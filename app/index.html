@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Upbase B2C Marketing Management Hub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="logo-icon">UB</div>
+        <div class="brand-text">
+          <h2>UPBASE B2C</h2>
+          <span>Marketing Operations</span>
+        </div>
+      </div>
+
+      <nav class="nav-menu">
+        <button class="nav-item active" data-tab="overview">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+          <span>Tổng Quan & SLA</span>
+        </button>
+        <button class="nav-item" data-tab="brand">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon></svg>
+          <span>Brand Team</span>
+        </button>
+        <button class="nav-item" data-tab="content">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+          <span>Content Team</span>
+        </button>
+        <button class="nav-item" data-tab="booking">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+          <span>Booking Execution</span>
+          <span class="badge pulse">Live</span>
+        </button>
+        <button class="nav-item" data-tab="contracts">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+          <span>Auto Hợp Đồng KOC</span>
+        </button>
+        <button class="nav-item" data-tab="leaderboard">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="7"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline></svg>
+          <span>Bảng Vàng Thi Đua</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="user-pill">
+          <div class="avatar">VN</div>
+          <div class="user-info">
+            <span class="user-name">Vân Ngọc</span>
+            <span class="user-role">Operations & Management</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <!-- Header Bar -->
+      <header class="top-header">
+        <div class="header-title">
+          <h1 id="page-title">Tổng Quan Vận Hành & Đo Lường SLA</h1>
+          <p id="page-subtitle">Hệ thống quản trị Marketing B2C Upbase — Đồng bộ 3 Team, Tự động hóa & Khử Lag</p>
+        </div>
+        <div class="header-actions">
+          <div class="status-indicator">
+            <span class="dot live"></span>
+            <span>Hệ Thống Phản Hồi: <strong>32ms</strong> (Zero Lag)</span>
+          </div>
+          <button class="btn btn-primary" id="btn-quick-contract">+ Tạo Nhanh Hợp Đồng KOC</button>
+        </div>
+      </header>
+
+      <!-- TAB 1: OVERVIEW & SLA -->
+      <section class="tab-pane active" id="tab-overview">
+        <!-- Top Stats Row -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon purple">📊</div>
+            <div class="stat-content">
+              <span class="stat-label">Tỷ Lệ Đạt SLA Toàn Phòng</span>
+              <div class="stat-value">92.4%</div>
+              <span class="stat-trend positive">↑ Tăng 32.4% so với trước khi chuẩn hóa</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon green">⚡</div>
+            <div class="stat-content">
+              <span class="stat-label">Thời Gian Gen Hợp Đồng KOC</span>
+              <div class="stat-value">1.8 phút</div>
+              <span class="stat-trend positive">⚡ Tự động 100% (cũ: 45 phút gõ tay)</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon blue">🎬</div>
+            <div class="stat-content">
+              <span class="stat-label">Video & Livestream Đang Chạy</span>
+              <div class="stat-value">148 Clips</div>
+              <span class="stat-trend neutral">TikTok, Shopee, Reels, Threads</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon orange">🏆</div>
+            <div class="stat-content">
+              <span class="stat-label">Chiến Thần Booking Tuần</span>
+              <div class="stat-value">Khánh Vy (Booking)</div>
+              <span class="stat-trend gold">★ 28 Deals chốt - 100% đúng SLA</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3-Team Pipeline Flow Visualization -->
+        <div class="card pipeline-card">
+          <div class="card-header">
+            <h3>Luồng Chuyển Giao Công Việc 3 Team (3-Team Handoff Pipeline)</h3>
+            <span class="badge info">Chuẩn SLA Hai Chiều</span>
+          </div>
+          <div class="pipeline-grid">
+            <div class="pipeline-column">
+              <div class="col-head brand-col">
+                <span class="col-title">1. BRAND TEAM</span>
+                <span class="sla-badge">SLA: 24h</span>
+              </div>
+              <div class="pipeline-body" id="col-brand">
+                <!-- Cards injected via JS -->
+              </div>
+            </div>
+
+            <div class="pipeline-arrow">➔</div>
+
+            <div class="pipeline-column">
+              <div class="col-head content-col">
+                <span class="col-title">2. CONTENT TEAM</span>
+                <span class="sla-badge">SLA: 24h - 48h</span>
+              </div>
+              <div class="pipeline-body" id="col-content">
+                <!-- Cards injected via JS -->
+              </div>
+            </div>
+
+            <div class="pipeline-arrow">➔</div>
+
+            <div class="pipeline-column">
+              <div class="col-head booking-col">
+                <span class="col-title">3. BOOKING EXECUTION</span>
+                <span class="sla-badge">SLA: 12h - 48h</span>
+              </div>
+              <div class="pipeline-body" id="col-booking">
+                <!-- Cards injected via JS -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SLA Control Table -->
+        <div class="card">
+          <div class="card-header">
+            <h3>Nhật Ký Giám Sát SLA & Trách Nhiệm Từng Vị Trí</h3>
+            <div class="filter-group">
+              <button class="pill-filter active">Tất cả (30)</button>
+              <button class="pill-filter">Đang trong hạn</button>
+              <button class="pill-filter warn">Sắp chạm trần SLA (2)</button>
+            </div>
+          </div>
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Mã Đầu Việc</th>
+                  <th>Nội dung bàn giao</th>
+                  <th>Team Phụ Trách</th>
+                  <th>Nhân sự</th>
+                  <th>Hạn chót SLA</th>
+                  <th>Thời gian còn lại</th>
+                  <th>Trạng thái</th>
+                </tr>
+              </thead>
+              <tbody id="sla-table-body">
+                <!-- Data populated by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 2: BRAND TEAM -->
+      <section class="tab-pane" id="tab-brand">
+        <div class="section-intro">
+          <div class="intro-box">
+            <h2>Brand Strategy & Campaign Management</h2>
+            <p>Xây dựng định vị, Target Audience, Big Idea và chuẩn hóa Campaign Brief trước khi bàn giao cho Content Team.</p>
+          </div>
+          <button class="btn btn-primary" id="btn-create-campaign">+ Tạo Chiến Dịch Mới</button>
+        </div>
+
+        <div class="cards-grid" id="brand-campaigns-grid">
+          <!-- Populated by JS -->
+        </div>
+      </section>
+
+      <!-- TAB 3: CONTENT TEAM -->
+      <section class="tab-pane" id="tab-content">
+        <div class="section-intro">
+          <div class="intro-box">
+            <h2>Content Strategy, Master Plan & Creative Assets</h2>
+            <p>Lập Content Pillar, định hướng kịch bản TikTok/Shopee, brief thiết kế PDP/Banner và chuyển giao góc quay cho Booking Team.</p>
+          </div>
+          <button class="btn btn-primary">+ Tạo Master Content Plan</button>
+        </div>
+
+        <div class="content-pillars-container" id="content-pillars-container">
+          <!-- Populated by JS -->
+        </div>
+      </section>
+
+      <!-- TAB 4: BOOKING EXECUTION -->
+      <section class="tab-pane" id="tab-booking">
+        <div class="booking-toolbar">
+          <div class="search-box">
+            <input type="text" id="koc-search" placeholder="🔍 Tìm kiếm KOC theo tên, kênh, ngành hàng...">
+          </div>
+          <div class="tier-filters">
+            <button class="filter-btn active" data-tier="all">Tất cả Tier</button>
+            <button class="filter-btn" data-tier="Tier 1 (Celebrity)">Tier 1 (Celeb)</button>
+            <button class="filter-btn" data-tier="Tier 2 (Macro)">Tier 2 (Macro)</button>
+            <button class="filter-btn" data-tier="Tier 3 (Micro)">Tier 3 (Micro)</button>
+            <button class="filter-btn" data-tier="Tier 4 (Affiliate)">Tier 4 (Affiliate)</button>
+          </div>
+          <button class="btn btn-primary" id="btn-add-koc">+ Thêm KOC Mới</button>
+        </div>
+
+        <div class="table-card">
+          <div class="card-header">
+            <h3>Danh Bạ KOC 4 Tier & Lịch Sử Hợp Tác (Tải 10,000 dòng Zero-Lag)</h3>
+            <span class="badge success">CSDL Quan Hệ Đã Index</span>
+          </div>
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>KOC / Kênh</th>
+                  <th>Phân Tầng (Tier)</th>
+                  <th>Ngành hàng (Niche)</th>
+                  <th>Followers</th>
+                  <th>Báo giá Video</th>
+                  <th>Uy tín trả bài</th>
+                  <th>Thao tác</th>
+                </tr>
+              </thead>
+              <tbody id="koc-table-body">
+                <!-- Populated by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 5: AUTO CONTRACT GENERATOR -->
+      <section class="tab-pane" id="tab-contracts">
+        <div class="contract-workspace">
+          <div class="contract-form-card">
+            <div class="card-header">
+              <h3>⚡ Công Cụ Sinh Hợp Đồng & Tạm Ứng Tự Động</h3>
+              <span class="badge info">Giải quyết dứt điểm Painpoint gõ tay</span>
+            </div>
+            <form id="contract-form">
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Chiến Dịch Liên Kết</label>
+                  <select id="cf-campaign" required>
+                    <option value="CAMP-1010">Mega Sale 10.10 - Kháng Nắng Đa Tầng</option>
+                    <option value="CAMP-GLOW">Thu Đông Rạng Rỡ - Skincare Upbase</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Nhân Sự Phụ Trách</label>
+                  <input type="text" id="cf-staff" value="Nguyễn Văn A (Booking Team)" required>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Họ Tên KOC</label>
+                  <input type="text" id="cf-koc-name" value="Lê Thị Bích Chanh" placeholder="Tên theo CCCD" required>
+                </div>
+                <div class="form-group">
+                  <label>Tên Kênh / KOC</label>
+                  <input type="text" id="cf-koc-stage" value="Chanh Beauty Review" required>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Số CCCD / CMND</label>
+                  <input type="text" id="cf-koc-cccd" value="001201004567" required>
+                </div>
+                <div class="form-group">
+                  <label>Mã Số Thuế (Nếu có)</label>
+                  <input type="text" id="cf-koc-tax" value="8492019482">
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Ngân Hàng & Số Tài Khoản</label>
+                  <input type="text" id="cf-koc-bank" value="Techcombank - 1903456789012" required>
+                </div>
+                <div class="form-group">
+                  <label>Nội Dung Triển Khai</label>
+                  <input type="text" id="cf-deliverables" value="01 Video TikTok 60s + Gắn link giỏ hàng Shopee" required>
+                </div>
+              </div>
+
+              <div class="highlight-split-card">
+                <div class="split-title">Quy Định Đợt Tạm Ứng & Quyết Toán (Auto Split)</div>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>Tổng Giá Trị Hợp Đồng (VNĐ)</label>
+                    <input type="number" id="cf-total" value="10000000" step="500000" required>
+                  </div>
+                  <div class="form-group">
+                    <label>Đợt 1: Tạm Ứng Trước (VNĐ)</label>
+                    <input type="number" id="cf-advance" value="2000000" step="500000" required>
+                  </div>
+                  <div class="form-group">
+                    <label>Đợt 2: Quyết Toán Sau Nghiệm Thu</label>
+                    <input type="text" id="cf-final" value="8.000.000 đ" readonly class="readonly-input">
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-actions">
+                <button type="submit" class="btn btn-success btn-lg">⚡ Tự Động Gen Hợp Đồng & Bắn Duyệt Lark Bot</button>
+                <button type="button" class="btn btn-secondary" id="btn-reset-contract">Làm mới form</button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Preview Pane -->
+          <div class="contract-preview-card">
+            <div class="preview-header">
+              <span>Bản Xem Trước Hợp Đồng Chuẩn Pháp Lý</span>
+              <button class="btn btn-sm btn-outline" id="btn-print-contract">In / Tải PDF</button>
+            </div>
+            <div class="contract-document" id="contract-document-preview">
+              <!-- Rendered Contract Preview -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 6: GAMIFICATION LEADERBOARD -->
+      <section class="tab-pane" id="tab-leaderboard">
+        <div class="leaderboard-header">
+          <div class="leaderboard-intro">
+            <h2>Bảng Vàng Thi Đua Phòng Marketing B2C</h2>
+            <p>Minh bạch thành tích, kích hoạt động lực tự thân, tách bạch Năng Lực (Kỷ luật SLA) vs Kết Quả (Sản lượng/Doanh thu).</p>
+          </div>
+          <div class="period-toggle">
+            <button class="btn btn-sm active">Tháng 9/2026</button>
+            <button class="btn btn-sm">Tuần Này</button>
+          </div>
+        </div>
+
+        <!-- Podium Top 3 -->
+        <div class="podium-grid">
+          <div class="podium-item rank-2">
+            <div class="crown">🥈</div>
+            <div class="avatar-circle">HL</div>
+            <div class="podium-name">Hoàng Linh</div>
+            <div class="podium-team">Content Team</div>
+            <div class="podium-score">945 Điểm</div>
+            <span class="podium-badge">Viral Hero Content</span>
+          </div>
+
+          <div class="podium-item rank-1">
+            <div class="crown">👑</div>
+            <div class="avatar-circle gold-border">KV</div>
+            <div class="podium-name">Khánh Vy</div>
+            <div class="podium-team">Booking Execution</div>
+            <div class="podium-score">1,120 Điểm</div>
+            <span class="podium-badge gold">Chiến Thần Booking</span>
+          </div>
+
+          <div class="podium-item rank-3">
+            <div class="crown">🥉</div>
+            <div class="avatar-circle">NA</div>
+            <div class="podium-name">Nguyễn Anh</div>
+            <div class="podium-team">Booking Execution</div>
+            <div class="podium-score">890 Điểm</div>
+            <span class="podium-badge">SLA Champion (100%)</span>
+          </div>
+        </div>
+
+        <!-- Full Leaderboard Table -->
+        <div class="card">
+          <div class="card-header">
+            <h3>Bảng Điểm Chi Tiết Toàn Bộ 30 Nhân Sự</h3>
+            <span class="badge info">Cập nhật thời gian thực</span>
+          </div>
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Hạng</th>
+                  <th>Nhân sự</th>
+                  <th>Team</th>
+                  <th>Điểm Kỷ Luật SLA (30%)</th>
+                  <th>Sản Lượng Video/Live (40%)</th>
+                  <th>Doanh Thu GMV (30%)</th>
+                  <th>Tổng Điểm</th>
+                  <th>Danh Hiệu Tuần</th>
+                </tr>
+              </thead>
+              <tbody id="leaderboard-table-body">
+                <!-- Populated by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

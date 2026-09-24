@@ -1,0 +1,345 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* ========================================================================= */
+/* UPBASE ENTERPRISE LIGHT THEME DESIGN TOKENS (CHUẨN SAAS SÁNG HIỆN ĐẠI)     */
+/* ========================================================================= */
+
+:root {
+  --font-sans: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --bg-base: #f8fafc;        /* slate-50: Nền tổng thể mềm mại */
+  --bg-surface: #ffffff;     /* white: Nền thẻ, popup, bảng */
+  --bg-surface-alt: #f1f5f9; /* slate-100: Header bảng, inner card */
+  --bg-hover: #f1f5f9;       /* slate-100: Trạng thái hover */
+  --border-subtle: #e2e8f0;  /* slate-200: Đường viền mảnh */
+  --border-accent: #cbd5e1;  /* slate-300: Đường viền nhấn */
+  --text-primary: #0f172a;   /* slate-900: Tiêu đề & chỉ số chính */
+  --text-secondary: #334155; /* slate-700: Văn bản nội dung */
+  --text-muted: #64748b;     /* slate-500: Chú thích phụ */
+  --primary-blue: #2563eb;   /* blue-600 */
+  --emerald-green: #059669;  /* emerald-600 */
+  --amber-gold: #d97706;     /* amber-600 */
+  --rose-red: #dc2626;       /* red-600 */
+}
+
+/* ========================================================================= */
+/* UNIVERSAL TYPOGRAPHY SYSTEM (ĐỒNG NHẤT TOÀN DIỆN FONT CHỮ TOÀN HỆ THỐNG)  */
+/* ========================================================================= */
+
+*, *::before, *::after {
+  font-family: inherit;
+}
+
+html, body {
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+  min-height: 100vh;
+  font-family: var(--font-sans) !important;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+button, input, select, textarea, optgroup {
+  font-family: var(--font-sans) !important;
+}
+
+/* Align numbers in tables and metrics cleanly with tabular figures */
+table, .tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Harmonize font-mono elements to use the same unified Plus Jakarta Sans typography 
+   with tabular-nums for aligned columns, preventing jarring typewriter fonts in UI */
+.font-mono:not(pre):not(code):not(kbd) {
+  font-family: var(--font-sans) !important;
+  font-variant-numeric: tabular-nums !important;
+  letter-spacing: -0.01em;
+}
+
+pre, code, kbd, samp {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace !important;
+}
+
+/* Light Mode Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Clean Enterprise Utility Classes - Light Theme */
+.card-enterprise {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.375rem; /* 6px crisp corners */
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.02);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.card-enterprise:hover {
+  border-color: var(--border-accent);
+}
+
+.card-inner-box {
+  background-color: var(--bg-surface-alt);
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.25rem; /* 4px crisp inner radius */
+}
+
+/* Subtle Table Styling - Light Theme */
+.table-header-enterprise {
+  background-color: var(--bg-surface-alt);
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.table-row-enterprise {
+  border-bottom: 1px solid var(--border-subtle);
+  transition: background-color 0.12s ease;
+}
+
+.table-row-enterprise:hover {
+  background-color: var(--bg-hover);
+}
+
+/* Crisp Pastel Status Badges - Light Theme & Zero-Wrap Guarantee */
+.badge-emerald,
+.badge-blue,
+.badge-amber,
+.badge-rose,
+.badge-purple,
+.badge-slate,
+[class*="badge-"],
+span[class*="rounded-full"][class*="text-[1"],
+span[class*="rounded-full"][class*="text-xs"],
+span[class*="rounded"][class*="text-[1"],
+span[class*="rounded-md"][class*="text-[1"],
+span[class*="rounded-lg"][class*="text-[1"] {
+  white-space: nowrap !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+  line-height: 1.25 !important;
+}
+
+.badge-emerald {
+  background-color: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+  border-radius: 0.25rem;
+}
+
+.badge-blue {
+  background-color: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+  border-radius: 0.25rem;
+}
+
+.badge-amber {
+  background-color: #fffbeb;
+  color: #b45309;
+  border: 1px solid #fde68a;
+  border-radius: 0.25rem;
+}
+
+.badge-rose {
+  background-color: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+  border-radius: 0.25rem;
+}
+
+.badge-purple {
+  background-color: #faf5ff;
+  color: #6d28d9;
+  border: 1px solid #ddd6fe;
+  border-radius: 0.25rem;
+}
+
+.badge-slate {
+  background-color: #f1f5f9;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.25rem;
+}
+
+/* ========================================================================= */
+/* STANDARDIZED BUTTON SYSTEM (ĐỒNG BỘ KÍCH THƯỚC NÚT TOÀN ỨNG DỤNG)        */
+/* ========================================================================= */
+
+/* General button hygiene: prevent text wrapping and vertical collapse */
+button {
+  white-space: nowrap;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Button Small: Table row actions, inline secondary actions */
+.btn-sm, button.btn-sm {
+  height: 28px !important;
+  min-height: 28px !important;
+  padding: 0 10px !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  border-radius: 6px !important;
+  gap: 5px !important;
+}
+
+/* Button Standard: Header CTA, Modals, Primary Toolbar actions */
+.btn-md, button.btn-md {
+  height: 32px !important;
+  min-height: 32px !important;
+  padding: 0 12px !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  border-radius: 8px !important;
+  gap: 6px !important;
+}
+
+/* Button Large: Prominent Primary Hero CTAs */
+.btn-lg, button.btn-lg {
+  height: 38px !important;
+  min-height: 38px !important;
+  padding: 0 16px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  border-radius: 8px !important;
+  gap: 8px !important;
+}
+
+/* ========================================================================= */
+/* DARK-TO-LIGHT UTILITY OVERRIDES (ÁNH XẠ TOÀN BỘ MÀU TỐI SANG MÀU SÁNG)    */
+/* ========================================================================= */
+
+/* Pure White Surfaces for all Dark Hex backgrounds */
+[class*="bg-[#0"]:not(button):not(button *):not([class*="bg-blue"]):not([class*="bg-emerald"]):not([class*="bg-rose"]):not([class*="bg-purple"]):not([class*="bg-amber"]),
+[class*="bg-[#1"]:not(button):not(button *):not([class*="bg-blue"]):not([class*="bg-emerald"]):not([class*="bg-rose"]):not([class*="bg-purple"]):not([class*="bg-amber"]),
+[class*="bg-slate-950"]:not(button):not(button *),
+[class*="bg-slate-900"]:not(button):not(button *),
+[class*="bg-slate-850"]:not(button):not(button *) {
+  background-color: #ffffff !important;
+}
+
+/* Slate-50 Sub-surfaces & Headers */
+[class*="bg-[#101726]"],
+[class*="bg-[#121826]"],
+[class*="bg-[#0e1424]"],
+[class*="bg-[#090e18]"],
+[class*="bg-[#090d16]"],
+[class*="bg-[#0f172a]"],
+[class*="bg-[#162036]"],
+[class*="bg-[#131d31]"],
+[class*="bg-[#0e1628]"],
+[class*="bg-[#111827]"],
+[class*="bg-[#0d1019]"],
+[class*="bg-[#121622]"],
+[class*="bg-[#161c2a]"] {
+  background-color: #f8fafc !important;
+}
+
+/* Slate-100 Accents & Table Rows */
+[class*="bg-[#182030]"],
+[class*="bg-[#1a2844]"],
+[class*="bg-[#1e293b]"] {
+  background-color: #f1f5f9 !important;
+}
+
+/* Hover Rows */
+[class*="hover:bg-[#"]:hover,
+[class*="hover:bg-slate-800"]:hover,
+[class*="hover:bg-slate-900"]:hover {
+  background-color: #f1f5f9 !important;
+}
+
+/* Crisp Slate Borders */
+[class*="border-[#"],
+[class*="border-slate-800"],
+[class*="border-slate-700"],
+[class*="border-slate-600"] {
+  border-color: #e2e8f0 !important;
+}
+
+/* Dividers */
+[class*="divide-[#"] > :not([hidden]) ~ :not([hidden]),
+[class*="divide-slate-800"] > :not([hidden]) ~ :not([hidden]),
+[class*="divide-slate-700"] > :not([hidden]) ~ :not([hidden]) {
+  border-color: #e2e8f0 !important;
+}
+
+/* Form Controls - Crisp White with Slate Borders */
+input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]),
+textarea,
+select {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: #3b82f6 !important;
+  outline: none;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+/* High-Contrast Typography for Light Theme */
+.text-slate-100:not(button):not(button *):not([class*="badge"]):not([class*="bg-blue"]):not([class*="bg-emerald"]):not([class*="bg-rose"]),
+.text-slate-200:not(button):not(button *):not([class*="badge"]):not([class*="bg-blue"]):not([class*="bg-emerald"]):not([class*="bg-rose"]) {
+  color: #0f172a !important;
+}
+
+.text-slate-300:not(button):not(button *):not([class*="badge"]):not([class*="bg-blue"]):not([class*="bg-emerald"]):not([class*="bg-rose"]) {
+  color: #334155 !important;
+}
+
+.text-slate-400:not(button):not(button *):not([class*="badge"]):not([class*="bg-blue"]):not([class*="bg-emerald"]):not([class*="bg-rose"]) {
+  color: #64748b !important;
+}
+
+/* Turn text-white on light surfaces into dark slate, strictly excluding solid buttons & badges */
+body *:not(button):not(button *):not([class*="badge"]):not([class*="bg-blue"]):not([class*="bg-emerald"]):not([class*="bg-rose"]):not([class*="bg-purple"]):not([class*="bg-amber"]):not([class*="bg-red"]):not([class*="from-"]):not([class*="to-"]).text-white {
+  color: #0f172a !important;
+}
+
+/* Ensure white text is strictly preserved on solid colored buttons */
+button.bg-blue-600, button.bg-blue-600 *,
+button.bg-emerald-600, button.bg-emerald-600 *,
+button.bg-rose-600, button.bg-rose-600 *,
+button.bg-purple-600, button.bg-purple-600 *,
+button[class*="from-blue"], button[class*="from-blue"] *,
+.text-white.bg-blue-600 {
+  color: #ffffff !important;
+}
+
+/* Modal Overlay Backdrop */
+.fixed.inset-0.bg-black\/70,
+.fixed.inset-0.bg-slate-950\/80 {
+  background-color: rgba(15, 23, 42, 0.45) !important;
+  backdrop-filter: blur(2px);
+}

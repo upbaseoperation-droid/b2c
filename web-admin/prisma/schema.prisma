@@ -1,0 +1,708 @@
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ==========================================
+// 1. CORE ENUMS & RBAC (6 MODULES ALIGNED)
+// ==========================================
+
+enum Role {
+  ADMIN
+  BRAND_MEMBER
+  CONTENT_MEMBER
+  BOOKING_MEMBER
+  MANAGER
+  LEAD_B2C
+  HEAD_OF_B2C
+}
+
+enum StoreAssignmentRole {
+  GROWTH_OWNER          // Chịu trách nhiệm doanh số & P&L tổng gian hàng
+  PRIMARY_B2C_OWNER     // Lead B2C Ops chính (chịu trách nhiệm vận hành nội dung, KOC & SLA)
+  CO_OWNER              // Đồng phụ trách (phối hợp quản lý gian hàng cùng Primary)
+  CONTENT_LEAD          // Phụ trách định hướng nội dung & kịch bản gian hàng
+}
+
+enum ServiceModel {
+  FULL_SERVICE          // Quản trị toàn diện (KOC + Content + Ads + Live)
+  AFFILIATE_ONLY        // Chỉ vận hành mạng lưới KOC Affiliate
+  LIVESTREAM_DEDICATED  // Đội ngũ chuyên biệt Livestream Inhouse/CTV
+}
+
+enum AccountStatus {
+  ONBOARDING            // Khởi tạo gian hàng & cấu hình ban đầu
+  ACTIVE                // Đang vận hành chiến dịch thường xuyên
+  MAINTENANCE           // Duy trì tối thiểu / Giai đoạn thấp điểm
+  OFFBOARDED            // Tạm dừng hoặc kết thúc dịch vụ
+}
+
+enum KocTier {
+  TIER_1_CELEB          // KL7 (>30M VNĐ)
+  TIER_2_MACRO          // KL6 (10M - 30M VNĐ)
+  TIER_3_MICRO          // KL4 - KL5 (3M - 10M VNĐ)
+  TIER_4_AFFILIATE      // TAP, KL1 - KL3 (<3M VNĐ hoặc thuần hoa hồng)
+}
+
+// 🌟 1. KHUNG LƯƠNG (KL) - Chuẩn hóa Sheet 3.1 & 5.6
+enum SalaryGrade {
+  TAP_UP_AFFILIATE      // TAP UpAffiliate (0đ - thuần affiliate)
+  KL1                   // 0 - 500.000 VNĐ
+  KL2                   // 500.000 - 1.500.000 VNĐ
+  KL3                   // 1.500.000 - 3.000.000 VNĐ
+  KL4                   // 3.000.000 - 5.000.000 VNĐ
+  KL5                   // 5.000.000 - 10.000.000 VNĐ
+  KL6                   // 10.000.000 - 30.000.000 VNĐ
+  KL7                   // > 30.000.000 VNĐ (Celeb / Mega)
+  TAP_EXTERNAL          // TAP đối tác ngoài / Agency MCN
+}
+
+// 🌟 2. SEGMENT - Phân nhóm Creator theo vai trò chiến lược (Sheet 3.2 Col 81 & 5.6)
+enum CreatorSegment {
+  MASSIVE_CREATOR       // TAP, KL1, KL2, KL3 (< 3M): Phủ diện rộng, tối ưu chi phí, long-tail GMV
+  MID_CREATOR           // KL4, KL5 (3M - 10M): Review chuyên sâu, tương tác gắn kết, ra đơn ổn định
+  KEY_CREATOR           // KL6 (10M - 30M): Nhận diện thương hiệu mạnh, đòn bẩy Spark Ads scale GMV
+  TOP_CREATOR           // KL7 (> 30M): Celebrity / Macro đỉnh cao, bảo chứng thương hiệu Mega/D-Day
+}
+
+// 🌟 3. KOC CATEGORY - Ngành hàng / Lĩnh vực KOC (Sheet 3.2 Col 87 & 5.4)
+enum KocCategory {
+  PERSONAL_CARE         // Mỹ phẩm, chăm sóc da liễu, tóc, body
+  MOM_AND_BABY          // Mẹ & Bé, phụ nữ mang thai, bỉm sữa
+  REVIEWER              // Reviewer chuyên sâu đa sản phẩm
+  LIFESTYLE             // Đời sống, thể thao, wellness
+  FASHION               // Thời trang, phụ kiện
+  ELHA                  // Điện gia dụng, thiết bị thông minh, đồ gia đình
+  FB                    // Thực phẩm, đồ uống (F&B), ẩm thực
+  SOCIAL_COMEDIAN       // Giải trí, kịch bản hài hước, tình huống sáng tạo
+  TRAVEL_HOSPITALITY    // Du lịch, nghỉ dưỡng, khách sạn, dịch vụ
+}
+
+enum WorkstreamType {
+  KOC_AFFILIATE         // KOC Affiliate seeding
+  INHOUSE_VIRAL         // Kênh Inhouse / Viral Video
+  LIVESTREAM_OPS        // Vận hành phòng Live HN/HCM & CTV
+  SPARK_ADS_BOOST       // Phối hợp Media chạy Spark Ads Scale GMV
+}
+
+enum CandidateStatus {
+  PROSPECTING           // Sàng lọc tệp kênh phù hợp
+  CONTACTED             // Đã nhắn tin / liên hệ Zalo
+  PITCHED               // Đã gửi Brief & chào giá
+  ACCEPTED              // KOC đồng ý nhận Job
+  REJECTED              // KOC từ chối / Báo giá quá cao
+  CONVERTED_TO_BOOKING  // Chốt thỏa thuận ➔ Chuyển sang tạo Booking
+}
+
+enum DealStatus {
+  DRAFT
+  CONTACTING
+  TERMS_AGREED
+  SCRIPT_PENDING
+  SCRIPT_APPROVED
+  CONTRACT_GENERATED
+  ADVANCE_PAID          // Đã chi tạm ứng 2tr (qua Lark Approval) -> Gửi sample
+  SAMPLE_SHIPPED
+  SAMPLE_RECEIVED
+  VIDEO_SUBMITTED
+  VIDEO_VERIFIED        // Nghiệm thu chất lượng video
+  FINAL_PAID            // Đã quyết toán 8tr (qua Lark Approval)
+  COMPLETED
+  CANCELLED
+}
+
+enum ContentFormat {
+  VIDEO_SHORT_60S       // Video ngắn chuẩn TikTok Shop 60s
+  VIDEO_HOOK_30S        // Video nhấn mạnh Hook 30s
+  LIVESTREAM_SESSION    // Phiên live bán hàng 2-3h
+  CAROUSEL_PHOTO        // Ảnh bộ / Carousel bán hàng
+}
+
+enum QcStatus {
+  PENDING               // Đang chờ QC thẩm định
+  PASS                  // Đạt tiêu chuẩn xuất bản
+  REVISION_REQUIRED     // Cần sửa theo checklist (Max 2 lần)
+}
+
+enum PublicationVerification {
+  PENDING_AUDIT         // Chờ đối soát link bài và mã Ads
+  VERIFIED              // Đã đối soát đúng mã và nội dung
+  REJECTED              // Bài đăng sai quy cách / Chưa cấp quyền Ads
+}
+
+enum CapacityStatus {
+  UNDERLOAD             // Dưới 75% định mức
+  OPTIMAL               // 75% - 115% định mức chuẩn
+  OVERLOAD              // Trên 115% (Cảnh báo quá tải)
+}
+
+enum GrowthDemandStatus {
+  PENDING_BREAKDOWN
+  PLANNED
+  LEAD_APPROVED
+  IN_EXECUTION
+  REJECTED
+}
+
+// ==========================================
+// 2. MODULE 5: PEOPLE & CAPACITY
+// ==========================================
+
+model User {
+  id               String                 @id @default(uuid())
+  email            String                 @unique
+  name             String
+  role             Role                   @default(BOOKING_MEMBER)
+  avatarUrl        String?
+  team             String?                // Booking Team 1, Content Team A...
+  leadId           String?
+  lead             User?                  @relation("UserHierarchy", fields: [leadId], references: [id])
+  subordinates     User[]                 @relation("UserHierarchy")
+  assignedDeals    BookingDeal[]
+  slaLogs          SlaLog[]
+  storeAssignments StoreStaffAssignment[]
+  createdAt        DateTime               @default(now())
+}
+
+// ==========================================
+// 3. MODULE 1: PORTFOLIO / STORE MANAGEMENT
+// ==========================================
+
+model StorePortfolio {
+  id                   String          @id @default(uuid())
+  brandName            String
+  storeName            String          @unique
+  platform             String          // TikTok Shop, Shopee Mall, Lazada
+  storeUrl             String?
+  serviceModel         ServiceModel    @default(FULL_SERVICE)
+  difficultyTier       String          @default("Tiêu chuẩn") // Cơ bản (1.0), Tiêu chuẩn (1.2), Vừa (1.4), Khó (1.6)
+  difficultyMultiplier Float           @default(1.2)
+  accountStatus        AccountStatus   @default(ACTIVE)
+  category             String          // Dược mỹ phẩm, Mẹ & Bé, Skincare...
+  monthlyTargetGmv     Decimal         @default(0) @db.Decimal(12, 2)
+  monthlyBudget        Decimal         @default(0) @db.Decimal(12, 2)
+  
+  // Phân định 2 chủ tài khoản rõ ràng:
+  accountOwnerName     String          // Account/Growth Owner (Chịu trách nhiệm doanh số & quan hệ khách hàng)
+  b2cOwnerName         String          // B2C Ops Owner (Chịu trách nhiệm vận hành nội dung & booking)
+  
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+
+  candidates           KocCandidate[]
+  bookingDeals         BookingDeal[]
+  growthDemands        GrowthDemand[]
+  staffAssignments     StoreStaffAssignment[]
+
+  @@index([accountStatus])
+  @@index([serviceModel])
+  @@index([brandName])
+}
+
+// ==========================================
+// 3.1. MULTI-PIC ASSIGNMENT (STORE <-> STAFF M-N)
+// ==========================================
+
+model StoreStaffAssignment {
+  id               String              @id @default(uuid())
+  storeId          String
+  store            StorePortfolio      @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  userId           String
+  user             User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role             StoreAssignmentRole @default(CO_OWNER)
+  notes            String?             // Ghi chú phân bổ: ví dụ "Phụ trách mảng Livestream", "Phụ trách Seeding KOC"
+  assignedAt       DateTime            @default(now())
+  assignedBy       String?             // Email hoặc Name của Manager thực hiện phân công
+
+  @@unique([storeId, userId, role])
+  @@index([userId])
+  @@index([storeId])
+  @@index([role])
+}
+
+// Cấu hình tham chiếu độ khó (backward compatibility)
+model StoreDifficultyConfig {
+  id               String   @id @default(uuid())
+  storeName        String   @unique
+  platform         String   // TikTok Shop, Shopee, Lazada
+  difficultyTier   String   // Cơ bản, Tiêu chuẩn, Vừa, Khó
+  multiplier       Float    @default(1.0) // 1.0, 1.2, 1.4, 1.6
+  category         String   // Dược mỹ phẩm, Skincare, Make-up...
+  monthlyTargetGmv Decimal  @db.Decimal(12, 2)
+  assignedPic      String
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+// ==========================================
+// 4. MODULE 2: PLANNING (MONTH / QUARTER)
+// ==========================================
+
+model Campaign {
+  id             String         @id @default(uuid())
+  code           String         @unique // vd: CAMP-2026-1010
+  name           String
+  brandName      String
+  status         String         @default("ACTIVE")
+  bigIdea        String?
+  targetAudience String?
+  budgetTotal    Decimal        @db.Decimal(12, 2)
+  startDate      DateTime
+  endDate        DateTime
+  contentPlans   ContentPlan[]
+  bookingDeals   BookingDeal[]
+  createdAt      DateTime       @default(now())
+}
+
+model ContentPlan {
+  id            String         @id @default(uuid())
+  campaignId    String
+  campaign      Campaign       @relation(fields: [campaignId], references: [id])
+  pillarName    String         // Educational, Social Proof, Commercial
+  channel       String         // TikTok, Shopee, Reels
+  angleScript   String
+  targetKocTier KocTier
+  status        String         @default("PLANNING")
+  createdAt     DateTime       @default(now())
+}
+
+model GrowthDemand {
+  id                   String                      @id @default(uuid())
+  code                 String                      @unique // e.g. GD-1010-SENKA
+  title                String
+  brandName            String
+  brandCategory        String
+  month                String                      // 2026/10
+  quarter              String?                     // 2026-Q4 (Hỗ trợ Planning Quý)
+  storePortfolioId     String?
+  storePortfolio       StorePortfolio?             @relation(fields: [storePortfolioId], references: [id])
+  workstream           WorkstreamType              @default(KOC_AFFILIATE)
+  totalAssignedBudget  Decimal                     @db.Decimal(12, 2)
+  targetGmv            Decimal                     @db.Decimal(12, 2)
+  targetNmv            Decimal?                    @db.Decimal(12, 2)
+  cancellationRate     Float                       @default(0.08)
+  targetCir            Float                       // e.g. 20.0 (%)
+  targetOutputsCount   Int                         @default(0) // Số lượng Output cam kết (Video/Live)
+  growthPic            String
+  bookingPic           String
+  deadlineBreakdown    String
+  growthNotes          String
+  status               GrowthDemandStatus          @default(PENDING_BREAKDOWN)
+  strategyNotes        String?
+  exceptionExplanation String?
+  createdAt            DateTime                    @default(now())
+  updatedAt            DateTime                    @updatedAt
+  tiers                GrowthDemandTierBreakdown[]
+  selfChannelPlan      SelfChannelPlanDb?
+  livestreamPlan       LivestreamPlanDb?
+  fourStageTracking    PlanFourStageTrackingDb?
+
+  @@index([status])
+  @@index([month])
+  @@index([quarter])
+}
+
+model GrowthDemandTierBreakdown {
+  id                 String       @id @default(uuid())
+  growthDemandId     String
+  growthDemand       GrowthDemand @relation(fields: [growthDemandId], references: [id], onDelete: Cascade)
+  tier               KocTier
+  tierLabel          String
+  salaryGradeLabel   String
+  targetCount        Int          @default(0)
+  estimatedAvgCost   Decimal      @db.Decimal(12, 2)
+  allocatedBudget    Decimal      @db.Decimal(12, 2)
+  estimatedGmvPerKoc Decimal      @db.Decimal(12, 2)
+  totalExpectedGmv   Decimal      @db.Decimal(12, 2)
+  roiBenchmark       Float        @default(4.0)
+  notes              String?
+
+  @@index([growthDemandId])
+}
+
+model SelfChannelPlanDb {
+  id               String       @id @default(uuid())
+  growthDemandId   String       @unique
+  growthDemand     GrowthDemand @relation(fields: [growthDemandId], references: [id], onDelete: Cascade)
+  plannedVideos    Int          @default(24)
+  approvedVideos   Int          @default(24)
+  reportedVideos   Int          @default(15)
+  productionBudget Decimal      @default(18000000) @db.Decimal(12, 2)
+  reportedCost     Decimal      @default(11250000) @db.Decimal(12, 2)
+  reupTiktok       Int          @default(24)
+  reupShopee       Int          @default(24)
+  reupFacebook     Int          @default(24)
+  reupThreads      Int          @default(20)
+  createdAt        DateTime     @default(now())
+}
+
+model LivestreamPlanDb {
+  id                    String       @id @default(uuid())
+  growthDemandId        String       @unique
+  growthDemand          GrowthDemand @relation(fields: [growthDemandId], references: [id], onDelete: Cascade)
+  inhouseSessionsHn     Int          @default(8)
+  inhouseSessionsHcm    Int          @default(16)
+  ctvSessions           Int          @default(10)
+  totalHours            Int          @default(92)
+  affiliateLiveSessions Int          @default(15)
+  plannedBudget         Decimal      @default(30000000) @db.Decimal(12, 2)
+  reportedBudget        Decimal      @default(19500000) @db.Decimal(12, 2)
+  plannedGmv            Decimal      @default(250000000) @db.Decimal(12, 2)
+  reportedGmv           Decimal      @default(178000000) @db.Decimal(12, 2)
+  createdAt             DateTime     @default(now())
+}
+
+model PlanFourStageTrackingDb {
+  id                String       @id @default(uuid())
+  growthDemandId    String       @unique
+  growthDemand      GrowthDemand @relation(fields: [growthDemandId], references: [id], onDelete: Cascade)
+  planBudget        Decimal      @db.Decimal(12, 2)
+  approvedBudget    Decimal      @db.Decimal(12, 2)
+  adjustedBudget    Decimal      @db.Decimal(12, 2)
+  reportedBudgetMtd Decimal      @db.Decimal(12, 2)
+  budgetGapMtd      Decimal      @db.Decimal(12, 2)
+  planNmv           Decimal      @db.Decimal(12, 2)
+  approvedNmv       Decimal      @db.Decimal(12, 2)
+  adjustedNmv       Decimal      @db.Decimal(12, 2)
+  reportedNmvMtd    Decimal      @db.Decimal(12, 2)
+  nmvGapMtd         Decimal      @db.Decimal(12, 2)
+  cancellationRate  Float        @default(0.08)
+  createdAt         DateTime     @default(now())
+}
+
+model WeeklyStorePlan411 {
+  id                   String   @id @default(uuid())
+  month                String   // 2026/09
+  week                 String   // W37, W38...
+  pic                  String
+  storeName            String
+  tiktokAffiliateQty   Int      @default(0)
+  tapAffiliateQty      Int      @default(0)
+  totalAffiliateBudget Decimal  @db.Decimal(12, 2)
+  actualBookedQty      Int      @default(0)
+  actualSpentBudget    Decimal  @default(0) @db.Decimal(12, 2)
+  targetGmv            Decimal? @db.Decimal(12, 2)
+  notes                String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@index([month])
+  @@index([storeName])
+}
+
+// =========================================================================
+// 5. MODULE 3 & 4: EXECUTION & CONTENT (DECOUPLED: CANDIDATE -> BOOKING -> CONTENT -> PUBLICATION)
+// =========================================================================
+
+// Master Hồ sơ Creator
+model KocProfile {
+  id               String         @id @default(uuid())
+  channelId        String         @unique // @megauriviu
+  stageName        String
+  realName         String?
+  tier             KocTier        @default(TIER_3_MICRO)
+  
+  // 🌟 4 TRƯỜNG PHÂN LOẠI CỐT LÕI (Sheet 3.1 & 3.2 & 5.4 & 5.6)
+  salaryGrade      SalaryGrade    @default(KL3)           // 1. KL (Khung lương net)
+  segment          CreatorSegment @default(MASSIVE_CREATOR) // 2. Segment (Massive, Mid, Key, Top)
+  tepKenh          String         @default("Review Nữ")   // 3. Tệp Kênh (25 tệp chuẩn)
+  kocCategory      KocCategory    @default(PERSONAL_CARE) // 4. KOC category (9 nhóm ngành)
+
+  mainChannel      String         @default("TIKTOK")
+  channelUrl       String
+  followersCount   Int            @default(0)
+  avgViews         Int            @default(0)
+  niche            String?        // Mô tả chi tiết ngách kênh
+  phone            String?
+  zalo             String?
+  email            String?
+  cccd             String?
+  taxCode          String?
+  bankName         String?
+  bankAccount      String?
+  rateCardVideo    Decimal?       @db.Decimal(12, 2)
+  reliabilityScore Float          @default(10.0)
+  deals            BookingDeal[]
+  candidates       KocCandidate[]
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@index([channelId])
+  @@index([tier])
+  @@index([salaryGrade])
+  @@index([segment])
+  @@index([kocCategory])
+  @@index([tepKenh])
+  @@index([niche])
+}
+
+// [Thực thể 1: Candidate] Pipeline tìm kiếm, tiếp cận & sàng lọc KOC
+model KocCandidate {
+  id               String          @id @default(uuid())
+  candidateCode    String          @unique // CAN-26-001
+  kocProfileId     String?
+  kocProfile       KocProfile?     @relation(fields: [kocProfileId], references: [id])
+  stageName        String
+  channelId        String
+  channelUrl       String
+  platform         String          @default("TIKTOK")
+  tier             KocTier         @default(TIER_3_MICRO)
+
+  // 🌟 4 TRƯỜNG PHÂN LOẠI CỐT LÕI
+  salaryGrade      SalaryGrade     @default(KL3)
+  segment          CreatorSegment  @default(MASSIVE_CREATOR)
+  tepKenh          String          @default("Review Nữ")
+  kocCategory      KocCategory     @default(PERSONAL_CARE)
+
+  followersCount   Int             @default(0)
+  avgViews         Int             @default(0)
+  rateCardExpected Decimal         @default(0) @db.Decimal(12, 2)
+  outreachStatus   CandidateStatus @default(PROSPECTING)
+  brandName        String
+  storePortfolioId String?
+  storePortfolio   StorePortfolio? @relation(fields: [storePortfolioId], references: [id])
+  assignedPic      String          // Nhân sự chịu trách nhiệm tiếp cận
+  pitchBatch       String?         // Đợt 1, Đợt 2...
+  rejectionReason  String?
+  contactedAt      DateTime?
+  convertedAt      DateTime?
+  bookingDeals     BookingDeal[]
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  @@index([outreachStatus])
+  @@index([salaryGrade])
+  @@index([segment])
+  @@index([kocCategory])
+  @@index([brandName])
+  @@index([assignedPic])
+}
+
+// [Thực thể 2: Booking Deal] Thỏa thuận hợp đồng & Điều khoản thương mại
+model BookingDeal {
+  id                     String          @id @default(uuid())
+  dealCode               String          @unique // BO26_0901_CHANH
+  campaignId             String
+  campaign               Campaign        @relation(fields: [campaignId], references: [id])
+  kocId                  String
+  koc                    KocProfile      @relation(fields: [kocId], references: [id])
+  candidateId            String?
+  candidate              KocCandidate?   @relation(fields: [candidateId], references: [id])
+  storePortfolioId       String?
+  storePortfolio         StorePortfolio? @relation(fields: [storePortfolioId], references: [id])
+  assignedStaffId        String
+  assignedStaff          User            @relation(fields: [assignedStaffId], references: [id])
+  status                 DealStatus      @default(CONTACTING)
+  
+  // 🌟 4 TRƯỜNG PHÂN LOẠI CỐT LÕI
+  salaryGrade            SalaryGrade     @default(KL3)
+  segment                CreatorSegment  @default(MASSIVE_CREATOR)
+  tepKenh                String          @default("Review Nữ")
+  kocCategory            KocCategory     @default(PERSONAL_CARE)
+  
+  // Điều khoản thương mại
+  committedOutputsCount  Int             @default(1) // Số sản phẩm cam kết (1 booking có thể ra 2-3 content items)
+  totalValue             Decimal         @db.Decimal(12, 2)
+  advanceAmount          Decimal         @default(2000000) @db.Decimal(12, 2)
+  finalAmount            Decimal         @db.Decimal(12, 2)
+  larkAdvanceApprovalCode String?        // Mã quy trình phê duyệt chi tạm ứng trên Lark
+  larkFinalApprovalCode   String?        // Mã quy trình phê duyệt chi quyết toán trên Lark
+  deadlinePost           DateTime
+  
+  // Quan hệ phân tách
+  contentItems           ContentItem[]   // 1 Booking ➔ Nhiều Content Items (Đảm bảo metric không bị méo mó)
+  sampleShipment         SampleShipment?
+  contract               Contract?
+
+  // Backward compatibility fields
+  videoPublishedUrl      String?
+  affiliateGmv           Decimal         @default(0) @db.Decimal(12, 2)
+  viewsCount             Int             @default(0)
+
+  createdAt              DateTime        @default(now())
+  updatedAt              DateTime        @updatedAt
+
+  @@index([status])
+  @@index([assignedStaffId])
+}
+
+// [Thực thể 3: Content Item] Sản phẩm sáng tạo, kịch bản, demo video & kiểm soát chất lượng (QC)
+model ContentItem {
+  id               String          @id @default(uuid())
+  contentCode      String          @unique // CNT-26-001
+  bookingDealId    String
+  bookingDeal      BookingDeal     @relation(fields: [bookingDealId], references: [id], onDelete: Cascade)
+  campaignTitle    String
+  creatorName      String
+  pillar           String          // Review trực tiếp, Nỗi đau - Giải pháp, Educate, Unboxing...
+  angle            String          // Góc tiếp cận kịch bản
+  format           ContentFormat   @default(VIDEO_SHORT_60S)
+  channel          String          @default("TIKTOK")
+  
+  // Kịch bản 4 phần chuẩn mực
+  scriptHook       String
+  scriptPainPoint  String
+  scriptUsp        String
+  scriptCta        String
+  scriptStatus     String          @default("PENDING") // PENDING, APPROVED, REVISION_REQUESTED
+  revisionCount    Int             @default(0)         // Max 2 revisions
+  
+  // Video nháp & Thẩm định QC
+  demoVideoUrl     String?
+  demoStatus       String          @default("NOT_SUBMITTED") // NOT_SUBMITTED, SUBMITTED, APPROVED, REJECTED
+  qcStatus         QcStatus        @default(PENDING)
+  qcChecklistNotes String?
+  approvedAt       DateTime?
+  
+  // Xuất bản thực tế
+  publications     Publication[]
+  
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  @@index([bookingDealId])
+  @@index([qcStatus])
+}
+
+// [Thực thể 4: Publication] Bài đăng thực tế, phân phối Ads & đo lường hiệu suất
+model Publication {
+  id                 String                  @id @default(uuid())
+  publicationCode    String                  @unique // PUB-26-001
+  contentItemId      String
+  contentItem        ContentItem             @relation(fields: [contentItemId], references: [id], onDelete: Cascade)
+  platform           String                  @default("TIKTOK") // TIKTOK, SHOPEE, REELS, THREADS
+  platformPostUrl    String
+  platformPostId     String?
+  
+  // Quyền phân phối Spark Ads
+  sparkAdsCode       String?
+  sparkAdsExpiryDays Int?                    @default(30)
+  isMediaHandedOff   Boolean                 @default(false)
+  
+  // Chỉ số hiệu suất thực nhận
+  publishedAt        DateTime                @default(now())
+  viewsCount         Int                     @default(0)
+  likesCount         Int                     @default(0)
+  commentsCount      Int                     @default(0)
+  sharesCount        Int                     @default(0)
+  affiliateGmv       Decimal                 @default(0) @db.Decimal(12, 2)
+  itemsSold          Int                     @default(0)
+  costAttributed     Decimal                 @default(0) @db.Decimal(12, 2)
+  roi                Float                   @default(0)
+  verificationStatus PublicationVerification @default(PENDING_AUDIT)
+  verifiedAt         DateTime?
+  
+  createdAt          DateTime                @default(now())
+  updatedAt          DateTime                @updatedAt
+
+  @@index([contentItemId])
+  @@index([verificationStatus])
+  @@index([sparkAdsCode])
+}
+
+model Contract {
+  id              String       @id @default(uuid())
+  dealId          String       @unique
+  deal            BookingDeal  @relation(fields: [dealId], references: [id])
+  contractNumber  String       @unique // UB-B2C-2026-xxxx
+  pdfStoragePath  String?      // Supabase Storage Bucket Path
+  advanceStatus   String       @default("PENDING") // PENDING, APPROVED, TRANSFERRED
+  finalStatus     String       @default("PENDING")
+  generatedAt     DateTime     @default(now())
+}
+
+// 📦 Quản lý Vận đơn gửi mẫu & Chống bùng mẫu (KOC Sample Delivery & Anti-Ghosting)
+model SampleShipment {
+  id                 String       @id @default(uuid())
+  dealCode           String       @unique
+  dealId             String?      @unique
+  deal               BookingDeal? @relation(fields: [dealId], references: [id])
+  kocName            String
+  kocPhone           String
+  shippingAddress    String
+  brandName          String
+  productName        String
+  carrier            String       // GHN, ViettelPost, J&T, ShopeeExpress
+  trackingCode       String       @unique
+  sentDate           DateTime     @default(now())
+  deliveredDate      DateTime?
+  status             String       @default("DELIVERING") // DELIVERING, DELIVERED, DEMO_SUBMITTED, AIRED, GHOST_WARNING, BLACKLISTED
+  daysSinceDelivered Int          @default(0)
+  demoDeadlineDays   Int          @default(5)
+  sparkAdsCode       String?
+  sparkAdsExpiryDays Int?         @default(30)
+  isMediaHandedOff   Boolean      @default(false)
+  bookingPic         String
+  notes              String?
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+
+  @@index([status])
+  @@index([trackingCode])
+  @@index([bookingPic])
+}
+
+// ==========================================
+// 6. MODULE 5 & 6: PERFORMANCE, SLA & CONTROL TOWER
+// ==========================================
+
+model SlaLog {
+  id              String       @id @default(uuid())
+  entityType      String       // CAMPAIGN_BRIEF, SCRIPT_REVIEW, CONTRACT_APPROVAL, VIDEO_REVIEW, SAMPLE_DELIVERY
+  entityId        String
+  assignedToId    String
+  assignedTo      User         @relation(fields: [assignedToId], references: [id])
+  startedAt       DateTime     @default(now())
+  deadline        DateTime
+  completedAt     DateTime?
+  isBreached      Boolean      @default(false)
+
+  @@index([entityType])
+  @@index([isBreached])
+}
+
+model LeaderboardRecord {
+  id              String       @id @default(uuid())
+  userId          String
+  month           String       // 2026-09
+  slaScore        Float        @default(100)
+  postCountScore  Float        @default(0)
+  gmvScore        Float        @default(0)
+  totalScore      Float        @default(0)
+  rank            Int          @default(0)
+  badge           String?
+  updatedAt       DateTime     @updatedAt
+
+  @@unique([userId, month])
+}
+
+// 🏆 Đánh giá hiệu suất 4P & Tính thưởng P3
+model StaffP3Record {
+  id                       String         @id @default(uuid())
+  staffName                String
+  role                     String         // Booking, Content, Brand
+  level                    String         // Intern, Junior, Senior, Lead
+  leadName                 String?        // Người phụ trách / Leader trực tiếp
+  teamName                 String?        // Booking Team 1, Content Team A...
+  assignedStore            String
+  storeMultiplier          Float          @default(1.0)
+  completedCases           Int            @default(0)
+  qualityMultiplier        Float          @default(1.0)
+  slaMultiplier            Float          @default(1.0)
+  calculatedWorkloadPoints Float          @default(0.0)
+  capacityStatus           CapacityStatus @default(OPTIMAL)
+  baseP3UnitRate           Decimal        @default(35000) @db.Decimal(10, 2)
+  estimatedBonusVnd        Decimal        @default(0) @db.Decimal(12, 2)
+  approvalStatus           String         @default("CHỜ_DUYỆT") // CHỜ_DUYỆT, ĐÃ_DUYỆT, YÊU_CẦU_ĐIỀU_CHỈNH
+  reviewNotes              String?
+  createdAt                DateTime       @default(now())
+  updatedAt                DateTime       @updatedAt
+
+  @@index([staffName])
+  @@index([approvalStatus])
+}

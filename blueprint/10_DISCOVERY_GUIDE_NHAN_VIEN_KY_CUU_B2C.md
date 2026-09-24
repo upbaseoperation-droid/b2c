@@ -1,0 +1,151 @@
+# BẢNG CÂU HỎI PHỎNG VẤN NHÂN VIÊN KỲ CỰU — MARKETING B2C
+
+**Giai đoạn SDLC:** 1 — Khảo sát hiện trạng vận hành và yêu cầu nghiệp vụ.  
+**Đối tượng:** Nhân sự key có kinh nghiệm trực tiếp làm việc trong team, đang được cân nhắc cho vai trò quản lý; áp dụng cho Booking, Content hoặc vai trò phối hợp sau khi thay tên bước theo công việc của người được hỏi.  
+**Thời lượng:** 75–90 phút nếu kết hợp khảo sát vận hành và đánh giá tiềm năng quản lý; có thể tách thành hai buổi.  
+**Mục tiêu:** Hiểu cách công việc **thực sự** diễn ra và đánh giá bằng chứng về khả năng dẫn dắt người khác, phân việc, ra quyết định, phối hợp, phát triển nhân sự. Giỏi chuyên môn và sẵn sàng quản lý là hai kết luận riêng. Câu trả lời là bằng chứng khảo sát, chưa tự động trở thành quy định hoặc quyết định nhân sự.
+
+## Cách mở đầu
+
+> “Mình muốn hiểu cách team vận hành thật và cách bạn đang dẫn dắt, phối hợp với mọi người. Mình sẽ hỏi cả những việc bạn làm tốt, tình huống khó và điều bạn muốn phát triển nếu nhận trách nhiệm lớn hơn. Mục tiêu là ghi nhận ví dụ cụ thể, không tìm một câu trả lời ‘đúng mẫu’. Nếu được, mình sẽ đi theo một BO hoặc plan gần đây mà bạn trực tiếp xử lý.”
+
+Không hỏi tuần tự toàn bộ bảng. Dành ít nhất nửa thời gian cho **một case thật**. Với mỗi câu trả lời quan trọng, hỏi tiếp: *“Bạn có thể mở một ví dụ gần nhất không? Bước trước là gì, bước sau là gì, ai chờ ai, dữ liệu nằm ở đâu, kết quả ra sao?”* Ghi rõ **người được hỏi trực tiếp làm**, **quan sát**, hay **nghe người khác kể**.
+
+**Lộ trình 75–90 phút:** 5 phút mở đầu và vai trò; 20 phút đi sâu một BO/plan thật (câu 3–5); 15 phút kiểm tra ranh giới plan và handoff (câu 6–8, 10); 35 phút dùng bảng **năng lực quản lý** bên dưới; 5–10 phút tự đánh giá, mong muốn phát triển và xin case/bằng chứng. Các câu vận hành còn lại dùng cho buổi 2. Thời gian trong bảng hỏi chính là **gợi ý cho từng nhánh khi chọn hỏi**, không cộng tất cả thành lịch buổi gặp.
+
+**Nếu người này chủ yếu phụ trách Research:** dùng lộ trình Research ở mục cuối thay cho phần đi sâu BO/plan. Chỉ giữ câu hỏi về BO để hiểu research được chuyển vào execution như thế nào.
+
+## Bảng hỏi chính
+
+| Ưu tiên / thời gian gợi ý | Câu hỏi | Cần ghi lại / bằng chứng nên xem |
+| --- | --- | --- |
+| **1 — 5 phút** | 1. Vai trò hiện tại của bạn là gì? Trong một tuần bình thường, ba loại việc nào chiếm nhiều thời gian nhất? Việc nào trên danh nghĩa thuộc team khác nhưng bạn vẫn thường phải làm? | Nhiệm vụ thực tế, tỷ lệ thời gian ước lượng, phần việc chồng lấn. |
+| **1 — 5 phút** | 2. So với 6–12 tháng trước, công việc đã đổi thế nào về số lượng brand, nền tảng, KL, format, mức duyệt hoặc yêu cầu báo cáo? | Thay đổi đã xảy ra, không chỉ định hướng tương lai. |
+| **1 — 20 phút** | 3. Chọn một BO hoặc một plan gần nhất bạn trực tiếp tham gia. Nó bắt đầu từ đâu? Hãy đi từng bước tới lúc air/nghiệm thu hoặc điểm hiện tại. | Mốc thời gian, người làm, người duyệt, đầu vào/đầu ra, công cụ ở từng bước. |
+| **1 — 20 phút** | 4. Trong case đó, bước nào phải chờ, làm lại hoặc nhập dữ liệu hai lần? Tại sao? Bạn đã xử lý bằng cách nào? | Thời gian chờ, số lần sửa, nguyên nhân, cách làm ngoài quy trình. |
+| **1 — 20 phút** | 5. Case đó khác quy trình/SOP đã viết ở đâu? Bước nào trên giấy có nhưng thực tế thường bỏ qua hoặc làm sau? | Khoảng cách SOP–thực tế; lý do nghiệp vụ, không quy lỗi cá nhân. |
+| **1 — 10 phút** | 6. Plan từ Growth đến bạn qua đâu? Bạn biết bản nào đã chốt và bản nào còn thay đổi bằng dấu hiệu gì? | Link/bảng Lark, trạng thái duyệt, thông báo, phiên bản. |
+| **1 — 10 phút** | 7. Content phân rã plan tới Platform, Content Type, Format, Model, KL như thế nào? Ai điền từng phần, ai kiểm tra tổng số lượng và ngân sách? | Một dòng plan Growth và các dòng Content tương ứng; quy tắc đối soát thật. |
+| **1 — 10 phút** | 8. Sau khi Content xong plan, Booking nhận đúng thông tin gì? Thông tin nào thường thiếu khiến phải hỏi lại hoặc tự đoán? | Mẫu handoff, các trường bắt buộc, vòng trả lại brief. |
+| **2 — 10 phút** | 9. Nếu plan Growth không khả thi với creator pool hoặc giá thực tế, ai có quyền đề xuất đổi và ai chốt? Một lần đổi gần nhất diễn ra ra sao? | Quyền quyết định, thời gian phản hồi, lịch sử điều chỉnh. |
+| **1 — 10 phút** | 10. Trong một BO, ai chọn KOC, ai chốt giá, ai duyệt với brand và ai quyết định thay KOC khi cần? | RACI thực tế, ngoại lệ KL cao hoặc brand lớn. |
+| **1 — 10 phút** | 11. Những trạng thái BO nào team thực sự dùng để điều hành? Trạng thái nào khó hiểu hoặc thường cập nhật muộn? | Pipeline đang dùng, thời điểm cập nhật, trạng thái bị dùng sai. |
+| **2 — 10 phút** | 12. Hợp đồng nguyên tắc, phụ lục tháng và phụ lục bổ sung hiện được làm thế nào? Ai gom BO, ai đối soát giá trị theo brand, ai theo dõi đã ký? | Một bộ hồ sơ đã ký nếu được phép xem; các bước thủ công và ngoại lệ. |
+| **2 — 10 phút** | 13. Đến kỳ nghiệm thu/thanh toán, lỗi nào xảy ra nhiều nhất: link air, giá, chứng từ, tài khoản, thiếu phụ lục hay dữ liệu plan? Ai thường sửa? | Số case/kỳ, ngày công sửa, checklist đang dùng. |
+| **1 — 10 phút** | 14. Công việc nào đang nằm trong đầu người có kinh nghiệm mà nhân viên mới không biết? Nếu bạn nghỉ hai tuần, phần nào dễ đứt nhất? | Kiến thức ngầm, điểm phụ thuộc cá nhân, tài liệu đào tạo thiếu. |
+| **2 — 10 phút** | 15. Người mới mất bao lâu để tự xử lý một BO đúng chuẩn? Ba lỗi họ thường mắc là gì? | Nhu cầu SOP, đào tạo, phân quyền theo level. |
+| **1 — 10 phút** | 16. Bạn đang dùng những file, Base, chat hoặc bảng cá nhân nào ngoài hệ thống chính? Mỗi nơi giải quyết việc gì mà hệ thống chính chưa làm được? | “Shadow system”, dữ liệu trùng, công cụ không nên bỏ vội. |
+| **2 — 10 phút** | 17. Có cột nào trong Plan order tổng bạn tin dùng để ra quyết định và cột nào đã cũ/ít ai hiểu? Ai là người thực sự nhập các cột đó? | Chủ sở hữu trường dữ liệu; không suy từ tỷ lệ trống. |
+| **1 — 10 phút** | 18. Chỉ số hoặc P3 hiện phản ánh sai công sức ở tình huống nào? Có khi nào làm đúng điều tốt cho brand nhưng điểm cá nhân lại thấp? | Sai lệch KPI, động cơ làm đẹp số, case kiểm chứng. |
+| **1 — 10 phút** | 19. Lead đang giúp team tháo gỡ việc gì tốt nhất? Quyết định nào bị đẩy lên lead/giám đốc quá nhiều, và quyết định nào nhân viên nên được tự xử lý? | Thiếu/quá tải quản lý cấp trung, quyền ủy nhiệm. |
+| **2 — 10 phút** | 20. Khi sang Shopee, Facebook, Instagram, Threads hoặc live, bước nào thực sự khác TikTok? Bước nào chỉ đổi tên nhưng cách làm giống nhau? | Nhu cầu quy trình chung/riêng, bằng chứng cho thiết kế đa nền tảng. |
+| **1 — 5 phút** | 21. Nếu được sửa **một quy định, một cách phối hợp và một công cụ** trong tháng tới, bạn chọn gì? Vì sao? | Ưu tiên theo tác động, phân biệt quy trình–con người–hệ thống. |
+| **1 — 5 phút** | 22. Việc gì team đang làm tốt mà giải pháp mới phải giữ lại? Điều gì sẽ khiến mọi người không dùng cách làm mới? | Yếu tố thành công, rủi ro thay đổi. |
+
+## Câu đào sâu theo nhánh công việc
+
+| Nếu người được hỏi làm… | Hỏi thêm |
+| --- | --- |
+| **Content** | Bạn chọn Format/Model/KL từ mục tiêu Growth bằng tiêu chí gì? Có dữ liệu hiệu quả theo nền tảng hay chủ yếu dựa vào kinh nghiệm? Ai kiểm tra plan cân ngân sách? Khi Booking phản hồi không khả thi, bạn sửa đến cấp nào? |
+| **Booking** | Từ plan Content tới danh sách KOC và BO mất bao lâu? Một KOC có nhiều kênh được nhận diện thế nào? Ai quyết định tạo nhiều BO, reup, cast/không cast? Việc nào có thể tự động mà vẫn cần người kiểm soát? |
+| **Brand/Account** | Brand tham gia duyệt ở những chặng nào là bắt buộc? Chặng nào có thể ủy quyền theo ngưỡng? Khi có thay đổi giá, timeline hoặc nội dung, ai tổng hợp một phiên bản phản hồi cuối cùng cho KOC? |
+| **Lead** | Bạn phân việc và cân tải theo số BO, độ khó store, KL, số brand hay năng lực cá nhân? Điểm nghẽn nào cần quyền quyết định mới thay vì thêm dashboard? |
+
+## Bảng hỏi đánh giá mức sẵn sàng lên quản lý
+
+Hỏi bằng ngữ khí tìm hiểu, không bắt đầu bằng nhận định “bạn chưa sẵn sàng”. Với mỗi câu, xin **một tình huống cụ thể trong 3–6 tháng gần đây**: bối cảnh, mục tiêu, hành động của bạn ấy, phản ứng của người khác, kết quả và điều sẽ làm khác.
+
+| Năng lực cần quan sát | Câu hỏi hành vi hoặc tình huống | Dấu hiệu tốt cần kiểm chứng | Dấu hiệu cần phát triển cần kiểm chứng |
+| --- | --- | --- | --- |
+| **Từ làm giỏi sang làm qua người khác** | 1. Một việc quan trọng bạn đã giao cho người khác thay vì tự làm là gì? Bạn chọn người, giao tiêu chuẩn và theo dõi thế nào? | Giao mục tiêu/quyền rõ, kiểm tra theo mốc, người khác tự làm được lần sau. | Giữ việc quan trọng cho mình; giao việc vặt; sửa hộ nhưng không huấn luyện. |
+| **Ưu tiên và cân tải** | 2. Kể một tuần có quá nhiều BO/brand cùng gấp. Bạn quyết định việc nào làm trước, việc nào lùi, và thông báo cho ai? | Nêu tiêu chí tác động, deadline, năng lực team; chủ động thương lượng ưu tiên. | Ôm hết việc, đổi ưu tiên liên tục, để team tự đoán, chỉ phản ứng khi trễ. |
+| **Huấn luyện và phản hồi** | 3. Một đồng nghiệp từng làm chưa đạt nhưng sau đó tiến bộ nhờ bạn hỗ trợ là ai? Bạn đã nói và làm gì; đo tiến bộ ra sao? | Phản hồi cụ thể, tôn trọng, có theo dõi và kết quả của người được hướng dẫn. | Chỉ nhắc lỗi, làm thay, hoặc không có ví dụ người khác tiến bộ. |
+| **Xử lý hiệu suất kém** | 4. Nếu một bạn liên tục cập nhật BO muộn dù đã nhắc, bạn sẽ tìm nguyên nhân và xử lý trong hai tuần thế nào? | Tách năng lực, tải, động lực, quy trình; đặt kỳ vọng và mốc theo dõi rõ. | Quy ngay là thiếu trách nhiệm; né trao đổi khó; chỉ tăng giám sát hoặc đẩy lên sếp. |
+| **Quyết định khi thiếu dữ liệu** | 5. Một lần bạn phải chốt phương án booking/plan khi dữ liệu chưa đủ là gì? Bạn cân rủi ro, hỏi ai và quyết định thế nào? | Nêu giả định, giới hạn rủi ro, điểm cần quay lại kiểm tra. | Chờ đủ mọi người duyệt; hoặc quyết theo cảm tính mà không kiểm tra hậu quả. |
+| **Phối hợp và ảnh hưởng ngang hàng** | 6. Kể một lần bạn bất đồng với Growth, Content, Brand hoặc Kế toán. Bạn đã giải quyết mà không cần giám đốc can thiệp thế nào? | Làm rõ mục tiêu chung, dữ kiện, quyền quyết định và cam kết sau cuộc trao đổi. | Đổ lỗi, né xung đột, dùng quan hệ cá nhân thay cho quy tắc, leo thang quá sớm. |
+| **Nâng hệ thống thay vì chữa từng case** | 7. Một lỗi lặp lại bạn đã biến thành checklist, quy tắc, đào tạo hoặc thay đổi handoff là gì? Sau đó lỗi giảm không? | Chứng minh cải tiến dùng được khi bản thân vắng mặt; có cách đo trước/sau. | Chỉ tự nhớ và tự sửa từng lần; quy trình vẫn phụ thuộc vào mình. |
+| **Công bằng và trách nhiệm** | 8. Khi team trễ mục tiêu vì một người hoặc vì brief từ team khác, bạn sẽ báo cáo kết quả và phân trách nhiệm ra sao? | Nhận phần trách nhiệm của mình, phân biệt nguyên nhân hệ thống/cá nhân, xử lý công bằng. | Che lỗi, đổ hết cho cá nhân hoặc team khác, sửa số liệu để báo cáo đẹp. |
+| **Tầm nhìn vượt chuyên môn cá nhân** | 9. Nếu quản lý team trong 90 ngày, bạn chọn ba thay đổi nào? Việc nào bạn **không** làm dù đang được đề xuất? | Ưu tiên có lý do, nguồn lực, trình tự và tiêu chí đo; biết từ chối. | Danh sách nhiều sáng kiến thiếu trade-off; chỉ xin thêm người/công cụ. |
+| **Động lực và tự nhận thức** | 10. Vì sao bạn muốn hoặc không muốn làm quản lý? Điểm nào người khác có thể thấy bạn chưa phù hợp? Bạn đang làm gì để cải thiện? | Hiểu trách nhiệm con người, nêu giới hạn thật và kế hoạch phát triển. | Chỉ xem chức danh như phần thưởng cho thâm niên/chuyên môn; không nêu được điểm cần phát triển. |
+| **Tình huống mô phỏng** | 11. Growth tăng 30% chỉ tiêu một nền tảng, ngân sách không đổi; Content nói không cân được, Booking báo creator pool thiếu. Bạn có 24 giờ. Bạn sẽ làm gì, gặp ai, đưa ra những lựa chọn nào cho giám đốc? | Tách dữ kiện/giả định, lập phương án có đánh đổi, quyết việc trong quyền và leo thang đúng điểm. | Nhận chỉ tiêu ngay không kiểm chứng; tự phân lại không có quyền; hoặc chuyển toàn bộ vấn đề lên giám đốc. |
+
+### Ghi nhận kết quả, không chấm bằng ấn tượng chung
+
+| Mức bằng chứng | Diễn giải |
+| --- | --- |
+| **Đã thể hiện** | Có ít nhất một case cụ thể, vai trò của bạn ấy rõ, kết quả quan sát được và có thể kiểm chứng với người/công việc liên quan. |
+| **Có tiềm năng, cần thử vai** | Tư duy xử lý hợp lý nhưng chưa từng có quyền/cơ hội làm; cần giao thử một phạm vi quản lý có người hướng dẫn và tiêu chí đo. |
+| **Cần phát triển** | Có case cho thấy hành vi chưa đáp ứng; nêu rõ hành vi và hậu quả, không dán nhãn tính cách. |
+| **Chưa đủ dữ liệu** | Chỉ có tự nhận xét, câu trả lời giả định hoặc ấn tượng của một người; cần case/quan sát khác. |
+
+Không cộng các hàng thành một “điểm quản lý” duy nhất. Kết luận riêng: **chuyên môn**, **khả năng quản lý công việc**, **khả năng quản lý con người**, **động lực nhận vai**. Đối chiếu với phản hồi của giám đốc, ít nhất một người từng được bạn ấy hướng dẫn và một bên phối hợp; dùng ví dụ công việc cụ thể, tránh nhận xét cá nhân không có bằng chứng.
+
+## Phỏng vấn chuyên sâu Research — dùng cho nhân sự này
+
+Tài liệu `Định hướng Marketing B2C _ Cơ cấu team.pdf` (tr. 13–14) mô tả Brand nghiên cứu thị trường, khách hàng, định vị và cơ hội tăng trưởng; Content nghiên cứu hành vi nội dung, thông điệp, kênh và format; Booking cung cấp dữ liệu creator khi cần. Đây là **định hướng trên tài liệu**. Cần hỏi cách làm thực tế, ai là Research Owner, và đầu ra đã tạo quyết định gì. Không mặc định research chỉ là làm slide hoặc tổng hợp dữ liệu.
+
+### Lộ trình 75–90 phút nếu trọng tâm là Research
+
+| Thời gian | Nội dung | Câu nên chọn |
+| --- | --- | --- |
+| 0–10 phút | Vai trò và phạm vi Research thực tế | R1–R3 |
+| 10–40 phút | Đi sâu **một dự án research đã hoàn tất** và quyết định phát sinh | R4–R10 |
+| 40–55 phút | Phương pháp, chất lượng insight và case research không hiệu quả | R11–R15 |
+| 55–75 phút | Handoff sang Brand/Content/Booking/Growth; quyền quyết định | R16–R19 |
+| 75–90 phút | Khả năng xây team Research và tự đánh giá | R20–R24 |
+
+### Bảng hỏi Research
+
+| Nhóm | Câu hỏi | Bằng chứng / điều cần phân biệt |
+| --- | --- | --- |
+| **Mandate** | **R1.** Bạn hiện nhận yêu cầu research từ ai, cho loại quyết định nào: chọn brand, xây strategy, chọn SKU, thông điệp, kênh, creator hay tối ưu campaign? Tỷ lệ thời gian cho mỗi loại? | Nhu cầu thật và việc “research” đang bị dùng như tên chung cho báo cáo. |
+| **Mandate** | **R2.** Ai quyết định một đề bài **cần nghiên cứu** và ai quyết định câu hỏi nghiên cứu đã đủ rõ để bắt đầu? Bạn có quyền từ chối hoặc sửa brief không? | Research Owner, người duyệt brief, quyền phản biện. |
+| **Mandate** | **R3.** Nếu Brand và Content cùng nghiên cứu một brand, ranh giới công việc thực tế là gì? Có phần nào trùng lặp hoặc bỏ trống? | So sánh với nguyên tắc một Strategy Owner trong tài liệu cơ cấu. |
+| **Case thật** | **R4.** Chọn research gần nhất có tác động đáng kể. Đề bài kinh doanh ban đầu là gì? Quyết định nào phải được đưa ra sau research? | Brief gốc, người ra quyết định, thời hạn. |
+| **Case thật** | **R5.** Trước khi tìm dữ liệu, bạn đặt những giả thuyết nào? Giả thuyết nào bị bác bỏ? | Khả năng thiết kế nghiên cứu, tránh đi tìm bằng chứng cho ý sẵn có. |
+| **Case thật** | **R6.** Bạn dùng nguồn nào: số sàn, dữ liệu brand, social/search, đối thủ, phỏng vấn khách hàng, dữ liệu creator, quan sát content? Nguồn nào bạn tin ít nhất và vì sao? | Danh mục nguồn, quyền truy cập, độ mới, giới hạn mẫu. |
+| **Case thật** | **R7.** Bạn chọn mẫu/đối tượng, kỳ thời gian và tiêu chí so sánh như thế nào? Có dữ liệu quan trọng nào không lấy được? | Phương pháp, thiên lệch, khoảng trống dữ liệu. |
+| **Case thật** | **R8.** Phát hiện nào chỉ là **quan sát số liệu**, phát hiện nào là **insight về nguyên nhân/hành vi**, và đề xuất nào là **quyết định kinh doanh**? Hãy tách ba phần trong báo cáo thật. | Chất lượng tư duy; tránh gọi một xu hướng hoặc biểu đồ là insight. |
+| **Case thật** | **R9.** Research đã làm team đổi quyết định gì so với kế hoạch ban đầu: target, USP, SKU, format, nền tảng, KL, budget hoặc brief? Ai chấp nhận hoặc bác đề xuất? | Dấu vết từ insight tới quyết định, không chỉ số trang báo cáo. |
+| **Case thật** | **R10.** Sau triển khai, dự đoán nào đúng/sai? Có buổi học lại hoặc cập nhật giả thuyết không? | Vòng phản hồi research → execution → learning. |
+| **Chất lượng** | **R11.** Case nào research của bạn từng kết luận sai hoặc không giúp ra quyết định? Vì thiếu dữ liệu, sai phương pháp, brief đổi hay bên nhận không dùng? | Tự nhận thức, cách sửa quy trình, không tìm lỗi cá nhân. |
+| **Chất lượng** | **R12.** Bạn kiểm tra một “insight” trước khi trình giám đốc như thế nào? Có ai phản biện, kiểm tra nguồn hoặc đưa cách giải thích khác không? | Cơ chế review, kiểm soát thiên lệch. |
+| **Chất lượng** | **R13.** Khi hai nguồn cho kết quả ngược nhau, bạn xử lý thế nào? Khi nào ghi “chưa đủ bằng chứng” thay vì kết luận? | Khả năng diễn giải bất định và khuyến nghị có điều kiện. |
+| **Chất lượng** | **R14.** Nếu chỉ có 48 giờ, bạn làm research đủ tốt theo cách nào và chủ động bỏ bước nào? | Khả năng ưu tiên theo rủi ro của quyết định. |
+| **Chất lượng** | **R15.** Có những báo cáo research nào được làm lặp lại nhưng hiếm khi được dùng? Vì sao vẫn làm? | Công việc không tạo giá trị, cơ hội chuẩn hóa/tự động hóa. |
+| **Handoff** | **R16.** Đầu ra research chuẩn gồm những gì để Content chuyển thành pillar/angle/format và Booking chọn creator? Team nhận thường hỏi lại điều gì? | Mẫu bàn giao, khoảng trống từ insight tới execution. |
+| **Handoff** | **R17.** Với booking đa nền tảng, research quyết định vai trò từng nền tảng ở cấp chiến lược hay đề xuất cả cơ cấu Platform × Content Type × Format × Model × KL? Ranh giới với plan Content là gì? | Phân biệt Research với quyền lập/chốt plan Content. |
+| **Handoff** | **R18.** Khi dữ liệu creator hoặc kết quả BO trái với giả thuyết research, ai cập nhật strategy và trong bao lâu? Booking có đường phản hồi chính thức không? | Vòng feedback và quyền thay đổi hướng đi. |
+| **Handoff** | **R19.** Ai là người có quyền phê duyệt kết luận research cuối cùng khi có Brand Team, và ai có quyền khi không có Brand Team? | RACI theo loại dự án, tránh hai Strategy Owner. |
+| **Sẵn sàng quản lý** | **R20.** Một phần research quan trọng bạn đã giao cho người khác là gì? Bạn truyền phương pháp, tiêu chuẩn chất lượng và review thế nào? Người đó có tự làm được lần sau không? | Năng lực xây người, khác với tự làm nhanh. |
+| **Sẵn sàng quản lý** | **R21.** Nếu có ba yêu cầu research đồng thời từ các brand, bạn sẽ chọn ưu tiên, ước lượng nguồn lực và từ chối/đàm phán deadline thế nào? | Quản lý portfolio, capacity, ảnh hưởng liên team. |
+| **Sẵn sàng quản lý** | **R22.** Bạn đã xây checklist, taxonomy, kho insight hoặc quy trình review nào để chất lượng research không phụ thuộc vào bản thân? Ai đang dùng? | Khả năng xây hệ thống làm việc, không chỉ chuyên môn cá nhân. |
+| **Sẵn sàng quản lý** | **R23.** Một bạn research có báo cáo đẹp nhưng kết luận yếu; bạn sẽ phản hồi và huấn luyện qua hai vòng làm việc ra sao? | Phản hồi chuyên môn, tiêu chuẩn, hỗ trợ phát triển. |
+| **Sẵn sàng quản lý** | **R24.** Nếu làm lead Research/Content, bạn muốn chịu trách nhiệm kết quả nào, cần quyền gì, và phần công việc chuyên môn nào phải giao bớt? Điểm yếu nào có thể cản bạn? | Động lực quản lý, khả năng rời vai chuyên gia, tự nhận thức. |
+
+### Tình huống mô phỏng để phân biệt chuyên gia Research và quản lý
+
+> Growth muốn dồn ngân sách Video Affiliate sang Shopee vì số đơn tháng trước tăng. Content muốn tăng TikTok vì video có view và GMV 30 ngày tốt. Brand muốn ưu tiên nhận diện trên Instagram. Dữ liệu các nền tảng khác kỳ đo và thiếu chi phí thực tế. Trong 48 giờ, bạn sẽ **xác định câu hỏi nghiên cứu**, kiểm tra nguồn nào trước, trình bày mức độ chắc chắn ra sao và đề xuất ai là người quyết định ngân sách? Nếu bạn có hai nhân sự hỗ trợ, bạn chia việc và review thế nào?
+
+Quan sát: có tách **đơn, GMV/NMV, chi phí, mục tiêu brand, kỳ đo** hay không; có nêu giới hạn dữ liệu; đưa phương án/đánh đổi thay vì một câu trả lời chắc chắn; giao việc và kiểm soát chất lượng được hay không.
+
+### Tài liệu nên xin xem tại buổi Research
+
+- Một brief research gốc và báo cáo cuối; tốt nhất là case đã triển khai để xem quyết định sau đó.
+- Một case research bị bác hoặc không được dùng, kèm lý do.
+- Mẫu nguồn dữ liệu, cách ghi nguồn/kỳ đo và cách kiểm tra số liệu; không cần sao chép dữ liệu nhạy cảm.
+- Brief hoặc plan Content đã thay đổi nhờ research, và kết quả sau thực thi nếu có.
+
+## Cách kết thúc và kiểm chứng
+
+1. Tóm lại ba điều mình hiểu về **cách làm hiện tại** và hỏi người được phỏng vấn sửa chỗ sai.
+2. Hỏi: “Trong các vấn đề vừa nói, đâu là **nguyên nhân**, đâu chỉ là **triệu chứng**? Tôi nên gặp ai có góc nhìn ngược lại?”
+3. Xin 2–3 ví dụ đã được phép xem: một case chạy suôn sẻ, một case trễ hoặc sửa nhiều lần, một plan thay đổi giữa kỳ. Không cần sao chép dữ liệu cá nhân nhạy cảm vào ghi chép discovery.
+4. Ghi mỗi phát hiện theo mẫu: `Case | Việc xảy ra | Tần suất/ảnh hưởng | Quy tắc trên giấy | Cách làm thực tế | Nguyên nhân giả định | Ai có quyền sửa | Cần kiểm chứng với ai/tài liệu nào`.
+
+## Sau buổi phỏng vấn
+
+- Đối chiếu phát hiện với [bộ câu hỏi Giám đốc khối](09_DISCOVERY_GUIDE_GIAM_DOC_KHOI_B2C.md) để tách **mục tiêu của lãnh đạo** khỏi **khả năng thực hiện và trở ngại tuyến đầu**.
+- Nếu đánh giá tiềm năng quản lý, ghi thêm mức bằng chứng cho từng năng lực ở bảng trên và đề xuất một phạm vi **thử vai** có thời hạn, quyền hạn, người hỗ trợ và tiêu chí quan sát; không suy từ thâm niên hoặc một cuộc phỏng vấn ra quyết định bổ nhiệm.
+- Cập nhật BRD và ma trận handoff chỉ khi có bằng chứng hoặc người có thẩm quyền xác nhận; giữ các ý kiến còn tranh luận trong danh sách giả thuyết.
+- Ưu tiên dựng một sơ đồ quy trình **as-is** từ case thật, rồi mới đề xuất quy trình **to-be**, vai trò, SLA và tính năng hệ thống.
