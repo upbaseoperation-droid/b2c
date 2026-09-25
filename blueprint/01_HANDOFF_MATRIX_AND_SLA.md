@@ -57,6 +57,30 @@
 | **SLA-07b**| Bàn giao Spark Ads & Chốt Ads | Booking | Team Growth | **24 giờ** | Mã Spark Ads TikTok, link video duyệt, xác nhận khách hàng chạy Ads |
 | **SLA-08** | Báo cáo Hiệu suất Chiến dịch | All Teams | Ban Giám đốc | **72 giờ** (sau end camp)| Dashboard tổng kết: GMV, Views, ROI, Chi phí thực tế vs Ngân sách |
 
+---
+
+## 3.3. Không Gian Vận Hành Brand Team & Trạm Kiểm Soát Handoff (Brand Team Workspace)
+
+Nhằm đảm bảo tính chuẩn mực và bảo vệ định vị nhãn hàng, phân hệ **Brand Team Workspace** (`BrandView.tsx`) thiết lập 4 trụ cột vận hành tự động hoá:
+
+1. **Studio Soạn Thảo & Bàn Giao Brief Chiến Dịch (SLA 24h):**
+   - Brand Team xác lập mục tiêu chiến lược: Big Idea, Key Message, Target Persona, Danh sách Hero SKUs, Mục tiêu CIR trần và Ngân sách.
+   - Thao tác 1-click **"Bàn Giao Sang Content (SLA 24h)"**: Kích hoạt bộ đếm ngược SLA 24 giờ cho Content Creative Studio và gắn định danh Content PIC phụ trách.
+2. **Brand Guideline & Blacklist Keyword Hub:**
+   - Quản trị từ điển từ khóa cấm/nhạy cảm theo 3 mức độ nghiêm ngặt:
+     - `CRITICAL_BANNED` (Đỏ): Vi phạm pháp luật y tế, luật quảng cáo mỹ phẩm/TPCN hoặc cam kết dứt điểm 100%.
+     - `COMPETITOR_WARNING` (Cam): Cấm nhắc tên hoặc so sánh dìm hàng đối thủ cạnh tranh trực tiếp.
+     - `SENSITIVE_POLICY` (Vàng): Từ khóa nhạy cảm vi phạm chính sách kiểm duyệt của TikTok Shop / Shopee.
+   - Kho tri thức sản phẩm chủ lực (Hero SKUs): Lưu trữ bằng chứng lâm sàng (clinical claims), giấy phép công bố ATTP, đặc tính USP và giám sát tồn kho hàng mẫu thực tế.
+   - Quy chuẩn hình ảnh (Visual Do's & Don'ts): Chuẩn hoá góc máy, ánh sáng, nguyên tắc xuất hiện logo và điều cấm kỵ.
+3. **Cổng Thẩm Định KOC & Kịch Bản Cuối (Brand Gatekeeper):**
+   - **Vòng 1 (KOC Candidate Profiling):** Thẩm định danh sách KOC dựa trên chuẩn **Khung Lương Upbase (KL1 - KL7 & TAP)**, giá net, tệp kênh và rủi ro hình ảnh/scandal.
+   - **Vòng 2 (Final Script Approval):** Duyệt cấu trúc kịch bản 4 phần (Hook 3s, Nỗi đau Pain point, Giải pháp & Hero SKU, Lời kêu gọi CTA). Tích hợp modal từ chối với lý do chuẩn hoá và góp ý chi tiết cho Content Team.
+4. **Sức Khỏe Hợp Đồng & Retainer P&L:**
+   - Theo dõi tiến độ giải ngân ngân sách, GMV thực tế tích lũy, ROI danh mục và tỷ lệ KOC bị từ chối (Rejection Rate).
+   - Phân loại sức khỏe nhãn hàng (`HEALTHY`, `WARNING`, `CRITICAL`) để kịp thời hội chẩn giữa Account Lead và Growth Lead.
+
+
 ### 3.1. Trạm Kiểm Soát Định Mức Lập Plan (Validation Gate)
 Hệ thống tự động khóa nút **"Trình Duyệt Lên Growth"** nếu vi phạm bất kỳ tiêu chuẩn nào dưới đây:
 1. **Trần ngân sách:** Tổng ngân sách phân bổ cho KOC + Self-Channel + Livestream vượt trần Growth giao.

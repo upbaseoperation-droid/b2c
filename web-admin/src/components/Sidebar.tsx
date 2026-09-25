@@ -92,7 +92,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         },
         {
           key: 'campaigns',
-          label: 'Chiến Dịch & Brief',
+          label: 'Brand Team (Chiến Lược & Brief)',
           icon: Layers,
           badge: currentUser.role === 'BRAND_MEMBER' ? 'Của Tôi' : undefined,
           badgeType: 'team'

@@ -397,8 +397,8 @@ export default function App() {
       subtitle: ''
     },
     campaigns: {
-      title: 'Chiến Dịch & Brief',
-      subtitle: ''
+      title: 'Không Gian Chiến Lược & Vận Hành Nhãn Hàng (Brand Team Workspace)',
+      subtitle: 'Soạn thảo & bàn giao brief SLA 24h, Brand Guideline & Blacklist từ khóa, Cổng thẩm định KOC và Sức khỏe Retainer P&L'
     },
     content: {
       title: 'Kịch Bản & Content',

@@ -32,7 +32,12 @@ import {
   SlaBreachItem,
   StaffSlaReportItem,
   E2EReconciliationWindow,
-  StaffMasterMember
+  StaffMasterMember,
+  BrandGuidelineAsset,
+  BlacklistKeyword,
+  HeroSkuItem,
+  BrandApprovalQueueItem,
+  BrandRetainerHealth
 } from './types';
 
 
@@ -2531,11 +2536,18 @@ export const INITIAL_LEADERBOARD: LeaderboardItem[] = [
 export const INITIAL_CAMPAIGNS: CampaignItem[] = [
   {
     id: 'camp-1',
-    code: 'CAMP-1010',
-    title: 'Chiến Dịch Mega Sale 10.10 — Kháng Nắng Đa Tầng',
-    brand: 'UpBeauty E2E-T (TikTok & Shopee)',
-    targetAudience: 'Nữ 18-28 tuổi, nhân viên văn phòng, sinh viên hay tiếp xúc màn hình máy tính và tia UV.',
-    bigIdea: 'Lá Chắn Đa Tầng — Bảo Vệ Toàn Diện Cả Ngày Dài',
+    code: 'CAMP-1010-SENKA',
+    title: 'Chiến Dịch Mega Sale 10.10 — Kháng Nắng Đa Tầng Senka Perfect Whip',
+    brand: 'Senka',
+    targetAudience: 'Nữ 18-28 tuổi, nhân viên văn phòng, sinh viên tiếp xúc màn hình và tia UV hàng ngày.',
+    bigIdea: 'Lá Chắn Đa Tầng — Bảo Vệ Da Sạch Sâu Cả Ngày Dài',
+    keyMessage: 'Bọt tơ tằm siêu nhỏ Micro Bubbles sạch sâu 99% bụi mịn PM 2.5 mà không gây khô căng da',
+    heroSkus: ['SKU-SNK-WHIP-120G', 'SKU-SNK-MICELLAR-500ML'],
+    targetCir: 13.8,
+    contentPic: 'Quỳnh Như',
+    handoffAt: '2026-09-23 10:00',
+    handoffSlaHours: 24,
+    isSlaBreached: false,
     budget: 250000000,
     spentBudget: 85000000,
     targetGmv: 1800000000,
@@ -2543,18 +2555,25 @@ export const INITIAL_CAMPAIGNS: CampaignItem[] = [
     targetKocCount: 30,
     bookedKocCount: 22,
     status: 'ACTIVE',
-    briefStatus: 'IN_PRODUCTION',
+    briefStatus: 'HANDED_OFF_TO_CONTENT',
     startDate: '2026-09-15',
     endDate: '2026-10-15',
-    guidelineUrl: 'https://upbase.vn/guidelines/megasale-1010.pdf'
+    guidelineUrl: 'https://upbase.vn/guidelines/senka-megasale-1010.pdf'
   },
   {
     id: 'camp-2',
-    code: 'CAMP-GLOW',
-    title: 'Chiến Dịch Thu Đông Rạng Rỡ — Phục Hồi Chuyên Sâu',
-    brand: 'Ziaja & Revision Skincare',
-    targetAudience: 'Nữ 22-35 tuổi quan tâm dưỡng ẩm, chống lão hóa mùa hanh khô mùa đông.',
-    bigIdea: 'Cấp Ẩm Chuyên Sâu — Phục Hồi Làn Da Mùa Lạnh',
+    code: 'CAMP-KUTI-THUDONG',
+    title: 'Chiến Dịch Mẹ Thông Thái Chăm Da Bé Thu Đông Kutieskin',
+    brand: 'Kutieskin',
+    targetAudience: 'Mẹ bỉm sữa 22-35 tuổi có con nhỏ từ 0-5 tuổi, quan tâm chăm sóc da trẻ mùa hanh khô.',
+    bigIdea: 'Lớp Giáp Thảo Dược Hữu Cơ Cho Da Nhạy Cảm Của Bé',
+    keyMessage: 'Dịu nhanh mẩn ngứa, dưỡng ẩm phục hồi sau 24h với Aminovector từ Pháp đạt chuẩn Cosmos',
+    heroSkus: ['SKU-KUTI-SOOTHING-30G'],
+    targetCir: 16.3,
+    contentPic: 'Quỳnh Như',
+    handoffAt: '2026-09-24 09:30',
+    handoffSlaHours: 24,
+    isSlaBreached: false,
     budget: 180000000,
     spentBudget: 40000000,
     targetGmv: 1200000000,
@@ -2565,25 +2584,513 @@ export const INITIAL_CAMPAIGNS: CampaignItem[] = [
     briefStatus: 'HANDED_OFF_TO_CONTENT',
     startDate: '2026-09-20',
     endDate: '2026-11-10',
-    guidelineUrl: 'https://upbase.vn/guidelines/thudong-glow.pdf'
+    guidelineUrl: 'https://upbase.vn/guidelines/kutieskin-thudong.pdf'
   },
   {
     id: 'camp-3',
-    code: 'CAMP-1111',
-    title: 'Chiến Dịch Siêu Tiệc Độc Thân 11.11 — Bùng Nổ Doanh Số',
-    brand: 'CeraVe & La Roche-Posay Upbase Distribution',
-    targetAudience: 'Giới trẻ Gen Z & Millennials, tín đồ săn sale livestream Shopee/TikTok.',
-    bigIdea: 'Săn Deal Chớp Nhoáng — Phục Hồi Hàng Rào Bảo Vệ Da',
+    code: 'CAMP-NW-IMMUNITY',
+    title: 'Chiến Dịch Tăng Đề Kháng Khởi Động Năm Học Nature\'s Way Kids Smart',
+    brand: "Nature's Way",
+    targetAudience: 'Phụ huynh có con trong độ tuổi mầm non và tiểu học hay ốm vặt khi giao mùa.',
+    bigIdea: 'Đề Kháng Vững Vàng — Tự Tin Đến Trường Cùng Nature\'s Way',
+    keyMessage: 'Bổ sung Kẽm & Vitamin C kẹo dẻo thơm ngon nhập khẩu 100% từ Úc giúp con khỏe mạnh',
+    heroSkus: ['SKU-NW-GUMMIES-60V'],
+    targetCir: 15.0,
+    contentPic: 'Quỳnh Như',
+    handoffAt: '2026-09-24 15:00',
+    handoffSlaHours: 24,
+    isSlaBreached: false,
     budget: 350000000,
-    spentBudget: 0,
+    spentBudget: 120000000,
     targetGmv: 2500000000,
-    currentGmv: 0,
+    currentGmv: 850000000,
     targetKocCount: 45,
+    bookedKocCount: 28,
+    status: 'ACTIVE',
+    briefStatus: 'IN_PRODUCTION',
+    startDate: '2026-09-10',
+    endDate: '2026-10-30'
+  },
+  {
+    id: 'camp-4',
+    code: 'CAMP-BABE-STOPAKN',
+    title: 'Chiến Dịch Tạm Biệt Da Dầu Mụn Laboratorios BABÉ Tây Ban Nha',
+    brand: 'Babe',
+    targetAudience: 'Giới trẻ Gen Z và người có làn da dầu nhờn, dễ bị mụn viêm vùng chữ T.',
+    bigIdea: 'Kiểm Soát Bã Nhờn Tinh Chuẩn Chuẩn Da Liễu Châu Âu',
+    keyMessage: 'Sạch sâu ngừa mụn với Cytobiol Iris và Salicylic Acid 0.5% độ pH 5.0 không khô rát',
+    heroSkus: ['SKU-BABE-STOPAKN-200ML'],
+    targetCir: 18.9,
+    contentPic: 'Quỳnh Như',
+    budget: 150000000,
+    spentBudget: 0,
+    targetGmv: 950000000,
+    currentGmv: 0,
+    targetKocCount: 25,
     bookedKocCount: 0,
     status: 'UPCOMING',
     briefStatus: 'DRAFT',
-    startDate: '2026-10-25',
-    endDate: '2026-11-15'
+    startDate: '2026-10-01',
+    endDate: '2026-10-31'
+  }
+];
+
+export const INITIAL_BRAND_GUIDELINES: BrandGuidelineAsset[] = [
+  {
+    id: 'bg-senka',
+    brandName: 'Senka',
+    category: 'Chăm Sóc Da / Sữa Rửa Mặt & Tẩy Trang',
+    colorTheme: 'from-blue-600 to-cyan-500',
+    toneOfVoice: 'Chuyên gia Nhật Bản, nhẹ nhàng, trong trẻo, khoa học nhưng gần gũi với học sinh sinh viên.',
+    toneTag: 'BÁC_SĨ_CHUYÊN_GIA',
+    logoRules: 'Logo Senka phải hiển thị rõ nét góc trên bên phải trong 3 giây đầu tiên và xuất hiện cùng sản phẩm thực tế.',
+    visualDoList: [
+      'Bọt tơ tằm trắng mịn tạo khối dày xốp trên lòng bàn tay',
+      'Cận cảnh làn da mộc sạch thoáng, mềm ẩm sau khi rửa',
+      'Ánh sáng tự nhiên ban ngày, không gian phòng tắm tối giản kiểu Nhật'
+    ],
+    visualDontList: [
+      'Không dùng filter làm mịn da giả tạo hoặc mờ nhòe bọt sữa rửa mặt',
+      'Không so sánh tiêu cực hoặc đặt cạnh sản phẩm của Hada Labo, Biore',
+      'Không tuyên bố "hết sạch mụn 100%" hay "trị dứt điểm"'
+    ],
+    blacklistKeywords: [
+      {
+        id: 'bl-1',
+        keyword: 'Trị dứt điểm mụn / thâm',
+        category: 'LEGAL_MEDICAL',
+        severity: 'CRITICAL_BANNED',
+        rationale: 'Vi phạm luật quảng cáo mỹ phẩm Bộ Y Tế (Mỹ phẩm không có chức năng điều trị dứt điểm bệnh lý da liễu).',
+        alternativeSuggestion: 'Hỗ trợ làm sạch sâu bã nhờn, giúp ngừa mụn quay trở lại'
+      },
+      {
+        id: 'bl-2',
+        keyword: '100% không kích ứng',
+        category: 'LEGAL_MEDICAL',
+        severity: 'CRITICAL_BANNED',
+        rationale: 'Cấm cam kết tuyệt đối 100% trong truyền thông dược mỹ phẩm.',
+        alternativeSuggestion: 'Công thức dịu nhẹ đã được kiểm nghiệm da liễu an toàn'
+      },
+      {
+        id: 'bl-3',
+        keyword: 'Tốt hơn Biore / Hada Labo',
+        category: 'COMPETITOR',
+        severity: 'COMPETITOR_WARNING',
+        rationale: 'Vi phạm quy chuẩn cấm dìm hàng đối thủ trực tiếp.',
+        alternativeSuggestion: 'Bọt dày xốp gấp 5 lần so với sữa rửa mặt thông thường'
+      }
+    ],
+    heroSkus: [
+      {
+        id: 'sku-senka-whip',
+        skuCode: 'SKU-SNK-WHIP-120G',
+        name: 'Sữa Rửa Mặt Tạo Bọt Tơ Tằm Senka Perfect Whip 120g',
+        category: 'Cleanser',
+        uspBulletPoints: [
+          'Hạt bọt siêu nhỏ Micro Bubbles len lỏi làm sạch bụi mịn PM 2.5',
+          'Gấp đôi Hyaluronic Acid giữ ẩm sâu, không căng rát sau rửa',
+          'Chiết xuất tơ tằm trắng Mayu Haku Nhật Bản độc quyền'
+        ],
+        clinicalClaims: 'Được kiểm nghiệm da liễu lâm sàng tại Nhật Bản, 96% người dùng cảm nhận da mềm mịn sau 7 ngày.',
+        pdpUrl: 'https://www.tiktok.com/@senkavietnam_official/product/1729481920',
+        sampleStockCount: 150,
+        priceVnd: 115000
+      },
+      {
+        id: 'sku-senka-water',
+        skuCode: 'SKU-SNK-MICELLAR-500ML',
+        name: 'Nước Tẩy Trang Sạch Sâu Giảm Mụn Senka All Clear Water 500ml',
+        category: 'Makeup Remover',
+        uspBulletPoints: [
+          'Công nghệ Micellar hút sạch 99% lớp trang điểm lâu trôi',
+          'Chiết xuất trà xanh Uji Kyoto kiềm dầu, chống oxy hóa',
+          'Không cồn, không dầu khoáng, không hương liệu nhân tạo'
+        ],
+        clinicalClaims: 'Chứng minh giảm dầu thừa 82% sau 4 giờ sử dụng.',
+        pdpUrl: 'https://www.tiktok.com/@senkavietnam_official/product/1729481921',
+        sampleStockCount: 80,
+        priceVnd: 145000
+      }
+    ]
+  },
+  {
+    id: 'bg-kutieskin',
+    brandName: 'Kutieskin',
+    category: 'Mẹ & Bé / Kem Bôi Da Trẻ Em',
+    colorTheme: 'from-pink-500 to-rose-400',
+    toneOfVoice: 'Ấm áp, đồng cảm, chuyên môn y khoa nhẹ nhàng, mẹ bỉm thông thái tin dùng.',
+    toneTag: 'MẸ_BỈM_CHÂN_THỰC',
+    logoRules: 'Logo Kutieskin kèm linh vật chú gấu nhỏ góc trái màn hình, màu sắc ấm cúng.',
+    visualDoList: [
+      'Cảnh mẹ chăm sóc, massage thoa kem cho bé lúc tắm xong hoặc trước khi ngủ',
+      'Cận cảnh chất kem thẩm thấu nhanh, không bết dính trên da em bé',
+      'Chứng nhận hữu cơ Cosmos Organic và tem chống hàng giả'
+    ],
+    visualDontList: [
+      'Không để bé khóc to hoặc hoảng sợ trong khung hình',
+      'Tuyệt đối không so sánh với các loại kem trộn, kem chứa Corticoid',
+      'Không cam kết "khỏi chàm sữa sau 1 lần bôi"'
+    ],
+    blacklistKeywords: [
+      {
+        id: 'bl-kuti-1',
+        keyword: 'Chữa khỏi chàm sữa 100%',
+        category: 'LEGAL_MEDICAL',
+        severity: 'CRITICAL_BANNED',
+        rationale: 'Chàm sữa là viêm da cơ địa mạn tính, không được dùng từ chữa khỏi 100%.',
+        alternativeSuggestion: 'Làm dịu nhanh mẩn ngứa, dưỡng ẩm phục hồi hàng rào bảo vệ da bé'
+      },
+      {
+        id: 'bl-kuti-2',
+        keyword: 'Chứa Corticoid trị nhanh',
+        category: 'LEGAL_MEDICAL',
+        severity: 'CRITICAL_BANNED',
+        rationale: 'Kutieskin là thảo dược hữu cơ không chứa Corticoid, cấm liên hệ gây hiểu lầm.',
+        alternativeSuggestion: 'Thảo dược tự nhiên Aminovector nhập khẩu từ Pháp, an toàn lành tính'
+      }
+    ],
+    heroSkus: [
+      {
+        id: 'sku-kuti-kemboirot',
+        skuCode: 'SKU-KUTI-SOOTHING-30G',
+        name: 'Kem Bôi Dịu Da Mẩn Ngứa Trẻ Em Kutieskin 30g',
+        category: 'Baby Skincare',
+        uspBulletPoints: [
+          'Chiết xuất Yến Mạch & Bơ Shea làm dịu ngứa, hăm tã sau 24h',
+          'Công nghệ kháng viêm thảo dược Aminovector từ Pháp',
+          'Không Corticoid, không Paraben, dùng an toàn cho trẻ sơ sinh từ 5 ngày tuổi'
+        ],
+        clinicalClaims: 'Đạt chứng nhận Organic Cosmos Châu Âu và chứng nhận kiểm nghiệm Viện Da Liễu.',
+        pdpUrl: 'https://www.tiktok.com/@kutieskin_official/product/182940192',
+        sampleStockCount: 220,
+        priceVnd: 98000
+      }
+    ]
+  },
+  {
+    id: 'bg-naturesway',
+    brandName: "Nature's Way",
+    category: 'Thực Phẩm Bảo Vệ Sức Khỏe Trẻ Em & Gia Đình',
+    colorTheme: 'from-emerald-600 to-teal-500',
+    toneOfVoice: 'Chuẩn Úc, khoa học, uy tín số 1 về vitamin trẻ em, bảo chứng chất lượng.',
+    toneTag: 'BÁC_SĨ_CHUYÊN_GIA',
+    logoRules: 'Logo Nature\'s Way hình chiếc lá xanh và cờ Úc góc trên bên phải.',
+    visualDoList: [
+      'Bé hào hứng ăn kẹo dẻo gummie hoặc uống siro vị ngon',
+      'Hộp sản phẩm có tem chống giả tích hợp mã QR truy xuất nguồn gốc',
+      'Hình ảnh gia đình vận động khỏe khoắn ngoài trời'
+    ],
+    visualDontList: [
+      'Cấm gọi là "Thuốc" (Nature\'s Way là TPCN/Bổ sung vi chất, không phải thuốc)',
+      'Không cam kết "uống vào tăng ngay 5cm chiều cao hoặc 2kg trong 1 tháng"',
+      'Không quay cảnh bé bị ép uống thuốc'
+    ],
+    blacklistKeywords: [
+      {
+        id: 'bl-nw-1',
+        keyword: 'Thuốc bổ tăng chiều cao / Thuốc trị biếng ăn',
+        category: 'LEGAL_MEDICAL',
+        severity: 'CRITICAL_BANNED',
+        rationale: 'Vi phạm nghiêm trọng phân loại TPCN. Bắt buộc gọi là Thực phẩm bảo vệ sức khỏe hoặc Viên nhai/Siro.',
+        alternativeSuggestion: 'Sản phẩm hỗ trợ bổ sung Canxi & Vitamin D3 giúp xương răng chắc khỏe'
+      },
+      {
+        id: 'bl-nw-2',
+        keyword: 'Uống vào tăng ngay 2-3kg',
+        category: 'SENSITIVE_POLICY',
+        severity: 'CRITICAL_BANNED',
+        rationale: 'Cam kết sai sự thật bị cấm hoàn toàn trên TikTok Shop & Dược phẩm.',
+        alternativeSuggestion: 'Giúp bé ăn ngon miệng tự nhiên và hấp thu dưỡng chất tốt hơn'
+      }
+    ],
+    heroSkus: [
+      {
+        id: 'sku-nw-vita-gummies',
+        skuCode: 'SKU-NW-GUMMIES-60V',
+        name: 'Kẹo Dẻo Bổ Sung Kẽm & Vitamin C Nature\'s Way Kids Smart 60 viên',
+        category: 'Supplements',
+        uspBulletPoints: [
+          'Thương hiệu số 1 tại Úc về dòng sản phẩm chăm sóc sức khỏe trẻ em',
+          'Vị dâu cam tự nhiên chua ngọt thơm ngon, bé thích thú tự giác ăn',
+          'Tăng cường miễn dịch, kích thích vị giác giúp bé ăn ngon tự nhiên'
+        ],
+        clinicalClaims: 'Nhập khẩu chính ngạch 100% từ Úc, đầy đủ giấy phép công bố Cục An Toàn Thực Phẩm.',
+        pdpUrl: 'https://www.tiktok.com/@natureswayvn/product/182940888',
+        sampleStockCount: 95,
+        priceVnd: 280000
+      }
+    ]
+  },
+  {
+    id: 'bg-babe',
+    brandName: 'Babe',
+    category: 'Dược Mỹ Phẩm Trị Mụn & Phục Hồi Chuyên Sâu',
+    colorTheme: 'from-amber-600 to-orange-500',
+    toneOfVoice: 'Dược mỹ phẩm Châu Âu, tối giản khoa học, kê đơn chuẩn da liễu Tây Ban Nha.',
+    toneTag: 'BÁC_SĨ_CHUYÊN_GIA',
+    logoRules: 'Logo Laboratorios BABÉ phong cách tối giản y tế góc trên.',
+    visualDoList: [
+      'Texture gel rửa mặt tạo bọt mịn trong suốt, độ pH 5.0 chuẩn da liễu',
+      'Bác sĩ hoặc KOC có kiến thức Skincare phân tích thành phần Niacinamide, Salicylic Acid',
+      'Đo độ ẩm và bã nhờn bằng máy soi da trước và sau'
+    ],
+    visualDontList: [
+      'Không dùng từ "hết mụn sau 1 đêm"',
+      'Không so sánh với SVR hay La Roche-Posay dạng bôi nhọ',
+      'Không quay cảnh nặn mụn chảy máu ghê rợn'
+    ],
+    blacklistKeywords: [
+      {
+        id: 'bl-babe-1',
+        keyword: 'Trị mụn cấp tốc sau 1 đêm',
+        category: 'LEGAL_MEDICAL',
+        severity: 'CRITICAL_BANNED',
+        rationale: 'Cam kết sai khoa học, dễ dẫn tới khiếu nại khách hàng và TikTok bóp reach.',
+        alternativeSuggestion: 'Giảm sưng viêm gom cồi mụn sau 48-72 giờ sử dụng đúng phác đồ'
+      }
+    ],
+    heroSkus: [
+      {
+        id: 'sku-babe-stop-akn',
+        skuCode: 'SKU-BABE-STOPAKN-200ML',
+        name: 'Gel Rửa Mặt Giảm Mụn Kiềm Dầu Babe Stop Akn Purifying Cleansing Gel 200ml',
+        category: 'Dermocosmetics',
+        uspBulletPoints: [
+          'Chứa phức hợp Cytobiol Iris kiềm dầu và kháng viêm mụn',
+          'Salicylic Acid 0.5% thông thoáng lỗ chân lông không gây khô căng',
+          'Độ pH chuẩn 5.0 tôn trọng hệ vi sinh vật tự nhiên trên da'
+        ],
+        clinicalClaims: 'Kiểm nghiệm lâm sàng tại Tây Ban Nha: 91% giảm bã nhờn, 84% giảm mụn viêm sau 28 ngày.',
+        pdpUrl: 'https://www.tiktok.com/@babe_vietnam/product/182940999',
+        sampleStockCount: 110,
+        priceVnd: 349000
+      }
+    ]
+  },
+  {
+    id: 'bg-bioessence',
+    brandName: 'Bio-Essence',
+    category: 'Mỹ Phẩm Chống Lão Hóa Vàng 24K',
+    colorTheme: 'from-amber-500 to-yellow-400',
+    toneOfVoice: 'Sang trọng, quý phái, công nghệ sinh học Bio-Energy Complex kích hoạt làn da.',
+    toneTag: 'SANG_TRỌNG_CAO_CẤP',
+    logoRules: 'Logo Bio-Essence ánh kim trên nền tối trang nhã.',
+    visualDoList: [
+      'Cận cảnh vảy vàng 24K óng ánh tan chảy khi thoa lên gò má',
+      'Độ bóng khỏe mọng nước Glass-Skin của phụ nữ trưởng thành',
+      'Trang phục trang nhã, ánh sáng ấm áp sang trọng'
+    ],
+    visualDontList: [
+      'Không quay cảnh lem luốc hoặc bôi trét cẩu thả',
+      'Không so sánh với vàng giả hay tuyên bố cải lão hoàn đồng vô lý'
+    ],
+    blacklistKeywords: [
+      {
+        id: 'bl-bio-1',
+        keyword: 'Trẻ hóa 10 tuổi ngay tức thì',
+        category: 'SENSITIVE_POLICY',
+        severity: 'CRITICAL_BANNED',
+        rationale: 'Vi phạm chính sách tuyên bố quá đà về sản phẩm chống lão hóa.',
+        alternativeSuggestion: 'Kích hoạt độ đàn hồi, giúp da căng bóng và làm mờ nếp nhăn li ti'
+      }
+    ],
+    heroSkus: [
+      {
+        id: 'sku-bio-gold-water',
+        skuCode: 'SKU-BIO-GOLD-100ML',
+        name: 'Nước Thần Phục Hồi Chống Lão Hóa Bio-Gold Rose Gold Water 100ml',
+        category: 'Anti-Aging',
+        uspBulletPoints: [
+          'Vàng 24K sinh học nguyên chất 98% tăng cường chống oxy hóa',
+          'Công nghệ độc quyền Bio-Energy Complex tăng khả năng hấp thu oxy cho tế bào',
+          'Se khít lỗ chân lông, dưỡng da sáng hồng rạng rỡ'
+        ],
+        clinicalClaims: 'Tăng cường tái tạo collagen lên 28% sau 14 ngày.',
+        pdpUrl: 'https://www.tiktok.com/@bioessencevn/product/182940777',
+        sampleStockCount: 75,
+        priceVnd: 420000
+      }
+    ]
+  }
+];
+
+export const INITIAL_BRAND_APPROVAL_QUEUE: BrandApprovalQueueItem[] = [
+  {
+    id: 'baq-1',
+    dealCode: 'BO260757834',
+    brandName: 'Kutieskin',
+    kocName: 'Bác Sĩ Da Liễu Nguyên',
+    kocChannel: '@drnguyendalieu',
+    avatarUrl: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=150&auto=format&fit=crop',
+    salaryGrade: 'KL4',
+    quoteNet: 4500000,
+    tepKenh: 'Bác sỹ/chuyên gia',
+    submissionRound: 'ROUND_1_KOC',
+    submittedBy: 'Khánh Vy',
+    submittedAt: '2026-09-24 14:30',
+    remainingSlaHours: 18.5,
+    status: 'PENDING'
+  },
+  {
+    id: 'baq-2',
+    dealCode: 'BO260757719',
+    brandName: 'Senka',
+    kocName: 'Chanh Beauty Review',
+    kocChannel: '@chanhbeauty',
+    avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop',
+    salaryGrade: 'KL3',
+    quoteNet: 2800000,
+    tepKenh: 'Review Nữ',
+    submissionRound: 'ROUND_2_SCRIPT',
+    submittedBy: 'Trần Anh Thư',
+    submittedAt: '2026-09-24 16:15',
+    remainingSlaHours: 21.0,
+    scriptContent: {
+      hook: 'Test camera UV thực tế 8 tiếng ngoài trời: Sữa rửa mặt tạo bọt tơ tằm Senka có làm sạch hết cặn kem chống nắng bám sâu không?',
+      pain: 'Hầu hết mọi người chỉ rửa mặt qua loa 10 giây, cặn kem chống nắng và bụi mịn PM 2.5 tích tụ làm bít tắc sinh mụn ẩn li ti.',
+      usp: 'Hạt bọt siêu nhỏ Micro Bubbles len lỏi vào lỗ chân lông hút sạch bã nhờn mà da vẫn mềm mịn nhờ gấp đôi Hyaluronic Acid.',
+      cta: 'Bấm ngay góc trái giỏ hàng nhận voucher mua 1 tặng 1 duy nhất trong phiên Live D-Day 10.10 này!',
+      durationSeconds: 62
+    },
+    status: 'PENDING'
+  },
+  {
+    id: 'baq-3',
+    dealCode: 'BO260757999',
+    brandName: "Nature's Way",
+    kocName: 'Mẹ Bầu Sành Điệu',
+    kocChannel: '@mebausanhdieu',
+    avatarUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop',
+    salaryGrade: 'KL5',
+    quoteNet: 6500000,
+    tepKenh: 'Mẹ bé (bầu)',
+    submissionRound: 'ROUND_1_KOC',
+    submittedBy: 'Nguyễn Thu Trang',
+    submittedAt: '2026-09-24 11:20',
+    remainingSlaHours: 15.0,
+    status: 'PENDING'
+  },
+  {
+    id: 'baq-4',
+    dealCode: 'BO260757555',
+    brandName: 'Babe',
+    kocName: 'Minh Đan Daily',
+    kocChannel: '@danxinhdaily',
+    avatarUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop',
+    salaryGrade: 'KL2',
+    quoteNet: 1200000,
+    tepKenh: 'Beauty',
+    submissionRound: 'ROUND_2_SCRIPT',
+    submittedBy: 'Đinh Thị Bích Liên',
+    submittedAt: '2026-09-24 09:00',
+    remainingSlaHours: 12.5,
+    scriptContent: {
+      hook: 'Review gel rửa mặt kiềm dầu Babe Stop Akn sau 1 tuần dùng thử xem da dầu mụn nhạy cảm có đỡ đổ dầu bóng loáng không.',
+      pain: 'Trời nồm ẩm hay nắng nóng da mặt lúc nào cũng đổ dầu bóng nhẫy, rửa mặt xong thì lại khô căng rát khó chịu.',
+      usp: 'Độ pH 5.0 dịu nhẹ, chứa phức hợp Iris kiềm dầu suốt 8h và Salicylic Acid thông thoáng lỗ chân lông.',
+      cta: 'Deal chính hãng nhập khẩu độc quyền giảm 35% đang gắn tại link giỏ hàng phía dưới.',
+      durationSeconds: 58
+    },
+    status: 'APPROVED'
+  }
+];
+
+export const INITIAL_BRAND_RETAINER_HEALTH: BrandRetainerHealth[] = [
+  {
+    id: 'brh-senka',
+    brandName: 'Senka',
+    accountLead: 'Phương Thảo',
+    growthLead: 'Hoàng Long',
+    allocatedBudget: 350000000,
+    spentBudget: 285000000,
+    targetGmv: 2100000000,
+    actualGmv: 1980000000,
+    roi: 6.95,
+    activeKocsCount: 42,
+    rejectedKocsCount: 3,
+    rejectionRate: 6.6,
+    healthStatus: 'HEALTHY',
+    statusNotes: 'Tiến độ GMV đạt 94.2% chỉ tiêu tháng. Hợp tác ổn định, KOC chất lượng cao ăn khớp guideline.'
+  },
+  {
+    id: 'brh-kutieskin',
+    brandName: 'Kutieskin',
+    accountLead: 'Phạm Thị Nhài',
+    growthLead: 'Phạm Thị Hồng Yến',
+    allocatedBudget: 220000000,
+    spentBudget: 175000000,
+    targetGmv: 1350000000,
+    actualGmv: 1290000000,
+    roi: 7.37,
+    activeKocsCount: 35,
+    rejectedKocsCount: 2,
+    rejectionRate: 5.4,
+    healthStatus: 'HEALTHY',
+    statusNotes: 'Tỷ lệ chốt đơn rất cao nhờ tệp KOC Mẹ & Bé uy tín. Cần đẩy thêm video đợt 3 Mega D-Day.'
+  },
+  {
+    id: 'brh-naturesway',
+    brandName: "Nature's Way",
+    accountLead: 'Hà Thị Thương',
+    growthLead: 'Nguyễn Anh Tú',
+    allocatedBudget: 420000000,
+    spentBudget: 310000000,
+    targetGmv: 2800000000,
+    actualGmv: 2450000000,
+    roi: 7.90,
+    activeKocsCount: 52,
+    rejectedKocsCount: 7,
+    rejectionRate: 11.8,
+    healthStatus: 'HEALTHY',
+    statusNotes: 'Brand kiểm soát khắt khe giấy phép quảng cáo TPCN. Đã đào tạo lại tệp KOC để hạn chế từ chối kịch bản.'
+  },
+  {
+    id: 'brh-babe',
+    brandName: 'Babe',
+    accountLead: 'Phạm Hà Hoàng Trang',
+    growthLead: 'Huỳnh Ngọc Xuân Thúy',
+    allocatedBudget: 180000000,
+    spentBudget: 145000000,
+    targetGmv: 950000000,
+    actualGmv: 780000000,
+    roi: 5.38,
+    activeKocsCount: 24,
+    rejectedKocsCount: 5,
+    rejectionRate: 17.2,
+    healthStatus: 'WARNING',
+    statusNotes: 'Tỷ lệ từ chối KOC còn cao (17.2%) do Brand yêu cầu KOC phải có kiến thức da liễu chuyên sâu. Đang hội chẩn lại tiêu chí.'
+  },
+  {
+    id: 'brh-bioessence',
+    brandName: 'Bio-Essence',
+    accountLead: 'Nguyễn Mai Linh',
+    growthLead: 'Nguyễn Mai Oanh',
+    allocatedBudget: 150000000,
+    spentBudget: 60000000,
+    targetGmv: 850000000,
+    actualGmv: 390000000,
+    roi: 6.50,
+    activeKocsCount: 16,
+    rejectedKocsCount: 4,
+    rejectionRate: 20.0,
+    healthStatus: 'WARNING',
+    statusNotes: 'Giải ngân chậm hơn kế hoạch 2 tuần do chờ phê duyệt Key Visual mới từ Brand mẹ bên Singapore.'
+  },
+  {
+    id: 'brh-phcare',
+    brandName: 'pHCare',
+    accountLead: 'Phương Thảo',
+    growthLead: 'Hoàng Long',
+    allocatedBudget: 90000000,
+    spentBudget: 25000000,
+    targetGmv: 450000000,
+    actualGmv: 180000000,
+    roi: 7.20,
+    activeKocsCount: 12,
+    rejectedKocsCount: 6,
+    rejectionRate: 33.3,
+    healthStatus: 'CRITICAL',
+    statusNotes: 'Cảnh báo đỏ: Tỷ lệ KOC bị từ chối 33.3% do ngành hàng dung dịch vệ sinh nhạy cảm. Cần họp khẩn chốt lại chân dung KOC.'
   }
 ];
 

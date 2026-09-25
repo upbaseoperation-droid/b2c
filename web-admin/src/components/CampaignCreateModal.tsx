@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { X, Target, Sparkles, Send, Calendar, DollarSign, Users } from 'lucide-react';
+import { X, Target, Sparkles, Send, Calendar, DollarSign, Users, Tag, AlertCircle } from 'lucide-react';
 import { CampaignItem } from '../lib/types';
 
 interface CampaignCreateModalProps {
@@ -17,11 +17,15 @@ export const CampaignCreateModal: React.FC<CampaignCreateModalProps> = ({
 }) => {
   const [title, setTitle] = useState('');
   const [code, setCode] = useState('');
-  const [brand, setBrand] = useState('UpBeauty E2E-T');
+  const [brand, setBrand] = useState('Senka');
   const [targetAudience, setTargetAudience] = useState('');
   const [bigIdea, setBigIdea] = useState('');
-  const [budget, setBudget] = useState(200000000);
-  const [targetGmv, setTargetGmv] = useState(1500000000);
+  const [keyMessage, setKeyMessage] = useState('');
+  const [heroSkusInput, setHeroSkusInput] = useState('');
+  const [targetCir, setTargetCir] = useState(18.0);
+  const [contentPic, setContentPic] = useState('Quỳnh Như (Content Lead)');
+  const [budget, setBudget] = useState(150000000);
+  const [targetGmv, setTargetGmv] = useState(1000000000);
   const [targetKocCount, setTargetKocCount] = useState(25);
   const [startDate, setStartDate] = useState('2026-10-01');
   const [endDate, setEndDate] = useState('2026-10-31');
@@ -30,13 +34,26 @@ export const CampaignCreateModal: React.FC<CampaignCreateModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Parse hero SKUs
+    const parsedSkus = heroSkusInput
+      .split(',')
+      .map(s => s.trim())
+      .filter(s => s.length > 0);
+
     const newCampaign: CampaignItem = {
       id: `camp-${Date.now()}`,
       code: code || `CAMP-${Math.floor(1000 + Math.random() * 9000)}`,
       title,
       brand,
-      targetAudience: targetAudience || 'Khách hàng mục tiêu TikTok & Shopee',
+      targetAudience: targetAudience || 'Khách hàng mục tiêu TikTok Shop & Shopee Mall',
       bigIdea: bigIdea || 'Chiến dịch bùng nổ doanh số quý 4',
+      keyMessage: keyMessage || undefined,
+      heroSkus: parsedSkus.length > 0 ? parsedSkus : undefined,
+      targetCir,
+      contentPic,
+      handoffAt: new Date().toISOString(),
+      handoffSlaHours: 24,
       budget,
       spentBudget: 0,
       targetGmv,
@@ -54,131 +71,195 @@ export const CampaignCreateModal: React.FC<CampaignCreateModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 overflow-y-auto animate-in fade-in duration-200">
-      <div className="bg-[#101726] border border-[#1e293b] rounded-lg w-full max-w-xl shadow-2xl overflow-hidden my-6">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto animate-in fade-in duration-150">
+      <div className="bg-white border border-slate-200 rounded-lg w-full max-w-xl shadow-2xl overflow-hidden my-6">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#1e293b] bg-[#0c121e]">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-md bg-blue-500/20 text-blue-400 flex items-center justify-center">
-              <Target className="w-4 h-4 text-blue-400" />
+            <div className="w-8 h-8 rounded bg-blue-100 text-blue-700 flex items-center justify-center">
+              <Target className="w-4 h-4 text-blue-700" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-white">Tạo Chiến Dịch & Chuẩn Hóa Brief</h3>
-              <p className="text-xs text-slate-400">Brand Team xác lập mục tiêu & chuyển giao sang Content SLA 24h</p>
+              <h3 className="text-base font-bold text-slate-900">Tạo Chiến Dịch & Soạn Thảo Brief</h3>
+              <p className="text-xs text-slate-500">Brand Team xác lập mục tiêu & chuyển giao sang Content Studio SLA 24h</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded text-slate-400 hover:text-white hover:bg-slate-800 transition">
+          <button
+            onClick={onClose}
+            className="p-1 rounded text-slate-400 hover:text-slate-600 hover:bg-slate-200 transition"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+        <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto text-xs">
           {/* Campaign Title & Code */}
           <div className="grid grid-cols-3 gap-3">
             <div className="col-span-2">
-              <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                Tên Chiến Dịch
+              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                Tên Chiến Dịch *
               </label>
               <input
                 type="text"
                 placeholder="VD: Mega Sale 11.11 — Cứu Rỗi Làn Da Dầu Mụn"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="w-full bg-[#172238] border border-[#1e293b] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                className="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-blue-500 focus:bg-white"
                 required
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-                Mã (Code)
+              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                Mã Code *
               </label>
               <input
                 type="text"
                 placeholder="CAMP-1111"
                 value={code}
                 onChange={(e) => setCode(e.target.value.toUpperCase())}
-                className="w-full bg-[#172238] border border-[#1e293b] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                className="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-blue-500 focus:bg-white"
                 required
               />
             </div>
           </div>
 
-          {/* Brand & Client */}
-          <div>
-            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-              Brand / Nhãn Hàng
-            </label>
-            <select
-              value={brand}
-              onChange={(e) => setBrand(e.target.value)}
-              className="w-full bg-[#172238] border border-[#1e293b] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500"
-            >
-              <option value="UpBeauty E2E-T">UpBeauty E2E-T (TikTok & Shopee Brand)</option>
-              <option value="Ziaja & Revision Skincare">Ziaja & Revision Skincare (Chăm Sóc Da Dược Liệu)</option>
-              <option value="CeraVe Official Store">CeraVe Official Store (Phân Phối Độc Quyền)</option>
-              <option value="La Roche-Posay Partner">La Roche-Posay Partner (Phục Hồi B5)</option>
-            </select>
+          {/* Brand & Content PIC */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                Brand / Nhãn Hàng *
+              </label>
+              <select
+                value={brand}
+                onChange={(e) => setBrand(e.target.value)}
+                className="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-blue-500"
+              >
+                <option value="Senka">Senka (Chăm sóc da Nhật Bản)</option>
+                <option value="Kutieskin">Kutieskin (Mẹ & Bé Hữu Cơ)</option>
+                <option value="Nature's Way">Nature&apos;s Way (Vitamin Trẻ Em Úc)</option>
+                <option value="Babe">Babe (Dược Mỹ Phẩm Tây Ban Nha)</option>
+                <option value="Bio-Essence">Bio-Essence (Vàng 24K Chống Lão Hóa)</option>
+                <option value="pHCare">pHCare (Dung Dịch Phụ Nữ)</option>
+                <option value="Cure Natural">Cure Natural (Tẩy Da Chết Nhật Bản)</option>
+                <option value="Keyshu">Keyshu (Mặt Nạ Rau Má)</option>
+                <option value="Royal Ausnz">Royal Ausnz (Sữa Hoàng Gia Úc)</option>
+                <option value="Peripera">Peripera (Son Môi & Makeup Hàn Quốc)</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+                Người Nhận Bàn Giao (Content PIC)
+              </label>
+              <select
+                value={contentPic}
+                onChange={(e) => setContentPic(e.target.value)}
+                className="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-blue-500"
+              >
+                <option value="Quỳnh Như (Content Lead)">Quỳnh Như (Content Lead)</option>
+                <option value="Trần Anh Thư (Content Senior)">Trần Anh Thư (Content Senior)</option>
+                <option value="Hoàng Yến (Creative PIC)">Hoàng Yến (Creative PIC)</option>
+              </select>
+            </div>
           </div>
 
-          {/* Big Idea & Key Message */}
+          {/* Big Idea */}
           <div>
-            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-              Big Idea & Thông Điệp Cốt Lõi
+            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+              Big Idea Chiến Dịch *
             </label>
             <input
               type="text"
               placeholder="VD: 'Lá Chắn Đa Tầng — Bảo Vệ Toàn Diện Cả Ngày Dài'"
               value={bigIdea}
               onChange={(e) => setBigIdea(e.target.value)}
-              className="w-full bg-[#172238] border border-[#1e293b] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+              className="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-blue-500 focus:bg-white"
               required
+            />
+          </div>
+
+          {/* Key Message */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+              Thông Điệp Cốt Lõi (Key Message)
+            </label>
+            <input
+              type="text"
+              placeholder="VD: Làm sạch sâu nhưng giữ trọn màng ẩm, không căng rát da sau 7 ngày"
+              value={keyMessage}
+              onChange={(e) => setKeyMessage(e.target.value)}
+              className="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-blue-500 focus:bg-white"
+            />
+          </div>
+
+          {/* Hero SKUs Input */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+              Sản Phẩm Chủ Lực (Hero SKUs, phân cách bằng dấu phẩy)
+            </label>
+            <input
+              type="text"
+              placeholder="VD: Sữa Rửa Mặt Perfect Whip 120g, Nước Tẩy Trang All Clear Water 500ml"
+              value={heroSkusInput}
+              onChange={(e) => setHeroSkusInput(e.target.value)}
+              className="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-blue-500 focus:bg-white"
             />
           </div>
 
           {/* Target Audience */}
           <div>
-            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-              Chân Dung Khách Hàng Mục Tiêu (Target Persona)
+            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+              Chân Dung Khách Hàng Mục Tiêu (Target Persona) *
             </label>
             <textarea
               rows={2}
               placeholder="VD: Nữ 18-28 tuổi, nhân viên văn phòng hoặc sinh viên thường xuyên tiếp xúc máy tính và tia UV..."
               value={targetAudience}
               onChange={(e) => setTargetAudience(e.target.value)}
-              className="w-full bg-[#172238] border border-[#1e293b] rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+              className="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-blue-500 focus:bg-white"
               required
             />
           </div>
 
-          {/* Financials & Target KOCs */}
-          <div className="grid grid-cols-3 gap-2">
+          {/* Financials & Target CIR */}
+          <div className="grid grid-cols-4 gap-2">
             <div>
-              <label className="block text-[11px] text-slate-400 mb-1">Ngân Sách Tổng (VNĐ)</label>
+              <label className="block text-[11px] text-slate-500 mb-1">Ngân Sách (VNĐ)</label>
               <input
                 type="number"
                 step={10000000}
                 value={budget}
                 onChange={(e) => setBudget(Number(e.target.value))}
-                className="w-full bg-[#172238] border border-[#1e293b] rounded-xl px-3 py-2 text-xs text-white font-bold"
+                className="w-full bg-slate-50 border border-slate-200 rounded px-2.5 py-1.5 text-xs text-slate-900 font-bold"
               />
             </div>
             <div>
-              <label className="block text-[11px] text-emerald-400 mb-1">Mục Tiêu GMV (VNĐ)</label>
+              <label className="block text-[11px] text-emerald-600 mb-1">Target GMV (VNĐ)</label>
               <input
                 type="number"
                 step={50000000}
                 value={targetGmv}
                 onChange={(e) => setTargetGmv(Number(e.target.value))}
-                className="w-full bg-[#172238] border border-[#1e293b] rounded-xl px-3 py-2 text-xs text-emerald-400 font-bold"
+                className="w-full bg-slate-50 border border-slate-200 rounded px-2.5 py-1.5 text-xs text-emerald-700 font-bold"
               />
             </div>
             <div>
-              <label className="block text-[11px] text-blue-400 mb-1">Target Số KOC</label>
+              <label className="block text-[11px] text-blue-600 mb-1">Target CIR (%)</label>
+              <input
+                type="number"
+                step={0.5}
+                value={targetCir}
+                onChange={(e) => setTargetCir(Number(e.target.value))}
+                className="w-full bg-slate-50 border border-slate-200 rounded px-2.5 py-1.5 text-xs text-blue-700 font-bold"
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] text-slate-500 mb-1">Target KOC</label>
               <input
                 type="number"
                 value={targetKocCount}
                 onChange={(e) => setTargetKocCount(Number(e.target.value))}
-                className="w-full bg-[#172238] border border-[#1e293b] rounded-xl px-3 py-2 text-xs text-blue-400 font-bold"
+                className="w-full bg-slate-50 border border-slate-200 rounded px-2.5 py-1.5 text-xs text-slate-800 font-bold"
               />
             </div>
           </div>
@@ -186,25 +267,25 @@ export const CampaignCreateModal: React.FC<CampaignCreateModalProps> = ({
           {/* Start and End Date */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
                 Ngày Bắt Đầu
               </label>
               <input
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="w-full bg-[#172238] border border-[#1e293b] rounded-xl px-3.5 py-2 text-xs text-white"
+                className="w-full bg-slate-50 border border-slate-200 rounded px-3 py-1.5 text-xs text-slate-900"
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
                 Hạn Kết Thúc
               </label>
               <input
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="w-full bg-[#172238] border border-[#1e293b] rounded-xl px-3.5 py-2 text-xs text-white"
+                className="w-full bg-slate-50 border border-slate-200 rounded px-3 py-1.5 text-xs text-slate-900"
               />
             </div>
           </div>
@@ -212,7 +293,7 @@ export const CampaignCreateModal: React.FC<CampaignCreateModalProps> = ({
           <div className="pt-2">
             <button
               type="submit"
-              className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-bold py-3 px-4 rounded-xl shadow-lg shadow-blue-500/25 transition flex items-center justify-center gap-2 text-xs"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-4 rounded shadow-sm transition flex items-center justify-center gap-2 text-xs"
             >
               <Send className="w-4 h-4" />
               <span>Tạo Brief & Tự Động Bàn Giao Sang Content (SLA 24h)</span>

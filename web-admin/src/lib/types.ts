@@ -540,6 +540,97 @@ export interface CampaignItem {
   startDate: string;
   endDate: string;
   guidelineUrl?: string;
+  keyMessage?: string;
+  heroSkus?: string[];
+  targetCir?: number; // e.g. 20.0 (%)
+  contentPic?: string; // Content Leader nhận handoff
+  handoffAt?: string; // Thời điểm handoff
+  handoffSlaHours?: number; // Mặc định 24h
+  isSlaBreached?: boolean;
+}
+
+// ==========================================
+// BRAND TEAM WORKSPACE TYPES
+// ==========================================
+export type BlacklistSeverity = 'CRITICAL_BANNED' | 'COMPETITOR_WARNING' | 'SENSITIVE_CLAIM' | 'SENSITIVE_POLICY';
+
+export interface BlacklistKeyword {
+  id: string;
+  keyword: string;
+  category: 'LEGAL_MEDICAL' | 'COMPETITOR' | 'SENSITIVE_POLICY';
+  severity: BlacklistSeverity;
+  rationale: string;
+  alternativeSuggestion?: string;
+  addedBy?: string;
+  addedAt?: string;
+}
+
+export interface HeroSkuItem {
+  id: string;
+  skuCode: string;
+  name: string;
+  category: string;
+  uspBulletPoints: string[];
+  clinicalClaims?: string;
+  pdpUrl: string;
+  sampleStockCount: number;
+  priceVnd: number;
+}
+
+export interface BrandGuidelineAsset {
+  id: string;
+  brandName: string;
+  category: string;
+  colorTheme: string;
+  toneOfVoice: string;
+  toneTag: 'BÁC_SĨ_CHUYÊN_GIA' | 'MẸ_BỈM_CHÂN_THỰC' | 'GEN_Z_TRENDING' | 'SANG_TRỌNG_CAO_CẤP';
+  logoRules: string;
+  visualDoList: string[];
+  visualDontList: string[];
+  blacklistKeywords: BlacklistKeyword[];
+  heroSkus: HeroSkuItem[];
+}
+
+export interface BrandApprovalQueueItem {
+  id: string;
+  dealCode: string;
+  brandName: string;
+  kocName: string;
+  kocChannel: string;
+  avatarUrl: string;
+  salaryGrade: SalaryGrade;
+  quoteNet: number;
+  tepKenh: TepKenh;
+  submissionRound: 'ROUND_1_KOC' | 'ROUND_2_SCRIPT';
+  submittedBy: string;
+  submittedAt: string;
+  remainingSlaHours: number;
+  scriptContent?: {
+    hook: string;
+    pain: string;
+    usp: string;
+    cta: string;
+    durationSeconds: number;
+  };
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  rejectReason?: string;
+}
+
+export interface BrandRetainerHealth {
+  id: string;
+  brandName: string;
+  accountLead: string;
+  growthLead: string;
+  allocatedBudget: number;
+  spentBudget: number;
+  targetGmv: number;
+  actualGmv: number;
+  roi: number;
+  activeKocsCount: number;
+  rejectedKocsCount: number;
+  rejectionRate: number; // e.g. 8.5%
+  healthStatus: 'HEALTHY' | 'WARNING' | 'CRITICAL';
+  statusNotes: string;
 }
 
 export interface ScriptReviewItem {
