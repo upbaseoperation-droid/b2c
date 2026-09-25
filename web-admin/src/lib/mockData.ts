@@ -37,7 +37,8 @@ import {
   BlacklistKeyword,
   HeroSkuItem,
   BrandApprovalQueueItem,
-  BrandRetainerHealth
+  BrandRetainerHealth,
+  BrandKnowledgeBase
 } from './types';
 
 
@@ -3091,6 +3092,691 @@ export const INITIAL_BRAND_RETAINER_HEALTH: BrandRetainerHealth[] = [
     rejectionRate: 33.3,
     healthStatus: 'CRITICAL',
     statusNotes: 'Cảnh báo đỏ: Tỷ lệ KOC bị từ chối 33.3% do ngành hàng dung dịch vệ sinh nhạy cảm. Cần họp khẩn chốt lại chân dung KOC.'
+  }
+];
+
+export const INITIAL_BRAND_KNOWLEDGE_BASES: BrandKnowledgeBase[] = [
+  {
+    id: 'kb-senka',
+    brandName: 'Senka',
+    slogan: 'Sạch Sâu Tinh Khiết — Dịu Êm Làn Da Chuẩn Nhật',
+    brandStory: 'Thành lập năm 2002 tại Tokyo bởi tập đoàn Shiseido, Senka là thương hiệu sữa rửa mặt và chăm sóc da quốc dân 15 năm liên tiếp số 1 tại thị trường Nhật Bản. Nổi danh với công nghệ tạo bọt tơ tằm trắng Micro Bubbles len lỏi sâu vào lỗ chân lông hút sạch bụi mịn PM2.5 mà vẫn bảo toàn độ ẩm tự nhiên của làn da.',
+    category: 'Chăm Sóc Da & Làm Sạch (Skincare)',
+    originCountry: 'Nhật Bản (Shiseido Group)',
+    foundedYear: 2002,
+    toneOfVoice: 'Khoa học, trong trẻo, nhẹ nhàng, gần gũi với học sinh sinh viên và nhân viên văn phòng. Truyền tải thông điệp làn da mộc rạng rỡ từ bước làm sạch căn bản.',
+    toneTag: 'BÁC_SĨ_CHUYÊN_GIA',
+    targetPersonaSummary: 'Nữ giới 16-28 tuổi, học sinh, sinh viên, nhân viên văn phòng có thói quen làm sạch da hàng ngày, thường xuyên di chuyển ngoài đường hoặc tiếp xúc môi trường ô nhiễm, điều hòa.',
+    colors: [
+      { name: 'Senka Primary Blue', hex: '#005BAC', role: 'PRIMARY' },
+      { name: 'Deep Navy Trust', hex: '#0A2540', role: 'SECONDARY' },
+      { name: 'Silk Foam White', hex: '#FFFFFF', role: 'BACKGROUND' },
+      { name: 'Hydra Soft Cyan', hex: '#38BDF8', role: 'ACCENT' }
+    ],
+    logoAssetRules: 'Logo Senka dạng chữ viết không chân cách điệu, bắt buộc hiển thị góc trên bên phải trong 3 giây đầu tiên của video. Khoảng cách an toàn tối thiểu 15px so với mép khung hình và không được đặt đè lên chi tiết rối mắt.',
+    logoDownloadUrls: [
+      { format: 'Logo Senka Xanh Chuẩn (PNG Trong Suốt High-Res)', url: 'https://cdn.upbase.vn/assets/senka/logo-blue-transparent.png' },
+      { format: 'Logo Senka Vector (SVG Dành Cho Editor/Designer)', url: 'https://cdn.upbase.vn/assets/senka/logo-senka-vector.svg' },
+      { format: 'Logo Senka Âm Bản Trắng (Dành Cho Nền Tối)', url: 'https://cdn.upbase.vn/assets/senka/logo-white-reversed.png' }
+    ],
+    visualDoList: [
+      'Cảnh tạo bọt sữa rửa mặt dày xốp trên lòng bàn tay hoặc lưới tạo bọt, độ bông xốp dày ít nhất 3cm',
+      'Cận cảnh làn da mộc sạch thoáng, mềm ẩm không bóng dầu sau khi rửa mặt với nước sạch',
+      'Không gian phòng tắm tối giản, hiện đại, ánh sáng tự nhiên ban ngày kiểu Nhật',
+      'Hướng dẫn test camera UV hoặc giấy thấm dầu để chứng minh khả năng làm sạch sâu thực tế'
+    ],
+    visualDontList: [
+      'Không sử dụng filter làm mịn da giả tạo hoặc làm mờ nhòe kết cấu bọt tơ tằm',
+      'Không đặt sản phẩm cạnh hoặc so sánh tiêu cực với Biore, Hada Labo, Innisfree',
+      'Không quay cảnh cào cấu mạnh tay làm đỏ rát da gây hiểu lầm sản phẩm kích ứng',
+      'Không cam kết "trị sạch 100% mụn sau 1 lần rửa"'
+    ],
+    certifications: [
+      {
+        id: 'cert-snk-01',
+        docTitle: 'Giấy tiếp nhận bản công bố sản phẩm mỹ phẩm số 154820/21/CBMP-QLD',
+        issuingAuthority: 'Cục Quản Lý Dược — Bộ Y Tế Việt Nam',
+        docNumber: '154820/21/CBMP-QLD',
+        issueDate: '2021-08-15',
+        validUntil: '2026-08-15',
+        docType: 'CÔNG_BỐ_MỸ_PHẨM',
+        verificationUrl: 'https://dav.gov.vn/tra-cuu-my-pham/154820-21',
+        summaryKeyFindings: 'Sản phẩm đạt chuẩn nhập khẩu chính ngạch 100% từ Shiseido Nhật Bản, an toàn da liễu không chứa chất cấm.'
+      },
+      {
+        id: 'cert-snk-02',
+        docTitle: 'Kiểm nghiệm lâm sàng da liễu về độ ẩm và hiệu quả làm sạch bụi mịn PM2.5',
+        issuingAuthority: 'Viện Kiểm Nghiệm Da Liễu Tokyo (Tokyo Dermatology Research Lab)',
+        docNumber: 'TDR-2022-8491',
+        issueDate: '2022-04-10',
+        docType: 'KIỂM_NGHIỆM_LÂM_SÀNG',
+        summaryKeyFindings: '96% người tham gia thử nghiệm xác nhận da mềm mượt không căng rát sau 7 ngày; chứng minh loại bỏ 94% bụi mịn PM2.5 và giảm 82% bã nhờn sau 4h.'
+      },
+      {
+        id: 'cert-snk-03',
+        docTitle: 'Giấy xác nhận nội dung quảng cáo số 128/2023/XNQC-YTHCM',
+        issuingAuthority: 'Sở Y Tế TP. Hồ Chí Minh',
+        docNumber: '128/2023/XNQC-YTHCM',
+        issueDate: '2023-03-20',
+        docType: 'XÁC_NHẬN_QUẢNG_CÁO',
+        mandatoryDisclaimerText: 'Hiệu quả thực tế có thể thay đổi tùy thuộc vào cơ địa và tình trạng da của từng người.',
+        summaryKeyFindings: 'Cho phép truyền thông công dụng làm sạch sâu bọt tơ tằm và công thức dưỡng ẩm gấp đôi Hyaluronic Acid.'
+      }
+    ],
+    skus: [
+      {
+        id: 'sku-senka-whip-det',
+        skuCode: 'SKU-SNK-WHIP-120G',
+        name: 'Sữa Rửa Mặt Tạo Bọt Tơ Tằm Trắng Senka Perfect Whip 120g',
+        volumeOrWeight: '120g tuýp chuẩn',
+        category: 'Cleanser (Sữa rửa mặt)',
+        priceVnd: 115000,
+        pdpUrl: 'https://www.tiktok.com/@senkavietnam_official/product/1729481920',
+        sampleStockCount: 150,
+        scientificMechanism: 'Hạt bọt Micro Bubbles mang điện tích âm liên kết tĩnh điện với bụi bẩn và bã nhờn mang điện tích dương sâu trong lỗ chân lông, cuốn trôi chất bẩn mà không làm tổn thương màng lipid.',
+        keyActiveIngredients: [
+          { name: 'Kén tơ tằm trắng Mayu Haku', percentage: 'Chiết xuất tự nhiên', origin: 'Nhật Bản', benefit: 'Tạo bọt mịn gấp 5 lần, tăng cường tái tạo lớp màng ẩm' },
+          { name: 'Gấp đôi Hyaluronic Acid', percentage: 'Chuẩn lâm sàng', origin: 'Nhật Bản', benefit: 'Cấp ẩm sâu 2 tầng, ngăn ngừa mất nước biểu bì sau khi rửa' },
+          { name: 'Sericin & Hydrolyzed Silk', percentage: 'Tinh khiết', origin: 'Nhật Bản', benefit: 'Dưỡng da sáng mịn và đàn hồi tự nhiên' }
+        ],
+        uniqueSellingPoints: [
+          'Hạt bọt siêu nhỏ Micro Bubbles len lỏi làm sạch bụi mịn PM2.5',
+          'Bọt dày xốp gấp 5 lần bảo vệ da khỏi lực ma sát của bàn tay',
+          'Gấp đôi Hyaluronic Acid giữ ẩm sâu, không hề căng rát sau rửa mặt',
+          'Sản phẩm số 1 Nhật Bản 15 năm liên tiếp'
+        ],
+        clinicalTrials: 'Chứng minh lâm sàng tại Nhật Bản: 96% người thử nghiệm cảm nhận da mềm mịn sau 7 ngày.',
+        usageInstructions: 'Lấy lượng kem cỡ 2cm ra lòng bàn tay ẩm, thêm ít nước đánh bọt bông xốp, mát-xa nhẹ nhàng khắp mặt 30-45 giây rồi rửa sạch bằng nước.',
+        targetSkinOrUser: 'Mọi loại da, đặc biệt da thường, da hỗn hợp thiên dầu, người hay makeup hoặc tiếp xúc bụi bẩn.',
+        contraindications: 'Không dùng trên vùng da có vết thương hở sâu hoặc đang bùng phát viêm da tiếp xúc cấp tính.'
+      },
+      {
+        id: 'sku-senka-micellar-det',
+        skuCode: 'SKU-SNK-MICELLAR-500ML',
+        name: 'Nước Tẩy Trang Sạch Sâu Giảm Mụn Senka All Clear Water Micellar 500ml',
+        volumeOrWeight: '500ml chai lớn tiết kiệm',
+        category: 'Makeup Remover (Nước tẩy trang)',
+        priceVnd: 145000,
+        pdpUrl: 'https://www.tiktok.com/@senkavietnam_official/product/1729481921',
+        sampleStockCount: 80,
+        scientificMechanism: 'Phân tử Micellar 2 đầu (đầu ưa nước và đầu ưa dầu) hoạt động như nam châm hút sạch cặn trang điểm lâu trôi và bã nhờn mà không phá vỡ màng ẩm sinh học.',
+        keyActiveIngredients: [
+          { name: 'Chiết xuất Trà Xanh Uji Kyoto', percentage: 'Hữu cơ', origin: 'Kyoto, Nhật Bản', benefit: 'Kiềm dầu, kháng viêm và chống oxy hóa mạnh mẽ' },
+          { name: 'Công nghệ Micellar', percentage: 'Độc quyền', origin: 'Shiseido Nhật Bản', benefit: 'Hút sạch 99% lớp trang điểm cứng đầu' }
+        ],
+        uniqueSellingPoints: [
+          'Công thức 3 KHÔNG: Không cồn, không dầu khoáng, không hương liệu độc hại',
+          'Kiềm dầu suốt 8h nhờ tinh chất trà xanh Uji Kyoto trứ danh',
+          'Dung tích lớn 500ml tiết kiệm cho học sinh sinh viên'
+        ],
+        clinicalTrials: 'Giảm 82% bã nhờn sau 4h sử dụng, an toàn cho da nhạy cảm có mụn.',
+        usageInstructions: 'Thấm ướt bông tẩy trang, lau nhẹ nhàng khắp mặt từ trong ra ngoài, không cần chà xát mạnh.',
+        targetSkinOrUser: 'Da dầu mụn, da hỗn hợp, người thường xuyên bôi kem chống nắng hoặc makeup hàng ngày.',
+        contraindications: 'Tránh tiếp xúc trực tiếp vào giác mạc mắt.'
+      }
+    ],
+    blacklistKeywords: [
+      {
+        id: 'bl-snk-01',
+        keyword: 'Trị dứt điểm mụn / sạch thâm 100%',
+        category: 'LEGAL_MEDICAL',
+        severity: 'CRITICAL_BANNED',
+        rationale: 'Vi phạm luật quảng cáo mỹ phẩm Bộ Y Tế. Mỹ phẩm làm sạch không có chức năng điều trị dứt điểm bệnh lý da liễu.',
+        alternativeSuggestion: 'Hỗ trợ làm sạch bã nhờn và vi khuẩn, giúp ngăn ngừa mụn quay trở lại hiệu quả'
+      },
+      {
+        id: 'bl-snk-02',
+        keyword: '100% không kích ứng',
+        category: 'LEGAL_MEDICAL',
+        severity: 'CRITICAL_BANNED',
+        rationale: 'Cấm cam kết tuyệt đối 100% trong truyền thông dược mỹ phẩm.',
+        alternativeSuggestion: 'Công thức dịu nhẹ đã được kiểm nghiệm da liễu an toàn'
+      },
+      {
+        id: 'bl-snk-03',
+        keyword: 'Tốt hơn Biore / Hada Labo',
+        category: 'COMPETITOR',
+        severity: 'COMPETITOR_WARNING',
+        rationale: 'Vi phạm quy chuẩn cấm dìm hàng đối thủ cạnh tranh trực tiếp.',
+        alternativeSuggestion: 'Hạt bọt tơ tằm siêu nhỏ Micro Bubbles tạo bọt dày xốp gấp 5 lần so với thông thường'
+      }
+    ],
+    whitelistKeywords: [
+      {
+        id: 'wl-snk-01',
+        phrase: 'Bọt tơ tằm dày xốp gấp 5 lần bảo vệ màng ẩm',
+        category: 'USP_CLAIM',
+        exampleUsage: 'Bọt tơ tằm dày xốp gấp 5 lần giúp giảm lực ma sát tay lên da, rửa xong da mềm mượt thích mê!',
+        benefitNotes: 'Tôn vinh công nghệ tơ tằm trắng Mayu Haku độc quyền của Shiseido'
+      },
+      {
+        id: 'wl-snk-02',
+        phrase: 'Gấp đôi Hyaluronic Acid không lo căng rát',
+        category: 'TRUST_BUILDER',
+        exampleUsage: 'Nhờ bổ sung gấp đôi Hyaluronic Acid nên dù rửa sạch sâu bụi bẩn da vẫn mềm ẩm dễ chịu.',
+        benefitNotes: 'Giải tỏa định kiến cũ của người dùng về việc sữa rửa mặt tạo bọt gây khô căng'
+      },
+      {
+        id: 'wl-snk-03',
+        phrase: 'Làm sạch sâu bụi mịn PM2.5 chuẩn kiểm nghiệm Nhật Bản',
+        category: 'HOOK_WINNER',
+        exampleUsage: 'Đi đường bụi mịn PM2.5 cả ngày về nhà phải có em này len lỏi sạch sâu lỗ chân lông!',
+        benefitNotes: 'Hook thời sự đánh trúng nỗi đau môi trường ô nhiễm của cư dân đô thị'
+      }
+    ],
+    objectionFaqs: [
+      {
+        id: 'faq-snk-01',
+        question: 'Nghe nói sữa rửa mặt Senka Perfect Whip rửa xong bị khô căng kít da, có đúng không?',
+        targetConcern: 'KÍCH_ỨNG_MẨN_ĐỎ',
+        recommendedAnswerForKoc: 'Đó là định kiến từ bản cũ cách đây nhiều năm rồi cả nhà ơi! Bản cải tiến mới nhất của Senka đã bổ sung gấp đôi Hyaluronic Acid và công nghệ tơ tằm Mayu Haku, giúp bọt dày gấp 5 lần đệm giữa tay và mặt. Khi tạo bọt bông xốp đúng cách trên tay rồi mới xoa lên mặt thì da rửa xong siêu mềm mượt, sạch thoáng mà màng ẩm tự nhiên vẫn nguyên vẹn.',
+        doMentionPoints: ['Phải tạo bọt bông xốp trên tay trước khi đưa lên mặt', 'Công thức cải tiến gấp đôi Hyaluronic Acid', 'Kiểm nghiệm da liễu Nhật Bản 96% mềm mượt'],
+        dontSayWords: ['Bản cũ dùng dở lắm', 'Khô rát', 'Hút hết dầu']
+      },
+      {
+        id: 'faq-snk-02',
+        question: 'Hàng trên TikTok Shop Upbase phân phối có phải chính hãng Nhật Bản không, sao giá mềm thế?',
+        targetConcern: 'NGUỒN_GỐC_XUẤT_XỨ',
+        recommendedAnswerForKoc: 'Gian hàng TikTok Shop của Senka do Upbase vận hành là kênh phân phối chính thức từ tập đoàn Shiseido Việt Nam. Sản phẩm có đầy đủ tem phụ tiếng Việt, tem chống hàng giả mã QR truy xuất và hóa đơn VAT. Mức giá ưu đãi này là do chương trình trợ giá trực tiếp độc quyền từ nhãn hàng trong phiên Mega Sale.',
+        doMentionPoints: ['Nhập khẩu chính ngạch 100% Shiseido', 'Có tem chống giả quét mã QR', 'Trợ giá trực tiếp từ nhãn hàng'],
+        dontSayWords: ['Hàng xách tay', 'Hàng tồn kho xả lỗ']
+      }
+    ],
+    crisisProtocols: [
+      {
+        stepNumber: 1,
+        actionTitle: 'Tiếp nhận & Hướng dẫn ngưng sử dụng tức thì',
+        guidelineDescription: 'Khi khách hàng comment bị mẩn đỏ, KOC phản hồi lịch sự hướng dẫn khách tạm ngưng dùng, rửa mặt lại bằng nước mát sạch và inbox trực tiếp fanpage Senka kèm ảnh chụp.',
+        contactPic: 'Account Lead (Phương Thảo - 0984.112.xxx)',
+        slaResponseMinutes: 30
+      },
+      {
+        stepNumber: 2,
+        actionTitle: 'Bác sĩ da liễu nhãn hàng hội chẩn & Đổi trả',
+        guidelineDescription: 'Đội ngũ chuyên gia Senka gọi điện thăm hỏi, xác định nguyên nhân (dị ứng chéo hay do kết hợp sai AHA/BHA) và hỗ trợ hoàn tiền hoặc đổi sản phẩm dịu nhẹ hơn.',
+        contactPic: 'Dermatologist Specialist (Dr. Hằng)',
+        slaResponseMinutes: 120
+      }
+    ],
+    lastUpdated: '2026-09-24',
+    updatedBy: 'Phạm Thị Nhài (Brand Manager)',
+    publicShareSlug: 'senka-japan-official',
+    shareAccessPin: 'SNK2026'
+  },
+  {
+    id: 'kb-kutieskin',
+    brandName: 'Kutieskin',
+    slogan: 'Nâng Niu Làn Da Bé — Trọn Vẹn Tình Yêu Mẹ',
+    brandStory: 'Kutieskin là thương hiệu chăm sóc da chuyên biệt cho trẻ sơ sinh và trẻ nhỏ số 1 tại Việt Nam được nghiên cứu và phát triển bởi CVI Pharma. Ứng dụng công nghệ kháng viêm thảo dược Aminovector độc quyền từ Pháp kết hợp nguồn dược liệu chuẩn hóa đạt chứng nhận Cosmos Organic Châu Âu, mang tới giải pháp làm dịu nhanh mẩn ngứa, chàm sữa mà hoàn toàn không chứa Corticoid.',
+    category: 'Mẹ & Bé (Baby Skincare & Healthcare)',
+    originCountry: 'Việt Nam (CVI Pharma)',
+    foundedYear: 2019,
+    toneOfVoice: 'Ấm áp, thấu hiểu, đồng cảm sâu sắc với nỗi lo của các mẹ bỉm sữa, kết hợp kiến thức y khoa chuyên môn đáng tin cậy.',
+    toneTag: 'MẸ_BỈM_CHÂN_THỰC',
+    targetPersonaSummary: 'Mẹ bỉm sữa đang nuôi con nhỏ từ 0 - 5 tuổi, mẹ bầu chuẩn bị sinh, các mẹ kỹ tính tìm kiếm sản phẩm lành tính không hóa chất độc hại để bảo vệ làn da non nớt của con.',
+    colors: [
+      { name: 'Kutieskin Baby Pink', hex: '#EC4899', role: 'PRIMARY' },
+      { name: 'Soft Herb Green', hex: '#059669', role: 'SECONDARY' },
+      { name: 'Warm Cream Peach', hex: '#FFF1F2', role: 'BACKGROUND' },
+      { name: 'Gentle Amber', hex: '#F59E0B', role: 'ACCENT' }
+    ],
+    logoAssetRules: 'Logo Kutieskin kèm biểu tượng chú gấu nhỏ ấm áp, hiển thị góc trái màn hình, màu sắc hồng pastel dịu nhẹ.',
+    logoDownloadUrls: [
+      { format: 'Logo Kutieskin Gấu Nhỏ (PNG Trong Suốt)', url: 'https://cdn.upbase.vn/assets/kutieskin/logo-pink-bear.png' },
+      { format: 'Logo Kutieskin Tròn Huy Hiệu (SVG)', url: 'https://cdn.upbase.vn/assets/kutieskin/badge-kutieskin.svg' }
+    ],
+    visualDoList: [
+      'Cảnh mẹ âu yếm chăm sóc, thoa kem nhẹ nhàng cho bé lúc vừa tắm xong hoặc trước khi đi ngủ',
+      'Cận cảnh chất kem thẩm thấu nhanh, không bết dính, bé thoải mái cười đùa',
+      'Giơ tem chống hàng giả và chứng nhận Organic Cosmos Châu Âu rõ nét',
+      'Không gian phòng ngủ hoặc phòng tắm gia đình ấm cúng, sạch sẽ'
+    ],
+    visualDontList: [
+      'Tuyệt đối không quay cảnh em bé đang khóc thét hay hoảng sợ',
+      'Cấm so sánh hoặc nhắc tới các loại kem trộn, thuốc bôi chứa Corticoid trôi nổi',
+      'Không bôi lem luốc vào vùng mắt hoặc miệng của trẻ',
+      'Không hứa hẹn "khỏi chàm sữa sau 1 lần bôi duy nhất"'
+    ],
+    certifications: [
+      {
+        id: 'cert-kuti-01',
+        docTitle: 'Giấy tiếp nhận bản công bố sản phẩm số 7291/20/CBMP-HN',
+        issuingAuthority: 'Sở Y Tế Hà Nội',
+        docNumber: '7291/20/CBMP-HN',
+        issueDate: '2020-11-12',
+        docType: 'CÔNG_BỐ_MỸ_PHẨM',
+        summaryKeyFindings: 'Sản phẩm thảo dược kiểm nghiệm an toàn cho trẻ sơ sinh từ 5 ngày tuổi, không chứa Corticoid, không Paraben.'
+      },
+      {
+        id: 'cert-kuti-02',
+        docTitle: 'Chứng nhận nguồn gốc nguyên liệu đạt chuẩn Cosmos Organic Châu Âu',
+        issuingAuthority: 'Ecocert Greenlife Pháp',
+        docNumber: 'ECO-FR-2021-998',
+        issueDate: '2021-06-18',
+        docType: 'CHỨNG_CHỈ_QUỐC_TẾ',
+        summaryKeyFindings: 'Chiết xuất Yến Mạch và Bơ Shea đạt chuẩn canh tác hữu cơ không phân bón hóa học và thuốc trừ sâu.'
+      }
+    ],
+    skus: [
+      {
+        id: 'sku-kuti-soothing-det',
+        skuCode: 'SKU-KUTI-SOOTHING-30G',
+        name: 'Kem Bôi Dịu Da Mẩn Ngứa Trẻ Em Kutieskin 30g',
+        volumeOrWeight: '30g tuýp nhỏ gọn',
+        category: 'Baby Skincare',
+        priceVnd: 98000,
+        pdpUrl: 'https://www.tiktok.com/@kutieskin_official/product/182940192',
+        sampleStockCount: 220,
+        scientificMechanism: 'Phức hợp Aminovector gắn kết axit amin với lipid thực vật giúp kháng khuẩn, làm dịu nhanh cơn ngứa rát và tái lập hàng rào bảo vệ màng da non của bé.',
+        keyActiveIngredients: [
+          { name: 'Aminovector từ Pháp', percentage: 'Chuẩn độc quyền', origin: 'Pháp', benefit: 'Kháng viêm sinh học, dứt cơn ngứa sau 24h' },
+          { name: 'Chiết xuất Yến Mạch & Bơ Shea', percentage: 'Hữu cơ Cosmos', origin: 'Châu Âu', benefit: 'Cấp ẩm phục hồi, mềm mịn vết nẻ và chàm sữa' },
+          { name: 'Nano Bạc & Tinh chất Nghệ trắng', percentage: 'Dược liệu sạch', origin: 'Việt Nam', benefit: 'Kháng khuẩn tự nhiên, ngừa thâm sẹo' }
+        ],
+        uniqueSellingPoints: [
+          'Làm dịu ngứa, mẩn đỏ, hăm tã sau 24h sử dụng',
+          '100% không chứa Corticoid, không Paraben, an toàn từ 5 ngày tuổi',
+          'Công nghệ kháng viêm thảo dược Aminovector nhập khẩu từ Pháp',
+          'Chất kem mỏng nhẹ thẩm thấu nhanh, không gây bết dính quần áo bé'
+        ],
+        clinicalTrials: 'Viện Kiểm Nghiệm Thuốc Trung Ương chứng nhận: Không chứa chất gây hại, kiểm nghiệm an toàn trên 500 trẻ sơ sinh.',
+        usageInstructions: 'Vệ sinh sạch vùng da tổn thương, lau khô nhẹ bằng khăn mềm rồi thoa một lớp kem mỏng 2-3 lần/ngày.',
+        targetSkinOrUser: 'Trẻ sơ sinh và trẻ nhỏ bị mẩn ngứa, hăm tã, côn trùng cắn, chàm sữa hoặc da khô nứt nẻ.',
+        contraindications: 'Không thoa trực tiếp lên vết thương hở đang chảy máu hoặc mưng mủ sâu.'
+      }
+    ],
+    blacklistKeywords: [
+      {
+        id: 'bl-kuti-01',
+        keyword: 'Chữa khỏi chàm sữa 100%',
+        category: 'LEGAL_MEDICAL',
+        severity: 'CRITICAL_BANNED',
+        rationale: 'Chàm sữa là viêm da cơ địa mạn tính, không được dùng từ chữa khỏi 100%.',
+        alternativeSuggestion: 'Làm dịu nhanh mẩn ngứa, dưỡng ẩm phục hồi và củng cố hàng rào bảo vệ da bé'
+      },
+      {
+        id: 'bl-kuti-02',
+        keyword: 'Chứa Corticoid khỏi ngay sau 1 đêm',
+        category: 'LEGAL_MEDICAL',
+        severity: 'CRITICAL_BANNED',
+        rationale: 'Kutieskin là thảo dược hữu cơ không chứa Corticoid, cấm liên hệ sai lệch.',
+        alternativeSuggestion: 'Kháng viêm thảo dược tự nhiên Aminovector nhập khẩu từ Pháp, an toàn lành tính'
+      }
+    ],
+    whitelistKeywords: [
+      {
+        id: 'wl-kuti-01',
+        phrase: 'Thảo dược Aminovector từ Pháp an toàn cho trẻ từ 5 ngày tuổi',
+        category: 'TRUST_BUILDER',
+        exampleUsage: 'Mẹ hoàn toàn an tâm vì Kutieskin dùng công nghệ Aminovector nhập khẩu từ Pháp, an toàn cho bé từ 5 ngày tuổi.',
+        benefitNotes: 'Bảo chứng chất lượng an toàn cao nhất cho trẻ sơ sinh'
+      },
+      {
+        id: 'wl-kuti-02',
+        phrase: 'Làm dịu mẩn ngứa hăm tã sau 24h không bết dính',
+        category: 'USP_CLAIM',
+        exampleUsage: 'Bé bị muỗi đốt hay mẩn ngứa thoa lớp mỏng là êm dịu ngay sau 24h, chất kem thấm nhanh không bết dính.',
+        benefitNotes: 'Khẳng định tốc độ hiệu quả thực tế'
+      }
+    ],
+    objectionFaqs: [
+      {
+        id: 'faq-kuti-01',
+        question: 'Kutieskin có chứa Corticoid để làm dịu ngứa nhanh không?',
+        targetConcern: 'KÍCH_ỨNG_MẨN_ĐỎ',
+        recommendedAnswerForKoc: 'Dạ hoàn toàn KHÔNG chứa Corticoid ạ! Kutieskin đã được Viện Kiểm Nghiệm Quốc Gia chứng nhận 100% không Corticoid, không Paraben. Tác dụng làm dịu nhanh là nhờ công nghệ kháng viêm sinh học Aminovector từ Pháp kết hợp Nano bạc và Yến mạch hữu cơ, tuyệt đối an toàn cho làn da mỏng manh của trẻ sơ sinh.',
+        doMentionPoints: ['Không chứa Corticoid', 'Chứng nhận Viện Kiểm Nghiệm', 'Công nghệ Aminovector Pháp'],
+        dontSayWords: ['Thuốc trị', 'Tác dụng phụ']
+      }
+    ],
+    crisisProtocols: [
+      {
+        stepNumber: 1,
+        actionTitle: 'Tiếp nhận thông tin mẹ bỉm & Bác sĩ nhi tư vấn',
+        guidelineDescription: 'Bác sĩ nhi khoa của nhãn hàng liên hệ trực tiếp mẹ để kiểm tra hình ảnh da bé, tư vấn phác đồ chăm sóc phù hợp hoàn toàn miễn phí.',
+        contactPic: 'Dr. Thùy Trang (CVI Medical Team)',
+        slaResponseMinutes: 45
+      }
+    ],
+    lastUpdated: '2026-09-25',
+    updatedBy: 'Quỳnh Như (Content Lead)',
+    publicShareSlug: 'kutieskin-vietnam-official',
+    shareAccessPin: 'KUTI2026'
+  },
+  {
+    id: 'kb-naturesway',
+    brandName: "Nature's Way",
+    slogan: 'Vitamin Số 1 Nước Úc — Đồng Hành Cùng Con Khôn Lớn',
+    brandStory: 'Ra đời từ năm 1943 tại Úc, Nature\'s Way là thương hiệu thực phẩm bảo vệ sức khỏe và vitamin trẻ em số 1 tại Úc. Sản phẩm nổi danh với dạng kẹo dẻo Kids Smart Vita Gummies thơm ngon tự nhiên giúp bé hào hứng bổ sung vi chất hàng ngày mà không cần ép uổng.',
+    category: 'Thực Phẩm Bảo Vệ Sức Khỏe & Vitamin Trẻ Em',
+    originCountry: 'Úc (Pharmacare Laboratories)',
+    foundedYear: 1943,
+    toneOfVoice: 'Khoa học dinh dưỡng, uy tín chuẩn Úc, bảo chứng sức khỏe gia đình, minh bạch nguồn gốc.',
+    toneTag: 'BÁC_SĨ_CHUYÊN_GIA',
+    targetPersonaSummary: 'Bố mẹ có con từ 2 - 12 tuổi mong muốn bổ sung kẽm, vitamin C, DHA hoặc canxi cho con phát triển toàn diện, trẻ biếng ăn hoặc đề kháng kém.',
+    colors: [
+      { name: 'Nature Green Leaf', hex: '#059669', role: 'PRIMARY' },
+      { name: 'Aussie Sunshine Gold', hex: '#F59E0B', role: 'SECONDARY' },
+      { name: 'Clean White', hex: '#FFFFFF', role: 'BACKGROUND' }
+    ],
+    logoAssetRules: 'Logo chiếc lá xanh đặc trưng kèm dòng chữ Nature\'s Way và huy hiệu cờ Úc góc trên bên phải.',
+    logoDownloadUrls: [
+      { format: 'Logo Nature\'s Way Chiếc Lá (PNG)', url: 'https://cdn.upbase.vn/assets/naturesway/logo-green-leaf.png' }
+    ],
+    visualDoList: [
+      'Bé hào hứng ăn kẹo dẻo gummie thơm ngon tự giác mà không cần bố mẹ ép',
+      'Hộp sản phẩm có tem chống giả tích hợp mã QR truy xuất nguồn gốc',
+      'Gia đình vận động thể thao ngoài trời khỏe khoắn'
+    ],
+    visualDontList: [
+      'CẤM TUYỆT ĐỐI GỌI LÀ "THUỐC" (Nature\'s Way là Thực phẩm bảo vệ sức khỏe)',
+      'Không cam kết "uống vào tăng ngay 5cm chiều cao hoặc 2kg trong 1 tháng"',
+      'Không quay cảnh bắt ép bé uống thuốc'
+    ],
+    certifications: [
+      {
+        id: 'cert-nw-01',
+        docTitle: 'Giấy tiếp nhận bản công bố sản phẩm số 2891/2021/ĐKSP',
+        issuingAuthority: 'Cục An Toàn Thực Phẩm — Bộ Y Tế',
+        docNumber: '2891/2021/ĐKSP',
+        issueDate: '2021-04-05',
+        docType: 'CÔNG_BỐ_ATTP',
+        mandatoryDisclaimerText: 'Thực phẩm này không phải là thuốc và không có tác dụng thay thế thuốc chữa bệnh.',
+        summaryKeyFindings: 'Sản phẩm nhập khẩu chính ngạch từ Úc, bổ sung vitamin C và Kẽm đạt tiêu chuẩn kiểm nghiệm an toàn thực phẩm.'
+      }
+    ],
+    skus: [
+      {
+        id: 'sku-nw-vita-gummies-det',
+        skuCode: 'SKU-NW-GUMMIES-60V',
+        name: 'Kẹo Dẻo Bổ Sung Kẽm & Vitamin C Nature\'s Way Kids Smart 60 viên',
+        volumeOrWeight: '60 viên/lọ',
+        category: 'Supplements (Thực phẩm bảo vệ sức khỏe)',
+        priceVnd: 280000,
+        pdpUrl: 'https://www.tiktok.com/@natureswayvn/product/182940888',
+        sampleStockCount: 95,
+        scientificMechanism: 'Kẽm hữu cơ kết hợp Vitamin C tăng cường hấp thu sinh học, kích hoạt tế bào lympho T củng cố hệ thống miễn dịch tự nhiên của trẻ.',
+        keyActiveIngredients: [
+          { name: 'Kẽm hữu cơ (Zinc)', percentage: '1.5mg', origin: 'Úc', benefit: 'Kích thích vị giác, kích hoạt enzym tiêu hóa' },
+          { name: 'Vitamin C', percentage: '30mg', origin: 'Úc', benefit: 'Tăng cường đề kháng, bảo vệ tế bào khỏi oxy hóa' }
+        ],
+        uniqueSellingPoints: [
+          'Thương hiệu vitamin trẻ em số 1 tại Úc',
+          'Vị dâu cam chua ngọt tự nhiên từ nước ép hoa quả, bé thích thú ăn mỗi ngày',
+          'Kích thích bé ăn ngon miệng tự nhiên, hỗ trợ đề kháng vững vàng',
+          'Nhập khẩu chính ngạch 100%, đầy đủ tem phụ và mã QR chống giả'
+        ],
+        clinicalTrials: 'Nghiên cứu lâm sàng tại Úc chứng minh trẻ bổ sung kẽm và vitamin C giảm 38% số ngày ốm vặt đường hô hấp.',
+        usageInstructions: 'Trẻ từ 2-3 tuổi: Nhai 1 viên/ngày. Trẻ từ 4 tuổi trở lên: Nhai 2 viên/ngày sau bữa ăn.',
+        targetSkinOrUser: 'Trẻ em từ 2 tuổi trở lên hay ốm vặt, biếng ăn, đề kháng kém khi giao mùa hoặc đi học mẫu giáo.',
+        contraindications: 'Không dùng cho trẻ dưới 2 tuổi nếu chưa có hướng dẫn của bác sĩ (ngừa nguy cơ hóc dị vật).'
+      }
+    ],
+    blacklistKeywords: [
+      {
+        id: 'bl-nw-01',
+        keyword: 'Thuốc bổ tăng cân / Thuốc trị biếng ăn',
+        category: 'LEGAL_MEDICAL',
+        severity: 'CRITICAL_BANNED',
+        rationale: 'Vi phạm nghiêm trọng quy chế TPCN. Cấm hoàn toàn dùng từ "Thuốc".',
+        alternativeSuggestion: 'Sản phẩm hỗ trợ bổ sung Kẽm & Vitamin C giúp bé ăn ngon và tăng cường đề kháng'
+      }
+    ],
+    whitelistKeywords: [
+      {
+        id: 'wl-nw-01',
+        phrase: 'Vitamin số 1 nước Úc giúp bé đề kháng vững vàng',
+        category: 'TRUST_BUILDER',
+        exampleUsage: 'Nature\'s Way là thương hiệu vitamin số 1 nước Úc được hàng triệu mẹ bỉm trên thế giới tin dùng.',
+        benefitNotes: 'Khẳng định vị thế thương hiệu toàn cầu'
+      }
+    ],
+    objectionFaqs: [
+      {
+        id: 'faq-nw-01',
+        question: 'Kẹo gummie có chứa đường không, ăn nhiều có bị sâu răng không?',
+        targetConcern: 'HIỆU_QUẢ_CHẬM',
+        recommendedAnswerForKoc: 'Kẹo dẻo Nature\'s Way có vị ngọt dịu nhẹ từ nước trái cây tự nhiên, không chứa đường hóa học độc hại. Tuy nhiên vì là sản phẩm bổ sung vi chất, bố mẹ chỉ nên cho bé nhai đúng liều lượng 1-2 viên mỗi ngày sau bữa ăn và duy trì đánh răng sạch sẽ cho bé nhé!',
+        doMentionPoints: ['Vị ngọt từ trái cây tự nhiên', 'Nhai đúng liều lượng 1-2 viên/ngày'],
+        dontSayWords: ['Ăn thoải mái thay kẹo ngọt', 'Ăn bao nhiêu cũng được']
+      }
+    ],
+    crisisProtocols: [
+      {
+        stepNumber: 1,
+        actionTitle: 'Xác minh tem chống giả & Lô sản xuất',
+        guidelineDescription: 'Hướng dẫn khách cào tem chống giả gửi mã về tổng đài xác thực hàng chính ngạch Pharmacare Úc.',
+        contactPic: 'Hà Thị Thương (Account Lead)',
+        slaResponseMinutes: 30
+      }
+    ],
+    lastUpdated: '2026-09-22',
+    updatedBy: 'Hà Thị Thương (Account Lead)',
+    publicShareSlug: 'naturesway-australia-official',
+    shareAccessPin: 'NW2026'
+  },
+  {
+    id: 'kb-babe',
+    brandName: 'Babe',
+    slogan: 'Dược Mỹ Phẩm Châu Âu — Chuẩn Da Liễu Tây Ban Nha',
+    brandStory: 'Laboratorios BABÉ thành lập năm 1994 tại Valencia Tây Ban Nha bởi các dược sĩ da liễu. Thương hiệu tiên phong phát triển các giải pháp phục hồi da dầu mụn chuyên sâu với công thức tối giản, minh bạch tỷ lệ thành phần và tôn trọng độ pH sinh học của làn da.',
+    category: 'Dược Mỹ Phẩm Kê Đơn (Dermocosmetics)',
+    originCountry: 'Tây Ban Nha (Valencia Laboratories)',
+    foundedYear: 1994,
+    toneOfVoice: 'Khoa học y khoa, kê đơn, phân tích chuyên môn da liễu, tối giản và khách quan.',
+    toneTag: 'BÁC_SĨ_CHUYÊN_GIA',
+    targetPersonaSummary: 'Nam nữ 18-35 tuổi sở hữu làn da dầu mụn, mụn ẩn, mụn viêm nhạy cảm, người đang treatment hoặc tìm kiếm giải pháp kiềm dầu phục hồi chuẩn y khoa.',
+    colors: [
+      { name: 'Babe Amber Orange', hex: '#EA580C', role: 'PRIMARY' },
+      { name: 'Medical Slate Navy', hex: '#0F172A', role: 'SECONDARY' },
+      { name: 'Laboratory Pure White', hex: '#FFFFFF', role: 'BACKGROUND' }
+    ],
+    logoAssetRules: 'Logo chữ Laboratorios BABÉ với dấu gạch ngang tối giản phong cách dược phòng Châu Âu.',
+    logoDownloadUrls: [
+      { format: 'Logo Laboratorios BABÉ (PNG)', url: 'https://cdn.upbase.vn/assets/babe/logo-babe-pharma.png' }
+    ],
+    visualDoList: [
+      'Texture gel rửa mặt trong suốt tạo bọt mịn nhẹ nhàng, độ pH 5.0 chuẩn da liễu',
+      'KOC/Bác sĩ phân tích cơ chế phức hợp Iris kiềm dầu và Salicylic Acid',
+      'Đo độ dầu thừa trước và sau khi sử dụng bằng máy soi da hoặc giấy thấm dầu'
+    ],
+    visualDontList: [
+      'Không dùng từ "hết mụn tức thì sau 1 đêm"',
+      'Không quay cảnh nặn mụn viêm chảy mủ ghê rợn',
+      'Không so sánh dìm hàng SVR hay La Roche-Posay'
+    ],
+    certifications: [
+      {
+        id: 'cert-babe-01',
+        docTitle: 'Chứng nhận đạt tiêu chuẩn thực hành sản xuất mỹ phẩm tốt ISO 22716 CGMP Châu Âu',
+        issuingAuthority: 'Cơ quan Y Tế Tây Ban Nha (AEMPS)',
+        docNumber: 'ES-CGMP-2021-491',
+        issueDate: '2021-02-14',
+        docType: 'CHỨNG_CHỈ_QUỐC_TẾ',
+        summaryKeyFindings: 'Sản xuất trong phòng thí nghiệm y tế vô trùng, kiểm nghiệm da liễu và nhãn khoa an toàn tuyệt đối.'
+      }
+    ],
+    skus: [
+      {
+        id: 'sku-babe-stop-akn-det',
+        skuCode: 'SKU-BABE-STOPAKN-200ML',
+        name: 'Gel Rửa Mặt Giảm Mụn Kiềm Dầu Babe Stop Akn Purifying Cleansing Gel 200ml',
+        volumeOrWeight: '200ml chai vòi nhấn',
+        category: 'Dermocosmetics (Dược mỹ phẩm)',
+        priceVnd: 349000,
+        pdpUrl: 'https://www.tiktok.com/@babe_vietnam/product/182940999',
+        sampleStockCount: 110,
+        scientificMechanism: 'Phức hợp Cytobiol Iris (Chiết xuất hoa diên vĩ + Zinc Sulfate + Vitamin A) ức chế enzym 5-alpha reductase làm giảm tiết bã nhờn, kết hợp Salicylic Acid 0.5% tẩy tế bào chết vi mô.',
+        keyActiveIngredients: [
+          { name: 'Phức hợp Cytobiol Iris 5%', percentage: '5.0%', origin: 'Tây Ban Nha', benefit: 'Kiềm dầu suốt 8h, gom cồi mụn' },
+          { name: 'Salicylic Acid (BHA)', percentage: '0.5%', origin: 'Châu Âu', benefit: 'Thông thoáng lỗ chân lông không gây kích ứng' },
+          { name: 'Zinc PCA', percentage: '0.02%', origin: 'Châu Âu', benefit: 'Kháng viêm mụn, giảm sưng đỏ' }
+        ],
+        uniqueSellingPoints: [
+          'Phức hợp Cytobiol Iris kiểm soát dầu thừa suốt 8 giờ',
+          'Độ pH chuẩn sinh học 5.0 tôn trọng hệ vi sinh vật trên da',
+          'Salicylic Acid 0.5% dịu êm thông thoáng lỗ chân lông không khô rát',
+          'Kiểm nghiệm lâm sàng tại Tây Ban Nha: 91% giảm bã nhờn, 84% giảm mụn'
+        ],
+        clinicalTrials: 'Nghiên cứu lâm sàng trên 40 tình nguyện viên da dầu mụn trong 28 ngày: 91% cảm nhận giảm dầu thừa rõ rệt.',
+        usageInstructions: 'Làm ướt mặt, lấy một lượng gel vừa đủ xoa nhẹ tạo bọt trên tay rồi mát-xa nhẹ nhàng 1 phút, rửa lại với nước ấm.',
+        targetSkinOrUser: 'Da dầu mụn, mụn ẩn, mụn đầu đen, da bóng nhờn lỗ chân lông to.',
+        contraindications: 'Không dùng cho người dị ứng với Salicylates (Aspirin).'
+      }
+    ],
+    blacklistKeywords: [
+      {
+        id: 'bl-babe-01',
+        keyword: 'Trị mụn cấp tốc sau 1 đêm',
+        category: 'LEGAL_MEDICAL',
+        severity: 'CRITICAL_BANNED',
+        rationale: 'Cam kết sai khoa học, dễ dẫn tới khiếu nại khách hàng và vi phạm chính sách kiểm duyệt.',
+        alternativeSuggestion: 'Hỗ trợ gom cồi mụn và giảm sưng viêm sau 48-72 giờ sử dụng đúng phác đồ'
+      }
+    ],
+    whitelistKeywords: [
+      {
+        id: 'wl-babe-01',
+        phrase: 'Phức hợp Cytobiol Iris kiềm dầu suốt 8h chuẩn da liễu Tây Ban Nha',
+        category: 'USP_CLAIM',
+        exampleUsage: 'Em gel rửa mặt Babe này chứa phức hợp Cytobiol Iris độc quyền giúp kiềm dầu khô ráo suốt 8 tiếng.',
+        benefitNotes: 'Khẳng định thành phần ngôi sao độc quyền'
+      }
+    ],
+    objectionFaqs: [
+      {
+        id: 'faq-babe-01',
+        question: 'Dùng gel rửa mặt Babe Stop Akn có làm da bị khô căng hay bong tróc không?',
+        targetConcern: 'KÍCH_ỨNG_MẨN_ĐỎ',
+        recommendedAnswerForKoc: 'Hoàn toàn không bạn nha! Điểm đặc biệt của Babe Stop Akn là độ pH chuẩn 5.0 trùng khớp với màng axit tự nhiên của da. Nồng độ Salicylic Acid chỉ ở mức 0.5% dịu nhẹ kết hợp kẽm PCA nên vừa làm sạch thông thoáng lỗ chân lông vừa giữ lại độ ẩm mềm mịn cho da.',
+        doMentionPoints: ['Độ pH chuẩn sinh học 5.0', 'BHA chỉ 0.5% dịu nhẹ', 'Không chứa cồn'],
+        dontSayWords: ['Hút cạn dầu', 'Lột tẩy']
+      }
+    ],
+    crisisProtocols: [
+      {
+        stepNumber: 1,
+        actionTitle: 'Hỗ trợ thăm khám trực tuyến cùng Bác Sĩ Babe',
+        guidelineDescription: 'Kết nối khách hàng với bác sĩ da liễu đại diện nhãn Babe để soi da và phân tích nguyên nhân mụn.',
+        contactPic: 'Phạm Hà Hoàng Trang (Account Lead)',
+        slaResponseMinutes: 60
+      }
+    ],
+    lastUpdated: '2026-09-24',
+    updatedBy: 'Phạm Hà Hoàng Trang (Account Lead)',
+    publicShareSlug: 'babe-laboratorios-official',
+    shareAccessPin: 'BABE2026'
+  },
+  {
+    id: 'kb-bioessence',
+    brandName: 'Bio-Essence',
+    slogan: 'Kích Hoạt Tế Bào — Trẻ Hóa Làn Da Vàng 24K',
+    brandStory: 'Thương hiệu dược mỹ phẩm hàng đầu Singapore và Châu Á với công nghệ sinh học Bio-Energy Complex độc quyền, giúp tăng cường 28% khả năng hấp thu oxy và dưỡng chất của tế bào da. Tinh túy vàng 24K sinh học nguyên chất 98% mang tới liệu pháp chống lão hóa sang trọng và hiệu quả.',
+    category: 'Mỹ Phẩm Chống Lão Hóa & Dưỡng Sáng (Anti-Aging)',
+    originCountry: 'Singapore (Wipro Consumer Care)',
+    foundedYear: 2001,
+    toneOfVoice: 'Sang trọng, quý phái, khoa học công nghệ cao, nâng niu phụ nữ hiện đại.',
+    toneTag: 'SANG_TRỌNG_CAO_CẤP',
+    targetPersonaSummary: 'Phụ nữ 25-45 tuổi bắt đầu xuất hiện dấu hiệu lão hóa, nếp nhăn li ti, da xỉn màu thiếu sức sống, mong muốn tìm kiếm sản phẩm dưỡng ẩm chuyên sâu và tái tạo độ đàn hồi.',
+    colors: [
+      { name: 'Bio Gold Imperial', hex: '#D97706', role: 'PRIMARY' },
+      { name: 'Royal Onyx Black', hex: '#0B0F19', role: 'SECONDARY' },
+      { name: 'Rose Gold Shimmer', hex: '#FDE68A', role: 'ACCENT' }
+    ],
+    logoAssetRules: 'Logo Bio-Essence ánh kim trên nền tối trang nhã, kiểu chữ thanh lịch.',
+    logoDownloadUrls: [
+      { format: 'Logo Bio-Essence Vàng Gold (PNG)', url: 'https://cdn.upbase.vn/assets/bioessence/logo-gold.png' }
+    ],
+    visualDoList: [
+      'Cận cảnh vảy vàng 24K óng ánh tan chảy khi thoa và thẩm thấu vào gò má',
+      'Độ bóng khỏe mọng nước Glass-Skin của làn da phụ nữ trưởng thành',
+      'Trang phục trang nhã, ánh sáng ấm áp sang trọng'
+    ],
+    visualDontList: [
+      'Không quay cảnh lem luốc hoặc bôi trét cẩu thả',
+      'Không so sánh với vàng giả hay tuyên bố cải lão hoàn đồng vô lý'
+    ],
+    certifications: [
+      {
+        id: 'cert-bio-01',
+        docTitle: 'Giấy tiếp nhận công bố mỹ phẩm nhập khẩu số 119820/19/CBMP-QLD',
+        issuingAuthority: 'Cục Quản Lý Dược — Bộ Y Tế',
+        docNumber: '119820/19/CBMP-QLD',
+        issueDate: '2019-10-08',
+        docType: 'CÔNG_BỐ_MỸ_PHẨM',
+        summaryKeyFindings: 'Sản phẩm tinh chất vàng 24K nhập khẩu chính ngạch từ Singapore, chứng minh khả năng kích thích tổng hợp Collagen.'
+      }
+    ],
+    skus: [
+      {
+        id: 'sku-bio-gold-water-det',
+        skuCode: 'SKU-BIO-GOLD-100ML',
+        name: 'Nước Thần Phục Hồi Chống Lão Hóa Vàng 24K Bio-Gold Rose Gold Water 100ml',
+        volumeOrWeight: '100ml chai thủy tinh sang trọng',
+        category: 'Anti-Aging Essence',
+        priceVnd: 420000,
+        pdpUrl: 'https://www.tiktok.com/@bioessencevn/product/182940777',
+        sampleStockCount: 75,
+        scientificMechanism: 'Vàng 24K sinh học đóng vai trò chất chống oxy hóa cực mạnh, kết hợp năng lượng Bio-Energy Complex kích thích quá trình trao đổi chất tế bào, se khít lỗ chân lông và giữ ẩm đa tầng.',
+        keyActiveIngredients: [
+          { name: 'Vàng 24K sinh học nguyên chất', percentage: '98%', origin: 'Singapore', benefit: 'Chống oxy hóa, tái tạo độ đàn hồi' },
+          { name: 'Bio-Energy Complex', percentage: 'Độc quyền', origin: 'Singapore', benefit: 'Tăng hấp thu oxy cho tế bào lên 28%' },
+          { name: 'Niacinamide & Chiết xuất Hoa Hồng', percentage: 'Tinh khiết', origin: 'Châu Á', benefit: 'Dưỡng da sáng hồng rạng rỡ' }
+        ],
+        uniqueSellingPoints: [
+          'Vảy vàng 24K tan chảy thẩm thấu tức thì vào da',
+          'Công nghệ độc quyền Bio-Energy Complex kích hoạt tế bào',
+          'Tăng cường tái tạo collagen lên 28% sau 14 ngày',
+          'Nuôi dưỡng làn da căng bóng ngậm nước chuẩn Glass-Skin'
+        ],
+        clinicalTrials: 'Thử nghiệm lâm sàng tại Singapore: 93% phụ nữ nhận thấy da săn chắc và mờ nếp nhăn li ti sau 2 tuần.',
+        usageInstructions: 'Sau bước rửa mặt, lấy lượng vừa đủ vỗ nhẹ lên khắp mặt và cổ sáng và tối.',
+        targetSkinOrUser: 'Phụ nữ từ 25 tuổi có dấu hiệu lão hóa, da khô ráp, xỉn màu.',
+        contraindications: 'Người dị ứng với kim loại vàng (rất hiếm gặp).'
+      }
+    ],
+    blacklistKeywords: [
+      {
+        id: 'bl-bio-01',
+        keyword: 'Trẻ hóa 10 tuổi ngay tức thì',
+        category: 'SENSITIVE_POLICY',
+        severity: 'CRITICAL_BANNED',
+        rationale: 'Tuyên bố sai sự thật vi phạm chính sách nền tảng và luật quảng cáo.',
+        alternativeSuggestion: 'Kích hoạt độ đàn hồi tế bào, giúp làn da căng bóng và làm mờ nếp nhăn li ti tự nhiên'
+      }
+    ],
+    whitelistKeywords: [
+      {
+        id: 'wl-bio-01',
+        phrase: 'Vảy vàng 24K sinh học tan chảy nuôi dưỡng làn da căng bóng',
+        category: 'HOOK_WINNER',
+        exampleUsage: 'Nhìn những vảy vàng 24K lấp lánh tan chảy trên da, vừa sang chảnh vừa cấp ẩm sâu cực đã!',
+        benefitNotes: 'Tạo hiệu ứng thị giác sang trọng kích thích mua sắm'
+      }
+    ],
+    objectionFaqs: [
+      {
+        id: 'faq-bio-01',
+        question: 'Vàng trong chai Bio-Gold có phải vàng thật không, bôi lên có bị bít tắc lỗ chân lông không?',
+        targetConcern: 'NGUỒN_GỐC_XUẤT_XỨ',
+        recommendedAnswerForKoc: 'Vàng trong chai Bio-Essence là vàng 24K sinh học tinh khiết 98% chuẩn công nghệ y dược bạn nhé! Nhờ công nghệ Bio-Energy Complex nghiền siêu vi mô nên khi bạn xoa nhẹ là vảy vàng tan chảy thẩm thấu hoàn toàn vào hạ bì, không hề để lại cặn bám gây bít tắc lỗ chân lông.',
+        doMentionPoints: ['Vàng 24K sinh học 98%', 'Tan chảy thẩm thấu hoàn toàn', 'Không gây bít tắc'],
+        dontSayWords: ['Vàng trang sức', 'Kim loại nặng']
+      }
+    ],
+    crisisProtocols: [
+      {
+        stepNumber: 1,
+        actionTitle: 'Xác minh và cam kết đền bù chính hãng 200%',
+        guidelineDescription: 'Cam kết nguồn gốc xuất xứ chính hãng tập đoàn Wipro Singapore với giấy kiểm định Cục Quản Lý Dược.',
+        contactPic: 'Nguyễn Mai Linh (Account Lead)',
+        slaResponseMinutes: 30
+      }
+    ],
+    lastUpdated: '2026-09-23',
+    updatedBy: 'Nguyễn Mai Linh (Account Lead)',
+    publicShareSlug: 'bioessence-singapore-official',
+    shareAccessPin: 'BIO2026'
   }
 ];
 

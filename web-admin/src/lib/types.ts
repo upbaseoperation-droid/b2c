@@ -633,6 +633,109 @@ export interface BrandRetainerHealth {
   statusNotes: string;
 }
 
+// ==========================================
+// BRAND KNOWLEDGE BASE & GUIDELINE SYSTEM TYPES
+// ==========================================
+
+export interface BrandColorToken {
+  name: string; // e.g. "Primary Blue", "Deep Navy", "Silk White"
+  hex: string;  // e.g. "#1e40af"
+  role: 'PRIMARY' | 'SECONDARY' | 'ACCENT' | 'BACKGROUND';
+}
+
+export interface BrandLegalCertification {
+  id: string;
+  docTitle: string; // e.g. "Giấy tiếp nhận bản công bố sản phẩm số 4920/2023/ĐKSP"
+  issuingAuthority: string; // Cục An Toàn Thực Phẩm - Bộ Y Tế, Sở Y Tế TP.HCM
+  docNumber: string;
+  issueDate: string;
+  validUntil?: string;
+  verificationUrl?: string;
+  docType: 'CÔNG_BỐ_MỸ_PHẨM' | 'CÔNG_BỐ_ATTP' | 'XÁC_NHẬN_QUẢNG_CÁO' | 'KIỂM_NGHIỆM_LÂM_SÀNG' | 'CHỨNG_CHỈ_QUỐC_TẾ';
+  mandatoryDisclaimerText?: string; // Câu cảnh báo bắt buộc khi truyền thông
+  summaryKeyFindings: string; // Tóm tắt kết luận lâm sàng / phê duyệt
+}
+
+export interface DetailedHeroSku {
+  id: string;
+  skuCode: string;
+  name: string;
+  volumeOrWeight: string; // e.g. "120g", "500ml", "60 viên"
+  category: string;
+  priceVnd: number;
+  pdpUrl: string;
+  sampleStockCount: number;
+  scientificMechanism: string; // Cơ chế tác động khoa học
+  keyActiveIngredients: {
+    name: string;
+    percentage?: string;
+    origin?: string;
+    benefit: string;
+  }[];
+  uniqueSellingPoints: string[]; // 3-5 USPs độc quyền
+  clinicalTrials: string; // Số liệu lâm sàng chứng minh
+  usageInstructions: string; // Cách dùng & liều lượng
+  targetSkinOrUser: string; // Chỉ định (Ai nên dùng)
+  contraindications: string; // Chống chỉ định (Ai không được dùng)
+}
+
+export interface WhitelistKeyword {
+  id: string;
+  phrase: string;
+  category: 'HOOK_WINNER' | 'USP_CLAIM' | 'TRUST_BUILDER' | 'CONVERSION_TRIGGER';
+  exampleUsage: string;
+  benefitNotes: string;
+}
+
+export interface ObjectionFaqItem {
+  id: string;
+  question: string; // Câu hỏi thắc mắc / vặn vẹo từ người xem
+  targetConcern: 'GIÁ_CẢ' | 'HIỆU_QUẢ_CHẬM' | 'KÍCH_ỨNG_MẨN_ĐỎ' | 'NGUỒN_GỐC_XUẤT_XỨ' | 'SO_SÁNH_ĐỐI_THỦ';
+  recommendedAnswerForKoc: string; // Câu trả lời mẫu chuẩn đã được Brand duyệt
+  doMentionPoints: string[]; // Những điểm KOC NÊN nhấn mạnh
+  dontSayWords: string[]; // Những từ KOC TUYỆT ĐỐI KHÔNG được lỡ miệng nói
+}
+
+export interface CrisisProtocol {
+  stepNumber: number;
+  actionTitle: string;
+  guidelineDescription: string;
+  contactPic: string;
+  slaResponseMinutes: number;
+}
+
+export interface BrandKnowledgeBase {
+  id: string;
+  brandName: string;
+  slogan: string;
+  brandStory: string;
+  category: string;
+  originCountry: string; // Nhật Bản, Úc, Tây Ban Nha, Việt Nam
+  foundedYear: number;
+  toneOfVoice: string;
+  toneTag: 'BÁC_SĨ_CHUYÊN_GIA' | 'MẸ_BỈM_CHÂN_THỰC' | 'GEN_Z_TRENDING' | 'SANG_TRỌNG_CAO_CẤP';
+  targetPersonaSummary: string;
+  colors: BrandColorToken[];
+  logoAssetRules: string;
+  logoDownloadUrls: {
+    format: string; // "PNG High-Res (Trong suốt)", "SVG Vector", "Logo Âm Bản Trắng"
+    url: string;
+  }[];
+  visualDoList: string[];
+  visualDontList: string[];
+  certifications: BrandLegalCertification[];
+  skus: DetailedHeroSku[];
+  blacklistKeywords: BlacklistKeyword[];
+  whitelistKeywords: WhitelistKeyword[];
+  objectionFaqs: ObjectionFaqItem[];
+  crisisProtocols: CrisisProtocol[];
+  lastUpdated: string;
+  updatedBy: string;
+  publicShareSlug: string; // e.g. "senka-japan-official"
+  shareAccessPin?: string; // Mã PIN xem tài liệu (nếu có)
+}
+
+
 export interface ScriptReviewItem {
   id: string;
   dealCode: string;

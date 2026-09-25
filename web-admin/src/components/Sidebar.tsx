@@ -13,7 +13,8 @@ import {
   Award,
   ShieldCheck,
   Package,
-  Coins
+  Coins,
+  BookOpen
 } from 'lucide-react';
 import { UserProfile } from '../lib/types';
 
@@ -22,6 +23,7 @@ export type TabKey =
   | 'overview'
   | 'stores'
   | 'campaigns'
+  | 'brand-knowledge'
   | 'content'
   | 'booking'
   | 'contracts'
@@ -96,6 +98,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
           icon: Layers,
           badge: currentUser.role === 'BRAND_MEMBER' ? 'Của Tôi' : undefined,
           badgeType: 'team'
+        },
+        {
+          key: 'brand-knowledge',
+          label: 'Bách Khoa Brand Guideline',
+          icon: BookOpen,
         },
         {
           key: 'stores',

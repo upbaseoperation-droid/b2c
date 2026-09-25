@@ -11,6 +11,7 @@ import { CockpitView } from '../components/views/CockpitView';
 import { OverviewView } from '../components/views/OverviewView';
 import { StoresView } from '../components/views/StoresView';
 import { BrandView } from '../components/views/BrandView';
+import { BrandKnowledgeView } from '../components/views/BrandKnowledgeView';
 import { ContentView } from '../components/views/ContentView';
 import { BookingView } from '../components/views/BookingView';
 import { ContractView } from '../components/views/ContractView';
@@ -400,6 +401,10 @@ export default function App() {
       title: 'Không Gian Chiến Lược & Vận Hành Nhãn Hàng (Brand Team Workspace)',
       subtitle: 'Soạn thảo & bàn giao brief SLA 24h, Brand Guideline & Blacklist từ khóa, Cổng thẩm định KOC và Sức khỏe Retainer P&L'
     },
+    'brand-knowledge': {
+      title: 'Bách Khoa Toàn Thư Brand Guideline (Brand Knowledge Base)',
+      subtitle: 'Trung tâm tri thức chuẩn hóa: Brand DNA, Hồ sơ pháp lý & bằng chứng lâm sàng, Hero SKUs, Blacklist/Whitelist & FAQ phản biện KOC'
+    },
     content: {
       title: 'Kịch Bản & Content',
       subtitle: ''
@@ -507,6 +512,10 @@ export default function App() {
               onCampaignCreatedNotification={handleCampaignCreatedNotification}
               onTriggerHandoffNotification={handleTriggerHandoffNotification}
             />
+          )}
+
+          {activeTab === 'brand-knowledge' && (
+            <BrandKnowledgeView />
           )}
 
           {activeTab === 'content' && (
