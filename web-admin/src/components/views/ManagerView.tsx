@@ -88,6 +88,7 @@ import {
 } from 'lucide-react';
 import { GrowthPlanBreakdownView } from './GrowthPlanBreakdownView';
 import { EmployeePlanInspectorModal } from '../EmployeePlanInspectorModal';
+import { AiStaffReviewModal } from '../AiStaffReviewModal';
 
 interface ManagerViewProps {
   deals: BookingDealItem[];
@@ -129,6 +130,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
   const [pingSuccessStaff, setPingSuccessStaff] = useState<string | null>(null);
   const [inspectStaffModal, setInspectStaffModal] = useState<StaffSlaReportItem | null>(null);
   const [breachActionModal, setBreachActionModal] = useState<SlaBreachItem | null>(null);
+  const [aiReviewTargetStaff, setAiReviewTargetStaff] = useState<string | null>(null);
 
   const handlePingStaff = (staffName: string, message: string) => {
     if (onPingStaffNotification) {
@@ -599,29 +601,40 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
           </button>
         </div>
 
-        {/* Month Selector */}
-        <div className="flex items-center gap-1 bg-white p-1 rounded-md border border-slate-200 shrink-0 text-xs self-end lg:self-auto overflow-x-auto max-w-full shadow-2xs">
-          {masterPlans.map(plan => (
-            <button
-              key={plan.month}
-              onClick={() => setSelectedMonth(plan.month)}
-              className={`px-3 py-1.5 rounded-md font-semibold transition text-xs flex items-center gap-1.5 whitespace-nowrap ${
-                selectedMonth === plan.month 
-                  ? 'bg-blue-600 text-white shadow-sm' 
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-              }`}
-            >
-              <Calendar className="w-3 h-3" />
-              <span>{plan.monthLabel}</span>
-              <span className={`text-[10px] px-1.5 py-0.2 rounded font-medium ${
-                plan.status === 'COMPLETED' ? 'bg-slate-100 text-slate-600 border border-slate-200' :
-                plan.status === 'ACTIVE' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
-                'bg-amber-50 text-amber-700 border border-amber-200'
-              }`}>
-                {plan.status === 'COMPLETED' ? 'Đã chốt' : plan.status === 'ACTIVE' ? 'Đang chạy' : 'Dự thảo'}
-              </span>
-            </button>
-          ))}
+        {/* Month Selector & AI Button */}
+        <div className="flex items-center gap-2 self-end lg:self-auto shrink-0 overflow-x-auto">
+          <button
+            onClick={() => setAiReviewTargetStaff('Khánh Vy')}
+            className="px-3 py-1.5 rounded-md font-bold text-xs bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-sm flex items-center gap-1.5 transition shrink-0"
+            title="Khởi chạy Trợ lý AI nhận xét tiến độ &amp; báo cáo nhân viên qua API"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-purple-200 animate-pulse" />
+            <span>AI Nhận Xét Nhân Viên</span>
+          </button>
+
+          <div className="flex items-center gap-1 bg-white p-1 rounded-md border border-slate-200 shrink-0 text-xs shadow-2xs">
+            {masterPlans.map(plan => (
+              <button
+                key={plan.month}
+                onClick={() => setSelectedMonth(plan.month)}
+                className={`px-3 py-1.5 rounded-md font-semibold transition text-xs flex items-center gap-1.5 whitespace-nowrap ${
+                  selectedMonth === plan.month 
+                    ? 'bg-blue-600 text-white shadow-sm' 
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                }`}
+              >
+                <Calendar className="w-3 h-3" />
+                <span>{plan.monthLabel}</span>
+                <span className={`text-[10px] px-1.5 py-0.2 rounded font-medium ${
+                  plan.status === 'COMPLETED' ? 'bg-slate-100 text-slate-600 border border-slate-200' :
+                  plan.status === 'ACTIVE' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                  'bg-amber-50 text-amber-700 border border-amber-200'
+                }`}>
+                  {plan.status === 'COMPLETED' ? 'Đã chốt' : plan.status === 'ACTIVE' ? 'Đang chạy' : 'Dự thảo'}
+                </span>
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -1901,20 +1914,30 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                         </span>
                       </td>
                       <td className="p-3 pr-6 text-right">
-                        <button
-                          onClick={() => handlePing(staff.id, staff.staffName, 'Đốc thúc trả link video TikTok lên sóng')}
-                          disabled={pingedStaff[staff.id]}
-                          className={`px-2.5 py-1 rounded-lg font-bold text-xs flex items-center gap-1 ml-auto transition ${
-                            pingedStaff[staff.id]
-                              ? 'bg-slate-800 text-slate-500'
-                              : (staff.isLagging || staff.airProgress < 50)
-                              ? 'bg-rose-600 hover:bg-rose-500 text-white shadow-sm'
-                              : 'bg-blue-600 hover:bg-blue-500 text-white shadow-sm'
-                          }`}
-                        >
-                          <BellRing className="w-3 h-3" />
-                          <span>{pingedStaff[staff.id] ? 'Đã Nhắc' : 'Đốc Thúc'}</span>
-                        </button>
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            onClick={() => setAiReviewTargetStaff(staff.staffName)}
+                            className="px-2 py-1 rounded bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 font-semibold text-[11px] transition flex items-center gap-1 shadow-2xs"
+                            title={`Khởi chạy AI nhận xét tiến độ của ${staff.staffName}`}
+                          >
+                            <Sparkles className="w-3 h-3 text-purple-600 animate-pulse" />
+                            <span>AI Review</span>
+                          </button>
+                          <button
+                            onClick={() => handlePing(staff.id, staff.staffName, 'Đốc thúc trả link video TikTok lên sóng')}
+                            disabled={pingedStaff[staff.id]}
+                            className={`px-2.5 py-1 rounded-lg font-bold text-xs flex items-center gap-1 transition ${
+                              pingedStaff[staff.id]
+                                ? 'bg-slate-800 text-slate-500'
+                                : (staff.isLagging || staff.airProgress < 50)
+                                ? 'bg-rose-600 hover:bg-rose-500 text-white shadow-sm'
+                                : 'bg-blue-600 hover:bg-blue-500 text-white shadow-sm'
+                            }`}
+                          >
+                            <BellRing className="w-3 h-3" />
+                            <span>{pingedStaff[staff.id] ? 'Đã Nhắc' : 'Đốc Thúc'}</span>
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -3489,6 +3512,16 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* AI Staff Review Modal (API Powered) */}
+      {aiReviewTargetStaff && (
+        <AiStaffReviewModal
+          isOpen={Boolean(aiReviewTargetStaff)}
+          onClose={() => setAiReviewTargetStaff(null)}
+          initialStaffName={aiReviewTargetStaff === 'ALL' ? undefined : aiReviewTargetStaff}
+          onPingStaffNotification={handlePingStaff}
+        />
       )}
 
     </div>

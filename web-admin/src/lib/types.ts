@@ -1342,5 +1342,68 @@ export interface StaffPlanOverview {
   managerFeedback?: string;
 }
 
+// ==========================================
+// AI EMPLOYEE PROGRESS & PERFORMANCE REVIEW TYPES
+// ==========================================
+export type AiReviewType = 
+  | 'COMPREHENSIVE' 
+  | 'PROGRESS_PACING' 
+  | 'SLA_QUALITY' 
+  | 'P3_WORKLOAD' 
+  | 'COACHING_ONE_ON_ONE';
 
+export interface AiEmployeeReviewRequest {
+  staffName: string;
+  role: string;
+  team?: string;
+  month?: string;
+  reviewType: AiReviewType;
+  allocationData?: {
+    totalPlannedVideos: number;
+    targetVideos: number;
+    totalPlannedBudget: number;
+    targetBudget: number;
+    totalPlannedGmv: number;
+    targetGmv: number;
+    fillRateVideos: number;
+    fillRateBudget: number;
+    assignedBrands?: string[];
+  };
+  slaData?: {
+    onTimeRate: number;
+    totalJobs: number;
+    breachedJobs: number;
+    penaltyPoints: number;
+    currentScore: number;
+    rating: string;
+    violationsCount: number;
+  };
+  workloadP3Data?: {
+    completedCases: number;
+    storeMultiplier: number;
+    qualityMultiplier: number;
+    slaMultiplier: number;
+    calculatedWorkloadPoints: number;
+    estimatedBonusVnd: number;
+  };
+  recentDealOrPlanContext?: string;
+  apiKey?: string;
+  apiProvider?: 'GEMINI' | 'OPENAI' | 'AUTO';
+  customPrompt?: string;
+}
 
+export interface AiEmployeeReviewResponse {
+  staffName: string;
+  overallGrade: 'Xuất sắc' | 'Đạt chuẩn' | 'Cần cải thiện' | 'Cảnh báo vi phạm';
+  performanceScore: number; // 0 - 100
+  pacingStatus: 'ON_TRACK' | 'AHEAD' | 'BEHIND' | 'CRITICAL_DELAY';
+  executiveSummary: string;
+  strengths: string[];
+  bottlenecksAndRisks: string[];
+  burnoutOrCapacityAlert?: string;
+  actionableCoaching: string[];
+  suggestedManagerNote: string;
+  suggestedLarkPingMessage: string;
+  evaluatedAt: string;
+  providerUsed: string;
+}

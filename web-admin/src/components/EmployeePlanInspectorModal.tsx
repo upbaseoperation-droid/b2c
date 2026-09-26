@@ -33,6 +33,7 @@ import {
   StaffPlanStatus,
   UserProfile
 } from '../lib/types';
+import { AiStaffReviewModal } from './AiStaffReviewModal';
 
 interface EmployeePlanInspectorModalProps {
   isOpen: boolean;
@@ -66,6 +67,7 @@ export const EmployeePlanInspectorModal: React.FC<EmployeePlanInspectorModalProp
   const [managerFeedback, setManagerFeedback] = useState(staffAllocation.managerNote || '');
   const [editingItem, setEditingItem] = useState<StaffDetailedPlanItem | null>(null);
   const [editNotes, setEditNotes] = useState('');
+  const [isAiReviewOpen, setIsAiReviewOpen] = useState(false);
 
   // Calculations
   const staffItems = planItems.filter(item => item.staffName === staffAllocation.staffName);
@@ -551,10 +553,23 @@ export const EmployeePlanInspectorModal: React.FC<EmployeePlanInspectorModalProp
 
           {/* Feedback & Decision Box */}
           <div className="p-4 rounded-md bg-slate-50 border border-slate-200 space-y-3">
-            <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
-              <MessageSquare className="w-3.5 h-3.5 text-blue-500" />
-              Chỉ Đạo & Nhận Xét Của Trưởng Phòng:
-            </h4>
+            <div className="flex items-center justify-between">
+              <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                <MessageSquare className="w-3.5 h-3.5 text-blue-500" />
+                Chỉ Đạo &amp; Nhận Xét Của Trưởng Phòng:
+              </h4>
+              {isManager && (
+                <button
+                  type="button"
+                  onClick={() => setIsAiReviewOpen(true)}
+                  className="px-2.5 py-1 rounded bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 font-semibold text-xs transition flex items-center gap-1.5 shadow-2xs"
+                  title="Nhận xét tiến độ bằng AI API và tự động gợi ý lời phê chuẩn mực"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-purple-600 animate-pulse" />
+                  <span>AI Đánh Giá &amp; Gợi Ý Lời Phê</span>
+                </button>
+              )}
+            </div>
             <textarea
               rows={2}
               value={managerFeedback}
@@ -612,6 +627,16 @@ export const EmployeePlanInspectorModal: React.FC<EmployeePlanInspectorModalProp
         </div>
 
       </div>
+
+      {/* AI Staff Reviewer Modal */}
+      {isAiReviewOpen && (
+        <AiStaffReviewModal
+          isOpen={isAiReviewOpen}
+          onClose={() => setIsAiReviewOpen(false)}
+          initialStaffName={staffAllocation.staffName}
+          onApplyManagerNote={(note) => setManagerFeedback(note)}
+        />
+      )}
     </div>
   );
 };

@@ -52,8 +52,10 @@ e:\Upbase\B2C\
 │   │   └── seed.ts                                 # Script nạp dữ liệu mẫu & KOCs
 │   ├── src\
 │   │   ├── app\                                    # Next.js App Router (Dashboard, Layout, Styles)
+│   │   │   └── api\ai\employee-review\route.ts     # Next.js Route Handler: AI API nhận xét tiến độ, báo cáo nhân sự, tuân thủ SLA & P3 (Gemini/OpenAI & Domain Engine)
 │   │   ├── components\                             # UI Components chuyên sâu:
-│   │   │   ├── EmployeePlanInspectorModal.tsx  # Soi & Thẩm Định Kế Hoạch Chi Tiết Nhân Viên dành cho Trưởng phòng (Đối soát 4 Tier, phê duyệt & batch tạo deal)
+│   │   │   ├── AiStaffReviewModal.tsx              # Trợ lý AI nhận xét tiến độ & báo cáo nhân viên (Gọi API, gợi ý lời phê Trưởng phòng & bắn Lark Bot)
+│   │   │   ├── EmployeePlanInspectorModal.tsx  # Soi & Thẩm Định Kế Hoạch Chi Tiết Nhân Viên dành cho Trưởng phòng (Tích hợp gợi ý lời phê AI)
 │   │   │   ├── MyPlanWorkspace.tsx             # Bàn làm việc Kế Hoạch Cá Nhân của chuyên viên (Phân rã W1-W4, lên slot KOC, trình Lead, kích hoạt deal)
 │   │   │   ├── KocProfileModal.tsx                 # Hồ sơ 360° KOC (Chuẩn 4 trường phân loại: KL, Segment, Tệp Kênh, KOC category; Demographics, Logistics & Pháp lý)
 │   │   │   ├── CreateKocModal.tsx                  # Tạo KOC mới chuẩn 4 trường (Tự động tính khung lương 9 bậc, phân nhóm Segment tự động theo rate)

@@ -18,12 +18,14 @@ import {
 } from 'lucide-react';
 import { StaffP3Record, StoreDifficultyConfig } from '@/lib/types';
 import { MOCK_P3_STAFF_RECORDS, MOCK_STORE_DIFFICULTIES } from '@/lib/mockData';
+import { AiStaffReviewModal } from '../AiStaffReviewModal';
 
 export default function PerformanceP3View() {
   const [activeTab, setActiveTab] = useState<'CALC' | 'STORE_MATRIX'>('CALC');
   const [staffRecords, setStaffRecords] = useState<StaffP3Record[]>(MOCK_P3_STAFF_RECORDS);
   const [storeConfigs, setStoreConfigs] = useState<StoreDifficultyConfig[]>(MOCK_STORE_DIFFICULTIES);
   const [selectedRole, setSelectedRole] = useState<string>('ALL');
+  const [aiReviewStaff, setAiReviewStaff] = useState<string | null>(null);
 
   // KPI summaries
   const totalBonusFund = staffRecords.reduce((sum, r) => sum + r.estimatedBonusVnd, 0);
@@ -262,16 +264,26 @@ export default function PerformanceP3View() {
 
                       {/* Actions */}
                       <td className="py-3 px-3 text-right">
-                        {item.approvalStatus === 'CHỜ_DUYỆT' ? (
+                        <div className="flex items-center justify-end gap-1.5">
                           <button
-                            onClick={() => handleApprove(item.id)}
-                            className="px-2.5 py-1 text-[11px] font-medium bg-slate-900 hover:bg-slate-800 text-white rounded transition shadow-sm"
+                            onClick={() => setAiReviewStaff(item.staffName)}
+                            className="px-2 py-1 text-[11px] font-semibold bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 rounded transition flex items-center gap-1 shadow-2xs"
+                            title="AI Nhận xét hiệu suất &amp; đề xuất thưởng P3"
                           >
-                            Duyệt Thưởng
+                            <Sparkles className="w-3 h-3 text-purple-600 animate-pulse" />
+                            <span>AI Review</span>
                           </button>
-                        ) : (
-                          <span className="text-[11px] text-slate-400 italic">Đã chốt</span>
-                        )}
+                          {item.approvalStatus === 'CHỜ_DUYỆT' ? (
+                            <button
+                              onClick={() => handleApprove(item.id)}
+                              className="px-2.5 py-1 text-[11px] font-medium bg-slate-900 hover:bg-slate-800 text-white rounded transition shadow-sm"
+                            >
+                              Duyệt Thưởng
+                            </button>
+                          ) : (
+                            <span className="text-[11px] text-slate-400 italic">Đã chốt</span>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -358,6 +370,15 @@ export default function PerformanceP3View() {
             </table>
           </div>
         </div>
+      )}
+
+      {/* AI Staff Performance Review Modal */}
+      {aiReviewStaff && (
+        <AiStaffReviewModal
+          isOpen={Boolean(aiReviewStaff)}
+          onClose={() => setAiReviewStaff(null)}
+          initialStaffName={aiReviewStaff}
+        />
       )}
     </div>
   );
