@@ -735,6 +735,48 @@ export interface BrandKnowledgeBase {
   shareAccessPin?: string; // Mã PIN xem tài liệu (nếu có)
 }
 
+// ==========================================
+// AI SCRIPT COMPLIANCE & ANALYSIS TYPES
+// ==========================================
+
+export interface AiAnalysisDimension {
+  name: string;
+  score: number;
+  maxScore: number;
+  status: 'EXCELLENT' | 'GOOD' | 'WARNING' | 'CRITICAL';
+  feedback: string;
+}
+
+export interface AiDetectedIssue {
+  id: string;
+  type: 'BLACKLIST_WORD' | 'MISSING_DISCLAIMER' | 'WEAK_HOOK' | 'TONE_MISMATCH' | 'MISSING_USP';
+  title: string;
+  detectedText?: string;
+  severity: 'CRITICAL' | 'WARNING' | 'SUGGESTION';
+  rationale: string;
+  replacementSuggestion?: string;
+}
+
+export interface AiScriptAnalysisResult {
+  overallScore: number; // 0 - 100
+  complianceStatus: 'PASS' | 'WARNING' | 'FAIL';
+  summaryVerdict: string;
+  dimensions: AiAnalysisDimension[];
+  issues: AiDetectedIssue[];
+  matchedUspsCount: number;
+  totalUspsCount: number;
+  toneAlignmentScore: number; // %
+  hasMandatoryDisclaimer: boolean;
+  rewrittenScript: {
+    hook: string;
+    painPoint: string;
+    solutionAndUsp: string;
+    callToAction: string;
+    fullText: string;
+  };
+}
+
+
 
 export interface ScriptReviewItem {
   id: string;

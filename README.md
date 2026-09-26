@@ -67,12 +67,12 @@ e:\Upbase\B2C\
 │   │   │       ├── GrowthPlanBreakdownView.tsx     # Lập Plan 3 kênh (KOC KL1-KL7, Self-Channel, Livestream), Đối soát 4 chặng & NMV Gap, Validation Gate, Xuất Excel 4.1 & Tải Mẫu 4.1.1
 │   │   │       ├── SampleTrackerView.tsx           # Giám sát vận đơn mẫu & Chống bùng KOC theo MeUp Playbook, SLA 5 ngày, Zalo direct & Spark Ads
 │   │   │       ├── PerformanceP3View.tsx           # Đánh giá 4P & Tính thưởng P3 tự động theo ma trận độ khó Store (x1.0 - x1.6)
-│   │   │       ├── BrandView.tsx                   # Không gian Chiến Lược & Vận Hành Brand Team: Studio Soạn Brief SLA 24h, Guideline & Blacklist Hub, Cổng Thẩm Định KOC & Script Gatekeeper, Retainer P&L
-│   │   │       ├── BrandKnowledgeView.tsx          # Bách khoa toàn thư Brand Guideline: Brand DNA, Pháp lý & Bằng chứng lâm sàng, Hero SKUs, Blacklist/Whitelist, Crisis FAQ & Sinh link KOC
+│   │   │       ├── BrandView.tsx                   # Không gian Chiến Lược & Vận Hành Brand Team: Studio Soạn Brief SLA 24h, Guideline & Blacklist Hub, Cổng Thẩm Định KOC & Script Gatekeeper (Tích hợp AI Thẩm Định Nhanh), Retainer P&L
+│   │   │       ├── BrandKnowledgeView.tsx          # Bách khoa toàn thư Brand Guideline: Brand DNA, Pháp lý & Lâm sàng, Hero SKUs, Blacklist/Whitelist, Crisis FAQ, KOC Share Portal & AI Script Inspector (Thẩm định kịch bản 5 chiều)
 │   │   │       ├── BrandHubView.tsx                # Cổng duyệt 4 chặng cho Brand Client
 │   │   │       ├── BookingView.tsx                 # Phân hệ Quản lý Booking (Tích hợp Tab 0: Bàn làm việc Kế hoạch cá nhân My Plan)
 │   │   │       └── ManagerView.tsx                 # Cụm Quản trị Kế hoạch: Ma trận phân bổ đa chiều (4 Tier, Brand, Tuần W1-W4), Đối soát 3 tầng & Soi plan nhân sự
-│   │   └── lib\                                    # Prisma Client, Supabase Client, excelExport.ts, Types & Data
+│   │   └── lib\                                    # Prisma Client, Supabase Client, aiScriptAnalyzer.ts (Động cơ AI đối soát kịch bản), excelExport.ts, Types & MockData
 │   ├── vercel.json                                 # Cấu hình sẵn sàng triển khai Vercel 1-click
 │   └── .env.example                                # Cấu hình biến môi trường Supabase & Vercel
 │

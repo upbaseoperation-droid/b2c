@@ -34,7 +34,13 @@ import {
   Globe,
   SlidersHorizontal,
   BookmarkCheck,
-  CheckSquare
+  CheckSquare,
+  RotateCcw,
+  RefreshCw,
+  ArrowRight,
+  Wand2,
+  Lightbulb,
+  CheckCheck
 } from 'lucide-react';
 import {
   BrandKnowledgeBase,
@@ -43,11 +49,13 @@ import {
   ObjectionFaqItem,
   BlacklistKeyword,
   WhitelistKeyword,
-  CrisisProtocol
+  CrisisProtocol,
+  AiScriptAnalysisResult
 } from '../../lib/types';
 import { INITIAL_BRAND_KNOWLEDGE_BASES } from '../../lib/mockData';
+import { analyzeScriptWithAi } from '../../lib/aiScriptAnalyzer';
 
-type KnowledgeTabKey = 'SKUS' | 'LEGAL' | 'KEYWORDS' | 'OBJECTIONS' | 'VISUAL_IDENTITY';
+type KnowledgeTabKey = 'SKUS' | 'LEGAL' | 'KEYWORDS' | 'OBJECTIONS' | 'VISUAL_IDENTITY' | 'AI_INSPECTOR';
 
 export const BrandKnowledgeView: React.FC = () => {
   const [knowledgeBases, setKnowledgeBases] = useState<BrandKnowledgeBase[]>(INITIAL_BRAND_KNOWLEDGE_BASES);
@@ -74,8 +82,56 @@ export const BrandKnowledgeView: React.FC = () => {
   const [newFaqDoPoints, setNewFaqDoPoints] = useState('');
   const [newFaqDontWords, setNewFaqDontWords] = useState('');
 
+  // AI Inspector States
+  const [inputScriptText, setInputScriptText] = useState<string>(
+    `Review sữa rửa mặt Senka Perfect Whip cho các bạn da dầu mụn đây!\nEm này rửa xong đảm bảo trị dứt điểm mụn và sạch thâm 100%, tốt hơn Biore hay Hada Labo nhiều.\nBọt tơ tằm trắng Mayu Haku siêu xốp giúp làm sạch sâu bụi bẩn và gấp đôi Hyaluronic Acid giữ ẩm dịu nhẹ.\nBấm ngay vào link giỏ hàng góc trái video để săn voucher giảm giá nhé!`
+  );
+  const [selectedSkuId, setSelectedSkuId] = useState<string>('');
+  const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
+  const [aiAnalysisResult, setAiAnalysisResult] = useState<AiScriptAnalysisResult | null>(null);
+
   // Active Brand Knowledge Base
   const currentBrand = knowledgeBases.find(b => b.id === selectedBrandId) || knowledgeBases[0];
+
+  const handleRunAiAnalysis = () => {
+    setIsAnalyzing(true);
+    setTimeout(() => {
+      const activeSku = currentBrand.skus.find(s => s.id === selectedSkuId) || currentBrand.skus[0];
+      const result = analyzeScriptWithAi(inputScriptText, currentBrand, activeSku);
+      setAiAnalysisResult(result);
+      setIsAnalyzing(false);
+    }, 450);
+  };
+
+  const handleLoadPreset = (type: 'SENKA_ERROR' | 'NATURE_DISCLAIMER' | 'KUTIE_PERFECT') => {
+    if (type === 'SENKA_ERROR') {
+      setSelectedBrandId('kb-senka');
+      const text = `Review sữa rửa mặt Senka Perfect Whip cho các bạn da dầu mụn đây!\nEm này rửa xong đảm bảo trị dứt điểm mụn và sạch thâm 100%, tốt hơn Biore hay Hada Labo nhiều.\nBọt tơ tằm trắng Mayu Haku siêu xốp giúp làm sạch sâu bụi bẩn và gấp đôi Hyaluronic Acid giữ ẩm dịu nhẹ.\nBấm ngay vào link giỏ hàng góc trái video để săn voucher giảm giá nhé!`;
+      setInputScriptText(text);
+      const senka = knowledgeBases.find(b => b.id === 'kb-senka') || currentBrand;
+      setAiAnalysisResult(analyzeScriptWithAi(text, senka, senka.skus[0]));
+    } else if (type === 'NATURE_DISCLAIMER') {
+      setSelectedBrandId('kb-naturesway');
+      const text = `Bé lười ăn hay ốm vặt thì mẹ mua ngay kẹo dẻo Kids Smart Vita Gummies này nha!\nKẹo dẻo bổ sung kẽm và vitamin C tăng cường miễn dịch cho bé rất tốt.\nThuốc bổ tăng cân giúp bé ăn ngon tự nhiên sau 2 tuần.\nBấm vào giỏ hàng săn deal mua 1 tặng 1 duy nhất hôm nay!`;
+      setInputScriptText(text);
+      const nw = knowledgeBases.find(b => b.id === 'kb-naturesway') || currentBrand;
+      setAiAnalysisResult(analyzeScriptWithAi(text, nw, nw.skus[0]));
+    } else if (type === 'KUTIE_PERFECT') {
+      setSelectedBrandId('kb-kutieskin');
+      const text = `Bé bị muỗi đốt hay mẩn ngứa hăm tã thì mẹ đừng vội dùng kem có corticoid độc hại nhé!\nEm kem bôi dịu da Kutieskin này dùng công nghệ thảo dược Aminovector nhập khẩu từ Pháp, an toàn cho trẻ sơ sinh từ 5 ngày tuổi.\nChiết xuất yến mạch và bơ shea làm dịu ngứa sau 24h, chất kem thấm nhanh không hề bết dính quần áo bé.\nCác mẹ bấm ngay vào giỏ hàng góc trái để nhận ưu đãi chính hãng từ CVI Pharma nhé!`;
+      setInputScriptText(text);
+      const kuti = knowledgeBases.find(b => b.id === 'kb-kutieskin') || currentBrand;
+      setAiAnalysisResult(analyzeScriptWithAi(text, kuti, kuti.skus[0]));
+    }
+  };
+
+  const handleApplyRewritten = () => {
+    if (aiAnalysisResult?.rewrittenScript?.fullText) {
+      setInputScriptText(aiAnalysisResult.rewrittenScript.fullText);
+      const activeSku = currentBrand.skus.find(s => s.id === selectedSkuId) || currentBrand.skus[0];
+      setAiAnalysisResult(analyzeScriptWithAi(aiAnalysisResult.rewrittenScript.fullText, currentBrand, activeSku));
+    }
+  };
 
   const handleCopy = (id: string, text: string) => {
     navigator.clipboard.writeText(text);
@@ -354,6 +410,27 @@ export const BrandKnowledgeView: React.FC = () => {
           >
             <Award className="w-4 h-4 text-purple-600" />
             <span>Quy Chuẩn Hình Ảnh Do&apos;s &amp; Don&apos;ts</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setActiveKnowledgeTab('AI_INSPECTOR');
+              if (!aiAnalysisResult) {
+                const activeSku = currentBrand.skus.find(s => s.id === selectedSkuId) || currentBrand.skus[0];
+                setAiAnalysisResult(analyzeScriptWithAi(inputScriptText, currentBrand, activeSku));
+              }
+            }}
+            className={`px-4 py-2.5 text-xs font-semibold border-b-2 transition flex items-center gap-2 whitespace-nowrap ${
+              activeKnowledgeTab === 'AI_INSPECTOR'
+                ? 'border-purple-600 text-purple-800 bg-purple-50/70 font-bold'
+                : 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+            }`}
+          >
+            <Sparkles className="w-4 h-4 text-purple-600 animate-pulse" />
+            <span>AI Thẩm Định Kịch Bản (AI Inspector)</span>
+            <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-purple-600 text-white font-bold">
+              AI Bot
+            </span>
           </button>
         </div>
       </div>
@@ -819,6 +896,425 @@ export const BrandKnowledgeView: React.FC = () => {
                   </li>
                 ))}
               </ul>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* TAB 6: AI THẨM ĐỊNH KỊCH BẢN (AI SCRIPT INSPECTOR)                         */}
+      {/* ========================================================================= */}
+      {activeKnowledgeTab === 'AI_INSPECTOR' && (
+        <div className="space-y-6 animate-in fade-in duration-200">
+          {/* Header Banner & Demo Scenarios */}
+          <div className="p-5 rounded-lg bg-gradient-to-r from-purple-900 via-indigo-900 to-slate-900 text-white shadow-md relative overflow-hidden">
+            <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+              <div className="space-y-1.5 max-w-2xl">
+                <div className="flex items-center gap-2">
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider bg-purple-500/30 text-purple-200 border border-purple-400/40 uppercase flex items-center gap-1.5">
+                    <Sparkles className="w-3 h-3 text-purple-300 animate-pulse" />
+                    AI Compliance Engine v2.4
+                  </span>
+                  <span className="text-xs text-purple-300 font-medium">
+                    Chuẩn Hóa Theo Brand Guideline: <strong>{currentBrand.brandName}</strong>
+                  </span>
+                </div>
+                <h3 className="text-lg font-bold tracking-tight text-white flex items-center gap-2">
+                  <span>Trợ Lý AI Thẩm Định &amp; Sửa Kịch Bản KOC Tự Động</span>
+                </h3>
+                <p className="text-xs text-purple-200/90 leading-relaxed">
+                  Đối soát kịch bản KOC theo 5 trục chuẩn mực: Quét từ cấm Blacklist, Tuyên bố pháp lý Bộ Y Tế, USPs sản phẩm, Tone of Voice và Cấu trúc 4 phần TikTok. Phát hiện lỗi và tự động viết lại kịch bản chuẩn trong 0.5s.
+                </p>
+              </div>
+
+              {/* 3 Preset Quick-Test Buttons */}
+              <div className="space-y-2 shrink-0">
+                <p className="text-[11px] font-semibold text-purple-200 uppercase tracking-wider">
+                  🧪 Nạp Kịch Bản Mẫu Kiểm Thử Nhanh:
+                </p>
+                <div className="flex flex-wrap lg:flex-col gap-2">
+                  <button
+                    onClick={() => handleLoadPreset('SENKA_ERROR')}
+                    className="px-3 py-1.5 rounded-md bg-rose-500/20 hover:bg-rose-500/30 border border-rose-400/40 text-rose-200 text-xs font-medium transition text-left flex items-center justify-between gap-2"
+                  >
+                    <span>🔴 Senka: Vi phạm từ cấm &amp; dìm đối thủ</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => handleLoadPreset('NATURE_DISCLAIMER')}
+                    className="px-3 py-1.5 rounded-md bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/40 text-amber-200 text-xs font-medium transition text-left flex items-center justify-between gap-2"
+                  >
+                    <span>🟡 Nature&apos;s Way: Thiếu cảnh báo BYT</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => handleLoadPreset('KUTIE_PERFECT')}
+                    className="px-3 py-1.5 rounded-md bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/40 text-emerald-200 text-xs font-medium transition text-left flex items-center justify-between gap-2"
+                  >
+                    <span>🟢 Kutieskin: Chuẩn y khoa Đạt 95đ</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 2-Column Workstation */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            {/* Cột Trái (5 Cột): Khung Nhập Liệu & Cấu Hình Đối Soát */}
+            <div className="lg:col-span-5 space-y-4">
+              <div className="card-enterprise p-5 bg-white space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                  <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-purple-600" />
+                    <span>Nội Dung Kịch Bản Cần Kiểm Thẩm</span>
+                  </h4>
+                  <span className="text-[11px] text-slate-500">
+                    {inputScriptText.trim().split(/\s+/).filter(Boolean).length} từ • {inputScriptText.length} ký tự
+                  </span>
+                </div>
+
+                {/* SKU Selector Dropdown */}
+                <div className="space-y-1.5 text-xs">
+                  <label className="font-semibold text-slate-700 flex items-center justify-between">
+                    <span>Sản phẩm đối soát (Hero SKU):</span>
+                    <span className="text-[10px] text-blue-600 font-normal">
+                      Khớp {currentBrand.skus.length} SKU trong kho
+                    </span>
+                  </label>
+                  <select
+                    value={selectedSkuId}
+                    onChange={(e) => setSelectedSkuId(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-md text-slate-800 text-xs font-medium focus:bg-white focus:outline-none focus:ring-1 focus:ring-purple-500"
+                  >
+                    <option value="">-- Mặc định ({currentBrand.skus[0]?.name || 'Tất cả SKU'}) --</option>
+                    {currentBrand.skus.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name} ({s.volumeOrWeight}) - {s.priceVnd.toLocaleString('vi-VN')} đ
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Active Brand Context Pill */}
+                <div className="p-3 bg-purple-50/60 rounded-md border border-purple-100 text-xs space-y-1">
+                  <div className="flex items-center justify-between font-semibold text-purple-900">
+                    <span>Nhãn hàng: {currentBrand.brandName}</span>
+                    <span className="text-[10px] bg-purple-200/70 text-purple-800 px-1.5 py-0.5 rounded">
+                      Tone: {currentBrand.toneTag.replace(/_/g, ' ')}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-600">
+                    Đang giám sát <strong>{currentBrand.blacklistKeywords.length} từ cấm</strong> &amp;{' '}
+                    <strong>{currentBrand.certifications.length} văn bản pháp lý</strong>.
+                  </p>
+                </div>
+
+                {/* Script Textarea */}
+                <div className="space-y-1.5">
+                  <textarea
+                    rows={10}
+                    value={inputScriptText}
+                    onChange={(e) => setInputScriptText(e.target.value)}
+                    placeholder="Dán nội dung lời thoại kịch bản (Hook, Pain, Solution, CTA) của KOC vào đây..."
+                    className="w-full p-3 text-xs leading-relaxed text-slate-800 bg-slate-50 border border-slate-300 rounded-md focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 font-mono transition"
+                  />
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex items-center gap-2 pt-1">
+                  <button
+                    onClick={handleRunAiAnalysis}
+                    disabled={isAnalyzing || !inputScriptText.trim()}
+                    className={`flex-1 py-2.5 px-4 rounded-md text-xs font-bold text-white shadow-sm flex items-center justify-center gap-2 transition ${
+                      isAnalyzing || !inputScriptText.trim()
+                        ? 'bg-purple-300 cursor-not-allowed'
+                        : 'bg-purple-600 hover:bg-purple-700 active:scale-98'
+                    }`}
+                  >
+                    {isAnalyzing ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                        <span>AI Đang Phân Tích &amp; Đối Soát...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-4 h-4" />
+                        <span>Phân Tích Bằng AI (AI Deep Scan)</span>
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setInputScriptText('');
+                      setAiAnalysisResult(null);
+                    }}
+                    title="Xóa trắng kịch bản"
+                    className="p-2.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-md border border-slate-200 transition"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Cột Phải (7 Cột): Báo Cáo Phân Tích AI Chi Tiết */}
+            <div className="lg:col-span-7 space-y-4">
+              {!aiAnalysisResult ? (
+                <div className="card-enterprise p-12 bg-white text-center space-y-3 border-dashed border-2 border-slate-300">
+                  <div className="w-12 h-12 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center mx-auto">
+                    <Sparkles className="w-6 h-6 animate-bounce" />
+                  </div>
+                  <h4 className="text-sm font-bold text-slate-800">Chưa có dữ liệu phân tích kịch bản</h4>
+                  <p className="text-xs text-slate-500 max-w-md mx-auto">
+                    Vui lòng nhập kịch bản ở khung bên trái hoặc bấm vào một trong các kịch bản mẫu ở trên, sau đó nhấn <strong>&ldquo;Phân Tích Bằng AI&rdquo;</strong>.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  {/* Top Score Card & Verdict */}
+                  <div className={`card-enterprise p-5 border-l-4 transition ${
+                    aiAnalysisResult.complianceStatus === 'PASS'
+                      ? 'border-l-emerald-500 bg-emerald-50/20 border-emerald-200'
+                      : aiAnalysisResult.complianceStatus === 'WARNING'
+                      ? 'border-l-amber-500 bg-amber-50/20 border-amber-200'
+                      : 'border-l-rose-500 bg-rose-50/20 border-rose-200'
+                  }`}>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      {/* Left: Overall Score Dial */}
+                      <div className="flex items-center gap-4">
+                        <div className={`w-16 h-16 rounded-full flex flex-col items-center justify-center font-bold border-4 shrink-0 ${
+                          aiAnalysisResult.complianceStatus === 'PASS'
+                            ? 'border-emerald-500 text-emerald-700 bg-emerald-50'
+                            : aiAnalysisResult.complianceStatus === 'WARNING'
+                            ? 'border-amber-500 text-amber-700 bg-amber-50'
+                            : 'border-rose-500 text-rose-700 bg-rose-50'
+                        }`}>
+                          <span className="text-xl leading-none">{aiAnalysisResult.overallScore}</span>
+                          <span className="text-[10px] font-normal text-slate-500">/ 100</span>
+                        </div>
+
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className={`px-2.5 py-0.5 rounded text-[11px] font-extrabold uppercase tracking-wide border ${
+                              aiAnalysisResult.complianceStatus === 'PASS'
+                                ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                                : aiAnalysisResult.complianceStatus === 'WARNING'
+                                ? 'bg-amber-100 text-amber-800 border-amber-300'
+                                : 'bg-rose-100 text-rose-800 border-rose-300'
+                            }`}>
+                              {aiAnalysisResult.complianceStatus === 'PASS' && 'ĐẠT CHUẨN XUẤT SẮC (PASS)'}
+                              {aiAnalysisResult.complianceStatus === 'WARNING' && 'CẢNH BÁO — CẦN ĐIỀU CHỈNH (WARNING)'}
+                              {aiAnalysisResult.complianceStatus === 'FAIL' && 'KHÔNG ĐẠT — TỪ CHỐI DUYỆT (FAIL)'}
+                            </span>
+                            <span className="text-[11px] text-slate-500">
+                              Phát hiện {aiAnalysisResult.issues.length} vấn đề
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-700 leading-relaxed font-medium">
+                            {aiAnalysisResult.summaryVerdict}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 5-Dimension Score Progress Cards */}
+                  <div className="card-enterprise p-4 bg-white space-y-3">
+                    <h5 className="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center justify-between">
+                      <span>Bảng Điểm 5 Trục Chuẩn Mực Brand Guideline</span>
+                      <span className="text-[11px] text-slate-400 font-normal">Độ tin cậy AI: 99.4%</span>
+                    </h5>
+
+                    <div className="grid grid-cols-1 gap-2.5">
+                      {aiAnalysisResult.dimensions.map((dim, idx) => (
+                        <div key={idx} className="p-2.5 rounded border border-slate-100 bg-slate-50/50 space-y-1.5 text-xs">
+                          <div className="flex items-center justify-between font-semibold">
+                            <span className="text-slate-800">{dim.name}</span>
+                            <div className="flex items-center gap-2">
+                              <span className={`px-1.5 py-0.2 rounded text-[10px] font-bold ${
+                                dim.status === 'EXCELLENT'
+                                  ? 'bg-emerald-100 text-emerald-800'
+                                  : dim.status === 'GOOD'
+                                  ? 'bg-blue-100 text-blue-800'
+                                  : dim.status === 'WARNING'
+                                  ? 'bg-amber-100 text-amber-800'
+                                  : 'bg-rose-100 text-rose-800'
+                              }`}>
+                                {dim.status}
+                              </span>
+                              <span className="font-mono text-slate-900 font-bold">
+                                {dim.score}/{dim.maxScore} đ
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Progress bar */}
+                          <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
+                            <div
+                              className={`h-full transition-all duration-300 ${
+                                dim.status === 'EXCELLENT'
+                                  ? 'bg-emerald-500'
+                                  : dim.status === 'GOOD'
+                                  ? 'bg-blue-500'
+                                  : dim.status === 'WARNING'
+                                  ? 'bg-amber-500'
+                                  : 'bg-rose-500'
+                              }`}
+                              style={{ width: `${Math.min(100, (dim.score / dim.maxScore) * 100)}%` }}
+                            />
+                          </div>
+
+                          <p className="text-[11px] text-slate-600">{dim.feedback}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Detected Issues Details */}
+                  {aiAnalysisResult.issues.length > 0 && (
+                    <div className="card-enterprise p-4 bg-white space-y-3">
+                      <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                        <h5 className="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-2">
+                          <AlertTriangle className="w-4 h-4 text-amber-600" />
+                          <span>Chi Tiết Lỗi &amp; Rủi Ro Phát Hiện ({aiAnalysisResult.issues.length})</span>
+                        </h5>
+                        <span className="text-[10px] text-slate-500">Cần sửa trước khi gửi Brand</span>
+                      </div>
+
+                      <div className="space-y-2.5">
+                        {aiAnalysisResult.issues.map((issue) => (
+                          <div
+                            key={issue.id}
+                            className={`p-3 rounded-md border text-xs space-y-1.5 ${
+                              issue.severity === 'CRITICAL'
+                                ? 'bg-rose-50/40 border-rose-200 text-rose-900'
+                                : issue.severity === 'WARNING'
+                                ? 'bg-amber-50/40 border-amber-200 text-amber-900'
+                                : 'bg-blue-50/40 border-blue-200 text-blue-900'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="font-bold flex items-center gap-1.5">
+                                {issue.severity === 'CRITICAL' && <AlertOctagon className="w-3.5 h-3.5 text-rose-600 shrink-0" />}
+                                {issue.severity === 'WARNING' && <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0" />}
+                                {issue.severity === 'SUGGESTION' && <Lightbulb className="w-3.5 h-3.5 text-blue-600 shrink-0" />}
+                                <span>{issue.title}</span>
+                              </span>
+                              <span className={`px-1.5 py-0.2 rounded text-[10px] font-bold ${
+                                issue.severity === 'CRITICAL'
+                                  ? 'bg-rose-200 text-rose-800'
+                                  : issue.severity === 'WARNING'
+                                  ? 'bg-amber-200 text-amber-800'
+                                  : 'bg-blue-200 text-blue-800'
+                              }`}>
+                                {issue.severity}
+                              </span>
+                            </div>
+
+                            <p className="text-[11px] text-slate-700 leading-relaxed">
+                              <strong>Lý do rủi ro:</strong> {issue.rationale}
+                            </p>
+
+                            {issue.replacementSuggestion && (
+                              <div className="p-2 rounded bg-white border border-slate-200/80 flex items-start justify-between gap-2 text-[11px]">
+                                <div>
+                                  <span className="text-emerald-700 font-bold">💡 Gợi ý chuẩn Brand: </span>
+                                  <span className="text-slate-800 italic">&ldquo;{issue.replacementSuggestion}&rdquo;</span>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* AI Rewritten Script Card (Auto-Fixed) */}
+                  <div className="card-enterprise p-5 bg-gradient-to-br from-purple-50/50 via-white to-indigo-50/30 border-purple-200 space-y-4 shadow-sm">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-purple-100 pb-3">
+                      <div>
+                        <h5 className="text-sm font-bold text-purple-950 flex items-center gap-2">
+                          <Wand2 className="w-4 h-4 text-purple-600" />
+                          <span>Kịch Bản Đã Được AI Chuẩn Hóa 100% (AI Rewritten)</span>
+                        </h5>
+                        <p className="text-[11px] text-slate-500">
+                          Tự động khử từ cấm, thay thế bằng thuật ngữ y khoa và chèn tuyên bố pháp lý
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={handleApplyRewritten}
+                          className="px-2.5 py-1 rounded bg-purple-100 hover:bg-purple-200 text-purple-800 text-xs font-semibold transition flex items-center gap-1"
+                        >
+                          <ArrowRight className="w-3.5 h-3.5" />
+                          <span>Áp Dụng Vào Ô Nhập</span>
+                        </button>
+
+                        <button
+                          onClick={() => handleCopy('ai-rewritten-script', aiAnalysisResult.rewrittenScript.fullText)}
+                          className="px-3 py-1 rounded bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold transition flex items-center gap-1 shadow-xs"
+                        >
+                          {copiedId === 'ai-rewritten-script' ? (
+                            <>
+                              <CheckCheck className="w-3.5 h-3.5 text-white" />
+                              <span>Đã Chép!</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-3.5 h-3.5" />
+                              <span>Sao Chép Lời Thoại</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* 4-Part Structure Breakdown */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                      <div className="p-3 bg-white rounded border border-purple-100 space-y-1">
+                        <span className="font-bold text-purple-800 text-[11px]">🎣 1. Hook 3 Giây Đầu:</span>
+                        <p className="text-slate-700 text-[11px] leading-relaxed italic">
+                          &ldquo;{aiAnalysisResult.rewrittenScript.hook}&rdquo;
+                        </p>
+                      </div>
+
+                      <div className="p-3 bg-white rounded border border-purple-100 space-y-1">
+                        <span className="font-bold text-amber-800 text-[11px]">⚡ 2. Nỗi Đau Người Dùng (Pain Point):</span>
+                        <p className="text-slate-700 text-[11px] leading-relaxed italic">
+                          &ldquo;{aiAnalysisResult.rewrittenScript.painPoint}&rdquo;
+                        </p>
+                      </div>
+
+                      <div className="p-3 bg-white rounded border border-purple-100 space-y-1">
+                        <span className="font-bold text-blue-800 text-[11px]">🧪 3. Giải Pháp &amp; USPs Độc Quyền:</span>
+                        <p className="text-slate-700 text-[11px] leading-relaxed italic">
+                          &ldquo;{aiAnalysisResult.rewrittenScript.solutionAndUsp}&rdquo;
+                        </p>
+                      </div>
+
+                      <div className="p-3 bg-white rounded border border-purple-100 space-y-1">
+                        <span className="font-bold text-emerald-800 text-[11px]">🛒 4. Kêu Gọi Hành Động (CTA):</span>
+                        <p className="text-slate-700 text-[11px] leading-relaxed italic">
+                          &ldquo;{aiAnalysisResult.rewrittenScript.callToAction}&rdquo;
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Full Script Box */}
+                    <div className="p-3.5 bg-white rounded-md border border-purple-200 text-xs text-slate-800 space-y-1.5 font-mono">
+                      <span className="text-[11px] font-bold text-purple-900 font-sans block">
+                        📝 Toàn văn kịch bản hoàn chỉnh (Sẵn sàng gửi KOC bấm máy):
+                      </span>
+                      <p className="whitespace-pre-line text-slate-800 leading-relaxed text-[11px] bg-slate-50 p-3 rounded border border-slate-200">
+                        {aiAnalysisResult.rewrittenScript.fullText}
+                      </p>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>

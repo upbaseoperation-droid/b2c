@@ -47,14 +47,17 @@ import {
   BlacklistKeyword,
   BlacklistSeverity,
   HeroSkuItem,
-  SalaryGrade
+  SalaryGrade,
+  AiScriptAnalysisResult
 } from '../../lib/types';
 import {
   INITIAL_CAMPAIGNS,
   INITIAL_BRAND_GUIDELINES,
   INITIAL_BRAND_APPROVAL_QUEUE,
-  INITIAL_BRAND_RETAINER_HEALTH
+  INITIAL_BRAND_RETAINER_HEALTH,
+  INITIAL_BRAND_KNOWLEDGE_BASES
 } from '../../lib/mockData';
+import { analyzeScriptWithAi } from '../../lib/aiScriptAnalyzer';
 import { CampaignCreateModal } from '../CampaignCreateModal';
 
 interface BrandViewProps {
@@ -101,6 +104,20 @@ export const BrandView: React.FC<BrandViewProps> = ({
   const [rejectModalItem, setRejectModalItem] = useState<BrandApprovalQueueItem | null>(null);
   const [rejectReasonSelection, setRejectReasonSelection] = useState<string>('Lệch định vị phong cách thương hiệu');
   const [rejectCustomNote, setRejectCustomNote] = useState('');
+
+  // AI Script Modal in Approval Gate
+  const [aiScanModalData, setAiScanModalData] = useState<{
+    item: BrandApprovalQueueItem;
+    result: AiScriptAnalysisResult;
+  } | null>(null);
+
+  const handleAiInspectScript = (item: BrandApprovalQueueItem) => {
+    if (!item.scriptContent) return;
+    const brandKb = INITIAL_BRAND_KNOWLEDGE_BASES.find(b => b.brandName.toLowerCase().includes(item.brandName.toLowerCase())) || INITIAL_BRAND_KNOWLEDGE_BASES[0];
+    const fullText = `${item.scriptContent.hook}\n${item.scriptContent.pain}\n${item.scriptContent.usp}\n${item.scriptContent.cta}`;
+    const result = analyzeScriptWithAi(fullText, brandKb);
+    setAiScanModalData({ item, result });
+  };
 
   // Tab 4: Retainer Health State
   const [retainerHealthList] = useState<BrandRetainerHealth[]>(INITIAL_BRAND_RETAINER_HEALTH);
@@ -1047,6 +1064,16 @@ export const BrandView: React.FC<BrandViewProps> = ({
                         </span>
                         {item.status === 'PENDING' ? (
                           <div className="flex items-center gap-1.5">
+                            {item.scriptContent && (
+                              <button
+                                onClick={() => handleAiInspectScript(item)}
+                                className="px-2.5 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 rounded font-semibold text-xs transition flex items-center gap-1.5"
+                                title="AI Thẩm Định Kịch Bản Theo Brand Guideline"
+                              >
+                                <Sparkles className="w-3.5 h-3.5 text-purple-600 animate-pulse" />
+                                <span>AI Thẩm Định</span>
+                              </button>
+                            )}
                             <button
                               onClick={() => handleApproveItem(item.id)}
                               className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded font-semibold text-xs transition flex items-center gap-1.5 shadow-sm"
@@ -1502,6 +1529,172 @@ export const BrandView: React.FC<BrandViewProps> = ({
             >
               Đã Hiểu & Đóng
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL: AI THẨM ĐỊNH KỊCH BẢN (SCRIPT INSPECTOR POPUP)                    */}
+      {/* ========================================================================= */}
+      {aiScanModalData && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 overflow-y-auto animate-in fade-in duration-150">
+          <div className="bg-white border border-slate-200 rounded-lg w-full max-w-2xl shadow-2xl overflow-hidden my-6">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-purple-600" />
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">
+                    AI Thẩm Định Kịch Bản — KOC {aiScanModalData.item.kocName}
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Đối soát theo chuẩn mực nhãn hàng: <strong>{aiScanModalData.item.brandName}</strong> (Mã deal: {aiScanModalData.item.dealCode})
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setAiScanModalData(null)}
+                className="p-1 text-slate-400 hover:text-slate-600 rounded transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 space-y-4 max-h-[75vh] overflow-y-auto text-xs">
+              {/* Verdict Strip */}
+              <div className={`p-4 rounded-lg border-l-4 flex items-center justify-between gap-4 ${
+                aiScanModalData.result.complianceStatus === 'PASS'
+                  ? 'border-l-emerald-500 bg-emerald-50/50 border border-emerald-200'
+                  : aiScanModalData.result.complianceStatus === 'WARNING'
+                  ? 'border-l-amber-500 bg-amber-50/50 border border-amber-200'
+                  : 'border-l-rose-500 bg-rose-50/50 border border-rose-200'
+              }`}>
+                <div className="space-y-1">
+                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                    aiScanModalData.result.complianceStatus === 'PASS'
+                      ? 'bg-emerald-100 text-emerald-800'
+                      : aiScanModalData.result.complianceStatus === 'WARNING'
+                      ? 'bg-amber-100 text-amber-800'
+                      : 'bg-rose-100 text-rose-800'
+                  }`}>
+                    {aiScanModalData.result.complianceStatus === 'PASS' && 'ĐẠT CHUẨN XUẤT SẮC'}
+                    {aiScanModalData.result.complianceStatus === 'WARNING' && 'CẢNH BÁO — CẦN SỬA ĐỔI'}
+                    {aiScanModalData.result.complianceStatus === 'FAIL' && 'KHÔNG ĐẠT — TỪ CHỐI DUYỆT'}
+                  </span>
+                  <p className="text-slate-700 font-medium leading-relaxed">
+                    {aiScanModalData.result.summaryVerdict}
+                  </p>
+                </div>
+
+                <div className="text-center shrink-0">
+                  <span className="text-2xl font-black text-slate-900 block leading-none">
+                    {aiScanModalData.result.overallScore}
+                  </span>
+                  <span className="text-[10px] text-slate-500 font-medium">/ 100 điểm</span>
+                </div>
+              </div>
+
+              {/* 5 Dimensions breakdown */}
+              <div className="space-y-2">
+                <h5 className="font-bold text-slate-900 uppercase tracking-wider text-[11px]">
+                  5 Trục Đánh Giá Tuân Thủ:
+                </h5>
+                <div className="grid grid-cols-1 gap-2">
+                  {aiScanModalData.result.dimensions.map((dim, idx) => (
+                    <div key={idx} className="p-2.5 rounded bg-slate-50 border border-slate-200 flex items-center justify-between gap-3">
+                      <div>
+                        <span className="font-semibold text-slate-800">{dim.name}</span>
+                        <p className="text-[11px] text-slate-500">{dim.feedback}</p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <span className="font-mono font-bold text-slate-900">{dim.score}/{dim.maxScore}đ</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Detected Issues */}
+              {aiScanModalData.result.issues.length > 0 && (
+                <div className="space-y-2">
+                  <h5 className="font-bold text-rose-900 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                    <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
+                    <span>Lỗi &amp; Rủi Ro Phát Hiện ({aiScanModalData.result.issues.length}):</span>
+                  </h5>
+                  <div className="space-y-2">
+                    {aiScanModalData.result.issues.map((issue) => (
+                      <div key={issue.id} className="p-3 bg-rose-50/60 rounded border border-rose-200 space-y-1">
+                        <div className="flex items-center justify-between font-bold text-rose-900">
+                          <span>{issue.title}</span>
+                          <span className="text-[10px] px-1.5 py-0.2 rounded bg-rose-200 text-rose-800">
+                            {issue.severity}
+                          </span>
+                        </div>
+                        <p className="text-slate-700 text-[11px]">{issue.rationale}</p>
+                        {issue.replacementSuggestion && (
+                          <p className="text-emerald-700 text-[11px] font-semibold">
+                            💡 Đề xuất thay thế: &ldquo;{issue.replacementSuggestion}&rdquo;
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* AI Rewritten Script */}
+              <div className="p-3 bg-purple-50/50 rounded-md border border-purple-200 space-y-1.5 font-mono text-[11px]">
+                <span className="font-bold text-purple-900 font-sans block">
+                  ✨ Lời thoại đã được AI viết lại chuẩn 100%:
+                </span>
+                <p className="whitespace-pre-line text-slate-800 bg-white p-2.5 rounded border border-purple-100">
+                  {aiScanModalData.result.rewrittenScript.fullText}
+                </p>
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="flex items-center justify-between px-6 py-4 border-t border-slate-200 bg-slate-50">
+              <button
+                type="button"
+                onClick={() => setAiScanModalData(null)}
+                className="px-4 py-2 border border-slate-200 rounded font-semibold text-slate-600 hover:bg-slate-100 transition"
+              >
+                Đóng
+              </button>
+
+              <div className="flex items-center gap-2">
+                {aiScanModalData.result.issues.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const notes = aiScanModalData.result.issues.map(i => `• ${i.title}: ${i.rationale}`).join('\n');
+                      setRejectCustomNote(notes);
+                      setRejectReasonSelection('Lệch định vị phong cách thương hiệu');
+                      setRejectModalItem(aiScanModalData.item);
+                      setAiScanModalData(null);
+                    }}
+                    className="px-3.5 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded font-semibold text-xs transition flex items-center gap-1.5"
+                  >
+                    <span>📋 Chèn Góp Ý AI Vào Form Từ Chối</span>
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleApproveItem(aiScanModalData.item.id);
+                    setAiScanModalData(null);
+                  }}
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded font-semibold text-xs transition flex items-center gap-1.5 shadow-sm"
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>Duyệt Kịch Bản Ngay</span>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
