@@ -424,8 +424,8 @@ export default function App() {
       subtitle: ''
     },
     'input-plan': {
-      title: 'Phân Rã Kế Hoạch B2C (Input Plan Studio)',
-      subtitle: 'Breakdown đa kênh, đa nền tảng, format nội dung và định mức KOC/KOL từ KL1 ➔ KL7 với cân đối ngân sách thời gian thực'
+      title: 'Quản Lý Kế Hoạch Theo Tháng (Monthly Plan Hub)',
+      subtitle: 'Hoạch định ngân sách theo chu kỳ tháng, phân rã đa kênh (TikTok Shop, Shopee, Live, Tự xây) và điều phối nhân sự Booking'
     },
     stores: {
       title: 'Gian Hàng & Nhãn Hàng',

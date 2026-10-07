@@ -42,7 +42,8 @@ import {
   Coins,
   Users,
   UserCheck,
-  X
+  X,
+  ChevronLeft
 } from 'lucide-react';
 import { 
   InputPlanBreakdownState, 
@@ -63,22 +64,31 @@ import {
   MockPlanScenario
 } from '../../lib/inputPlanDefaults';
 import { exportInputPlanStudioToExcel } from '../../lib/excelExport';
+import { MonthlyPlanHub } from './MonthlyPlanHub';
+import { INITIAL_MONTHLY_PLANS } from '../../lib/monthlyPlanData';
 
 interface InputPlanBreakdownViewProps {
   currentUser?: UserProfile;
   onNotify?: (msg: string) => void;
   onGenerateDealsFromPlan?: (slots: StaffDetailedPlanItem[]) => void;
   onApplyPlanToWeeklyStore?: (planData: WeeklyStorePlan411) => void;
+  initialShowStudio?: boolean;
 }
 
 export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
   currentUser,
   onNotify,
   onGenerateDealsFromPlan,
-  onApplyPlanToWeeklyStore
+  onApplyPlanToWeeklyStore,
+  initialShowStudio = false
 }) => {
-  // Main Plan State (default from Fresh balanced scenario)
-  const [planState, setPlanState] = useState<InputPlanBreakdownState>(MOCK_PLAN_SCENARIOS[0].state);
+  // Master Monthly Plans State
+  const [monthlyPlans, setMonthlyPlans] = useState<InputPlanBreakdownState[]>(INITIAL_MONTHLY_PLANS);
+  // View mode: false = Màn hình Quản Lý Kế Hoạch Theo Tháng (MonthlyPlanHub), true = Studio Chi Tiết Phân Rã
+  const [isShowingStudio, setIsShowingStudio] = useState<boolean>(initialShowStudio);
+
+  // Main Plan State (default from Fresh balanced scenario or active plan)
+  const [planState, setPlanState] = useState<InputPlanBreakdownState>(INITIAL_MONTHLY_PLANS[0]);
   const [activeScenarioId, setActiveScenarioId] = useState<string>(MOCK_PLAN_SCENARIOS[0].id);
 
   // Active Channel Sub-Tab
@@ -534,8 +544,115 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
     }
   };
 
+  // 🌟 MÀN HÌNH 1: QUẢN LÝ KẾ HOẠCH THEO THÁNG (MONTHLY PLAN HUB)
+  if (!isShowingStudio) {
+    return (
+      <MonthlyPlanHub
+        plans={monthlyPlans}
+        currentUser={currentUser}
+        onNotify={notify}
+        onSelectPlan={(selected) => {
+          setPlanState(selected);
+          setIsShowingStudio(true);
+        }}
+        onCreatePlan={(newPlan) => {
+          setMonthlyPlans(prev => [newPlan, ...prev]);
+          setPlanState(newPlan);
+          setIsShowingStudio(true);
+        }}
+        onClonePlan={(sourcePlan, targetMonth) => {
+          const cloned: InputPlanBreakdownState = {
+            ...sourcePlan,
+            id: `PLAN-${targetMonth.replace('/', '-')}-${Date.now().toString().slice(-4)}`,
+            title: `Kế Hoạch B2C ${targetMonth} - ${sourcePlan.brandName} (Nhân Bản)`,
+            month: targetMonth,
+            status: 'DRAFT',
+            statusLabel: 'Bản Nháp (Đang Lập)',
+            spentBudget: 0,
+            deliveredContents: 0,
+            actualGmv: 0,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          };
+          setMonthlyPlans(prev => [cloned, ...prev]);
+        }}
+        onUpdatePlanStatus={(planId, newStatus) => {
+          setMonthlyPlans(prev => prev.map(p => p.id === planId ? { ...p, status: newStatus } : p));
+        }}
+      />
+    );
+  }
+
+  // 🌟 MÀN HÌNH 2: PHÂN RÃ KẾ HOẠCH CHI TIẾT (INPUT PLAN STUDIO)
   return (
     <div className="space-y-6 animate-in fade-in duration-200 max-w-[1600px] mx-auto pb-12">
+      {/* 🌟 THANH ĐIỀU HƯỚNG: QUAY LẠI QUẢN LÝ KẾ HOẠCH THÁNG */}
+      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl p-4 text-white shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4 border border-indigo-500/20">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => {
+              // Lưu cập nhật kế hoạch hiện tại vào master state
+              setMonthlyPlans(prev => prev.map(p => p.id === planState.id ? planState : p));
+              setIsShowingStudio(false);
+            }}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs backdrop-blur-sm transition-all border border-white/10 shadow-sm transform active:scale-95"
+          >
+            <ChevronLeft className="w-4 h-4 text-amber-400" />
+            <span>⬅ Quay Lại Quản Lý Kế Hoạch Tháng</span>
+          </button>
+
+          <div className="h-6 w-px bg-white/20 hidden md:block" />
+
+          <div className="space-y-0.5">
+            <div className="flex items-center gap-2">
+              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-400/20 text-amber-300 border border-amber-400/30">
+                📅 {planState.month} ({planState.week})
+              </span>
+              <span className="text-xs font-semibold text-indigo-200">
+                {planState.brandName}
+              </span>
+              <span className="text-xs text-slate-400">• PIC: <strong className="text-white">{planState.pic}</strong></span>
+            </div>
+            <div className="text-sm font-bold text-white truncate max-w-xl">
+              {planState.title}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {/* Quick Plan Switcher */}
+          <select
+            value={planState.id}
+            onChange={(e) => {
+              const found = monthlyPlans.find(p => p.id === e.target.value);
+              if (found) {
+                // save current first
+                setMonthlyPlans(prev => prev.map(p => p.id === planState.id ? planState : p));
+                setPlanState(found);
+                notify(`Đã chuyển sang kế hoạch: ${found.title}`);
+              }
+            }}
+            className="px-3 py-2 bg-white/10 hover:bg-white/15 text-white border border-white/10 rounded-xl text-xs font-semibold focus:outline-none cursor-pointer"
+          >
+            {monthlyPlans.map(p => (
+              <option key={p.id} value={p.id} className="text-slate-900">
+                [{p.month}] {p.brandName} - {p.title.slice(0, 32)}...
+              </option>
+            ))}
+          </select>
+
+          <button
+            onClick={() => {
+              setMonthlyPlans(prev => prev.map(p => p.id === planState.id ? { ...planState, updatedAt: new Date().toISOString() } : p));
+              notify(`💾 Đã lưu thay đổi kế hoạch "${planState.title}" vào Danh Mục Master!`);
+            }}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold text-xs shadow-md shadow-emerald-500/20 transition-all"
+          >
+            <Save className="w-3.5 h-3.5" />
+            Lưu Kế Hoạch
+          </button>
+        </div>
+      </div>
       {/* ========================================================================= */}
       {/* 1. TOP HEADER & QUICK METRICS COCKPIT                                    */}
       {/* ========================================================================= */}

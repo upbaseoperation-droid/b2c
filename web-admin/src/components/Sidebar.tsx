@@ -16,6 +16,7 @@ import {
   Coins,
   BookOpen,
   Calculator,
+  Calendar,
   X
 } from 'lucide-react';
 import { UserProfile } from '../lib/types';
@@ -87,9 +88,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
       items: [
         {
           key: 'input-plan',
-          label: 'Phân Rã Kế Hoạch (Input Plan)',
-          icon: Calculator,
-          badge: 'Tốc Độ',
+          label: 'Kế Hoạch Tháng (Monthly Plan)',
+          icon: Calendar,
+          badge: 'Tháng 10',
           badgeType: 'team'
         },
         {

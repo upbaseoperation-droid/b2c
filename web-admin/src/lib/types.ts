@@ -1452,11 +1452,19 @@ export interface InputPlanRowItem {
   staffNotes?: string; // Ghi chú/yêu cầu riêng của PIC cho nhân sự nhận slot
 }
 
+export type MonthlyPlanStatus = 
+  | 'DRAFT'              // Bản nháp đang phân rã
+  | 'PENDING_APPROVAL'   // Chờ Trưởng phòng duyệt
+  | 'LEAD_APPROVED'      // Trưởng phòng đã duyệt
+  | 'BRAND_APPROVED'     // Brand đã thông qua
+  | 'IN_EXECUTION'       // Đang triển khai booking
+  | 'COMPLETED';         // Đã nghiệm thu & đóng số tháng
+
 export interface InputPlanBreakdownState {
   id: string;
   title: string;
   brandName: string;
-  month: string;
+  month: string; // Chu kỳ tháng (e.g. '2026/10', '2026/09', '2026/08', '2026/11')
   week: string;
   pic: string;
   totalTargetBudget: number; // Ngân sách tổng ban đầu (VNĐ)
@@ -1465,5 +1473,12 @@ export interface InputPlanBreakdownState {
   cancellationRate: number; // Tỷ lệ hủy định mức (default 8%)
   strategyPreset?: 'CUSTOM' | 'BALANCED' | 'GMV_MAX' | 'BRAND_PUSH' | 'COST_SAVER' | 'MEGA_SALE';
   notes?: string;
+  status?: MonthlyPlanStatus;
+  statusLabel?: string;
+  deliveredContents?: number;
+  spentBudget?: number;
+  actualGmv?: number;
+  createdAt?: string;
+  updatedAt?: string;
   items: InputPlanRowItem[];
 }
