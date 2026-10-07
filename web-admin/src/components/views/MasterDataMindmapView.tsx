@@ -404,7 +404,7 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
     }
 
     setIsEditingStorePic(false);
-    const msg = `👑 Đã cập nhật PIC Chính [${editingStoreForm.primaryPic}] cho gian hàng!`;
+    const msg = `Đã cập nhật PIC Chính [${editingStoreForm.primaryPic}] cho gian hàng!`;
     if (onNotify) onNotify(msg);
   };
 
@@ -527,7 +527,7 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
               onChange={e => setFilterPlatform(e.target.value as any)}
               className="bg-slate-50 border border-slate-200 text-slate-700 rounded-lg px-2.5 py-1.5 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-xs"
             >
-              <option value="ALL">🌐 Tất Cả Sàn</option>
+              <option value="ALL">Tất Cả Sàn</option>
               <option value="TIKTOK_SHOP">TikTok Shop</option>
               <option value="SHOPEE_MALL">Shopee Mall</option>
               <option value="LAZADA">Lazada</option>
@@ -539,7 +539,7 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
               onChange={e => setFilterBrandId(e.target.value)}
               className="bg-slate-50 border border-slate-200 text-slate-700 rounded-lg px-2.5 py-1.5 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-xs"
             >
-              <option value="ALL">🏢 Tất Cả Brand</option>
+              <option value="ALL">Tất Cả Brand</option>
               {brands.map(b => (
                 <option key={b.id} value={b.id}>{b.name}</option>
               ))}
@@ -551,7 +551,7 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
               onChange={e => setFilterPic(e.target.value)}
               className="bg-slate-50 border border-slate-200 text-slate-700 rounded-lg px-2.5 py-1.5 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-xs"
             >
-              <option value="ALL">👤 Tất Cả PIC</option>
+              <option value="ALL">Tất Cả PIC</option>
               {allPicOptions.map(pic => (
                 <option key={pic} value={pic}>PIC: {pic}</option>
               ))}
@@ -719,7 +719,7 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
                           >
                             <div className="flex items-center justify-between">
                               <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">
-                                🏢 BRAND TỔNG
+                                BRAND TỔNG
                               </span>
                               <span className="text-[10px] text-slate-500">
                                 {brandStores.length} Gian Hàng
@@ -880,11 +880,11 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
                                                     </button>
                                                   </div>
 
-                                                  {/* 👑 PIC Chính Highlight */}
+                                                  {/* PIC Chính Highlight */}
                                                   <div className="mt-2 p-2 rounded-lg bg-amber-50 border border-amber-200">
                                                     <div className="flex items-center gap-2">
-                                                      <div className="w-6 h-6 rounded-full bg-amber-500 flex items-center justify-center text-white font-black text-[10px] shrink-0">
-                                                        👑
+                                                      <div className="w-6 h-6 rounded-full bg-amber-600 flex items-center justify-center text-white shrink-0">
+                                                        <ShieldCheck className="w-3.5 h-3.5" />
                                                       </div>
                                                       <div className="min-w-0">
                                                         <div className="text-[11px] font-black text-amber-900 truncate">
@@ -922,7 +922,7 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
 
                                                   {store.assignmentNotes && (
                                                     <div className="mt-2 p-1.5 bg-amber-50/50 rounded text-[9px] text-amber-900 border border-amber-200/60 line-clamp-2">
-                                                      💬 {store.assignmentNotes}
+                                                      {store.assignmentNotes}
                                                     </div>
                                                   )}
                                                 </div>
@@ -1094,8 +1094,9 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
                     <div className="p-2.5 bg-white rounded-lg border border-amber-200 flex items-center justify-between shadow-2xs">
                       <div>
                         <div className="text-[10px] text-slate-500">1 PIC Chính Phụ Trách:</div>
-                        <div className="text-xs font-black text-slate-900 flex items-center gap-1 mt-0.5">
-                          <span className="text-amber-500">👑</span> {selectedNode.data.primaryPic}
+                        <div className="text-xs font-black text-slate-900 flex items-center gap-1.5 mt-0.5">
+                          <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-100 text-amber-800 border border-amber-200">PIC CHÍNH</span>
+                          <span>{selectedNode.data.primaryPic}</span>
                         </div>
                       </div>
                       <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
@@ -1120,7 +1121,7 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
                     </div>
 
                     <p className="text-[10px] text-slate-600 mt-2 italic bg-white p-2 rounded border border-slate-200">
-                      💡 <strong>Nguyên tắc:</strong> Mọi kế hoạch tuần/tháng (Plan Studio) của gian hàng này sẽ do <strong>{selectedNode.data.primaryPic}</strong> chủ trì phân chia và giao task.
+                      <strong>Nguyên tắc:</strong> Mọi kế hoạch tuần/tháng (Plan Studio) của gian hàng này sẽ do <strong>{selectedNode.data.primaryPic}</strong> chủ trì phân chia và giao task.
                     </p>
                   </div>
 
@@ -1182,7 +1183,7 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
                 <div className="space-y-4">
                   <div>
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">
-                      📦 SẢN PHẨM & STORE SKU MAPPING
+                      SẢN PHẨM & STORE SKU MAPPING
                     </span>
                     <h3 className="text-sm font-black text-slate-900 mt-2">
                       {selectedNode.data.productName}
@@ -1212,7 +1213,7 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
                   </div>
 
                   <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-[11px] text-slate-600 space-y-1.5">
-                    <div className="font-bold text-slate-800">💡 Cơ chế ánh xạ ID tự động:</div>
+                    <div className="font-bold text-slate-800">Cơ chế ánh xạ ID tự động:</div>
                     <p>
                       Khi PIC lập Plan cho gian hàng này và chọn sản phẩm <em>{selectedNode.data.productName}</em>, hệ thống sẽ tự động gán mã <strong>{selectedNode.data.platformProductId}</strong> để KOC gắn đúng giỏ hàng, tránh nhầm lẫn giữa các sàn.
                     </p>
@@ -1222,7 +1223,7 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
                 <div className="space-y-4">
                   <div>
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200">
-                      🏢 BRAND TỔNG
+                      BRAND TỔNG
                     </span>
                     <h3 className="text-sm font-black text-slate-900 mt-2">
                       {selectedNode.data.name}
@@ -1341,7 +1342,7 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
                   className="w-full bg-white border border-amber-300 text-amber-900 font-bold rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
                 >
                   {allPicOptions.map(staff => (
-                    <option key={staff} value={staff}>👑 {staff} (Lead PIC Gian Hàng)</option>
+                    <option key={staff} value={staff}>{staff} (Lead PIC Gian Hàng)</option>
                   ))}
                 </select>
                 <p className="text-[10px] text-amber-700 mt-1">

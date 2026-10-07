@@ -99,15 +99,15 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                 <span className="font-bold text-slate-900 block">Mega Sale 10.10: Kháng Nắng</span>
                 <p className="text-slate-600 text-[11px]">Big Idea: &quot;Lá Chắn Đa Tầng&quot; - Target 1.8 Tỷ GMV</p>
                 <div className="flex justify-between text-[10px] text-slate-500 pt-1.5 border-t border-slate-100">
-                  <span>👤 Phương Thảo</span>
-                  <span className="text-emerald-600 font-semibold">✓ Đã duyệt brief</span>
+                  <span className="font-medium text-slate-700">Phương Thảo</span>
+                  <span className="text-emerald-600 font-semibold">Đã duyệt brief</span>
                 </div>
               </div>
               <div className="p-3.5 bg-white rounded-xl border border-slate-200 text-xs space-y-1.5 shadow-2xs">
                 <span className="font-bold text-slate-900 block">Re-positioning Thu Đông Q4</span>
                 <p className="text-slate-600 text-[11px]">Value Proposition cho dòng phục hồi da mùa khô</p>
                 <div className="flex justify-between text-[10px] text-slate-500 pt-1.5 border-t border-slate-100">
-                  <span>👤 Tiến (Brand Lead)</span>
+                  <span className="font-medium text-slate-700">Tiến (Brand Lead)</span>
                   <span className="text-blue-600 font-semibold">SLA còn 14h</span>
                 </div>
               </div>
@@ -125,15 +125,15 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                 <span className="font-bold text-slate-900 block">Master Plan 10.10: 45 Posts</span>
                 <p className="text-slate-600 text-[11px]">Pillars: Giáo dục UV (35%) + Social Proof (45%)</p>
                 <div className="flex justify-between text-[10px] text-slate-500 pt-1.5 border-t border-slate-100">
-                  <span>👤 Quỳnh Như</span>
-                  <span className="text-emerald-600 font-semibold">✓ Đã chuyển Booking</span>
+                  <span className="font-medium text-slate-700">Quỳnh Như</span>
+                  <span className="text-emerald-600 font-semibold">Đã chuyển Booking</span>
                 </div>
               </div>
               <div className="p-3.5 bg-white rounded-xl border border-slate-200 text-xs space-y-1.5 shadow-2xs">
                 <span className="font-bold text-slate-900 block">Duyệt Kịch Bản KOC 60s</span>
                 <p className="text-slate-600 text-[11px]">Angle &quot;Soi camera UV trước và sau khi thoa&quot;</p>
                 <div className="flex justify-between text-[10px] text-slate-500 pt-1.5 border-t border-slate-100">
-                  <span>👤 Hoàng Linh</span>
+                  <span className="font-medium text-slate-700">Hoàng Linh</span>
                   <span className="text-amber-600 font-semibold">SLA còn 4h</span>
                 </div>
               </div>
@@ -151,7 +151,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                 <span className="font-bold text-slate-900 block">Booking 30 KOC Video Tier 3</span>
                 <p className="text-slate-600 text-[11px]">Đã chốt 28/30 KOCs • 18 HĐ đã chi tạm ứng 2tr</p>
                 <div className="flex justify-between text-[10px] text-slate-500 pt-1.5 border-t border-slate-100">
-                  <span>👤 Khánh Vy</span>
+                  <span className="font-medium text-slate-700">Khánh Vy</span>
                   <span className="text-emerald-600 font-semibold">Đang tiến độ tốt</span>
                 </div>
               </div>
@@ -159,7 +159,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                 <span className="font-bold text-slate-900 block">Live Affiliate Marathon D-Day</span>
                 <p className="text-slate-600 text-[11px]">Booking 8 KOC Live đồng thời khung 19h - 24h</p>
                 <div className="flex justify-between text-[10px] text-slate-500 pt-1.5 border-t border-slate-100">
-                  <span>👤 Nguyễn Anh</span>
+                  <span className="font-medium text-slate-700">Nguyễn Anh</span>
                   <span className="text-blue-600 font-semibold">Chờ nghiệm thu</span>
                 </div>
               </div>

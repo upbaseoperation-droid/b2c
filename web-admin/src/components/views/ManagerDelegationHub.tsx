@@ -138,7 +138,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
   const handleCreateTask = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTaskState.title.trim()) {
-      notify('⚠️ Vui lòng nhập tiêu đề nhiệm vụ!');
+      notify('Vui lòng nhập tiêu đề nhiệm vụ!');
       return;
     }
 
@@ -167,7 +167,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
     };
 
     onAddTask(createdTask);
-    notify(`🚀 Trưởng phòng đã giao nhiệm vụ "${newTaskState.title}" cho chuyên viên ${newTaskState.targetStaff}!`);
+    notify(`Trưởng phòng đã giao nhiệm vụ "${newTaskState.title}" cho chuyên viên ${newTaskState.targetStaff}!`);
     
     if (onPingStaff) {
       onPingStaff(newTaskState.targetStaff, `Nhiệm vụ mới từ Trưởng phòng: ${newTaskState.title}`);
@@ -204,7 +204,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
         brandGuideline: brandFormState.brandGuideline
       };
       onUpdateBrand(updated);
-      notify(`✅ Đã cập nhật phân công cho nhãn hàng ${updated.name}: PIC Lead là ${updated.bookingPicLead}!`);
+      notify(`Đã cập nhật phân công cho nhãn hàng ${updated.name}: PIC Lead là ${updated.bookingPicLead}!`);
     } else if (onAddBrand) {
       const newBrand: BrandDetail = {
         id: `brand-${Date.now()}`,
@@ -229,7 +229,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
         heroProducts: []
       };
       onAddBrand(newBrand);
-      notify(`🎉 Đã thêm nhãn hàng mới ${newBrand.name} và phân bổ PIC Lead ${newBrand.bookingPicLead}!`);
+      notify(`Đã thêm nhãn hàng mới ${newBrand.name} và phân bổ PIC Lead ${newBrand.bookingPicLead}!`);
     }
 
     setIsBrandModalOpen(false);
@@ -271,7 +271,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
     };
 
     onUpdateStore(updated);
-    notify(`✅ Đã phân công gian hàng "${updated.storeName}" cho: ${b2cOwners.join(' & ')}!`);
+    notify(`Đã phân công gian hàng "${updated.storeName}" cho: ${b2cOwners.join(' & ')}!`);
     setEditingStore(null);
   };
 
@@ -313,7 +313,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
       }
     });
 
-    notify(`⚡ Đã tự động cân bằng tải thành công cho ${rebalancedCount} gian hàng trên toàn phòng!`);
+    notify(`Đã tự động cân bằng tải thành công cho ${rebalancedCount} gian hàng trên toàn phòng!`);
   };
 
   return (
@@ -379,7 +379,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
           <div className="p-3 rounded-xl bg-blue-50/60 border border-blue-200">
             <div className="flex items-center gap-2 text-xs font-bold text-blue-900 mb-1">
               <span className="w-5 h-5 rounded-md bg-blue-600 text-white flex items-center justify-center text-[10px]">1</span>
-              <span>👑 Trưởng Phòng (Division Head)</span>
+              <span>Trưởng Phòng (Division Head)</span>
             </div>
             <p className="text-[11px] text-slate-600 leading-snug">
               Quản lý toàn bộ nhân viên, phân chia Brand & Gian hàng, giao việc và duyệt ngân sách tổng.
@@ -389,7 +389,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
           <div className="p-3 rounded-xl bg-purple-50/60 border border-purple-200">
             <div className="flex items-center gap-2 text-xs font-bold text-purple-900 mb-1">
               <span className="w-5 h-5 rounded-md bg-purple-600 text-white flex items-center justify-center text-[10px]">2</span>
-              <span>🎯 Brand PIC (Brand Lead)</span>
+              <span>Brand PIC (Brand Lead)</span>
             </div>
             <p className="text-[11px] text-slate-600 leading-snug">
               Tiếp nhận Brand từ Trưởng phòng, phân rã Input Plan (KL1-KL7), điều phối và giao việc cho team Booking.
@@ -399,7 +399,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
           <div className="p-3 rounded-xl bg-emerald-50/60 border border-emerald-200">
             <div className="flex items-center gap-2 text-xs font-bold text-emerald-900 mb-1">
               <span className="w-5 h-5 rounded-md bg-emerald-600 text-white flex items-center justify-center text-[10px]">3</span>
-              <span>⚡ Chuyên Viên Booking</span>
+              <span>Chuyên Viên Booking</span>
             </div>
             <p className="text-[11px] text-slate-600 leading-snug">
               Nhận slot KOC và Gian hàng từ Trưởng phòng & Brand PIC, deal giá, ký hợp đồng và gửi mẫu.
@@ -409,7 +409,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
           <div className="p-3 rounded-xl bg-orange-50/60 border border-orange-200">
             <div className="flex items-center gap-2 text-xs font-bold text-orange-900 mb-1">
               <span className="w-5 h-5 rounded-md bg-orange-600 text-white flex items-center justify-center text-[10px]">4</span>
-              <span>✍️ Chuyên Viên Content</span>
+              <span>Chuyên Viên Content</span>
             </div>
             <p className="text-[11px] text-slate-600 leading-snug">
               Nhận brief, thẩm định kịch bản 4 phần, giám sát nội dung video và tuân thủ Brand Guideline.
@@ -500,9 +500,9 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
             }`}
           >
             <GitFork className="w-3.5 h-3.5" />
-            <span>🧠 5. Sơ Đồ Cây Mindmap (Toàn Cảnh)</span>
+            <span>5. Sơ Đồ Cây Mindmap Master Data</span>
             <span className="px-1.5 py-0.2 rounded text-[10px] bg-blue-100 text-blue-700 font-bold">
-              MỚI
+              Mới
             </span>
           </button>
         </div>
@@ -514,7 +514,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
             title="Tự động phân bổ lại gian hàng để không ai bị quá tải"
           >
             <Zap className="w-3.5 h-3.5 text-indigo-600" />
-            <span>⚡ Tự Động Cân Bằng Tải</span>
+            <span>Tự Động Cân Bằng Tải</span>
           </button>
         )}
       </div>
@@ -582,7 +582,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                           onChange={(e) => {
                             const updated = { ...brand, bookingPicLead: e.target.value };
                             onUpdateBrand(updated);
-                            notify(`🔄 Đã gán Brand PIC của ${brand.name} cho: ${e.target.value}`);
+                            notify(`Đã gán Brand PIC của ${brand.name} cho: ${e.target.value}`);
                           }}
                           className="w-full text-xs font-semibold px-2.5 py-1.5 bg-blue-50/60 hover:bg-blue-50 border border-blue-200 rounded-lg text-blue-900 focus:outline-none focus:border-blue-500 transition shadow-2xs"
                         >
@@ -601,7 +601,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                           onChange={(e) => {
                             const updated = { ...brand, accountPic: e.target.value };
                             onUpdateBrand(updated);
-                            notify(`🔄 Đã gán Account PIC của ${brand.name} cho: ${e.target.value}`);
+                            notify(`Đã gán Account PIC của ${brand.name} cho: ${e.target.value}`);
                           }}
                           className="w-full text-xs px-2 py-1.5 bg-slate-50 hover:bg-white border border-slate-200 rounded-lg text-slate-800 focus:outline-none focus:border-blue-500 transition shadow-2xs"
                         >
@@ -620,7 +620,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                           onChange={(e) => {
                             const updated = { ...brand, growthPic: e.target.value };
                             onUpdateBrand(updated);
-                            notify(`🔄 Đã gán Growth PIC của ${brand.name} cho: ${e.target.value}`);
+                            notify(`Đã gán Growth PIC của ${brand.name} cho: ${e.target.value}`);
                           }}
                           className="w-full text-xs px-2 py-1.5 bg-slate-50 hover:bg-white border border-slate-200 rounded-lg text-slate-800 focus:outline-none focus:border-blue-500 transition shadow-2xs"
                         >
@@ -966,7 +966,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                           if (onPingStaff) {
                             onPingStaff(task.pic, `Đốc thúc nhiệm vụ: ${task.title}`);
                           }
-                          notify(`🔔 Đã gửi ping nhắc nhở chuyên viên ${task.pic} qua Lark Bot thành công!`);
+                          notify(`Đã gửi ping nhắc nhở chuyên viên ${task.pic} qua Lark Bot thành công!`);
                         }}
                         className="px-2.5 py-1 rounded text-xs font-semibold text-blue-700 hover:bg-blue-50 border border-blue-200 flex items-center justify-center gap-1 mx-auto transition"
                       >
@@ -1081,9 +1081,9 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                     onChange={(e) => setNewTaskState(prev => ({ ...prev, urgency: e.target.value as any }))}
                     className="w-full text-xs font-medium px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:outline-none focus:border-blue-500"
                   >
-                    <option value="critical">🔴 Khẩn Cấp (SLA Gấp)</option>
-                    <option value="warning">🟡 Cảnh Báo (Cần Chú Ý)</option>
-                    <option value="normal">🔵 Bình Thường</option>
+                    <option value="critical">Khẩn Cấp (SLA Gấp)</option>
+                    <option value="warning">Cảnh Báo (Cần Chú Ý)</option>
+                    <option value="normal">Bình Thường</option>
                   </select>
                 </div>
               </div>

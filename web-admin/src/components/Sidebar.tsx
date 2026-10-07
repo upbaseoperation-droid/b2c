@@ -141,7 +141,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       items: [
         {
           key: 'manager',
-          label: isManager ? '👑 Phân Bổ & Điều Phối Lead' : 'Kế Hoạch & Báo Cáo',
+          label: isManager ? 'Phân Bổ & Điều Phối' : 'Kế Hoạch & Báo Cáo',
           icon: TrendingUp,
           badge: isManager ? 'Trưởng Phòng' : 'Lead',
           badgeType: 'lead'

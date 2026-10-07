@@ -53,8 +53,9 @@ export const LeaderboardView: React.FC = () => {
           <div className="card-enterprise p-5 bg-white border border-blue-200 shadow-xs flex flex-col justify-between relative">
             <div>
               <div className="flex items-center justify-between mb-3">
-                <span className="badge-blue px-2.5 py-0.5 rounded text-[11px] font-bold">
-                  🥇 #1 Toàn Phòng
+                <span className="badge-blue px-2.5 py-0.5 rounded text-[11px] font-bold flex items-center gap-1">
+                  <Award className="w-3.5 h-3.5 text-blue-600" />
+                  Top 1 Toàn Phòng
                 </span>
                 <span className="text-xs font-bold text-blue-600 font-mono">
                   {top1.totalScore} Điểm
@@ -92,8 +93,9 @@ export const LeaderboardView: React.FC = () => {
           <div className="card-enterprise p-5 bg-white border border-slate-200 shadow-xs flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between mb-3">
-                <span className="badge-amber px-2.5 py-0.5 rounded text-[11px] font-bold">
-                  🥈 #2 Toàn Phòng
+                <span className="badge-amber px-2.5 py-0.5 rounded text-[11px] font-bold flex items-center gap-1">
+                  <Award className="w-3.5 h-3.5 text-amber-600" />
+                  Top 2 Toàn Phòng
                 </span>
                 <span className="text-xs font-bold text-amber-700 font-mono">
                   {top2.totalScore} Điểm
@@ -131,8 +133,9 @@ export const LeaderboardView: React.FC = () => {
           <div className="card-enterprise p-5 bg-white border border-slate-200 shadow-xs flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between mb-3">
-                <span className="badge-purple px-2.5 py-0.5 rounded text-[11px] font-bold">
-                  🥉 #3 Toàn Phòng
+                <span className="badge-purple px-2.5 py-0.5 rounded text-[11px] font-bold flex items-center gap-1">
+                  <Award className="w-3.5 h-3.5 text-purple-600" />
+                  Top 3 Toàn Phòng
                 </span>
                 <span className="text-xs font-bold text-purple-700 font-mono">
                   {top3.totalScore} Điểm

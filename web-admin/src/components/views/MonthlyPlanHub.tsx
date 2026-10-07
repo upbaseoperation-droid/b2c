@@ -188,7 +188,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
     };
 
     onCreatePlan(createdPlan);
-    notify(`🎉 Đã khởi tạo Kế hoạch mới "${createdPlan.title}" cho chu kỳ ${newPlanMonth}!`);
+    notify(`Đã khởi tạo Kế hoạch mới "${createdPlan.title}" cho chu kỳ ${newPlanMonth}!`);
     setIsCreateModalOpen(false);
     // Optionally open the studio right away
     onSelectPlan(createdPlan);
@@ -197,7 +197,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
   const handleCloneSubmit = () => {
     if (!cloningPlan) return;
     onClonePlan(cloningPlan, cloneTargetMonth);
-    notify(`📋 Đã nhân bản thành công Kế hoạch "${cloningPlan.title}" sang chu kỳ ${cloneTargetMonth}!`);
+    notify(`Đã nhân bản thành công Kế hoạch "${cloningPlan.title}" sang chu kỳ ${cloneTargetMonth}!`);
     setCloningPlan(null);
   };
 
@@ -296,7 +296,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                   items: autoBalancePlanItems(INITIAL_INPUT_PLAN_ITEMS, 120000000, 65, 'BALANCED')
                 };
                 onCreatePlan(newPlan);
-                notify(`🎲 Đã tạo nhanh kế hoạch mẫu "${newPlan.title}"!`);
+                notify(`Đã tạo nhanh kế hoạch mẫu "${newPlan.title}"!`);
               }}
               className="inline-flex items-center gap-2 px-4 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white font-medium text-sm backdrop-blur-sm transition-all"
               title="Tạo nhanh 1 kế hoạch mẫu ngẫu nhiên để trải nghiệm"
@@ -491,11 +491,11 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
               className="bg-transparent font-semibold text-slate-900 focus:outline-none cursor-pointer"
             >
               <option value="ALL">Tất cả trạng thái</option>
-              <option value="IN_EXECUTION">🟢 Đang Thực Thi</option>
-              <option value="LEAD_APPROVED">🔵 Đã Duyệt</option>
-              <option value="PENDING_APPROVAL">🟡 Chờ Lead Duyệt</option>
-              <option value="DRAFT">⚪ Bản Nháp</option>
-              <option value="COMPLETED">🟣 Đã Nghiệm Thu</option>
+              <option value="IN_EXECUTION">Đang Thực Thi</option>
+              <option value="LEAD_APPROVED">Đã Duyệt</option>
+              <option value="PENDING_APPROVAL">Chờ Lead Duyệt</option>
+              <option value="DRAFT">Bản Nháp</option>
+              <option value="COMPLETED">Đã Nghiệm Thu</option>
             </select>
           </div>
 
@@ -696,7 +696,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                     onClick={() => onSelectPlan(plan)}
                     className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white font-bold text-xs shadow-md shadow-indigo-600/20 group-hover:shadow-indigo-600/40 transition-all transform active:scale-95"
                   >
-                    <span>👉 Vào Phân Rã Chi Tiết</span>
+                    <span>Vào Phân Rã Chi Tiết</span>
                     <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                   </button>
                 </div>

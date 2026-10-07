@@ -95,7 +95,7 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
     }));
 
     if (onNotify) {
-      onNotify(`📥 Đã nạp thành công dữ liệu ${p.week} từ File 4.1.1 (${p.storeName}) vào phân bổ KOC!`);
+      onNotify(`Đã nạp thành công dữ liệu ${p.week} từ File 4.1.1 (${p.storeName}) vào phân bổ KOC!`);
     }
   };
 
@@ -276,7 +276,7 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
 
     setCurrentBreakdown(newBreakdown);
     if (onNotify) {
-      onNotify(`✨ Đã áp dụng chiến lược phân bổ: ${presetType === 'GMV_MAX' ? 'Tối Đa Hóa GMV' : presetType === 'BRAND_PUSH' ? 'Nhận Diện & Trust' : 'Tỷ Lệ Vàng Upbase'}`);
+      onNotify(`Đã áp dụng chiến lược phân bổ: ${presetType === 'GMV_MAX' ? 'Tối Đa Hóa GMV' : presetType === 'BRAND_PUSH' ? 'Nhận Diện & Trust' : 'Tỷ Lệ Vàng Upbase'}`);
     }
   };
 
@@ -297,9 +297,9 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
 
     if (onNotify) {
       if (newStatus === 'LEAD_APPROVED') {
-        onNotify(`🎉 Quản lý đã phê duyệt Kế hoạch phân bổ ${activeDemand.code}! Kích hoạt chuyển giao sang Booking Execution.`);
+        onNotify(`Quản lý đã phê duyệt Kế hoạch phân bổ ${activeDemand.code}! Kích hoạt chuyển giao sang Booking Execution.`);
       } else {
-        onNotify(`💾 Đã lưu thành công Kế hoạch phân bổ cho ${activeDemand.code} (${activeDemand.brandName})!`);
+        onNotify(`Đã lưu thành công Kế hoạch phân bổ cho ${activeDemand.code} (${activeDemand.brandName})!`);
       }
     }
   };
@@ -316,7 +316,7 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
       });
     }
     if (onNotify) {
-      onNotify(`⚡ Đã tự động khởi tạo ${totalKocCount} vị trí Deal Booking từ Kế Hoạch ${activeDemand.code}! Bàn giao nhân sự Booking tác nghiệp.`);
+      onNotify(`Đã tự động khởi tạo ${totalKocCount} vị trí Deal Booking từ Kế Hoạch ${activeDemand.code}! Bàn giao nhân sự Booking tác nghiệp.`);
     }
   };
 
@@ -324,12 +324,12 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
     try {
       await exportPlanOrderToExcel(activeDemand, currentBreakdown);
       if (onNotify) {
-        onNotify(`📊 Đã xuất file Excel Kế hoạch 4.1 thành công cho ${activeDemand.code}!`);
+        onNotify(`Đã xuất file Excel Kế hoạch 4.1 thành công cho ${activeDemand.code}!`);
       }
     } catch (err) {
       console.error(err);
       if (onNotify) {
-        onNotify('❌ Lỗi khi xuất file Excel kế hoạch.');
+        onNotify('Lỗi khi xuất file Excel kế hoạch.');
       }
     }
   };
@@ -338,12 +338,12 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
     try {
       await downloadWeeklyTemplate411();
       if (onNotify) {
-        onNotify('📥 Đã tải xuống biểu mẫu Template Input Plan 4.1.1!');
+        onNotify('Đã tải xuống biểu mẫu Template Input Plan 4.1.1!');
       }
     } catch (err) {
       console.error(err);
       if (onNotify) {
-        onNotify('❌ Lỗi khi tải biểu mẫu template.');
+        onNotify('Lỗi khi tải biểu mẫu template.');
       }
     }
   };
@@ -546,21 +546,21 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
                   onClick={() => applyPreset('GMV_MAX')}
                   className="px-2.5 py-1 rounded-md text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition cursor-pointer"
                 >
-                  🚀 Tối Đa Hóa GMV (Micro + Affiliate)
+                  Tối Đa Hóa GMV (Micro + Affiliate)
                 </button>
                 <button
                   type="button"
                   onClick={() => applyPreset('BRAND_PUSH')}
                   className="px-2.5 py-1 rounded-md text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100 transition cursor-pointer"
                 >
-                  👑 Đẩy Thương Hiệu &amp; Trust (Celeb + Macro)
+                  Đẩy Thương Hiệu &amp; Trust (Celeb + Macro)
                 </button>
                 <button
                   type="button"
                   onClick={() => applyPreset('BALANCED')}
                   className="px-2.5 py-1 rounded-md text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition cursor-pointer"
                 >
-                  ⚖️ Tỷ Lệ Vàng Upbase (Chuẩn 4 Cấp)
+                  Tỷ Lệ Vàng Upbase (Chuẩn 4 Cấp)
                 </button>
               </div>
             </div>
@@ -1066,7 +1066,7 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
               <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${
                 isOverBudget ? 'bg-rose-100 text-rose-800 border-rose-300' : 'bg-emerald-50 text-emerald-700 border-emerald-300'
               }`}>
-                {isOverBudget ? '⚠️ VƯỢT HẠN MỨC' : '✅ TRONG HẠN MỨC'}
+                {isOverBudget ? 'VƯỢT HẠN MỨC' : 'TRONG HẠN MỨC'}
               </span>
             </div>
 
@@ -1104,7 +1104,7 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
               </div>
               {isOverBudget && (
                 <p className="text-[11px] text-rose-800 bg-rose-50 p-2.5 rounded-lg border border-rose-200">
-                  ⚠️ Tổng ngân sách đang vượt <strong>{(Math.abs(budgetHeadroom) / 1000000).toFixed(1)}M đ</strong>. Hãy giảm số lượng KOC hoặc điều chỉnh đơn giá để đảm bảo tuân thủ hạn mức của Growth!
+                  Tổng ngân sách đang vượt <strong>{(Math.abs(budgetHeadroom) / 1000000).toFixed(1)}M đ</strong>. Hãy giảm số lượng KOC hoặc điều chỉnh đơn giá để đảm bảo tuân thủ hạn mức của Growth!
                 </p>
               )}
             </div>

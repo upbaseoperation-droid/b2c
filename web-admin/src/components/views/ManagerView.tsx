@@ -441,7 +441,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
       externalOnApproveEntirePlan(staffName, managerFeedback);
     }
     if (onPingStaffNotification) {
-      onPingStaffNotification(staffName, `🎉 Trưởng phòng đã phê duyệt toàn bộ Kế hoạch tháng! Bạn có thể bắt đầu chuyển deal tác nghiệp.`);
+      onPingStaffNotification(staffName, `Trưởng phòng đã phê duyệt toàn bộ Kế hoạch tháng! Bạn có thể bắt đầu chuyển deal tác nghiệp.`);
     }
     setInspectingStaffAllocation(null);
   };
@@ -457,7 +457,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
       externalOnRequestPlanRevision(staffName, managerFeedback);
     }
     if (onPingStaffNotification) {
-      onPingStaffNotification(staffName, `🔔 [Yêu Cầu Sửa Plan] Trưởng phòng gửi góp ý: "${managerFeedback || 'Vui lòng bổ sung thêm KOC'}"`);
+      onPingStaffNotification(staffName, `[Yêu Cầu Sửa Plan] Trưởng phòng gửi góp ý: "${managerFeedback || 'Vui lòng bổ sung thêm KOC'}"`);
     }
     setInspectingStaffAllocation(null);
   };
@@ -485,7 +485,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
       externalOnConvertPlanToDeals(staffName);
     }
     if (onPingStaffNotification) {
-      onPingStaffNotification(staffName, `⚡ Đã chuyển đổi thành công các slot KOC đã duyệt sang Deal Booking tác nghiệp.`);
+      onPingStaffNotification(staffName, `Đã chuyển đổi thành công các slot KOC đã duyệt sang Deal Booking tác nghiệp.`);
     }
     setInspectingStaffAllocation(null);
   };
@@ -513,7 +513,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
     if (onPingStaffNotification) {
       onPingStaffNotification(
         '5 Nhân sự tụt tiến độ (<50%): Vũ Hoài Lâm, Ôn Ngọc Hà, Lê Thanh Hải, Dương Thị Hồng Nhung, Hoàng Hải Long',
-        '⚡ [Khẩn cấp] Đốc thúc hoàn tất nghiệm thu link video TikTok trước 18:00 để kéo tiến độ air tháng 8!'
+        '[Khẩn cấp] Đốc thúc hoàn tất nghiệm thu link video TikTok trước 18:00 để kéo tiến độ air tháng 8!'
       );
     }
   };
@@ -523,7 +523,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
     if (onPingStaffNotification) {
       onPingStaffNotification(
         'Kế toán & Booking pHCare',
-        '✅ Đã phê duyệt đối soát tự động mã Spark Ads TikTok — Giải tỏa 50.000.000 đ ngân sách gap!'
+        'Đã phê duyệt đối soát tự động mã Spark Ads TikTok — Giải tỏa 50.000.000 đ ngân sách gap!'
       );
     }
   };
@@ -533,7 +533,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
     if (onPingStaffNotification) {
       onPingStaffNotification(
         'Team Lead Booking',
-        '🤝 Đã điều phối 3 nhân sự hỗ trợ cho cụm gian hàng EUPC, Natural Care, Keyshu, Lipit để bù đắp 203M gap capacity!'
+        'Đã điều phối 3 nhân sự hỗ trợ cho cụm gian hàng EUPC, Natural Care, Keyshu, Lipit để bù đắp 203M gap capacity!'
       );
     }
   };
@@ -903,7 +903,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
               <div className="space-y-2 text-xs">
                 <div className="p-3 rounded-lg bg-rose-50/60 border border-rose-200 space-y-1">
                   <div className="flex items-center justify-between">
-                    <span className="font-bold text-rose-800">⚠️ Cảnh báo bùng mẫu (Ghost Sample Delivery)</span>
+                    <span className="font-bold text-rose-800">Cảnh báo bùng mẫu (Ghost Sample Delivery)</span>
                     <span className="text-[10px] font-mono font-bold text-rose-600">SLA &gt; 5 Ngày</span>
                   </div>
                   <p className="text-[11px] text-slate-600">
@@ -913,7 +913,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
 
                 <div className="p-3 rounded-lg bg-amber-50/60 border border-amber-200 space-y-1">
                   <div className="flex items-center justify-between">
-                    <span className="font-bold text-amber-800">⚡ Lệch tiến độ Air cụm gian hàng FMCG</span>
+                    <span className="font-bold text-amber-800">Lệch tiến độ Air cụm gian hàng FMCG</span>
                     <span className="text-[10px] font-mono font-bold text-amber-600">Gap 42M GMV</span>
                   </div>
                   <p className="text-[11px] text-slate-600">
@@ -923,7 +923,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
 
                 <div className="p-3 rounded-lg bg-blue-50/60 border border-blue-200 space-y-1">
                   <div className="flex items-center justify-between">
-                    <span className="font-bold text-blue-800">🏆 Top Winner Video bứt phá doanh số</span>
+                    <span className="font-bold text-blue-800">Top Winner Video bứt phá doanh số</span>
                     <span className="text-[10px] font-mono font-bold text-emerald-600">ROI 18.2x</span>
                   </div>
                   <p className="text-[11px] text-slate-600">
@@ -975,7 +975,8 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                 </div>
               </div>
               <div className="px-3 py-1 rounded bg-amber-100 border border-amber-200 text-amber-800 text-[11px] font-bold shrink-0 self-end sm:self-auto flex items-center gap-1.5">
-                <span>🔒 CHỈ XEM (READ-ONLY)</span>
+                <Lock className="w-3.5 h-3.5" />
+                <span>CHỈ XEM (READ-ONLY)</span>
               </div>
             </div>
           )}
@@ -1543,9 +1544,9 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                               hasRevision ? 'bg-rose-500/10 text-rose-300 border-rose-500/30' :
                               'bg-slate-800 text-slate-400 border-slate-700'
                             }`}>
-                              {hasSubmitted ? '⏳ Chờ duyệt' :
-                               isFullyApproved ? '✓ Đã duyệt' :
-                               hasRevision ? '⚠️ Cần sửa' : 'Đang lập plan'}
+                              {hasSubmitted ? 'Chờ duyệt' :
+                               isFullyApproved ? 'Đã duyệt' :
+                               hasRevision ? 'Cần sửa' : 'Đang lập plan'}
                             </span>
                           </div>
                         </td>
@@ -1730,7 +1731,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                       <span className={`text-[10px] font-bold px-2 py-0.5 rounded border inline-block ${
                         remainingBudget >= 0 && remainingVideos >= 0 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : 'bg-rose-500/10 text-rose-400 border-rose-500/30'
                       }`}>
-                        {remainingBudget >= 0 && remainingVideos >= 0 ? '✅ HỢP LỆ TRẦN' : '⚠️ VƯỢT ĐỊNH MỨC'}
+                        {remainingBudget >= 0 && remainingVideos >= 0 ? 'HỢP LỆ TRẦN' : 'VƯỢT ĐỊNH MỨC'}
                       </span>
                     </td>
                     <td className="p-3 pr-5 text-right text-slate-500">—</td>
@@ -2633,7 +2634,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                   <span className="w-2 h-2 rounded-full bg-amber-600 animate-ping" />
                 </div>
                 <p className="text-[11px] text-amber-900 font-medium">Mở sửa (09:00 - 17:00), Khóa cứng 17:30</p>
-                <span className="text-[10px] text-amber-800 font-black mt-1">⚡ ĐANG MỞ CỬA SỔ</span>
+                <span className="text-[10px] text-amber-800 font-black mt-1">ĐANG MỞ CỬA SỔ</span>
               </div>
 
               <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200 flex flex-col justify-between opacity-80">
@@ -2916,9 +2917,9 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                   className="bg-white border border-slate-200 rounded-lg px-2.5 py-1 text-slate-700 text-xs focus:outline-none"
                 >
                   <option value="ALL">Tất cả Mức độ</option>
-                  <option value="CRITICAL">🔥 Khẩn cấp (CRITICAL)</option>
-                  <option value="HIGH">⚠️ Nghiêm trọng (HIGH)</option>
-                  <option value="WARNING">⚡ Cảnh báo (WARNING)</option>
+                  <option value="CRITICAL">Khẩn cấp (CRITICAL)</option>
+                  <option value="HIGH">Nghiêm trọng (HIGH)</option>
+                  <option value="WARNING">Cảnh báo (WARNING)</option>
                 </select>
 
                 <select
@@ -3359,7 +3360,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
 
             <div className="p-6 space-y-4 text-xs max-h-[75vh] overflow-y-auto">
               <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-blue-800 text-xs">
-                💡 <strong>Nguyên tắc quản trị Top-Down:</strong> Trưởng phòng chốt tổng ngân sách và trần video cho 4 Tier. Sau đó hệ thống sẽ dùng các mốc này để kiểm soát cân đối khi phân bổ xuống 26 nhân sự.
+                <strong>Nguyên tắc quản trị Top-Down:</strong> Trưởng phòng chốt tổng ngân sách và trần video cho 4 Tier. Sau đó hệ thống sẽ dùng các mốc này để kiểm soát cân đối khi phân bổ xuống 26 nhân sự.
               </div>
 
               <div className="space-y-3">
@@ -3620,7 +3621,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                     className="w-full p-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition flex items-center justify-center gap-2"
                   >
                     <Zap className="w-4 h-4" />
-                    <span>⚡ Phê Duyệt Đề Xuất Tự Air (Auto-Air)</span>
+                    <span>Phê Duyệt Đề Xuất Tự Air (Auto-Air)</span>
                   </button>
                 )}
 
@@ -3630,7 +3631,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                     className="w-full p-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition flex items-center justify-center gap-2"
                   >
                     <FileCheck className="w-4 h-4" />
-                    <span>📄 Yêu Cầu Bổ Sung Bản Scan Ký 2 Bên & CCCD</span>
+                    <span>Yêu Cầu Bổ Sung Bản Scan Ký 2 Bên & CCCD</span>
                   </button>
                 )}
 
@@ -3640,7 +3641,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                     className="w-full p-2.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl transition flex items-center justify-center gap-2"
                   >
                     <Unlock className="w-4 h-4" />
-                    <span>🔓 Xác Nhận Mở Khóa Tạm 24h Để Điền Link</span>
+                    <span>Xác Nhận Mở Khóa Tạm 24h Để Điền Link</span>
                   </button>
                 )}
 
