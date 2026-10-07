@@ -48,8 +48,16 @@ export const USERS: UserProfile[] = [
     name: 'Vân Ngọc',
     email: 'vanngoc@upbase.vn',
     role: 'MANAGER',
-    roleTitle: 'Operations & Division Head',
+    roleTitle: 'Operations & Division Head (Trưởng Phòng)',
     avatar: 'VN'
+  },
+  {
+    id: 'user-ha-linh',
+    name: 'Đặng Mai Hà Linh',
+    email: 'halinh@upbase.vn',
+    role: 'BRAND_MEMBER',
+    roleTitle: 'Brand PIC / Senior Campaign Lead',
+    avatar: 'HL'
   },
   {
     id: 'user-khanh-vy',
@@ -58,6 +66,22 @@ export const USERS: UserProfile[] = [
     role: 'BOOKING_MEMBER',
     roleTitle: 'Senior Booking Execution Specialist',
     avatar: 'KV'
+  },
+  {
+    id: 'user-thu-trang',
+    name: 'Nguyễn Thu Trang',
+    email: 'thutrang@upbase.vn',
+    role: 'BOOKING_MEMBER',
+    roleTitle: 'Booking Specialist (Micro & Sàn)',
+    avatar: 'TT'
+  },
+  {
+    id: 'user-minh-duc',
+    name: 'Trần Minh Đức',
+    email: 'minhduc@upbase.vn',
+    role: 'BOOKING_MEMBER',
+    roleTitle: 'Live & Creator Specialist',
+    avatar: 'MĐ'
   },
   {
     id: 'user-quynh-nhu',

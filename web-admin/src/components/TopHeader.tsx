@@ -74,7 +74,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
           >
             {USERS.map(user => (
               <option key={user.id} value={user.id} className="bg-white text-slate-800">
-                {user.name} ({user.role === 'MANAGER' ? 'Trưởng phòng' : user.role === 'BOOKING_MEMBER' ? 'Booking' : user.role === 'CONTENT_MEMBER' ? 'Content' : 'Brand'})
+                {user.name} ({user.role === 'MANAGER' ? '👑 Trưởng phòng' : user.role === 'BRAND_MEMBER' ? '🎯 Brand PIC' : user.role === 'CONTENT_MEMBER' ? '✍️ Content Lead' : '⚡ Booking'})
               </option>
             ))}
           </select>

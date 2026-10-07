@@ -48,7 +48,11 @@ import {
   UserProfile,
   StaffSlaReportItem,
   SlaBreachItem,
-  E2EReconciliationWindow
+  E2EReconciliationWindow,
+  BrandDetail,
+  StorePortfolioItem,
+  StaffMasterMember,
+  SlaTask
 } from '../../lib/types';
 import { 
   MONTHLY_PLAN_DATA, 
@@ -66,7 +70,11 @@ import {
   INITIAL_DETAILED_STAFF_PLANS,
   INITIAL_SLA_BREACHES,
   INITIAL_STAFF_SLA_REPORTS,
-  INITIAL_RECONCILIATION_WINDOW
+  INITIAL_RECONCILIATION_WINDOW,
+  INITIAL_BRANDS,
+  INITIAL_STORE_PORTFOLIOS,
+  INITIAL_TASKS,
+  STAFF_MASTER_DIRECTORY
 } from '../../lib/mockData';
 import { 
   Sliders, 
@@ -85,11 +93,13 @@ import {
   Eye,
   Table,
   CalendarDays,
-  Store
+  Store,
+  ShieldCheck
 } from 'lucide-react';
 import { GrowthPlanBreakdownView } from './GrowthPlanBreakdownView';
 import { EmployeePlanInspectorModal } from '../EmployeePlanInspectorModal';
 import { AiStaffReviewModal } from '../AiStaffReviewModal';
+import { ManagerDelegationHub } from './ManagerDelegationHub';
 
 interface ManagerViewProps {
   deals: BookingDealItem[];
@@ -104,6 +114,13 @@ interface ManagerViewProps {
   staffAllocationsByMonth?: Record<string, MonthlyStaffAllocation[]>;
   onUpdateStaffAllocation?: (month: string, updatedList: MonthlyStaffAllocation[]) => void;
   onOpenInputPlan?: () => void;
+  brands?: BrandDetail[];
+  onUpdateBrand?: (brand: BrandDetail) => void;
+  onAddBrand?: (brand: BrandDetail) => void;
+  storePortfolios?: StorePortfolioItem[];
+  onUpdateStore?: (store: StorePortfolioItem) => void;
+  tasks?: SlaTask[];
+  onAddTask?: (task: SlaTask) => void;
 }
 
 export const ManagerView: React.FC<ManagerViewProps> = ({ 
@@ -118,11 +135,47 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
   onConvertPlanToDeals: externalOnConvertPlanToDeals,
   staffAllocationsByMonth: externalStaffAllocationsByMonth,
   onUpdateStaffAllocation: externalOnUpdateStaffAllocation,
-  onOpenInputPlan
+  onOpenInputPlan,
+  brands: externalBrands,
+  onUpdateBrand: externalOnUpdateBrand,
+  onAddBrand: externalOnAddBrand,
+  storePortfolios: externalStorePortfolios,
+  onUpdateStore: externalOnUpdateStore,
+  tasks: externalTasks,
+  onAddTask: externalOnAddTask
 }) => {
   const isManager = currentUser ? currentUser.role === 'MANAGER' : true;
-  const [activeTab, setActiveTab] = useState<'CONTROL_TOWER' | 'GROWTH_BREAKDOWN' | 'ALLOCATION' | 'MONTHLY_PLAN' | 'STAFF_AIR_PROGRESS' | 'STAFF_REVENUE_GMV' | 'PLAN_GAP_466M' | 'DEEP_ANALYTICS' | 'SLA_MANAGEMENT'>('CONTROL_TOWER');
+  const [activeTab, setActiveTab] = useState<'DELEGATION_HUB' | 'CONTROL_TOWER' | 'GROWTH_BREAKDOWN' | 'ALLOCATION' | 'MONTHLY_PLAN' | 'STAFF_AIR_PROGRESS' | 'STAFF_REVENUE_GMV' | 'PLAN_GAP_466M' | 'DEEP_ANALYTICS' | 'SLA_MANAGEMENT'>('DELEGATION_HUB');
   
+  // State phân quyền Brand, Gian Hàng, Giao Việc của Trưởng Phòng
+  const [internalBrands, setInternalBrands] = useState<BrandDetail[]>(externalBrands || INITIAL_BRANDS);
+  const [internalStores, setInternalStores] = useState<StorePortfolioItem[]>(externalStorePortfolios || INITIAL_STORE_PORTFOLIOS);
+  const [internalTasks, setInternalTasks] = useState<SlaTask[]>(externalTasks || INITIAL_TASKS);
+
+  const currentBrands = externalBrands || internalBrands;
+  const currentStores = externalStorePortfolios || internalStores;
+  const currentTasks = externalTasks || internalTasks;
+
+  const handleUpdateBrand = (b: BrandDetail) => {
+    setInternalBrands(prev => prev.map(item => item.id === b.id ? b : item));
+    if (externalOnUpdateBrand) externalOnUpdateBrand(b);
+  };
+
+  const handleAddBrand = (b: BrandDetail) => {
+    setInternalBrands(prev => [b, ...prev]);
+    if (externalOnAddBrand) externalOnAddBrand(b);
+  };
+
+  const handleUpdateStore = (s: StorePortfolioItem) => {
+    setInternalStores(prev => prev.map(item => item.id === s.id ? s : item));
+    if (externalOnUpdateStore) externalOnUpdateStore(s);
+  };
+
+  const handleAddTask = (t: SlaTask) => {
+    setInternalTasks(prev => [t, ...prev]);
+    if (externalOnAddTask) externalOnAddTask(t);
+  };
+
   // 🌟 SLA B2C & E2E Reconciliation Window States
   const [slaBreaches, setSlaBreaches] = useState<SlaBreachItem[]>(INITIAL_SLA_BREACHES);
   const [staffSlaReports, setStaffSlaReports] = useState<StaffSlaReportItem[]>(INITIAL_STAFF_SLA_REPORTS);
@@ -499,6 +552,22 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
       <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 p-2 bg-slate-100 border border-slate-200 rounded-md">
         {/* 8 Primary Executive Navigation Tabs */}
         <div className="flex items-center gap-1.5 text-xs overflow-x-auto pb-1 lg:pb-0">
+          {/* TAB ĐẶC QUYỀN TRƯỞNG PHÒNG: PHÂN BỔ BRAND, GIAN HÀNG & GIAO VIỆC */}
+          <button
+            onClick={() => setActiveTab('DELEGATION_HUB')}
+            className={`px-3 py-1.5 rounded-md font-bold flex items-center gap-1.5 whitespace-nowrap transition ${
+              activeTab === 'DELEGATION_HUB'
+                ? 'bg-blue-600 text-white shadow-sm ring-1 ring-blue-400'
+                : 'bg-white text-blue-700 hover:text-blue-900 border border-blue-200 hover:bg-blue-50'
+            }`}
+          >
+            <ShieldCheck className="w-3.5 h-3.5 text-blue-500" />
+            <span>Phân Bổ Brand, Gian Hàng & Giao Việc</span>
+            <span className="text-[10px] px-1.5 py-0.2 rounded font-black bg-blue-100 text-blue-800">
+              Trưởng Phòng
+            </span>
+          </button>
+
           <button
             onClick={() => setActiveTab('CONTROL_TOWER')}
             className={`px-3 py-1.5 rounded-md font-bold flex items-center gap-1.5 whitespace-nowrap transition ${
@@ -666,6 +735,36 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
           </div>
         </div>
       </div>
+
+      {/* ========================================================================= */}
+      {/* TAB MỚI: TRUNG TÂM PHÂN BỔ & ĐIỀU PHỐI (MANAGER DELEGATION HUB)           */}
+      {/* ========================================================================= */}
+      {activeTab === 'DELEGATION_HUB' && (
+        <ManagerDelegationHub
+          currentUser={currentUser || {
+            id: 'user-van-ngoc',
+            name: 'Vân Ngọc',
+            email: 'vanngoc@upbase.vn',
+            role: 'MANAGER',
+            roleTitle: 'Operations & Division Head',
+            avatar: 'VN'
+          }}
+          brands={currentBrands}
+          onUpdateBrand={handleUpdateBrand}
+          onAddBrand={handleAddBrand}
+          storePortfolios={currentStores}
+          onUpdateStore={handleUpdateStore}
+          staffList={STAFF_MASTER_DIRECTORY}
+          tasks={currentTasks}
+          onAddTask={handleAddTask}
+          onPingStaff={onPingStaffNotification}
+          onNotify={(msg) => {
+            if (onPingStaffNotification) {
+              onPingStaffNotification('Trưởng Phòng', msg);
+            }
+          }}
+        />
+      )}
 
       {/* ========================================================================= */}
       {/* MODULE 6: CONTROL TOWER (HEAD/LEAD ZERO INPUT - STRICTLY MONITORING ONLY) */}

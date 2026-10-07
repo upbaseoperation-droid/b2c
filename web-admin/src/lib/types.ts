@@ -442,7 +442,10 @@ export type SlaTaskType =
   | 'DNTT_DEADLINE_10AM'
   | 'CONTRACT_9M_CHECK'
   | 'DATA_LOCK_7D'
-  | 'E2E_RECONCILIATION';
+  | 'E2E_RECONCILIATION'
+  | 'GENERAL_TASK'
+  | 'SAMPLE_DELIVERY'
+  | 'ADS_CODE_RETRIEVAL';
 
 export interface SlaTask {
   id: string;
@@ -457,6 +460,10 @@ export interface SlaTask {
   dealCode?: string;
   escalatedTo?: string; // Growth Lead, Leader B2C
   actionLabel?: string; // Nhãn nút xử lý nhanh
+  description?: string;
+  brand?: string;
+  deadlineHours?: number;
+  createdAt?: string;
 }
 
 // 🌟 PHÂN LOẠI VI PHẠM SLA B2C (THEO QUY ĐỊNH MỚI)
@@ -861,6 +868,7 @@ export interface BrandDetail {
   accountPic: string; // Account Manager làm việc với Brand
   growthPic: string; // Growth Lead chạy Ads & GMV
   bookingPicLead: string; // Trưởng nhóm Booking phụ trách KOC
+  brandPicName?: string; // Brand PIC Lead (alias)
   
   // Tiêu chí & Guidelines
   brandGuideline: string;
@@ -1158,6 +1166,7 @@ export interface StorePortfolioItem {
   monthlyBudget: number;
   accountOwnerName: string; // Account/Growth Owner phụ trách doanh số & quan hệ khách hàng
   b2cOwnerName: string; // B2C Ops Owner phụ trách vận hành nội dung & booking
+  assignedStaff?: string; // Alias for primary B2C Ops assignee
   b2cOwners?: string[]; // 🌟 Danh sách các nhân sự B2C Ops cùng làm 1 shop (hỗ trợ trường hợp 2+ nhân viên làm cùng 1 shop)
   assignmentNotes?: string; // 🌟 Ghi chú phân chia công việc (ví dụ: chia theo Tier KOC, chia ca, chia đầu việc)
   activeCandidatesCount?: number;

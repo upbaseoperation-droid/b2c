@@ -28,7 +28,9 @@ import {
   INITIAL_TASKS, 
   INITIAL_KOCS, 
   INITIAL_DETAILED_STAFF_PLANS, 
-  INITIAL_STAFF_ALLOCATIONS_26 
+  INITIAL_STAFF_ALLOCATIONS_26,
+  INITIAL_BRANDS,
+  INITIAL_STORE_PORTFOLIOS
 } from '../lib/mockData';
 import { 
   UserProfile, 
@@ -39,16 +41,20 @@ import {
   StaffDetailedPlanItem, 
   MonthlyStaffAllocation,
   StaffPlanStatus,
-  ContentPillarType
+  ContentPillarType,
+  BrandDetail,
+  StorePortfolioItem
 } from '../lib/types';
 
 export default function App() {
-  const [currentUser, setCurrentUser] = useState<UserProfile>(USERS[1]); // Default Khánh Vy (Booking)
-  const [activeTab, setActiveTab] = useState<TabKey>('cockpit');
+  const [currentUser, setCurrentUser] = useState<UserProfile>(USERS[0]); // Default Vân Ngọc (Trưởng phòng)
+  const [activeTab, setActiveTab] = useState<TabKey>('manager');
 
   const [kocs, setKocs] = useState<KocItem[]>(INITIAL_KOCS);
   const [deals, setDeals] = useState<BookingDealItem[]>(INITIAL_DEALS);
   const [tasks, setTasks] = useState<SlaTask[]>(INITIAL_TASKS);
+  const [brands, setBrands] = useState<BrandDetail[]>(INITIAL_BRANDS);
+  const [storePortfolios, setStorePortfolios] = useState<StorePortfolioItem[]>(INITIAL_STORE_PORTFOLIOS);
 
   // Shared Plan State between Manager & Employees
   const [detailedPlans, setDetailedPlans] = useState<StaffDetailedPlanItem[]>(INITIAL_DETAILED_STAFF_PLANS);
@@ -309,6 +315,26 @@ export default function App() {
     showToast('✨ Đã hoàn thành đầu việc! Ghi nhận +5 điểm Kỷ luật SLA vào Bảng Vàng.');
   };
 
+  const handleAddTask = (newTask: SlaTask) => {
+    setTasks(prev => [newTask, ...prev]);
+    showToast(`⚡ Trưởng phòng đã giao nhiệm vụ: "${newTask.title}" tới ${newTask.pic}!`);
+  };
+
+  const handleUpdateBrand = (updatedBrand: BrandDetail) => {
+    setBrands(prev => prev.map(b => b.id === updatedBrand.id ? updatedBrand : b));
+    showToast(`🎯 Đã cập nhật phân bổ Brand: ${updatedBrand.name} (PIC: ${updatedBrand.bookingPicLead || updatedBrand.brandPicName || 'Chưa gán'})`);
+  };
+
+  const handleAddBrand = (newBrand: BrandDetail) => {
+    setBrands(prev => [newBrand, ...prev]);
+    showToast(`🎯 Đã thêm mới nhãn hàng: ${newBrand.name} (Phụ trách: ${newBrand.bookingPicLead || newBrand.brandPicName || 'Chưa gán'})`);
+  };
+
+  const handleUpdateStore = (updatedStore: StorePortfolioItem) => {
+    setStorePortfolios(prev => prev.map(s => s.id === updatedStore.id ? updatedStore : s));
+    showToast(`🏪 Đã cập nhật phân bổ gian hàng ${updatedStore.storeName} -> Phụ trách: ${updatedStore.b2cOwnerName || updatedStore.assignedStaff}`);
+  };
+
   const handleApproveAdvance = (dealId: string) => {
     setDeals(prev => prev.map(d => d.id === dealId ? {
       ...d,
@@ -426,8 +452,8 @@ export default function App() {
       subtitle: ''
     },
     manager: {
-      title: 'Kế Hoạch & Báo Cáo',
-      subtitle: ''
+      title: '👑 Trung Tâm Phân Bổ, Điều Phối & Báo Cáo',
+      subtitle: 'Dành riêng Trưởng phòng: Phân chia Brand, gán gian hàng, cân bằng tải nhân sự & giao việc SLA'
     },
     'sample-tracker': {
       title: 'Giám Sát Vận Đơn Mẫu & Chống Bùng KOC',
@@ -618,6 +644,13 @@ export default function App() {
                 setStaffAllocations(prev => ({ ...prev, [month]: updatedList }));
                 showToast(`💾 Đã lưu điều chỉnh Ma Trận Phân Bổ tháng ${month}!`);
               }}
+              brands={brands}
+              onUpdateBrand={handleUpdateBrand}
+              onAddBrand={handleAddBrand}
+              storePortfolios={storePortfolios}
+              onUpdateStore={handleUpdateStore}
+              tasks={tasks}
+              onAddTask={handleAddTask}
             />
           )}
 
