@@ -80,6 +80,25 @@ pre, code, kbd, samp {
   background: #94a3b8;
 }
 
+/* Ultra-slim unobtrusive scrollbar for Sidebar Navigation */
+.sidebar-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.sidebar-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.sidebar-scrollbar::-webkit-scrollbar-thumb {
+  background: #e2e8f0;
+  border-radius: 9999px;
+}
+.sidebar-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #cbd5e1;
+}
+.sidebar-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #e2e8f0 transparent;
+}
+
 /* Clean Enterprise Utility Classes - Light Theme */
 .card-enterprise {
   background-color: var(--bg-surface);
@@ -186,8 +205,8 @@ span[class*="rounded-lg"][class*="text-[1"] {
 /* STANDARDIZED BUTTON SYSTEM (ĐỒNG BỘ KÍCH THƯỚC NÚT TOÀN ỨNG DỤNG)        */
 /* ========================================================================= */
 
-/* General button hygiene: prevent text wrapping and vertical collapse */
-button {
+/* General button hygiene: scoped to buttons with explicit button classes to prevent interfering with layout buttons */
+.btn-sm, .btn-md, .btn-lg {
   white-space: nowrap;
   flex-shrink: 0;
   display: inline-flex;

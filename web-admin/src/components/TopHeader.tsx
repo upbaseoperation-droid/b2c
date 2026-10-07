@@ -31,13 +31,13 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   const isBrand = currentUser.role === 'BRAND_MEMBER';
 
   return (
-    <header className="sticky top-0 z-20 bg-white/95 backdrop-blur-md border-b border-slate-200 px-4 sm:px-6 py-2.5 flex items-center justify-between gap-4 shadow-2xs">
+    <header className="sticky top-0 z-20 h-14 bg-white/95 backdrop-blur-md border-b border-slate-200 px-4 sm:px-6 flex items-center justify-between gap-4 shadow-2xs shrink-0">
       {/* Mobile Menu Button & Page Title */}
       <div className="flex items-center gap-3 min-w-0">
         {onToggleMobileSidebar && (
           <button
             onClick={onToggleMobileSidebar}
-            className="lg:hidden p-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition"
+            className="lg:hidden p-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition shrink-0"
             aria-label="Mở menu điều hướng"
           >
             <Menu className="w-5 h-5" />
@@ -45,11 +45,11 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
         )}
 
         <div className="min-w-0">
-          <h1 className="text-sm font-bold text-slate-900 tracking-tight truncate">
+          <h1 className="text-sm font-bold text-slate-900 tracking-tight truncate leading-tight">
             {title}
           </h1>
           {subtitle && (
-            <p className="text-[11px] text-slate-500 truncate hidden md:block">
+            <p className="text-[11px] text-slate-500 truncate hidden md:block leading-tight mt-0.5">
               {subtitle}
             </p>
           )}

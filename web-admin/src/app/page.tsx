@@ -496,7 +496,7 @@ export default function App() {
           onToggleMobileSidebar={() => setIsMobileSidebarOpen(prev => !prev)}
         />
 
-        <main className="p-8 max-w-7xl w-full mx-auto space-y-6">
+        <main className="p-6 lg:p-8 w-full max-w-[1600px] space-y-6">
           {activeTab === 'cockpit' && (
             <CockpitView
               currentUser={currentUser}
