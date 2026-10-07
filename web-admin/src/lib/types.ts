@@ -1453,12 +1453,54 @@ export interface InputPlanRowItem {
 }
 
 export type MonthlyPlanStatus = 
-  | 'DRAFT'              // Bản nháp đang phân rã
-  | 'PENDING_APPROVAL'   // Chờ Trưởng phòng duyệt
-  | 'LEAD_APPROVED'      // Trưởng phòng đã duyệt
-  | 'BRAND_APPROVED'     // Brand đã thông qua
-  | 'IN_EXECUTION'       // Đang triển khai booking
-  | 'COMPLETED';         // Đã nghiệm thu & đóng số tháng
+  | 'DRAFT'                  // Bản nháp đang phân rã
+  | 'PENDING_PRE_APPROVAL'   // Chờ Sơ duyệt (Gửi sang Growth thẩm định cơ cấu & ngân sách)
+  | 'PRE_APPROVED'           // Sơ duyệt Đạt (Growth đã thông qua)
+  | 'REVISION_REQUESTED'     // Yêu cầu hiệu chỉnh (Growth/Lead yêu cầu sửa đổi)
+  | 'PENDING_APPROVAL'       // Chờ Trưởng phòng phê duyệt chính thức
+  | 'LEAD_APPROVED'          // Trưởng phòng đã duyệt
+  | 'BRAND_APPROVED'         // Brand đã thông qua
+  | 'APPROVED'               // Đã phê duyệt chính thức
+  | 'IN_EXECUTION'           // Đang triển khai booking
+  | 'COMPLETED';             // Đã nghiệm thu & đóng số tháng
+
+export type PlanDiscussionRole = 'GROWTH' | 'BOOKING' | 'LEAD' | 'SYSTEM';
+
+export type PlanDiscussionType = 
+  | 'COMMENT' 
+  | 'REVISION_REQUEST' 
+  | 'PRE_APPROVAL_PASS' 
+  | 'FINAL_APPROVAL_PASS' 
+  | 'STATUS_CHANGE'
+  | 'BUDGET_ADJUST';
+
+export interface PlanDiscussionMessage {
+  id: string;
+  authorName: string;
+  authorRole: PlanDiscussionRole;
+  authorTitle: string; // "Growth PIC", "Booking Specialist", "Trưởng Phòng B2C", "Hệ Thống"
+  content: string;
+  type: PlanDiscussionType;
+  timestamp: string;
+  tags?: string[];
+  budgetDiff?: {
+    oldBudget?: number;
+    newBudget?: number;
+    oldGmv?: number;
+    newGmv?: number;
+  };
+}
+
+export interface PlanApprovalStep {
+  id: string;
+  stage: 'DRAFT' | 'PRE_APPROVAL' | 'FINAL_APPROVAL' | 'EXECUTION';
+  stageName: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'IN_PROGRESS';
+  actorName?: string;
+  actorRole?: PlanDiscussionRole;
+  timestamp?: string;
+  feedback?: string;
+}
 
 export interface InputPlanBreakdownState {
   id: string;
@@ -1467,6 +1509,7 @@ export interface InputPlanBreakdownState {
   month: string; // Chu kỳ tháng (e.g. '2026/10', '2026/09', '2026/08', '2026/11')
   week: string;
   pic: string;
+  growthPic?: string; // Nhân sự Growth phụ trách thẩm định
   totalTargetBudget: number; // Ngân sách tổng ban đầu (VNĐ)
   totalTargetContents: number; // Số lượng nội dung tổng ban đầu
   targetGmv: number; // GMV mục tiêu
@@ -1481,4 +1524,13 @@ export interface InputPlanBreakdownState {
   createdAt?: string;
   updatedAt?: string;
   items: InputPlanRowItem[];
+  // Luồng duyệt & Lịch sử trao đổi Booking <-> Growth
+  approvalSteps?: PlanApprovalStep[];
+  discussions?: PlanDiscussionMessage[];
+  preApprovedBy?: string;
+  preApprovedAt?: string;
+  preApprovalNotes?: string;
+  approvedBy?: string;
+  approvedAt?: string;
+  revisionNotes?: string;
 }

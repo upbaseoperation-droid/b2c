@@ -43,7 +43,9 @@ import {
   Users,
   UserCheck,
   X,
-  ChevronLeft
+  ChevronLeft,
+  MessageSquare,
+  BadgeCheck
 } from 'lucide-react';
 import { 
   InputPlanBreakdownState, 
@@ -52,7 +54,10 @@ import {
   UserProfile, 
   StaffDetailedPlanItem,
   SalaryGrade,
-  WeeklyStorePlan411
+  WeeklyStorePlan411,
+  PlanDiscussionMessage,
+  PlanDiscussionRole,
+  MonthlyPlanStatus
 } from '../../lib/types';
 import { 
   BENCHMARK_COSTS, 
@@ -66,6 +71,8 @@ import {
 import { exportInputPlanStudioToExcel } from '../../lib/excelExport';
 import { MonthlyPlanHub } from './MonthlyPlanHub';
 import { INITIAL_MONTHLY_PLANS } from '../../lib/monthlyPlanData';
+import { PlanApprovalStepper } from './PlanApprovalStepper';
+import { PlanDiscussionHub } from './PlanDiscussionHub';
 
 interface InputPlanBreakdownViewProps {
   currentUser?: UserProfile;
@@ -91,8 +98,11 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
   const [planState, setPlanState] = useState<InputPlanBreakdownState>(INITIAL_MONTHLY_PLANS[0]);
   const [activeScenarioId, setActiveScenarioId] = useState<string>(MOCK_PLAN_SCENARIOS[0].id);
 
+  // Simulation Role: Booking PIC vs Growth PIC vs Trưởng Phòng
+  const [currentRole, setCurrentRole] = useState<PlanDiscussionRole>('BOOKING');
+
   // Active Channel Sub-Tab
-  const [activeTab, setActiveTab] = useState<'TIKTOK' | 'MULTI_PLATFORM' | 'SELF_CHANNEL' | 'LIVESTREAM' | 'ALL_SUMMARY' | 'EXCEL_PREVIEW'>('TIKTOK');
+  const [activeTab, setActiveTab] = useState<'TIKTOK' | 'MULTI_PLATFORM' | 'SELF_CHANNEL' | 'LIVESTREAM' | 'DISCUSSIONS' | 'ALL_SUMMARY' | 'EXCEL_PREVIEW'>('TIKTOK');
 
   // View Mode: 'CARDS' (Intuitive & Visual) or 'TABLE' (Clean & Fast)
   const [viewMode, setViewMode] = useState<'CARDS' | 'TABLE'>('TABLE');
@@ -544,6 +554,91 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
     }
   };
 
+  const handleStatusChangeForPlan = (
+    planId: string, 
+    newStatus: MonthlyPlanStatus, 
+    logMessage: string, 
+    note?: string
+  ) => {
+    const timestamp = new Date().toISOString();
+    const isTargetCurrent = planState.id === planId;
+    const targetPlan = isTargetCurrent ? planState : monthlyPlans.find(p => p.id === planId);
+    if (!targetPlan) return;
+
+    let authorName = targetPlan.pic;
+    let authorTitle = 'Booking PIC';
+    if (currentRole === 'GROWTH') {
+      authorName = targetPlan.growthPic || 'Trần Thị Ánh';
+      authorTitle = 'Growth PIC / Brand Growth Lead';
+    } else if (currentRole === 'LEAD') {
+      authorName = 'Nguyễn Hoàng Long';
+      authorTitle = 'Trưởng Phòng B2C';
+    }
+
+    const newMsg: PlanDiscussionMessage = {
+      id: `DISC-${Date.now()}`,
+      authorName,
+      authorRole: currentRole,
+      authorTitle,
+      content: note ? `${logMessage}\n\nÝ kiến ghi chú: "${note}"` : logMessage,
+      type: newStatus === 'PRE_APPROVED' 
+        ? 'PRE_APPROVAL_PASS' 
+        : (newStatus === 'APPROVED' || newStatus === 'LEAD_APPROVED' || newStatus === 'IN_EXECUTION') 
+        ? 'FINAL_APPROVAL_PASS' 
+        : newStatus === 'REVISION_REQUESTED' 
+        ? 'REVISION_REQUEST' 
+        : 'STATUS_CHANGE',
+      timestamp,
+      tags: ['Quy Trình Duyệt', newStatus]
+    };
+
+    const updatedPlan: InputPlanBreakdownState = {
+      ...targetPlan,
+      status: newStatus,
+      updatedAt: timestamp,
+      preApprovedBy: newStatus === 'PRE_APPROVED' ? authorName : targetPlan.preApprovedBy,
+      preApprovedAt: newStatus === 'PRE_APPROVED' ? timestamp : targetPlan.preApprovedAt,
+      preApprovalNotes: newStatus === 'PRE_APPROVED' ? note : targetPlan.preApprovalNotes,
+      approvedBy: (newStatus === 'APPROVED' || newStatus === 'IN_EXECUTION') ? authorName : targetPlan.approvedBy,
+      approvedAt: (newStatus === 'APPROVED' || newStatus === 'IN_EXECUTION') ? timestamp : targetPlan.approvedAt,
+      revisionNotes: newStatus === 'REVISION_REQUESTED' ? note : targetPlan.revisionNotes,
+      discussions: [newMsg, ...(targetPlan.discussions || [])]
+    };
+
+    if (isTargetCurrent) {
+      setPlanState(updatedPlan);
+    }
+    setMonthlyPlans(prev => prev.map(p => p.id === planId ? updatedPlan : p));
+  };
+
+  const handleSendMessageToPlan = (
+    planId: string, 
+    msg: Omit<PlanDiscussionMessage, 'id' | 'timestamp'>
+  ) => {
+    const fullMsg: PlanDiscussionMessage = {
+      ...msg,
+      id: `DISC-${Date.now()}`,
+      timestamp: new Date().toISOString()
+    };
+
+    const isTargetCurrent = planState.id === planId;
+    if (isTargetCurrent) {
+      setPlanState(prev => ({
+        ...prev,
+        updatedAt: new Date().toISOString(),
+        discussions: [fullMsg, ...(prev.discussions || [])]
+      }));
+    }
+    setMonthlyPlans(prev => prev.map(p => {
+      if (p.id !== planId) return p;
+      return {
+        ...p,
+        updatedAt: new Date().toISOString(),
+        discussions: [fullMsg, ...(p.discussions || [])]
+      };
+    }));
+  };
+
   // 🌟 MÀN HÌNH 1: QUẢN LÝ KẾ HOẠCH THEO THÁNG (MONTHLY PLAN HUB)
   if (!isShowingStudio) {
     return (
@@ -576,8 +671,11 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
           };
           setMonthlyPlans(prev => [cloned, ...prev]);
         }}
-        onUpdatePlanStatus={(planId, newStatus) => {
-          setMonthlyPlans(prev => prev.map(p => p.id === planId ? { ...p, status: newStatus } : p));
+        onUpdatePlanStatus={(planId, newStatus, log, note) => {
+          handleStatusChangeForPlan(planId, newStatus, log || `Cập nhật trạng thái kế hoạch sang ${newStatus}`, note);
+        }}
+        onSendMessage={(planId, msg) => {
+          handleSendMessageToPlan(planId, msg);
         }}
       />
     );
@@ -653,6 +751,16 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
           </button>
         </div>
       </div>
+
+      {/* 🌟 0. LUỒNG PHÊ DUYỆT 2 CẤP & TIẾN TRÌNH SƠ DUYỆT (APPROVAL STEPPER) */}
+      <PlanApprovalStepper
+        plan={planState}
+        currentRole={currentRole}
+        onRoleChange={setCurrentRole}
+        onStatusChange={(newStatus, log, note) => handleStatusChangeForPlan(planState.id, newStatus, log, note)}
+        onNotify={notify}
+      />
+
       {/* ========================================================================= */}
       {/* 1. TOP HEADER & QUICK METRICS COCKPIT                                    */}
       {/* ========================================================================= */}
@@ -1069,12 +1177,29 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
               {channelTotals.livestream.qty} ca · {(channelTotals.livestream.budget / 1000000).toFixed(1)}M
             </span>
           </button>
+
+          <button
+            onClick={() => setActiveTab('DISCUSSIONS')}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition whitespace-nowrap ${
+              activeTab === 'DISCUSSIONS'
+                ? 'bg-slate-900 text-white shadow-xs'
+                : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200/90 hover:bg-slate-50'
+            }`}
+          >
+            <MessageSquare className="w-3.5 h-3.5 text-indigo-500" />
+            <span>5. Trao Đổi Booking & Growth</span>
+            <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+              activeTab === 'DISCUSSIONS' ? 'bg-indigo-600 text-white' : 'bg-amber-100 text-amber-800'
+            }`}>
+              {planState.discussions?.length || 0} trao đổi
+            </span>
+          </button>
         </div>
 
         {/* View Switchers & Excel Preview */}
         <div className="flex items-center gap-2">
           {/* Card vs Table toggle */}
-          {activeTab !== 'EXCEL_PREVIEW' && (
+          {activeTab !== 'EXCEL_PREVIEW' && activeTab !== 'DISCUSSIONS' && (
             <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200/80">
               <button
                 onClick={() => setViewMode('TABLE')}
@@ -1116,7 +1241,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
       {/* ========================================================================= */}
       {/* 3. MAIN CONTENT AREA: VIEW MODE 1 - CARDS VIEW (INTUITIVE & MODERN)       */}
       {/* ========================================================================= */}
-      {activeTab !== 'EXCEL_PREVIEW' && viewMode === 'CARDS' && (
+      {activeTab !== 'EXCEL_PREVIEW' && activeTab !== 'DISCUSSIONS' && viewMode === 'CARDS' && (
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {visibleItems.map((item) => {
@@ -1292,7 +1417,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
       {/* ========================================================================= */}
       {/* 4. MAIN CONTENT AREA: VIEW MODE 2 - CLEAN STREAMLINED TABLE               */}
       {/* ========================================================================= */}
-      {activeTab !== 'EXCEL_PREVIEW' && viewMode === 'TABLE' && (
+      {activeTab !== 'EXCEL_PREVIEW' && activeTab !== 'DISCUSSIONS' && viewMode === 'TABLE' && (
         <div className="bg-white rounded-2xl border border-slate-200/90 overflow-hidden shadow-xs">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
@@ -1498,7 +1623,21 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
       )}
 
       {/* ========================================================================= */}
-      {/* 5. TAB EXCEL PREVIEW (CLEAN SHEET 4.1.1 VERIFICATION)                     */}
+      {/* 5. TAB TRAO ĐỔI BOOKING & GROWTH & LỊCH SỬ DUYỆT                          */}
+      {/* ========================================================================= */}
+      {activeTab === 'DISCUSSIONS' && (
+        <div className="space-y-4">
+          <PlanDiscussionHub
+            plan={planState}
+            currentRole={currentRole}
+            onSendMessage={(msg) => handleSendMessageToPlan(planState.id, msg)}
+            onNotify={notify}
+          />
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 6. TAB EXCEL PREVIEW (CLEAN SHEET 4.1.1 VERIFICATION)                     */}
       {/* ========================================================================= */}
       {activeTab === 'EXCEL_PREVIEW' && (
         <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs">

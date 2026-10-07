@@ -29,22 +29,29 @@ import {
   Send,
   X,
   Check,
-  RefreshCw
+  RefreshCw,
+  MessageSquare,
+  ShieldCheck,
+  BadgeCheck,
+  AlertTriangle
 } from 'lucide-react';
 import { 
   InputPlanBreakdownState, 
   MonthlyPlanStatus, 
+  PlanDiscussionMessage,
   UserProfile 
 } from '../../lib/types';
 import { AVAILABLE_MONTHS } from '../../lib/monthlyPlanData';
 import { autoBalancePlanItems, INITIAL_INPUT_PLAN_ITEMS } from '../../lib/inputPlanDefaults';
+import { PlanHistoryModal } from './PlanHistoryModal';
 
 interface MonthlyPlanHubProps {
   plans: InputPlanBreakdownState[];
   onSelectPlan: (plan: InputPlanBreakdownState) => void;
   onCreatePlan: (newPlan: InputPlanBreakdownState) => void;
   onClonePlan: (sourcePlan: InputPlanBreakdownState, targetMonth: string) => void;
-  onUpdatePlanStatus?: (planId: string, newStatus: MonthlyPlanStatus) => void;
+  onUpdatePlanStatus?: (planId: string, newStatus: MonthlyPlanStatus, logMessage?: string, note?: string) => void;
+  onSendMessage?: (planId: string, msg: Omit<PlanDiscussionMessage, 'id' | 'timestamp'>) => void;
   currentUser?: UserProfile;
   onNotify?: (msg: string) => void;
 }
@@ -55,6 +62,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
   onCreatePlan,
   onClonePlan,
   onUpdatePlanStatus,
+  onSendMessage,
   currentUser,
   onNotify
 }) => {
@@ -82,6 +90,10 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
   // Modal State for Clone Plan
   const [cloningPlan, setCloningPlan] = useState<InputPlanBreakdownState | null>(null);
   const [cloneTargetMonth, setCloneTargetMonth] = useState('2026/11');
+
+  // Modal State for History & Discussions
+  const [historyPlanId, setHistoryPlanId] = useState<string | null>(null);
+  const viewingHistoryPlan = plans.find(p => p.id === historyPlanId) || null;
 
   const notify = (msg: string) => {
     if (onNotify) onNotify(msg);
@@ -136,7 +148,10 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
     const avgRoi = totalBudget > 0 ? (totalGmv / totalBudget).toFixed(1) : '0';
 
     const countExecuting = targetPool.filter(p => p.status === 'IN_EXECUTION').length;
-    const countApproved = targetPool.filter(p => p.status === 'LEAD_APPROVED' || p.status === 'BRAND_APPROVED').length;
+    const countApproved = targetPool.filter(p => ['LEAD_APPROVED', 'BRAND_APPROVED', 'APPROVED'].includes(p.status || '')).length;
+    const countPreApproval = targetPool.filter(p => p.status === 'PENDING_PRE_APPROVAL').length;
+    const countPreApproved = targetPool.filter(p => p.status === 'PRE_APPROVED').length;
+    const countRevision = targetPool.filter(p => p.status === 'REVISION_REQUESTED').length;
     const countPending = targetPool.filter(p => p.status === 'PENDING_APPROVAL').length;
     const countDraft = targetPool.filter(p => p.status === 'DRAFT' || !p.status).length;
     const countCompleted = targetPool.filter(p => p.status === 'COMPLETED').length;
@@ -149,6 +164,9 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
       avgRoi,
       countExecuting,
       countApproved,
+      countPreApproval,
+      countPreApproved,
+      countRevision,
       countPending,
       countDraft,
       countCompleted
@@ -171,6 +189,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
       month: newPlanMonth,
       week: newPlanWeek,
       pic: newPlanPic,
+      growthPic: 'Trần Thị Ánh (Growth Manager)',
       totalTargetBudget: newPlanBudget,
       totalTargetContents: newPlanQty,
       targetGmv: newPlanGmv,
@@ -184,7 +203,19 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
       notes: newPlanNotes || `Kế hoạch khởi tạo cho chu kỳ ${newPlanMonth}.`,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      items: balancedItems
+      items: balancedItems,
+      discussions: [
+        {
+          id: `DISC-${Date.now()}`,
+          authorName: newPlanPic,
+          authorRole: 'BOOKING',
+          authorTitle: 'Booking Specialist PIC',
+          content: `Khởi tạo kế hoạch tháng ${newPlanMonth} với ngân sách trần ${(newPlanBudget / 1000000).toLocaleString('vi-VN')} Tr đ, dự kiến ${newPlanQty} nội dung. Đang tiến hành phân rã 4 kênh.`,
+          type: 'COMMENT',
+          timestamp: new Date().toISOString(),
+          tags: ['Khởi Tạo', 'Ngân Sách']
+        }
+      ]
     };
 
     onCreatePlan(createdPlan);
@@ -203,26 +234,48 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
 
   const getStatusBadge = (status?: MonthlyPlanStatus) => {
     switch (status) {
-      case 'IN_EXECUTION':
+      case 'PENDING_PRE_APPROVAL':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            Đang Thực Thi
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200">
+            <Clock className="w-3.5 h-3.5 text-amber-600 animate-spin" />
+            Chờ Sơ Duyệt
           </span>
         );
-      case 'LEAD_APPROVED':
-      case 'BRAND_APPROVED':
+      case 'PRE_APPROVED':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
-            <CheckCircle2 className="w-3.5 h-3.5 text-blue-600" />
-            Đã Phê Duyệt
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-teal-50 text-teal-800 border border-teal-200">
+            <BadgeCheck className="w-3.5 h-3.5 text-teal-600" />
+            Sơ Duyệt Đạt
+          </span>
+        );
+      case 'REVISION_REQUESTED':
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-800 border border-rose-200">
+            <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
+            Cần Hiệu Chỉnh
           </span>
         );
       case 'PENDING_APPROVAL':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
-            <Clock className="w-3.5 h-3.5 text-amber-600" />
-            Chờ Lead Duyệt
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-800 border border-blue-200">
+            <Clock className="w-3.5 h-3.5 text-blue-600 animate-pulse" />
+            Chờ Duyệt Lead
+          </span>
+        );
+      case 'LEAD_APPROVED':
+      case 'BRAND_APPROVED':
+      case 'APPROVED':
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+            Đã Phê Duyệt
+          </span>
+        );
+      case 'IN_EXECUTION':
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-800 border border-indigo-200">
+            <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
+            Đang Thực Thi
           </span>
         );
       case 'COMPLETED':
@@ -434,17 +487,27 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
               {monthlyMetrics.planCount} <span className="text-sm font-normal text-slate-500">kế hoạch</span>
             </div>
             <div className="flex flex-wrap items-center gap-1.5 mt-1.5 text-xs">
-              <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-semibold">
+              <span className="px-2 py-0.5 rounded bg-indigo-100 text-indigo-800 font-semibold">
                 {monthlyMetrics.countExecuting} Đang chạy
               </span>
-              <span className="px-2 py-0.5 rounded bg-blue-100 text-blue-800 font-semibold">
-                {monthlyMetrics.countApproved} Đã duyệt
-              </span>
-              {monthlyMetrics.countPending > 0 && (
+              {monthlyMetrics.countPreApproval > 0 && (
                 <span className="px-2 py-0.5 rounded bg-amber-100 text-amber-800 font-semibold">
-                  {monthlyMetrics.countPending} Chờ duyệt
+                  {monthlyMetrics.countPreApproval} Chờ sơ duyệt
                 </span>
               )}
+              {monthlyMetrics.countPreApproved > 0 && (
+                <span className="px-2 py-0.5 rounded bg-teal-100 text-teal-800 font-semibold">
+                  {monthlyMetrics.countPreApproved} Sơ duyệt đạt
+                </span>
+              )}
+              {monthlyMetrics.countRevision > 0 && (
+                <span className="px-2 py-0.5 rounded bg-rose-100 text-rose-800 font-semibold">
+                  {monthlyMetrics.countRevision} Cần hiệu chỉnh
+                </span>
+              )}
+              <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-semibold">
+                {monthlyMetrics.countApproved} Đã duyệt
+              </span>
             </div>
           </div>
         </div>
@@ -491,9 +554,12 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
               className="bg-transparent font-semibold text-slate-900 focus:outline-none cursor-pointer"
             >
               <option value="ALL">Tất cả trạng thái</option>
+              <option value="PENDING_PRE_APPROVAL">Chờ Sơ Duyệt (Growth)</option>
+              <option value="PRE_APPROVED">Sơ Duyệt Đạt</option>
+              <option value="REVISION_REQUESTED">Cần Hiệu Chỉnh</option>
+              <option value="PENDING_APPROVAL">Chờ Duyệt Lead</option>
               <option value="IN_EXECUTION">Đang Thực Thi</option>
-              <option value="LEAD_APPROVED">Đã Duyệt</option>
-              <option value="PENDING_APPROVAL">Chờ Lead Duyệt</option>
+              <option value="LEAD_APPROVED">Đã Phê Duyệt</option>
               <option value="DRAFT">Bản Nháp</option>
               <option value="COMPLETED">Đã Nghiệm Thu</option>
             </select>
@@ -607,11 +673,18 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                     <h3 className="font-bold text-base text-slate-900 group-hover:text-indigo-600 transition-colors line-clamp-2 leading-snug">
                       {plan.title}
                     </h3>
-                    <div className="flex items-center gap-2 mt-2 text-xs text-slate-500">
-                      <div className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-[10px]">
-                        {plan.pic?.charAt(0) || 'P'}
+                    <div className="flex items-center gap-2 mt-2 text-xs text-slate-500 flex-wrap">
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-[10px]">
+                          {plan.pic?.charAt(0) || 'P'}
+                        </div>
+                        <span>Booking: <strong className="text-slate-800">{plan.pic}</strong></span>
                       </div>
-                      <span>PIC: <strong className="text-slate-800">{plan.pic}</strong></span>
+                      <span>•</span>
+                      <div className="flex items-center gap-1">
+                        <span className="text-slate-400">Growth:</span>
+                        <strong className="text-amber-800">{plan.growthPic?.split(' ')[0] || 'Team'}</strong>
+                      </div>
                       <span>•</span>
                       <span className="text-slate-400">{plan.week}</span>
                     </div>
@@ -679,7 +752,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                   </div>
                 </div>
 
-                {/* Card Footer: Action Button trọng tâm */}
+                {/* Card Footer: Action Buttons */}
                 <div className="p-4 bg-white border-t border-slate-100 flex items-center justify-between gap-2">
                   <button
                     onClick={() => {
@@ -693,10 +766,19 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                   </button>
 
                   <button
-                    onClick={() => onSelectPlan(plan)}
-                    className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white font-bold text-xs shadow-md shadow-indigo-600/20 group-hover:shadow-indigo-600/40 transition-all transform active:scale-95"
+                    onClick={() => setHistoryPlanId(plan.id)}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-50 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 border border-slate-200 text-xs font-semibold transition-all"
+                    title="Xem Lịch Sử Trao Đổi Booking & Growth & Luồng Phê Duyệt"
                   >
-                    <span>Vào Phân Rã Chi Tiết</span>
+                    <MessageSquare className="w-3.5 h-3.5 text-indigo-500" />
+                    <span>Trao Đổi ({plan.discussions?.length || 0})</span>
+                  </button>
+
+                  <button
+                    onClick={() => onSelectPlan(plan)}
+                    className="flex-1 inline-flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white font-bold text-xs shadow-md shadow-indigo-600/20 group-hover:shadow-indigo-600/40 transition-all transform active:scale-95"
+                  >
+                    <span>Vào Phân Rã</span>
                     <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                   </button>
                 </div>
@@ -744,8 +826,9 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                       <td className="py-3.5 px-4 font-semibold text-slate-800">
                         {plan.brandName}
                       </td>
-                      <td className="py-3.5 px-4 text-slate-700">
-                        {plan.pic}
+                      <td className="py-3.5 px-4">
+                        <div className="font-semibold text-slate-800">{plan.pic}</div>
+                        <div className="text-[10px] text-amber-700 font-medium">Growth: {plan.growthPic?.split(' ')[0] || 'Team'}</div>
                       </td>
                       <td className="py-3.5 px-4 text-right font-bold text-slate-900">
                         {(plan.totalTargetBudget / 1000000).toLocaleString('vi-VN')} Tr đ
@@ -764,13 +847,23 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                         {getStatusBadge(plan.status)}
                       </td>
                       <td className="py-3.5 px-4 text-center" onClick={(e) => e.stopPropagation()}>
-                        <button
-                          onClick={() => onSelectPlan(plan)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-sm"
-                        >
-                          <span>Xem Chi Tiết</span>
-                          <ArrowRight className="w-3 h-3" />
-                        </button>
+                        <div className="flex items-center justify-center gap-1.5">
+                          <button
+                            onClick={() => setHistoryPlanId(plan.id)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 text-xs font-semibold transition-colors"
+                            title="Xem Lịch Sử Trao Đổi Booking & Growth & Luồng Phê Duyệt"
+                          >
+                            <MessageSquare className="w-3.5 h-3.5 text-indigo-500" />
+                            <span>({plan.discussions?.length || 0})</span>
+                          </button>
+                          <button
+                            onClick={() => onSelectPlan(plan)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs"
+                          >
+                            <span>Xem Studio</span>
+                            <ArrowRight className="w-3 h-3" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -1051,6 +1144,26 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* 🌟 8. MODAL XEM LỊCH SỬ TRAO ĐỔI & TIẾN TRÌNH DUYỆT */}
+      {viewingHistoryPlan && (
+        <PlanHistoryModal
+          plan={viewingHistoryPlan}
+          isOpen={!!viewingHistoryPlan}
+          onClose={() => setHistoryPlanId(null)}
+          onSendMessage={(planId, msg) => {
+            if (onSendMessage) {
+              onSendMessage(planId, msg);
+            }
+          }}
+          onStatusChange={(planId, newStatus, log, note) => {
+            if (onUpdatePlanStatus) {
+              onUpdatePlanStatus(planId, newStatus, log, note);
+            }
+          }}
+          onNotify={notify}
+        />
       )}
     </div>
   );
