@@ -73,6 +73,19 @@ export const EmployeePlanInspectorModal: React.FC<EmployeePlanInspectorModalProp
     }
   }, [staffAllocation]);
 
+  // ESC key listener
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    if (isOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen || !staffAllocation) return null;
 
   // Calculations
@@ -128,8 +141,18 @@ export const EmployeePlanInspectorModal: React.FC<EmployeePlanInspectorModalProp
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="bg-white border border-slate-200 rounded-lg shadow-2xl w-full max-w-6xl max-h-[92vh] flex flex-col overflow-hidden text-slate-800">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div 
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Kế Hoạch Triển Khai Chi Tiết — ${staffAllocation.staffName}`}
+        className="bg-white border border-slate-200 rounded-xl shadow-2xl w-full max-w-6xl max-h-[92vh] flex flex-col overflow-hidden text-slate-800"
+      >
         
         {/* ========================================================================= */}
         {/* 1. MODAL HEADER                                                           */}

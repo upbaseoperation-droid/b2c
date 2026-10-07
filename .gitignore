@@ -37,3 +37,7 @@ Thumbs.db
 *.pdf
 *.docx
 pdf_preview/
+
+# Local Agent & Tooling
+.agents/
+ECC/

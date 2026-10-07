@@ -12,29 +12,43 @@ export const updateSession = async (request: NextRequest) => {
     },
   });
 
-  const supabase = createServerClient(
-    supabaseUrl!,
-    supabaseKey!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-          supabaseResponse = NextResponse.next({
-            request,
-          });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          );
-        },
-      },
-    }
-  );
+  // Only attempt auth refresh if valid Supabase URL is configured
+  const isValidConfig = supabaseUrl && !supabaseUrl.includes('[PROJECT-REF]') && supabaseKey && !supabaseKey.includes('placeholder');
+  if (!isValidConfig) {
+    return supabaseResponse;
+  }
 
-  // Refresh auth token
-  await supabase.auth.getUser();
+  try {
+    const supabase = createServerClient(
+      supabaseUrl,
+      supabaseKey,
+      {
+        cookies: {
+          getAll() {
+            return request.cookies.getAll();
+          },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+            supabaseResponse = NextResponse.next({
+              request,
+            });
+            cookiesToSet.forEach(({ name, value, options }) =>
+              supabaseResponse.cookies.set(name, value, options)
+            );
+          },
+        },
+      }
+    );
+
+    // Refresh auth token safely if cookie exists
+    const hasAuthCookie = request.cookies.getAll().some(c => c.name.startsWith('sb-'));
+    if (hasAuthCookie) {
+      await supabase.auth.getUser();
+    }
+  } catch (err) {
+    // Fail gracefully without interrupting request flow
+    console.warn('[Middleware] Supabase auth refresh skipped:', err);
+  }
 
   return supabaseResponse;
 };

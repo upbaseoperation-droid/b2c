@@ -65,13 +65,16 @@ export default function App() {
   const [preselectedKoc, setPreselectedKoc] = useState<KocItem | null>(null);
   const [preselectedBrand, setPreselectedBrand] = useState<string | null>(null);
 
-  // Notifications Toast
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  // Mobile Drawer State
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
+  // Notifications Toast (Enhanced with Type & Dismiss)
+  const [toastData, setToastData] = useState<{ message: string; type: 'success' | 'warning' | 'info' | 'error' } | null>(null);
+
+  const showToast = (msg: string, type: 'success' | 'warning' | 'info' | 'error' = 'success') => {
+    setToastData({ message: msg, type });
     setTimeout(() => {
-      setToastMessage(null);
+      setToastData(null);
     }, 4500);
   };
 
@@ -446,18 +449,36 @@ export default function App() {
 
   return (
     <div className="flex min-h-screen bg-slate-50 text-slate-900">
-      {/* Toast Notification */}
-      {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 px-4 py-2.5 rounded-md bg-slate-900 text-white font-medium text-xs shadow-xl animate-in slide-in-from-bottom-3 duration-150 flex items-center gap-2 border border-slate-700">
-          <span>{toastMessage}</span>
+      {/* Toast Notification (Enterprise Multi-Type) */}
+      {toastData && (
+        <div 
+          className={`fixed bottom-6 right-6 z-50 px-4 py-3 rounded-xl text-xs font-semibold shadow-2xl animate-in slide-in-from-bottom-3 duration-200 flex items-center gap-2.5 border ${
+            toastData.type === 'success' ? 'bg-slate-900 text-white border-slate-700' :
+            toastData.type === 'warning' ? 'bg-amber-900 text-amber-100 border-amber-700' :
+            toastData.type === 'error' ? 'bg-rose-900 text-rose-100 border-rose-700' :
+            'bg-blue-900 text-blue-100 border-blue-700'
+          }`}
+          role="status"
+          aria-live="polite"
+        >
+          <span>{toastData.message}</span>
+          <button 
+            onClick={() => setToastData(null)}
+            className="p-1 rounded-md hover:bg-white/20 transition text-slate-400 hover:text-white"
+            aria-label="Đóng thông báo"
+          >
+            ✕
+          </button>
         </div>
       )}
 
-      {/* Sidebar Navigation */}
+      {/* Sidebar Navigation (with Mobile Drawer Support) */}
       <Sidebar
         activeTab={activeTab}
         onTabSelect={setActiveTab}
         currentUser={currentUser}
+        isMobileOpen={isMobileSidebarOpen}
+        onCloseMobile={() => setIsMobileSidebarOpen(false)}
       />
 
       {/* Main Content Space */}
@@ -472,6 +493,7 @@ export default function App() {
           onOpenImport={() => setIsImportOpen(true)}
           title={titles[activeTab].title}
           subtitle={titles[activeTab].subtitle}
+          onToggleMobileSidebar={() => setIsMobileSidebarOpen(prev => !prev)}
         />
 
         <main className="p-8 max-w-7xl w-full mx-auto space-y-6">

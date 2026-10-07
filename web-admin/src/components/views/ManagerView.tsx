@@ -175,6 +175,19 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
     }
   }, [externalPlanItems]);
 
+  // Global Escape key dismiss for open modals
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setEditingAllocation(null);
+        setIsTierQuotaModalOpen(false);
+        setInspectStaffModal(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   
   // Master Plans state (Quản lý chỉ tiêu theo tháng & theo 4 Tier KOC/KOL)
   const [masterPlans, setMasterPlans] = useState<MonthlyMasterQuotaPlan[]>(MONTHLY_MASTER_QUOTA_PLANS);
@@ -918,17 +931,17 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
             </div>
 
             {/* Ceiling Metrics Summary */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 py-4 border-b border-[#1e293b]/70">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 py-4 border-b border-slate-200">
               <div>
-                <span className="text-[11px] text-slate-400 font-medium block">Trần Ngân Sách {currentPlan.monthLabel}</span>
-                <div className="text-xl font-bold text-white mt-0.5">{TOTAL_CEILING_BUDGET.toLocaleString('vi-VN')} đ</div>
-                <div className="flex items-center justify-between text-[11px] text-slate-400 mt-1">
-                  <span>Đã giao: <strong className="text-blue-400 font-semibold">{totalAllocatedBudget.toLocaleString('vi-VN')} đ</strong></span>
-                  <span className={remainingBudget === 0 ? 'text-emerald-400 font-semibold' : remainingBudget < 0 ? 'text-rose-400 font-semibold' : 'text-amber-400 font-semibold'}>
+                <span className="text-[11px] text-slate-500 font-medium block">Trần Ngân Sách {currentPlan.monthLabel}</span>
+                <div className="text-xl font-bold text-slate-900 mt-0.5">{TOTAL_CEILING_BUDGET.toLocaleString('vi-VN')} đ</div>
+                <div className="flex items-center justify-between text-[11px] text-slate-500 mt-1">
+                  <span>Đã giao: <strong className="text-blue-700 font-semibold">{totalAllocatedBudget.toLocaleString('vi-VN')} đ</strong></span>
+                  <span className={remainingBudget === 0 ? 'text-emerald-700 font-semibold' : remainingBudget < 0 ? 'text-rose-700 font-semibold' : 'text-amber-700 font-semibold'}>
                     {remainingBudget === 0 ? 'Cân đối 100%' : remainingBudget < 0 ? `Vượt: ${Math.abs(remainingBudget).toLocaleString('vi-VN')} đ` : `Còn: ${remainingBudget.toLocaleString('vi-VN')} đ`}
                   </span>
                 </div>
-                <div className="w-full h-1.5 bg-slate-800 rounded-full mt-2 overflow-hidden">
+                <div className="w-full h-1.5 bg-slate-200 rounded-full mt-2 overflow-hidden">
                   <div 
                     className={`h-full rounded-full transition-all ${totalAllocatedBudget > TOTAL_CEILING_BUDGET ? 'bg-rose-500' : 'bg-blue-500'}`}
                     style={{ width: `${Math.min(100, (totalAllocatedBudget / TOTAL_CEILING_BUDGET) * 100)}%` }}
@@ -937,15 +950,15 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
               </div>
 
               <div>
-                <span className="text-[11px] text-slate-400 font-medium block">Chỉ Tiêu Video Toàn Phòng</span>
-                <div className="text-xl font-bold text-white mt-0.5">{TOTAL_TARGET_VIDEOS.toLocaleString('vi-VN')} Video</div>
-                <div className="flex items-center justify-between text-[11px] text-slate-400 mt-1">
-                  <span>Đã giao: <strong className="text-purple-400 font-semibold">{totalAllocatedVideos.toLocaleString('vi-VN')}</strong></span>
-                  <span className={remainingVideos === 0 ? 'text-emerald-400 font-semibold' : remainingVideos < 0 ? 'text-rose-400 font-semibold' : 'text-slate-300'}>
+                <span className="text-[11px] text-slate-500 font-medium block">Chỉ Tiêu Video Toàn Phòng</span>
+                <div className="text-xl font-bold text-slate-900 mt-0.5">{TOTAL_TARGET_VIDEOS.toLocaleString('vi-VN')} Video</div>
+                <div className="flex items-center justify-between text-[11px] text-slate-500 mt-1">
+                  <span>Đã giao: <strong className="text-purple-700 font-semibold">{totalAllocatedVideos.toLocaleString('vi-VN')}</strong></span>
+                  <span className={remainingVideos === 0 ? 'text-emerald-700 font-semibold' : remainingVideos < 0 ? 'text-rose-700 font-semibold' : 'text-slate-600'}>
                     {remainingVideos === 0 ? '100% Cân đối' : remainingVideos < 0 ? `Vượt +${Math.abs(remainingVideos)}` : `Còn ${remainingVideos}`}
                   </span>
                 </div>
-                <div className="w-full h-1.5 bg-slate-800 rounded-full mt-2 overflow-hidden">
+                <div className="w-full h-1.5 bg-slate-200 rounded-full mt-2 overflow-hidden">
                   <div 
                     className={`h-full rounded-full transition-all ${totalAllocatedVideos > TOTAL_TARGET_VIDEOS ? 'bg-rose-500' : 'bg-purple-500'}`}
                     style={{ width: `${Math.min(100, (totalAllocatedVideos / TOTAL_TARGET_VIDEOS) * 100)}%` }}
@@ -954,15 +967,15 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
               </div>
 
               <div>
-                <span className="text-[11px] text-slate-400 font-medium block">Mục Tiêu Doanh Số (GMV)</span>
-                <div className="text-xl font-bold text-emerald-400 mt-0.5">{totalTargetGmv.toLocaleString('vi-VN')} đ</div>
-                <div className="flex items-center justify-between text-[11px] text-slate-400 mt-1">
-                  <span>Thực đạt: <strong className="text-white">{(allocations.reduce((sum, a) => sum + (a.actualGmv || 0), 0) / 1000000000).toFixed(2)} B</strong></span>
-                  <span className="text-emerald-400 font-semibold">
+                <span className="text-[11px] text-slate-500 font-medium block">Mục Tiêu Doanh Số (GMV)</span>
+                <div className="text-xl font-bold text-emerald-700 mt-0.5">{totalTargetGmv.toLocaleString('vi-VN')} đ</div>
+                <div className="flex items-center justify-between text-[11px] text-slate-500 mt-1">
+                  <span>Thực đạt: <strong className="text-slate-900 font-semibold">{(allocations.reduce((sum, a) => sum + (a.actualGmv || 0), 0) / 1000000000).toFixed(2)} B</strong></span>
+                  <span className="text-emerald-700 font-semibold">
                     {totalTargetGmv > 0 ? Math.round((allocations.reduce((sum, a) => sum + (a.actualGmv || 0), 0) / totalTargetGmv) * 100) : 0}%
                   </span>
                 </div>
-                <div className="w-full h-1.5 bg-slate-800 rounded-full mt-2 overflow-hidden">
+                <div className="w-full h-1.5 bg-slate-200 rounded-full mt-2 overflow-hidden">
                   <div 
                     className="h-full bg-emerald-500 rounded-full" 
                     style={{ width: `${totalTargetGmv > 0 ? Math.min(100, (allocations.reduce((sum, a) => sum + (a.actualGmv || 0), 0) / totalTargetGmv) * 100) : 0}%` }} 
@@ -971,13 +984,13 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
               </div>
 
               <div>
-                <span className="text-[11px] text-slate-400 font-medium block">Quy Mô & Tải Nhân Sự</span>
-                <div className="text-xl font-bold text-white mt-0.5">{allocations.length} Chuyên Viên</div>
-                <div className="flex items-center justify-between text-[11px] text-slate-400 mt-1">
+                <span className="text-[11px] text-slate-500 font-medium block">Quy Mô & Tải Nhân Sự</span>
+                <div className="text-xl font-bold text-slate-900 mt-0.5">{allocations.length} Chuyên Viên</div>
+                <div className="flex items-center justify-between text-[11px] text-slate-500 mt-1">
                   <span>{allocations.filter(a => !a.isLagging).length} Đạt tiến độ</span>
-                  <span className="text-rose-400 font-semibold">{allocations.filter(a => a.isLagging).length} Cần hỗ trợ</span>
+                  <span className="text-rose-700 font-semibold">{allocations.filter(a => a.isLagging).length} Cần hỗ trợ</span>
                 </div>
-                <div className="w-full h-1.5 bg-slate-800 rounded-full mt-2 overflow-hidden">
+                <div className="w-full h-1.5 bg-slate-200 rounded-full mt-2 overflow-hidden">
                   <div 
                     className="h-full bg-rose-500 rounded-full" 
                     style={{ width: `${(allocations.filter(a => a.isLagging).length / allocations.length) * 100}%` }} 
@@ -1638,48 +1651,48 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
         <div className="space-y-6">
           {/* Executive Summary 4 Cards (From Image 1) */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="card-enterprise p-5 bg-[#0b1322] border-blue-500/30 text-center">
-              <span className="text-xs text-blue-400 font-bold uppercase tracking-wider block">AFFILIATE GMV</span>
-              <div className="text-2xl font-black text-white mt-1">84,0%</div>
-              <span className="text-xs text-slate-300 mt-1 block">
-                <strong className="text-emerald-400">24,15 B</strong> / 28,74 B plan
+            <div className="card-enterprise p-5 bg-white border-blue-200 shadow-2xs text-center">
+              <span className="text-xs text-blue-700 font-bold uppercase tracking-wider block">AFFILIATE GMV</span>
+              <div className="text-2xl font-black text-slate-900 mt-1">84,0%</div>
+              <span className="text-xs text-slate-600 mt-1 block">
+                <strong className="text-emerald-700">24,15 B</strong> / 28,74 B plan
               </span>
             </div>
 
-            <div className="card-enterprise p-5 bg-[#0b1322] border-purple-500/30 text-center">
-              <span className="text-xs text-purple-400 font-bold uppercase tracking-wider block">AFFILIATE BUDGET</span>
-              <div className="text-2xl font-black text-white mt-1">90,4%</div>
-              <span className="text-xs text-slate-300 mt-1 block">
-                Gross <strong className="text-purple-300">3,05 B</strong> / 3,37 B
+            <div className="card-enterprise p-5 bg-white border-purple-200 shadow-2xs text-center">
+              <span className="text-xs text-purple-700 font-bold uppercase tracking-wider block">AFFILIATE BUDGET</span>
+              <div className="text-2xl font-black text-slate-900 mt-1">90,4%</div>
+              <span className="text-xs text-slate-600 mt-1 block">
+                Gross <strong className="text-purple-700">3,05 B</strong> / 3,37 B
               </span>
             </div>
 
-            <div className="card-enterprise p-5 bg-[#0b1322] border-emerald-500/30 text-center">
-              <span className="text-xs text-emerald-400 font-bold uppercase tracking-wider block">VIDEO CÓ CAST BOOKING</span>
-              <div className="text-2xl font-black text-white mt-1">622 Video</div>
-              <span className="text-xs text-slate-300 mt-1 block">
-                GMV30 ~ <strong className="text-emerald-400">1,27 B</strong>
+            <div className="card-enterprise p-5 bg-white border-emerald-200 shadow-2xs text-center">
+              <span className="text-xs text-emerald-700 font-bold uppercase tracking-wider block">VIDEO CÓ CAST BOOKING</span>
+              <div className="text-2xl font-black text-slate-900 mt-1">622 Video</div>
+              <span className="text-xs text-slate-600 mt-1 block">
+                GMV30 ~ <strong className="text-emerald-700">1,27 B</strong>
               </span>
             </div>
 
-            <div className="card-enterprise p-5 bg-[#0b1322] border-amber-500/30 text-center">
-              <span className="text-xs text-amber-400 font-bold uppercase tracking-wider block">SELF CHANNEL GMV</span>
-              <div className="text-2xl font-black text-white mt-1">63,4%</div>
-              <span className="text-xs text-slate-300 mt-1 block">
-                <strong className="text-amber-300">1,19 B</strong> / 1,88 B plan
+            <div className="card-enterprise p-5 bg-white border-amber-200 shadow-2xs text-center">
+              <span className="text-xs text-amber-700 font-bold uppercase tracking-wider block">SELF CHANNEL GMV</span>
+              <div className="text-2xl font-black text-slate-900 mt-1">63,4%</div>
+              <span className="text-xs text-slate-600 mt-1 block">
+                <strong className="text-amber-700">1,19 B</strong> / 1,88 B plan
               </span>
             </div>
           </div>
 
           {/* Master Table: Overall Marketing B2C T8 (From Image 2) */}
           <div className="card-enterprise overflow-hidden">
-            <div className="px-6 py-4 border-b border-[#1e293b] bg-[#0b1120] flex items-center justify-between">
+            <div className="px-6 py-4 border-b border-slate-200 bg-slate-50/80 flex items-center justify-between">
               <div>
-                <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                  <CheckSquare className="w-4 h-4 text-emerald-400" />
+                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                  <CheckSquare className="w-4 h-4 text-emerald-600" />
                   Bảng Theo Dõi Kế Hoạch & Thực Đạt (Overall Marketing B2C T8)
                 </h3>
-                <p className="text-xs text-slate-400 mt-0.5">
+                <p className="text-xs text-slate-500 mt-0.5">
                   Đối chiếu chỉ số Plan T8 vs Revise T8 vs Actual T8 và tỷ lệ % hoàn thành
                 </p>
               </div>
@@ -1691,23 +1704,23 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
-                  <tr className="table-header-enterprise bg-[#131d31]">
-                    <th className="p-3.5 pl-6 font-bold text-slate-200">Workstream (Hạng Mục)</th>
-                    <th className="p-3.5 font-bold text-slate-200">Metric (Chỉ Số)</th>
-                    <th className="p-3.5 font-bold text-slate-200">Plan T8</th>
-                    <th className="p-3.5 font-bold text-slate-200">Revise T8</th>
-                    <th className="p-3.5 font-bold text-slate-200">Actual T8</th>
-                    <th className="p-3.5 pr-6 font-bold text-slate-200 text-right">% Đạt Kế Hoạch</th>
+                  <tr className="bg-slate-100/70 border-b border-slate-200">
+                    <th className="p-3.5 pl-6 font-bold text-slate-600">Workstream (Hạng Mục)</th>
+                    <th className="p-3.5 font-bold text-slate-600">Metric (Chỉ Số)</th>
+                    <th className="p-3.5 font-bold text-slate-600">Plan T8</th>
+                    <th className="p-3.5 font-bold text-slate-600">Revise T8</th>
+                    <th className="p-3.5 font-bold text-slate-600">Actual T8</th>
+                    <th className="p-3.5 pr-6 font-bold text-slate-600 text-right">% Đạt Kế Hoạch</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#1e293b]">
+                <tbody className="divide-y divide-slate-100">
                   {MONTHLY_PLAN_DATA.map((row) => (
-                    <tr key={row.id} className="table-row-enterprise hover:bg-[#131d31]/50 transition-colors">
-                      <td className="p-3.5 pl-6 font-bold text-white">{row.workstream}</td>
-                      <td className="p-3.5 font-medium text-slate-300">{row.metric}</td>
-                      <td className="p-3.5 text-slate-400 font-mono">{row.planT8}</td>
-                      <td className="p-3.5 text-slate-400 font-mono">{row.reviseT8}</td>
-                      <td className="p-3.5 font-bold text-white font-mono">{row.actualT8}</td>
+                    <tr key={row.id} className="hover:bg-slate-50/80 transition-colors">
+                      <td className="p-3.5 pl-6 font-bold text-slate-900">{row.workstream}</td>
+                      <td className="p-3.5 font-medium text-slate-700">{row.metric}</td>
+                      <td className="p-3.5 text-slate-500 font-mono">{row.planT8}</td>
+                      <td className="p-3.5 text-slate-500 font-mono">{row.reviseT8}</td>
+                      <td className="p-3.5 font-bold text-slate-900 font-mono">{row.actualT8}</td>
                       <td className="p-3.5 pr-6 text-right">
                         <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold inline-block ${
                           row.pctAchieved === '100%' || Number(row.pctAchieved.replace('%','').replace(',','.')) >= 90
@@ -1727,14 +1740,14 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
           </div>
 
           {/* Detailed Section: VI. Self Channel (From Image 8) */}
-          <div className="card-enterprise p-5 bg-[#0c121e] border-amber-500/30 space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-[#1e293b]">
+          <div className="card-enterprise p-5 bg-amber-50/40 border border-amber-200 shadow-2xs space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-amber-200/80">
               <div>
-                <h4 className="text-sm font-bold text-amber-300 flex items-center gap-2">
-                  <Flame className="w-4 h-4 fill-amber-400 text-amber-400" />
+                <h4 className="text-sm font-bold text-amber-800 flex items-center gap-2">
+                  <Flame className="w-4 h-4 fill-amber-500 text-amber-500" />
                   VI. Chi Tiết Phân Hệ Kênh Tự Vận Hành (Self Channel)
                 </h4>
-                <p className="text-xs text-slate-400 mt-0.5">
+                <p className="text-xs text-slate-600 mt-0.5">
                   Đánh giá chỉ tiêu GMV, Budget Gross và 853 Video thực tế lên sóng từ hệ thống kênh In-House
                 </p>
               </div>
@@ -1744,36 +1757,36 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
-              <div className="p-3.5 bg-[#09101d] rounded-xl border border-[#1e293b]">
-                <span className="text-slate-400 block mb-1">GMV Self Channel:</span>
-                <div className="text-lg font-black text-white">
+              <div className="p-3.5 bg-white rounded-xl border border-slate-200 shadow-2xs">
+                <span className="text-slate-500 block mb-1">GMV Self Channel:</span>
+                <div className="text-lg font-black text-slate-900">
                   {SELF_CHANNEL_SUMMARY.gmvActual} <span className="text-xs text-slate-400 font-normal">/ {SELF_CHANNEL_SUMMARY.gmvPlan} plan</span>
                 </div>
-                <span className="text-amber-400 font-bold mt-1 block">Đạt {SELF_CHANNEL_SUMMARY.gmvPct}</span>
+                <span className="text-amber-700 font-bold mt-1 block">Đạt {SELF_CHANNEL_SUMMARY.gmvPct}</span>
               </div>
 
-              <div className="p-3.5 bg-[#09101d] rounded-xl border border-[#1e293b]">
-                <span className="text-slate-400 block mb-1">Budget Gross:</span>
-                <div className="text-lg font-black text-purple-300">
+              <div className="p-3.5 bg-white rounded-xl border border-slate-200 shadow-2xs">
+                <span className="text-slate-500 block mb-1">Budget Gross:</span>
+                <div className="text-lg font-black text-purple-700">
                   {SELF_CHANNEL_SUMMARY.budgetActual} <span className="text-xs text-slate-400 font-normal">/ {SELF_CHANNEL_SUMMARY.budgetPlan} plan</span>
                 </div>
-                <span className="text-emerald-400 font-bold mt-1 block">Giải ngân {SELF_CHANNEL_SUMMARY.budgetPct}</span>
+                <span className="text-emerald-700 font-bold mt-1 block">Giải ngân {SELF_CHANNEL_SUMMARY.budgetPct}</span>
               </div>
 
-              <div className="p-3.5 bg-[#09101d] rounded-xl border border-[#1e293b]">
-                <span className="text-slate-400 block mb-1">Sản Lượng Video Air:</span>
-                <div className="text-lg font-black text-cyan-400">
+              <div className="p-3.5 bg-white rounded-xl border border-slate-200 shadow-2xs">
+                <span className="text-slate-500 block mb-1">Sản Lượng Video Air:</span>
+                <div className="text-lg font-black text-blue-700">
                   {SELF_CHANNEL_SUMMARY.videoActual} <span className="text-xs text-slate-400 font-normal">/ {SELF_CHANNEL_SUMMARY.videoPlan} plan</span>
                 </div>
-                <span className="text-emerald-400 font-bold mt-1 block">Đạt {SELF_CHANNEL_SUMMARY.videoPct}</span>
+                <span className="text-emerald-700 font-bold mt-1 block">Đạt {SELF_CHANNEL_SUMMARY.videoPct}</span>
               </div>
 
-              <div className="p-3.5 bg-[#09101d] rounded-xl border border-[#1e293b]">
-                <span className="text-slate-400 block mb-1">Bảng Pillar Kênh In-House:</span>
-                <div className="text-lg font-black text-emerald-400">
+              <div className="p-3.5 bg-white rounded-xl border border-slate-200 shadow-2xs">
+                <span className="text-slate-500 block mb-1">Bảng Pillar Kênh In-House:</span>
+                <div className="text-lg font-black text-emerald-700">
                   {SELF_CHANNEL_SUMMARY.pillarVideoCount} Video
                 </div>
-                <span className="text-slate-300 mt-1 block font-mono">GMV 30: {SELF_CHANNEL_SUMMARY.pillarGmv30}</span>
+                <span className="text-slate-600 mt-1 block font-mono">GMV 30: {SELF_CHANNEL_SUMMARY.pillarGmv30}</span>
               </div>
             </div>
           </div>
@@ -1786,24 +1799,24 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
       {activeTab === 'STAFF_AIR_PROGRESS' && (
         <div className="space-y-6">
           {/* Action Header & Quick Filters */}
-          <div className="card-enterprise p-5 bg-[#0b1120] flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+          <div className="card-enterprise p-5 bg-white border border-slate-200 shadow-2xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
             <div>
-              <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <Video className="w-4 h-4 text-cyan-400" />
+              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                <Video className="w-4 h-4 text-blue-600" />
                 Chi Tiết Chỉ Tiêu Ngân Sách & Tiến Độ Air Theo 26 Nhân Sự Booking (Tháng 8/2026)
               </h3>
-              <p className="text-xs text-slate-400 mt-0.5">
+              <p className="text-xs text-slate-500 mt-0.5">
                 Tổng Plan 5.648 video vs Report 1.407 video (TB 65%) • Plan ngân sách 3,681B vs Report 2,849B (TB 74%)
               </p>
             </div>
 
             <div className="flex items-center gap-2">
               {/* Quick Filter buttons */}
-              <div className="flex items-center gap-1 bg-[#09101d] p-1 rounded-xl border border-[#1e293b] text-xs">
+              <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs">
                 <button
                   onClick={() => setAirFilter('ALL')}
                   className={`px-2.5 py-1 rounded-lg font-bold transition ${
-                    airFilter === 'ALL' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'
+                    airFilter === 'ALL' ? 'bg-blue-600 text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
                   Tất Cả (26)
@@ -1811,7 +1824,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                 <button
                   onClick={() => setAirFilter('LAGGING')}
                   className={`px-2.5 py-1 rounded-lg font-bold transition flex items-center gap-1 ${
-                    airFilter === 'LAGGING' ? 'bg-rose-600 text-white' : 'text-rose-400 hover:text-white'
+                    airFilter === 'LAGGING' ? 'bg-rose-600 text-white shadow-2xs' : 'text-rose-700 hover:text-rose-900'
                   }`}
                 >
                   <AlertTriangle className="w-3 h-3" />
@@ -1820,7 +1833,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                 <button
                   onClick={() => setAirFilter('OVER_BUDGET')}
                   className={`px-2.5 py-1 rounded-lg font-bold transition ${
-                    airFilter === 'OVER_BUDGET' ? 'bg-purple-600 text-white' : 'text-purple-400 hover:text-white'
+                    airFilter === 'OVER_BUDGET' ? 'bg-purple-600 text-white shadow-2xs' : 'text-purple-700 hover:text-purple-900'
                   }`}
                 >
                   Vượt Ngân Sách &gt;100%
@@ -1828,7 +1841,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                 <button
                   onClick={() => setAirFilter('GOOD')}
                   className={`px-2.5 py-1 rounded-lg font-bold transition ${
-                    airFilter === 'GOOD' ? 'bg-emerald-600 text-white' : 'text-emerald-400 hover:text-white'
+                    airFilter === 'GOOD' ? 'bg-emerald-600 text-white shadow-2xs' : 'text-emerald-700 hover:text-emerald-900'
                   }`}
                 >
                   Tiến Độ Tốt (&gt;=80%)
@@ -1839,10 +1852,10 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
               <button
                 onClick={handlePingAllLagging}
                 disabled={isAllLaggingPinged}
-                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-md ${
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-xs cursor-pointer ${
                   isAllLaggingPinged
-                    ? 'bg-slate-800 text-slate-500'
-                    : 'bg-rose-600 hover:bg-rose-500 text-white'
+                    ? 'bg-slate-100 text-slate-400 border border-slate-200'
+                    : 'bg-rose-600 hover:bg-rose-700 text-white'
                 }`}
               >
                 <BellRing className="w-3.5 h-3.5" />
@@ -1856,32 +1869,32 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
-                  <tr className="table-header-enterprise bg-[#131d31]">
-                    <th className="p-3 pl-6 font-bold text-slate-200">Tháng</th>
-                    <th className="p-3 font-bold text-slate-200">Nhân Sự Booking</th>
-                    <th className="p-3 font-bold text-slate-200 text-right">Plan Số Video</th>
-                    <th className="p-3 font-bold text-slate-200 text-right">Report Số Video</th>
-                    <th className="p-3 font-bold text-slate-200 text-center">Tiến Độ Air</th>
-                    <th className="p-3 font-bold text-slate-200 text-right">Plan Ngân Sách</th>
-                    <th className="p-3 font-bold text-slate-200 text-right">Report Ngân Sách</th>
-                    <th className="p-3 font-bold text-slate-200 text-center">Tiến Độ Ngân Sách</th>
-                    <th className="p-3 pr-6 font-bold text-slate-200 text-right">Hành Động</th>
+                  <tr className="bg-slate-100/70 border-b border-slate-200">
+                    <th className="p-3 pl-6 font-bold text-slate-600">Tháng</th>
+                    <th className="p-3 font-bold text-slate-600">Nhân Sự Booking</th>
+                    <th className="p-3 font-bold text-slate-600 text-right">Plan Số Video</th>
+                    <th className="p-3 font-bold text-slate-600 text-right">Report Số Video</th>
+                    <th className="p-3 font-bold text-slate-600 text-center">Tiến Độ Air</th>
+                    <th className="p-3 font-bold text-slate-600 text-right">Plan Ngân Sách</th>
+                    <th className="p-3 font-bold text-slate-600 text-right">Report Ngân Sách</th>
+                    <th className="p-3 font-bold text-slate-600 text-center">Tiến Độ Ngân Sách</th>
+                    <th className="p-3 pr-6 font-bold text-slate-600 text-right">Hành Động</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#1e293b]">
+                <tbody className="divide-y divide-slate-100">
                   {filteredStaffProgress.map((staff, idx) => (
                     <tr 
                       key={staff.id} 
-                      className={`table-row-enterprise transition-colors ${
+                      className={`transition-colors ${
                         staff.isLagging || staff.airProgress < 50 
-                          ? 'bg-rose-950/20 hover:bg-rose-950/30' 
-                          : 'hover:bg-[#131d31]/50'
+                          ? 'bg-rose-50/60 hover:bg-rose-100/50' 
+                          : 'hover:bg-slate-50/80'
                       }`}
                     >
-                      <td className="p-3 pl-6 text-slate-400 font-mono">{staff.month}</td>
+                      <td className="p-3 pl-6 text-slate-500 font-mono">{staff.month}</td>
                       <td className="p-3">
                         <div className="flex items-center gap-2">
-                          <span className="font-bold text-white text-sm">{staff.staffName}</span>
+                          <span className="font-bold text-slate-900 text-sm">{staff.staffName}</span>
                           {(staff.isLagging || staff.airProgress < 50) && (
                             <span className="badge-rose px-1.5 py-0.2 rounded text-[9px] font-bold">
                               Chậm Tiến Độ
@@ -1894,11 +1907,11 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                           )}
                         </div>
                       </td>
-                      <td className="p-3 text-right font-mono text-slate-300">{staff.planVideos}</td>
-                      <td className="p-3 text-right font-mono font-bold text-white">{staff.reportVideos}</td>
+                      <td className="p-3 text-right font-mono text-slate-600">{staff.planVideos}</td>
+                      <td className="p-3 text-right font-mono font-bold text-slate-900">{staff.reportVideos}</td>
                       <td className="p-3 text-center">
                         <div className="inline-flex items-center gap-2">
-                          <div className="w-16 bg-slate-800 rounded-full h-1.5 hidden sm:block">
+                          <div className="w-16 bg-slate-200 rounded-full h-1.5 hidden sm:block">
                             <div 
                               className={`h-1.5 rounded-full ${
                                 staff.airProgress < 50 ? 'bg-rose-500' :
@@ -1915,10 +1928,10 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                           </span>
                         </div>
                       </td>
-                      <td className="p-3 text-right font-mono text-slate-400">
+                      <td className="p-3 text-right font-mono text-slate-500">
                         {staff.planBudget.toLocaleString('vi-VN')} đ
                       </td>
-                      <td className="p-3 text-right font-mono font-bold text-cyan-400">
+                      <td className="p-3 text-right font-mono font-bold text-blue-700">
                         {staff.reportBudget.toLocaleString('vi-VN')} đ
                       </td>
                       <td className="p-3 text-center">
@@ -1933,7 +1946,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                         <div className="flex items-center justify-end gap-1.5">
                           <button
                             onClick={() => setAiReviewTargetStaff(staff.staffName)}
-                            className="px-2 py-1 rounded bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 font-semibold text-[11px] transition flex items-center gap-1 shadow-2xs"
+                            className="px-2 py-1 rounded bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 font-semibold text-[11px] transition flex items-center gap-1 shadow-2xs cursor-pointer"
                             title={`Khởi chạy AI nhận xét tiến độ của ${staff.staffName}`}
                           >
                             <Sparkles className="w-3 h-3 text-purple-600 animate-pulse" />
@@ -1942,12 +1955,12 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                           <button
                             onClick={() => handlePing(staff.id, staff.staffName, 'Đốc thúc trả link video TikTok lên sóng')}
                             disabled={pingedStaff[staff.id]}
-                            className={`px-2.5 py-1 rounded-lg font-bold text-xs flex items-center gap-1 transition ${
+                            className={`px-2.5 py-1 rounded-lg font-bold text-xs flex items-center gap-1 transition cursor-pointer ${
                               pingedStaff[staff.id]
-                                ? 'bg-slate-800 text-slate-500'
+                                ? 'bg-slate-100 text-slate-400 border border-slate-200'
                                 : (staff.isLagging || staff.airProgress < 50)
-                                ? 'bg-rose-600 hover:bg-rose-500 text-white shadow-sm'
-                                : 'bg-blue-600 hover:bg-blue-500 text-white shadow-sm'
+                                ? 'bg-rose-600 hover:bg-rose-700 text-white shadow-xs'
+                                : 'bg-blue-600 hover:bg-blue-700 text-white shadow-xs'
                             }`}
                           >
                             <BellRing className="w-3 h-3" />
@@ -1960,25 +1973,25 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                 </tbody>
                 {/* Total Footer Row */}
                 <tfoot>
-                  <tr className="bg-[#0b1322] border-t-2 border-blue-500/40 font-bold text-white">
+                  <tr className="bg-slate-100/90 border-t-2 border-blue-500 font-bold text-slate-900">
                     <td className="p-3.5 pl-6" colSpan={2}>
                       TỔNG CỘNG (26 BẢN GHI TOÀN BỘ B2C)
                     </td>
-                    <td className="p-3.5 text-right font-mono text-cyan-300">5.648</td>
-                    <td className="p-3.5 text-right font-mono text-emerald-400">1.407</td>
+                    <td className="p-3.5 text-right font-mono text-blue-700">5.648</td>
+                    <td className="p-3.5 text-right font-mono text-emerald-700">1.407</td>
                     <td className="p-3.5 text-center">
                       <span className="badge-emerald px-2 py-0.5 rounded text-[11px]">
                         Trung Bình 65%
                       </span>
                     </td>
-                    <td className="p-3.5 text-right font-mono text-slate-300">3.681.480.001 đ</td>
-                    <td className="p-3.5 text-right font-mono text-cyan-400">2.849.289.000 đ</td>
+                    <td className="p-3.5 text-right font-mono text-slate-700">3.681.480.001 đ</td>
+                    <td className="p-3.5 text-right font-mono text-blue-700">2.849.289.000 đ</td>
                     <td className="p-3.5 text-center">
-                      <span className="badge-cyan px-2 py-0.5 rounded text-[11px]">
+                      <span className="badge-blue px-2 py-0.5 rounded text-[11px]">
                         Trung Bình 74%
                       </span>
                     </td>
-                    <td className="p-3.5 pr-6 text-right text-slate-400 text-[10px]">
+                    <td className="p-3.5 pr-6 text-right text-slate-500 text-[10px]">
                       Kiểm duyệt 100%
                     </td>
                   </tr>
@@ -1995,16 +2008,16 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
       {activeTab === 'STAFF_REVENUE_GMV' && (
         <div className="space-y-6">
           {/* Caveat Banner from Image 7 */}
-          <div className="p-4 bg-gradient-to-r from-blue-950/40 via-[#131d31] to-[#0c121e] rounded-xl border border-blue-500/30 flex items-center justify-between text-xs">
+          <div className="p-4 bg-blue-50/80 rounded-xl border border-blue-200 flex items-center justify-between text-xs">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center font-black">
+              <div className="w-9 h-9 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center font-black">
                 <HelpCircle className="w-5 h-5" />
               </div>
               <div>
-                <span className="font-bold text-blue-300 text-sm">
+                <span className="font-bold text-blue-900 text-sm">
                   Ghi Chú Đánh Giá Hiệu Quả: Dữ Liệu Kéo Thiếu Kênh Tự Vận Hành (Self Channel)
                 </span>
-                <p className="text-slate-300 mt-0.5">
+                <p className="text-slate-600 mt-0.5">
                   Một số nhân sự làm thuần Self Channel nhìn hiệu quả doanh thu affiliate trên bảng này sẽ bị thấp hơn đóng góp thực tế. Quản lý cần đối chiếu thêm với Phân hệ Self Channel tại Tab 1.
                 </p>
               </div>
@@ -2016,13 +2029,13 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
 
           {/* Revenue Table from Image 7 */}
           <div className="card-enterprise overflow-hidden">
-            <div className="px-6 py-4 border-b border-[#1e293b] bg-[#0b1120] flex items-center justify-between">
+            <div className="px-6 py-4 border-b border-slate-200 bg-slate-50/80 flex items-center justify-between">
               <div>
-                <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4 text-emerald-400" />
+                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4 text-emerald-600" />
                   Báo Cáo Hiệu Quả Doanh Thu & Tăng Trưởng GMV 30 Ngày Từng Nhân Sự
                 </h3>
-                <p className="text-xs text-slate-400 mt-0.5">
+                <p className="text-xs text-slate-500 mt-0.5">
                   So sánh GMV tháng này vs GMV tháng trước, tỷ lệ tăng trưởng và số KOC book mới phát triển
                 </p>
               </div>
@@ -2034,23 +2047,23 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
-                  <tr className="table-header-enterprise bg-[#131d31]">
-                    <th className="p-3 pl-6 font-bold text-slate-200">#</th>
-                    <th className="p-3 font-bold text-slate-200">Nhân Sự Booking</th>
-                    <th className="p-3 font-bold text-slate-200 text-center">Tiến Độ Ngân Sách</th>
-                    <th className="p-3 font-bold text-slate-200 text-center">KOC Book Mới</th>
-                    <th className="p-3 font-bold text-slate-200 text-right">GMV Tháng Này (30 Ngày)</th>
-                    <th className="p-3 font-bold text-slate-200 text-right">GMV Tháng Trước</th>
-                    <th className="p-3 font-bold text-slate-200 text-right">Tăng Trưởng GMV</th>
-                    <th className="p-3 pr-6 font-bold text-slate-200 text-center">ROI 14 Ngày</th>
+                  <tr className="bg-slate-100/70 border-b border-slate-200">
+                    <th className="p-3 pl-6 font-bold text-slate-600">#</th>
+                    <th className="p-3 font-bold text-slate-600">Nhân Sự Booking</th>
+                    <th className="p-3 font-bold text-slate-600 text-center">Tiến Độ Ngân Sách</th>
+                    <th className="p-3 font-bold text-slate-600 text-center">KOC Book Mới</th>
+                    <th className="p-3 font-bold text-slate-600 text-right">GMV Tháng Này (30 Ngày)</th>
+                    <th className="p-3 font-bold text-slate-600 text-right">GMV Tháng Trước</th>
+                    <th className="p-3 font-bold text-slate-600 text-right">Tăng Trưởng GMV</th>
+                    <th className="p-3 pr-6 font-bold text-slate-600 text-center">ROI 14 Ngày</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#1e293b]">
+                <tbody className="divide-y divide-slate-100">
                   {BOOKING_STAFF_REVENUE_26.map((staff, idx) => (
-                    <tr key={staff.id} className="table-row-enterprise hover:bg-[#131d31]/50 transition-colors">
+                    <tr key={staff.id} className="hover:bg-slate-50/80 transition-colors">
                       <td className="p-3 pl-6 text-slate-500 font-mono">{idx + 1}</td>
                       <td className="p-3">
-                        <span className="font-bold text-white text-sm">{staff.staffName}</span>
+                        <span className="font-bold text-slate-900 text-sm">{staff.staffName}</span>
                         {idx === 0 && (
                           <span className="badge-amber ml-2 px-1.5 py-0.2 rounded text-[9px] font-bold">
                             Dẫn Đầu Doanh Thu
@@ -2070,39 +2083,39 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                           {staff.budgetProgress}%
                         </span>
                       </td>
-                      <td className="p-3 text-center font-bold text-cyan-400 font-mono">
+                      <td className="p-3 text-center font-bold text-blue-700 font-mono">
                         {staff.newKocsBooked}
                       </td>
-                      <td className="p-3 text-right font-mono font-bold text-emerald-400">
+                      <td className="p-3 text-right font-mono font-bold text-emerald-700">
                         {staff.gmvThisMonth > 0 ? `${staff.gmvThisMonth.toLocaleString('vi-VN')} đ` : '0 đ'}
                       </td>
-                      <td className="p-3 text-right font-mono text-slate-400">
+                      <td className="p-3 text-right font-mono text-slate-500">
                         {staff.gmvLastMonth > 0 ? `${staff.gmvLastMonth.toLocaleString('vi-VN')} đ` : '0 đ'}
                       </td>
                       <td className="p-3 text-right">
                         <span className={`font-mono font-bold text-[11px] flex items-center justify-end gap-0.5 ${
-                          staff.growthRate > 0 ? 'text-emerald-400' :
-                          staff.growthRate < 0 ? 'text-rose-400' : 'text-slate-400'
+                          staff.growthRate > 0 ? 'text-emerald-700' :
+                          staff.growthRate < 0 ? 'text-rose-700' : 'text-slate-500'
                         }`}>
                           {staff.growthRate > 0 ? '+' : ''}{staff.growthRate.toFixed(2)}%
                         </span>
                       </td>
-                      <td className="p-3 pr-6 text-center font-mono text-slate-400">
+                      <td className="p-3 pr-6 text-center font-mono text-slate-600">
                         {staff.roi14Days.toFixed(2)}
                       </td>
                     </tr>
                   ))}
                 </tbody>
                 <tfoot>
-                  <tr className="bg-[#0b1322] border-t-2 border-emerald-500/40 font-bold text-white">
+                  <tr className="bg-slate-100/90 border-t-2 border-emerald-600 font-bold text-slate-900">
                     <td className="p-3.5 pl-6" colSpan={3}>
                       TỔNG CỘNG THỰC TẾ
                     </td>
-                    <td className="p-3.5 text-center font-mono text-cyan-400">243 KOC</td>
-                    <td className="p-3.5 text-right font-mono text-emerald-400">1.361.919.883 đ</td>
-                    <td className="p-3.5 text-right font-mono text-slate-300">2.395.027.916 đ</td>
-                    <td className="p-3.5 text-right font-mono text-emerald-400">+22.51% (TB)</td>
-                    <td className="p-3.5 pr-6 text-center font-mono text-slate-400">0.00</td>
+                    <td className="p-3.5 text-center font-mono text-blue-700">243 KOC</td>
+                    <td className="p-3.5 text-right font-mono text-emerald-700">1.361.919.883 đ</td>
+                    <td className="p-3.5 text-right font-mono text-slate-700">2.395.027.916 đ</td>
+                    <td className="p-3.5 text-right font-mono text-emerald-700">+22.51% (TB)</td>
+                    <td className="p-3.5 pr-6 text-center font-mono text-slate-600">0.00</td>
                   </tr>
                 </tfoot>
               </table>
@@ -2117,7 +2130,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
       {activeTab === 'PLAN_GAP_466M' && (
         <div className="space-y-6">
           {/* Executive Overview Banner of the 466M Gap */}
-          <div className="card-enterprise p-6 bg-gradient-to-r from-rose-950/40 via-[#0f172a] to-[#09101d] border-rose-500/30">
+          <div className="card-enterprise p-6 bg-rose-50/50 border border-rose-200 shadow-2xs">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
               <div>
                 <div className="flex items-center gap-2 mb-1.5">
@@ -2125,30 +2138,30 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                     <AlertTriangle className="w-3.5 h-3.5" />
                     V. Chi Tiêu Ngân Sách Booking Tháng 8 — Phân Tích Plan Gap
                   </span>
-                  <span className="text-xs text-slate-400">Báo cáo trực quan theo nguyên nhân gốc rễ</span>
+                  <span className="text-xs text-slate-500">Báo cáo trực quan theo nguyên nhân gốc rễ</span>
                 </div>
-                <h3 className="text-xl font-black text-white">
+                <h3 className="text-xl font-black text-slate-900">
                   Phân Tích Hụt 466 Triệu Ngân Sách Theo 5 Cụm Gian Hàng Thực Tế
                 </h3>
-                <p className="text-xs text-slate-300 mt-1 max-w-2xl leading-relaxed">
+                <p className="text-xs text-slate-600 mt-1 max-w-2xl leading-relaxed">
                   Lý do gap 466M: Xảy ra cục bộ tại một số cụm gian hàng do thiếu capacity, vận hành nội bộ, thay đổi plan, và chưa nghiệm thu chi phí mã Ads (pHCare). Toàn bộ B2C vẫn đạt 90,4% ngân sách nhờ bù đắp từ các gian tiêu vượt như Babe.
                 </p>
               </div>
 
-              <div className="text-right bg-[#0c121e] p-4 rounded-xl border border-rose-500/30 shrink-0">
-                <span className="text-xs text-rose-400 font-bold uppercase tracking-wider block">TỔNG NGÂN SÁCH GAP</span>
-                <div className="text-2xl font-black text-rose-400 mt-1">466.809.172 đ</div>
-                <span className="text-[11px] text-slate-400">Phân bổ trên 5 nhóm nguyên nhân</span>
+              <div className="text-right bg-white p-4 rounded-xl border border-rose-200 shadow-2xs shrink-0">
+                <span className="text-xs text-rose-700 font-bold uppercase tracking-wider block">TỔNG NGÂN SÁCH GAP</span>
+                <div className="text-2xl font-black text-rose-700 mt-1">466.809.172 đ</div>
+                <span className="text-[11px] text-slate-500">Phân bổ trên 5 nhóm nguyên nhân</span>
               </div>
             </div>
           </div>
 
           {/* Master Table of 5 Cause Groups (Direct from Image 8) */}
           <div className="card-enterprise overflow-hidden">
-            <div className="px-6 py-4 border-b border-[#1e293b] bg-[#0b1120] flex items-center justify-between">
+            <div className="px-6 py-4 border-b border-slate-200 bg-slate-50/80 flex items-center justify-between">
               <div>
-                <h4 className="text-sm font-bold text-white">Bảng Phân Tích 5 Nhóm Nguyên Nhân & Cụm Gian Hàng Bị Gap</h4>
-                <p className="text-xs text-slate-400 mt-0.5">Xác định giải pháp khắc phục cụ thể cho từng nhãn hàng trong Tháng 9</p>
+                <h4 className="text-sm font-bold text-slate-900">Bảng Phân Tích 5 Nhóm Nguyên Nhân & Cụm Gian Hàng Bị Gap</h4>
+                <p className="text-xs text-slate-500 mt-0.5">Xác định giải pháp khắc phục cụ thể cho từng nhãn hàng trong Tháng 9</p>
               </div>
               <span className="badge-rose px-2.5 py-1 rounded-full text-xs font-bold">
                 5 Nhóm Nguyên Nhân
@@ -2158,20 +2171,20 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
-                  <tr className="table-header-enterprise bg-[#131d31]">
-                    <th className="p-3.5 pl-6 font-bold text-slate-200">Nhóm Nguyên Nhân</th>
-                    <th className="p-3.5 font-bold text-slate-200">Cụm Gian Hàng / Brand</th>
-                    <th className="p-3.5 font-bold text-slate-200 text-right">Ngân Sách Gap</th>
-                    <th className="p-3.5 font-bold text-slate-200 text-center">Tỷ Trọng Gap</th>
-                    <th className="p-3.5 pr-6 font-bold text-slate-200 text-right">Giải Pháp Khắc Phục</th>
+                  <tr className="bg-slate-100/70 border-b border-slate-200">
+                    <th className="p-3.5 pl-6 font-bold text-slate-600">Nhóm Nguyên Nhân</th>
+                    <th className="p-3.5 font-bold text-slate-600">Cụm Gian Hàng / Brand</th>
+                    <th className="p-3.5 font-bold text-slate-600 text-right">Ngân Sách Gap</th>
+                    <th className="p-3.5 font-bold text-slate-600 text-center">Tỷ Trọng Gap</th>
+                    <th className="p-3.5 pr-6 font-bold text-slate-600 text-right">Giải Pháp Khắc Phục</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#1e293b]">
+                <tbody className="divide-y divide-slate-100">
                   {PLAN_GAP_DATA.map((gap, idx) => (
-                    <tr key={gap.id} className="table-row-enterprise hover:bg-[#131d31]/50 transition-colors">
-                      <td className="p-3.5 pl-6 font-bold text-white">{gap.causeGroup}</td>
-                      <td className="p-3.5 font-semibold text-cyan-300">{gap.brandCluster}</td>
-                      <td className="p-3.5 text-right font-mono font-bold text-rose-400">
+                    <tr key={gap.id} className="hover:bg-slate-50/80 transition-colors">
+                      <td className="p-3.5 pl-6 font-bold text-slate-900">{gap.causeGroup}</td>
+                      <td className="p-3.5 font-semibold text-blue-700">{gap.brandCluster}</td>
+                      <td className="p-3.5 text-right font-mono font-bold text-rose-700">
                         {gap.gapAmount.toLocaleString('vi-VN')} đ
                       </td>
                       <td className="p-3.5 text-center">
@@ -2184,10 +2197,10 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                           <button
                             onClick={handleResolveAdsCode}
                             disabled={isAdsCodeResolved}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition inline-flex items-center gap-1 ${
+                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition inline-flex items-center gap-1 cursor-pointer ${
                               isAdsCodeResolved
-                                ? 'bg-emerald-600/30 text-emerald-400 border border-emerald-500/40'
-                                : 'bg-amber-600 hover:bg-amber-500 text-white shadow-sm'
+                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-2xs'
+                                : 'bg-amber-600 hover:bg-amber-700 text-white shadow-xs'
                             }`}
                           >
                             <Zap className="w-3 h-3" />
@@ -2197,34 +2210,34 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                           <button
                             onClick={handleRebalanceCapacity}
                             disabled={isCapacityRebalanced}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition inline-flex items-center gap-1 ${
+                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition inline-flex items-center gap-1 cursor-pointer ${
                               isCapacityRebalanced
-                                ? 'bg-emerald-600/30 text-emerald-400 border border-emerald-500/40'
-                                : 'bg-blue-600 hover:bg-blue-500 text-white shadow-sm'
+                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-2xs'
+                                : 'bg-blue-600 hover:bg-blue-700 text-white shadow-xs'
                             }`}
                           >
                             <Users className="w-3 h-3" />
                             <span>{isCapacityRebalanced ? 'Đã Điều Phối Nhân Sự' : 'Bổ Sung Capacity Booking'}</span>
                           </button>
                         ) : (
-                          <span className="text-slate-400 italic text-[11px]">{gap.note}</span>
+                          <span className="text-slate-500 italic text-[11px]">{gap.note}</span>
                         )}
                       </td>
                     </tr>
                   ))}
                 </tbody>
                 <tfoot>
-                  <tr className="bg-[#0b1322] border-t-2 border-rose-500/40 font-bold text-white">
+                  <tr className="bg-slate-100/90 border-t-2 border-rose-500 font-bold text-slate-900">
                     <td className="p-3.5 pl-6" colSpan={2}>
                       TỔNG NGÂN SÁCH GAP 5 NHÓM
                     </td>
-                    <td className="p-3.5 text-right font-mono text-rose-400 text-sm">
+                    <td className="p-3.5 text-right font-mono text-rose-700 text-sm">
                       466.809.172 đ
                     </td>
                     <td className="p-3.5 text-center">
                       <span className="badge-rose px-2 py-0.5 rounded text-[11px]">100.0%</span>
                     </td>
-                    <td className="p-3.5 pr-6 text-right text-slate-300 text-[11px]">
+                    <td className="p-3.5 pr-6 text-right text-slate-600 text-[11px]">
                       Bù đắp bởi các gian tiêu vượt như Babe
                     </td>
                   </tr>
@@ -2246,8 +2259,8 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
               onClick={() => setAnalyticsSubTab('KL')}
               className={`px-3.5 py-2 rounded-xl font-bold transition ${
                 analyticsSubTab === 'KL'
-                  ? 'bg-amber-600 text-white shadow-sm'
-                  : 'bg-[#101726] text-slate-400 hover:text-white border border-[#1e293b]'
+                  ? 'bg-amber-600 text-white shadow-xs'
+                  : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200'
               }`}
             >
               2.2 Hiệu Quả Theo Khung Lương (KL1 ➔ KL7)
@@ -2256,8 +2269,8 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
               onClick={() => setAnalyticsSubTab('PILLAR')}
               className={`px-3.5 py-2 rounded-xl font-bold transition ${
                 analyticsSubTab === 'PILLAR'
-                  ? 'bg-amber-600 text-white shadow-sm'
-                  : 'bg-[#101726] text-slate-400 hover:text-white border border-[#1e293b]'
+                  ? 'bg-amber-600 text-white shadow-xs'
+                  : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200'
               }`}
             >
               2.3 Hiệu Quả Theo Content Pillar (6 Trụ Cột)
@@ -2266,8 +2279,8 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
               onClick={() => setAnalyticsSubTab('CREATOR_NICHE')}
               className={`px-3.5 py-2 rounded-xl font-bold transition ${
                 analyticsSubTab === 'CREATOR_NICHE'
-                  ? 'bg-amber-600 text-white shadow-sm'
-                  : 'bg-[#101726] text-slate-400 hover:text-white border border-[#1e293b]'
+                  ? 'bg-amber-600 text-white shadow-xs'
+                  : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200'
               }`}
             >
               2.4 Báo Cáo Theo Tệp Creator (Review Nữ, Mẹ bé...)
@@ -2277,36 +2290,36 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
           {/* Dimension 1: Khung Lương KL1 -> KL7 (Table 2.2 from Image 4) */}
           {analyticsSubTab === 'KL' && (
             <div className="card-enterprise overflow-hidden">
-              <div className="px-6 py-4 border-b border-[#1e293b] bg-[#0b1120] flex items-center justify-between">
+              <div className="px-6 py-4 border-b border-slate-200 bg-slate-50/80 flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-bold text-white">2.2 Báo Cáo Hiệu Quả Theo Khung Lương KOC (KL)</h3>
-                  <p className="text-xs text-slate-400 mt-0.5">Đánh giá sản lượng video, chi phí bỏ ra, GMV30 và tỷ suất hoàn vốn ROI từng khung</p>
+                  <h3 className="text-sm font-bold text-slate-900">2.2 Báo Cáo Hiệu Quả Theo Khung Lương KOC (KL)</h3>
+                  <p className="text-xs text-slate-500 mt-0.5">Đánh giá sản lượng video, chi phí bỏ ra, GMV30 và tỷ suất hoàn vốn ROI từng khung</p>
                 </div>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse text-xs">
                   <thead>
-                    <tr className="table-header-enterprise bg-[#131d31]">
-                      <th className="p-3.5 pl-6 font-bold text-slate-200">Khung Lương (KL)</th>
-                      <th className="p-3.5 font-bold text-slate-200">Số Video</th>
-                      <th className="p-3.5 font-bold text-slate-200">% Video</th>
-                      <th className="p-3.5 font-bold text-slate-200">Chi Phí (CP)</th>
-                      <th className="p-3.5 font-bold text-slate-200">% CP</th>
-                      <th className="p-3.5 font-bold text-slate-200">GMV 30 Ngày</th>
-                      <th className="p-3.5 font-bold text-slate-200">% GMV</th>
-                      <th className="p-3.5 pr-6 font-bold text-slate-200 text-right">ROI Thực Đạt</th>
+                    <tr className="bg-slate-100/70 border-b border-slate-200">
+                      <th className="p-3.5 pl-6 font-bold text-slate-600">Khung Lương (KL)</th>
+                      <th className="p-3.5 font-bold text-slate-600">Số Video</th>
+                      <th className="p-3.5 font-bold text-slate-600">% Video</th>
+                      <th className="p-3.5 font-bold text-slate-600">Chi Phí (CP)</th>
+                      <th className="p-3.5 font-bold text-slate-600">% CP</th>
+                      <th className="p-3.5 font-bold text-slate-600">GMV 30 Ngày</th>
+                      <th className="p-3.5 font-bold text-slate-600">% GMV</th>
+                      <th className="p-3.5 pr-6 font-bold text-slate-600 text-right">ROI Thực Đạt</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#1e293b]">
+                  <tbody className="divide-y divide-slate-100">
                     {KL_PERFORMANCE_DATA.map((r) => (
-                      <tr key={r.kl} className="table-row-enterprise hover:bg-[#131d31]/50 transition-colors">
-                        <td className="p-3.5 pl-6 font-bold text-white font-mono">{r.kl}</td>
-                        <td className="p-3.5 font-semibold text-slate-200">{r.videoCount}</td>
-                        <td className="p-3.5 text-slate-400">{r.pctVideo}</td>
-                        <td className="p-3.5 font-mono text-slate-300">{r.cost}</td>
-                        <td className="p-3.5 text-slate-400">{r.pctCost}</td>
-                        <td className="p-3.5 font-mono font-bold text-emerald-400">{r.gmv30}</td>
-                        <td className="p-3.5 text-slate-400">{r.pctGmv}</td>
+                      <tr key={r.kl} className="hover:bg-slate-50/80 transition-colors">
+                        <td className="p-3.5 pl-6 font-bold text-slate-900 font-mono">{r.kl}</td>
+                        <td className="p-3.5 font-semibold text-slate-800">{r.videoCount}</td>
+                        <td className="p-3.5 text-slate-500">{r.pctVideo}</td>
+                        <td className="p-3.5 font-mono text-slate-700">{r.cost}</td>
+                        <td className="p-3.5 text-slate-500">{r.pctCost}</td>
+                        <td className="p-3.5 font-mono font-bold text-emerald-700">{r.gmv30}</td>
+                        <td className="p-3.5 text-slate-500">{r.pctGmv}</td>
                         <td className="p-3.5 pr-6 text-right">
                           <span className={`px-2 py-0.5 rounded font-bold text-[11px] ${
                             r.roi >= 0.8 ? 'badge-emerald' : r.roi >= 0.5 ? 'badge-blue' : 'badge-amber'
@@ -2325,36 +2338,36 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
           {/* Dimension 2: Content Pillar (Table 2.3 from Image 4) */}
           {analyticsSubTab === 'PILLAR' && (
             <div className="card-enterprise overflow-hidden">
-              <div className="px-6 py-4 border-b border-[#1e293b] bg-[#0b1120] flex items-center justify-between">
+              <div className="px-6 py-4 border-b border-slate-200 bg-slate-50/80 flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-bold text-white">2.3 Báo Cáo Hiệu Quả Theo Content Pillar</h3>
-                  <p className="text-xs text-slate-400 mt-0.5">Xác định trụ cột nội dung nào mang lại ROI cao nhất để tập trung nguồn lực</p>
+                  <h3 className="text-sm font-bold text-slate-900">2.3 Báo Cáo Hiệu Quả Theo Content Pillar</h3>
+                  <p className="text-xs text-slate-500 mt-0.5">Xác định trụ cột nội dung nào mang lại ROI cao nhất để tập trung nguồn lực</p>
                 </div>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse text-xs">
                   <thead>
-                    <tr className="table-header-enterprise bg-[#131d31]">
-                      <th className="p-3.5 pl-6 font-bold text-slate-200">Content Pillar</th>
-                      <th className="p-3.5 font-bold text-slate-200">Số Video</th>
-                      <th className="p-3.5 font-bold text-slate-200">% Video</th>
-                      <th className="p-3.5 font-bold text-slate-200">Chi Phí</th>
-                      <th className="p-3.5 font-bold text-slate-200">% CP</th>
-                      <th className="p-3.5 font-bold text-slate-200">GMV 30 Ngày</th>
-                      <th className="p-3.5 font-bold text-slate-200">% GMV</th>
-                      <th className="p-3.5 pr-6 font-bold text-slate-200 text-right">ROI</th>
+                    <tr className="bg-slate-100/70 border-b border-slate-200">
+                      <th className="p-3.5 pl-6 font-bold text-slate-600">Content Pillar</th>
+                      <th className="p-3.5 font-bold text-slate-600">Số Video</th>
+                      <th className="p-3.5 font-bold text-slate-600">% Video</th>
+                      <th className="p-3.5 font-bold text-slate-600">Chi Phí</th>
+                      <th className="p-3.5 font-bold text-slate-600">% CP</th>
+                      <th className="p-3.5 font-bold text-slate-600">GMV 30 Ngày</th>
+                      <th className="p-3.5 font-bold text-slate-600">% GMV</th>
+                      <th className="p-3.5 pr-6 font-bold text-slate-600 text-right">ROI</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#1e293b]">
+                  <tbody className="divide-y divide-slate-100">
                     {PILLAR_PERFORMANCE_DATA.map((p) => (
-                      <tr key={p.pillar} className="table-row-enterprise hover:bg-[#131d31]/50 transition-colors">
-                        <td className="p-3.5 pl-6 font-bold text-white">{p.pillar}</td>
-                        <td className="p-3.5 font-semibold text-slate-200">{p.videoCount}</td>
-                        <td className="p-3.5 text-slate-400">{p.pctVideo}</td>
-                        <td className="p-3.5 font-mono text-slate-300">{p.cost}</td>
-                        <td className="p-3.5 text-slate-400">{p.pctCost}</td>
-                        <td className="p-3.5 font-mono font-bold text-emerald-400">{p.gmv30}</td>
-                        <td className="p-3.5 text-slate-400">{p.pctGmv}</td>
+                      <tr key={p.pillar} className="hover:bg-slate-50/80 transition-colors">
+                        <td className="p-3.5 pl-6 font-bold text-slate-900">{p.pillar}</td>
+                        <td className="p-3.5 font-semibold text-slate-800">{p.videoCount}</td>
+                        <td className="p-3.5 text-slate-500">{p.pctVideo}</td>
+                        <td className="p-3.5 font-mono text-slate-700">{p.cost}</td>
+                        <td className="p-3.5 text-slate-500">{p.pctCost}</td>
+                        <td className="p-3.5 font-mono font-bold text-emerald-700">{p.gmv30}</td>
+                        <td className="p-3.5 text-slate-500">{p.pctGmv}</td>
                         <td className="p-3.5 pr-6 text-right">
                           <span className={`px-2 py-0.5 rounded font-bold text-[11px] ${
                             p.roi >= 0.8 ? 'badge-emerald' : p.roi >= 0.4 ? 'badge-blue' : 'badge-amber'
@@ -2373,36 +2386,36 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
           {/* Dimension 3: Creator Niche (Table 2.4 from Image 5) */}
           {analyticsSubTab === 'CREATOR_NICHE' && (
             <div className="card-enterprise overflow-hidden">
-              <div className="px-6 py-4 border-b border-[#1e293b] bg-[#0b1120] flex items-center justify-between">
+              <div className="px-6 py-4 border-b border-slate-200 bg-slate-50/80 flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-bold text-white">2.4 Report Hiệu Quả Theo Tệp Creator</h3>
-                  <p className="text-xs text-slate-400 mt-0.5">Phân tích hiệu suất theo từng nhóm đối tượng Creator booking</p>
+                  <h3 className="text-sm font-bold text-slate-900">2.4 Report Hiệu Quả Theo Tệp Creator</h3>
+                  <p className="text-xs text-slate-500 mt-0.5">Phân tích hiệu suất theo từng nhóm đối tượng Creator booking</p>
                 </div>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse text-xs">
                   <thead>
-                    <tr className="table-header-enterprise bg-[#131d31]">
-                      <th className="p-3.5 pl-6 font-bold text-slate-200">Tệp Creator</th>
-                      <th className="p-3.5 font-bold text-slate-200">Số Video</th>
-                      <th className="p-3.5 font-bold text-slate-200">% Video</th>
-                      <th className="p-3.5 font-bold text-slate-200">Chi Phí</th>
-                      <th className="p-3.5 font-bold text-slate-200">% CP</th>
+                    <tr className="bg-slate-100/70 border-b border-slate-200">
+                      <th className="p-3.5 pl-6 font-bold text-slate-600">Tệp Creator</th>
+                      <th className="p-3.5 font-bold text-slate-600">Số Video</th>
+                      <th className="p-3.5 font-bold text-slate-600">% Video</th>
+                      <th className="p-3.5 font-bold text-slate-600">Chi Phí</th>
+                      <th className="p-3.5 font-bold text-slate-600">% CP</th>
                       <th className="p-3.5 font-bold text-slate-200">GMV 30 Ngày</th>
                       <th className="p-3.5 font-bold text-slate-200">% GMV</th>
                       <th className="p-3.5 pr-6 font-bold text-slate-200 text-right">ROI</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#1e293b]">
+                  <tbody className="divide-y divide-slate-100">
                     {CREATOR_NICHE_PERFORMANCE_DATA.map((c) => (
-                      <tr key={c.niche} className="table-row-enterprise hover:bg-[#131d31]/50 transition-colors">
-                        <td className="p-3.5 pl-6 font-bold text-white">{c.niche}</td>
-                        <td className="p-3.5 font-semibold text-slate-200">{c.videoCount}</td>
-                        <td className="p-3.5 text-slate-400">{c.pctVideo}</td>
-                        <td className="p-3.5 font-mono text-slate-300">{c.cost}</td>
-                        <td className="p-3.5 text-slate-400">{c.pctCost}</td>
-                        <td className="p-3.5 font-mono font-bold text-emerald-400">{c.gmv30}</td>
-                        <td className="p-3.5 text-slate-400">{c.pctGmv}</td>
+                      <tr key={c.niche} className="hover:bg-slate-50/80 transition-colors">
+                        <td className="p-3.5 pl-6 font-bold text-slate-900">{c.niche}</td>
+                        <td className="p-3.5 font-semibold text-slate-800">{c.videoCount}</td>
+                        <td className="p-3.5 text-slate-500">{c.pctVideo}</td>
+                        <td className="p-3.5 font-mono text-slate-700">{c.cost}</td>
+                        <td className="p-3.5 text-slate-500">{c.pctCost}</td>
+                        <td className="p-3.5 font-mono font-bold text-emerald-700">{c.gmv30}</td>
+                        <td className="p-3.5 text-slate-500">{c.pctGmv}</td>
                         <td className="p-3.5 pr-6 text-right">
                           <span className={`px-2 py-0.5 rounded font-bold text-[11px] ${
                             c.roi >= 0.8 ? 'badge-emerald' : c.roi >= 0.4 ? 'badge-blue' : 'badge-amber'
@@ -2419,22 +2432,22 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
           )}
 
           {/* Strategic Action Insight from Real Data */}
-          <div className="card-enterprise p-5 bg-[#0e1320] border-[#1e293b] space-y-3">
-            <h4 className="text-sm font-bold text-white flex items-center gap-2">
-              <Check className="w-4 h-4 text-blue-400" />
+          <div className="card-enterprise p-5 bg-white border border-slate-200 shadow-xs space-y-3">
+            <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+              <Check className="w-4 h-4 text-blue-600" />
               Định Hướng Điều Phối Kế Hoạch Cho Quản Lý:
             </h4>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-slate-300">
-              <div className="p-3 bg-[#0a0e17] rounded-xl border border-[#1e293b]">
-                <strong className="text-emerald-400 block mb-1">1. Đẩy mạnh KL1 & Unboxing (ROI &gt; 0.85):</strong>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-slate-700">
+              <div className="p-3 bg-emerald-50/60 rounded-xl border border-emerald-200/80">
+                <strong className="text-emerald-800 block mb-1">1. Đẩy mạnh KL1 & Unboxing (ROI &gt; 0.85):</strong>
                 Unboxing chi phí chỉ chiếm 0,52% nhưng đạt ROI 1.01 (hoàn vốn 100%). Cần tăng tỷ trọng video Unboxing và KL1 trong tháng 9.
               </div>
-              <div className="p-3 bg-[#0a0e17] rounded-xl border border-[#1e293b]">
-                <strong className="text-amber-400 block mb-1">2. Tái ký KOC Gia Đình & Bác Sĩ (ROI 0.96 &amp; 0.86):</strong>
+              <div className="p-3 bg-amber-50/60 rounded-xl border border-amber-200/80">
+                <strong className="text-amber-800 block mb-1">2. Tái ký KOC Gia Đình & Bác Sĩ (ROI 0.96 &amp; 0.86):</strong>
                 Nhóm Bác sĩ và Gia đình có độ tin cậy vượt trội và tỷ lệ chuyển đổi đơn hàng rất cao so với nhóm Review Nữ phổ thông.
               </div>
-              <div className="p-3 bg-[#0a0e17] rounded-xl border border-[#1e293b]">
-                <strong className="text-blue-400 block mb-1">3. Kiểm soát ngân sách KL6 &amp; KL7:</strong>
+              <div className="p-3 bg-blue-50/60 rounded-xl border border-blue-200/80">
+                <strong className="text-blue-800 block mb-1">3. Kiểm soát ngân sách KL6 &amp; KL7:</strong>
                 KL6 và KL7 chiếm tới 67,6% ngân sách (hơn 1,9 Tỷ đ) nhưng ROI chỉ đạt 0.30 - 0.62. Cần đàm phán gắt gao điều khoản cam kết view/GMV.
               </div>
             </div>
@@ -2978,21 +2991,30 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
         const newTeamT4 = otherAllocatedT4 + Number(editAllocForm.tier4Videos || 0);
 
         return (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 animate-in fade-in duration-150 overflow-y-auto">
-            <div className="bg-[#0f1420] border border-[#1e293b] rounded-lg w-full max-w-xl shadow-2xl overflow-hidden my-8">
-              <div className="flex items-center justify-between px-6 py-4 border-b border-[#1e293b] bg-[#090d16]">
+          <div 
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150 overflow-y-auto"
+            onClick={() => setEditingAllocation(null)}
+            role="dialog"
+            aria-modal="true"
+          >
+            <div 
+              className="bg-white border border-slate-200 rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden my-8"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-md bg-blue-600/20 text-blue-400 flex items-center justify-center font-bold">
+                  <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold border border-blue-200">
                     <Sliders className="w-4 h-4" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold text-white">Phân Bổ Kế Hoạch 4 Tier — {currentPlan.monthLabel}</h3>
-                    <p className="text-xs text-slate-400">{editingAllocation.staffName} • {editingAllocation.roleTitle}</p>
+                    <h3 className="text-sm font-bold text-slate-900">Phân Bổ Kế Hoạch 4 Tier — {currentPlan.monthLabel}</h3>
+                    <p className="text-xs text-slate-500">{editingAllocation.staffName} • {editingAllocation.roleTitle}</p>
                   </div>
                 </div>
                 <button 
                   onClick={() => setEditingAllocation(null)}
-                  className="p-1 rounded text-slate-400 hover:text-white hover:bg-slate-800 transition"
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition"
+                  aria-label="Đóng"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -3001,96 +3023,96 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
               <div className="p-6 space-y-4 text-xs max-h-[75vh] overflow-y-auto">
                 {/* Tier Quotas Grid inputs */}
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-2 flex items-center justify-between">
+                  <label className="block text-slate-700 font-semibold mb-2 flex items-center justify-between">
                     <span className="flex items-center gap-1.5">
-                      <LayersIcon className="w-3.5 h-3.5 text-blue-400" />
+                      <LayersIcon className="w-3.5 h-3.5 text-blue-600" />
                       Phân Bổ Số Video Theo 4 Tier KOC / KOL
                     </span>
-                    <span className="text-[11px] text-blue-400 font-mono font-bold">
+                    <span className="text-[11px] text-blue-600 font-mono font-bold">
                       Tổng: {calculatedVideos} clips
                     </span>
                   </label>
 
                   <div className="grid grid-cols-2 gap-3">
                     {/* Tier 1 */}
-                    <div className="p-2.5 bg-[#141b2b] border border-rose-500/30 rounded-xl">
+                    <div className="p-2.5 bg-rose-50/50 border border-rose-200 rounded-xl">
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-[11px] font-semibold text-rose-300">Tier 1: Celeb / Mega</span>
-                        <span className="text-[10px] text-slate-400 font-mono">KL7 (&gt;25M)</span>
+                        <span className="text-[11px] font-semibold text-rose-800">Tier 1: Celeb / Mega</span>
+                        <span className="text-[10px] text-rose-600 font-mono">KL7 (&gt;25M)</span>
                       </div>
                       <input
                         type="number"
                         min="0"
                         value={editAllocForm.tier1Videos}
                         onChange={(e) => setEditAllocForm(prev => ({ ...prev, tier1Videos: Math.max(0, Number(e.target.value)) }))}
-                        className="w-full bg-[#0a0f1d] border border-slate-700 rounded-lg px-2.5 py-1.5 text-white font-mono text-xs focus:outline-none focus:border-rose-500"
+                        className="w-full bg-white border border-rose-300 rounded-lg px-2.5 py-1.5 text-slate-900 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
                       />
-                      <div className="flex items-center justify-between text-[10px] text-slate-400 mt-1">
+                      <div className="flex items-center justify-between text-[10px] text-slate-500 mt-1">
                         <span>Đã air: {editingAllocation.tier1Videos || 0}</span>
-                        <span className={newTeamT1 > t1Ceiling ? 'text-rose-400 font-semibold' : 'text-slate-500'}>
+                        <span className={newTeamT1 > t1Ceiling ? 'text-rose-600 font-semibold' : 'text-slate-500'}>
                           Toàn phòng: {newTeamT1}/{t1Ceiling}
                         </span>
                       </div>
                     </div>
 
                     {/* Tier 2 */}
-                    <div className="p-2.5 bg-[#141b2b] border border-blue-500/30 rounded-xl">
+                    <div className="p-2.5 bg-blue-50/50 border border-blue-200 rounded-xl">
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-[11px] font-semibold text-blue-300">Tier 2: Macro Creator</span>
-                        <span className="text-[10px] text-slate-400 font-mono">KL6 (10-25M)</span>
+                        <span className="text-[11px] font-semibold text-blue-800">Tier 2: Macro Creator</span>
+                        <span className="text-[10px] text-blue-600 font-mono">KL6 (10-25M)</span>
                       </div>
                       <input
                         type="number"
                         min="0"
                         value={editAllocForm.tier2Videos}
                         onChange={(e) => setEditAllocForm(prev => ({ ...prev, tier2Videos: Math.max(0, Number(e.target.value)) }))}
-                        className="w-full bg-[#0a0f1d] border border-slate-700 rounded-lg px-2.5 py-1.5 text-white font-mono text-xs focus:outline-none focus:border-blue-500"
+                        className="w-full bg-white border border-blue-300 rounded-lg px-2.5 py-1.5 text-slate-900 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                       />
-                      <div className="flex items-center justify-between text-[10px] text-slate-400 mt-1">
+                      <div className="flex items-center justify-between text-[10px] text-slate-500 mt-1">
                         <span>Đã air: {editingAllocation.tier2Videos || 0}</span>
-                        <span className={newTeamT2 > t2Ceiling ? 'text-rose-400 font-semibold' : 'text-slate-500'}>
+                        <span className={newTeamT2 > t2Ceiling ? 'text-rose-600 font-semibold' : 'text-slate-500'}>
                           Toàn phòng: {newTeamT2}/{t2Ceiling}
                         </span>
                       </div>
                     </div>
 
                     {/* Tier 3 */}
-                    <div className="p-2.5 bg-[#141b2b] border border-emerald-500/30 rounded-xl">
+                    <div className="p-2.5 bg-emerald-50/50 border border-emerald-200 rounded-xl">
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-[11px] font-semibold text-emerald-300">Tier 3: Micro Creator</span>
-                        <span className="text-[10px] text-slate-400 font-mono">KL4-KL5 (2.5-10M)</span>
+                        <span className="text-[11px] font-semibold text-emerald-800">Tier 3: Micro Creator</span>
+                        <span className="text-[10px] text-emerald-600 font-mono">KL4-KL5 (2.5-10M)</span>
                       </div>
                       <input
                         type="number"
                         min="0"
                         value={editAllocForm.tier3Videos}
                         onChange={(e) => setEditAllocForm(prev => ({ ...prev, tier3Videos: Math.max(0, Number(e.target.value)) }))}
-                        className="w-full bg-[#0a0f1d] border border-slate-700 rounded-lg px-2.5 py-1.5 text-white font-mono text-xs focus:outline-none focus:border-emerald-500"
+                        className="w-full bg-white border border-emerald-300 rounded-lg px-2.5 py-1.5 text-slate-900 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
                       />
-                      <div className="flex items-center justify-between text-[10px] text-slate-400 mt-1">
+                      <div className="flex items-center justify-between text-[10px] text-slate-500 mt-1">
                         <span>Đã air: {editingAllocation.tier3Videos || 0}</span>
-                        <span className={newTeamT3 > t3Ceiling ? 'text-rose-400 font-semibold' : 'text-slate-500'}>
+                        <span className={newTeamT3 > t3Ceiling ? 'text-rose-600 font-semibold' : 'text-slate-500'}>
                           Toàn phòng: {newTeamT3}/{t3Ceiling}
                         </span>
                       </div>
                     </div>
 
                     {/* Tier 4 */}
-                    <div className="p-2.5 bg-[#141b2b] border border-purple-500/30 rounded-xl">
+                    <div className="p-2.5 bg-purple-50/50 border border-purple-200 rounded-xl">
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-[11px] font-semibold text-purple-300">Tier 4: Nano & Affiliate</span>
-                        <span className="text-[10px] text-slate-400 font-mono">KL1-KL3 (&lt;2.5M)</span>
+                        <span className="text-[11px] font-semibold text-purple-800">Tier 4: Nano & Affiliate</span>
+                        <span className="text-[10px] text-purple-600 font-mono">KL1-KL3 (&lt;2.5M)</span>
                       </div>
                       <input
                         type="number"
                         min="0"
                         value={editAllocForm.tier4Videos}
                         onChange={(e) => setEditAllocForm(prev => ({ ...prev, tier4Videos: Math.max(0, Number(e.target.value)) }))}
-                        className="w-full bg-[#0a0f1d] border border-slate-700 rounded-lg px-2.5 py-1.5 text-white font-mono text-xs focus:outline-none focus:border-purple-500"
+                        className="w-full bg-white border border-purple-300 rounded-lg px-2.5 py-1.5 text-slate-900 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500"
                       />
-                      <div className="flex items-center justify-between text-[10px] text-slate-400 mt-1">
+                      <div className="flex items-center justify-between text-[10px] text-slate-500 mt-1">
                         <span>Đã air: {editingAllocation.tier4Videos ?? editingAllocation.reportVideos}</span>
-                        <span className={newTeamT4 > t4Ceiling ? 'text-rose-400 font-semibold' : 'text-slate-500'}>
+                        <span className={newTeamT4 > t4Ceiling ? 'text-rose-600 font-semibold' : 'text-slate-500'}>
                           Toàn phòng: {newTeamT4}/{t4Ceiling}
                         </span>
                       </div>
@@ -3099,8 +3121,8 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
 
                   {/* Warning banner if exceeding any tier ceiling */}
                   {(newTeamT1 > t1Ceiling || newTeamT2 > t2Ceiling || newTeamT3 > t3Ceiling || newTeamT4 > t4Ceiling) && (
-                    <div className="mt-2.5 p-2 bg-rose-500/10 border border-rose-500/30 rounded-lg flex items-center gap-2 text-rose-400 text-[11px]">
-                      <AlertTriangle className="w-4 h-4 shrink-0" />
+                    <div className="mt-2.5 p-2 bg-rose-50 border border-rose-200 rounded-lg flex items-center gap-2 text-rose-700 text-[11px]">
+                      <AlertTriangle className="w-4 h-4 shrink-0 text-rose-600" />
                       <span>
                         Cảnh báo: Phân bổ này sẽ khiến trần của phòng bị vượt ({[
                           newTeamT1 > t1Ceiling && `Tier 1 (+${newTeamT1 - t1Ceiling})`,
@@ -3116,11 +3138,11 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                 {/* Budget input & Auto Calculation */}
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="text-slate-300 font-semibold">Ngân Sách Phân Bổ (VND)</label>
+                    <label className="text-slate-700 font-semibold">Ngân Sách Phân Bổ (VND)</label>
                     <button
                       type="button"
                       onClick={() => setEditAllocForm(prev => ({ ...prev, planBudget: suggestedBudget }))}
-                      className="text-[11px] text-blue-400 hover:text-blue-300 underline transition flex items-center gap-1"
+                      className="text-[11px] text-blue-600 hover:text-blue-700 font-medium underline transition flex items-center gap-1"
                     >
                       <Sparkles className="w-3 h-3" />
                       Áp dụng gợi ý 4 Tier: {(suggestedBudget / 1000000).toLocaleString('vi-VN', { maximumFractionDigits: 1 })}M đ
@@ -3131,70 +3153,70 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                     step="1000000"
                     value={editAllocForm.planBudget}
                     onChange={(e) => setEditAllocForm(prev => ({ ...prev, planBudget: Number(e.target.value) }))}
-                    className="w-full bg-[#151c2c] border border-[#1e293b] rounded-lg px-3 py-2 text-white font-mono focus:outline-none focus:border-blue-500"
+                    className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-900 font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                   />
-                  <div className="flex items-center justify-between text-[10px] text-slate-400 mt-1">
+                  <div className="flex items-center justify-between text-[10px] text-slate-500 mt-1">
                     <span>Đã giải ngân thực tế: {editingAllocation.reportBudget.toLocaleString('vi-VN')} đ</span>
-                    <span className="text-slate-400">Đơn giá TB ước tính: {calculatedVideos > 0 ? Math.round(editAllocForm.planBudget / calculatedVideos).toLocaleString('vi-VN') : 0} đ/clip</span>
+                    <span className="text-slate-500">Đơn giá TB ước tính: {calculatedVideos > 0 ? Math.round(editAllocForm.planBudget / calculatedVideos).toLocaleString('vi-VN') : 0} đ/clip</span>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-slate-300 font-semibold mb-1">Target GMV (VND)</label>
+                    <label className="block text-slate-700 font-semibold mb-1">Target GMV (VND)</label>
                     <input
                       type="number"
                       step="1000000"
                       value={editAllocForm.targetGmv}
                       onChange={(e) => setEditAllocForm(prev => ({ ...prev, targetGmv: Number(e.target.value) }))}
-                      className="w-full bg-[#151c2c] border border-[#1e293b] rounded-lg px-3 py-2 text-white font-mono focus:outline-none focus:border-blue-500"
+                      className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-900 font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-slate-300 font-semibold mb-1">Chỉ Tiêu Tuyển KOC Mới</label>
+                    <label className="block text-slate-700 font-semibold mb-1">Chỉ Tiêu Tuyển KOC Mới</label>
                     <input
                       type="number"
                       value={editAllocForm.targetNewKocs}
                       onChange={(e) => setEditAllocForm(prev => ({ ...prev, targetNewKocs: Number(e.target.value) }))}
-                      className="w-full bg-[#151c2c] border border-[#1e293b] rounded-lg px-3 py-2 text-white font-mono focus:outline-none focus:border-blue-500"
+                      className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-900 font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">Nhãn Hàng / Brand Phụ Trách (cách nhau dấu phẩy)</label>
+                  <label className="block text-slate-700 font-semibold mb-1">Nhãn Hàng / Brand Phụ Trách (cách nhau dấu phẩy)</label>
                   <input
                     type="text"
                     value={editAllocForm.assignedBrands}
                     onChange={(e) => setEditAllocForm(prev => ({ ...prev, assignedBrands: e.target.value }))}
                     placeholder="Royal Ausnz, Babe, Kutieskin..."
-                    className="w-full bg-[#151c2c] border border-[#1e293b] rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+                    className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">Ghi Chú Chỉ Đạo Nghiệp Vụ Của Trưởng Phòng</label>
+                  <label className="block text-slate-700 font-semibold mb-1">Ghi Chú Chỉ Đạo Nghiệp Vụ Của Trưởng Phòng</label>
                   <textarea
                     rows={2}
                     value={editAllocForm.managerNote}
                     onChange={(e) => setEditAllocForm(prev => ({ ...prev, managerNote: e.target.value }))}
                     placeholder="Ghi chú điều phối tiến độ, ưu tiên nhóm Tier hoặc nhắc nhở deadline..."
-                    className="w-full bg-[#151c2c] border border-[#1e293b] rounded-lg p-3 text-white focus:outline-none focus:border-blue-500 resize-none"
+                    className="w-full bg-white border border-slate-300 rounded-lg p-3 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none"
                   />
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-[#1e293b] bg-[#090d16]">
+              <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-slate-200 bg-slate-50">
                 <button
                   onClick={() => setEditingAllocation(null)}
-                  className="px-4 py-2 rounded-lg text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800 transition"
+                  className="px-4 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-800 hover:bg-slate-200 transition"
                 >
                   Hủy Bỏ
                 </button>
                 <button
                   onClick={handleSaveAlloc}
-                  className="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-semibold shadow-sm transition flex items-center gap-1.5"
+                  className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow-xs transition flex items-center gap-1.5"
                 >
                   <Save className="w-3.5 h-3.5" />
                   <span>Lưu Phân Bổ</span>
@@ -3207,28 +3229,37 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
 
       {/* Modal: Cấu Hình Hạn Mức 4 Tier Toàn Phòng (Top-Down Quota Configuration) */}
       {isTierQuotaModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 animate-in fade-in duration-150 overflow-y-auto">
-          <div className="bg-[#0f1420] border border-[#1e293b] rounded-lg w-full max-w-2xl shadow-2xl overflow-hidden my-8">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-[#1e293b] bg-[#090d16]">
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150 overflow-y-auto"
+          onClick={() => setIsTierQuotaModalOpen(false)}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div 
+            className="bg-white border border-slate-200 rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden my-8"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-md bg-blue-600/20 text-blue-400 flex items-center justify-center font-bold">
+                <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold border border-blue-200">
                   <SlidersHorizontal className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-white">Cấu Hình Hạn Mức 4 Tier KOC / KOL — {currentPlan.monthLabel}</h3>
-                  <p className="text-xs text-slate-400">Thiết lập trần video & ngân sách toàn phòng trước khi phân bổ cho nhân viên</p>
+                  <h3 className="text-sm font-bold text-slate-900">Cấu Hình Hạn Mức 4 Tier KOC / KOL — {currentPlan.monthLabel}</h3>
+                  <p className="text-xs text-slate-500">Thiết lập trần video & ngân sách toàn phòng trước khi phân bổ cho nhân viên</p>
                 </div>
               </div>
               <button 
                 onClick={() => setIsTierQuotaModalOpen(false)}
-                className="p-1 rounded text-slate-400 hover:text-white hover:bg-slate-800 transition"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition"
+                aria-label="Đóng"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <div className="p-6 space-y-4 text-xs max-h-[75vh] overflow-y-auto">
-              <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl text-blue-300 text-xs">
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-blue-800 text-xs">
                 💡 <strong>Nguyên tắc quản trị Top-Down:</strong> Trưởng phòng chốt tổng ngân sách và trần video cho 4 Tier. Sau đó hệ thống sẽ dùng các mốc này để kiểm soát cân đối khi phân bổ xuống 26 nhân sự.
               </div>
 
@@ -3236,23 +3267,23 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                 {editTierForm.map((tier, idx) => {
                   const calculatedAvg = tier.targetVideos > 0 ? Math.round(tier.totalBudget / tier.targetVideos) : 0;
                   return (
-                    <div key={tier.tierId} className="p-4 bg-[#141b2b] border border-[#1e293b] rounded-xl space-y-3">
+                    <div key={tier.tierId} className="p-4 bg-slate-50/70 border border-slate-200 rounded-xl space-y-3">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <span className="w-2 h-2 rounded-full bg-blue-400" />
-                          <span className="font-bold text-white text-xs">{tier.tierName}</span>
-                          <span className="px-2 py-0.5 rounded text-[10px] bg-slate-800 text-slate-300 border border-slate-700 font-mono">
+                          <span className="w-2 h-2 rounded-full bg-blue-600" />
+                          <span className="font-bold text-slate-900 text-xs">{tier.tierName}</span>
+                          <span className="px-2 py-0.5 rounded text-[10px] bg-slate-100 text-slate-700 border border-slate-200 font-mono">
                             {tier.klRange}
                           </span>
                         </div>
-                        <span className="text-[11px] text-slate-400">
-                          Đơn giá TB: <strong className="text-white font-mono">{(calculatedAvg / 1000000).toLocaleString('vi-VN', { maximumFractionDigits: 2 })}M đ/clip</strong>
+                        <span className="text-[11px] text-slate-500">
+                          Đơn giá TB: <strong className="text-slate-900 font-mono">{(calculatedAvg / 1000000).toLocaleString('vi-VN', { maximumFractionDigits: 2 })}M đ/clip</strong>
                         </span>
                       </div>
 
                       <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <label className="block text-[11px] text-slate-400 mb-1">Trần Số Video (Clips)</label>
+                          <label className="block text-[11px] text-slate-600 mb-1 font-medium">Trần Số Video (Clips)</label>
                           <input
                             type="number"
                             min="0"
@@ -3261,12 +3292,12 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                               const val = Math.max(0, Number(e.target.value));
                               setEditTierForm(prev => prev.map((t, i) => i === idx ? { ...t, targetVideos: val } : t));
                             }}
-                            className="w-full bg-[#0a0f1d] border border-slate-700 rounded-lg px-3 py-1.5 text-white font-mono focus:outline-none focus:border-blue-500"
+                            className="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-slate-900 font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                           />
                         </div>
 
                         <div>
-                          <label className="block text-[11px] text-slate-400 mb-1">Trần Ngân Sách (VND)</label>
+                          <label className="block text-[11px] text-slate-600 mb-1 font-medium">Trần Ngân Sách (VND)</label>
                           <input
                             type="number"
                             min="0"
@@ -3276,7 +3307,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                               const val = Math.max(0, Number(e.target.value));
                               setEditTierForm(prev => prev.map((t, i) => i === idx ? { ...t, totalBudget: val } : t));
                             }}
-                            className="w-full bg-[#0a0f1d] border border-slate-700 rounded-lg px-3 py-1.5 text-white font-mono focus:outline-none focus:border-blue-500"
+                            className="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-slate-900 font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                           />
                         </div>
                       </div>
@@ -3289,7 +3320,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                           setEditTierForm(prev => prev.map((t, i) => i === idx ? { ...t, description: val } : t));
                         }}
                         placeholder="Mô tả chiến lược và vai trò của Tier này trong tháng..."
-                        className="w-full bg-[#0a0f1d] border border-slate-800 rounded-lg px-3 py-1 text-[11px] text-slate-300 focus:outline-none focus:border-slate-600"
+                        className="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-[11px] text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                       />
                     </div>
                   );
@@ -3297,32 +3328,32 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
               </div>
 
               {/* Total Summary */}
-              <div className="p-3.5 bg-[#0a0f1d] border border-[#1e293b] rounded-xl flex items-center justify-between text-xs">
+              <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between text-xs">
                 <div>
-                  <span className="text-slate-400">Tổng Trần Video Tháng:</span>
-                  <span className="ml-2 font-bold text-white font-mono">
+                  <span className="text-slate-600">Tổng Trần Video Tháng:</span>
+                  <span className="ml-2 font-bold text-slate-900 font-mono">
                     {editTierForm.reduce((sum, t) => sum + (t.targetVideos || 0), 0).toLocaleString('vi-VN')} clips
                   </span>
                 </div>
                 <div>
-                  <span className="text-slate-400">Tổng Trần Ngân Sách:</span>
-                  <span className="ml-2 font-bold text-blue-400 font-mono">
+                  <span className="text-slate-600">Tổng Trần Ngân Sách:</span>
+                  <span className="ml-2 font-bold text-blue-700 font-mono">
                     {editTierForm.reduce((sum, t) => sum + (t.totalBudget || 0), 0).toLocaleString('vi-VN')} đ
                   </span>
                 </div>
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-[#1e293b] bg-[#090d16]">
+            <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-slate-200 bg-slate-50">
               <button
                 onClick={() => setIsTierQuotaModalOpen(false)}
-                className="px-4 py-2 rounded-lg text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800 transition"
+                className="px-4 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-800 hover:bg-slate-200 transition"
               >
                 Hủy Bỏ
               </button>
               <button
                 onClick={handleSaveTierQuota}
-                className="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-semibold shadow-sm transition flex items-center gap-1.5"
+                className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow-xs transition flex items-center gap-1.5"
               >
                 <Save className="w-3.5 h-3.5" />
                 <span>Lưu Hạn Mức Tháng</span>

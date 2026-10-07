@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   ShieldCheck,
   CheckCircle2,
@@ -64,6 +64,20 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({ onNotify }) => {
 
   // Copy Magic Link state
   const [copiedLink, setCopiedLink] = useState(false);
+
+  // Close modals on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (isPlanRevisionModalOpen) setIsPlanRevisionModalOpen(false);
+        if (rejectingKoc) setRejectingKoc(null);
+      }
+    };
+    if (isPlanRevisionModalOpen || rejectingKoc) {
+      window.addEventListener('keydown', handleKeyDown);
+      return () => window.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [isPlanRevisionModalOpen, rejectingKoc]);
 
   // Check if Stage 1 is completed
   const isPlanApproved = activePortal.planApprovalStatus === 'BRAND_PLAN_APPROVED';
@@ -495,53 +509,53 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({ onNotify }) => {
 
           {/* Campaign Strategy & KPI Overview */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="card-enterprise p-4 bg-[#0e1320] border-[#1e293b]">
-              <span className="text-[11px] text-slate-400 block font-medium">Tổng Ngân Sách Gói Chiến Dịch</span>
-              <span className="text-lg font-black font-mono text-emerald-400 mt-1 block">
+            <div className="card-enterprise p-4 bg-white border border-slate-200 shadow-xs">
+              <span className="text-[11px] text-slate-500 block font-medium">Tổng Ngân Sách Gói Chiến Dịch</span>
+              <span className="text-lg font-black font-mono text-emerald-600 mt-1 block">
                 {(activePortal.totalBudget).toLocaleString('vi-VN')} đ
               </span>
-              <span className="text-[10px] text-slate-500 mt-1 block">Đã bao gồm chi phí thù lao & vận hành</span>
+              <span className="text-[10px] text-slate-400 mt-1 block">Đã bao gồm chi phí thù lao &amp; vận hành</span>
             </div>
 
-            <div className="card-enterprise p-4 bg-[#0e1320] border-[#1e293b]">
-              <span className="text-[11px] text-slate-400 block font-medium">Mục Tiêu Doanh Thu GMV Dự Phóng</span>
-              <span className="text-lg font-black font-mono text-blue-400 mt-1 block">
+            <div className="card-enterprise p-4 bg-white border border-slate-200 shadow-xs">
+              <span className="text-[11px] text-slate-500 block font-medium">Mục Tiêu Doanh Thu GMV Dự Phóng</span>
+              <span className="text-lg font-black font-mono text-blue-600 mt-1 block">
                 {(activePortal.targetGmv).toLocaleString('vi-VN')} đ
               </span>
-              <span className="text-[10px] text-slate-500 mt-1 block">Tỷ lệ ROI kỳ vọng: 5.0x</span>
+              <span className="text-[10px] text-slate-400 mt-1 block">Tỷ lệ ROI kỳ vọng: 5.0x</span>
             </div>
 
-            <div className="card-enterprise p-4 bg-[#0e1320] border-[#1e293b]">
-              <span className="text-[11px] text-slate-400 block font-medium">Tỷ Lệ CIR Mục Tiêu (Cost/Revenue)</span>
-              <span className="text-lg font-black font-mono text-amber-400 mt-1 block">
+            <div className="card-enterprise p-4 bg-white border border-slate-200 shadow-xs">
+              <span className="text-[11px] text-slate-500 block font-medium">Tỷ Lệ CIR Mục Tiêu (Cost/Revenue)</span>
+              <span className="text-lg font-black font-mono text-amber-600 mt-1 block">
                 {activePortal.targetCir.toFixed(1)}%
               </span>
-              <span className="text-[10px] text-slate-500 mt-1 block">Chi phí trên mỗi 100đ doanh thu</span>
+              <span className="text-[10px] text-slate-400 mt-1 block">Chi phí trên mỗi 100đ doanh thu</span>
             </div>
 
-            <div className="card-enterprise p-4 bg-[#0e1320] border-[#1e293b]">
-              <span className="text-[11px] text-slate-400 block font-medium">Quy Mô Creator Triển Khai</span>
-              <span className="text-lg font-black font-mono text-purple-400 mt-1 block">
+            <div className="card-enterprise p-4 bg-white border border-slate-200 shadow-xs">
+              <span className="text-[11px] text-slate-500 block font-medium">Quy Mô Creator Triển Khai</span>
+              <span className="text-lg font-black font-mono text-purple-600 mt-1 block">
                 {activePortal.totalTargetVideos} Clips
               </span>
-              <span className="text-[10px] text-slate-500 mt-1 block">Trải dài trên 4 cấp độ KOC</span>
+              <span className="text-[10px] text-slate-400 mt-1 block">Trải dài trên 4 cấp độ KOC</span>
             </div>
           </div>
 
           {/* Strategy Brief Context for Brand */}
-          <div className="card-enterprise p-4 bg-[#0e1320] border-[#1e293b] text-xs space-y-2">
-            <h4 className="font-bold text-white flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-amber-400" />
-              Định Hướng Chiến Lược & Sản Phẩm Trọng Tâm (Campaign Strategy):
+          <div className="card-enterprise p-4 bg-white border border-slate-200 shadow-xs text-xs space-y-2">
+            <h4 className="font-bold text-slate-900 flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-amber-500" />
+              Định Hướng Chiến Lược &amp; Sản Phẩm Trọng Tâm (Campaign Strategy):
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
-              <div className="p-3 rounded-md bg-[#0b1120] border border-[#1e293b]">
-                <span className="font-bold text-slate-300 block mb-1">🎯 Thông điệp chủ đạo (Big Idea):</span>
-                <p className="text-slate-400 leading-relaxed">{activePortal.bigIdea}</p>
+              <div className="p-3 rounded-lg bg-slate-50 border border-slate-200">
+                <span className="font-bold text-slate-800 block mb-1">🎯 Thông điệp chủ đạo (Big Idea):</span>
+                <p className="text-slate-600 leading-relaxed">{activePortal.bigIdea}</p>
               </div>
-              <div className="p-3 rounded-md bg-[#0b1120] border border-[#1e293b]">
-                <span className="font-bold text-slate-300 block mb-1">📦 Sản phẩm chủ lực (Hero SKUs):</span>
-                <ul className="list-disc list-inside text-slate-400 space-y-0.5">
+              <div className="p-3 rounded-lg bg-slate-50 border border-slate-200">
+                <span className="font-bold text-slate-800 block mb-1">📦 Sản phẩm chủ lực (Hero SKUs):</span>
+                <ul className="list-disc list-inside text-slate-600 space-y-0.5">
                   {activePortal.focusSkus.map((sku, i) => (
                     <li key={i}>{sku}</li>
                   ))}
@@ -551,57 +565,57 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({ onNotify }) => {
           </div>
 
           {/* The 4-Tier Budget Breakdown Table */}
-          <div className="card-enterprise p-5 bg-[#0e1320] border-[#1e293b] overflow-x-auto">
-            <div className="flex items-center justify-between pb-3 mb-3 border-b border-[#1e293b]">
+          <div className="card-enterprise p-5 bg-white border border-slate-200 shadow-xs overflow-x-auto">
+            <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-200">
               <div>
-                <h4 className="text-xs font-bold text-white uppercase tracking-wider">
+                <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
                   CƠ CẤU PHÂN BỔ 4 CẤP ĐỘ KOC / KOL CHIẾN DỊCH
                 </h4>
-                <p className="text-[11px] text-slate-400">
+                <p className="text-[11px] text-slate-500">
                   Số lượng và vai trò chiến lược được thiết kế riêng biệt để cân bằng giữa Độ Phủ Nhận Diện và Hiệu Quả Doanh Thu.
                 </p>
               </div>
-              <span className="text-xs font-semibold px-2.5 py-1 rounded bg-[#0b1120] text-emerald-400 border border-[#1e293b]">
+              <span className="text-xs font-semibold px-2.5 py-1 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
                 Bảo vệ biên độ an toàn ngân sách: 100%
               </span>
             </div>
 
             <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className="border-b border-[#1e293b] text-slate-400 bg-[#0b1120]">
+                <tr className="border-b border-slate-200 text-slate-600 bg-slate-50">
                   <th className="py-2.5 px-3 font-semibold">Cấp Độ KOC / KOL</th>
                   <th className="py-2.5 px-3 font-semibold text-center">Số Lượng Creator</th>
                   <th className="py-2.5 px-3 font-semibold text-right">Ngân Sách Phân Bổ</th>
                   <th className="py-2.5 px-3 font-semibold text-center">Tỷ Trọng (%)</th>
-                  <th className="py-2.5 px-3 font-semibold">Vai Trò & Định Hướng Chiến Lược</th>
+                  <th className="py-2.5 px-3 font-semibold">Vai Trò &amp; Định Hướng Chiến Lược</th>
                   <th className="py-2.5 px-3 font-semibold text-center">Mục Tiêu ROI</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#1e293b]/60">
+              <tbody className="divide-y divide-slate-200">
                 {activePortal.breakdownTiers.map((tier) => {
                   const share = ((tier.allocatedBudget / activePortal.totalBudget) * 100).toFixed(1);
                   return (
-                    <tr key={tier.tier} className="hover:bg-slate-800/30 transition">
+                    <tr key={tier.tier} className="hover:bg-slate-50/80 transition">
                       <td className="py-3 px-3">
-                        <div className="font-bold text-white text-xs">{tier.tierLabel}</div>
-                        <div className="text-[10px] text-slate-400">{tier.salaryGradeLabel}</div>
+                        <div className="font-bold text-slate-900 text-xs">{tier.tierLabel}</div>
+                        <div className="text-[10px] text-slate-500">{tier.salaryGradeLabel}</div>
                       </td>
-                      <td className="py-3 px-3 text-center font-bold text-blue-400">
+                      <td className="py-3 px-3 text-center font-bold text-blue-600">
                         {tier.targetCount} Creators
                       </td>
-                      <td className="py-3 px-3 text-right font-mono font-bold text-white">
+                      <td className="py-3 px-3 text-right font-mono font-bold text-slate-900">
                         {(tier.allocatedBudget).toLocaleString('vi-VN')} đ
                       </td>
                       <td className="py-3 px-3 text-center">
-                        <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-300">
+                        <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-700">
                           {share}%
                         </span>
                       </td>
-                      <td className="py-3 px-3 text-slate-300 max-w-xs">
+                      <td className="py-3 px-3 text-slate-600 max-w-xs">
                         {tier.notes}
                       </td>
                       <td className="py-3 px-3 text-center">
-                        <span className="text-[11px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded">
+                        <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded">
                           {tier.historicalRoiBenchmark}x
                         </span>
                       </td>
@@ -610,15 +624,15 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({ onNotify }) => {
                 })}
               </tbody>
               <tfoot>
-                <tr className="border-t-2 border-[#1e293b] bg-[#0b1120]/80 font-bold text-xs">
-                  <td className="py-3 px-3 text-white">TỔNG CỘNG CHIẾN DỊCH</td>
-                  <td className="py-3 px-3 text-center text-blue-400">{activePortal.totalTargetVideos} Clips</td>
-                  <td className="py-3 px-3 text-right font-mono text-emerald-400">
+                <tr className="border-t-2 border-slate-300 bg-slate-50 font-bold text-xs">
+                  <td className="py-3 px-3 text-slate-900">TỔNG CỘNG CHIẾN DỊCH</td>
+                  <td className="py-3 px-3 text-center text-blue-600">{activePortal.totalTargetVideos} Clips</td>
+                  <td className="py-3 px-3 text-right font-mono text-emerald-600">
                     {(activePortal.totalBudget).toLocaleString('vi-VN')} đ
                   </td>
-                  <td className="py-3 px-3 text-center text-slate-300">100.0%</td>
-                  <td className="py-3 px-3 text-slate-400">Đã chốt cấu trúc chiến lược</td>
-                  <td className="py-3 px-3 text-center text-emerald-400">5.0x</td>
+                  <td className="py-3 px-3 text-center text-slate-700">100.0%</td>
+                  <td className="py-3 px-3 text-slate-500">Đã chốt cấu trúc chiến lược</td>
+                  <td className="py-3 px-3 text-center text-emerald-600">5.0x</td>
                 </tr>
               </tfoot>
             </table>
@@ -631,18 +645,18 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({ onNotify }) => {
       {/* ------------------------------------------------------------------------- */}
       {activeStage === 'STAGE_2_KOCS' && (
         <div className="space-y-4">
-          <div className="card-enterprise p-4 bg-[#0e1320] border-[#1e293b] flex items-center justify-between gap-4">
+          <div className="card-enterprise p-4 bg-white border border-slate-200 shadow-xs flex items-center justify-between gap-4">
             <div>
-              <h3 className="text-sm font-bold text-white">
+              <h3 className="text-sm font-bold text-slate-900">
                 DANH SÁCH KOC / KOL ĐỀ XUẤT CHO CHIẾN DỊCH
               </h3>
-              <p className="text-xs text-slate-400 mt-0.5">
+              <p className="text-xs text-slate-500 mt-0.5">
                 Các Creator được chọn lọc kỹ càng dựa trên chỉ số tệp người xem, lịch sử chuyển đổi và độ an toàn thương hiệu.
               </p>
             </div>
-            <div className="text-xs text-slate-400">
+            <div className="text-xs text-slate-600">
               Đã duyệt:{' '}
-              <strong className="text-emerald-400">
+              <strong className="text-emerald-600 font-bold">
                 {activePortal.kocCandidates.filter(k => k.brandApprovalStatus === 'ĐÃ_DUYỆT').length}
               </strong>
               /{activePortal.kocCandidates.length} KOCs
@@ -659,21 +673,21 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({ onNotify }) => {
                 <div
                   key={koc.id}
                   className={`card-enterprise p-4 border transition flex flex-col justify-between ${
-                    isApproved ? 'bg-emerald-950/20 border-emerald-500/40' :
-                    isRejected ? 'bg-rose-950/20 border-rose-500/40 opacity-75' :
-                    'bg-[#0e1320] border-[#1e293b]'
+                    isApproved ? 'bg-emerald-50/40 border-emerald-300 shadow-2xs' :
+                    isRejected ? 'bg-rose-50/40 border-rose-300 opacity-80 shadow-2xs' :
+                    'bg-white border-slate-200 shadow-xs hover:border-slate-300'
                   }`}
                 >
                   <div>
                     {/* Top Row: Tier & Status */}
                     <div className="flex items-center justify-between gap-2 mb-2">
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">
                         {koc.tierLabel}
                       </span>
                       <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${
-                        isApproved ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' :
-                        isRejected ? 'bg-rose-500/20 text-rose-300 border-rose-500/40' :
-                        'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                        isApproved ? 'bg-emerald-50 text-emerald-700 border-emerald-300' :
+                        isRejected ? 'bg-rose-50 text-rose-700 border-rose-300' :
+                        'bg-amber-50 text-amber-800 border-amber-300'
                       }`}>
                         {isApproved ? 'Đã Đồng Ý' : isRejected ? 'Đã Từ Chối' : 'Chờ Brand Duyệt'}
                       </span>
@@ -681,16 +695,16 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({ onNotify }) => {
 
                     {/* Creator Identity */}
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-md bg-slate-800 text-blue-400 font-bold flex items-center justify-center text-sm border border-slate-700">
+                      <div className="w-10 h-10 rounded-lg bg-blue-50 text-blue-700 font-bold flex items-center justify-center text-sm border border-blue-200 shadow-2xs">
                         {koc.stageName.slice(0, 2).toUpperCase()}
                       </div>
                       <div>
-                        <h4 className="text-sm font-bold text-white">{koc.stageName}</h4>
+                        <h4 className="text-sm font-bold text-slate-900">{koc.stageName}</h4>
                         <a
                           href={koc.channelUrl}
                           target="_blank"
                           rel="noreferrer"
-                          className="text-xs text-blue-400 hover:underline flex items-center gap-1 font-mono"
+                          className="text-xs text-blue-600 hover:underline flex items-center gap-1 font-mono"
                         >
                           {koc.channelId}
                           <ExternalLink className="w-3 h-3" />
@@ -699,29 +713,29 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({ onNotify }) => {
                     </div>
 
                     {/* Performance Metrics */}
-                    <div className="grid grid-cols-3 gap-2 my-3 p-2 rounded-md bg-[#0b1120] text-center text-[11px] border border-[#1e293b]">
+                    <div className="grid grid-cols-3 gap-2 my-3 p-2 rounded-lg bg-slate-50 text-center text-[11px] border border-slate-200">
                       <div>
                         <span className="text-slate-500 block text-[10px]">Followers</span>
-                        <span className="font-bold text-white">{(koc.followers / 1000).toFixed(0)}K</span>
+                        <span className="font-bold text-slate-900">{(koc.followers / 1000).toFixed(0)}K</span>
                       </div>
                       <div>
                         <span className="text-slate-500 block text-[10px]">View TB</span>
-                        <span className="font-bold text-blue-400">{(koc.avgViews / 1000).toFixed(0)}K</span>
+                        <span className="font-bold text-blue-600">{(koc.avgViews / 1000).toFixed(0)}K</span>
                       </div>
                       <div>
                         <span className="text-slate-500 block text-[10px]">Tương Tác</span>
-                        <span className="font-bold text-emerald-400">{koc.engagementRate}%</span>
+                        <span className="font-bold text-emerald-600">{koc.engagementRate}%</span>
                       </div>
                     </div>
 
                     {/* Format Description */}
-                    <p className="text-[11px] text-slate-300 bg-[#0b1120]/60 p-2 rounded border border-[#1e293b]/70">
+                    <p className="text-[11px] text-slate-700 bg-slate-50 p-2.5 rounded-lg border border-slate-200 leading-relaxed">
                       <strong>Quyền lợi:</strong> {koc.formatDescription}
                     </p>
 
                     {/* Sample Videos */}
                     <div className="mt-2.5 text-[11px]">
-                      <span className="text-slate-400 block mb-1 font-semibold">Clip mẫu tương tự:</span>
+                      <span className="text-slate-500 block mb-1 font-semibold">Clip mẫu tương tự:</span>
                       <div className="space-y-1">
                         {koc.sampleVideoUrls.map((sample, i) => (
                           <a
@@ -729,7 +743,7 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({ onNotify }) => {
                             href={sample.url}
                             target="_blank"
                             rel="noreferrer"
-                            className="text-blue-400 hover:text-blue-300 block truncate flex items-center gap-1 bg-[#0b1120] px-2 py-1 rounded"
+                            className="text-blue-700 hover:text-blue-800 block truncate flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-md transition"
                           >
                             <Play className="w-3 h-3 text-slate-500 shrink-0" />
                             <span className="truncate">{sample.title}</span>
@@ -740,18 +754,18 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({ onNotify }) => {
 
                     {/* Rejection Note if any */}
                     {isRejected && (
-                      <div className="mt-2 text-[10px] text-rose-300 bg-rose-950/40 p-2 rounded border border-rose-800/40">
+                      <div className="mt-2 text-[10px] text-rose-800 bg-rose-50 p-2 rounded-lg border border-rose-200 font-medium">
                         <strong>Lý do từ chối:</strong> {koc.rejectReason}
                       </div>
                     )}
                   </div>
 
                   {/* Actions */}
-                  <div className="mt-4 pt-3 border-t border-[#1e293b] flex items-center justify-between gap-2">
+                  <div className="mt-4 pt-3 border-t border-slate-200 flex items-center justify-between gap-2">
                     <button
                       type="button"
                       onClick={() => setRejectingKoc(koc)}
-                      className="px-2.5 py-1.5 rounded-md text-xs font-semibold text-rose-400 hover:bg-rose-950/40 border border-rose-800/50 transition flex items-center gap-1"
+                      className="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-rose-700 hover:bg-rose-50 border border-rose-300 transition flex items-center gap-1 cursor-pointer"
                     >
                       <RotateCcw className="w-3 h-3" />
                       Đổi KOC Khác
@@ -760,10 +774,10 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({ onNotify }) => {
                       type="button"
                       disabled={isApproved}
                       onClick={() => handleApproveKoc(koc.id)}
-                      className={`px-3 py-1.5 rounded-md text-xs font-bold transition flex items-center gap-1 ${
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
                         isApproved
-                          ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 cursor-default'
-                          : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm'
+                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-300 cursor-default'
+                          : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs'
                       }`}
                     >
                       <Check className="w-3.5 h-3.5" />
@@ -783,8 +797,8 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({ onNotify }) => {
       {activeStage === 'STAGE_3_SCRIPTS' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
           {/* Script List Sidebar */}
-          <div className="card-enterprise p-4 bg-[#0e1320] border-[#1e293b] space-y-3">
-            <h4 className="text-xs font-bold text-white uppercase tracking-wider pb-2 border-b border-[#1e293b]">
+          <div className="card-enterprise p-4 bg-white border border-slate-200 shadow-xs space-y-3">
+            <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider pb-2 border-b border-slate-200">
               Kịch Bản Cần Phê Duyệt ({activePortal.scripts.length})
             </h4>
 
@@ -795,24 +809,24 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({ onNotify }) => {
                   <div
                     key={s.id}
                     onClick={() => setActiveScriptId(s.id)}
-                    className={`p-3 rounded-md border cursor-pointer transition ${
+                    className={`p-3 rounded-lg border cursor-pointer transition ${
                       isSelected
-                        ? 'bg-blue-950/40 border-blue-500 shadow-sm'
-                        : 'bg-[#0b1120] border-[#1e293b] hover:border-slate-600'
+                        ? 'bg-blue-50/80 border-blue-500 shadow-2xs'
+                        : 'bg-white border-slate-200 hover:bg-slate-50'
                     }`}
                   >
                     <div className="flex items-center justify-between text-[11px] mb-1">
-                      <span className="font-bold text-white">{s.kocStageName}</span>
-                      <span className={`text-[10px] font-semibold px-1.5 py-0.2 rounded ${
-                        s.status === 'APPROVED' ? 'bg-emerald-500/20 text-emerald-300' :
-                        s.status === 'REVISION_REQUESTED' ? 'bg-amber-500/20 text-amber-300' :
-                        'bg-blue-500/20 text-blue-300'
+                      <span className="font-bold text-slate-900">{s.kocStageName}</span>
+                      <span className={`text-[10px] font-semibold px-2 py-0.5 rounded border ${
+                        s.status === 'APPROVED' ? 'bg-emerald-50 text-emerald-700 border-emerald-300' :
+                        s.status === 'REVISION_REQUESTED' ? 'bg-amber-50 text-amber-800 border-amber-300' :
+                        'bg-blue-50 text-blue-700 border-blue-200'
                       }`}>
                         {s.status === 'APPROVED' ? 'Đã Duyệt' : s.status === 'REVISION_REQUESTED' ? 'Đang Sửa' : 'Chờ Duyệt'}
                       </span>
                     </div>
-                    <p className="text-[11px] text-slate-400 line-clamp-1">{s.productName}</p>
-                    <span className="text-[10px] text-amber-400 block mt-1 flex items-center gap-1">
+                    <p className="text-[11px] text-slate-500 line-clamp-1">{s.productName}</p>
+                    <span className="text-[10px] text-amber-700 font-semibold block mt-1 flex items-center gap-1">
                       <Clock className="w-3 h-3" />
                       SLA còn: {s.remainingHours} giờ
                     </span>
@@ -825,20 +839,20 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({ onNotify }) => {
           {/* Active Script Review Detail */}
           {activeScript && (
             <div className="lg:col-span-2 space-y-4">
-              <div className="card-enterprise p-5 bg-[#0e1320] border-[#1e293b]">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#1e293b]">
+              <div className="card-enterprise p-5 bg-white border border-slate-200 shadow-xs">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-200">
                   <div>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">
                       {activeScript.dealCode}
                     </span>
-                    <h3 className="text-sm font-bold text-white mt-1">
+                    <h3 className="text-sm font-bold text-slate-900 mt-1">
                       Kịch bản Video của {activeScript.kocStageName} ({activeScript.videoDuration})
                     </h3>
-                    <p className="text-xs text-slate-400 mt-0.5">Sản phẩm: {activeScript.productName}</p>
+                    <p className="text-xs text-slate-500 mt-0.5">Sản phẩm: {activeScript.productName}</p>
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <span className="text-xs px-2.5 py-1 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold flex items-center gap-1">
+                    <span className="text-xs px-2.5 py-1 rounded bg-amber-50 text-amber-800 border border-amber-300 font-bold flex items-center gap-1 shadow-2xs">
                       <Clock className="w-3.5 h-3.5" />
                       SLA: {activeScript.remainingHours}h còn lại
                     </span>
@@ -848,59 +862,59 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({ onNotify }) => {
                 {/* 4-Part Script Structure */}
                 <div className="space-y-3 mt-4 text-xs">
                   {/* Part 1: Hook */}
-                  <div className="p-3.5 rounded-md bg-[#0b1120] border border-[#1e293b]">
-                    <span className="font-bold text-amber-400 block text-xs uppercase mb-1">
+                  <div className="p-3.5 rounded-lg bg-amber-50/50 border border-amber-200">
+                    <span className="font-bold text-amber-800 block text-xs uppercase mb-1">
                       1. Đoạn Mở Đầu (Hook 3s Đầu):
                     </span>
-                    <p className="text-slate-200 leading-relaxed font-medium">{activeScript.hook}</p>
+                    <p className="text-slate-800 leading-relaxed font-medium">{activeScript.hook}</p>
                   </div>
 
                   {/* Part 2: Pain Point */}
-                  <div className="p-3.5 rounded-md bg-[#0b1120] border border-[#1e293b]">
-                    <span className="font-bold text-rose-400 block text-xs uppercase mb-1">
+                  <div className="p-3.5 rounded-lg bg-rose-50/50 border border-rose-200">
+                    <span className="font-bold text-rose-800 block text-xs uppercase mb-1">
                       2. Nỗi Đau Khách Hàng (Pain Point):
                     </span>
-                    <p className="text-slate-200 leading-relaxed">{activeScript.painPoint}</p>
+                    <p className="text-slate-800 leading-relaxed">{activeScript.painPoint}</p>
                   </div>
 
                   {/* Part 3: Solution & USP */}
-                  <div className="p-3.5 rounded-md bg-[#0b1120] border border-[#1e293b]">
-                    <span className="font-bold text-emerald-400 block text-xs uppercase mb-1">
+                  <div className="p-3.5 rounded-lg bg-emerald-50/50 border border-emerald-200">
+                    <span className="font-bold text-emerald-800 block text-xs uppercase mb-1">
                       3. Giải Pháp & Điểm Mạnh Sản Phẩm (USP):
                     </span>
-                    <p className="text-slate-200 leading-relaxed">{activeScript.solutionAndUsp}</p>
+                    <p className="text-slate-800 leading-relaxed">{activeScript.solutionAndUsp}</p>
                   </div>
 
                   {/* Part 4: CTA */}
-                  <div className="p-3.5 rounded-md bg-[#0b1120] border border-[#1e293b]">
-                    <span className="font-bold text-blue-400 block text-xs uppercase mb-1">
+                  <div className="p-3.5 rounded-lg bg-blue-50/50 border border-blue-200">
+                    <span className="font-bold text-blue-800 block text-xs uppercase mb-1">
                       4. Lời Kêu Gọi Mua Hàng (Call To Action - CTA):
                     </span>
-                    <p className="text-slate-200 leading-relaxed">{activeScript.callToAction}</p>
+                    <p className="text-slate-800 leading-relaxed">{activeScript.callToAction}</p>
                   </div>
                 </div>
 
                 {/* Existing Feedback if any */}
                 {activeScript.brandFeedback && (
-                  <div className="mt-4 p-3 rounded-md bg-amber-950/30 border border-amber-500/40 text-xs text-amber-200">
+                  <div className="mt-4 p-3 rounded-lg bg-amber-50 border border-amber-300 text-xs text-amber-900 leading-relaxed">
                     <strong>Góp ý gần nhất của Brand (Lần {activeScript.revisionCount}/2):</strong> {activeScript.brandFeedback}
                   </div>
                 )}
 
                 {/* Inline Feedback Form for Brand */}
                 {activeScript.status !== 'APPROVED' && (
-                  <div className="mt-5 pt-4 border-t border-[#1e293b] space-y-3">
+                  <div className="mt-5 pt-4 border-t border-slate-200 space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-white flex items-center gap-1.5">
-                        <MessageSquare className="w-3.5 h-3.5 text-blue-400" />
+                      <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                        <MessageSquare className="w-3.5 h-3.5 text-blue-600" />
                         Góp Ý Chỉnh Sửa Kịch Bản (Còn {2 - activeScript.revisionCount} lần sửa):
                       </span>
-                      <div className="flex items-center gap-1 text-[11px]">
-                        <span className="text-slate-400">Chọn phần góp ý:</span>
+                      <div className="flex items-center gap-1.5 text-[11px]">
+                        <span className="text-slate-500 font-medium">Chọn phần góp ý:</span>
                         <select
                           value={feedbackSection}
                           onChange={(e: any) => setFeedbackSection(e.target.value)}
-                          className="bg-[#0b1120] text-slate-200 border border-[#1e293b] rounded px-2 py-0.5 text-xs outline-none"
+                          className="bg-white text-slate-800 border border-slate-300 rounded-lg px-2.5 py-1 text-xs focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none cursor-pointer"
                         >
                           <option value="HOOK">1. Hook</option>
                           <option value="PAIN">2. Pain Point</option>
@@ -915,7 +929,7 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({ onNotify }) => {
                       value={scriptFeedbackText}
                       onChange={(e) => setScriptFeedbackText(e.target.value)}
                       placeholder="Nhập nội dung cần điều chỉnh chi tiết cho KOC (VD: Đề nghị nhấn mạnh khả năng kiềm dầu 8 tiếng thay vì làm trắng)..."
-                      className="w-full text-xs bg-[#0b1120] text-slate-200 border border-[#1e293b] rounded-md p-2.5 focus:border-blue-500 outline-none leading-relaxed"
+                      className="w-full text-xs bg-white text-slate-900 placeholder-slate-400 border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none leading-relaxed"
                     />
 
                     <div className="flex items-center justify-between pt-1">
@@ -923,7 +937,7 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({ onNotify }) => {
                         type="button"
                         disabled={!scriptFeedbackText.trim() || activeScript.revisionCount >= 2}
                         onClick={handleSubmitScriptFeedback}
-                        className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-slate-200 border border-slate-700 rounded-md text-xs font-semibold flex items-center gap-1.5 transition"
+                        className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 disabled:opacity-50 text-slate-700 border border-slate-300 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
                       >
                         <Send className="w-3.5 h-3.5" />
                         Gửi Yêu Cầu Sửa Kịch Bản
@@ -932,7 +946,7 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({ onNotify }) => {
                       <button
                         type="button"
                         onClick={() => handleApproveScript(activeScript.id)}
-                        className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-md text-xs font-bold flex items-center gap-1.5 shadow-md transition"
+                        className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-2xs transition cursor-pointer"
                       >
                         <Check className="w-3.5 h-3.5" />
                         ✅ Phê Duyệt Kịch Bản Này
@@ -953,80 +967,80 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({ onNotify }) => {
         <div className="space-y-5">
           {/* Real-time Tickers */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="card-enterprise p-4 bg-[#0e1320] border-[#1e293b]">
-              <span className="text-[11px] text-slate-400 block font-medium">Tiến Độ Lên Sóng Video</span>
+            <div className="card-enterprise p-4 bg-white border border-slate-200 shadow-xs">
+              <span className="text-[11px] text-slate-500 block font-medium">Tiến Độ Lên Sóng Video</span>
               <div className="flex items-baseline gap-2 mt-1">
-                <span className="text-xl font-black font-mono text-white">
+                <span className="text-xl font-black font-mono text-slate-900">
                   {activePortal.liveAiredVideosCount}
                 </span>
-                <span className="text-xs text-slate-500">/ {activePortal.totalTargetVideos} Clips đã air</span>
+                <span className="text-xs text-slate-400">/ {activePortal.totalTargetVideos} Clips đã air</span>
               </div>
-              <div className="w-full bg-[#0b1120] h-2 rounded-full mt-2 border border-[#1e293b]">
+              <div className="w-full bg-slate-100 h-2 rounded-full mt-2 border border-slate-200">
                 <div
-                  className="h-full bg-blue-500 rounded-full"
+                  className="h-full bg-blue-600 rounded-full"
                   style={{ width: `${(activePortal.liveAiredVideosCount / activePortal.totalTargetVideos) * 100}%` }}
                 />
               </div>
             </div>
 
-            <div className="card-enterprise p-4 bg-[#0e1320] border-[#1e293b]">
-              <span className="text-[11px] text-slate-400 block font-medium">Tổng Lượt Views Thực Tế</span>
+            <div className="card-enterprise p-4 bg-white border border-slate-200 shadow-xs">
+              <span className="text-[11px] text-slate-500 block font-medium">Tổng Lượt Views Thực Tế</span>
               <div className="flex items-baseline gap-2 mt-1">
-                <span className="text-xl font-black font-mono text-purple-400">
+                <span className="text-xl font-black font-mono text-purple-600">
                   {(activePortal.totalAiredViews).toLocaleString('vi-VN')}
                 </span>
-                <span className="text-xs text-slate-500">Lượt xem</span>
+                <span className="text-xs text-slate-400">Lượt xem</span>
               </div>
-              <span className="text-[10px] text-emerald-400 mt-2 block flex items-center gap-1">
+              <span className="text-[10px] text-emerald-700 font-medium mt-2 block flex items-center gap-1">
                 <TrendingUp className="w-3 h-3" />
                 Dữ liệu đồng bộ trực tiếp từ TikTok Analytics
               </span>
             </div>
 
-            <div className="card-enterprise p-4 bg-[#0e1320] border-[#1e293b]">
-              <span className="text-[11px] text-slate-400 block font-medium">Doanh Thu GMV Tạm Tính</span>
+            <div className="card-enterprise p-4 bg-white border border-slate-200 shadow-xs">
+              <span className="text-[11px] text-slate-500 block font-medium">Doanh Thu GMV Tạm Tính</span>
               <div className="flex items-baseline gap-2 mt-1">
-                <span className="text-xl font-black font-mono text-emerald-400">
+                <span className="text-xl font-black font-mono text-emerald-600">
                   {(activePortal.totalAffiliateGmv).toLocaleString('vi-VN')} đ
                 </span>
               </div>
               <span className="text-[10px] text-slate-400 mt-2 block">
-                Phát sinh qua link Affiliate & Giỏ hàng
+                Phát sinh qua link Affiliate &amp; Giỏ hàng
               </span>
             </div>
           </div>
 
           {/* Watermarked Draft Preview & Aired Clips Table */}
-          <div className="card-enterprise p-5 bg-[#0e1320] border-[#1e293b]">
-            <h4 className="text-xs font-bold text-white uppercase tracking-wider pb-3 mb-3 border-b border-[#1e293b] flex items-center justify-between">
-              <span>BẢNG THEO DÕI VIDEO & LINK LÊN SÓNG CHÍNH THỨC</span>
-              <span className="text-xs font-normal text-slate-400">
+          <div className="card-enterprise p-5 bg-white border border-slate-200 shadow-xs">
+            <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider pb-3 mb-3 border-b border-slate-200 flex items-center justify-between">
+              <span>BẢNG THEO DÕI VIDEO &amp; LINK LÊN SÓNG CHÍNH THỨC</span>
+              <span className="text-xs font-normal text-slate-500">
                 Nhãn hàng có thể bấm xem clip nháp hoặc link TikTok trực tiếp
               </span>
             </h4>
 
             <div className="space-y-3">
               {activePortal.scripts.map((sc, i) => (
-                <div key={sc.id} className="p-3.5 rounded-md bg-[#0b1120] border border-[#1e293b] flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
+                <div key={sc.id} className="p-3.5 rounded-lg bg-slate-50 border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="font-bold text-white text-xs">{sc.kocStageName}</span>
-                      <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-800 text-slate-300">
+                      <span className="font-bold text-slate-900 text-xs">{sc.kocStageName}</span>
+                      <span className="text-[10px] px-2 py-0.5 rounded bg-slate-200/80 text-slate-700 font-mono font-medium">
                         {sc.channelId}
                       </span>
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${
-                        sc.publishedVideoUrl ? 'bg-emerald-500/20 text-emerald-300' : 'bg-blue-500/20 text-blue-300'
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${
+                        sc.publishedVideoUrl ? 'bg-emerald-50 text-emerald-700 border-emerald-300' : 'bg-blue-50 text-blue-700 border-blue-200'
                       }`}>
                         {sc.publishedVideoUrl ? 'ĐÃ LÊN SÓNG' : 'ĐANG QUAY / CHỜ DUYỆT NHÁP'}
                       </span>
                     </div>
-                    <p className="text-slate-400 mt-1 line-clamp-1">{sc.productName} ({sc.videoDuration})</p>
+                    <p className="text-slate-600 mt-1 line-clamp-1">{sc.productName} ({sc.videoDuration})</p>
                   </div>
 
                   <div className="flex items-center gap-3">
                     {sc.publishedVideoUrl ? (
                       <div className="text-right">
-                        <span className="text-emerald-400 font-bold block">
+                        <span className="text-emerald-700 font-bold block">
                           {(sc.gmv || 0).toLocaleString('vi-VN')} đ GMV
                         </span>
                         <span className="text-[10px] text-slate-500">{(sc.views || 0).toLocaleString('vi-VN')} views</span>
@@ -1039,9 +1053,9 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({ onNotify }) => {
                         onClick={() => {
                           if (onNotify) onNotify(`🎬 Đang mở bản xem trước video nháp của ${sc.kocStageName} (Có Watermark Bản Quyền Upbase).`);
                         }}
-                        className="px-2.5 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center gap-1 text-[11px] font-semibold"
+                        className="px-3 py-1.5 rounded-lg bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 flex items-center gap-1.5 text-[11px] font-semibold transition cursor-pointer shadow-2xs"
                       >
-                        <Play className="w-3 h-3 text-amber-400" />
+                        <Play className="w-3 h-3 text-amber-500" />
                         Xem Clip Nháp (Watermark)
                       </button>
                     )}
@@ -1051,7 +1065,7 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({ onNotify }) => {
                         href={sc.publishedVideoUrl}
                         target="_blank"
                         rel="noreferrer"
-                        className="px-3 py-1.5 rounded bg-blue-600 hover:bg-blue-500 text-white font-bold flex items-center gap-1 text-[11px] shadow-sm"
+                        className="px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold flex items-center gap-1.5 text-[11px] shadow-2xs transition"
                       >
                         <ExternalLink className="w-3 h-3" />
                         Xem Clip Trên TikTok
@@ -1071,23 +1085,32 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({ onNotify }) => {
 
       {/* Modal 1: Plan Revision Request for Stage 1 */}
       {isPlanRevisionModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="card-enterprise w-full max-w-lg p-5 bg-[#0e1320] border-slate-700 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-[#1e293b]">
-              <h4 className="text-sm font-bold text-white flex items-center gap-2">
-                <RotateCcw className="w-4 h-4 text-amber-400" />
+        <div 
+          className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setIsPlanRevisionModalOpen(false);
+          }}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Yêu cầu điều chỉnh kế hoạch ngân sách"
+        >
+          <div className="card-enterprise w-full max-w-lg p-6 bg-white border border-slate-200 shadow-2xl space-y-4 text-slate-800 animate-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200">
+              <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                <RotateCcw className="w-4 h-4 text-amber-600" />
                 Yêu Cầu Điều Chỉnh Kế Hoạch Ngân Sách
               </h4>
               <button
                 type="button"
                 onClick={() => setIsPlanRevisionModalOpen(false)}
-                className="text-slate-400 hover:text-white text-xs"
+                className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition cursor-pointer"
+                aria-label="Đóng"
               >
                 ✕
               </button>
             </div>
 
-            <p className="text-xs text-slate-300 leading-relaxed">
+            <p className="text-xs text-slate-600 leading-relaxed">
               Vui lòng nhập chi tiết định hướng Quý Nhãn Hàng muốn thay đổi (Ví dụ: muốn dồn thêm ngân sách vào Micro KOC, giảm bớt Celeb, hoặc đổi tệp sáng tạo).
             </p>
 
@@ -1096,14 +1119,14 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({ onNotify }) => {
               value={planRevisionNotes}
               onChange={(e) => setPlanRevisionNotes(e.target.value)}
               placeholder="Nhập góp ý cụ thể cho Booking Team..."
-              className="w-full text-xs bg-[#0b1120] text-slate-200 border border-[#1e293b] rounded-md p-2.5 focus:border-blue-500 outline-none leading-relaxed"
+              className="w-full text-xs bg-white text-slate-900 placeholder-slate-400 border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none leading-relaxed"
             />
 
-            <div className="flex justify-end gap-2 pt-2 border-t border-[#1e293b]">
+            <div className="flex justify-end gap-2 pt-3 border-t border-slate-200">
               <button
                 type="button"
                 onClick={() => setIsPlanRevisionModalOpen(false)}
-                className="px-3.5 py-1.5 rounded-md text-xs font-semibold text-slate-300 hover:bg-slate-800"
+                className="px-4 py-2 rounded-lg text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition cursor-pointer"
               >
                 Đóng
               </button>
@@ -1111,7 +1134,7 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({ onNotify }) => {
                 type="button"
                 disabled={!planRevisionNotes.trim()}
                 onClick={handleRequestPlanRevision}
-                className="px-4 py-1.5 rounded-md text-xs font-bold bg-amber-600 hover:bg-amber-500 text-white disabled:opacity-50"
+                className="px-4 py-2 rounded-lg text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white disabled:opacity-50 transition cursor-pointer shadow-2xs"
               >
                 Gửi Yêu Cầu Chỉnh Sửa
               </button>
@@ -1122,23 +1145,32 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({ onNotify }) => {
 
       {/* Modal 2: KOC Reject Reason for Stage 2 */}
       {rejectingKoc && (
-        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="card-enterprise w-full max-w-md p-5 bg-[#0e1320] border-slate-700 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-[#1e293b]">
-              <h4 className="text-sm font-bold text-white flex items-center gap-2">
-                <RotateCcw className="w-4 h-4 text-rose-400" />
+        <div 
+          className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setRejectingKoc(null);
+          }}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Đề xuất đổi KOC"
+        >
+          <div className="card-enterprise w-full max-w-md p-6 bg-white border border-slate-200 shadow-2xl space-y-4 text-slate-800 animate-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200">
+              <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                <RotateCcw className="w-4 h-4 text-rose-600" />
                 Đề Xuất Đổi KOC: {rejectingKoc.stageName}
               </h4>
               <button
                 type="button"
                 onClick={() => setRejectingKoc(null)}
-                className="text-slate-400 hover:text-white text-xs"
+                className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition cursor-pointer"
+                aria-label="Đóng"
               >
                 ✕
               </button>
             </div>
 
-            <p className="text-xs text-slate-300">
+            <p className="text-xs text-slate-600 leading-relaxed">
               Vui lòng chọn lý do Quý Nhãn Hàng không đồng ý KOC này để Upbase đề xuất Creator phù hợp hơn:
             </p>
 
@@ -1153,16 +1185,16 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({ onNotify }) => {
               ].map(reason => (
                 <label
                   key={reason}
-                  className="flex items-center gap-2.5 p-2 rounded bg-[#0b1120] border border-[#1e293b] cursor-pointer hover:bg-slate-800/50"
+                  className="flex items-center gap-2.5 p-2.5 rounded-lg bg-slate-50 border border-slate-200 cursor-pointer hover:bg-slate-100 transition text-slate-800"
                 >
                   <input
                     type="radio"
                     name="rejectReason"
                     checked={selectedRejectReason === reason}
                     onChange={() => setSelectedRejectReason(reason as BrandRejectReasonType)}
-                    className="accent-blue-500"
+                    className="accent-blue-600 cursor-pointer"
                   />
-                  <span className="text-slate-200">{reason}</span>
+                  <span>{reason}</span>
                 </label>
               ))}
 
@@ -1172,23 +1204,23 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({ onNotify }) => {
                   placeholder="Nhập lý do cụ thể..."
                   value={rejectCustomNote}
                   onChange={(e) => setRejectCustomNote(e.target.value)}
-                  className="w-full text-xs bg-[#0b1120] text-slate-200 border border-[#1e293b] rounded p-2 focus:border-blue-500 outline-none mt-2"
+                  className="w-full text-xs bg-white text-slate-900 placeholder-slate-400 border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none mt-2"
                 />
               )}
             </div>
 
-            <div className="flex justify-end gap-2 pt-2 border-t border-[#1e293b]">
+            <div className="flex justify-end gap-2 pt-3 border-t border-slate-200">
               <button
                 type="button"
                 onClick={() => setRejectingKoc(null)}
-                className="px-3.5 py-1.5 rounded-md text-xs font-semibold text-slate-300 hover:bg-slate-800"
+                className="px-4 py-2 rounded-lg text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition cursor-pointer"
               >
                 Hủy
               </button>
               <button
                 type="button"
                 onClick={handleConfirmRejectKoc}
-                className="px-4 py-1.5 rounded-md text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white"
+                className="px-4 py-2 rounded-lg text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white shadow-2xs transition cursor-pointer"
               >
                 Xác Nhận Đổi KOC
               </button>

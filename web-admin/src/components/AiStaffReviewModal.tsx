@@ -81,6 +81,19 @@ export const AiStaffReviewModal: React.FC<AiStaffReviewModalProps> = ({
     }
   }, [initialStaffName]);
 
+  // ESC key listener
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    if (isOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   // Aggregate staff metrics
   const getStaffMetrics = (name: string) => {
     const allocation = INITIAL_STAFF_ALLOCATIONS_26.find((a: MonthlyStaffAllocation) => a.staffName === name) || INITIAL_STAFF_ALLOCATIONS_26[0];
@@ -205,13 +218,25 @@ export const AiStaffReviewModal: React.FC<AiStaffReviewModalProps> = ({
   const currentMetrics = getStaffMetrics(selectedStaffName);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 overflow-y-auto animate-in fade-in duration-150">
-      <div className="bg-white border border-slate-200 rounded-lg w-full max-w-4xl shadow-2xl overflow-hidden my-6">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto animate-in fade-in duration-150"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div 
+        role="dialog"
+        aria-modal="true"
+        aria-label="Trợ Lý AI Nhận Xét Báo Cáo, Tiến Độ & Hiệu Suất Nhân Viên"
+        className="bg-white border border-slate-200 rounded-xl w-full max-w-4xl shadow-2xl overflow-hidden my-6"
+      >
         {/* Header Banner */}
         <div className="p-5 bg-gradient-to-r from-purple-900 via-indigo-900 to-slate-900 text-white relative">
           <button
+            type="button"
             onClick={onClose}
-            className="absolute top-4 right-4 p-1.5 text-purple-200 hover:text-white hover:bg-white/10 rounded-md transition"
+            aria-label="Đóng modal"
+            className="absolute top-4 right-4 p-1.5 text-purple-200 hover:text-white hover:bg-white/10 rounded-lg transition"
           >
             <X className="w-5 h-5" />
           </button>

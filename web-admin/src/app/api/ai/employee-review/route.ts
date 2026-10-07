@@ -10,15 +10,23 @@ export async function POST(req: NextRequest) {
   try {
     const body: AiEmployeeReviewRequest = await req.json();
 
-    if (!body || !body.staffName) {
+    if (!body || !body.staffName || typeof body.staffName !== 'string') {
       return NextResponse.json(
-        { error: 'Thiếu thông tin nhân viên cần nhận xét (staffName is required)' },
+        { error: 'Thiếu thông tin nhân viên cần nhận xét hợp lệ (staffName is required)' },
+        { status: 400 }
+      );
+    }
+
+    // Sanitize staffName to prevent injection
+    const cleanStaffName = body.staffName.replace(/[^\p{L}\p{N}\s._-]/gu, '').slice(0, 60).trim();
+    if (!cleanStaffName) {
+      return NextResponse.json(
+        { error: 'Tên nhân viên chứa ký tự không hợp lệ' },
         { status: 400 }
       );
     }
 
     const {
-      staffName,
       role = 'Booking',
       team = 'Booking Execution Team',
       month = '2026/09',
@@ -32,12 +40,18 @@ export async function POST(req: NextRequest) {
       customPrompt
     } = body;
 
-    // Detect API Keys
+    // Sanitize customPrompt: restrict length to 300 chars, block prompt injection keywords
+    const sanitizedCustomPrompt = customPrompt
+      ? customPrompt.slice(0, 300).replace(/ignore previous instructions|system prompt|bypass/gi, '[filtered]').trim()
+      : undefined;
+
+    // Detect API Keys securely (server-side only by default, client key only if format matches)
+    const validClientKey = typeof apiKey === 'string' && apiKey.length > 20 && apiKey.length < 200 ? apiKey.trim() : '';
     const resolvedGeminiKey = (apiProvider === 'GEMINI' || apiProvider === 'AUTO') 
-      ? (apiKey || process.env.GEMINI_API_KEY || '') 
+      ? (validClientKey || process.env.GEMINI_API_KEY || '') 
       : '';
     const resolvedOpenAiKey = (apiProvider === 'OPENAI' || (apiProvider === 'AUTO' && !resolvedGeminiKey)) 
-      ? (apiKey || process.env.OPENAI_API_KEY || '') 
+      ? (validClientKey || process.env.OPENAI_API_KEY || '') 
       : '';
 
     // Build the executive system prompt
@@ -56,7 +70,7 @@ YÊU CẦU ĐÁNH GIÁ:
 
 Trả về định dạng JSON thuần túy (không markdown bao quanh) với cấu trúc sau:
 {
-  "staffName": "${staffName}",
+  "staffName": "${cleanStaffName}",
   "overallGrade": "Xuất sắc" | "Đạt chuẩn" | "Cần cải thiện" | "Cảnh báo vi phạm",
   "performanceScore": số nguyên từ 0 đến 100,
   "pacingStatus": "ON_TRACK" | "AHEAD" | "BEHIND" | "CRITICAL_DELAY",
@@ -70,7 +84,7 @@ Trả về định dạng JSON thuần túy (không markdown bao quanh) với c�
 }`;
 
     const contextPayload = {
-      staffName,
+      staffName: cleanStaffName,
       role,
       team,
       month,
@@ -79,7 +93,7 @@ Trả về định dạng JSON thuần túy (không markdown bao quanh) với c�
       slaCompliance: slaData || { note: 'Chưa có số liệu SLA' },
       p3Workload: workloadP3Data || { note: 'Chưa có số liệu P3' },
       context: recentDealOrPlanContext || 'Vận hành tháng định kỳ',
-      userCustomInstruction: customPrompt || 'Không có yêu cầu đặc thù'
+      userCustomInstruction: sanitizedCustomPrompt || 'Không có yêu cầu đặc thù'
     };
 
     // Try Gemini API if key available

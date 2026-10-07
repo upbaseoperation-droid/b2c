@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, UploadCloud, FileSpreadsheet, CheckCircle2, ArrowRight, Loader2 } from 'lucide-react';
 
 interface ImportExcelModalProps {
@@ -16,6 +16,18 @@ export const ImportExcelModal: React.FC<ImportExcelModalProps> = ({
 }) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [successData, setSuccessData] = useState<{ updatedDeals: number; totalGmvAdded: number } | null>(null);
+
+  // Keyboard accessibility: ESC key to close modal
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        handleClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -41,19 +53,34 @@ export const ImportExcelModal: React.FC<ImportExcelModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4">
-      <div className="bg-[#101726] border border-[#1e293b] rounded-lg w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#1e293b] bg-[#0c121e]">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-md bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">
-              <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-in fade-in duration-150"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) handleClose();
+      }}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="import-excel-title"
+    >
+      <div className="bg-white border border-slate-200 rounded-xl w-full max-w-lg shadow-2xl overflow-hidden animate-in zoom-in-95 duration-150">
+        {/* Header - Enterprise Light Theme */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50/80">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center font-bold shadow-2xs">
+              <FileSpreadsheet className="w-5 h-5 text-emerald-600" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-white">📥 Nhập Báo Cáo Doanh Số 1 Chạm</h3>
-              <p className="text-xs text-slate-400">Zero-API: Kéo thả file Excel từ TikTok Shop / Shopee</p>
+              <h3 id="import-excel-title" className="text-sm font-bold text-slate-900">
+                Nhập Báo Cáo Doanh Số
+              </h3>
+              <p className="text-xs text-slate-500">Kéo thả file Excel đối soát từ TikTok Shop / Shopee</p>
             </div>
           </div>
-          <button onClick={handleClose} className="p-1.5 rounded text-slate-400 hover:text-white hover:bg-slate-800 transition">
+          <button 
+            onClick={handleClose} 
+            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition"
+            aria-label="Đóng cửa sổ"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -61,39 +88,39 @@ export const ImportExcelModal: React.FC<ImportExcelModalProps> = ({
         <div className="p-6 space-y-4">
           {!successData ? (
             <>
-              {/* Dropzone */}
+              {/* Dropzone - Clean Light */}
               <div
                 onClick={handleSimulateImport}
-                className="border-2 border-dashed border-[#334155] hover:border-emerald-500 rounded-md p-8 flex flex-col items-center justify-center text-center cursor-pointer bg-[#0d1322] hover:bg-[#121b2d] transition group"
+                className="border-2 border-dashed border-slate-300 hover:border-emerald-500 rounded-xl p-8 flex flex-col items-center justify-center text-center cursor-pointer bg-slate-50/50 hover:bg-emerald-50/30 transition group"
               >
                 {isProcessing ? (
                   <div className="flex flex-col items-center py-4">
-                    <Loader2 className="w-10 h-10 text-emerald-400 animate-spin mb-3" />
-                    <span className="text-sm font-semibold text-white">Đang phân tích & khớp mã KOC...</span>
-                    <span className="text-xs text-slate-400 mt-1">Đang xử lý 19.000 dòng dữ liệu không giật lag</span>
+                    <Loader2 className="w-9 h-9 text-emerald-600 animate-spin mb-3" />
+                    <span className="text-xs font-bold text-slate-900">Đang phân tích &amp; khớp mã KOC...</span>
+                    <span className="text-[11px] text-slate-500 mt-1">Đang xử lý dữ liệu đối soát an toàn</span>
                   </div>
                 ) : (
                   <>
-                    <div className="w-12 h-12 rounded-md bg-emerald-500/10 text-emerald-400 flex items-center justify-center mb-3 group-hover:scale-110 transition">
+                    <div className="w-12 h-12 rounded-xl bg-emerald-100/70 text-emerald-700 flex items-center justify-center mb-3 group-hover:scale-105 transition shadow-2xs">
                       <UploadCloud className="w-6 h-6" />
                     </div>
-                    <span className="text-sm font-semibold text-white">Kéo thả file Excel/CSV báo cáo vào đây</span>
-                    <span className="text-xs text-slate-400 mt-1 max-w-xs">
-                      Hỗ trợ file xuất từ TikTok Shop Seller Center, Shopee Affiliate, hoặc file B2C_Quản lý Booking.xlsx
+                    <span className="text-xs font-bold text-slate-900">Kéo thả file Excel/CSV báo cáo vào đây</span>
+                    <span className="text-[11px] text-slate-500 mt-1 max-w-xs leading-relaxed">
+                      Hỗ trợ file xuất từ TikTok Shop Seller Center, Shopee Affiliate, hoặc B2C Booking.xlsx
                     </span>
                     <button
                       type="button"
-                      className="mt-4 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-xs text-white font-medium rounded-lg border border-slate-700 transition"
+                      className="mt-4 px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-lg border border-slate-300 shadow-2xs transition"
                     >
-                      Bấm để chọn file mẫu hoặc kiểm tra thử
+                      Bấm để chọn file hoặc kiểm tra thử
                     </button>
                   </>
                 )}
               </div>
 
-              <div className="p-3 bg-slate-900/60 rounded-xl border border-slate-800 text-xs text-slate-300 space-y-1">
-                <div className="flex items-center gap-1.5 font-medium text-emerald-400">
-                  <CheckCircle2 className="w-3.5 h-3.5" />
+              <div className="p-3.5 bg-slate-50 rounded-lg border border-slate-200 text-xs text-slate-600 space-y-1.5 leading-relaxed">
+                <div className="flex items-center gap-1.5 font-bold text-emerald-700">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                   <span>Cơ chế đối soát thông minh:</span>
                 </div>
                 <p>• Hệ thống tự động nhận diện cột `ID kênh`, `Mã BO` hoặc `Link kênh` để cập nhật GMV.</p>
@@ -102,28 +129,28 @@ export const ImportExcelModal: React.FC<ImportExcelModalProps> = ({
             </>
           ) : (
             <div className="py-4 text-center space-y-4">
-              <div className="w-14 h-14 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto">
+              <div className="w-14 h-14 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto shadow-2xs">
                 <CheckCircle2 className="w-8 h-8" />
               </div>
               <div>
-                <h4 className="text-lg font-bold text-white">Đồng Bộ Báo Cáo Thành Công!</h4>
-                <p className="text-xs text-slate-400 mt-1">Dữ liệu đã được nạp tức thì vào CSDL</p>
+                <h4 className="text-base font-bold text-slate-900">Đồng Bộ Báo Cáo Thành Công!</h4>
+                <p className="text-xs text-slate-500 mt-0.5">Dữ liệu đã được nạp tức thì vào bộ nhớ đối soát</p>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 p-4 bg-[#0d1322] rounded-xl border border-emerald-500/30">
+              <div className="grid grid-cols-2 gap-3 p-4 bg-emerald-50/60 rounded-xl border border-emerald-200">
                 <div>
-                  <span className="text-xs text-slate-400 block">Deals KOC Cập Nhật</span>
-                  <span className="text-xl font-bold text-white">{successData.updatedDeals} KOCs</span>
+                  <span className="text-xs text-slate-600 block">Deals KOC Cập Nhật</span>
+                  <span className="text-lg font-bold text-slate-900">{successData.updatedDeals} KOCs</span>
                 </div>
                 <div>
-                  <span className="text-xs text-slate-400 block">Tổng Doanh Số GMV Mới</span>
-                  <span className="text-xl font-bold text-emerald-400">+{successData.totalGmvAdded.toLocaleString('vi-VN')} đ</span>
+                  <span className="text-xs text-slate-600 block">Tổng Doanh Số GMV Mới</span>
+                  <span className="text-lg font-bold text-emerald-700">+{successData.totalGmvAdded.toLocaleString('vi-VN')} đ</span>
                 </div>
               </div>
 
               <button
                 onClick={handleClose}
-                className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 rounded-xl transition text-sm flex items-center justify-center gap-1.5"
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-lg transition text-xs flex items-center justify-center gap-2 shadow-xs"
               >
                 <span>Xem Thay Đổi Trên Bảng Thi Đua</span>
                 <ArrowRight className="w-4 h-4" />

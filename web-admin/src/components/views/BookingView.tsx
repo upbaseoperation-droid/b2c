@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Search, 
   Zap, 
@@ -223,6 +223,20 @@ export const BookingView: React.FC<BookingViewProps> = ({
     }
     setHandoffDeal(null);
   };
+
+  // ESC key listener for modals
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setHandoffDeal(null);
+        setEditingDeal(null);
+      }
+    };
+    if (handoffDeal || editingDeal) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handoffDeal, editingDeal]);
 
   // 🌟 1. Khung Lương (KL) - Chuẩn hóa Sheet 3.1 & 5.6
   const salaryGrades = [
@@ -839,18 +853,18 @@ export const BookingView: React.FC<BookingViewProps> = ({
           </div>
 
           {/* Performance Insight Banner */}
-          <div className="p-4 bg-[#0e1320] rounded-xl border border-[#1e293b] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+          <div className="p-4 bg-blue-50/70 rounded-xl border border-blue-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
             <div>
-              <span className="font-bold text-white text-xs uppercase tracking-wider block">
+              <span className="font-bold text-blue-900 text-xs uppercase tracking-wider block">
                 Phân Tích Hiệu Suất Video: Top 20 Video Đóng Góp 55,8% GMV (709,4M đ)
               </span>
-              <p className="text-slate-400 mt-0.5">
+              <p className="text-slate-600 mt-0.5">
                 Top 5 video tạo 313,4M (24,6%) đều là Creator đã từng hợp tác trước đó. Đề xuất ưu tiên tái ký các deal có ROI &gt; 1.0.
               </p>
             </div>
             <button
               onClick={() => setDealsFilter('WINNER_TOP20')}
-              className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold rounded-lg shrink-0 transition"
+              className="px-3.5 py-1.5 bg-white hover:bg-slate-50 text-blue-700 border border-blue-300 font-semibold rounded-lg shrink-0 transition shadow-2xs cursor-pointer"
             >
               Lọc Top 20 Hiệu Quả
             </button>
@@ -1221,7 +1235,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
                   placeholder="🔍 Tra cứu KOC theo tên (@channel), ngành hàng, hoặc số điện thoại..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full bg-[#0b1120] border border-[#1e293b] rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white transition"
                 />
               </div>
 
@@ -1236,9 +1250,9 @@ export const BookingView: React.FC<BookingViewProps> = ({
             </div>
 
             {/* Filter 1: Khung Lương (KL) */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 pt-1 border-t border-[#1e293b]">
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 pt-1 border-t border-slate-200">
               <span className="text-slate-500 flex items-center gap-1 shrink-0 font-medium text-xs mr-1">
-                <DollarSign className="w-3.5 h-3.5 text-cyan-400" /> 1. Khung Lương (KL):
+                <DollarSign className="w-3.5 h-3.5 text-cyan-600" /> 1. Khung Lương (KL):
               </span>
               {salaryGrades.map((kl) => (
                 <button
@@ -1247,7 +1261,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
                   className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold whitespace-nowrap transition ${
                     selectedKL === kl.key
                       ? 'bg-blue-600 text-white shadow-md shadow-blue-500/25'
-                      : 'bg-[#0b1120] text-slate-400 hover:text-slate-200 border border-[#1e293b]'
+                      : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200 hover:bg-slate-50'
                   }`}
                 >
                   {kl.label}
@@ -1482,63 +1496,75 @@ export const BookingView: React.FC<BookingViewProps> = ({
       {/* MODAL: BÀN GIAO SANG TEAM GROWTH (QUÉT MÃ SPARK ADS & CHỐT ADS VỚI KHÁCH) */}
       {/* ========================================================================= */}
       {handoffDeal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="bg-[#0e1320] border border-[#1e293b] rounded-lg max-w-lg w-full shadow-2xl overflow-hidden">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-[#1e293b] bg-[#090d16]">
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setHandoffDeal(null);
+          }}
+        >
+          <div 
+            role="dialog"
+            aria-modal="true"
+            aria-label="Bàn Giao Sang Team Growth (Chạy Ads)"
+            className="bg-white border border-slate-200 rounded-xl max-w-lg w-full shadow-2xl overflow-hidden text-slate-800"
+          >
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-md bg-purple-600/20 text-purple-400 flex items-center justify-center font-bold">
+                <div className="w-8 h-8 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center font-bold">
                   <Share2 className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-white">Bàn Giao Sang Team Growth (Chạy Ads)</h3>
-                  <p className="text-xs text-slate-400">{handoffDeal.dealCode} • {handoffDeal.kocStageName} • {handoffDeal.brandName}</p>
+                  <h3 className="text-sm font-bold text-slate-900">Bàn Giao Sang Team Growth (Chạy Ads)</h3>
+                  <p className="text-xs text-slate-500">{handoffDeal.dealCode} • {handoffDeal.kocStageName} • {handoffDeal.brandName}</p>
                 </div>
               </div>
               <button 
+                type="button"
                 onClick={() => setHandoffDeal(null)}
-                className="p-1 rounded text-slate-400 hover:text-white hover:bg-slate-800 transition"
+                aria-label="Đóng modal"
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-200 transition"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <div className="p-6 space-y-4 text-xs">
-              <div className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-md text-purple-300 space-y-1">
-                <span className="font-semibold block">Quy trình bàn giao kỹ thuật chuẩn Upbase:</span>
-                <p className="text-[11px] text-slate-300">
+              <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg text-purple-900 space-y-1">
+                <span className="font-semibold block text-purple-950">Quy trình bàn giao kỹ thuật chuẩn Upbase:</span>
+                <p className="text-[11px] text-purple-800">
                   Sau khi KOC air video và gửi mã Spark Ads TikTok, Booking bàn giao cho Growth Team để quét mã ủy quyền, gắn sản phẩm TikTok Shop và chốt ngân sách chạy Ads với khách hàng.
                 </p>
               </div>
 
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">Mã Spark Ads TikTok (Ủy quyền quảng cáo)</label>
+                <label className="block text-slate-700 font-semibold mb-1">Mã Spark Ads TikTok (Ủy quyền quảng cáo)</label>
                 <input
                   type="text"
                   value={handoffForm.sparkAdsCode}
                   onChange={(e) => setHandoffForm(prev => ({ ...prev, sparkAdsCode: e.target.value }))}
                   placeholder="SPARK-TT-xxxx..."
-                  className="w-full bg-[#151c2c] border border-[#1e293b] rounded-lg px-3 py-2 text-white font-mono focus:outline-none focus:border-purple-500"
+                  className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-800 font-mono focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">Link Video TikTok Đã Air</label>
+                <label className="block text-slate-700 font-semibold mb-1">Link Video TikTok Đã Air</label>
                 <input
                   type="text"
                   value={handoffForm.tiktokVideoUrl}
                   onChange={(e) => setHandoffForm(prev => ({ ...prev, tiktokVideoUrl: e.target.value }))}
                   placeholder="https://www.tiktok.com/@.../video/..."
-                  className="w-full bg-[#151c2c] border border-[#1e293b] rounded-lg px-3 py-2 text-white focus:outline-none focus:border-purple-500"
+                  className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">Thời Hạn Mã Ads</label>
+                  <label className="block text-slate-700 font-semibold mb-1">Thời Hạn Mã Ads</label>
                   <select
                     value={handoffForm.authDuration}
                     onChange={(e) => setHandoffForm(prev => ({ ...prev, authDuration: e.target.value }))}
-                    className="w-full bg-[#151c2c] border border-[#1e293b] rounded-lg px-3 py-2 text-white focus:outline-none focus:border-purple-500"
+                    className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
                   >
                     <option value="30 ngày">30 ngày</option>
                     <option value="60 ngày">60 ngày (Tiêu chuẩn)</option>
@@ -1548,11 +1574,11 @@ export const BookingView: React.FC<BookingViewProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">Trạng Thái Khách Hàng</label>
+                  <label className="block text-slate-700 font-semibold mb-1">Trạng Thái Khách Hàng</label>
                   <select
                     value={handoffForm.clientCommitmentStatus}
                     onChange={(e) => setHandoffForm(prev => ({ ...prev, clientCommitmentStatus: e.target.value }))}
-                    className="w-full bg-[#151c2c] border border-[#1e293b] rounded-lg px-3 py-2 text-white focus:outline-none focus:border-purple-500"
+                    className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
                   >
                     <option value="ĐÃ_CHỐT_NGÂN_SÁCH_ADS">Đã chốt ngân sách Ads</option>
                     <option value="CHỜ_DUYỆT_NGÂN_SÁCH">Đang trình duyệt ngân sách</option>
@@ -1562,27 +1588,29 @@ export const BookingView: React.FC<BookingViewProps> = ({
               </div>
 
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">Ghi Chú Target Cho Team Growth</label>
+                <label className="block text-slate-700 font-semibold mb-1">Ghi Chú Target Cho Team Growth</label>
                 <textarea
                   rows={2}
                   value={handoffForm.growthNote}
                   onChange={(e) => setHandoffForm(prev => ({ ...prev, growthNote: e.target.value }))}
                   placeholder="Ghi chú đối tượng khán giả, USP cần gắn khi set campaign..."
-                  className="w-full bg-[#151c2c] border border-[#1e293b] rounded-lg p-2.5 text-white focus:outline-none focus:border-purple-500 resize-none"
+                  className="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-slate-800 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 resize-none"
                 />
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-[#1e293b] bg-[#090d16]">
+            <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-slate-200 bg-slate-50">
               <button
+                type="button"
                 onClick={() => setHandoffDeal(null)}
-                className="px-4 py-2 rounded-lg text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800 transition"
+                className="px-4 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 transition"
               >
                 Hủy
               </button>
               <button
+                type="button"
                 onClick={handleConfirmGrowthHandoff}
-                className="px-5 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-xs font-semibold shadow-sm transition flex items-center gap-1.5"
+                className="px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-semibold shadow-sm transition flex items-center gap-1.5"
               >
                 <Check className="w-3.5 h-3.5" />
                 <span>Xác Nhận Bàn Giao Growth</span>
@@ -1596,30 +1624,42 @@ export const BookingView: React.FC<BookingViewProps> = ({
       {/* MODAL: CẬP NHẬT TIẾN ĐỘ DEAL TÁC NGHIỆP (OPERATIONAL UPDATE MODAL) */}
       {/* ========================================================================= */}
       {editingDeal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="card-enterprise max-w-lg w-full p-6 bg-[#0e1626] border-blue-500/40 shadow-2xl space-y-5">
-            <div className="flex items-center justify-between pb-3 border-b border-[#1e293b]">
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setEditingDeal(null);
+          }}
+        >
+          <div 
+            role="dialog"
+            aria-modal="true"
+            aria-label="Vận Hành Job Booking & Phê Duyệt Brand"
+            className="bg-white border border-slate-200 rounded-xl max-w-lg w-full p-6 shadow-2xl space-y-5 text-slate-800"
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200">
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="badge-blue px-2 py-0.5 rounded text-[10px] font-mono font-bold">
+                  <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-blue-50 text-blue-700 border border-blue-200">
                     {editingDeal.dealCode}
                   </span>
                   {editingDeal.jobId && (
-                    <span className="text-[10px] text-slate-400 font-mono">
-                      Mã Job: <strong className="text-cyan-400">{editingDeal.jobId}</strong>
+                    <span className="text-[10px] text-slate-500 font-mono">
+                      Mã Job: <strong className="text-blue-700">{editingDeal.jobId}</strong>
                     </span>
                   )}
                 </div>
-                <h3 className="text-base font-black text-white mt-1">
-                  Vận Hành Job Booking & Phê Duyệt Brand
+                <h3 className="text-base font-bold text-slate-900 mt-1">
+                  Vận Hành Job Booking &amp; Phê Duyệt Brand
                 </h3>
-                <p className="text-xs text-slate-400">
-                  KOC: <strong className="text-white">{editingDeal.kocStageName}</strong> • Brand: <strong className="text-cyan-400">{editingDeal.brandName || 'Upbase Brand'}</strong> • SP: <span className="text-amber-300">{editingDeal.productName || 'Chung'}</span>
+                <p className="text-xs text-slate-500">
+                  KOC: <strong className="text-slate-800">{editingDeal.kocStageName}</strong> • Brand: <strong className="text-blue-700">{editingDeal.brandName || 'Upbase Brand'}</strong> • SP: <span className="text-amber-700 font-medium">{editingDeal.productName || 'Chung'}</span>
                 </p>
               </div>
               <button
+                type="button"
                 onClick={() => setEditingDeal(null)}
-                className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition"
+                aria-label="Đóng modal"
+                className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1627,18 +1667,18 @@ export const BookingView: React.FC<BookingViewProps> = ({
 
             <div className="space-y-4 text-xs max-h-[70vh] overflow-y-auto pr-1">
               {/* Field 0: Phê Duyệt Brand Theo Job Cụ Thể */}
-              <div className="p-3 bg-[#09101d] rounded-xl border border-blue-500/30 space-y-2">
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
                 <div className="flex items-center justify-between">
-                  <label className="text-slate-200 font-bold block flex items-center gap-1.5">
-                    <span className="text-amber-400">🎃</span> 1. Phê Duyệt Của Brand Đối Với Job Này:
+                  <label className="text-slate-800 font-bold block flex items-center gap-1.5">
+                    <span className="text-amber-500">⭐</span> 1. Phê Duyệt Của Brand Đối Với Job Này:
                   </label>
-                  <span className="text-[10px] text-slate-400">Duyệt theo từng Job / Chiến dịch</span>
+                  <span className="text-[10px] text-slate-500">Duyệt theo từng Job / Chiến dịch</span>
                 </div>
                 <div className="grid grid-cols-3 gap-2">
                   {[
-                    { key: 'ĐÃ_DUYỆT', label: '✓ Brand Đã Duyệt', clsActive: 'bg-emerald-600 border-emerald-400 text-white' },
-                    { key: 'CHỜ_DUYỆT', label: '⏳ Chờ Brand Duyệt', clsActive: 'bg-amber-600 border-amber-400 text-white' },
-                    { key: 'TỪ_CHỐI', label: '✕ Brand Từ Chối', clsActive: 'bg-rose-600 border-rose-400 text-white' },
+                    { key: 'ĐÃ_DUYỆT', label: '✓ Brand Đã Duyệt', clsActive: 'bg-emerald-600 border-emerald-500 text-white' },
+                    { key: 'CHỜ_DUYỆT', label: '⏳ Chờ Brand Duyệt', clsActive: 'bg-amber-600 border-amber-500 text-white' },
+                    { key: 'TỪ_CHỐI', label: '✕ Brand Từ Chối', clsActive: 'bg-rose-600 border-rose-500 text-white' },
                   ].map((s) => (
                     <button
                       key={s.key}
@@ -1651,10 +1691,10 @@ export const BookingView: React.FC<BookingViewProps> = ({
                           pipelineText: newStatus === 'TỪ_CHỐI' ? 'Brand từ chối' : (newStatus === 'ĐÃ_DUYỆT' && prev.pipelineText === 'Chờ Brand duyệt' ? 'Đã tạo BO' : prev.pipelineText)
                         }));
                       }}
-                      className={`py-2 px-2 rounded-xl font-bold border transition text-center text-xs ${
+                      className={`py-2 px-2 rounded-lg font-bold border transition text-center text-xs ${
                         editForm.brandApprovalStatus === s.key
-                          ? s.clsActive + ' shadow-sm'
-                          : 'bg-[#0f172a] border-[#1e293b] text-slate-400 hover:text-white'
+                          ? s.clsActive + ' shadow-xs'
+                          : 'bg-white border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                       }`}
                     >
                       {s.label}
@@ -1664,16 +1704,16 @@ export const BookingView: React.FC<BookingViewProps> = ({
 
                 {/* If Brand Rejected, prompt for reason */}
                 {editForm.brandApprovalStatus === 'TỪ_CHỐI' && (
-                  <div className="mt-2.5 pt-2.5 border-t border-[#1e293b] space-y-1.5 animate-in fade-in">
-                    <label className="text-rose-400 font-bold block text-[11px]">
-                      ⚠️ Lý Do Brand Từ Chối KOC Cho Job Này (Lưu vết & Báo cáo):
+                  <div className="mt-2.5 pt-2.5 border-t border-slate-200 space-y-1.5 animate-in fade-in">
+                    <label className="text-rose-600 font-bold block text-[11px]">
+                      ⚠️ Lý Do Brand Từ Chối KOC Cho Job Này (Lưu vết &amp; Báo cáo):
                     </label>
                     <input
                       type="text"
                       placeholder="Ví dụ: Tệp follower lệch định vị, Brand yêu cầu chuyên gia, Chi phí vượt ngân sách..."
                       value={editForm.brandRejectReason}
                       onChange={(e) => setEditForm(prev => ({ ...prev, brandRejectReason: e.target.value }))}
-                      className="w-full bg-[#0b1120] border border-rose-500/40 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-rose-400"
+                      className="w-full bg-white border border-rose-300 rounded-lg px-3 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-rose-500"
                     />
                     <div className="flex flex-wrap gap-1.5 pt-1">
                       {[
@@ -1687,7 +1727,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
                           key={reason}
                           type="button"
                           onClick={() => setEditForm(prev => ({ ...prev, brandRejectReason: reason }))}
-                          className="px-2 py-0.5 rounded text-[10px] bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white transition"
+                          className="px-2 py-0.5 rounded text-[10px] bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 transition"
                         >
                           + {reason}
                         </button>
@@ -1699,20 +1739,20 @@ export const BookingView: React.FC<BookingViewProps> = ({
 
               {/* Field 1: Tiến Độ Tác Nghiệp Nội Bộ (Pipeline Lark Base) */}
               <div>
-                <label className="text-slate-300 font-bold block mb-1.5">
+                <label className="text-slate-700 font-semibold block mb-1.5">
                   2. Tiến Độ Vận Hành Nội Bộ (Pipeline 8 Bước Chuẩn Lark Base):
                 </label>
                 <select
                   value={editForm.pipelineText}
                   onChange={(e) => setEditForm(prev => ({ ...prev, pipelineText: e.target.value }))}
-                  className="w-full bg-[#09101d] border border-[#1e293b] rounded-xl px-3 py-2.5 text-xs text-cyan-300 font-semibold focus:outline-none focus:border-cyan-500"
+                  className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-blue-700 font-semibold focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                 >
                   <option value="Chờ Brand duyệt">1. Chờ Brand duyệt KOC</option>
-                  <option value="Đã tạo BO">2. Đã tạo BO & Ký Hợp đồng</option>
+                  <option value="Đã tạo BO">2. Đã tạo BO &amp; Ký Hợp đồng</option>
                   <option value="Gửi hàng">3. Gửi hàng mẫu (Sample)</option>
                   <option value="Kịch bản">4. Duyệt kịch bản nội dung</option>
-                  <option value="KOC quay video">5. KOC quay & nộp video nháp</option>
-                  <option value="Lên video">6. Lên video TikTok & Gắn giỏ hàng</option>
+                  <option value="KOC quay video">5. KOC quay &amp; nộp video nháp</option>
+                  <option value="Lên video">6. Lên video TikTok &amp; Gắn giỏ hàng</option>
                   <option value="Nghiệm thu Ads">7. Nghiệm thu mã Spark Ads</option>
                   <option value="Đối soát">8. Đối soát thanh toán (Kế toán)</option>
                   <option value="Done">✓ Done (Hoàn tất chiến dịch)</option>
@@ -1722,7 +1762,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
 
               {/* Field 2: Trạng Thái Gửi Mẫu Sản Phẩm (Sample) */}
               <div>
-                <label className="text-slate-300 font-bold block mb-1.5">
+                <label className="text-slate-700 font-semibold block mb-1.5">
                   3. Trạng Thái Gửi Mẫu Sản Phẩm (Sample Dispatch):
                 </label>
                 <div className="grid grid-cols-3 gap-2">
@@ -1735,10 +1775,10 @@ export const BookingView: React.FC<BookingViewProps> = ({
                       key={s.key}
                       type="button"
                       onClick={() => setEditForm(prev => ({ ...prev, sampleStatus: s.key as any }))}
-                      className={`py-2 px-2.5 rounded-xl font-bold border transition text-center ${
+                      className={`py-2 px-2.5 rounded-lg font-bold border transition text-center ${
                         editForm.sampleStatus === s.key
-                          ? 'bg-blue-600 border-blue-400 text-white shadow-sm'
-                          : 'bg-[#09101d] border-[#1e293b] text-slate-400 hover:text-white'
+                          ? 'bg-blue-600 border-blue-500 text-white shadow-xs'
+                          : 'bg-white border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                       }`}
                     >
                       {s.label}
@@ -1749,7 +1789,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
 
               {/* Field 4: TikTok Video URL */}
               <div>
-                <label className="text-slate-300 font-bold block mb-1.5">
+                <label className="text-slate-700 font-semibold block mb-1.5">
                   4. Link Video TikTok Chính Thức Đã Lên Sóng:
                 </label>
                 <input
@@ -1757,16 +1797,16 @@ export const BookingView: React.FC<BookingViewProps> = ({
                   placeholder="https://www.tiktok.com/@creator/video/7418..."
                   value={editForm.tiktokVideoUrl}
                   onChange={(e) => setEditForm(prev => ({ ...prev, tiktokVideoUrl: e.target.value }))}
-                  className="w-full bg-[#09101d] border border-[#1e293b] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 font-mono"
+                  className="w-full bg-white border border-slate-300 rounded-lg px-3.5 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-mono"
                 />
               </div>
 
               {/* Field 5: Ads Code Verification */}
               <div>
-                <label className="text-slate-300 font-bold block mb-1.5">
+                <label className="text-slate-700 font-semibold block mb-1.5">
                   5. Nghiệm Thu Mã Ủy Quyền Ads Spark Code (TikTok):
                 </label>
-                <p className="text-[11px] text-slate-400 mb-2">
+                <p className="text-[11px] text-slate-500 mb-2">
                   * Tránh Plan Gap ngân sách (ví dụ hụt 50M ở pHCare do chưa đối soát mã Ads)
                 </p>
                 <div className="grid grid-cols-3 gap-2">
@@ -1779,10 +1819,10 @@ export const BookingView: React.FC<BookingViewProps> = ({
                       key={a.key}
                       type="button"
                       onClick={() => setEditForm(prev => ({ ...prev, adsCodeStatus: a.key as any }))}
-                      className={`py-2 px-2 rounded-xl font-bold border transition text-center ${
+                      className={`py-2 px-2 rounded-lg font-bold border transition text-center ${
                         editForm.adsCodeStatus === a.key
-                          ? 'bg-emerald-600 border-emerald-400 text-white shadow-sm'
-                          : 'bg-[#09101d] border-[#1e293b] text-slate-400 hover:text-white'
+                          ? 'bg-emerald-600 border-emerald-500 text-white shadow-xs'
+                          : 'bg-white border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                       }`}
                     >
                       {a.label}
@@ -1794,19 +1834,19 @@ export const BookingView: React.FC<BookingViewProps> = ({
               {/* Field 6: GMV 30 Days & Views */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-slate-300 font-bold block mb-1.5">
+                  <label className="text-slate-700 font-semibold block mb-1.5">
                     6. Số Lượt Views Đạt Được:
                   </label>
                   <input
                     type="number"
                     value={editForm.viewsCount}
                     onChange={(e) => setEditForm(prev => ({ ...prev, viewsCount: Number(e.target.value) }))}
-                    className="w-full bg-[#09101d] border border-[#1e293b] rounded-xl px-3.5 py-2 text-xs text-white font-mono"
+                    className="w-full bg-white border border-slate-300 rounded-lg px-3.5 py-2 text-xs text-slate-800 font-mono focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                   />
                 </div>
 
                 <div>
-                  <label className="text-slate-300 font-bold block mb-1.5">
+                  <label className="text-slate-700 font-semibold block mb-1.5">
                     7. GMV 30 Ngày (Doanh Thu Thực Tế):
                   </label>
                   <input
@@ -1814,25 +1854,25 @@ export const BookingView: React.FC<BookingViewProps> = ({
                     step={500000}
                     value={editForm.gmv30}
                     onChange={(e) => setEditForm(prev => ({ ...prev, gmv30: Number(e.target.value) }))}
-                    className="w-full bg-[#09101d] border border-[#1e293b] rounded-xl px-3.5 py-2 text-xs text-emerald-400 font-mono font-bold"
+                    className="w-full bg-white border border-slate-300 rounded-lg px-3.5 py-2 text-xs text-emerald-700 font-mono font-bold focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                   />
                 </div>
               </div>
 
               {/* Field 8: Workflow Stage */}
               <div>
-                <label className="text-slate-300 font-bold block mb-1.5">
-                  8. Giai Đoạn Nghiệm Thu & Kế Toán:
+                <label className="text-slate-700 font-semibold block mb-1.5">
+                  8. Giai Đoạn Nghiệm Thu &amp; Kế Toán:
                 </label>
                 <select
                   value={editForm.status}
                   onChange={(e) => setEditForm(prev => ({ ...prev, status: e.target.value as any }))}
-                  className="w-full bg-[#09101d] border border-[#1e293b] rounded-xl px-3 py-2 text-xs text-white font-semibold"
+                  className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-800 font-semibold focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                 >
                   <option value="SCRIPT_APPROVED">Đã Duyệt Kịch Bản (Cần Trình Ký)</option>
                   <option value="ADVANCE_PAID">Đã Chi Tạm Ứng (Đang Triển Khai)</option>
                   <option value="VIDEO_SUBMITTED">Video Đã Lên Sóng (Chờ Nghiệm Thu Link)</option>
-                  <option value="VIDEO_VERIFIED">Đã Nghiệm Thu Video & Mã Ads (Chờ Kế Toán Tất Toán)</option>
+                  <option value="VIDEO_VERIFIED">Đã Nghiệm Thu Video &amp; Mã Ads (Chờ Kế Toán Tất Toán)</option>
                   <option value="FINAL_PAID">Đã Tất Toán (Hoàn Tất Hợp Đồng)</option>
                   <option value="CANCELLED">Đã Hủy / Brand Từ Chối</option>
                 </select>
@@ -1840,21 +1880,21 @@ export const BookingView: React.FC<BookingViewProps> = ({
             </div>
 
             {/* Calculated Preview Box */}
-            <div className="p-3 bg-[#080d18] rounded-xl border border-[#1a273f] flex items-center justify-between text-xs">
+            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between text-xs">
               <div>
-                <span className="text-slate-400">ROI Dự Tính:</span>
-                <span className="font-bold text-emerald-400 ml-1.5">
+                <span className="text-slate-500 font-medium">ROI Dự Tính:</span>
+                <span className="font-bold text-emerald-700 ml-1.5 font-mono">
                   {((editForm.gmv30 || 0) / (editingDeal.totalValue || 1)).toFixed(2)}x
                 </span>
               </div>
               <div className="flex items-center gap-2">
                 {editForm.gmv30 >= 30000000 && (
-                  <span className="badge-amber px-2 py-0.5 rounded text-[10px] font-bold">
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
                     🌟 Đạt Chuẩn Top 20 Winner
                   </span>
                 )}
                 {((editForm.gmv30 || 0) / (editingDeal.totalValue || 1)) >= 1.0 && (
-                  <span className="badge-emerald px-2 py-0.5 rounded text-[10px] font-bold">
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
                     ✓ Hoàn Vốn (ROI &gt;= 1.0)
                   </span>
                 )}
@@ -1862,21 +1902,21 @@ export const BookingView: React.FC<BookingViewProps> = ({
             </div>
 
             {/* Actions */}
-            <div className="flex items-center justify-end gap-2.5 pt-2">
+            <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-200">
               <button
                 type="button"
                 onClick={() => setEditingDeal(null)}
-                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white bg-slate-800 transition"
+                className="px-4 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 transition"
               >
                 Hủy
               </button>
               <button
                 type="button"
                 onClick={handleSaveDealUpdate}
-                className="px-5 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 shadow-md transition flex items-center gap-1.5"
+                className="px-5 py-2 rounded-lg text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-sm transition flex items-center gap-1.5"
               >
                 <Check className="w-3.5 h-3.5" />
-                <span>Lưu & Đồng Bộ Báo Cáo</span>
+                <span>Lưu &amp; Đồng Bộ Báo Cáo</span>
               </button>
             </div>
           </div>

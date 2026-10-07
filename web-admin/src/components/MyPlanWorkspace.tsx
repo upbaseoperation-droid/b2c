@@ -420,14 +420,25 @@ export const MyPlanWorkspace: React.FC<MyPlanWorkspaceProps> = ({
       {/* 3. MODAL: ADD KOC SLOT TO PLAN                                            */}
       {/* ========================================================================= */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="bg-[#0b101b] border border-[#1e293b] rounded-lg shadow-2xl w-full max-w-xl p-6 text-slate-200">
-            <div className="flex items-center justify-between pb-3 border-b border-[#1e293b] mb-4">
-              <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <Plus className="w-4 h-4 text-blue-400" />
-                Thêm Slot KOC Vào Kế Hoạch Tháng
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setIsAddModalOpen(false);
+          }}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="bg-white border border-slate-200 rounded-xl shadow-2xl w-full max-w-xl p-6 text-slate-900 animate-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200 mb-4">
+              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                <Plus className="w-4 h-4 text-blue-600" />
+                <span>Thêm Slot KOC Vào Kế Hoạch Tháng</span>
               </h3>
-              <button onClick={() => setIsAddModalOpen(false)} className="text-slate-400 hover:text-white">
+              <button 
+                onClick={() => setIsAddModalOpen(false)} 
+                className="p-1 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition"
+                aria-label="Đóng"
+              >
                 ✕
               </button>
             </div>
@@ -436,16 +447,16 @@ export const MyPlanWorkspace: React.FC<MyPlanWorkspaceProps> = ({
               
               {/* Quick Pick from Master KOC Directory */}
               <div>
-                <label className="text-slate-400 font-semibold block mb-1">
-                  Gợi ý chọn nhanh từ Danh Bạ KOC (Hoặc gõ tên mới bên dưới):
+                <label className="text-slate-700 font-semibold block mb-1">
+                  Gợi ý chọn nhanh từ Danh Bạ KOC:
                 </label>
-                <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto p-2 bg-[#080d18] rounded border border-[#1e293b]">
+                <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto p-2 bg-slate-50 rounded-lg border border-slate-200">
                   {kocs.slice(0, 8).map(koc => (
                     <button
                       type="button"
                       key={koc.id}
                       onClick={() => handleSelectExistingKoc(koc)}
-                      className="px-2 py-0.5 rounded bg-slate-800 hover:bg-blue-600 text-slate-300 hover:text-white text-[11px] font-medium border border-slate-700 transition"
+                      className="px-2 py-0.5 rounded bg-white hover:bg-blue-50 text-slate-700 hover:text-blue-700 text-xs font-medium border border-slate-300 shadow-2xs transition"
                     >
                       {koc.stageName} ({koc.salaryGrade})
                     </button>
@@ -455,35 +466,35 @@ export const MyPlanWorkspace: React.FC<MyPlanWorkspaceProps> = ({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-slate-400 font-semibold block mb-1">Tên KOC / Stage Name:</label>
+                  <label className="text-slate-700 font-semibold block mb-1">Tên KOC / Stage Name:</label>
                   <input
                     type="text"
                     required
                     placeholder="VD: Chloe Nguyễn, Bác sĩ Hằng..."
                     value={formKocName}
                     onChange={(e) => setFormKocName(e.target.value)}
-                    className="w-full bg-[#101726] border border-[#1e293b] rounded p-2 text-white focus:outline-none focus:border-blue-500"
+                    className="w-full bg-white border border-slate-300 rounded-lg p-2 text-slate-900 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="text-slate-400 font-semibold block mb-1">Kênh TikTok (Channel ID):</label>
+                  <label className="text-slate-700 font-semibold block mb-1">Kênh TikTok (Channel ID):</label>
                   <input
                     type="text"
                     placeholder="VD: @chloenguyen.official"
                     value={formChannelId}
                     onChange={(e) => setFormChannelId(e.target.value)}
-                    className="w-full bg-[#101726] border border-[#1e293b] rounded p-2 text-white focus:outline-none focus:border-blue-500"
+                    className="w-full bg-white border border-slate-300 rounded-lg p-2 text-slate-900 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="text-slate-400 font-semibold block mb-1">Nhãn Hàng (Brand):</label>
+                  <label className="text-slate-700 font-semibold block mb-1">Nhãn Hàng (Brand):</label>
                   <select
                     value={formBrand}
                     onChange={(e) => setFormBrand(e.target.value)}
-                    className="w-full bg-[#101726] border border-[#1e293b] rounded p-2 text-white focus:outline-none focus:border-blue-500"
+                    className="w-full bg-white border border-slate-300 rounded-lg p-2 text-slate-900 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
                   >
                     {(allocation?.assignedBrands || ['Senka', 'Cure Natural Aqua Gel']).map(b => (
                       <option key={b} value={b}>{b}</option>
@@ -491,11 +502,11 @@ export const MyPlanWorkspace: React.FC<MyPlanWorkspaceProps> = ({
                   </select>
                 </div>
                 <div>
-                  <label className="text-slate-400 font-semibold block mb-1">Tuần Lên Sóng:</label>
+                  <label className="text-slate-700 font-semibold block mb-1">Tuần Lên Sóng:</label>
                   <select
                     value={formWeek}
                     onChange={(e) => setFormWeek(e.target.value as any)}
-                    className="w-full bg-[#101726] border border-[#1e293b] rounded p-2 text-white focus:outline-none focus:border-blue-500 font-mono font-bold"
+                    className="w-full bg-white border border-slate-300 rounded-lg p-2 text-slate-900 font-bold focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
                   >
                     <option value="W1">Tuần 1 (W1: Mở Màn)</option>
                     <option value="W2">Tuần 2 (W2: Tăng Tốc)</option>
@@ -504,7 +515,7 @@ export const MyPlanWorkspace: React.FC<MyPlanWorkspaceProps> = ({
                   </select>
                 </div>
                 <div>
-                  <label className="text-slate-400 font-semibold block mb-1">Tier KOC:</label>
+                  <label className="text-slate-700 font-semibold block mb-1">Tier KOC:</label>
                   <select
                     value={formTier}
                     onChange={(e) => {
@@ -515,23 +526,23 @@ export const MyPlanWorkspace: React.FC<MyPlanWorkspaceProps> = ({
                       else if (t === 'TIER_3_MICRO') setFormSalaryGrade('KL4');
                       else setFormSalaryGrade('KL2');
                     }}
-                    className="w-full bg-[#101726] border border-[#1e293b] rounded p-2 text-white focus:outline-none focus:border-blue-500"
+                    className="w-full bg-white border border-slate-300 rounded-lg p-2 text-slate-900 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
                   >
                     <option value="TIER_1_CELEB">Tier 1: Celeb / Mega</option>
                     <option value="TIER_2_MACRO">Tier 2: Macro KOL</option>
                     <option value="TIER_3_MICRO">Tier 3: Micro KOC</option>
-                    <option value="TIER_4_AFFILIATE">Tier 4: Nano & Affiliate</option>
+                    <option value="TIER_4_AFFILIATE">Tier 4: Nano &amp; Affiliate</option>
                   </select>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-slate-400 font-semibold block mb-1">Góc Quay / Content Pillar:</label>
+                  <label className="text-slate-700 font-semibold block mb-1">Góc Quay / Content Pillar:</label>
                   <select
                     value={formPillar}
                     onChange={(e) => setFormPillar(e.target.value)}
-                    className="w-full bg-[#101726] border border-[#1e293b] rounded p-2 text-white focus:outline-none focus:border-blue-500"
+                    className="w-full bg-white border border-slate-300 rounded-lg p-2 text-slate-900 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
                   >
                     <option value="Review trực tiếp">Review trực tiếp</option>
                     <option value="Nỗi đau - Giải pháp">Nỗi đau - Giải pháp</option>
@@ -542,11 +553,11 @@ export const MyPlanWorkspace: React.FC<MyPlanWorkspaceProps> = ({
                   </select>
                 </div>
                 <div>
-                  <label className="text-slate-400 font-semibold block mb-1">Tệp Kênh (25 Tệp):</label>
+                  <label className="text-slate-700 font-semibold block mb-1">Tệp Kênh (25 Tệp):</label>
                   <select
                     value={formTepKenh}
                     onChange={(e) => setFormTepKenh(e.target.value as any)}
-                    className="w-full bg-[#101726] border border-[#1e293b] rounded p-2 text-white focus:outline-none focus:border-blue-500"
+                    className="w-full bg-white border border-slate-300 rounded-lg p-2 text-slate-900 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
                   >
                     <option value="Beauty">Beauty (Làm đẹp)</option>
                     <option value="Review Nữ">Review Nữ</option>
@@ -562,36 +573,36 @@ export const MyPlanWorkspace: React.FC<MyPlanWorkspaceProps> = ({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-slate-400 font-semibold block mb-1">Dự Toán Chi Phí Cast (VND):</label>
+                  <label className="text-slate-700 font-semibold block mb-1">Dự Toán Chi Phí Cast (VND):</label>
                   <input
                     type="number"
                     value={formBudget}
                     onChange={(e) => setFormBudget(Number(e.target.value))}
-                    className="w-full bg-[#101726] border border-[#1e293b] rounded p-2 text-cyan-400 font-mono font-bold focus:outline-none focus:border-blue-500"
+                    className="w-full bg-white border border-slate-300 rounded-lg p-2 text-blue-700 font-mono font-bold focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="text-slate-400 font-semibold block mb-1">Target GMV Kỳ Vọng (VND):</label>
+                  <label className="text-slate-700 font-semibold block mb-1">Target GMV Kỳ Vọng (VND):</label>
                   <input
                     type="number"
                     value={formGmv}
                     onChange={(e) => setFormGmv(Number(e.target.value))}
-                    className="w-full bg-[#101726] border border-[#1e293b] rounded p-2 text-emerald-400 font-mono font-bold focus:outline-none focus:border-blue-500"
+                    className="w-full bg-white border border-slate-300 rounded-lg p-2 text-emerald-700 font-mono font-bold focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
                   />
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#1e293b]">
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-200">
                 <button
                   type="button"
                   onClick={() => setIsAddModalOpen(false)}
-                  className="px-3 py-1.5 rounded text-slate-400 hover:text-white"
+                  className="px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition"
                 >
                   Hủy Bỏ
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-1.5 rounded bg-blue-600 hover:bg-blue-500 text-white font-bold transition"
+                  className="px-4 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold transition shadow-xs"
                 >
                   Lưu Vào Kế Hoạch
                 </button>
