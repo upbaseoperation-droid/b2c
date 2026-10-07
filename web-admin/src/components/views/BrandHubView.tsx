@@ -221,27 +221,27 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({ onNotify }) => {
       {/* ========================================================================= */}
       {/* 1. BRAND PORTAL TOP HEADER & SECURE CLIENT IDENTIFIER                    */}
       {/* ========================================================================= */}
-      <div className="card-enterprise p-5 bg-[#0e1320] border-[#1e293b]">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-[#1e293b]">
+      <div className="card-enterprise p-5 bg-white border border-slate-200 shadow-xs">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-200">
           <div className="flex items-center gap-3.5">
-            <div className="w-11 h-11 rounded-md bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center font-black text-white text-base shadow-md border border-blue-400/30">
+            <div className="w-11 h-11 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center font-black text-white text-base shadow-sm">
               {activePortal.brandLogoText.slice(0, 3)}
             </div>
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <h2 className="text-base font-bold text-white tracking-tight">
+                <h2 className="text-base font-bold text-slate-900 tracking-tight">
                   {activePortal.brandName}
                 </h2>
-                <span className="text-[11px] px-2 py-0.5 rounded font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+                <span className="badge-emerald px-2.5 py-0.5 rounded font-bold text-[11px] flex items-center gap-1">
                   <ShieldCheck className="w-3.5 h-3.5" />
                   Cổng Tác Nghiệp Khách Hàng (Brand Client Portal)
                 </span>
-                <span className="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-mono">
+                <span className="badge-slate text-[10px] px-2 py-0.5 rounded font-mono font-bold">
                   {activePortal.campaignCode}
                 </span>
               </div>
-              <p className="text-xs text-slate-400 mt-1">
-                Chiến Dịch: <strong className="text-slate-200">{activePortal.campaignTitle}</strong> ({activePortal.month})
+              <p className="text-xs text-slate-500 mt-1">
+                Chiến Dịch: <strong className="text-slate-800">{activePortal.campaignTitle}</strong> ({activePortal.month})
               </p>
             </div>
           </div>
@@ -249,15 +249,15 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({ onNotify }) => {
           {/* Brand Switcher & Magic Link Share Button */}
           <div className="flex items-center gap-2 flex-wrap self-start lg:self-auto">
             {/* Switch Brand Dropdown */}
-            <div className="flex items-center gap-1.5 bg-[#0b1120] border border-[#1e293b] rounded-md px-2.5 py-1 text-xs">
-              <Building className="w-3.5 h-3.5 text-slate-400" />
+            <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 text-xs shadow-2xs">
+              <Building className="w-3.5 h-3.5 text-slate-500" />
               <select
                 value={activePortal.id}
                 onChange={(e) => handleSwitchPortal(e.target.value)}
-                className="bg-transparent text-white font-semibold text-xs focus:outline-none cursor-pointer pr-1"
+                className="bg-transparent text-slate-900 font-semibold text-xs focus:outline-none cursor-pointer pr-1"
               >
                 {portals.map(p => (
-                  <option key={p.id} value={p.id} className="bg-[#0b1120] text-slate-200">
+                  <option key={p.id} value={p.id} className="bg-white text-slate-900">
                     {p.brandName} ({p.campaignCode})
                   </option>
                 ))}
@@ -268,9 +268,9 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({ onNotify }) => {
             <button
               type="button"
               onClick={handleCopyMagicLink}
-              className="px-3 py-1.5 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/40 rounded-md text-xs font-semibold flex items-center gap-1.5 transition"
+              className="btn-md bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition shadow-2xs"
             >
-              {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Share2 className="w-3.5 h-3.5" />}
+              {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Share2 className="w-3.5 h-3.5 text-blue-600" />}
               <span>{copiedLink ? 'Đã Sao Chép Link' : 'Copy Magic Link Brand'}</span>
             </button>
           </div>
@@ -278,17 +278,17 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({ onNotify }) => {
 
         {/* Dedicated Support Team & SLA Commitment */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4 pt-1 text-xs">
-          <div className="p-2.5 rounded-md bg-[#0b1120] border border-[#1e293b] flex items-center justify-between">
-            <span className="text-slate-400">Account Lead Upbase:</span>
-            <span className="font-semibold text-white">{activePortal.accountPic}</span>
+          <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-between">
+            <span className="text-slate-500">Account Lead Upbase:</span>
+            <span className="font-semibold text-slate-900">{activePortal.accountPic}</span>
           </div>
-          <div className="p-2.5 rounded-md bg-[#0b1120] border border-[#1e293b] flex items-center justify-between">
-            <span className="text-slate-400">Booking Execution Lead:</span>
-            <span className="font-semibold text-white">{activePortal.bookingPic}</span>
+          <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-between">
+            <span className="text-slate-500">Booking Execution Lead:</span>
+            <span className="font-semibold text-slate-900">{activePortal.bookingPic}</span>
           </div>
-          <div className="p-2.5 rounded-md bg-[#0b1120] border border-[#1e293b] flex items-center justify-between">
-            <span className="text-slate-400">Cam Kết SLA Phản Hồi:</span>
-            <span className="font-bold text-amber-400 flex items-center gap-1">
+          <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-between">
+            <span className="text-slate-500">Cam Kết SLA Phản Hồi:</span>
+            <span className="font-bold text-amber-600 flex items-center gap-1">
               <Clock className="w-3 h-3" />
               Tối đa 24h / Lần duyệt
             </span>
@@ -303,28 +303,28 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({ onNotify }) => {
         {/* Stage 1 Button */}
         <button
           onClick={() => setActiveStage('STAGE_1_PLAN')}
-          className={`p-3 rounded-md border text-left transition flex items-start gap-3 relative ${
+          className={`p-3 rounded-xl border text-left transition flex items-start gap-3 relative ${
             activeStage === 'STAGE_1_PLAN'
-              ? 'bg-blue-950/40 border-blue-500 ring-1 ring-blue-500/50 shadow-sm'
-              : 'bg-[#0e1320] border-[#1e293b] hover:bg-[#111827]'
+              ? 'bg-blue-50/80 border-blue-500 ring-1 ring-blue-500/40 shadow-xs'
+              : 'bg-white border-slate-200 hover:bg-slate-50 shadow-2xs'
           }`}
         >
-          <div className={`w-7 h-7 rounded-md flex items-center justify-center shrink-0 font-bold text-xs ${
-            isPlanApproved ? 'bg-emerald-500 text-white' : 'bg-blue-600 text-white'
+          <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 font-bold text-xs ${
+            isPlanApproved ? 'bg-emerald-600 text-white' : 'bg-blue-600 text-white'
           }`}>
             {isPlanApproved ? <Check className="w-4 h-4" /> : '1'}
           </div>
           <div className="min-w-0">
-            <span className="text-[10px] font-bold uppercase tracking-wider block text-slate-400">
+            <span className="text-[10px] font-bold uppercase tracking-wider block text-slate-500">
               Chặng 1 (Bắt Buộc Trước)
             </span>
-            <span className="text-xs font-bold text-white block mt-0.5">
+            <span className="text-xs font-bold text-slate-900 block mt-0.5">
               Duyệt Kế Hoạch & Ngân Sách
             </span>
             <span className={`text-[10px] font-semibold mt-1 inline-block px-1.5 py-0.2 rounded border ${
-              isPlanApproved ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' :
-              activePortal.planApprovalStatus === 'BRAND_PLAN_REVISION_REQUESTED' ? 'bg-rose-500/20 text-rose-300 border-rose-500/30' :
-              'bg-amber-500/20 text-amber-300 border-amber-500/30 animate-pulse'
+              isPlanApproved ? 'badge-emerald' :
+              activePortal.planApprovalStatus === 'BRAND_PLAN_REVISION_REQUESTED' ? 'badge-rose' :
+              'badge-amber animate-pulse'
             }`}>
               {isPlanApproved ? 'Đã Phê Duyệt' :
                activePortal.planApprovalStatus === 'BRAND_PLAN_REVISION_REQUESTED' ? 'Đang Yêu Cầu Sửa' : 'Chờ Brand Duyệt'}
@@ -338,27 +338,27 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({ onNotify }) => {
             if (isPlanApproved) setActiveStage('STAGE_2_KOCS');
           }}
           disabled={!isPlanApproved}
-          className={`p-3 rounded-md border text-left transition flex items-start gap-3 relative ${
+          className={`p-3 rounded-xl border text-left transition flex items-start gap-3 relative ${
             !isPlanApproved
-              ? 'bg-[#0a0d14] border-[#1e293b]/50 opacity-60 cursor-not-allowed'
+              ? 'bg-slate-50/70 border-slate-200/80 opacity-60 cursor-not-allowed'
               : activeStage === 'STAGE_2_KOCS'
-              ? 'bg-blue-950/40 border-blue-500 ring-1 ring-blue-500/50 shadow-sm'
-              : 'bg-[#0e1320] border-[#1e293b] hover:bg-[#111827]'
+              ? 'bg-blue-50/80 border-blue-500 ring-1 ring-blue-500/40 shadow-xs'
+              : 'bg-white border-slate-200 hover:bg-slate-50 shadow-2xs'
           }`}
         >
-          <div className={`w-7 h-7 rounded-md flex items-center justify-center shrink-0 font-bold text-xs ${
-            !isPlanApproved ? 'bg-slate-800 text-slate-500' : 'bg-blue-600 text-white'
+          <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 font-bold text-xs ${
+            !isPlanApproved ? 'bg-slate-200 text-slate-500' : 'bg-blue-600 text-white'
           }`}>
             {!isPlanApproved ? <Lock className="w-3.5 h-3.5 text-slate-500" /> : '2'}
           </div>
           <div className="min-w-0">
-            <span className="text-[10px] font-bold uppercase tracking-wider block text-slate-400">
+            <span className="text-[10px] font-bold uppercase tracking-wider block text-slate-500">
               Chặng 2
             </span>
-            <span className="text-xs font-bold text-white block mt-0.5">
+            <span className="text-xs font-bold text-slate-900 block mt-0.5">
               Duyệt Danh Sách KOC
             </span>
-            <span className="text-[10px] text-slate-400 mt-1 block">
+            <span className="text-[10px] text-slate-500 mt-1 block">
               {!isPlanApproved ? 'Khóa (Cần duyệt Chặng 1)' : `${activePortal.kocCandidates.filter(k => k.brandApprovalStatus === 'ĐÃ_DUYỆT').length}/${activePortal.kocCandidates.length} KOCs đã duyệt`}
             </span>
           </div>
@@ -370,27 +370,27 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({ onNotify }) => {
             if (isPlanApproved) setActiveStage('STAGE_3_SCRIPTS');
           }}
           disabled={!isPlanApproved}
-          className={`p-3 rounded-md border text-left transition flex items-start gap-3 relative ${
+          className={`p-3 rounded-xl border text-left transition flex items-start gap-3 relative ${
             !isPlanApproved
-              ? 'bg-[#0a0d14] border-[#1e293b]/50 opacity-60 cursor-not-allowed'
+              ? 'bg-slate-50/70 border-slate-200/80 opacity-60 cursor-not-allowed'
               : activeStage === 'STAGE_3_SCRIPTS'
-              ? 'bg-blue-950/40 border-blue-500 ring-1 ring-blue-500/50 shadow-sm'
-              : 'bg-[#0e1320] border-[#1e293b] hover:bg-[#111827]'
+              ? 'bg-blue-50/80 border-blue-500 ring-1 ring-blue-500/40 shadow-xs'
+              : 'bg-white border-slate-200 hover:bg-slate-50 shadow-2xs'
           }`}
         >
-          <div className={`w-7 h-7 rounded-md flex items-center justify-center shrink-0 font-bold text-xs ${
-            !isPlanApproved ? 'bg-slate-800 text-slate-500' : 'bg-blue-600 text-white'
+          <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 font-bold text-xs ${
+            !isPlanApproved ? 'bg-slate-200 text-slate-500' : 'bg-blue-600 text-white'
           }`}>
             {!isPlanApproved ? <Lock className="w-3.5 h-3.5 text-slate-500" /> : '3'}
           </div>
           <div className="min-w-0">
-            <span className="text-[10px] font-bold uppercase tracking-wider block text-slate-400">
+            <span className="text-[10px] font-bold uppercase tracking-wider block text-slate-500">
               Chặng 3
             </span>
-            <span className="text-xs font-bold text-white block mt-0.5">
+            <span className="text-xs font-bold text-slate-900 block mt-0.5">
               Thẩm Định Kịch Bản (24h)
             </span>
-            <span className="text-[10px] text-slate-400 mt-1 block">
+            <span className="text-[10px] text-slate-500 mt-1 block">
               {!isPlanApproved ? 'Khóa (Cần duyệt Chặng 1)' : `${activePortal.scripts.filter(s => s.status === 'APPROVED').length}/${activePortal.scripts.length} Kịch bản đã duyệt`}
             </span>
           </div>
@@ -402,27 +402,27 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({ onNotify }) => {
             if (isPlanApproved) setActiveStage('STAGE_4_COCKPIT');
           }}
           disabled={!isPlanApproved}
-          className={`p-3 rounded-md border text-left transition flex items-start gap-3 relative ${
+          className={`p-3 rounded-xl border text-left transition flex items-start gap-3 relative ${
             !isPlanApproved
-              ? 'bg-[#0a0d14] border-[#1e293b]/50 opacity-60 cursor-not-allowed'
+              ? 'bg-slate-50/70 border-slate-200/80 opacity-60 cursor-not-allowed'
               : activeStage === 'STAGE_4_COCKPIT'
-              ? 'bg-blue-950/40 border-blue-500 ring-1 ring-blue-500/50 shadow-sm'
-              : 'bg-[#0e1320] border-[#1e293b] hover:bg-[#111827]'
+              ? 'bg-blue-50/80 border-blue-500 ring-1 ring-blue-500/40 shadow-xs'
+              : 'bg-white border-slate-200 hover:bg-slate-50 shadow-2xs'
           }`}
         >
-          <div className={`w-7 h-7 rounded-md flex items-center justify-center shrink-0 font-bold text-xs ${
-            !isPlanApproved ? 'bg-slate-800 text-slate-500' : 'bg-blue-600 text-white'
+          <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 font-bold text-xs ${
+            !isPlanApproved ? 'bg-slate-200 text-slate-500' : 'bg-blue-600 text-white'
           }`}>
             {!isPlanApproved ? <Lock className="w-3.5 h-3.5 text-slate-500" /> : '4'}
           </div>
           <div className="min-w-0">
-            <span className="text-[10px] font-bold uppercase tracking-wider block text-slate-400">
+            <span className="text-[10px] font-bold uppercase tracking-wider block text-slate-500">
               Chặng 4
             </span>
-            <span className="text-xs font-bold text-white block mt-0.5">
+            <span className="text-xs font-bold text-slate-900 block mt-0.5">
               Nghiệm Thu & Báo Cáo Live
             </span>
-            <span className="text-[10px] text-slate-400 mt-1 block">
+            <span className="text-[10px] text-slate-500 mt-1 block">
               {!isPlanApproved ? 'Khóa' : `${activePortal.liveAiredVideosCount}/${activePortal.totalTargetVideos} Clips Đã Air`}
             </span>
           </div>
@@ -439,28 +439,28 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({ onNotify }) => {
       {activeStage === 'STAGE_1_PLAN' && (
         <div className="space-y-5">
           {/* Plan Status Alert Banner */}
-          <div className={`p-4 rounded-md border flex flex-col md:flex-row md:items-center justify-between gap-4 ${
+          <div className={`p-4 rounded-xl border flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-2xs ${
             isPlanApproved
-              ? 'bg-emerald-950/30 border-emerald-500/40 text-emerald-300'
+              ? 'bg-emerald-50 border-emerald-200 text-emerald-950'
               : activePortal.planApprovalStatus === 'BRAND_PLAN_REVISION_REQUESTED'
-              ? 'bg-rose-950/30 border-rose-500/40 text-rose-300'
-              : 'bg-amber-950/30 border-amber-500/40 text-amber-300'
+              ? 'bg-rose-50 border-rose-200 text-rose-950'
+              : 'bg-amber-50 border-amber-200 text-amber-950'
           }`}>
             <div className="flex items-start gap-3">
               {isPlanApproved ? (
-                <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+                <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
               ) : (
-                <AlertCircle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+                <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
               )}
               <div>
-                <h4 className="text-sm font-bold">
+                <h4 className="text-sm font-bold text-slate-900">
                   {isPlanApproved
                     ? `Kế Hoạch Đã Được Nhãn Hàng Phê Duyệt vào ngày ${activePortal.planApprovalDate}`
                     : activePortal.planApprovalStatus === 'BRAND_PLAN_REVISION_REQUESTED'
                     ? 'Đang chờ Booking Team điều chỉnh Kế hoạch theo phản hồi của bạn'
                     : 'YÊU CẦU BẮT BUỘC: Quý Nhãn Hàng Vui Lòng Phê Duyệt Kế Hoạch Trước'}
                 </h4>
-                <p className="text-xs opacity-90 mt-1 leading-relaxed">
+                <p className="text-xs text-slate-600 mt-1 leading-relaxed">
                   {isPlanApproved
                     ? 'Chặng 1 đã hoàn tất! Quý Nhãn Hàng có thể chuyển sang Chặng 2 để duyệt từng gương mặt KOC cụ thể trong danh sách đề xuất.'
                     : activePortal.planApprovalStatus === 'BRAND_PLAN_REVISION_REQUESTED'
@@ -476,7 +476,7 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({ onNotify }) => {
                 <button
                   type="button"
                   onClick={() => setIsPlanRevisionModalOpen(true)}
-                  className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-md text-xs font-semibold flex items-center gap-1.5 transition"
+                  className="btn-md bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition shadow-2xs"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
                   Yêu Cầu Chỉnh Sửa
@@ -484,7 +484,7 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({ onNotify }) => {
                 <button
                   type="button"
                   onClick={handleApprovePlan}
-                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-md text-xs font-bold flex items-center gap-1.5 shadow-md transition"
+                  className="btn-md bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-2xs transition"
                 >
                   <ThumbsUp className="w-3.5 h-3.5" />
                   ✅ Duyệt Thông Qua Kế Hoạch

@@ -103,7 +103,7 @@ export default function PerformanceP3View() {
             <span className="text-xs font-medium">Tổng Quỹ Thưởng P3</span>
             <Coins className="w-4 h-4 text-amber-500" />
           </div>
-          <div className="text-xl font-bold text-slate-900">{totalBonusFund.toLocaleString()}đ</div>
+          <div className="text-xl font-bold text-slate-900 font-mono whitespace-nowrap">{totalBonusFund.toLocaleString('vi-VN')}&nbsp;₫</div>
           <div className="text-[11px] text-emerald-600 font-medium mt-0.5">Dự toán ngân sách tháng</div>
         </div>
 
@@ -146,7 +146,7 @@ export default function PerformanceP3View() {
                 Điểm Workload = Số Ca Hoàn Thành × Hệ Số Độ Khó Store (1.0 - 1.6) × Hệ Số Chất Lượng (0.9 - 1.15) × Hệ Số SLA (0.8 - 1.2)
               </div>
               <p className="text-[11px] text-slate-500 mt-1">
-                Tiền thưởng = Điểm Workload × Đơn giá điểm theo Level (Intern: 30.000đ, Junior: 35.000đ, Senior: 40.000đ).
+                Tiền thưởng = Điểm Workload × Đơn giá điểm theo Level (Intern: 30.000&nbsp;₫, Junior: 35.000&nbsp;₫, Senior: 40.000&nbsp;₫).
               </p>
             </div>
           </div>
@@ -160,7 +160,7 @@ export default function PerformanceP3View() {
                   key={role}
                   onClick={() => setSelectedRole(role)}
                   className={`px-2.5 py-1 text-xs rounded transition ${
-                    selectedRole === role ? 'bg-slate-900 text-white font-medium' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    selectedRole === role ? 'bg-blue-600 text-white font-semibold shadow-2xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}
                 >
                   {role === 'ALL' ? 'Tất cả' : role}
@@ -241,22 +241,22 @@ export default function PerformanceP3View() {
 
                       {/* Bonus VND */}
                       <td className="py-3 px-3 text-right">
-                        <div className="font-bold text-emerald-600 text-sm">
-                          {item.estimatedBonusVnd.toLocaleString()}đ
+                        <div className="font-bold text-emerald-600 text-sm font-mono whitespace-nowrap">
+                          {item.estimatedBonusVnd.toLocaleString('vi-VN')}&nbsp;₫
                         </div>
-                        <div className="text-[10px] text-slate-400">
-                          {item.baseP3UnitRate.toLocaleString()}đ/điểm
+                        <div className="text-[10px] text-slate-400 font-mono">
+                          {item.baseP3UnitRate.toLocaleString('vi-VN')}&nbsp;₫/điểm
                         </div>
                       </td>
 
                       {/* Status */}
                       <td className="py-3 px-3 text-center">
                         {item.approvalStatus === 'ĐÃ_DUYỆT' ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 rounded">
+                          <span className="badge-emerald inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold">
                             <CheckCircle2 className="w-3 h-3" /> Đã Duyệt
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200 rounded">
+                          <span className="badge-amber inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold">
                             <AlertCircle className="w-3 h-3" /> Chờ Duyệt
                           </span>
                         )}
@@ -267,7 +267,7 @@ export default function PerformanceP3View() {
                         <div className="flex items-center justify-end gap-1.5">
                           <button
                             onClick={() => setAiReviewStaff(item.staffName)}
-                            className="px-2 py-1 text-[11px] font-semibold bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 rounded transition flex items-center gap-1 shadow-2xs"
+                            className="btn-sm bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 rounded-lg transition flex items-center gap-1 shadow-2xs font-semibold"
                             title="AI Nhận xét hiệu suất &amp; đề xuất thưởng P3"
                           >
                             <Sparkles className="w-3 h-3 text-purple-600 animate-pulse" />
@@ -276,7 +276,7 @@ export default function PerformanceP3View() {
                           {item.approvalStatus === 'CHỜ_DUYỆT' ? (
                             <button
                               onClick={() => handleApprove(item.id)}
-                              className="px-2.5 py-1 text-[11px] font-medium bg-slate-900 hover:bg-slate-800 text-white rounded transition shadow-sm"
+                              className="btn-sm bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition shadow-2xs"
                             >
                               Duyệt Thưởng
                             </button>
@@ -339,8 +339,8 @@ export default function PerformanceP3View() {
                     </td>
                     <td className="py-3 px-3 text-slate-700">{store.category}</td>
                     <td className="py-3 px-3 font-medium text-slate-800">{store.assignedPic}</td>
-                    <td className="py-3 px-3 text-right font-semibold text-slate-900">
-                      {store.monthlyTargetGmv.toLocaleString()}đ
+                    <td className="py-3 px-3 text-right font-semibold text-slate-900 font-mono whitespace-nowrap">
+                      {store.monthlyTargetGmv.toLocaleString('vi-VN')}&nbsp;₫
                     </td>
                     <td className="py-3 px-3 text-center">
                       <span className={`inline-block px-2 py-0.5 text-[10px] font-semibold rounded ${

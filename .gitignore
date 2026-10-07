@@ -33,6 +33,7 @@ Thumbs.db
 # Large data & binary files (Clean source code only)
 *.csv
 *.xlsx
+*.xlsm
 *.pdf
 *.docx
 pdf_preview/

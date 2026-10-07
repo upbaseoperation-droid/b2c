@@ -1,7 +1,9 @@
+> **LƯU TRỮ — prototype v0 (30/09/2026).** Tài liệu này mô tả prototype `B2C/web-admin`, không phải yêu cầu đã duyệt. Không dùng làm căn cứ cho giai đoạn 2. Lý do và tài liệu thay thế: [README lưu trữ](README.md), `HUB:DEC-003`.
+
 # ĐẶC TẢ TỰ ĐỘNG HÓA HỢP ĐỒNG & THANH TOÁN TẠM ỨNG KOC
 ## Giải pháp giải phóng thao tác thủ công cho Booking Execution Team
 
-> **Cập nhật yêu cầu 24/09/2026 — SDLC giai đoạn 1:** Luồng bên dưới mô tả thiết kế prototype cũ, sinh một hợp đồng cho mỗi BO. Yêu cầu đã xác nhận hiện là **HĐNT với KOC → phụ lục/SOW gom các BO cùng KOC, cùng tháng (không phụ thuộc brand/store) → phụ lục bổ sung cho BO phát sinh sau khi phụ lục tháng đã ký**. Thanh toán theo phụ lục/SOW; từng BO giữ chi phí để đối soát. Xem [BRD booking đa nền tảng](08_BOOKING_MULTIPLATFORM_BRD.md). Chưa áp dụng luồng cũ để triển khai mới cho đến khi đặc tả chi tiết được cập nhật.
+> **Cập nhật yêu cầu 24/09/2026 — SDLC giai đoạn 1:** Luồng bên dưới mô tả thiết kế prototype cũ, sinh một hợp đồng cho mỗi BO. Yêu cầu đã xác nhận hiện là **HĐNT với KOC → phụ lục/SOW gom các BO cùng KOC, cùng tháng (không phụ thuộc brand/store) → phụ lục bổ sung cho BO phát sinh sau khi phụ lục tháng đã ký**. Thanh toán theo phụ lục/SOW; từng BO giữ chi phí để đối soát. Xem [BRD booking đa nền tảng](../../../../Upaffiliate/blueprint/1-requirements/1.3_BRD_BOOKING_MULTIPLATFORM.md). Chưa áp dụng luồng cũ để triển khai mới cho đến khi đặc tả chi tiết được cập nhật.
 
 ---
 

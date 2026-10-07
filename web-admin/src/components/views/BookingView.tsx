@@ -33,7 +33,8 @@ import {
   Users,
   Truck,
   Target,
-  Crown
+  Crown,
+  Calculator
 } from 'lucide-react';
 import { 
   KocItem, 
@@ -75,6 +76,7 @@ interface BookingViewProps {
   onConvertPlanItemToDeal?: (item: StaffDetailedPlanItem) => void;
   staffAllocations?: MonthlyStaffAllocation[];
   currentUserName?: string;
+  onOpenInputPlan?: () => void;
 }
 
 export const BookingView: React.FC<BookingViewProps> = ({ 
@@ -92,7 +94,8 @@ export const BookingView: React.FC<BookingViewProps> = ({
   onSubmitPlanToLead: externalOnSubmitPlanToLead,
   onConvertPlanItemToDeal,
   staffAllocations: externalStaffAllocations,
-  currentUserName
+  currentUserName,
+  onOpenInputPlan
 }) => {
   const [activeSubTab, setActiveSubTab] = useState<'MY_PLAN' | 'CANDIDATES' | 'BOOKING_DEALS' | 'KOC_DIRECTORY'>('MY_PLAN');
   const [candidates, setCandidates] = useState<KocCandidateItem[]>(INITIAL_KOC_CANDIDATES);
@@ -561,6 +564,16 @@ export const BookingView: React.FC<BookingViewProps> = ({
         </div>
 
         <div className="flex items-center gap-2">
+          {onOpenInputPlan && (
+            <button
+              onClick={onOpenInputPlan}
+              className="btn-md bg-gradient-to-r from-blue-700 to-indigo-700 hover:from-blue-600 hover:to-indigo-600 text-white font-bold text-xs shadow-xs transition flex items-center gap-1.5"
+            >
+              <Calculator className="w-3.5 h-3.5 text-amber-300" />
+              <span>Phân Rã Kế Hoạch (Input Plan)</span>
+            </button>
+          )}
+
           <button
             onClick={() => setIsCreateKocOpen(true)}
             className="btn-md bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 font-semibold text-xs shadow-2xs transition"

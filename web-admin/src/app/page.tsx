@@ -18,6 +18,7 @@ import { ContractView } from '../components/views/ContractView';
 import { ManagerView } from '../components/views/ManagerView';
 import { LeaderboardView } from '../components/views/LeaderboardView';
 import { BrandHubView } from '../components/views/BrandHubView';
+import { InputPlanBreakdownView } from '../components/views/InputPlanBreakdownView';
 import SampleTrackerView from '../components/views/SampleTrackerView';
 import PerformanceP3View from '../components/views/PerformanceP3View';
 
@@ -393,6 +394,10 @@ export default function App() {
       title: 'Tổng Quan Vận Hành',
       subtitle: ''
     },
+    'input-plan': {
+      title: 'Phân Rã Kế Hoạch B2C (Input Plan Studio)',
+      subtitle: 'Breakdown đa kênh, đa nền tảng, format nội dung và định mức KOC/KOL từ KL1 ➔ KL7 với cân đối ngân sách thời gian thực'
+    },
     stores: {
       title: 'Gian Hàng & Nhãn Hàng',
       subtitle: ''
@@ -482,6 +487,7 @@ export default function App() {
               onSelectDeal={setSelectedDealForContract}
               deals={deals}
               onTaskActionClick={handleTaskActionClick}
+              onNavigateToInputPlan={() => setActiveTab('input-plan')}
             />
           )}
 
@@ -493,6 +499,21 @@ export default function App() {
                 setIsQuickBookOpen(true);
               }}
               onSelectDeal={setSelectedDealForContract}
+            />
+          )}
+
+          {activeTab === 'input-plan' && (
+            <InputPlanBreakdownView
+              currentUser={currentUser}
+              onNotify={showToast}
+              onGenerateDealsFromPlan={(newSlots) => {
+                setDetailedPlans(prev => [...newSlots, ...prev]);
+                showToast(`🚀 Đã sinh ${newSlots.length} slot KOC tác nghiệp và tự động chuyển giao sang Quản Lý Booking!`);
+                setActiveTab('booking');
+              }}
+              onApplyPlanToWeeklyStore={(weeklyPlan) => {
+                showToast(`✅ Đã lưu và đồng bộ kế hoạch ${weeklyPlan.storeName} (${weeklyPlan.week}) vào Sổ Kế Hoạch Tuần Thực Tế!`);
+              }}
             />
           )}
 
@@ -541,6 +562,7 @@ export default function App() {
               onConvertPlanItemToDeal={handleConvertPlanItemToDeal}
               staffAllocations={staffAllocations['2026/09']}
               currentUserName={currentUser.name}
+              onOpenInputPlan={() => setActiveTab('input-plan')}
             />
           )}
 
@@ -569,6 +591,7 @@ export default function App() {
               onGenerateDealsFromPlan={handleGenerateDealsFromGrowthDemand}
               onConvertPlanToDeals={handleBatchConvertPlanToDeals}
               staffAllocationsByMonth={staffAllocations}
+              onOpenInputPlan={() => setActiveTab('input-plan')}
               onUpdateStaffAllocation={(month, updatedList) => {
                 setStaffAllocations(prev => ({ ...prev, [month]: updatedList }));
                 showToast(`💾 Đã lưu điều chỉnh Ma Trận Phân Bổ tháng ${month}!`);

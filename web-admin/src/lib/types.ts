@@ -1407,3 +1407,52 @@ export interface AiEmployeeReviewResponse {
   evaluatedAt: string;
   providerUsed: string;
 }
+
+// =========================================================================
+// 🌟 7. INPUT PLAN BREAKDOWN STUDIO TYPES (PHÂN RÃ KẾ HOẠCH B2C ĐA KÊNH & ĐA BẬC)
+// =========================================================================
+
+export type InputPlanChannelType = 
+  | 'TIKTOK' 
+  | 'SHOPEE' 
+  | 'FACEBOOK' 
+  | 'INSTAGRAM' 
+  | 'THREADS' 
+  | 'SELF_CHANNEL' 
+  | 'LIVESTREAM';
+
+export interface InputPlanRowItem {
+  id: string;
+  channel: InputPlanChannelType;
+  platform: string;
+  category: 'KOC_TIER' | 'PLATFORM_FORMAT' | 'SELF_CHANNEL' | 'LIVESTREAM';
+  tierCode: SalaryGrade | 'Reup' | 'Affiliate' | 'Review voice' | 'Nhạc text' | 'Video remix' | 'Video AI' | 'POV' | 'Độc quyền' | 'Add in' | 'Daily';
+  tierLabel: string;
+  salaryGrade?: SalaryGrade;
+  contentFormat: string; // Loại nội dung (Review trực tiếp, Nỗi đau - Giải pháp, Unboxing, POV, v.v.)
+  qty: number; // Số lượng nội dung / video
+  unitCost: number; // Đơn giá VNĐ
+  benchmarkCost: number; // Đơn giá tham chiếu Upbase
+  totalBudget: number; // qty * unitCost
+  expectedRoiMultiplier: number; // ROI ước tính
+  targetGmv: number; // Doanh thu dự phóng
+  productFocus?: string;
+  notes?: string;
+  isCustomFormat?: boolean;
+}
+
+export interface InputPlanBreakdownState {
+  id: string;
+  title: string;
+  brandName: string;
+  month: string;
+  week: string;
+  pic: string;
+  totalTargetBudget: number; // Ngân sách tổng ban đầu (VNĐ)
+  totalTargetContents: number; // Số lượng nội dung tổng ban đầu
+  targetGmv: number; // GMV mục tiêu
+  cancellationRate: number; // Tỷ lệ hủy định mức (default 8%)
+  strategyPreset?: 'CUSTOM' | 'BALANCED' | 'GMV_MAX' | 'BRAND_PUSH' | 'COST_SAVER' | 'MEGA_SALE';
+  notes?: string;
+  items: InputPlanRowItem[];
+}

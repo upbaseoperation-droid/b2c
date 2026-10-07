@@ -30,10 +30,12 @@ import {
   Check,
   SlidersHorizontal,
   ShieldAlert,
-  Award
+  Award,
+  GitFork
 } from 'lucide-react';
 import { UserProfile, BrandDetail, EcomStore, HeroProduct, StorePortfolioItem, StaffMasterMember } from '../../lib/types';
 import { INITIAL_BRANDS, INITIAL_STORE_PORTFOLIOS, STAFF_MASTER_DIRECTORY } from '../../lib/mockData';
+import { MasterDataMindmapView } from './MasterDataMindmapView';
 
 interface StoresViewProps {
   currentUser: UserProfile;
@@ -45,7 +47,7 @@ export const StoresView: React.FC<StoresViewProps> = ({
   onOpenQuickBookWithBrand,
 }) => {
   const [brands, setBrands] = useState<BrandDetail[]>(INITIAL_BRANDS);
-  const [activeStoreTab, setActiveStoreTab] = useState<'STORE_PORTFOLIO' | 'BRAND_STRATEGY' | 'STAFF_MATRIX'>('STORE_PORTFOLIO');
+  const [activeStoreTab, setActiveStoreTab] = useState<'MINDMAP' | 'STORE_PORTFOLIO' | 'BRAND_STRATEGY' | 'STAFF_MATRIX'>('MINDMAP');
   const [storePortfolios, setStorePortfolios] = useState<StorePortfolioItem[]>(INITIAL_STORE_PORTFOLIOS);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
@@ -404,6 +406,20 @@ export const StoresView: React.FC<StoresViewProps> = ({
       {/* 6-Module Subtab Navigation: Module 1 Portfolio / Store Management & Master Data */}
       <div className="flex items-center gap-2 p-1.5 bg-[#101726] border border-[#1e293b] rounded-xl text-xs overflow-x-auto">
         <button
+          onClick={() => setActiveStoreTab('MINDMAP')}
+          className={`px-4 py-2 rounded-lg font-bold transition flex items-center gap-2 whitespace-nowrap ${
+            activeStoreTab === 'MINDMAP'
+              ? 'bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white shadow-md'
+              : 'text-slate-400 hover:text-white hover:bg-[#162036]'
+          }`}
+        >
+          <GitFork className="w-3.5 h-3.5 text-cyan-300" />
+          <span>🧠 1. Mindmap Master Data (Brand ➔ Gian ➔ PIC ➔ SKU)</span>
+          <span className="px-1.5 py-0.2 rounded text-[9px] bg-cyan-400/20 text-cyan-300 border border-cyan-400/40 font-black">
+            MỚI
+          </span>
+        </button>
+        <button
           onClick={() => setActiveStoreTab('STORE_PORTFOLIO')}
           className={`px-4 py-2 rounded-lg font-bold transition flex items-center gap-2 whitespace-nowrap ${
             activeStoreTab === 'STORE_PORTFOLIO'
@@ -412,7 +428,7 @@ export const StoresView: React.FC<StoresViewProps> = ({
           }`}
         >
           <Building2 className="w-3.5 h-3.5" />
-          <span>1. Danh Mục Gian Hàng & Phân Quyền ({storePortfolios.length} Shops)</span>
+          <span>2. Danh Sách Gian Hàng ({storePortfolios.length} Shops)</span>
         </button>
         <button
           onClick={() => setActiveStoreTab('BRAND_STRATEGY')}
@@ -423,7 +439,7 @@ export const StoresView: React.FC<StoresViewProps> = ({
           }`}
         >
           <Layers className="w-3.5 h-3.5" />
-          <span>2. Chiến Lược Brand & Sản Phẩm ({brands.length} Brands)</span>
+          <span>3. Chiến Lược Brand & SP ({brands.length} Brands)</span>
         </button>
         <button
           onClick={() => setActiveStoreTab('STAFF_MATRIX')}
@@ -434,9 +450,18 @@ export const StoresView: React.FC<StoresViewProps> = ({
           }`}
         >
           <Users className="w-3.5 h-3.5" />
-          <span>3. Ma Trận Phân Bổ Nhân Sự ({STAFF_MASTER_DIRECTORY.length} PICs)</span>
+          <span>4. Ma Trận Phân Bổ PICs ({STAFF_MASTER_DIRECTORY.length} Nhân Sự)</span>
         </button>
       </div>
+
+      {/* RENDER MODULE 0: INTERACTIVE MINDMAP MASTER DATA */}
+      {activeStoreTab === 'MINDMAP' && (
+        <MasterDataMindmapView
+          currentUser={currentUser}
+          onOpenQuickBookWithBrand={onOpenQuickBookWithBrand}
+          onNotify={msg => setAssignmentToast(msg)}
+        />
+      )}
 
       {/* RENDER MODULE 1: STORE PORTFOLIO MANAGEMENT */}
       {activeStoreTab === 'STORE_PORTFOLIO' && (
@@ -781,8 +806,8 @@ export const StoresView: React.FC<StoresViewProps> = ({
                   key={staff.id} 
                   className={`p-4 rounded-xl border transition ${
                     isCurrentUser 
-                      ? 'bg-blue-950/20 border-blue-500/50 shadow-md' 
-                      : 'bg-[#0b1120] border-[#1e293b] hover:border-slate-700'
+                      ? 'bg-blue-50/70 border-blue-300 shadow-xs ring-1 ring-blue-500/20' 
+                      : 'bg-white border-slate-200 hover:border-slate-300 shadow-2xs'
                   }`}
                 >
                   <div className="flex items-start justify-between gap-3">
@@ -791,42 +816,42 @@ export const StoresView: React.FC<StoresViewProps> = ({
                         {staff.avatar}
                       </div>
                       <div>
-                        <div className="font-bold text-white text-xs flex items-center gap-1.5">
+                        <div className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
                           <span>{staff.name}</span>
                           {isCurrentUser && (
-                            <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                            <span className="badge-blue px-1.5 py-0.2 rounded text-[9px] font-bold">
                               Bạn
                             </span>
                           )}
                         </div>
-                        <div className="text-[11px] text-slate-400">{staff.roleTitle}</div>
+                        <div className="text-[11px] text-slate-500">{staff.roleTitle}</div>
                       </div>
                     </div>
                     <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                      staff.role === 'BOOKING' ? 'bg-purple-500/15 text-purple-300 border border-purple-500/30' :
-                      staff.role === 'CONTENT' ? 'bg-pink-500/15 text-pink-300 border border-pink-500/30' :
-                      staff.role === 'ACCOUNT' ? 'bg-cyan-500/15 text-cyan-300 border border-cyan-500/30' :
-                      'bg-amber-500/15 text-amber-300 border border-amber-500/30'
+                      staff.role === 'BOOKING' ? 'badge-purple' :
+                      staff.role === 'CONTENT' ? 'badge-rose' :
+                      staff.role === 'ACCOUNT' ? 'badge-blue' :
+                      'badge-amber'
                     }`}>
                       {staff.team}
                     </span>
                   </div>
 
                   {/* Contact info */}
-                  <div className="text-[11px] text-slate-400 mt-3 pt-2.5 border-t border-[#1e293b]/70 flex items-center justify-between">
-                    <span>Email: <strong className="text-slate-300">{staff.email}</strong></span>
-                    {staff.phone && <span className="font-mono text-slate-400">{staff.phone}</span>}
+                  <div className="text-[11px] text-slate-500 mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between">
+                    <span>Email: <strong className="text-slate-800">{staff.email}</strong></span>
+                    {staff.phone && <span className="font-mono text-slate-500">{staff.phone}</span>}
                   </div>
 
                   {/* Workload Capacity Bar */}
                   <div className="mt-3">
                     <div className="flex items-center justify-between text-[11px] mb-1">
-                      <span className="text-slate-400 font-medium">Định mức phụ trách:</span>
-                      <span className={`font-bold ${isOverloaded ? 'text-rose-400' : 'text-emerald-400'}`}>
+                      <span className="text-slate-500 font-medium">Định mức phụ trách:</span>
+                      <span className={`font-bold ${isOverloaded ? 'text-rose-600' : 'text-emerald-600'}`}>
                         {assignedStores.length} / {staff.maxStoresCapacity} Gian hàng ({loadPct}%)
                       </span>
                     </div>
-                    <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                    <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
                       <div 
                         className={`h-full rounded-full transition-all ${
                           isOverloaded ? 'bg-rose-500' : loadPct >= 75 ? 'bg-emerald-500' : 'bg-blue-500'
@@ -837,12 +862,12 @@ export const StoresView: React.FC<StoresViewProps> = ({
                   </div>
 
                   {/* Assigned Stores List */}
-                  <div className="mt-3 pt-2.5 border-t border-[#1e293b]/70 space-y-1.5">
-                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">
+                  <div className="mt-3 pt-2.5 border-t border-slate-100 space-y-1.5">
+                    <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">
                       Các Gian Hàng Phụ Trách ({assignedStores.length}):
                     </span>
                     {assignedStores.length === 0 ? (
-                      <div className="text-[11px] text-slate-500 italic py-1">
+                      <div className="text-[11px] text-slate-400 italic py-1">
                         Chưa được phân công gian hàng nào
                       </div>
                     ) : (
@@ -850,17 +875,17 @@ export const StoresView: React.FC<StoresViewProps> = ({
                         {assignedStores.map(st => {
                           const isCoWorking = st.b2cOwners && st.b2cOwners.length > 1;
                           return (
-                            <div key={st.id} className="p-1.5 bg-[#162036] rounded-md border border-[#1e293b] flex items-center justify-between text-[11px]">
+                            <div key={st.id} className="p-1.5 bg-slate-50 rounded-md border border-slate-200 flex items-center justify-between text-[11px]">
                               <div className="truncate pr-2">
-                                <span className="font-bold text-white block truncate">{st.storeName}</span>
-                                <span className="text-[10px] text-slate-400">{st.brandName} • {st.platform}</span>
+                                <span className="font-bold text-slate-900 block truncate">{st.storeName}</span>
+                                <span className="text-[10px] text-slate-500">{st.brandName} • {st.platform}</span>
                               </div>
                               {isCoWorking ? (
-                                <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 shrink-0" title={`Đồng phụ trách cùng: ${st.b2cOwners?.filter(o => o !== staff.name).join(', ')}`}>
+                                <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 shrink-0" title={`Đồng phụ trách cùng: ${st.b2cOwners?.filter(o => o !== staff.name).join(', ')}`}>
                                   🤝 Đồng phụ trách
                                 </span>
                               ) : (
-                                <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-800 text-slate-300 border border-slate-700 shrink-0">
+                                <span className="badge-slate px-1.5 py-0.5 rounded text-[9px] font-bold shrink-0">
                                   Đơn nhiệm
                                 </span>
                               )}

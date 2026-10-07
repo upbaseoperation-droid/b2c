@@ -361,16 +361,16 @@ export const ContractView: React.FC<ContractViewProps> = ({
 
         {/* Responsive Table Container */}
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse text-xs min-w-[1240px]">
+          <table className="w-full text-left border-separate border-spacing-0 text-xs min-w-[1280px]">
             <thead>
-              <tr className="bg-slate-50/90 text-slate-600 font-semibold uppercase tracking-wider text-[11px] border-b border-slate-200">
-                <th className="py-3 px-4 w-[160px] min-w-[160px]">Mã HĐ & Nhãn Hàng</th>
-                <th className="py-3 px-4 w-[210px] min-w-[210px]">KOC & Kênh Tác Nghiệp</th>
-                <th className="py-3 px-4 w-[230px] min-w-[230px]">Chiến Dịch & Sản Phẩm</th>
-                <th className="py-3 px-4 w-[170px] min-w-[170px]">Lên Sóng & Mẫu</th>
-                <th className="py-3 px-4 w-[220px] min-w-[220px]">Tài Chính & Giải Ngân</th>
-                <th className="py-3 px-4 w-[180px] min-w-[180px]">Trạng Thái Phê Duyệt</th>
-                <th className="py-3 px-4 w-[170px] min-w-[170px] text-right sticky right-0 bg-slate-50/95 shadow-[-3px_0_6px_rgba(0,0,0,0.03)] border-l border-slate-200">
+              <tr className="bg-slate-50 text-slate-700 font-semibold uppercase tracking-wider text-[11px]">
+                <th className="py-3.5 px-4 w-[170px] min-w-[170px] border-b border-slate-200 bg-slate-50">Mã HĐ & Nhãn Hàng</th>
+                <th className="py-3.5 px-4 w-[210px] min-w-[210px] border-b border-slate-200 bg-slate-50">KOC & Kênh Tác Nghiệp</th>
+                <th className="py-3.5 px-4 w-[230px] min-w-[230px] border-b border-slate-200 bg-slate-50">Chiến Dịch & Sản Phẩm</th>
+                <th className="py-3.5 px-4 w-[160px] min-w-[160px] border-b border-slate-200 bg-slate-50">Lên Sóng & Mẫu</th>
+                <th className="py-3.5 px-4 w-[210px] min-w-[210px] border-b border-slate-200 bg-slate-50">Tài Chính & Giải Ngân</th>
+                <th className="py-3.5 px-4 w-[190px] min-w-[190px] border-b border-slate-200 bg-slate-50">Trạng Thái Phê Duyệt</th>
+                <th className="py-3.5 px-4 w-[180px] min-w-[180px] text-right sticky right-0 z-20 bg-slate-50 shadow-[-3px_0_6px_rgba(0,0,0,0.04)] border-b border-l border-slate-200">
                   Thao Tác / Lark
                 </th>
               </tr>
@@ -394,7 +394,7 @@ export const ContractView: React.FC<ContractViewProps> = ({
                       className="hover:bg-blue-50/30 transition-colors group"
                     >
                       {/* Cột 1: Mã HĐ & Brand */}
-                      <td className="py-3.5 px-4 align-top">
+                      <td className="py-3.5 px-4 align-top border-b border-slate-100">
                         <div className="flex items-center gap-1.5">
                           <span
                             onClick={() => onSelectDeal(deal)}
@@ -460,7 +460,7 @@ export const ContractView: React.FC<ContractViewProps> = ({
                       </td>
 
                       {/* Cột 2: KOC & Kênh Tác Nghiệp */}
-                      <td className="py-3.5 px-4 align-top">
+                      <td className="py-3.5 px-4 align-top border-b border-slate-100">
                         <div className="flex items-start gap-2.5">
                           <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-600 text-white font-bold text-[11px] flex items-center justify-center shrink-0 shadow-2xs">
                             {deal.kocStageName.charAt(0)}
@@ -485,7 +485,7 @@ export const ContractView: React.FC<ContractViewProps> = ({
                       </td>
 
                       {/* Cột 3: Chiến Dịch & Sản Phẩm */}
-                      <td className="py-3.5 px-4 align-top">
+                      <td className="py-3.5 px-4 align-top border-b border-slate-100">
                         <div
                           className="font-medium text-slate-800 line-clamp-1 max-w-[210px]"
                           title={deal.campaignTitle}
@@ -506,7 +506,7 @@ export const ContractView: React.FC<ContractViewProps> = ({
                       </td>
 
                       {/* Cột 4: Lên Sóng & Hàng Mẫu */}
-                      <td className="py-3.5 px-4 align-top">
+                      <td className="py-3.5 px-4 align-top border-b border-slate-100">
                         <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-800">
                           <Calendar className="w-3.5 h-3.5 text-slate-400" />
                           <span>{deal.deadlinePost || '10/10/2026'}</span>
@@ -540,7 +540,7 @@ export const ContractView: React.FC<ContractViewProps> = ({
                       </td>
 
                       {/* Cột 5: Tài Chính & Giải Ngân */}
-                      <td className="py-3.5 px-4 align-top">
+                      <td className="py-3.5 px-4 align-top border-b border-slate-100">
                         <div className="font-bold text-slate-900 text-sm whitespace-nowrap">
                           {deal.totalValue.toLocaleString('vi-VN')} <span className="text-xs font-medium text-slate-500">₫</span>
                         </div>
@@ -571,8 +571,8 @@ export const ContractView: React.FC<ContractViewProps> = ({
                       </td>
 
                       {/* Cột 6: Trạng Thái Phê Duyệt */}
-                      <td className="py-3.5 px-4 align-top">
-                        <div className="w-fit">
+                      <td className="py-3.5 px-4 align-top border-b border-slate-100">
+                        <div className="w-fit whitespace-nowrap">
                           {deal.status === 'FINAL_PAID' ? (
                             <span className="badge-emerald px-2 py-1 rounded-full text-[10px] font-bold flex items-center gap-1">
                               <CheckCircle2 className="w-3 h-3" /> Đã tất toán xong
@@ -591,14 +591,14 @@ export const ContractView: React.FC<ContractViewProps> = ({
                             </span>
                           )}
                         </div>
-                        <div className="text-[10px] text-slate-500 mt-1.5 flex items-center gap-1">
+                        <div className="text-[10px] text-slate-500 mt-1.5 flex items-center gap-1 whitespace-nowrap">
                           <CreditCard className="w-3 h-3 text-slate-400" />
                           <span>VietQR • Sẵn sàng chi</span>
                         </div>
                       </td>
 
                       {/* Cột 7: Thao Tác / Lark (Sticky Right) */}
-                      <td className="py-3.5 px-4 align-top text-right sticky right-0 bg-white/95 group-hover:bg-blue-50/95 transition-colors shadow-[-3px_0_6px_rgba(0,0,0,0.03)] border-l border-slate-200">
+                      <td className="py-3.5 px-4 align-top text-right sticky right-0 z-10 bg-white group-hover:bg-slate-50 transition-colors shadow-[-3px_0_6px_rgba(0,0,0,0.04)] border-b border-l border-slate-200">
                         <div className="flex flex-col items-end gap-1.5">
                           {/* Nút Chi Đợt 1 (Cọc) */}
                           {deal.status !== 'ADVANCE_PAID' &&

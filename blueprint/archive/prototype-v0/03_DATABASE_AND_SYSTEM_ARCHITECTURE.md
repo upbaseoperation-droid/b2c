@@ -1,9 +1,11 @@
+> **LƯU TRỮ — prototype v0 (30/09/2026).** Tài liệu này mô tả prototype `B2C/web-admin`, không phải yêu cầu đã duyệt. Không dùng làm căn cứ cho giai đoạn 2. Lý do và tài liệu thay thế: [README lưu trữ](README.md), `HUB:DEC-003`.
+
 # KIẾN TRÚC DỮ LIỆU & HỆ THỐNG HYBRID (GIẢI QUYẾT TRIỆT ĐỂ GIẬT LAG LARK)
 ## Nền tảng quản trị vận hành tốc độ cao cho Marketing B2C Upbase
 
-> **Khoảng cách thiết kế 24/09/2026:** Mô hình `BookingDeal`–`Contract` một-một đang mô tả prototype, chưa đáp ứng HĐNT, phụ lục/SOW gom nhiều BO cùng KOC và tháng, cũng như phụ lục bổ sung cho BO phát sinh sau ký. Đây là yêu cầu SDLC giai đoạn 1 tại [BRD booking đa nền tảng](08_BOOKING_MULTIPLATFORM_BRD.md). Chưa sửa schema triển khai trước khi chốt các điểm còn mở trong BRD.
+> **Khoảng cách thiết kế 24/09/2026:** Mô hình `BookingDeal`–`Contract` một-một đang mô tả prototype, chưa đáp ứng HĐNT, phụ lục/SOW gom nhiều BO cùng KOC và tháng, cũng như phụ lục bổ sung cho BO phát sinh sau ký. Đây là yêu cầu SDLC giai đoạn 1 tại [BRD booking đa nền tảng](../../../../Upaffiliate/blueprint/1-requirements/1.3_BRD_BOOKING_MULTIPLATFORM.md). Chưa sửa schema triển khai trước khi chốt các điểm còn mở trong BRD.
 
-> **Đầu vào plan Growth:** Plan nguồn đang trên Lark. Kết nối API là phương án khả thi nếu xác định được Base/Sheets và app có quyền đọc. Trong giai đoạn 1 chưa chốt API, webhook hay schema đồng bộ; yêu cầu thử nghiệm và quy tắc nguồn dữ liệu ghi tại [BRD mục 2b](08_BOOKING_MULTIPLATFORM_BRD.md#2b-khả-thi-tích-hợp-plan-growth-từ-lark--cần-xác-minh-tại-tenant).
+> **Đầu vào plan Growth:** Plan nguồn đang trên Lark. Kết nối API là phương án khả thi nếu xác định được Base/Sheets và app có quyền đọc. Trong giai đoạn 1 chưa chốt API, webhook hay schema đồng bộ; yêu cầu thử nghiệm và quy tắc nguồn dữ liệu ghi tại [BRD mục 2b](../../../../Upaffiliate/blueprint/1-requirements/1.3_BRD_BOOKING_MULTIPLATFORM.md#2b-khả-thi-tích-hợp-plan-growth-từ-lark--cần-xác-minh-tại-tenant).
 
 > **Phạm vi dữ liệu:** Bản xuất `4.1 Plan order tổng.xlsx` có 228 cột, gồm nhiều nhóm lịch sử, vận hành và báo cáo. Thiết kế tích hợp phải dùng danh sách trường plan Growth được chốt trong BRD, giữ ID nguồn và trạng thái duyệt; không sao chép nguyên bảng 228 cột vào mô hình plan Booking.
 

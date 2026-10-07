@@ -14,13 +14,15 @@ import {
   ShieldCheck,
   Package,
   Coins,
-  BookOpen
+  BookOpen,
+  Calculator
 } from 'lucide-react';
 import { UserProfile } from '../lib/types';
 
 export type TabKey =
   | 'cockpit'
   | 'overview'
+  | 'input-plan'
   | 'stores'
   | 'campaigns'
   | 'brand-knowledge'
@@ -78,6 +80,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
     {
       title: 'TÁC NGHIỆP PHÂN HỆ',
       items: [
+        {
+          key: 'input-plan',
+          label: 'Phân Rã Kế Hoạch (Input Plan)',
+          icon: Calculator,
+          badge: 'Tốc Độ',
+          badgeType: 'team'
+        },
         {
           key: 'booking',
           label: 'Quản Lý Booking',

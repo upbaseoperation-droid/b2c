@@ -1,3 +1,5 @@
+> **LƯU TRỮ — prototype v0 (30/09/2026).** Tài liệu này mô tả prototype `B2C/web-admin`, không phải yêu cầu đã duyệt. Không dùng làm căn cứ cho giai đoạn 2. Lý do và tài liệu thay thế: [README lưu trữ](README.md), `HUB:DEC-003`.
+
 # ĐẶC TẢ HỆ THỐNG TÀI KHOẢN, XÁC THỰC & PHÂN QUYỀN (AUTH & RBAC SPEC)
 ## Dự án: Upbase B2C Marketing Operations Hub
 ### Phân loại lộ trình: Bản đặc tả thiết kế chuẩn — Sẽ phát triển chuyên sâu ở Giai đoạn 2 (Phase 2)

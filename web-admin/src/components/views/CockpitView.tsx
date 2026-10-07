@@ -1,12 +1,12 @@
 'use client';
 
-import React from 'react';
 import {
   Clock,
   AlertCircle,
   CheckCircle2,
   ArrowRight,
   ExternalLink,
+  Calculator
 } from 'lucide-react';
 import { SlaTask, UserProfile, BookingDealItem } from '../../lib/types';
 
@@ -18,6 +18,7 @@ interface CockpitViewProps {
   onSelectDeal: (deal: BookingDealItem) => void;
   deals: BookingDealItem[];
   onTaskActionClick?: (task: SlaTask) => void;
+  onNavigateToInputPlan?: () => void;
 }
 
 export const CockpitView: React.FC<CockpitViewProps> = ({
@@ -27,6 +28,7 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
   onSelectDeal,
   deals,
   onTaskActionClick,
+  onNavigateToInputPlan
 }) => {
   const relevantTasks = tasks.filter(t => {
     if (currentUser.role === 'MANAGER' || currentUser.role === 'ADMIN') return true;
@@ -71,6 +73,37 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Quick Access to Input Plan Studio */}
+      {onNavigateToInputPlan && (
+        <div className="p-4 rounded-xl bg-gradient-to-r from-slate-900 via-blue-950 to-indigo-950 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-blue-900/60 shadow-sm">
+          <div className="flex items-center gap-3.5">
+            <div className="w-10 h-10 rounded-lg bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+              <Calculator className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-xs font-bold text-white uppercase tracking-wider">
+                  Phân Rã Kế Hoạch B2C (Input Plan Studio)
+                </h3>
+                <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-amber-400 text-slate-950 uppercase">
+                  Mới
+                </span>
+              </div>
+              <p className="text-xs text-slate-300 mt-0.5">
+                Nhập ngân sách & số lượng ➔ Break đa kênh, đa nền tảng, loại nội dung & 7 bậc KOC (KL1 ➔ KL7) với cân đối thời gian thực
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={onNavigateToInputPlan}
+            className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold flex items-center justify-center gap-1.5 shrink-0 transition shadow-xs"
+          >
+            <span>Mở Lập Kế Hoạch</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
 
       {/* Task List */}
       <div className="rounded-xl bg-white border border-slate-200 shadow-xs overflow-hidden">

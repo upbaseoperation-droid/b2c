@@ -1,0 +1,198 @@
+Tổng hợp vấn đề về luồng quản lý job (có cast)
+1. Tổng quan hệ thống:
+Gồm các Entity: 
+Koc: 1 koc có thể đky nh job 
+Campaign: thông tin chung để koc đky -> tạo thành các job, 1 camp cso thể có 1 or nhiều sp
+Sản phẩm: sp trong camp, koc dùng để lấy link aff, 1 sp có thể có 1 or nh PL
+Phân loại: dùng để phát sinh đơn gửi sample 
+Job: chỉ có 1 koc đăng ký, có thể 1 hoặc nh asset 
+Asset: là vid/live trong job, map vs sp, 1 asset có thể có nhiều SOW (gán giỏ, sd hình ảnh, quảng cáo, reup, ....)
+Tham khảo thêm: Booking đa sàn
+2. SOW và cách phân bổ chi phí 
+Luồng vận hành thực tế : 
+Vận hành sẽ nhận thông tin của Brand muốn chạy aff trên 1 hay đa nền tảng -> sau đó sẽ lên plan ngân sách, số lượng vid, est GMV cho từng nền tảng 
+Làm việc với KOC để book job (nếu book KOC đa nền tảng sẽ trao đổi luôn trong 1 lần)
+Làm hợp đồng cho KOC theo nội dung đã chốt của lần trao đổi (nếu book đa nền tảng thì cũng chỉ làm 1 hđ)
+Nghiệm thu theo từng vid - tương ứng với từng BO trên Lark 
+Có thể mua thêm 1 dịch vụ sau khi thấy hiệu quả: gia hạn chạy ads, ....
+VD:  
+Tình huống
+Lần trao đổi 
+Số lần ký hđ/phụ lục  
+Số job 
+Số vid cần trả 
+Số BO (Lark) 
+Số lần thanh toán 
+KOC chỉ nhận làm vid mới trên Tiktok 
+1
+1
+1
+1
+1
+ko tạm ứng: 1
+có tạm ứng (số tạm ứng < cast): 2 
+KOC nhận làm vid mới trên Tikotk & reup trên Shopee - chốt trong 1 lần trao đổi 
+1
+1
+1
+2
+2
+ko tạm ứng: 1
+có tạm ứng (số tạm ứng < cast): 2 
+KOC nhận làm vid mới trên Tikotk & reup trên Shopee - chốt trong 2 lần trao đổi 
+2
+2
+2
+2
+2
+ko tạm ứng: 2
+có tạm ứng (số tạm ứng < cast): 3 or 4
+Vấn đề: 
+chi phí booking hiện tại chỉ tổng hợp cho Tiktok, tuy nhiên vận hành lại tận dụng tài nguyên của Tiktok để scale đa nền tảng => ko hoạch toán đc chi phí hiệu quả theo từng kênh
+Mong muốn: bóc tách rõ các chi phí để đánh giá hiệu quả, giảm thiểu số lượng hđ phải ký  
+Bảng 1:  tổng hợp các SOW & cách phân bổ chi phí mong muốn: 
+(Tham khảo các định nghĩa ở đây: Quy trình Booking - Tech)
+SOW 
+Đối tượng tác động 
+Phân bổ chí phí 
+Noted 
+Sản xuất nội dung: theo 1 trong các hình thức: 
+mới 
+adapt 
+cross-post 
+Post-only
+Production-only
+Cut-down / Re-edit
+-> mỗi hình thức sẽ có mức chi phí khác nhau (tuy nhiên hệ thống UpA đang chỉ hỗ trợ mới)
+Từng asset 
+Theo từng nền tảng up vid 
+ví dụ: 
+camp Tiktok book KOC A lên 1 vid mới (sp tikotk) & yêu cầu thêm p adapt  trên FB 1 vid 
+-> cần nghiệm thu 2 vid 
+Gắn link sản phẩm (add showcase)
+Từng asset 
+Theo campaign store 
+Gắn link affiliate  (add vào vid)
+Từng asset 
+Theo campaign store 
+Cấp quyền chạy quảng cáo 
+-> có thời gian sd 
+Từng asset 
+Theo campaign store 
+Quyền sử dụng hình ảnh-> cần chọn sàn  & có thời gian sd 
+Từng KOC 
+Phân bổ theo nền tảng: chia đều
+thường 2 mục này bên A sẽ deal thành 1 mức giá -> nhưng vẫn có số ít koc chia nhỏ để deal 
+Quyền sử dụng video-> cần chọn sàn  & có thời gian sd 
+Từng asset 
+Phân bổ theo nền tảng: chia đều
+3. Vấn đề UX: 
+3.1  UX chung: 
+1 asset nhiều SOW, 1 SOW lại có nhiều thông tin cần xem  & các thông tin khác(yêu cầu nội dung, hạn air) => Hiển thị trên app vs KOC thì rất nhiều thông tin (1 job có thể có nhiều sp, 1 sp nhiều asset)
+Bảng 2:  tổng hợp thông tin của 1 deal (theo tổ chức dữ liệu)
+Group 
+Chi tiết 
+Noted 
+Deal 
+lời mời 
+thông tin brand 
+thời gian diễn ra 
+cast tổng 
+Sản phẩm aff
+thông tin sp 
+brief sp 
+có thể dùng chung trong deal vì hiện tại vận hành đg làm 1 pp tất cả các sp hot
+hình thức quảng cáo 
+số lượng asset 
+Cms, cms ads 
+Asset 
+tuyến content 
+số lần duyệt 
+có thể dùng chung cho nh asset 
+thời gian air 
+cast 
+SOW & phí  (bảng 1)
+lần thanh toán & thời gian 
+có thể dùng chung cho nh asset/đi theo deal 
+Sản phẩm trải nghiệm/sp mẫu 
+Phân loại  
+Số lượng 
+Với cách thức sxuất nội dung: cần clear rõ adapt/cross-post sẽ bóc thành 1 yc về video riêng hay chỉ là 1 SOW add - in trong vid mới (nhu cầu cần nghiệm thu cả 2 vid, tương ứng vs Lark sẽ có 2 BO)
+VD: yêu cầu koc A lên vid Tiktok (vid mới) & cross-post 1 vid trên Fb
+hướng UX 1: 
+video 
+SL 
+SOW 
+video 1 
+1
+cross-post 1 vid trên Fb
+hướng UX 2: 
+video 
+cách thức sx
+video 1
+1
+mới 
+video 2
+1
+cross-post
+SL =1 
+ND: Theo vid 1 
+3.2 UX hiển thị dynamic theo từng đối tượng: 
+KOC nhỏ: 
+Agency có thể đề xuất luôn mức cast
+Agency ko muốn hiển thị giá theo các SOW vì sợ KOC nhìn thấy họ hiểu là họ có thể deal (thường các koc nhỏ thì họ sẽ free các dịch vụ thêm cho mình)
+KOC lớn: 
+Agency thường ko đưa mức cast từ đầu mà để KOC tự đề xuất
+Hành vi của KOC thường bóc tách nhỏ các chi phí dịch vụ: cần clear rõ chi phí sản xuất nội dung  & chi phí dịch vụ add-in 
+ 
+4. Analystic 
+Định nghĩa: 
+kênh truyền thông: là kênh mà koc p đăng tải vid/live,...
+kênh aff: là kênh ghi nhận hoa hồng bán sp
+Phương án 
+VD: 
+Booking nhận hợp tác vs Brand X, chạy đa nền tảng Shopee, Tiktok
+Lên 1  vid trên chính kênh Tikotk cá nhân của KOC - gán link aff Tiktok
+Lên 1 vid cross-post lại vid Tiktok trên chính kênh Fb cá nhân của KOC - gán link aff Shopee 
+Cần lên partner tạo 2Camp 
+1 cho Shopee -> S1, 
+1 cho Tiktik -> T1
+Ưu
+Nhược 
+Phương án 1: 
+Thêm 1 layer camp Brand: gồm nhiều camp sàn (Shopee, Tiktok, UB,...)
+Quản lý thêm thông tin kênh truyền thông
+Hiển thị vs KOC theo camp Brand 
+Job phát sinh theo camp Brand 
+Về Agency UpS thêm 1 camp tổng Brand X -> camp X
+Add 2 camp S1 & T1 vào Camp tổng 
+Hiển thị camp X trên Hub cho KOC đăng ký 
+KOC đăng ký -> phát sinh 1 job, phải trả 2 vid 
+vid 1 up trên Tiktok - gán link aff T
+vid 2 up trên FB- gán link aff S
+chạy đc camp đa nền tảng
+tối ưu chi phí sample 
+Mối quan hệ giữa các entity phức tạp 
+Tổ chức lại UX: 1 camp p có đủ thông tin của các kênh bán
+Nếu quy trình nhiều bạn nhân sự care booking trên 1 kênh bán thì ko phân quyền đc  
+Logic ghi nhận đơn chưa rõ nên theo kênh bán nào 
+Vid 2 phải phụ thuộc vào vid 1 nên để cùng trong 1 job khó xử lý 
+Phương án 2: 
+Thêm 1 layer camp Brand: gồm nhiều camp sàn (Shopee, Tiktok, UB,...)
+Quản lý thêm thông tin kênh truyền thông
+Hiển thị vs KOC theo camp Brand 
+Job phát sinh theo kênh aff (kênh bán)  
+=> Sugesstion 
+Về Agency UpS thêm 1 camp tổng Brand X -> camp X
+Add 2 camp S1 & T1 vào Camp tổng 
+Hiển thị camp X trên Hub cho KOC đăng ký 
+KOC đăng ký -> phát sinh 2 job, 
+job 1: 1 vid up trên Tiktok - gán link aff T
+job 2 (phụ thuộc vào job 1 done): 1 vid up trên FB - gán link aff S 
+chạy đc camp đa nền tảng
+tối ưu chi phí sample 
+Mối quan hệ giữa các entity phức tạp 
+Tổ chức lại UX: 1 camp p có đủ thông tin của các kênh bán
+Nếu quy trình nhiều bạn nhân sự care booking trên 1 kênh bán thì ko phân quyền đc  
+Logic ghi nhận đơn chưa rõ nên theo kênh bán nào 
+Tổ chức Camp Brand 

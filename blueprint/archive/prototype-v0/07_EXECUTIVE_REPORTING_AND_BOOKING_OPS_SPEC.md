@@ -1,14 +1,16 @@
+> **LƯU TRỮ — prototype v0 (30/09/2026).** Tài liệu này mô tả prototype `B2C/web-admin`, không phải yêu cầu đã duyệt. Không dùng làm căn cứ cho giai đoạn 2. Lý do và tài liệu thay thế: [README lưu trữ](README.md), `HUB:DEC-003`.
+
 # ĐẶC TẢ BÁO CÁO ĐIỀU HÀNH & HỆ THỐNG TÁC NGHIỆP BOOKING B2C
 ## Dựa trên Báo cáo Vận hành & Dữ liệu Thực tế Phòng Marketing B2C Upbase
 
-> **Cập nhật yêu cầu 24/09/2026:** Trong phạm vi booking đa nền tảng, **job = BO**. Một BO có một tổ hợp Platform × Content Type × Format × Model. HĐNT dùng chung cho KOC; phụ lục/SOW gom các BO cùng KOC và tháng, kể cả nhiều brand/store; BO phát sinh sau khi phụ lục tháng ký đi vào phụ lục bổ sung. Các mô tả hợp đồng theo từng job bên dưới là hiện trạng prototype cần thiết kế lại. Xem [BRD booking đa nền tảng](08_BOOKING_MULTIPLATFORM_BRD.md).
+> **Cập nhật yêu cầu 24/09/2026:** Trong phạm vi booking đa nền tảng, **job = BO**. Một BO có một tổ hợp Platform × Content Type × Format × Model. HĐNT dùng chung cho KOC; phụ lục/SOW gom các BO cùng KOC và tháng, kể cả nhiều brand/store; BO phát sinh sau khi phụ lục tháng ký đi vào phụ lục bổ sung. Các mô tả hợp đồng theo từng job bên dưới là hiện trạng prototype cần thiết kế lại. Xem [BRD booking đa nền tảng](../../../../Upaffiliate/blueprint/1-requirements/1.3_BRD_BOOKING_MULTIPLATFORM.md).
 
-> **Cập nhật phân công plan:** Growth thuộc team vận hành sàn lập plan/order đầu vào theo từng nền tảng; **Content phân rã order đó thành plan chi tiết**. Các mục “Growth Demand Breakdown Cockpit” và “My Plan Workspace” bên dưới đang mô tả Booking phân rã plan theo prototype; chưa phản ánh phân công đã xác nhận. Xem [BRD](08_BOOKING_MULTIPLATFORM_BRD.md#2a-khảo-sát-ranh-giới-lập-plan--chưa-chốt-raci).
+> **Cập nhật phân công plan:** Growth thuộc team vận hành sàn lập plan/order đầu vào theo từng nền tảng; **Content phân rã order đó thành plan chi tiết**. Các mục “Growth Demand Breakdown Cockpit” và “My Plan Workspace” bên dưới đang mô tả Booking phân rã plan theo prototype; chưa phản ánh phân công đã xác nhận. Xem [BRD](../../../../Upaffiliate/blueprint/1-requirements/1.3_BRD_BOOKING_MULTIPLATFORM.md#2a-khảo-sát-ranh-giới-lập-plan--chưa-chốt-raci).
 
 > **Mức chi tiết đã chốt:** Growth giao số tổng theo nền tảng và tổng ngân sách; Content phân rã theo năm chiều booking (Platform, Content Type, Format, Model, KL). Báo cáo plan phải đối soát tổng số lượng từng nền tảng và ngân sách Content phân bổ với số Growth giao; không dùng luồng Booking tự phân rã trong prototype làm nguồn quy tắc nghiệp vụ.
 
-> **Nhịp T−1 đã chốt:** List booking Đợt 1 của tháng T phải hoàn thành chậm nhất **ngày 10/T−1**; số plan Growth chốt đến **ngày 25/T−1**. Theo dõi riêng mốc hoàn thành list và kết quả đối soát sau khi Content phân rã từ số Growth chốt. Tiêu chí “list xong” và phạm vi cam kết trước ngày 25 còn mở tại [BRD BR-10](08_BOOKING_MULTIPLATFORM_BRD.md).
-> **Nhịp booking tháng đã chốt:** Booking có **3 đợt/tháng**; ngày 10/T−1 chỉ là hạn của list Đợt 1. Báo cáo cần lọc theo từng đợt và cộng lên tổng tháng; lịch Đợt 2/3 chưa chốt tại [BRD BR-11](08_BOOKING_MULTIPLATFORM_BRD.md).
+> **Nhịp T−1 đã chốt:** List booking Đợt 1 của tháng T phải hoàn thành chậm nhất **ngày 10/T−1**; số plan Growth chốt đến **ngày 25/T−1**. Theo dõi riêng mốc hoàn thành list và kết quả đối soát sau khi Content phân rã từ số Growth chốt. Tiêu chí “list xong” và phạm vi cam kết trước ngày 25 còn mở tại [BRD BR-10](../../../../Upaffiliate/blueprint/1-requirements/1.3_BRD_BOOKING_MULTIPLATFORM.md).
+> **Nhịp booking tháng đã chốt:** Booking có **3 đợt/tháng**; ngày 10/T−1 chỉ là hạn của list Đợt 1. Báo cáo cần lọc theo từng đợt và cộng lên tổng tháng; lịch Đợt 2/3 chưa chốt tại [BRD BR-11](../../../../Upaffiliate/blueprint/1-requirements/1.3_BRD_BOOKING_MULTIPLATFORM.md).
 
 ---
 

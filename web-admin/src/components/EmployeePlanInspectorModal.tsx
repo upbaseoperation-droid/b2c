@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   X, 
   CheckCircle2, 
@@ -58,16 +58,22 @@ export const EmployeePlanInspectorModal: React.FC<EmployeePlanInspectorModalProp
   onConvertPlanToDeals,
   currentUser
 }) => {
-  if (!isOpen || !staffAllocation) return null;
-
   const isManager = currentUser ? currentUser.role === 'MANAGER' : true;
   const [selectedWeekFilter, setSelectedWeekFilter] = useState<'ALL' | 'W1' | 'W2' | 'W3' | 'W4'>('ALL');
   const [selectedTierFilter, setSelectedTierFilter] = useState<'ALL' | KocTier>('ALL');
   const [searchTerm, setSearchTerm] = useState('');
-  const [managerFeedback, setManagerFeedback] = useState(staffAllocation.managerNote || '');
+  const [managerFeedback, setManagerFeedback] = useState(staffAllocation?.managerNote || '');
   const [editingItem, setEditingItem] = useState<StaffDetailedPlanItem | null>(null);
   const [editNotes, setEditNotes] = useState('');
   const [isAiReviewOpen, setIsAiReviewOpen] = useState(false);
+
+  useEffect(() => {
+    if (staffAllocation?.managerNote) {
+      setManagerFeedback(staffAllocation.managerNote);
+    }
+  }, [staffAllocation]);
+
+  if (!isOpen || !staffAllocation) return null;
 
   // Calculations
   const staffItems = planItems.filter(item => item.staffName === staffAllocation.staffName);

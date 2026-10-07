@@ -1,3 +1,5 @@
+> **LƯU TRỮ — prototype v0 (30/09/2026).** Tài liệu này mô tả prototype `B2C/web-admin`, không phải yêu cầu đã duyệt. Không dùng làm căn cứ cho giai đoạn 2. Lý do và tài liệu thay thế: [README lưu trữ](README.md), `HUB:DEC-003`.
+
 # QUY CHẾ TÍNH ĐIỂM THI ĐUA (GAMIFICATION LEADERBOARD) & ĐÁNH GIÁ HIỆU SUẤT
 ## Tạo động lực chủ động, minh bạch và tách bạch Năng lực vs Kết quả cho phòng Marketing B2C Upbase
 

@@ -1,3 +1,5 @@
+> **LƯU TRỮ — prototype v0 (30/09/2026).** Tài liệu này mô tả prototype `B2C/web-admin`, không phải yêu cầu đã duyệt. Không dùng làm căn cứ cho giai đoạn 2. Lý do và tài liệu thay thế: [README lưu trữ](README.md), `HUB:DEC-003`.
+
 # ĐẶC TẢ HỆ THỐNG THIẾT KẾ ĐỒNG NHẤT (ENTERPRISE DESIGN SYSTEM SPEC)
 ## Dự án: Upbase B2C Marketing Operations Hub
 ### Phong Cách: Enterprise SaaS Light Theme (Sáng Rõ, Hiện Đại, Chuẩn Mực Doanh Nghiệp)

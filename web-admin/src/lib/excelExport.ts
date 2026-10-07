@@ -1,5 +1,5 @@
 import ExcelJS from 'exceljs';
-import { GrowthDemandItem, GrowthDemandBreakdownTier } from './types';
+import { GrowthDemandItem, GrowthDemandBreakdownTier, InputPlanBreakdownState } from './types';
 import { MOCK_WEEKLY_PLANS_411 } from './mockData';
 
 export async function exportPlanOrderToExcel(demand: GrowthDemandItem, breakdown: GrowthDemandBreakdownTier[]) {
@@ -516,6 +516,212 @@ export async function downloadWeeklyTemplate411() {
   const a = document.createElement('a');
   a.href = url;
   a.download = `Template_Input_Plan_4.1.1.xlsx`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// =========================================================================
+// 🌟 XUẤT FILE 4.1.1 INPUT PLAN TỪ INPUT PLAN STUDIO (CHUẨN 61 CỘT UPBASE)
+// =========================================================================
+export async function exportInputPlanStudioToExcel(state: InputPlanBreakdownState) {
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = 'Upbase B2C Operations';
+  workbook.lastModifiedBy = state.pic || 'Booking Lead';
+  workbook.created = new Date();
+
+  const ws = workbook.addWorksheet('4.1.1 Input plan', { views: [{ showGridLines: true }] });
+
+  // 61 Headers exactly matching Upbase file
+  const fullHeaders = [
+    'Tháng', 'Ngày đầu tháng', 'Người phụ trách', 'Store', 'Tuần', 'Cảnh báo', 'Plan điểm hiệu suất',
+    'TikTok_Tổng affiliate', 'TAP UpAffiliate', 'KL1', 'KL2', 'KL3', 'KL4', 'KL5', 'KL6', 'KL7',
+    'TikTok_Tổng ngân sách affiliate', 'Ngân sách KL1', 'Ngân sách KL2', 'Ngân sách KL3', 'Ngân sách KL4', 'Ngân sách KL5', 'Ngân sách KL6', 'Ngân sách KL7',
+    'Shopee_Reup', 'Shopee_Affiliate', 'Shopee_Ngân sách affiliate',
+    'Facebook_Reup', 'Facebook_Affiliate', 'Facebook_Ngân sách affiliate',
+    'Instagram_Reup', 'Instagram_Affiliate', 'Instagram_Ngân sách affiliate',
+    'Threads_Reup', 'Threads_Affiliate', 'Threads_Ngân sách affiliate',
+    'Tổng video self channel', 'Review voice', 'Nhạc text', 'Video remix', 'Video AI', 'POV', 'Tổng ngân sách video self channel',
+    'Độc quyền_Số phiên', 'Độc quyền_Ngân sách', 'Add in_Số phiên', 'Add in_Ngân sách', 'Daily_Số phiên', 'Daily_Ngân sách',
+    'Booking PIC', 'Ngày trong tháng', '(This month) GMV 30 ngày', '(Last month) GMV 30 ngày', 'Note', 'Leader', 'Store_text', 'Week', 'Brand',
+    'Tổng số phiên livestream affiliate', 'Tổng ngân sách livestream affiliate'
+  ];
+
+  const headerRow = ws.getRow(1);
+  headerRow.height = 28;
+  fullHeaders.forEach((text, i) => {
+    const cell = headerRow.getCell(i + 1);
+    cell.value = text;
+    cell.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: i < 7 ? '1E293B' : i < 24 ? '1D4ED8' : i < 36 ? 'EA580C' : i < 43 ? '0D9488' : i < 49 ? '7C3AED' : '334155' }
+    };
+    cell.font = { name: 'Segoe UI', size: 10, bold: true, color: { argb: 'FFFFFF' } };
+    cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+    cell.border = {
+      top: { style: 'thin', color: { argb: '94A3B8' } },
+      bottom: { style: 'thin', color: { argb: '94A3B8' } },
+      left: { style: 'thin', color: { argb: '94A3B8' } },
+      right: { style: 'thin', color: { argb: '94A3B8' } }
+    };
+  });
+
+  // Extract counts and budgets from state items
+  const getItem = (id: string) => state.items.find(it => it.id === id);
+  const ttTap = getItem('row-tt-tap')?.qty || 0;
+  const ttKl1 = getItem('row-tt-kl1')?.qty || 0;
+  const ttKl2 = getItem('row-tt-kl2')?.qty || 0;
+  const ttKl3 = getItem('row-tt-kl3')?.qty || 0;
+  const ttKl4 = getItem('row-tt-kl4')?.qty || 0;
+  const ttKl5 = getItem('row-tt-kl5')?.qty || 0;
+  const ttKl6 = getItem('row-tt-kl6')?.qty || 0;
+  const ttKl7 = getItem('row-tt-kl7')?.qty || 0;
+  const ttTotalAff = ttTap + ttKl1 + ttKl2 + ttKl3 + ttKl4 + ttKl5 + ttKl6 + ttKl7;
+
+  const bgKl1 = getItem('row-tt-kl1')?.totalBudget || 0;
+  const bgKl2 = getItem('row-tt-kl2')?.totalBudget || 0;
+  const bgKl3 = getItem('row-tt-kl3')?.totalBudget || 0;
+  const bgKl4 = getItem('row-tt-kl4')?.totalBudget || 0;
+  const bgKl5 = getItem('row-tt-kl5')?.totalBudget || 0;
+  const bgKl6 = getItem('row-tt-kl6')?.totalBudget || 0;
+  const bgKl7 = getItem('row-tt-kl7')?.totalBudget || 0;
+  const bgTotalTt = bgKl1 + bgKl2 + bgKl3 + bgKl4 + bgKl5 + bgKl6 + bgKl7;
+
+  const shopeeReup = getItem('row-shopee-reup')?.qty || 0;
+  const shopeeAff = getItem('row-shopee-aff')?.qty || 0;
+  const shopeeBudget = (getItem('row-shopee-reup')?.totalBudget || 0) + (getItem('row-shopee-aff')?.totalBudget || 0);
+
+  const fbReup = getItem('row-fb-reup')?.qty || 0;
+  const fbAff = getItem('row-fb-aff')?.qty || 0;
+  const fbBudget = (getItem('row-fb-reup')?.totalBudget || 0) + (getItem('row-fb-aff')?.totalBudget || 0);
+
+  const igReup = 0;
+  const igAff = getItem('row-ig-aff')?.qty || 0;
+  const igBudget = getItem('row-ig-aff')?.totalBudget || 0;
+
+  const threadsReup = 0;
+  const threadsAff = getItem('row-threads-aff')?.qty || 0;
+  const threadsBudget = getItem('row-threads-aff')?.totalBudget || 0;
+
+  const selfVoice = getItem('row-self-voice')?.qty || 0;
+  const selfMusic = getItem('row-self-music')?.qty || 0;
+  const selfRemix = getItem('row-self-remix')?.qty || 0;
+  const selfAi = getItem('row-self-ai')?.qty || 0;
+  const selfPov = getItem('row-self-pov')?.qty || 0;
+  const selfTotal = selfVoice + selfMusic + selfRemix + selfAi + selfPov;
+  const selfBudget = (getItem('row-self-voice')?.totalBudget || 0) +
+    (getItem('row-self-music')?.totalBudget || 0) +
+    (getItem('row-self-remix')?.totalBudget || 0) +
+    (getItem('row-self-ai')?.totalBudget || 0) +
+    (getItem('row-self-pov')?.totalBudget || 0);
+
+  const liveExclusive = getItem('row-live-exclusive')?.qty || 0;
+  const liveExclusiveBudget = getItem('row-live-exclusive')?.totalBudget || 0;
+  const liveAddin = getItem('row-live-addin')?.qty || 0;
+  const liveAddinBudget = getItem('row-live-addin')?.totalBudget || 0;
+  const liveDaily = getItem('row-live-daily')?.qty || 0;
+  const liveDailyBudget = getItem('row-live-daily')?.totalBudget || 0;
+  const liveTotalSessions = liveExclusive + liveAddin + liveDaily;
+  const liveTotalBudget = liveExclusiveBudget + liveAddinBudget + liveDailyBudget;
+
+  const brandOnly = state.brandName.split('_')[0] || state.brandName;
+
+  const dataValues = [
+    state.month,
+    `${state.month}-01`,
+    state.pic,
+    state.brandName,
+    state.week,
+    '', // Cảnh báo
+    '1.2', // Plan điểm hiệu suất
+    ttTotalAff,
+    ttTap,
+    ttKl1,
+    ttKl2,
+    ttKl3,
+    ttKl4,
+    ttKl5,
+    ttKl6,
+    ttKl7,
+    bgTotalTt,
+    bgKl1,
+    bgKl2,
+    bgKl3,
+    bgKl4,
+    bgKl5,
+    bgKl6,
+    bgKl7,
+    shopeeReup,
+    shopeeAff,
+    shopeeBudget,
+    fbReup,
+    fbAff,
+    fbBudget,
+    igReup,
+    igAff,
+    igBudget,
+    threadsReup,
+    threadsAff,
+    threadsBudget,
+    selfTotal,
+    selfVoice,
+    selfMusic,
+    selfRemix,
+    selfAi,
+    selfPov,
+    selfBudget,
+    liveExclusive,
+    liveExclusiveBudget,
+    liveAddin,
+    liveAddinBudget,
+    liveDaily,
+    liveDailyBudget,
+    state.pic,
+    '1',
+    state.targetGmv || 750000000,
+    Math.round((state.targetGmv || 750000000) * 0.85),
+    state.notes || '',
+    'Đặng Thị Yến Nhi',
+    state.brandName,
+    state.week,
+    brandOnly,
+    liveTotalSessions,
+    liveTotalBudget
+  ];
+
+  const row2 = ws.getRow(2);
+  row2.height = 22;
+  dataValues.forEach((val, i) => {
+    const cell = row2.getCell(i + 1);
+    cell.value = val;
+    cell.font = { name: 'Segoe UI', size: 10 };
+    cell.border = {
+      top: { style: 'thin', color: { argb: 'CBD5E1' } },
+      bottom: { style: 'thin', color: { argb: 'CBD5E1' } },
+      left: { style: 'thin', color: { argb: 'CBD5E1' } },
+      right: { style: 'thin', color: { argb: 'CBD5E1' } }
+    };
+    if (typeof val === 'number') {
+      if (val > 1000) {
+        cell.numFmt = '#,##0" ₫"';
+      }
+      cell.alignment = { horizontal: 'right', vertical: 'middle' };
+    } else {
+      cell.alignment = { horizontal: 'left', vertical: 'middle' };
+    }
+  });
+
+  // Adjust column widths
+  ws.columns = fullHeaders.map((_, i) => ({
+    width: i === 3 ? 28 : i === 4 ? 20 : i === 0 ? 12 : i === 2 ? 18 : 14
+  }));
+
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `4.1.1_Input_Plan_${brandOnly}_${state.week.split(' ')[0]}.xlsx`;
   a.click();
   URL.revokeObjectURL(url);
 }

@@ -1,0 +1,165 @@
+=== PAGE 1 ===
+Portfolio đề xuất AI - MARKETING B2C​
+Định dạng: Lark Doc ​
+Người tổng hợp: Lương Nguyễn Trang Nhung​
+Ngày gửi: _____ ​
+Trước khi viết, bắt buộc tra Registry đã scale (Lark Base) để tránh trùng use-case.​
+1. Background chung của phòng ban​
+1.1 Bối cảnh vận hành hiện tại​
+•
+Chiều nhân sự (pain point hàng ngày): ​
+◦Check/duyệt kịch bản là công việc lặp lại với tần suất cao. PIC phải đối chiếu thủ công 
+giữa brief, Brand Guideline, USP/claim sản phẩm, TikTok Policy, content direction và chất 
+lượng creative; đồng thời wording feedback lại cho KOC/KOL/VJ.​
+◦Content phải tự xử lý nhiều task visual mang tính execution. Với Product Brief gửi đối tác, 
+một brief khoảng 15-20 ảnh có thể mất 2-3 ngày để tìm reference, thiết kế và hoàn thiện 
+trên Canva; ngoài ra còn có visual cho bài đăng TikTok.​
+◦Khi nhiều Brand/campaign triển khai song song, các task lặp lại này chiếm đáng kể thời 
+gian của PIC, làm giảm resource dành cho strategy, creative thinking và performance 
+optimization.​
+•
+Chiều quản lý/leader (pain point về follow, chiến lược): ​
+◦Chất lượng check kịch bản phụ thuộc nhiều vào kinh nghiệm từng PIC​
+◦Leader/Senior vẫn phải tham gia xử lý các lỗi execution cơ bản, khó chuẩn hóa tiêu chuẩn 
+duyệt giữa nhiều account và khó kiểm soát việc guideline/learning cũ có được áp dụng 
+đầy đủ hay không.​
+1.2 Baseline thực tế toàn phòng​
+
+=== PAGE 2 ===
+1.3 Thị trường - Scan công cụ AI sẵn có liên quan​
+1.4 Vì sao cần build AI nội bộ​
+Brand Guideline + Product Knowledge + Campaign Brief + Content Direction + TikTok Policy 
++ Historical Feedback + Checklist nội bộ → thành 01 quy trình check thống nhất.​
+Mục tiêu không thay thế PIC duyệt cuối, mà tạo thêm một lớp:​
+AI Pre-check → PIC Decision → Brand Approval​
+Giúp:​
+•
+ Giảm các lỗi cơ bản trước khi script đến PIC. ​
+•
+ Giảm thời gian đọc và đối chiếu thủ công. ​
+•
+ Chuẩn hóa tiêu chí check giữa các PIC. ​
+•
+ Giảm số vòng sửa vì các lỗi có thể phát hiện sớm. ​
+•
+ Giữ lại feedback/knowledge của từng Brand để tái sử dụng. ​
+•
+ Leader/Senior tập trung vào creative judgement và strategic direction thay vì lỗi execution. ​
+2. Danh sách ĐỀ XUẤT (không giới hạn số lượng, mỗi ý tưởng 1 card)​
+Đề xuất #1 - FEEDBACK KỊCH BẢN CONTENT​
+
+=== PAGE 3 ===
+
+=== PAGE 4 ===
+
+=== PAGE 5 ===
+Đề xuất #2 - TẠO BRIEF THƯƠNG HIỆU + CONTENT ẢNH CUỘN​
+
+=== PAGE 6 ===
+
+=== PAGE 7 ===
+Đề xuất #3: BOT viết Content Threads
+Đã áp dụng: ​
+Vận hành & Booking Threads ​
+Trường​
+Nội dung​
+Pain point cụ thể​
+Social/PIC phải viết content Threads với tần suất cao cho nhiều 
+campaign/Brand. ​
+Các bước lặp lại gồm đọc brief, tìm hook/angle, viết theo tone kênh, gắn CTA 
+và kiểm tra lại thông tin campaign. ​
+Tần suất xảy ra pain 
+point​
+Hàng ngày/hàng tuần; tăng mạnh khi chạy nhiều campaign đồng thời hoặc 
+cần đẩy CTA kéo KOC đăng ký job trong thời gian ngắn.​
+Chi phí cơ hội nếu 
+không làm​
+Social mất nhiều thời gian cho draft/biến thể câu chữ thay vì research trend, 
+community insight và tối ưu performance.​
+ Khó giữ chất lượng đồng đều khi onboard intern/newbie hoặc scale nhiều 
+kênh.​
+AI đề xuất​
+Bot nhận Campaign Brief + Content Pillar + Tone of Voice + dữ liệu bắt buộc 
+(điều kiện, deadline, cast, CTA) để tạo nhiều phiên bản Threads theo từng 
+mục tiêu: FOMO, chia sẻ tips, review trải nghiệm, seeding, CTA kéo đăng ký.​
+Input chuẩn​
+Campaign Brief; Product/Brand Knowledge; Content Pillar; Tone of Voice; 
+CTA/link; blacklist wording; post tốt trước đây và feedback đã duyệt.​
+Output​
+3-5 option/post gồm: hook, body, CTA, comment seeding gợi ý; có checklist 
+facts/campaign info trước khi PIC duyệt.​
+Workflow
+Brief/Base → Bot tạo draft → AI self-check fact/CTA/pillar → Social/PIC chọn 
+& chỉnh creative → Đăng bài → lưu performance/learning để tái sử dụng.​
+Target Pilot​
+Giảm ≥50% thời gian viết draft; giảm lỗi sai thông tin campaign/CTA; tạo 
+được nhiều angle khác nhau nhưng vẫn đúng tone và pillar.​
+
+=== PAGE 8 ===
+Guardrail​
+Bot không tự bịa thông tin campaign, giá/cast/deadline; chỉ dùng dữ liệu đã 
+nhập. PIC vẫn duyệt cuối trước khi publish; lưu version để truy vết nội dung 
+nguồn.​
+Đề xuất #4: Gen hợp đồng tự động ​
+Trường​
+Nội dung​
+Pain point cụ thể​
+Booking/Account phải lấy dữ liệu từ form/base rồi điền lại vào mẫu hợp đồng: 
+thông tin đối tác, hạng mục, số lượng deliverable, cast, timeline, quyền sử 
+dụng nội dung, thanh toán và thuế/chứng từ. ​
+Nhập tay lặp lại dễ sai tên, số tiền, ngày, scope hoặc dùng nhầm version 
+template.​
+Tần suất xảy ra pain 
+point​
+Phát sinh theo từng KOC/KOL/đối tác có cast và tăng mạnh khi booking hàng 
+loạt hoặc nhiều campaign chạy song song.​
+Chi phí cơ hội nếu 
+không làm​
+Mất thời gian hành chính của Booking/Account/Legal; ​
+hợp đồng chậm có thể ảnh hưởng timeline air. Sai trường thông tin tạo thêm 
+vòng sửa, đối soát và rủi ro vận hành.​
+AI/Automation đề xuất​
+Từ form/Lark Base, hệ thống kiểm tra đủ trường bắt buộc và sinh hợp đồng 
+theo đúng template/phụ lục đã được Legal phê duyệt. Có thể tạo DOCX/PDF 
+draft, đặt tên file chuẩn và lưu theo Brand/Campaign/đối tác.​
+Input chuẩn​
+Template hợp đồng đã Legal duyệt + thư viện điều khoản được phép dùng; 
+thông tin pháp nhân/cá nhân; campaign; deliverable; fee; timeline; payment 
+term; thuế/chứng từ; quyền sử dụng nội dung.​
+Output​
+01 hợp đồng draft hoàn chỉnh + cảnh báo trường thiếu/mâu thuẫn + summary 
+các điều khoản chính để PIC/Legal rà soát trước khi gửi ký.​
+Workflow
+Booking nhập/chọn dữ liệu → Validation → Gen hợp đồng → PIC/Legal review 
+→ khóa version → gửi ký → lưu link hợp đồng về Base.​
+Target Pilot​
+Giảm ≥70% thời gian tạo bản nháp; ≥95% trường bắt buộc được map tự 
+động từ nguồn; giảm lỗi copy-paste và nhầm template.​
+Guardrail​
+Không để AI tự sáng tác điều khoản pháp lý. Chỉ chọn/điền từ template và 
+clause library đã Legal phê duyệt; mọi hợp đồng phải có bước human review 
+trước khi phát hành/ký; phân quyền dữ liệu cá nhân và lưu audit log.​
+
+=== PAGE 9 ===
+3. Bảng tổng hợp so sánh nhanh (để họp dễ chọn)​
+4. [Điền sau họp] Kết quả họp chọn Pilot​
+•
+Ngày họp: _____​
+•
+Người dự: Xuân Anh / Anh Huy / IC / Đại diện phòng ban: _____​
+•
+Dự án được chọn: _____​
+•
+Lý do chọn: _____​
+•
+Dự án tạm hoãn: _____ (lý do)​
+•
+Người phụ trách chuyển sang bước lập Kế hoạch Pilot chi tiết: _____​
+•
+Deadline nộp Kế hoạch Pilot chi tiết: _____​
+5. Form yêu cầu tài khoản (nội dung bắt buộc)​
+
+=== PAGE 10 ===
+
+=== PAGE 11 ===
+Danh sách nhân sự cấp tài khoản​
