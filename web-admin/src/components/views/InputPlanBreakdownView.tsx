@@ -39,11 +39,15 @@ import {
   Clock,
   ArrowUpRight,
   ShieldCheck,
-  Coins
+  Coins,
+  Users,
+  UserCheck,
+  X
 } from 'lucide-react';
 import { 
   InputPlanBreakdownState, 
   InputPlanRowItem, 
+  InputPlanChannelType,
   UserProfile, 
   StaffDetailedPlanItem,
   SalaryGrade,
@@ -106,6 +110,21 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
     'Lê Hoàng Yến',
     'Phan Diệu Ánh'
   ];
+
+  // Thông tin chuyên môn của các thành viên trong team Booking để bạn PIC dễ dàng phân công
+  const TEAM_MEMBERS_INFO: Record<string, { role: string; avatar: string; expertise: string }> = {
+    'Đặng Mai Hà Linh': { role: 'Brand PIC / Senior Specialist', avatar: 'HL', expertise: 'Chiến lược, Celeb & Macro (KL5-KL7)' },
+    'Khánh Vy': { role: 'Senior Booking Specialist', avatar: 'KV', expertise: 'Key Creator & Mid-Macro (KL3-KL5)' },
+    'Nguyễn Thu Trang': { role: 'Booking Specialist', avatar: 'TT', expertise: 'Micro KOC & Shopee Affiliate' },
+    'Phạm Thị Thu Hằng': { role: 'Booking Specialist', avatar: 'TH', expertise: 'Affiliate TAP & Review voice' },
+    'Trần Minh Đức': { role: 'Live & Creator Specialist', avatar: 'MĐ', expertise: 'Livestream Độc quyền & Co-host' },
+    'Lê Hoàng Yến': { role: 'Multi-platform Specialist', avatar: 'HY', expertise: 'Facebook, Instagram & Threads' },
+    'Phan Diệu Ánh': { role: 'Junior Booking Associate', avatar: 'DÁ', expertise: 'KOC Mới & Reup Sàn' }
+  };
+
+  // State Modal Phân Bổ Kế Hoạch Cho Team của bạn PIC
+  const [isAllocationModalOpen, setIsAllocationModalOpen] = useState(false);
+  const [allocationFilterChannel, setAllocationFilterChannel] = useState<'ALL' | InputPlanChannelType>('ALL');
 
   const WEEK_OPTIONS = [
     'W40 [25.09 - 01.10]',
@@ -330,6 +349,116 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
     notify(`✅ Đã lưu kế hoạch ${planState.week} (${planState.brandName}) vào Sổ Kế Hoạch Tuần Thực Tế!`);
   };
 
+  // Cập nhật người phụ trách cho từng dòng phân rã
+  const handleUpdateItemAssignee = (id: string, staffName: string) => {
+    setPlanState(prev => ({
+      ...prev,
+      items: prev.items.map(it => it.id === id ? { ...it, assignedStaff: staffName } : it)
+    }));
+  };
+
+  // Cập nhật ghi chú/yêu cầu riêng của PIC cho dòng đó
+  const handleUpdateItemStaffNotes = (id: string, notes: string) => {
+    setPlanState(prev => ({
+      ...prev,
+      items: prev.items.map(it => it.id === id ? { ...it, staffNotes: notes } : it)
+    }));
+  };
+
+  // Gán tất cả các dòng cho PIC chủ trì
+  const handleAssignAllToPic = () => {
+    setPlanState(prev => ({
+      ...prev,
+      items: prev.items.map(it => ({ ...it, assignedStaff: prev.pic }))
+    }));
+    notify(`🔄 Đã gán toàn bộ kế hoạch cho PIC chủ trì (${planState.pic})!`);
+  };
+
+  // Gán tự động theo năng lực và chuyên môn của các thành viên trong team
+  const handleAutoAssignByExpertise = () => {
+    setPlanState(prev => ({
+      ...prev,
+      items: prev.items.map(it => {
+        let assigned = prev.pic;
+        // Livestream -> Trần Minh Đức
+        if (it.channel === 'LIVESTREAM') {
+          assigned = 'Trần Minh Đức';
+        }
+        // Đa sàn (Shopee, FB, IG, Threads) -> Lê Hoàng Yến
+        else if (['SHOPEE', 'FACEBOOK', 'INSTAGRAM', 'THREADS'].includes(it.channel)) {
+          assigned = 'Lê Hoàng Yến';
+        }
+        // Kênh tự xây & Reup -> Phan Diệu Ánh
+        else if (it.channel === 'SELF_CHANNEL') {
+          assigned = 'Phan Diệu Ánh';
+        }
+        // TikTok Celeb & Macro lớn (KL6, KL7) -> PIC chủ trì
+        else if (['KL6', 'KL7'].includes(it.tierCode)) {
+          assigned = prev.pic;
+        }
+        // TikTok Mid-Macro (KL4, KL5) -> Khánh Vy
+        else if (['KL4', 'KL5'].includes(it.tierCode)) {
+          assigned = 'Khánh Vy';
+        }
+        // TikTok Micro (KL3) -> Nguyễn Thu Trang
+        else if (it.tierCode === 'KL3') {
+          assigned = 'Nguyễn Thu Trang';
+        }
+        // TikTok Affiliate / TAP (KL1, KL2, TAP) -> Phạm Thị Thu Hằng
+        else {
+          assigned = 'Phạm Thị Thu Hằng';
+        }
+
+        return { ...it, assignedStaff: assigned };
+      })
+    }));
+    notify(`⚡ PIC ${planState.pic} đã phân bổ tự động các dòng theo chuyên môn của từng thành viên trong team!`);
+  };
+
+  // Tổng hợp phân bổ theo từng nhân sự trong team
+  const staffAllocationSummary = useMemo(() => {
+    const summaryMap: Record<string, {
+      staffName: string;
+      videoCount: number;
+      totalBudget: number;
+      targetGmv: number;
+      channels: Set<string>;
+      tiersCount: Record<string, number>;
+    }> = {};
+
+    PIC_OPTIONS.forEach(staff => {
+      summaryMap[staff] = {
+        staffName: staff,
+        videoCount: 0,
+        totalBudget: 0,
+        targetGmv: 0,
+        channels: new Set(),
+        tiersCount: {}
+      };
+    });
+
+    planState.items.forEach(item => {
+      const assignee = item.assignedStaff || planState.pic;
+      if (!summaryMap[assignee]) {
+        summaryMap[assignee] = {
+          staffName: assignee,
+          videoCount: 0,
+          totalBudget: 0,
+          targetGmv: 0,
+          channels: new Set(),
+          tiersCount: {}
+        };
+      }
+      summaryMap[assignee].videoCount += item.qty;
+      summaryMap[assignee].totalBudget += item.totalBudget;
+      summaryMap[assignee].targetGmv += item.targetGmv;
+      summaryMap[assignee].channels.add(item.channel);
+      summaryMap[assignee].tiersCount[item.tierCode] = (summaryMap[assignee].tiersCount[item.tierCode] || 0) + item.qty;
+    });
+
+    return Object.values(summaryMap).filter(s => s.videoCount > 0 || s.staffName === planState.pic);
+  }, [planState.items, planState.pic]);
+
   const handleGenerateBookingSlots = () => {
     const generatedSlots: StaffDetailedPlanItem[] = [];
     const brandOnly = planState.brandName.split('_')[0] || planState.brandName;
@@ -337,6 +466,8 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
     planState.items.forEach(item => {
       if (item.qty <= 0) return;
       const slotsToGen = Math.min(item.qty, 8);
+      const assignee = item.assignedStaff || planState.pic;
+
       for (let i = 1; i <= slotsToGen; i++) {
         const salaryGrade = (item.salaryGrade || (item.tierCode.startsWith('KL') ? item.tierCode : 'KL3')) as SalaryGrade;
         const kocTier = ['KL6', 'KL7'].includes(salaryGrade) 
@@ -349,7 +480,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
 
         generatedSlots.push({
           id: `slot-auto-${Date.now()}-${item.id}-${i}`,
-          staffName: planState.pic,
+          staffName: assignee,
           month: planState.month,
           brandName: brandOnly,
           tier: kocTier,
@@ -362,7 +493,9 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
           budgetEstimated: item.unitCost,
           targetGmv: item.unitCost * item.expectedRoiMultiplier,
           status: 'DRAFT',
-          leadNotes: `Sinh tự động từ Input Plan Studio (${item.platform} - ${item.contentFormat})`,
+          leadNotes: item.staffNotes
+            ? `[Giao bởi PIC ${planState.pic}]: ${item.staffNotes} (${item.platform} - ${item.contentFormat})`
+            : `[Giao bởi PIC ${planState.pic}]: Phân rã từ Input Plan (${item.platform} - ${item.contentFormat})`,
           updatedAt: new Date().toISOString().replace('T', ' ').substring(0, 16)
         });
       }
@@ -371,7 +504,10 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
     if (onGenerateDealsFromPlan && generatedSlots.length > 0) {
       onGenerateDealsFromPlan(generatedSlots);
     }
-    notify(`🚀 Đã sinh ${generatedSlots.length} slot KOC tác nghiệp và chuyển giao sang khâu Booking!`);
+
+    const assignedCount = staffAllocationSummary.filter(s => s.videoCount > 0).length;
+    notify(`🚀 PIC ${planState.pic} đã phân bổ thành công ${generatedSlots.length} slot KOC cho ${assignedCount} nhân sự trong team Booking!`);
+    setIsAllocationModalOpen(false);
   };
 
   // Visible items based on activeTab
@@ -446,6 +582,36 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                 <option key={w} value={w}>{w}</option>
               ))}
             </select>
+
+            {/* PIC Chủ Trì Kế Hoạch (Có trách nhiệm phân bổ cho team) */}
+            <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 text-xs">
+              <UserCheck className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+              <span className="text-[10px] font-bold text-slate-400 uppercase">PIC:</span>
+              <select
+                value={planState.pic}
+                onChange={(e) => {
+                  const newPic = e.target.value;
+                  setPlanState(prev => ({ ...prev, pic: newPic }));
+                  notify(`👤 Đã chọn ${newPic} làm PIC chủ trì kế hoạch ${planState.brandName.split('_')[0]}!`);
+                }}
+                className="bg-transparent text-slate-800 font-bold text-xs focus:outline-none cursor-pointer"
+                title="Chuyên viên phụ trách chính (PIC) có trách nhiệm phân bổ kế hoạch cho các bạn nhân sự khác trong team"
+              >
+                {PIC_OPTIONS.map(p => (
+                  <option key={p} value={p}>{p}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Nút Phân Bổ Kế Hoạch Cho Team */}
+            <button
+              onClick={() => setIsAllocationModalOpen(true)}
+              className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs transition"
+              title="Mở bảng phân bổ từng dòng / bậc KOC cho các bạn nhân sự trong team"
+            >
+              <Users className="w-3.5 h-3.5" />
+              <span>Phân Bổ Cho Team</span>
+            </button>
 
             {/* Test Presets Pills */}
             <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg border border-slate-200/60">
@@ -880,6 +1046,36 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                         ))}
                       </select>
                     </div>
+
+                    {/* Nhân Sự Phụ Trách / Thực Thi */}
+                    <div className="mt-2.5">
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
+                          <UserCheck className="w-3 h-3 text-blue-600" />
+                          Nhân Sự Phụ Trách
+                        </label>
+                        {item.assignedStaff && item.assignedStaff !== planState.pic && (
+                          <span className="text-[9px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.2 rounded border border-blue-200">
+                            Team
+                          </span>
+                        )}
+                      </div>
+                      <select
+                        value={item.assignedStaff || planState.pic}
+                        onChange={(e) => handleUpdateItemAssignee(item.id, e.target.value)}
+                        className={`w-full text-xs font-semibold px-2.5 py-1.5 rounded-lg border transition ${
+                          item.assignedStaff && item.assignedStaff !== planState.pic
+                            ? 'bg-blue-50/70 border-blue-300 text-blue-900'
+                            : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-800'
+                        }`}
+                      >
+                        {PIC_OPTIONS.map(staff => (
+                          <option key={staff} value={staff}>
+                            {staff} {staff === planState.pic ? '(PIC)' : ''}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
 
                   {/* Card Footer: Quantity Stepper & Subtotal */}
@@ -948,6 +1144,15 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
 
             <div className="flex items-center gap-2">
               <button
+                onClick={() => setIsAllocationModalOpen(true)}
+                className="px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs transition"
+                title="Mở bảng phân bổ từng dòng kế hoạch cho nhân sự trong team Booking"
+              >
+                <Users className="w-3.5 h-3.5" />
+                <span>Phân Bổ Cho Team</span>
+              </button>
+
+              <button
                 onClick={handleExportExcel}
                 className="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs transition"
               >
@@ -977,12 +1182,13 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
               <thead>
                 <tr className="bg-slate-50 text-slate-500 font-bold border-b border-slate-200 text-[11px] uppercase tracking-wider">
                   <th className="py-3 px-4 w-44">Phân Bậc KOC / Nền Tảng</th>
-                  <th className="py-3 px-4 min-w-[260px]">Loại Nội Dung Tương Ứng</th>
-                  <th className="py-3 px-4 w-44 text-center">Số Lượng Clip</th>
-                  <th className="py-3 px-4 w-36 text-right">Đơn Giá Net</th>
-                  <th className="py-3 px-4 w-36 text-right">Thành Tiền</th>
-                  <th className="py-3 px-4 w-36 text-right">Dự Phóng GMV</th>
-                  <th className="py-3 px-3 w-20 text-center">Điền Nốt</th>
+                  <th className="py-3 px-4 min-w-[220px]">Loại Nội Dung Tương Ứng</th>
+                  <th className="py-3 px-3 w-48">Nhân Sự Thực Thi</th>
+                  <th className="py-3 px-4 w-40 text-center">Số Lượng Clip</th>
+                  <th className="py-3 px-4 w-32 text-right">Đơn Giá Net</th>
+                  <th className="py-3 px-4 w-32 text-right">Thành Tiền</th>
+                  <th className="py-3 px-4 w-32 text-right">Dự Phóng GMV</th>
+                  <th className="py-3 px-3 w-16 text-center">Điền Nốt</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -1014,6 +1220,25 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                         >
                           {CONTENT_FORMAT_OPTIONS.map(fmt => (
                             <option key={fmt} value={fmt}>{fmt}</option>
+                          ))}
+                        </select>
+                      </td>
+
+                      {/* Column 2b: Assignee Selector */}
+                      <td className="py-3 px-3">
+                        <select
+                          value={item.assignedStaff || planState.pic}
+                          onChange={(e) => handleUpdateItemAssignee(item.id, e.target.value)}
+                          className={`w-full text-xs font-semibold px-2 py-1.5 rounded-lg border transition shadow-2xs ${
+                            item.assignedStaff && item.assignedStaff !== planState.pic
+                              ? 'bg-blue-50/70 border-blue-300 text-blue-900'
+                              : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-800'
+                          }`}
+                        >
+                          {PIC_OPTIONS.map(staff => (
+                            <option key={staff} value={staff}>
+                              {staff} {staff === planState.pic ? '(PIC)' : ''}
+                            </option>
                           ))}
                         </select>
                       </td>
@@ -1127,6 +1352,15 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
 
             <div className="flex items-center gap-2">
               <button
+                onClick={() => setIsAllocationModalOpen(true)}
+                className="px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs transition"
+                title="Mở bảng phân bổ từng dòng kế hoạch cho nhân sự trong team Booking"
+              >
+                <Users className="w-3.5 h-3.5" />
+                <span>Phân Bổ Cho Team</span>
+              </button>
+
+              <button
                 onClick={handleExportExcel}
                 className="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs transition"
               >
@@ -1223,6 +1457,320 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                 </tr>
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 6. MODAL PHÂN BỔ KẾ HOẠCH CHO TEAM BOOKING (PIC COORDINATION STUDIO)     */}
+      {/* ========================================================================= */}
+      {isAllocationModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white w-full max-w-5xl max-h-[92vh] rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden">
+            {/* Modal Header */}
+            <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-900 text-white">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-md">
+                  <Users className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base font-bold">Phân Bổ Kế Hoạch Cho Team Booking</h3>
+                    <span className="text-[11px] bg-blue-500/20 text-blue-300 border border-blue-400/30 px-2 py-0.5 rounded-full font-semibold">
+                      Chủ trì: {planState.pic}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Thương hiệu: <strong className="text-white">{planState.brandName.split('_')[0]}</strong> • {planState.month} - {planState.week} • Tổng {totalAllocatedContents} video ({(totalAllocatedBudget / 1000000).toFixed(1)}M đ)
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsAllocationModalOpen(false)}
+                className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition"
+                title="Đóng cửa sổ"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              {/* Workload Summary across Team */}
+              <div>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                  <div>
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                      <UserCheck className="w-4 h-4 text-blue-600" />
+                      Cân Bằng Tải Khối Lượng Công Việc Team ({staffAllocationSummary.filter(s => s.videoCount > 0).length} nhân sự tham gia)
+                    </h4>
+                    <p className="text-[11px] text-slate-400 mt-0.5">
+                      Bạn PIC chủ trì có trách nhiệm điều phối chỉ tiêu video và ngân sách phù hợp năng lực của từng bạn
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={handleAutoAssignByExpertise}
+                      className="text-xs font-bold px-3 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 flex items-center gap-1.5 transition shadow-2xs"
+                    >
+                      <Zap className="w-3.5 h-3.5 text-indigo-600" />
+                      <span>⚡ Gán Tự Động Theo Chuyên Môn</span>
+                    </button>
+                    <button
+                      onClick={handleAssignAllToPic}
+                      className="text-xs font-semibold px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 flex items-center gap-1 transition"
+                    >
+                      <RotateCcw className="w-3 h-3 text-slate-500" />
+                      <span>Gán Toàn Bộ Cho PIC</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                  {PIC_OPTIONS.map((staffName) => {
+                    const info = TEAM_MEMBERS_INFO[staffName] || { role: 'Booking Specialist', avatar: 'ST', expertise: 'KOC' };
+                    const summary = staffAllocationSummary.find(s => s.staffName === staffName) || {
+                      staffName,
+                      videoCount: 0,
+                      totalBudget: 0,
+                      targetGmv: 0,
+                      channels: new Set<string>()
+                    };
+                    const isPic = staffName === planState.pic;
+                    const pctOfTotal = totalAllocatedContents > 0 ? (summary.videoCount / totalAllocatedContents) * 100 : 0;
+
+                    return (
+                      <div
+                        key={staffName}
+                        className={`p-3.5 rounded-xl border transition ${
+                          summary.videoCount > 0
+                            ? isPic 
+                              ? 'bg-blue-50/60 border-blue-200 shadow-2xs'
+                              : 'bg-white border-slate-200 shadow-2xs'
+                            : 'bg-slate-50/60 border-slate-200/60 opacity-60'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            <div className={`w-8 h-8 rounded-lg font-bold text-xs flex items-center justify-center ${
+                              isPic ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-700'
+                            }`}>
+                              {info.avatar}
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-1">
+                                <span className="font-bold text-xs text-slate-900 leading-tight">{staffName}</span>
+                                {isPic && (
+                                  <span className="text-[9px] bg-blue-600 text-white font-bold px-1.5 py-0.2 rounded-full">
+                                    PIC
+                                  </span>
+                                )}
+                              </div>
+                              <span className="text-[10px] text-slate-500 block leading-tight">{info.role}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="mt-2 pt-2 border-t border-slate-100 flex items-baseline justify-between">
+                          <span className="text-xs text-slate-600">Được giao:</span>
+                          <span className="font-bold font-mono text-sm text-indigo-700">
+                            {summary.videoCount} <span className="text-[11px] font-normal text-slate-500">video ({pctOfTotal.toFixed(0)}%)</span>
+                          </span>
+                        </div>
+
+                        <div className="flex items-center justify-between text-[11px] font-mono text-slate-500 mt-1">
+                          <span>Ngân sách:</span>
+                          <span className="font-bold text-slate-800">{(summary.totalBudget / 1000000).toFixed(1)}M đ</span>
+                        </div>
+
+                        {/* Progress Bar of workload */}
+                        <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden mt-2">
+                          <div
+                            className={`h-full rounded-full transition-all ${
+                              pctOfTotal > 40 ? 'bg-amber-500' : 'bg-blue-600'
+                            }`}
+                            style={{ width: `${Math.min(100, pctOfTotal)}%` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Items Allocation Table */}
+              <div>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                  <div>
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                      <Sliders className="w-4 h-4 text-slate-600" />
+                      Chi Tiết Phân Bổ Từng Phân Bậc KOC & Kênh
+                    </h4>
+                    <p className="text-[11px] text-slate-400 mt-0.5">
+                      Chọn trực tiếp nhân sự thực thi và nhập chỉ đạo chi tiết của PIC cho từng dòng
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg border border-slate-200">
+                    <button
+                      onClick={() => setAllocationFilterChannel('ALL')}
+                      className={`px-2.5 py-1 rounded text-[11px] font-bold transition ${
+                        allocationFilterChannel === 'ALL' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                    >
+                      Tất Cả ({planState.items.length})
+                    </button>
+                    <button
+                      onClick={() => setAllocationFilterChannel('TIKTOK')}
+                      className={`px-2.5 py-1 rounded text-[11px] font-bold transition ${
+                        allocationFilterChannel === 'TIKTOK' ? 'bg-white text-indigo-700 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                    >
+                      TikTok
+                    </button>
+                    <button
+                      onClick={() => setAllocationFilterChannel('SHOPEE')}
+                      className={`px-2.5 py-1 rounded text-[11px] font-bold transition ${
+                        allocationFilterChannel === 'SHOPEE' ? 'bg-white text-orange-700 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                    >
+                      Đa Sàn
+                    </button>
+                    <button
+                      onClick={() => setAllocationFilterChannel('SELF_CHANNEL')}
+                      className={`px-2.5 py-1 rounded text-[11px] font-bold transition ${
+                        allocationFilterChannel === 'SELF_CHANNEL' ? 'bg-white text-teal-700 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                    >
+                      Kênh Tự Xây
+                    </button>
+                    <button
+                      onClick={() => setAllocationFilterChannel('LIVESTREAM')}
+                      className={`px-2.5 py-1 rounded text-[11px] font-bold transition ${
+                        allocationFilterChannel === 'LIVESTREAM' ? 'bg-white text-purple-700 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                    >
+                      Livestream
+                    </button>
+                  </div>
+                </div>
+
+                <div className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-2xs">
+                  <div className="overflow-x-auto max-h-[380px]">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead className="sticky top-0 bg-slate-100 text-slate-600 font-bold border-b border-slate-200 text-[11px]">
+                        <tr>
+                          <th className="py-2.5 px-3 w-40">Phân Bậc KOC</th>
+                          <th className="py-2.5 px-3 w-44">Định Dạng Video</th>
+                          <th className="py-2.5 px-3 w-28 text-center">Số Lượng Clip</th>
+                          <th className="py-2.5 px-3 w-28 text-right">Ngân Sách</th>
+                          <th className="py-2.5 px-3 w-52">Nhân Sự Phụ Trách</th>
+                          <th className="py-2.5 px-3 min-w-[200px]">Chỉ Đạo / Lưu Ý Của PIC</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {planState.items
+                          .filter(item => {
+                            if (allocationFilterChannel === 'ALL') return true;
+                            if (allocationFilterChannel === 'TIKTOK') return item.channel === 'TIKTOK';
+                            if (allocationFilterChannel === 'SHOPEE') return ['SHOPEE', 'FACEBOOK', 'INSTAGRAM', 'THREADS'].includes(item.channel);
+                            if (allocationFilterChannel === 'SELF_CHANNEL') return item.channel === 'SELF_CHANNEL';
+                            if (allocationFilterChannel === 'LIVESTREAM') return item.channel === 'LIVESTREAM';
+                            return true;
+                          })
+                          .map(item => {
+                            const isPicAssigned = !item.assignedStaff || item.assignedStaff === planState.pic;
+
+                            return (
+                              <tr key={item.id} className="hover:bg-slate-50 transition">
+                                <td className="py-2.5 px-3">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className={`text-[10px] font-black px-2 py-0.5 rounded font-mono border ${getTierBadgeStyle(item.tierCode)}`}>
+                                      {item.tierCode}
+                                    </span>
+                                    <span className="font-bold text-slate-900 truncate max-w-[110px]">
+                                      {item.tierLabel.split(':')[1]?.trim() || item.tierLabel}
+                                    </span>
+                                  </div>
+                                </td>
+
+                                <td className="py-2.5 px-3">
+                                  <span className="text-slate-700 font-medium truncate block max-w-[170px]">
+                                    {item.contentFormat}
+                                  </span>
+                                </td>
+
+                                <td className="py-2.5 px-3 text-center font-mono font-bold text-slate-900">
+                                  {item.qty} clip
+                                </td>
+
+                                <td className="py-2.5 px-3 text-right font-mono font-bold text-slate-800">
+                                  {(item.totalBudget / 1000000).toFixed(2)}M
+                                </td>
+
+                                <td className="py-2.5 px-3">
+                                  <select
+                                    value={item.assignedStaff || planState.pic}
+                                    onChange={(e) => handleUpdateItemAssignee(item.id, e.target.value)}
+                                    className={`w-full text-xs font-semibold px-2.5 py-1.5 rounded-lg border transition ${
+                                      !isPicAssigned
+                                        ? 'bg-blue-50/70 border-blue-300 text-blue-900'
+                                        : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-800'
+                                    }`}
+                                  >
+                                    {PIC_OPTIONS.map(staff => (
+                                      <option key={staff} value={staff}>
+                                        {staff} {staff === planState.pic ? '(PIC Chủ Trì)' : ''}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </td>
+
+                                <td className="py-2.5 px-3">
+                                  <input
+                                    type="text"
+                                    placeholder="Lưu ý: Yêu cầu KOC lên link bio, reup Shopee..."
+                                    value={item.staffNotes || ''}
+                                    onChange={(e) => handleUpdateItemStaffNotes(item.id, e.target.value)}
+                                    className="w-full text-xs px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-blue-500 transition"
+                                  />
+                                </td>
+                              </tr>
+                            );
+                          })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="px-6 py-4 border-t border-slate-200 bg-slate-50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-3 text-xs font-mono text-slate-600">
+                <span>Phân bổ: <strong className="text-blue-700 font-bold">{staffAllocationSummary.filter(s => s.videoCount > 0).length}</strong> nhân sự</span>
+                <span>•</span>
+                <span>Tổng clip: <strong className="text-slate-900 font-bold">{totalAllocatedContents}</strong></span>
+                <span>•</span>
+                <span>Ngân sách: <strong className="text-slate-900 font-bold">{(totalAllocatedBudget / 1000000).toFixed(1)}M đ</strong></span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setIsAllocationModalOpen(false)}
+                  className="px-4 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs transition"
+                >
+                  Đóng & Lưu Nháp
+                </button>
+
+                <button
+                  onClick={handleGenerateBookingSlots}
+                  className="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-md transition active:scale-95"
+                >
+                  <Send className="w-3.5 h-3.5 text-amber-300" />
+                  <span>Xác Nhận & Giao Việc Cho Team</span>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

@@ -1439,6 +1439,8 @@ export interface InputPlanRowItem {
   productFocus?: string;
   notes?: string;
   isCustomFormat?: boolean;
+  assignedStaff?: string; // Nhân sự trong team Booking được bạn PIC phân bổ
+  staffNotes?: string; // Ghi chú/yêu cầu riêng của PIC cho nhân sự nhận slot
 }
 
 export interface InputPlanBreakdownState {
