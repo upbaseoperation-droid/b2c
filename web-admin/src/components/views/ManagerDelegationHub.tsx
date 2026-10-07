@@ -29,7 +29,8 @@ import {
   Layers,
   ArrowRight,
   TrendingUp,
-  Coins
+  Coins,
+  GitFork
 } from 'lucide-react';
 import { 
   UserProfile, 
@@ -39,6 +40,7 @@ import {
   SlaTask,
   UserRole
 } from '../../lib/types';
+import { MasterDataMindmapView } from './MasterDataMindmapView';
 
 interface ManagerDelegationHubProps {
   currentUser: UserProfile;
@@ -68,7 +70,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
   onNotify
 }) => {
   // Active Section Tab
-  const [activeSection, setActiveSection] = useState<'BRANDS' | 'STORES' | 'STAFF' | 'TASKS'>('BRANDS');
+  const [activeSection, setActiveSection] = useState<'BRANDS' | 'STORES' | 'STAFF' | 'TASKS' | 'MINDMAP'>('BRANDS');
 
   // Search & Filter
   const [searchTerm, setSearchTerm] = useState('');
@@ -486,6 +488,21 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
               activeSection === 'TASKS' ? 'bg-blue-800 text-white' : 'bg-slate-100 text-slate-600'
             }`}>
               {tasks.length} Việc
+            </span>
+          </button>
+
+          <button
+            onClick={() => setActiveSection('MINDMAP')}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition whitespace-nowrap ${
+              activeSection === 'MINDMAP'
+                ? 'bg-blue-600 text-white shadow-xs'
+                : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200 hover:bg-slate-50'
+            }`}
+          >
+            <GitFork className="w-3.5 h-3.5" />
+            <span>🧠 5. Sơ Đồ Cây Mindmap (Toàn Cảnh)</span>
+            <span className="px-1.5 py-0.2 rounded text-[10px] bg-blue-100 text-blue-700 font-bold">
+              MỚI
             </span>
           </button>
         </div>
@@ -962,6 +979,40 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
               </tbody>
             </table>
           </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 7. SECTION 5: SƠ ĐỒ CÂY MINDMAP MASTER DATA (BRAND ➔ GIAN ➔ PIC ➔ SKU)    */}
+      {/* ========================================================================= */}
+      {activeSection === 'MINDMAP' && (
+        <div className="space-y-4 animate-in fade-in duration-200">
+          <div className="p-4 bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-md">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-blue-500/20 border border-blue-400/30 flex items-center justify-center text-blue-300 font-bold shrink-0">
+                <GitFork className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-bold text-sm text-white flex items-center gap-2">
+                  <span>Toàn Cảnh Phân Bổ Mindmap (Master Data Hierarchy)</span>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                    Trực Quan Hóa 4 Tầng Phân Cấp
+                  </span>
+                </h3>
+                <p className="text-xs text-blue-200 mt-0.5">
+                  Sơ đồ cây phân nhánh trực quan: Nhãn Hàng ➔ Gian Hàng Sàn (TikTok Shop, Shopee Mall, Lazada) ➔ Nhân Sự PIC Phụ Trách (1 PIC Chính + các PIC Hỗ Trợ) ➔ Danh Mục Sản Phẩm Hero SKU & Doanh Số.
+                </p>
+              </div>
+            </div>
+            <div className="text-xs text-slate-300 bg-white/10 px-3 py-1.5 rounded-xl border border-white/10 shrink-0">
+              Nhấn vào từng node để mở rộng/thu gọn nhánh
+            </div>
+          </div>
+
+          <MasterDataMindmapView
+            currentUser={currentUser}
+            onNotify={notify}
+          />
         </div>
       )}
 
