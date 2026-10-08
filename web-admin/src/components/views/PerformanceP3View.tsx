@@ -17,14 +17,68 @@ import {
   ChevronRight,
   Sparkles
 } from 'lucide-react';
-import { StaffP3Record, StoreDifficultyConfig } from '@/lib/types';
+import { StaffP3Record, StoreDifficultyConfig, StorePortfolioItem, BookingDealItem, UserProfile } from '@/lib/types';
 import { MOCK_P3_STAFF_RECORDS, MOCK_STORE_DIFFICULTIES } from '@/lib/mockData';
 import { AiStaffReviewModal } from '../AiStaffReviewModal';
 
-export default function PerformanceP3View() {
+export interface PerformanceP3ViewProps {
+  storePortfolios?: StorePortfolioItem[];
+  deals?: BookingDealItem[];
+  currentUser?: UserProfile;
+  onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
+  onUpdateStoreDifficulty?: (storeId: string, multiplier: number, tier: 'Cơ bản' | 'Tiêu chuẩn' | 'Vừa' | 'Khó') => void;
+}
+
+export default function PerformanceP3View({
+  storePortfolios = [],
+  deals = [],
+  currentUser,
+  onNotify,
+  onUpdateStoreDifficulty
+}: PerformanceP3ViewProps = {}) {
   const [activeTab, setActiveTab] = useState<'CALC' | 'STORE_MATRIX'>('CALC');
   const [staffRecords, setStaffRecords] = useState<StaffP3Record[]>(MOCK_P3_STAFF_RECORDS);
-  const [storeConfigs, setStoreConfigs] = useState<StoreDifficultyConfig[]>(MOCK_STORE_DIFFICULTIES);
+
+  const initialMergedStores = React.useMemo<StoreDifficultyConfig[]>(() => {
+    if (storePortfolios.length === 0) return MOCK_STORE_DIFFICULTIES;
+    return storePortfolios.map(st => ({
+      id: st.id,
+      storeName: st.storeName,
+      platform: (st.platform === 'Shopee Mall' ? 'Shopee' : st.platform) as 'TikTok Shop' | 'Lazada' | 'Shopee',
+      brandName: st.brandName,
+      category: st.category || 'Tiêu dùng & Bán lẻ',
+      monthlyTargetGmv: st.monthlyTargetGmv || 500000000,
+      difficultyTier: st.difficultyTier,
+      multiplier: st.difficultyMultiplier,
+      assignedPic: st.b2cOwnerName || st.accountOwnerName || 'Khánh Vy',
+      accountOwner: st.accountOwnerName,
+      b2cOwner: st.b2cOwnerName,
+      activeKocsCount: st.activeBookingsCount || 8,
+      notes: st.assignmentNotes || 'Đồng bộ từ Dữ liệu gốc Gian hàng'
+    }));
+  }, [storePortfolios]);
+
+  const [storeConfigs, setStoreConfigs] = useState<StoreDifficultyConfig[]>(initialMergedStores);
+
+  React.useEffect(() => {
+    if (storePortfolios.length > 0) {
+      setStoreConfigs(storePortfolios.map(st => ({
+        id: st.id,
+        storeName: st.storeName,
+        platform: (st.platform === 'Shopee Mall' ? 'Shopee' : st.platform) as 'TikTok Shop' | 'Lazada' | 'Shopee',
+        brandName: st.brandName,
+        category: st.category || 'Tiêu dùng & Bán lẻ',
+        monthlyTargetGmv: st.monthlyTargetGmv || 500000000,
+        difficultyTier: st.difficultyTier,
+        multiplier: st.difficultyMultiplier,
+        assignedPic: st.b2cOwnerName || st.accountOwnerName || 'Khánh Vy',
+        accountOwner: st.accountOwnerName,
+        b2cOwner: st.b2cOwnerName,
+        activeKocsCount: st.activeBookingsCount || 8,
+        notes: st.assignmentNotes || 'Đồng bộ từ Dữ liệu gốc Gian hàng'
+      })));
+    }
+  }, [storePortfolios]);
   const [selectedRole, setSelectedRole] = useState<string>('ALL');
   const [aiReviewStaff, setAiReviewStaff] = useState<string | null>(null);
 
@@ -48,16 +102,24 @@ export default function PerformanceP3View() {
   };
 
   const handleUpdateStoreMultiplier = (storeId: string, newMultiplier: number) => {
+    let tier: 'Cơ bản' | 'Tiêu chuẩn' | 'Vừa' | 'Khó' = 'Cơ bản';
+    if (newMultiplier >= 1.6) tier = 'Khó';
+    else if (newMultiplier >= 1.4) tier = 'Vừa';
+    else if (newMultiplier >= 1.2) tier = 'Tiêu chuẩn';
+
     setStoreConfigs(prev => prev.map(s => {
       if (s.id === storeId) {
-        let tier: 'Cơ bản' | 'Tiêu chuẩn' | 'Vừa' | 'Khó' = 'Cơ bản';
-        if (newMultiplier >= 1.6) tier = 'Khó';
-        else if (newMultiplier >= 1.4) tier = 'Vừa';
-        else if (newMultiplier >= 1.2) tier = 'Tiêu chuẩn';
         return { ...s, multiplier: newMultiplier, difficultyTier: tier };
       }
       return s;
     }));
+
+    if (onUpdateStoreDifficulty) {
+      onUpdateStoreDifficulty(storeId, newMultiplier, tier);
+    }
+    if (onNotify) {
+      onNotify(`Đã cập nhật hệ số độ khó (x${newMultiplier}) và đồng bộ với Master Data`);
+    }
   };
 
   return (

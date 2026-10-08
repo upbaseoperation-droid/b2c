@@ -686,7 +686,19 @@ export default function App() {
           )}
 
           {activeTab === 'sample-tracker' && (
-            <SampleTrackerView />
+            <SampleTrackerView
+              deals={deals}
+              currentUser={currentUser}
+              onNotify={showToast}
+              onUpdateDealWithSparkAds={(dealCode, sparkCode) => {
+                setDeals(prev => prev.map(d => d.dealCode === dealCode ? {
+                  ...d,
+                  adsCodeStatus: 'ĐÃ_NGHIỆM_THU',
+                  sparkAdsCode: sparkCode,
+                  pipelineText: 'Đã có Spark Ads'
+                } : d));
+              }}
+            />
           )}
 
           {activeTab === 'manager' && (
@@ -717,7 +729,19 @@ export default function App() {
           )}
 
           {activeTab === 'performance-p3' && (
-            <PerformanceP3View />
+            <PerformanceP3View
+              storePortfolios={storePortfolios}
+              deals={deals}
+              currentUser={currentUser}
+              onNotify={showToast}
+              onUpdateStoreDifficulty={(storeId, multiplier, tier) => {
+                setStorePortfolios(prev => prev.map(s => s.id === storeId ? {
+                  ...s,
+                  difficultyMultiplier: multiplier,
+                  difficultyTier: tier
+                } : s));
+              }}
+            />
           )}
 
           {(activeTab === 'leaderboard') && (
@@ -734,9 +758,25 @@ export default function App() {
 
           {activeTab === 'brand-hub' && (
             <BrandHubView
+              deals={deals}
+              brands={brands}
               onNotify={showToast}
               onNavigateToCtvHub={() => setActiveTab('self-channel-hub')}
               onNavigateToKocHub={() => setActiveTab('koc-hub')}
+              onBrandApproveDeal={(kocOrDeal) => {
+                setDeals(prev => prev.map(d => 
+                  (d.kocStageName.toLowerCase().includes(kocOrDeal.toLowerCase()) || d.dealCode === kocOrDeal)
+                    ? { ...d, brandApprovalStatus: 'ĐÃ_DUYỆT' }
+                    : d
+                ));
+              }}
+              onBrandRejectDeal={(kocOrDeal, reason) => {
+                setDeals(prev => prev.map(d => 
+                  (d.kocStageName.toLowerCase().includes(kocOrDeal.toLowerCase()) || d.dealCode === kocOrDeal)
+                    ? { ...d, brandApprovalStatus: 'TỪ_CHỐI' }
+                    : d
+                ));
+              }}
             />
           )}
 

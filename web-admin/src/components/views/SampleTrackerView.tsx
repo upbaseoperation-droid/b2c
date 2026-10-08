@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Package, 
   Truck, 
@@ -19,16 +19,65 @@ import {
   Check,
   Sparkles
 } from 'lucide-react';
-import { SampleShipment } from '@/lib/types';
+import { SampleShipment, BookingDealItem, UserProfile } from '@/lib/types';
 import { MOCK_SAMPLE_SHIPMENTS } from '@/lib/mockData';
 
-export default function SampleTrackerView() {
-  const [shipments, setShipments] = useState<SampleShipment[]>(MOCK_SAMPLE_SHIPMENTS);
+export interface SampleTrackerViewProps {
+  deals?: BookingDealItem[];
+  currentUser?: UserProfile;
+  onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
+  onUpdateDealWithSparkAds?: (dealCode: string, sparkCode: string) => void;
+}
+
+export default function SampleTrackerView({
+  deals = [],
+  currentUser,
+  onNotify,
+  onUpdateDealWithSparkAds
+}: SampleTrackerViewProps = {}) {
+  // Đồng bộ các deal từ Booking sang danh sách vận đơn mẫu nếu chưa có
+  const mergedInitialShipments = useMemo(() => {
+    const existingCodes = new Set(MOCK_SAMPLE_SHIPMENTS.map(s => s.dealCode));
+    const dealShipments: SampleShipment[] = deals
+      .filter(d => !existingCodes.has(d.dealCode))
+      .map((d, idx) => ({
+        id: `SMP-DEAL-${d.id || idx}`,
+        dealCode: d.dealCode,
+        kocName: d.kocStageName,
+        kocPhone: '0981.xxx.xxx',
+        shippingAddress: 'Địa chỉ nhận mẫu KOC đã xác nhận trên hệ thống',
+        brandName: d.brandName,
+        productName: d.productName || 'Sản phẩm chủ lực',
+        carrier: 'GHN',
+        trackingCode: `GHN-${d.dealCode.replace(/[^0-9]/g, '') || Math.floor(10000000 + Math.random() * 90000000)}`,
+        sentDate: '01/10/2026',
+        deliveredDate: d.sampleStatus === 'ĐÃ_NHẬN' ? '03/10/2026' : undefined,
+        status: (d.sampleStatus === 'ĐÃ_NHẬN' ? 'DELIVERED' : d.adsCodeStatus === 'ĐÃ_NGHIỆM_THU' ? 'AIRED' : 'DELIVERING') as any,
+        daysSinceDelivered: d.sampleStatus === 'ĐÃ_NHẬN' ? 2 : 0,
+        demoDeadlineDays: 5,
+        sparkAdsCode: d.sparkAdsCode,
+        isMediaHandedOff: !!d.sparkAdsCode,
+        bookingPic: d.assignedStaff || 'Khánh Vy',
+        notes: `Tự động liên kết từ Deal Booking ${d.dealCode} (${d.campaignTitle})`
+      }));
+
+    return [...MOCK_SAMPLE_SHIPMENTS, ...dealShipments];
+  }, [deals]);
+
+  const [shipments, setShipments] = useState<SampleShipment[]>(mergedInitialShipments);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [selectedBrand, setSelectedBrand] = useState<string>('ALL');
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [sparkCodeInput, setSparkCodeInput] = useState<{ [id: string]: string }>({});
+
+  useEffect(() => {
+    setShipments(prev => {
+      const prevIds = new Set(prev.map(p => p.id));
+      const newlyAdded = mergedInitialShipments.filter(m => !prevIds.has(m.id));
+      return newlyAdded.length > 0 ? [...prev, ...newlyAdded] : prev;
+    });
+  }, [mergedInitialShipments]);
 
   const brands = Array.from(new Set(shipments.map(s => s.brandName)));
 
@@ -59,6 +108,7 @@ export default function SampleTrackerView() {
   const handleSaveSparkCode = (id: string) => {
     const code = sparkCodeInput[id];
     if (!code) return;
+    const targetItem = shipments.find(s => s.id === id);
     setShipments(prev => prev.map(item => {
       if (item.id === id) {
         return {
@@ -71,6 +121,13 @@ export default function SampleTrackerView() {
       }
       return item;
     }));
+
+    if (targetItem && onUpdateDealWithSparkAds) {
+      onUpdateDealWithSparkAds(targetItem.dealCode, code);
+    }
+    if (onNotify) {
+      onNotify(`Đã lưu mã Spark Ads [${code}] cho đơn mẫu ${targetItem?.dealCode || id} và bàn giao cho Media`);
+    }
   };
 
   const handleMarkBlacklist = (id: string) => {

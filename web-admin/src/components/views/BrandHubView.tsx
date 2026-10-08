@@ -36,14 +36,20 @@ import {
   BrandCampaignPortalData,
   BrandKocCandidate,
   BrandScriptItem,
-  BrandRejectReasonType
+  BrandRejectReasonType,
+  BookingDealItem,
+  BrandDetail
 } from '../../lib/types';
 import { INITIAL_BRAND_PORTAL_DATA } from '../../lib/mockData';
 
-interface BrandHubViewProps {
+export interface BrandHubViewProps {
+  deals?: BookingDealItem[];
+  brands?: BrandDetail[];
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
   onNavigateToCtvHub?: () => void;
   onNavigateToKocHub?: () => void;
+  onBrandApproveDeal?: (kocOrDeal: string) => void;
+  onBrandRejectDeal?: (kocOrDeal: string, reason: string) => void;
 }
 
 export type BrandHubPillarTab = 'OVERVIEW' | 'APPROVALS' | 'ACTIVE_JOBS' | 'DISCUSSION' | 'HISTORY';
@@ -60,9 +66,13 @@ interface ChatMessage {
 }
 
 export const BrandHubView: React.FC<BrandHubViewProps> = ({ 
+  deals = [],
+  brands = [],
   onNotify,
   onNavigateToCtvHub,
-  onNavigateToKocHub
+  onNavigateToKocHub,
+  onBrandApproveDeal,
+  onBrandRejectDeal
 }) => {
   const [portals, setPortals] = useState<BrandCampaignPortalData[]>(INITIAL_BRAND_PORTAL_DATA);
   const [selectedPortalId, setSelectedPortalId] = useState<string>(INITIAL_BRAND_PORTAL_DATA[0].id);
@@ -197,6 +207,7 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
 
   // KOC Actions
   const handleApproveKoc = (kocId: string) => {
+    const targetKoc = activePortal.kocCandidates.find(k => k.id === kocId);
     setPortals(prev => prev.map(p => {
       if (p.id === activePortal.id) {
         return {
@@ -206,6 +217,10 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
       }
       return p;
     }));
+
+    if (targetKoc && onBrandApproveDeal) {
+      onBrandApproveDeal(targetKoc.stageName);
+    }
 
     if (onNotify) {
       onNotify(`Brand đã duyệt KOC! Hệ thống chuyển sang chặng gửi hàng mẫu và kịch bản.`, 'success');
@@ -230,6 +245,9 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
       return p;
     }));
 
+    if (onBrandRejectDeal) {
+      onBrandRejectDeal(rejectingKoc.stageName, finalReason);
+    }
     if (onNotify) {
       onNotify(`Đã từ chối KOC ${rejectingKoc.stageName} (Lý do: ${finalReason}). Upbase sẽ đề xuất KOC thay thế trong 24 giờ.`, 'warning');
     }
