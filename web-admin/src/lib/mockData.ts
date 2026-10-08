@@ -41,6 +41,7 @@ import {
   BrandKnowledgeBase,
   PushProductItem
 } from './types';
+import { LIVE_STORE_PORTFOLIOS_MASTER } from './liveStoresData';
 
 
 export const USERS: UserProfile[] = [
@@ -6133,7 +6134,7 @@ export const MOCK_WEEKLY_PLANS_411: WeeklyStorePlan411[] = [
 // =========================================================================
 
 // --- MODULE 1: PORTFOLIO / STORE MANAGEMENT ---
-export const INITIAL_STORE_PORTFOLIOS: StorePortfolioItem[] = [
+const DEFAULT_SAMPLE_STORES: StorePortfolioItem[] = [
   {
     id: 'store-port-1',
     brandName: 'Kutieskin',
@@ -6266,6 +6267,11 @@ export const INITIAL_STORE_PORTFOLIOS: StorePortfolioItem[] = [
     activeContentsCount: 24,
     createdAt: '2026-03-10'
   }
+];
+
+export const INITIAL_STORE_PORTFOLIOS: StorePortfolioItem[] = [
+  ...DEFAULT_SAMPLE_STORES,
+  ...LIVE_STORE_PORTFOLIOS_MASTER.filter(s => !DEFAULT_SAMPLE_STORES.some(d => d.storeName === s.storeName))
 ];
 
 // MASTER DATA DANH BẠ NHÂN SỰ & QUẢN LÝ PHÂN CÔNG
