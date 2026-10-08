@@ -24,6 +24,7 @@ import { InputPlanBreakdownView } from '../components/views/InputPlanBreakdownVi
 import SampleTrackerView from '../components/views/SampleTrackerView';
 import PerformanceP3View from '../components/views/PerformanceP3View';
 import { PushProductsView } from '../components/views/PushProductsView';
+import { MasterDataHubView } from '../components/views/MasterDataHubView';
 
 import { 
   USERS, 
@@ -461,8 +462,12 @@ export default function App() {
       title: 'Quản Lý Kế Hoạch Theo Tháng (Monthly Plan Hub)',
       subtitle: 'Hoạch định ngân sách theo chu kỳ tháng, phân rã đa kênh (TikTok Shop, Shopee, Live, Tự xây) và điều phối nhân sự Booking'
     },
+    'master-data': {
+      title: 'Dữ liệu gốc',
+      subtitle: ''
+    },
     'push-products': {
-      title: 'Sản Phẩm Thúc Đẩy (Focus Push Products)',
+      title: 'Sản phẩm',
       subtitle: ''
     },
     stores: {
@@ -614,22 +619,35 @@ export default function App() {
             />
           )}
 
-          {activeTab === 'push-products' && (
-            <PushProductsView
+          {activeTab === 'master-data' && (
+            <MasterDataHubView
               currentUser={currentUser}
               brands={brands}
+              kocs={kocs}
+              onNotify={showToast}
+              onOpenQuickBookWithKoc={handleOpenQuickBookWithKoc}
+              onKocCreated={handleKocCreated}
+              onKocUpdated={handleKocUpdated}
+            />
+          )}
+
+          {activeTab === 'push-products' && (
+            <MasterDataHubView
+              initialSubTab="products"
+              currentUser={currentUser}
+              brands={brands}
+              kocs={kocs}
               onNotify={showToast}
             />
           )}
 
           {activeTab === 'stores' && (
-            <StoresView
+            <MasterDataHubView
+              initialSubTab="stores"
               currentUser={currentUser}
-              onOpenQuickBookWithBrand={(bName) => {
-                setPreselectedKoc(null);
-                setPreselectedBrand(bName);
-                setIsQuickBookOpen(true);
-              }}
+              brands={brands}
+              kocs={kocs}
+              onNotify={showToast}
             />
           )}
 
@@ -672,9 +690,12 @@ export default function App() {
           )}
 
           {activeTab === 'koc-master' && (
-            <KocMasterDataView
-              kocs={kocs}
+            <MasterDataHubView
+              initialSubTab="kocs"
               currentUser={currentUser}
+              brands={brands}
+              kocs={kocs}
+              onNotify={showToast}
               onOpenQuickBookWithKoc={handleOpenQuickBookWithKoc}
               onKocCreated={handleKocCreated}
               onKocUpdated={handleKocUpdated}

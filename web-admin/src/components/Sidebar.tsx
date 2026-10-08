@@ -19,6 +19,7 @@ import {
   Calculator,
   Calendar,
   Flame,
+  Database,
   X,
   LogOut
 } from 'lucide-react';
@@ -28,6 +29,7 @@ export type TabKey =
   | 'cockpit'
   | 'overview'
   | 'input-plan'
+  | 'master-data'
   | 'push-products'
   | 'stores'
   | 'campaigns'
@@ -101,22 +103,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
           badgeType: 'team'
         },
         {
-          key: 'push-products',
-          label: 'Sản Phẩm Thúc Đẩy',
-          icon: Flame
-        },
-        {
           key: 'booking',
           label: 'Quản Lý Booking',
           icon: Users,
           badge: currentUser.role === 'BOOKING_MEMBER' ? 'Của Tôi' : undefined,
-          badgeType: 'team'
-        },
-        {
-          key: 'koc-master',
-          label: 'Danh Bạ Master KOC',
-          icon: UserCheck,
-          badge: 'OCR CCCD',
           badgeType: 'team'
         },
         {
@@ -134,24 +124,29 @@ export const Sidebar: React.FC<SidebarProps> = ({
           badgeType: 'team'
         },
         {
-          key: 'brand-knowledge',
-          label: 'Bách Khoa Brand Guideline',
-          icon: BookOpen,
-        },
-        {
-          key: 'stores',
-          label: 'Gian Hàng & Nhãn Hàng',
-          icon: Store,
-        },
-        {
           key: 'contracts',
           label: 'Hợp Đồng & Thanh Toán',
           icon: FileCheck,
         },
         {
           key: 'sample-tracker',
-          label: 'Giám Sát Mẫu & Bùng KOC',
+          label: 'Giám Sát Mẫu',
           icon: Package,
+        },
+        {
+          key: 'brand-knowledge',
+          label: 'Hướng Dẫn Nhãn Hàng',
+          icon: BookOpen,
+        },
+      ]
+    },
+    {
+      title: 'DỮ LIỆU GỐC',
+      items: [
+        {
+          key: 'master-data',
+          label: 'Dữ liệu gốc',
+          icon: Database,
         },
       ]
     },

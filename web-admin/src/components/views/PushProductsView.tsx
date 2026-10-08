@@ -881,90 +881,86 @@ ${prod.doAndDonts ? `- Quy tắc Do & Don'ts: ${prod.doAndDonts}` : ''}
       {/* Clean Top Bar: Role Switcher & Create Action */}
       <div className="bg-white px-5 py-3.5 rounded-xl border border-slate-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-rose-50 text-rose-600 border border-rose-200 shadow-2xs">
-            <Flame className="w-5 h-5" />
+          <div className="p-2 rounded-lg bg-slate-100 text-slate-700 border border-slate-200">
+            <Package className="w-4 h-4" />
           </div>
           <div>
             <h1 className="text-base font-bold text-slate-900 flex items-center gap-2">
-              Sản Phẩm Thúc Đẩy
-              <span className="text-xs font-normal text-slate-400 font-mono">
-                Focus Push Products
-              </span>
+              Sản phẩm
             </h1>
             <p className="text-xs text-slate-500">
-              Danh mục SKU trọng tâm theo gian hàng • Chốt điều kiện Growth ↔ B2C
+              Danh mục SKU theo từng gian hàng và điều kiện thương mại
             </p>
           </div>
         </div>
 
-        {/* Clean Interactive Persona Switcher & Create Button */}
-        <div className="flex items-center gap-3">
-          <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs">
-            <span className="text-[11px] font-medium text-slate-500 px-2 flex items-center gap-1">
-              <Users className="w-3.5 h-3.5 text-slate-400" />
-              Vai trò:
+        {/* Persona Switcher & Create Button */}
+        <div className="flex items-center gap-2.5">
+          <div className="flex items-center bg-slate-100 p-1 rounded-lg border border-slate-200 text-xs">
+            <span className="text-[11px] text-slate-500 px-2 flex items-center gap-1">
+              Góc nhìn:
             </span>
             <button
               type="button"
               onClick={() => {
                 setActiveRole('GROWTH');
                 setActiveAuthorName('Hoàng Long (Growth Lead)');
-                notify('Chuyển sang góc nhìn: Growth Team (Khởi tạo deal, gian hàng & kho)', 'info');
+                notify('Chuyển sang góc nhìn: Growth Team', 'info');
               }}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
+              className={`px-2.5 py-1 rounded text-xs transition-all flex items-center gap-1.5 ${
                 activeRole === 'GROWTH'
-                  ? 'bg-white text-indigo-600 shadow-2xs font-bold'
-                  : 'text-slate-600 hover:text-slate-900'
+                  ? 'bg-white text-slate-900 shadow-2xs font-bold'
+                  : 'text-slate-600 hover:text-slate-900 font-medium'
               }`}
             >
-              <TrendingUp className="w-3.5 h-3.5 text-indigo-600" />
-              Growth Lead
+              <TrendingUp className="w-3.5 h-3.5 text-slate-600" />
+              Growth
             </button>
             <button
               type="button"
               onClick={() => {
                 setActiveRole('B2C');
                 setActiveAuthorName('Khánh Vy (Booking Lead)');
-                notify('Chuyển sang góc nhìn: B2C Team (Review khả thi, booking & brief KOC)', 'info');
+                notify('Chuyển sang góc nhìn: B2C Team', 'info');
               }}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
+              className={`px-2.5 py-1 rounded text-xs transition-all flex items-center gap-1.5 ${
                 activeRole === 'B2C'
-                  ? 'bg-white text-rose-600 shadow-2xs font-bold'
-                  : 'text-slate-600 hover:text-slate-900'
+                  ? 'bg-white text-slate-900 shadow-2xs font-bold'
+                  : 'text-slate-600 hover:text-slate-900 font-medium'
               }`}
             >
-              <Flame className="w-3.5 h-3.5 text-rose-600" />
-              B2C Lead
+              <Users className="w-3.5 h-3.5 text-slate-600" />
+              B2C Booking
             </button>
           </div>
 
           <button
             type="button"
             onClick={() => setIsCreateModalOpen(true)}
-            className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-xl shadow-2xs transition-all flex items-center gap-1.5 whitespace-nowrap"
+            className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5 whitespace-nowrap"
           >
-            <Plus className="w-4 h-4" />
-            Khởi Tạo SKU Mới
+            <Plus className="w-3.5 h-3.5" />
+            Thêm sản phẩm
           </button>
         </div>
       </div>
 
-      {/* 🌟 TIME HORIZON TABS: Available (Hiện Tại) vs Tương Lai vs Lịch Sử */}
-      <div className="bg-white p-2.5 rounded-xl border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center flex-wrap gap-2">
+      {/* TIME HORIZON TABS: Đang mở bán vs Kế hoạch vs Lịch sử */}
+      <div className="bg-white p-2 rounded-xl border border-slate-200 shadow-xs flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center flex-wrap gap-1.5">
           <button
             type="button"
             onClick={() => setTimeHorizon('AVAILABLE')}
-            className={`px-4 py-2 text-xs font-bold rounded-lg transition-all flex items-center gap-2 ${
+            className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5 ${
               timeHorizon === 'AVAILABLE'
-                ? 'bg-emerald-600 text-white shadow-sm ring-2 ring-emerald-500/20'
-                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                ? 'bg-slate-900 text-white shadow-xs'
+                : 'text-slate-600 hover:bg-slate-100'
             }`}
           >
-            <CheckCircle2 className="w-4 h-4" />
-            Đang Available (Hiện Tại)
-            <span className={`px-2 py-0.5 rounded-full text-[11px] font-mono font-bold ${
-              timeHorizon === 'AVAILABLE' ? 'bg-white/20 text-white' : 'bg-emerald-100 text-emerald-800'
+            <CheckCircle2 className="w-3.5 h-3.5" />
+            Đang mở bán
+            <span className={`px-1.5 py-0.2 rounded text-[11px] font-mono ${
+              timeHorizon === 'AVAILABLE' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700'
             }`}>
               {horizonCounts.available}
             </span>
@@ -973,16 +969,16 @@ ${prod.doAndDonts ? `- Quy tắc Do & Don'ts: ${prod.doAndDonts}` : ''}
           <button
             type="button"
             onClick={() => setTimeHorizon('FUTURE')}
-            className={`px-4 py-2 text-xs font-bold rounded-lg transition-all flex items-center gap-2 ${
+            className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5 ${
               timeHorizon === 'FUTURE'
-                ? 'bg-indigo-600 text-white shadow-sm ring-2 ring-indigo-500/20'
-                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                ? 'bg-slate-900 text-white shadow-xs'
+                : 'text-slate-600 hover:bg-slate-100'
             }`}
           >
-            <Calendar className="w-4 h-4" />
-            Kế Hoạch Tương Lai (Các Tháng Sau)
-            <span className={`px-2 py-0.5 rounded-full text-[11px] font-mono font-bold ${
-              timeHorizon === 'FUTURE' ? 'bg-white/20 text-white' : 'bg-indigo-100 text-indigo-800'
+            <Calendar className="w-3.5 h-3.5" />
+            Kế hoạch sắp tới
+            <span className={`px-1.5 py-0.2 rounded text-[11px] font-mono ${
+              timeHorizon === 'FUTURE' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700'
             }`}>
               {horizonCounts.future}
             </span>
@@ -991,16 +987,16 @@ ${prod.doAndDonts ? `- Quy tắc Do & Don'ts: ${prod.doAndDonts}` : ''}
           <button
             type="button"
             onClick={() => setTimeHorizon('HISTORY')}
-            className={`px-4 py-2 text-xs font-bold rounded-lg transition-all flex items-center gap-2 ${
+            className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5 ${
               timeHorizon === 'HISTORY'
-                ? 'bg-slate-800 text-white shadow-sm ring-2 ring-slate-800/20'
-                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                ? 'bg-slate-900 text-white shadow-xs'
+                : 'text-slate-600 hover:bg-slate-100'
             }`}
           >
-            <History className="w-4 h-4" />
-            Lịch Sử (Các Chu Kỳ Trước)
-            <span className={`px-2 py-0.5 rounded-full text-[11px] font-mono font-bold ${
-              timeHorizon === 'HISTORY' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-800'
+            <History className="w-3.5 h-3.5" />
+            Lịch sử
+            <span className={`px-1.5 py-0.2 rounded text-[11px] font-mono ${
+              timeHorizon === 'HISTORY' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700'
             }`}>
               {horizonCounts.history}
             </span>
@@ -1009,13 +1005,13 @@ ${prod.doAndDonts ? `- Quy tắc Do & Don'ts: ${prod.doAndDonts}` : ''}
           <button
             type="button"
             onClick={() => setTimeHorizon('ALL')}
-            className={`px-3 py-2 text-xs font-semibold rounded-lg transition-all ${
+            className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${
               timeHorizon === 'ALL'
                 ? 'bg-slate-200 text-slate-900 font-bold'
-                : 'text-slate-500 hover:text-slate-900'
+                : 'text-slate-500 hover:text-slate-800'
             }`}
           >
-            Tất Cả ({products.length})
+            Tất cả ({products.length})
           </button>
         </div>
 
@@ -1053,74 +1049,74 @@ ${prod.doAndDonts ? `- Quy tắc Do & Don'ts: ${prod.doAndDonts}` : ''}
         </div>
       </div>
 
-      {/* KPI Cards Strip (Focus on Stock, Quota, Consensus - NO TARGET GMV) */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:border-indigo-300 transition-all">
+      {/* KPI Cards Strip */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
           <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
-            <span>Sản Phẩm Đang Xem</span>
-            <Boxes className="w-4 h-4 text-indigo-500" />
+            <span>Tổng sản phẩm</span>
+            <Boxes className="w-3.5 h-3.5 text-slate-400" />
           </div>
-          <div className="text-2xl font-bold text-slate-900">{metrics.totalCount} <span className="text-xs font-normal text-slate-500">SKU</span></div>
-          <div className="text-[11px] text-slate-400 mt-1">Phân bố theo gian hàng</div>
+          <div className="text-xl font-bold text-slate-900">{metrics.totalCount} <span className="text-xs font-normal text-slate-500">SKU</span></div>
+          <div className="text-[11px] text-slate-400 mt-0.5">Theo gian hàng sàn</div>
         </div>
 
-        <div className="bg-emerald-50/50 p-4 rounded-xl border border-emerald-200 shadow-sm hover:border-emerald-400 transition-all">
-          <div className="flex items-center justify-between text-xs text-emerald-700 mb-1 font-medium">
-            <span>Đã Chốt Đồng Thuận</span>
-            <Lock className="w-4 h-4 text-emerald-600" />
+        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
+          <div className="flex items-center justify-between text-xs text-slate-600 mb-1">
+            <span>Đã chốt duyệt</span>
+            <Lock className="w-3.5 h-3.5 text-slate-400" />
           </div>
-          <div className="text-2xl font-bold text-emerald-700">{metrics.lockedCount}</div>
-          <div className="text-[11px] text-emerald-600 font-medium mt-1">
-            Đạt {metrics.lockRatio}% tổng SKU hiện tại
-          </div>
-        </div>
-
-        <div className="bg-indigo-50/50 p-4 rounded-xl border border-indigo-200 shadow-sm hover:border-indigo-400 transition-all">
-          <div className="flex items-center justify-between text-xs text-indigo-700 mb-1 font-medium">
-            <span>Đang Thảo Luận 2 Chiều</span>
-            <MessageSquare className="w-4 h-4 text-indigo-600" />
-          </div>
-          <div className="text-2xl font-bold text-indigo-700">{metrics.inDiscussionCount}</div>
-          <div className="text-[11px] text-indigo-600 mt-1">Growth ↔ B2C phản biện deal/mẫu</div>
-        </div>
-
-        <div className="bg-amber-50/60 p-4 rounded-xl border border-amber-300 shadow-sm hover:border-amber-400 transition-all">
-          <div className="flex items-center justify-between text-xs text-amber-800 mb-1 font-medium">
-            <span>Hạn Mức Mẫu Có Thể Cấp</span>
-            <Package className="w-4 h-4 text-amber-600" />
-          </div>
-          <div className="text-xl font-bold text-slate-900">
-            {metrics.totalSampleAllocated} <span className="text-xs font-normal text-slate-500">/ {metrics.totalSampleQuota} mẫu</span>
-          </div>
-          <div className="text-[11px] text-slate-500 mt-1">
-            Đã cấp {metrics.totalSampleQuota > 0 ? Math.round((metrics.totalSampleAllocated / metrics.totalSampleQuota) * 100) : 0}% cho KOC
+          <div className="text-xl font-bold text-slate-900">{metrics.lockedCount}</div>
+          <div className="text-[11px] text-slate-500 mt-0.5">
+            Đạt {metrics.lockRatio}% tổng danh mục
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:border-indigo-300 transition-all">
-          <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
-            <span>Tồn Kho Cam Kết Giữ</span>
-            <Store className="w-4 h-4 text-teal-600" />
+        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
+          <div className="flex items-center justify-between text-xs text-slate-600 mb-1">
+            <span>Đang trao đổi</span>
+            <MessageSquare className="w-3.5 h-3.5 text-slate-400" />
           </div>
-          <div className="text-xl font-bold text-slate-900">
+          <div className="text-xl font-bold text-slate-900">{metrics.inDiscussionCount}</div>
+          <div className="text-[11px] text-slate-500 mt-0.5">Phản biện điều kiện deal/mẫu</div>
+        </div>
+
+        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
+          <div className="flex items-center justify-between text-xs text-slate-600 mb-1">
+            <span>Hạn mức mẫu</span>
+            <Package className="w-3.5 h-3.5 text-slate-400" />
+          </div>
+          <div className="text-lg font-bold text-slate-900">
+            {metrics.totalSampleAllocated} <span className="text-xs font-normal text-slate-500">/ {metrics.totalSampleQuota}</span>
+          </div>
+          <div className="text-[11px] text-slate-500 mt-0.5">
+            Đã cấp {metrics.totalSampleQuota > 0 ? Math.round((metrics.totalSampleAllocated / metrics.totalSampleQuota) * 100) : 0}% quota
+          </div>
+        </div>
+
+        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
+          <div className="flex items-center justify-between text-xs text-slate-600 mb-1">
+            <span>Tồn kho khả dụng</span>
+            <Store className="w-3.5 h-3.5 text-slate-400" />
+          </div>
+          <div className="text-lg font-bold text-slate-900">
             {metrics.totalAvailableStock.toLocaleString('vi-VN')} <span className="text-xs font-normal text-slate-500">SP</span>
           </div>
-          <div className="text-[11px] text-slate-400 mt-1">Sẵn sàng phục vụ chiến dịch</div>
+          <div className="text-[11px] text-slate-500 mt-0.5">Cam kết cho chiến dịch</div>
         </div>
       </div>
 
       {/* Filter and Control Bar */}
-      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+      <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs space-y-2.5">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-2.5">
           {/* Search box */}
           <div className="relative flex-1 min-w-[240px]">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder="Tìm theo SKU, tên sản phẩm, gian hàng, thương hiệu, USP hoặc thông điệp..."
+              placeholder="Tìm theo SKU, tên sản phẩm, gian hàng, thương hiệu..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+              className="w-full pl-9 pr-4 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-slate-400"
             />
             {searchQuery && (
               <button
@@ -1139,26 +1135,26 @@ ${prod.doAndDonts ? `- Quy tắc Do & Don'ts: ${prod.doAndDonts}` : ''}
               <button
                 type="button"
                 onClick={() => setViewMode('BRAND_STORE_HIERARCHY')}
-                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all flex items-center gap-1.5 ${
+                className={`px-2.5 py-1 text-xs font-medium rounded-md transition-all flex items-center gap-1.5 ${
                   viewMode === 'BRAND_STORE_HIERARCHY'
-                    ? 'bg-white text-indigo-600 shadow-sm font-bold'
+                    ? 'bg-white text-slate-900 shadow-xs font-semibold'
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
                 <Layers className="w-3.5 h-3.5" />
-                Phân Cấp: Brand ➔ Gian Hàng
+                Theo gian hàng
               </button>
               <button
                 type="button"
                 onClick={() => setViewMode('GRID')}
-                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all flex items-center gap-1.5 ${
+                className={`px-2.5 py-1 text-xs font-medium rounded-md transition-all flex items-center gap-1.5 ${
                   viewMode === 'GRID'
-                    ? 'bg-white text-indigo-600 shadow-sm font-bold'
+                    ? 'bg-white text-slate-900 shadow-xs font-semibold'
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
                 <SlidersHorizontal className="w-3.5 h-3.5" />
-                Dạng Bảng Master Data
+                Dạng bảng
               </button>
             </div>
 
@@ -1166,10 +1162,10 @@ ${prod.doAndDonts ? `- Quy tắc Do & Don'ts: ${prod.doAndDonts}` : ''}
             <button
               type="button"
               onClick={() => setIsCreateModalOpen(true)}
-              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-all flex items-center gap-1.5 whitespace-nowrap"
+              className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5 whitespace-nowrap"
             >
-              <Plus className="w-4 h-4" />
-              Khởi Tạo SP Thúc Đẩy Mới
+              <Plus className="w-3.5 h-3.5" />
+              Thêm sản phẩm
             </button>
           </div>
         </div>
@@ -1285,18 +1281,18 @@ ${prod.doAndDonts ? `- Quy tắc Do & Don'ts: ${prod.doAndDonts}` : ''}
                         <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-indigo-100 text-indigo-700">
                           {bGroup.storeGroups.length} Gian Hàng
                         </span>
-                        <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-200 text-slate-700">
-                          {bGroup.totalProductsCount} SKU Thúc Đẩy
+                        <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+                          {bGroup.totalProductsCount} sản phẩm
                         </span>
                       </div>
                       <div className="text-xs text-slate-500 mt-0.5 flex items-center gap-3">
                         <span>Ngành hàng: <strong>{bGroup.brandCategory}</strong></span>
                         <span>•</span>
-                        <span>Đã chốt: <strong className="text-emerald-600">{bGroup.lockedCount}/{bGroup.totalProductsCount} SKU</strong></span>
+                        <span>Đã chốt: <strong className="text-slate-800">{bGroup.lockedCount}/{bGroup.totalProductsCount} SKU</strong></span>
                         <span>•</span>
                         <span>Tổng tồn kho: <strong className="text-slate-700">{bGroup.totalStock.toLocaleString('vi-VN')} SP</strong></span>
                         <span>•</span>
-                        <span>Hạn mức mẫu: <strong className="text-indigo-600">{bGroup.totalSampleQuota} mẫu</strong></span>
+                        <span>Hạn mức mẫu: <strong className="text-slate-800">{bGroup.totalSampleQuota} mẫu</strong></span>
                       </div>
                     </div>
                   </div>
@@ -1305,9 +1301,9 @@ ${prod.doAndDonts ? `- Quy tắc Do & Don'ts: ${prod.doAndDonts}` : ''}
                     <button
                       type="button"
                       onClick={() => handleOpenCreateForStore(bGroup.brandId, bGroup.storeGroups[0]?.storeId || '')}
-                      className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 transition-colors flex items-center gap-1"
+                      className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 transition-colors flex items-center gap-1"
                     >
-                      <Plus className="w-3.5 h-3.5" /> Thêm SKU Cho Brand
+                      <Plus className="w-3.5 h-3.5" /> Thêm sản phẩm
                     </button>
                   </div>
                 </div>
