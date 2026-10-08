@@ -103,6 +103,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
           badgeType: 'team'
         },
         {
+          key: 'push-products',
+          label: 'Sản Phẩm Thúc Đẩy',
+          icon: TrendingUp,
+        },
+        {
           key: 'booking',
           label: 'Quản Lý Booking',
           icon: Users,

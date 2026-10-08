@@ -886,10 +886,10 @@ ${prod.doAndDonts ? `- Quy tắc Do & Don'ts: ${prod.doAndDonts}` : ''}
           </div>
           <div>
             <h1 className="text-base font-bold text-slate-900 flex items-center gap-2">
-              Sản phẩm
+              Sản phẩm thúc đẩy
             </h1>
             <p className="text-xs text-slate-500">
-              Danh mục SKU theo từng gian hàng và điều kiện thương mại
+              Thiết lập điều kiện chiến dịch, tồn kho, mẫu và brief KOC giữa Growth & B2C
             </p>
           </div>
         </div>
@@ -940,7 +940,7 @@ ${prod.doAndDonts ? `- Quy tắc Do & Don'ts: ${prod.doAndDonts}` : ''}
             className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5 whitespace-nowrap"
           >
             <Plus className="w-3.5 h-3.5" />
-            Thêm sản phẩm
+            Đề xuất sản phẩm thúc đẩy
           </button>
         </div>
       </div>

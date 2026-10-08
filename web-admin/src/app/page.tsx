@@ -632,11 +632,9 @@ export default function App() {
           )}
 
           {activeTab === 'push-products' && (
-            <MasterDataHubView
-              initialSubTab="products"
+            <PushProductsView
               currentUser={currentUser}
               brands={brands}
-              kocs={kocs}
               onNotify={showToast}
             />
           )}

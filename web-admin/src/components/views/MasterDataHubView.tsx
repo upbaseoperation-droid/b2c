@@ -7,14 +7,27 @@ import {
   Plus, 
   X, 
   CheckCircle2,
-  Shield
+  Shield,
+  Tag
 } from 'lucide-react';
 import { UserProfile, BrandDetail, StorePortfolioItem, KocItem } from '../../lib/types';
-import { INITIAL_BRANDS, INITIAL_STORE_PORTFOLIOS, USERS, INITIAL_KOCS } from '../../lib/mockData';
-import { PushProductsView } from './PushProductsView';
+import { INITIAL_BRANDS, INITIAL_STORE_PORTFOLIOS, USERS, INITIAL_KOCS, INITIAL_PUSH_PRODUCTS } from '../../lib/mockData';
 import { KocMasterDataView } from './KocMasterDataView';
 
 export type MasterDataSubTab = 'brands' | 'stores' | 'products' | 'kocs' | 'staff';
+
+export interface MasterProductItem {
+  id: string;
+  sku: string;
+  productName: string;
+  brandName: string;
+  storeName: string;
+  platform: 'TikTok Shop' | 'Shopee Mall' | 'Lazada';
+  category: string;
+  originalPrice: number;
+  pdpUrl: string;
+  status: 'ACTIVE' | 'DISCONTINUED';
+}
 
 interface MasterDataHubViewProps {
   currentUser: UserProfile;
@@ -67,6 +80,38 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
     accountOwnerName: 'Hoàng Long'
   });
 
+  // Master Product Catalog state (Dữ liệu gốc sản phẩm)
+  const [productList, setProductList] = useState<MasterProductItem[]>(() => 
+    INITIAL_PUSH_PRODUCTS.map(p => ({
+      id: p.id,
+      sku: p.sku,
+      productName: p.productName,
+      brandName: p.brandName,
+      storeName: p.storeName || (p.platform === 'TIKTOK_SHOP' ? `${p.brandName} TikTok Shop` : `${p.brandName} Shopee Mall`),
+      platform: p.platform === 'TIKTOK_SHOP' ? 'TikTok Shop' : p.platform === 'SHOPEE_MALL' ? 'Shopee Mall' : 'Lazada',
+      category: p.brandCategory,
+      originalPrice: p.originalPrice,
+      pdpUrl: p.pdpUrl || '',
+      status: 'ACTIVE'
+    }))
+  );
+  const [productSearch, setProductSearch] = useState('');
+  const [selectedProductBrand, setSelectedProductBrand] = useState('ALL');
+  const [selectedProductPlatform, setSelectedProductPlatform] = useState('ALL');
+  const [isProductModalOpen, setIsProductModalOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<MasterProductItem | null>(null);
+  const [productForm, setProductForm] = useState({
+    sku: '',
+    productName: '',
+    brandName: brands[0]?.name || 'Kutieskin',
+    storeName: '',
+    platform: 'Shopee Mall' as 'TikTok Shop' | 'Shopee Mall' | 'Lazada',
+    category: 'Mẹ & Bé',
+    originalPrice: 150000,
+    pdpUrl: '',
+    status: 'ACTIVE' as 'ACTIVE' | 'DISCONTINUED'
+  });
+
   // Staff state
   const [staffSearch, setStaffSearch] = useState('');
   const [selectedStaffRole, setSelectedStaffRole] = useState('ALL');
@@ -92,6 +137,17 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
     return true;
   });
 
+  // Filtered Master Products
+  const filteredProducts = productList.filter(p => {
+    if (selectedProductBrand !== 'ALL' && p.brandName !== selectedProductBrand) return false;
+    if (selectedProductPlatform !== 'ALL' && p.platform !== selectedProductPlatform) return false;
+    if (productSearch.trim()) {
+      const q = productSearch.toLowerCase();
+      return p.productName.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q) || p.brandName.toLowerCase().includes(q);
+    }
+    return true;
+  });
+
   // Filtered Staff
   const filteredStaff = USERS.filter(u => {
     if (selectedStaffRole !== 'ALL' && u.role !== selectedStaffRole) return false;
@@ -101,6 +157,11 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
     }
     return true;
   });
+
+  // Format Currency
+  const formatVnd = (num: number) => {
+    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(num);
+  };
 
   // Handle Add/Edit Brand
   const handleSaveBrand = (e: React.FormEvent) => {
@@ -175,6 +236,45 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
     setIsStoreModalOpen(false);
   };
 
+  // Handle Add / Edit Master Product
+  const handleSaveProduct = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!productForm.sku.trim() || !productForm.productName.trim()) return;
+
+    if (editingProduct) {
+      setProductList(prev => prev.map(p => p.id === editingProduct.id ? {
+        ...p,
+        sku: productForm.sku.trim().toUpperCase(),
+        productName: productForm.productName.trim(),
+        brandName: productForm.brandName,
+        storeName: productForm.storeName.trim() || `${productForm.brandName} ${productForm.platform}`,
+        platform: productForm.platform,
+        category: productForm.category,
+        originalPrice: Number(productForm.originalPrice),
+        pdpUrl: productForm.pdpUrl.trim(),
+        status: productForm.status
+      } : p));
+      if (onNotify) onNotify(`Đã cập nhật sản phẩm [${productForm.sku}] vào dữ liệu gốc`);
+    } else {
+      const newProd: MasterProductItem = {
+        id: `mp-${Date.now()}`,
+        sku: productForm.sku.trim().toUpperCase(),
+        productName: productForm.productName.trim(),
+        brandName: productForm.brandName,
+        storeName: productForm.storeName.trim() || `${productForm.brandName} ${productForm.platform}`,
+        platform: productForm.platform,
+        category: productForm.category,
+        originalPrice: Number(productForm.originalPrice),
+        pdpUrl: productForm.pdpUrl.trim(),
+        status: productForm.status
+      };
+      setProductList(prev => [newProd, ...prev]);
+      if (onNotify) onNotify(`Đã thêm sản phẩm [${newProd.sku}] vào dữ liệu gốc`);
+    }
+    setIsProductModalOpen(false);
+    setEditingProduct(null);
+  };
+
   return (
     <div className="space-y-5">
       {/* Sub-Tabs Navigation */}
@@ -183,12 +283,12 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
           <div>
             <h1 className="text-base font-bold text-slate-900">Dữ liệu gốc</h1>
             <p className="text-xs text-slate-500 mt-0.5">
-              Quản lý danh mục chuẩn hóa cho toàn bộ hệ thống vận hành
+              Quản lý các danh mục nền tảng: Thương hiệu, Gian hàng, Sản phẩm, KOC và Nhân sự
             </p>
           </div>
         </div>
 
-        {/* Minimalist Sub-Tabs (No emojis, no colorful badges) */}
+        {/* Minimalist Sub-Tabs */}
         <div className="flex space-x-6 overflow-x-auto text-xs font-medium pt-1">
           <button
             type="button"
@@ -230,6 +330,9 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
             }`}
           >
             <span>Sản phẩm</span>
+            <span className="text-[11px] font-mono px-1.5 py-0.2 rounded bg-slate-100 text-slate-600">
+              {productList.length}
+            </span>
           </button>
 
           <button
@@ -493,13 +596,159 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
         </div>
       )}
 
-      {/* SUB-TAB 3: SẢN PHẨM (Clean UI, không lạm dụng icon, không dùng từ "thúc đẩy") */}
+      {/* SUB-TAB 3: SẢN PHẨM (Master Product Catalog) */}
       {activeSubTab === 'products' && (
-        <PushProductsView
-          currentUser={currentUser}
-          brands={brandList}
-          onNotify={onNotify}
-        />
+        <div className="space-y-4">
+          <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2 flex-1 max-w-lg">
+              <div className="relative w-full">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Tìm theo SKU, tên sản phẩm, thương hiệu..."
+                  value={productSearch}
+                  onChange={(e) => setProductSearch(e.target.value)}
+                  className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-slate-400"
+                />
+              </div>
+
+              <select
+                value={selectedProductPlatform}
+                onChange={(e) => setSelectedProductPlatform(e.target.value)}
+                className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-700 focus:outline-none shrink-0"
+              >
+                <option value="ALL">Mọi nền tảng</option>
+                <option value="TikTok Shop">TikTok Shop</option>
+                <option value="Shopee Mall">Shopee Mall</option>
+                <option value="Lazada">Lazada</option>
+              </select>
+
+              <select
+                value={selectedProductBrand}
+                onChange={(e) => setSelectedProductBrand(e.target.value)}
+                className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-700 focus:outline-none shrink-0"
+              >
+                <option value="ALL">Mọi nhãn hàng</option>
+                {brandList.map(b => (
+                  <option key={b.id} value={b.name}>{b.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                setEditingProduct(null);
+                setProductForm({
+                  sku: '',
+                  productName: '',
+                  brandName: brandList[0]?.name || 'Kutieskin',
+                  storeName: '',
+                  platform: 'Shopee Mall',
+                  category: 'Mẹ & Bé',
+                  originalPrice: 150000,
+                  pdpUrl: '',
+                  status: 'ACTIVE'
+                });
+                setIsProductModalOpen(true);
+              }}
+              className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg transition flex items-center gap-1.5 shrink-0"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Thêm sản phẩm
+            </button>
+          </div>
+
+          <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-50 text-slate-600 border-b border-slate-200 font-semibold text-[11px]">
+                <tr>
+                  <th className="py-3 px-4">Mã SKU & Tên sản phẩm</th>
+                  <th className="py-3 px-4">Thương hiệu</th>
+                  <th className="py-3 px-4">Gian hàng & Sàn</th>
+                  <th className="py-3 px-4">Ngành hàng</th>
+                  <th className="py-3 px-4 text-right">Giá niêm yết</th>
+                  <th className="py-3 px-4 text-center">Trạng thái</th>
+                  <th className="py-3 px-4 text-right">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {filteredProducts.map(p => (
+                  <tr key={p.id} className="hover:bg-slate-50/70 transition-colors">
+                    <td className="py-3 px-4">
+                      <div className="font-mono font-bold text-slate-800">{p.sku}</div>
+                      <div className="text-slate-900 font-medium line-clamp-1">{p.productName}</div>
+                    </td>
+                    <td className="py-3 px-4 text-slate-700">{p.brandName}</td>
+                    <td className="py-3 px-4">
+                      <div className="flex items-center gap-1.5">
+                        <span className={`px-2 py-0.2 rounded text-[10px] font-medium ${
+                          p.platform === 'TikTok Shop' 
+                            ? 'bg-slate-900 text-white' 
+                            : p.platform === 'Shopee Mall' 
+                            ? 'bg-orange-100 text-orange-800' 
+                            : 'bg-blue-100 text-blue-800'
+                        }`}>
+                          {p.platform}
+                        </span>
+                        <span className="text-[11px] text-slate-600 truncate max-w-[140px]">{p.storeName}</span>
+                      </div>
+                    </td>
+                    <td className="py-3 px-4 text-slate-600">{p.category}</td>
+                    <td className="py-3 px-4 text-right font-mono font-semibold text-slate-900">
+                      {formatVnd(p.originalPrice)}
+                    </td>
+                    <td className="py-3 px-4 text-center">
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-semibold ${
+                        p.status === 'ACTIVE' 
+                          ? 'bg-slate-100 text-slate-800' 
+                          : 'bg-gray-100 text-gray-500'
+                      }`}>
+                        {p.status === 'ACTIVE' ? 'Đang kinh doanh' : 'Tạm ngừng'}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        {p.pdpUrl && (
+                          <a
+                            href={p.pdpUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-slate-500 hover:text-slate-800 p-1"
+                            title="Xem trang sản phẩm trên sàn"
+                          >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                          </a>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingProduct(p);
+                            setProductForm({
+                              sku: p.sku,
+                              productName: p.productName,
+                              brandName: p.brandName,
+                              storeName: p.storeName,
+                              platform: p.platform,
+                              category: p.category,
+                              originalPrice: p.originalPrice,
+                              pdpUrl: p.pdpUrl,
+                              status: p.status
+                            });
+                            setIsProductModalOpen(true);
+                          }}
+                          className="text-slate-600 hover:text-slate-900 font-medium text-xs px-2 py-1 rounded hover:bg-slate-100 transition"
+                        >
+                          Sửa
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       )}
 
       {/* SUB-TAB 4: DANH BẠ KOC */}
@@ -772,6 +1021,152 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsStoreModalOpen(false)}
+                  className="px-3 py-1.5 border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 transition"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-lg transition"
+                >
+                  Lưu
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: THÊM / SỬA SẢN PHẨM GỐC */}
+      {isProductModalOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-xl border border-slate-200 max-w-md w-full p-5 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <h3 className="font-bold text-sm text-slate-900">
+                {editingProduct ? 'Cập nhật thông tin sản phẩm' : 'Thêm sản phẩm vào dữ liệu gốc'}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setIsProductModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveProduct} className="space-y-3 text-xs">
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-slate-600 font-medium mb-1">Mã SKU *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="VD: KUTIE-SOOTH-30G"
+                    value={productForm.sku}
+                    onChange={(e) => setProductForm(prev => ({ ...prev, sku: e.target.value }))}
+                    className="w-full px-3 py-1.5 border border-slate-200 rounded-lg font-mono focus:outline-none focus:ring-1 focus:ring-slate-400 uppercase"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-600 font-medium mb-1">Giá niêm yết (VNĐ) *</label>
+                  <input
+                    type="number"
+                    required
+                    value={productForm.originalPrice}
+                    onChange={(e) => setProductForm(prev => ({ ...prev, originalPrice: Number(e.target.value) }))}
+                    className="w-full px-3 py-1.5 border border-slate-200 rounded-lg font-mono focus:outline-none focus:ring-1 focus:ring-slate-400"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-600 font-medium mb-1">Tên sản phẩm *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ví dụ: Kem Bôi Dịu Da Kutieskin 30g"
+                  value={productForm.productName}
+                  onChange={(e) => setProductForm(prev => ({ ...prev, productName: e.target.value }))}
+                  className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-400"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-slate-600 font-medium mb-1">Thuộc thương hiệu</label>
+                  <select
+                    value={productForm.brandName}
+                    onChange={(e) => setProductForm(prev => ({ ...prev, brandName: e.target.value }))}
+                    className="w-full px-3 py-1.5 border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-slate-400"
+                  >
+                    {brandList.map(b => (
+                      <option key={b.id} value={b.name}>{b.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-slate-600 font-medium mb-1">Nền tảng sàn</label>
+                  <select
+                    value={productForm.platform}
+                    onChange={(e) => setProductForm(prev => ({ ...prev, platform: e.target.value as any }))}
+                    className="w-full px-3 py-1.5 border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-slate-400"
+                  >
+                    <option value="Shopee Mall">Shopee Mall</option>
+                    <option value="TikTok Shop">TikTok Shop</option>
+                    <option value="Lazada">Lazada</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-600 font-medium mb-1">Tên gian hàng phân phối</label>
+                <input
+                  type="text"
+                  placeholder="Ví dụ: Kutieskin Shopee Mall"
+                  value={productForm.storeName}
+                  onChange={(e) => setProductForm(prev => ({ ...prev, storeName: e.target.value }))}
+                  className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-400"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-600 font-medium mb-1">Ngành hàng sản phẩm</label>
+                <input
+                  type="text"
+                  value={productForm.category}
+                  onChange={(e) => setProductForm(prev => ({ ...prev, category: e.target.value }))}
+                  className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-400"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-600 font-medium mb-1">Link trang sản phẩm (PDP URL)</label>
+                <input
+                  type="url"
+                  placeholder="https://..."
+                  value={productForm.pdpUrl}
+                  onChange={(e) => setProductForm(prev => ({ ...prev, pdpUrl: e.target.value }))}
+                  className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-400"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-600 font-medium mb-1">Trạng thái kinh doanh</label>
+                <select
+                  value={productForm.status}
+                  onChange={(e) => setProductForm(prev => ({ ...prev, status: e.target.value as any }))}
+                  className="w-full px-3 py-1.5 border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-slate-400"
+                >
+                  <option value="ACTIVE">Đang kinh doanh</option>
+                  <option value="DISCONTINUED">Tạm ngừng</option>
+                </select>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setIsProductModalOpen(false)}
                   className="px-3 py-1.5 border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 transition"
                 >
                   Hủy
