@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   ShieldCheck,
   CheckCircle2,
@@ -26,7 +26,20 @@ import {
   Share2,
   Building,
   UserCheck,
-  Users
+  Users,
+  Briefcase,
+  History,
+  LayoutDashboard,
+  CheckSquare,
+  Download,
+  Paperclip,
+  Smile,
+  FileCheck,
+  Filter,
+  Search,
+  ArrowRight,
+  Flame,
+  BadgeCheck
 } from 'lucide-react';
 import {
   BrandCampaignPortalData,
@@ -37,9 +50,22 @@ import {
 import { INITIAL_BRAND_PORTAL_DATA } from '../../lib/mockData';
 
 interface BrandHubViewProps {
-  onNotify?: (msg: string) => void;
+  onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
   onNavigateToCtvHub?: () => void;
   onNavigateToKocHub?: () => void;
+}
+
+export type BrandHubPillarTab = 'OVERVIEW' | 'APPROVALS' | 'ACTIVE_JOBS' | 'DISCUSSION' | 'HISTORY';
+
+interface ChatMessage {
+  id: string;
+  sender: 'BRAND' | 'UPBASE_ACCOUNT' | 'UPBASE_BOOKING';
+  senderName: string;
+  senderRole: string;
+  avatarText: string;
+  time: string;
+  content: string;
+  attachmentName?: string;
 }
 
 export const BrandHubView: React.FC<BrandHubViewProps> = ({ 
@@ -52,8 +78,8 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
 
   const activePortal = portals.find(p => p.id === selectedPortalId) || portals[0];
 
-  // Active Stage Tab: STAGE_1_PLAN | STAGE_2_KOCS | STAGE_3_SCRIPTS | STAGE_4_COCKPIT
-  const [activeStage, setActiveStage] = useState<'STAGE_1_PLAN' | 'STAGE_2_KOCS' | 'STAGE_3_SCRIPTS' | 'STAGE_4_COCKPIT'>('STAGE_1_PLAN');
+  // The 5 Universal Enterprise Hub Tabs
+  const [activeTab, setActiveTab] = useState<BrandHubPillarTab>('OVERVIEW');
 
   // Stage 1: Plan Revision Form state
   const [isPlanRevisionModalOpen, setIsPlanRevisionModalOpen] = useState(false);
@@ -68,6 +94,42 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
   const [activeScriptId, setActiveScriptId] = useState<string>(activePortal.scripts[0]?.id || '');
   const [scriptFeedbackText, setScriptFeedbackText] = useState('');
   const [feedbackSection, setFeedbackSection] = useState<'HOOK' | 'PAIN' | 'USP' | 'CTA'>('HOOK');
+
+  // Stage filter for Active Jobs
+  const [jobStatusFilter, setJobStatusFilter] = useState<string>('ALL');
+  const [jobSearchQuery, setJobSearchQuery] = useState<string>('');
+
+  // Discussion Chat State
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
+    {
+      id: 'msg-1',
+      sender: 'UPBASE_ACCOUNT',
+      senderName: activePortal.accountPic || 'Vân Ngọc',
+      senderRole: 'Account Lead Upbase',
+      avatarText: 'VN',
+      time: 'Hôm qua lúc 14:20',
+      content: `Chào Quý Nhãn Hàng ${activePortal.brandName}! Đội ngũ Upbase đã chuẩn bị xong kế hoạch ngân sách và danh sách các KOC đề xuất cho chiến dịch ${activePortal.campaignTitle}. Anh/chị xem qua và phê duyệt giúp team nhé ạ!`
+    },
+    {
+      id: 'msg-2',
+      sender: 'BRAND',
+      senderName: 'Brand Manager',
+      senderRole: activePortal.brandName,
+      avatarText: 'BM',
+      time: 'Hôm qua lúc 16:05',
+      content: 'Cảm ơn em. Mình đã xem qua, kế hoạch ngân sách cơ bản ổn. Tuy nhiên với tệp Micro KOC bên em ưu tiên chọn các bạn có thế mạnh về phân tích thành phần lành tính giúp bên mình nhé.'
+    },
+    {
+      id: 'msg-3',
+      sender: 'UPBASE_BOOKING',
+      senderName: activePortal.bookingPic || 'Khánh Vy',
+      senderRole: 'Booking Execution Lead',
+      avatarText: 'KV',
+      time: 'Sáng nay lúc 09:15',
+      content: 'Dạ vâng ạ! Team Booking đã lọc kỹ và bổ sung 2 bạn Dược sĩ/Beauty Reviewer chuyên sâu về da nhạy cảm. Kịch bản của 2 bạn đã được gửi lên mục "Cần duyệt ngay" để anh/chị xem trước ạ.'
+    }
+  ]);
+  const [newChatText, setNewChatText] = useState('');
 
   // Copy Magic Link state
   const [copiedLink, setCopiedLink] = useState(false);
@@ -89,20 +151,25 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
   // Check if Stage 1 is completed
   const isPlanApproved = activePortal.planApprovalStatus === 'BRAND_PLAN_APPROVED';
 
+  // Count pending items for Approvals badge
+  const pendingApprovalsCount = useMemo(() => {
+    let count = 0;
+    if (!isPlanApproved) count += 1;
+    count += activePortal.kocCandidates.filter(k => k.brandApprovalStatus === 'CHỜ_DUYỆT').length;
+    count += activePortal.scripts.filter(s => s.status !== 'APPROVED').length;
+    return count;
+  }, [isPlanApproved, activePortal]);
+
   // Handle Switch Brand Portal
   const handleSwitchPortal = (portalId: string) => {
     setSelectedPortalId(portalId);
     const target = portals.find(p => p.id === portalId);
     if (target) {
       setActiveScriptId(target.scripts[0]?.id || '');
-      // If target plan is pending, force jump to Stage 1
-      if (target.planApprovalStatus !== 'BRAND_PLAN_APPROVED') {
-        setActiveStage('STAGE_1_PLAN');
-      }
     }
   };
 
-  // Stage 1 Actions: Approve or Request Revision
+  // Plan Actions
   const handleApprovePlan = () => {
     setPortals(prev => prev.map(p => {
       if (p.id === activePortal.id) {
@@ -116,10 +183,8 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
     }));
 
     if (onNotify) {
-      onNotify(`Quý Nhãn Hàng ${activePortal.brandName} đã chính thức phê duyệt Kế hoạch Ngân sách & Cơ cấu KOC! Chặng 2 (Duyệt Danh Sách KOC) đã được mở khóa.`);
+      onNotify(`Quý Nhãn Hàng ${activePortal.brandName} đã chính thức phê duyệt Kế hoạch Ngân sách!`, 'success');
     }
-    // Automatically advance to Stage 2
-    setActiveStage('STAGE_2_KOCS');
   };
 
   const handleRequestPlanRevision = () => {
@@ -137,12 +202,12 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
     }));
 
     if (onNotify) {
-      onNotify(`Đã ghi nhận phản hồi yêu cầu điều chỉnh Kế hoạch từ Nhãn hàng ${activePortal.brandName}. Booking Lead sẽ cập nhật lại trong 12 giờ.`);
+      onNotify(`Đã ghi nhận yêu cầu điều chỉnh Kế hoạch từ Nhãn hàng. Booking Lead sẽ cập nhật lại trong 12 giờ.`, 'warning');
     }
     setIsPlanRevisionModalOpen(false);
   };
 
-  // Stage 2 Actions: Approve or Reject KOC
+  // KOC Actions
   const handleApproveKoc = (kocId: string) => {
     setPortals(prev => prev.map(p => {
       if (p.id === activePortal.id) {
@@ -155,13 +220,12 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
     }));
 
     if (onNotify) {
-      onNotify(`Brand đã duyệt KOC! Hệ thống kích hoạt ký hợp đồng và gửi hàng mẫu.`);
+      onNotify(`Brand đã duyệt KOC! Hệ thống chuyển sang chặng gửi hàng mẫu và kịch bản.`, 'success');
     }
   };
 
   const handleConfirmRejectKoc = () => {
     if (!rejectingKoc) return;
-
     const finalReason = selectedRejectReason === 'Lý do khác' ? (rejectCustomNote || 'Lý do khác') : selectedRejectReason;
 
     setPortals(prev => prev.map(p => {
@@ -179,13 +243,13 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
     }));
 
     if (onNotify) {
-      onNotify(`Đã từ chối KOC ${rejectingKoc.stageName} (Lý do: ${finalReason}). Đội ngũ Booking sẽ đề xuất KOC thay thế trong 24 giờ.`);
+      onNotify(`Đã từ chối KOC ${rejectingKoc.stageName} (Lý do: ${finalReason}). Upbase sẽ đề xuất KOC thay thế trong 24 giờ.`, 'warning');
     }
     setRejectingKoc(null);
     setRejectCustomNote('');
   };
 
-  // Stage 3 Actions: Approve or Request Script Revision
+  // Script Actions
   const activeScript = activePortal.scripts.find(s => s.id === activeScriptId) || activePortal.scripts[0];
 
   const handleApproveScript = (scriptId: string) => {
@@ -200,7 +264,7 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
     }));
 
     if (onNotify) {
-      onNotify(`Brand đã phê duyệt kịch bản video của KOC ${activeScript?.kocStageName}! KOC được phép tiến hành quay video.`);
+      onNotify(`Brand đã phê duyệt kịch bản video của KOC ${activeScript?.kocStageName}! KOC được phép tiến hành quay video.`, 'success');
     }
   };
 
@@ -223,9 +287,29 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
     }));
 
     if (onNotify) {
-      onNotify(`Đã gửi góp ý kịch bản cho KOC ${activeScript.kocStageName} (Lần sửa: ${activeScript.revisionCount + 1}/2). Content Lead sẽ hỗ trợ KOC hoàn thiện.`);
+      onNotify(`Đã gửi góp ý kịch bản cho KOC ${activeScript.kocStageName} (Lần sửa: ${activeScript.revisionCount + 1}/2).`, 'info');
     }
     setScriptFeedbackText('');
+  };
+
+  // Chat message send handler
+  const handleSendMessage = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!newChatText.trim()) return;
+
+    const newMsg: ChatMessage = {
+      id: `msg-${Date.now()}`,
+      sender: 'BRAND',
+      senderName: 'Brand Manager',
+      senderRole: activePortal.brandName,
+      avatarText: 'BM',
+      time: 'Vừa xong',
+      content: newChatText.trim()
+    };
+
+    setChatMessages(prev => [...prev, newMsg]);
+    setNewChatText('');
+    if (onNotify) onNotify('Đã gửi tin nhắn đến Upbase Account Team!', 'success');
   };
 
   const handleCopyMagicLink = () => {
@@ -233,29 +317,42 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
     setCopiedLink(true);
     setTimeout(() => setCopiedLink(false), 3000);
     if (onNotify) {
-      onNotify('Đã sao chép Magic Link dành cho Brand! Bạn có thể gửi link này qua Zalo/Email cho Brand Manager.');
+      onNotify('Đã sao chép Magic Link Cổng Nhãn Hàng! Link này có thể gửi qua Zalo/Email cho Brand Manager.', 'success');
     }
   };
+
+  // Filtered jobs in Active Jobs tab
+  const filteredJobs = useMemo(() => {
+    return activePortal.scripts.filter(sc => {
+      const matchQuery = sc.kocStageName.toLowerCase().includes(jobSearchQuery.toLowerCase()) ||
+        sc.productName.toLowerCase().includes(jobSearchQuery.toLowerCase());
+      if (!matchQuery) return false;
+      if (jobStatusFilter === 'AIRED') return !!sc.publishedVideoUrl;
+      if (jobStatusFilter === 'DRAFT') return !!sc.draftVideoUrl && !sc.publishedVideoUrl;
+      if (jobStatusFilter === 'SCRIPT') return sc.status !== 'APPROVED';
+      return true;
+    });
+  }, [activePortal, jobStatusFilter, jobSearchQuery]);
 
   return (
     <div className="space-y-6">
       {/* ========================================================================= */}
-      {/* 1. BRAND PORTAL TOP HEADER & SECURE CLIENT IDENTIFIER                    */}
+      {/* 1. BRAND PORTAL TOP HEADER & CONTEXT BAR                                 */}
       {/* ========================================================================= */}
       <div className="card-enterprise p-5 bg-white border border-slate-200 shadow-xs">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-200">
           <div className="flex items-center gap-3.5">
-            <div className="w-11 h-11 rounded-lg bg-blue-600 flex items-center justify-center font-semibold text-white text-base shadow-sm">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center font-bold text-white text-base shadow-sm">
               {activePortal.brandLogoText.slice(0, 3)}
             </div>
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <h2 className="text-base font-semibold text-slate-900 tracking-tight">
+                <h2 className="text-lg font-bold text-slate-900 tracking-tight">
                   {activePortal.brandName}
                 </h2>
                 <span className="badge-emerald px-2.5 py-0.5 rounded font-semibold text-2xs flex items-center gap-1">
                   <ShieldCheck className="w-3.5 h-3.5" />
-                  Cổng tác nghiệp khách hàng
+                  Cổng tác nghiệp Nhãn hàng
                 </span>
                 <span className="badge-slate text-2xs px-2 py-0.5 rounded font-mono font-semibold">
                   {activePortal.campaignCode}
@@ -267,10 +364,9 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
             </div>
           </div>
 
-          {/* Brand Switcher & Magic Link Share Button */}
+          {/* Brand Switcher & Multi-hub Shortcuts */}
           <div className="flex items-center gap-2 flex-wrap self-start lg:self-auto">
-            {/* Switch Brand Dropdown */}
-            <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 text-xs shadow-2xs">
+            <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs shadow-2xs">
               <Building className="w-3.5 h-3.5 text-slate-500" />
               <select
                 value={activePortal.id}
@@ -285,7 +381,6 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
               </select>
             </div>
 
-            {/* Share Magic Link */}
             <button
               type="button"
               onClick={handleCopyMagicLink}
@@ -342,251 +437,193 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
       </div>
 
       {/* ========================================================================= */}
-      {/* 2. THE 4-STAGE GATED STEPPER NAVIGATION                                   */}
+      {/* 2. THE 5 UNIVERSAL ENTERPRISE HUB TABS                                   */}
       {/* ========================================================================= */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        {/* Stage 1 Button */}
+      <div className="flex items-center gap-2 border-b border-slate-200 pb-2 overflow-x-auto">
         <button
-          onClick={() => setActiveStage('STAGE_1_PLAN')}
-          className={`p-3 rounded-xl border text-left transition flex items-start gap-3 relative ${
-            activeStage === 'STAGE_1_PLAN'
-              ? 'bg-blue-50/80 border-blue-500 ring-1 ring-blue-500/40 shadow-xs'
-              : 'bg-white border-slate-200 hover:bg-slate-50 shadow-2xs'
+          type="button"
+          onClick={() => setActiveTab('OVERVIEW')}
+          className={`px-4 py-2.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 whitespace-nowrap ${
+            activeTab === 'OVERVIEW'
+              ? 'bg-slate-900 text-white shadow-xs'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
           }`}
         >
-          <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 font-semibold text-xs ${
-            isPlanApproved ? 'bg-emerald-600 text-white' : 'bg-blue-600 text-white'
-          }`}>
-            {isPlanApproved ? <Check className="w-4 h-4" /> : '1'}
-          </div>
-          <div className="min-w-0">
-            <span className="text-2xs font-semibold block text-slate-500">
-              Chặng 1 (bắt buộc trước)
-            </span>
-            <span className="text-xs font-semibold text-slate-900 block mt-0.5">
-              Duyệt kế hoạch & ngân sách
-            </span>
-            <span className={`text-2xs font-semibold mt-1 inline-block px-1.5 py-0.2 rounded border ${
-              isPlanApproved ? 'badge-emerald' :
-              activePortal.planApprovalStatus === 'BRAND_PLAN_REVISION_REQUESTED' ? 'badge-rose' :
-              'badge-amber '
+          <LayoutDashboard className="w-3.5 h-3.5" />
+          <span>1. Tổng quan</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('APPROVALS')}
+          className={`px-4 py-2.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 whitespace-nowrap relative ${
+            activeTab === 'APPROVALS'
+              ? 'bg-blue-600 text-white shadow-xs'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+          }`}
+        >
+          <AlertCircle className="w-3.5 h-3.5" />
+          <span>2. Cần duyệt ngay</span>
+          {pendingApprovalsCount > 0 && (
+            <span className={`text-2xs font-bold px-1.5 py-0.5 rounded-full ${
+              activeTab === 'APPROVALS' ? 'bg-white text-blue-700' : 'bg-rose-500 text-white'
             }`}>
-              {isPlanApproved ? 'Đã Phê Duyệt' :
-               activePortal.planApprovalStatus === 'BRAND_PLAN_REVISION_REQUESTED' ? 'Đang Yêu Cầu Sửa' : 'Chờ Brand Duyệt'}
+              {pendingApprovalsCount}
             </span>
-          </div>
+          )}
         </button>
 
-        {/* Stage 2 Button (Gated by Stage 1) */}
         <button
-          onClick={() => {
-            if (isPlanApproved) setActiveStage('STAGE_2_KOCS');
-          }}
-          disabled={!isPlanApproved}
-          className={`p-3 rounded-xl border text-left transition flex items-start gap-3 relative ${
-            !isPlanApproved
-              ? 'bg-slate-50/70 border-slate-200/80 opacity-60 cursor-not-allowed'
-              : activeStage === 'STAGE_2_KOCS'
-              ? 'bg-blue-50/80 border-blue-500 ring-1 ring-blue-500/40 shadow-xs'
-              : 'bg-white border-slate-200 hover:bg-slate-50 shadow-2xs'
+          type="button"
+          onClick={() => setActiveTab('ACTIVE_JOBS')}
+          className={`px-4 py-2.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 whitespace-nowrap ${
+            activeTab === 'ACTIVE_JOBS'
+              ? 'bg-slate-900 text-white shadow-xs'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
           }`}
         >
-          <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 font-semibold text-xs ${
-            !isPlanApproved ? 'bg-slate-200 text-slate-500' : 'bg-blue-600 text-white'
-          }`}>
-            {!isPlanApproved ? <Lock className="w-3.5 h-3.5 text-slate-500" /> : '2'}
-          </div>
-          <div className="min-w-0">
-            <span className="text-2xs font-semibold block text-slate-500">
-              Chặng 2
-            </span>
-            <span className="text-xs font-semibold text-slate-900 block mt-0.5">
-              Duyệt danh sách KOC
-            </span>
-            <span className="text-2xs text-slate-500 mt-1 block">
-              {!isPlanApproved ? 'Khóa (Cần duyệt Chặng 1)' : `${activePortal.kocCandidates.filter(k => k.brandApprovalStatus === 'ĐÃ_DUYỆT').length}/${activePortal.kocCandidates.length} KOCs đã duyệt`}
-            </span>
-          </div>
+          <Briefcase className="w-3.5 h-3.5" />
+          <span>3. Các job đang làm ({activePortal.kocCandidates.length})</span>
         </button>
 
-        {/* Stage 3 Button (Gated by Stage 1) */}
         <button
-          onClick={() => {
-            if (isPlanApproved) setActiveStage('STAGE_3_SCRIPTS');
-          }}
-          disabled={!isPlanApproved}
-          className={`p-3 rounded-xl border text-left transition flex items-start gap-3 relative ${
-            !isPlanApproved
-              ? 'bg-slate-50/70 border-slate-200/80 opacity-60 cursor-not-allowed'
-              : activeStage === 'STAGE_3_SCRIPTS'
-              ? 'bg-blue-50/80 border-blue-500 ring-1 ring-blue-500/40 shadow-xs'
-              : 'bg-white border-slate-200 hover:bg-slate-50 shadow-2xs'
+          type="button"
+          onClick={() => setActiveTab('DISCUSSION')}
+          className={`px-4 py-2.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 whitespace-nowrap ${
+            activeTab === 'DISCUSSION'
+              ? 'bg-slate-900 text-white shadow-xs'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
           }`}
         >
-          <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 font-semibold text-xs ${
-            !isPlanApproved ? 'bg-slate-200 text-slate-500' : 'bg-blue-600 text-white'
-          }`}>
-            {!isPlanApproved ? <Lock className="w-3.5 h-3.5 text-slate-500" /> : '3'}
-          </div>
-          <div className="min-w-0">
-            <span className="text-2xs font-semibold block text-slate-500">
-              Chặng 3
-            </span>
-            <span className="text-xs font-semibold text-slate-900 block mt-0.5">
-              Thẩm định kịch bản (24h)
-            </span>
-            <span className="text-2xs text-slate-500 mt-1 block">
-              {!isPlanApproved ? 'Khóa (Cần duyệt Chặng 1)' : `${activePortal.scripts.filter(s => s.status === 'APPROVED').length}/${activePortal.scripts.length} Kịch bản đã duyệt`}
-            </span>
-          </div>
+          <MessageSquare className="w-3.5 h-3.5" />
+          <span>4. Trao đổi qua lại</span>
         </button>
 
-        {/* Stage 4 Button */}
         <button
-          onClick={() => {
-            if (isPlanApproved) setActiveStage('STAGE_4_COCKPIT');
-          }}
-          disabled={!isPlanApproved}
-          className={`p-3 rounded-xl border text-left transition flex items-start gap-3 relative ${
-            !isPlanApproved
-              ? 'bg-slate-50/70 border-slate-200/80 opacity-60 cursor-not-allowed'
-              : activeStage === 'STAGE_4_COCKPIT'
-              ? 'bg-blue-50/80 border-blue-500 ring-1 ring-blue-500/40 shadow-xs'
-              : 'bg-white border-slate-200 hover:bg-slate-50 shadow-2xs'
+          type="button"
+          onClick={() => setActiveTab('HISTORY')}
+          className={`px-4 py-2.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-2 whitespace-nowrap ${
+            activeTab === 'HISTORY'
+              ? 'bg-slate-900 text-white shadow-xs'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
           }`}
         >
-          <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 font-semibold text-xs ${
-            !isPlanApproved ? 'bg-slate-200 text-slate-500' : 'bg-blue-600 text-white'
-          }`}>
-            {!isPlanApproved ? <Lock className="w-3.5 h-3.5 text-slate-500" /> : '4'}
-          </div>
-          <div className="min-w-0">
-            <span className="text-2xs font-semibold block text-slate-500">
-              Chặng 4
-            </span>
-            <span className="text-xs font-semibold text-slate-900 block mt-0.5">
-              Nghiệm thu & báo cáo Live
-            </span>
-            <span className="text-2xs text-slate-500 mt-1 block">
-              {!isPlanApproved ? 'Khóa' : `${activePortal.liveAiredVideosCount}/${activePortal.totalTargetVideos} Clips Đã Air`}
-            </span>
-          </div>
+          <History className="w-3.5 h-3.5" />
+          <span>5. Lịch sử &amp; Nghiệm thu</span>
         </button>
       </div>
 
       {/* ========================================================================= */}
-      {/* 3. STAGE CONTENT AREA                                                     */}
+      {/* TAB 1: TỔNG QUAN (OVERVIEW & CAMPAIGN STRATEGY)                           */}
       {/* ========================================================================= */}
-
-      {/* ------------------------------------------------------------------------- */}
-      {/* CHẶNG 1: DUYỆT KẾ HOẠCH PHÂN BỔ NGÂN SÁCH (MẶC ĐỊNH BƯỚC ĐẦU TIÊN)        */}
-      {/* ------------------------------------------------------------------------- */}
-      {activeStage === 'STAGE_1_PLAN' && (
-        <div className="space-y-5">
-          {/* Plan Status Alert Banner */}
-          <div className={`p-4 rounded-xl border flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-2xs ${
-            isPlanApproved
-              ? 'bg-emerald-50 border-emerald-200 text-emerald-950'
-              : activePortal.planApprovalStatus === 'BRAND_PLAN_REVISION_REQUESTED'
-              ? 'bg-rose-50 border-rose-200 text-rose-950'
-              : 'bg-amber-50 border-amber-200 text-amber-950'
-          }`}>
-            <div className="flex items-start gap-3">
-              {isPlanApproved ? (
-                <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
-              ) : (
-                <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-              )}
-              <div>
-                <h4 className="text-sm font-semibold text-slate-900">
-                  {isPlanApproved
-                    ? `Kế Hoạch Đã Được Nhãn Hàng Phê Duyệt vào ngày ${activePortal.planApprovalDate}`
-                    : activePortal.planApprovalStatus === 'BRAND_PLAN_REVISION_REQUESTED'
-                    ? 'Đang chờ Booking Team điều chỉnh Kế hoạch theo phản hồi của bạn'
-                    : 'YÊU CẦU BẮT BUỘC: Quý Nhãn Hàng Vui Lòng Phê Duyệt Kế Hoạch Trước'}
-                </h4>
-                <p className="text-xs text-slate-600 mt-1 leading-relaxed">
-                  {isPlanApproved
-                    ? 'Chặng 1 đã hoàn tất! Quý Nhãn Hàng có thể chuyển sang Chặng 2 để duyệt từng gương mặt KOC cụ thể trong danh sách đề xuất.'
-                    : activePortal.planApprovalStatus === 'BRAND_PLAN_REVISION_REQUESTED'
-                    ? `Góp ý của bạn: "${activePortal.planFeedbackNotes}"`
-                    : 'Sau khi Quý Nhãn Hàng duyệt Kế hoạch phân bổ ngân sách & số lượng KOC theo từng Level dưới đây, đội ngũ Booking sẽ mở khóa danh sách KOC cụ thể để bạn thẩm định.'}
-                </p>
-              </div>
-            </div>
-
-            {/* Stage 1 Actions */}
-            {!isPlanApproved && (
-              <div className="flex items-center gap-2 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setIsPlanRevisionModalOpen(true)}
-                  className="btn-md bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition shadow-2xs"
-                >
-                  <RotateCcw className="w-3.5 h-3.5" />
-                  Yêu cầu chỉnh sửa
-                </button>
-                <button
-                  type="button"
-                  onClick={handleApprovePlan}
-                  className="btn-md bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-2xs transition"
-                >
-                  <ThumbsUp className="w-3.5 h-3.5" />
-                  Duyệt thông Qua kế hoạch
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Campaign Strategy & KPI Overview */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      {activeTab === 'OVERVIEW' && (
+        <div className="space-y-5 animate-in fade-in duration-150">
+          {/* Top 4 KPI Metrics */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="card-enterprise p-4 bg-white border border-slate-200 shadow-xs">
               <span className="text-2xs text-slate-500 block font-medium">Tổng ngân sách gói chiến dịch</span>
-              <span className="text-lg font-semibold font-mono text-emerald-600 mt-1 block">
+              <span className="text-xl font-bold font-mono text-emerald-600 mt-1 block">
                 {(activePortal.totalBudget).toLocaleString('vi-VN')} đ
               </span>
-              <span className="text-2xs text-slate-400 mt-1 block">Đã bao gồm chi phí thù lao &amp; vận hành</span>
+              <span className="text-2xs text-slate-400 mt-1 block">Đã phân bổ 100% theo các cấp độ KOC</span>
             </div>
 
             <div className="card-enterprise p-4 bg-white border border-slate-200 shadow-xs">
               <span className="text-2xs text-slate-500 block font-medium">Mục tiêu doanh thu GMV dự phóng</span>
-              <span className="text-lg font-semibold font-mono text-blue-600 mt-1 block">
+              <span className="text-xl font-bold font-mono text-blue-600 mt-1 block">
                 {(activePortal.targetGmv).toLocaleString('vi-VN')} đ
               </span>
-              <span className="text-2xs text-slate-400 mt-1 block">Tỷ lệ ROI kỳ vọng: 5.0x</span>
+              <span className="text-2xs text-emerald-600 font-medium mt-1 block">ROI kỳ vọng: 5.0x</span>
             </div>
 
             <div className="card-enterprise p-4 bg-white border border-slate-200 shadow-xs">
               <span className="text-2xs text-slate-500 block font-medium">Tỷ lệ CIR mục tiêu</span>
-              <span className="text-lg font-semibold font-mono text-amber-600 mt-1 block">
+              <span className="text-xl font-bold font-mono text-amber-600 mt-1 block">
                 {activePortal.targetCir.toFixed(1)}%
               </span>
-              <span className="text-2xs text-slate-400 mt-1 block">Chi phí trên mỗi 100đ doanh thu</span>
+              <span className="text-2xs text-slate-400 mt-1 block">Chi phí / 100đ doanh thu GMV</span>
             </div>
 
             <div className="card-enterprise p-4 bg-white border border-slate-200 shadow-xs">
-              <span className="text-2xs text-slate-500 block font-medium">Quy mô Creator triển khai</span>
-              <span className="text-lg font-semibold font-mono text-purple-600 mt-1 block">
-                {activePortal.totalTargetVideos} Clips
-              </span>
-              <span className="text-2xs text-slate-400 mt-1 block">Trải dài trên 4 cấp độ KOC</span>
+              <span className="text-2xs text-slate-500 block font-medium">Quy mô Video &amp; Creator</span>
+              <div className="flex items-baseline gap-1 mt-1">
+                <span className="text-xl font-bold font-mono text-purple-600">
+                  {activePortal.liveAiredVideosCount} / {activePortal.totalTargetVideos}
+                </span>
+                <span className="text-xs text-slate-500 font-medium">Clips đã lên sóng</span>
+              </div>
+              <div className="w-full bg-slate-100 h-1.5 rounded-full mt-2 overflow-hidden">
+                <div 
+                  className="bg-purple-600 h-full rounded-full transition-all"
+                  style={{ width: `${(activePortal.liveAiredVideosCount / activePortal.totalTargetVideos) * 100}%` }}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Stage Status Overview Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <div className="p-3.5 rounded-xl border border-slate-200 bg-white shadow-2xs space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-2xs font-semibold text-slate-500 uppercase">Chặng 1</span>
+                <span className={`text-2xs font-bold px-2 py-0.5 rounded border ${
+                  isPlanApproved ? 'badge-emerald' : 'badge-amber'
+                }`}>
+                  {isPlanApproved ? 'Đã duyệt' : 'Chờ duyệt'}
+                </span>
+              </div>
+              <span className="text-xs font-semibold text-slate-900 block">Kế hoạch ngân sách</span>
+              <p className="text-2xs text-slate-500">Phân rã ngân sách cho 4 cấp độ KOC</p>
+            </div>
+
+            <div className="p-3.5 rounded-xl border border-slate-200 bg-white shadow-2xs space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-2xs font-semibold text-slate-500 uppercase">Chặng 2</span>
+                <span className="text-2xs font-bold px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">
+                  {activePortal.kocCandidates.filter(k => k.brandApprovalStatus === 'ĐÃ_DUYỆT').length}/{activePortal.kocCandidates.length} KOC
+                </span>
+              </div>
+              <span className="text-xs font-semibold text-slate-900 block">Duyệt KOCs</span>
+              <p className="text-2xs text-slate-500">Thẩm định profile và mức độ phù hợp</p>
+            </div>
+
+            <div className="p-3.5 rounded-xl border border-slate-200 bg-white shadow-2xs space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-2xs font-semibold text-slate-500 uppercase">Chặng 3</span>
+                <span className="text-2xs font-bold px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200">
+                  {activePortal.scripts.filter(s => s.status === 'APPROVED').length}/{activePortal.scripts.length} Kịch bản
+                </span>
+              </div>
+              <span className="text-xs font-semibold text-slate-900 block">Thẩm định kịch bản</span>
+              <p className="text-2xs text-slate-500">Góp ý Hook, Pain point, USP, CTA</p>
+            </div>
+
+            <div className="p-3.5 rounded-xl border border-slate-200 bg-white shadow-2xs space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-2xs font-semibold text-slate-500 uppercase">Chặng 4</span>
+                <span className="text-2xs font-bold px-2 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200">
+                  {activePortal.liveAiredVideosCount}/{activePortal.totalTargetVideos} Clips
+                </span>
+              </div>
+              <span className="text-xs font-semibold text-slate-900 block">Lên sóng &amp; Nghiệm thu</span>
+              <p className="text-2xs text-slate-500">Đo lường Views, GMV và Spark Ads code</p>
             </div>
           </div>
 
           {/* Strategy Brief Context for Brand */}
-          <div className="card-enterprise p-4 bg-white border border-slate-200 shadow-xs text-xs space-y-2">
+          <div className="card-enterprise p-5 bg-white border border-slate-200 shadow-xs text-xs space-y-3">
             <h4 className="font-semibold text-slate-900 flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-amber-500" />
               Định Hướng Chiến Lược &amp; Sản Phẩm Trọng Tâm (Campaign Strategy):
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
-              <div className="p-3 rounded-lg bg-slate-50 border border-slate-200">
-                <span className="font-semibold text-slate-800 block mb-1">Thông điệp chủ đạo:</span>
+              <div className="p-3.5 rounded-lg bg-slate-50 border border-slate-200">
+                <span className="font-semibold text-slate-800 block mb-1">Thông điệp chủ đạo (Big Idea):</span>
                 <p className="text-slate-600 leading-relaxed">{activePortal.bigIdea}</p>
               </div>
-              <div className="p-3 rounded-lg bg-slate-50 border border-slate-200">
-                <span className="font-semibold text-slate-800 block mb-1">Sản phẩm chủ lực:</span>
-                <ul className="list-disc list-inside text-slate-600 space-y-0.5">
+              <div className="p-3.5 rounded-lg bg-slate-50 border border-slate-200">
+                <span className="font-semibold text-slate-800 block mb-1">Sản phẩm chủ lực (Focus SKUs):</span>
+                <ul className="list-disc list-inside text-slate-600 space-y-1">
                   {activePortal.focusSkus.map((sku, i) => (
                     <li key={i}>{sku}</li>
                   ))}
@@ -598,354 +635,288 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
           {/* The 4-Tier Budget Breakdown Table */}
           <div className="card-enterprise p-5 bg-white border border-slate-200 shadow-xs overflow-x-auto">
             <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-200">
-              <div>
-                <h4 className="text-xs font-semibold text-slate-900">
-                  Cơ cấu phân bổ 4 cấp độ KOC / KOL chiến dịch
-                </h4>
-                <p className="text-2xs text-slate-500">
-                  Số lượng và vai trò chiến lược được thiết kế riêng biệt để cân bằng giữa độ phủ nhận diện và hiệu quả doanh Thu.
-                </p>
-              </div>
-              <span className="text-xs font-semibold px-2.5 py-1 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
-                Bảo vệ biên độ an toàn ngân sách: 100%
-              </span>
+              <h4 className="text-xs font-semibold text-slate-900">
+                CƠ CẤU PHÂN BỔ NGÂN SÁCH THEO CẤP ĐỘ KOC (GROWTH DEMAND)
+              </h4>
+              <button
+                type="button"
+                onClick={() => setActiveTab('APPROVALS')}
+                className="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1"
+              >
+                <span>Xem mục cần duyệt</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
             </div>
 
-            <table className="w-full text-left text-xs border-collapse">
+            <table className="w-full text-xs text-left">
               <thead>
-                <tr className="border-b border-slate-200 text-slate-600 bg-slate-50">
-                  <th className="py-2.5 px-3 font-semibold">Cấp độ KOC / KOL</th>
-                  <th className="py-2.5 px-3 font-semibold text-center">Số lượng Creator</th>
-                  <th className="py-2.5 px-3 font-semibold text-right">Ngân sách phân bổ</th>
-                  <th className="py-2.5 px-3 font-semibold text-center">Tỷ trọng (%)</th>
-                  <th className="py-2.5 px-3 font-semibold">Vai Trò &amp; Định Hướng Chiến Lược</th>
-                  <th className="py-2.5 px-3 font-semibold text-center">Mục tiêu ROI</th>
+                <tr className="border-b border-slate-200 text-slate-500 font-medium">
+                  <th className="py-2.5 pr-3">Phân loại KOC</th>
+                  <th className="py-2.5 px-3">Số lượng Slot</th>
+                  <th className="py-2.5 px-3">Định mức chi phí</th>
+                  <th className="py-2.5 px-3">Tổng ngân sách</th>
+                  <th className="py-2.5 px-3">Mục tiêu GMV</th>
+                  <th className="py-2.5 pl-3">Trạng thái duyệt</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200">
-                {activePortal.breakdownTiers.map((tier) => {
-                  const share = ((tier.allocatedBudget / activePortal.totalBudget) * 100).toFixed(1);
-                  return (
-                    <tr key={tier.tier} className="hover:bg-slate-50/80 transition">
-                      <td className="py-3 px-3">
-                        <div className="font-semibold text-slate-900 text-xs">{tier.tierLabel}</div>
-                        <div className="text-2xs text-slate-500">{tier.salaryGradeLabel}</div>
-                      </td>
-                      <td className="py-3 px-3 text-center font-semibold text-blue-600">
-                        {tier.targetCount} Creators
-                      </td>
-                      <td className="py-3 px-3 text-right font-mono font-semibold text-slate-900">
-                        {(tier.allocatedBudget).toLocaleString('vi-VN')} đ
-                      </td>
-                      <td className="py-3 px-3 text-center">
-                        <span className="text-2xs font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700">
-                          {share}%
-                        </span>
-                      </td>
-                      <td className="py-3 px-3 text-slate-600 max-w-xs">
-                        {tier.notes}
-                      </td>
-                      <td className="py-3 px-3 text-center">
-                        <span className="text-2xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded">
-                          {tier.historicalRoiBenchmark}x
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
+              <tbody className="divide-y divide-slate-100">
+                {activePortal.breakdownTiers.map(t => (
+                  <tr key={t.tierLabel} className="hover:bg-slate-50/50">
+                    <td className="py-3 pr-3 font-semibold text-slate-900">{t.tierLabel}</td>
+                    <td className="py-3 px-3 font-mono">{t.targetCount} KOCs</td>
+                    <td className="py-3 px-3 font-mono">{(t.estimatedAvgCost).toLocaleString('vi-VN')} đ</td>
+                    <td className="py-3 px-3 font-mono font-semibold text-slate-900">{(t.allocatedBudget).toLocaleString('vi-VN')} đ</td>
+                    <td className="py-3 px-3 font-mono text-blue-700">{(t.totalExpectedGmv).toLocaleString('vi-VN')} đ</td>
+                    <td className="py-3 pl-3">
+                      <span className="badge-emerald text-2xs px-2 py-0.5 rounded font-semibold">
+                        Đã khớp ngân sách
+                      </span>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
-              <tfoot>
-                <tr className="border-t-2 border-slate-300 bg-slate-50 font-semibold text-xs">
-                  <td className="py-3 px-3 text-slate-900">Tổng cộng chiến dịch</td>
-                  <td className="py-3 px-3 text-center text-blue-600">{activePortal.totalTargetVideos} Clips</td>
-                  <td className="py-3 px-3 text-right font-mono text-emerald-600">
-                    {(activePortal.totalBudget).toLocaleString('vi-VN')} đ
-                  </td>
-                  <td className="py-3 px-3 text-center text-slate-700">100.0%</td>
-                  <td className="py-3 px-3 text-slate-500">Đã chốt cấu trúc chiến lược</td>
-                  <td className="py-3 px-3 text-center text-emerald-600">5.0x</td>
-                </tr>
-              </tfoot>
             </table>
           </div>
         </div>
       )}
 
-      {/* ------------------------------------------------------------------------- */}
-      {/* CHẶNG 2: DUYỆT DANH SÁCH KOC ĐỀ XUẤT (GATED BY STAGE 1)                    */}
-      {/* ------------------------------------------------------------------------- */}
-      {activeStage === 'STAGE_2_KOCS' && (
-        <div className="space-y-4">
-          <div className="card-enterprise p-4 bg-white border border-slate-200 shadow-xs flex items-center justify-between gap-4">
-            <div>
-              <h3 className="text-sm font-semibold text-slate-900">
-                Danh sách KOC / KOL đề xuất cho chiến dịch
-              </h3>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Các Creator được chọn lọc kỹ càng dựa trên chỉ số tệp người xem, lịch sử chuyển đổi và độ an toàn thương hiệu.
+      {/* ========================================================================= */}
+      {/* TAB 2: CẦN DUYỆT NGAY (ACTION CENTER / PENDING APPROVALS)                  */}
+      {/* ========================================================================= */}
+      {activeTab === 'APPROVALS' && (
+        <div className="space-y-6 animate-in fade-in duration-150">
+          {/* Notice banner if everything is approved */}
+          {pendingApprovalsCount === 0 && (
+            <div className="p-6 rounded-2xl bg-emerald-50 border border-emerald-200 text-center space-y-2">
+              <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto">
+                <CheckCircle2 className="w-6 h-6" />
+              </div>
+              <h4 className="text-sm font-bold text-emerald-950">
+                Tuyệt vời! Quý Nhãn Hàng đã hoàn tất toàn bộ các mục cần phê duyệt!
+              </h4>
+              <p className="text-xs text-emerald-800 max-w-md mx-auto">
+                Không còn kịch bản hay KOC nào đang chờ duyệt. Đội ngũ Upbase đang tiến hành quay dựng và chuẩn bị lịch lên sóng theo cam kết.
               </p>
+              <button
+                type="button"
+                onClick={() => setActiveTab('ACTIVE_JOBS')}
+                className="mt-3 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold inline-flex items-center gap-1.5 shadow-2xs transition"
+              >
+                <span>Xem các Job đang triển khai</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
             </div>
-            <div className="text-xs text-slate-600">
-              Đã duyệt:{' '}
-              <strong className="text-emerald-600 font-semibold">
-                {activePortal.kocCandidates.filter(k => k.brandApprovalStatus === 'ĐÃ_DUYỆT').length}
-              </strong>
-              /{activePortal.kocCandidates.length} KOCs
-            </div>
-          </div>
+          )}
 
-          {/* KOC Candidates Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {activePortal.kocCandidates.map(koc => {
-              const isApproved = koc.brandApprovalStatus === 'ĐÃ_DUYỆT';
-              const isRejected = koc.brandApprovalStatus === 'TỪ_CHỐI';
-
-              return (
-                <div
-                  key={koc.id}
-                  className={`card-enterprise p-4 border transition flex flex-col justify-between ${
-                    isApproved ? 'bg-emerald-50/40 border-emerald-300 shadow-2xs' :
-                    isRejected ? 'bg-rose-50/40 border-rose-300 opacity-80 shadow-2xs' :
-                    'bg-white border-slate-200 shadow-xs hover:border-slate-300'
-                  }`}
-                >
+          {/* ITEM 1: PLAN APPROVAL (If not approved) */}
+          {!isPlanApproved && (
+            <div className="card-enterprise p-5 bg-amber-50/60 border border-amber-300 shadow-xs space-y-4">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-amber-200">
+                <div className="flex items-center gap-2.5">
+                  <span className="w-7 h-7 rounded-lg bg-amber-600 text-white font-bold text-xs flex items-center justify-center shrink-0">
+                    1
+                  </span>
                   <div>
-                    {/* Top Row: Tier & Status */}
-                    <div className="flex items-center justify-between gap-2 mb-2">
-                      <span className="text-2xs font-semibold px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">
-                        {koc.tierLabel}
-                      </span>
-                      <span className={`text-2xs font-semibold px-2 py-0.5 rounded border ${
-                        isApproved ? 'bg-emerald-50 text-emerald-700 border-emerald-300' :
-                        isRejected ? 'bg-rose-50 text-rose-700 border-rose-300' :
-                        'bg-amber-50 text-amber-800 border-amber-300'
-                      }`}>
-                        {isApproved ? 'Đã Đồng Ý' : isRejected ? 'Đã Từ Chối' : 'Chờ Brand Duyệt'}
-                      </span>
+                    <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                      Phê duyệt Kế Hoạch &amp; Ngân Sách Chiến Dịch
+                      <span className="badge-amber text-2xs px-2 py-0.5 rounded font-semibold">Cần xử lý trước</span>
+                    </h4>
+                    <p className="text-xs text-slate-600">
+                      Tổng ngân sách: <strong>{(activePortal.totalBudget).toLocaleString('vi-VN')} đ</strong> • Mục tiêu GMV: <strong>{(activePortal.targetGmv).toLocaleString('vi-VN')} đ</strong>
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setIsPlanRevisionModalOpen(true)}
+                    className="btn-md bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition shadow-2xs"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    Yêu cầu điều chỉnh
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleApprovePlan}
+                    className="btn-md bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-2xs transition"
+                  >
+                    <ThumbsUp className="w-3.5 h-3.5" />
+                    Duyệt thông qua kế hoạch
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ITEM 2: PENDING KOC CANDIDATES */}
+          {activePortal.kocCandidates.filter(k => k.brandApprovalStatus === 'CHỜ_DUYỆT').length > 0 && (
+            <div className="card-enterprise p-5 bg-white border border-slate-200 shadow-xs space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-200">
+                <div className="flex items-center gap-2">
+                  <span className="w-7 h-7 rounded-lg bg-blue-600 text-white font-bold text-xs flex items-center justify-center shrink-0">
+                    2
+                  </span>
+                  <div>
+                    <h4 className="text-sm font-bold text-slate-900">
+                      Danh Sách KOC Chờ Nhãn Hàng Duyệt ({activePortal.kocCandidates.filter(k => k.brandApprovalStatus === 'CHỜ_DUYỆT').length} KOCs)
+                    </h4>
+                    <p className="text-xs text-slate-500">
+                      Vui lòng duyệt danh sách để Upbase tiến hành gửi mẫu unboxing và chốt hợp đồng.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {activePortal.kocCandidates.filter(k => k.brandApprovalStatus === 'CHỜ_DUYỆT').map(koc => (
+                  <div key={koc.id} className="p-4 rounded-xl border border-slate-200 bg-slate-50/60 hover:bg-slate-50 transition space-y-3 text-xs">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-indigo-100 text-indigo-700 font-bold flex items-center justify-center text-xs shrink-0">
+                          {koc.stageName.slice(0, 2).toUpperCase()}
+                        </div>
+                        <div>
+                          <span className="font-bold text-slate-900 block text-sm">{koc.stageName}</span>
+                          <span className="text-2xs text-slate-500 font-mono">{koc.channelId}</span>
+                        </div>
+                      </div>
+                      <span className="badge-slate text-2xs px-2 py-0.5 rounded font-semibold">{koc.tier}</span>
                     </div>
 
-                    {/* Creator Identity */}
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-blue-50 text-blue-700 font-semibold flex items-center justify-center text-sm border border-blue-200 shadow-2xs">
-                        {koc.stageName.slice(0, 2).toUpperCase()}
+                    <div className="grid grid-cols-2 gap-2 text-2xs py-2 border-y border-slate-200/80">
+                      <div>
+                        <span className="text-slate-500 block">Followers:</span>
+                        <span className="font-semibold text-slate-800">{(koc.followers).toLocaleString('vi-VN')}</span>
                       </div>
                       <div>
-                        <h4 className="text-sm font-semibold text-slate-900">{koc.stageName}</h4>
-                        <a
-                          href={koc.channelUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-xs text-blue-600 hover:underline flex items-center gap-1 font-mono"
-                        >
-                          {koc.channelId}
-                          <ExternalLink className="w-3 h-3" />
-                        </a>
-                      </div>
-                    </div>
-
-                    {/* Performance Metrics */}
-                    <div className="grid grid-cols-3 gap-2 my-3 p-2 rounded-lg bg-slate-50 text-center text-2xs border border-slate-200">
-                      <div>
-                        <span className="text-slate-500 block text-2xs">Followers</span>
-                        <span className="font-semibold text-slate-900">{(koc.followers / 1000).toFixed(0)}K</span>
-                      </div>
-                      <div>
-                        <span className="text-slate-500 block text-2xs">View TB</span>
-                        <span className="font-semibold text-blue-600">{(koc.avgViews / 1000).toFixed(0)}K</span>
-                      </div>
-                      <div>
-                        <span className="text-slate-500 block text-2xs">Tương tác</span>
+                        <span className="text-slate-500 block">Tỷ lệ tương tác:</span>
                         <span className="font-semibold text-emerald-600">{koc.engagementRate}%</span>
                       </div>
+                      <div>
+                        <span className="text-slate-500 block">Lượt xem TB:</span>
+                        <span className="font-semibold text-slate-800">{(koc.avgViews).toLocaleString('vi-VN')}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 block">Ngành hàng (Niche):</span>
+                        <span className="font-semibold text-blue-700 truncate block">{koc.niche}</span>
+                      </div>
                     </div>
 
-                    {/* Format Description */}
-                    <p className="text-2xs text-slate-700 bg-slate-50 p-2.5 rounded-lg border border-slate-200 leading-relaxed">
-                      <strong>Quyền lợi:</strong> {koc.formatDescription}
+                    <p className="text-2xs text-slate-600 italic">
+                      Định dạng: "{koc.formatDescription}"
                     </p>
 
-                    {/* Sample Videos */}
-                    <div className="mt-2.5 text-2xs">
-                      <span className="text-slate-500 block mb-1 font-semibold">Clip mẫu tương tự:</span>
-                      <div className="space-y-1">
-                        {koc.sampleVideoUrls.map((sample, i) => (
-                          <a
-                            key={i}
-                            href={sample.url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-blue-700 hover:text-blue-800 block truncate flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-md transition"
-                          >
-                            <Play className="w-3 h-3 text-slate-500 shrink-0" />
-                            <span className="truncate">{sample.title}</span>
-                          </a>
-                        ))}
-                      </div>
+                    <div className="flex items-center gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setRejectingKoc(koc);
+                          setSelectedRejectReason('Lệch định vị thương hiệu');
+                        }}
+                        className="flex-1 py-1.5 px-3 rounded-lg border border-slate-300 hover:bg-slate-100 text-slate-700 font-semibold text-xs transition"
+                      >
+                        Đổi KOC
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleApproveKoc(koc.id)}
+                        className="flex-1 py-1.5 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs transition shadow-2xs"
+                      >
+                        Duyệt KOC
+                      </button>
                     </div>
-
-                    {/* Rejection Note if any */}
-                    {isRejected && (
-                      <div className="mt-2 text-2xs text-rose-800 bg-rose-50 p-2 rounded-lg border border-rose-200 font-medium">
-                        <strong>Lý do từ chối:</strong> {koc.rejectReason}
-                      </div>
-                    )}
                   </div>
+                ))}
+              </div>
+            </div>
+          )}
 
-                  {/* Actions */}
-                  <div className="mt-4 pt-3 border-t border-slate-200 flex items-center justify-between gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setRejectingKoc(koc)}
-                      className="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-rose-700 hover:bg-rose-50 border border-rose-300 transition flex items-center gap-1 cursor-pointer"
-                    >
-                      <RotateCcw className="w-3 h-3" />
-                      Đổi KOC khác
-                    </button>
-                    <button
-                      type="button"
-                      disabled={isApproved}
-                      onClick={() => handleApproveKoc(koc.id)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1 cursor-pointer ${
-                        isApproved
-                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-300 cursor-default'
-                          : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs'
-                      }`}
-                    >
-                      <Check className="w-3.5 h-3.5" />
-                      {isApproved ? 'Đã Đồng Ý' : 'Đồng Ý KOC Này'}
-                    </button>
+          {/* ITEM 3: PENDING SCRIPT REVIEWS */}
+          {activePortal.scripts.filter(s => s.status !== 'APPROVED').length > 0 && (
+            <div className="card-enterprise p-5 bg-white border border-slate-200 shadow-xs space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-200">
+                <div className="flex items-center gap-2">
+                  <span className="w-7 h-7 rounded-lg bg-indigo-600 text-white font-bold text-xs flex items-center justify-center shrink-0">
+                    3
+                  </span>
+                  <div>
+                    <h4 className="text-sm font-bold text-slate-900">
+                      Thẩm Định Kịch Bản Video ({activePortal.scripts.filter(s => s.status !== 'APPROVED').length} Kịch bản chờ duyệt)
+                    </h4>
+                    <p className="text-xs text-slate-500">
+                      Góp ý trực tiếp theo 4 phân đoạn (Hook, Pain point, USP, CTA) hoặc phê duyệt để KOC tiến hành quay.
+                    </p>
                   </div>
                 </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
+              </div>
 
-      {/* ------------------------------------------------------------------------- */}
-      {/* CHẶNG 3: THẨM ĐỊNH KỊCH BẢN (SLA 24H)                                     */}
-      {/* ------------------------------------------------------------------------- */}
-      {activeStage === 'STAGE_3_SCRIPTS' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-          {/* Script List Sidebar */}
-          <div className="card-enterprise p-4 bg-white border border-slate-200 shadow-xs space-y-3">
-            <h4 className="text-xs font-semibold text-slate-900 pb-2 border-b border-slate-200">
-              Kịch Bản Cần Phê Duyệt ({activePortal.scripts.length})
-            </h4>
-
-            <div className="space-y-2">
-              {activePortal.scripts.map(s => {
-                const isSelected = s.id === activeScript?.id;
-                return (
-                  <div
-                    key={s.id}
-                    onClick={() => setActiveScriptId(s.id)}
-                    className={`p-3 rounded-lg border cursor-pointer transition ${
-                      isSelected
-                        ? 'bg-blue-50/80 border-blue-500 shadow-2xs'
-                        : 'bg-white border-slate-200 hover:bg-slate-50'
+              {/* Script selector tabs */}
+              <div className="flex items-center gap-2 overflow-x-auto pb-1">
+                {activePortal.scripts.filter(s => s.status !== 'APPROVED').map(sc => (
+                  <button
+                    key={sc.id}
+                    type="button"
+                    onClick={() => setActiveScriptId(sc.id)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition border whitespace-nowrap ${
+                      activeScript?.id === sc.id
+                        ? 'bg-indigo-50 border-indigo-500 text-indigo-700 ring-1 ring-indigo-500/30'
+                        : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
                     }`}
                   >
-                    <div className="flex items-center justify-between text-2xs mb-1">
-                      <span className="font-semibold text-slate-900">{s.kocStageName}</span>
-                      <span className={`text-2xs font-semibold px-2 py-0.5 rounded border ${
-                        s.status === 'APPROVED' ? 'bg-emerald-50 text-emerald-700 border-emerald-300' :
-                        s.status === 'REVISION_REQUESTED' ? 'bg-amber-50 text-amber-800 border-amber-300' :
-                        'bg-blue-50 text-blue-700 border-blue-200'
-                      }`}>
-                        {s.status === 'APPROVED' ? 'Đã Duyệt' : s.status === 'REVISION_REQUESTED' ? 'Đang Sửa' : 'Chờ Duyệt'}
-                      </span>
+                    {sc.kocStageName} ({sc.productName.slice(0, 18)}...)
+                  </button>
+                ))}
+              </div>
+
+              {activeScript && (
+                <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 space-y-4 text-xs">
+                  <div className="flex items-center justify-between pb-2 border-b border-slate-200">
+                    <div>
+                      <span className="font-bold text-slate-900 text-sm">{activeScript.kocStageName}</span>
+                      <span className="text-slate-500 ml-2">Sản phẩm: {activeScript.productName} ({activeScript.videoDuration})</span>
                     </div>
-                    <p className="text-2xs text-slate-500 line-clamp-1">{s.productName}</p>
-                    <span className="text-2xs text-amber-700 font-semibold block mt-1 flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
-                      SLA còn: {s.remainingHours} giờ
+                    <span className="badge-amber text-2xs px-2 py-0.5 rounded font-semibold">
+                      Lần sửa: {activeScript.revisionCount}/2
                     </span>
                   </div>
-                );
-              })}
-            </div>
-          </div>
 
-          {/* Active Script Review Detail */}
-          {activeScript && (
-            <div className="lg:col-span-2 space-y-4">
-              <div className="card-enterprise p-5 bg-white border border-slate-200 shadow-xs">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-200">
-                  <div>
-                    <span className="text-2xs font-semibold px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">
-                      {activeScript.dealCode}
-                    </span>
-                    <h3 className="text-sm font-semibold text-slate-900 mt-1">
-                      Kịch bản Video của {activeScript.kocStageName} ({activeScript.videoDuration})
-                    </h3>
-                    <p className="text-xs text-slate-500 mt-0.5">Sản phẩm: {activeScript.productName}</p>
+                  {/* 4-part script breakdown */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="p-3 rounded-lg bg-amber-50/50 border border-amber-200">
+                      <span className="font-bold text-amber-900 block mb-1">1. Hook mở đầu (3 giây đầu):</span>
+                      <p className="text-slate-800 leading-relaxed">{activeScript.hook}</p>
+                    </div>
+
+                    <div className="p-3 rounded-lg bg-rose-50/50 border border-rose-200">
+                      <span className="font-bold text-rose-900 block mb-1">2. Nỗi đau khách hàng (Pain Point):</span>
+                      <p className="text-slate-800 leading-relaxed">{activeScript.painPoint}</p>
+                    </div>
+
+                    <div className="p-3 rounded-lg bg-emerald-50/50 border border-emerald-200">
+                      <span className="font-bold text-emerald-900 block mb-1">3. Giải pháp &amp; USP sản phẩm:</span>
+                      <p className="text-slate-800 leading-relaxed">{activeScript.solutionAndUsp}</p>
+                    </div>
+
+                    <div className="p-3 rounded-lg bg-blue-50/50 border border-blue-200">
+                      <span className="font-bold text-blue-900 block mb-1">4. Lời kêu gọi mua hàng (CTA):</span>
+                      <p className="text-slate-800 leading-relaxed">{activeScript.callToAction}</p>
+                    </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs px-2.5 py-1 rounded bg-amber-50 text-amber-800 border border-amber-300 font-semibold flex items-center gap-1 shadow-2xs">
-                      <Clock className="w-3.5 h-3.5" />
-                      SLA: {activeScript.remainingHours}h còn lại
-                    </span>
-                  </div>
-                </div>
-
-                {/* 4-Part Script Structure */}
-                <div className="space-y-3 mt-4 text-xs">
-                  {/* Part 1: Hook */}
-                  <div className="p-3.5 rounded-lg bg-amber-50/50 border border-amber-200">
-                    <span className="font-semibold text-amber-800 block text-xs mb-1">
-                      1. Đoạn mở đầu (Hook 3s đầu):
-                    </span>
-                    <p className="text-slate-800 leading-relaxed font-medium">{activeScript.hook}</p>
-                  </div>
-
-                  {/* Part 2: Pain Point */}
-                  <div className="p-3.5 rounded-lg bg-rose-50/50 border border-rose-200">
-                    <span className="font-semibold text-rose-800 block text-xs mb-1">
-                      2. Nỗi đau khách hàng:
-                    </span>
-                    <p className="text-slate-800 leading-relaxed">{activeScript.painPoint}</p>
-                  </div>
-
-                  {/* Part 3: Solution & USP */}
-                  <div className="p-3.5 rounded-lg bg-emerald-50/50 border border-emerald-200">
-                    <span className="font-semibold text-emerald-800 block text-xs mb-1">
-                      3. Giải pháp & điểm mạnh sản phẩm (USP):
-                    </span>
-                    <p className="text-slate-800 leading-relaxed">{activeScript.solutionAndUsp}</p>
-                  </div>
-
-                  {/* Part 4: CTA */}
-                  <div className="p-3.5 rounded-lg bg-blue-50/50 border border-blue-200">
-                    <span className="font-semibold text-blue-800 block text-xs mb-1">
-                      4. Lời kêu gọi mua hàng:
-                    </span>
-                    <p className="text-slate-800 leading-relaxed">{activeScript.callToAction}</p>
-                  </div>
-                </div>
-
-                {/* Existing Feedback if any */}
-                {activeScript.brandFeedback && (
-                  <div className="mt-4 p-3 rounded-lg bg-amber-50 border border-amber-300 text-xs text-amber-900 leading-relaxed">
-                    <strong>Góp ý gần nhất của Brand (Lần {activeScript.revisionCount}/2):</strong> {activeScript.brandFeedback}
-                  </div>
-                )}
-
-                {/* Inline Feedback Form for Brand */}
-                {activeScript.status !== 'APPROVED' && (
-                  <div className="mt-5 pt-4 border-t border-slate-200 space-y-3">
+                  {/* Feedback Form */}
+                  <div className="pt-3 border-t border-slate-200 space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold text-slate-900 flex items-center gap-1.5">
+                      <span className="font-semibold text-slate-900 flex items-center gap-1.5">
                         <MessageSquare className="w-3.5 h-3.5 text-blue-600" />
-                        Góp Ý Chỉnh Sửa Kịch Bản (Còn {2 - activeScript.revisionCount} lần sửa):
+                        Góp ý chỉnh sửa cho KOC:
                       </span>
                       <div className="flex items-center gap-1.5 text-2xs">
-                        <span className="text-slate-500 font-medium">Chọn phần góp ý:</span>
+                        <span className="text-slate-500">Phần góp ý:</span>
                         <select
                           value={feedbackSection}
                           onChange={(e: any) => setFeedbackSection(e.target.value)}
-                          className="bg-white text-slate-800 border border-slate-300 rounded-lg px-2.5 py-1 text-xs focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none cursor-pointer"
+                          className="bg-white text-slate-800 border border-slate-300 rounded-lg px-2 py-0.5 text-2xs"
                         >
                           <option value="HOOK">1. Hook</option>
                           <option value="PAIN">2. Pain Point</option>
@@ -959,8 +930,8 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
                       rows={2}
                       value={scriptFeedbackText}
                       onChange={(e) => setScriptFeedbackText(e.target.value)}
-                      placeholder="Nhập nội dung cần điều chỉnh chi tiết cho KOC (VD: Đề nghị nhấn mạnh khả năng kiềm dầu 8 tiếng thay vì làm trắng)..."
-                      className="w-full text-xs bg-white text-slate-900 placeholder-slate-400 border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none leading-relaxed"
+                      placeholder="Nhập nội dung chỉnh sửa cụ thể cho KOC..."
+                      className="w-full text-xs bg-white text-slate-900 placeholder-slate-400 border border-slate-300 rounded-lg p-2.5 outline-none focus:ring-1 focus:ring-blue-500"
                     />
 
                     <div className="flex items-center justify-between pt-1">
@@ -968,143 +939,354 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
                         type="button"
                         disabled={!scriptFeedbackText.trim() || activeScript.revisionCount >= 2}
                         onClick={handleSubmitScriptFeedback}
-                        className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 disabled:opacity-50 text-slate-700 border border-slate-300 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
+                        className="btn-md bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 rounded-lg text-xs font-semibold flex items-center gap-1.5"
                       >
                         <Send className="w-3.5 h-3.5" />
-                        Gửi yêu cầu sửa kịch bản
+                        Gửi yêu cầu sửa
                       </button>
 
                       <button
                         type="button"
                         onClick={() => handleApproveScript(activeScript.id)}
-                        className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-2xs transition cursor-pointer"
+                        className="btn-md bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-2xs"
                       >
                         <Check className="w-3.5 h-3.5" />
                         Phê duyệt kịch bản này
                       </button>
                     </div>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           )}
         </div>
       )}
 
-      {/* ------------------------------------------------------------------------- */}
-      {/* CHẶNG 4: NGHIỆM THU VIDEO & LIVE CAMPAIGN COCKPIT                         */}
-      {/* ------------------------------------------------------------------------- */}
-      {activeStage === 'STAGE_4_COCKPIT' && (
-        <div className="space-y-5">
-          {/* Real-time Tickers */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="card-enterprise p-4 bg-white border border-slate-200 shadow-xs">
-              <span className="text-2xs text-slate-500 block font-medium">Tiến độ lên sóng video</span>
-              <div className="flex items-baseline gap-2 mt-1">
-                <span className="text-xl font-semibold font-mono text-slate-900">
-                  {activePortal.liveAiredVideosCount}
-                </span>
-                <span className="text-xs text-slate-400">/ {activePortal.totalTargetVideos} Clips đã air</span>
-              </div>
-              <div className="w-full bg-slate-100 h-2 rounded-full mt-2 border border-slate-200">
-                <div
-                  className="h-full bg-blue-600 rounded-full"
-                  style={{ width: `${(activePortal.liveAiredVideosCount / activePortal.totalTargetVideos) * 100}%` }}
-                />
-              </div>
+      {/* ========================================================================= */}
+      {/* TAB 3: CÁC JOB ĐANG LÀM (ACTIVE JOBS & PIPELINE)                          */}
+      {/* ========================================================================= */}
+      {activeTab === 'ACTIVE_JOBS' && (
+        <div className="space-y-4 animate-in fade-in duration-150">
+          {/* Filter Bar */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
+            <div className="flex items-center gap-2">
+              <Search className="w-4 h-4 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Tìm KOC hoặc sản phẩm..."
+                value={jobSearchQuery}
+                onChange={(e) => setJobSearchQuery(e.target.value)}
+                className="text-xs bg-transparent text-slate-800 placeholder-slate-400 outline-none w-48 sm:w-64"
+              />
             </div>
 
-            <div className="card-enterprise p-4 bg-white border border-slate-200 shadow-xs">
-              <span className="text-2xs text-slate-500 block font-medium">Tổng lượt Views thực tế</span>
-              <div className="flex items-baseline gap-2 mt-1">
-                <span className="text-xl font-semibold font-mono text-purple-600">
-                  {(activePortal.totalAiredViews).toLocaleString('vi-VN')}
-                </span>
-                <span className="text-xs text-slate-400">Lượt xem</span>
-              </div>
-              <span className="text-2xs text-emerald-700 font-medium mt-2 block flex items-center gap-1">
-                <TrendingUp className="w-3 h-3" />
-                Dữ liệu đồng bộ trực tiếp từ TikTok Analytics
-              </span>
-            </div>
-
-            <div className="card-enterprise p-4 bg-white border border-slate-200 shadow-xs">
-              <span className="text-2xs text-slate-500 block font-medium">Doanh thu GMV tạm tính</span>
-              <div className="flex items-baseline gap-2 mt-1">
-                <span className="text-xl font-semibold font-mono text-emerald-600">
-                  {(activePortal.totalAffiliateGmv).toLocaleString('vi-VN')} đ
-                </span>
-              </div>
-              <span className="text-2xs text-slate-400 mt-2 block">
-                Phát sinh qua link Affiliate &amp; Giỏ hàng
-              </span>
+            <div className="flex items-center gap-1.5 text-xs">
+              <span className="text-slate-500 text-2xs">Lọc trạng thái:</span>
+              <button
+                type="button"
+                onClick={() => setJobStatusFilter('ALL')}
+                className={`px-2.5 py-1 rounded-lg text-2xs font-semibold transition ${
+                  jobStatusFilter === 'ALL' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                Tất cả ({activePortal.scripts.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setJobStatusFilter('SCRIPT')}
+                className={`px-2.5 py-1 rounded-lg text-2xs font-semibold transition ${
+                  jobStatusFilter === 'SCRIPT' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                Kịch bản
+              </button>
+              <button
+                type="button"
+                onClick={() => setJobStatusFilter('DRAFT')}
+                className={`px-2.5 py-1 rounded-lg text-2xs font-semibold transition ${
+                  jobStatusFilter === 'DRAFT' ? 'bg-amber-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                Đang quay/nháp
+              </button>
+              <button
+                type="button"
+                onClick={() => setJobStatusFilter('AIRED')}
+                className={`px-2.5 py-1 rounded-lg text-2xs font-semibold transition ${
+                  jobStatusFilter === 'AIRED' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                Đã lên sóng ({activePortal.liveAiredVideosCount})
+              </button>
             </div>
           </div>
 
-          {/* Watermarked Draft Preview & Aired Clips Table */}
-          <div className="card-enterprise p-5 bg-white border border-slate-200 shadow-xs">
-            <h4 className="text-xs font-semibold text-slate-900 pb-3 mb-3 border-b border-slate-200 flex items-center justify-between">
-              <span>BẢNG THEO DÕI VIDEO &amp; LINK LÊN SÓNG CHÍNH THỨC</span>
-              <span className="text-xs font-normal text-slate-500">
-                Nhãn hàng có thể bấm xem clip nháp hoặc link TikTok trực tiếp
-              </span>
-            </h4>
-
-            <div className="space-y-3">
-              {activePortal.scripts.map((sc, i) => (
-                <div key={sc.id} className="p-3.5 rounded-lg bg-slate-50 border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-slate-900 text-xs">{sc.kocStageName}</span>
-                      <span className="text-2xs px-2 py-0.5 rounded bg-slate-200/80 text-slate-700 font-mono font-medium">
-                        {sc.channelId}
-                      </span>
-                      <span className={`text-2xs font-semibold px-2 py-0.5 rounded border ${
-                        sc.publishedVideoUrl ? 'bg-emerald-50 text-emerald-700 border-emerald-300' : 'bg-blue-50 text-blue-700 border-blue-200'
-                      }`}>
-                        {sc.publishedVideoUrl ? 'ĐÃ LÊN SÓNG' : 'ĐANG QUAY / CHỜ DUYỆT NHÁP'}
-                      </span>
+          {/* Job List */}
+          <div className="space-y-3">
+            {filteredJobs.map(job => (
+              <div key={job.id} className="card-enterprise p-4 bg-white border border-slate-200 shadow-xs space-y-3">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white font-bold flex items-center justify-center text-xs shrink-0">
+                      {job.kocStageName.slice(0, 2).toUpperCase()}
                     </div>
-                    <p className="text-slate-600 mt-1 line-clamp-1">{sc.productName} ({sc.videoDuration})</p>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-slate-900 text-xs">{job.kocStageName}</span>
+                        <span className="text-2xs font-mono text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">{job.channelId}</span>
+                        <span className={`text-2xs font-semibold px-2 py-0.5 rounded border ${
+                          job.publishedVideoUrl 
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
+                            : job.draftVideoUrl
+                            ? 'bg-amber-50 text-amber-700 border-amber-300'
+                            : 'bg-blue-50 text-blue-700 border-blue-200'
+                        }`}>
+                          {job.publishedVideoUrl ? 'ĐÃ LÊN SÓNG' : job.draftVideoUrl ? 'CÓ CLIP NHÁP' : 'ĐANG VIẾT KỊCH BẢN'}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-600 mt-0.5">{job.productName} ({job.videoDuration})</p>
+                    </div>
                   </div>
 
-                  <div className="flex items-center gap-3">
-                    {sc.publishedVideoUrl ? (
-                      <div className="text-right">
-                        <span className="text-emerald-700 font-semibold block">
-                          {(sc.gmv || 0).toLocaleString('vi-VN')} đ GMV
+                  {/* Actions & Metrics */}
+                  <div className="flex items-center gap-2">
+                    {job.publishedVideoUrl ? (
+                      <div className="text-right mr-2 text-xs">
+                        <span className="text-emerald-700 font-bold block">
+                          {(job.gmv || 0).toLocaleString('vi-VN')} đ GMV
                         </span>
-                        <span className="text-2xs text-slate-500">{(sc.views || 0).toLocaleString('vi-VN')} views</span>
+                        <span className="text-2xs text-slate-500">{(job.views || 0).toLocaleString('vi-VN')} views</span>
                       </div>
                     ) : null}
 
-                    {sc.draftVideoUrl && (
+                    {job.draftVideoUrl && (
                       <button
                         type="button"
                         onClick={() => {
-                          if (onNotify) onNotify(`Đang mở bản xem trước video nháp của ${sc.kocStageName} (Có Watermark Bản Quyền Upbase).`);
+                          if (onNotify) onNotify(`Đang mở clip nháp có Watermark bản quyền Upbase của ${job.kocStageName}.`, 'info');
                         }}
-                        className="px-3 py-1.5 rounded-lg bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 flex items-center gap-1.5 text-2xs font-semibold transition cursor-pointer shadow-2xs"
+                        className="px-3 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-xs font-semibold flex items-center gap-1.5 transition"
                       >
-                        <Play className="w-3 h-3 text-amber-500" />
+                        <Play className="w-3.5 h-3.5 text-amber-600" />
                         Xem Clip Nháp
                       </button>
                     )}
 
-                    {sc.publishedVideoUrl && (
+                    {job.publishedVideoUrl && (
                       <a
-                        href={sc.publishedVideoUrl}
+                        href={job.publishedVideoUrl}
                         target="_blank"
                         rel="noreferrer"
-                        className="px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold flex items-center gap-1.5 text-2xs shadow-2xs transition"
+                        className="px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold flex items-center gap-1.5 text-xs shadow-2xs transition"
                       >
-                        <ExternalLink className="w-3 h-3" />
-                        Xem Clip Trên TikTok
+                        <ExternalLink className="w-3.5 h-3.5" />
+                        Xem trên TikTok
                       </a>
                     )}
                   </div>
                 </div>
-              ))}
+
+                {/* Pipeline Progression Steps */}
+                <div className="grid grid-cols-5 gap-1.5 pt-2 border-t border-slate-100 text-2xs">
+                  <div className="p-1.5 rounded bg-emerald-50 text-emerald-800 font-medium text-center border border-emerald-200">
+                    1. Chốt KOC ✓
+                  </div>
+                  <div className="p-1.5 rounded bg-emerald-50 text-emerald-800 font-medium text-center border border-emerald-200">
+                    2. Gửi hàng mẫu ✓
+                  </div>
+                  <div className={`p-1.5 rounded font-medium text-center border ${
+                    job.status === 'APPROVED' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-amber-50 text-amber-800 border-amber-200'
+                  }`}>
+                    3. Kịch bản {job.status === 'APPROVED' ? '✓' : '...'}
+                  </div>
+                  <div className={`p-1.5 rounded font-medium text-center border ${
+                    job.draftVideoUrl ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-slate-50 text-slate-500 border-slate-200'
+                  }`}>
+                    4. Quay nháp {job.draftVideoUrl ? '✓' : '...'}
+                  </div>
+                  <div className={`p-1.5 rounded font-medium text-center border ${
+                    job.publishedVideoUrl ? 'bg-purple-50 text-purple-800 border-purple-200' : 'bg-slate-50 text-slate-500 border-slate-200'
+                  }`}>
+                    5. Lên sóng {job.publishedVideoUrl ? '✓' : '...'}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* TAB 4: TRAO ĐỔI QUA LẠI (TWO-WAY DISCUSSION & CHAT)                       */}
+      {/* ========================================================================= */}
+      {activeTab === 'DISCUSSION' && (
+        <div className="card-enterprise bg-white border border-slate-200 shadow-xs rounded-2xl flex flex-col h-[600px] overflow-hidden animate-in fade-in duration-150">
+          {/* Chat Header */}
+          <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/80">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center text-xs">
+                UP
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-slate-900">
+                  Kênh Trao Đổi Chiến Dịch: {activePortal.brandName} ⇄ Upbase Operations
+                </h4>
+                <p className="text-2xs text-slate-500">
+                  Người phụ trách: <strong>{activePortal.accountPic}</strong> (Account Lead) &amp; <strong>{activePortal.bookingPic}</strong> (Booking Lead)
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-2xs px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 font-semibold flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse"></span>
+                Cam kết phản hồi &lt; 2h
+              </span>
+            </div>
+          </div>
+
+          {/* Chat Message List */}
+          <div className="flex-1 p-4 overflow-y-auto space-y-4 text-xs bg-slate-50/30">
+            {chatMessages.map(msg => {
+              const isBrand = msg.sender === 'BRAND';
+              return (
+                <div
+                  key={msg.id}
+                  className={`flex items-start gap-2.5 ${isBrand ? 'flex-row-reverse' : 'flex-row'}`}
+                >
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-2xs text-white shrink-0 ${
+                    isBrand ? 'bg-indigo-600' : 'bg-blue-600'
+                  }`}>
+                    {msg.avatarText}
+                  </div>
+                  <div className={`max-w-[75%] space-y-1 ${isBrand ? 'items-end' : 'items-start'}`}>
+                    <div className={`flex items-center gap-2 text-2xs text-slate-400 ${isBrand ? 'justify-end' : 'justify-start'}`}>
+                      <span className="font-semibold text-slate-700">{msg.senderName}</span>
+                      <span>•</span>
+                      <span>{msg.time}</span>
+                    </div>
+                    <div className={`p-3.5 rounded-2xl leading-relaxed text-xs shadow-2xs ${
+                      isBrand 
+                        ? 'bg-blue-600 text-white rounded-tr-none' 
+                        : 'bg-white text-slate-800 border border-slate-200 rounded-tl-none'
+                    }`}>
+                      {msg.content}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Chat Input Bar */}
+          <form onSubmit={handleSendMessage} className="p-3 border-t border-slate-200 bg-white flex items-center gap-2">
+            <input
+              type="text"
+              value={newChatText}
+              onChange={(e) => setNewChatText(e.target.value)}
+              placeholder="Nhập nội dung trao đổi với đội ngũ Upbase..."
+              className="flex-1 text-xs bg-slate-50 text-slate-900 placeholder-slate-400 border border-slate-200 rounded-xl px-3.5 py-2.5 outline-none focus:border-blue-500 focus:bg-white transition"
+            />
+            <button
+              type="submit"
+              disabled={!newChatText.trim()}
+              className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-semibold text-xs transition flex items-center gap-1.5 shadow-2xs"
+            >
+              <Send className="w-3.5 h-3.5" />
+              <span>Gửi</span>
+            </button>
+          </form>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* TAB 5: LỊCH SỬ & NGHIỆM THU (HISTORY & ARCHIVES)                          */}
+      {/* ========================================================================= */}
+      {activeTab === 'HISTORY' && (
+        <div className="space-y-5 animate-in fade-in duration-150">
+          <div className="card-enterprise p-5 bg-white border border-slate-200 shadow-xs">
+            <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-200">
+              <div>
+                <h4 className="text-xs font-bold text-slate-900">
+                  LỊCH SỬ CÁC CHIẾN DỊCH ĐÃ THỰC HIỆN VỚI UPBASE
+                </h4>
+                <p className="text-2xs text-slate-500 mt-0.5">
+                  Lưu trữ kết quả, báo cáo nghiệm thu và hóa đơn tài chính của các chiến dịch trước đây.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (onNotify) onNotify('Đang xuất biên bản nghiệm thu tổng hợp định dạng PDF...', 'success');
+                }}
+                className="btn-md bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-2xs"
+              >
+                <Download className="w-3.5 h-3.5 text-blue-600" />
+                <span>Tải Báo Cáo Nghiệm Thu Tổng Hợp (.PDF)</span>
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/60 space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <span className="font-bold text-slate-900 text-sm">Chiến dịch Mega Sale 9.9 - Siêu Tiệc Thương Hiệu</span>
+                    <span className="text-2xs text-slate-500 ml-2">Tháng 09/2026</span>
+                  </div>
+                  <span className="badge-emerald text-2xs px-2.5 py-0.5 rounded font-semibold self-start sm:self-auto">
+                    ĐÃ NGHIỆM THU &amp; QUYẾT TOÁN 100%
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs pt-1">
+                  <div>
+                    <span className="text-slate-500 block text-2xs">Ngân sách giải ngân:</span>
+                    <span className="font-bold text-slate-900 font-mono">180.000.000 đ</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block text-2xs">Doanh thu GMV thực tế:</span>
+                    <span className="font-bold text-emerald-600 font-mono">924.500.000 đ</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block text-2xs">Lượt xem video tích lũy:</span>
+                    <span className="font-bold text-purple-600 font-mono">1.850.000 views</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block text-2xs">Quy mô Video:</span>
+                    <span className="font-bold text-slate-900 font-mono">35 Clips (100% on-time)</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/60 space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <span className="font-bold text-slate-900 text-sm">Chiến dịch Khởi Động Mùa Tựu Trường Kutieskin</span>
+                    <span className="text-2xs text-slate-500 ml-2">Tháng 08/2026</span>
+                  </div>
+                  <span className="badge-emerald text-2xs px-2.5 py-0.5 rounded font-semibold self-start sm:self-auto">
+                    ĐÃ NGHIỆM THU
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs pt-1">
+                  <div>
+                    <span className="text-slate-500 block text-2xs">Ngân sách giải ngân:</span>
+                    <span className="font-bold text-slate-900 font-mono">120.000.000 đ</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block text-2xs">Doanh thu GMV thực tế:</span>
+                    <span className="font-bold text-emerald-600 font-mono">652.000.000 đ</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block text-2xs">Lượt xem video tích lũy:</span>
+                    <span className="font-bold text-purple-600 font-mono">1.210.000 views</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block text-2xs">Quy mô Video:</span>
+                    <span className="font-bold text-slate-900 font-mono">24 Clips</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -1114,7 +1296,7 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
       {/* 4. MODALS (PLAN REVISION & KOC REJECT)                                    */}
       {/* ========================================================================= */}
 
-      {/* Modal 1: Plan Revision Request for Stage 1 */}
+      {/* Modal 1: Plan Revision Request */}
       {isPlanRevisionModalOpen && (
         <div 
           className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150"
@@ -1123,7 +1305,6 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
           }}
           role="dialog"
           aria-modal="true"
-          aria-label="Yêu cầu điều chỉnh kế hoạch ngân sách"
         >
           <div className="card-enterprise w-full max-w-lg p-6 bg-white border border-slate-200 shadow-2xl space-y-4 text-slate-800 animate-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between pb-3 border-b border-slate-200">
@@ -1135,7 +1316,6 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
                 type="button"
                 onClick={() => setIsPlanRevisionModalOpen(false)}
                 className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition cursor-pointer"
-                aria-label="Đóng"
               >
                 ✕
               </button>
@@ -1174,7 +1354,7 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
         </div>
       )}
 
-      {/* Modal 2: KOC Reject Reason for Stage 2 */}
+      {/* Modal 2: KOC Reject Reason */}
       {rejectingKoc && (
         <div 
           className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150"
@@ -1183,7 +1363,6 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
           }}
           role="dialog"
           aria-modal="true"
-          aria-label="Đề xuất đổi KOC"
         >
           <div className="card-enterprise w-full max-w-md p-6 bg-white border border-slate-200 shadow-2xl space-y-4 text-slate-800 animate-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between pb-3 border-b border-slate-200">
@@ -1195,7 +1374,6 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
                 type="button"
                 onClick={() => setRejectingKoc(null)}
                 className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition cursor-pointer"
-                aria-label="Đóng"
               >
                 ✕
               </button>

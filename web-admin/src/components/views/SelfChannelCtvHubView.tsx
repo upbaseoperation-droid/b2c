@@ -75,7 +75,52 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
   const [contributors, setContributors] = useState<Contributor[]>(INITIAL_CONTRIBUTORS);
 
   // Tab State: 'PIPELINE' | 'CTV_PORTAL' | 'CONTRIBUTORS' | 'SETTLEMENT'
-  const [activeTab, setActiveTab] = useState<'PIPELINE' | 'CTV_PORTAL' | 'CONTRIBUTORS' | 'SETTLEMENT'>('PIPELINE');
+  const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'APPROVALS' | 'ACTIVE_JOBS' | 'DISCUSSION' | 'HISTORY'>('OVERVIEW');
+  const [isCtvSimulatorView, setIsCtvSimulatorView] = useState(false);
+
+  // Discussion Chat State
+  const [ctvChatMessages, setCtvChatMessages] = useState<Array<{ id: string; sender: 'CTV' | 'UPBASE_LEAD'; senderName: string; time: string; content: string }>>([
+    {
+      id: 'cmsg-1',
+      sender: 'UPBASE_LEAD',
+      senderName: 'Khánh Vy (Video & Booking Lead)',
+      time: 'Hôm qua lúc 10:15',
+      content: 'Chào các bạn CTV sáng tạo video tháng này! Brand Senka & Kutieskin đã chốt danh sách SKU trọng tâm và kịch bản mẫu. Các bạn xem kỹ Do & Don\'ts trước khi nộp kịch bản nhé ạ!'
+    },
+    {
+      id: 'cmsg-2',
+      sender: 'CTV',
+      senderName: 'Bùi Thị Lan (Mẹ Bỉm Sữa)',
+      time: 'Hôm qua lúc 14:30',
+      content: 'Chị Vy ơi, em đã quay xong clip nháp KUTIE-SOOTH-30G rồi, phần ánh sáng tự nhiên ban ngày test chất kem rất mướt. Em vừa nộp link drive trên mục Cần duyệt, chị QA xem giúp em nhé!'
+    },
+    {
+      id: 'cmsg-3',
+      sender: 'UPBASE_LEAD',
+      senderName: 'Khánh Vy (Video & Booking Lead)',
+      time: 'Sáng nay lúc 08:45',
+      content: 'Đã check video của Lan nhé! Đoạn bôi kem lên má bé rất đạt cảm xúc, chỉ cần chỉnh âm lượng nhạc nền giảm 15% ở đoạn 0:25 là đạt chuẩn nghiệm thu luôn nha em.'
+    }
+  ]);
+  const [newCtvChatText, setNewCtvChatText] = useState('');
+
+  const handleSendCtvChat = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!newCtvChatText.trim()) return;
+
+    setCtvChatMessages(prev => [
+      ...prev,
+      {
+        id: `cmsg-${Date.now()}`,
+        sender: 'CTV',
+        senderName: currentUser?.name || 'Cộng Tác Viên',
+        time: 'Vừa xong',
+        content: newCtvChatText.trim()
+      }
+    ]);
+    setNewCtvChatText('');
+    notify('Đã gửi tin nhắn đến Upbase Video Production Team!');
+  };
 
   // Filter States
   const [selectedPillarId, setSelectedPillarId] = useState<string>('ALL');
@@ -667,59 +712,79 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
         </div>
       </div>
 
-      {/* 3. NAVIGATION TABS */}
+      {/* 3. THE 5 UNIVERSAL ENTERPRISE HUB TABS */}
       <div className="flex items-center justify-between border-b border-slate-200 pb-2">
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1.5 overflow-x-auto">
           <button
             type="button"
-            onClick={() => setActiveTab('PIPELINE')}
-            className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-colors flex items-center gap-2 ${
-              activeTab === 'PIPELINE'
+            onClick={() => setActiveTab('OVERVIEW')}
+            className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-colors flex items-center gap-2 whitespace-nowrap ${
+              activeTab === 'OVERVIEW'
+                ? 'bg-slate-900 text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+            }`}
+          >
+            <Layers className="w-3.5 h-3.5" />
+            <span>1. Tổng quan</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('APPROVALS')}
+            className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-colors flex items-center gap-2 whitespace-nowrap relative ${
+              activeTab === 'APPROVALS'
+                ? 'bg-indigo-600 text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+            }`}
+          >
+            <AlertCircle className="w-3.5 h-3.5" />
+            <span>2. Cần duyệt &amp; Nộp bài</span>
+            {(stats.scriptPendingTasks + (tasks.filter(t => t.status === 'DRAFT_VIDEO_SUBMITTED').length) + (tasks.filter(t => t.status === 'ACCEPTED_COMPLETED').length)) > 0 && (
+              <span className={`text-2xs font-bold px-1.5 py-0.5 rounded-full ${
+                activeTab === 'APPROVALS' ? 'bg-white text-indigo-700' : 'bg-rose-500 text-white'
+              }`}>
+                {stats.scriptPendingTasks + (tasks.filter(t => t.status === 'DRAFT_VIDEO_SUBMITTED').length) + (tasks.filter(t => t.status === 'ACCEPTED_COMPLETED').length)}
+              </span>
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('ACTIVE_JOBS')}
+            className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-colors flex items-center gap-2 whitespace-nowrap ${
+              activeTab === 'ACTIVE_JOBS'
                 ? 'bg-slate-900 text-white shadow-xs'
                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
             }`}
           >
             <Video className="w-3.5 h-3.5" />
-            Tiến Độ Video ({tasks.length})
+            <span>3. Các job đang làm ({tasks.length})</span>
           </button>
 
           <button
             type="button"
-            onClick={() => setActiveTab('CTV_PORTAL')}
-            className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-colors flex items-center gap-2 ${
-              activeTab === 'CTV_PORTAL'
+            onClick={() => setActiveTab('DISCUSSION')}
+            className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-colors flex items-center gap-2 whitespace-nowrap ${
+              activeTab === 'DISCUSSION'
                 ? 'bg-slate-900 text-white shadow-xs'
                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
             }`}
           >
-            <User className="w-3.5 h-3.5 text-indigo-400" />
-            Góc Nhìn CTV (Hub Preview)
+            <MessageSquare className="w-3.5 h-3.5" />
+            <span>4. Trao đổi qua lại</span>
           </button>
 
           <button
             type="button"
-            onClick={() => setActiveTab('CONTRIBUTORS')}
-            className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-colors flex items-center gap-2 ${
-              activeTab === 'CONTRIBUTORS'
-                ? 'bg-slate-900 text-white shadow-xs'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-            }`}
-          >
-            <Award className="w-3.5 h-3.5" />
-            Danh Bạ CTV ({contributors.length})
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('SETTLEMENT')}
-            className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-colors flex items-center gap-2 ${
-              activeTab === 'SETTLEMENT'
+            onClick={() => setActiveTab('HISTORY')}
+            className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-colors flex items-center gap-2 whitespace-nowrap ${
+              activeTab === 'HISTORY'
                 ? 'bg-slate-900 text-white shadow-xs'
                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
             }`}
           >
             <Wallet className="w-3.5 h-3.5" />
-            Bảng Kê Nhuận Bút
+            <span>5. Lịch sử &amp; Nhuận bút</span>
             {stats.pendingPayment > 0 && (
               <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
             )}
@@ -768,8 +833,158 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
         </div>
       </div>
 
+      {/* ========================================================================= */}
+      {/* TAB 2: CẦN DUYỆT & NỘP BÀI (ACTION CENTER)                                */}
+      {/* ========================================================================= */}
+      {activeTab === 'APPROVALS' && (
+        <div className="space-y-5 animate-in fade-in duration-150">
+          {/* Pending Scripts Section */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-5 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200">
+              <div className="flex items-center gap-2">
+                <span className="w-7 h-7 rounded-lg bg-amber-600 text-white font-bold text-xs flex items-center justify-center">
+                  1
+                </span>
+                <div>
+                  <h4 className="text-sm font-bold text-slate-900">
+                    Kịch Bản Chờ Duyệt Hoặc Cần Sửa ({tasks.filter(t => t.status === 'SCRIPT_PENDING_REVIEW' || t.status === 'SCRIPT_REVISION').length} tasks)
+                  </h4>
+                  <p className="text-xs text-slate-500">Duyệt dàn ý 3 phần (Hook, Nội dung, CTA) trước khi CTV tiến hành quay dựng.</p>
+                </div>
+              </div>
+            </div>
+
+            {tasks.filter(t => t.status === 'SCRIPT_PENDING_REVIEW' || t.status === 'SCRIPT_REVISION').length === 0 ? (
+              <p className="text-xs text-slate-400 italic py-3 text-center">Không có kịch bản nào đang chờ duyệt.</p>
+            ) : (
+              <div className="space-y-3">
+                {tasks.filter(t => t.status === 'SCRIPT_PENDING_REVIEW' || t.status === 'SCRIPT_REVISION').map(t => (
+                  <div key={t.id} className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/50 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-2xs font-semibold bg-slate-200 px-1.5 py-0.5 rounded text-slate-700">{t.taskCode}</span>
+                        <span className="font-bold text-slate-900">{t.title}</span>
+                        {renderStatusBadge(t.status)}
+                      </div>
+                      <p className="text-2xs text-slate-500 mt-0.5">CTV: <strong>{t.contributorName}</strong> • Sản phẩm: {t.productName} ({t.linkedSku})</p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedTask(t);
+                        setIsScriptReviewModalOpen(true);
+                      }}
+                      className="px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold flex items-center gap-1.5 transition self-start md:self-auto shadow-2xs"
+                    >
+                      <FileText className="w-3.5 h-3.5" />
+                      <span>Xem &amp; Duyệt Kịch Bản</span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Pending Video QA Section */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-5 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200">
+              <div className="flex items-center gap-2">
+                <span className="w-7 h-7 rounded-lg bg-indigo-600 text-white font-bold text-xs flex items-center justify-center">
+                  2
+                </span>
+                <div>
+                  <h4 className="text-sm font-bold text-slate-900">
+                    Video Nháp Chờ Kiểm Định QA &amp; Nghiệm Thu ({tasks.filter(t => t.status === 'DRAFT_VIDEO_SUBMITTED' || t.status === 'VIDEO_REVISION').length} clips)
+                  </h4>
+                  <p className="text-xs text-slate-500">Kiểm tra checklist Do &amp; Don\'ts, watermark, chất lượng âm thanh, góc quay.</p>
+                </div>
+              </div>
+            </div>
+
+            {tasks.filter(t => t.status === 'DRAFT_VIDEO_SUBMITTED' || t.status === 'VIDEO_REVISION').length === 0 ? (
+              <p className="text-xs text-slate-400 italic py-3 text-center">Không có video nháp nào đang chờ kiểm định QA.</p>
+            ) : (
+              <div className="space-y-3">
+                {tasks.filter(t => t.status === 'DRAFT_VIDEO_SUBMITTED' || t.status === 'VIDEO_REVISION').map(t => (
+                  <div key={t.id} className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/50 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-2xs font-semibold bg-slate-200 px-1.5 py-0.5 rounded text-slate-700">{t.taskCode}</span>
+                        <span className="font-bold text-slate-900">{t.title}</span>
+                        {renderStatusBadge(t.status)}
+                      </div>
+                      <p className="text-2xs text-slate-500 mt-0.5">CTV: <strong>{t.contributorName}</strong> • Thù lao: <strong className="text-indigo-700 font-mono">{formatVnd(t.remuneration)}</strong></p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedTask(t);
+                        setIsVideoQaModalOpen(true);
+                      }}
+                      className="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold flex items-center gap-1.5 transition self-start md:self-auto shadow-2xs"
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      <span>Kiểm Định QA &amp; Nghiệm Thu</span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Pending Payment Section */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-5 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200">
+              <div className="flex items-center gap-2">
+                <span className="w-7 h-7 rounded-lg bg-emerald-600 text-white font-bold text-xs flex items-center justify-center">
+                  3
+                </span>
+                <div>
+                  <h4 className="text-sm font-bold text-slate-900">
+                    Nhuận Bút Chờ Quyết Toán ({tasks.filter(t => t.status === 'ACCEPTED_COMPLETED').length} video đã nghiệm thu)
+                  </h4>
+                  <p className="text-xs text-slate-500">Video đã đạt chuẩn, xác nhận để sinh mã ủy nhiệm chi UNC gửi Kế toán.</p>
+                </div>
+              </div>
+            </div>
+
+            {tasks.filter(t => t.status === 'ACCEPTED_COMPLETED').length === 0 ? (
+              <p className="text-xs text-slate-400 italic py-3 text-center">Toàn bộ video nghiệm thu đã được thanh toán xong.</p>
+            ) : (
+              <div className="space-y-3">
+                {tasks.filter(t => t.status === 'ACCEPTED_COMPLETED').map(t => (
+                  <div key={t.id} className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/50 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-2xs font-semibold bg-slate-200 px-1.5 py-0.5 rounded text-slate-700">{t.taskCode}</span>
+                        <span className="font-bold text-slate-900">{t.title}</span>
+                      </div>
+                      <p className="text-2xs text-slate-500 mt-0.5">CTV: <strong>{t.contributorName}</strong> • Thù lao: <strong className="text-emerald-700 font-mono text-sm">{formatVnd(t.remuneration)}</strong></p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => handleMarkTaskPaid(t)}
+                      className="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold flex items-center gap-1.5 transition self-start md:self-auto shadow-2xs"
+                    >
+                      <Wallet className="w-3.5 h-3.5" />
+                      <span>Xác Nhận Đã Chi (Tạo UNC)</span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* TAB 3: CÁC JOB ĐANG LÀM (ACTIVE JOBS & PIPELINE)                          */}
+      {/* ========================================================================= */}
       {/* 4. TAB CONTENT 1: PIPELINE / TASK BOARD */}
-      {activeTab === 'PIPELINE' && (
+      {activeTab === 'ACTIVE_JOBS' && !isCtvSimulatorView && (
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredTasks.length === 0 ? (
@@ -906,7 +1121,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
       )}
 
       {/* 5. TAB CONTENT 2: CTV PORTAL SIMULATION */}
-      {activeTab === 'CTV_PORTAL' && (
+      {activeTab === 'ACTIVE_JOBS' && isCtvSimulatorView && (
         <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100">
             <div>
@@ -1074,7 +1289,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
       )}
 
       {/* 6. TAB CONTENT 3: CONTRIBUTORS ROSTER */}
-      {activeTab === 'CONTRIBUTORS' && (
+      {activeTab === 'OVERVIEW' && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
@@ -1177,7 +1392,82 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
       )}
 
       {/* 7. TAB CONTENT 4: SETTLEMENT & PAYROLL */}
-      {activeTab === 'SETTLEMENT' && (
+      {/* ========================================================================= */}
+      {/* TAB 4: TRAO ĐỔI QUA LẠI (TWO-WAY DISCUSSION & CHAT)                       */}
+      {/* ========================================================================= */}
+      {activeTab === 'DISCUSSION' && (
+        <div className="bg-white border border-slate-200 shadow-xs rounded-2xl flex flex-col h-[580px] overflow-hidden animate-in fade-in duration-150">
+          <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/80">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-indigo-600 text-white font-bold flex items-center justify-center text-xs">
+                CTV
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-slate-900">
+                  Kênh Thảo Luận Kỹ Thuật &amp; Góp Ý Dựng Clip: CTV ⇄ Upbase Lead
+                </h4>
+                <p className="text-2xs text-slate-500">
+                  Hỗ trợ giải đáp kịch bản, thời gian nộp mẫu, feedback âm thanh, góc quay
+                </p>
+              </div>
+            </div>
+            <span className="text-2xs px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 font-semibold flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse"></span>
+              Phản hồi trực tuyến &lt; 30 phút
+            </span>
+          </div>
+
+          <div className="flex-1 p-4 overflow-y-auto space-y-3.5 text-xs bg-slate-50/40">
+            {ctvChatMessages.map(msg => {
+              const isCtv = msg.sender === 'CTV';
+              return (
+                <div key={msg.id} className={`flex items-start gap-2.5 ${isCtv ? 'flex-row-reverse' : 'flex-row'}`}>
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-2xs text-white shrink-0 ${
+                    isCtv ? 'bg-indigo-600' : 'bg-slate-700'
+                  }`}>
+                    {isCtv ? 'CTV' : 'UP'}
+                  </div>
+                  <div className={`max-w-[75%] space-y-1 ${isCtv ? 'items-end' : 'items-start'}`}>
+                    <div className={`flex items-center gap-2 text-2xs text-slate-400 ${isCtv ? 'justify-end' : 'justify-start'}`}>
+                      <span className="font-semibold text-slate-700">{msg.senderName}</span>
+                      <span>•</span>
+                      <span>{msg.time}</span>
+                    </div>
+                    <div className={`p-3.5 rounded-2xl leading-relaxed text-xs shadow-2xs ${
+                      isCtv ? 'bg-indigo-600 text-white rounded-tr-none' : 'bg-white text-slate-800 border border-slate-200 rounded-tl-none'
+                    }`}>
+                      {msg.content}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <form onSubmit={handleSendCtvChat} className="p-3 border-t border-slate-200 bg-white flex items-center gap-2">
+            <input
+              type="text"
+              value={newCtvChatText}
+              onChange={(e) => setNewCtvChatText(e.target.value)}
+              placeholder="Nhập nội dung trao đổi với Production Lead..."
+              className="flex-1 text-xs bg-slate-50 text-slate-900 placeholder-slate-400 border border-slate-200 rounded-xl px-3.5 py-2.5 outline-none focus:border-indigo-500 focus:bg-white transition"
+            />
+            <button
+              type="submit"
+              disabled={!newCtvChatText.trim()}
+              className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-semibold text-xs transition flex items-center gap-1.5 shadow-2xs"
+            >
+              <Send className="w-3.5 h-3.5" />
+              <span>Gửi</span>
+            </button>
+          </form>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* TAB 5: LỊCH SỬ & QUYẾT TOÁN NHUẬN BÚT (HISTORY)                           */}
+      {/* ========================================================================= */}
+      {activeTab === 'HISTORY' && (
         <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden space-y-4 p-5">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200">
             <div>

@@ -3,6 +3,8 @@
 import React, { useState, useMemo } from 'react';
 import {
   Users,
+  Briefcase,
+  History as HistoryIcon,
   Video,
   Star,
   CheckCircle2,
@@ -73,8 +75,53 @@ export const KocKolHubView: React.FC<KocKolHubViewProps> = ({
     return initialKocs.find(k => k.id === selectedKocId) || initialKocs[0];
   }, [initialKocs, selectedKocId]);
 
-  // Tab State: 'OFFERS' | 'SAMPLES' | 'SUBMISSION' | 'EARNINGS'
-  const [activeTab, setActiveTab] = useState<'OFFERS' | 'SAMPLES' | 'SUBMISSION' | 'EARNINGS'>('OFFERS');
+  // The 5 Universal Enterprise Hub Tabs
+  const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'APPROVALS' | 'ACTIVE_JOBS' | 'DISCUSSION' | 'HISTORY'>('OVERVIEW');
+  const [activeJobsSubTab, setActiveJobsSubTab] = useState<'DEALS' | 'SAMPLES' | 'SUBMISSION'>('DEALS');
+
+  // Discussion Chat State between KOC and Upbase Booking PIC
+  const [kocChatMessages, setKocChatMessages] = useState([
+    {
+      id: 'kmsg-1',
+      sender: 'UPBASE_BOOKING',
+      senderName: 'Khánh Vy (Booking Lead Upbase)',
+      time: 'Hôm qua lúc 11:20',
+      content: `Chào ${activeKoc.stageName}! Team Booking vừa gửi bạn lời mời hợp tác chiến dịch mới của nhãn hàng. Hàng mẫu đã được gửi chuyển phát nhanh GHN đến bạn rồi nhé!`
+    },
+    {
+      id: 'kmsg-2',
+      sender: 'KOC',
+      senderName: activeKoc.stageName,
+      time: 'Hôm qua lúc 15:45',
+      content: 'Dạ em vừa nhận được kiện hàng mẫu rồi chị Vy ơi! Sản phẩm đóng gói rất cẩn thận. Em sẽ lên kịch bản unboxing và test chất kem trong 2 ngày tới rồi nộp kịch bản qua tab Cần duyệt cho bên mình duyệt ạ.'
+    },
+    {
+      id: 'kmsg-3',
+      sender: 'UPBASE_BOOKING',
+      senderName: 'Khánh Vy (Booking Lead Upbase)',
+      time: 'Sáng nay lúc 09:30',
+      content: 'Tuyệt vời em ơi! Lưu ý giúp chị là Brand muốn nhấn mạnh tính năng kiềm dầu 8 tiếng và dịu nhẹ cho da mụn nha. Cần hỗ trợ mã Spark Ads code cứ nhắn chị nhé!'
+    }
+  ]);
+  const [newKocChatText, setNewKocChatText] = useState('');
+
+  const handleSendKocChat = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!newKocChatText.trim()) return;
+
+    setKocChatMessages(prev => [
+      ...prev,
+      {
+        id: `kmsg-${Date.now()}`,
+        sender: 'KOC',
+        senderName: activeKoc.stageName,
+        time: 'Vừa xong',
+        content: newKocChatText.trim()
+      }
+    ]);
+    setNewKocChatText('');
+    notify('Đã gửi tin nhắn đến Booking PIC Upbase!');
+  };
 
   // Local Deals State for active KOC
   const [deals, setDeals] = useState<BookingDealItem[]>(initialDeals);
@@ -113,6 +160,14 @@ export const KocKolHubView: React.FC<KocKolHubViewProps> = ({
   const notify = (msg: string, type: 'success' | 'warning' | 'info' | 'error' = 'success') => {
     if (onNotify) onNotify(msg, type);
   };
+
+  // Pending approvals count for KOC Action Center
+  const pendingActionCount = useMemo(() => {
+    const pendingOffers = currentKocDeals.filter(d => (!d.kocResponseStatus || d.kocResponseStatus === 'ĐANG_THƯƠNG_LƯỢNG') || d.status === 'CONTACTING').length;
+    const pendingSamples = currentKocDeals.filter(d => d.sampleStatus === 'ĐANG_GIAO').length;
+    const pendingSubmissions = currentKocDeals.filter(d => d.status === 'SAMPLE_RECEIVED' || !d.sparkAdsCode).length;
+    return pendingOffers + pendingSamples + (pendingSubmissions > 0 ? 1 : 0);
+  }, [currentKocDeals]);
 
   // KPIs for Active KOC
   const stats = useMemo(() => {
@@ -329,59 +384,79 @@ export const KocKolHubView: React.FC<KocKolHubViewProps> = ({
         </div>
       </div>
 
-      {/* 3. WORKSPACE NAVIGATION TABS */}
+      {/* 3. THE 5 UNIVERSAL ENTERPRISE HUB TABS */}
       <div className="flex items-center justify-between border-b border-slate-200 pb-2">
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
           <button
             type="button"
-            onClick={() => setActiveTab('OFFERS')}
+            onClick={() => setActiveTab('OVERVIEW')}
             className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-colors flex items-center gap-2 whitespace-nowrap ${
-              activeTab === 'OFFERS'
+              activeTab === 'OVERVIEW'
                 ? 'bg-slate-900 text-white shadow-xs'
                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
             }`}
           >
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Lời mời Job & Hợp đồng ({currentKocDeals.length})</span>
+            <Layers className="w-3.5 h-3.5" />
+            <span>1. Tổng quan</span>
           </button>
 
           <button
             type="button"
-            onClick={() => setActiveTab('SAMPLES')}
-            className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-colors flex items-center gap-2 whitespace-nowrap ${
-              activeTab === 'SAMPLES'
-                ? 'bg-slate-900 text-white shadow-xs'
+            onClick={() => setActiveTab('APPROVALS')}
+            className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-colors flex items-center gap-2 whitespace-nowrap relative ${
+              activeTab === 'APPROVALS'
+                ? 'bg-indigo-600 text-white shadow-xs'
                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
             }`}
           >
-            <Package className="w-3.5 h-3.5" />
-            <span>Hàng mẫu & Vận chuyển ({stats.pendingSamples})</span>
+            <AlertCircle className="w-3.5 h-3.5" />
+            <span>2. Cần xác nhận &amp; Duyệt</span>
+            {pendingActionCount > 0 && (
+              <span className={`text-2xs font-bold px-1.5 py-0.5 rounded-full ${
+                activeTab === 'APPROVALS' ? 'bg-white text-indigo-700' : 'bg-rose-500 text-white'
+              }`}>
+                {pendingActionCount}
+              </span>
+            )}
           </button>
 
           <button
             type="button"
-            onClick={() => setActiveTab('SUBMISSION')}
+            onClick={() => setActiveTab('ACTIVE_JOBS')}
             className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-colors flex items-center gap-2 whitespace-nowrap ${
-              activeTab === 'SUBMISSION'
+              activeTab === 'ACTIVE_JOBS'
                 ? 'bg-slate-900 text-white shadow-xs'
                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
             }`}
           >
-            <Play className="w-3.5 h-3.5" />
-            <span>Nộp Video & Spark Ads</span>
+            <Briefcase className="w-3.5 h-3.5" />
+            <span>3. Các job đang làm ({currentKocDeals.length})</span>
           </button>
 
           <button
             type="button"
-            onClick={() => setActiveTab('EARNINGS')}
+            onClick={() => setActiveTab('DISCUSSION')}
             className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-colors flex items-center gap-2 whitespace-nowrap ${
-              activeTab === 'EARNINGS'
+              activeTab === 'DISCUSSION'
                 ? 'bg-slate-900 text-white shadow-xs'
                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
             }`}
           >
-            <Wallet className="w-3.5 h-3.5" />
-            <span>Thu nhập & Đối soát VietQR</span>
+            <MessageSquare className="w-3.5 h-3.5" />
+            <span>4. Trao đổi qua lại</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('HISTORY')}
+            className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-colors flex items-center gap-2 whitespace-nowrap ${
+              activeTab === 'HISTORY'
+                ? 'bg-slate-900 text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+            }`}
+          >
+            <HistoryIcon className="w-3.5 h-3.5" />
+            <span>5. Lịch sử &amp; Quyết toán</span>
           </button>
         </div>
 
@@ -397,9 +472,179 @@ export const KocKolHubView: React.FC<KocKolHubViewProps> = ({
       </div>
 
       {/* ========================================================================= */}
-      {/* TAB 1: LỜI MỜI JOB & DEAL BOOKING                                         */}
       {/* ========================================================================= */}
-      {activeTab === 'OFFERS' && (
+      {/* TAB 1: TỔNG QUAN (OVERVIEW & COLLABORATION HEALTH)                       */}
+      {/* ========================================================================= */}
+      {activeTab === 'OVERVIEW' && (
+        <div className="space-y-4 animate-in fade-in duration-150">
+          <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200">
+              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-indigo-600" />
+                Hồ Sơ Hợp Tác KOC Tiêu Biểu &amp; Tỷ Lệ On-Time
+              </h3>
+              <span className="badge-emerald text-2xs px-2.5 py-1 rounded font-semibold">
+                Đối tác Tin Cậy Của Upbase
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+                <span className="text-slate-500 block text-2xs">Điểm đánh giá uy tín (Rating):</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-lg font-bold text-amber-500 font-mono">5.0 / 5.0</span>
+                  <div className="flex text-amber-400 text-xs">★★★★★</div>
+                </div>
+                <p className="text-2xs text-slate-500">Dựa trên 18 chiến dịch hợp tác gần nhất</p>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+                <span className="text-slate-500 block text-2xs">Tỷ lệ lên video đúng hạn (On-time SLA):</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-lg font-bold text-emerald-600 font-mono">96.8%</span>
+                </div>
+                <p className="text-2xs text-slate-500">Cam kết trả bài nháp trong vòng 3 ngày sau nhận mẫu</p>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+                <span className="text-slate-500 block text-2xs">Trạng thái xác thực pháp lý &amp; thuế:</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-lg font-bold text-blue-600 font-mono">Đã Xác Thực</span>
+                  <ShieldCheck className="w-4 h-4 text-blue-600" />
+                </div>
+                <p className="text-2xs text-slate-500">Đã cập nhật CCCD &amp; Mã số thuế TNCN</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* TAB 2: CẦN XÁC NHẬN & PHÊ DUYỆT (ACTION CENTER)                          */}
+      {/* ========================================================================= */}
+      {activeTab === 'APPROVALS' && (
+        <div className="space-y-4 animate-in fade-in duration-150">
+          {/* Action 1: Pending Offers */}
+          <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs space-y-3">
+            <h4 className="text-xs font-bold text-slate-900 pb-2 border-b border-slate-200 flex items-center justify-between">
+              <span>1. LỜI MỜI BOOKING MỚI CHỜ BẠN XÁC NHẬN ({currentKocDeals.filter(d => (!d.kocResponseStatus || d.kocResponseStatus === 'ĐANG_THƯƠNG_LƯỢNG') || d.status === 'CONTACTING').length} deals)</span>
+              <span className="text-2xs text-slate-500 font-normal">Vui lòng Chấp nhận hoặc Đề xuất cast trong 24h</span>
+            </h4>
+
+            {currentKocDeals.filter(d => (!d.kocResponseStatus || d.kocResponseStatus === 'ĐANG_THƯƠNG_LƯỢNG') || d.status === 'CONTACTING').length === 0 ? (
+              <p className="text-xs text-slate-400 italic py-2">Bạn đã phản hồi toàn bộ các lời mời booking mới.</p>
+            ) : (
+              <div className="space-y-3">
+                {currentKocDeals.filter(d => (!d.kocResponseStatus || d.kocResponseStatus === 'ĐANG_THƯƠNG_LƯỢNG') || d.status === 'CONTACTING').map(deal => (
+                  <div key={deal.id} className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-slate-900">{deal.campaignTitle}</span>
+                        <span className="badge-slate text-2xs px-2 py-0.5 rounded font-semibold">{deal.brandName}</span>
+                      </div>
+                      <p className="text-2xs text-slate-500 mt-0.5">Sản phẩm: {deal.productName} • Mức cast đề xuất: <strong className="text-emerald-700 font-mono text-sm">{formatVndShort(deal.totalValue || 3000000)}</strong></p>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => handleAcceptDeal(deal.id)}
+                        className="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs transition shadow-2xs"
+                      >
+                        Đồng Ý Nhận Job
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setNegotiatingDeal(deal);
+                          setCounterRate(deal.totalValue || activeKoc.rateCardVideo || 3000000);
+                        }}
+                        className="px-3 py-1.5 rounded-lg border border-slate-300 hover:bg-slate-100 text-slate-700 font-semibold text-xs transition"
+                      >
+                        Đề Xuất Cast
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Action 2: Sample Check-in */}
+          <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs space-y-3">
+            <h4 className="text-xs font-bold text-slate-900 pb-2 border-b border-slate-200 flex items-center justify-between">
+              <span>2. CHECK-IN XÁC NHẬN NHẬN HÀNG MẪU UNBOXING ({currentKocDeals.filter(d => d.sampleStatus === 'ĐANG_GIAO').length} kiện hàng)</span>
+              <span className="text-2xs text-slate-500 font-normal">Bấm xác nhận khi shipper đã giao hàng đến bạn</span>
+            </h4>
+
+            {currentKocDeals.filter(d => d.sampleStatus === 'ĐANG_GIAO').length === 0 ? (
+              <p className="text-xs text-slate-400 italic py-2">Không có kiện hàng mẫu nào đang trên đường vận chuyển.</p>
+            ) : (
+              <div className="space-y-3">
+                {currentKocDeals.filter(d => d.sampleStatus === 'ĐANG_GIAO').map(deal => (
+                  <div key={deal.id} className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                    <div>
+                      <span className="font-bold text-slate-900">{deal.productName || 'Kiện hàng mẫu sản phẩm'}</span>
+                      <p className="text-2xs text-slate-500 mt-0.5">Nhãn hàng: <strong>{deal.brandName}</strong> • Mã vận đơn: <span className="font-mono font-semibold text-indigo-700">{deal.jobId || 'GHN-89421-HN'}</span></p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDeals(prev => prev.map(d => d.id === deal.id ? { ...d, sampleStatus: 'ĐÃ_NHẬN', pipelineText: 'Đã nhận mẫu - Đang quay video' } : d));
+                        notify('Đã xác nhận nhận mẫu! Hệ thống chuyển sang giai đoạn quay video nháp.');
+                      }}
+                      className="px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs transition shadow-2xs shrink-0"
+                    >
+                      <Check className="w-3.5 h-3.5 inline mr-1" />
+                      Xác Nhận Đã Nhận Mẫu
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* TAB 3: CÁC JOB ĐANG LÀM (ACTIVE JOBS)                                     */}
+      {/* ========================================================================= */}
+      {/* TAB 3: CÁC JOB ĐANG LÀM (ACTIVE JOBS)                                     */}
+      {/* ========================================================================= */}
+      {activeTab === 'ACTIVE_JOBS' && (
+        <div className="space-y-4 animate-in fade-in duration-150">
+          <div className="flex items-center gap-2 bg-slate-50 p-1.5 rounded-xl border border-slate-200">
+            <button
+              type="button"
+              onClick={() => setActiveJobsSubTab('DEALS')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                activeJobsSubTab === 'DEALS' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Danh sách Deals ({currentKocDeals.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveJobsSubTab('SAMPLES')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                activeJobsSubTab === 'SAMPLES' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Hàng mẫu &amp; Vận đơn ({stats.pendingSamples})
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveJobsSubTab('SUBMISSION')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                activeJobsSubTab === 'SUBMISSION' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Nộp Video &amp; Spark Ads
+            </button>
+          </div>
+
+          {activeJobsSubTab === 'DEALS' && (
         <div className="space-y-3">
           {currentKocDeals.map(deal => {
             const isAccepted = deal.kocResponseStatus === 'ĐỒNG_Ý' || (deal.status !== 'CONTACTING' && deal.status !== 'CANCELLED');
@@ -515,7 +760,7 @@ export const KocKolHubView: React.FC<KocKolHubViewProps> = ({
                         type="button"
                         onClick={() => {
                           setSubmittingDeal(deal);
-                          setActiveTab('SUBMISSION');
+                          setActiveJobsSubTab('SUBMISSION');
                         }}
                         className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg transition flex items-center gap-1.5 shadow-xs"
                       >
@@ -534,7 +779,7 @@ export const KocKolHubView: React.FC<KocKolHubViewProps> = ({
       {/* ========================================================================= */}
       {/* TAB 2: HÀNG MẪU & VẬN CHUYỂN                                              */}
       {/* ========================================================================= */}
-      {activeTab === 'SAMPLES' && (
+          {activeJobsSubTab === 'SAMPLES' && (
         <div className="space-y-4">
           {/* Shipping Address Summary Card */}
           <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 flex items-center justify-between gap-3 text-xs">
@@ -624,7 +869,7 @@ export const KocKolHubView: React.FC<KocKolHubViewProps> = ({
       {/* ========================================================================= */}
       {/* TAB 3: NỘP VIDEO & SPARK ADS                                              */}
       {/* ========================================================================= */}
-      {activeTab === 'SUBMISSION' && (
+          {activeJobsSubTab === 'SUBMISSION' && (
         <div className="space-y-4">
           <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
             <h3 className="text-sm font-bold text-slate-900 mb-1">Cổng nộp Video nghiệm thu & Mã Spark Ads</h3>
@@ -690,10 +935,85 @@ export const KocKolHubView: React.FC<KocKolHubViewProps> = ({
         </div>
       )}
 
+        </div>
+      )}
+
       {/* ========================================================================= */}
-      {/* TAB 4: THU NHẬP & ĐỐI SOÁT VIETQR                                         */}
+      {/* TAB 4: TRAO ĐỔI QUA LẠI (TWO-WAY DISCUSSION & CHAT)                       */}
       {/* ========================================================================= */}
-      {activeTab === 'EARNINGS' && (
+      {activeTab === 'DISCUSSION' && (
+        <div className="bg-white border border-slate-200 shadow-xs rounded-2xl flex flex-col h-[580px] overflow-hidden animate-in fade-in duration-150">
+          <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/80">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-purple-600 text-white font-bold flex items-center justify-center text-xs">
+                KOC
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-slate-900">
+                  Kênh Trao Đổi Booking Trực Tiếp: {activeKoc.stageName} ⇄ Upbase Booking PIC
+                </h4>
+                <p className="text-2xs text-slate-500">
+                  Hỗ trợ giải đáp kịch bản, thời gian nộp mẫu, xin gia hạn lịch quay, mã Spark Ads
+                </p>
+              </div>
+            </div>
+            <span className="text-2xs px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 font-semibold flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse"></span>
+              Phản hồi trực tuyến &lt; 15 phút
+            </span>
+          </div>
+
+          <div className="flex-1 p-4 overflow-y-auto space-y-3.5 text-xs bg-slate-50/40">
+            {kocChatMessages.map(msg => {
+              const isKoc = msg.sender === 'KOC';
+              return (
+                <div key={msg.id} className={`flex items-start gap-2.5 ${isKoc ? 'flex-row-reverse' : 'flex-row'}`}>
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-2xs text-white shrink-0 ${
+                    isKoc ? 'bg-purple-600' : 'bg-slate-700'
+                  }`}>
+                    {isKoc ? activeKoc.stageName.slice(0, 2).toUpperCase() : 'UP'}
+                  </div>
+                  <div className={`max-w-[75%] space-y-1 ${isKoc ? 'items-end' : 'items-start'}`}>
+                    <div className={`flex items-center gap-2 text-2xs text-slate-400 ${isKoc ? 'justify-end' : 'justify-start'}`}>
+                      <span className="font-semibold text-slate-700">{msg.senderName}</span>
+                      <span>•</span>
+                      <span>{msg.time}</span>
+                    </div>
+                    <div className={`p-3.5 rounded-2xl leading-relaxed text-xs shadow-2xs ${
+                      isKoc ? 'bg-purple-600 text-white rounded-tr-none' : 'bg-white text-slate-800 border border-slate-200 rounded-tl-none'
+                    }`}>
+                      {msg.content}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <form onSubmit={handleSendKocChat} className="p-3 border-t border-slate-200 bg-white flex items-center gap-2">
+            <input
+              type="text"
+              value={newKocChatText}
+              onChange={(e) => setNewKocChatText(e.target.value)}
+              placeholder="Nhập nội dung trao đổi với Booking Lead Upbase..."
+              className="flex-1 text-xs bg-slate-50 text-slate-900 placeholder-slate-400 border border-slate-200 rounded-xl px-3.5 py-2.5 outline-none focus:border-purple-500 focus:bg-white transition"
+            />
+            <button
+              type="submit"
+              disabled={!newKocChatText.trim()}
+              className="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white font-semibold text-xs transition flex items-center gap-1.5 shadow-2xs"
+            >
+              <Send className="w-3.5 h-3.5" />
+              <span>Gửi</span>
+            </button>
+          </form>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* TAB 5: LỊCH SỬ HỢP TÁC & QUYẾT TOÁN (HISTORY)                             */}
+      {/* ========================================================================= */}
+      {activeTab === 'HISTORY' && (
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Bank / QR Card */}
