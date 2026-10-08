@@ -9,14 +9,40 @@ import {
   X, 
   CheckCircle2,
   Shield,
-  Tag
+  Tag,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { UserProfile, BrandDetail, StorePortfolioItem, KocItem, MasterContentPillar } from '../../lib/types';
 import { INITIAL_BRANDS, INITIAL_STORE_PORTFOLIOS, USERS, INITIAL_KOCS, INITIAL_PUSH_PRODUCTS } from '../../lib/mockData';
-import { INITIAL_MASTER_PILLARS } from '../../lib/selfChannelData';
+import { 
+  UPBASE_MASTER_PILLARS, 
+  UPBASE_CAST_TIERS, 
+  UPBASE_VIDEO_FORMATS, 
+  UPBASE_KOC_NICHES, 
+  UPBASE_STORES_MASTER, 
+  UPBASE_STAFF_MASTER, 
+  UPBASE_BRANDS_MASTER 
+} from '../../lib/importedMasterData';
 import { KocMasterDataView } from './KocMasterDataView';
+import { 
+  CastTiersMasterView, 
+  KocNichesMasterView, 
+  VideoFormatsMasterView, 
+  StoresMasterView, 
+  StaffMasterView 
+} from './master-data';
 
-export type MasterDataSubTab = 'brands' | 'stores' | 'products' | 'pillars' | 'kocs' | 'staff';
+export type MasterDataSubTab = 
+  | 'brands' 
+  | 'stores' 
+  | 'products' 
+  | 'pillars' 
+  | 'cast-tiers' 
+  | 'koc-niches' 
+  | 'video-formats' 
+  | 'kocs' 
+  | 'staff';
 
 export interface MasterProductItem {
   id: string;
@@ -54,10 +80,14 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
 }) => {
   const [activeSubTab, setActiveSubTab] = useState<MasterDataSubTab>(initialSubTab);
 
-  // Brand state
-  const [brandList, setBrandList] = useState<BrandDetail[]>(brands);
+  // Brand state (Tải 625 thương hiệu chuẩn Upbase Master Data)
+  const [brandList, setBrandList] = useState<BrandDetail[]>(() => 
+    UPBASE_BRANDS_MASTER.length > 0 ? UPBASE_BRANDS_MASTER : brands
+  );
   const [brandSearch, setBrandSearch] = useState('');
   const [selectedBrandCategory, setSelectedBrandCategory] = useState('ALL');
+  const [brandPage, setBrandPage] = useState(1);
+  const BRAND_PAGE_SIZE = 25;
   const [isBrandModalOpen, setIsBrandModalOpen] = useState(false);
   const [editingBrand, setEditingBrand] = useState<BrandDetail | null>(null);
   const [brandForm, setBrandForm] = useState({
@@ -68,8 +98,8 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
     status: 'ACTIVE' as 'ACTIVE' | 'PAUSED' | 'UPCOMING'
   });
 
-  // Store state
-  const [storeList, setStoreList] = useState<StorePortfolioItem[]>(INITIAL_STORE_PORTFOLIOS);
+  // Store state (Tải 957 gian hàng chuẩn Upbase Master Data)
+  const [storeList, setStoreList] = useState<StorePortfolioItem[]>(UPBASE_STORES_MASTER);
   const [storeSearch, setStoreSearch] = useState('');
   const [selectedStorePlatform, setSelectedStorePlatform] = useState('ALL');
   const [selectedStoreBrand, setSelectedStoreBrand] = useState('ALL');
@@ -115,8 +145,8 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
   });
 
   // Staff state
-  // Master Content Pillars state (Trụ cột nội dung chuẩn)
-  const [pillarList, setPillarList] = useState<MasterContentPillar[]>(INITIAL_MASTER_PILLARS);
+  // Master Content Pillars state (15 Trụ cột nội dung chuẩn Upbase Master Data 5.5)
+  const [pillarList, setPillarList] = useState<MasterContentPillar[]>(UPBASE_MASTER_PILLARS);
   const [pillarSearch, setPillarSearch] = useState('');
   const [selectedPillarNiche, setSelectedPillarNiche] = useState('ALL');
   const [selectedPillarStatus, setSelectedPillarStatus] = useState<'ALL' | 'ACTIVE' | 'INACTIVE'>('ALL');
@@ -147,6 +177,8 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
     }
     return true;
   });
+  const totalBrandPages = Math.ceil(filteredBrands.length / BRAND_PAGE_SIZE) || 1;
+  const currentBrands = filteredBrands.slice((brandPage - 1) * BRAND_PAGE_SIZE, brandPage * BRAND_PAGE_SIZE);
 
   // Filtered Stores
   const filteredStores = storeList.filter(s => {
@@ -457,6 +489,51 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
 
           <button
             type="button"
+            onClick={() => setActiveSubTab('cast-tiers')}
+            className={`py-3 border-b-2 transition-colors whitespace-nowrap flex items-center gap-2 ${
+              activeSubTab === 'cast-tiers'
+                ? 'border-slate-900 text-slate-900 font-semibold'
+                : 'border-transparent text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <span>Bậc cast & Phân nhóm</span>
+            <span className="text-2xs font-mono px-1.5 py-0.2 rounded bg-slate-100 text-slate-600">
+              {UPBASE_CAST_TIERS.length}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveSubTab('koc-niches')}
+            className={`py-3 border-b-2 transition-colors whitespace-nowrap flex items-center gap-2 ${
+              activeSubTab === 'koc-niches'
+                ? 'border-slate-900 text-slate-900 font-semibold'
+                : 'border-transparent text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <span>Tệp kênh KOC</span>
+            <span className="text-2xs font-mono px-1.5 py-0.2 rounded bg-slate-100 text-slate-600">
+              {UPBASE_KOC_NICHES.length}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveSubTab('video-formats')}
+            className={`py-3 border-b-2 transition-colors whitespace-nowrap flex items-center gap-2 ${
+              activeSubTab === 'video-formats'
+                ? 'border-slate-900 text-slate-900 font-semibold'
+                : 'border-transparent text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <span>Định dạng video</span>
+            <span className="text-2xs font-mono px-1.5 py-0.2 rounded bg-slate-100 text-slate-600">
+              {UPBASE_VIDEO_FORMATS.length}
+            </span>
+          </button>
+
+          <button
+            type="button"
             onClick={() => setActiveSubTab('kocs')}
             className={`py-3 border-b-2 transition-colors whitespace-nowrap flex items-center gap-2 ${
               activeSubTab === 'kocs'
@@ -479,9 +556,9 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
-            <span>Nhân sự</span>
+            <span>Nhân sự Booking</span>
             <span className="text-2xs font-mono px-1.5 py-0.2 rounded bg-slate-100 text-slate-600">
-              {USERS.length}
+              {UPBASE_STAFF_MASTER.length}
             </span>
           </button>
         </div>
@@ -549,7 +626,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {filteredBrands.map(b => (
+                {currentBrands.map(b => (
                   <tr key={b.id} className="hover:bg-slate-50/70 transition-colors">
                     <td className="py-3 px-4">
                       <div className="font-semibold text-slate-900">{b.name}</div>
@@ -558,7 +635,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                     <td className="py-3 px-4 text-slate-700">{b.companyName || b.name}</td>
                     <td className="py-3 px-4 text-slate-600">{b.category}</td>
                     <td className="py-3 px-4 text-center font-mono font-semibold text-slate-800">
-                      {b.stores?.length || 0}
+                      {b.storeCount || b.stores?.length || 0}
                     </td>
                     <td className="py-3 px-4 text-slate-700">
                       {b.accountPic || b.brandPicName || 'Chưa phân công'}
@@ -595,117 +672,46 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                 ))}
               </tbody>
             </table>
+
+            {/* Pagination for Brands */}
+            <div className="px-4 py-3 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-slate-600">
+              <div>
+                Hiển thị <span className="font-semibold text-slate-900">{Math.min(filteredBrands.length, (brandPage - 1) * BRAND_PAGE_SIZE + 1)}</span> - <span className="font-semibold text-slate-900">{Math.min(filteredBrands.length, brandPage * BRAND_PAGE_SIZE)}</span> trên tổng số <span className="font-semibold text-slate-900">{filteredBrands.length}</span> thương hiệu
+              </div>
+
+              <div className="flex items-center gap-1.5 self-end sm:self-auto">
+                <button
+                  type="button"
+                  disabled={brandPage <= 1}
+                  onClick={() => setBrandPage(p => Math.max(1, p - 1))}
+                  className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                </button>
+                <span className="px-2 text-xs font-mono font-medium text-slate-800">
+                  Trang {brandPage} / {totalBrandPages}
+                </span>
+                <button
+                  type="button"
+                  disabled={brandPage >= totalBrandPages}
+                  onClick={() => setBrandPage(p => Math.min(totalBrandPages, p + 1))}
+                  className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
 
       {/* SUB-TAB 2: GIAN HÀNG */}
       {activeSubTab === 'stores' && (
-        <div className="space-y-4">
-          <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-2 flex-1 max-w-lg">
-              <div className="relative w-full">
-                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  placeholder="Tìm gian hàng, thương hiệu..."
-                  value={storeSearch}
-                  onChange={(e) => setStoreSearch(e.target.value)}
-                  className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-slate-400"
-                />
-              </div>
-
-              <select
-                value={selectedStorePlatform}
-                onChange={(e) => setSelectedStorePlatform(e.target.value)}
-                className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-700 focus:outline-none shrink-0"
-              >
-                <option value="ALL">Mọi nền tảng</option>
-                <option value="TikTok Shop">TikTok Shop</option>
-                <option value="Shopee Mall">Shopee Mall</option>
-                <option value="Lazada">Lazada</option>
-              </select>
-
-              <select
-                value={selectedStoreBrand}
-                onChange={(e) => setSelectedStoreBrand(e.target.value)}
-                className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-700 focus:outline-none shrink-0"
-              >
-                <option value="ALL">Mọi nhãn hàng</option>
-                {brandList.map(b => (
-                  <option key={b.id} value={b.name}>{b.name}</option>
-                ))}
-              </select>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => {
-                setStoreForm({
-                  storeName: '',
-                  brandName: brandList[0]?.name || 'Kutieskin',
-                  platform: 'TikTok Shop',
-                  storeUrl: '',
-                  accountOwnerName: 'Hoàng Long'
-                });
-                setIsStoreModalOpen(true);
-              }}
-              className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg transition flex items-center gap-1.5 shrink-0"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              Thêm gian hàng
-            </button>
-          </div>
-
-          <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 text-slate-600 border-b border-slate-200 font-semibold text-2xs">
-                <tr>
-                  <th className="py-3 px-4">Tên gian hàng</th>
-                  <th className="py-3 px-4">Nền tảng</th>
-                  <th className="py-3 px-4">Thương hiệu</th>
-                  <th className="py-3 px-4">Phụ trách (PIC)</th>
-                  <th className="py-3 px-4 text-center">Trạng thái</th>
-                  <th className="py-3 px-4 text-right">Liên kết</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {filteredStores.map(s => (
-                  <tr key={s.id} className="hover:bg-slate-50/70 transition-colors">
-                    <td className="py-3 px-4 font-semibold text-slate-900">
-                      {s.storeName}
-                    </td>
-                    <td className="py-3 px-4">
-                      <ChannelTag channel={s.platform} />
-                    </td>
-                    <td className="py-3 px-4 text-slate-700">{s.brandName}</td>
-                    <td className="py-3 px-4 text-slate-600">{s.accountOwnerName}</td>
-                    <td className="py-3 px-4 text-center">
-                      <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                        Đang hoạt động
-                      </span>
-                    </td>
-                    <td className="py-3 px-4 text-right">
-                      {s.storeUrl ? (
-                        <a
-                          href={s.storeUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex items-center gap-1 text-slate-600 hover:text-slate-900 text-xs"
-                        >
-                          <span>Mở sàn</span>
-                          <ExternalLink className="w-3 h-3" />
-                        </a>
-                      ) : (
-                        <span className="text-slate-400 text-xs">Chưa có link</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <StoresMasterView
+          initialStores={storeList}
+          brandNames={brandList.map(b => b.name)}
+          onNotify={onNotify}
+        />
       )}
 
       {/* SUB-TAB 3: SẢN PHẨM (Master Product Catalog) */}
@@ -968,10 +974,15 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                               {p.name}
                             </span>
                           </div>
-                          <div>
+                          <div className="flex items-center gap-1.5 flex-wrap">
                             <span className="font-mono text-2xs font-semibold px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">
                               {p.code}
                             </span>
+                            {p.tagPillar && (
+                              <span className="text-2xs font-semibold px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">
+                                Tag: {p.tagPillar}
+                              </span>
+                            )}
                           </div>
                           {p.targetAudience && (
                             <p className="text-2xs text-slate-500 line-clamp-1">
@@ -1099,7 +1110,31 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
         </div>
       )}
 
-      {/* SUB-TAB 4: DANH BẠ KOC */}
+      {/* SUB-TAB: BẬC CAST & PHÂN NHÓM CREATOR */}
+      {activeSubTab === 'cast-tiers' && (
+        <CastTiersMasterView
+          initialTiers={UPBASE_CAST_TIERS}
+          onNotify={onNotify}
+        />
+      )}
+
+      {/* SUB-TAB: TỆP KÊNH & CHUYÊN MỤC KOC */}
+      {activeSubTab === 'koc-niches' && (
+        <KocNichesMasterView
+          initialNiches={UPBASE_KOC_NICHES}
+          onNotify={onNotify}
+        />
+      )}
+
+      {/* SUB-TAB: PHÂN LOẠI ĐỊNH DẠNG VIDEO */}
+      {activeSubTab === 'video-formats' && (
+        <VideoFormatsMasterView
+          initialFormats={UPBASE_VIDEO_FORMATS}
+          onNotify={onNotify}
+        />
+      )}
+
+      {/* SUB-TAB: DANH BẠ KOC */}
       {activeSubTab === 'kocs' && (
         <KocMasterDataView
           kocs={kocs}
@@ -1110,82 +1145,12 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
         />
       )}
 
-      {/* SUB-TAB 5: NHÂN SỰ */}
+      {/* SUB-TAB: NHÂN SỰ BOOKING & VẬN HÀNH */}
       {activeSubTab === 'staff' && (
-        <div className="space-y-4">
-          <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-2 flex-1 max-w-md">
-              <div className="relative w-full">
-                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  placeholder="Tìm nhân sự theo tên, email, vị trí..."
-                  value={staffSearch}
-                  onChange={(e) => setStaffSearch(e.target.value)}
-                  className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-slate-400"
-                />
-              </div>
-
-              <select
-                value={selectedStaffRole}
-                onChange={(e) => setSelectedStaffRole(e.target.value)}
-                className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-700 focus:outline-none shrink-0"
-              >
-                <option value="ALL">Mọi vai trò</option>
-                <option value="MANAGER">Trưởng phòng</option>
-                <option value="BRAND_MEMBER">Quản lý nhãn</option>
-                <option value="BOOKING_MEMBER">Chuyên viên Booking</option>
-                <option value="CONTENT_MEMBER">Chuyên viên nội dung</option>
-              </select>
-            </div>
-
-            <div className="text-xs text-slate-500 flex items-center gap-2">
-              <Shield className="w-3.5 h-3.5 text-slate-400" />
-              <span>Đồng bộ qua Lark SSO</span>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 text-slate-600 border-b border-slate-200 font-semibold text-2xs">
-                <tr>
-                  <th className="py-3 px-4">Nhân sự</th>
-                  <th className="py-3 px-4">Email công ty</th>
-                  <th className="py-3 px-4">Vai trò hệ thống</th>
-                  <th className="py-3 px-4">Chức danh</th>
-                  <th className="py-3 px-4 text-center">Xác thực</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {filteredStaff.map(u => (
-                  <tr key={u.id} className="hover:bg-slate-50/70 transition-colors">
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-7 h-7 rounded-lg bg-slate-100 text-slate-700 font-semibold text-xs flex items-center justify-center border border-slate-200">
-                          {u.avatar}
-                        </div>
-                        <span className="font-semibold text-slate-900">{u.name}</span>
-                      </div>
-                    </td>
-                    <td className="py-3 px-4 font-mono text-slate-600">{u.email}</td>
-                    <td className="py-3 px-4">
-                      <span className="px-2 py-0.5 rounded text-2xs font-medium bg-slate-100 text-slate-700 border border-slate-200">
-                        {u.role === 'MANAGER' ? 'Quản trị' : u.role === 'BRAND_MEMBER' ? 'Nhãn hàng' : u.role === 'CONTENT_MEMBER' ? 'Nội dung' : 'Booking'}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4 text-slate-600">{u.roleTitle}</td>
-                    <td className="py-3 px-4 text-center">
-                      <span className="inline-flex items-center gap-1 text-2xs font-medium text-emerald-700">
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                        Lark SSO
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <StaffMasterView
+          initialStaff={UPBASE_STAFF_MASTER}
+          onNotify={onNotify}
+        />
       )}
 
       {/* MODAL: THÊM / SỬA THƯƠNG HIỆU */}

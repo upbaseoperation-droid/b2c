@@ -1051,6 +1051,22 @@ export interface PushProductItem {
   auditLogs: PushProductAuditLog[];
 }
 
+export interface MasterBrandSummary {
+  id: string;
+  code: string;
+  name: string;
+  companyName: string;
+  category: string;
+  storeCount: number;
+  platforms: string[];
+  servicePackages: string[];
+  status: 'ACTIVE' | 'PAUSED' | 'UPCOMING';
+  accountPic?: string;
+  growthPic?: string;
+  monthlyBudget?: number;
+  contractEndDate?: string;
+}
+
 export interface BrandDetail {
   id: string;
   code: string;
@@ -1082,6 +1098,14 @@ export interface BrandDetail {
   // Gian hàng & Sản phẩm
   stores: EcomStore[];
   heroProducts: HeroProduct[];
+
+  // Master Data helper attributes
+  contactPerson?: string;
+  contractEndDate?: string;
+  monthlyBudget?: number;
+  storeCount?: number;
+  platforms?: string[];
+  servicePackages?: string[];
 }
 
 export type GrowthDemandStatus = 
@@ -1377,6 +1401,23 @@ export interface StorePortfolioItem {
   activeBookingsCount?: number;
   activeContentsCount?: number;
   createdAt?: string;
+
+  // Upbase Master Data (5.1 Stores)
+  storeOperation?: string; // Tên nhận diện vận hành: Brand_Platform_Service
+  servicePackage?: string; // E2E-S, Live-S, MCN-S, Standard...
+  servicePackageName?: string; // E2E - Service, Live - Service...
+  growthPic?: string; // PIC phụ trách Growth
+  contentPic?: string; // PIC phụ trách Content
+  mediaPic?: string; // PIC phụ trách Media
+  csListingPic?: string; // PIC CS Listing
+  csDesignPic?: string; // PIC CS Design
+  livestreamPic?: string; // PIC Livestream inhouse
+  teamGrowth?: string; // Team Growth phụ trách
+  liveDate?: string; // Ngày bắt đầu Live
+  offDate?: string; // Ngày kết thúc hợp đồng / Off
+  brandId?: string; // Mã Brand ID (BRAND001...)
+  cmsRate?: number | string; // % CMS thu Brand
+  fixFeeLivePerHour?: number; // Fix fee / giờ livestream
 }
 
 // MASTER DATA NHÂN VIÊN & PHÂN CÔNG GIAN HÀNG
@@ -1390,6 +1431,15 @@ export interface StaffMasterMember {
   email: string;
   phone?: string;
   maxStoresCapacity: number;
+
+  // Upbase Master Data (6.2 Nhân sự Booking)
+  staffCode?: string; // ID nhân sự (HN782, HCM105...)
+  gender?: string; // Nam / Nữ
+  location?: 'HN' | 'HCM' | string; // Khu vực làm việc
+  employmentType?: 'Chính thức' | 'Cộng tác viên' | 'Thực tập sinh' | string; // Loại hình nhân sự
+  department?: string; // Phòng ban (Growth 1-6, Booking, Livestream, MCN...)
+  position?: string; // Vị trí chức danh
+  startDate?: string; // Ngày bắt đầu làm việc
 }
 
 // --- MODULE 2: PLANNING ---
@@ -1755,6 +1805,7 @@ export interface MasterContentPillar {
   code: string; // VD: 'EDUCATIONAL', 'PRODUCT_SHOWCASE', 'STORYTELLING', 'TREND_JACKING', 'TESTIMONIAL', 'PROBLEM_SOLUTION', 'BEHIND_SCENES', 'UNBOXING_ASMR'
   name: string; // Tên trụ cột nội dung
   description: string; // Định hướng nội dung & quy chuẩn sáng tạo
+  tagPillar?: string; // Tag Pillar chuẩn Upbase (Review trực tiếp, Nỗi đau - Giải pháp, Unboxing...)
   applicableNiches: string[]; // Ngành hàng phù hợp (VD: 'Mẹ & Bé', 'Chăm Sóc Da', 'Sức Khỏe', 'F&B', 'Gia Dụng', 'Toàn ngành')
   suggestedFormats: string[]; // Định dạng video gợi ý
   benchmarkUnitCost: number; // Đơn giá thù lao định mức tham chiếu / video (VNĐ)
@@ -1764,6 +1815,41 @@ export interface MasterContentPillar {
   colorTag?: string; // Tag màu nhận diện
   activeBrandsCount?: number; // Số brand đang áp dụng
   createdAt: string;
+  lastUpdate?: string;
+}
+
+// Master Data: Bậc cast & Phân nhóm KOC (5.6 Tệp cast)
+export interface MasterCastTier {
+  id: string;
+  tierCode: string; // VD: 'TAP UpAffiliate', 'KL1', 'KL2' ... 'KL7', 'TAP đối tác ngoài'
+  priceRange: string; // VD: '0', '0 - 500k', '500k - 1.5M', '1.5M - 3M' ...
+  minCast: number; // VNĐ
+  maxCast: number; // VNĐ
+  baseAverage: number; // VNĐ
+  creatorGroup: 'Massive Creator' | 'Mid Creator' | 'Key Creator' | 'Top Creator' | string;
+  note: string; // Ghi chú chiến lược sử dụng
+  adsCost: string; // 'Không mất', 'Thương lượng', '+20-30%' ...
+  usageImageCost: string; // 'Không mất', 'Thương lượng', '+30-50%' ...
+  lastUpdate?: string;
+}
+
+// Master Data: Phân loại định dạng video (5.3 Phân loại video)
+export interface MasterVideoFormat {
+  id: string;
+  name: string; // VD: 'Unbox Voice', 'Review Voice', 'Nhạc text', 'Ảnh lướt', 'Video remix', 'Video AI', 'TAP đối tác ngoài'
+  option: string;
+  lastUpdate?: string;
+}
+
+// Master Data: Tệp kênh & Chuyên mục KOC (5.4 Tệp KOCs)
+export interface MasterKocNiche {
+  id: string;
+  nicheName: string; // VD: 'Review Nữ', 'Review Nam', 'Mẹ bé (bầu)', 'Makeup Artist', 'Bác sỹ/chuyên gia' ...
+  definition?: string;
+  category?: string; // 'Beauty & Personal Care', 'Mom & Baby', 'Food & Beverage' ...
+  properties?: string; // 'Lifestyle', 'Expert', 'Creator' ...
+  pillarMatch?: string; // Trụ cột nội dung liên kết gợi ý
+  lastUpdate?: string;
 }
 
 // Trụ cột nội dung phân bổ cho Self Channel trong kế hoạch Brand

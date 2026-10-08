@@ -1,3 +1,4 @@
+import { UPBASE_MASTER_PILLARS } from './importedMasterData';
 import { 
   MasterContentPillar,
   SelfChannelContentPillar, 
@@ -10,128 +11,8 @@ import {
 // 1. MASTER DATA: DANH MỤC TRỤ CỘT NỘI DUNG (CONTENT PILLARS)
 // Dùng làm chuẩn chung toàn hệ thống B2C cho mọi Brand & Kế hoạch
 // ==========================================
-export const INITIAL_MASTER_PILLARS: MasterContentPillar[] = [
-  {
-    id: 'MASTER-PIL-01',
-    code: 'EDUCATIONAL',
-    name: 'Giáo Dục & Tư Vấn Chuyên Gia',
-    description: 'Bác sĩ, dược sĩ hoặc chuyên gia chuyên ngành giải thích cơ chế bệnh lý, khoa học làn da, hướng dẫn phòng ngừa và chăm sóc chuẩn y khoa.',
-    applicableNiches: ['Mẹ & Bé', 'Chăm Sóc Da', 'Sức Khỏe'],
-    suggestedFormats: ['Voiceover chuyên gia + B-roll', 'Q&A giải đáp thắc mắc', 'Infographic trực quan'],
-    benchmarkUnitCost: 1500000,
-    targetAudience: 'Phụ huynh có con nhỏ, người có vấn đề da liễu cần giải pháp khoa học uy tín',
-    keyObjectives: 'Xây dựng uy tín nhãn hàng, định vị chuyên môn và tạo niềm tin bền vững',
-    status: 'ACTIVE',
-    colorTag: '#4F46E5',
-    activeBrandsCount: 5,
-    createdAt: '2026-08-15'
-  },
-  {
-    id: 'MASTER-PIL-02',
-    code: 'PRODUCT_SHOWCASE',
-    name: 'Demo Trải Nghiệm & Hướng Dẫn Sử Dụng',
-    description: 'Cận cảnh chất kem/sản phẩm, test độ thấm, hướng dẫn quy trình sử dụng từng bước chuẩn xác, đánh giá cảm quan thực tế trên da.',
-    applicableNiches: ['Mẹ & Bé', 'Chăm Sóc Da', 'Gia Dụng & Đời Sống', 'Chăm Sóc Cá Nhân'],
-    suggestedFormats: ['Cận cảnh macro test chất kem', 'Quy trình 3 bước sử dụng', 'Review cảm giác thẩm thấu'],
-    benchmarkUnitCost: 1000000,
-    targetAudience: 'Khách hàng đang tìm hiểu chi tiết thành phần & tính năng trước khi quyết định mua',
-    keyObjectives: 'Thúc đẩy chuyển đổi giỏ hàng, giảm tỷ lệ đổi trả do dùng sai cách',
-    status: 'ACTIVE',
-    colorTag: '#0284C7',
-    activeBrandsCount: 8,
-    createdAt: '2026-08-15'
-  },
-  {
-    id: 'MASTER-PIL-03',
-    code: 'STORYTELLING',
-    name: 'Tình Huống & Drama Đời Thực',
-    description: 'Khoảnh khắc cứu nguy da bé nửa đêm, chuyện bố chăm con vụng về, tâm sự mẹ bỉm trải lòng lồng ghép khéo léo giải pháp của sản phẩm.',
-    applicableNiches: ['Mẹ & Bé', 'Gia Dụng & Đời Sống', 'F&B', 'Toàn ngành'],
-    suggestedFormats: ['Tình huống đối thoại 2 người', 'POV tâm sự trải lòng', 'Hài hước nhẹ nhàng đời sống'],
-    benchmarkUnitCost: 1500000,
-    targetAudience: 'Người dùng lướt feed mạng xã hội giải trí, gia đình trẻ, mẹ bỉm sữa',
-    keyObjectives: 'Tạo cảm xúc đồng điệu, tăng organic reach tự nhiên và độ thiện cảm thương hiệu',
-    status: 'ACTIVE',
-    colorTag: '#E11D48',
-    activeBrandsCount: 4,
-    createdAt: '2026-08-20'
-  },
-  {
-    id: 'MASTER-PIL-04',
-    code: 'TREND_JACKING',
-    name: 'Bắt Trend & Âm Thanh Hot TikTok',
-    description: 'Bắt nhịp âm thanh hot trend, meme, template thịnh hành hoặc challenge mới nổi, lồng ghép nhận diện thương hiệu trong 3-5 giây đầu.',
-    applicableNiches: ['Chăm Sóc Da', 'Mẹ & Bé', 'Thời Trang', 'Toàn ngành'],
-    suggestedFormats: ['Biến hình trước / sau 3s', 'Nhạc xu hướng thịnh hành', 'Template Capcut thịnh hành'],
-    benchmarkUnitCost: 1000000,
-    targetAudience: 'Gen Z, Millennials lướt nhanh mục Dành Cho Bạn (FYP)',
-    keyObjectives: 'Tận dụng thuật toán phân phối, tạo đột biến lượt xem và độ phủ nhận diện',
-    status: 'ACTIVE',
-    colorTag: '#D97706',
-    activeBrandsCount: 6,
-    createdAt: '2026-08-22'
-  },
-  {
-    id: 'MASTER-PIL-05',
-    code: 'PROBLEM_SOLUTION',
-    name: 'Nỗi Đau & Giải Pháp Đột Phá',
-    description: 'Mở đầu trực diện với nỗi đau bức bối (con gãi ngứa trầy xước, da mẩn đỏ quấy khóc), phân tích nguyên nhân sai lầm và đưa giải pháp dứt điểm.',
-    applicableNiches: ['Mẹ & Bé', 'Chăm Sóc Da', 'Sức Khỏe', 'Gia Dụng & Đời Sống'],
-    suggestedFormats: ['Hook 3s nỗi đau cấp bách', 'Chỉ rõ sai lầm thường gặp', 'Giải pháp xử lý dứt điểm'],
-    benchmarkUnitCost: 1300000,
-    targetAudience: 'Người đang chịu vấn đề nhức nhối cấp thiết cần giải pháp ngay',
-    keyObjectives: 'Kích hoạt hành động mua ngay (Direct Response), tăng tỷ lệ nhấp giỏ hàng',
-    status: 'ACTIVE',
-    colorTag: '#7C3AED',
-    activeBrandsCount: 7,
-    createdAt: '2026-09-01'
-  },
-  {
-    id: 'MASTER-PIL-06',
-    code: 'TESTIMONIAL',
-    name: 'Feedback & Chứng Thực Khách Hàng',
-    description: 'Câu chuyện trải nghiệm thực tế trước và sau khi dùng (Before/After) có kiểm chứng, mở hộp tin nhắn phản hồi của khách hàng thân thiết.',
-    applicableNiches: ['Mẹ & Bé', 'Chăm Sóc Da', 'Sức Khỏe'],
-    suggestedFormats: ['So sánh Before / After có kiểm chứng', 'Phỏng vấn khách hàng thực tế', 'Mở tin nhắn feedback chân thật'],
-    benchmarkUnitCost: 1200000,
-    targetAudience: 'Khách hàng đang phân vân so sánh giữa nhiều thương hiệu đối thủ',
-    keyObjectives: 'Xóa bỏ rào cản do dự (Social Proof), củng cố quyết định chốt đơn',
-    status: 'ACTIVE',
-    colorTag: '#059669',
-    activeBrandsCount: 5,
-    createdAt: '2026-09-05'
-  },
-  {
-    id: 'MASTER-PIL-07',
-    code: 'BEHIND_SCENES',
-    name: 'Hậu Trường Sản Xuất & Kiểm Định Chất Lượng',
-    description: 'Thước phim tại nhà máy chuẩn CGMP, phòng lab R&D nghiên cứu công thức, quy trình đóng gói vô trùng và tem chống hàng giả minh bạch.',
-    applicableNiches: ['Mẹ & Bé', 'Dược Mỹ Phẩm', 'F&B Thực Phẩm Sạch'],
-    suggestedFormats: ['Tham quan nhà máy CGMP', 'Kiểm nghiệm trong phòng Lab', 'Quy trình đóng gói gửi hàng'],
-    benchmarkUnitCost: 1800000,
-    targetAudience: 'Khách hàng kỹ tính, đề cao nguồn gốc xuất xứ và quy chuẩn kiểm nghiệm',
-    keyObjectives: 'Khẳng định vị thế thương hiệu cao cấp, bảo chứng chất lượng và tính minh bạch',
-    status: 'ACTIVE',
-    colorTag: '#0D9488',
-    activeBrandsCount: 3,
-    createdAt: '2026-09-10'
-  },
-  {
-    id: 'MASTER-PIL-08',
-    code: 'UNBOXING_ASMR',
-    name: 'Đập Hộp & Trải Nghiệm Giác Quan ASMR',
-    description: 'Âm thanh mở hộp giòn tan, bóc seal, kiểm tra tem niêm phong, tiếng xịt/thoa kem êm tai tạo cảm giác thư giãn và trải nghiệm sở hữu cao cấp.',
-    applicableNiches: ['Chăm Sóc Da', 'Mẹ & Bé', 'Gia Dụng & Đời Sống'],
-    suggestedFormats: ['ASMR thu âm chân thực không nhạc nền', 'Unboxing cận cảnh chi tiết quà tặng & bao bì'],
-    benchmarkUnitCost: 900000,
-    targetAudience: 'Người xem thích trải nghiệm giác quan, giới trẻ chuộng bao bì thẩm mỹ',
-    keyObjectives: 'Tăng thời gian xem trung bình (Watch Time), kích thích cảm giác muốn sở hữu',
-    status: 'ACTIVE',
-    colorTag: '#6366F1',
-    activeBrandsCount: 4,
-    createdAt: '2026-09-15'
-  }
-];
+export const INITIAL_MASTER_PILLARS: MasterContentPillar[] = UPBASE_MASTER_PILLARS;
+
 
 // ==========================================
 // 2. TRỤ CỘT NỘI DUNG MẪU ÁP DỤNG TRONG KẾ HOẠCH (PLANNING PILLARS)

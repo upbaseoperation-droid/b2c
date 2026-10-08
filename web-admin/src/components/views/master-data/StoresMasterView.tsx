@@ -1,0 +1,591 @@
+'use client';
+
+import React, { useState, useMemo } from 'react';
+import { Search, Plus, X, ExternalLink, Store, ShoppingBag, ChevronLeft, ChevronRight, Users } from 'lucide-react';
+import { ChannelTag } from '../../ui';
+import { StorePortfolioItem } from '../../../lib/types';
+
+interface StoresMasterViewProps {
+  initialStores: StorePortfolioItem[];
+  brandNames: string[];
+  onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
+}
+
+const PAGE_SIZE = 25;
+
+export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
+  initialStores,
+  brandNames,
+  onNotify
+}) => {
+  const [stores, setStores] = useState<StorePortfolioItem[]>(initialStores);
+  const [search, setSearch] = useState('');
+  const [selectedPlatform, setSelectedPlatform] = useState('ALL');
+  const [selectedPackage, setSelectedPackage] = useState('ALL');
+  const [selectedStatus, setSelectedStatus] = useState('ALL');
+  const [page, setPage] = useState(1);
+
+  // Modal State
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingStore, setEditingStore] = useState<StorePortfolioItem | null>(null);
+  const [form, setForm] = useState({
+    storeName: '',
+    brandName: brandNames[0] || '',
+    platform: 'Shopee Mall' as 'Shopee Mall' | 'TikTok Shop' | 'Lazada',
+    servicePackage: 'E2E-S',
+    accountOwnerName: '',
+    growthPic: '',
+    contentPic: '',
+    storeUrl: ''
+  });
+
+  // Extract unique packages
+  const packages = useMemo(() => {
+    const set = new Set<string>();
+    stores.forEach(s => {
+      if (s.servicePackage) set.add(s.servicePackage);
+    });
+    return Array.from(set).sort();
+  }, [stores]);
+
+  // Filtered stores
+  const filteredStores = useMemo(() => {
+    return stores.filter(s => {
+      if (selectedPlatform !== 'ALL' && s.platform !== selectedPlatform) return false;
+      if (selectedPackage !== 'ALL' && s.servicePackage !== selectedPackage) return false;
+      if (selectedStatus !== 'ALL' && s.accountStatus !== selectedStatus) return false;
+      if (search.trim()) {
+        const q = search.toLowerCase();
+        return (
+          s.storeName.toLowerCase().includes(q) ||
+          (s.storeOperation && s.storeOperation.toLowerCase().includes(q)) ||
+          s.brandName.toLowerCase().includes(q) ||
+          (s.accountOwnerName && s.accountOwnerName.toLowerCase().includes(q)) ||
+          (s.growthPic && s.growthPic.toLowerCase().includes(q)) ||
+          (s.contentPic && s.contentPic.toLowerCase().includes(q)) ||
+          (s.mediaPic && s.mediaPic.toLowerCase().includes(q))
+        );
+      }
+      return true;
+    });
+  }, [stores, selectedPlatform, selectedPackage, selectedStatus, search]);
+
+  // Pagination slice
+  const totalPages = Math.ceil(filteredStores.length / PAGE_SIZE) || 1;
+  const currentStores = useMemo(() => {
+    const start = (page - 1) * PAGE_SIZE;
+    return filteredStores.slice(start, start + PAGE_SIZE);
+  }, [filteredStores, page]);
+
+  // KPI stats
+  const shopeeCount = stores.filter(s => s.platform === 'Shopee Mall').length;
+  const tiktokCount = stores.filter(s => s.platform === 'TikTok Shop').length;
+  const lazadaCount = stores.filter(s => s.platform === 'Lazada').length;
+  const activeCount = stores.filter(s => s.accountStatus === 'ACTIVE').length;
+
+  const handleOpenAdd = () => {
+    setEditingStore(null);
+    setForm({
+      storeName: '',
+      brandName: brandNames[0] || '',
+      platform: 'Shopee Mall',
+      servicePackage: 'E2E-S',
+      accountOwnerName: '',
+      growthPic: '',
+      contentPic: '',
+      storeUrl: ''
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleOpenEdit = (s: StorePortfolioItem) => {
+    setEditingStore(s);
+    setForm({
+      storeName: s.storeName,
+      brandName: s.brandName,
+      platform: s.platform,
+      servicePackage: s.servicePackage || 'E2E-S',
+      accountOwnerName: s.accountOwnerName || '',
+      growthPic: s.growthPic || '',
+      contentPic: s.contentPic || '',
+      storeUrl: s.storeUrl || ''
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleSave = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.storeName.trim()) return;
+
+    if (editingStore) {
+      setStores(prev => prev.map(s => s.id === editingStore.id ? {
+        ...s,
+        storeName: form.storeName.trim(),
+        brandName: form.brandName,
+        platform: form.platform,
+        servicePackage: form.servicePackage,
+        accountOwnerName: form.accountOwnerName.trim() || s.accountOwnerName,
+        growthPic: form.growthPic.trim() || s.growthPic,
+        contentPic: form.contentPic.trim() || s.contentPic,
+        storeUrl: form.storeUrl.trim() || s.storeUrl
+      } : s));
+      if (onNotify) onNotify(`Đã cập nhật gian hàng [${form.storeName}]`);
+    } else {
+      const newStore: StorePortfolioItem = {
+        id: `ST-${String(stores.length + 1).padStart(4, '0')}`,
+        storeName: form.storeName.trim(),
+        storeOperation: form.storeName.trim(),
+        brandName: form.brandName,
+        platform: form.platform,
+        servicePackage: form.servicePackage,
+        serviceModel: 'FULL_SERVICE',
+        difficultyTier: 'Tiêu chuẩn',
+        difficultyMultiplier: 1.0,
+        accountStatus: 'ACTIVE',
+        category: 'Tiêu dùng & Bán lẻ',
+        monthlyTargetGmv: 150000000,
+        monthlyBudget: 25000000,
+        accountOwnerName: form.accountOwnerName.trim() || 'Nguyễn Thu Trang',
+        b2cOwnerName: form.contentPic.trim() || 'Đặng Thị Linh',
+        growthPic: form.growthPic.trim(),
+        contentPic: form.contentPic.trim(),
+        storeUrl: form.storeUrl.trim() || ''
+      };
+      setStores(prev => [newStore, ...prev]);
+      if (onNotify) onNotify(`Đã thêm gian hàng mới [${newStore.storeName}]`);
+    }
+    setIsModalOpen(false);
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* KPI Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
+          <div className="flex items-center justify-between">
+            <span className="text-2xs font-semibold uppercase tracking-wider text-slate-500">Tổng số gian hàng</span>
+            <Store className="w-4 h-4 text-slate-400" />
+          </div>
+          <div className="mt-1 flex items-baseline gap-2">
+            <span className="text-xl font-bold font-mono text-slate-900">{stores.length}</span>
+            <span className="text-2xs text-slate-500">stores</span>
+          </div>
+          <div className="text-2xs text-emerald-600 mt-1 font-semibold">
+            {activeCount} gian hàng đang vận hành (Live)
+          </div>
+        </div>
+
+        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
+          <div className="flex items-center justify-between">
+            <span className="text-2xs font-semibold uppercase tracking-wider text-slate-500">Shopee Mall</span>
+            <ShoppingBag className="w-4 h-4 text-orange-500" />
+          </div>
+          <div className="mt-1 flex items-baseline gap-2">
+            <span className="text-xl font-bold font-mono text-orange-600">{shopeeCount}</span>
+            <span className="text-2xs text-slate-500">gian hàng</span>
+          </div>
+          <div className="text-2xs text-slate-500 mt-1">
+            Chiếm {Math.round((shopeeCount / (stores.length || 1)) * 100)}% danh mục
+          </div>
+        </div>
+
+        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
+          <div className="flex items-center justify-between">
+            <span className="text-2xs font-semibold uppercase tracking-wider text-slate-500">TikTok Shop</span>
+            <ShoppingBag className="w-4 h-4 text-slate-800" />
+          </div>
+          <div className="mt-1 flex items-baseline gap-2">
+            <span className="text-xl font-bold font-mono text-slate-900">{tiktokCount}</span>
+            <span className="text-2xs text-slate-500">gian hàng</span>
+          </div>
+          <div className="text-2xs text-slate-500 mt-1">
+            Chiếm {Math.round((tiktokCount / (stores.length || 1)) * 100)}% danh mục
+          </div>
+        </div>
+
+        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
+          <div className="flex items-center justify-between">
+            <span className="text-2xs font-semibold uppercase tracking-wider text-slate-500">Lazada</span>
+            <ShoppingBag className="w-4 h-4 text-blue-600" />
+          </div>
+          <div className="mt-1 flex items-baseline gap-2">
+            <span className="text-xl font-bold font-mono text-blue-600">{lazadaCount}</span>
+            <span className="text-2xs text-slate-500">gian hàng</span>
+          </div>
+          <div className="text-2xs text-slate-500 mt-1">
+            Chiếm {Math.round((lazadaCount / (stores.length || 1)) * 100)}% danh mục
+          </div>
+        </div>
+      </div>
+
+      {/* Filter and Action Bar */}
+      <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2 flex-1 max-w-2xl">
+          <div className="relative w-full sm:w-64">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder="Tìm theo gian hàng, thương hiệu, PIC..."
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+              className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-slate-400"
+            />
+          </div>
+
+          <select
+            value={selectedPlatform}
+            onChange={(e) => {
+              setSelectedPlatform(e.target.value);
+              setPage(1);
+            }}
+            className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-700 focus:outline-none shrink-0"
+          >
+            <option value="ALL">Mọi sàn</option>
+            <option value="Shopee Mall">Shopee Mall</option>
+            <option value="TikTok Shop">TikTok Shop</option>
+            <option value="Lazada">Lazada</option>
+          </select>
+
+          <select
+            value={selectedPackage}
+            onChange={(e) => {
+              setSelectedPackage(e.target.value);
+              setPage(1);
+            }}
+            className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-700 focus:outline-none shrink-0"
+          >
+            <option value="ALL">Mọi gói dịch vụ ({packages.length})</option>
+            {packages.map(p => (
+              <option key={p} value={p}>{p}</option>
+            ))}
+          </select>
+
+          <select
+            value={selectedStatus}
+            onChange={(e) => {
+              setSelectedStatus(e.target.value);
+              setPage(1);
+            }}
+            className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-700 focus:outline-none shrink-0"
+          >
+            <option value="ALL">Mọi trạng thái</option>
+            <option value="ACTIVE">Đang Live</option>
+            <option value="OFFBOARDED">Đã Off</option>
+          </select>
+        </div>
+
+        <button
+          type="button"
+          onClick={handleOpenAdd}
+          className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg transition flex items-center gap-1.5 shrink-0"
+        >
+          <Plus className="w-3.5 h-3.5" />
+          Thêm gian hàng
+        </button>
+      </div>
+
+      {/* Stores Table */}
+      <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
+        <table className="w-full text-left text-xs">
+          <thead className="bg-slate-50 text-slate-600 border-b border-slate-200 font-semibold text-2xs">
+            <tr>
+              <th className="py-3 px-4 min-w-[200px]">Gian hàng & Mã</th>
+              <th className="py-3 px-4 w-[130px]">Nền tảng</th>
+              <th className="py-3 px-4 w-[160px]">Thương hiệu</th>
+              <th className="py-3 px-4 w-[110px]">Gói dịch vụ</th>
+              <th className="py-3 px-4 min-w-[220px]">Đội ngũ phụ trách (PICs)</th>
+              <th className="py-3 px-4 w-[140px]">Thời hạn HĐ</th>
+              <th className="py-3 px-4 text-center w-[90px]">Trạng thái</th>
+              <th className="py-3 px-4 text-right w-[100px]">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {currentStores.length === 0 ? (
+              <tr>
+                <td colSpan={8} className="py-12 text-center text-slate-400">
+                  Không tìm thấy gian hàng phù hợp với điều kiện lọc
+                </td>
+              </tr>
+            ) : (
+              currentStores.map(s => (
+                <tr key={s.id} className="hover:bg-slate-50/70 transition-colors">
+                  {/* Gian hàng */}
+                  <td className="py-3 px-4">
+                    <div className="font-semibold text-slate-900 text-xs">
+                      {s.storeName}
+                    </div>
+                    <div className="text-2xs font-mono text-slate-400 mt-0.5">
+                      {s.id} {s.storeOperation && s.storeOperation !== s.storeName ? `• ${s.storeOperation}` : ''}
+                    </div>
+                  </td>
+
+                  {/* Nền tảng */}
+                  <td className="py-3 px-4">
+                    <ChannelTag channel={s.platform} />
+                  </td>
+
+                  {/* Thương hiệu */}
+                  <td className="py-3 px-4">
+                    <span className="font-medium text-slate-800">{s.brandName}</span>
+                    {s.brandId && (
+                      <div className="text-2xs font-mono text-slate-400">{s.brandId}</div>
+                    )}
+                  </td>
+
+                  {/* Gói dịch vụ */}
+                  <td className="py-3 px-4">
+                    {s.servicePackage ? (
+                      <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+                        {s.servicePackage}
+                      </span>
+                    ) : (
+                      <span className="text-slate-400 text-2xs">—</span>
+                    )}
+                  </td>
+
+                  {/* PICs */}
+                  <td className="py-3 px-4 text-2xs space-y-0.5">
+                    {s.accountOwnerName && (
+                      <div className="flex items-center gap-1.5 text-slate-700">
+                        <span className="text-slate-400 font-medium">Account:</span>
+                        <span className="font-medium">{s.accountOwnerName}</span>
+                      </div>
+                    )}
+                    {s.growthPic && (
+                      <div className="flex items-center gap-1.5 text-slate-600">
+                        <span className="text-slate-400">Growth:</span>
+                        <span>{s.growthPic}</span>
+                      </div>
+                    )}
+                    {s.contentPic && (
+                      <div className="flex items-center gap-1.5 text-slate-600">
+                        <span className="text-slate-400">Content:</span>
+                        <span>{s.contentPic}</span>
+                      </div>
+                    )}
+                    {s.mediaPic && (
+                      <div className="flex items-center gap-1.5 text-slate-500">
+                        <span className="text-slate-400">Media:</span>
+                        <span>{s.mediaPic}</span>
+                      </div>
+                    )}
+                  </td>
+
+                  {/* Thời hạn HĐ */}
+                  <td className="py-3 px-4 text-2xs text-slate-600 font-mono">
+                    {s.liveDate ? (
+                      <div>
+                        <div>Live: {s.liveDate}</div>
+                        {s.offDate && <div className="text-slate-400">Off: {s.offDate}</div>}
+                      </div>
+                    ) : (
+                      <span className="text-slate-400">Chưa đặt ngày</span>
+                    )}
+                  </td>
+
+                  {/* Trạng thái */}
+                  <td className="py-3 px-4 text-center">
+                    <span className={`px-2 py-0.5 rounded text-2xs font-semibold ${
+                      s.accountStatus === 'ACTIVE' 
+                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
+                        : 'bg-slate-100 text-slate-500'
+                    }`}>
+                      {s.accountStatus === 'ACTIVE' ? 'Đang Live' : 'Đã Off'}
+                    </span>
+                  </td>
+
+                  {/* Thao tác */}
+                  <td className="py-3 px-4 text-right space-x-1">
+                    {s.storeUrl && (
+                      <a
+                        href={s.storeUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-slate-400 hover:text-slate-800 p-1 inline-block"
+                        title="Mở link gian hàng sàn"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </a>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => handleOpenEdit(s)}
+                      className="text-slate-600 hover:text-slate-900 font-medium text-xs px-2 py-1 rounded hover:bg-slate-100 transition inline-block"
+                    >
+                      Sửa
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+
+        {/* Pagination Bar */}
+        <div className="px-4 py-3 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-slate-600">
+          <div>
+            Hiển thị <span className="font-semibold text-slate-900">{Math.min(filteredStores.length, (page - 1) * PAGE_SIZE + 1)}</span> - <span className="font-semibold text-slate-900">{Math.min(filteredStores.length, page * PAGE_SIZE)}</span> trên tổng số <span className="font-semibold text-slate-900">{filteredStores.length}</span> gian hàng
+          </div>
+
+          <div className="flex items-center gap-1.5 self-end sm:self-auto">
+            <button
+              type="button"
+              disabled={page <= 1}
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" />
+            </button>
+            <span className="px-2 text-xs font-mono font-medium text-slate-800">
+              Trang {page} / {totalPages}
+            </span>
+            <button
+              type="button"
+              disabled={page >= totalPages}
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Modal Add / Edit Store */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-xl border border-slate-200 max-w-md w-full p-5 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <h3 className="font-semibold text-sm text-slate-900">
+                {editingStore ? `Cập nhật gian hàng [${editingStore.storeName}]` : 'Thêm gian hàng mới'}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSave} className="space-y-3 text-xs">
+              <div>
+                <label className="block text-slate-600 font-medium mb-1">Tên gian hàng vận hành *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="VD: Brand_Platform_Service"
+                  value={form.storeName}
+                  onChange={(e) => setForm(prev => ({ ...prev, storeName: e.target.value }))}
+                  className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-400"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-slate-600 font-medium mb-1">Thuộc thương hiệu</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Tên nhãn hàng"
+                    value={form.brandName}
+                    onChange={(e) => setForm(prev => ({ ...prev, brandName: e.target.value }))}
+                    className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-400"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-600 font-medium mb-1">Nền tảng sàn</label>
+                  <select
+                    value={form.platform}
+                    onChange={(e) => setForm(prev => ({ ...prev, platform: e.target.value as any }))}
+                    className="w-full px-3 py-1.5 border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-slate-400"
+                  >
+                    <option value="Shopee Mall">Shopee Mall</option>
+                    <option value="TikTok Shop">TikTok Shop</option>
+                    <option value="Lazada">Lazada</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-slate-600 font-medium mb-1">Gói dịch vụ</label>
+                  <input
+                    type="text"
+                    placeholder="VD: E2E-S, Live-S..."
+                    value={form.servicePackage}
+                    onChange={(e) => setForm(prev => ({ ...prev, servicePackage: e.target.value }))}
+                    className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-400"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-600 font-medium mb-1">Account PIC</label>
+                  <input
+                    type="text"
+                    placeholder="Họ tên PIC"
+                    value={form.accountOwnerName}
+                    onChange={(e) => setForm(prev => ({ ...prev, accountOwnerName: e.target.value }))}
+                    className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-400"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-slate-600 font-medium mb-1">Growth PIC</label>
+                  <input
+                    type="text"
+                    placeholder="PIC phụ trách Growth"
+                    value={form.growthPic}
+                    onChange={(e) => setForm(prev => ({ ...prev, growthPic: e.target.value }))}
+                    className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-400"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-600 font-medium mb-1">Content PIC</label>
+                  <input
+                    type="text"
+                    placeholder="PIC phụ trách Content"
+                    value={form.contentPic}
+                    onChange={(e) => setForm(prev => ({ ...prev, contentPic: e.target.value }))}
+                    className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-400"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-600 font-medium mb-1">Link gian hàng sàn (URL)</label>
+                <input
+                  type="url"
+                  placeholder="https://..."
+                  value={form.storeUrl}
+                  onChange={(e) => setForm(prev => ({ ...prev, storeUrl: e.target.value }))}
+                  className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-400"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="px-3 py-1.5 border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 transition"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-lg transition"
+                >
+                  Lưu gian hàng
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};

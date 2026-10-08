@@ -46,7 +46,7 @@ Dùng **token ngữ nghĩa** trong code mới. Tailwind sinh class từ token: `
 
 ### Màu thương hiệu
 
-Nút chính dùng `--color-primary` (than đen của chữ “upbase”). Màu xanh `--color-accent` dành cho thông tin: liên kết, tiến độ, trạng thái đang chạy. Đổi màu ở `globals.css` là cả app đổi theo; nút cũ viết `bg-blue-600`/`bg-indigo-600` cũng được ánh xạ về `primary`. Logo: `public/upbase-logo.png`, hiển thị qua thành phần `BrandLogo` (menu trái, trang đăng nhập). Màu lấy từ logo: cam san hô `#EF5842`, chữ `#2B2B2B`. Cam san hô chỉ dùng cho logo, không dùng cho nút hay trạng thái vì dễ lẫn với màu lỗi và màu Shopee. File hiện là PNG 180×48; nên thay bằng SVG khi có để logo nét trên màn hình độ phân giải cao.
+Nút chính dùng `--color-primary` (than đen của chữ “upbase”). Màu xanh `--color-accent` dành cho thông tin: liên kết, tiến độ, trạng thái đang chạy. Đổi màu ở `globals.css` là cả app đổi theo; nút cũ viết `bg-blue-600`/`bg-indigo-600` cũng được ánh xạ về `primary`. Logo: `public/upbase-logo.png`, hiển thị qua thành phần `BrandLogo` (menu trái, trang đăng nhập). Icon tab trình duyệt: `src/app/icon.png` và `src/app/favicon.ico`, cắt từ biểu tượng chữ U của logo (48×48). Màu lấy từ logo: cam san hô `#EF5842`, chữ `#2B2B2B`. Cam san hô chỉ dùng cho logo, không dùng cho nút hay trạng thái vì dễ lẫn với màu lỗi và màu Shopee. File hiện là PNG 180×48; nên thay bằng SVG khi có để logo nét trên màn hình độ phân giải cao.
 
 ### Màu dữ liệu
 
