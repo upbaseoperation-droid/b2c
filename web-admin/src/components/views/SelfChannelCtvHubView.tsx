@@ -36,7 +36,8 @@ import {
   Wallet,
   FileCheck,
   HelpCircle,
-  MessageSquare
+  MessageSquare,
+  Users
 } from 'lucide-react';
 import {
   SelfChannelContentPillar,
@@ -74,8 +75,8 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
   const [tasks, setTasks] = useState<SelfChannelVideoTask[]>(INITIAL_SELF_CHANNEL_TASKS);
   const [contributors, setContributors] = useState<Contributor[]>(INITIAL_CONTRIBUTORS);
 
-  // Tab State: 'PIPELINE' | 'CTV_PORTAL' | 'CONTRIBUTORS' | 'SETTLEMENT'
-  const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'APPROVALS' | 'ACTIVE_JOBS' | 'DISCUSSION' | 'HISTORY'>('OVERVIEW');
+  // Tab State: 'OVERVIEW' | 'APPROVALS' | 'ACTIVE_JOBS' | 'CONTRIBUTORS' | 'DISCUSSION' | 'HISTORY'
+  const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'APPROVALS' | 'ACTIVE_JOBS' | 'CONTRIBUTORS' | 'DISCUSSION' | 'HISTORY'>('OVERVIEW');
   const [isCtvSimulatorView, setIsCtvSimulatorView] = useState(false);
 
   // Discussion Chat State
@@ -128,7 +129,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
   const [selectedContributorId, setSelectedContributorId] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
-  // Active CTV Simulator State for 'CTV_PORTAL' view
+  // Active CTV Simulator State
   const [simulatedCtvId, setSimulatedCtvId] = useState<string>(INITIAL_CONTRIBUTORS[0].id);
 
   // Modal States
@@ -220,6 +221,10 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
     const budgetTotal = allocation.budgetSelfChannel;
     const progressPercent = Math.round((completedTasks / targetVideos) * 100);
 
+    const pendingApprovalsCount = scriptPendingTasks + 
+      tasks.filter(t => t.status === 'DRAFT_VIDEO_SUBMITTED').length + 
+      tasks.filter(t => t.status === 'ACCEPTED_COMPLETED').length;
+
     return {
       totalTasks,
       completedTasks,
@@ -231,7 +236,8 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
       paidTotal,
       targetVideos,
       budgetTotal,
-      progressPercent
+      progressPercent,
+      pendingApprovalsCount
     };
   }, [tasks, allocation]);
 
@@ -258,56 +264,56 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
     switch (status) {
       case 'OPEN_TASK':
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-semibold bg-slate-100 text-slate-700">
             <Clock className="w-3 h-3 text-slate-500" />
             Mở nhận task
           </span>
         );
       case 'SCRIPT_PENDING_REVIEW':
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-semibold bg-amber-50 text-amber-800 border border-amber-300">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-semibold bg-amber-50 text-amber-800">
             <FileText className="w-3 h-3 text-amber-600" />
             Chờ duyệt kịch bản
           </span>
         );
       case 'SCRIPT_REVISION':
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-semibold bg-rose-50 text-rose-700 border border-rose-200">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-semibold bg-rose-50 text-rose-700">
             <AlertTriangle className="w-3 h-3 text-rose-500" />
             Sửa kịch bản
           </span>
         );
       case 'SCRIPT_APPROVED':
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-semibold bg-blue-50 text-blue-700">
             <Video className="w-3 h-3 text-blue-600" />
             Đang quay & dựng
           </span>
         );
       case 'DRAFT_VIDEO_SUBMITTED':
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-semibold bg-indigo-50 text-indigo-700">
             <Play className="w-3 h-3 text-indigo-600" />
             Chờ duyệt video
           </span>
         );
       case 'VIDEO_REVISION':
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-semibold bg-orange-50 text-orange-700 border border-orange-200">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-semibold bg-orange-50 text-orange-700">
             <AlertCircle className="w-3 h-3 text-orange-600" />
             Sửa video nháp
           </span>
         );
       case 'ACCEPTED_COMPLETED':
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-300">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-semibold bg-emerald-50 text-emerald-700">
             <CheckCircle2 className="w-3 h-3 text-emerald-600" />
             Đã nghiệm thu (Chờ chi)
           </span>
         );
       case 'PAID':
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-semibold bg-purple-50 text-purple-700 border border-purple-200">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-semibold bg-purple-50 text-purple-700">
             <Wallet className="w-3 h-3 text-purple-600" />
             Đã quyết toán
           </span>
@@ -508,365 +514,363 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
   };
 
   return (
-    <div className="space-y-5 pb-12">
-      {/* 1. TOP HEADER & ALLOCATION OVERVIEW */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-5">
+    <div className="space-y-6">
+      {/* ========================================================================= */}
+      {/* 1. SLEEK ENTERPRISE HEADER                                               */}
+      {/* ========================================================================= */}
+      <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <span className="px-2.5 py-1 rounded-md text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 flex items-center gap-1.5">
-                <Video className="w-3.5 h-3.5" />
-                Luồng Độc Lập: Kênh Thương Hiệu (Self Channel)
-              </span>
-              <span className="px-2.5 py-1 rounded-md text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200">
-                Thương hiệu: <strong>{allocation.brandName}</strong>
-              </span>
+          <div className="flex items-center gap-3.5">
+            <div className="w-11 h-11 rounded-xl bg-indigo-600 text-white font-bold flex items-center justify-center text-sm shadow-xs shrink-0">
+              <Video className="w-5 h-5" />
             </div>
-            <h1 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-              Self Channel & CTV Video Hub
-            </h1>
-            <p className="text-xs text-slate-500">
-              Quản lý sản xuất video kênh chính chủ (TikTok/Reels) qua mạng lưới Cộng Tác Viên theo <strong>Content Pillar</strong> • Tách biệt hoàn toàn với luồng Affiliate KOC ngoại sàn.
-            </p>
+            <div>
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <h1 className="text-base font-bold text-slate-900 tracking-tight">
+                  Self Channel &amp; CTV Video Hub
+                </h1>
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-2xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                  Kênh Chính Chủ Brand
+                </span>
+                <span className="font-mono text-2xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
+                  {allocation.brandName}
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Sản xuất video kênh chính chủ (TikTok/Reels) qua mạng lưới CTV theo <strong className="text-slate-700">Content Pillar</strong> • Tách biệt hoàn toàn với Affiliate KOC ngoại sàn.
+              </p>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2 flex-wrap self-start lg:self-auto">
             {onOpenPushProducts && (
               <button
                 type="button"
                 onClick={onOpenPushProducts}
-                className="px-3 py-2 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors flex items-center gap-1.5"
+                className="px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg text-xs font-medium flex items-center gap-1.5 transition"
               >
-                <Tag className="w-3.5 h-3.5 text-slate-500" />
-                Xem SP Thúc Đẩy (Gắn SKU)
+                <Tag className="w-3.5 h-3.5 text-slate-400" />
+                <span>SP Thúc Đẩy (Gắn SKU)</span>
               </button>
             )}
+
             <button
               type="button"
               onClick={() => setIsCreateTaskModalOpen(true)}
-              className="px-4 py-2 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition-colors flex items-center gap-1.5"
+              className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition shadow-2xs"
             >
-              <Plus className="w-4 h-4" />
-              Tạo Task Video Mới
+              <Plus className="w-3.5 h-3.5" />
+              <span>Tạo Task Video</span>
             </button>
+
+            {onNavigateToBrand && (
+              <button
+                type="button"
+                onClick={onNavigateToBrand}
+                className="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-lg text-xs font-medium flex items-center gap-1.5 transition"
+                title="Quay lại Cổng Nhãn Hàng"
+              >
+                <Layers className="w-3.5 h-3.5 text-slate-500" />
+                <span>Cổng Brand</span>
+              </button>
+            )}
           </div>
         </div>
+      </div>
 
-        {/* Brand Budget Split Comparison Bar */}
-        <div className="mt-5 pt-4 border-t border-slate-100">
-          <div className="flex items-center justify-between text-xs mb-2">
-            <div className="flex items-center gap-2">
-              <span className="font-semibold text-slate-800">Cơ cấu Ngân sách Brand Tháng 10:</span>
-              <span className="font-bold text-indigo-700">{formatVnd(allocation.totalBudget)}</span>
-            </div>
-            <div className="flex items-center gap-4 text-2xs text-slate-500">
-              <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block"></span>
-                Kênh Affiliate (KOC Ngoại Sàn): <strong>{formatVnd(allocation.budgetAffiliate)} (75%)</strong>
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-indigo-600 inline-block"></span>
-                Kênh Self Channel (CTV Nội Bộ): <strong>{formatVnd(allocation.budgetSelfChannel)} (25%)</strong>
-              </span>
-            </div>
-          </div>
+      {/* ========================================================================= */}
+      {/* 2. MINIMALIST SEGMENTED TABS                                             */}
+      {/* ========================================================================= */}
+      <div className="flex items-center gap-1.5 border-b border-slate-200/80 pb-3 overflow-x-auto text-xs">
+        <button
+          type="button"
+          onClick={() => setActiveTab('OVERVIEW')}
+          className={`px-3.5 py-2 rounded-lg font-medium transition flex items-center gap-2 whitespace-nowrap ${
+            activeTab === 'OVERVIEW'
+              ? 'bg-slate-900 text-white font-semibold shadow-xs'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+          }`}
+        >
+          <Layers className="w-3.5 h-3.5" />
+          <span>Tổng quan &amp; Pillar</span>
+        </button>
 
-          {/* Visual split progress bar */}
-          <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden flex">
-            <div 
-              style={{ width: `${(allocation.budgetAffiliate / allocation.totalBudget) * 100}%` }}
-              className="bg-blue-500 h-full relative group cursor-pointer"
-              title={`Affiliate KOC: ${formatVnd(allocation.budgetAffiliate)} - Phân rã theo bậc KL1-KL7`}
-            />
-            <div 
-              style={{ width: `${(allocation.budgetSelfChannel / allocation.totalBudget) * 100}%` }}
-              className="bg-indigo-600 h-full relative group cursor-pointer"
-              title={`Self Channel: ${formatVnd(allocation.budgetSelfChannel)} - Phân rã theo Content Pillar`}
-            />
-          </div>
-        </div>
-
-        {/* 4 Stat Cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
-          <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-            <span className="text-2xs text-slate-500 block">Ngân Sách Self Channel:</span>
-            <div className="flex items-baseline gap-1 mt-0.5">
-              <span className="text-base font-bold text-slate-900 font-mono">{formatVnd(allocation.budgetSelfChannel)}</span>
-            </div>
-            <span className="text-2xs text-indigo-600 block mt-0.5">
-              Đã chi: <strong>{formatVnd(stats.totalSpent)}</strong>
+        <button
+          type="button"
+          onClick={() => setActiveTab('APPROVALS')}
+          className={`px-3.5 py-2 rounded-lg font-medium transition flex items-center gap-2 whitespace-nowrap ${
+            activeTab === 'APPROVALS'
+              ? 'bg-indigo-600 text-white font-semibold shadow-xs'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+          }`}
+        >
+          <AlertCircle className="w-3.5 h-3.5" />
+          <span>Cần duyệt &amp; Nộp bài</span>
+          {stats.pendingApprovalsCount > 0 && (
+            <span className={`text-2xs font-bold px-1.5 py-0.2 rounded-full ${
+              activeTab === 'APPROVALS' ? 'bg-white text-indigo-700' : 'bg-rose-500 text-white'
+            }`}>
+              {stats.pendingApprovalsCount}
             </span>
+          )}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('ACTIVE_JOBS')}
+          className={`px-3.5 py-2 rounded-lg font-medium transition flex items-center gap-2 whitespace-nowrap ${
+            activeTab === 'ACTIVE_JOBS'
+              ? 'bg-slate-900 text-white font-semibold shadow-xs'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+          }`}
+        >
+          <Video className="w-3.5 h-3.5" />
+          <span>Công việc đang chạy ({tasks.length})</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('CONTRIBUTORS')}
+          className={`px-3.5 py-2 rounded-lg font-medium transition flex items-center gap-2 whitespace-nowrap ${
+            activeTab === 'CONTRIBUTORS'
+              ? 'bg-slate-900 text-white font-semibold shadow-xs'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+          }`}
+        >
+          <Users className="w-3.5 h-3.5" />
+          <span>Danh bạ CTV ({contributors.length})</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('DISCUSSION')}
+          className={`px-3.5 py-2 rounded-lg font-medium transition flex items-center gap-2 whitespace-nowrap ${
+            activeTab === 'DISCUSSION'
+              ? 'bg-slate-900 text-white font-semibold shadow-xs'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+          }`}
+        >
+          <MessageSquare className="w-3.5 h-3.5" />
+          <span>Trao đổi</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('HISTORY')}
+          className={`px-3.5 py-2 rounded-lg font-medium transition flex items-center gap-2 whitespace-nowrap ${
+            activeTab === 'HISTORY'
+              ? 'bg-slate-900 text-white font-semibold shadow-xs'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+          }`}
+        >
+          <Wallet className="w-3.5 h-3.5" />
+          <span>Lịch sử &amp; Nhuận bút</span>
+        </button>
+      </div>
+
+      {/* ========================================================================= */}
+      {/* TAB 1: TỔNG QUAN & CONTENT PILLARS (OVERVIEW)                             */}
+      {/* ========================================================================= */}
+      {activeTab === 'OVERVIEW' && (
+        <div className="space-y-6 animate-in fade-in duration-150">
+          {/* 4 Clean Metric Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-white rounded-xl p-4 border border-slate-200/80 shadow-xs">
+              <span className="text-2xs font-medium text-slate-500 uppercase tracking-wide">Ngân Sách Self Channel</span>
+              <div className="mt-1 flex items-baseline justify-between">
+                <span className="text-lg font-bold font-mono text-slate-900">
+                  {formatVnd(allocation.budgetSelfChannel)}
+                </span>
+                <span className="text-2xs text-indigo-600 font-medium">25% tổng gói</span>
+              </div>
+              <span className="text-2xs text-slate-400 mt-0.5 block">Đã chi: {formatVnd(stats.totalSpent)}</span>
+            </div>
+
+            <div className="bg-white rounded-xl p-4 border border-slate-200/80 shadow-xs">
+              <span className="text-2xs font-medium text-slate-500 uppercase tracking-wide">Mục Tiêu Video Kênh</span>
+              <div className="mt-1 flex items-baseline justify-between">
+                <span className="text-lg font-bold font-mono text-slate-900">
+                  {stats.completedTasks} / {stats.targetVideos}
+                </span>
+                <span className="text-2xs text-emerald-600 font-medium">{stats.progressPercent}%</span>
+              </div>
+              <div className="w-full bg-slate-100 h-1.5 rounded-full mt-2 overflow-hidden">
+                <div 
+                  className="bg-emerald-600 h-full rounded-full transition-all"
+                  style={{ width: `${Math.min(100, stats.progressPercent)}%` }}
+                />
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl p-4 border border-slate-200/80 shadow-xs">
+              <span className="text-2xs font-medium text-slate-500 uppercase tracking-wide">Tiến Độ Sản Xuất</span>
+              <div className="mt-1 flex items-baseline justify-between">
+                <span className="text-lg font-bold font-mono text-amber-600">
+                  {stats.scriptPendingTasks} chờ duyệt
+                </span>
+                <span className="text-2xs text-indigo-600 font-medium">{stats.inProgressTasks} đang dựng</span>
+              </div>
+              <span className="text-2xs text-slate-400 mt-0.5 block">{stats.openTasks} task mở đang tìm CTV</span>
+            </div>
+
+            <div className="bg-white rounded-xl p-4 border border-slate-200/80 shadow-xs">
+              <span className="text-2xs font-medium text-slate-500 uppercase tracking-wide">Nhuận Bút Chờ Quyết Toán</span>
+              <div className="mt-1 flex items-baseline justify-between">
+                <span className="text-lg font-bold font-mono text-amber-700">
+                  {formatVnd(stats.pendingPayment)}
+                </span>
+                <span className="text-2xs text-emerald-600 font-medium">Đã chi: {formatVnd(stats.paidTotal)}</span>
+              </div>
+              <span className="text-2xs text-slate-400 mt-0.5 block">Sẵn sàng xuất file UNC</span>
+            </div>
           </div>
 
-          <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-            <span className="text-2xs text-slate-500 block">Mục Tiêu Video Kênh:</span>
-            <div className="flex items-baseline gap-1 mt-0.5">
-              <span className="text-base font-bold text-slate-900 font-mono">{stats.completedTasks} / {stats.targetVideos}</span>
-              <span className="text-2xs text-slate-500">video</span>
+          {/* Budget Split Comparison Bar */}
+          <div className="bg-white rounded-xl p-5 border border-slate-200/80 shadow-xs space-y-3">
+            <div className="flex items-center justify-between text-xs">
+              <span className="font-semibold text-slate-900">
+                Cơ Cấu Ngân Sách Brand: <strong className="text-indigo-700">{formatVnd(allocation.totalBudget)}</strong>
+              </span>
+              <div className="flex items-center gap-4 text-2xs text-slate-500">
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-blue-500 inline-block"></span>
+                  Affiliate KOC: {formatVnd(allocation.budgetAffiliate)} (75%)
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-indigo-600 inline-block"></span>
+                  Self Channel CTV: {formatVnd(allocation.budgetSelfChannel)} (25%)
+                </span>
+              </div>
             </div>
-            <div className="w-full bg-slate-200 h-1.5 rounded-full mt-1.5 overflow-hidden">
+
+            <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden flex">
               <div 
-                className="bg-emerald-600 h-full rounded-full transition-all"
-                style={{ width: `${Math.min(100, stats.progressPercent)}%` }}
+                style={{ width: `${(allocation.budgetAffiliate / allocation.totalBudget) * 100}%` }}
+                className="bg-blue-500 h-full"
+                title={`Affiliate KOC: ${formatVnd(allocation.budgetAffiliate)}`}
+              />
+              <div 
+                style={{ width: `${(allocation.budgetSelfChannel / allocation.totalBudget) * 100}%` }}
+                className="bg-indigo-600 h-full"
+                title={`Self Channel: ${formatVnd(allocation.budgetSelfChannel)}`}
               />
             </div>
           </div>
 
-          <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-            <span className="text-2xs text-slate-500 block">Tiến Độ Sản Xuất:</span>
-            <div className="flex items-center gap-2 mt-0.5">
-              <span className="text-xs font-semibold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">
-                {stats.scriptPendingTasks} chờ duyệt kịch bản
-              </span>
-              <span className="text-xs font-semibold text-indigo-700 bg-indigo-100 px-1.5 py-0.5 rounded">
-                {stats.inProgressTasks} đang dựng
-              </span>
+          {/* Content Pillars Grid */}
+          <div className="bg-white rounded-xl p-5 border border-slate-200/80 shadow-xs space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-semibold text-slate-900 uppercase tracking-wide flex items-center gap-1.5">
+                <Layers className="w-3.5 h-3.5 text-indigo-600" />
+                Phân Bổ Kế Hoạch Theo Trụ Cột Nội Dung (Content Pillar)
+              </h3>
+              <span className="text-2xs text-slate-400">Định mức thù lao cố định theo từng Pillar</span>
             </div>
-            <span className="text-2xs text-slate-500 block mt-1">
-              {stats.openTasks} task mở chờ CTV nhận
-            </span>
-          </div>
 
-          <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-            <span className="text-2xs text-slate-500 block">Nhuận Bút Chờ Quyết Toán:</span>
-            <div className="flex items-baseline gap-1 mt-0.5">
-              <span className="text-base font-bold text-amber-700 font-mono">{formatVnd(stats.pendingPayment)}</span>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+              {allocation.pillars.map((pillar) => {
+                const pillarTasks = tasks.filter(t => t.pillarId === pillar.id);
+                const pillarCompleted = pillarTasks.filter(t => t.status === 'ACCEPTED_COMPLETED' || t.status === 'PAID').length;
+                const percent = Math.round((pillarCompleted / pillar.targetVideos) * 100);
+
+                return (
+                  <div
+                    key={pillar.id}
+                    className="p-3.5 rounded-xl border border-slate-100 bg-slate-50/50 space-y-2 hover:bg-slate-50 transition"
+                  >
+                    <div className="flex items-start justify-between gap-1">
+                      <span className="font-semibold text-slate-900">{pillar.name}</span>
+                      <span className="text-2xs font-mono font-semibold px-1.5 py-0.5 rounded bg-white text-indigo-700 border border-slate-200">
+                        {formatVnd(pillar.unitCostPerVideo)}/clip
+                      </span>
+                    </div>
+
+                    <p className="text-2xs text-slate-500 line-clamp-2 leading-relaxed">
+                      {pillar.description}
+                    </p>
+
+                    <div className="pt-2 border-t border-slate-200/60 text-2xs space-y-1">
+                      <div className="flex items-center justify-between text-slate-500">
+                        <span>Mục tiêu:</span>
+                        <span className="font-mono font-semibold text-slate-800">
+                          {pillarCompleted}/{pillar.targetVideos} clips ({percent}%)
+                        </span>
+                      </div>
+                      <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden mt-1">
+                        <div 
+                          className="bg-indigo-600 h-full rounded-full"
+                          style={{ width: `${Math.min(100, percent)}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-            <span className="text-2xs text-emerald-700 block mt-0.5">
-              Đã thanh toán: <strong>{formatVnd(stats.paidTotal)}</strong>
-            </span>
           </div>
         </div>
-      </div>
-
-      {/* 2. CONTENT PILLARS BREAKDOWN STRIP */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-4">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <Layers className="w-4 h-4 text-indigo-600" />
-            <span className="text-xs font-semibold text-slate-900">Phân Bổ Kế Hoạch Theo Content Pillar (Trụ Cột Nội Dung)</span>
-            <span className="text-2xs text-slate-400">• Không chia theo KL, định mức thù lao theo Pillar</span>
-          </div>
-          <button
-            type="button"
-            onClick={() => setSelectedPillarId('ALL')}
-            className={`text-2xs font-semibold px-2 py-1 rounded transition-colors ${
-              selectedPillarId === 'ALL' ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:bg-slate-100'
-            }`}
-          >
-            Tất cả Pillar ({allocation.pillars.length})
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-          {allocation.pillars.map((pillar) => {
-            const isSelected = selectedPillarId === pillar.id;
-            const pillarTasks = tasks.filter(t => t.pillarId === pillar.id);
-            const pillarCompleted = pillarTasks.filter(t => t.status === 'ACCEPTED_COMPLETED' || t.status === 'PAID').length;
-            const percent = Math.round((pillarCompleted / pillar.targetVideos) * 100);
-
-            return (
-              <div
-                key={pillar.id}
-                onClick={() => setSelectedPillarId(isSelected ? 'ALL' : pillar.id)}
-                className={`p-3.5 rounded-xl border transition-all cursor-pointer text-xs space-y-2 ${
-                  isSelected 
-                    ? 'border-indigo-600 bg-indigo-50/40 ring-2 ring-indigo-500/20 shadow-xs' 
-                    : 'border-slate-200 bg-slate-50/60 hover:bg-slate-100/60'
-                }`}
-              >
-                <div className="flex items-start justify-between gap-1">
-                  <span className="font-semibold text-slate-900 line-clamp-1">{pillar.name}</span>
-                  <span className="text-2xs font-mono font-semibold px-1.5 py-0.5 rounded bg-white text-indigo-700 border border-indigo-200">
-                    {formatVnd(pillar.unitCostPerVideo)}/clip
-                  </span>
-                </div>
-
-                <p className="text-2xs text-slate-500 line-clamp-2 leading-relaxed">
-                  {pillar.description}
-                </p>
-
-                <div className="space-y-1 pt-1 border-t border-slate-200/60 text-2xs">
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-500">Mục tiêu:</span>
-                    <span className="font-semibold text-slate-800 font-mono">
-                      {pillarCompleted} / {pillar.targetVideos} video ({percent}%)
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-500">Ngân sách:</span>
-                    <span className="font-semibold text-slate-800 font-mono">
-                      {formatVnd(pillar.allocatedBudget)}
-                    </span>
-                  </div>
-                  <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden mt-1">
-                    <div 
-                      className="bg-indigo-600 h-full rounded-full"
-                      style={{ width: `${Math.min(100, percent)}%` }}
-                    />
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* 3. THE 5 UNIVERSAL ENTERPRISE HUB TABS */}
-      <div className="flex items-center justify-between border-b border-slate-200 pb-2">
-        <div className="flex items-center gap-1.5 overflow-x-auto">
-          <button
-            type="button"
-            onClick={() => setActiveTab('OVERVIEW')}
-            className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-colors flex items-center gap-2 whitespace-nowrap ${
-              activeTab === 'OVERVIEW'
-                ? 'bg-slate-900 text-white shadow-xs'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-            }`}
-          >
-            <Layers className="w-3.5 h-3.5" />
-            <span>1. Tổng quan</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('APPROVALS')}
-            className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-colors flex items-center gap-2 whitespace-nowrap relative ${
-              activeTab === 'APPROVALS'
-                ? 'bg-indigo-600 text-white shadow-xs'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-            }`}
-          >
-            <AlertCircle className="w-3.5 h-3.5" />
-            <span>2. Cần duyệt &amp; Nộp bài</span>
-            {(stats.scriptPendingTasks + (tasks.filter(t => t.status === 'DRAFT_VIDEO_SUBMITTED').length) + (tasks.filter(t => t.status === 'ACCEPTED_COMPLETED').length)) > 0 && (
-              <span className={`text-2xs font-bold px-1.5 py-0.5 rounded-full ${
-                activeTab === 'APPROVALS' ? 'bg-white text-indigo-700' : 'bg-rose-500 text-white'
-              }`}>
-                {stats.scriptPendingTasks + (tasks.filter(t => t.status === 'DRAFT_VIDEO_SUBMITTED').length) + (tasks.filter(t => t.status === 'ACCEPTED_COMPLETED').length)}
-              </span>
-            )}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('ACTIVE_JOBS')}
-            className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-colors flex items-center gap-2 whitespace-nowrap ${
-              activeTab === 'ACTIVE_JOBS'
-                ? 'bg-slate-900 text-white shadow-xs'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-            }`}
-          >
-            <Video className="w-3.5 h-3.5" />
-            <span>3. Các job đang làm ({tasks.length})</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('DISCUSSION')}
-            className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-colors flex items-center gap-2 whitespace-nowrap ${
-              activeTab === 'DISCUSSION'
-                ? 'bg-slate-900 text-white shadow-xs'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-            }`}
-          >
-            <MessageSquare className="w-3.5 h-3.5" />
-            <span>4. Trao đổi qua lại</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('HISTORY')}
-            className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-colors flex items-center gap-2 whitespace-nowrap ${
-              activeTab === 'HISTORY'
-                ? 'bg-slate-900 text-white shadow-xs'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-            }`}
-          >
-            <Wallet className="w-3.5 h-3.5" />
-            <span>5. Lịch sử &amp; Nhuận bút</span>
-            {stats.pendingPayment > 0 && (
-              <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
-            )}
-          </button>
-
-          {onNavigateToBrand && (
-            <button
-              type="button"
-              onClick={onNavigateToBrand}
-              className="ml-2 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors flex items-center gap-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 shrink-0"
-              title="Quay lại giao diện Làm việc với Brand"
-            >
-              <Layers className="w-3.5 h-3.5 text-blue-600" />
-              <span>Làm việc với Brand</span>
-              <ArrowRight className="w-3.5 h-3.5 text-blue-600" />
-            </button>
-          )}
-        </div>
-
-        {/* Global Search & Filter Bar */}
-        <div className="flex items-center gap-2">
-          <div className="relative">
-            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              placeholder="Tìm mã task, tiêu đề, SKU, CTV..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-8 pr-3 py-1.5 rounded-lg border border-slate-200 text-xs w-56 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-            />
-          </div>
-
-          <select
-            value={selectedStatus}
-            onChange={(e) => setSelectedStatus(e.target.value)}
-            className="px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs text-slate-700 bg-white"
-          >
-            <option value="ALL">Tất cả trạng thái</option>
-            <option value="OPEN_TASK">Mở nhận task</option>
-            <option value="SCRIPT_PENDING_REVIEW">Chờ duyệt kịch bản</option>
-            <option value="SCRIPT_APPROVED">Đang quay & dựng</option>
-            <option value="DRAFT_VIDEO_SUBMITTED">Chờ duyệt video</option>
-            <option value="ACCEPTED_COMPLETED">Đã nghiệm thu (Chờ chi)</option>
-            <option value="PAID">Đã quyết toán</option>
-          </select>
-        </div>
-      </div>
+      )}
 
       {/* ========================================================================= */}
-      {/* TAB 2: CẦN DUYỆT & NỘP BÀI (ACTION CENTER)                                */}
+      {/* TAB 2: CẦN DUYỆT & NỘP BÀI (INBOX - LINEAR/STRIPE STYLE)                  */}
       {/* ========================================================================= */}
       {activeTab === 'APPROVALS' && (
-        <div className="space-y-5 animate-in fade-in duration-150">
-          {/* Pending Scripts Section */}
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-5 space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-200">
-              <div className="flex items-center gap-2">
-                <span className="w-7 h-7 rounded-lg bg-amber-600 text-white font-bold text-xs flex items-center justify-center">
-                  1
-                </span>
+        <div className="space-y-4 animate-in fade-in duration-150">
+          {stats.pendingApprovalsCount === 0 && (
+            <div className="p-8 rounded-2xl bg-white border border-slate-200/80 text-center space-y-3">
+              <div className="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto">
+                <CheckCircle2 className="w-6 h-6" />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-slate-900">
+                  Không có kịch bản hoặc video nào đang chờ duyệt!
+                </h4>
+                <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
+                  Toàn bộ task nộp từ Cộng Tác Viên đã được thẩm định QA và quyết toán đúng tiến độ.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActiveTab('ACTIVE_JOBS')}
+                className="mt-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-semibold inline-flex items-center gap-1.5 transition"
+              >
+                <span>Xem công việc đang chạy</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+
+          {stats.pendingApprovalsCount > 0 && (
+            <div className="bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-hidden">
+              <div className="p-4 border-b border-slate-100 flex items-center justify-between">
                 <div>
-                  <h4 className="text-sm font-bold text-slate-900">
-                    Kịch Bản Chờ Duyệt Hoặc Cần Sửa ({tasks.filter(t => t.status === 'SCRIPT_PENDING_REVIEW' || t.status === 'SCRIPT_REVISION').length} tasks)
-                  </h4>
-                  <p className="text-xs text-slate-500">Duyệt dàn ý 3 phần (Hook, Nội dung, CTA) trước khi CTV tiến hành quay dựng.</p>
+                  <h3 className="text-xs font-semibold text-slate-900 uppercase tracking-wide">
+                    Hộp Việc Cần Phê Duyệt &amp; Nghiệm Thu ({stats.pendingApprovalsCount} mục)
+                  </h3>
+                  <p className="text-2xs text-slate-500 mt-0.5">
+                    Click xem kịch bản, kiểm tra clip nháp hoặc xác nhận quyết toán nhuận bút
+                  </p>
                 </div>
               </div>
-            </div>
 
-            {tasks.filter(t => t.status === 'SCRIPT_PENDING_REVIEW' || t.status === 'SCRIPT_REVISION').length === 0 ? (
-              <p className="text-xs text-slate-400 italic py-3 text-center">Không có kịch bản nào đang chờ duyệt.</p>
-            ) : (
-              <div className="space-y-3">
+              <div className="divide-y divide-slate-100">
+                {/* 1. Pending Scripts */}
                 {tasks.filter(t => t.status === 'SCRIPT_PENDING_REVIEW' || t.status === 'SCRIPT_REVISION').map(t => (
-                  <div key={t.id} className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/50 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-2xs font-semibold bg-slate-200 px-1.5 py-0.5 rounded text-slate-700">{t.taskCode}</span>
-                        <span className="font-bold text-slate-900">{t.title}</span>
-                        {renderStatusBadge(t.status)}
+                  <div key={t.id} className="p-4 hover:bg-slate-50/40 transition flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-700 font-bold text-xs flex items-center justify-center shrink-0">
+                        <FileText className="w-4 h-4" />
                       </div>
-                      <p className="text-2xs text-slate-500 mt-0.5">CTV: <strong>{t.contributorName}</strong> • Sản phẩm: {t.productName} ({t.linkedSku})</p>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-slate-900 text-xs">Kịch bản: {t.title}</span>
+                          <span className="font-mono text-2xs text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">{t.taskCode}</span>
+                          {renderStatusBadge(t.status)}
+                        </div>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          CTV: <strong className="text-slate-700">{t.contributorName}</strong> • SKU: <span className="font-mono">{t.linkedSku}</span> • Thù lao: <strong className="text-indigo-700">{formatVnd(t.remuneration)}</strong>
+                        </p>
+                      </div>
                     </div>
 
                     <button
@@ -875,46 +879,31 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                         setSelectedTask(t);
                         setIsScriptReviewModalOpen(true);
                       }}
-                      className="px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold flex items-center gap-1.5 transition self-start md:self-auto shadow-2xs"
+                      className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition shadow-2xs self-end sm:self-auto"
                     >
-                      <FileText className="w-3.5 h-3.5" />
+                      <Eye className="w-3.5 h-3.5" />
                       <span>Xem &amp; Duyệt Kịch Bản</span>
                     </button>
                   </div>
                 ))}
-              </div>
-            )}
-          </div>
 
-          {/* Pending Video QA Section */}
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-5 space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-200">
-              <div className="flex items-center gap-2">
-                <span className="w-7 h-7 rounded-lg bg-indigo-600 text-white font-bold text-xs flex items-center justify-center">
-                  2
-                </span>
-                <div>
-                  <h4 className="text-sm font-bold text-slate-900">
-                    Video Nháp Chờ Kiểm Định QA &amp; Nghiệm Thu ({tasks.filter(t => t.status === 'DRAFT_VIDEO_SUBMITTED' || t.status === 'VIDEO_REVISION').length} clips)
-                  </h4>
-                  <p className="text-xs text-slate-500">Kiểm tra checklist Do &amp; Don\'ts, watermark, chất lượng âm thanh, góc quay.</p>
-                </div>
-              </div>
-            </div>
-
-            {tasks.filter(t => t.status === 'DRAFT_VIDEO_SUBMITTED' || t.status === 'VIDEO_REVISION').length === 0 ? (
-              <p className="text-xs text-slate-400 italic py-3 text-center">Không có video nháp nào đang chờ kiểm định QA.</p>
-            ) : (
-              <div className="space-y-3">
+                {/* 2. Pending Video QA */}
                 {tasks.filter(t => t.status === 'DRAFT_VIDEO_SUBMITTED' || t.status === 'VIDEO_REVISION').map(t => (
-                  <div key={t.id} className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/50 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-2xs font-semibold bg-slate-200 px-1.5 py-0.5 rounded text-slate-700">{t.taskCode}</span>
-                        <span className="font-bold text-slate-900">{t.title}</span>
-                        {renderStatusBadge(t.status)}
+                  <div key={t.id} className="p-4 hover:bg-slate-50/40 transition flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-700 font-bold text-xs flex items-center justify-center shrink-0">
+                        <Play className="w-4 h-4" />
                       </div>
-                      <p className="text-2xs text-slate-500 mt-0.5">CTV: <strong>{t.contributorName}</strong> • Thù lao: <strong className="text-indigo-700 font-mono">{formatVnd(t.remuneration)}</strong></p>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-slate-900 text-xs">Clip nháp: {t.title}</span>
+                          <span className="font-mono text-2xs text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">{t.taskCode}</span>
+                          {renderStatusBadge(t.status)}
+                        </div>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          CTV: <strong className="text-slate-700">{t.contributorName}</strong> • Thời lượng: {t.videoDeliverables?.durationSeconds || 30}s • Thù lao: <strong className="text-indigo-700">{formatVnd(t.remuneration)}</strong>
+                        </p>
+                      </div>
                     </div>
 
                     <button
@@ -923,51 +912,36 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                         setSelectedTask(t);
                         setIsVideoQaModalOpen(true);
                       }}
-                      className="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold flex items-center gap-1.5 transition self-start md:self-auto shadow-2xs"
+                      className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition shadow-2xs self-end sm:self-auto"
                     >
                       <CheckCircle2 className="w-3.5 h-3.5" />
                       <span>Kiểm Định QA &amp; Nghiệm Thu</span>
                     </button>
                   </div>
                 ))}
-              </div>
-            )}
-          </div>
 
-          {/* Pending Payment Section */}
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-5 space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-200">
-              <div className="flex items-center gap-2">
-                <span className="w-7 h-7 rounded-lg bg-emerald-600 text-white font-bold text-xs flex items-center justify-center">
-                  3
-                </span>
-                <div>
-                  <h4 className="text-sm font-bold text-slate-900">
-                    Nhuận Bút Chờ Quyết Toán ({tasks.filter(t => t.status === 'ACCEPTED_COMPLETED').length} video đã nghiệm thu)
-                  </h4>
-                  <p className="text-xs text-slate-500">Video đã đạt chuẩn, xác nhận để sinh mã ủy nhiệm chi UNC gửi Kế toán.</p>
-                </div>
-              </div>
-            </div>
-
-            {tasks.filter(t => t.status === 'ACCEPTED_COMPLETED').length === 0 ? (
-              <p className="text-xs text-slate-400 italic py-3 text-center">Toàn bộ video nghiệm thu đã được thanh toán xong.</p>
-            ) : (
-              <div className="space-y-3">
+                {/* 3. Pending Settlement */}
                 {tasks.filter(t => t.status === 'ACCEPTED_COMPLETED').map(t => (
-                  <div key={t.id} className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/50 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-2xs font-semibold bg-slate-200 px-1.5 py-0.5 rounded text-slate-700">{t.taskCode}</span>
-                        <span className="font-bold text-slate-900">{t.title}</span>
+                  <div key={t.id} className="p-4 hover:bg-slate-50/40 transition flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 font-bold text-xs flex items-center justify-center shrink-0">
+                        <Wallet className="w-4 h-4" />
                       </div>
-                      <p className="text-2xs text-slate-500 mt-0.5">CTV: <strong>{t.contributorName}</strong> • Thù lao: <strong className="text-emerald-700 font-mono text-sm">{formatVnd(t.remuneration)}</strong></p>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-slate-900 text-xs">Nghiệm thu đạt: {t.title}</span>
+                          <span className="font-mono text-2xs text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">{t.taskCode}</span>
+                        </div>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          CTV: <strong className="text-slate-700">{t.contributorName}</strong> • Thù lao: <strong className="text-emerald-700 font-mono text-sm">{formatVnd(t.remuneration)}</strong>
+                        </p>
+                      </div>
                     </div>
 
                     <button
                       type="button"
                       onClick={() => handleMarkTaskPaid(t)}
-                      className="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold flex items-center gap-1.5 transition self-start md:self-auto shadow-2xs"
+                      className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition shadow-2xs self-end sm:self-auto"
                     >
                       <Wallet className="w-3.5 h-3.5" />
                       <span>Xác Nhận Đã Chi (Tạo UNC)</span>
@@ -975,94 +949,102 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                   </div>
                 ))}
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       )}
 
       {/* ========================================================================= */}
-      {/* TAB 3: CÁC JOB ĐANG LÀM (ACTIVE JOBS & PIPELINE)                          */}
+      {/* TAB 3: CÔNG VIỆC ĐANG CHẠY (ACTIVE JOBS)                                 */}
       {/* ========================================================================= */}
-      {/* 4. TAB CONTENT 1: PIPELINE / TASK BOARD */}
-      {activeTab === 'ACTIVE_JOBS' && !isCtvSimulatorView && (
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {activeTab === 'ACTIVE_JOBS' && (
+        <div className="space-y-4 animate-in fade-in duration-150">
+          {/* Clean Filter Bar */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3 rounded-xl border border-slate-200/80 shadow-xs">
+            <div className="flex items-center gap-2 px-2">
+              <Search className="w-4 h-4 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Tìm mã task, tiêu đề, SKU, CTV..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="text-xs bg-transparent text-slate-800 placeholder-slate-400 outline-none w-48 sm:w-72"
+              />
+            </div>
+
+            <div className="flex items-center gap-2 text-xs">
+              <select
+                value={selectedStatus}
+                onChange={(e) => setSelectedStatus(e.target.value)}
+                className="px-2.5 py-1 rounded-lg border border-slate-200 text-xs text-slate-700 bg-white"
+              >
+                <option value="ALL">Tất cả trạng thái</option>
+                <option value="OPEN_TASK">Mở nhận task</option>
+                <option value="SCRIPT_PENDING_REVIEW">Chờ duyệt kịch bản</option>
+                <option value="SCRIPT_APPROVED">Đang quay & dựng</option>
+                <option value="DRAFT_VIDEO_SUBMITTED">Chờ duyệt video</option>
+                <option value="ACCEPTED_COMPLETED">Đã nghiệm thu (Chờ chi)</option>
+                <option value="PAID">Đã quyết toán</option>
+              </select>
+
+              <button
+                type="button"
+                onClick={() => setIsCtvSimulatorView(!isCtvSimulatorView)}
+                className={`px-3 py-1 rounded-lg text-2xs font-semibold transition ${
+                  isCtvSimulatorView 
+                    ? 'bg-indigo-600 text-white' 
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                {isCtvSimulatorView ? 'Đang bật view CTV' : 'Mô phỏng góc CTV'}
+              </button>
+            </div>
+          </div>
+
+          {/* Simulator switcher when enabled */}
+          {isCtvSimulatorView && (
+            <div className="p-3 bg-indigo-50/60 rounded-xl border border-indigo-100 flex items-center justify-between text-xs">
+              <span className="font-semibold text-indigo-900">Mô phỏng giao diện CTV nộp bài:</span>
+              <select
+                value={simulatedCtvId}
+                onChange={(e) => setSimulatedCtvId(e.target.value)}
+                className="px-2.5 py-1 rounded-lg border border-indigo-200 bg-white text-slate-800 text-xs font-semibold"
+              >
+                {contributors.map(c => (
+                  <option key={c.id} value={c.id}>{c.name} ({c.nicheSpecialty[0]})</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Tasks List */}
+          <div className="space-y-3">
             {filteredTasks.length === 0 ? (
-              <div className="col-span-full py-12 text-center text-slate-400 text-xs bg-white rounded-2xl border border-slate-200">
+              <div className="py-12 text-center text-slate-400 text-xs bg-white rounded-xl border border-slate-200/80">
                 Không tìm thấy task video nào phù hợp với bộ lọc.
               </div>
             ) : (
               filteredTasks.map((task) => (
-                <div
-                  key={task.id}
-                  className="bg-white rounded-2xl border border-slate-200 shadow-xs hover:shadow-md transition-shadow overflow-hidden flex flex-col justify-between"
-                >
-                  <div className="p-4 space-y-3">
-                    {/* Header: Code & Status */}
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="font-mono text-xs font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
-                        {task.taskCode}
-                      </span>
-                      {renderStatusBadge(task.status)}
-                    </div>
-
-                    {/* Title */}
-                    <h3 className="font-semibold text-slate-900 text-sm leading-snug line-clamp-2">
-                      {task.title}
-                    </h3>
-
-                    {/* Metadata tags */}
-                    <div className="flex flex-wrap gap-1.5 text-2xs">
-                      <span className="px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 font-medium border border-indigo-100">
-                        {task.pillarName}
-                      </span>
-                      {task.linkedSku && (
-                        <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-mono border border-slate-200">
-                          SKU: {task.linkedSku}
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Contributor & Remuneration */}
-                    <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
+                <div key={task.id} className="bg-white rounded-xl p-4 border border-slate-200/80 shadow-xs hover:border-slate-300 transition">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                    <div>
                       <div className="flex items-center gap-2">
-                        {task.contributorAvatar ? (
-                          <img
-                            src={task.contributorAvatar}
-                            alt={task.contributorName}
-                            className="w-6 h-6 rounded-full object-cover border border-slate-200"
-                          />
-                        ) : (
-                          <div className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-2xs text-slate-600 font-semibold">
-                            ?
-                          </div>
-                        )}
-                        <span className="text-slate-700 font-medium">
-                          {task.contributorName || <span className="text-slate-400 italic">Chưa giao CTV</span>}
+                        <span className="font-mono text-2xs font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
+                          {task.taskCode}
                         </span>
+                        <span className="font-semibold text-slate-900 text-xs">{task.title}</span>
+                        {renderStatusBadge(task.status)}
                       </div>
-
-                      <span className="font-mono font-bold text-indigo-700">
-                        {formatVnd(task.remuneration)}
-                      </span>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        Pillar: <strong className="text-indigo-700">{task.pillarName}</strong> • SKU: <span className="font-mono">{task.linkedSku}</span> • CTV: <strong>{task.contributorName || 'Chưa giao'}</strong> • Thù lao: <strong className="text-slate-800 font-mono">{formatVnd(task.remuneration)}</strong>
+                      </p>
                     </div>
 
-                    {/* Quick Script or Video Preview Peek */}
-                    {task.scriptContent && (
-                      <div className="p-2.5 bg-slate-50 rounded-xl text-2xs space-y-1 border border-slate-200/60">
-                        <span className="font-semibold text-slate-700 block">Hook 3s đầu:</span>
-                        <p className="text-slate-600 italic line-clamp-2">"{task.scriptContent.hook}"</p>
-                      </div>
-                    )}
-                  </div>
+                    <div className="flex items-center gap-2 self-end md:self-auto">
+                      <span className="text-2xs text-slate-400 flex items-center gap-1 mr-2">
+                        <Calendar className="w-3 h-3" /> Hạn: {formatDate(task.deadline)}
+                      </span>
 
-                  {/* Action Footer */}
-                  <div className="px-4 py-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between gap-2 text-xs">
-                    <span className="text-2xs text-slate-400 flex items-center gap-1">
-                      <Calendar className="w-3 h-3" /> Hạn: {formatDate(task.deadline)}
-                    </span>
-
-                    <div className="flex items-center gap-1.5">
                       {task.status === 'SCRIPT_PENDING_REVIEW' && (
                         <button
                           type="button"
@@ -1085,7 +1067,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                           }}
                           className="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white flex items-center gap-1 shadow-2xs"
                         >
-                          <Play className="w-3.5 h-3.5" /> Duyệt video QA
+                          <Play className="w-3.5 h-3.5" /> Duyệt QA video
                         </button>
                       )}
 
@@ -1106,7 +1088,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                             setSelectedTask(task);
                             setIsCreateTaskModalOpen(true);
                           }}
-                          className="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-200 hover:bg-slate-300 text-slate-700"
+                          className="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700"
                         >
                           Giao CTV
                         </button>
@@ -1120,188 +1102,26 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
         </div>
       )}
 
-      {/* 5. TAB CONTENT 2: CTV PORTAL SIMULATION */}
-      {activeTab === 'ACTIVE_JOBS' && isCtvSimulatorView && (
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100">
-            <div>
-              <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                <User className="w-4 h-4 text-indigo-600" />
-                Cổng Làm Việc Dành Cho Cộng Tác Viên (CTV Workspace Hub)
-              </h2>
-              <p className="text-2xs text-slate-500 mt-0.5">
-                Mô phỏng trải nghiệm màn hình CTV khi nhận task, nộp outline kịch bản và gửi link video nháp để Brand nghiệm thu.
-              </p>
-            </div>
-
-            <div className="flex items-center gap-2 text-xs">
-              <span className="text-slate-500 font-medium">Đang đóng vai CTV:</span>
-              <select
-                value={simulatedCtvId}
-                onChange={(e) => setSimulatedCtvId(e.target.value)}
-                className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white font-semibold text-slate-800"
-              >
-                {contributors.map(c => (
-                  <option key={c.id} value={c.id}>{c.name} ({c.nicheSpecialty[0]})</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {/* Active CTV Profile Card */}
-          {(() => {
-            const currentCtv = contributors.find(c => c.id === simulatedCtvId) || contributors[0];
-            const myTasks = tasks.filter(t => t.contributorId === currentCtv.id);
-            const myEarnings = myTasks
-              .filter(t => t.status === 'ACCEPTED_COMPLETED' || t.status === 'PAID')
-              .reduce((sum, t) => sum + t.remuneration, 0);
-
-            return (
-              <div className="space-y-6">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-slate-50 rounded-xl border border-slate-200">
-                  <div className="flex items-center gap-3">
-                    <img
-                      src={currentCtv.avatar}
-                      alt={currentCtv.name}
-                      className="w-12 h-12 rounded-full object-cover border border-slate-300"
-                    />
-                    <div>
-                      <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
-                        {currentCtv.name}
-                        <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-emerald-100 text-emerald-800">
-                          CTV Đang Hoạt Động
-                        </span>
-                      </h3>
-                      <p className="text-xs text-slate-500">
-                        SĐT: {currentCtv.phone} • STK: <strong>{currentCtv.bankAccount}</strong> ({currentCtv.bankName})
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-6 text-xs">
-                    <div>
-                      <span className="text-2xs text-slate-400 block">Số Task Đang Làm:</span>
-                      <span className="font-bold text-slate-900 font-mono">{myTasks.length} task</span>
-                    </div>
-                    <div>
-                      <span className="text-2xs text-slate-400 block">Thù Lao Tích Lũy:</span>
-                      <span className="font-bold text-indigo-700 font-mono">{formatVnd(myEarnings)}</span>
-                    </div>
-                    <div>
-                      <span className="text-2xs text-slate-400 block">Điểm Đánh Giá:</span>
-                      <span className="font-bold text-amber-600 flex items-center gap-1 font-mono">
-                        <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
-                        {currentCtv.ratingScore} / 5.0
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* My Assigned Tasks List */}
-                <div className="space-y-3">
-                  <h4 className="text-xs font-semibold text-slate-900 flex items-center gap-1.5">
-                    <FileText className="w-3.5 h-3.5 text-indigo-600" />
-                    Danh Sách Task Brand Đã Giao Cho Bạn ({myTasks.length})
-                  </h4>
-
-                  {myTasks.length === 0 ? (
-                    <div className="p-8 text-center text-slate-400 text-xs border border-dashed border-slate-200 rounded-xl">
-                      Bạn chưa được giao task video nào trong tháng này.
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {myTasks.map(task => (
-                        <div
-                          key={task.id}
-                          className="p-4 bg-white rounded-xl border border-slate-200 space-y-3 shadow-2xs"
-                        >
-                          <div className="flex items-start justify-between gap-2">
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <span className="font-mono text-2xs font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
-                                  {task.taskCode}
-                                </span>
-                                <span className="text-2xs font-semibold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded">
-                                  {task.pillarName}
-                                </span>
-                              </div>
-                              <h5 className="font-semibold text-slate-900 text-sm mt-1">{task.title}</h5>
-                              <p className="text-xs text-slate-500">
-                                Sản phẩm: <strong>{task.productName}</strong> ({task.linkedSku}) • Thù lao: <strong className="text-indigo-700">{formatVnd(task.remuneration)}</strong>
-                              </p>
-                            </div>
-                            {renderStatusBadge(task.status)}
-                          </div>
-
-                          {/* Submission Status & Feedback Display */}
-                          {task.scriptContent ? (
-                            <div className="p-3 bg-slate-50 rounded-lg text-xs space-y-1.5 border border-slate-100">
-                              <span className="font-semibold text-slate-700 block">Kịch bản bạn đã nộp:</span>
-                              <div className="text-2xs text-slate-600 space-y-1">
-                                <p><strong>Hook:</strong> {task.scriptContent.hook}</p>
-                                <p><strong>Nội dung:</strong> {task.scriptContent.body}</p>
-                                <p><strong>CTA:</strong> {task.scriptContent.cta}</p>
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="p-3 bg-amber-50/50 rounded-lg text-xs space-y-2 border border-amber-200">
-                              <span className="font-semibold text-amber-900 block flex items-center gap-1.5">
-                                <Clock className="w-3.5 h-3.5 text-amber-600" />
-                                Bạn chưa nộp kịch bản cho task này
-                              </span>
-                              <p className="text-2xs text-amber-800">
-                                Vui lòng soạn dàn ý kịch bản 3 phần (Hook 3s, Thân bài và Lời kêu gọi CTA) để Brand duyệt trước khi quay.
-                              </p>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setSelectedTask(task);
-                                  setIsScriptReviewModalOpen(true);
-                                }}
-                                className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white"
-                              >
-                                Soạn & Nộp Kịch Bản Ngay
-                              </button>
-                            </div>
-                          )}
-
-                          {/* Latest Feedback From Brand Lead */}
-                          {task.feedbackLogs.length > 0 && (
-                            <div className="p-3 bg-indigo-50/50 rounded-lg text-xs space-y-1 border border-indigo-100">
-                              <span className="font-semibold text-indigo-900 flex items-center gap-1">
-                                <MessageSquare className="w-3 h-3 text-indigo-600" />
-                                Phản hồi mới nhất từ Brand ({task.feedbackLogs[task.feedbackLogs.length - 1].reviewedBy}):
-                              </span>
-                              <p className="text-2xs text-slate-700 italic">
-                                "{task.feedbackLogs[task.feedbackLogs.length - 1].comment}"
-                              </p>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })()}
-        </div>
-      )}
-
-      {/* 6. TAB CONTENT 3: CONTRIBUTORS ROSTER */}
-      {activeTab === 'OVERVIEW' && (
-        <div className="space-y-4">
+      {/* ========================================================================= */}
+      {/* TAB 4: DANH BẠ CTV (CONTRIBUTORS ROSTER)                                  */}
+      {/* ========================================================================= */}
+      {activeTab === 'CONTRIBUTORS' && (
+        <div className="space-y-4 animate-in fade-in duration-150">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-sm font-bold text-slate-900">Danh Bạ Cộng Tác Viên Sản Xuất Video</h2>
-              <p className="text-xs text-slate-500">Mạng lưới diễn viên, editor, mẹ bỉm sáng tạo nội dung ký hợp đồng CTV với Brand.</p>
+              <h2 className="text-xs font-semibold text-slate-900 uppercase tracking-wide">
+                Danh Bạ Cộng Tác Viên Sản Xuất Video
+              </h2>
+              <p className="text-2xs text-slate-500 mt-0.5">
+                Mạng lưới diễn viên, editor, mẹ bỉm sáng tạo nội dung ký hợp đồng CTV với Brand
+              </p>
             </div>
             <button
               type="button"
               onClick={() => setIsAddContributorModalOpen(true)}
-              className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition-colors flex items-center gap-1.5"
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-2xs transition flex items-center gap-1.5"
             >
-              <Plus className="w-4 h-4" /> Thêm CTV Mới
+              <Plus className="w-3.5 h-3.5" /> Thêm CTV Mới
             </button>
           </div>
 
@@ -1309,73 +1129,50 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
             {contributors.map((ctv) => (
               <div
                 key={ctv.id}
-                className="bg-white rounded-2xl border border-slate-200 shadow-xs p-5 space-y-4 flex flex-col justify-between"
+                className="bg-white rounded-xl border border-slate-200/80 shadow-xs p-4 space-y-3 flex flex-col justify-between"
               >
-                <div className="space-y-3">
+                <div className="space-y-2.5">
                   <div className="flex items-start gap-3">
                     <img
                       src={ctv.avatar}
                       alt={ctv.name}
-                      className="w-12 h-12 rounded-full object-cover border border-slate-200"
+                      className="w-10 h-10 rounded-full object-cover border border-slate-200"
                     />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
-                        <h4 className="font-bold text-slate-900 text-sm truncate">{ctv.name}</h4>
+                        <h4 className="font-bold text-slate-900 text-xs truncate">{ctv.name}</h4>
                         <span className="text-xs font-bold text-amber-600 flex items-center gap-0.5">
                           <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
                           {ctv.ratingScore}
                         </span>
                       </div>
                       <span className="text-2xs font-semibold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded inline-block mt-0.5">
-                        {ctv.role === 'ALL_IN_ONE' ? 'Quay & Diễn Trọn Gói' : ctv.role === 'VIDEO_EDITOR' ? 'Chuyên Editor Hậu Kỳ' : ctv.role === 'CREATIVE_ACTOR' ? 'Diễn Viên / Chuyên Gia' : 'Biên Kịch Nội Dung'}
+                        {ctv.role === 'ALL_IN_ONE' ? 'Quay & Diễn Trọn Gói' : ctv.role === 'VIDEO_EDITOR' ? 'Editor Hậu Kỳ' : 'Biên Kịch / Diễn Viên'}
                       </span>
                     </div>
                   </div>
 
-                  <div className="space-y-1 text-xs">
-                    <div className="flex items-center justify-between text-2xs text-slate-500">
-                      <span>SĐT liên hệ:</span>
+                  <div className="space-y-1 text-2xs text-slate-500">
+                    <div className="flex items-center justify-between">
+                      <span>SĐT:</span>
                       <span className="font-medium text-slate-800">{ctv.phone}</span>
                     </div>
-                    <div className="flex items-center justify-between text-2xs text-slate-500">
-                      <span>Kênh / Portfolio:</span>
-                      {ctv.channelLink ? (
-                        <a
-                          href={ctv.channelLink}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="font-medium text-indigo-600 hover:underline flex items-center gap-0.5"
-                        >
-                          Xem kênh <ExternalLink className="w-2.5 h-2.5" />
-                        </a>
-                      ) : (
-                        <span className="text-slate-400">Đang cập nhật</span>
-                      )}
-                    </div>
-                    <div className="flex items-center justify-between text-2xs text-slate-500">
-                      <span>Tài khoản nhận thù lao:</span>
+                    <div className="flex items-center justify-between">
+                      <span>STK:</span>
                       <span className="font-mono font-medium text-slate-800">{ctv.bankAccount} ({ctv.bankName})</span>
                     </div>
                   </div>
 
-                  {/* Niche specialty tags */}
                   <div className="flex flex-wrap gap-1">
                     {ctv.nicheSpecialty.map((tag, idx) => (
-                      <span key={idx} className="px-2 py-0.5 rounded text-2xs bg-slate-100 text-slate-600 border border-slate-200">
+                      <span key={idx} className="px-2 py-0.5 rounded text-2xs bg-slate-50 text-slate-600 border border-slate-200/60">
                         #{tag}
                       </span>
                     ))}
                   </div>
-
-                  {ctv.notes && (
-                    <p className="text-2xs text-slate-500 italic bg-slate-50 p-2 rounded border border-slate-100">
-                      "{ctv.notes}"
-                    </p>
-                  )}
                 </div>
 
-                {/* Performance stats */}
-                <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs">
                   <div>
                     <span className="text-2xs text-slate-400 block">Đã bàn giao:</span>
                     <span className="font-bold text-slate-900 font-mono">{ctv.completedTaskCount} video</span>
@@ -1391,50 +1188,48 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
         </div>
       )}
 
-      {/* 7. TAB CONTENT 4: SETTLEMENT & PAYROLL */}
       {/* ========================================================================= */}
-      {/* TAB 4: TRAO ĐỔI QUA LẠI (TWO-WAY DISCUSSION & CHAT)                       */}
+      {/* TAB 5: TRAO ĐỔI (TWO-WAY DISCUSSION)                                      */}
       {/* ========================================================================= */}
       {activeTab === 'DISCUSSION' && (
-        <div className="bg-white border border-slate-200 shadow-xs rounded-2xl flex flex-col h-[580px] overflow-hidden animate-in fade-in duration-150">
-          <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/80">
+        <div className="bg-white border border-slate-200/80 shadow-xs rounded-2xl flex flex-col h-[560px] overflow-hidden animate-in fade-in duration-150">
+          <div className="p-3.5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-indigo-600 text-white font-bold flex items-center justify-center text-xs">
+              <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white font-bold flex items-center justify-center text-xs">
                 CTV
               </div>
               <div>
                 <h4 className="text-xs font-bold text-slate-900">
-                  Kênh Thảo Luận Kỹ Thuật &amp; Góp Ý Dựng Clip: CTV ⇄ Upbase Lead
+                  Kênh Thảo Luận: CTV ⇄ Upbase Production Lead
                 </h4>
                 <p className="text-2xs text-slate-500">
-                  Hỗ trợ giải đáp kịch bản, thời gian nộp mẫu, feedback âm thanh, góc quay
+                  Giải đáp kịch bản, thời gian nộp mẫu, feedback âm thanh, góc quay
                 </p>
               </div>
             </div>
-            <span className="text-2xs px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 font-semibold flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse"></span>
+            <span className="text-2xs px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 font-medium">
               Phản hồi trực tuyến &lt; 30 phút
             </span>
           </div>
 
-          <div className="flex-1 p-4 overflow-y-auto space-y-3.5 text-xs bg-slate-50/40">
+          <div className="flex-1 p-4 overflow-y-auto space-y-3 text-xs bg-slate-50/20">
             {ctvChatMessages.map(msg => {
               const isCtv = msg.sender === 'CTV';
               return (
                 <div key={msg.id} className={`flex items-start gap-2.5 ${isCtv ? 'flex-row-reverse' : 'flex-row'}`}>
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-2xs text-white shrink-0 ${
+                  <div className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-2xs text-white shrink-0 ${
                     isCtv ? 'bg-indigo-600' : 'bg-slate-700'
                   }`}>
                     {isCtv ? 'CTV' : 'UP'}
                   </div>
-                  <div className={`max-w-[75%] space-y-1 ${isCtv ? 'items-end' : 'items-start'}`}>
+                  <div className={`max-w-[70%] space-y-1 ${isCtv ? 'items-end' : 'items-start'}`}>
                     <div className={`flex items-center gap-2 text-2xs text-slate-400 ${isCtv ? 'justify-end' : 'justify-start'}`}>
                       <span className="font-semibold text-slate-700">{msg.senderName}</span>
                       <span>•</span>
                       <span>{msg.time}</span>
                     </div>
-                    <div className={`p-3.5 rounded-2xl leading-relaxed text-xs shadow-2xs ${
-                      isCtv ? 'bg-indigo-600 text-white rounded-tr-none' : 'bg-white text-slate-800 border border-slate-200 rounded-tl-none'
+                    <div className={`p-3 rounded-2xl leading-relaxed text-xs ${
+                      isCtv ? 'bg-indigo-600 text-white rounded-tr-none' : 'bg-white text-slate-800 border border-slate-200/80 rounded-tl-none shadow-2xs'
                     }`}>
                       {msg.content}
                     </div>
@@ -1444,7 +1239,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
             })}
           </div>
 
-          <form onSubmit={handleSendCtvChat} className="p-3 border-t border-slate-200 bg-white flex items-center gap-2">
+          <form onSubmit={handleSendCtvChat} className="p-3 border-t border-slate-100 bg-white flex items-center gap-2">
             <input
               type="text"
               value={newCtvChatText}
@@ -1455,7 +1250,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
             <button
               type="submit"
               disabled={!newCtvChatText.trim()}
-              className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-semibold text-xs transition flex items-center gap-1.5 shadow-2xs"
+              className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 text-white font-semibold text-xs transition flex items-center gap-1.5 shadow-2xs"
             >
               <Send className="w-3.5 h-3.5" />
               <span>Gửi</span>
@@ -1465,72 +1260,75 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
       )}
 
       {/* ========================================================================= */}
-      {/* TAB 5: LỊCH SỬ & QUYẾT TOÁN NHUẬN BÚT (HISTORY)                           */}
+      {/* TAB 6: LỊCH SỬ & QUYẾT TOÁN (HISTORY)                                     */}
       {/* ========================================================================= */}
       {activeTab === 'HISTORY' && (
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden space-y-4 p-5">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200">
+        <div className="bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-hidden space-y-4 p-5 animate-in fade-in duration-150">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
             <div>
-              <h2 className="text-sm font-bold text-slate-900">Bảng Kê Quyết Toán Nhuận Bút Video CTV</h2>
-              <p className="text-xs text-slate-500">Danh sách các video đã nghiệm thu đạt chuẩn, sẵn sàng xuất file chuyển Kế toán chi trả.</p>
+              <h2 className="text-xs font-semibold text-slate-900 uppercase tracking-wide">
+                Bảng Kê Quyết Toán Nhuận Bút Video CTV
+              </h2>
+              <p className="text-2xs text-slate-500 mt-0.5">
+                Danh sách video đã nghiệm thu đạt chuẩn, sẵn sàng xuất file chuyển Kế toán chi trả
+              </p>
             </div>
 
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  notify('Đã xuất file bảng kê quyết toán nhuận bút CTV (Excel/CSV)!');
-                }}
-                className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors flex items-center gap-1.5"
-              >
-                <Download className="w-3.5 h-3.5" /> Xuất Bảng Kê Chi Trả
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => {
+                notify('Đã xuất file bảng kê quyết toán nhuận bút CTV (Excel/CSV)!');
+              }}
+              className="px-3 py-1.5 rounded-lg text-xs font-medium bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 flex items-center gap-1.5 transition"
+            >
+              <Download className="w-3.5 h-3.5 text-indigo-600" />
+              <span>Xuất Bảng Kê Chi Trả</span>
+            </button>
           </div>
 
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className="border-b border-slate-200 bg-slate-50 text-slate-600 font-semibold text-2xs">
-                  <th className="py-3 px-4">MÃ TASK</th>
-                  <th className="py-3 px-4">TIÊU ĐỀ VIDEO & PILLAR</th>
-                  <th className="py-3 px-4">CỘNG TÁC VIÊN</th>
-                  <th className="py-3 px-4">NGÀY NGHIỆM THU</th>
-                  <th className="py-3 px-4 text-right">THÙ LAO (VNĐ)</th>
-                  <th className="py-3 px-4 text-center">TRẠNG THÁI</th>
-                  <th className="py-3 px-4 text-center">THAO TÁC</th>
+                <tr className="border-b border-slate-100 bg-slate-50/50 text-slate-500 font-medium text-2xs">
+                  <th className="py-2.5 px-3">MÃ TASK</th>
+                  <th className="py-2.5 px-3">TIÊU ĐỀ &amp; PILLAR</th>
+                  <th className="py-2.5 px-3">CỘNG TÁC VIÊN</th>
+                  <th className="py-2.5 px-3">NGÀY DUYỆT</th>
+                  <th className="py-2.5 px-3 text-right">THÙ LAO</th>
+                  <th className="py-2.5 px-3 text-center">TRẠNG THÁI</th>
+                  <th className="py-2.5 px-3 text-center">THAO TÁC</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {tasks
                   .filter(t => t.status === 'ACCEPTED_COMPLETED' || t.status === 'PAID')
                   .map((task) => (
-                    <tr key={task.id} className="hover:bg-slate-50/70 transition-colors">
-                      <td className="py-3 px-4 font-mono font-semibold text-slate-500 text-2xs">
+                    <tr key={task.id} className="hover:bg-slate-50/40 transition">
+                      <td className="py-3 px-3 font-mono font-semibold text-slate-500 text-2xs">
                         {task.taskCode}
                       </td>
-                      <td className="py-3 px-4">
+                      <td className="py-3 px-3">
                         <div className="font-semibold text-slate-900">{task.title}</div>
-                        <div className="text-2xs text-indigo-600">{task.pillarName} • SKU: {task.linkedSku}</div>
+                        <div className="text-2xs text-slate-500">{task.pillarName} • SKU: {task.linkedSku}</div>
                       </td>
-                      <td className="py-3 px-4">
-                        <div className="font-medium text-slate-800">{task.contributorName}</div>
+                      <td className="py-3 px-3 font-medium text-slate-800">
+                        {task.contributorName}
                       </td>
-                      <td className="py-3 px-4 text-slate-500 font-mono text-2xs">
+                      <td className="py-3 px-3 text-slate-400 font-mono text-2xs">
                         {formatDate(task.acceptedAt || task.createdAt)}
                       </td>
-                      <td className="py-3 px-4 text-right font-mono font-bold text-slate-900">
+                      <td className="py-3 px-3 text-right font-mono font-bold text-slate-900">
                         {formatVnd(task.remuneration)}
                       </td>
-                      <td className="py-3 px-4 text-center">
+                      <td className="py-3 px-3 text-center">
                         {renderStatusBadge(task.status)}
                       </td>
-                      <td className="py-3 px-4 text-center">
+                      <td className="py-3 px-3 text-center">
                         {task.status === 'ACCEPTED_COMPLETED' ? (
                           <button
                             type="button"
                             onClick={() => handleMarkTaskPaid(task)}
-                            className="px-2.5 py-1 rounded-lg text-2xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs transition-colors"
+                            className="px-2.5 py-1 rounded-lg text-2xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white transition shadow-2xs"
                           >
                             Xác nhận đã chi
                           </button>
@@ -1549,22 +1347,22 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
       )}
 
       {/* ============================================================== */}
-      {/* MODAL 1: TẠO TASK VIDEO MỚI */}
+      {/* MODAL 1: TẠO TASK VIDEO MỚI                                     */}
       {/* ============================================================== */}
       {isCreateTaskModalOpen && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-150">
-            <div className="px-6 py-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
-              <h3 className="text-base font-semibold text-slate-900 flex items-center gap-2">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
+          <div className="bg-white rounded-2xl max-w-lg w-full shadow-xl border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-150">
+            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
                 <Plus className="w-4 h-4 text-indigo-600" />
                 Khởi Tạo Task Sản Xuất Video Self Channel
               </h3>
               <button
                 type="button"
                 onClick={() => setIsCreateTaskModalOpen(false)}
-                className="w-8 h-8 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-200/60 flex items-center justify-center"
+                className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition"
               >
-                <X className="w-5 h-5" />
+                ✕
               </button>
             </div>
 
@@ -1577,7 +1375,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                   placeholder="VD: Test thực tế bôi dịu chàm sữa sau 72h..."
                   value={newTaskForm.title}
                   onChange={(e) => setNewTaskForm(prev => ({ ...prev, title: e.target.value }))}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                  className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
                 />
               </div>
 
@@ -1594,7 +1392,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                       remuneration: p ? p.unitCostPerVideo : prev.remuneration
                     }));
                   }}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white"
+                  className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white"
                 >
                   {allocation.pillars.map(p => (
                     <option key={p.id} value={p.id}>{p.name} (Định mức: {formatVnd(p.unitCostPerVideo)})</option>
@@ -1609,7 +1407,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                     type="number"
                     value={newTaskForm.remuneration}
                     onChange={(e) => setNewTaskForm(prev => ({ ...prev, remuneration: Number(e.target.value) }))}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-200 font-mono font-semibold text-indigo-700"
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 font-mono font-semibold text-indigo-700 bg-slate-50 focus:bg-white"
                   />
                 </div>
                 <div className="space-y-1">
@@ -1619,7 +1417,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                     required
                     value={newTaskForm.deadline}
                     onChange={(e) => setNewTaskForm(prev => ({ ...prev, deadline: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-200"
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white"
                   />
                 </div>
               </div>
@@ -1629,7 +1427,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                 <select
                   value={newTaskForm.contributorId}
                   onChange={(e) => setNewTaskForm(prev => ({ ...prev, contributorId: e.target.value }))}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white"
+                  className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white"
                 >
                   <option value="">-- Mở task để CTV tự ứng tuyển --</option>
                   {contributors.map(c => (
@@ -1638,17 +1436,17 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                 </select>
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200">
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => setIsCreateTaskModalOpen(false)}
-                  className="px-4 py-2 rounded-lg text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700"
+                  className="px-4 py-2 rounded-lg text-xs font-medium text-slate-700 hover:bg-slate-100 transition"
                 >
                   Hủy Bỏ
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm flex items-center gap-1.5"
+                  className="px-5 py-2 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white transition shadow-2xs flex items-center gap-1.5"
                 >
                   <Check className="w-4 h-4" /> Khởi Tạo Task
                 </button>
@@ -1659,49 +1457,49 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
       )}
 
       {/* ============================================================== */}
-      {/* MODAL 2: DUYỆT KỊCH BẢN (SCRIPT REVIEW MODAL) */}
+      {/* MODAL 2: DUYỆT KỊCH BẢN (SCRIPT REVIEW MODAL)                    */}
       {/* ============================================================== */}
       {isScriptReviewModalOpen && selectedTask && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-xl w-full shadow-2xl border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-150">
-            <div className="px-6 py-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
+          <div className="bg-white rounded-2xl max-w-xl w-full shadow-xl border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-150">
+            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
               <div>
-                <h3 className="text-base font-semibold text-slate-900 flex items-center gap-2">
+                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
                   <FileText className="w-4 h-4 text-indigo-600" />
-                  Duyệt Kịch Bản Video (Script Review)
+                  Duyệt Kịch Bản Video: {selectedTask.taskCode}
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Mã: <strong>{selectedTask.taskCode}</strong> • CTV: <strong>{selectedTask.contributorName}</strong>
+                <p className="text-2xs text-slate-500 mt-0.5">
+                  CTV: <strong>{selectedTask.contributorName}</strong> • {selectedTask.title}
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setIsScriptReviewModalOpen(false)}
-                className="w-8 h-8 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-200/60 flex items-center justify-center"
+                className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition"
               >
-                <X className="w-5 h-5" />
+                ✕
               </button>
             </div>
 
             <div className="p-6 space-y-4 text-xs">
-              <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
+              <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 space-y-2.5">
                 <span className="font-semibold text-slate-800 block text-xs">Nội dung kịch bản CTV đã nộp:</span>
                 <div className="space-y-2">
                   <div>
                     <span className="font-semibold text-indigo-700 block text-2xs">1. Hook 3 Giây Đầu:</span>
-                    <p className="text-slate-800 bg-white p-2 rounded border border-slate-200 mt-0.5">
+                    <p className="text-slate-800 bg-white p-2.5 rounded-lg border border-slate-200/80 mt-0.5">
                       {selectedTask.scriptContent?.hook || 'Chưa nộp'}
                     </p>
                   </div>
                   <div>
-                    <span className="font-semibold text-indigo-700 block text-2xs">2. Thân Bài / Diễn Giải Giải Pháp & Demo:</span>
-                    <p className="text-slate-800 bg-white p-2 rounded border border-slate-200 mt-0.5 whitespace-pre-line">
+                    <span className="font-semibold text-indigo-700 block text-2xs">2. Thân Bài / Demo:</span>
+                    <p className="text-slate-800 bg-white p-2.5 rounded-lg border border-slate-200/80 mt-0.5 whitespace-pre-line">
                       {selectedTask.scriptContent?.body || 'Chưa nộp'}
                     </p>
                   </div>
                   <div>
-                    <span className="font-semibold text-indigo-700 block text-2xs">3. Kêu Gọi Hành Động (CTA):</span>
-                    <p className="text-slate-800 bg-white p-2 rounded border border-slate-200 mt-0.5">
+                    <span className="font-semibold text-indigo-700 block text-2xs">3. Kêu Gọi Mua (CTA):</span>
+                    <p className="text-slate-800 bg-white p-2.5 rounded-lg border border-slate-200/80 mt-0.5">
                       {selectedTask.scriptContent?.cta || 'Chưa nộp'}
                     </p>
                   </div>
@@ -1709,7 +1507,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
               </div>
 
               {/* Review Decision */}
-              <div className="space-y-2 pt-2">
+              <div className="space-y-2 pt-1">
                 <label className="font-semibold text-slate-700 block">Quyết Định Duyệt Kịch Bản:</label>
                 <div className="grid grid-cols-2 gap-3">
                   <button
@@ -1722,7 +1520,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                     }`}
                   >
                     <CheckCircle2 className="w-4 h-4 mx-auto mb-1 text-emerald-600" />
-                    Duyệt Kịch Bản (Đạt Chuẩn)
+                    Duyệt Kịch Bản (Pass)
                   </button>
                   <button
                     type="button"
@@ -1734,38 +1532,38 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                     }`}
                   >
                     <AlertTriangle className="w-4 h-4 mx-auto mb-1 text-rose-600" />
-                    Yêu Cầu Chỉnh Sửa
+                    Yêu Cầu Sửa
                   </button>
                 </div>
               </div>
 
               <div className="space-y-1">
-                <label className="font-semibold text-slate-700 block">Góp Ý / Nhận Xét Cụ Thể Cho CTV</label>
+                <label className="font-semibold text-slate-700 block">Góp Ý Cụ Thể</label>
                 <textarea
-                  rows={3}
+                  rows={2}
                   placeholder="Ghi chú cụ thể các câu thoại cần sửa, góc quay bổ sung..."
                   value={scriptFeedbackText}
                   onChange={(e) => setScriptFeedbackText(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                  className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200">
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => setIsScriptReviewModalOpen(false)}
-                  className="px-4 py-2 rounded-lg text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700"
+                  className="px-4 py-2 rounded-lg text-xs font-medium text-slate-700 hover:bg-slate-100 transition"
                 >
                   Đóng
                 </button>
                 <button
                   type="button"
                   onClick={handleSaveScriptReview}
-                  className={`px-5 py-2 rounded-lg text-xs font-semibold text-white shadow-sm flex items-center gap-1.5 ${
+                  className={`px-5 py-2 rounded-lg text-xs font-semibold text-white shadow-2xs transition flex items-center gap-1.5 ${
                     scriptVerdict === 'APPROVED' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-rose-600 hover:bg-rose-700'
                   }`}
                 >
-                  <Send className="w-3.5 h-3.5" /> Xác Nhận & Gửi Phản Hồi
+                  <Send className="w-3.5 h-3.5" /> Xác Nhận Phản Hồi
                 </button>
               </div>
             </div>
@@ -1774,32 +1572,31 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
       )}
 
       {/* ============================================================== */}
-      {/* MODAL 3: DUYỆT VIDEO NHÁP & QA (VIDEO QA MODAL) */}
+      {/* MODAL 3: DUYỆT VIDEO NHÁP & QA (VIDEO QA MODAL)                 */}
       {/* ============================================================== */}
       {isVideoQaModalOpen && selectedTask && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-xl w-full shadow-2xl border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-150">
-            <div className="px-6 py-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
+          <div className="bg-white rounded-2xl max-w-xl w-full shadow-xl border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-150">
+            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
               <div>
-                <h3 className="text-base font-semibold text-slate-900 flex items-center gap-2">
+                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
                   <Play className="w-4 h-4 text-indigo-600" />
-                  Nghiệm Thu Video Nháp (Video QA & Feedback)
+                  Nghiệm Thu Video Nháp: {selectedTask.taskCode}
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Mã: <strong>{selectedTask.taskCode}</strong> • Phiên bản: v{selectedTask.videoDeliverables?.currentVersion || 1}
+                <p className="text-2xs text-slate-500 mt-0.5">
+                  Phiên bản: v{selectedTask.videoDeliverables?.currentVersion || 1} • CTV: <strong>{selectedTask.contributorName}</strong>
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setIsVideoQaModalOpen(false)}
-                className="w-8 h-8 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-200/60 flex items-center justify-center"
+                className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition"
               >
-                <X className="w-5 h-5" />
+                ✕
               </button>
             </div>
 
             <div className="p-6 space-y-4 text-xs">
-              {/* Video Link */}
               <div className="p-3 bg-indigo-50/50 rounded-xl border border-indigo-100 flex items-center justify-between">
                 <div>
                   <span className="font-semibold text-slate-800 block">Link Video CTV Đã Nộp:</span>
@@ -1818,7 +1615,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
               </div>
 
               {/* 4 QA Checklist Items */}
-              <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+              <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 space-y-2">
                 <span className="font-semibold text-slate-800 block">Checklist Kiểm Định Chất Lượng:</span>
                 <div className="space-y-1.5 text-2xs">
                   <label className="flex items-center gap-2 cursor-pointer">
@@ -1855,7 +1652,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                       onChange={(e) => setVideoChecklist(prev => ({ ...prev, guidelinesFollowed: e.target.checked }))}
                       className="rounded text-indigo-600"
                     />
-                    <span>Tuân thủ đúng quy tắc Do & Don'ts của Brand (không nói quá, dìm đối thủ)</span>
+                    <span>Tuân thủ đúng quy tắc Do &amp; Don'ts của Brand</span>
                   </label>
                 </div>
               </div>
@@ -1884,33 +1681,33 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                   }`}
                 >
                   <AlertTriangle className="w-4 h-4 mx-auto mb-1 text-rose-600" />
-                  Yêu Cầu Chỉnh Sửa / Quay Lại
+                  Yêu Cầu Chỉnh Sửa
                 </button>
               </div>
 
               <div className="space-y-1">
                 <label className="font-semibold text-slate-700 block">Nhận Xét Cụ Thể</label>
                 <textarea
-                  rows={3}
+                  rows={2}
                   placeholder="Ghi rõ đoạn giây cần cắt, text cần sửa hoặc lỗi âm thanh..."
                   value={videoFeedbackText}
                   onChange={(e) => setVideoFeedbackText(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                  className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200">
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => setIsVideoQaModalOpen(false)}
-                  className="px-4 py-2 rounded-lg text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700"
+                  className="px-4 py-2 rounded-lg text-xs font-medium text-slate-700 hover:bg-slate-100 transition"
                 >
                   Đóng
                 </button>
                 <button
                   type="button"
                   onClick={handleSaveVideoQa}
-                  className={`px-5 py-2 rounded-lg text-xs font-semibold text-white shadow-sm flex items-center gap-1.5 ${
+                  className={`px-5 py-2 rounded-lg text-xs font-semibold text-white shadow-2xs transition flex items-center gap-1.5 ${
                     videoVerdict === 'APPROVED' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-rose-600 hover:bg-rose-700'
                   }`}
                 >
@@ -1923,22 +1720,22 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
       )}
 
       {/* ============================================================== */}
-      {/* MODAL 4: THÊM MỚI CỘNG TÁC VIÊN */}
+      {/* MODAL 4: THÊM MỚI CỘNG TÁC VIÊN                                 */}
       {/* ============================================================== */}
       {isAddContributorModalOpen && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-150">
-            <div className="px-6 py-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
-              <h3 className="text-base font-semibold text-slate-900 flex items-center gap-2">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
+          <div className="bg-white rounded-2xl max-w-lg w-full shadow-xl border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-150">
+            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
                 <User className="w-4 h-4 text-indigo-600" />
                 Thêm Mới Cộng Tác Viên (CTV)
               </h3>
               <button
                 type="button"
                 onClick={() => setIsAddContributorModalOpen(false)}
-                className="w-8 h-8 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-200/60 flex items-center justify-center"
+                className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition"
               >
-                <X className="w-5 h-5" />
+                ✕
               </button>
             </div>
 
@@ -1952,7 +1749,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                     placeholder="Nguyễn Văn A"
                     value={newContributorForm.name}
                     onChange={(e) => setNewContributorForm(prev => ({ ...prev, name: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-200"
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white"
                   />
                 </div>
                 <div className="space-y-1">
@@ -1963,7 +1760,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                     placeholder="0988 123 456"
                     value={newContributorForm.phone}
                     onChange={(e) => setNewContributorForm(prev => ({ ...prev, phone: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-200"
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white"
                   />
                 </div>
               </div>
@@ -1974,9 +1771,9 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                   <select
                     value={newContributorForm.role}
                     onChange={(e) => setNewContributorForm(prev => ({ ...prev, role: e.target.value as Contributor['role'] }))}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white"
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white"
                   >
-                    <option value="ALL_IN_ONE">Tự Quay & Diễn Trọn Gói</option>
+                    <option value="ALL_IN_ONE">Tự Quay &amp; Diễn Trọn Gói</option>
                     <option value="VIDEO_EDITOR">Editor Dựng Video</option>
                     <option value="CREATIVE_ACTOR">Diễn Viên / Chuyên Gia</option>
                     <option value="SCRIPTWRITER">Biên Kịch Nội Dung</option>
@@ -1989,7 +1786,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                     placeholder="Mẹ & Bé, Chăm Da, Gia Đình"
                     value={newContributorForm.niche}
                     onChange={(e) => setNewContributorForm(prev => ({ ...prev, niche: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-200"
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white"
                   />
                 </div>
               </div>
@@ -2001,12 +1798,12 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                   placeholder="https://tiktok.com/@..."
                   value={newContributorForm.channelLink}
                   onChange={(e) => setNewContributorForm(prev => ({ ...prev, channelLink: e.target.value }))}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-200"
+                  className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white"
                 />
               </div>
 
-              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
-                <span className="font-semibold text-slate-800 block text-2xs">Thông Tin Tài Khoản Nhận Nhuận Bút:</span>
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 space-y-2">
+                <span className="font-semibold text-slate-800 block text-2xs">Tài Khoản Nhận Nhuận Bút:</span>
                 <div className="grid grid-cols-2 gap-2 text-2xs">
                   <div>
                     <label className="text-slate-500 block mb-0.5">Ngân Hàng:</label>
@@ -2031,17 +1828,17 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200">
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => setIsAddContributorModalOpen(false)}
-                  className="px-4 py-2 rounded-lg text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700"
+                  className="px-4 py-2 rounded-lg text-xs font-medium text-slate-700 hover:bg-slate-100 transition"
                 >
                   Hủy Bỏ
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm flex items-center gap-1.5"
+                  className="px-5 py-2 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-2xs transition flex items-center gap-1.5"
                 >
                   <Check className="w-4 h-4" /> Thêm Vào Danh Bạ
                 </button>
