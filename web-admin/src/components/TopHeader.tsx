@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Plus, Upload, Menu, ChevronDown } from 'lucide-react';
+import { Plus, Upload, Menu, ChevronDown, Sparkles, ArrowRight } from 'lucide-react';
 import { UserProfile } from '../lib/types';
 import { USERS } from '../lib/mockData';
 import type { TabKey } from './Sidebar';
@@ -30,6 +30,7 @@ interface TopHeaderProps {
   onOpenImport: () => void;
   title: string;
   subtitle?: string;
+  activeTab?: TabKey;
   onNavigateTab?: (tab: TabKey) => void;
   onToggleMobileSidebar?: () => void;
   onLogout?: () => void;
@@ -42,6 +43,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   onOpenImport,
   title,
   subtitle,
+  activeTab,
   onNavigateTab,
   onToggleMobileSidebar,
 }) => {
@@ -90,7 +92,8 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
           </label>
         )}
 
-        {isBookingOrManager && (
+        {/* Nút thao tác Booking chỉ xuất hiện khi đang ở tab Booking */}
+        {isBookingOrManager && activeTab === 'booking' && (
           <>
             <button
               onClick={onOpenImport}
@@ -107,6 +110,18 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
               <span className="hidden sm:inline">Tạo booking</span>
             </button>
           </>
+        )}
+
+        {/* Nút thao tác nhanh chuyển sang Content Angle khi ở tab Kịch bản */}
+        {activeTab === 'content' && onNavigateTab && (
+          <button
+            onClick={() => onNavigateTab('content-angles')}
+            className="btn-md bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 transition-colors flex items-center gap-1.5 shadow-2xs"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-purple-600" />
+            <span className="hidden sm:inline font-semibold">Góc tiếp cận theo SP</span>
+            <ArrowRight className="w-3 h-3 text-purple-500" />
+          </button>
         )}
 
 

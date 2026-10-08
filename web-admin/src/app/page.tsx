@@ -462,24 +462,24 @@ export default function App() {
   // Tiêu đề trang: khớp tên trên menu, mô tả chỉ khi thêm thông tin
   const titles: Record<TabKey, { title: string; subtitle: string }> = {
     cockpit: { title: 'Việc của tôi', subtitle: '' },
-    overview: { title: 'Tổng quan', subtitle: '' },
+    overview: { title: 'Tổng quan vận hành', subtitle: 'Toàn cảnh GMV, doanh số, tiến độ deal và hiệu suất' },
     'input-plan': { title: 'Kế hoạch tháng', subtitle: 'Ngân sách, kênh và nhân sự booking theo từng tháng' },
     'self-channel-hub': { title: 'Hub làm việc với Cộng tác viên (CTV)', subtitle: 'Sản xuất video kênh thương hiệu theo Content Pillar và quản lý Cộng Tác Viên' },
-    'master-data': { title: 'Dữ liệu gốc', subtitle: '' },
-    'push-products': { title: 'Sản phẩm đẩy', subtitle: '' },
-    stores: { title: 'Gian hàng & nhãn hàng', subtitle: '' },
+    'master-data': { title: 'Dữ liệu gốc (Master Data)', subtitle: 'Thương hiệu, gian hàng, sản phẩm, ngành hàng và định danh pháp lý KOC' },
+    'push-products': { title: 'Sản phẩm đẩy của nhãn', subtitle: 'Danh mục sản phẩm trọng tâm, tồn kho và mức hoa hồng push' },
+    stores: { title: 'Gian hàng & nhãn hàng', subtitle: 'Danh mục 957 gian hàng Shopee, TikTok Shop, Lazada' },
     campaigns: { title: 'Làm việc với Brand', subtitle: 'Brief chiến dịch, Brand Guideline, Blacklist từ khóa và duyệt KOC của team Brand' },
     'brand-knowledge': { title: 'Hướng dẫn nhãn hàng', subtitle: 'Thông tin thương hiệu, hồ sơ pháp lý, Hero SKU và từ khóa cần tránh' },
-    content: { title: 'Kịch bản', subtitle: '' },
+    content: { title: 'Quản lý Kịch bản & Nội dung Video', subtitle: 'Kho sản phẩm nội dung, hàng chờ duyệt kịch bản 24h, video nháp KOC và đối soát bài đăng live' },
     'content-angles': { title: 'Thiết Lập Góc Nội Dung (Content Angles)', subtitle: 'Kho kịch bản phân rã theo Trụ cột nội dung và từng sản phẩm của gian hàng' },
     'partner-access': { title: 'Quản Trị Phân Quyền & RBAC Tập Trung', subtitle: 'Ma trận phân quyền 7 vai trò, quản lý PIC nhân sự nội bộ và cấp quyền Gmail cho đối tác bên thứ 3' },
-    booking: { title: 'Booking', subtitle: '' },
+    booking: { title: 'Kế hoạch & Vận hành Booking', subtitle: 'Phân rã kế hoạch theo Khung lương KL1-7, tuyển chọn KOC và quản lý deal hợp đồng' },
     'koc-master': { title: 'Danh bạ KOC', subtitle: 'Hồ sơ KOC, giấy tờ pháp lý và mẫu hợp đồng' },
-    contracts: { title: 'Hợp đồng & thanh toán', subtitle: '' },
+    contracts: { title: 'Hợp đồng & thanh toán', subtitle: 'Theo dõi hợp đồng điện tử, tạm ứng và nghiệm thu thanh lý' },
     manager: { title: 'Phân bổ & điều phối', subtitle: 'Gán nhãn hàng, gian hàng và cân bằng khối lượng việc' },
     'sample-tracker': { title: 'Hàng mẫu', subtitle: 'Vận đơn mẫu, hạn nộp kịch bản 5 ngày và mã Spark Ads' },
     'performance-p3': { title: 'Đánh giá 4P & thưởng P3', subtitle: 'Điểm khối lượng việc theo độ khó gian hàng, chất lượng và SLA' },
-    leaderboard: { title: 'Hiệu suất nhân sự', subtitle: '' },
+    leaderboard: { title: 'Hiệu suất nhân sự', subtitle: 'Bảng xếp hạng KPI và SLA toàn đội ngũ vận hành' },
     'brand-hub': { title: 'Cổng đối tác Brand', subtitle: 'Duyệt kế hoạch → Duyệt KOC → Duyệt kịch bản → Nghiệm thu video' },
     'koc-hub': { title: 'Hub đối tác KOC / KOL', subtitle: 'Xem lời mời booking, xác nhận nhận hàng mẫu, nộp link video review & mã Spark Ads' },
     'ads-report': { title: 'Báo cáo Ads TikTok & Mapping Tuần', subtitle: 'Tự động đọc file báo cáo xuất từ TikTok Shop Seller, đối soát mã Spark Ads và đồng bộ ROAS thực tế' },
@@ -533,6 +533,7 @@ export default function App() {
           onOpenImport={() => setIsImportOpen(true)}
           title={titles[activeTab].title}
           subtitle={titles[activeTab].subtitle}
+          activeTab={activeTab}
           onNavigateTab={setActiveTab}
           onToggleMobileSidebar={() => setIsMobileSidebarOpen(prev => !prev)}
           onLogout={handleLogout}
@@ -714,6 +715,11 @@ export default function App() {
               kocs={kocs}
               currentUser={currentUser}
               onOpenQuickBookWithKoc={handleOpenQuickBookWithKoc}
+              onOpenQuickBook={() => {
+                setPreselectedKoc(null);
+                setIsQuickBookOpen(true);
+              }}
+              onOpenImport={() => setIsImportOpen(true)}
               onSelectDealForContract={setSelectedDealForContract}
               onUpdateDeal={handleUpdateDeal}
               onKocCreated={handleKocCreated}

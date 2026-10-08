@@ -34,7 +34,9 @@ import {
   Truck,
   Target,
   Crown,
-  Calculator
+  Calculator,
+  Plus,
+  Upload
 } from 'lucide-react';
 import { 
   KocItem, 
@@ -80,6 +82,8 @@ interface BookingViewProps {
   staffAllocations?: MonthlyStaffAllocation[];
   currentUserName?: string;
   onOpenInputPlan?: () => void;
+  onOpenQuickBook?: () => void;
+  onOpenImport?: () => void;
 }
 
 export const BookingView: React.FC<BookingViewProps> = ({ 
@@ -98,7 +102,9 @@ export const BookingView: React.FC<BookingViewProps> = ({
   onConvertPlanItemToDeal,
   staffAllocations: externalStaffAllocations,
   currentUserName,
-  onOpenInputPlan
+  onOpenInputPlan,
+  onOpenQuickBook,
+  onOpenImport
 }) => {
   const [activeSubTab, setActiveSubTab] = useState<'MY_PLAN' | 'CANDIDATES' | 'BOOKING_DEALS' | 'KOC_DIRECTORY'>('MY_PLAN');
   const [candidates, setCandidates] = useState<KocCandidateItem[]>(INITIAL_KOC_CANDIDATES);
@@ -520,7 +526,13 @@ export const BookingView: React.FC<BookingViewProps> = ({
             { key: 'KOC_DIRECTORY', label: 'Danh bạ KOC', count: localKocs.length },
           ]}
         />
-        <div className="flex items-center gap-2 lg:pb-2">
+        <div className="flex items-center gap-2 lg:pb-2 flex-wrap">
+          {onOpenImport && (
+            <Button variant="secondary" icon={Upload} onClick={onOpenImport}>Nhập Excel</Button>
+          )}
+          {onOpenQuickBook && (
+            <Button variant="primary" icon={Plus} onClick={onOpenQuickBook}>Tạo booking deal mới</Button>
+          )}
           {onOpenInputPlan && (
             <Button icon={Calculator} onClick={onOpenInputPlan}>Phân rã kế hoạch</Button>
           )}

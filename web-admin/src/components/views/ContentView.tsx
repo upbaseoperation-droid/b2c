@@ -54,67 +54,79 @@ export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotifi
 
   return (
     <div className="space-y-4">
-      {/* Navigation Sub-Tabs */}
-      <div className="flex items-center gap-2 text-xs overflow-x-auto pb-1">
-        <button
-          onClick={() => setActiveSubTab('CONTENT_ITEMS')}
-          className={`px-3.5 py-2 rounded-xl font-semibold transition flex items-center gap-2 whitespace-nowrap ${
-            activeSubTab === 'CONTENT_ITEMS'
-              ? 'bg-purple-600 text-white shadow-xs'
-              : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200 hover:bg-slate-50'
-          }`}
-        >
-          <Sparkles className="w-3.5 h-3.5" />
-          <span>1. Kho Sản Phẩm Nội Dung & QC ({contentItems.length})</span>
-        </button>
+      {/* Navigation Sub-Tabs and Action Bar */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-1">
+        <div className="flex items-center gap-2 text-xs overflow-x-auto pb-1 lg:pb-0">
+          <button
+            onClick={() => setActiveSubTab('CONTENT_ITEMS')}
+            className={`px-3.5 py-2 rounded-xl font-semibold transition flex items-center gap-2 whitespace-nowrap ${
+              activeSubTab === 'CONTENT_ITEMS'
+                ? 'bg-purple-600 text-white shadow-xs'
+                : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200 hover:bg-slate-50'
+            }`}
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>1. Kho Sản Phẩm Nội Dung & QC ({contentItems.length})</span>
+          </button>
 
-        <button
-          onClick={() => setActiveSubTab('SCRIPTS')}
-          className={`px-3.5 py-2 rounded-xl font-semibold transition flex items-center gap-2 whitespace-nowrap ${
-            activeSubTab === 'SCRIPTS'
-              ? 'bg-purple-600 text-white shadow-xs'
-              : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200 hover:bg-slate-50'
-          }`}
-        >
-          <FileText className="w-3.5 h-3.5" />
-          <span>2. Hàng Chờ Duyệt Kịch Bản ({scripts.filter(s => s.status === 'PENDING').length})</span>
-        </button>
+          <button
+            onClick={() => setActiveSubTab('SCRIPTS')}
+            className={`px-3.5 py-2 rounded-xl font-semibold transition flex items-center gap-2 whitespace-nowrap ${
+              activeSubTab === 'SCRIPTS'
+                ? 'bg-purple-600 text-white shadow-xs'
+                : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200 hover:bg-slate-50'
+            }`}
+          >
+            <FileText className="w-3.5 h-3.5" />
+            <span>2. Hàng Chờ Duyệt Kịch Bản ({scripts.filter(s => s.status === 'PENDING').length})</span>
+          </button>
 
-        <button
-          onClick={() => setActiveSubTab('DRAFT_VIDEOS')}
-          className={`px-3.5 py-2 rounded-xl font-semibold transition flex items-center gap-2 whitespace-nowrap ${
-            activeSubTab === 'DRAFT_VIDEOS'
-              ? 'bg-purple-600 text-white shadow-xs'
-              : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200 hover:bg-slate-50'
-          }`}
-        >
-          <Video className="w-3.5 h-3.5" />
-          <span>3. Video nháp KOC gửi về</span>
-        </button>
+          <button
+            onClick={() => setActiveSubTab('DRAFT_VIDEOS')}
+            className={`px-3.5 py-2 rounded-xl font-semibold transition flex items-center gap-2 whitespace-nowrap ${
+              activeSubTab === 'DRAFT_VIDEOS'
+                ? 'bg-purple-600 text-white shadow-xs'
+                : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200 hover:bg-slate-50'
+            }`}
+          >
+            <Video className="w-3.5 h-3.5" />
+            <span>3. Video nháp KOC gửi về</span>
+          </button>
 
-        <button
-          onClick={() => setActiveSubTab('PUBLICATIONS')}
-          className={`px-3.5 py-2 rounded-xl font-semibold transition flex items-center gap-2 whitespace-nowrap ${
-            activeSubTab === 'PUBLICATIONS'
-              ? 'bg-purple-600 text-white shadow-xs'
-              : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200 hover:bg-slate-50'
-          }`}
-        >
-          <Share2 className="w-3.5 h-3.5" />
-          <span>4. Bài Đăng Live & Đối Soát Mã Ads ({publications.length})</span>
-        </button>
+          <button
+            onClick={() => setActiveSubTab('PUBLICATIONS')}
+            className={`px-3.5 py-2 rounded-xl font-semibold transition flex items-center gap-2 whitespace-nowrap ${
+              activeSubTab === 'PUBLICATIONS'
+                ? 'bg-purple-600 text-white shadow-xs'
+                : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200 hover:bg-slate-50'
+            }`}
+          >
+            <Share2 className="w-3.5 h-3.5" />
+            <span>4. Bài Đăng Live & Đối Soát Mã Ads ({publications.length})</span>
+          </button>
 
-        <button
-          onClick={() => setActiveSubTab('PILLARS')}
-          className={`px-3.5 py-2 rounded-xl font-semibold transition flex items-center gap-2 whitespace-nowrap ${
-            activeSubTab === 'PILLARS'
-              ? 'bg-purple-600 text-white shadow-xs'
-              : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200 hover:bg-slate-50'
-          }`}
-        >
-          <Award className="w-3.5 h-3.5" />
-          <span>5. Trụ Cột & Góc Tiếp Cận Theo SP</span>
-        </button>
+          <button
+            onClick={() => setActiveSubTab('PILLARS')}
+            className={`px-3.5 py-2 rounded-xl font-semibold transition flex items-center gap-2 whitespace-nowrap ${
+              activeSubTab === 'PILLARS'
+                ? 'bg-purple-600 text-white shadow-xs'
+                : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200 hover:bg-slate-50'
+            }`}
+          >
+            <Award className="w-3.5 h-3.5" />
+            <span>5. Trụ Cột & Góc Tiếp Cận Theo SP</span>
+          </button>
+        </div>
+
+        {onNavigateToAngles && (
+          <button
+            onClick={onNavigateToAngles}
+            className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200 transition flex items-center gap-1.5 shrink-0 shadow-2xs self-start lg:self-auto"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-purple-600" />
+            <span>Thiết lập Góc tiếp cận SP</span>
+          </button>
+        )}
       </div>
 
       {/* View 0: Content Items Master Grid */}
