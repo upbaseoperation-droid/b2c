@@ -913,6 +913,139 @@ export interface HeroProduct {
   imageUrl?: string;
 }
 
+// ==========================================
+// PUSH PRODUCTS (SẢN PHẨM THÚC ĐẨY) TYPES
+// ==========================================
+
+export type PushProductStatus = 
+  | 'PROPOSED'          // Mới đề xuất (Chờ B2C/Growth phản hồi)
+  | 'IN_DISCUSSION'     // Đang trao đổi & thương lượng điều kiện
+  | 'CHANGE_REQUESTED'  // Có yêu cầu thay đổi (Chờ bên kia review)
+  | 'LOCKED_APPROVED'   // Đã đồng thuận chốt (Khóa cho chiến dịch)
+  | 'ARCHIVED';         // Đã kết thúc chu kỳ / Lưu trữ
+
+export type PushProductFeasibility = 
+  | 'HIGH_VIRAL'        // Tiềm năng viral cao, KOC rất thích
+  | 'MEDIUM'            // Trung bình, cần kịch bản sáng tạo
+  | 'CHALLENGING'       // Khó bán, cần deal sâu hoặc hỗ trợ ads
+  | 'REJECTED_BY_B2C';  // B2C đánh giá không khả thi, đề xuất đổi
+
+export type PushProductRole = 'GROWTH' | 'B2C' | 'MANAGEMENT';
+
+export interface PushProductComment {
+  id: string;
+  authorName: string;
+  authorRole: PushProductRole;
+  authorAvatar?: string;
+  content: string;
+  type: 'COMMENT' | 'PRICE_DEAL' | 'SAMPLE_REQUEST' | 'FEASIBILITY_FEEDBACK' | 'LOCK_AGREEMENT';
+  createdAt: string;
+}
+
+export type ChangeRequestType = 
+  | 'CHANGE_PRICE' 
+  | 'CHANGE_COMMISSION' 
+  | 'CHANGE_SAMPLE_QUOTA' 
+  | 'CHANGE_STOCK'
+  | 'CHANGE_CYCLE_DATES'
+  | 'REPLACE_SKU' 
+  | 'CANCEL_PRODUCT';
+
+export interface PushProductChangeRequest {
+  id: string;
+  type: ChangeRequestType;
+  requestedBy: string;
+  requesterRole: PushProductRole;
+  requestedAt: string;
+  reason: string;
+  field: string;
+  fieldLabel: string;
+  oldValue: string | number;
+  newValue: string | number;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  reviewedBy?: string;
+  reviewedAt?: string;
+  reviewNote?: string;
+}
+
+export interface PushProductAuditLog {
+  id: string;
+  timestamp: string;
+  action: string;
+  actorName: string;
+  actorRole: PushProductRole;
+  description: string;
+}
+
+export interface PushProductItem {
+  id: string;
+  sku: string;
+  productName: string;
+  
+  // 🌟 Chiều phân cấp: Brand => Gian hàng (Store) => Sản phẩm thúc đẩy
+  brandId: string;
+  brandName: string;
+  brandCategory: string;
+  storeId: string; // ID gian hàng
+  storeName: string; // Tên gian hàng (VD: Kutieskin Official Store)
+  platform: 'TIKTOK_SHOP' | 'SHOPEE_MALL' | 'LAZADA'; // Sàn thương mại
+  storeUrl?: string; // Link gian hàng
+
+  imageUrl?: string;
+  cycleMonth: string; // e.g. "2026/10"
+  campaignName: string; // e.g. "Chiến dịch Thúc Đẩy Tháng 10"
+  startDate: string; // Ngày bắt đầu chu kỳ (YYYY-MM-DD)
+  endDate: string; // Ngày kết thúc chu kỳ (YYYY-MM-DD)
+  cycleType?: 'MONTHLY' | 'MEGA_CAMPAIGN' | 'PAYDAY' | 'FLASH_SALE' | 'CUSTOM';
+  
+  // 🌟 Thông tin thương mại & hàng hóa cốt lõi (Growth thiết lập & thỏa thuận với B2C)
+  originalPrice: number; // Giá niêm yết
+  promotionalPrice: number; // Giá deal / giá bán chiến dịch thúc đẩy
+  discountPercent: number; // % Giảm giá
+  affiliateRate: number; // % Hoa hồng KOC / Affiliate
+  availableStock: number; // Tồn kho khả dụng / cam kết giữ cho chiến dịch
+  monthlySampleQuota: number; // Số lượng mẫu tối đa có thể cấp trong chu kỳ
+  allocatedSampleCount: number; // Số lượng mẫu B2C đã cấp / booking thực tế
+  
+  // Không có target GMV tổng từ đầu (giữ optional nếu cần tham chiếu sau)
+  targetGmv?: number;
+  targetOrders?: number;
+
+  // 🌟 Thông tin sản phẩm & Brief KOC / KOL (Dùng trực tiếp để brief Creator)
+  usp: string; // Điểm bán hàng độc nhất (USP / Key Selling Points)
+  keyMessage?: string; // Thông điệp truyền thông chính cần KOC nhấn mạnh
+  viralAngle: string; // Góc quay video / Content hook gợi ý
+  targetKocNiche: string[]; // Tệp KOC phù hợp (Beauty, Mẹ bỉm, Học sinh sinh viên...)
+  pdpUrl?: string; // Link sản phẩm trên sàn (Shopee / TikTok Shop) để KOC gắn giỏ hàng
+  briefUrl?: string; // Link tài liệu Brief / Guideline chi tiết (Google Drive / Lark Docs)
+  doAndDonts?: string; // Quy tắc NÊN làm & KHÔNG ĐƯỢC NÓI khi review
+  sampleNotes?: string; // Điều kiện / chính sách cấp mẫu cho KOC
+  feasibilityScore: PushProductFeasibility; // Đánh giá khả thi của B2C
+  b2cEvaluationNote?: string; // Nhận xét / phản hồi từ B2C
+  
+  // Links phụ
+  pdpUrlTikTok?: string;
+  pdpUrlShopee?: string;
+
+  // PICs
+  growthPic: string; // PIC Growth phụ trách khởi tạo & đảm bảo deal/kho
+  b2cPic: string; // PIC B2C Booking phụ trách kết nối KOC
+  
+  // Workflow Status
+  status: PushProductStatus;
+  proposedAt: string;
+  lockedAt?: string;
+  lockedBy?: {
+    growthPic: string;
+    b2cPic: string;
+  };
+  
+  // Collaboration & Change Audit
+  comments: PushProductComment[];
+  changeRequests: PushProductChangeRequest[];
+  auditLogs: PushProductAuditLog[];
+}
+
 export interface BrandDetail {
   id: string;
   code: string;

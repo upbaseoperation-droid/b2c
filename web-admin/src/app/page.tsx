@@ -23,6 +23,7 @@ import { BrandHubView } from '../components/views/BrandHubView';
 import { InputPlanBreakdownView } from '../components/views/InputPlanBreakdownView';
 import SampleTrackerView from '../components/views/SampleTrackerView';
 import PerformanceP3View from '../components/views/PerformanceP3View';
+import { PushProductsView } from '../components/views/PushProductsView';
 
 import { 
   USERS, 
@@ -460,6 +461,10 @@ export default function App() {
       title: 'Quản Lý Kế Hoạch Theo Tháng (Monthly Plan Hub)',
       subtitle: 'Hoạch định ngân sách theo chu kỳ tháng, phân rã đa kênh (TikTok Shop, Shopee, Live, Tự xây) và điều phối nhân sự Booking'
     },
+    'push-products': {
+      title: 'Sản Phẩm Thúc Đẩy (Focus Push Products)',
+      subtitle: ''
+    },
     stores: {
       title: 'Gian Hàng & Nhãn Hàng',
       subtitle: ''
@@ -606,6 +611,14 @@ export default function App() {
               onApplyPlanToWeeklyStore={(weeklyPlan) => {
                 showToast(`Đã lưu và đồng bộ kế hoạch ${weeklyPlan.storeName} (${weeklyPlan.week}) vào Sổ Kế Hoạch Tuần Thực Tế!`);
               }}
+            />
+          )}
+
+          {activeTab === 'push-products' && (
+            <PushProductsView
+              currentUser={currentUser}
+              brands={brands}
+              onNotify={showToast}
             />
           )}
 

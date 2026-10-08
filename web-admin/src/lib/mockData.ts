@@ -38,7 +38,8 @@ import {
   HeroSkuItem,
   BrandApprovalQueueItem,
   BrandRetainerHealth,
-  BrandKnowledgeBase
+  BrandKnowledgeBase,
+  PushProductItem
 } from './types';
 
 
@@ -7394,9 +7395,919 @@ export const INITIAL_RECONCILIATION_WINDOW: E2EReconciliationWindow = {
   pendingErrorsCount: 3
 };
 
+// ==========================================
+// MASTER DATA SẢN PHẨM THÚC ĐẨY (FOCUS PUSH PRODUCTS)
+// Chiều phân cấp: Brand => Gian hàng (Store) => Sản phẩm thúc đẩy
+// ==========================================
+export const INITIAL_PUSH_PRODUCTS: PushProductItem[] = [
+  // ==========================================
+  // BRAND 1: KUTIESKIN MAMA & BABY
+  // ==========================================
+  // Gian hàng 1: Shopee Mall Kutieskin Chính Hãng (store-kutieskin-sp)
+  {
+    id: 'push-kuti-1',
+    sku: 'KUTIE-SOOTH-30G',
+    productName: 'Kem Bôi Dịu Da Kutieskin 30g',
+    brandId: 'brand-kutieskin',
+    brandName: 'Kutieskin Mama & Baby',
+    brandCategory: 'Mẹ & Bé / Chăm Sóc Da Trẻ Em',
+    storeId: 'store-kutieskin-sp',
+    storeName: 'Shopee Mall Kutieskin Chính Hãng',
+    platform: 'SHOPEE_MALL',
+    storeUrl: 'https://shopee.vn/kutieskin_official',
+    imageUrl: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=400&q=80',
+    cycleMonth: '2026/10',
+    campaignName: 'Mega Sale 10.10 & Payday Cuối Tháng',
+    startDate: '2026-10-01',
+    endDate: '2026-10-31',
+    cycleType: 'MONTHLY',
+    originalPrice: 96000,
+    promotionalPrice: 79000,
+    discountPercent: 18,
+    affiliateRate: 20,
+    availableStock: 12500,
+    monthlySampleQuota: 250,
+    allocatedSampleCount: 165,
+    usp: '100% thảo dược Nano Bạc & Yến mạch Pháp nhập khẩu, dịu ngứa chàm sữa sau 3 ngày, an toàn tuyệt đối cho trẻ sơ sinh.',
+    keyMessage: 'Dịu êm da bé tức thì - Mẹ an tâm trọn giấc nồng cùng Kutieskin thảo dược.',
+    viralAngle: 'Mẹ bỉm chia sẻ khoảnh khắc cứu nguy làn da bé nửa đêm, so sánh trước và sau 72h dùng kem dịu da.',
+    targetKocNiche: ['Mẹ Bỉm Nuôi Con', 'Hot Mom & Gia Đình', 'Bác Sĩ / Dược Sĩ Nhi Khoa', 'Lifestyle Reviewer'],
+    pdpUrl: 'https://shopee.vn/kutieskin-kem-diu-da-chinh-hang-30g',
+    briefUrl: 'https://drive.google.com/kutieskin-kem-diu-da-brief-2026',
+    doAndDonts: 'NÊN: Quay cận chất kem mềm mịn thẩm thấu nhanh, có em bé tương tác cùng mẹ. KHÔNG ĐƯỢC: So sánh dìm hàng nhãn khác, không cam kết "khỏi 100% sau 1 đêm".',
+    sampleNotes: 'Cấp 01 tuýp fullsize 30g + túi quà CVI cho KOC có em bé từ 0-3 tuổi.',
+    feasibilityScore: 'HIGH_VIRAL',
+    b2cEvaluationNote: 'Sản phẩm chủ lực có uy tín sẵn trên thị trường. KOC nhận mẫu đạt tỷ lệ lên video 94%. Hoa hồng 20% rất hấp dẫn KOC sàn.',
+    growthPic: 'Hoàng Long',
+    b2cPic: 'Khánh Vy',
+    status: 'LOCKED_APPROVED',
+    proposedAt: '2026-09-25T08:30:00Z',
+    lockedAt: '2026-09-28T16:00:00Z',
+    lockedBy: {
+      growthPic: 'Hoàng Long (Growth Lead)',
+      b2cPic: 'Khánh Vy (Booking Lead)'
+    },
+    comments: [
+      {
+        id: 'comm-kuti-1-1',
+        authorName: 'Hoàng Long',
+        authorRole: 'GROWTH',
+        content: 'Kho tổng vừa nhập về thêm 15,000 tuýp date mới 2029. Growth đưa SKU này làm SP thúc đẩy số 1 trên Shopee Mall Kutieskin tháng 10. Giá flash sale chốt 79k, hoa hồng 20%.',
+        type: 'PRICE_DEAL',
+        createdAt: '2026-09-25T09:15:00Z'
+      },
+      {
+        id: 'comm-kuti-1-2',
+        authorName: 'Khánh Vy',
+        authorRole: 'B2C',
+        content: 'B2C đã book xong 45 Mẹ Bỉm Tier 3 và 5 Hot Mom Tier 2. Hạn mức mẫu 250 tuýp đảm bảo đủ phủ sóng trọn tháng.',
+        type: 'SAMPLE_REQUEST',
+        createdAt: '2026-09-26T14:20:00Z'
+      },
+      {
+        id: 'comm-kuti-1-3',
+        authorName: 'Hoàng Long',
+        authorRole: 'GROWTH',
+        content: 'Đã khóa kho 12,500 tuýp riêng cho kênh Affiliate Shopee. Chốt duyệt khóa sản phẩm thúc đẩy này!',
+        type: 'LOCK_AGREEMENT',
+        createdAt: '2026-09-28T15:50:00Z'
+      }
+    ],
+    changeRequests: [],
+    auditLogs: [
+      {
+        id: 'log-kuti-1-1',
+        timestamp: '2026-09-25 08:30',
+        action: 'Khởi tạo SP Thúc Đẩy',
+        actorName: 'Hoàng Long',
+        actorRole: 'GROWTH',
+        description: 'Growth khởi tạo SKU Kem Bôi Dịu Da 30g trên Shopee Mall cho chu kỳ Tháng 10/2026.'
+      },
+      {
+        id: 'log-kuti-1-2',
+        timestamp: '2026-09-28 16:00',
+        action: 'Chốt Khóa SP Thúc Đẩy (LOCKED)',
+        actorName: 'Hoàng Long & Khánh Vy',
+        actorRole: 'MANAGEMENT',
+        description: 'Hai bên Growth và B2C thống nhất chốt duyệt khóa SKU cho chu kỳ Tháng 10.'
+      }
+    ]
+  },
+  {
+    id: 'push-kuti-2',
+    sku: 'KUTIE-MOSQ-20ML',
+    productName: 'Tinh Chất Bôi Muỗi Đốt & Côn Trùng Cắn Kutieskin 20ml',
+    brandId: 'brand-kutieskin',
+    brandName: 'Kutieskin Mama & Baby',
+    brandCategory: 'Mẹ & Bé / Chăm Sóc Da Trẻ Em',
+    storeId: 'store-kutieskin-sp',
+    storeName: 'Shopee Mall Kutieskin Chính Hãng',
+    platform: 'SHOPEE_MALL',
+    storeUrl: 'https://shopee.vn/kutieskin_official',
+    imageUrl: 'https://images.unsplash.com/photo-1556228722-d0b5de70b774?auto=format&fit=crop&w=400&q=80',
+    cycleMonth: '2026/10',
+    campaignName: 'Chiến Dịch Mùa Mưa Muỗi Đốt (Shopee)',
+    startDate: '2026-10-05',
+    endDate: '2026-10-25',
+    cycleType: 'MEGA_CAMPAIGN',
+    originalPrice: 75000,
+    promotionalPrice: 62000,
+    discountPercent: 17,
+    affiliateRate: 18,
+    availableStock: 8000,
+    monthlySampleQuota: 180,
+    allocatedSampleCount: 95,
+    usp: 'Tinh dầu tràm trà & Cúc La Mã, xẹp vết muỗi đốt sau 2h, không để lại vết thâm sẹo trên da em bé.',
+    keyMessage: 'Bảo vệ bé yêu khỏi muỗi đốt mùa mưa - Xẹp sưng ngứa tức thì không để lại thâm.',
+    viralAngle: 'Mẹo bỏ túi cho mẹ khi dắt bé đi công viên / về quê mùa mưa ẩm.',
+    targetKocNiche: ['Mẹ Bỉm', 'Gia Đình Trẻ', 'Reviewer Đồ Dùng Trẻ Em'],
+    pdpUrl: 'https://shopee.vn/kutieskin-tinh-chat-muoi-20ml',
+    briefUrl: 'https://drive.google.com/kutieskin-muoi-brief-2026',
+    doAndDonts: 'NÊN: Làm nổi bật kích thước nhỏ gọn dễ mang theo trong túi bỉm sữa. KHÔNG: Quảng cáo tác dụng xua đuổi muỗi như thuốc xịt hóa chất.',
+    sampleNotes: 'Cấp 01 chai 20ml cho KOC có tệp mẹ bỉm tương tác tốt.',
+    feasibilityScore: 'HIGH_VIRAL',
+    b2cEvaluationNote: 'Mùa thu mưa nhiều muỗi đốt, sản phẩm này chuyển đổi cực kỳ nhạy trên live và video ngắn.',
+    growthPic: 'Hoàng Long',
+    b2cPic: 'Khánh Vy',
+    status: 'LOCKED_APPROVED',
+    proposedAt: '2026-09-28T10:00:00Z',
+    lockedAt: '2026-10-02T11:00:00Z',
+    lockedBy: {
+      growthPic: 'Hoàng Long (Growth Lead)',
+      b2cPic: 'Khánh Vy (Booking Lead)'
+    },
+    comments: [
+      {
+        id: 'comm-kuti-2-1',
+        authorName: 'Hoàng Long',
+        authorRole: 'GROWTH',
+        content: 'Mùa mưa muỗi bùng phát, đề xuất chạy đợt cao điểm từ 05/10 đến 25/10 để đón đầu nhu cầu phòng dịch sốt xuất huyết.',
+        type: 'COMMENT',
+        createdAt: '2026-09-28T10:30:00Z'
+      }
+    ],
+    changeRequests: [],
+    auditLogs: [
+      {
+        id: 'log-kuti-2-1',
+        timestamp: '2026-09-28 10:00',
+        action: 'Khởi tạo SP Thúc Đẩy',
+        actorName: 'Hoàng Long',
+        actorRole: 'GROWTH',
+        description: 'Tạo sản phẩm thúc đẩy tinh chất muỗi đốt Kutieskin trên Shopee Mall.'
+      }
+    ]
+  },
+  // Gian hàng 2: Kutieskin Official Store (TikTok Shop - store-kutieskin-tts)
+  {
+    id: 'push-kuti-3',
+    sku: 'KUTIE-BATH-250ML',
+    productName: 'Nước Tắm Gội Thảo Dược Kutieskin 250ml',
+    brandId: 'brand-kutieskin',
+    brandName: 'Kutieskin Mama & Baby',
+    brandCategory: 'Mẹ & Bé / Chăm Sóc Da Trẻ Em',
+    storeId: 'store-kutieskin-tts',
+    storeName: 'Kutieskin Official Store (TikTok)',
+    platform: 'TIKTOK_SHOP',
+    storeUrl: 'https://shop.tiktok.com/view/product/kutieskin-official',
+    imageUrl: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&w=400&q=80',
+    cycleMonth: '2026/10',
+    campaignName: 'TikTok Shop Mega 10.10 & Payday',
+    startDate: '2026-10-01',
+    endDate: '2026-10-31',
+    cycleType: 'MONTHLY',
+    originalPrice: 135000,
+    promotionalPrice: 112000,
+    discountPercent: 17,
+    affiliateRate: 18,
+    availableStock: 6000,
+    monthlySampleQuota: 120,
+    allocatedSampleCount: 88,
+    usp: 'Công thức 2 trong 1 tắm gội thảo dược không cay mắt, chiết xuất sài đất, kim ngân hoa kháng khuẩn tự nhiên.',
+    keyMessage: 'Tắm mát dịu da - Ngăn ngừa rôm sảy mẩn ngứa suốt cả ngày cho con yêu.',
+    viralAngle: 'Cảnh tắm bé cưng xỉu với bọt thảo mộc tự nhiên thơm ngát, em bé cười tít mắt trong bồn tắm.',
+    targetKocNiche: ['Mẹ Bỉm Sữa', 'KOL Gia Đình', 'TikTok Creator Mẹ & Bé'],
+    pdpUrl: 'https://shop.tiktok.com/view/product/kutieskin-nuoc-tam-250ml',
+    briefUrl: 'https://drive.google.com/kutieskin-tam-goi-brief-2026',
+    doAndDonts: 'NÊN: Khung hình ấm cúng, nhạc nền vui vẻ nhẹ nhàng. KHÔNG: Để nước dính thẳng vào mắt bé trong cảnh quay.',
+    sampleNotes: 'Cấp 01 chai 250ml fullsize cho KOC quay video tương tác thực.',
+    feasibilityScore: 'HIGH_VIRAL',
+    b2cEvaluationNote: 'Bao bì chai vòi nhấn tiện dụng, các mẹ quay video tắm bé rất dễ viral trên TikTok.',
+    growthPic: 'Hoàng Long',
+    b2cPic: 'Khánh Vy',
+    status: 'IN_DISCUSSION',
+    proposedAt: '2026-09-30T10:00:00Z',
+    comments: [
+      {
+        id: 'comm-kuti-3-1',
+        authorName: 'Khánh Vy',
+        authorRole: 'B2C',
+        content: 'Đề xuất tăng hoa hồng từ 16% lên 18% để kích thích các KOC Live gắn link giỏ hàng TikTok Shop.',
+        type: 'PRICE_DEAL',
+        createdAt: '2026-10-01T09:00:00Z'
+      },
+      {
+        id: 'comm-kuti-3-2',
+        authorName: 'Hoàng Long',
+        authorRole: 'GROWTH',
+        content: 'Đồng ý nâng hoa hồng lên 18%. Growth đang chuẩn bị thêm combo kèm khăn tắm sợi tre làm quà tặng.',
+        type: 'COMMENT',
+        createdAt: '2026-10-02T14:00:00Z'
+      }
+    ],
+    changeRequests: [],
+    auditLogs: [
+      {
+        id: 'log-kuti-3-1',
+        timestamp: '2026-09-30 10:00',
+        action: 'Khởi tạo SP Thúc Đẩy',
+        actorName: 'Hoàng Long',
+        actorRole: 'GROWTH',
+        description: 'Tạo sản phẩm thúc đẩy nước tắm gội trên TikTok Shop.'
+      }
+    ]
+  },
+  // Tương lai Tháng 11/2026:
+  {
+    id: 'push-kuti-future-1',
+    sku: 'KUTIE-COMBO-WINTER',
+    productName: 'Combo Chống Nẻ & Dưỡng Ẩm Mùa Đông Kutieskin (Kem Dưỡng + Dịu Da)',
+    brandId: 'brand-kutieskin',
+    brandName: 'Kutieskin Mama & Baby',
+    brandCategory: 'Mẹ & Bé / Chăm Sóc Da Trẻ Em',
+    storeId: 'store-kutieskin-tts',
+    storeName: 'Kutieskin Official Store (TikTok)',
+    platform: 'TIKTOK_SHOP',
+    storeUrl: 'https://shop.tiktok.com/view/product/kutieskin-official',
+    imageUrl: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=400&q=80',
+    cycleMonth: '2026/11',
+    campaignName: 'Chiến Dịch Đông Ấm Cho Bé (Mega 11.11)',
+    startDate: '2026-11-01',
+    endDate: '2026-11-30',
+    cycleType: 'MONTHLY',
+    originalPrice: 195000,
+    promotionalPrice: 159000,
+    discountPercent: 18,
+    affiliateRate: 22,
+    availableStock: 15000,
+    monthlySampleQuota: 300,
+    allocatedSampleCount: 0,
+    usp: 'Combo chuyên biệt dưỡng ẩm sâu chống nẻ má đào, khô nứt nẻ da mùa đông hanh khô ở miền Bắc.',
+    keyMessage: 'Bảo vệ làn da mỏng manh của bé qua mùa đông hanh nứt - Dưỡng ẩm 24h mềm mịn như nhung.',
+    viralAngle: 'Mẹ bỉm miền Bắc chuẩn bị hành trang giữ ấm và dưỡng da cho con đón gió mùa đông bắc.',
+    targetKocNiche: ['Mẹ Bỉm Miền Bắc', 'KOL Gia Đình', 'Bác Sĩ Da Liễu Nhi'],
+    pdpUrl: 'https://shop.tiktok.com/view/product/kutieskin-combo-winter',
+    briefUrl: 'https://drive.google.com/kutieskin-combo-winter-brief',
+    doAndDonts: 'NÊN: Nhấn mạnh thời tiết hanh khô mùa đông. KHÔNG: Nói quá về việc trị dứt điểm mọi bệnh viêm da cơ địa.',
+    sampleNotes: 'Cấp trọn bộ hộp quà mùa đông gồm 2 tuýp + tất len em bé cho KOC quay unboxing.',
+    feasibilityScore: 'HIGH_VIRAL',
+    b2cEvaluationNote: 'Combo này đón đúng mùa hanh heo tháng 11, tiềm năng bùng nổ doanh số rất mạnh.',
+    growthPic: 'Hoàng Long',
+    b2cPic: 'Khánh Vy',
+    status: 'PROPOSED',
+    proposedAt: '2026-10-06T15:00:00Z',
+    comments: [
+      {
+        id: 'comm-kuti-f-1',
+        authorName: 'Hoàng Long',
+        authorRole: 'GROWTH',
+        content: 'Growth đã lên kế hoạch sản xuất 15,000 hộp quà mùa đông. B2C xem xét danh sách KOC miền Bắc để gửi mẫu trước ngày 25/10 nhé.',
+        type: 'COMMENT',
+        createdAt: '2026-10-06T15:30:00Z'
+      }
+    ],
+    changeRequests: [],
+    auditLogs: [
+      {
+        id: 'log-kuti-f-1',
+        timestamp: '2026-10-06 15:00',
+        action: 'Khởi tạo SP Thúc Đẩy Tháng Sau',
+        actorName: 'Hoàng Long',
+        actorRole: 'GROWTH',
+        description: 'Tạo kế hoạch SKU Thúc Đẩy cho chu kỳ Tháng 11/2026.'
+      }
+    ]
+  },
+  // Lịch sử Tháng 09/2026:
+  {
+    id: 'push-kuti-past-1',
+    sku: 'KUTIE-BABY-CREAM',
+    productName: 'Kem Dưỡng Ẩm Trẻ Em Kutieskin 30g',
+    brandId: 'brand-kutieskin',
+    brandName: 'Kutieskin Mama & Baby',
+    brandCategory: 'Mẹ & Bé / Chăm Sóc Da Trẻ Em',
+    storeId: 'store-kutieskin-sp',
+    storeName: 'Shopee Mall Kutieskin Chính Hãng',
+    platform: 'SHOPEE_MALL',
+    storeUrl: 'https://shopee.vn/kutieskin_official',
+    imageUrl: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=400&q=80',
+    cycleMonth: '2026/09',
+    campaignName: 'Chiến Dịch Khai Giảng & Thu Sang (Tháng 9)',
+    startDate: '2026-09-01',
+    endDate: '2026-09-30',
+    cycleType: 'MONTHLY',
+    originalPrice: 96000,
+    promotionalPrice: 82000,
+    discountPercent: 15,
+    affiliateRate: 18,
+    availableStock: 500,
+    monthlySampleQuota: 200,
+    allocatedSampleCount: 195,
+    usp: 'Dầu hạnh nhân & Bơ hạt mỡ hữu cơ, dưỡng ẩm phục hồi hàng rào biểu bì da trẻ em.',
+    keyMessage: 'Dưỡng ẩm dịu lành mỗi ngày - Bé da khỏe, mẹ an lòng.',
+    viralAngle: 'Quy trình bôi kem dưỡng ẩm cho con trước khi đi mẫu giáo.',
+    targetKocNiche: ['Mẹ Bỉm Sữa', 'Reviewer Da Liễu'],
+    pdpUrl: 'https://shopee.vn/kutieskin-kem-duong-am-30g',
+    briefUrl: 'https://drive.google.com/kutieskin-kem-duong-sep2026',
+    feasibilityScore: 'HIGH_VIRAL',
+    growthPic: 'Hoàng Long',
+    b2cPic: 'Khánh Vy',
+    status: 'ARCHIVED',
+    proposedAt: '2026-08-25T08:00:00Z',
+    lockedAt: '2026-08-28T10:00:00Z',
+    lockedBy: {
+      growthPic: 'Hoàng Long',
+      b2cPic: 'Khánh Vy'
+    },
+    comments: [
+      {
+        id: 'comm-kuti-p-1',
+        authorName: 'Khánh Vy',
+        authorRole: 'B2C',
+        content: 'Đã hoàn thành chiến dịch tháng 9, cấp 195/200 mẫu, chuyển đổi video đạt 88%. Đóng chu kỳ lưu trữ.',
+        type: 'LOCK_AGREEMENT',
+        createdAt: '2026-09-30T17:00:00Z'
+      }
+    ],
+    changeRequests: [],
+    auditLogs: [
+      {
+        id: 'log-kuti-p-1',
+        timestamp: '2026-09-30 17:00',
+        action: 'Đóng Chu Kỳ & Lưu Trữ (ARCHIVED)',
+        actorName: 'Khánh Vy',
+        actorRole: 'B2C',
+        description: 'Kết thúc chu kỳ Tháng 9, chuyển SKU sang kho lưu trữ lịch sử.'
+      }
+    ]
+  },
 
+  // ==========================================
+  // BRAND 2: BYE BYE BLEMISH
+  // ==========================================
+  // Gian hàng 1: Bye Bye Blemish Vietnam (TikTok Shop - store-bbb-tts)
+  {
+    id: 'push-bbb-1',
+    sku: 'BBB-DRYING-30ML',
+    productName: 'Chấm Mụn Tràm Trà Tea Tree Drying Lotion 30ml',
+    brandId: 'brand-bye-bye-blemish',
+    brandName: 'Bye Bye Blemish',
+    brandCategory: 'Trị Mụn & Skincare Chuyên Sâu',
+    storeId: 'store-bbb-tts',
+    storeName: 'Bye Bye Blemish Vietnam (TikTok)',
+    platform: 'TIKTOK_SHOP',
+    storeUrl: 'https://shop.tiktok.com/view/product/byebyeblemish-official',
+    imageUrl: 'https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?auto=format&fit=crop&w=400&q=80',
+    cycleMonth: '2026/10',
+    campaignName: 'Mega 10.10 & Đại Chiến Trị Mụn HSSV',
+    startDate: '2026-10-01',
+    endDate: '2026-10-31',
+    cycleType: 'MONTHLY',
+    originalPrice: 245000,
+    promotionalPrice: 199000,
+    discountPercent: 19,
+    affiliateRate: 20,
+    availableStock: 8500,
+    monthlySampleQuota: 200,
+    allocatedSampleCount: 140,
+    usp: 'Lưu huỳnh tự nhiên & Tràm trà tinh khiết Mỹ, gom cồi mụn bọc sưng đỏ sau 1 đêm, không để lại thâm sẹo.',
+    keyMessage: 'Chấm 1 nốt - Xẹp 1 đêm: Vũ khí tối thượng xóa sổ mụn bọc cấp tốc.',
+    viralAngle: 'Review thực tế chấm mụn trước khi ngủ và zoom cận cảnh vết mụn xẹp phẳng sáng hôm sau.',
+    targetKocNiche: ['Beauty Reviewer Da Mụn', 'Học Sinh Sinh Viên', 'Gen Z Skincare', 'KOC Make-up'],
+    pdpUrl: 'https://shop.tiktok.com/view/product/bbb-drying-lotion-30ml',
+    briefUrl: 'https://drive.google.com/bbb-drying-lotion-brief-2026',
+    doAndDonts: 'NÊN: Để lọ dung dịch tách 2 lớp rõ ràng khi quay, dùng tăm bông chấm lớp bột hồng dưới đáy. TUYỆT ĐỐI KHÔNG: Lắc đều lọ dung dịch khi quay.',
+    sampleNotes: 'Cấp 01 chai 30ml + hộp tăm bông y tế chuyên dụng.',
+    feasibilityScore: 'HIGH_VIRAL',
+    b2cEvaluationNote: 'Sản phẩm hit TikTok Shop, KOC nào có da mụn thật quay lên view rất cao.',
+    growthPic: 'Hoàng Long',
+    b2cPic: 'Khánh Vy',
+    status: 'LOCKED_APPROVED',
+    proposedAt: '2026-09-26T09:00:00Z',
+    lockedAt: '2026-09-29T14:00:00Z',
+    lockedBy: {
+      growthPic: 'Hoàng Long (Growth Lead)',
+      b2cPic: 'Khánh Vy (Booking Lead)'
+    },
+    comments: [
+      {
+        id: 'comm-bbb-1-1',
+        authorName: 'Hoàng Long',
+        authorRole: 'GROWTH',
+        content: 'Chốt giá 199k tặng kèm hộp tăm bông. Hoa hồng 20% cạnh tranh trực diện với các brand cùng phân khúc.',
+        type: 'PRICE_DEAL',
+        createdAt: '2026-09-26T09:30:00Z'
+      }
+    ],
+    changeRequests: [],
+    auditLogs: [
+      {
+        id: 'log-bbb-1-1',
+        timestamp: '2026-09-26 09:00',
+        action: 'Khởi tạo SP Thúc Đẩy',
+        actorName: 'Hoàng Long',
+        actorRole: 'GROWTH',
+        description: 'Tạo sản phẩm thúc đẩy Chấm Mụn Tràm Trà trên TikTok Shop.'
+      }
+    ]
+  },
+  // Gian hàng 2: Bye Bye Blemish Official Store (Shopee Mall - store-bbb-sp)
+  {
+    id: 'push-bbb-2',
+    sku: 'BBB-PATCH-9PCS',
+    productName: 'Miếng Dán Mụn Vi Kim Tinh Chất Tràm Trà (9 miếng)',
+    brandId: 'brand-bye-bye-blemish',
+    brandName: 'Bye Bye Blemish',
+    brandCategory: 'Trị Mụn & Skincare Chuyên Sâu',
+    storeId: 'store-bbb-sp',
+    storeName: 'Bye Bye Blemish Official Store (Shopee)',
+    platform: 'SHOPEE_MALL',
+    storeUrl: 'https://shopee.vn/byebyeblemish_vn',
+    imageUrl: 'https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?auto=format&fit=crop&w=400&q=80',
+    cycleMonth: '2026/10',
+    campaignName: 'Flash Sale Shopee 10.10 & Payday',
+    startDate: '2026-10-05',
+    endDate: '2026-10-25',
+    cycleType: 'MEGA_CAMPAIGN',
+    originalPrice: 95000,
+    promotionalPrice: 79000,
+    discountPercent: 17,
+    affiliateRate: 18,
+    availableStock: 10000,
+    monthlySampleQuota: 180,
+    allocatedSampleCount: 110,
+    usp: 'Đầu vi kim tự tan đưa trực tiếp tinh chất BHA và Tràm trà sâu vào nhân mụn viêm ẩn dưới da.',
+    keyMessage: 'Triệt tiêu mụn viêm từ gốc rễ với công nghệ vi kim hòa tan tân tiến từ Mỹ.',
+    viralAngle: 'Cảm giác ấn vi kim chạm nhẹ vào mụn bọc không đau rát mà cực kỳ êm ái, bóc miếng dán sau 8 tiếng hút sạch nhân mủ.',
+    targetKocNiche: ['Beauty Reviewer', 'Da Mụn Nội Tiết', 'Sinh Viên'],
+    pdpUrl: 'https://shopee.vn/byebyeblemish-mieng-dan-vi-kim',
+    briefUrl: 'https://drive.google.com/bbb-patch-brief-2026',
+    doAndDonts: 'NÊN: Cảnh bóc miếng dán thấy mủ trắng được hút ra. KHÔNG: Dán lên vết thương hở đang chảy máu.',
+    sampleNotes: 'Cấp 02 hộp 9 miếng cho KOC test lên da.',
+    feasibilityScore: 'HIGH_VIRAL',
+    b2cEvaluationNote: 'Giá deal 79k rất dễ chốt đơn trên sàn Shopee trong các khung giờ Flash Sale.',
+    growthPic: 'Hoàng Long',
+    b2cPic: 'Khánh Vy',
+    status: 'LOCKED_APPROVED',
+    proposedAt: '2026-09-27T11:00:00Z',
+    lockedAt: '2026-09-30T10:00:00Z',
+    lockedBy: {
+      growthPic: 'Hoàng Long',
+      b2cPic: 'Khánh Vy'
+    },
+    comments: [],
+    changeRequests: [],
+    auditLogs: [
+      {
+        id: 'log-bbb-2-1',
+        timestamp: '2026-09-27 11:00',
+        action: 'Khởi tạo SP Thúc Đẩy',
+        actorName: 'Hoàng Long',
+        actorRole: 'GROWTH',
+        description: 'Tạo sản phẩm thúc đẩy Miếng Dán Mụn Vi Kim trên Shopee Mall.'
+      }
+    ]
+  },
+  // Tương lai Tháng 11:
+  {
+    id: 'push-bbb-future-1',
+    sku: 'BBB-SERUM-SALICYLIC',
+    productName: 'Serum Giảm Mụn Đầu Đen & Thu Nhỏ Lỗ Chân Lông BBB 30ml',
+    brandId: 'brand-bye-bye-blemish',
+    brandName: 'Bye Bye Blemish',
+    brandCategory: 'Trị Mụn & Skincare Chuyên Sâu',
+    storeId: 'store-bbb-tts',
+    storeName: 'Bye Bye Blemish Vietnam (TikTok)',
+    platform: 'TIKTOK_SHOP',
+    storeUrl: 'https://shop.tiktok.com/view/product/byebyeblemish-official',
+    imageUrl: 'https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?auto=format&fit=crop&w=400&q=80',
+    cycleMonth: '2026/11',
+    campaignName: 'Mega 11.11 Lễ Hội Độc Thân (TikTok Shop)',
+    startDate: '2026-11-05',
+    endDate: '2026-11-20',
+    cycleType: 'MEGA_CAMPAIGN',
+    originalPrice: 285000,
+    promotionalPrice: 219000,
+    discountPercent: 23,
+    affiliateRate: 20,
+    availableStock: 5000,
+    monthlySampleQuota: 150,
+    allocatedSampleCount: 0,
+    usp: '2% Salicylic Acid + Niacinamide 4%, kiểm soát bã nhờn chữ T, mờ thâm mụn sau 14 ngày.',
+    keyMessage: 'Tạm biệt mụn đầu đen và lỗ chân lông to cùng Serum Salicylic Mỹ.',
+    viralAngle: 'Thử thách 14 ngày bôi serum vùng mũi và soi da bằng kính phóng đại.',
+    targetKocNiche: ['Beauty KOC Chuyên Nghiệp', 'Skincare Khoa Học'],
+    pdpUrl: 'https://shop.tiktok.com/view/product/bbb-serum-salicylic',
+    briefUrl: 'https://drive.google.com/bbb-serum-brief-nov2026',
+    feasibilityScore: 'MEDIUM',
+    growthPic: 'Hoàng Long',
+    b2cPic: 'Khánh Vy',
+    status: 'PROPOSED',
+    proposedAt: '2026-10-07T14:00:00Z',
+    comments: [
+      {
+        id: 'comm-bbb-f-1',
+        authorName: 'Hoàng Long',
+        authorRole: 'GROWTH',
+        content: 'Hàng nhập khẩu Mỹ vừa thông quan 5,000 chai. Lên kế hoạch thúc đẩy cho chiến dịch Mega 11.11 tới.',
+        type: 'COMMENT',
+        createdAt: '2026-10-07T14:30:00Z'
+      }
+    ],
+    changeRequests: [],
+    auditLogs: [
+      {
+        id: 'log-bbb-f-1',
+        timestamp: '2026-10-07 14:00',
+        action: 'Khởi tạo SP Thúc Đẩy Tháng Sau',
+        actorName: 'Hoàng Long',
+        actorRole: 'GROWTH',
+        description: 'Đề xuất Serum Salicylic cho chu kỳ Mega 11.11 Tháng 11/2026.'
+      }
+    ]
+  },
 
+  // ==========================================
+  // BRAND 3: ROYAL AUSNZ (SỮA HOÀNG GIA ÚC)
+  // ==========================================
+  // Gian hàng 1: Royal Ausnz Flagship Store (Shopee Mall - store-royal-sp)
+  {
+    id: 'push-royal-1',
+    sku: 'ROYAL-TODDLER-900G',
+    productName: 'Sữa Hoàng Gia Úc Premium Toddler Số 3 900g (1-3 tuổi)',
+    brandId: 'brand-royal-ausnz',
+    brandName: 'Royal Ausnz (Sữa Hoàng Gia Úc)',
+    brandCategory: 'Sữa & Dinh Dưỡng Cao Cấp',
+    storeId: 'store-royal-sp',
+    storeName: 'Royal Ausnz Flagship Store (Shopee)',
+    platform: 'SHOPEE_MALL',
+    storeUrl: 'https://shopee.vn/royalausnz_official',
+    imageUrl: 'https://images.unsplash.com/photo-1550572017-edd951aa8f72?auto=format&fit=crop&w=400&q=80',
+    cycleMonth: '2026/10',
+    campaignName: 'Tháng Vàng Tiêu Hóa Khỏe - Bé Tăng Cân Vượt Trội',
+    startDate: '2026-10-01',
+    endDate: '2026-10-31',
+    cycleType: 'MONTHLY',
+    originalPrice: 680000,
+    promotionalPrice: 610000,
+    discountPercent: 10,
+    affiliateRate: 14,
+    availableStock: 4200,
+    monthlySampleQuota: 80,
+    allocatedSampleCount: 52,
+    usp: '160 năm di sản sữa Úc, công nghệ trộn ướt sấy thăng hoa 20 phút giữ trọn kháng thể tự nhiên, hệ tiêu hóa êm không táo bón.',
+    keyMessage: 'Nguồn dinh dưỡng tinh khiết từ nước Úc cho con tiêu hóa khỏe, tăng cân đều đặn.',
+    viralAngle: 'Mẹ thông thái phân tích tem truy xuất nguồn gốc xuất xứ chính hãng tại Úc và trải nghiệm bé uống ngon miệng.',
+    targetKocNiche: ['Hot Mom Dinh Dưỡng', 'Bác Sĩ Nhi Khoa', 'Mẹ Bỉm Nuôi Con Khoa Học'],
+    pdpUrl: 'https://shopee.vn/royalausnz-premium-toddler-so-3-900g',
+    briefUrl: 'https://drive.google.com/royal-ausnz-toddler-brief-2026',
+    doAndDonts: 'NÊN: Nhấn mạnh sữa sạch từ đồng cỏ tự nhiên nước Úc. TUYỆT ĐỐI TUÂN THỦ: Không vi phạm luật quảng cáo sữa thay thế sữa mẹ, chỉ review cho trẻ trên 12 tháng.',
+    sampleNotes: 'Cấp 01 lon 900g nguyên seal có tem chống giả điện tử của Bộ Công An.',
+    feasibilityScore: 'HIGH_VIRAL',
+    b2cEvaluationNote: 'Dòng sữa cao cấp uy tín, giá trị đơn cao nên hoa hồng 14% mang lại thu nhập rất tốt cho Creator.',
+    growthPic: 'Lê Thanh Hải',
+    b2cPic: 'Đinh Thị Bích Liên',
+    status: 'LOCKED_APPROVED',
+    proposedAt: '2026-09-24T10:00:00Z',
+    lockedAt: '2026-09-27T15:00:00Z',
+    lockedBy: {
+      growthPic: 'Lê Thanh Hải (Growth PIC)',
+      b2cPic: 'Đinh Thị Bích Liên (Booking PIC)'
+    },
+    comments: [
+      {
+        id: 'comm-ro-1-1',
+        authorName: 'Lê Thanh Hải',
+        authorRole: 'GROWTH',
+        content: 'Chốt gói quà tặng bình lắc sữa cao cấp cho mỗi đơn Shopee Mall. Quota mẫu 80 lon gửi các bác sĩ và hot mom uy tín.',
+        type: 'PRICE_DEAL',
+        createdAt: '2026-09-24T10:30:00Z'
+      }
+    ],
+    changeRequests: [],
+    auditLogs: [
+      {
+        id: 'log-ro-1-1',
+        timestamp: '2026-09-24 10:00',
+        action: 'Khởi tạo SP Thúc Đẩy',
+        actorName: 'Lê Thanh Hải',
+        actorRole: 'GROWTH',
+        description: 'Khởi tạo SP thúc đẩy Premium Toddler Số 3 trên Shopee Flagship Store.'
+      }
+    ]
+  },
+  // Gian hàng 2: Royal Ausnz Vietnam Official (TikTok Shop - store-royal-tts)
+  {
+    id: 'push-royal-2',
+    sku: 'ROYAL-GOAT-800G',
+    productName: 'Sữa Dê Hoàng Gia Úc Goat Toddler 800g (1-3 tuổi)',
+    brandId: 'brand-royal-ausnz',
+    brandName: 'Royal Ausnz (Sữa Hoàng Gia Úc)',
+    brandCategory: 'Sữa & Dinh Dưỡng Cao Cấp',
+    storeId: 'store-royal-tts',
+    storeName: 'Royal Ausnz Vietnam Official (TikTok)',
+    platform: 'TIKTOK_SHOP',
+    storeUrl: 'https://shop.tiktok.com/view/product/royal-ausnz-official',
+    imageUrl: 'https://images.unsplash.com/photo-1550572017-edd951aa8f72?auto=format&fit=crop&w=400&q=80',
+    cycleMonth: '2026/10',
+    campaignName: 'Giải Pháp Cho Bé Dị Ứng Đạm Sữa Bò (TikTok Shop)',
+    startDate: '2026-10-05',
+    endDate: '2026-10-28',
+    cycleType: 'PAYDAY',
+    originalPrice: 920000,
+    promotionalPrice: 840000,
+    discountPercent: 9,
+    affiliateRate: 15,
+    availableStock: 2500,
+    monthlySampleQuota: 50,
+    allocatedSampleCount: 30,
+    usp: 'Đạm quý A2 tự nhiên từ sữa dê Úc, kích thước hạt cầu béo siêu nhỏ giúp bé hấp thu trọn vẹn, giải pháp vàng cho bé bất dung nạp lactose.',
+    keyMessage: 'Sữa Dê Hoàng Gia Úc - Dịu lành đường tiêu hóa, con êm bụng lớn khôn.',
+    viralAngle: 'Tâm sự của mẹ có con từng trớ nghẹn, dị ứng sữa bò đổi sang sữa dê và kết quả bất ngờ sau 3 tuần.',
+    targetKocNiche: ['Mẹ Bé Chuyên Sâu', 'Bác Sĩ Tiêu Hóa Nhi'],
+    pdpUrl: 'https://shop.tiktok.com/view/product/royal-goat-800g',
+    briefUrl: 'https://drive.google.com/royal-ausnz-goat-brief-2026',
+    doAndDonts: 'NÊN: Tập trung vào đạm A2 tự nhiên và sự êm ái của đường tiêu hóa. KHÔNG: Tuyên bố thay thế phác đồ điều trị của bác sĩ.',
+    sampleNotes: 'Cấp 01 lon 800g cho KOC có bé thực sự gặp vấn đề nhạy cảm tiêu hóa.',
+    feasibilityScore: 'MEDIUM',
+    b2cEvaluationNote: 'Phân khúc ngách giá cao nhưng khách hàng trung thành cực cao, chốt đơn trên livestream rất đều.',
+    growthPic: 'Lê Thanh Hải',
+    b2cPic: 'Đinh Thị Bích Liên',
+    status: 'IN_DISCUSSION',
+    proposedAt: '2026-09-29T14:00:00Z',
+    comments: [
+      {
+        id: 'comm-ro-2-1',
+        authorName: 'Đinh Thị Bích Liên',
+        authorRole: 'B2C',
+        content: 'B2C đang đàm phán với 10 KOC là Bác sĩ Nhi để livestream chia sẻ chuyên đề bất dung nạp đạm sữa bò. Xin cấp mẫu bổ sung 15 lon.',
+        type: 'SAMPLE_REQUEST',
+        createdAt: '2026-10-01T11:00:00Z'
+      }
+    ],
+    changeRequests: [],
+    auditLogs: [
+      {
+        id: 'log-ro-2-1',
+        timestamp: '2026-09-29 14:00',
+        action: 'Khởi tạo SP Thúc Đẩy',
+        actorName: 'Lê Thanh Hải',
+        actorRole: 'GROWTH',
+        description: 'Tạo sản phẩm thúc đẩy Sữa Dê Hoàng Gia Úc trên TikTok Shop.'
+      }
+    ]
+  },
+  // Lịch sử Tháng 09/2026:
+  {
+    id: 'push-royal-past-1',
+    sku: 'ROYAL-LACTOFERRIN-100G',
+    productName: 'Sữa Bột Bổ Sung Kháng Thể Lactoferrin Hoàng Gia Úc 100g',
+    brandId: 'brand-royal-ausnz',
+    brandName: 'Royal Ausnz (Sữa Hoàng Gia Úc)',
+    brandCategory: 'Sữa & Dinh Dưỡng Cao Cấp',
+    storeId: 'store-royal-sp',
+    storeName: 'Royal Ausnz Flagship Store (Shopee)',
+    platform: 'SHOPEE_MALL',
+    storeUrl: 'https://shopee.vn/royalausnz_official',
+    imageUrl: 'https://images.unsplash.com/photo-1550572017-edd951aa8f72?auto=format&fit=crop&w=400&q=80',
+    cycleMonth: '2026/09',
+    campaignName: 'Chiến Dịch Tăng Đề Kháng Mùa Tựu Trường (Tháng 9)',
+    startDate: '2026-09-01',
+    endDate: '2026-09-30',
+    cycleType: 'MONTHLY',
+    originalPrice: 590000,
+    promotionalPrice: 510000,
+    discountPercent: 14,
+    affiliateRate: 15,
+    availableStock: 200,
+    monthlySampleQuota: 60,
+    allocatedSampleCount: 58,
+    usp: 'Hàm lượng Lactoferrin tinh khiết 100mg/100g, nâng cao hệ miễn dịch tự nhiên cho bé mùa đi học.',
+    keyMessage: 'Lá chắn đề kháng tự nhiên cho con vững vàng đến trường.',
+    viralAngle: 'Mẹ chuẩn bị hành trang tăng đề kháng trước ngày tựu trường khai giảng lớp 1.',
+    targetKocNiche: ['Hot Mom', 'Reviewer Dinh Dưỡng'],
+    pdpUrl: 'https://shopee.vn/royal-lactoferrin-100g',
+    briefUrl: 'https://drive.google.com/royal-lactoferrin-sep2026',
+    feasibilityScore: 'HIGH_VIRAL',
+    growthPic: 'Lê Thanh Hải',
+    b2cPic: 'Đinh Thị Bích Liên',
+    status: 'ARCHIVED',
+    proposedAt: '2026-08-25T09:00:00Z',
+    lockedAt: '2026-08-28T14:00:00Z',
+    lockedBy: {
+      growthPic: 'Lê Thanh Hải',
+      b2cPic: 'Đinh Thị Bích Liên'
+    },
+    comments: [],
+    changeRequests: [],
+    auditLogs: [
+      {
+        id: 'log-ro-p-1',
+        timestamp: '2026-09-30 18:00',
+        action: 'Đóng Chu Kỳ & Lưu Trữ (ARCHIVED)',
+        actorName: 'Đinh Thị Bích Liên',
+        actorRole: 'B2C',
+        description: 'Hoàn thành chiến dịch Tháng 9, chuyển SKU sang kho lưu trữ.'
+      }
+    ]
+  },
 
-
-
-
+  // ==========================================
+  // BRAND 4: PHCARE JAPAN
+  // ==========================================
+  // Gian hàng 1: pHCare Japan Official (TikTok Shop - store-phcare-tts)
+  {
+    id: 'push-phcare-1',
+    sku: 'PHCARE-FRESH-150ML',
+    productName: 'Dung Dịch Vệ Sinh Phụ Nữ pHCare Shower Fresh 150ml',
+    brandId: 'brand-phcare',
+    brandName: 'pHCare Japan',
+    brandCategory: 'Chăm Sóc Cá Nhân & Phụ Khoa Nữ',
+    storeId: 'store-phcare-tts',
+    storeName: 'pHCare Japan Official (TikTok)',
+    platform: 'TIKTOK_SHOP',
+    storeUrl: 'https://shop.tiktok.com/view/product/phcare-official',
+    imageUrl: 'https://images.unsplash.com/photo-1556228578-0d85b1a4d571?auto=format&fit=crop&w=400&q=80',
+    cycleMonth: '2026/10',
+    campaignName: 'Mega Sale 10.10 & Payday Cuối Tháng (TikTok)',
+    startDate: '2026-10-01',
+    endDate: '2026-10-31',
+    cycleType: 'MONTHLY',
+    originalPrice: 165000,
+    promotionalPrice: 139000,
+    discountPercent: 16,
+    affiliateRate: 18,
+    availableStock: 9200,
+    monthlySampleQuota: 200,
+    allocatedSampleCount: 145,
+    usp: 'Chuẩn công nghệ Nhật Bản, độ pH 5.0 cân bằng hoàn hảo vùng nhạy cảm, tinh chất hoa cúc Chamomile thơm mát 24h.',
+    keyMessage: 'Thơm tho dịu êm chuẩn Nhật - Tự tin tỏa sáng suốt cả ngày dài năng động.',
+    viralAngle: 'Góc tự chăm sóc bản thân tinh tế của con gái hiện đại, bí quyết thơm tho tự tin ngày dâu rụng.',
+    targetKocNiche: ['Beauty Reviewer Gen Z', 'Lifestyle Nữ', 'Sinh Viên & Công Sở'],
+    pdpUrl: 'https://shop.tiktok.com/view/product/phcare-shower-fresh-150ml',
+    briefUrl: 'https://drive.google.com/phcare-fresh-brief-2026',
+    doAndDonts: 'NÊN: Phong cách thanh lịch, chia sẻ văn minh khoa học. TUYỆT ĐỐI KHÔNG: Dùng hình ảnh phản cảm hoặc ngôn từ thô tục vi phạm chính sách cộng đồng.',
+    sampleNotes: 'Cấp 01 chai 150ml + túi zip lụa thời trang đi kèm.',
+    feasibilityScore: 'HIGH_VIRAL',
+    b2cEvaluationNote: 'Sản phẩm giá mềm, bao bì xinh xắn chuẩn Nhật, các bạn KOC Gen Z quay video rất tự nhiên và tương tác cao.',
+    growthPic: 'Vũ Hoài Lâm',
+    b2cPic: 'Thu Thảo',
+    status: 'LOCKED_APPROVED',
+    proposedAt: '2026-09-25T14:00:00Z',
+    lockedAt: '2026-09-28T10:00:00Z',
+    lockedBy: {
+      growthPic: 'Vũ Hoài Lâm (Growth Lead)',
+      b2cPic: 'Thu Thảo (Booking Lead)'
+    },
+    comments: [
+      {
+        id: 'comm-ph-1-1',
+        authorName: 'Vũ Hoài Lâm',
+        authorRole: 'GROWTH',
+        content: 'Chốt giá deal 139k tặng kèm túi zip thời trang. Growth đẩy mạnh kho 9,200 chai sẵn sàng phục vụ Mega 10.10.',
+        type: 'PRICE_DEAL',
+        createdAt: '2026-09-25T14:30:00Z'
+      }
+    ],
+    changeRequests: [],
+    auditLogs: [
+      {
+        id: 'log-ph-1-1',
+        timestamp: '2026-09-25 14:00',
+        action: 'Khởi tạo SP Thúc Đẩy',
+        actorName: 'Vũ Hoài Lâm',
+        actorRole: 'GROWTH',
+        description: 'Đề xuất pHCare Shower Fresh 150ml làm SP Thúc Đẩy số 1 của brand.'
+      }
+    ]
+  },
+  // Gian hàng 2: pHCare Official Store VN (Shopee Mall - store-phcare-sp)
+  {
+    id: 'push-phcare-2',
+    sku: 'PHCARE-FOAM-120ML',
+    productName: 'Bọt Vệ Sinh Dịu Nhẹ pHCare Daily Moisture Foam 120ml',
+    brandId: 'brand-phcare',
+    brandName: 'pHCare Japan',
+    brandCategory: 'Chăm Sóc Cá Nhân & Phụ Khoa Nữ',
+    storeId: 'store-phcare-sp',
+    storeName: 'pHCare Official Store VN (Shopee)',
+    platform: 'SHOPEE_MALL',
+    storeUrl: 'https://shopee.vn/phcare_japan',
+    imageUrl: 'https://images.unsplash.com/photo-1556228722-d0b5de70b774?auto=format&fit=crop&w=400&q=80',
+    cycleMonth: '2026/10',
+    campaignName: 'Đại Tiệc Shopee Mall 10.10 & Payday',
+    startDate: '2026-10-10',
+    endDate: '2026-10-28',
+    cycleType: 'PAYDAY',
+    originalPrice: 195000,
+    promotionalPrice: 169000,
+    discountPercent: 13,
+    affiliateRate: 17,
+    availableStock: 4500,
+    monthlySampleQuota: 120,
+    allocatedSampleCount: 30,
+    usp: 'Đầu tạo bọt tuyết siêu mịn tức thì không cần ma sát, bổ sung Ceramide & Hyaluronic Acid dưỡng ẩm dịu êm.',
+    keyMessage: 'Bọt tuyết dịu êm như mây - Nâng niu vùng nhạy cảm cùng pHCare công nghệ Nhật.',
+    viralAngle: 'Trải nghiệm nhấn đầu tạo bọt mây mịn như bông lan, cảm giác êm ái thư giãn chuẩn spa Nhật.',
+    targetKocNiche: ['Beauty Nữ', 'Skincare Body', 'Lifestyle Gen Z'],
+    pdpUrl: 'https://shopee.vn/phcare-bot-ve-sinh-120ml',
+    briefUrl: 'https://drive.google.com/phcare-foam-brief-2026',
+    doAndDonts: 'NÊN: Cảnh quay nhấn vòi tạo bọt ASMR bồng bềnh thị giác. KHÔNG: So sánh dìm hàng các thương hiệu trong nước.',
+    sampleNotes: 'Cấp 01 chai 120ml cho KOC quay video trải nghiệm ASMR.',
+    feasibilityScore: 'MEDIUM',
+    b2cEvaluationNote: 'Bao bì tạo bọt là điểm cộng thị giác lớn khi quay video ASMR. Đang thương lượng thêm 30 suất mẫu cho KOC Live.',
+    growthPic: 'Vũ Hoài Lâm',
+    b2cPic: 'Thu Thảo',
+    status: 'IN_DISCUSSION',
+    proposedAt: '2026-09-30T15:00:00Z',
+    comments: [
+      {
+        id: 'comm-ph-2-1',
+        authorName: 'Vũ Hoài Lâm',
+        authorRole: 'GROWTH',
+        content: 'Dòng bọt tuyết này giá cao hơn chai nước thông thường, Growth đề xuất quota mẫu 120 chai cho các KOC có thế mạnh quay video thẩm mỹ cao.',
+        type: 'COMMENT',
+        createdAt: '2026-09-30T15:30:00Z'
+      }
+    ],
+    changeRequests: [],
+    auditLogs: [
+      {
+        id: 'log-ph-2-1',
+        timestamp: '2026-09-30 15:00',
+        action: 'Khởi tạo SP Thúc Đẩy',
+        actorName: 'Vũ Hoài Lâm',
+        actorRole: 'GROWTH',
+        description: 'Tạo đề xuất Bọt vệ sinh pHCare Foam làm SP Thúc Đẩy số 2 của brand trên Shopee Mall.'
+      }
+    ]
+  },
+  // Tương lai Tháng 11:
+  {
+    id: 'push-phcare-future-1',
+    sku: 'PHCARE-TRAVEL-DUO',
+    productName: 'Combo 2 Chai Bỏ Túi pHCare Mini Pocket 50ml x 2 (Du Lịch & Thể Thao)',
+    brandId: 'brand-phcare',
+    brandName: 'pHCare Japan',
+    brandCategory: 'Chăm Sóc Cá Nhân & Phụ Khoa Nữ',
+    storeId: 'store-phcare-tts',
+    storeName: 'pHCare Japan Official (TikTok)',
+    platform: 'TIKTOK_SHOP',
+    storeUrl: 'https://shop.tiktok.com/view/product/phcare-official',
+    imageUrl: 'https://images.unsplash.com/photo-1556228578-0d85b1a4d571?auto=format&fit=crop&w=400&q=80',
+    cycleMonth: '2026/11',
+    campaignName: 'Mùa Du Lịch & Dã Ngoại Cuối Năm (Mega 11.11)',
+    startDate: '2026-11-01',
+    endDate: '2026-11-30',
+    cycleType: 'MONTHLY',
+    originalPrice: 150000,
+    promotionalPrice: 119000,
+    discountPercent: 21,
+    affiliateRate: 20,
+    availableStock: 7000,
+    monthlySampleQuota: 160,
+    allocatedSampleCount: 0,
+    usp: 'Thiết kế mini pocket 50ml tiện lợi bỏ gọn túi xách hay balo tập gym, có nắp khóa chống tràn khi di chuyển.',
+    keyMessage: 'Bí kíp bỏ túi của cô nàng năng động - Thơm tho sạch thoáng mọi chuyến đi xa.',
+    viralAngle: 'What in my gym bag / travel bag - Món đồ bất ly thân của các bạn nữ mê thể thao.',
+    targetKocNiche: ['Lifestyle Nữ', 'Gym & Fitness', 'Travel Creator'],
+    pdpUrl: 'https://shop.tiktok.com/view/product/phcare-mini-duo',
+    briefUrl: 'https://drive.google.com/phcare-mini-brief-nov2026',
+    feasibilityScore: 'HIGH_VIRAL',
+    growthPic: 'Vũ Hoài Lâm',
+    b2cPic: 'Thu Thảo',
+    status: 'PROPOSED',
+    proposedAt: '2026-10-07T16:00:00Z',
+    comments: [
+      {
+        id: 'comm-ph-f-1',
+        authorName: 'Vũ Hoài Lâm',
+        authorRole: 'GROWTH',
+        content: 'Dòng mini 50ml bán theo cặp này giá deal 119k rất hút tệp học sinh sinh viên và dân công sở đi du lịch cuối năm.',
+        type: 'COMMENT',
+        createdAt: '2026-10-07T16:30:00Z'
+      }
+    ],
+    changeRequests: [],
+    auditLogs: [
+      {
+        id: 'log-ph-f-1',
+        timestamp: '2026-10-07 16:00',
+        action: 'Khởi tạo SP Thúc Đẩy Tháng Sau',
+        actorName: 'Vũ Hoài Lâm',
+        actorRole: 'GROWTH',
+        description: 'Tạo đề xuất Combo Mini Pocket cho chu kỳ Tháng 11/2026.'
+      }
+    ]
+  }
+];

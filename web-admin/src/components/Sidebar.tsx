@@ -18,6 +18,7 @@ import {
   BookOpen,
   Calculator,
   Calendar,
+  Flame,
   X,
   LogOut
 } from 'lucide-react';
@@ -27,6 +28,7 @@ export type TabKey =
   | 'cockpit'
   | 'overview'
   | 'input-plan'
+  | 'push-products'
   | 'stores'
   | 'campaigns'
   | 'brand-knowledge'
@@ -97,6 +99,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
           icon: Calendar,
           badge: 'Tháng 10',
           badgeType: 'team'
+        },
+        {
+          key: 'push-products',
+          label: 'Sản Phẩm Thúc Đẩy',
+          icon: Flame
         },
         {
           key: 'booking',
