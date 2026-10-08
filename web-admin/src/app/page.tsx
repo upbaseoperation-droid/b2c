@@ -513,7 +513,7 @@ export default function App() {
       />
 
       {/* Main Content Space */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 lg:pl-60">
         <TopHeader
           currentUser={currentUser}
           onUserChange={setCurrentUser}

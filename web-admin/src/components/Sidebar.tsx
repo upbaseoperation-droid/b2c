@@ -139,10 +139,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
       )}
 
       <aside
-        className={`w-60 bg-surface border-r border-line flex flex-col shrink-0 h-screen select-none transition-transform duration-200 ease-in-out ${
+        className={`w-60 bg-surface border-r border-line flex flex-col shrink-0 h-screen select-none transition-transform duration-200 ease-in-out fixed inset-y-0 left-0 z-30 overscroll-contain ${
           isMobileOpen
-            ? 'fixed inset-y-0 left-0 z-50 translate-x-0 shadow-2xl'
-            : 'fixed inset-y-0 left-0 -translate-x-full lg:sticky lg:top-0 lg:translate-x-0 z-30'
+            ? 'translate-x-0 shadow-2xl z-50'
+            : '-translate-x-full lg:translate-x-0'
         }`}
         aria-label="Điều hướng chính"
       >
@@ -160,7 +160,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           )}
         </div>
 
-        <nav className="flex-1 overflow-y-auto px-3 pt-2 pb-4 space-y-5 sidebar-scrollbar">
+        <nav className="flex-1 overflow-y-auto px-3 pt-2 pb-4 space-y-5 sidebar-scrollbar overscroll-contain">
           {navSections.map((section) => (
             <div key={section.title}>
               <div className="px-2 pb-1 text-2xs font-medium text-ink-3">{section.title}</div>
