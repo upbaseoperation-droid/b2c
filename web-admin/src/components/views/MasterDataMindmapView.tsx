@@ -36,8 +36,8 @@ import {
   Eye,
   ShoppingBag
 } from 'lucide-react';
-import { UserProfile, BrandDetail, EcomStore, HeroProduct, StaffMasterMember } from '../../lib/types';
-import { INITIAL_BRANDS, STAFF_MASTER_DIRECTORY } from '../../lib/mockData';
+import { UserProfile, BrandDetail, EcomStore, HeroProduct, StaffMasterMember, StorePortfolioItem } from '../../lib/types';
+import { INITIAL_BRANDS, STAFF_MASTER_DIRECTORY, INITIAL_STORE_PORTFOLIOS } from '../../lib/mockData';
 
 // Extended type for Store with explicit Store-specific Product IDs and PIC hierarchy
 export interface StoreProductSkuMap {
@@ -70,22 +70,9 @@ export interface MindmapStoreNode {
   storeProducts: StoreProductSkuMap[];
 }
 
-interface MasterDataMindmapViewProps {
-  currentUser: UserProfile;
-  onOpenQuickBookWithBrand?: (brandName: string) => void;
-  onNotify?: (msg: string) => void;
-}
+// 5 Demo stores with rich manually-tuned SKUs
+export const STATIC_DETAILED_DEMO_STORES: MindmapStoreNode[] = [
 
-export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
-  currentUser,
-  onOpenQuickBookWithBrand,
-  onNotify
-}) => {
-  // Master Brands list
-  const [brands, setBrands] = useState<BrandDetail[]>(INITIAL_BRANDS);
-
-  // Initialize Store nodes with 1 Primary PIC + Sub-PICs + Store-specific Product IDs
-  const [stores, setStores] = useState<MindmapStoreNode[]>([
     // Brand 1: Kutieskin
     {
       id: 'store-kuti-tts',
@@ -276,13 +263,225 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
         }
       ]
     }
-  ]);
+];
+
+// Helper: Convert all 131+ StorePortfolioItems into rich MindmapStoreNodes
+export function buildMindmapStoresAndBrands(
+  rawPortfolios: StorePortfolioItem[] = INITIAL_STORE_PORTFOLIOS,
+  baseBrands: BrandDetail[] = INITIAL_BRANDS
+) {
+  // 1. Build Brands Map
+  const brandMap = new Map<string, BrandDetail>();
+  baseBrands.forEach(b => {
+    brandMap.set(b.name.trim().toLowerCase(), b);
+  });
+
+  const brandColors = ['#3b82f6', '#8b5cf6', '#ec4899', '#10b981', '#f59e0b', '#06b6d4', '#6366f1', '#14b8a6', '#f43f5e', '#84cc16'];
+
+  rawPortfolios.forEach((s, idx) => {
+    const bName = (s.brandName || 'Thương hiệu').trim();
+    const key = bName.toLowerCase();
+
+    if (!brandMap.has(key)) {
+      const brandId = `brand-${bName.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
+      const color = brandColors[brandMap.size % brandColors.length];
+
+      const sameStores = rawPortfolios.filter(st => (st.brandName || '').trim().toLowerCase() === key);
+      const totalGmv = sameStores.reduce((acc, curr) => acc + (curr.monthlyTargetGmv || 350000000), 0);
+      const totalBudget = sameStores.reduce((acc, curr) => acc + (curr.monthlyBudget || 100000000), 0);
+
+      const newBrand: BrandDetail = {
+        id: brandId,
+        code: bName.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6) || `BR${idx}`,
+        name: bName,
+        companyName: `Công ty TNHH Phân Phối ${bName} Việt Nam`,
+        category: s.category || 'Mỹ phẩm & Chăm sóc cá nhân',
+        color,
+        status: 'ACTIVE',
+        planBudget: totalBudget,
+        spentBudget: Math.round(totalBudget * 0.42),
+        targetGmv: totalGmv,
+        currentGmv: Math.round(totalGmv * 0.48),
+        targetVideos: sameStores.length * 15,
+        airedVideos: Math.round(sameStores.length * 8),
+        accountPic: s.accountOwnerName || 'Chưa gán',
+        growthPic: s.growthPic || 'Chưa gán',
+        bookingPicLead: (s.b2cOwners && s.b2cOwners[0]) || s.b2cOwnerName || 'Chưa gán',
+        brandGuideline: `Bộ quy chuẩn nhận diện thương hiệu & định hướng nội dung ${bName}.`,
+        kocCriteria: `KOC/KOL từ 50k-500k followers ngành ${s.category || 'Lifestyle & Beauty'}.`,
+        stores: [],
+        heroProducts: []
+      };
+
+      brandMap.set(key, newBrand);
+    }
+  });
+
+  const finalBrands = Array.from(brandMap.values());
+
+  // 2. Build Store Nodes
+  const existingMap = new Map<string, MindmapStoreNode>();
+  STATIC_DETAILED_DEMO_STORES.forEach(node => {
+    existingMap.set(node.storeName.toLowerCase(), node);
+    existingMap.set(node.id.toLowerCase(), node);
+  });
+
+  const finalStores: MindmapStoreNode[] = rawPortfolios.map((s, idx) => {
+    const existing = existingMap.get(s.storeName.toLowerCase()) || existingMap.get((s.id || '').toLowerCase());
+    if (existing) {
+      return {
+        ...existing,
+        id: s.id || existing.id,
+        primaryPic: s.accountOwnerName || existing.primaryPic,
+        memberPics: [
+          ...(s.growthPic && s.growthPic !== 'Chưa gán' ? [`Growth: ${s.growthPic}`] : []),
+          ...(s.contentPic && s.contentPic !== 'Chưa gán' ? [`Content: ${s.contentPic}`] : []),
+          ...(s.mediaPic && s.mediaPic !== 'Chưa gán' ? [`Media: ${s.mediaPic}`] : []),
+          ...(s.csListingPic && s.csListingPic !== 'Chưa gán' ? [`CS/Listing: ${s.csListingPic}`] : []),
+          ...((s.b2cOwners || []).filter(bo => bo && bo !== 'Chưa gán' && bo !== s.accountOwnerName).map(bo => `Booking: ${bo}`))
+        ].filter((val, i, arr) => arr.indexOf(val) === i && val !== `Growth: ${s.accountOwnerName}`),
+        assignmentNotes: s.assignmentNotes || existing.assignmentNotes
+      };
+    }
+
+    // Platform normalization
+    let platform: 'TIKTOK_SHOP' | 'SHOPEE_MALL' | 'LAZADA' = 'TIKTOK_SHOP';
+    const platStr = (s.platform || '').toLowerCase();
+    if (platStr.includes('shopee')) {
+      platform = 'SHOPEE_MALL';
+    } else if (platStr.includes('lazada') || platStr.includes('lzd')) {
+      platform = 'LAZADA';
+    } else {
+      platform = 'TIKTOK_SHOP';
+    }
+
+    const brandName = (s.brandName || 'Thương hiệu').trim();
+    const brandId = `brand-${brandName.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
+
+    const primaryPic = (s.accountOwnerName && s.accountOwnerName !== 'Chưa gán')
+      ? s.accountOwnerName
+      : ((s.b2cOwners && s.b2cOwners[0] && s.b2cOwners[0] !== 'Chưa gán')
+          ? s.b2cOwners[0]
+          : (s.b2cOwnerName && s.b2cOwnerName !== 'Chưa gán' ? s.b2cOwnerName : 'Chưa gán'));
+
+    const memberPics: string[] = [];
+    if (s.growthPic && s.growthPic !== 'Chưa gán' && s.growthPic !== primaryPic) {
+      memberPics.push(`Growth: ${s.growthPic}`);
+    }
+    if (s.contentPic && s.contentPic !== 'Chưa gán' && s.contentPic !== primaryPic) {
+      memberPics.push(`Content: ${s.contentPic}`);
+    }
+    if (s.mediaPic && s.mediaPic !== 'Chưa gán' && s.mediaPic !== primaryPic) {
+      memberPics.push(`Media: ${s.mediaPic}`);
+    }
+    if (s.csListingPic && s.csListingPic !== 'Chưa gán' && s.csListingPic !== primaryPic) {
+      memberPics.push(`CS/Listing: ${s.csListingPic}`);
+    }
+    if (s.b2cOwners && Array.isArray(s.b2cOwners)) {
+      s.b2cOwners.forEach(bo => {
+        if (bo && bo !== 'Chưa gán' && bo !== primaryPic && !memberPics.some(m => m.includes(bo))) {
+          memberPics.push(`Booking: ${bo}`);
+        }
+      });
+    }
+
+    const cleanBrandSlug = brandName.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5) || 'SKU';
+    const storeShortId = (s.id || `st-${idx}`).replace(/[^a-zA-Z0-9]/g, '').slice(-4);
+    const storeProducts: StoreProductSkuMap[] = [
+      {
+        masterProductId: `prod-${s.id || idx}-1`,
+        masterSku: `${cleanBrandSlug}-HERO-01`,
+        productName: `Combo Chăm Sóc & Làm Đẹp ${brandName} Best Seller`,
+        platformProductId: `${platform === 'TIKTOK_SHOP' ? 'TTS' : platform === 'SHOPEE_MALL' ? 'SP' : 'LZD'}-${storeShortId}-01`,
+        platformUrl: s.storeUrl || '#',
+        storePrice: 289000,
+        commissionRate: 15,
+        isHeroSku: true
+      },
+      {
+        masterProductId: `prod-${s.id || idx}-2`,
+        masterSku: `${cleanBrandSlug}-CORE-02`,
+        productName: `Sản Phẩm Phổ Thông ${brandName} Phân Phối Chính Hãng`,
+        platformProductId: `${platform === 'TIKTOK_SHOP' ? 'TTS' : platform === 'SHOPEE_MALL' ? 'SP' : 'LZD'}-${storeShortId}-02`,
+        platformUrl: s.storeUrl || '#',
+        storePrice: 199000,
+        commissionRate: 12,
+        isHeroSku: false
+      }
+    ];
+
+    return {
+      id: s.id || `store-mindmap-${idx}`,
+      brandId,
+      brandName,
+      storeName: s.storeName,
+      platform,
+      storeId: s.storeOperation || s.storeName,
+      storeUrl: s.storeUrl || '#',
+      status: (s.accountStatus === 'ACTIVE' || s.operationStatus === 'Live') ? 'ACTIVE' : 'PAUSED',
+      monthlyTargetGmv: s.monthlyTargetGmv || 400000000,
+      monthlyBudget: s.monthlyBudget || 120000000,
+      primaryPic,
+      memberPics,
+      assignmentNotes: s.assignmentNotes || `PIC Chính: ${primaryPic} | Squad hỗ trợ: ${memberPics.join(', ') || 'Chưa gán'}`,
+      storeProducts
+    };
+  });
+
+  return { brands: finalBrands, stores: finalStores };
+}
+
+export interface MasterDataMindmapViewProps {
+  currentUser: UserProfile;
+  onOpenQuickBookWithBrand?: (brandName: string) => void;
+  onNotify?: (msg: string) => void;
+  storePortfolios?: StorePortfolioItem[];
+  brands?: BrandDetail[];
+}
+
+export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
+  currentUser,
+  onOpenQuickBookWithBrand,
+  onNotify,
+  storePortfolios,
+  brands: initialBrandsProp
+}) => {
+  // Pre-calculate initial brands and stores from live portfolios (131 Live + internal stores)
+  const initialData = useMemo(() => {
+    return buildMindmapStoresAndBrands(
+      storePortfolios && storePortfolios.length > 0 ? storePortfolios : INITIAL_STORE_PORTFOLIOS,
+      initialBrandsProp && initialBrandsProp.length > 0 ? initialBrandsProp : INITIAL_BRANDS
+    );
+  }, [storePortfolios, initialBrandsProp]);
+
+  // Master Brands list (derived dynamically from 131 stores + initial brands)
+  const [brands, setBrands] = useState<BrandDetail[]>(initialData.brands);
+
+  // Initialize Store nodes with 1 Primary PIC + Sub-PICs + Store-specific Product IDs
+  const [stores, setStores] = useState<MindmapStoreNode[]>(initialData.stores);
+
+  // Synchronize when initialData changes
+  React.useEffect(() => {
+    setBrands(initialData.brands);
+    setStores(initialData.stores);
+  }, [initialData]);
 
   // UI Interactive States for Mindmap
   // Set of expanded node IDs: 'root', 'brand-xxx', 'store-xxx', 'store-xxx-staff', 'store-xxx-products', etc.
-  const [expandedNodes, setExpandedNodes] = useState<Set<string>>(
-    new Set(['root', 'brand-kutieskin', 'store-kuti-tts', 'store-kuti-tts-staff', 'store-kuti-tts-products', 'brand-facerepublic', 'store-fr-tts'])
-  );
+  const [expandedNodes, setExpandedNodes] = useState<Set<string>>(() => {
+    const initialSet = new Set(['root']);
+    if (initialData.brands[0]) initialSet.add(initialData.brands[0].id);
+    if (initialData.stores[0]) {
+      initialSet.add(initialData.stores[0].id);
+      initialSet.add(`${initialData.stores[0].id}-staff`);
+      initialSet.add(`${initialData.stores[0].id}-products`);
+    }
+    initialSet.add('brand-kutieskin');
+    initialSet.add('store-kuti-tts');
+    initialSet.add('store-kuti-tts-staff');
+    initialSet.add('store-kuti-tts-products');
+    return initialSet;
+  });
 
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
@@ -297,10 +496,10 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
   const [selectedNode, setSelectedNode] = useState<{
     type: 'ROOT' | 'BRAND' | 'STORE' | 'STAFF' | 'PRODUCT';
     data: any;
-  } | null>({
+  } | null>(() => ({
     type: 'STORE',
-    data: stores[0]
-  });
+    data: initialData.stores[0] || null
+  }));
 
   // Edit / Assignment Modal State inside Inspector
   const [isEditingStorePic, setIsEditingStorePic] = useState(false);

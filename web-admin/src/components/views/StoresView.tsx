@@ -475,6 +475,7 @@ export const StoresView: React.FC<StoresViewProps> = ({
       {/* RENDER MODULE 0: INTERACTIVE MINDMAP MASTER DATA */}
       {activeStoreTab === 'MINDMAP' && (
         <MasterDataMindmapView
+          storePortfolios={storePortfolios}
           currentUser={currentUser}
           onOpenQuickBookWithBrand={onOpenQuickBookWithBrand}
           onNotify={msg => setAssignmentToast(msg)}
