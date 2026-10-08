@@ -11,8 +11,10 @@ const SHOW_ROLE_SWITCHER =
   process.env.NODE_ENV !== 'production' || process.env.NEXT_PUBLIC_ENABLE_ROLE_SWITCHER === '1';
 
 const ROLE_LABEL: Record<UserProfile['role'], string> = {
-  ADMIN: 'Quản trị',
+  ADMIN: 'Quản trị (BOD)',
   MANAGER: 'Trưởng phòng',
+  LEADER: 'Trưởng nhóm (PIC Lead)',
+  MEMBER: 'Chuyên viên vận hành',
   BRAND_MEMBER: 'Brand PIC',
   CONTENT_MEMBER: 'Content',
   BOOKING_MEMBER: 'Booking',

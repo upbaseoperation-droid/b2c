@@ -30,7 +30,7 @@ import { KocKolHubView } from '../components/views/KocKolHubView';
 import { WeeklyAdsReportHubView } from '../components/views/WeeklyAdsReportHubView';
 import { ExecutiveDashboardReportsView } from '../components/views/ExecutiveDashboardReportsView';
 import { ContentAngleSetupView } from '../components/views/ContentAngleSetupView';
-import { ThirdPartyAccessSetupView } from '../components/views/ThirdPartyAccessSetupView';
+import { CentralizedRbacHubView } from '../components/views/CentralizedRbacHubView';
 import { isThirdPartyPartner, getPartnerLandingTab } from '../lib/thirdPartyAccessData';
 
 import { 
@@ -472,7 +472,7 @@ export default function App() {
     'brand-knowledge': { title: 'Hướng dẫn nhãn hàng', subtitle: 'Thông tin thương hiệu, hồ sơ pháp lý, Hero SKU và từ khóa cần tránh' },
     content: { title: 'Kịch bản', subtitle: '' },
     'content-angles': { title: 'Thiết Lập Góc Nội Dung (Content Angles)', subtitle: 'Kho kịch bản phân rã theo Trụ cột nội dung và từng sản phẩm của gian hàng' },
-    'partner-access': { title: 'Phân Quyền Đối Tác (Gmail SSO)', subtitle: 'Cấp quyền truy cập Gmail cho Brand, KOC/KOL và CTV phân quyền xem theo nhãn' },
+    'partner-access': { title: 'Quản Trị Phân Quyền & RBAC Tập Trung', subtitle: 'Ma trận phân quyền 7 vai trò, quản lý PIC nhân sự nội bộ và cấp quyền Gmail cho đối tác bên thứ 3' },
     booking: { title: 'Booking', subtitle: '' },
     'koc-master': { title: 'Danh bạ KOC', subtitle: 'Hồ sơ KOC, giấy tờ pháp lý và mẫu hợp đồng' },
     contracts: { title: 'Hợp đồng & thanh toán', subtitle: '' },
@@ -690,11 +690,15 @@ export default function App() {
           )}
 
           {activeTab === 'partner-access' && (
-            <ThirdPartyAccessSetupView
+            <CentralizedRbacHubView
               currentUser={currentUser}
               brands={brands}
               kocs={kocs}
               onNotify={showToast}
+              onImpersonateUser={(user) => {
+                setCurrentUser(user);
+                showToast(`Đã đóng vai nhân sự ${user.name} (${user.roleTitle})`, 'info');
+              }}
               onImpersonatePartner={(partnerUser) => {
                 setCurrentUser(partnerUser);
                 const targetTab = getPartnerLandingTab(partnerUser);

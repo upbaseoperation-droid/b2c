@@ -152,7 +152,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       title: 'Dữ liệu',
       items: [
         { key: 'master-data', label: 'Dữ liệu gốc (Master Data)', icon: Database },
-        { key: 'partner-access', label: 'Phân quyền đối tác (Gmail)', icon: KeyRound }
+        { key: 'partner-access', label: 'Phân quyền & RBAC tập trung', icon: KeyRound }
       ],
     },
     {

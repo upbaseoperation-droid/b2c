@@ -4,6 +4,8 @@ export type UserRole =
   | 'CONTENT_MEMBER' 
   | 'BOOKING_MEMBER' 
   | 'MANAGER'
+  | 'LEADER'
+  | 'MEMBER'
   | 'BRAND_PARTNER' // Đại diện đối tác Brand đăng nhập Gmail
   | 'KOC_PARTNER'   // Creator / KOC đăng nhập Gmail
   | 'CTV_PARTNER';  // Cộng tác viên kênh nội bộ đăng nhập Gmail
@@ -55,6 +57,56 @@ export interface ThirdPartyAccessAccount {
   createdAt?: string;
   createdBy?: string;
 }
+
+export type PermissionAccessLevel = 'ALL' | 'SCOPED' | 'VIEW' | 'APPROVE' | 'DENIED';
+
+export interface PermissionMatrixItem {
+  id: string;
+  category: 'PLANNING' | 'BOOKING_CONTENT' | 'CONTRACTS_FINANCE' | 'PERFORMANCE_ADS' | 'SYSTEM_MASTER';
+  categoryTitle: string;
+  featureName: string;
+  description: string;
+  permissions: Record<string, PermissionAccessLevel>;
+  securityNote?: string;
+}
+
+export interface InternalStaffRbacMember {
+  id: string;
+  name: string;
+  email: string;
+  avatar: string;
+  role: UserRole;
+  roleTitle: string;
+  department: string;
+  position: string;
+  picBrands: string[];
+  permissions: {
+    canApproveBudget: boolean;
+    canApproveP3: boolean;
+    canApprovePayment: boolean;
+    canViewAllBrands: boolean;
+    canExportRawData: boolean;
+    canManageMasterData: boolean;
+  };
+  status: 'ACTIVE' | 'SUSPENDED';
+  lastActive: string;
+  authMethod: 'LARK_SSO';
+}
+
+export interface RbacAuditLogItem {
+  id: string;
+  timestamp: string;
+  actorName: string;
+  actorEmail: string;
+  actorRole: string;
+  actionType: 'LOGIN' | 'ROLE_CHANGE' | 'PERMISSION_TOGGLE' | 'IMPERSONATE' | 'INVITE_PARTNER' | 'SUSPEND_USER';
+  targetUserOrEntity: string;
+  description: string;
+  ipAddress: string;
+  deviceInfo: string;
+  status: 'SUCCESS' | 'WARNING';
+}
+
 
 export type KocTier = 'TIER_1_CELEB' | 'TIER_2_MACRO' | 'TIER_3_MICRO' | 'TIER_4_AFFILIATE';
 
