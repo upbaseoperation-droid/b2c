@@ -36,7 +36,8 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
     accountOwnerName: '',
     growthPic: '',
     contentPic: '',
-    storeUrl: ''
+    storeUrl: '',
+    operationStatus: 'Live' as 'Live' | 'Off' | 'Kênh nội bộ'
   });
 
   // Extract unique packages
@@ -53,7 +54,11 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
     return stores.filter(s => {
       if (selectedPlatform !== 'ALL' && s.platform !== selectedPlatform) return false;
       if (selectedPackage !== 'ALL' && s.servicePackage !== selectedPackage) return false;
-      if (selectedStatus !== 'ALL' && s.accountStatus !== selectedStatus) return false;
+      if (selectedStatus !== 'ALL') {
+        if (selectedStatus === 'Live' && s.operationStatus !== 'Live' && s.accountStatus !== 'ACTIVE') return false;
+        if (selectedStatus === 'Off' && s.operationStatus !== 'Off' && s.accountStatus !== 'OFFBOARDED') return false;
+        if (selectedStatus === 'Kênh nội bộ' && s.operationStatus !== 'Kênh nội bộ' && s.accountStatus !== 'MAINTENANCE') return false;
+      }
       if (search.trim()) {
         const q = search.toLowerCase();
         return (
@@ -81,7 +86,9 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
   const shopeeCount = stores.filter(s => s.platform === 'Shopee Mall').length;
   const tiktokCount = stores.filter(s => s.platform === 'TikTok Shop').length;
   const lazadaCount = stores.filter(s => s.platform === 'Lazada').length;
-  const activeCount = stores.filter(s => s.accountStatus === 'ACTIVE').length;
+  const liveCount = stores.filter(s => s.operationStatus === 'Live' || s.accountStatus === 'ACTIVE').length;
+  const offCount = stores.filter(s => s.operationStatus === 'Off' || s.accountStatus === 'OFFBOARDED').length;
+  const internalCount = stores.filter(s => s.operationStatus === 'Kênh nội bộ' || s.accountStatus === 'MAINTENANCE').length;
 
   const handleOpenAdd = () => {
     setEditingStore(null);
@@ -93,7 +100,8 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
       accountOwnerName: '',
       growthPic: '',
       contentPic: '',
-      storeUrl: ''
+      storeUrl: '',
+      operationStatus: 'Live'
     });
     setIsModalOpen(true);
   };
@@ -108,7 +116,8 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
       accountOwnerName: s.accountOwnerName || '',
       growthPic: s.growthPic || '',
       contentPic: s.contentPic || '',
-      storeUrl: s.storeUrl || ''
+      storeUrl: s.storeUrl || '',
+      operationStatus: s.operationStatus || (s.accountStatus === 'ACTIVE' ? 'Live' : 'Off')
     });
     setIsModalOpen(true);
   };
@@ -116,6 +125,9 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.storeName.trim()) return;
+
+    const opStatus = form.operationStatus;
+    const accStatus = opStatus === 'Live' ? 'ACTIVE' : (opStatus === 'Off' ? 'OFFBOARDED' : 'MAINTENANCE');
 
     if (editingStore) {
       setStores(prev => prev.map(s => s.id === editingStore.id ? {
@@ -127,7 +139,9 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
         accountOwnerName: form.accountOwnerName.trim() || s.accountOwnerName,
         growthPic: form.growthPic.trim() || s.growthPic,
         contentPic: form.contentPic.trim() || s.contentPic,
-        storeUrl: form.storeUrl.trim() || s.storeUrl
+        storeUrl: form.storeUrl.trim() || s.storeUrl,
+        operationStatus: opStatus,
+        accountStatus: accStatus
       } : s));
       if (onNotify) onNotify(`Đã cập nhật gian hàng [${form.storeName}]`);
     } else {
@@ -141,7 +155,8 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
         serviceModel: 'FULL_SERVICE',
         difficultyTier: 'Tiêu chuẩn',
         difficultyMultiplier: 1.0,
-        accountStatus: 'ACTIVE',
+        accountStatus: accStatus,
+        operationStatus: opStatus,
         category: 'Tiêu dùng & Bán lẻ',
         monthlyTargetGmv: 150000000,
         monthlyBudget: 25000000,
@@ -170,8 +185,16 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
             <span className="text-xl font-bold font-mono text-slate-900">{stores.length}</span>
             <span className="text-2xs text-slate-500">stores</span>
           </div>
-          <div className="text-2xs text-emerald-600 mt-1 font-semibold">
-            {activeCount} gian hàng đang vận hành (Live)
+          <div className="text-2xs text-emerald-600 mt-1 font-semibold flex items-center gap-1.5 flex-wrap">
+            <span>{liveCount} Live</span>
+            <span className="text-slate-300">•</span>
+            <span className="text-slate-500">{offCount} Off</span>
+            {internalCount > 0 && (
+              <>
+                <span className="text-slate-300">•</span>
+                <span className="text-indigo-600">{internalCount} Nội bộ</span>
+              </>
+            )}
           </div>
         </div>
 
@@ -271,9 +294,12 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
             }}
             className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-700 focus:outline-none shrink-0"
           >
-            <option value="ALL">Mọi trạng thái</option>
-            <option value="ACTIVE">Đang Live</option>
-            <option value="OFFBOARDED">Đã Off</option>
+            <option value="ALL">Mọi trạng thái ({stores.length})</option>
+            <option value="Live">Đang Live ({liveCount})</option>
+            <option value="Off">Đã Off ({offCount})</option>
+            {internalCount > 0 && (
+              <option value="Kênh nội bộ">Kênh nội bộ ({internalCount})</option>
+            )}
           </select>
         </div>
 
@@ -388,13 +414,19 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
 
                   {/* Trạng thái */}
                   <td className="py-3 px-4 text-center">
-                    <span className={`px-2 py-0.5 rounded text-2xs font-semibold ${
-                      s.accountStatus === 'ACTIVE' 
-                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
-                        : 'bg-slate-100 text-slate-500'
-                    }`}>
-                      {s.accountStatus === 'ACTIVE' ? 'Đang Live' : 'Đã Off'}
-                    </span>
+                    {s.operationStatus === 'Live' || s.accountStatus === 'ACTIVE' ? (
+                      <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        Live
+                      </span>
+                    ) : s.operationStatus === 'Kênh nội bộ' || s.accountStatus === 'MAINTENANCE' ? (
+                      <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                        Kênh nội bộ
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-slate-100 text-slate-500 border border-slate-200">
+                        Off
+                      </span>
+                    )}
                   </td>
 
                   {/* Thao tác */}
@@ -484,7 +516,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 <div>
                   <label className="block text-slate-600 font-medium mb-1">Thuộc thương hiệu</label>
                   <input
@@ -506,6 +538,18 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                     <option value="Shopee Mall">Shopee Mall</option>
                     <option value="TikTok Shop">TikTok Shop</option>
                     <option value="Lazada">Lazada</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-slate-600 font-medium mb-1">Trạng thái vận hành</label>
+                  <select
+                    value={form.operationStatus}
+                    onChange={(e) => setForm(prev => ({ ...prev, operationStatus: e.target.value as any }))}
+                    className="w-full px-3 py-1.5 border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 font-medium"
+                  >
+                    <option value="Live">Live (Đang chạy)</option>
+                    <option value="Off">Off (Đã kết thúc HĐ)</option>
+                    <option value="Kênh nội bộ">Kênh nội bộ</option>
                   </select>
                 </div>
               </div>

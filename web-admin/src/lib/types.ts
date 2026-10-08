@@ -1104,8 +1104,13 @@ export interface BrandDetail {
   contractEndDate?: string;
   monthlyBudget?: number;
   storeCount?: number;
+  liveStoreCount?: number;
+  offStoreCount?: number;
+  internalStoreCount?: number;
   platforms?: string[];
   servicePackages?: string[];
+  contentPic?: string;
+  mediaPic?: string;
 }
 
 export type GrowthDemandStatus = 
@@ -1418,6 +1423,7 @@ export interface StorePortfolioItem {
   brandId?: string; // Mã Brand ID (BRAND001...)
   cmsRate?: number | string; // % CMS thu Brand
   fixFeeLivePerHour?: number; // Fix fee / giờ livestream
+  operationStatus?: 'Live' | 'Off' | 'Kênh nội bộ';
 }
 
 // MASTER DATA NHÂN VIÊN & PHÂN CÔNG GIAN HÀNG

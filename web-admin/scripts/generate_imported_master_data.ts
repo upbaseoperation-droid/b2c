@@ -181,13 +181,33 @@ async function run() {
   await wbStores.xlsx.readFile(path.join(masterDir, 'B2C_Quản lý Booking_5.1 Stores.xlsx'));
   const wsStores = wbStores.worksheets[0];
   const stores: any[] = [];
-  const brandMap = new Map<string, { brandName: string; brandId?: string; storeCount: number; platforms: Set<string>; servicePackages: Set<string> }>();
+  const brandMap = new Map<string, {
+    brandName: string;
+    brandId?: string;
+    storeCount: number;
+    liveStoreCount: number;
+    offStoreCount: number;
+    internalStoreCount: number;
+    platforms: Set<string>;
+    servicePackages: Set<string>;
+    accountPic?: string;
+    growthPic?: string;
+    contentPic?: string;
+    mediaPic?: string;
+    stores: any[];
+  }>();
+
+  const validStatuses = new Set(['Live', 'Off', 'Kênh nội bộ']);
 
   wsStores.eachRow((row, rowNumber) => {
     if (rowNumber === 1) return;
     const vals = Array.isArray(row.values) ? row.values.slice(1) : [];
     const storeOp = cleanStr(vals[0]);
     const brandName = cleanStr(vals[2]) || cleanStr(vals[3]);
+    const statusRaw = cleanStr(vals[15]);
+
+    // BỎ CÁC GIAN HÀNG NHÁP/BLANK - CHỈ GIỮ LẠI: Live, Off, Kênh nội bộ
+    if (!validStatuses.has(statusRaw)) return;
     if (!brandName || !storeOp) return;
 
     const brandId = cleanStr(vals[30]); // Brand ID
@@ -204,7 +224,6 @@ async function run() {
     const csDesignPic = cleanStr(vals[12]);
     const mediaPic = cleanStr(vals[13]);
     const contentPic = cleanStr(vals[14]);
-    const statusRaw = cleanStr(vals[15]);
     const liveDate = formatDate(vals[16]);
     const offDate = formatDate(vals[18]);
     const livestreamPic = cleanStr(vals[25]);
@@ -216,16 +235,24 @@ async function run() {
     if (servicePkg.toLowerCase().includes('live')) serviceModel = 'LIVESTREAM_DEDICATED';
     else if (servicePkg.toLowerCase().includes('mcn') || servicePkg.toLowerCase().includes('affiliate')) serviceModel = 'AFFILIATE_ONLY';
 
+    let accountStatus: 'ACTIVE' | 'OFFBOARDED' | 'MAINTENANCE' = 'ACTIVE';
+    if (statusRaw === 'Off') accountStatus = 'OFFBOARDED';
+    else if (statusRaw === 'Kênh nội bộ') accountStatus = 'MAINTENANCE';
+
+    const storeId = `ST-${String(stores.length + 1).padStart(4, '0')}`;
+    const storeUrl = cleanStr(vals[7]) || `https://${platform.toLowerCase().replace(/\s+/g, '')}.vn/${storeOp.replace(/[^a-zA-Z0-9]/g, '').toLowerCase()}`;
+
     const storeItem = {
-      id: `ST-${String(stores.length + 1).padStart(4, '0')}`,
+      id: storeId,
       brandName,
       storeName: storeOp,
       platform,
-      storeUrl: cleanStr(vals[7]) || `https://${platform.toLowerCase().replace(/\s+/g, '')}.vn/${storeOp.replace(/[^a-zA-Z0-9]/g, '').toLowerCase()}`,
+      storeUrl,
       serviceModel,
       difficultyTier: 'Tiêu chuẩn',
       difficultyMultiplier: 1.0,
-      accountStatus: statusRaw === 'Live' || (!statusRaw && liveDate) ? 'ACTIVE' : 'OFFBOARDED',
+      accountStatus,
+      operationStatus: statusRaw as 'Live' | 'Off' | 'Kênh nội bộ',
       category: 'Tiêu dùng & Bán lẻ',
       monthlyTargetGmv: 150000000,
       monthlyBudget: 25000000,
@@ -255,44 +282,85 @@ async function run() {
         brandName,
         brandId,
         storeCount: 0,
+        liveStoreCount: 0,
+        offStoreCount: 0,
+        internalStoreCount: 0,
         platforms: new Set(),
-        servicePackages: new Set()
+        servicePackages: new Set(),
+        accountPic,
+        growthPic,
+        contentPic,
+        mediaPic,
+        stores: []
       });
     }
     const bInfo = brandMap.get(brandName)!;
     bInfo.storeCount += 1;
+    if (statusRaw === 'Live') bInfo.liveStoreCount += 1;
+    else if (statusRaw === 'Off') bInfo.offStoreCount += 1;
+    else if (statusRaw === 'Kênh nội bộ') bInfo.internalStoreCount += 1;
+
     if (rawPlatform) bInfo.platforms.add(platform);
     if (servicePkg) bInfo.servicePackages.add(servicePkg);
+    if (!bInfo.accountPic && accountPic) bInfo.accountPic = accountPic;
+    if (!bInfo.growthPic && growthPic) bInfo.growthPic = growthPic;
+    if (!bInfo.contentPic && contentPic) bInfo.contentPic = contentPic;
+    if (!bInfo.mediaPic && mediaPic) bInfo.mediaPic = mediaPic;
+
+    let ecomPlatform: 'TIKTOK_SHOP' | 'SHOPEE_MALL' | 'LAZADA' = 'SHOPEE_MALL';
+    if (platform === 'TikTok Shop') ecomPlatform = 'TIKTOK_SHOP';
+    else if (platform === 'Lazada') ecomPlatform = 'LAZADA';
+
+    bInfo.stores.push({
+      id: storeItem.id,
+      brandId: brandId || `BRAND-${String(brandMap.size).padStart(3, '0')}`,
+      platform: ecomPlatform,
+      storeName: storeOp,
+      storeId: storeOp,
+      storeUrl: storeItem.storeUrl,
+      affiliateRate: 15,
+      requiresSparkAds: true,
+      status: statusRaw === 'Live' ? 'ACTIVE' : 'PAUSED'
+    });
   });
 
-  const extractedBrands = Array.from(brandMap.values()).map((b, idx) => ({
-    id: b.brandId || `BRAND-${String(idx + 1).padStart(3, '0')}`,
-    code: b.brandId || `BRAND_${String(idx + 1).padStart(3, '0')}`,
-    name: b.brandName,
-    companyName: `${b.brandName} Corporation`,
-    category: 'Tiêu dùng & Bán lẻ',
-    color: 'bg-blue-600',
-    status: 'ACTIVE' as const,
-    planBudget: 150000000,
-    spentBudget: 0,
-    targetGmv: 500000000,
-    currentGmv: 0,
-    targetVideos: 50,
-    airedVideos: 0,
-    accountPic: 'Phương Thảo',
-    growthPic: 'Hoàng Long',
-    bookingPicLead: 'Khánh Vy',
-    brandGuideline: `Bộ quy chuẩn nội dung và thương hiệu cho ${b.brandName}`,
-    kocCriteria: 'KOC phù hợp tệp khách hàng nhãn hàng',
-    stores: [],
-    heroProducts: [],
-    contactPerson: 'Đại diện Nhãn hàng',
-    contractEndDate: '2026-12-31',
-    monthlyBudget: 150000000,
-    storeCount: b.storeCount,
-    platforms: Array.from(b.platforms),
-    servicePackages: Array.from(b.servicePackages)
-  }));
+  const extractedBrands = Array.from(brandMap.values()).map((b, idx) => {
+    const isLive = b.liveStoreCount > 0 || b.internalStoreCount > 0;
+    const brandId = b.brandId || `BRAND-${String(idx + 1).padStart(3, '0')}`;
+    return {
+      id: brandId,
+      code: b.brandId || `BRAND_${String(idx + 1).padStart(3, '0')}`,
+      name: b.brandName,
+      companyName: `${b.brandName} Corporation`,
+      category: 'Tiêu dùng & Bán lẻ',
+      color: isLive ? 'bg-emerald-600' : 'bg-slate-500',
+      status: (isLive ? 'ACTIVE' : 'PAUSED') as 'ACTIVE' | 'PAUSED' | 'UPCOMING',
+      planBudget: 150000000,
+      spentBudget: 0,
+      targetGmv: 500000000,
+      currentGmv: 0,
+      targetVideos: 50,
+      airedVideos: 0,
+      accountPic: b.accountPic || 'Phương Thảo',
+      growthPic: b.growthPic || 'Hoàng Long',
+      bookingPicLead: 'Khánh Vy',
+      contentPic: b.contentPic || 'Đặng Thị Linh',
+      mediaPic: b.mediaPic || '',
+      brandGuideline: `Bộ quy chuẩn nội dung và thương hiệu cho ${b.brandName}`,
+      kocCriteria: 'KOC phù hợp tệp khách hàng nhãn hàng',
+      stores: b.stores,
+      heroProducts: [],
+      contactPerson: 'Đại diện Nhãn hàng',
+      contractEndDate: '2026-12-31',
+      monthlyBudget: 150000000,
+      storeCount: b.storeCount,
+      liveStoreCount: b.liveStoreCount,
+      offStoreCount: b.offStoreCount,
+      internalStoreCount: b.internalStoreCount,
+      platforms: Array.from(b.platforms),
+      servicePackages: Array.from(b.servicePackages)
+    };
+  });
 
   // 6. NHÂN SỰ BOOKING (6.2)
   const wbStaff = new ExcelJS.Workbook();
