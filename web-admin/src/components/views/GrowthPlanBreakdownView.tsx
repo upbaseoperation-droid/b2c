@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { formatVndShort } from '../../lib/format';
 import { 
   Target, 
   DollarSign, 
@@ -135,13 +136,13 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
   // Validation Gate Block Reasons
   const blockReasons: string[] = [];
   if (isOverBudget) {
-    blockReasons.push(`Vượt ngân sách: Vượt ${(Math.abs(budgetHeadroom) / 1000000).toFixed(1)}M đ so với định mức Growth giao.`);
+    blockReasons.push(`Vượt ngân sách: Vượt ${formatVndShort(Math.abs(budgetHeadroom))} so với định mức Growth giao.`);
   }
   if (isHighTierBlocked) {
     blockReasons.push(`Vi phạm định mức KOC lớn: Bậc >= KL4 chiếm ${(highTierRatio * 100).toFixed(1)}% (vượt ngưỡng trần 45%).`);
   }
   if (isNmvShortfall) {
-    blockReasons.push(`Chưa đạt chỉ tiêu NMV: Dự phóng hụt ${((targetNmv - projectedNmv) / 1000000).toFixed(1)}M đ so với cam kết.`);
+    blockReasons.push(`Chưa đạt chỉ tiêu NMV: Dự phóng hụt ${formatVndShort((targetNmv - projectedNmv))} so với cam kết.`);
   }
 
   const isBlocked = blockReasons.length > 0 && !exceptionExplanation.trim();
@@ -365,21 +366,21 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
           <div>
             <div className="flex items-center gap-2.5 flex-wrap">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-2xs" />
-              <h2 className="text-base font-bold text-slate-900 tracking-tight uppercase">
-                BÀN LÀM VIỆC: PHÂN BỔ KOC / KOL TỪ YÊU CẦU GROWTH
+              <h2 className="text-base font-semibold text-slate-900 tracking-tight">
+                Bàn làm việc: Phân bổ KOC / KOL từ yêu cầu growth
               </h2>
-              <span className="text-[11px] px-2 py-0.5 rounded font-semibold bg-blue-50 text-blue-700 border border-blue-200">
-                Luồng Handoff Growth ➔ Booking
+              <span className="text-2xs px-2 py-0.5 rounded font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                Luồng Handoff Growth → Booking
               </span>
               {pendingCount > 0 && (
-                <span className="text-[11px] px-2 py-0.5 rounded font-bold bg-amber-50 text-amber-800 border border-amber-300 flex items-center gap-1 shadow-2xs">
+                <span className="text-2xs px-2 py-0.5 rounded font-semibold bg-amber-50 text-amber-800 border border-amber-300 flex items-center gap-1 shadow-2xs">
                   <Clock className="w-3 h-3 text-amber-600" />
                   {pendingCount} Yêu Cầu Chờ Lập Plan
                 </span>
               )}
             </div>
             <p className="text-xs text-slate-500 mt-1">
-              Nhận đề bài ngân sách &amp; GMV từ Growth Lead ➔ Break-down chi tiết số lượng KOC theo 4 Level (Celeb, Macro, Micro, Affiliate) &amp; dự phóng CIR thời gian thực.
+              Nhận đề bài ngân sách &amp; GMV từ Growth Lead → Break-down chi tiết số lượng KOC theo 4 Level (Celeb, Macro, Micro, Affiliate) &amp; dự phóng CIR thời gian thực.
             </p>
           </div>
 
@@ -436,11 +437,11 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
               >
                 <div>
                   <div className="flex items-center justify-between gap-1 mb-1.5">
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 font-mono">
+                    <span className="text-2xs font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 font-mono">
                       {demand.code}
                     </span>
-                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded border ${
-                      demand.status === 'PENDING_BREAKDOWN' ? 'bg-amber-50 text-amber-800 border-amber-300 animate-pulse' :
+                    <span className={`text-2xs font-semibold px-2 py-0.5 rounded border ${
+                      demand.status === 'PENDING_BREAKDOWN' ? 'bg-amber-50 text-amber-800 border-amber-300 ' :
                       demand.status === 'PLANNED' ? 'bg-blue-50 text-blue-700 border-blue-200' :
                       demand.status === 'LEAD_APPROVED' ? 'bg-emerald-50 text-emerald-700 border-emerald-300' :
                       'bg-purple-50 text-purple-700 border-purple-200'
@@ -451,20 +452,20 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
                     </span>
                   </div>
 
-                  <h4 className="text-xs font-bold text-slate-900 line-clamp-1">{demand.brandName}</h4>
-                  <p className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">{demand.title}</p>
+                  <h4 className="text-xs font-semibold text-slate-900 line-clamp-1">{demand.brandName}</h4>
+                  <p className="text-2xs text-slate-500 line-clamp-1 mt-0.5">{demand.title}</p>
                 </div>
 
-                <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px]">
+                <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-2xs">
                   <div>
-                    <span className="text-slate-400 block text-[10px]">Ngân Sách Cấp</span>
-                    <span className="font-bold text-emerald-600 font-mono">
+                    <span className="text-slate-400 block text-2xs">Ngân sách cấp</span>
+                    <span className="font-semibold text-emerald-600 font-mono">
                       {(demand.totalAssignedBudget / 1000000).toLocaleString('vi-VN')}M đ
                     </span>
                   </div>
                   <div className="text-right">
-                    <span className="text-slate-400 block text-[10px]">Mục Tiêu GMV</span>
-                    <span className="font-bold text-blue-600 font-mono">
+                    <span className="text-slate-400 block text-2xs">Mục tiêu GMV</span>
+                    <span className="font-semibold text-blue-600 font-mono">
                       {(demand.targetGmv / 1000000).toLocaleString('vi-VN')}M đ
                     </span>
                   </div>
@@ -486,10 +487,10 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200">
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">
+                  <span className="text-xs font-semibold px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">
                     {activeDemand.code}
                   </span>
-                  <h3 className="text-sm font-bold text-slate-900">{activeDemand.title}</h3>
+                  <h3 className="text-sm font-semibold text-slate-900">{activeDemand.title}</h3>
                 </div>
                 <div className="flex items-center gap-4 text-xs text-slate-500 mt-1.5 flex-wrap">
                   <span className="flex items-center gap-1">
@@ -509,7 +510,7 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
 
               {/* Status Indicator */}
               <div className="text-right">
-                <span className={`inline-block text-xs font-bold px-2.5 py-0.5 rounded border ${
+                <span className={`inline-block text-xs font-semibold px-2.5 py-0.5 rounded border ${
                   activeDemand.status === 'PENDING_BREAKDOWN' ? 'bg-amber-50 text-amber-800 border-amber-300' :
                   activeDemand.status === 'PLANNED' ? 'bg-blue-50 text-blue-700 border-blue-200' :
                   activeDemand.status === 'LEAD_APPROVED' ? 'bg-emerald-50 text-emerald-700 border-emerald-300' :
@@ -519,7 +520,7 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
                    activeDemand.status === 'PLANNED' ? 'Đã Lập (Chờ Duyệt)' :
                    activeDemand.status === 'LEAD_APPROVED' ? 'Lead Đã Duyệt' : 'Đang Triển Khai'}
                 </span>
-                <span className="text-[10px] text-slate-400 block mt-1">
+                <span className="text-2xs text-slate-400 block mt-1">
                   Hạn chót: {activeDemand.deadlineBreakdown}
                 </span>
               </div>
@@ -527,7 +528,7 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
 
             {/* Growth Brief Notes */}
             <div className="mt-3 p-3 rounded-lg bg-slate-50 border border-slate-200 text-xs">
-              <span className="font-bold text-amber-800 flex items-center gap-1.5 mb-1">
+              <span className="font-semibold text-amber-800 flex items-center gap-1.5 mb-1">
                 <Info className="w-3.5 h-3.5 text-amber-600" />
                 Định hướng &amp; Yêu cầu trọng tâm từ Growth Team:
               </span>
@@ -546,7 +547,7 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
                   onClick={() => applyPreset('GMV_MAX')}
                   className="px-2.5 py-1 rounded-md text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition cursor-pointer"
                 >
-                  Tối Đa Hóa GMV (Micro + Affiliate)
+                  Tối đa hóa GMV
                 </button>
                 <button
                   type="button"
@@ -560,17 +561,17 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
                   onClick={() => applyPreset('BALANCED')}
                   className="px-2.5 py-1 rounded-md text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition cursor-pointer"
                 >
-                  Tỷ Lệ Vàng Upbase (Chuẩn 4 Cấp)
+                  Tỷ lệ vàng Upbase (chuẩn 4 cấp)
                 </button>
               </div>
             </div>
 
-            {/* 📥 Nạp Dữ Liệu Kế Hoạch Thực Tế Từ File 4.1.1 Input Plan */}
+            {/* Nạp Dữ Liệu Kế Hoạch Thực Tế Từ File 4.1.1 Input Plan */}
             <div className="mt-3 p-3 rounded-lg bg-blue-50/60 border border-blue-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-blue-900 flex items-center gap-1.5">
+                <span className="text-xs font-semibold text-blue-900 flex items-center gap-1.5">
                   <Zap className="w-3.5 h-3.5 text-blue-600" />
-                  Nạp Kế Hoạch Tuần Thực Tế (File 4.1.1 - 7 Bậc KL1-KL7):
+                  Nạp kế hoạch tuần thực tế (File 4.1.1 - 7 bậc KL1-KL7):
                 </span>
                 <select
                   value={selectedPlan411Id}
@@ -586,7 +587,7 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
               </div>
 
               <div className="flex items-center gap-2">
-                <div className="text-[11px] text-slate-600 font-mono hidden md:block">
+                <div className="text-2xs text-slate-600 font-mono hidden md:block">
                   KL1:{activePlan411.kocTiersCount.kl1} | KL2:{activePlan411.kocTiersCount.kl2} | KL3:{activePlan411.kocTiersCount.kl3} | KL4:{activePlan411.kocTiersCount.kl4} | KL5:{activePlan411.kocTiersCount.kl5} | KL6:{activePlan411.kocTiersCount.kl6} | KL7:{activePlan411.kocTiersCount.kl7}
                 </div>
                 <button
@@ -594,7 +595,7 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
                   onClick={handleApplyPlan411}
                   className="px-3 py-1 text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition shadow-2xs flex items-center gap-1 cursor-pointer"
                 >
-                  Áp Dụng
+                  Áp dụng
                 </button>
                 <button
                   type="button"
@@ -661,15 +662,15 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
           <div className="card-enterprise p-5 bg-white border border-slate-200 shadow-xs overflow-x-auto">
             <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-200">
               <div>
-                <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                <h4 className="text-xs font-semibold text-slate-900 flex items-center gap-2">
                   <Layers className="w-4 h-4 text-blue-600" />
                   BẢNG PHÂN BỔ SỐ LƯỢNG KOC &amp; DỰ PHÓNG NGÂN SÁCH THEO 4 LEVEL
                 </h4>
-                <p className="text-[11px] text-slate-500">
+                <p className="text-2xs text-slate-500">
                   Điều chỉnh số lượng và đơn giá dự kiến để hệ thống tự động cân đối ngân sách và doanh số kỳ vọng.
                 </p>
               </div>
-              <span className="text-xs font-bold text-slate-700 px-2.5 py-1 rounded bg-slate-100 border border-slate-200">
+              <span className="text-xs font-semibold text-slate-700 px-2.5 py-1 rounded bg-slate-100 border border-slate-200">
                 Tổng Target: <strong className="text-blue-600">{totalKocCount} KOCs</strong>
               </span>
             </div>
@@ -677,13 +678,13 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
             <table className="w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="border-b border-slate-200 text-slate-600 bg-slate-50">
-                  <th className="py-2.5 px-3 font-semibold">Cấp Độ KOC / KOL</th>
+                  <th className="py-2.5 px-3 font-semibold">Cấp độ KOC / KOL</th>
                   <th className="py-2.5 px-3 font-semibold text-center">Số Lượng Target</th>
-                  <th className="py-2.5 px-3 font-semibold text-right">Đơn Giá TB / KOC</th>
-                  <th className="py-2.5 px-3 font-semibold text-right">Ngân Sách Phân Bổ</th>
-                  <th className="py-2.5 px-3 font-semibold text-right">GMV Dự Phóng / KOC</th>
-                  <th className="py-2.5 px-3 font-semibold text-right">Tổng GMV Dự Kiến</th>
-                  <th className="py-2.5 px-3 font-semibold text-center">ROI Dự Phóng</th>
+                  <th className="py-2.5 px-3 font-semibold text-right">Đơn giá TB / KOC</th>
+                  <th className="py-2.5 px-3 font-semibold text-right">Ngân sách phân bổ</th>
+                  <th className="py-2.5 px-3 font-semibold text-right">GMV dự phóng / KOC</th>
+                  <th className="py-2.5 px-3 font-semibold text-right">Tổng GMV dự kiến</th>
+                  <th className="py-2.5 px-3 font-semibold text-center">ROI dự phóng</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200">
@@ -696,14 +697,14 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
                   return (
                     <tr key={tierItem.tier} className="hover:bg-slate-50/80 transition">
                       <td className="py-3 px-3">
-                        <div className="font-bold text-slate-900 text-xs">{tierItem.tierLabel}</div>
-                        <div className="text-[10px] text-slate-500 font-mono">{tierItem.salaryGradeLabel}</div>
+                        <div className="font-semibold text-slate-900 text-xs">{tierItem.tierLabel}</div>
+                        <div className="text-2xs text-slate-500 font-mono">{tierItem.salaryGradeLabel}</div>
                         <input
                           type="text"
                           placeholder="Ghi chú chiến lược tier..."
                           value={tierItem.notes || ''}
                           onChange={(e) => handleUpdateTierNotes(idx, e.target.value)}
-                          className="mt-1 w-full text-[10px] bg-white text-slate-800 border border-slate-200 rounded px-2 py-0.5 focus:border-blue-500 outline-none"
+                          className="mt-1 w-full text-2xs bg-white text-slate-800 border border-slate-200 rounded px-2 py-0.5 focus:border-blue-500 outline-none"
                         />
                       </td>
 
@@ -713,7 +714,7 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
                           <button
                             type="button"
                             onClick={() => handleUpdateTierCount(idx, -1)}
-                            className="w-5 h-5 flex items-center justify-center rounded bg-white hover:bg-slate-100 text-slate-700 font-bold transition shadow-2xs cursor-pointer"
+                            className="w-5 h-5 flex items-center justify-center rounded bg-white hover:bg-slate-100 text-slate-700 font-semibold transition shadow-2xs cursor-pointer"
                           >
                             <Minus className="w-3 h-3" />
                           </button>
@@ -722,12 +723,12 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
                             min="0"
                             value={tierItem.targetCount}
                             onChange={(e) => handleUpdateTierCountDirect(idx, parseInt(e.target.value) || 0)}
-                            className="w-10 text-center font-bold text-slate-900 bg-transparent outline-none text-xs"
+                            className="w-10 text-center font-semibold text-slate-900 bg-transparent outline-none text-xs"
                           />
                           <button
                             type="button"
                             onClick={() => handleUpdateTierCount(idx, 1)}
-                            className="w-5 h-5 flex items-center justify-center rounded bg-white hover:bg-slate-100 text-slate-700 font-bold transition shadow-2xs cursor-pointer"
+                            className="w-5 h-5 flex items-center justify-center rounded bg-white hover:bg-slate-100 text-slate-700 font-semibold transition shadow-2xs cursor-pointer"
                           >
                             <Plus className="w-3 h-3" />
                           </button>
@@ -744,14 +745,14 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
                             onChange={(e) => handleUpdateTierCost(idx, parseInt(e.target.value) || 0)}
                             className="w-24 text-right font-mono text-xs bg-white text-emerald-700 border border-slate-300 rounded px-1.5 py-1 focus:border-emerald-500 outline-none"
                           />
-                          <span className="text-[10px] text-slate-400">đ</span>
+                          <span className="text-2xs text-slate-400">đ</span>
                         </div>
                       </td>
 
                       {/* Allocated Budget */}
-                      <td className="py-3 px-3 text-right font-mono font-bold text-slate-900">
+                      <td className="py-3 px-3 text-right font-mono font-semibold text-slate-900">
                         <div>{(tierBudget).toLocaleString('vi-VN')} đ</div>
-                        <div className="text-[10px] text-slate-500 font-normal">
+                        <div className="text-2xs text-slate-500 font-normal">
                           Tỷ trọng: {budgetShare}%
                         </div>
                       </td>
@@ -766,21 +767,21 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
                             onChange={(e) => handleUpdateTierGmv(idx, parseInt(e.target.value) || 0)}
                             className="w-24 text-right font-mono text-xs bg-white text-blue-700 border border-slate-300 rounded px-1.5 py-1 focus:border-blue-500 outline-none"
                           />
-                          <span className="text-[10px] text-slate-400">đ</span>
+                          <span className="text-2xs text-slate-400">đ</span>
                         </div>
-                        <div className="text-[10px] text-slate-500 font-normal">
+                        <div className="text-2xs text-slate-500 font-normal">
                           Benchmark: {tierItem.historicalRoiBenchmark}x
                         </div>
                       </td>
 
                       {/* Total Expected GMV */}
-                      <td className="py-3 px-3 text-right font-mono font-bold text-blue-600">
+                      <td className="py-3 px-3 text-right font-mono font-semibold text-blue-600">
                         <div>{(tierGmv).toLocaleString('vi-VN')} đ</div>
                       </td>
 
                       {/* Tier ROI */}
                       <td className="py-3 px-3 text-center">
-                        <span className={`text-[11px] font-bold px-2 py-0.5 rounded border ${
+                        <span className={`text-2xs font-semibold px-2 py-0.5 rounded border ${
                           parseFloat(tierRoi) >= 6.0 ? 'bg-emerald-50 text-emerald-700 border-emerald-300' :
                           parseFloat(tierRoi) >= 4.0 ? 'bg-blue-50 text-blue-700 border-blue-200' :
                           'bg-amber-50 text-amber-800 border-amber-300'
@@ -793,8 +794,8 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
                 })}
               </tbody>
               <tfoot>
-                <tr className="border-t-2 border-slate-300 bg-slate-50 font-bold text-xs">
-                  <td className="py-3 px-3 text-slate-900">TỔNG CỘNG TOÀN CHIẾN DỊCH</td>
+                <tr className="border-t-2 border-slate-300 bg-slate-50 font-semibold text-xs">
+                  <td className="py-3 px-3 text-slate-900">Tổng cộng toàn chiến dịch</td>
                   <td className="py-3 px-3 text-center text-blue-600">{totalKocCount} KOCs</td>
                   <td className="py-3 px-3 text-right text-slate-400">—</td>
                   <td className={`py-3 px-3 text-right font-mono ${isOverBudget ? 'text-rose-600' : 'text-emerald-700'}`}>
@@ -818,15 +819,15 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
             <div className="card-enterprise p-5 bg-white border border-slate-200 shadow-xs space-y-4">
               <div className="flex items-center justify-between pb-3 border-b border-slate-200">
                 <div>
-                  <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                  <h4 className="text-xs font-semibold text-slate-900 flex items-center gap-2">
                     <Video className="w-4 h-4 text-purple-600" />
-                    KẾ HOẠCH VIDEO SELF-CHANNEL (KÊNH THƯƠNG HIỆU INHOUSE)
+                    Kế hoạch video self-channel (kênh thương hiệu inhouse)
                   </h4>
-                  <p className="text-[11px] text-slate-500">
+                  <p className="text-2xs text-slate-500">
                     Sản xuất nội dung độc quyền bởi Content Team Upbase và phân phối Reup đa nền tảng để phủ sóng sản phẩm.
                   </p>
                 </div>
-                <span className="text-xs font-bold text-emerald-700 px-2.5 py-1 rounded bg-emerald-50 border border-emerald-200">
+                <span className="text-xs font-semibold text-emerald-700 px-2.5 py-1 rounded bg-emerald-50 border border-emerald-200">
                   Tiết kiệm ~45.000.000đ chi phí Cast KOC
                 </span>
               </div>
@@ -834,61 +835,61 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
               {/* KPI Mini-cards */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-                  <div className="text-[11px] text-slate-500">Video Sản Xuất Mới</div>
-                  <div className="text-base font-bold text-slate-900 mt-1">24 Videos Plan</div>
-                  <div className="text-[10px] text-emerald-600 font-semibold mt-0.5">Đã hoàn thành 18/24 (75%)</div>
+                  <div className="text-2xs text-slate-500">Video sản xuất mới</div>
+                  <div className="text-base font-semibold text-slate-900 mt-1">24 Videos Plan</div>
+                  <div className="text-2xs text-emerald-600 font-semibold mt-0.5">Đã hoàn thành 18/24 (75%)</div>
                 </div>
                 <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-                  <div className="text-[11px] text-slate-500">Ngân Sách Sản Xuất Inhouse</div>
-                  <div className="text-base font-bold text-slate-900 mt-1">18.000.000đ</div>
-                  <div className="text-[10px] text-slate-400 mt-0.5">750.000đ / video dựng &amp; kịch bản</div>
+                  <div className="text-2xs text-slate-500">Ngân Sách Sản Xuất Inhouse</div>
+                  <div className="text-base font-semibold text-slate-900 mt-1">18.000.000đ</div>
+                  <div className="text-2xs text-slate-400 mt-0.5">750.000đ / video dựng &amp; kịch bản</div>
                 </div>
                 <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-                  <div className="text-[11px] text-slate-500">Chi Phí Đã Giải Ngân (MTD)</div>
-                  <div className="text-base font-bold text-purple-600 mt-1">14.200.000đ</div>
-                  <div className="text-[10px] text-slate-400 mt-0.5">Tiến độ ngân sách: 78.8%</div>
+                  <div className="text-2xs text-slate-500">Chi phí đã giải ngân (MTD)</div>
+                  <div className="text-base font-semibold text-purple-600 mt-1">14.200.000đ</div>
+                  <div className="text-2xs text-slate-400 mt-0.5">Tiến độ ngân sách: 78.8%</div>
                 </div>
               </div>
 
               {/* Reup Matrix Table */}
               <div className="pt-2">
-                <h5 className="text-xs font-semibold text-slate-800 mb-2">Ma Trận Phân Phối Reup Đa Kênh (Theo Cột 211-215 Sheet 4.1):</h5>
+                <h5 className="text-xs font-semibold text-slate-800 mb-2">Ma trận phân phối Reup đa kênh (theo cột 211-215 Sheet 4.1):</h5>
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
                     <tr className="border-b border-slate-200 text-slate-600 bg-slate-50">
-                      <th className="py-2 px-3">Kênh Phân Phối</th>
-                      <th className="py-2 px-3 text-center">Chỉ Tiêu Reup (Plan)</th>
-                      <th className="py-2 px-3 text-center">Đã Reup Thực Tế</th>
-                      <th className="py-2 px-3 text-center">Tiến Độ</th>
-                      <th className="py-2 px-3 text-right">Chi Phí Bình Quân/Kênh</th>
+                      <th className="py-2 px-3">Kênh phân phối</th>
+                      <th className="py-2 px-3 text-center">Chỉ tiêu Reup</th>
+                      <th className="py-2 px-3 text-center">Đã Reup thực tế</th>
+                      <th className="py-2 px-3 text-center">Tiến độ</th>
+                      <th className="py-2 px-3 text-right">Chi phí bình quân/kênh</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200">
                     <tr className="hover:bg-slate-50">
-                      <td className="py-2.5 px-3 font-semibold text-slate-900">TikTok Shop (Kênh Chính)</td>
+                      <td className="py-2.5 px-3 font-semibold text-slate-900">TikTok Shop (kênh chính)</td>
                       <td className="py-2.5 px-3 text-center font-mono text-slate-700">24 video</td>
-                      <td className="py-2.5 px-3 text-center font-mono text-emerald-700 font-bold">18 video</td>
+                      <td className="py-2.5 px-3 text-center font-mono text-emerald-700 font-semibold">18 video</td>
                       <td className="py-2.5 px-3 text-center text-emerald-700 font-semibold">75%</td>
-                      <td className="py-2.5 px-3 text-right font-mono text-slate-500">0đ (Inhouse)</td>
+                      <td className="py-2.5 px-3 text-right font-mono text-slate-500">0đ</td>
                     </tr>
                     <tr className="hover:bg-slate-50">
-                      <td className="py-2.5 px-3 font-semibold text-slate-900">Shopee Video (Gắn Giỏ Hàng)</td>
+                      <td className="py-2.5 px-3 font-semibold text-slate-900">Shopee video (gắn giỏ hàng)</td>
                       <td className="py-2.5 px-3 text-center font-mono text-slate-700">24 video</td>
-                      <td className="py-2.5 px-3 text-center font-mono text-emerald-700 font-bold">18 video</td>
+                      <td className="py-2.5 px-3 text-center font-mono text-emerald-700 font-semibold">18 video</td>
                       <td className="py-2.5 px-3 text-center text-emerald-700 font-semibold">75%</td>
                       <td className="py-2.5 px-3 text-right font-mono text-slate-500">0đ</td>
                     </tr>
                     <tr className="hover:bg-slate-50">
                       <td className="py-2.5 px-3 font-semibold text-slate-900">Facebook Reels / Fanpage</td>
                       <td className="py-2.5 px-3 text-center font-mono text-slate-700">20 video</td>
-                      <td className="py-2.5 px-3 text-center font-mono text-blue-600 font-bold">15 video</td>
+                      <td className="py-2.5 px-3 text-center font-mono text-blue-600 font-semibold">15 video</td>
                       <td className="py-2.5 px-3 text-center text-blue-600 font-semibold">75%</td>
                       <td className="py-2.5 px-3 text-right font-mono text-slate-500">0đ</td>
                     </tr>
                     <tr className="hover:bg-slate-50">
-                      <td className="py-2.5 px-3 font-semibold text-slate-900">Threads Video (Tương Tác Viral)</td>
+                      <td className="py-2.5 px-3 font-semibold text-slate-900">Threads video (tương tác Viral)</td>
                       <td className="py-2.5 px-3 text-center font-mono text-slate-700">12 video</td>
-                      <td className="py-2.5 px-3 text-center font-mono text-purple-600 font-bold">10 video</td>
+                      <td className="py-2.5 px-3 text-center font-mono text-purple-600 font-semibold">10 video</td>
                       <td className="py-2.5 px-3 text-center text-purple-600 font-semibold">83%</td>
                       <td className="py-2.5 px-3 text-right font-mono text-slate-500">0đ</td>
                     </tr>
@@ -903,40 +904,40 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
             <div className="card-enterprise p-5 bg-white border border-slate-200 shadow-xs space-y-4">
               <div className="flex items-center justify-between pb-3 border-b border-slate-200">
                 <div>
-                  <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                  <h4 className="text-xs font-semibold text-slate-900 flex items-center gap-2">
                     <Tv className="w-4 h-4 text-amber-600" />
                     KẾ HOẠCH LIVESTREAM GIAN HÀNG (INHOUSE HN/HCM &amp; CTV)
                   </h4>
-                  <p className="text-[11px] text-slate-500">
-                    Phân bổ phiên live định kỳ 3h (Inhouse) và 2h (CTV) nhằm giữ nhịp chuyển đổi trong các khung giờ vàng.
+                  <p className="text-2xs text-slate-500">
+                    Phân bổ phiên live định kỳ 3h và 2h (CTV) nhằm giữ nhịp chuyển đổi trong các khung giờ vàng.
                   </p>
                 </div>
-                <span className="text-xs font-bold text-amber-800 px-2.5 py-1 rounded bg-amber-50 border border-amber-200">
-                  Tổng 34 Phiên • 92 Giờ Live
+                <span className="text-xs font-semibold text-amber-800 px-2.5 py-1 rounded bg-amber-50 border border-amber-200">
+                  Tổng 34 phiên • 92 giờ Live
                 </span>
               </div>
 
               {/* KPI Live */}
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                 <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-                  <div className="text-[11px] text-slate-500">Inhouse Studio HCM (3h)</div>
-                  <div className="text-base font-bold text-slate-900 mt-1">16 Phiên</div>
-                  <div className="text-[10px] text-slate-400 mt-0.5">48 giờ live</div>
+                  <div className="text-2xs text-slate-500">Inhouse Studio HCM (3h)</div>
+                  <div className="text-base font-semibold text-slate-900 mt-1">16 Phiên</div>
+                  <div className="text-2xs text-slate-400 mt-0.5">48 giờ live</div>
                 </div>
                 <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-                  <div className="text-[11px] text-slate-500">Inhouse Studio HN (3h)</div>
-                  <div className="text-base font-bold text-slate-900 mt-1">8 Phiên</div>
-                  <div className="text-[10px] text-slate-400 mt-0.5">24 giờ live</div>
+                  <div className="text-2xs text-slate-500">Inhouse Studio HN (3h)</div>
+                  <div className="text-base font-semibold text-slate-900 mt-1">8 Phiên</div>
+                  <div className="text-2xs text-slate-400 mt-0.5">24 giờ live</div>
                 </div>
                 <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-                  <div className="text-[11px] text-slate-500">CTV Live Ngoài (2h)</div>
-                  <div className="text-base font-bold text-slate-900 mt-1">10 Phiên</div>
-                  <div className="text-[10px] text-slate-400 mt-0.5">20 giờ live</div>
+                  <div className="text-2xs text-slate-500">CTV Live Ngoài (2h)</div>
+                  <div className="text-base font-semibold text-slate-900 mt-1">10 Phiên</div>
+                  <div className="text-2xs text-slate-400 mt-0.5">20 giờ live</div>
                 </div>
                 <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-                  <div className="text-[11px] text-slate-500">Target NMV Live</div>
-                  <div className="text-base font-bold text-emerald-600 mt-1">250.000.000đ</div>
-                  <div className="text-[10px] text-slate-400 mt-0.5">Chi phí: 35.000.000đ</div>
+                  <div className="text-2xs text-slate-500">Target NMV Live</div>
+                  <div className="text-base font-semibold text-emerald-600 mt-1">250.000.000đ</div>
+                  <div className="text-2xs text-slate-400 mt-0.5">Chi phí: 35.000.000đ</div>
                 </div>
               </div>
 
@@ -951,61 +952,61 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
             <div className="card-enterprise p-5 bg-white border border-slate-200 shadow-xs space-y-4">
               <div className="flex items-center justify-between pb-3 border-b border-slate-200">
                 <div>
-                  <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                  <h4 className="text-xs font-semibold text-slate-900 flex items-center gap-2">
                     <BarChart3 className="w-4 h-4 text-emerald-600" />
-                    BẢNG ĐỐI SOÁT 4 CỘT: PLAN ➔ DUYỆT ➔ ĐIỀU CHỈNH ➔ THỰC TẾ MTD
+                    Bảng đối soát 4 cột: Plan → Duyệt → Điều chỉnh → Thực tế MTD
                   </h4>
-                  <p className="text-[11px] text-slate-500">
+                  <p className="text-2xs text-slate-500">
                     Theo dõi sát vòng đời ngân sách và chênh lệch Gap NMV thực thu sau khi trừ tỷ lệ hủy đơn của sàn.
                   </p>
                 </div>
-                <span className="text-xs font-bold text-slate-700 px-2.5 py-1 rounded bg-slate-100 border border-slate-200">
-                  Tỷ Lệ Hủy: <strong className="text-amber-600 font-bold">8.0%</strong>
+                <span className="text-xs font-semibold text-slate-700 px-2.5 py-1 rounded bg-slate-100 border border-slate-200">
+                  Tỷ lệ hủy: <strong className="text-amber-600 font-semibold">8.0%</strong>
                 </span>
               </div>
 
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="border-b border-slate-200 text-slate-600 bg-slate-50">
-                    <th className="py-2.5 px-3">Hạng Mục</th>
-                    <th className="py-2.5 px-3 text-right">1. (Plan) Đầu Tháng</th>
+                    <th className="py-2.5 px-3">Hạng mục</th>
+                    <th className="py-2.5 px-3 text-right">1. (Plan) đầu tháng</th>
                     <th className="py-2.5 px-3 text-right">2. (Duyệt) Leader</th>
-                    <th className="py-2.5 px-3 text-right">3. (Sau Đ/C) Giữa Kỳ</th>
+                    <th className="py-2.5 px-3 text-right">3. (Sau đ/C) giữa kỳ</th>
                     <th className="py-2.5 px-3 text-right">4. (Report) MTD</th>
-                    <th className="py-2.5 px-3 text-right">GAP Chênh Lệch</th>
-                    <th className="py-2.5 px-3 text-center">Đánh Giá Tiến Độ</th>
+                    <th className="py-2.5 px-3 text-right">GAP chênh lệch</th>
+                    <th className="py-2.5 px-3 text-center">Đánh giá tiến độ</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200">
                   <tr className="hover:bg-slate-50">
-                    <td className="py-2.5 px-3 font-semibold text-slate-900">Ngân Sách Video Affiliate</td>
+                    <td className="py-2.5 px-3 font-semibold text-slate-900">Ngân sách video Affiliate</td>
                     <td className="py-2.5 px-3 text-right font-mono text-slate-700">150.000.000đ</td>
                     <td className="py-2.5 px-3 text-right font-mono text-slate-700">150.000.000đ</td>
                     <td className="py-2.5 px-3 text-right font-mono text-blue-700">155.000.000đ</td>
-                    <td className="py-2.5 px-3 text-right font-mono text-emerald-700 font-bold">114.000.000đ</td>
+                    <td className="py-2.5 px-3 text-right font-mono text-emerald-700 font-semibold">114.000.000đ</td>
                     <td className="py-2.5 px-3 text-right font-mono text-slate-500">+41.000.000đ</td>
                     <td className="py-2.5 px-3 text-center text-emerald-700 font-semibold">Đúng tiến độ (73.5%)</td>
                   </tr>
                   <tr className="hover:bg-slate-50">
-                    <td className="py-2.5 px-3 font-semibold text-slate-900">Ngân Sách Self-Channel</td>
+                    <td className="py-2.5 px-3 font-semibold text-slate-900">Ngân sách Self-Channel</td>
                     <td className="py-2.5 px-3 text-right font-mono text-slate-700">18.000.000đ</td>
                     <td className="py-2.5 px-3 text-right font-mono text-slate-700">18.000.000đ</td>
                     <td className="py-2.5 px-3 text-right font-mono text-blue-700">18.000.000đ</td>
-                    <td className="py-2.5 px-3 text-right font-mono text-emerald-700 font-bold">14.200.000đ</td>
+                    <td className="py-2.5 px-3 text-right font-mono text-emerald-700 font-semibold">14.200.000đ</td>
                     <td className="py-2.5 px-3 text-right font-mono text-slate-500">+3.800.000đ</td>
                     <td className="py-2.5 px-3 text-center text-emerald-700 font-semibold">Đúng tiến độ (78.8%)</td>
                   </tr>
                   <tr className="hover:bg-slate-50">
-                    <td className="py-2.5 px-3 font-semibold text-slate-900">Ngân Sách Livestream</td>
+                    <td className="py-2.5 px-3 font-semibold text-slate-900">Ngân sách livestream</td>
                     <td className="py-2.5 px-3 text-right font-mono text-slate-700">35.000.000đ</td>
                     <td className="py-2.5 px-3 text-right font-mono text-slate-700">35.000.000đ</td>
                     <td className="py-2.5 px-3 text-right font-mono text-blue-700">35.000.000đ</td>
-                    <td className="py-2.5 px-3 text-right font-mono text-emerald-700 font-bold">28.500.000đ</td>
+                    <td className="py-2.5 px-3 text-right font-mono text-emerald-700 font-semibold">28.500.000đ</td>
                     <td className="py-2.5 px-3 text-right font-mono text-slate-500">+6.500.000đ</td>
                     <td className="py-2.5 px-3 text-center text-emerald-700 font-semibold">Đúng tiến độ (81.4%)</td>
                   </tr>
-                  <tr className="hover:bg-slate-50 border-t border-slate-200 bg-slate-50/70 font-bold">
-                    <td className="py-2.5 px-3 text-slate-900">TỔNG CHI PHÍ THÚC ĐẨY</td>
+                  <tr className="hover:bg-slate-50 border-t border-slate-200 bg-slate-50/70 font-semibold">
+                    <td className="py-2.5 px-3 text-slate-900">Tổng chi phí thúc đẩy</td>
                     <td className="py-2.5 px-3 text-right font-mono text-slate-900">203.000.000đ</td>
                     <td className="py-2.5 px-3 text-right font-mono text-slate-900">203.000.000đ</td>
                     <td className="py-2.5 px-3 text-right font-mono text-blue-700">208.000.000đ</td>
@@ -1014,16 +1015,16 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
                     <td className="py-2.5 px-3 text-center text-emerald-700">Trong hạn mức</td>
                   </tr>
                   <tr className="hover:bg-slate-50">
-                    <td className="py-2.5 px-3 font-semibold text-blue-700">GMV Kế Hoạch (Gộp)</td>
+                    <td className="py-2.5 px-3 font-semibold text-blue-700">GMV kế hoạch (gộp)</td>
                     <td className="py-2.5 px-3 text-right font-mono text-slate-700">750.000.000đ</td>
                     <td className="py-2.5 px-3 text-right font-mono text-slate-700">750.000.000đ</td>
                     <td className="py-2.5 px-3 text-right font-mono text-blue-700">770.000.000đ</td>
-                    <td className="py-2.5 px-3 text-right font-mono text-blue-700 font-bold">556.000.000đ</td>
+                    <td className="py-2.5 px-3 text-right font-mono text-blue-700 font-semibold">556.000.000đ</td>
                     <td className="py-2.5 px-3 text-right font-mono text-amber-700">-214.000.000đ</td>
                     <td className="py-2.5 px-3 text-center text-blue-700 font-semibold">Đạt 72.2% MTD</td>
                   </tr>
-                  <tr className="hover:bg-slate-50 bg-emerald-50/60 font-bold border-t border-emerald-200">
-                    <td className="py-3 px-3 text-emerald-900">NMV THUẦN (TRỪ HỦY 8%)</td>
+                  <tr className="hover:bg-slate-50 bg-emerald-50/60 font-semibold border-t border-emerald-200">
+                    <td className="py-3 px-3 text-emerald-900">Nmv thuần (trừ hủy 8%)</td>
                     <td className="py-3 px-3 text-right font-mono text-slate-900">690.000.000đ</td>
                     <td className="py-3 px-3 text-right font-mono text-slate-900">690.000.000đ</td>
                     <td className="py-3 px-3 text-right font-mono text-blue-700">708.400.000đ</td>
@@ -1038,7 +1039,7 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
 
           {/* Booking Strategy Textarea */}
           <div className="card-enterprise p-4 bg-white border border-slate-200 shadow-xs">
-            <h4 className="text-xs font-bold text-slate-900 mb-2 flex items-center gap-1.5">
+            <h4 className="text-xs font-semibold text-slate-900 mb-2 flex items-center gap-1.5">
               <FileCheck className="w-3.5 h-3.5 text-blue-600" />
               Chiến Lược Triển Khai &amp; Danh Sách KOC Đề Xuất (Booking PIC Note):
             </h4>
@@ -1059,11 +1060,11 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
             isOverBudget ? 'bg-rose-50/70 border-rose-300' : 'bg-white border-slate-200 shadow-xs'
           }`}>
             <div className="flex items-center justify-between pb-3 border-b border-slate-200">
-              <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+              <span className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
                 <DollarSign className="w-4 h-4 text-emerald-600" />
-                KIỂM SOÁT NGÂN SÁCH
+                Kiểm soát ngân sách
               </span>
-              <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${
+              <span className={`text-2xs font-semibold px-2 py-0.5 rounded border ${
                 isOverBudget ? 'bg-rose-100 text-rose-800 border-rose-300' : 'bg-emerald-50 text-emerald-700 border-emerald-300'
               }`}>
                 {isOverBudget ? 'VƯỢT HẠN MỨC' : 'TRONG HẠN MỨC'}
@@ -1073,13 +1074,13 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
             <div className="space-y-3 mt-4 text-xs">
               <div className="flex justify-between items-center">
                 <span className="text-slate-500">Ngân sách Growth cấp:</span>
-                <span className="font-bold font-mono text-slate-900">
+                <span className="font-semibold font-mono text-slate-900">
                   {(activeDemand.totalAssignedBudget).toLocaleString('vi-VN')} đ
                 </span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-slate-500">Tổng ngân sách đã chia:</span>
-                <span className={`font-bold font-mono ${isOverBudget ? 'text-rose-600' : 'text-emerald-600'}`}>
+                <span className={`font-semibold font-mono ${isOverBudget ? 'text-rose-600' : 'text-emerald-600'}`}>
                   {(totalAllocatedBudget).toLocaleString('vi-VN')} đ
                 </span>
               </div>
@@ -1096,15 +1097,15 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
 
               <div className="flex justify-between items-center pt-2 border-t border-slate-200">
                 <span className="text-slate-600 font-semibold">Khoảng trống còn lại:</span>
-                <span className={`font-bold font-mono text-sm ${
+                <span className={`font-semibold font-mono text-sm ${
                   isOverBudget ? 'text-rose-600' : 'text-emerald-600'
                 }`}>
                   {budgetHeadroom >= 0 ? '+' : ''}{(budgetHeadroom / 1000000).toLocaleString('vi-VN')}M đ
                 </span>
               </div>
               {isOverBudget && (
-                <p className="text-[11px] text-rose-800 bg-rose-50 p-2.5 rounded-lg border border-rose-200">
-                  Tổng ngân sách đang vượt <strong>{(Math.abs(budgetHeadroom) / 1000000).toFixed(1)}M đ</strong>. Hãy giảm số lượng KOC hoặc điều chỉnh đơn giá để đảm bảo tuân thủ hạn mức của Growth!
+                <p className="text-2xs text-rose-800 bg-rose-50 p-2.5 rounded-lg border border-rose-200">
+                  Tổng ngân sách đang vượt <strong>{formatVndShort(Math.abs(budgetHeadroom))}</strong>. Hãy giảm số lượng KOC hoặc điều chỉnh đơn giá để đảm bảo tuân thủ hạn mức của Growth!
                 </p>
               )}
             </div>
@@ -1113,11 +1114,11 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
           {/* Card 2: GMV & NMV Target & CIR Projection */}
           <div className="card-enterprise p-5 bg-white border border-slate-200 shadow-xs">
             <div className="flex items-center justify-between pb-3 border-b border-slate-200">
-              <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+              <span className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
                 <Target className="w-4 h-4 text-blue-600" />
                 MỤC TIÊU NMV &amp; GMV (THUẦN SAU HỦY)
               </span>
-              <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${
+              <span className={`text-2xs font-semibold px-2 py-0.5 rounded border ${
                 nmvAchievementRate >= 100 ? 'bg-emerald-50 text-emerald-700 border-emerald-300' : 'bg-amber-50 text-amber-800 border-amber-300'
               }`}>
                 {nmvAchievementRate >= 100 ? 'ĐẠT KỲ VỌNG' : 'CHƯA ĐẠT'}
@@ -1127,30 +1128,30 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
             <div className="space-y-3 mt-4 text-xs">
               <div className="flex justify-between items-center">
                 <span className="text-slate-500">Target GMV gộp Growth giao:</span>
-                <span className="font-bold font-mono text-slate-900">
+                <span className="font-semibold font-mono text-slate-900">
                   {(activeDemand.targetGmv).toLocaleString('vi-VN')} đ
                 </span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-slate-500">Dự phóng GMV đạt được:</span>
-                <span className="font-bold font-mono text-blue-600 text-sm">
+                <span className="font-semibold font-mono text-blue-600 text-sm">
                   {(totalExpectedGmv).toLocaleString('vi-VN')} đ
                 </span>
               </div>
 
               {/* NMV Section */}
               <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-200 space-y-1.5">
-                <div className="flex justify-between items-center text-[11px]">
+                <div className="flex justify-between items-center text-2xs">
                   <span className="text-slate-500">Tỷ lệ hủy đơn định mức:</span>
                   <span className="font-mono text-amber-700 font-semibold">{(cancellationRate * 100).toFixed(1)}%</span>
                 </div>
-                <div className="flex justify-between items-center text-[11px]">
+                <div className="flex justify-between items-center text-2xs">
                   <span className="text-slate-600 font-semibold">Target NMV thuần (Sau hủy):</span>
-                  <span className="font-mono font-bold text-slate-800">{(targetNmv).toLocaleString('vi-VN')} đ</span>
+                  <span className="font-mono font-semibold text-slate-800">{(targetNmv).toLocaleString('vi-VN')} đ</span>
                 </div>
-                <div className="flex justify-between items-center text-[11px] pt-1 border-t border-slate-200">
-                  <span className="text-emerald-700 font-bold">Dự phóng NMV thực thu:</span>
-                  <span className="font-mono font-bold text-emerald-700">{(projectedNmv).toLocaleString('vi-VN')} đ</span>
+                <div className="flex justify-between items-center text-2xs pt-1 border-t border-slate-200">
+                  <span className="text-emerald-700 font-semibold">Dự phóng NMV thực thu:</span>
+                  <span className="font-mono font-semibold text-emerald-700">{(projectedNmv).toLocaleString('vi-VN')} đ</span>
                 </div>
               </div>
 
@@ -1163,8 +1164,8 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
               </div>
 
               <div className="flex justify-between items-center pt-2 border-t border-slate-200">
-                <span className="text-slate-600 font-semibold">% Đạt Target NMV Thuần:</span>
-                <span className={`font-bold font-mono text-sm ${
+                <span className="text-slate-600 font-semibold">% Đạt Target NMV thuần:</span>
+                <span className={`font-semibold font-mono text-sm ${
                   nmvAchievementRate >= 100 ? 'text-emerald-600' : 'text-amber-700'
                 }`}>
                   {nmvAchievementRate.toFixed(1)}%
@@ -1175,11 +1176,11 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
               <div className="pt-2 border-t border-slate-200 space-y-2">
                 <div className="flex justify-between items-center">
                   <span className="text-slate-500">CIR trần (Growth yêu cầu):</span>
-                  <span className="font-bold font-mono text-slate-800">{activeDemand.targetCir.toFixed(1)}%</span>
+                  <span className="font-semibold font-mono text-slate-800">{activeDemand.targetCir.toFixed(1)}%</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-slate-500">CIR Dự phóng kế hoạch:</span>
-                  <span className={`font-bold font-mono ${
+                  <span className={`font-semibold font-mono ${
                     projectedCir <= activeDemand.targetCir ? 'text-emerald-600' : 'text-rose-600'
                   }`}>
                     {projectedCir.toFixed(1)}% ({projectedCir <= activeDemand.targetCir ? 'Tốt hơn trần' : 'Vượt trần'})
@@ -1187,7 +1188,7 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-slate-500">Blended ROI dự kiến:</span>
-                  <span className="font-bold font-mono text-amber-700 text-sm">{projectedRoi.toFixed(1)}x</span>
+                  <span className="font-semibold font-mono text-amber-700 text-sm">{projectedRoi.toFixed(1)}x</span>
                 </div>
               </div>
             </div>
@@ -1195,24 +1196,24 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
 
           {/* Action Box With Validation Gate */}
           <div className="card-enterprise p-5 bg-white border border-slate-200 shadow-xs space-y-3">
-            <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider pb-2 border-b border-slate-200">
+            <h4 className="text-xs font-semibold text-slate-900 pb-2 border-b border-slate-200">
               THAO TÁC DUYỆT &amp; KIỂM SOÁT ĐỊNH MỨC
             </h4>
 
             {/* Validation Gate Alert */}
             {blockReasons.length > 0 && (
               <div className="p-3 bg-rose-50 border border-rose-200 rounded-lg text-xs space-y-2">
-                <div className="font-bold text-rose-800 flex items-center gap-1.5">
+                <div className="font-semibold text-rose-800 flex items-center gap-1.5">
                   <AlertOctagon className="w-4 h-4 text-rose-600 flex-shrink-0" />
                   <span>CHẶN GỬI DUYỆT ({blockReasons.length} Cảnh Báo)</span>
                 </div>
-                <ul className="list-disc pl-4 space-y-1 text-[11px] text-rose-700">
+                <ul className="list-disc pl-4 space-y-1 text-2xs text-rose-700">
                   {blockReasons.map((reason, i) => (
                     <li key={i}>{reason}</li>
                   ))}
                 </ul>
                 <div className="pt-2 border-t border-rose-200">
-                  <label className="text-[10px] text-rose-800 font-semibold block mb-1">
+                  <label className="text-2xs text-rose-800 font-semibold block mb-1">
                     Nhập giải trình ngoại lệ (để mở khóa gửi nếu Growth đã đồng ý):
                   </label>
                   <input
@@ -1220,7 +1221,7 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
                     value={exceptionExplanation}
                     onChange={(e) => setExceptionExplanation(e.target.value)}
                     placeholder="VD: Growth duyệt ngoại lệ đẩy mạnh Macro mở phễu..."
-                    className="w-full text-[11px] bg-white border border-rose-300 rounded-lg px-2.5 py-1 text-slate-900 focus:outline-none focus:border-rose-500"
+                    className="w-full text-2xs bg-white border border-rose-300 rounded-lg px-2.5 py-1 text-slate-900 focus:outline-none focus:border-rose-500"
                   />
                 </div>
               </div>
@@ -1232,14 +1233,14 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
               className="w-full py-2.5 px-3 rounded-lg font-semibold text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 transition flex items-center justify-center gap-2 border border-slate-300 cursor-pointer shadow-2xs"
             >
               <Save className="w-3.5 h-3.5 text-blue-600" />
-              Lưu Bản Nháp (Save Draft)
+              Lưu bản nháp
             </button>
 
             <button
               type="button"
               disabled={isBlocked}
               onClick={() => handleSavePlan('PLANNED')}
-              className={`w-full py-2.5 px-3 rounded-lg font-bold text-xs transition flex items-center justify-center gap-2 shadow-2xs cursor-pointer ${
+              className={`w-full py-2.5 px-3 rounded-lg font-semibold text-xs transition flex items-center justify-center gap-2 shadow-2xs cursor-pointer ${
                 isBlocked
                   ? 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200'
                   : 'bg-blue-600 hover:bg-blue-700 text-white'
@@ -1253,7 +1254,7 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
               type="button"
               disabled={isBlocked}
               onClick={handleGenerateDeals}
-              className={`w-full py-2.5 px-3 rounded-lg font-bold text-xs transition flex items-center justify-center gap-2 shadow-2xs border cursor-pointer ${
+              className={`w-full py-2.5 px-3 rounded-lg font-semibold text-xs transition flex items-center justify-center gap-2 shadow-2xs border cursor-pointer ${
                 isBlocked
                   ? 'bg-slate-100 text-slate-400 cursor-not-allowed border-slate-200'
                   : 'bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600'
@@ -1268,8 +1269,8 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
               <button
                 type="button"
                 onClick={handleExportPlan}
-                className="py-2 px-2 rounded-lg font-semibold text-[11px] bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 transition flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer"
-                title="Xuất trọn vẹn Kế hoạch 4 chặng & KOC 7 bậc sang file Excel .xlsx"
+                className="py-2 px-2 rounded-lg font-semibold text-2xs bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 transition flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer"
+                title="Xuất trọn vẹn kế hoạch 4 chặng & KOC 7 bậc sang file Excel .xlsx"
               >
                 <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
                 Xuất Excel 4.1
@@ -1278,15 +1279,15 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
               <button
                 type="button"
                 onClick={handleDownloadTemplate}
-                className="py-2 px-2 rounded-lg font-semibold text-[11px] bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-300 transition flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer"
+                className="py-2 px-2 rounded-lg font-semibold text-2xs bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-300 transition flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer"
                 title="Tải biểu mẫu Excel chuẩn 4.1.1 để PIC điền kế hoạch tuần"
               >
                 <Download className="w-3.5 h-3.5 text-blue-600" />
                 Mẫu Input 4.1.1
               </button>
             </div>
-            <p className="text-[10px] text-slate-500 text-center">
-              Khởi tạo tự động các deal booking vào phân hệ Quản Lý Booking để nhân viên bắt đầu tiếp cận KOC.
+            <p className="text-2xs text-slate-500 text-center">
+              Khởi tạo tự động các deal booking vào phân hệ quản lý booking để nhân viên bắt đầu tiếp cận KOC.
             </p>
           </div>
         </div>

@@ -187,16 +187,16 @@ export const ContractModal: React.FC<ContractModalProps> = ({
         {/* Modal Top Bar - Enterprise Light */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50/80">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-blue-50 border border-blue-200 text-blue-600 flex items-center justify-center font-bold shadow-2xs">
+            <div className="w-9 h-9 rounded-lg bg-blue-50 border border-blue-200 text-blue-600 flex items-center justify-center font-semibold shadow-2xs">
               <ShieldCheck className="w-5 h-5 text-blue-600" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 id="contract-modal-title" className="text-sm font-bold text-slate-900">
+                <h3 id="contract-modal-title" className="text-sm font-semibold text-slate-900">
                   Văn Bản Hợp Đồng KOC &amp; Cổng Chi Tiền
                 </h3>
                 {ocrData && (
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded border flex items-center gap-1 ${
+                  <span className={`text-2xs font-semibold px-2 py-0.5 rounded border flex items-center gap-1 ${
                     isOcrCompany 
                       ? 'bg-purple-50 text-purple-700 border-purple-200' 
                       : 'bg-emerald-50 text-emerald-700 border-emerald-200'
@@ -213,7 +213,7 @@ export const ContractModal: React.FC<ContractModalProps> = ({
             {/* OCR Scanner Button */}
             <button
               onClick={() => setIsOcrOpen(true)}
-              className="px-3 py-1.5 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-xs font-semibold text-white rounded-lg flex items-center gap-1.5 transition shadow-xs cursor-pointer"
+              className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 hover: text-xs font-semibold text-white rounded-lg flex items-center gap-1.5 transition shadow-xs cursor-pointer"
               title="Tải ảnh CCCD hoặc Giấy phép kinh doanh để bóc tách tự động"
             >
               <Sparkles className="w-3.5 h-3.5" />
@@ -256,16 +256,16 @@ export const ContractModal: React.FC<ContractModalProps> = ({
                   Đang áp dụng mẫu chuẩn: <strong>{ocrData.recommendedTemplate.templateName}</strong> ({ocrData.recommendedTemplate.templateCode})
                 </span>
               </div>
-              <span className="text-[10px] font-mono bg-white px-2 py-0.5 rounded border border-blue-200 text-blue-800 font-bold">
+              <span className="text-2xs font-mono bg-white px-2 py-0.5 rounded border border-blue-200 text-blue-800 font-semibold">
                 {ocrData.recommendedTemplate.sampleFileName}
               </span>
             </div>
           )}
 
           <div className="text-center pb-4 border-b border-slate-200">
-            <h4 className="font-bold text-sm tracking-wide text-slate-900">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</h4>
+            <h4 className="font-semibold text-sm text-slate-900">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</h4>
             <p className="text-xs italic text-slate-600">Độc lập - Tự do - Hạnh phúc</p>
-            <div className="mt-3 font-bold text-base text-blue-900 tracking-wide uppercase">
+            <div className="mt-3 font-semibold text-base text-blue-900">
               {isOcrCompany 
                 ? 'HỢP ĐỒNG DỊCH VỤ QUẢNG BÁ NỘI DUNG — PHÁP NHÂN DOANH NGHIỆP' 
                 : 'HỢP ĐỒNG DỊCH VỤ QUẢNG BÁ NỘI DUNG (KOC MARKETING)'}
@@ -277,7 +277,7 @@ export const ContractModal: React.FC<ContractModalProps> = ({
 
           <div className="space-y-2.5 pt-2">
             <div className="p-3.5 bg-slate-50 rounded-lg border border-slate-200">
-              <p className="font-bold text-slate-800">BÊN A (BÊN THUÊ DỊCH VỤ): CÔNG TY CỔ PHẦN UPBASE ASIA</p>
+              <p className="font-semibold text-slate-800">BÊN A (BÊN THUÊ DỊCH VỤ): CÔNG TY CỔ PHẦN UPBASE ASIA</p>
               <p className="text-slate-600 mt-0.5">• Địa chỉ: Tầng 5, Tòa nhà Upbase, Cầu Giấy, Hà Nội</p>
               <p className="text-slate-600">• Đại diện phụ trách: <strong className="text-slate-900">{deal.assignedStaff}</strong> (Phòng Marketing B2C)</p>
             </div>
@@ -287,13 +287,13 @@ export const ContractModal: React.FC<ContractModalProps> = ({
               ocrData ? 'bg-blue-50/30 border-blue-200' : 'bg-slate-50 border border-slate-200'
             }`}>
               <div className="flex items-center justify-between">
-                <p className="font-bold text-slate-800">
+                <p className="font-semibold text-slate-800">
                   {isOcrCompany 
                     ? 'BÊN B (BÊN CUNG CẤP DỊCH VỤ - PHÁP NHÂN DOANH NGHIỆP / HKD):' 
                     : 'BÊN B (BÊN CUNG CẤP DỊCH VỤ - KOC / CÁ NHÂN):'}
                 </p>
                 {ocrData && (
-                  <span className="text-[10px] font-bold text-blue-600 bg-blue-100/70 px-2 py-0.5 rounded">
+                  <span className="text-2xs font-semibold text-blue-600 bg-blue-100/70 px-2 py-0.5 rounded">
                     Dữ liệu bóc tách từ {ocrData.fileName || 'ảnh'}
                   </span>
                 )}
@@ -322,7 +322,7 @@ export const ContractModal: React.FC<ContractModalProps> = ({
 
           <div className="space-y-3 pt-2">
             <div>
-              <p className="font-bold text-slate-900 uppercase">ĐIỀU 1: PHẠM VI DỊCH VỤ &amp; QUYỀN SỞ HỮU</p>
+              <p className="font-semibold text-slate-900">ĐIỀU 1: PHẠM VI DỊCH VỤ &amp; QUYỀN SỞ HỮU</p>
               <p className="text-slate-700 mt-0.5">
                 Bên B nhận thực hiện sản xuất và đăng tải 01 Video sáng tạo nội dung cho chiến dịch <strong>{deal.campaignTitle}</strong>:
               </p>
@@ -336,7 +336,7 @@ export const ContractModal: React.FC<ContractModalProps> = ({
             </div>
 
             <div>
-              <p className="font-bold text-slate-900 uppercase">ĐIỀU 2: PHÍ DỊCH VỤ &amp; PHƯƠNG THỨC THANH TOÁN 2 ĐỢT</p>
+              <p className="font-semibold text-slate-900">ĐIỀU 2: PHÍ DỊCH VỤ &amp; PHƯƠNG THỨC THANH TOÁN 2 ĐỢT</p>
               <table className="w-full border-collapse border border-slate-300 mt-1.5 text-xs">
                 <thead>
                   <tr className="bg-slate-100 text-left text-slate-700 font-semibold">
@@ -348,25 +348,25 @@ export const ContractModal: React.FC<ContractModalProps> = ({
                 </thead>
                 <tbody>
                   <tr>
-                    <td className="border border-slate-300 p-2 font-bold text-emerald-700">Đợt 1: Tạm ứng</td>
-                    <td className="border border-slate-300 p-2 font-bold text-emerald-700 font-mono">{deal.advanceAmount.toLocaleString('vi-VN')} đ</td>
+                    <td className="border border-slate-300 p-2 font-semibold text-emerald-700">Đợt 1: Tạm ứng</td>
+                    <td className="border border-slate-300 p-2 font-semibold text-emerald-700 font-mono">{deal.advanceAmount.toLocaleString('vi-VN')} đ</td>
                     <td className="border border-slate-300 p-2">Sau khi ký HĐ &amp; duyệt kịch bản sơ bộ (Cho phép gửi mẫu)</td>
                     <td className="border border-slate-300 p-2 font-semibold">
                       {deal.status === 'ADVANCE_PAID' || deal.status === 'VIDEO_SUBMITTED' || deal.status === 'FINAL_PAID'
-                        ? '✅ Đã Giải Ngân' : '⏳ Chờ Duyệt Chi Lark'}
+                        ? 'Đã Giải Ngân' : 'Chờ Duyệt Chi Lark'}
                     </td>
                   </tr>
                   <tr>
-                    <td className="border border-slate-300 p-2 font-bold text-blue-700">Đợt 2: Quyết toán</td>
-                    <td className="border border-slate-300 p-2 font-bold text-blue-700 font-mono">{deal.finalAmount.toLocaleString('vi-VN')} đ</td>
+                    <td className="border border-slate-300 p-2 font-semibold text-blue-700">Đợt 2: Quyết toán</td>
+                    <td className="border border-slate-300 p-2 font-semibold text-blue-700 font-mono">{deal.finalAmount.toLocaleString('vi-VN')} đ</td>
                     <td className="border border-slate-300 p-2">Sau khi video lên sóng &amp; gửi link nghiệm thu hợp lệ</td>
                     <td className="border border-slate-300 p-2 font-semibold">
-                      {deal.status === 'FINAL_PAID' ? '✅ Đã Tất Toán' : '⏳ Sau Nghiệm Thu Video'}
+                      {deal.status === 'FINAL_PAID' ? 'Đã Tất Toán' : 'Sau Nghiệm Thu Video'}
                     </td>
                   </tr>
                   <tr className="bg-blue-50/70">
-                    <td className="border border-slate-300 p-2 font-bold text-slate-900">TỔNG GIÁ TRỊ</td>
-                    <td colSpan={3} className="border border-slate-300 p-2 font-bold text-blue-900 font-mono text-sm">
+                    <td className="border border-slate-300 p-2 font-semibold text-slate-900">TỔNG GIÁ TRỊ</td>
+                    <td colSpan={3} className="border border-slate-300 p-2 font-semibold text-blue-900 font-mono text-sm">
                       {deal.totalValue.toLocaleString('vi-VN')} VNĐ
                     </td>
                   </tr>
@@ -387,11 +387,11 @@ export const ContractModal: React.FC<ContractModalProps> = ({
                 />
               </div>
               <div className="text-xs space-y-1">
-                <span className="font-bold text-emerald-800 text-xs flex items-center gap-1.5">
+                <span className="font-semibold text-emerald-800 text-xs flex items-center gap-1.5">
                   <QrCode className="w-4 h-4 text-emerald-600" />
                   Mã VietQR &amp; Thông Tin Chi Tiền (Đồng Bộ Lark Approval)
                 </span>
-                <p className="text-slate-600 text-[11px]">
+                <p className="text-slate-600 text-2xs">
                   Quét bằng App Ngân hàng bất kỳ để tự động điền STK, Số tiền và Nội dung chuyển khoản chuẩn.
                 </p>
                 <div className="font-mono text-xs text-slate-800 bg-white/80 border border-emerald-200 px-2.5 py-1 rounded-md">
@@ -404,13 +404,13 @@ export const ContractModal: React.FC<ContractModalProps> = ({
           {/* Signature row */}
           <div className="flex justify-between pt-6 text-xs border-t border-slate-200 mt-4">
             <div className="text-center">
-              <p className="font-bold text-slate-800">ĐẠI DIỆN BÊN A (UPBASE)</p>
-              <p className="text-[11px] text-slate-500 italic">(Đã ký số điện tử qua hệ thống)</p>
+              <p className="font-semibold text-slate-800">ĐẠI DIỆN BÊN A (UPBASE)</p>
+              <p className="text-2xs text-slate-500 italic">(Đã ký số điện tử qua hệ thống)</p>
               <div className="mt-8 font-semibold text-blue-800">{deal.assignedStaff}</div>
             </div>
             <div className="text-center">
-              <p className="font-bold text-slate-800">ĐẠI DIỆN BÊN B (KOC)</p>
-              <p className="text-[11px] text-slate-500 italic">(Ký, ghi rõ họ tên)</p>
+              <p className="font-semibold text-slate-800">ĐẠI DIỆN BÊN B (KOC)</p>
+              <p className="text-2xs text-slate-500 italic">(Ký, ghi rõ họ tên)</p>
               <div className="mt-8 font-semibold text-slate-800">{koc.realName || deal.kocStageName}</div>
             </div>
           </div>
@@ -429,7 +429,7 @@ export const ContractModal: React.FC<ContractModalProps> = ({
                   onApproveAdvance(deal.id);
                   onClose();
                 }}
-                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg flex items-center gap-1.5 transition shadow-xs"
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-lg flex items-center gap-1.5 transition shadow-xs"
               >
                 <CheckCircle2 className="w-4 h-4" />
                 <span>Duyệt Chi Cọc {deal.advanceAmount.toLocaleString('vi-VN')} đ</span>
@@ -442,7 +442,7 @@ export const ContractModal: React.FC<ContractModalProps> = ({
                   onApproveFinal(deal.id);
                   onClose();
                 }}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-lg flex items-center gap-1.5 transition shadow-xs"
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-lg flex items-center gap-1.5 transition shadow-xs"
               >
                 <CheckCircle className="w-4 h-4" />
                 <span>Duyệt Chi Tất Toán {deal.finalAmount.toLocaleString('vi-VN')} đ</span>

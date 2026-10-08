@@ -41,6 +41,8 @@ import {
   UserRole
 } from '../../lib/types';
 import { MasterDataMindmapView } from './MasterDataMindmapView';
+import { Avatar, Button, Segmented, Status , ChannelTag } from '../ui';
+import { formatVndShort } from '../../lib/format';
 
 interface ManagerDelegationHubProps {
   currentUser: UserProfile;
@@ -212,7 +214,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
         name: brandFormState.name,
         companyName: brandFormState.companyName || 'Công ty Đối tác',
         category: brandFormState.category,
-        color: 'from-blue-600 to-indigo-700',
+        color: 'bg-blue-600 ',
         status: 'ACTIVE',
         planBudget: brandFormState.planBudget,
         spentBudget: 0,
@@ -318,205 +320,48 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
 
   return (
     <div className="space-y-5">
-      {/* ========================================================================= */}
-      {/* 1. TOP HEADER & ROLE MATRIX BANNER                                        */}
-      {/* ========================================================================= */}
-      <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-xs">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-200">
-          <div className="flex items-center gap-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 text-white flex items-center justify-center shadow-md shrink-0">
-              <ShieldCheck className="w-6 h-6" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-base font-bold text-slate-900">
-                  Trung Tâm Phân Bổ & Điều Phối Cấp Cao (Manager Hub)
-                </h2>
-                <span className="text-[11px] bg-blue-100 text-blue-800 font-bold px-2 py-0.5 rounded-full border border-blue-200">
-                  Quyền Trưởng Phòng: {currentUser.name}
-                </span>
-              </div>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Bao quát 100% nhân sự toàn phòng • Phân chia Brand, Gian hàng, Cân bằng tải và Giao việc trực tiếp
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setIsTaskModalOpen(true)}
-              className="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-2 shadow-xs transition active:scale-95"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Giao Việc Cho Nhân Sự</span>
-            </button>
-            <button
-              onClick={() => {
-                setEditingBrand(null);
-                setBrandFormState({
-                  name: '',
-                  companyName: '',
-                  category: 'Mỹ phẩm & Chăm sóc da',
-                  planBudget: 150000000,
-                  targetGmv: 450000000,
-                  bookingPicLead: 'Đặng Mai Hà Linh',
-                  accountPic: 'Phạm Thị Nhài',
-                  growthPic: 'Hoàng Long',
-                  brandGuideline: ''
-                });
-                setIsBrandModalOpen(true);
-              }}
-              className="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-2 shadow-xs transition"
-            >
-              <Building2 className="w-4 h-4 text-amber-300" />
-              <span>Thêm Nhãn Hàng</span>
-            </button>
-          </div>
+      {/* Thanh phân khu: chọn mục, thao tác chính bên phải */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Segmented
+          value={activeSection}
+          onChange={setActiveSection}
+          items={[
+            { key: 'BRANDS', label: `Nhãn hàng · ${brands.length}` },
+            { key: 'STORES', label: `Gian hàng · ${storePortfolios.length}` },
+            { key: 'STAFF', label: `Tải nhân sự · ${staffList.length}` },
+            { key: 'TASKS', label: `Giao việc · ${tasks.length}` },
+            { key: 'MINDMAP', label: 'Sơ đồ dữ liệu' },
+          ]}
+        />
+        <div className="flex items-center gap-2">
+          {activeSection === 'STAFF' && (
+            <Button icon={Zap} onClick={handleAutoRebalance} title="Phân bổ lại gian hàng để không ai bị quá tải">
+              Cân bằng tải
+            </Button>
+          )}
+          <Button icon={Send} onClick={() => setIsTaskModalOpen(true)}>Giao việc</Button>
+          <Button
+            variant="primary"
+            icon={Plus}
+            onClick={() => {
+              setEditingBrand(null);
+              setBrandFormState({
+                name: '',
+                companyName: '',
+                category: 'Mỹ phẩm & Chăm sóc da',
+                planBudget: 150000000,
+                targetGmv: 450000000,
+                bookingPicLead: 'Đặng Mai Hà Linh',
+                accountPic: 'Phạm Thị Nhài',
+                growthPic: 'Hoàng Long',
+                brandGuideline: ''
+              });
+              setIsBrandModalOpen(true);
+            }}
+          >
+            Thêm nhãn hàng
+          </Button>
         </div>
-
-        {/* 4 Roles Hierarchy Guide Bar */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-4">
-          <div className="p-3 rounded-xl bg-blue-50/60 border border-blue-200">
-            <div className="flex items-center gap-2 text-xs font-bold text-blue-900 mb-1">
-              <span className="w-5 h-5 rounded-md bg-blue-600 text-white flex items-center justify-center text-[10px]">1</span>
-              <span>Trưởng Phòng (Division Head)</span>
-            </div>
-            <p className="text-[11px] text-slate-600 leading-snug">
-              Quản lý toàn bộ nhân viên, phân chia Brand & Gian hàng, giao việc và duyệt ngân sách tổng.
-            </p>
-          </div>
-
-          <div className="p-3 rounded-xl bg-purple-50/60 border border-purple-200">
-            <div className="flex items-center gap-2 text-xs font-bold text-purple-900 mb-1">
-              <span className="w-5 h-5 rounded-md bg-purple-600 text-white flex items-center justify-center text-[10px]">2</span>
-              <span>Brand PIC (Brand Lead)</span>
-            </div>
-            <p className="text-[11px] text-slate-600 leading-snug">
-              Tiếp nhận Brand từ Trưởng phòng, phân rã Input Plan (KL1-KL7), điều phối và giao việc cho team Booking.
-            </p>
-          </div>
-
-          <div className="p-3 rounded-xl bg-emerald-50/60 border border-emerald-200">
-            <div className="flex items-center gap-2 text-xs font-bold text-emerald-900 mb-1">
-              <span className="w-5 h-5 rounded-md bg-emerald-600 text-white flex items-center justify-center text-[10px]">3</span>
-              <span>Chuyên Viên Booking</span>
-            </div>
-            <p className="text-[11px] text-slate-600 leading-snug">
-              Nhận slot KOC và Gian hàng từ Trưởng phòng & Brand PIC, deal giá, ký hợp đồng và gửi mẫu.
-            </p>
-          </div>
-
-          <div className="p-3 rounded-xl bg-orange-50/60 border border-orange-200">
-            <div className="flex items-center gap-2 text-xs font-bold text-orange-900 mb-1">
-              <span className="w-5 h-5 rounded-md bg-orange-600 text-white flex items-center justify-center text-[10px]">4</span>
-              <span>Chuyên Viên Content</span>
-            </div>
-            <p className="text-[11px] text-slate-600 leading-snug">
-              Nhận brief, thẩm định kịch bản 4 phần, giám sát nội dung video và tuân thủ Brand Guideline.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* ========================================================================= */}
-      {/* 2. SUB-TABS NAVIGATION: 4 PHÂN KHU ĐIỀU PHỐI                                */}
-      {/* ========================================================================= */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-2">
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
-          <button
-            onClick={() => setActiveSection('BRANDS')}
-            className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition whitespace-nowrap ${
-              activeSection === 'BRANDS'
-                ? 'bg-blue-600 text-white shadow-xs'
-                : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200 hover:bg-slate-50'
-            }`}
-          >
-            <Building2 className="w-3.5 h-3.5" />
-            <span>1. Phân Chia Nhãn Hàng (Brand PICs)</span>
-            <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
-              activeSection === 'BRANDS' ? 'bg-blue-800 text-white' : 'bg-slate-100 text-slate-600'
-            }`}>
-              {brands.length} Brands
-            </span>
-          </button>
-
-          <button
-            onClick={() => setActiveSection('STORES')}
-            className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition whitespace-nowrap ${
-              activeSection === 'STORES'
-                ? 'bg-blue-600 text-white shadow-xs'
-                : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200 hover:bg-slate-50'
-            }`}
-          >
-            <Store className="w-3.5 h-3.5" />
-            <span>2. Phân Chia Gian Hàng (Store Portfolio)</span>
-            <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
-              activeSection === 'STORES' ? 'bg-blue-800 text-white' : 'bg-slate-100 text-slate-600'
-            }`}>
-              {storePortfolios.length} Shops
-            </span>
-          </button>
-
-          <button
-            onClick={() => setActiveSection('STAFF')}
-            className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition whitespace-nowrap ${
-              activeSection === 'STAFF'
-                ? 'bg-blue-600 text-white shadow-xs'
-                : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200 hover:bg-slate-50'
-            }`}
-          >
-            <Users className="w-3.5 h-3.5" />
-            <span>3. Cân Bằng Tải Nhân Sự (Staff Capacity)</span>
-            <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
-              activeSection === 'STAFF' ? 'bg-blue-800 text-white' : 'bg-slate-100 text-slate-600'
-            }`}>
-              {staffList.length} Nhân Sự
-            </span>
-          </button>
-
-          <button
-            onClick={() => setActiveSection('TASKS')}
-            className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition whitespace-nowrap ${
-              activeSection === 'TASKS'
-                ? 'bg-blue-600 text-white shadow-xs'
-                : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200 hover:bg-slate-50'
-            }`}
-          >
-            <Send className="w-3.5 h-3.5" />
-            <span>4. Giao Việc & Đốc Thúc SLA</span>
-            <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
-              activeSection === 'TASKS' ? 'bg-blue-800 text-white' : 'bg-slate-100 text-slate-600'
-            }`}>
-              {tasks.length} Việc
-            </span>
-          </button>
-
-          <button
-            onClick={() => setActiveSection('MINDMAP')}
-            className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition whitespace-nowrap ${
-              activeSection === 'MINDMAP'
-                ? 'bg-blue-600 text-white shadow-xs'
-                : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200 hover:bg-slate-50'
-            }`}
-          >
-            <GitFork className="w-3.5 h-3.5" />
-            <span>5. Sơ Đồ Cây Mindmap Master Data</span>
-            <span className="px-1.5 py-0.2 rounded text-[10px] bg-blue-100 text-blue-700 font-bold">
-              Mới
-            </span>
-          </button>
-        </div>
-
-        {activeSection === 'STAFF' && (
-          <button
-            onClick={handleAutoRebalance}
-            className="px-3 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs border border-indigo-200 flex items-center gap-1.5 transition shrink-0"
-            title="Tự động phân bổ lại gian hàng để không ai bị quá tải"
-          >
-            <Zap className="w-3.5 h-3.5 text-indigo-600" />
-            <span>Tự Động Cân Bằng Tải</span>
-          </button>
-        )}
       </div>
 
       {/* ========================================================================= */}
@@ -526,17 +371,17 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
         <div className="bg-white rounded-2xl border border-slate-200/90 overflow-hidden shadow-xs">
           <div className="p-4 border-b border-slate-200 bg-slate-50/70 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+              <h3 className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
                 <Building2 className="w-4 h-4 text-blue-600" />
-                Danh Sách Nhãn Hàng & Trưởng Nhóm Phụ Trách (Brand PIC Leads)
+                Danh sách nhãn hàng & trưởng nhóm phụ trách
               </h3>
-              <p className="text-[11px] text-slate-500 mt-0.5">
+              <p className="text-2xs text-slate-500 mt-0.5">
                 Trưởng phòng chỉ định Brand PIC chịu trách nhiệm lập kế hoạch, phân rã KOC và phối hợp cùng Brand Client
               </p>
             </div>
             <div className="flex items-center gap-2">
               <span className="text-xs text-slate-500 font-mono">
-                Tổng ngân sách giao: <strong className="text-slate-900 font-bold">{(brands.reduce((s, b) => s + (b.planBudget || 0), 0) / 1000000).toFixed(0)}M đ</strong>
+                Tổng ngân sách giao: <strong className="text-slate-900 font-semibold">{formatVndShort(brands.reduce((s, b) => s + (b.planBudget || 0), 0))}</strong>
               </span>
             </div>
           </div>
@@ -544,15 +389,15 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className="bg-slate-100/70 text-slate-600 font-bold border-b border-slate-200 text-[11px] uppercase tracking-wider">
-                  <th className="py-3 px-4 min-w-[200px]">Thương Hiệu & Công Ty</th>
-                  <th className="py-3 px-4 min-w-[180px]">Brand PIC Lead (Chính)</th>
-                  <th className="py-3 px-3 min-w-[150px]">Account PIC</th>
-                  <th className="py-3 px-3 min-w-[150px]">Growth PIC</th>
-                  <th className="py-3 px-3 text-right">Trần Ngân Sách</th>
-                  <th className="py-3 px-3 text-right">Target GMV</th>
-                  <th className="py-3 px-3 text-center">Gian Hàng</th>
-                  <th className="py-3 px-3 text-center w-24">Thao Tác</th>
+                <tr className="bg-slate-100/70 text-slate-600 font-semibold border-b border-slate-200 text-2xs">
+                  <th className="py-3 px-4 min-w-[200px]">Nhãn hàng</th>
+                  <th className="py-3 px-4 min-w-[210px]">Brand PIC</th>
+                  <th className="py-3 px-3 min-w-[170px]">Account PIC</th>
+                  <th className="py-3 px-3 min-w-[170px]">Growth PIC</th>
+                  <th className="py-3 px-3 text-right">Ngân sách</th>
+                  <th className="py-3 px-3 text-right">GMV mục tiêu</th>
+                  <th className="py-3 px-3 text-center">Gian hàng</th>
+                  <th className="py-3 px-3 text-center w-24"><span className="sr-only">Thao tác</span></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -563,12 +408,12 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                     <tr key={brand.id} className="hover:bg-slate-50 transition group">
                       <td className="py-3.5 px-4">
                         <div className="flex items-center gap-2.5">
-                          <div className="w-8 h-8 rounded-lg bg-blue-50 border border-blue-200 text-blue-700 font-bold text-xs flex items-center justify-center shrink-0">
+                          <div className="w-8 h-8 rounded-md bg-sunken text-ink-2 font-semibold text-2xs flex items-center justify-center shrink-0">
                             {brand.name.substring(0, 2).toUpperCase()}
                           </div>
                           <div>
-                            <span className="font-bold text-slate-900 text-xs block">{brand.name}</span>
-                            <span className="text-[10px] text-slate-400 block truncate max-w-[180px]">
+                            <span className="font-semibold text-slate-900 text-xs block">{brand.name}</span>
+                            <span className="text-2xs text-slate-400 block truncate max-w-[180px]">
                               {brand.companyName || brand.category}
                             </span>
                           </div>
@@ -577,26 +422,26 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
 
                       {/* Brand PIC Dropdown */}
                       <td className="py-3.5 px-4">
-                        <select
+                        <div className="flex items-center gap-2"><Avatar name={brand.bookingPicLead || 'Đặng Mai Hà Linh' || '?'} size={22} /><select
                           value={brand.bookingPicLead || 'Đặng Mai Hà Linh'}
                           onChange={(e) => {
                             const updated = { ...brand, bookingPicLead: e.target.value };
                             onUpdateBrand(updated);
                             notify(`Đã gán Brand PIC của ${brand.name} cho: ${e.target.value}`);
                           }}
-                          className="w-full text-xs font-semibold px-2.5 py-1.5 bg-blue-50/60 hover:bg-blue-50 border border-blue-200 rounded-lg text-blue-900 focus:outline-none focus:border-blue-500 transition shadow-2xs"
+                          className="w-full min-w-0 text-xs font-medium px-2 py-1.5 bg-surface border border-line-strong rounded-md text-ink focus:outline-none focus:border-focus transition-colors"
                         >
                           {staffList.map(s => (
                             <option key={s.id} value={s.name}>
                               {s.name} ({s.roleTitle})
                             </option>
                           ))}
-                        </select>
+                        </select></div>
                       </td>
 
                       {/* Account PIC Dropdown */}
                       <td className="py-3.5 px-3">
-                        <select
+                        <div className="flex items-center gap-2"><Avatar name={brand.accountPic || 'Phạm Thị Nhài' || '?'} size={22} /><select
                           value={brand.accountPic || 'Phạm Thị Nhài'}
                           onChange={(e) => {
                             const updated = { ...brand, accountPic: e.target.value };
@@ -610,12 +455,12 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                               {s.name}
                             </option>
                           ))}
-                        </select>
+                        </select></div>
                       </td>
 
                       {/* Growth PIC Dropdown */}
                       <td className="py-3.5 px-3">
-                        <select
+                        <div className="flex items-center gap-2"><Avatar name={brand.growthPic || 'Hoàng Long' || '?'} size={22} /><select
                           value={brand.growthPic || 'Hoàng Long'}
                           onChange={(e) => {
                             const updated = { ...brand, growthPic: e.target.value };
@@ -629,21 +474,19 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                               {s.name}
                             </option>
                           ))}
-                        </select>
+                        </select></div>
                       </td>
 
-                      <td className="py-3.5 px-3 text-right font-mono font-bold text-slate-800">
-                        {((brand.planBudget || 0) / 1000000).toFixed(1)}M đ
+                      <td className="py-3.5 px-3 text-right font-mono font-semibold text-slate-800">
+                        {formatVndShort(brand.planBudget || 0)}
                       </td>
 
-                      <td className="py-3.5 px-3 text-right font-mono font-bold text-emerald-700">
-                        {((brand.targetGmv || 0) / 1000000).toFixed(0)}M đ
+                      <td className="py-3.5 px-3 text-right font-mono font-semibold text-emerald-700">
+                        {formatVndShort(brand.targetGmv || 0)}
                       </td>
 
                       <td className="py-3.5 px-3 text-center">
-                        <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
-                          {brandStoresCount} shops
-                        </span>
+                        {brandStoresCount > 0 ? (<span className="tabular-nums text-slate-700">{brandStoresCount}</span>) : (<Status tone="warning">Chưa gán</Status>)}
                       </td>
 
                       <td className="py-3.5 px-3 text-center">
@@ -651,7 +494,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                           onClick={() => handleOpenEditBrand(brand)}
                           className="px-2.5 py-1 rounded text-xs font-semibold text-blue-700 hover:bg-blue-50 border border-blue-200 transition"
                         >
-                          Chi Tiết
+                          Chi tiết
                         </button>
                       </td>
                     </tr>
@@ -670,11 +513,11 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
         <div className="bg-white rounded-2xl border border-slate-200/90 overflow-hidden shadow-xs">
           <div className="p-4 border-b border-slate-200 bg-slate-50/70 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+              <h3 className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
                 <Store className="w-4 h-4 text-blue-600" />
-                Danh Sách Gian Hàng & Chuyên Viên Tác Nghiệp (Store Assignment)
+                Danh sách gian hàng & chuyên viên tác nghiệp
               </h3>
-              <p className="text-[11px] text-slate-500 mt-0.5">
+              <p className="text-2xs text-slate-500 mt-0.5">
                 Phân bổ chuyên viên Booking / B2C Ops phụ trách từng gian hàng TikTok Shop, Shopee Mall, Lazada
               </p>
             </div>
@@ -695,14 +538,14 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className="bg-slate-100/70 text-slate-600 font-bold border-b border-slate-200 text-[11px] uppercase tracking-wider">
-                  <th className="py-3 px-4 min-w-[200px]">Gian Hàng & Sàn</th>
-                  <th className="py-3 px-3">Nhãn Hàng</th>
-                  <th className="py-3 px-4 min-w-[220px]">Nhân Sự B2C Ops Phụ Trách</th>
+                <tr className="bg-slate-100/70 text-slate-600 font-semibold border-b border-slate-200 text-2xs">
+                  <th className="py-3 px-4 min-w-[200px]">Gian hàng & sàn</th>
+                  <th className="py-3 px-3">Nhãn hàng</th>
+                  <th className="py-3 px-4 min-w-[220px]">Nhân sự B2C Ops phụ trách</th>
                   <th className="py-3 px-3">Account Owner</th>
                   <th className="py-3 px-3 text-right">Target GMV</th>
-                  <th className="py-3 px-4 min-w-[200px]">Chỉ Đạo Riêng Của Trưởng Phòng</th>
-                  <th className="py-3 px-3 text-center w-24">Cập Nhật</th>
+                  <th className="py-3 px-4 min-w-[200px]">Chỉ đạo riêng của trưởng phòng</th>
+                  <th className="py-3 px-3 text-center w-24">Cập nhật</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -717,14 +560,8 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                     return (
                       <tr key={store.id} className="hover:bg-slate-50 transition group">
                         <td className="py-3 px-4">
-                          <div className="font-bold text-slate-900 text-xs">{store.storeName}</div>
-                          <span className={`inline-block mt-0.5 text-[10px] font-semibold px-1.5 py-0.2 rounded ${
-                            store.platform === 'TikTok Shop' ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' :
-                            store.platform === 'Shopee Mall' ? 'bg-orange-50 text-orange-700 border border-orange-200' :
-                            'bg-blue-50 text-blue-700 border border-blue-200'
-                          }`}>
-                            {store.platform}
-                          </span>
+                          <div className="font-semibold text-slate-900 text-xs">{store.storeName}</div>
+                          <ChannelTag channel={store.platform} />
                         </td>
 
                         <td className="py-3 px-3 font-semibold text-slate-700">
@@ -739,7 +576,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                               const newOwners = [e.target.value];
                               handleSaveStoreAssignment(store.id, newOwners, store.assignmentNotes || '');
                             }}
-                            className="w-full text-xs font-semibold px-2.5 py-1.5 bg-blue-50/60 hover:bg-blue-50 border border-blue-200 rounded-lg text-blue-900 focus:outline-none focus:border-blue-500 transition shadow-2xs"
+                            className="w-full min-w-0 text-xs font-medium px-2 py-1.5 bg-surface border border-line-strong rounded-md text-ink focus:outline-none focus:border-focus transition-colors"
                           >
                             {staffList.filter(s => s.role === 'BOOKING' || s.role === 'CONTENT').map(s => (
                               <option key={s.id} value={s.name}>
@@ -753,8 +590,8 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                           {store.accountOwnerName || 'Phạm Thị Nhài'}
                         </td>
 
-                        <td className="py-3 px-3 text-right font-mono font-bold text-emerald-700">
-                          {((store.monthlyTargetGmv || 0) / 1000000).toFixed(0)}M đ
+                        <td className="py-3 px-3 text-right font-mono font-semibold text-emerald-700">
+                          {formatVndShort((store.monthlyTargetGmv || 0))}
                         </td>
 
                         {/* Assignment Notes */}
@@ -777,7 +614,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                             onClick={() => handleOpenEditStore(store)}
                             className="px-2.5 py-1 rounded text-xs font-semibold text-slate-700 hover:bg-slate-100 border border-slate-200 transition"
                           >
-                            Chi Tiết
+                            Chi tiết
                           </button>
                         </td>
                       </tr>
@@ -814,15 +651,15 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                   <div>
                     <div className="flex items-start justify-between gap-2 mb-2">
                       <div className="flex items-center gap-2">
-                        <div className="w-9 h-9 rounded-xl bg-blue-600 text-white font-bold text-xs flex items-center justify-center shadow-xs">
+                        <div className="w-9 h-9 rounded-xl bg-blue-600 text-white font-semibold text-xs flex items-center justify-center shadow-xs">
                           {staff.avatar}
                         </div>
                         <div>
-                          <span className="font-bold text-slate-900 text-xs block">{staff.name}</span>
-                          <span className="text-[10px] text-slate-500 block leading-tight">{staff.roleTitle}</span>
+                          <span className="font-semibold text-slate-900 text-xs block">{staff.name}</span>
+                          <span className="text-2xs text-slate-500 block leading-tight">{staff.roleTitle}</span>
                         </div>
                       </div>
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                      <span className={`text-2xs font-semibold px-2 py-0.5 rounded-full ${
                         staff.role === 'BOOKING' ? 'bg-purple-50 text-purple-700 border border-purple-200' :
                         staff.role === 'CONTENT' ? 'bg-orange-50 text-orange-700 border border-orange-200' :
                         'bg-blue-50 text-blue-700 border border-blue-200'
@@ -833,7 +670,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
 
                     <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-baseline justify-between text-xs">
                       <span className="text-slate-500">Gian hàng phụ trách:</span>
-                      <span className={`font-mono font-bold ${isOverloaded ? 'text-rose-600' : 'text-slate-900'}`}>
+                      <span className={`font-mono font-semibold ${isOverloaded ? 'text-rose-600' : 'text-slate-900'}`}>
                         {assignedStores.length} / {maxCap} shops ({loadPct}%)
                       </span>
                     </div>
@@ -850,18 +687,18 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
 
                     {/* Assigned Stores List tags */}
                     <div className="mt-3">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+                      <span className="text-2xs font-semibold text-slate-400 block mb-1">
                         Danh sách Shops:
                       </span>
                       <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto">
                         {assignedStores.length > 0 ? (
                           assignedStores.map(st => (
-                            <span key={st.id} className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 font-medium truncate max-w-[130px]" title={st.storeName}>
+                            <span key={st.id} className="text-2xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 font-medium truncate max-w-[130px]" title={st.storeName}>
                               {st.storeName.split('_')[0]}
                             </span>
                           ))
                         ) : (
-                          <span className="text-[10px] text-slate-400 italic">Chưa được gán shop nào</span>
+                          <span className="text-2xs text-slate-400 italic">Chưa được gán shop nào</span>
                         )}
                       </div>
                     </div>
@@ -879,7 +716,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                       className="w-full py-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-semibold border border-slate-200 flex items-center justify-center gap-1.5 transition"
                     >
                       <Send className="w-3 h-3 text-blue-600" />
-                      <span>Giao Việc Cho Bạn Này</span>
+                      <span>Giao việc cho bạn này</span>
                     </button>
                   </div>
                 </div>
@@ -896,31 +733,31 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
         <div className="bg-white rounded-2xl border border-slate-200/90 overflow-hidden shadow-xs">
           <div className="p-4 border-b border-slate-200 bg-slate-50/70 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+              <h3 className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
                 <Send className="w-4 h-4 text-blue-600" />
                 Hàng Chờ Nhiệm Vụ Trưởng Phòng Đã Giao ({tasks.length} Tasks)
               </h3>
-              <p className="text-[11px] text-slate-500 mt-0.5">
-                Các nhiệm vụ này tự động hiển thị trong phân hệ "Công Việc Của Tôi" (Cockpit) của từng chuyên viên
+              <p className="text-2xs text-slate-500 mt-0.5">
+                Các nhiệm vụ này tự động hiển thị trong phân hệ "Công việc của tôi" của từng chuyên viên
               </p>
             </div>
             <button
               onClick={() => setIsTaskModalOpen(true)}
-              className="px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs transition"
+              className="px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs flex items-center gap-1.5 shadow-xs transition"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>Giao Thêm Việc Mới</span>
+              <span>Giao thêm việc mới</span>
             </button>
           </div>
 
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className="bg-slate-100/70 text-slate-600 font-bold border-b border-slate-200 text-[11px] uppercase tracking-wider">
-                  <th className="py-3 px-4 min-w-[240px]">Tiêu Đề & Chỉ Đạo</th>
-                  <th className="py-3 px-3">Nhãn Hàng</th>
-                  <th className="py-3 px-3 min-w-[150px]">Chuyên Viên Nhận Việc</th>
-                  <th className="py-3 px-3 text-center">Độ Khẩn Cấp</th>
+                <tr className="bg-slate-100/70 text-slate-600 font-semibold border-b border-slate-200 text-2xs">
+                  <th className="py-3 px-4 min-w-[240px]">Tiêu đề & chỉ đạo</th>
+                  <th className="py-3 px-3">Nhãn hàng</th>
+                  <th className="py-3 px-3 min-w-[150px]">Chuyên viên nhận việc</th>
+                  <th className="py-3 px-3 text-center">Độ khẩn cấp</th>
                   <th className="py-3 px-3 text-center">Hạn SLA</th>
                   <th className="py-3 px-3 text-center w-28">Đốc Thúc</th>
                 </tr>
@@ -929,8 +766,8 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                 {tasks.map((task) => (
                   <tr key={task.id} className="hover:bg-slate-50 transition group">
                     <td className="py-3 px-4">
-                      <div className="font-bold text-slate-900 text-xs">{task.title}</div>
-                      <p className="text-[11px] text-slate-500 mt-0.5 line-clamp-1">{task.description}</p>
+                      <div className="font-semibold text-slate-900 text-xs">{task.title}</div>
+                      <p className="text-2xs text-slate-500 mt-0.5 line-clamp-1">{task.description}</p>
                     </td>
 
                     <td className="py-3 px-3 font-semibold text-slate-700">
@@ -939,15 +776,15 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
 
                     <td className="py-3 px-3">
                       <div className="flex items-center gap-1.5">
-                        <span className="w-5 h-5 rounded-full bg-blue-100 text-blue-700 font-bold text-[9px] flex items-center justify-center shrink-0">
+                        <span className="w-5 h-5 rounded-full bg-blue-100 text-blue-700 font-semibold text-2xs flex items-center justify-center shrink-0">
                           {task.pic.substring(0, 2).toUpperCase()}
                         </span>
-                        <span className="font-bold text-slate-900 text-xs">{task.pic}</span>
+                        <span className="font-semibold text-slate-900 text-xs">{task.pic}</span>
                       </div>
                     </td>
 
                     <td className="py-3 px-3 text-center">
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                      <span className={`text-2xs font-semibold px-2 py-0.5 rounded-full ${
                         task.urgency === 'critical' ? 'bg-rose-100 text-rose-800 border border-rose-300' :
                         task.urgency === 'warning' ? 'bg-amber-100 text-amber-800 border border-amber-300' :
                         'bg-slate-100 text-slate-700'
@@ -956,7 +793,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                       </span>
                     </td>
 
-                    <td className="py-3 px-3 text-center font-mono font-bold text-slate-700">
+                    <td className="py-3 px-3 text-center font-mono font-semibold text-slate-700">
                       {task.deadlineHours}h
                     </td>
 
@@ -983,24 +820,24 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
       )}
 
       {/* ========================================================================= */}
-      {/* 7. SECTION 5: SƠ ĐỒ CÂY MINDMAP MASTER DATA (BRAND ➔ GIAN ➔ PIC ➔ SKU)    */}
+      {/* 7. SECTION 5: SƠ ĐỒ CÂY MINDMAP MASTER DATA (BRAND → GIAN → PIC → SKU)    */}
       {/* ========================================================================= */}
       {activeSection === 'MINDMAP' && (
         <div className="space-y-4 animate-in fade-in duration-200">
-          <div className="p-4 bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-md">
+          <div className="p-4 bg-blue-900 text-white rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-md">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-blue-500/20 border border-blue-400/30 flex items-center justify-center text-blue-300 font-bold shrink-0">
+              <div className="w-10 h-10 rounded-xl bg-blue-500/20 border border-blue-400/30 flex items-center justify-center text-blue-300 font-semibold shrink-0">
                 <GitFork className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="font-bold text-sm text-white flex items-center gap-2">
-                  <span>Toàn Cảnh Phân Bổ Mindmap (Master Data Hierarchy)</span>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                    Trực Quan Hóa 4 Tầng Phân Cấp
+                <h3 className="font-semibold text-sm text-white flex items-center gap-2">
+                  <span>Toàn cảnh phân bổ Mindmap</span>
+                  <span className="px-2 py-0.5 rounded-full text-2xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                    Trực quan hóa 4 tầng phân cấp
                   </span>
                 </h3>
                 <p className="text-xs text-blue-200 mt-0.5">
-                  Sơ đồ cây phân nhánh trực quan: Nhãn Hàng ➔ Gian Hàng Sàn (TikTok Shop, Shopee Mall, Lazada) ➔ Nhân Sự PIC Phụ Trách (1 PIC Chính + các PIC Hỗ Trợ) ➔ Danh Mục Sản Phẩm Hero SKU & Doanh Số.
+                  Sơ đồ cây phân nhánh trực quan: Nhãn hàng → Gian hàng sàn → Nhân sự PIC phụ trách (1 PIC chính + các PIC hỗ trợ) → Danh mục sản phẩm Hero SKU & doanh số.
                 </p>
               </div>
             </div>
@@ -1026,8 +863,8 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
               <div className="flex items-center gap-2.5">
                 <Send className="w-5 h-5 text-blue-400" />
                 <div>
-                  <h3 className="text-sm font-bold">Giao Việc Trực Tiếp Cho Nhân Sự</h3>
-                  <p className="text-[11px] text-slate-400">Trưởng phòng phân công nhiệm vụ và hạn định SLA</p>
+                  <h3 className="text-sm font-semibold">Giao việc trực tiếp cho nhân sự</h3>
+                  <p className="text-2xs text-slate-400">Trưởng phòng phân công nhiệm vụ và hạn định SLA</p>
                 </div>
               </div>
               <button
@@ -1040,8 +877,8 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
 
             <form onSubmit={handleCreateTask} className="p-6 space-y-4 text-xs">
               <div>
-                <label className="font-bold text-slate-700 block mb-1">
-                  1. Chuyên Viên Nhận Việc
+                <label className="font-semibold text-slate-700 block mb-1">
+                  1. Chuyên viên nhận việc
                 </label>
                 <select
                   value={newTaskState.targetStaff}
@@ -1058,8 +895,8 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">
-                    2. Nhãn Hàng Liên Quan
+                  <label className="font-semibold text-slate-700 block mb-1">
+                    2. Nhãn hàng liên quan
                   </label>
                   <select
                     value={newTaskState.brand}
@@ -1073,24 +910,24 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                 </div>
 
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">
-                    3. Mức Độ Ưu Tiên
+                  <label className="font-semibold text-slate-700 block mb-1">
+                    3. Mức độ ưu tiên
                   </label>
                   <select
                     value={newTaskState.urgency}
                     onChange={(e) => setNewTaskState(prev => ({ ...prev, urgency: e.target.value as any }))}
                     className="w-full text-xs font-medium px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:outline-none focus:border-blue-500"
                   >
-                    <option value="critical">Khẩn Cấp (SLA Gấp)</option>
-                    <option value="warning">Cảnh Báo (Cần Chú Ý)</option>
+                    <option value="critical">Khẩn cấp (SLA gấp)</option>
+                    <option value="warning">Cảnh báo (cần chú ý)</option>
                     <option value="normal">Bình Thường</option>
                   </select>
                 </div>
               </div>
 
               <div>
-                <label className="font-bold text-slate-700 block mb-1">
-                  4. Tiêu Đề Công Việc / Nhiệm Vụ
+                <label className="font-semibold text-slate-700 block mb-1">
+                  4. Tiêu đề công việc / nhiệm vụ
                 </label>
                 <input
                   type="text"
@@ -1103,8 +940,8 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
               </div>
 
               <div>
-                <label className="font-bold text-slate-700 block mb-1">
-                  5. Chỉ Đạo Chi Tiết Của Trưởng Phòng
+                <label className="font-semibold text-slate-700 block mb-1">
+                  5. Chỉ đạo chi tiết của trưởng phòng
                 </label>
                 <textarea
                   rows={3}
@@ -1116,8 +953,8 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
               </div>
 
               <div>
-                <label className="font-bold text-slate-700 block mb-1">
-                  6. Hạn Định SLA Xử Lý (Giờ)
+                <label className="font-semibold text-slate-700 block mb-1">
+                  6. Hạn định SLA xử lý (giờ)
                 </label>
                 <div className="flex items-center gap-2">
                   {[12, 24, 48, 72].map(hrs => (
@@ -1125,7 +962,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                       key={hrs}
                       type="button"
                       onClick={() => setNewTaskState(prev => ({ ...prev, deadlineHours: hrs }))}
-                      className={`flex-1 py-1.5 rounded-lg border text-xs font-bold transition ${
+                      className={`flex-1 py-1.5 rounded-lg border text-xs font-semibold transition ${
                         newTaskState.deadlineHours === hrs
                           ? 'bg-blue-600 text-white border-blue-600'
                           : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
@@ -1141,13 +978,13 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsTaskModalOpen(false)}
-                  className="px-4 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 font-bold transition"
+                  className="px-4 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 font-semibold transition"
                 >
                   Huỷ
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold transition shadow-xs flex items-center gap-1.5"
+                  className="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold transition shadow-xs flex items-center gap-1.5"
                 >
                   <Send className="w-3.5 h-3.5" />
                   <span>Giao Việc Ngay</span>
@@ -1168,10 +1005,10 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
               <div className="flex items-center gap-2.5">
                 <Building2 className="w-5 h-5 text-blue-400" />
                 <div>
-                  <h3 className="text-sm font-bold">
+                  <h3 className="text-sm font-semibold">
                     {editingBrand ? `Chỉnh Sửa Phân Bổ Nhãn Hàng: ${editingBrand.name}` : 'Thêm Nhãn Hàng Mới & Phân Bổ PIC'}
                   </h3>
-                  <p className="text-[11px] text-slate-400">Trưởng phòng thiết lập Brand PIC, Account PIC và ngân sách trần</p>
+                  <p className="text-2xs text-slate-400">Trưởng phòng thiết lập Brand PIC, Account PIC và ngân sách trần</p>
                 </div>
               </div>
               <button
@@ -1185,8 +1022,8 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
             <form onSubmit={handleSaveBrand} className="p-6 space-y-4 text-xs">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">
-                    Tên Thương Hiệu
+                  <label className="font-semibold text-slate-700 block mb-1">
+                    Tên thương hiệu
                   </label>
                   <input
                     type="text"
@@ -1199,8 +1036,8 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                 </div>
 
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">
-                    Ngành Hàng
+                  <label className="font-semibold text-slate-700 block mb-1">
+                    Ngành hàng
                   </label>
                   <select
                     value={brandFormState.category}
@@ -1217,7 +1054,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
               </div>
 
               <div>
-                <label className="font-bold text-slate-700 block mb-1">
+                <label className="font-semibold text-slate-700 block mb-1">
                   Brand PIC Lead (Chịu trách nhiệm chính)
                 </label>
                 <select
@@ -1235,7 +1072,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">
+                  <label className="font-semibold text-slate-700 block mb-1">
                     Account PIC
                   </label>
                   <select
@@ -1250,7 +1087,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                 </div>
 
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">
+                  <label className="font-semibold text-slate-700 block mb-1">
                     Growth PIC
                   </label>
                   <select
@@ -1267,20 +1104,20 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">
-                    Trần Ngân Sách (VNĐ)
+                  <label className="font-semibold text-slate-700 block mb-1">
+                    Ngân sách (VNĐ)
                   </label>
                   <input
                     type="number"
                     step="5000000"
                     value={brandFormState.planBudget}
                     onChange={(e) => setBrandFormState(prev => ({ ...prev, planBudget: Number(e.target.value) || 0 }))}
-                    className="w-full text-xs px-3 py-2 bg-white border border-slate-200 rounded-lg text-slate-900 font-mono font-bold focus:outline-none focus:border-blue-500 shadow-2xs"
+                    className="w-full text-xs px-3 py-2 bg-white border border-slate-200 rounded-lg text-slate-900 font-mono font-semibold focus:outline-none focus:border-blue-500 shadow-2xs"
                   />
                 </div>
 
                 <div>
-                  <label className="font-bold text-slate-700 block mb-1">
+                  <label className="font-semibold text-slate-700 block mb-1">
                     Target GMV (VNĐ)
                   </label>
                   <input
@@ -1288,7 +1125,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                     step="10000000"
                     value={brandFormState.targetGmv}
                     onChange={(e) => setBrandFormState(prev => ({ ...prev, targetGmv: Number(e.target.value) || 0 }))}
-                    className="w-full text-xs px-3 py-2 bg-white border border-slate-200 rounded-lg text-slate-900 font-mono font-bold focus:outline-none focus:border-blue-500 shadow-2xs"
+                    className="w-full text-xs px-3 py-2 bg-white border border-slate-200 rounded-lg text-slate-900 font-mono font-semibold focus:outline-none focus:border-blue-500 shadow-2xs"
                   />
                 </div>
               </div>
@@ -1297,16 +1134,16 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsBrandModalOpen(false)}
-                  className="px-4 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 font-bold transition"
+                  className="px-4 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 font-semibold transition"
                 >
                   Huỷ
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold transition shadow-xs flex items-center gap-1.5"
+                  className="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold transition shadow-xs flex items-center gap-1.5"
                 >
                   <Check className="w-3.5 h-3.5" />
-                  <span>Lưu Phân Công Brand</span>
+                  <span>Lưu phân công Brand</span>
                 </button>
               </div>
             </form>
@@ -1324,8 +1161,8 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
               <div className="flex items-center gap-2.5">
                 <Store className="w-5 h-5 text-blue-400" />
                 <div>
-                  <h3 className="text-sm font-bold">Phân Công Gian Hàng</h3>
-                  <p className="text-[11px] text-slate-400">{editingStore.storeName}</p>
+                  <h3 className="text-sm font-semibold">Phân công gian hàng</h3>
+                  <p className="text-2xs text-slate-400">{editingStore.storeName}</p>
                 </div>
               </div>
               <button
@@ -1338,8 +1175,8 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
 
             <div className="p-6 space-y-4 text-xs">
               <div>
-                <label className="font-bold text-slate-700 block mb-1">
-                  Chọn Nhân Sự B2C Ops Phụ Trách
+                <label className="font-semibold text-slate-700 block mb-1">
+                  Chọn nhân sự B2C Ops phụ trách
                 </label>
                 <select
                   value={(editingStore.b2cOwners && editingStore.b2cOwners[0]) || editingStore.b2cOwnerName || 'Khánh Vy'}
@@ -1357,8 +1194,8 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
               </div>
 
               <div>
-                <label className="font-bold text-slate-700 block mb-1">
-                  Chỉ Đạo & Yêu Cầu Riêng Của Trưởng Phòng
+                <label className="font-semibold text-slate-700 block mb-1">
+                  Chỉ đạo & yêu cầu riêng của trưởng phòng
                 </label>
                 <textarea
                   rows={3}
@@ -1373,7 +1210,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                 <button
                   type="button"
                   onClick={() => setEditingStore(null)}
-                  className="px-4 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 font-bold transition"
+                  className="px-4 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 font-semibold transition"
                 >
                   Đóng
                 </button>
@@ -1384,9 +1221,9 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                     const owners = editingStore.b2cOwners || [editingStore.b2cOwnerName];
                     handleSaveStoreAssignment(editingStore.id, owners, notes);
                   }}
-                  className="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold transition shadow-xs"
+                  className="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold transition shadow-xs"
                 >
-                  Lưu Thay Đổi
+                  Lưu thay đổi
                 </button>
               </div>
             </div>

@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
+import { formatVndShort } from '../lib/format';
+import { Button, EmptyState } from './ui';
 import { 
   Target, 
   DollarSign, 
@@ -137,37 +139,22 @@ export const MyPlanWorkspace: React.FC<MyPlanWorkspaceProps> = ({
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-200">
           <div>
             <div className="flex items-center gap-2.5 flex-wrap">
-              <span className="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-sm" />
-              <h2 className="text-base font-bold text-slate-900 tracking-tight uppercase">
-                BÀN LÀM VIỆC KẾ HOẠCH THÁNG — CHUYÊN VIÊN {currentStaffName.toUpperCase()}
+              <h2 className="text-base font-semibold text-slate-900 tracking-tight">
+                Kế hoạch tháng của {currentStaffName}
               </h2>
-              <span className="text-[11px] px-2 py-0.5 rounded font-mono font-bold bg-blue-50 text-blue-700 border border-blue-200">
+              <span className="text-2xs px-2 py-0.5 rounded font-mono font-semibold bg-blue-50 text-blue-700 border border-blue-200">
                 {allocation?.month || '2026/09'}
               </span>
-              <span className="text-[11px] px-2 py-0.5 rounded font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                Chỉ Tiêu Được Trưởng Phòng Phân Bổ
-              </span>
+              
             </div>
             <p className="text-xs text-slate-500 mt-1">
-              Bạn nhận được hạn mức từ Bảng Ma Trận của Trưởng phòng ➔ Lên danh sách KOC chi tiết từng slot theo tuần (W1-W4) và trình duyệt để mở khóa hợp đồng.
+              Chia hạn mức trưởng phòng giao thành các slot KOC theo tuần, rồi gửi duyệt để mở khóa hợp đồng.
             </p>
           </div>
 
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => setIsAddModalOpen(true)}
-              className="btn-md bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-xs transition"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>+ Thêm KOC Vào Plan</span>
-            </button>
-            <button
-              onClick={() => onSubmitPlanToLead(currentStaffName)}
-              className="btn-md bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition"
-            >
-              <Send className="w-3.5 h-3.5" />
-              <span>Trình Duyệt Plan Lên Lead</span>
-            </button>
+            <Button icon={Plus} onClick={() => setIsAddModalOpen(true)}>Thêm KOC</Button>
+            <Button variant="primary" icon={Send} onClick={() => onSubmitPlanToLead(currentStaffName)}>Gửi duyệt</Button>
           </div>
         </div>
 
@@ -180,11 +167,11 @@ export const MyPlanWorkspace: React.FC<MyPlanWorkspaceProps> = ({
                 <Video className="w-3.5 h-3.5 text-blue-500" />
                 Số Video Giao
               </span>
-              <span className={`font-mono font-bold ${fillRateVideos >= 90 ? 'text-emerald-600' : 'text-amber-600'}`}>
+              <span className={`font-mono font-semibold ${fillRateVideos >= 90 ? 'text-emerald-600' : 'text-amber-600'}`}>
                 {fillRateVideos}% lấp đầy
               </span>
             </div>
-            <div className="text-xl font-bold font-mono text-slate-900">
+            <div className="text-xl font-semibold font-mono text-slate-900">
               {plannedVideos} <span className="text-xs text-slate-500 font-normal">/ {targetVideos} video</span>
             </div>
             <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden mt-2">
@@ -200,16 +187,16 @@ export const MyPlanWorkspace: React.FC<MyPlanWorkspaceProps> = ({
             <div className="flex justify-between items-center text-xs text-slate-500 mb-1">
               <span className="flex items-center gap-1.5">
                 <DollarSign className="w-3.5 h-3.5 text-blue-600" />
-                Ngân Sách Được Giao
+                Ngân sách được giao
               </span>
-              <span className="font-mono font-bold text-blue-600">
+              <span className="font-mono font-semibold text-blue-600">
                 {fillRateBudget}%
               </span>
             </div>
-            <div className="text-xl font-bold font-mono text-blue-600">
-              {(plannedBudget / 1000000).toFixed(1)}M <span className="text-xs text-slate-500 font-normal">/ {(targetBudget / 1000000).toFixed(1)}M đ</span>
+            <div className="text-xl font-semibold font-mono text-blue-600">
+              {formatVndShort(plannedBudget)} <span className="text-xs text-slate-500 font-normal">/ {formatVndShort(targetBudget)}</span>
             </div>
-            <div className="text-[10px] text-slate-500 mt-2">
+            <div className="text-2xs text-slate-500 mt-2">
               Khoảng trống còn lại: <strong className="text-slate-900">{Math.max(0, targetBudget - plannedBudget).toLocaleString('vi-VN')} đ</strong>
             </div>
           </div>
@@ -221,14 +208,14 @@ export const MyPlanWorkspace: React.FC<MyPlanWorkspaceProps> = ({
                 <Target className="w-3.5 h-3.5 text-emerald-600" />
                 Target GMV Tháng
               </span>
-              <span className="font-mono font-bold text-emerald-600">
-                {(plannedGmv / 1000000).toFixed(1)}M
+              <span className="font-mono font-semibold text-emerald-600">
+                {formatVndShort(plannedGmv)}
               </span>
             </div>
-            <div className="text-xl font-bold font-mono text-emerald-600">
-              {(targetGmv / 1000000).toFixed(1)}M đ
+            <div className="text-xl font-semibold font-mono text-emerald-600">
+              {formatVndShort(targetGmv)}
             </div>
-            <div className="text-[10px] text-slate-500 mt-2">
+            <div className="text-2xs text-slate-500 mt-2">
               Cam kết GMV đóng góp cho phòng Marketing B2C
             </div>
           </div>
@@ -236,16 +223,16 @@ export const MyPlanWorkspace: React.FC<MyPlanWorkspaceProps> = ({
           {/* Col 4 */}
           <div className="p-3.5 rounded-md bg-slate-50 border border-slate-200 shadow-2xs">
             <span className="text-xs text-slate-500 block font-medium mb-1">
-              Brand & Chỉ Đạo Của Trưởng Phòng:
+              Brand & chỉ đạo của trưởng phòng:
             </span>
             <div className="flex flex-wrap gap-1 mb-1.5">
               {(allocation?.assignedBrands || ['Senka', 'Cure']).map(b => (
-                <span key={b} className="px-1.5 py-0.2 rounded bg-slate-100 text-slate-700 text-[10px] font-semibold border border-slate-200">
+                <span key={b} className="px-1.5 py-0.2 rounded bg-slate-100 text-slate-700 text-2xs font-semibold border border-slate-200">
                   {b}
                 </span>
               ))}
             </div>
-            <p className="text-[10px] text-slate-600 italic line-clamp-2">
+            <p className="text-2xs text-slate-600 italic line-clamp-2">
               "{allocation?.managerNote || 'Tập trung đẩy mạnh KOC Macro cho đợt Mega Day tuần 3.'}"
             </p>
           </div>
@@ -258,14 +245,14 @@ export const MyPlanWorkspace: React.FC<MyPlanWorkspaceProps> = ({
       <div className="card-enterprise overflow-hidden">
         <div className="px-5 py-3 border-b border-slate-200 bg-slate-50 flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
-              DANH SÁCH KOC / SLOT KẾ HOẠCH CHI TIẾT ({staffItems.length} SLOTS)
+            <h3 className="text-xs font-semibold text-slate-900">
+              Slot KOC · {staffItems.length}
             </h3>
-            <span className="text-[11px] px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 font-medium">
+            <span className="text-2xs px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 font-medium">
               {approvedCount} đã duyệt
             </span>
             {pendingCount > 0 && (
-              <span className="text-[11px] px-2 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200 font-medium">
+              <span className="text-2xs px-2 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200 font-medium">
                 {pendingCount} chờ duyệt
               </span>
             )}
@@ -277,11 +264,11 @@ export const MyPlanWorkspace: React.FC<MyPlanWorkspaceProps> = ({
               <button
                 key={w}
                 onClick={() => setSelectedWeekFilter(w)}
-                className={`px-2.5 py-0.5 rounded text-[11px] font-semibold transition ${
+                className={`px-2.5 py-0.5 rounded text-2xs font-semibold transition ${
                   selectedWeekFilter === w ? 'bg-blue-600 text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                {w === 'ALL' ? 'Tất Cả Tuần' : `Tuần ${w}`}
+                {w === 'ALL' ? 'Cả tháng' : w}
               </button>
             ))}
           </div>
@@ -292,22 +279,26 @@ export const MyPlanWorkspace: React.FC<MyPlanWorkspaceProps> = ({
             <thead>
               <tr className="bg-slate-50 text-slate-700 border-b border-slate-200 font-semibold">
                 <th className="p-3 pl-4">Tuần</th>
-                <th className="p-3">Nhãn Hàng</th>
+                <th className="p-3">Nhãn hàng</th>
                 <th className="p-3">KOC / Creator</th>
                 <th className="p-3">Tier & Khung Lương</th>
                 <th className="p-3">Góc Quay / Pillar</th>
-                <th className="p-3 text-right">Dự Toán Cast</th>
+                <th className="p-3 text-right">Dự toán Cast</th>
                 <th className="p-3 text-right">Target GMV</th>
-                <th className="p-3 text-center">Trạng Thái Plan</th>
-                <th className="p-3">Ghi Chú Của Lead</th>
+                <th className="p-3 text-center">Trạng thái Plan</th>
+                <th className="p-3">Ghi chú của Lead</th>
                 <th className="p-3 pr-4 text-right">Thao Tác</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
               {filteredItems.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="p-8 text-center text-slate-500 text-xs">
-                    Chưa có slot KOC nào trong kế hoạch. Bấm "+ Thêm KOC Vào Plan" để khởi tạo slot đầu tiên!
+                  <td colSpan={10} className="px-4">
+                    <EmptyState
+                      title="Kế hoạch chưa có KOC"
+                      description="Thêm KOC từ danh bạ để bắt đầu chia slot theo tuần."
+                      action={<Button size="sm" icon={Plus} onClick={() => setIsAddModalOpen(true)}>Thêm KOC</Button>}
+                    />
                   </td>
                 </tr>
               ) : (
@@ -315,7 +306,7 @@ export const MyPlanWorkspace: React.FC<MyPlanWorkspaceProps> = ({
                   <tr key={item.id} className="hover:bg-slate-50 transition-colors">
                     {/* Week */}
                     <td className="p-3 pl-4">
-                      <span className="font-bold font-mono px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 text-[10px]">
+                      <span className="font-semibold font-mono px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 text-2xs">
                         {item.targetWeek}
                       </span>
                     </td>
@@ -327,15 +318,15 @@ export const MyPlanWorkspace: React.FC<MyPlanWorkspaceProps> = ({
 
                     {/* KOC Info */}
                     <td className="p-3">
-                      <div className="font-bold text-slate-900 text-xs">{item.kocStageName}</div>
+                      <div className="font-semibold text-slate-900 text-xs">{item.kocStageName}</div>
                       {item.channelId && (
-                        <div className="text-[10px] text-slate-500 font-mono">{item.channelId}</div>
+                        <div className="text-2xs text-slate-500 font-mono">{item.channelId}</div>
                       )}
                     </td>
 
                     {/* Tier */}
                     <td className="p-3">
-                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border inline-block ${
+                      <span className={`text-2xs font-semibold px-1.5 py-0.5 rounded border inline-block ${
                         item.tier === 'TIER_1_CELEB' ? 'bg-rose-50 text-rose-700 border-rose-200' :
                         item.tier === 'TIER_2_MACRO' ? 'bg-blue-50 text-blue-700 border-blue-200' :
                         item.tier === 'TIER_3_MICRO' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
@@ -344,28 +335,28 @@ export const MyPlanWorkspace: React.FC<MyPlanWorkspaceProps> = ({
                         {item.salaryGrade} ({item.tier.replace('TIER_', '')})
                       </span>
                       {item.tepKenh && (
-                        <div className="text-[10px] text-slate-500 mt-0.5">{item.tepKenh}</div>
+                        <div className="text-2xs text-slate-500 mt-0.5">{item.tepKenh}</div>
                       )}
                     </td>
 
                     {/* Pillar */}
-                    <td className="p-3 text-slate-700 text-[11px]">
+                    <td className="p-3 text-slate-700 text-2xs">
                       {item.contentPillar}
                     </td>
 
                     {/* Cost */}
-                    <td className="p-3 text-right font-mono font-bold text-cyan-400">
+                    <td className="p-3 text-right font-mono font-semibold text-cyan-400">
                       {item.budgetEstimated === 0 ? 'FOC (0đ)' : `${item.budgetEstimated.toLocaleString('vi-VN')} đ`}
                     </td>
 
                     {/* GMV */}
-                    <td className="p-3 text-right font-mono font-bold text-emerald-400">
+                    <td className="p-3 text-right font-mono font-semibold text-emerald-400">
                       {item.targetGmv.toLocaleString('vi-VN')} đ
                     </td>
 
                     {/* Status */}
                     <td className="p-3 text-center">
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded border inline-block ${
+                      <span className={`text-2xs font-semibold px-2 py-0.5 rounded border inline-block ${
                         item.status === 'APPROVED' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' :
                         item.status === 'CONVERTED' ? 'bg-purple-500/20 text-purple-300 border-purple-500/30' :
                         item.status === 'SUBMITTED' ? 'bg-blue-500/20 text-blue-300 border-blue-500/30' :
@@ -374,14 +365,14 @@ export const MyPlanWorkspace: React.FC<MyPlanWorkspaceProps> = ({
                       }`}>
                         {item.status === 'APPROVED' ? '✓ Đã Duyệt' :
                          item.status === 'CONVERTED' ? '✓ Đã Lên Deal' :
-                         item.status === 'SUBMITTED' ? '⏳ Chờ Duyệt' :
-                         item.status === 'REVISION_REQUESTED' ? '⚠️ Cần Sửa' : 'Bản Nháp'}
+                         item.status === 'SUBMITTED' ? 'Chờ Duyệt' :
+                         item.status === 'REVISION_REQUESTED' ? 'Cần Sửa' : 'Bản Nháp'}
                       </span>
                     </td>
 
                     {/* Lead Notes */}
                     <td className="p-3 max-w-[180px]">
-                      <p className="text-[10px] text-slate-400 truncate hover:text-clip" title={item.leadNotes}>
+                      <p className="text-2xs text-slate-400 truncate hover:text-clip" title={item.leadNotes}>
                         {item.leadNotes || '—'}
                       </p>
                     </td>
@@ -393,7 +384,7 @@ export const MyPlanWorkspace: React.FC<MyPlanWorkspaceProps> = ({
                           <button
                             onClick={() => onConvertItemToDeal(item)}
                             title="1-Click chuyển slot này sang Booking Deal thực tế để ký HĐ và cọc"
-                            className="btn-sm bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-xs transition"
+                            className="btn-sm bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-xs transition"
                           >
                             <Zap className="w-3 h-3 text-amber-300" />
                             <span>Lên Deal</span>
@@ -430,9 +421,9 @@ export const MyPlanWorkspace: React.FC<MyPlanWorkspaceProps> = ({
         >
           <div className="bg-white border border-slate-200 rounded-xl shadow-2xl w-full max-w-xl p-6 text-slate-900 animate-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between pb-3 border-b border-slate-200 mb-4">
-              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+              <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
                 <Plus className="w-4 h-4 text-blue-600" />
-                <span>Thêm Slot KOC Vào Kế Hoạch Tháng</span>
+                <span>Thêm slot KOC vào kế hoạch tháng</span>
               </h3>
               <button 
                 onClick={() => setIsAddModalOpen(false)} 
@@ -448,7 +439,7 @@ export const MyPlanWorkspace: React.FC<MyPlanWorkspaceProps> = ({
               {/* Quick Pick from Master KOC Directory */}
               <div>
                 <label className="text-slate-700 font-semibold block mb-1">
-                  Gợi ý chọn nhanh từ Danh Bạ KOC:
+                  Gợi ý chọn nhanh từ danh bạ KOC:
                 </label>
                 <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto p-2 bg-slate-50 rounded-lg border border-slate-200">
                   {kocs.slice(0, 8).map(koc => (
@@ -470,14 +461,14 @@ export const MyPlanWorkspace: React.FC<MyPlanWorkspaceProps> = ({
                   <input
                     type="text"
                     required
-                    placeholder="VD: Chloe Nguyễn, Bác sĩ Hằng..."
+                    placeholder="VD: Chloe nguyễn, bác sĩ hằng..."
                     value={formKocName}
                     onChange={(e) => setFormKocName(e.target.value)}
                     className="w-full bg-white border border-slate-300 rounded-lg p-2 text-slate-900 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="text-slate-700 font-semibold block mb-1">Kênh TikTok (Channel ID):</label>
+                  <label className="text-slate-700 font-semibold block mb-1">Kênh TikTok:</label>
                   <input
                     type="text"
                     placeholder="VD: @chloenguyen.official"
@@ -490,7 +481,7 @@ export const MyPlanWorkspace: React.FC<MyPlanWorkspaceProps> = ({
 
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="text-slate-700 font-semibold block mb-1">Nhãn Hàng (Brand):</label>
+                  <label className="text-slate-700 font-semibold block mb-1">Nhãn hàng:</label>
                   <select
                     value={formBrand}
                     onChange={(e) => setFormBrand(e.target.value)}
@@ -502,16 +493,16 @@ export const MyPlanWorkspace: React.FC<MyPlanWorkspaceProps> = ({
                   </select>
                 </div>
                 <div>
-                  <label className="text-slate-700 font-semibold block mb-1">Tuần Lên Sóng:</label>
+                  <label className="text-slate-700 font-semibold block mb-1">Tuần lên sóng:</label>
                   <select
                     value={formWeek}
                     onChange={(e) => setFormWeek(e.target.value as any)}
-                    className="w-full bg-white border border-slate-300 rounded-lg p-2 text-slate-900 font-bold focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
+                    className="w-full bg-white border border-slate-300 rounded-lg p-2 text-slate-900 font-semibold focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
                   >
-                    <option value="W1">Tuần 1 (W1: Mở Màn)</option>
-                    <option value="W2">Tuần 2 (W2: Tăng Tốc)</option>
+                    <option value="W1">Tuần 1 (W1: Mở màn)</option>
+                    <option value="W2">Tuần 2 (W2: Tăng tốc)</option>
                     <option value="W3">Tuần 3 (W3: Mega D-Day)</option>
-                    <option value="W4">Tuần 4 (W4: Về Đích)</option>
+                    <option value="W4">Tuần 4 (W4: Về đích)</option>
                   </select>
                 </div>
                 <div>
@@ -549,11 +540,11 @@ export const MyPlanWorkspace: React.FC<MyPlanWorkspaceProps> = ({
                     <option value="Unboxing">Unboxing</option>
                     <option value="Educate">Educate / Bác sĩ</option>
                     <option value="Daily Vlog">Daily Vlog</option>
-                    <option value="FOMO">FOMO Giờ Vàng</option>
+                    <option value="FOMO">FOMO giờ vàng</option>
                   </select>
                 </div>
                 <div>
-                  <label className="text-slate-700 font-semibold block mb-1">Tệp Kênh (25 Tệp):</label>
+                  <label className="text-slate-700 font-semibold block mb-1">Tệp kênh (25 tệp):</label>
                   <select
                     value={formTepKenh}
                     onChange={(e) => setFormTepKenh(e.target.value as any)}
@@ -573,21 +564,21 @@ export const MyPlanWorkspace: React.FC<MyPlanWorkspaceProps> = ({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-slate-700 font-semibold block mb-1">Dự Toán Chi Phí Cast (VND):</label>
+                  <label className="text-slate-700 font-semibold block mb-1">Dự toán chi phí Cast (VND):</label>
                   <input
                     type="number"
                     value={formBudget}
                     onChange={(e) => setFormBudget(Number(e.target.value))}
-                    className="w-full bg-white border border-slate-300 rounded-lg p-2 text-blue-700 font-mono font-bold focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
+                    className="w-full bg-white border border-slate-300 rounded-lg p-2 text-blue-700 font-mono font-semibold focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="text-slate-700 font-semibold block mb-1">Target GMV Kỳ Vọng (VND):</label>
+                  <label className="text-slate-700 font-semibold block mb-1">Target GMV kỳ vọng (VND):</label>
                   <input
                     type="number"
                     value={formGmv}
                     onChange={(e) => setFormGmv(Number(e.target.value))}
-                    className="w-full bg-white border border-slate-300 rounded-lg p-2 text-emerald-700 font-mono font-bold focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
+                    className="w-full bg-white border border-slate-300 rounded-lg p-2 text-emerald-700 font-mono font-semibold focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
                   />
                 </div>
               </div>
@@ -598,13 +589,13 @@ export const MyPlanWorkspace: React.FC<MyPlanWorkspaceProps> = ({
                   onClick={() => setIsAddModalOpen(false)}
                   className="px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition"
                 >
-                  Hủy Bỏ
+                  Hủy bỏ
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold transition shadow-xs"
+                  className="px-4 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold transition shadow-xs"
                 >
-                  Lưu Vào Kế Hoạch
+                  Lưu vào kế hoạch
                 </button>
               </div>
             </form>

@@ -59,6 +59,9 @@ import {
 import { KocProfileModal } from '../KocProfileModal';
 import { CreateKocModal } from '../CreateKocModal';
 import { MyPlanWorkspace } from '../MyPlanWorkspace';
+import { Avatar, Button, Chips, ConfirmDialog, DataTable, EmptyState, Field, FilterBar, Input, Modal, Panel, Person, Segmented, Select, Stat, StatRow, Status, Tabs, Textarea } from '../ui';
+import type { StatusTone } from '../ui';
+import { formatNumber, formatPercent, formatVnd, formatVndShort } from '../../lib/format';
 
 interface BookingViewProps {
   deals: BookingDealItem[];
@@ -143,7 +146,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
     }
   }, [currentUser, currentUserName]);
 
-  // 🌟 Search & 4 Phân loại cốt lõi KOC Directory (Sheet 3.1 & 3.2 & 5.4 & 5.6)
+  // Search & 4 Phân loại cốt lõi KOC Directory (Sheet 3.1 & 3.2 & 5.4 & 5.6)
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedKL, setSelectedKL] = useState<string>('ALL'); // 1. Khung lương
   const [selectedSegment, setSelectedSegment] = useState<string>('ALL'); // 2. Segment
@@ -185,6 +188,8 @@ export const BookingView: React.FC<BookingViewProps> = ({
 
   // State for Growth Handoff Modal (Bàn giao quét mã Spark Ads & setup Ads)
   const [handoffDeal, setHandoffDeal] = useState<BookingDealItem | null>(null);
+  const [rejectingDeal, setRejectingDeal] = useState<BookingDealItem | null>(null);
+  const [autoAirDeal, setAutoAirDeal] = useState<BookingDealItem | null>(null);
   const [handoffForm, setHandoffForm] = useState({
     sparkAdsCode: '',
     tiktokVideoUrl: '',
@@ -238,7 +243,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handoffDeal, editingDeal]);
 
-  // 🌟 1. Khung Lương (KL) - Chuẩn hóa Sheet 3.1 & 5.6
+  // 1. Khung Lương (KL) - Chuẩn hóa Sheet 3.1 & 5.6
   const salaryGrades = [
     { key: 'ALL', label: 'Tất cả KL' },
     { key: 'TAP UpAffiliate', label: 'TAP UpAffiliate (0đ)' },
@@ -252,7 +257,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
     { key: 'TAP đối tác ngoài', label: 'TAP Ngoài (MCN)' },
   ];
 
-  // 🌟 2. Phân nhóm Creator (Segment) - Sheet 3.2 Col 81 & 5.6
+  // 2. Phân nhóm Creator (Segment) - Sheet 3.2 Col 81 & 5.6
   const creatorSegments = [
     { key: 'ALL', label: 'Tất cả Segment' },
     { key: 'Massive Creator', label: 'Massive Creator (TAP, KL1-3)' },
@@ -261,9 +266,9 @@ export const BookingView: React.FC<BookingViewProps> = ({
     { key: 'Top Creator', label: 'Top Creator (KL7)' },
   ];
 
-  // 🌟 3. KOC Category (Ngành hàng) - Sheet 3.2 Col 87 & 5.4
+  // 3. KOC Category (Ngành hàng) - Sheet 3.2 Col 87 & 5.4
   const kocCategories = [
-    { key: 'ALL', label: 'Tất cả Ngành Hàng' },
+    { key: 'ALL', label: 'Tất cả ngành hàng' },
     { key: 'Personal care', label: 'Personal care' },
     { key: 'Mom and baby', label: 'Mom and baby' },
     { key: 'Reviewer', label: 'Reviewer' },
@@ -275,9 +280,9 @@ export const BookingView: React.FC<BookingViewProps> = ({
     { key: 'Travel/Hospitality', label: 'Travel/Hospitality' },
   ];
 
-  // 🌟 4. Tệp Kênh - 25 tệp chuẩn Sheet 3.1 & 5.4
+  // 4. Tệp Kênh - 25 tệp chuẩn Sheet 3.1 & 5.4
   const tepKenhList = [
-    { key: 'ALL', label: 'Tất cả Tệp Kênh' },
+    { key: 'ALL', label: 'Tất cả tệp kênh' },
     { key: 'Review Nữ', label: 'Review Nữ' },
     { key: 'Review Nam', label: 'Review Nam' },
     { key: 'Unboxing', label: 'Unboxing' },
@@ -316,17 +321,17 @@ export const BookingView: React.FC<BookingViewProps> = ({
     { key: 'Mẹ bé', label: 'Mẹ bé' },
     { key: 'Gia đình', label: 'Gia đình' },
     { key: 'Beauty', label: 'Beauty' },
-    { key: 'Bác sĩ/chuyên gia', label: 'Bác sĩ / Chuyên gia' },
+    { key: 'Bác sĩ/chuyên gia', label: 'Bác sĩ / chuyên gia' },
     { key: 'Unboxing', label: 'Unboxing' },
   ];
 
   // Brands / Gian hàng (from Image 8)
   const brandsList = [
-    { key: 'ALL', label: 'Tất Cả Gian Hàng' },
+    { key: 'ALL', label: 'Tất cả gian hàng' },
     { key: 'Kutieskin Mama', label: 'Kutieskin Mama' },
     { key: 'Royal Ausnz', label: 'Royal Ausnz' },
     { key: 'Bye Bye Blemish', label: 'Bye Bye Blemish' },
-    { key: 'pHCare', label: 'pHCare (Cần Mã Ads)' },
+    { key: 'pHCare', label: 'pHCare (cần mã Ads)' },
     { key: 'EUPC', label: 'EUPC' },
     { key: 'Natural Care', label: 'Natural Care' },
     { key: 'Keyshu', label: 'Keyshu' },
@@ -386,13 +391,8 @@ export const BookingView: React.FC<BookingViewProps> = ({
   };
 
   // Quick Brand Approval Action (One-click)
-  const handleQuickBrandApproval = (deal: BookingDealItem, status: 'ĐÃ_DUYỆT' | 'TỪ_CHỐI') => {
-    let rejectReason = '';
-    if (status === 'TỪ_CHỐI') {
-      const inputReason = prompt('Nhập lý do Brand từ chối KOC cho Job này:', 'Tệp khán giả KOC không phù hợp tệp khách hàng mục tiêu của Brand');
-      if (inputReason === null) return;
-      rejectReason = inputReason.trim() || 'Lệch định vị thương hiệu';
-    }
+  const handleQuickBrandApproval = (deal: BookingDealItem, status: 'ĐÃ_DUYỆT' | 'TỪ_CHỐI', reason = '') => {
+    const rejectReason = reason || 'Lệch định vị thương hiệu';
 
     const updatedDeal: BookingDealItem = {
       ...deal,
@@ -474,134 +474,57 @@ export const BookingView: React.FC<BookingViewProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Compact Personal KPI Bar */}
-      <div className="p-3 rounded-xl bg-blue-50/80 border border-blue-200/90 shadow-2xs">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-          <div className="flex items-center gap-2.5 flex-wrap">
-            {currentUser?.role === 'MANAGER' ? (
-              <div className="flex items-center gap-1.5 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-lg">
-                <Crown className="w-3.5 h-3.5 text-amber-600" />
-                <span className="text-[11px] text-amber-800 font-bold">[Lead] Soi KPI NV:</span>
-                <select
-                  value={selectedStaffName}
-                  onChange={(e) => setSelectedStaffName(e.target.value)}
-                  className="bg-white text-slate-800 border border-amber-300 rounded px-1.5 py-0.5 text-xs font-semibold focus:outline-none"
-                >
-                  {(externalStaffAllocations || INITIAL_STAFF_ALLOCATIONS_26).map(a => (
-                    <option key={a.id} value={a.staffName} className="bg-white text-slate-900">
-                      {a.staffName} ({a.roleTitle})
-                    </option>
-                  ))}
-                </select>
-              </div>
-            ) : (
-              <span className="bg-blue-600 text-white px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1 text-[11px] shadow-2xs">
-                <UserCheck className="w-3 h-3" />
-                KPI {selectedStaffName}
-              </span>
-            )}
-            <span className="text-slate-600 font-medium">
-              Air: <strong className="text-slate-900 font-bold">{personalStaffProgress.reportVideos}/{personalStaffProgress.planVideos} clips</strong> ({personalStaffProgress.airProgress}%)
-            </span>
-            <span className="text-slate-300">|</span>
-            <span className="text-slate-600 font-medium">
-              Ngân sách: <strong className="text-blue-700 font-bold">{(personalStaffProgress.reportBudget / 1000000).toFixed(1)}M/{(personalStaffProgress.planBudget / 1000000).toFixed(1)}M</strong> ({personalStaffProgress.budgetProgress}%)
-            </span>
-          </div>
-
-          <div className="flex items-center gap-2">
-            {personalStaffProgress.isLagging || personalStaffProgress.airProgress < 50 ? (
-              <span className="badge-rose px-2 py-0.5 rounded-full text-[11px] font-bold flex items-center gap-1">
-                <AlertTriangle className="w-3 h-3" />
-                Tiến độ air &lt;50% — Cần đốc thúc KOC
-              </span>
-            ) : (
-              <span className="badge-emerald px-2 py-0.5 rounded-full text-[11px] font-bold flex items-center gap-1">
-                <Sparkles className="w-3 h-3" />
-                Tiến độ đạt chuẩn ({personalStaffProgress.airProgress}%)
-              </span>
-            )}
-          </div>
-        </div>
+      {/* Tiến độ cá nhân */}
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-[13px] text-ink-2">
+        {currentUser?.role === 'MANAGER' ? (
+          <label className="inline-flex items-center gap-2">
+            <span className="text-ink-3">Xem kế hoạch của</span>
+            <select
+              value={selectedStaffName}
+              onChange={(e) => setSelectedStaffName(e.target.value)}
+              className="h-8 px-2 rounded-md border border-line-strong bg-surface text-ink font-medium focus:outline-none"
+            >
+              {(externalStaffAllocations || INITIAL_STAFF_ALLOCATIONS_26).map(a => (
+                <option key={a.id} value={a.staffName}>{a.staffName}</option>
+              ))}
+            </select>
+          </label>
+        ) : (
+          <span className="font-medium text-ink">{selectedStaffName}</span>
+        )}
+        <span>
+          Air <strong className="font-semibold text-ink tabular-nums">{personalStaffProgress.reportVideos}/{personalStaffProgress.planVideos}</strong>
+          <span className="text-ink-3"> · {personalStaffProgress.airProgress}%</span>
+        </span>
+        <span>
+          Ngân sách <strong className="font-semibold text-ink tabular-nums">{formatVndShort(personalStaffProgress.reportBudget)} / {formatVndShort(personalStaffProgress.planBudget)}</strong>
+          <span className="text-ink-3"> · {personalStaffProgress.budgetProgress}%</span>
+        </span>
+        {personalStaffProgress.isLagging || personalStaffProgress.airProgress < 50 ? (
+          <Status tone="critical">Air dưới 50%</Status>
+        ) : (
+          <Status tone="positive">Đúng tiến độ</Status>
+        )}
       </div>
 
-      {/* Sub-Tabs Navigation Bar */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-2 bg-slate-100 border border-slate-200 rounded-xl">
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
-          <button
-            onClick={() => setActiveSubTab('MY_PLAN')}
-            className={`btn-md font-bold text-xs transition ${
-              activeSubTab === 'MY_PLAN'
-                ? 'bg-blue-600 text-white shadow-xs'
-                : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200 hover:bg-slate-50'
-            }`}
-          >
-            <Target className="w-3.5 h-3.5" />
-            <span>0. Kế Hoạch Của Tôi (My Plan)</span>
-          </button>
-
-          <button
-            onClick={() => setActiveSubTab('CANDIDATES')}
-            className={`btn-md font-bold text-xs transition ${
-              activeSubTab === 'CANDIDATES'
-                ? 'bg-blue-600 text-white shadow-xs'
-                : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200 hover:bg-slate-50'
-            }`}
-          >
-            <UserCheck className="w-3.5 h-3.5" />
-            <span>1. Sàng Lọc KOC & Pipeline Tiếp Cận ({candidates.length})</span>
-          </button>
-
-          <button
-            onClick={() => setActiveSubTab('BOOKING_DEALS')}
-            className={`btn-md font-bold text-xs transition ${
-              activeSubTab === 'BOOKING_DEALS'
-                ? 'bg-blue-600 text-white shadow-xs'
-                : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200 hover:bg-slate-50'
-            }`}
-          >
-            <Video className="w-3.5 h-3.5" />
-            <span>2. Hợp Đồng Booking & Chi Tạm Ứng ({deals.length})</span>
-          </button>
-
-          <button
-            onClick={() => setActiveSubTab('KOC_DIRECTORY')}
-            className={`btn-md font-bold text-xs transition ${
-              activeSubTab === 'KOC_DIRECTORY'
-                ? 'bg-blue-600 text-white shadow-xs'
-                : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200 hover:bg-slate-50'
-            }`}
-          >
-            <Layers className="w-3.5 h-3.5" />
-            <span>3. Danh Bạ Master KOC ({localKocs.length})</span>
-          </button>
-        </div>
-
-        <div className="flex items-center gap-2">
+      {/* Tab và thao tác */}
+      <div className="flex flex-col-reverse lg:flex-row lg:items-end justify-between gap-3">
+        <Tabs
+          className="flex-1"
+          value={activeSubTab}
+          onChange={setActiveSubTab}
+          items={[
+            { key: 'MY_PLAN', label: 'Kế hoạch của tôi' },
+            { key: 'CANDIDATES', label: 'Sàng lọc KOC', count: candidates.length },
+            { key: 'BOOKING_DEALS', label: 'Hợp đồng & tạm ứng', count: deals.length },
+            { key: 'KOC_DIRECTORY', label: 'Danh bạ KOC', count: localKocs.length },
+          ]}
+        />
+        <div className="flex items-center gap-2 lg:pb-2">
           {onOpenInputPlan && (
-            <button
-              onClick={onOpenInputPlan}
-              className="btn-md bg-gradient-to-r from-blue-700 to-indigo-700 hover:from-blue-600 hover:to-indigo-600 text-white font-bold text-xs shadow-xs transition flex items-center gap-1.5"
-            >
-              <Calculator className="w-3.5 h-3.5 text-amber-300" />
-              <span>Phân Rã Kế Hoạch (Input Plan)</span>
-            </button>
+            <Button icon={Calculator} onClick={onOpenInputPlan}>Phân rã kế hoạch</Button>
           )}
-
-          <button
-            onClick={() => setIsCreateKocOpen(true)}
-            className="btn-md bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 font-semibold text-xs shadow-2xs transition"
-          >
-            <UserPlus className="w-3.5 h-3.5" />
-            <span>+ Thêm KOC Mới</span>
-          </button>
-
-          <button
-            onClick={() => onOpenQuickBookWithKoc(localKocs[0] || INITIAL_KOCS[0])}
-            className="btn-md bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow-xs transition"
-          >
-            <span>+ Tạo Booking Deal</span>
-          </button>
+          <Button icon={UserPlus} onClick={() => setIsCreateKocOpen(true)}>Thêm KOC</Button>
         </div>
       </div>
 
@@ -649,1279 +572,567 @@ export const BookingView: React.FC<BookingViewProps> = ({
       )}
 
       {/* ========================================================================= */}
-      {/* SUB-TAB 1: CANDIDATE POOL & OUTREACH PIPELINE (DECOUPLED FROM CONTRACTS) */}
+      {/* TAB: SÀNG LỌC KOC                                                          */}
       {/* ========================================================================= */}
-      {activeSubTab === 'CANDIDATES' && (
-        <div className="space-y-4 animate-in fade-in duration-150">
-          {/* Conversion Pipeline Telemetry */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div className="p-3.5 bg-white rounded-xl border border-slate-200 shadow-2xs">
-              <span className="text-[11px] text-slate-500 block font-medium">Tổng Ứng Viên Sàng Lọc</span>
-              <div className="text-xl font-black text-slate-900 mt-0.5">{candidates.length} KOCs</div>
-              <span className="text-[10px] text-slate-500">Tiếp cận 3 Kênh (TikTok/Shopee/IG)</span>
-            </div>
-            <div className="p-3.5 bg-white rounded-xl border border-slate-200 shadow-2xs">
-              <span className="text-[11px] text-slate-500 block font-medium">Chuyển Đổi Thành HĐ Booking</span>
-              <div className="text-xl font-black text-emerald-600 mt-0.5">
-                {candidates.filter(c => c.outreachStatus === 'CONVERTED_TO_BOOKING').length} / {candidates.length}
-              </div>
-              <span className="text-[10px] text-emerald-600 font-semibold">
-                Tỷ lệ chốt deal: {((candidates.filter(c => c.outreachStatus === 'CONVERTED_TO_BOOKING').length / (candidates.length || 1)) * 100).toFixed(0)}%
-              </span>
-            </div>
-            <div className="p-3.5 bg-white rounded-xl border border-slate-200 shadow-2xs">
-              <span className="text-[11px] text-slate-500 block font-medium">Đang Chào Giá / Chờ Đồng Ý</span>
-              <div className="text-xl font-black text-amber-600 mt-0.5">
-                {candidates.filter(c => c.outreachStatus === 'PITCHED' || c.outreachStatus === 'CONTACTED').length} KOCs
-              </div>
-              <span className="text-[10px] text-slate-500">Đang giữ cam kết SLA 24h</span>
-            </div>
-            <div className="p-3.5 bg-white rounded-xl border border-slate-200 shadow-2xs">
-              <span className="text-[11px] text-slate-500 block font-medium">Từ Chối / Vượt Khung Giá</span>
-              <div className="text-xl font-black text-rose-600 mt-0.5">
-                {candidates.filter(c => c.outreachStatus === 'REJECTED').length} KOCs
-              </div>
-              <span className="text-[10px] text-slate-500">Kiểm soát chặt chẽ CIR</span>
-            </div>
-          </div>
+      {activeSubTab === 'CANDIDATES' && (() => {
+        const converted = candidates.filter(c => c.outreachStatus === 'CONVERTED_TO_BOOKING').length;
+        const inProgress = candidates.filter(c => c.outreachStatus === 'PITCHED' || c.outreachStatus === 'CONTACTED').length;
+        const rejected = candidates.filter(c => c.outreachStatus === 'REJECTED').length;
+        const rows = candidates.filter(c => candidateFilter === 'ALL' || c.outreachStatus === candidateFilter);
+        const OUTREACH: Record<string, { label: string; tone: StatusTone }> = {
+          CONTACTED: { label: 'Đã nhắn', tone: 'neutral' },
+          PITCHED: { label: 'Đang chào giá', tone: 'warning' },
+          CONVERTED_TO_BOOKING: { label: 'Đã ký booking', tone: 'positive' },
+          REJECTED: { label: 'Từ chối', tone: 'critical' },
+        };
+        return (
+          <div className="space-y-4">
+            <StatRow>
+              <Stat label="Ứng viên" value={candidates.length} note="Đang theo dõi trong tháng" />
+              <Stat label="Đã ký booking" value={`${converted}/${candidates.length}`} progress={{ value: converted, max: candidates.length || 1, target: 0.3 }} note={`Tỷ lệ chốt ${formatPercent(converted / (candidates.length || 1), 0)}`} />
+              <Stat label="Đang trao đổi" value={inProgress} note="Phản hồi trong 24 giờ" />
+              <Stat label="Từ chối" value={rejected} note="Lệch tệp hoặc vượt khung giá" tone={rejected > 0 ? 'warning' : undefined} />
+            </StatRow>
 
-          {/* Candidates Pipeline Table */}
-          <div className="card-enterprise overflow-hidden">
-            <div className="px-5 py-4 border-b border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-3 bg-slate-50">
-              <div>
-                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                  <UserCheck className="w-4 h-4 text-blue-600" />
-                  <span>Pipeline Tiếp Cận Ứng Viên KOC — Tách Biệt Với Hợp Đồng Thương Mại</span>
-                </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Đo lường chính xác tỷ lệ chuyển đổi từ liên hệ (Pitch) đến ký kết (Booking Deal), không làm méo mó số liệu CPA
-                </p>
-              </div>
-
-              {/* Status Filter */}
-              <div className="flex items-center gap-1 bg-slate-100 border border-slate-200 rounded-lg p-1 text-xs">
-                {['ALL', 'CONTACTED', 'PITCHED', 'CONVERTED_TO_BOOKING', 'REJECTED'].map((st) => (
-                  <button
-                    key={st}
-                    onClick={() => setCandidateFilter(st)}
-                    className={`px-2.5 py-1 rounded font-semibold text-[11px] transition ${
-                      candidateFilter === st ? 'bg-blue-600 text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'
-                    }`}
-                  >
-                    {st === 'ALL' ? 'Tất Cả' : st === 'CONVERTED_TO_BOOKING' ? 'Đã Chốt HĐ' : st === 'PITCHED' ? 'Đang Chào Giá' : st === 'CONTACTED' ? 'Đang Nhắn' : 'Từ Chối'}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs min-w-[1100px] border-collapse">
-                <thead className="bg-slate-50 text-slate-700 border-b border-slate-200 uppercase tracking-wider text-[11px]">
-                  <tr>
-                    <th className="p-3.5 pl-5 w-[220px] min-w-[220px]">Mã & KOC Ứng Viên</th>
-                    <th className="p-3.5 w-[180px] min-w-[180px]">Phân Hạng & Follower</th>
-                    <th className="p-3.5 w-[200px] min-w-[200px]">Thương Hiệu / Gian Hàng</th>
-                    <th className="p-3.5 w-[140px] min-w-[140px]">Giá Net Đề Xuất</th>
-                    <th className="p-3.5 w-[130px] min-w-[130px]">Booking PIC</th>
-                    <th className="p-3.5 w-[160px] min-w-[160px] text-center">Trạng Thái Outreach</th>
-                    <th className="p-3.5 pr-5 w-[140px] min-w-[140px] text-right sticky right-0 bg-slate-50 border-l border-slate-200">Thao Tác</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-200">
-                  {candidates
-                    .filter(c => candidateFilter === 'ALL' || c.outreachStatus === candidateFilter)
-                    .map((can) => (
-                      <tr key={can.id} className="hover:bg-blue-50/30 transition">
-                        <td className="p-3.5 pl-5">
-                          <span className="text-blue-600 font-bold block text-[11px]">{can.candidateCode}</span>
-                          <span className="font-bold text-slate-900 text-xs">{can.stageName}</span>
-                          <div className="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5">
-                            <span>🎵 {can.channelId}</span>
-                            <a href={can.channelUrl} target="_blank" rel="noreferrer" className="text-slate-400 hover:text-blue-600">
-                              <ExternalLink className="w-3 h-3" />
-                            </a>
-                          </div>
-                        </td>
-                        <td className="p-3.5">
-                          <span className="badge-purple px-2 py-0.5 rounded text-[10px] font-bold block w-fit">
-                            {can.tierLabel}
-                          </span>
-                          <div className="text-[11px] text-slate-500 mt-1">
-                            {(can.followers / 1000).toFixed(0)}k Follow • {(can.avgViews / 1000).toFixed(0)}k View
-                          </div>
-                        </td>
-                        <td className="p-3.5">
-                          <div className="font-bold text-slate-800">{can.brandName}</div>
-                          <div className="text-[10px] text-slate-500 mt-0.5">{can.storeName || 'Toàn bộ gian hàng'}</div>
-                        </td>
-                        <td className="p-3.5">
-                          <span className="font-bold text-slate-900 text-xs whitespace-nowrap">
-                            {(can.rateCardExpected / 1000000).toLocaleString('vi-VN')} Triệu ₫
-                          </span>
-                        </td>
-                        <td className="p-3.5">
-                          <span className="font-semibold text-slate-800">{can.assignedPic}</span>
-                          <div className="text-[10px] text-slate-500">{can.pitchBatch || 'Đợt 1'}</div>
-                        </td>
-                        <td className="p-3.5 text-center">
-                          {can.outreachStatus === 'CONVERTED_TO_BOOKING' && (
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-                              ✓ Đã Ký Booking ({can.convertedBookingId})
-                            </span>
-                          )}
-                          {can.outreachStatus === 'PITCHED' && (
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/10 text-blue-400 border border-blue-500/30">
-                              ⏳ Đang Đàm Phán Brief
-                            </span>
-                          )}
-                          {can.outreachStatus === 'CONTACTED' && (
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30">
-                              💬 Đã Nhắn Zalo
-                            </span>
-                          )}
-                          {can.outreachStatus === 'REJECTED' && (
-                            <div>
-                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-500/10 text-red-400 border border-red-500/30">
-                                ✕ Từ Chối
-                              </span>
-                              {can.rejectionReason && (
-                                <p className="text-[10px] text-slate-500 mt-0.5 max-w-xs">{can.rejectionReason}</p>
-                              )}
-                            </div>
-                          )}
-                        </td>
-                        <td className="p-3.5 pr-5 text-right">
-                          {can.outreachStatus !== 'CONVERTED_TO_BOOKING' && can.outreachStatus !== 'REJECTED' && (
-                            <button
-                              onClick={() => {
-                                setCandidates(prev => prev.map(c => c.id === can.id ? {
-                                  ...c,
-                                  outreachStatus: 'CONVERTED_TO_BOOKING',
-                                  convertedBookingId: `BO26_${Date.now().toString().slice(-6)}`
-                                } : c));
-                              }}
-                              className="px-2.5 py-1 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-lg font-bold text-[11px] shadow-sm transition"
-                            >
-                              + Chốt ➔ Tạo Booking
-                            </button>
-                          )}
-                          {can.outreachStatus === 'CONVERTED_TO_BOOKING' && (
-                            <span className="text-[11px] text-emerald-400 font-semibold font-mono">
-                              {can.convertedBookingId}
-                            </span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ========================================================================= */}
-      {/* SUB-TAB 1: MANAGEMENT OF INDIVIDUAL BOOKING DEALS (OPERATIONAL WORKFLOW) */}
-      {/* ========================================================================= */}
-      {activeSubTab === 'BOOKING_DEALS' && (
-        <div className="space-y-5">
-          {/* Executive Performance Highlights */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="card-enterprise p-4">
-              <span className="text-xs text-slate-400 font-medium">Tổng Video Booking Có Phí</span>
-              <div className="text-2xl font-black text-white mt-1">622 Video</div>
-              <span className="text-[11px] text-cyan-400 font-semibold">Tạo 1,27 Tỷ GMV 30 Ngày</span>
-            </div>
-
-            <div className="card-enterprise p-4 border-blue-500/30">
-              <span className="text-xs text-blue-400 font-medium">Ngân Sách Đã Giải Ngân</span>
-              <div className="text-2xl font-black text-blue-400 mt-1">2,83 Tỷ đ</div>
-              <span className="text-[11px] text-slate-400">ROI Toàn Bộ: 0.45</span>
-            </div>
-
-            <div className="card-enterprise p-4 border-emerald-500/30">
-              <span className="text-xs text-emerald-400 font-medium">Video Có Doanh Thu (GMV &gt; 0)</span>
-              <div className="text-2xl font-black text-emerald-400 mt-1">274 / 622</div>
-              <span className="text-[11px] text-emerald-400 font-bold">44,1% Video Có GMV</span>
-            </div>
-
-            <div className="card-enterprise p-4 border-amber-500/30">
-              <span className="text-xs text-amber-400 font-medium">Video Hoàn Vốn (GMV &gt;= Cost)</span>
-              <div className="text-2xl font-black text-amber-400 mt-1">93 / 622</div>
-              <span className="text-[11px] text-amber-400 font-bold">15,0% Đạt Điểm Hòa Vốn</span>
-            </div>
-          </div>
-
-          {/* Performance Insight Banner */}
-          <div className="p-4 bg-blue-50/70 rounded-xl border border-blue-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-            <div>
-              <span className="font-bold text-blue-900 text-xs uppercase tracking-wider block">
-                Phân Tích Hiệu Suất Video: Top 20 Video Đóng Góp 55,8% GMV (709,4M đ)
-              </span>
-              <p className="text-slate-600 mt-0.5">
-                Top 5 video tạo 313,4M (24,6%) đều là Creator đã từng hợp tác trước đó. Đề xuất ưu tiên tái ký các deal có ROI &gt; 1.0.
-              </p>
-            </div>
-            <button
-              onClick={() => setDealsFilter('WINNER_TOP20')}
-              className="px-3.5 py-1.5 bg-white hover:bg-slate-50 text-blue-700 border border-blue-300 font-semibold rounded-lg shrink-0 transition shadow-2xs cursor-pointer"
-            >
-              Lọc Top 20 Hiệu Quả
-            </button>
-          </div>
-
-          {/* Brand Filter Pills + Search Controls */}
-          {/* Brand Filter Pills + Search Controls */}
-          <div className="card-enterprise p-4 space-y-3 bg-white border border-slate-200 shadow-xs">
-            <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
-              <div className="relative flex-1">
-                <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  placeholder="🔍 Tìm kiếm mã deal (BO26...), tên KOC, cụm gian hàng, hoặc chiến dịch..."
-                  value={dealsSearch}
-                  onChange={(e) => setDealsSearch(e.target.value)}
-                  className="w-full bg-white border border-slate-200 rounded-xl pl-10 pr-4 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 shadow-2xs"
+            <Panel flush title="Ứng viên KOC" description="Theo dõi từ lúc liên hệ đến khi ký booking">
+              <div className="px-4 py-3 border-b border-line">
+                <Chips
+                  value={candidateFilter}
+                  onChange={setCandidateFilter}
+                  items={[
+                    { key: 'ALL', label: 'Tất cả', count: candidates.length },
+                    { key: 'CONTACTED', label: 'Đã nhắn', count: candidates.filter(c => c.outreachStatus === 'CONTACTED').length },
+                    { key: 'PITCHED', label: 'Đang chào giá', count: candidates.filter(c => c.outreachStatus === 'PITCHED').length },
+                    { key: 'CONVERTED_TO_BOOKING', label: 'Đã ký', count: converted },
+                    { key: 'REJECTED', label: 'Từ chối', count: rejected },
+                  ]}
                 />
               </div>
-
-              <div className="flex items-center gap-1.5 overflow-x-auto text-xs">
-                {[
-                  { key: 'ALL', label: 'Tất Cả Deals / Jobs' },
-                  { key: 'BRAND_PENDING', label: '⏳ Chờ Brand Duyệt' },
-                  { key: 'BRAND_APPROVED', label: '✓ Brand Đã Duyệt' },
-                  { key: 'BRAND_REJECTED', label: '✕ Brand Từ Chối' },
-                  { key: 'WINNER_TOP20', label: '🌟 Top 20 Winner' },
-                  { key: 'ADS_CODE_PENDING', label: '⚠️ Chưa Mã Ads' },
-                  { key: 'HAS_GMV', label: 'GMV > 0' },
-                  { key: 'BREAK_EVEN', label: 'Hoàn Vốn (ROI >= 1)' },
-                ].map(f => (
-                  <button
-                    key={f.key}
-                    onClick={() => setDealsFilter(f.key as any)}
-                    className={`px-3 py-1.5 rounded-xl font-semibold whitespace-nowrap transition ${
-                      dealsFilter === f.key
-                        ? 'bg-blue-600 text-white shadow-sm'
-                        : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200 hover:bg-slate-50'
-                    }`}
-                  >
-                    {f.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Brand Filter Row */}
-            <div className="flex items-center gap-2 pt-2 border-t border-slate-200 text-xs overflow-x-auto">
-              <span className="text-slate-500 flex items-center gap-1 shrink-0 font-medium">
-                <Package className="w-3.5 h-3.5 text-blue-500" /> Cụm Gian Hàng / Brand:
-              </span>
-              {brandsList.map(b => (
-                <button
-                  key={b.key}
-                  onClick={() => setSelectedBrandFilter(b.key)}
-                  className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition whitespace-nowrap ${
-                    selectedBrandFilter === b.key
-                      ? 'bg-blue-600 text-white shadow-2xs'
-                      : 'bg-slate-100 text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  {b.label}
-                </button>
-              ))}
-            </div>
+              <DataTable
+                rows={rows}
+                rowKey={c => c.id}
+                stickyLast
+                empty={<EmptyState title="Không có ứng viên ở trạng thái này" description="Chọn “Tất cả” để xem toàn bộ danh sách." />}
+                columns={[
+                  {
+                    key: 'koc', header: 'KOC', width: 220, render: c => (
+                      <div className="leading-tight">
+                        <div className="font-medium text-ink">{c.stageName}</div>
+                        <a href={c.channelUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-2xs text-ink-3 hover:text-accent mt-0.5">
+                          {c.channelId}<ExternalLink className="w-3 h-3" />
+                        </a>
+                        <div className="text-2xs text-ink-3 font-code mt-0.5">{c.candidateCode}</div>
+                      </div>
+                    ),
+                  },
+                  {
+                    key: 'tier', header: 'Hạng', width: 160, render: c => (
+                      <div className="leading-tight">
+                        <div className="text-ink">{c.tierLabel}</div>
+                        <div className="text-2xs text-ink-3 mt-0.5 tabular-nums">{formatNumber(c.followers)} follower · {formatNumber(c.avgViews)} view</div>
+                      </div>
+                    ),
+                  },
+                  {
+                    key: 'brand', header: 'Nhãn hàng', width: 180, render: c => (
+                      <div className="leading-tight">
+                        <div className="text-ink">{c.brandName}</div>
+                        <div className="text-2xs text-ink-3 mt-0.5">{c.storeName || 'Mọi gian hàng'}</div>
+                      </div>
+                    ),
+                  },
+                  { key: 'price', header: 'Giá đề xuất', align: 'right', width: 120, render: c => <span className="tabular-nums">{formatVndShort(c.rateCardExpected)}</span> },
+                  { key: 'pic', header: 'PIC', width: 160, render: c => <Person name={c.assignedPic} sub={c.pitchBatch || 'Đợt 1'} size={22} /> },
+                  {
+                    key: 'status', header: 'Trạng thái', width: 170, render: c => {
+                      const st = OUTREACH[c.outreachStatus] || { label: c.outreachStatus, tone: 'neutral' as StatusTone };
+                      return (
+                        <div className="grid gap-1 justify-items-start">
+                          <Status tone={st.tone}>{st.label}</Status>
+                          {c.outreachStatus === 'CONVERTED_TO_BOOKING' && c.convertedBookingId && <span className="text-2xs text-ink-3 font-code">{c.convertedBookingId}</span>}
+                          {c.outreachStatus === 'REJECTED' && c.rejectionReason && <span className="text-2xs text-ink-3 max-w-[200px] whitespace-normal">{c.rejectionReason}</span>}
+                        </div>
+                      );
+                    },
+                  },
+                  {
+                    key: 'actions', header: <span className="sr-only">Thao tác</span>, align: 'right', width: 130, render: c =>
+                      c.outreachStatus !== 'CONVERTED_TO_BOOKING' && c.outreachStatus !== 'REJECTED' ? (
+                        <Button size="sm" onClick={() => setCandidates(prev => prev.map(x => x.id === c.id ? { ...x, outreachStatus: 'CONVERTED_TO_BOOKING', convertedBookingId: `BO26_${Date.now().toString().slice(-6)}` } : x))}>
+                          Chốt booking
+                        </Button>
+                      ) : null,
+                  },
+                ]}
+              />
+            </Panel>
           </div>
-
-          {/* Operational Deals Table */}
-          <div className="card-enterprise overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
-              <div>
-                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                  <Video className="w-4 h-4 text-blue-600" />
-                  Luồng Tác Nghiệp Từng Job Booking — Phê Duyệt Brand & Pipeline 8 Bước Chuẩn Upbase
-                </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Phê duyệt Brand theo từng Job cụ thể • Điều phối gửi mẫu kho • Nghiệm thu video & mã Spark Ads • Đo lường GMV/ROI
-                </p>
-              </div>
-              <span className="badge-blue px-2.5 py-1 rounded-full text-xs font-bold">
-                {filteredDeals.length} Jobs Đang Hiển Thị
-              </span>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse text-xs min-w-[1360px]">
-                <thead>
-                  <tr className="table-header-enterprise bg-slate-50 text-slate-700">
-                    <th className="p-3 pl-5 text-slate-700 font-semibold w-[230px] min-w-[230px]">Mã Job & Gian Hàng / Sản Phẩm</th>
-                    <th className="p-3 text-slate-700 font-semibold w-[190px] min-w-[190px]">KOC & Định Mức</th>
-                    <th className="p-3 text-slate-700 font-semibold w-[160px] min-w-[160px]">Phê Duyệt Brand (Theo Job)</th>
-                    <th className="p-3 text-slate-700 font-semibold w-[170px] min-w-[170px]">5 Chặng Quy Trình Vận Hành</th>
-                    <th className="p-3 text-slate-700 font-semibold w-[150px] min-w-[150px]">Bên Giữ Bóng & SLA</th>
-                    <th className="p-3 text-slate-700 font-semibold w-[160px] min-w-[160px]">Mẫu & Link TikTok / Ads</th>
-                    <th className="p-3 text-right text-slate-700 font-semibold w-[160px] min-w-[160px]">Ngân Sách / GMV</th>
-                    <th className="p-3 text-slate-700 font-semibold w-[120px] min-w-[120px]">Nhân Sự</th>
-                    <th className="p-3 pr-5 text-slate-700 font-semibold text-right w-[160px] min-w-[160px] sticky right-0 bg-slate-50 border-l border-slate-200">Thao Tác</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-200">
-                  {filteredDeals.map((deal) => (
-                    <tr key={deal.id} className="table-row-enterprise hover:bg-blue-50/30 transition-colors">
-                      {/* Job Code & Brand & Product */}
-                      <td className="p-3.5 pl-6">
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-bold text-blue-600">{deal.dealCode}</span>
-                          {deal.jobId && <span className="text-[10px] text-slate-500">• {deal.jobId}</span>}
-                          {deal.isWinnerTop20 && (
-                            <span className="badge-amber px-1.5 py-0.2 rounded text-[9px] font-bold">Top 20</span>
-                          )}
-                        </div>
-                        <div className="font-bold text-slate-900 mt-0.5">{deal.brandName || 'Upbase Brand'}</div>
-                        <div className="text-[11px] text-blue-600 font-medium truncate max-w-xs">
-                          📦 {deal.productName || 'Sản phẩm booking'} {deal.bookingBatch ? `(${deal.bookingBatch})` : ''}
-                        </div>
-                        <div className="text-[10px] text-slate-500 truncate max-w-xs">{deal.campaignTitle}</div>
-                      </td>
-
-                      {/* KOC & Salary Grade */}
-                      <td className="p-3.5">
-                        <div className="font-bold text-slate-900">{deal.kocStageName}</div>
-                        <div className="text-[10px] text-slate-500">{deal.kocChannelId || ''}</div>
-                        <div className="flex items-center gap-1.5 mt-0.5">
-                          <span className="badge-purple px-1.5 py-0.2 rounded text-[9px] font-bold">
-                            {deal.salaryGrade}
-                          </span>
-                          <span className="text-[10px] text-slate-500">{deal.creatorCategory}</span>
-                        </div>
-                      </td>
-
-                      {/* Phê Duyệt Brand Theo Từng Job */}
-                      <td className="p-3.5">
-                        {deal.brandApprovalStatus === 'ĐÃ_DUYỆT' ? (
-                          <div>
-                            <span className="px-2 py-0.5 rounded text-[10px] font-bold badge-emerald inline-flex items-center gap-1">
-                              <Check className="w-3 h-3 text-emerald-400" />
-                              Brand Đã Duyệt
-                            </span>
-                            {deal.brandApprovalDate && (
-                              <div className="text-[9px] text-slate-400 mt-0.5">{deal.brandApprovalDate}</div>
-                            )}
-                          </div>
-                        ) : deal.brandApprovalStatus === 'TỪ_CHỐI' ? (
-                          <div>
-                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30 inline-flex items-center gap-1">
-                              <X className="w-3 h-3 text-rose-400" />
-                              Brand Từ Chối
-                            </span>
-                            <div className="text-[10px] text-rose-400 mt-1 max-w-[150px] leading-tight font-medium">
-                              Lý do: {deal.brandRejectReason || 'Lệch định vị'}
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="space-y-1">
-                            <span className="px-2 py-0.5 rounded text-[10px] font-bold badge-amber inline-block">
-                              ⏳ Chờ Brand Duyệt
-                            </span>
-                            <div className="flex items-center gap-1 pt-0.5">
-                              <button
-                                onClick={() => handleQuickBrandApproval(deal, 'ĐÃ_DUYỆT')}
-                                className="px-2 py-0.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-[10px] font-bold transition flex items-center gap-0.5 shadow-sm"
-                                title="Duyệt KOC cho Job này"
-                              >
-                                <Check className="w-2.5 h-2.5" /> Duyệt
-                              </button>
-                              <button
-                                onClick={() => handleQuickBrandApproval(deal, 'TỪ_CHỐI')}
-                                className="px-2 py-0.5 bg-rose-600/80 hover:bg-rose-600 text-white rounded text-[10px] font-bold transition flex items-center gap-0.5"
-                                title="Từ chối KOC (nhập lý do)"
-                              >
-                                <X className="w-2.5 h-2.5" /> Từ chối
-                              </button>
-                            </div>
-                          </div>
-                        )}
-                      </td>
-
-                      {/* 5 Chặng Quy Trình Vận Hành */}
-                      <td className="p-3">
-                        <div className="space-y-1">
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-semibold inline-block ${
-                            deal.currentStage === '5_SETTLEMENT' || deal.pipelineText === 'Done' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
-                            deal.currentStage === '4_AIR_GROWTH' || deal.status === 'VIDEO_SUBMITTED' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
-                            deal.currentStage === '3_CONTENT_SCRIPT' ? 'bg-purple-50 text-purple-700 border border-purple-200' :
-                            deal.currentStage === '2_DEAL_CONTRACT' ? 'bg-cyan-50 text-cyan-700 border border-cyan-200' :
-                            'bg-blue-50 text-blue-700 border border-blue-200'
-                          }`}>
-                            {deal.currentStage === '5_SETTLEMENT' ? '5. Quyết Toán Mùng 2' :
-                             deal.currentStage === '4_AIR_GROWTH' ? '4. Air & Bàn Giao Growth' :
-                             deal.currentStage === '3_CONTENT_SCRIPT' ? '3. Kịch Bản & Mẫu Thử' :
-                             deal.currentStage === '2_DEAL_CONTRACT' ? '2. Hợp Đồng & Cọc' :
-                             '1. Kế Hoạch & Sourcing'}
-                          </span>
-                          <div className="text-[10px] text-slate-500 font-medium">
-                            {deal.pipelineText || deal.statusLabel}
-                          </div>
-                        </div>
-                      </td>
-
-                      {/* Đơn Vị Giữ Bóng & SLA */}
-                      <td className="p-3">
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-1.5">
-                            <span className={`px-1.5 py-0.2 rounded text-[9px] font-bold ${
-                              deal.holdingTeam === 'GROWTH' ? 'bg-purple-50 text-purple-700 border border-purple-200' :
-                              deal.holdingTeam === 'BRAND' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
-                              deal.holdingTeam === 'FINANCE' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
-                              deal.holdingTeam === 'CONTENT' ? 'bg-cyan-50 text-cyan-700 border border-cyan-200' :
-                              'bg-blue-50 text-blue-700 border border-blue-200'
-                            }`}>
-                              [{deal.holdingTeam || 'BOOKING'}]
-                            </span>
-                            <span className={`text-[10px] font-semibold ${deal.isSlaWarning ? 'text-amber-600 font-bold' : 'text-slate-500'}`}>
-                              {deal.slaRemainingText || 'Trong hạn'}
-                            </span>
-                          </div>
-                          <div className="text-[10px] text-slate-500 truncate max-w-[130px]">
-                            {deal.holdingReason || 'Đang xử lý theo luồng'}
-                          </div>
-
-                          {/* SLA Triggers from Các SLA B2C */}
-                          {deal.brandOrientationPendingDays && deal.brandOrientationPendingDays >= 3 ? (
-                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-100 text-amber-900 border border-amber-300 block w-fit mt-1 animate-pulse">
-                              ⚡ Brand quá {deal.brandOrientationPendingDays}d: Tự Air
-                            </span>
-                          ) : null}
-                          {deal.isLocked7WorkingDays && (
-                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-900 text-white block w-fit mt-1">
-                              🔒 Khóa (&gt;7d thiếu link)
-                            </span>
-                          )}
-                          {deal.isDnttOverdue10Am && (
-                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-rose-100 text-rose-800 border border-rose-300 block w-fit mt-1">
-                              ⚠️ Trễ DNTT 10:00 AM
-                            </span>
-                          )}
-                        </div>
-                      </td>
-
-                      {/* Mẫu (Sample) & Link TikTok & Ads */}
-                      <td className="p-3">
-                        <div className="space-y-0.5">
-                          <span className={`px-1.5 py-0.2 rounded text-[9px] font-medium inline-block ${
-                            deal.sampleStatus === 'ĐÃ_NHẬN' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
-                            deal.sampleStatus === 'ĐANG_GIAO' ? 'bg-cyan-50 text-cyan-700 border border-cyan-200' : 'bg-slate-100 text-slate-600 border border-slate-200'
-                          }`}>
-                            {deal.sampleStatus === 'ĐÃ_NHẬN' ? '✓ Đã nhận mẫu' :
-                             deal.sampleStatus === 'ĐANG_GIAO' ? '🚚 Đang giao mẫu' : 'Chưa gửi'}
-                          </span>
-
-                          {deal.tiktokVideoUrl || deal.videoUrl ? (
-                            <a
-                              href={deal.tiktokVideoUrl || deal.videoUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="text-blue-600 hover:text-blue-700 text-[11px] font-medium flex items-center gap-1 truncate max-w-[120px] hover:underline"
-                            >
-                              <ExternalLink className="w-3 h-3 shrink-0" />
-                              <span>Link TikTok</span>
-                            </a>
-                          ) : (
-                            <span className="text-slate-400 text-[10px] block">Chưa có video</span>
-                          )}
-
-                          <div>
-                            {deal.sparkAdsCode ? (
-                              <span className="text-[9px] font-mono text-emerald-700 font-bold block truncate max-w-[120px]">
-                                Ads: {deal.sparkAdsCode}
-                              </span>
-                            ) : (
-                              <span className="text-[9px] text-slate-400 block">Chưa mã Ads</span>
-                            )}
-                          </div>
-                        </div>
-                      </td>
-
-                      {/* Chi Phí / GMV / ROI */}
-                      <td className="p-3 text-right">
-                        <div className="font-bold text-slate-900 font-mono whitespace-nowrap">{deal.totalValue.toLocaleString('vi-VN')}&nbsp;₫</div>
-                        <div className="font-semibold text-emerald-600 font-mono text-[11px] whitespace-nowrap">
-                          GMV: {deal.gmv30.toLocaleString('vi-VN')}&nbsp;₫
-                        </div>
-                        <span className={`px-1.5 py-0.2 rounded font-mono text-[9px] font-semibold inline-block ${
-                          deal.roi >= 1.0 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
-                          deal.roi >= 0.5 ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'bg-slate-100 text-slate-600 border border-slate-200'
-                        }`}>
-                          ROI {deal.roi.toFixed(2)}
-                        </span>
-                      </td>
-
-                      {/* Nhân Sự 3 Bên */}
-                      <td className="p-3">
-                        <div className="text-xs text-slate-900 font-semibold truncate max-w-[100px]">
-                          {deal.bookingPic || deal.assignedStaff}
-                        </div>
-                        <div className="text-[10px] text-slate-500 truncate max-w-[100px]">
-                          G: {deal.growthPic || '—'}
-                        </div>
-                        <div className="text-[10px] text-slate-500 truncate max-w-[100px]">
-                          A: {deal.accountPic || '—'}
-                        </div>
-                      </td>
-
-                      {/* Thao Tác (Sticky Right Column) */}
-                      <td className="p-3 pr-5 text-right sticky right-0 bg-white/95 border-l border-slate-200 shadow-[-3px_0_6px_rgba(0,0,0,0.03)]">
-                        <div className="flex items-center justify-end gap-1.5">
-                          {/* SLA B2C Auto-Air Trigger Button */}
-                          {deal.brandOrientationPendingDays && deal.brandOrientationPendingDays >= 3 && (
-                            <button
-                              onClick={() => alert(`Đã kích hoạt đề xuất Tự Air (Auto-Air) cho deal ${deal.dealCode} do Brand không phản hồi quá 3 ngày làm việc theo quy chế SLA B2C.`)}
-                              className="px-2 py-1 bg-amber-500 hover:bg-amber-600 text-white rounded text-[11px] font-bold transition flex items-center gap-1 shadow-xs"
-                              title="Đề xuất Tự Air do Brand quá hạn duyệt định hướng 3 ngày"
-                            >
-                              <Zap className="w-3 h-3" />
-                              <span>Tự Air</span>
-                            </button>
-                          )}
-
-                          {/* Growth Handoff Button (Chặng 4 hoặc có video) */}
-                          <button
-                            onClick={() => handleOpenGrowthHandoff(deal)}
-                            className="px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded text-[11px] font-semibold transition flex items-center gap-1 shadow-xs"
-                            title="Bàn giao mã Spark Ads TikTok sang Team Growth"
-                          >
-                            <Share2 className="w-3 h-3" />
-                            <span>Bàn Giao</span>
-                          </button>
-
-                          <button
-                            onClick={() => handleOpenEditModal(deal)}
-                            className="px-2 py-1 bg-white hover:bg-slate-50 text-slate-700 hover:text-blue-600 border border-slate-200 hover:border-blue-300 rounded text-[11px] font-medium transition flex items-center gap-1 shadow-xs"
-                            title="Cập nhật tiến độ Job"
-                          >
-                            <Edit3 className="w-3 h-3" />
-                            <span>Sửa</span>
-                          </button>
-
-                          <button
-                            onClick={() => onSelectDealForContract && onSelectDealForContract(deal)}
-                            className="px-2 py-1 bg-white hover:bg-slate-50 text-slate-700 rounded text-[11px] font-medium border border-slate-200 hover:border-slate-300 transition shadow-xs"
-                            title="Xem hợp đồng"
-                          >
-                            <span>HĐ</span>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* ========================================================================= */}
-      {/* SUB-TAB 2: KOC DIRECTORY & 360 PROFILE WITH BOOKING HISTORY */}
+      {/* TAB: HỢP ĐỒNG & TẠM ỨNG (TỪNG JOB BOOKING)                                 */}
+      {/* ========================================================================= */}
+      {activeSubTab === 'BOOKING_DEALS' && (() => {
+        const STAGE: Record<string, { label: string; tone: StatusTone }> = {
+          '1_PLAN_SOURCING': { label: '1. Kế hoạch & tìm KOC', tone: 'neutral' },
+          '2_DEAL_CONTRACT': { label: '2. Hợp đồng & cọc', tone: 'info' },
+          '3_CONTENT_SCRIPT': { label: '3. Kịch bản & mẫu', tone: 'info' },
+          '4_AIR_GROWTH': { label: '4. Lên sóng & bàn giao', tone: 'warning' },
+          '5_SETTLEMENT': { label: '5. Quyết toán', tone: 'positive' },
+        };
+        const TEAM: Record<string, string> = { BOOKING: 'Booking', CONTENT: 'Content', BRAND: 'Brand', GROWTH: 'Growth', FINANCE: 'Kế toán' };
+        const countBy = (fn: (d: BookingDealItem) => boolean) => deals.filter(fn).length;
+        return (
+          <div className="space-y-4">
+            <StatRow>
+              <Stat label="Video booking có phí" value="622" note="Tạo 1,27 tỷ GMV trong 30 ngày" />
+              <Stat label="Ngân sách đã giải ngân" value="2,83 tỷ" note="ROI toàn bộ 0,45" />
+              <Stat label="Video có doanh thu" value="274/622" progress={{ value: 274, max: 622, target: 0.5 }} note="44,1% video có GMV" />
+              <Stat label="Video hoàn vốn" value="93/622" progress={{ value: 93, max: 622, target: 0.3 }} note="15% đạt điểm hòa vốn" tone="warning" />
+            </StatRow>
+
+            <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 rounded-xl bg-accent-soft">
+              <p className="text-[13px] text-ink-2 min-w-0">
+                <strong className="font-semibold text-ink">Top 20 video đóng góp 55,8% GMV (709 tr).</strong>{' '}
+                5 video đứng đầu đều từ creator đã từng hợp tác. Ưu tiên tái ký các deal có ROI trên 1.
+              </p>
+              <Button size="sm" onClick={() => setDealsFilter('WINNER_TOP20')}>Xem top 20</Button>
+            </div>
+
+            <Panel flush title="Job booking" description="Brand duyệt từng job, gửi mẫu, nghiệm thu video và mã Spark Ads, đo GMV">
+              <div className="px-4 py-3 border-b border-line">
+                <FilterBar
+                  search={{ value: dealsSearch, onChange: setDealsSearch, placeholder: 'Tìm mã deal, KOC, sản phẩm, chiến dịch' }}
+                  filters={
+                    <Select value={selectedBrandFilter} onChange={e => setSelectedBrandFilter(e.target.value)} className="w-auto min-w-[180px]" aria-label="Lọc theo gian hàng">
+                      {brandsList.map(b => <option key={b.key} value={b.key}>{b.key === 'ALL' ? 'Mọi gian hàng' : b.label}</option>)}
+                    </Select>
+                  }
+                  resultCount={filteredDeals.length}
+                  chips={
+                    <Chips
+                      value={dealsFilter}
+                      onChange={setDealsFilter}
+                      items={[
+                        { key: 'ALL', label: 'Tất cả', count: deals.length },
+                        { key: 'BRAND_PENDING', label: 'Chờ Brand duyệt', count: countBy(d => d.brandApprovalStatus === 'CHỜ_DUYỆT') },
+                        { key: 'BRAND_APPROVED', label: 'Brand đã duyệt', count: countBy(d => d.brandApprovalStatus === 'ĐÃ_DUYỆT') },
+                        { key: 'BRAND_REJECTED', label: 'Brand từ chối', count: countBy(d => d.brandApprovalStatus === 'TỪ_CHỐI') },
+                        { key: 'WINNER_TOP20', label: 'Top 20', count: countBy(d => !!d.isWinnerTop20) },
+                        { key: 'ADS_CODE_PENDING', label: 'Chưa mã Ads', count: countBy(d => d.adsCodeStatus === 'CHƯA_CẤP') },
+                        { key: 'HAS_GMV', label: 'Có GMV', count: countBy(d => (d.gmv30 || 0) > 0) },
+                        { key: 'BREAK_EVEN', label: 'Hoàn vốn', count: countBy(d => (d.roi || 0) >= 1) },
+                      ]}
+                    />
+                  }
+                />
+              </div>
+              <DataTable
+                rows={filteredDeals}
+                rowKey={d => d.id}
+                stickyLast
+                empty={<EmptyState title="Không có job phù hợp" description="Bỏ bớt bộ lọc hoặc xóa từ khóa tìm kiếm." />}
+                columns={[
+                  {
+                    key: 'job', header: 'Job', width: 230, render: d => (
+                      <div className="leading-tight">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-code text-2xs text-ink-3">{d.dealCode}</span>
+                          {d.isWinnerTop20 && <Status tone="warning">Top 20</Status>}
+                        </div>
+                        <div className="font-medium text-ink mt-1">{d.brandName || 'Upbase'}</div>
+                        <div className="text-2xs text-ink-2 truncate max-w-[220px]">{d.productName || 'Sản phẩm booking'}{d.bookingBatch ? ` · ${d.bookingBatch}` : ''}</div>
+                        <div className="text-2xs text-ink-3 truncate max-w-[220px]">{d.campaignTitle}</div>
+                      </div>
+                    ),
+                  },
+                  {
+                    key: 'koc', header: 'KOC', width: 180, render: d => (
+                      <div className="leading-tight">
+                        <div className="font-medium text-ink">{d.kocStageName}</div>
+                        <div className="text-2xs text-ink-3 mt-0.5">{d.kocChannelId}</div>
+                        <div className="text-2xs text-ink-3 mt-0.5">{d.salaryGrade}{d.creatorCategory ? ` · ${d.creatorCategory}` : ''}</div>
+                      </div>
+                    ),
+                  },
+                  {
+                    key: 'approval', header: 'Brand duyệt', width: 170, render: d =>
+                      d.brandApprovalStatus === 'ĐÃ_DUYỆT' ? (
+                        <div className="grid gap-1 justify-items-start">
+                          <Status tone="positive">Đã duyệt</Status>
+                          {d.brandApprovalDate && <span className="text-2xs text-ink-3">{d.brandApprovalDate}</span>}
+                        </div>
+                      ) : d.brandApprovalStatus === 'TỪ_CHỐI' ? (
+                        <div className="grid gap-1 justify-items-start">
+                          <Status tone="critical">Từ chối</Status>
+                          <span className="text-2xs text-ink-3 max-w-[160px] whitespace-normal">{d.brandRejectReason || 'Lệch định vị'}</span>
+                        </div>
+                      ) : (
+                        <div className="grid gap-1.5 justify-items-start">
+                          <Status tone="warning">Chờ duyệt</Status>
+                          <div className="flex gap-1">
+                            <Button size="sm" icon={Check} onClick={() => handleQuickBrandApproval(d, 'ĐÃ_DUYỆT')}>Duyệt</Button>
+                            <Button size="sm" variant="ghost" onClick={() => setRejectingDeal(d)}>Từ chối</Button>
+                          </div>
+                        </div>
+                      ),
+                  },
+                  {
+                    key: 'stage', header: 'Bước', width: 180, render: d => {
+                      const st = STAGE[d.currentStage || '1_PLAN_SOURCING'];
+                      return (
+                        <div className="grid gap-1 justify-items-start">
+                          <Status tone={d.pipelineText === 'Done' ? 'positive' : st.tone}>{st.label}</Status>
+                          <span className="text-2xs text-ink-3 max-w-[170px] whitespace-normal">{d.pipelineText || d.statusLabel}</span>
+                        </div>
+                      );
+                    },
+                  },
+                  {
+                    key: 'holder', header: 'Đang ở', width: 170, render: d => (
+                      <div className="grid gap-1 justify-items-start leading-tight">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-medium text-ink">{TEAM[d.holdingTeam || 'BOOKING']}</span>
+                          <span className={d.isSlaWarning ? 'text-2xs text-warning font-medium' : 'text-2xs text-ink-3'}>{d.slaRemainingText || 'Trong hạn'}</span>
+                        </div>
+                        <span className="text-2xs text-ink-3 truncate max-w-[160px]">{d.holdingReason || 'Đang xử lý'}</span>
+                        {d.brandOrientationPendingDays && d.brandOrientationPendingDays >= 3 ? <Status tone="warning">Brand quá {d.brandOrientationPendingDays} ngày</Status> : null}
+                        {d.isLocked7WorkingDays && <Status tone="critical">Khóa: quá 7 ngày chưa có link</Status>}
+                        {d.isDnttOverdue10Am && <Status tone="critical">Trễ đề nghị thanh toán</Status>}
+                      </div>
+                    ),
+                  },
+                  {
+                    key: 'delivery', header: 'Mẫu · video · Ads', width: 160, render: d => (
+                      <div className="grid gap-1 text-2xs leading-tight">
+                        <span className={d.sampleStatus === 'ĐÃ_NHẬN' ? 'text-positive' : 'text-ink-2'}>
+                          {d.sampleStatus === 'ĐÃ_NHẬN' ? 'Đã nhận mẫu' : d.sampleStatus === 'ĐANG_GIAO' ? 'Đang giao mẫu' : 'Chưa gửi mẫu'}
+                        </span>
+                        {d.tiktokVideoUrl || d.videoUrl ? (
+                          <a href={d.tiktokVideoUrl || d.videoUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-accent hover:underline">
+                            Video TikTok<ExternalLink className="w-3 h-3" />
+                          </a>
+                        ) : (
+                          <span className="text-ink-3">Chưa có video</span>
+                        )}
+                        {d.sparkAdsCode ? <span className="font-code text-ink-2 truncate max-w-[150px]">{d.sparkAdsCode}</span> : <span className="text-ink-3">Chưa mã Ads</span>}
+                      </div>
+                    ),
+                  },
+                  {
+                    key: 'money', header: 'Chi phí · GMV', align: 'right', width: 140, render: d => (
+                      <div className="grid gap-0.5 justify-items-end tabular-nums leading-tight">
+                        <span className="text-ink">{formatVndShort(d.totalValue)}</span>
+                        <span className="text-2xs text-ink-3">GMV {formatVndShort(d.gmv30)}</span>
+                        <span className={(d.roi || 0) >= 1 ? 'text-2xs font-medium text-positive' : 'text-2xs text-ink-3'}>ROI {(d.roi || 0).toLocaleString('vi-VN', { maximumFractionDigits: 2 })}</span>
+                      </div>
+                    ),
+                  },
+                  {
+                    key: 'people', header: 'Nhân sự', width: 170, render: d => (
+                      <div className="grid gap-1">
+                        <Person name={d.bookingPic || d.assignedStaff} size={22} />
+                        <span className="text-2xs text-ink-3 pl-[30px]">Growth: {d.growthPic || '—'} · Account: {d.accountPic || '—'}</span>
+                      </div>
+                    ),
+                  },
+                  {
+                    key: 'actions', header: <span className="sr-only">Thao tác</span>, align: 'right', width: 200, render: d => (
+                      <div className="flex items-center justify-end gap-1">
+                        {d.brandOrientationPendingDays && d.brandOrientationPendingDays >= 3 ? (
+                          <Button size="sm" icon={Zap} onClick={() => setAutoAirDeal(d)} title="Brand quá 3 ngày chưa duyệt định hướng">Tự air</Button>
+                        ) : null}
+                        <Button size="sm" variant="ghost" icon={Share2} onClick={() => handleOpenGrowthHandoff(d)} title="Bàn giao mã Spark Ads cho team Growth">Bàn giao</Button>
+                        <Button size="sm" variant="ghost" icon={Edit3} onClick={() => handleOpenEditModal(d)}>Sửa</Button>
+                        <Button size="sm" variant="ghost" onClick={() => onSelectDealForContract?.(d)} title="Xem hợp đồng">HĐ</Button>
+                      </div>
+                    ),
+                  },
+                ]}
+              />
+            </Panel>
+          </div>
+        );
+      })()}
+
+      {/* ========================================================================= */}
+      {/* TAB: DANH BẠ KOC                                                           */}
       {/* ========================================================================= */}
       {activeSubTab === 'KOC_DIRECTORY' && (
-        <div className="space-y-5">
-          {/* Top Search & Filter Bar */}
-          <div className="card-enterprise p-4 space-y-3">
-            <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
-              <div className="relative flex-1">
-                <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  placeholder="🔍 Tra cứu KOC theo tên (@channel), ngành hàng, hoặc số điện thoại..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white transition"
-                />
-              </div>
-
-              {/* Create KOC Button */}
-              <button
-                onClick={() => setIsCreateKocOpen(true)}
-                className="px-3.5 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center gap-1.5 shrink-0"
-              >
-                <UserPlus className="w-4 h-4" />
-                <span>+ Thêm KOC Mới</span>
-              </button>
-            </div>
-
-            {/* Filter 1: Khung Lương (KL) */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 pt-1 border-t border-slate-200">
-              <span className="text-slate-500 flex items-center gap-1 shrink-0 font-medium text-xs mr-1">
-                <DollarSign className="w-3.5 h-3.5 text-cyan-600" /> 1. Khung Lương (KL):
-              </span>
-              {salaryGrades.map((kl) => (
-                <button
-                  key={kl.key}
-                  onClick={() => setSelectedKL(kl.key)}
-                  className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold whitespace-nowrap transition ${
-                    selectedKL === kl.key
-                      ? 'bg-blue-600 text-white shadow-md shadow-blue-500/25'
-                      : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200 hover:bg-slate-50'
-                  }`}
-                >
-                  {kl.label}
-                </button>
-              ))}
-            </div>
-
-            {/* Filter 2: Phân nhóm Creator (Segment) */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
-              <span className="text-slate-500 flex items-center gap-1 shrink-0 font-medium text-xs mr-1">
-                <Users className="w-3.5 h-3.5 text-purple-400" /> 2. Segment Creator:
-              </span>
-              {creatorSegments.map((seg) => (
-                <button
-                  key={seg.key}
-                  onClick={() => setSelectedSegment(seg.key)}
-                  className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold whitespace-nowrap transition ${
-                    selectedSegment === seg.key
-                      ? 'bg-purple-600 text-white shadow-sm'
-                      : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200 hover:bg-slate-50'
-                  }`}
-                >
-                  {seg.label}
-                </button>
-              ))}
-            </div>
-
-            {/* Filter 3 & 4: KOC Category & Tệp Kênh Dropdowns */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-200 text-xs">
-              <div className="flex items-center gap-2">
-                <span className="text-slate-600 shrink-0 font-medium flex items-center gap-1">
-                  <Layers className="w-3.5 h-3.5 text-emerald-600" /> 3. KOC Category:
-                </span>
-                <select
-                  value={selectedKocCategory}
-                  onChange={(e) => setSelectedKocCategory(e.target.value)}
-                  className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-blue-500"
-                >
-                  {kocCategories.map((c) => (
-                    <option key={c.key} value={c.key}>{c.label}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <span className="text-slate-600 shrink-0 font-medium flex items-center gap-1">
-                  <Filter className="w-3.5 h-3.5 text-pink-600" /> 4. Tệp Kênh (25 tệp):
-                </span>
-                <select
-                  value={selectedTepKenh}
-                  onChange={(e) => setSelectedTepKenh(e.target.value)}
-                  className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-blue-500"
-                >
-                  {tepKenhList.map((t) => (
-                    <option key={t.key} value={t.key}>{t.label}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
+        <Panel flush title="Danh bạ KOC" description="Bấm vào một KOC để mở hồ sơ đầy đủ và lịch sử hợp tác">
+          <div className="px-4 py-3 border-b border-line">
+            <FilterBar
+              search={{ value: searchTerm, onChange: setSearchTerm, placeholder: 'Tìm tên, kênh, ngành hàng, số điện thoại' }}
+              resultCount={filteredKocs.length}
+              filters={
+                <>
+                  <Select value={selectedKL} onChange={e => setSelectedKL(e.target.value)} className="w-auto" aria-label="Khung lương">
+                    {salaryGrades.map(o => <option key={o.key} value={o.key}>{o.key === 'ALL' ? 'Mọi khung lương' : o.label}</option>)}
+                  </Select>
+                  <Select value={selectedSegment} onChange={e => setSelectedSegment(e.target.value)} className="w-auto" aria-label="Phân nhóm creator">
+                    {creatorSegments.map(o => <option key={o.key} value={o.key}>{o.key === 'ALL' ? 'Mọi phân nhóm' : o.label}</option>)}
+                  </Select>
+                  <Select value={selectedKocCategory} onChange={e => setSelectedKocCategory(e.target.value)} className="w-auto" aria-label="Ngành hàng">
+                    {kocCategories.map(o => <option key={o.key} value={o.key}>{o.key === 'ALL' ? 'Mọi ngành hàng' : o.label}</option>)}
+                  </Select>
+                  <Select value={selectedTepKenh} onChange={e => setSelectedTepKenh(e.target.value)} className="w-auto" aria-label="Tệp kênh">
+                    {tepKenhList.map(o => <option key={o.key} value={o.key}>{o.key === 'ALL' ? 'Mọi tệp kênh' : o.label}</option>)}
+                  </Select>
+                </>
+              }
+            />
           </div>
-
-          {/* KOC Directory Table */}
-          <div className="card-enterprise overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/70">
-              <div>
-                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                  Danh Mục KOC & Phân Loại 4 Trường Cốt Lõi (KL, Segment, Tệp Kênh, KOC Category)
-                </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Chuẩn hóa theo file Quản lý Booking 3.1 & 3.2 • Nhấp vào dòng KOC để mở Hồ Sơ 360° & Đánh giá Winner Creator
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="badge-emerald px-2.5 py-1 rounded-full text-xs font-bold">
-                  Hiển thị {filteredKocs.length} KOCs
-                </span>
-                <button
-                  onClick={() => setIsCreateKocOpen(true)}
-                  className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg shadow-sm transition flex items-center gap-1"
-                >
-                  <UserPlus className="w-3.5 h-3.5" />
-                  <span>+ Thêm KOC</span>
-                </button>
-              </div>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[1380px] text-left border-collapse text-xs">
-                <thead>
-                  <tr className="table-header-enterprise bg-slate-50 border-b border-slate-200">
-                    <th className="p-3.5 pl-6 font-bold text-slate-700 w-[240px] min-w-[240px]">KOC / Kênh & Khu Vực</th>
-                    <th className="p-3.5 font-bold text-slate-700 w-[120px] min-w-[120px]">Khung Lương (KL)</th>
-                    <th className="p-3.5 font-bold text-slate-700 w-[140px] min-w-[140px]">Phân Nhóm (Segment)</th>
-                    <th className="p-3.5 font-bold text-slate-700 w-[170px] min-w-[170px]">Tệp Kênh & Category</th>
-                    <th className="p-3.5 font-bold text-slate-700 w-[150px] min-w-[150px] text-right">Báo Giá Video Net</th>
-                    <th className="p-3.5 font-bold text-slate-700 w-[200px] min-w-[200px]">TikTok Shop (Follower / GMV / AOV)</th>
-                    <th className="p-3.5 font-bold text-slate-700 w-[150px] min-w-[150px]">Lịch Sử Upbase & ROI</th>
-                    <th className="p-3.5 font-bold text-slate-700 w-[130px] min-w-[130px]">PIC Phụ Trách</th>
-                    <th className="p-3.5 pr-6 font-bold text-slate-700 text-right w-[160px] min-w-[160px] sticky right-0 bg-slate-50 border-l border-slate-200">Thao Tác</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-200">
-                  {filteredKocs.map((koc) => (
-                    <tr
-                      key={koc.id}
-                      onClick={() => setInspectedKoc(koc)}
-                      className="table-row-enterprise cursor-pointer group hover:bg-blue-50/30 transition-colors"
-                    >
-                      <td className="p-3.5 pl-6">
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-slate-900 text-sm group-hover:text-blue-600 transition-colors">
-                            {koc.stageName}
-                          </span>
-                          {koc.isWinnerTop20 && (
-                            <span className="badge-amber px-2 py-0.2 rounded-full text-[9px] font-bold flex items-center gap-0.5">
-                              <Flame className="w-2.5 h-2.5 fill-amber-500 text-amber-500" /> Winner
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-[11px] text-slate-500 font-mono mt-0.5">
-                          {koc.channelId} • {koc.phone}
-                        </div>
-                        <div className="flex items-center gap-1.5 mt-1">
-                          <span className="text-[10px] text-slate-500 flex items-center gap-0.5">
-                            <MapPin className="w-3 h-3 text-rose-500" />
-                            {koc.location || 'Hà Nội'}
-                          </span>
-                          <span className="text-slate-300">•</span>
-                          <span className="text-[10px] text-blue-600 font-medium">
-                            {koc.bookingFormat || 'Booking Video KOC'}
-                          </span>
-                        </div>
-                      </td>
-
-                      <td className="p-3.5">
-                        <span className="badge-purple px-2 py-0.5 rounded text-[10px] font-bold font-mono">
-                          {koc.salaryGrade}
-                        </span>
-                        <div className="text-[10px] text-slate-500 mt-1">{koc.tierLabel}</div>
-                      </td>
-
-                      <td className="p-3.5">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold inline-flex items-center gap-1 ${
-                          koc.segment === 'Top Creator' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
-                          koc.segment === 'Key Creator' ? 'bg-purple-50 text-purple-700 border border-purple-200' :
-                          koc.segment === 'Mid Creator' ? 'bg-blue-50 text-blue-700 border border-blue-200' :
-                          'bg-teal-50 text-teal-700 border border-teal-200'
-                        }`}>
-                          {koc.segment === 'Top Creator' && <Sparkles className="w-2.5 h-2.5 text-amber-600" />}
-                          {koc.segment || 'Massive Creator'}
-                        </span>
-                      </td>
-
-                      <td className="p-3.5">
-                        <div className="text-slate-800 font-semibold">{koc.tepKenh || koc.creatorCategory || 'Review Nữ'}</div>
-                        <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                          <span className="badge-emerald px-1.5 py-0.2 rounded text-[9px] font-medium">
-                            {koc.kocCategory || 'Personal care'}
-                          </span>
-                          <span className="text-[10px] text-pink-600 font-mono">
-                            👩 {koc.femaleRatio ?? 85}% • 👨 {koc.maleRatio ?? 15}%
-                          </span>
-                        </div>
-                      </td>
-
-                      <td className="p-3.5 font-bold text-blue-700 font-mono text-sm text-right whitespace-nowrap">
-                        {koc.rateCardVideo.toLocaleString('vi-VN')}&nbsp;₫
-                      </td>
-
-                      <td className="p-3.5">
-                        <div className="text-slate-900 font-bold">
-                          {koc.followers.toLocaleString('vi-VN')} followers
-                        </div>
-                        <div className="text-[11px] text-emerald-600 font-mono mt-0.5 whitespace-nowrap font-semibold">
-                          Kỷ lục GMV: {(koc.gmvBestCase || koc.rateCardVideo * 3).toLocaleString('vi-VN')}&nbsp;₫
-                        </div>
-                        <div className="text-[10px] text-slate-500 font-mono whitespace-nowrap">
-                          AOV: {(koc.aov || 245000).toLocaleString('vi-VN')}&nbsp;₫
-                        </div>
-                      </td>
-
-                      <td className="p-3.5">
-                        <div className="font-bold text-emerald-700 font-mono whitespace-nowrap">
-                          {(koc.totalPastGmv || koc.rateCardVideo * 3).toLocaleString('vi-VN')}&nbsp;₫
-                        </div>
-                        <div className="mt-1">
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                            (koc.historicalRoi || 2.5) >= 1.0 ? 'badge-emerald' : 'badge-amber'
-                          }`}>
-                            ROI {(koc.historicalRoi || 2.5).toFixed(2)}
-                          </span>
-                        </div>
-                      </td>
-
-                      <td className="p-3.5">
-                        <div className="text-slate-900 font-semibold text-xs">
-                          {koc.bookingPic || 'Khánh Vy'}
-                        </div>
-                        <span className="badge-blue px-2 py-0.2 rounded text-[9px] font-bold mt-1 inline-block">
-                          {koc.statusKoc || 'SẴN SÀNG'}
-                        </span>
-                      </td>
-
-                      <td className="p-3.5 pr-6 text-right sticky right-0 bg-white/95 border-l border-slate-200 shadow-[-3px_0_6px_rgba(0,0,0,0.03)]" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex items-center justify-end gap-2">
-                          <button
-                            onClick={() => setInspectedKoc(koc)}
-                            className="px-2.5 py-1.5 bg-white hover:bg-slate-50 text-slate-700 hover:text-blue-600 rounded-lg text-xs font-semibold border border-slate-200 flex items-center gap-1 transition shadow-xs"
-                          >
-                            <Eye className="w-3.5 h-3.5 text-blue-600" />
-                            <span>Hồ Sơ 360°</span>
-                          </button>
-                          <button
-                            onClick={() => onOpenQuickBookWithKoc(koc)}
-                            className="px-2.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-lg shadow-xs transition flex items-center gap-1"
-                          >
-                            <span>Tạo Deal</span>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ========================================================================= */}
-      {/* MODAL: BÀN GIAO SANG TEAM GROWTH (QUÉT MÃ SPARK ADS & CHỐT ADS VỚI KHÁCH) */}
-      {/* ========================================================================= */}
-      {handoffDeal && (
-        <div 
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setHandoffDeal(null);
-          }}
-        >
-          <div 
-            role="dialog"
-            aria-modal="true"
-            aria-label="Bàn Giao Sang Team Growth (Chạy Ads)"
-            className="bg-white border border-slate-200 rounded-xl max-w-lg w-full shadow-2xl overflow-hidden text-slate-800"
-          >
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center font-bold">
-                  <Share2 className="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-slate-900">Bàn Giao Sang Team Growth (Chạy Ads)</h3>
-                  <p className="text-xs text-slate-500">{handoffDeal.dealCode} • {handoffDeal.kocStageName} • {handoffDeal.brandName}</p>
-                </div>
-              </div>
-              <button 
-                type="button"
-                onClick={() => setHandoffDeal(null)}
-                aria-label="Đóng modal"
-                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-200 transition"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="p-6 space-y-4 text-xs">
-              <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg text-purple-900 space-y-1">
-                <span className="font-semibold block text-purple-950">Quy trình bàn giao kỹ thuật chuẩn Upbase:</span>
-                <p className="text-[11px] text-purple-800">
-                  Sau khi KOC air video và gửi mã Spark Ads TikTok, Booking bàn giao cho Growth Team để quét mã ủy quyền, gắn sản phẩm TikTok Shop và chốt ngân sách chạy Ads với khách hàng.
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-slate-700 font-semibold mb-1">Mã Spark Ads TikTok (Ủy quyền quảng cáo)</label>
-                <input
-                  type="text"
-                  value={handoffForm.sparkAdsCode}
-                  onChange={(e) => setHandoffForm(prev => ({ ...prev, sparkAdsCode: e.target.value }))}
-                  placeholder="SPARK-TT-xxxx..."
-                  className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-800 font-mono focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-slate-700 font-semibold mb-1">Link Video TikTok Đã Air</label>
-                <input
-                  type="text"
-                  value={handoffForm.tiktokVideoUrl}
-                  onChange={(e) => setHandoffForm(prev => ({ ...prev, tiktokVideoUrl: e.target.value }))}
-                  placeholder="https://www.tiktok.com/@.../video/..."
-                  className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-slate-700 font-semibold mb-1">Thời Hạn Mã Ads</label>
-                  <select
-                    value={handoffForm.authDuration}
-                    onChange={(e) => setHandoffForm(prev => ({ ...prev, authDuration: e.target.value }))}
-                    className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
-                  >
-                    <option value="30 ngày">30 ngày</option>
-                    <option value="60 ngày">60 ngày (Tiêu chuẩn)</option>
-                    <option value="90 ngày">90 ngày</option>
-                    <option value="Không giới hạn">Không giới hạn</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-slate-700 font-semibold mb-1">Trạng Thái Khách Hàng</label>
-                  <select
-                    value={handoffForm.clientCommitmentStatus}
-                    onChange={(e) => setHandoffForm(prev => ({ ...prev, clientCommitmentStatus: e.target.value }))}
-                    className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-800 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
-                  >
-                    <option value="ĐÃ_CHỐT_NGÂN_SÁCH_ADS">Đã chốt ngân sách Ads</option>
-                    <option value="CHỜ_DUYỆT_NGÂN_SÁCH">Đang trình duyệt ngân sách</option>
-                    <option value="TEST_ORGANIC_TRƯỚC">Chạy organic 24h trước</option>
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-slate-700 font-semibold mb-1">Ghi Chú Target Cho Team Growth</label>
-                <textarea
-                  rows={2}
-                  value={handoffForm.growthNote}
-                  onChange={(e) => setHandoffForm(prev => ({ ...prev, growthNote: e.target.value }))}
-                  placeholder="Ghi chú đối tượng khán giả, USP cần gắn khi set campaign..."
-                  className="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-slate-800 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 resize-none"
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-slate-200 bg-slate-50">
-              <button
-                type="button"
-                onClick={() => setHandoffDeal(null)}
-                className="px-4 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 transition"
-              >
-                Hủy
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmGrowthHandoff}
-                className="px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-semibold shadow-sm transition flex items-center gap-1.5"
-              >
-                <Check className="w-3.5 h-3.5" />
-                <span>Xác Nhận Bàn Giao Growth</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ========================================================================= */}
-      {/* MODAL: CẬP NHẬT TIẾN ĐỘ DEAL TÁC NGHIỆP (OPERATIONAL UPDATE MODAL) */}
-      {/* ========================================================================= */}
-      {editingDeal && (
-        <div 
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setEditingDeal(null);
-          }}
-        >
-          <div 
-            role="dialog"
-            aria-modal="true"
-            aria-label="Vận Hành Job Booking & Phê Duyệt Brand"
-            className="bg-white border border-slate-200 rounded-xl max-w-lg w-full p-6 shadow-2xl space-y-5 text-slate-800"
-          >
-            <div className="flex items-center justify-between pb-3 border-b border-slate-200">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-blue-50 text-blue-700 border border-blue-200">
-                    {editingDeal.dealCode}
-                  </span>
-                  {editingDeal.jobId && (
-                    <span className="text-[10px] text-slate-500 font-mono">
-                      Mã Job: <strong className="text-blue-700">{editingDeal.jobId}</strong>
-                    </span>
-                  )}
-                </div>
-                <h3 className="text-base font-bold text-slate-900 mt-1">
-                  Vận Hành Job Booking &amp; Phê Duyệt Brand
-                </h3>
-                <p className="text-xs text-slate-500">
-                  KOC: <strong className="text-slate-800">{editingDeal.kocStageName}</strong> • Brand: <strong className="text-blue-700">{editingDeal.brandName || 'Upbase Brand'}</strong> • SP: <span className="text-amber-700 font-medium">{editingDeal.productName || 'Chung'}</span>
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setEditingDeal(null)}
-                aria-label="Đóng modal"
-                className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="space-y-4 text-xs max-h-[70vh] overflow-y-auto pr-1">
-              {/* Field 0: Phê Duyệt Brand Theo Job Cụ Thể */}
-              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
-                <div className="flex items-center justify-between">
-                  <label className="text-slate-800 font-bold block flex items-center gap-1.5">
-                    <span className="text-amber-500">⭐</span> 1. Phê Duyệt Của Brand Đối Với Job Này:
-                  </label>
-                  <span className="text-[10px] text-slate-500">Duyệt theo từng Job / Chiến dịch</span>
-                </div>
-                <div className="grid grid-cols-3 gap-2">
-                  {[
-                    { key: 'ĐÃ_DUYỆT', label: '✓ Brand Đã Duyệt', clsActive: 'bg-emerald-600 border-emerald-500 text-white' },
-                    { key: 'CHỜ_DUYỆT', label: '⏳ Chờ Brand Duyệt', clsActive: 'bg-amber-600 border-amber-500 text-white' },
-                    { key: 'TỪ_CHỐI', label: '✕ Brand Từ Chối', clsActive: 'bg-rose-600 border-rose-500 text-white' },
-                  ].map((s) => (
-                    <button
-                      key={s.key}
-                      type="button"
-                      onClick={() => {
-                        const newStatus = s.key as any;
-                        setEditForm(prev => ({
-                          ...prev,
-                          brandApprovalStatus: newStatus,
-                          pipelineText: newStatus === 'TỪ_CHỐI' ? 'Brand từ chối' : (newStatus === 'ĐÃ_DUYỆT' && prev.pipelineText === 'Chờ Brand duyệt' ? 'Đã tạo BO' : prev.pipelineText)
-                        }));
-                      }}
-                      className={`py-2 px-2 rounded-lg font-bold border transition text-center text-xs ${
-                        editForm.brandApprovalStatus === s.key
-                          ? s.clsActive + ' shadow-xs'
-                          : 'bg-white border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-                      }`}
-                    >
-                      {s.label}
-                    </button>
-                  ))}
-                </div>
-
-                {/* If Brand Rejected, prompt for reason */}
-                {editForm.brandApprovalStatus === 'TỪ_CHỐI' && (
-                  <div className="mt-2.5 pt-2.5 border-t border-slate-200 space-y-1.5 animate-in fade-in">
-                    <label className="text-rose-600 font-bold block text-[11px]">
-                      ⚠️ Lý Do Brand Từ Chối KOC Cho Job Này (Lưu vết &amp; Báo cáo):
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Ví dụ: Tệp follower lệch định vị, Brand yêu cầu chuyên gia, Chi phí vượt ngân sách..."
-                      value={editForm.brandRejectReason}
-                      onChange={(e) => setEditForm(prev => ({ ...prev, brandRejectReason: e.target.value }))}
-                      className="w-full bg-white border border-rose-300 rounded-lg px-3 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-rose-500"
-                    />
-                    <div className="flex flex-wrap gap-1.5 pt-1">
-                      {[
-                        'Lệch định vị sản phẩm',
-                        'Follower không khớp tệp khách',
-                        'Chi phí rate card vượt ngân sách',
-                        'Brand yêu cầu KOC chuyên gia/Bác sĩ',
-                        'KOC quá bận / Trùng lịch'
-                      ].map((reason) => (
-                        <button
-                          key={reason}
-                          type="button"
-                          onClick={() => setEditForm(prev => ({ ...prev, brandRejectReason: reason }))}
-                          className="px-2 py-0.5 rounded text-[10px] bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 transition"
-                        >
-                          + {reason}
-                        </button>
-                      ))}
+          <DataTable
+            rows={filteredKocs}
+            rowKey={k => k.id}
+            stickyLast
+            onRowClick={k => setInspectedKoc(k)}
+            empty={<EmptyState title="Không tìm thấy KOC" description="Thử từ khóa khác hoặc bỏ bớt bộ lọc." action={<Button size="sm" icon={UserPlus} onClick={() => setIsCreateKocOpen(true)}>Thêm KOC</Button>} />}
+            columns={[
+              {
+                key: 'koc', header: 'KOC', width: 300, render: k => (
+                  <div className="flex items-start gap-2.5">
+                    <Avatar name={k.stageName} size={28} />
+                    <div className="leading-tight min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-medium text-ink">{k.stageName}</span>
+                        {k.isWinnerTop20 && <Status tone="warning">Winner</Status>}
+                      </div>
+                      <div className="text-2xs text-ink-3 mt-0.5">{k.channelId} · {k.phone}</div>
+                      <div className="text-2xs text-ink-3">{k.location || 'Hà Nội'} · {k.bookingFormat || 'Booking video'}</div>
                     </div>
                   </div>
-                )}
-              </div>
-
-              {/* Field 1: Tiến Độ Tác Nghiệp Nội Bộ (Pipeline Lark Base) */}
-              <div>
-                <label className="text-slate-700 font-semibold block mb-1.5">
-                  2. Tiến Độ Vận Hành Nội Bộ (Pipeline 8 Bước Chuẩn Lark Base):
-                </label>
-                <select
-                  value={editForm.pipelineText}
-                  onChange={(e) => setEditForm(prev => ({ ...prev, pipelineText: e.target.value }))}
-                  className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-blue-700 font-semibold focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                >
-                  <option value="Chờ Brand duyệt">1. Chờ Brand duyệt KOC</option>
-                  <option value="Đã tạo BO">2. Đã tạo BO &amp; Ký Hợp đồng</option>
-                  <option value="Gửi hàng">3. Gửi hàng mẫu (Sample)</option>
-                  <option value="Kịch bản">4. Duyệt kịch bản nội dung</option>
-                  <option value="KOC quay video">5. KOC quay &amp; nộp video nháp</option>
-                  <option value="Lên video">6. Lên video TikTok &amp; Gắn giỏ hàng</option>
-                  <option value="Nghiệm thu Ads">7. Nghiệm thu mã Spark Ads</option>
-                  <option value="Đối soát">8. Đối soát thanh toán (Kế toán)</option>
-                  <option value="Done">✓ Done (Hoàn tất chiến dịch)</option>
-                  <option value="Brand từ chối">✕ Brand từ chối / Hủy job</option>
-                </select>
-              </div>
-
-              {/* Field 2: Trạng Thái Gửi Mẫu Sản Phẩm (Sample) */}
-              <div>
-                <label className="text-slate-700 font-semibold block mb-1.5">
-                  3. Trạng Thái Gửi Mẫu Sản Phẩm (Sample Dispatch):
-                </label>
-                <div className="grid grid-cols-3 gap-2">
-                  {[
-                    { key: 'CHƯA_GỬI', label: 'Chưa Gửi' },
-                    { key: 'ĐANG_GIAO', label: 'Đang Giao Hàng' },
-                    { key: 'ĐÃ_NHẬN', label: 'KOC Đã Nhận Mẫu' },
-                  ].map((s) => (
-                    <button
-                      key={s.key}
-                      type="button"
-                      onClick={() => setEditForm(prev => ({ ...prev, sampleStatus: s.key as any }))}
-                      className={`py-2 px-2.5 rounded-lg font-bold border transition text-center ${
-                        editForm.sampleStatus === s.key
-                          ? 'bg-blue-600 border-blue-500 text-white shadow-xs'
-                          : 'bg-white border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-                      }`}
-                    >
-                      {s.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Field 4: TikTok Video URL */}
-              <div>
-                <label className="text-slate-700 font-semibold block mb-1.5">
-                  4. Link Video TikTok Chính Thức Đã Lên Sóng:
-                </label>
-                <input
-                  type="text"
-                  placeholder="https://www.tiktok.com/@creator/video/7418..."
-                  value={editForm.tiktokVideoUrl}
-                  onChange={(e) => setEditForm(prev => ({ ...prev, tiktokVideoUrl: e.target.value }))}
-                  className="w-full bg-white border border-slate-300 rounded-lg px-3.5 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-mono"
-                />
-              </div>
-
-              {/* Field 5: Ads Code Verification */}
-              <div>
-                <label className="text-slate-700 font-semibold block mb-1.5">
-                  5. Nghiệm Thu Mã Ủy Quyền Ads Spark Code (TikTok):
-                </label>
-                <p className="text-[11px] text-slate-500 mb-2">
-                  * Tránh Plan Gap ngân sách (ví dụ hụt 50M ở pHCare do chưa đối soát mã Ads)
-                </p>
-                <div className="grid grid-cols-3 gap-2">
-                  {[
-                    { key: 'CHƯA_CẤP', label: '⚠️ Chưa Cấp Mã' },
-                    { key: 'ĐÃ_NGHIỆM_THU', label: '✓ Đã Duyệt Mã Ads' },
-                    { key: 'KHÔNG_DÙNG', label: 'Không Dùng Ads' },
-                  ].map((a) => (
-                    <button
-                      key={a.key}
-                      type="button"
-                      onClick={() => setEditForm(prev => ({ ...prev, adsCodeStatus: a.key as any }))}
-                      className={`py-2 px-2 rounded-lg font-bold border transition text-center ${
-                        editForm.adsCodeStatus === a.key
-                          ? 'bg-emerald-600 border-emerald-500 text-white shadow-xs'
-                          : 'bg-white border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-                      }`}
-                    >
-                      {a.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Field 6: GMV 30 Days & Views */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-slate-700 font-semibold block mb-1.5">
-                    6. Số Lượt Views Đạt Được:
-                  </label>
-                  <input
-                    type="number"
-                    value={editForm.viewsCount}
-                    onChange={(e) => setEditForm(prev => ({ ...prev, viewsCount: Number(e.target.value) }))}
-                    className="w-full bg-white border border-slate-300 rounded-lg px-3.5 py-2 text-xs text-slate-800 font-mono focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-slate-700 font-semibold block mb-1.5">
-                    7. GMV 30 Ngày (Doanh Thu Thực Tế):
-                  </label>
-                  <input
-                    type="number"
-                    step={500000}
-                    value={editForm.gmv30}
-                    onChange={(e) => setEditForm(prev => ({ ...prev, gmv30: Number(e.target.value) }))}
-                    className="w-full bg-white border border-slate-300 rounded-lg px-3.5 py-2 text-xs text-emerald-700 font-mono font-bold focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-
-              {/* Field 8: Workflow Stage */}
-              <div>
-                <label className="text-slate-700 font-semibold block mb-1.5">
-                  8. Giai Đoạn Nghiệm Thu &amp; Kế Toán:
-                </label>
-                <select
-                  value={editForm.status}
-                  onChange={(e) => setEditForm(prev => ({ ...prev, status: e.target.value as any }))}
-                  className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-800 font-semibold focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                >
-                  <option value="SCRIPT_APPROVED">Đã Duyệt Kịch Bản (Cần Trình Ký)</option>
-                  <option value="ADVANCE_PAID">Đã Chi Tạm Ứng (Đang Triển Khai)</option>
-                  <option value="VIDEO_SUBMITTED">Video Đã Lên Sóng (Chờ Nghiệm Thu Link)</option>
-                  <option value="VIDEO_VERIFIED">Đã Nghiệm Thu Video &amp; Mã Ads (Chờ Kế Toán Tất Toán)</option>
-                  <option value="FINAL_PAID">Đã Tất Toán (Hoàn Tất Hợp Đồng)</option>
-                  <option value="CANCELLED">Đã Hủy / Brand Từ Chối</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Calculated Preview Box */}
-            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between text-xs">
-              <div>
-                <span className="text-slate-500 font-medium">ROI Dự Tính:</span>
-                <span className="font-bold text-emerald-700 ml-1.5 font-mono">
-                  {((editForm.gmv30 || 0) / (editingDeal.totalValue || 1)).toFixed(2)}x
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                {editForm.gmv30 >= 30000000 && (
-                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
-                    🌟 Đạt Chuẩn Top 20 Winner
-                  </span>
-                )}
-                {((editForm.gmv30 || 0) / (editingDeal.totalValue || 1)) >= 1.0 && (
-                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                    ✓ Hoàn Vốn (ROI &gt;= 1.0)
-                  </span>
-                )}
-              </div>
-            </div>
-
-            {/* Actions */}
-            <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-200">
-              <button
-                type="button"
-                onClick={() => setEditingDeal(null)}
-                className="px-4 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 transition"
-              >
-                Hủy
-              </button>
-              <button
-                type="button"
-                onClick={handleSaveDealUpdate}
-                className="px-5 py-2 rounded-lg text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-sm transition flex items-center gap-1.5"
-              >
-                <Check className="w-3.5 h-3.5" />
-                <span>Lưu &amp; Đồng Bộ Báo Cáo</span>
-              </button>
-            </div>
-          </div>
-        </div>
+                ),
+              },
+              {
+                key: 'grade', header: 'Khung lương', width: 140, render: k => (
+                  <div className="leading-tight">
+                    <div className="text-ink">{k.salaryGrade}</div>
+                    <div className="text-2xs text-ink-3 mt-0.5">{k.segment || 'Massive Creator'}</div>
+                  </div>
+                ),
+              },
+              {
+                key: 'audience', header: 'Tệp kênh', width: 170, render: k => (
+                  <div className="leading-tight">
+                    <div className="text-ink">{k.tepKenh || k.creatorCategory || 'Review Nữ'}</div>
+                    <div className="text-2xs text-ink-3 mt-0.5">{k.kocCategory || 'Personal care'} · nữ {k.femaleRatio ?? 85}%</div>
+                  </div>
+                ),
+              },
+              { key: 'rate', header: 'Báo giá video', align: 'right', width: 130, render: k => <span className="tabular-nums">{formatVnd(k.rateCardVideo)}</span> },
+              {
+                key: 'shop', header: 'TikTok Shop', width: 180, render: k => (
+                  <div className="leading-tight tabular-nums">
+                    <div className="text-ink">{formatNumber(k.followers)} follower</div>
+                    <div className="text-2xs text-ink-3 mt-0.5">GMV cao nhất {formatVndShort(k.gmvBestCase || k.rateCardVideo * 3)} · AOV {formatVndShort(k.aov || 245000)}</div>
+                  </div>
+                ),
+              },
+              {
+                key: 'history', header: 'Với Upbase', align: 'right', width: 130, render: k => (
+                  <div className="grid gap-0.5 justify-items-end tabular-nums leading-tight">
+                    <span className="text-ink">{formatVndShort(k.totalPastGmv || k.rateCardVideo * 3)}</span>
+                    <span className={(k.historicalRoi || 2.5) >= 1 ? 'text-2xs font-medium text-positive' : 'text-2xs text-warning'}>ROI {(k.historicalRoi || 2.5).toLocaleString('vi-VN', { maximumFractionDigits: 2 })}</span>
+                  </div>
+                ),
+              },
+              { key: 'pic', header: 'PIC', width: 150, render: k => <Person name={k.bookingPic || 'Khánh Vy'} sub={k.statusKoc || 'Sẵn sàng'} size={22} /> },
+              {
+                key: 'actions', header: <span className="sr-only">Thao tác</span>, align: 'right', width: 120, render: k => (
+                  <div onClick={e => e.stopPropagation()}>
+                    <Button size="sm" onClick={() => onOpenQuickBookWithKoc(k)}>Tạo booking</Button>
+                  </div>
+                ),
+              },
+            ]}
+          />
+        </Panel>
       )}
+
+      {/* ========================================================================= */}
+      {/* MODAL: BÀN GIAO SANG TEAM GROWTH                                            */}
+      {/* ========================================================================= */}
+      <Modal
+        open={!!handoffDeal}
+        onClose={() => setHandoffDeal(null)}
+        title="Bàn giao cho team Growth"
+        description={handoffDeal ? `${handoffDeal.dealCode} · ${handoffDeal.kocStageName} · ${handoffDeal.brandName}` : undefined}
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setHandoffDeal(null)}>Hủy</Button>
+            <Button variant="primary" icon={Check} onClick={handleConfirmGrowthHandoff}>Bàn giao</Button>
+          </>
+        }
+      >
+        <p className="text-[13px] text-ink-2">Growth dùng mã Spark Ads để chạy quảng cáo trên video đã lên sóng và chốt ngân sách Ads với khách hàng.</p>
+        <Field label="Mã Spark Ads" htmlFor="handoff-spark">
+          <Input id="handoff-spark" className="font-code" value={handoffForm.sparkAdsCode} onChange={e => setHandoffForm(prev => ({ ...prev, sparkAdsCode: e.target.value }))} placeholder="SPARK-TT-…" />
+        </Field>
+        <Field label="Link video TikTok" htmlFor="handoff-url">
+          <Input id="handoff-url" value={handoffForm.tiktokVideoUrl} onChange={e => setHandoffForm(prev => ({ ...prev, tiktokVideoUrl: e.target.value }))} placeholder="https://www.tiktok.com/@…/video/…" />
+        </Field>
+        <div className="grid sm:grid-cols-2 gap-4">
+          <Field label="Thời hạn mã Ads" htmlFor="handoff-duration">
+            <Select id="handoff-duration" value={handoffForm.authDuration} onChange={e => setHandoffForm(prev => ({ ...prev, authDuration: e.target.value }))}>
+              <option value="30 ngày">30 ngày</option>
+              <option value="60 ngày">60 ngày (thường dùng)</option>
+              <option value="90 ngày">90 ngày</option>
+              <option value="Không giới hạn">Không giới hạn</option>
+            </Select>
+          </Field>
+          <Field label="Khách hàng" htmlFor="handoff-client">
+            <Select id="handoff-client" value={handoffForm.clientCommitmentStatus} onChange={e => setHandoffForm(prev => ({ ...prev, clientCommitmentStatus: e.target.value }))}>
+              <option value="ĐÃ_CHỐT_NGÂN_SÁCH_ADS">Đã chốt ngân sách Ads</option>
+              <option value="CHỜ_DUYỆT_NGÂN_SÁCH">Đang duyệt ngân sách</option>
+              <option value="TEST_ORGANIC_TRƯỚC">Chạy tự nhiên 24 giờ trước</option>
+            </Select>
+          </Field>
+        </div>
+        <Field label="Ghi chú cho Growth" hint="Đối tượng khán giả, điểm bán hàng cần nhấn khi lên chiến dịch" htmlFor="handoff-note">
+          <Textarea id="handoff-note" rows={2} value={handoffForm.growthNote} onChange={e => setHandoffForm(prev => ({ ...prev, growthNote: e.target.value }))} />
+        </Field>
+      </Modal>
+
+      {/* ========================================================================= */}
+      {/* MODAL: CẬP NHẬT JOB                                                         */}
+      {/* ========================================================================= */}
+      <Modal
+        open={!!editingDeal}
+        onClose={() => setEditingDeal(null)}
+        size="lg"
+        title={editingDeal ? `Cập nhật job ${editingDeal.dealCode}` : ''}
+        description={editingDeal ? `${editingDeal.kocStageName} · ${editingDeal.brandName || 'Upbase'} · ${editingDeal.productName || 'Sản phẩm chung'}` : undefined}
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setEditingDeal(null)}>Hủy</Button>
+            <Button variant="primary" icon={Check} onClick={handleSaveDealUpdate}>Lưu</Button>
+          </>
+        }
+      >
+        {editingDeal && (
+          <>
+            <Field label="Brand duyệt KOC cho job này">
+              <Segmented
+                value={editForm.brandApprovalStatus}
+                onChange={(v) => setEditForm(prev => ({
+                  ...prev,
+                  brandApprovalStatus: v,
+                  pipelineText: v === 'TỪ_CHỐI' ? 'Brand từ chối' : (v === 'ĐÃ_DUYỆT' && prev.pipelineText === 'Chờ Brand duyệt' ? 'Đã tạo BO' : prev.pipelineText),
+                }))}
+                items={[
+                  { key: 'ĐÃ_DUYỆT', label: 'Đã duyệt' },
+                  { key: 'CHỜ_DUYỆT', label: 'Chờ duyệt' },
+                  { key: 'TỪ_CHỐI', label: 'Từ chối' },
+                ]}
+              />
+            </Field>
+
+            {editForm.brandApprovalStatus === 'TỪ_CHỐI' && (
+              <Field label="Lý do Brand từ chối" hint="Lưu lại để báo cáo và lần sau chọn KOC phù hợp hơn" htmlFor="edit-reject">
+                <Input id="edit-reject" value={editForm.brandRejectReason} onChange={e => setEditForm(prev => ({ ...prev, brandRejectReason: e.target.value }))} placeholder="Ví dụ: tệp follower lệch định vị" />
+                <div className="flex flex-wrap gap-1.5">
+                  {['Lệch định vị sản phẩm', 'Follower không khớp tệp khách', 'Giá vượt ngân sách', 'Brand cần KOC chuyên gia', 'KOC trùng lịch'].map(r => (
+                    <button key={r} type="button" onClick={() => setEditForm(prev => ({ ...prev, brandRejectReason: r }))} className="h-6 px-2 rounded-full border border-line text-2xs text-ink-2 hover:border-line-strong hover:text-ink">
+                      {r}
+                    </button>
+                  ))}
+                </div>
+              </Field>
+            )}
+
+            <div className="grid sm:grid-cols-2 gap-4">
+              <Field label="Bước hiện tại" htmlFor="edit-pipeline">
+                <Select id="edit-pipeline" value={editForm.pipelineText} onChange={e => setEditForm(prev => ({ ...prev, pipelineText: e.target.value }))}>
+                  <option value="Chờ Brand duyệt">1. Chờ Brand duyệt KOC</option>
+                  <option value="Đã tạo BO">2. Đã tạo BO và ký hợp đồng</option>
+                  <option value="Gửi hàng">3. Gửi hàng mẫu</option>
+                  <option value="Kịch bản">4. Duyệt kịch bản</option>
+                  <option value="KOC quay video">5. KOC quay và nộp video nháp</option>
+                  <option value="Lên video">6. Lên video và gắn giỏ hàng</option>
+                  <option value="Nghiệm thu Ads">7. Nghiệm thu mã Spark Ads</option>
+                  <option value="Đối soát">8. Đối soát thanh toán</option>
+                  <option value="Done">Hoàn tất</option>
+                  <option value="Brand từ chối">Brand từ chối / hủy job</option>
+                </Select>
+              </Field>
+              <Field label="Giai đoạn thanh toán" htmlFor="edit-status">
+                <Select id="edit-status" value={editForm.status} onChange={e => setEditForm(prev => ({ ...prev, status: e.target.value as BookingDealItem['status'] }))}>
+                  <option value="SCRIPT_APPROVED">Đã duyệt kịch bản, chờ ký</option>
+                  <option value="ADVANCE_PAID">Đã tạm ứng, đang triển khai</option>
+                  <option value="VIDEO_SUBMITTED">Video đã lên sóng, chờ nghiệm thu</option>
+                  <option value="VIDEO_VERIFIED">Đã nghiệm thu, chờ kế toán tất toán</option>
+                  <option value="FINAL_PAID">Đã tất toán</option>
+                  <option value="CANCELLED">Đã hủy</option>
+                </Select>
+              </Field>
+            </div>
+
+            <div className="grid sm:grid-cols-2 gap-4">
+              <Field label="Hàng mẫu">
+                <Segmented
+                  value={editForm.sampleStatus}
+                  onChange={(v) => setEditForm(prev => ({ ...prev, sampleStatus: v }))}
+                  items={[{ key: 'CHƯA_GỬI', label: 'Chưa gửi' }, { key: 'ĐANG_GIAO', label: 'Đang giao' }, { key: 'ĐÃ_NHẬN', label: 'Đã nhận' }]}
+                />
+              </Field>
+              <Field label="Mã Spark Ads" hint="Chưa đối soát mã Ads sẽ gây hụt ngân sách kế hoạch">
+                <Segmented
+                  value={editForm.adsCodeStatus}
+                  onChange={(v) => setEditForm(prev => ({ ...prev, adsCodeStatus: v }))}
+                  items={[{ key: 'CHƯA_CẤP', label: 'Chưa cấp' }, { key: 'ĐÃ_NGHIỆM_THU', label: 'Đã duyệt' }, { key: 'KHÔNG_DÙNG', label: 'Không dùng' }]}
+                />
+              </Field>
+            </div>
+
+            <Field label="Link video TikTok" htmlFor="edit-url">
+              <Input id="edit-url" value={editForm.tiktokVideoUrl} onChange={e => setEditForm(prev => ({ ...prev, tiktokVideoUrl: e.target.value }))} placeholder="https://www.tiktok.com/@creator/video/…" />
+            </Field>
+
+            <div className="grid sm:grid-cols-2 gap-4">
+              <Field label="Lượt xem" htmlFor="edit-views">
+                <Input id="edit-views" type="number" inputMode="numeric" className="tabular-nums" value={editForm.viewsCount} onChange={e => setEditForm(prev => ({ ...prev, viewsCount: Number(e.target.value) }))} />
+              </Field>
+              <Field label="GMV 30 ngày (đ)" htmlFor="edit-gmv">
+                <Input id="edit-gmv" type="number" step={500000} inputMode="numeric" className="tabular-nums" value={editForm.gmv30} onChange={e => setEditForm(prev => ({ ...prev, gmv30: Number(e.target.value) }))} />
+              </Field>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 px-3 py-2.5 rounded-md bg-sunken text-[13px]">
+              <span className="text-ink-3">ROI dự tính</span>
+              <strong className="font-semibold text-ink tabular-nums">{((editForm.gmv30 || 0) / (editingDeal.totalValue || 1)).toLocaleString('vi-VN', { maximumFractionDigits: 2 })}</strong>
+              {editForm.gmv30 >= 30000000 && <Status tone="warning">Đạt top 20</Status>}
+              {(editForm.gmv30 || 0) / (editingDeal.totalValue || 1) >= 1 && <Status tone="positive">Hoàn vốn</Status>}
+            </div>
+          </>
+        )}
+      </Modal>
+
+      {/* Từ chối nhanh từ bảng: cần lý do */}
+      <ConfirmDialog
+        open={!!rejectingDeal}
+        title="Brand từ chối KOC này?"
+        message={rejectingDeal ? `${rejectingDeal.kocStageName} · ${rejectingDeal.dealCode}` : undefined}
+        confirmLabel="Từ chối"
+        tone="danger"
+        reason={{ label: 'Lý do', defaultValue: 'Tệp khán giả của KOC không khớp khách hàng mục tiêu', required: true }}
+        onCancel={() => setRejectingDeal(null)}
+        onConfirm={(reason) => { if (rejectingDeal) handleQuickBrandApproval(rejectingDeal, 'TỪ_CHỐI', reason); setRejectingDeal(null); }}
+      />
+
+      {/* Đề xuất tự air khi Brand quá hạn duyệt định hướng */}
+      <ConfirmDialog
+        open={!!autoAirDeal}
+        title="Đề xuất tự air?"
+        message={autoAirDeal ? `Brand chưa phản hồi định hướng cho ${autoAirDeal.dealCode} sau ${autoAirDeal.brandOrientationPendingDays} ngày làm việc. Theo SLA, Booking được cho KOC lên video theo brief đã duyệt.` : undefined}
+        confirmLabel="Cho phép tự air"
+        onCancel={() => setAutoAirDeal(null)}
+        onConfirm={() => {
+          if (autoAirDeal && onUpdateDeal) onUpdateDeal({ ...autoAirDeal, pipelineText: 'Tự air (Brand quá hạn)', holdingReason: 'Tự air theo SLA do Brand quá hạn duyệt' });
+          setAutoAirDeal(null);
+        }}
+      />
 
       {/* KOC 360 Profile Modal */}
       <KocProfileModal

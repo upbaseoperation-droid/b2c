@@ -4,31 +4,32 @@ import React from 'react';
 import {
   CheckSquare,
   BarChart2,
-  Store,
   Layers,
   FileText,
   Users,
-  UserCheck,
   FileCheck,
   TrendingUp,
   Award,
-  ShieldCheck,
   Package,
   Coins,
   BookOpen,
-  Calculator,
   Calendar,
-  Flame,
   Database,
+  Split,
+  ExternalLink,
+  Video,
   X,
-  LogOut
+  LogOut,
+  type LucideIcon,
 } from 'lucide-react';
 import { UserProfile } from '../lib/types';
+import { Avatar, BrandLogo } from './ui';
 
 export type TabKey =
   | 'cockpit'
   | 'overview'
   | 'input-plan'
+  | 'self-channel-hub'
   | 'master-data'
   | 'push-products'
   | 'stores'
@@ -47,9 +48,7 @@ export type TabKey =
 interface NavItem {
   key: TabKey;
   label: string;
-  icon: any;
-  badge?: string;
-  badgeType?: 'lead' | 'team' | 'portal';
+  icon: LucideIcon;
 }
 
 interface NavSection {
@@ -78,259 +77,128 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const navSections: NavSection[] = [
     {
-      title: 'TỔNG QUAN & CÁ NHÂN',
+      title: 'Của tôi',
       items: [
-        {
-          key: 'cockpit',
-          label: 'Công Việc Của Tôi',
-          icon: CheckSquare,
-        },
-        {
-          key: 'overview',
-          label: 'Tổng Quan Vận Hành',
-          icon: BarChart2,
-        },
-      ]
+        { key: 'cockpit', label: 'Việc của tôi', icon: CheckSquare },
+        { key: 'overview', label: 'Tổng quan', icon: BarChart2 },
+      ],
     },
     {
-      title: 'TÁC NGHIỆP PHÂN HỆ',
+      title: 'Vận hành',
       items: [
-        {
-          key: 'input-plan',
-          label: 'Kế Hoạch Tháng (Monthly Plan)',
-          icon: Calendar,
-          badge: 'Tháng 10',
-          badgeType: 'team'
-        },
-        {
-          key: 'push-products',
-          label: 'Sản Phẩm Thúc Đẩy',
-          icon: TrendingUp,
-        },
-        {
-          key: 'booking',
-          label: 'Quản Lý Booking',
-          icon: Users,
-          badge: currentUser.role === 'BOOKING_MEMBER' ? 'Của Tôi' : undefined,
-          badgeType: 'team'
-        },
-        {
-          key: 'content',
-          label: 'Kịch Bản & Content',
-          icon: FileText,
-          badge: currentUser.role === 'CONTENT_MEMBER' ? 'Của Tôi' : undefined,
-          badgeType: 'team'
-        },
-        {
-          key: 'campaigns',
-          label: 'Brand Team (Chiến Lược & Brief)',
-          icon: Layers,
-          badge: currentUser.role === 'BRAND_MEMBER' ? 'Của Tôi' : undefined,
-          badgeType: 'team'
-        },
-        {
-          key: 'contracts',
-          label: 'Hợp Đồng & Thanh Toán',
-          icon: FileCheck,
-        },
-        {
-          key: 'sample-tracker',
-          label: 'Giám Sát Mẫu',
-          icon: Package,
-        },
-        {
-          key: 'brand-knowledge',
-          label: 'Hướng Dẫn Nhãn Hàng',
-          icon: BookOpen,
-        },
-      ]
+        { key: 'input-plan', label: 'Kế hoạch tháng', icon: Calendar },
+        { key: 'push-products', label: 'Sản phẩm đẩy', icon: TrendingUp },
+        { key: 'self-channel-hub', label: 'Self Channel & CTV', icon: Video },
+        { key: 'booking', label: 'Booking', icon: Users },
+        { key: 'content', label: 'Kịch bản', icon: FileText },
+        { key: 'campaigns', label: 'Brief & chiến dịch', icon: Layers },
+        { key: 'contracts', label: 'Hợp đồng & thanh toán', icon: FileCheck },
+        { key: 'sample-tracker', label: 'Hàng mẫu', icon: Package },
+        { key: 'brand-knowledge', label: 'Hướng dẫn nhãn hàng', icon: BookOpen },
+      ],
     },
     {
-      title: 'DỮ LIỆU GỐC',
-      items: [
-        {
-          key: 'master-data',
-          label: 'Dữ liệu gốc',
-          icon: Database,
-        },
-      ]
+      title: 'Dữ liệu',
+      items: [{ key: 'master-data', label: 'Dữ liệu gốc', icon: Database }],
     },
     {
-      title: 'QUẢN TRỊ & ĐIỀU HÀNH',
+      title: 'Quản lý',
       items: [
-        {
-          key: 'manager',
-          label: isManager ? 'Phân Bổ & Điều Phối' : 'Kế Hoạch & Báo Cáo',
-          icon: TrendingUp,
-          badge: isManager ? 'Trưởng Phòng' : 'Lead',
-          badgeType: 'lead'
-        },
-        {
-          key: 'performance-p3',
-          label: 'Đánh Giá 4P & Thưởng P3',
-          icon: Coins,
-        },
-        {
-          key: 'leaderboard',
-          label: 'Hiệu Suất Nhân Sự',
-          icon: Award,
-        },
-      ]
+        { key: 'manager', label: isManager ? 'Phân bổ & điều phối' : 'Kế hoạch & báo cáo', icon: Split },
+        { key: 'performance-p3', label: 'Đánh giá 4P & thưởng', icon: Coins },
+        { key: 'leaderboard', label: 'Hiệu suất nhân sự', icon: Award },
+      ],
     },
     {
-      title: 'CỔNG NGOÀI (CLIENT)',
-      items: [
-        {
-          key: 'brand-hub',
-          label: 'Brand Client Portal',
-          icon: ShieldCheck,
-          badge: 'Khách',
-          badgeType: 'portal'
-        },
-      ]
-    }
+      title: 'Khách hàng',
+      items: [{ key: 'brand-hub', label: 'Cổng khách hàng', icon: ExternalLink }],
+    },
   ];
 
   const handleItemClick = (key: TabKey) => {
     onTabSelect(key);
-    if (onCloseMobile) {
-      onCloseMobile();
-    }
+    onCloseMobile?.();
   };
 
   return (
     <>
-      {/* Mobile Backdrop Overlay */}
       {isMobileOpen && (
         <div
-          className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-40 lg:hidden animate-in fade-in duration-150"
+          className="fixed inset-0 bg-slate-900/40 z-40 lg:hidden animate-in fade-in duration-150"
           onClick={onCloseMobile}
           aria-hidden="true"
         />
       )}
 
-      {/* Main Sidebar Element */}
       <aside
-        className={`w-64 lg:w-72 xl:w-[300px] bg-white border-r border-slate-200 flex flex-col shrink-0 h-screen select-none transition-transform duration-200 ease-in-out ${
+        className={`w-60 bg-surface border-r border-line flex flex-col shrink-0 h-screen select-none transition-transform duration-200 ease-in-out ${
           isMobileOpen
             ? 'fixed inset-y-0 left-0 z-50 translate-x-0 shadow-2xl'
             : 'fixed inset-y-0 left-0 -translate-x-full lg:sticky lg:top-0 lg:translate-x-0 z-30'
         }`}
-        aria-label="Thanh điều hướng chính"
+        aria-label="Điều hướng chính"
       >
-        {/* Brand Header: Fixed h-14 to perfectly match TopHeader horizontal border */}
-        <div className="h-14 px-4 border-b border-slate-200 flex items-center justify-between shrink-0 bg-white">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center font-bold text-white text-xs shadow-xs shrink-0">
-              UB
-            </div>
-            <div className="min-w-0">
-              <span className="text-xs font-bold text-slate-900 tracking-tight block truncate leading-tight">
-                Upbase Ops
-              </span>
-              <span className="text-[11px] text-slate-500 block truncate font-normal leading-tight">
-                Marketing B2C
-              </span>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-1.5 shrink-0">
-            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border uppercase tracking-wide ${
-              isManager 
-                ? 'bg-purple-50 text-purple-700 border-purple-200' 
-                : 'bg-blue-50 text-blue-700 border-blue-200'
-            }`}>
-              {currentUser.role === 'MANAGER' ? 'LEAD' : currentUser.role === 'BOOKING_MEMBER' ? 'BOOKING' : currentUser.role === 'CONTENT_MEMBER' ? 'CONTENT' : 'BRAND'}
-            </span>
+        <div className="h-14 px-4 flex items-center justify-between shrink-0">
+          <BrandLogo height={22} />
 
-            {/* Close button for Mobile Drawer only */}
-            {onCloseMobile && (
-              <button
-                onClick={onCloseMobile}
-                className="lg:hidden p-1 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition"
-                aria-label="Đóng thanh điều hướng"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            )}
-          </div>
+          {onCloseMobile && (
+            <button
+              onClick={onCloseMobile}
+              className="lg:hidden p-1.5 rounded-md text-ink-3 hover:text-ink hover:bg-sunken transition-colors"
+              aria-label="Đóng menu"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
 
-        {/* Categorized Navigation Menu: Independent scroll with slim scrollbar */}
-        <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-4 sidebar-scrollbar">
-          {navSections.map((section, sIdx) => (
-            <div key={sIdx} className="space-y-1">
-              <div className="px-3 pt-1 pb-1 text-[11px] font-bold text-slate-400 tracking-wider uppercase">
-                {section.title}
-              </div>
-              {section.items.map((item) => {
-                const Icon = item.icon;
-                const isActive = activeTab === item.key;
-                return (
-                  <button
-                    key={item.key}
-                    onClick={() => handleItemClick(item.key)}
-                    className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-left text-xs transition-colors duration-100 group ${
-                      isActive
-                        ? 'bg-blue-50 text-blue-700 font-bold border border-blue-200/90 shadow-2xs'
-                        : 'text-slate-700 hover:text-slate-900 hover:bg-slate-100 font-medium'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2.5 truncate min-w-0 pr-1">
-                      <Icon className={`w-4 h-4 shrink-0 transition-colors ${isActive ? 'text-blue-600' : 'text-slate-500 group-hover:text-slate-700'}`} strokeWidth={isActive ? 2 : 1.75} />
+        <nav className="flex-1 overflow-y-auto px-3 pt-2 pb-4 space-y-5 sidebar-scrollbar">
+          {navSections.map((section) => (
+            <div key={section.title}>
+              <div className="px-2 pb-1 text-2xs font-medium text-ink-3">{section.title}</div>
+              <div className="space-y-px">
+                {section.items.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = activeTab === item.key;
+                  return (
+                    <button
+                      key={item.key}
+                      onClick={() => handleItemClick(item.key)}
+                      aria-current={isActive ? 'page' : undefined}
+                      className={`w-full flex items-center gap-2.5 px-2 py-1.5 rounded-md text-left text-[13.5px] transition-colors ${
+                        isActive
+                          ? 'bg-sunken text-ink font-medium'
+                          : 'text-ink-2 hover:text-ink hover:bg-sunken'
+                      }`}
+                    >
+                      <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-ink' : 'text-ink-3'}`} strokeWidth={1.75} />
                       <span className="truncate">{item.label}</span>
-                    </div>
-
-                    {item.badge && (
-                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border shrink-0 ${
-                        item.badgeType === 'lead'
-                          ? isManager
-                            ? 'bg-purple-50 text-purple-700 border-purple-200'
-                            : 'bg-slate-100 text-slate-600 border-slate-200'
-                          : item.badgeType === 'portal'
-                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                          : 'bg-blue-50 text-blue-700 border-blue-200'
-                      }`}>
-                        {item.badge}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           ))}
         </nav>
 
-        {/* User Footer: Fixed shrink-0 with 24px icon alignment */}
-        <div className="shrink-0 p-3 border-t border-slate-200 bg-slate-50/70">
-          <div className="flex items-center justify-between gap-2 p-2 rounded-xl bg-white border border-slate-200 shadow-2xs">
+        <div className="shrink-0 px-3 py-3 border-t border-line">
+          <div className="flex items-center justify-between gap-2 px-1">
             <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-8 h-8 rounded-lg bg-blue-100 border border-blue-200 text-blue-700 font-bold flex items-center justify-center text-xs shrink-0 relative">
-                {currentUser.avatar}
-                {currentUser.larkOpenId && (
-                  <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-cyan-500 border-2 border-white" title="Đã kết nối Lark SSO" />
-                )}
-              </div>
-              <div className="truncate min-w-0">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-xs font-bold text-slate-900 block truncate leading-tight">
-                    {currentUser.name}
-                  </span>
-                </div>
-                <span className="text-[10px] text-slate-500 block truncate leading-tight mt-0.5">
-                  {currentUser.roleTitle}
-                </span>
+              <Avatar name={currentUser.name} src={currentUser.larkAvatarUrl} size={28} />
+              <div className="min-w-0 leading-tight">
+                <span className="block text-[13px] font-medium text-ink truncate">{currentUser.name}</span>
+                <span className="block text-2xs text-ink-3 truncate">{currentUser.roleTitle}</span>
               </div>
             </div>
 
             {onLogout && (
               <button
                 onClick={onLogout}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition shrink-0"
-                title="Đăng xuất khỏi phiên làm việc"
+                className="p-1.5 rounded-md text-ink-3 hover:text-ink hover:bg-sunken transition-colors shrink-0"
+                title="Đăng xuất"
                 aria-label="Đăng xuất"
               >
-                <LogOut className="w-3.5 h-3.5" />
+                <LogOut className="w-4 h-4" strokeWidth={1.75} />
               </button>
             )}
           </div>

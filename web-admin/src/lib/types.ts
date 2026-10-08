@@ -13,7 +13,7 @@ export interface UserProfile {
 
 export type KocTier = 'TIER_1_CELEB' | 'TIER_2_MACRO' | 'TIER_3_MICRO' | 'TIER_4_AFFILIATE';
 
-// 🌟 1. KHUNG LƯƠNG (KL) - Chuẩn hóa Sheet 3.1 & 5.6
+// 1. KHUNG LƯƠNG (KL) - Chuẩn hóa Sheet 3.1 & 5.6
 export type SalaryGrade = 
   | 'TAP UpAffiliate'
   | 'KL1'
@@ -25,14 +25,14 @@ export type SalaryGrade =
   | 'KL7'
   | 'TAP đối tác ngoài';
 
-// 🌟 2. SEGMENT - Phân nhóm Creator theo vai trò chiến lược (Sheet 3.2 Col 81 & 5.6)
+// 2. SEGMENT - Phân nhóm Creator theo vai trò chiến lược (Sheet 3.2 Col 81 & 5.6)
 export type CreatorSegment = 
   | 'Massive Creator'
   | 'Mid Creator'
   | 'Key Creator'
   | 'Top Creator';
 
-// 🌟 3. KOC CATEGORY - Ngành hàng / Lĩnh vực KOC (Sheet 3.2 Col 87 & 5.4)
+// 3. KOC CATEGORY - Ngành hàng / Lĩnh vực KOC (Sheet 3.2 Col 87 & 5.4)
 export type KocCategory = 
   | 'Personal care'
   | 'Mom and baby'
@@ -44,7 +44,7 @@ export type KocCategory =
   | 'Social / Comedian'
   | 'Travel/Hospitality';
 
-// 🌟 4. TỆP KÊNH - 25 tệp chuẩn hóa trong vận hành Upbase (Sheet 3.1 Col 23 & 5.4)
+// 4. TỆP KÊNH - 25 tệp chuẩn hóa trong vận hành Upbase (Sheet 3.1 Col 23 & 5.4)
 export type TepKenh = 
   | 'Review Nữ'
   | 'Review Nam'
@@ -123,7 +123,7 @@ export type ContentPillarType =
   | 'Chưa phân loại';
 
 // =========================================================================
-// 🌟 AI OCR LEGAL DOCUMENT EXTRACTION (CCCD & ĐĂNG KÝ KINH DOANH)
+// AI OCR LEGAL DOCUMENT EXTRACTION (CCCD & ĐĂNG KÝ KINH DOANH)
 // =========================================================================
 
 export type LegalDocumentType = 'CCCD' | 'BUSINESS_LICENSE' | 'BUSINESS_HOUSEHOLD' | 'UNKNOWN';
@@ -176,24 +176,24 @@ export interface OcrLegalExtractionResult {
 
 export interface KocItem {
   id: string;
-  channelId: string; // 🎃 ID kênh (vd: megauriviu, chanhbeauty)
+  channelId: string; // ID kênh (vd: megauriviu, chanhbeauty)
   channelLink?: string; // Link kênh (https://www.tiktok.com/@...)
   stageName: string;
   realName: string;
   tier: KocTier;
   tierLabel: string;
 
-  // 🌟 4 TRƯỜNG PHÂN LOẠI CỐT LÕI (Sheet 3.1 & 3.2 & 5.4 & 5.6):
-  salaryGrade: SalaryGrade; // 1. Khung lương (TAP, KL1 ➔ KL7, TAP đối tác ngoài)
+  // 4 TRƯỜNG PHÂN LOẠI CỐT LÕI (Sheet 3.1 & 3.2 & 5.4 & 5.6):
+  salaryGrade: SalaryGrade; // 1. Khung lương (TAP, KL1 → KL7, TAP đối tác ngoài)
   segment: CreatorSegment; // 2. Phân nhóm Creator (Massive, Mid, Key, Top)
-  tepKenh: TepKenh; // 3. 🌟Tệp kênh (25 tệp chuẩn: Review Nữ, Mẹ bé (bầu), Beauty, ELHA...)
+  tepKenh: TepKenh; // 3. Tệp kênh (25 tệp chuẩn: Review Nữ, Mẹ bé (bầu), Beauty, ELHA...)
   creatorCategory?: CreatorNiche; // Alias backward-compatibility cho tepKenh
   kocCategory: KocCategory; // 4. KOC category (9 nhóm ngành: Personal care, Mom and baby, Reviewer...)
 
   niche: string;
   followers: number; // Follower
   avgViews: number; // View trung bình
-  rateCardVideo: number; // 🎃 Giá net video
+  rateCardVideo: number; // Giá net video
   bookingFormat?: 'Booking Video KOC' | 'Booking Livestream KOC' | 'Affiliate Thuần'; // Định dạng booking
   
   // Thông tin liên hệ & Hậu cần nhận hàng gửi mẫu (Sample Shipping - Rất quan trọng cho Booking)
@@ -210,7 +210,7 @@ export interface KocItem {
   bankAccount: string;
   avatarUrl?: string;
 
-  // 🌟 Pháp lý & Xác thực OCR CCCD / ĐKKD
+  // Pháp lý & Xác thực OCR CCCD / ĐKKD
   isOcrVerified?: boolean;
   ocrDocumentType?: LegalDocumentType;
   ocrVerifiedAt?: string;
@@ -241,9 +241,9 @@ export interface KocItem {
 
   // Vận hành & Phê duyệt Brand
   brandName?: string; // Brand / Store phù hợp hoặc đề xuất
-  brandApprovalStatus?: 'ĐÃ_DUYỆT' | 'CHỜ_DUYỆT' | 'TỪ_CHỐI'; // 🎃 Brand duyệt
+  brandApprovalStatus?: 'ĐÃ_DUYỆT' | 'CHỜ_DUYỆT' | 'TỪ_CHỐI'; // Brand duyệt
   brandRejectReason?: string; // Lý do Brand từ chối
-  statusKoc?: 'SẴN_SÀNG' | 'ĐANG_LIÊN_HỆ' | 'TỪ_CHỐI' | 'ĐÃ_KÝ'; // 🎃 Trạng thái KOC
+  statusKoc?: 'SẴN_SÀNG' | 'ĐANG_LIÊN_HỆ' | 'TỪ_CHỐI' | 'ĐÃ_KÝ'; // Trạng thái KOC
   currentPipeline?: string; // Pipeline (Đã duyệt, Đã tạo BO, Gửi hàng, Đã air...)
   bookingPic?: string; // Booking PIC (Nhân sự phụ trách)
   contentNote?: string; // Content note / Đề xuất từ UpBase
@@ -284,8 +284,8 @@ export interface BookingDealItem {
   // Brand & Store & Sản phẩm của Job này (Cốt lõi theo Job)
   brandName: string; // Brand (Kutieskin Mama, Royal Ausnz, Nature's Way, Bye Bye Blemish, pHCare, Babe...)
   storeName?: string; // Store (Kutieskin Mama_TikTok_E2E-S, Fresh_TikTok_E2E-C...)
-  productName?: string; // 🌟Sản phẩm (Mặt nạ rau má Premium, Nước tắm/kem tuti, Quạt tuần hoàn...)
-  bookingBatch?: string; // 🎃 Đợt (Đợt 1, Đợt 2, Đợt 3)
+  productName?: string; // Sản phẩm (Mặt nạ rau má Premium, Nước tắm/kem tuti, Quạt tuần hoàn...)
+  bookingBatch?: string; // Đợt (Đợt 1, Đợt 2, Đợt 3)
   bookingFormat?: 'Booking Video KOC' | 'Booking Livestream KOC' | 'Affiliate Thuần';
   
   // KOC Reference & 4 Phân loại cốt lõi (Sheet 3.1 & 3.2)
@@ -301,12 +301,12 @@ export interface BookingDealItem {
   contentPillar: ContentPillarType;
   
   // Phê duyệt của Brand (THEO TỪNG JOB CỤ THỂ)
-  brandApprovalStatus: BrandApprovalStatus; // 🎃 Brand duyệt (ĐÃ_DUYỆT, CHỜ_DUYỆT, TỪ_CHỐI)
+  brandApprovalStatus: BrandApprovalStatus; // Brand duyệt (ĐÃ_DUYỆT, CHỜ_DUYỆT, TỪ_CHỐI)
   brandApprovalDate?: string; // Ngày Brand duyệt
   brandRejectReason?: string; // Lý do Brand từ chối (nếu có)
   
   // Trạng thái KOC nhận Job này
-  kocResponseStatus?: KocJobResponseStatus; // 🎃 Trạng thái KOC (ĐỒNG_Ý, TỪ_CHỐI, ĐANG_THƯƠNG_LƯỢNG)
+  kocResponseStatus?: KocJobResponseStatus; // Trạng thái KOC (ĐỒNG_Ý, TỪ_CHỐI, ĐANG_THƯƠNG_LƯỢNG)
   
   // Pipeline vận hành theo từng Job
   pipelineText?: string; // Pipeline_text (Gửi hàng, Tạm ứng, Done...)
@@ -356,7 +356,7 @@ export interface BookingDealItem {
   larkFinalApprovalCode?: string; // Mã phiếu quyết toán 8tr trên Lark
   contentItems?: ContentItemModel[];
 
-  // 🌟 BỘ TRIGGER SLA B2C MỚI (CHUẨN HOÁ THEO TÀI LIỆU CÁC SLA B2C.PDF)
+  // BỘ TRIGGER SLA B2C MỚI (CHUẨN HOÁ THEO TÀI LIỆU CÁC SLA B2C.PDF)
   // 1. Pháp chế & Hợp đồng KOC
   contractScanUrl?: string; // Link scan hợp đồng (Bắt buộc với deal > 9.000.000 VNĐ)
   contractCreatedAt?: string; // Ngày ký HĐ (phải trước ngày DNTT >= 2 ngày với deal > 9M)
@@ -532,7 +532,7 @@ export interface SlaTask {
   createdAt?: string;
 }
 
-// 🌟 PHÂN LOẠI VI PHẠM SLA B2C (THEO QUY ĐỊNH MỚI)
+// PHÂN LOẠI VI PHẠM SLA B2C (THEO QUY ĐỊNH MỚI)
 export type SlaBreachCategory =
   | 'SAMPLE_NOT_SHIPPED_2D'       // Quá 2 ngày kho/brand chưa gửi hàng
   | 'NO_TRACKING_CODE_3D'          // Quá 3 ngày chưa có mã vận đơn
@@ -563,7 +563,7 @@ export interface SlaBreachItem {
   resolutionNotes?: string;
 }
 
-// 🌟 BÁO CÁO QUẢN LÝ TUÂN THỦ SLA CỦA NHÂN VIÊN
+// BÁO CÁO QUẢN LÝ TUÂN THỦ SLA CỦA NHÂN VIÊN
 export interface StaffSlaReportItem {
   id: string;
   staffName: string;
@@ -582,7 +582,7 @@ export interface StaffSlaReportItem {
   rating: 'Xuất sắc' | 'Đạt chuẩn' | 'Cần cải thiện' | 'Cảnh báo vi phạm';
 }
 
-// 🌟 LỊCH CỬA SỔ NGHIỆM THU E2E KẾ TOÁN (WD05 & WD11)
+// LỊCH CỬA SỔ NGHIỆM THU E2E KẾ TOÁN (WD05 & WD11)
 export interface E2EReconciliationWindow {
   currentPhase: 'FREEZE_MUNG_2' | 'REPORT_ERROR_WD04' | 'OPEN_WINDOW_WD05' | 'LOCKED_WD05' | 'REPORT_ERROR_WD10' | 'OPEN_WINDOW_WD11' | 'PERMANENT_LOCK';
   phaseLabel: string;
@@ -982,7 +982,7 @@ export interface PushProductItem {
   sku: string;
   productName: string;
   
-  // 🌟 Chiều phân cấp: Brand => Gian hàng (Store) => Sản phẩm thúc đẩy
+  // Chiều phân cấp: Brand => Gian hàng (Store) => Sản phẩm thúc đẩy
   brandId: string;
   brandName: string;
   brandCategory: string;
@@ -998,7 +998,7 @@ export interface PushProductItem {
   endDate: string; // Ngày kết thúc chu kỳ (YYYY-MM-DD)
   cycleType?: 'MONTHLY' | 'MEGA_CAMPAIGN' | 'PAYDAY' | 'FLASH_SALE' | 'CUSTOM';
   
-  // 🌟 Thông tin thương mại & hàng hóa cốt lõi (Growth thiết lập & thỏa thuận với B2C)
+  // Thông tin thương mại & hàng hóa cốt lõi (Growth thiết lập & thỏa thuận với B2C)
   originalPrice: number; // Giá niêm yết
   promotionalPrice: number; // Giá deal / giá bán chiến dịch thúc đẩy
   discountPercent: number; // % Giảm giá
@@ -1011,7 +1011,7 @@ export interface PushProductItem {
   targetGmv?: number;
   targetOrders?: number;
 
-  // 🌟 Thông tin sản phẩm & Brief KOC / KOL (Dùng trực tiếp để brief Creator)
+  // Thông tin sản phẩm & Brief KOC / KOL (Dùng trực tiếp để brief Creator)
   usp: string; // Điểm bán hàng độc nhất (USP / Key Selling Points)
   keyMessage?: string; // Thông điệp truyền thông chính cần KOC nhấn mạnh
   viralAngle: string; // Góc quay video / Content hook gợi ý
@@ -1022,6 +1022,11 @@ export interface PushProductItem {
   sampleNotes?: string; // Điều kiện / chính sách cấp mẫu cho KOC
   feasibilityScore: PushProductFeasibility; // Đánh giá khả thi của B2C
   b2cEvaluationNote?: string; // Nhận xét / phản hồi từ B2C
+  
+  // Trạng thái B2C Input Brief KOC
+  b2cBriefStatus?: 'PENDING_BRIEF' | 'BRIEF_COMPLETED'; // PENDING_BRIEF (chờ B2C nhập) hoặc BRIEF_COMPLETED
+  briefUpdatedBy?: string; // Người B2C cập nhật brief
+  briefUpdatedAt?: string; // Thời gian B2C cập nhật brief
   
   // Links phụ
   pdpUrlTikTok?: string;
@@ -1252,7 +1257,7 @@ export interface BrandCampaignPortalData {
   bookingPic: string;
 }
 
-// 📦 Quản lý Vận đơn gửi mẫu & Chống bùng mẫu (KOC Sample Delivery & Anti-Ghosting)
+// Quản lý Vận đơn gửi mẫu & Chống bùng mẫu (KOC Sample Delivery & Anti-Ghosting)
 export interface SampleShipment {
   id: string;
   dealCode: string;
@@ -1275,7 +1280,7 @@ export interface SampleShipment {
   notes?: string;
 }
 
-// 🎯 Hệ số độ khó Store theo chuẩn 4P Marketing B2C
+// Hệ số độ khó Store theo chuẩn 4P Marketing B2C
 export interface StoreDifficultyConfig {
   id: string;
   storeName: string;
@@ -1287,7 +1292,7 @@ export interface StoreDifficultyConfig {
   assignedPic: string;
 }
 
-// 🏆 Đánh giá hiệu suất 4P & Tính thưởng P3
+// Đánh giá hiệu suất 4P & Tính thưởng P3
 export interface StaffP3Record {
   id: string;
   staffName: string;
@@ -1305,7 +1310,7 @@ export interface StaffP3Record {
   reviewNotes?: string;
 }
 
-// 📊 Dữ liệu kế hoạch chi tiết từ 4.1.1 Input Plan (Bậc KL1 - KL7)
+// Dữ liệu kế hoạch chi tiết từ 4.1.1 Input Plan (Bậc KL1 - KL7)
 export interface WeeklyStorePlan411 {
   id: string;
   month: string; // 2026/09
@@ -1366,15 +1371,15 @@ export interface StorePortfolioItem {
   accountOwnerName: string; // Account/Growth Owner phụ trách doanh số & quan hệ khách hàng
   b2cOwnerName: string; // B2C Ops Owner phụ trách vận hành nội dung & booking
   assignedStaff?: string; // Alias for primary B2C Ops assignee
-  b2cOwners?: string[]; // 🌟 Danh sách các nhân sự B2C Ops cùng làm 1 shop (hỗ trợ trường hợp 2+ nhân viên làm cùng 1 shop)
-  assignmentNotes?: string; // 🌟 Ghi chú phân chia công việc (ví dụ: chia theo Tier KOC, chia ca, chia đầu việc)
+  b2cOwners?: string[]; // Danh sách các nhân sự B2C Ops cùng làm 1 shop (hỗ trợ trường hợp 2+ nhân viên làm cùng 1 shop)
+  assignmentNotes?: string; // Ghi chú phân chia công việc (ví dụ: chia theo Tier KOC, chia ca, chia đầu việc)
   activeCandidatesCount?: number;
   activeBookingsCount?: number;
   activeContentsCount?: number;
   createdAt?: string;
 }
 
-// 🌟 MASTER DATA NHÂN VIÊN & PHÂN CÔNG GIAN HÀNG
+// MASTER DATA NHÂN VIÊN & PHÂN CÔNG GIAN HÀNG
 export interface StaffMasterMember {
   id: string;
   name: string;
@@ -1408,7 +1413,7 @@ export interface KocCandidateItem {
   platform: 'TIKTOK' | 'SHOPEE' | 'INSTAGRAM' | 'FACEBOOK';
   tier: KocTier;
   tierLabel: string;
-  // 🌟 4 Phân loại cốt lõi (Sheet 3.1 & 3.2)
+  // 4 Phân loại cốt lõi (Sheet 3.1 & 3.2)
   salaryGrade?: SalaryGrade;
   segment?: CreatorSegment;
   tepKenh?: TepKenh;
@@ -1617,7 +1622,7 @@ export interface AiEmployeeReviewResponse {
 }
 
 // =========================================================================
-// 🌟 7. INPUT PLAN BREAKDOWN STUDIO TYPES (PHÂN RÃ KẾ HOẠCH B2C ĐA KÊNH & ĐA BẬC)
+// 7. INPUT PLAN BREAKDOWN STUDIO TYPES (PHÂN RÃ KẾ HOẠCH B2C ĐA KÊNH & ĐA BẬC)
 // =========================================================================
 
 export type InputPlanChannelType = 
@@ -1723,6 +1728,12 @@ export interface InputPlanBreakdownState {
   createdAt?: string;
   updatedAt?: string;
   items: InputPlanRowItem[];
+  // Phân bổ 2 kênh độc lập: Affiliate vs Self Channel (Kênh thương hiệu)
+  budgetAffiliate?: number; // Ngân sách Affiliate (VD: 150,000,000 VNĐ)
+  budgetSelfChannel?: number; // Ngân sách Self Channel (VD: 50,000,000 VNĐ)
+  targetAffiliateContents?: number; // Target số video KOC ngoại sàn
+  targetSelfChannelContents?: number; // Target số video kênh thương hiệu
+  selfChannelPillars?: SelfChannelContentPillar[]; // Phân rã theo Content Pillar
   // Luồng duyệt & Lịch sử trao đổi Booking <-> Growth
   approvalSteps?: PlanApprovalStep[];
   discussions?: PlanDiscussionMessage[];
@@ -1733,3 +1744,183 @@ export interface InputPlanBreakdownState {
   approvedAt?: string;
   revisionNotes?: string;
 }
+
+// =========================================================================
+// 8. MASTER CONTENT PILLAR & SELF CHANNEL CTV TYPES (TRỤ CỘT NỘI DUNG & KÊNH NỘI BỘ)
+// =========================================================================
+
+// Master Data: Danh mục gốc Trụ cột nội dung (Dùng chung toàn hệ thống B2C)
+export interface MasterContentPillar {
+  id: string;
+  code: string; // VD: 'EDUCATIONAL', 'PRODUCT_SHOWCASE', 'STORYTELLING', 'TREND_JACKING', 'TESTIMONIAL', 'PROBLEM_SOLUTION', 'BEHIND_SCENES', 'UNBOXING_ASMR'
+  name: string; // Tên trụ cột nội dung
+  description: string; // Định hướng nội dung & quy chuẩn sáng tạo
+  applicableNiches: string[]; // Ngành hàng phù hợp (VD: 'Mẹ & Bé', 'Chăm Sóc Da', 'Sức Khỏe', 'F&B', 'Gia Dụng', 'Toàn ngành')
+  suggestedFormats: string[]; // Định dạng video gợi ý
+  benchmarkUnitCost: number; // Đơn giá thù lao định mức tham chiếu / video (VNĐ)
+  targetAudience: string; // Tệp khán giả hướng tới
+  keyObjectives: string; // Mục tiêu truyền thông cốt lõi
+  status: 'ACTIVE' | 'INACTIVE';
+  colorTag?: string; // Tag màu nhận diện
+  activeBrandsCount?: number; // Số brand đang áp dụng
+  createdAt: string;
+}
+
+// Trụ cột nội dung phân bổ cho Self Channel trong kế hoạch Brand
+export interface SelfChannelContentPillar {
+  id: string;
+  masterPillarId?: string; // Liên kết tới Master Data Content Pillar gốc
+  name: string; // VD: 'Giáo Dục / Chuyên Gia', 'Demo & Review Thực Tế', 'Tình Huống / Drama', 'Bắt Trend / Âm Thanh Hot'
+  code: 'EDUCATIONAL' | 'PRODUCT_SHOWCASE' | 'STORYTELLING' | 'TREND_JACKING' | 'BEHIND_SCENES' | 'TESTIMONIAL' | 'CUSTOM' | string;
+  description: string; // Định hướng nội dung & quy chuẩn
+  targetVideos: number; // Số lượng video mục tiêu
+  completedVideos?: number; // Số lượng video đã nghiệm thu
+  allocatedBudget: number; // Ngân sách phân bổ cho pillar này (VNĐ)
+  unitCostPerVideo: number; // Đơn giá thù lao định mức / video (VNĐ)
+  targetViews?: number; // Lượt view mục tiêu
+  coreSkuIds?: string[]; // Các SKU trọng tâm gắn vào Pillar này
+  color?: string; // Mã màu hiển thị
+}
+
+// Cấu trúc phân bổ ngân sách 2 luồng độc lập: Affiliate vs Self Channel
+export interface BrandChannelAllocation {
+  brandId: string;
+  brandName: string;
+  totalBudget: number; // VD: 200,000,000 VNĐ
+  
+  // Luồng 1: Affiliate (KOC/KOL)
+  budgetAffiliate: number; // VD: 150,000,000 VNĐ
+  targetAffiliateVideos: number;
+  targetAffiliateGmv: number;
+  affiliateNotes?: string;
+  
+  // Luồng 2: Self Channel (Kênh thương hiệu)
+  budgetSelfChannel: number; // VD: 50,000,000 VNĐ
+  targetSelfChannelVideos: number; // VD: 40 video
+  selfChannelNotes?: string;
+  pillars: SelfChannelContentPillar[]; // Danh sách phân bổ theo Content Pillar
+}
+
+// Phân loại vai trò của Cộng Tác Viên
+export type ContributorRole = 
+  | 'ALL_IN_ONE'      // Tự lên kịch bản, quay, diễn và edit hoàn thiện
+  | 'VIDEO_EDITOR'    // Chuyên dựng / edit hậu kỳ video (Brand cung cấp raw footage)
+  | 'CREATIVE_ACTOR'  // Diễn xuất & quay trải nghiệm thực tế
+  | 'SCRIPTWRITER';   // Biên kịch / biên tập nội dung
+
+export type ContributorStatus = 'ACTIVE' | 'ON_HOLD' | 'PROBATION' | 'TERMINATED';
+
+export interface Contributor {
+  id: string;
+  name: string;
+  avatar?: string;
+  phone: string;
+  email?: string;
+  channelLink?: string; // TikTok / Portfolio link
+  nicheSpecialty: string[]; // Tệp thế mạnh (VD: Mẹ & Bé, Chăm da, Diễn hài...)
+  role: ContributorRole;
+  status: ContributorStatus;
+  
+  // Tài chính & Thanh toán
+  bankName: string;
+  bankAccount: string;
+  bankAccountName: string;
+  taxCode?: string;
+  
+  // Hiệu suất & Lũy kế
+  ratingScore: number; // 1-5 sao
+  assignedTaskCount: number;
+  completedTaskCount: number;
+  totalPaidAmount: number; // Tổng thù lao đã thanh toán (VNĐ)
+  joinedDate: string;
+  notes?: string;
+}
+
+// Trạng thái vòng đời của một Task sản xuất Video Self Channel
+export type VideoTaskStatus = 
+  | 'OPEN_TASK'              // Task mới tạo, mở cho CTV nhận hoặc Brand chỉ định
+  | 'SCRIPT_PENDING_REVIEW'  // CTV đã nộp kịch bản, chờ Brand duyệt
+  | 'SCRIPT_REVISION'        // Yêu cầu sửa kịch bản
+  | 'SCRIPT_APPROVED'        // Kịch bản đã duyệt, CTV tiến hành quay & edit
+  | 'DRAFT_VIDEO_SUBMITTED'  // CTV đã nộp video nháp (v1, v2)
+  | 'VIDEO_REVISION'         // Brand yêu cầu chỉnh sửa video
+  | 'ACCEPTED_COMPLETED'     // Đã nghiệm thu video đạt chuẩn (chờ thanh toán)
+  | 'PAID';                  // Đã thanh toán nhuận bút
+
+export interface VideoRevisionFeedback {
+  id: string;
+  version: number;
+  reviewedBy: string; // Tên nhân sự Brand duyệt
+  reviewedAt: string;
+  type: 'SCRIPT' | 'VIDEO';
+  verdict: 'APPROVED' | 'REVISE';
+  comment: string;
+  checklist?: {
+    hookCompliant: boolean;      // Đúng hook 3s đầu
+    productAppearance: boolean;  // Rõ sản phẩm & góc quay chuẩn
+    audioClear: boolean;         // Giọng đọc / nhạc nền rõ ràng
+    guidelinesFollowed: boolean; // Đúng Do & Don'ts của Brand
+  };
+}
+
+export interface SelfChannelVideoTask {
+  id: string;
+  taskCode: string; // VD: "SC-KUTI-202610-01"
+  title: string; // VD: "Review hướng dẫn bôi dịu chàm sữa cho bé sau 72h"
+  brandId: string;
+  brandName: string;
+  storeId?: string;
+  storeName?: string;
+  
+  // Thuộc Pillar nào
+  pillarId: string;
+  pillarName: string;
+  pillarCode?: SelfChannelContentPillar['code'];
+  
+  // Sản phẩm liên kết (SKU thúc đẩy)
+  linkedSku?: string;
+  productName?: string;
+  
+  // Thù lao & Thời hạn
+  remuneration: number; // Thù lao chi trả cho CTV (VNĐ) - VD: 1,500,000 đ
+  deadline: string; // Ngày hoàn tất dự kiến (YYYY-MM-DD)
+  
+  // CTV được giao
+  contributorId?: string;
+  contributorName?: string;
+  contributorAvatar?: string;
+  
+  // Trạng thái vòng đời
+  status: VideoTaskStatus;
+  
+  // Kịch bản (Script submission)
+  scriptContent?: {
+    hook: string; // 3 giây đầu
+    body: string; // Diễn giải & Demo giải pháp
+    cta: string; // Kêu gọi hành động / gắn giỏ
+    submittedAt?: string;
+  };
+  
+  // Video Deliverables
+  videoDeliverables?: {
+    currentVersion: number;
+    draftVideoUrl?: string; // Link Drive / Capcut / Video preview
+    finalVideoUrl?: string; // Link video chính thức đạt nghiệm thu
+    captionSuggested?: string; // Gợi ý caption đăng bài
+    submittedAt?: string;
+    durationSeconds?: number;
+  };
+  
+  // Feedback & Lịch sử duyệt
+  feedbackLogs: VideoRevisionFeedback[];
+  
+  // Kế toán & Quyết toán
+  acceptedAt?: string;
+  acceptedBy?: string;
+  paidAt?: string;
+  paymentRef?: string;
+  
+  createdAt: string;
+  updatedAt?: string;
+}
+

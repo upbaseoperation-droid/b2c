@@ -93,7 +93,7 @@ export const CampaignCreateModal: React.FC<CampaignCreateModalProps> = ({
       <div 
         role="dialog"
         aria-modal="true"
-        aria-label="Tạo Chiến Dịch & Soạn Thảo Brief"
+        aria-label="Tạo chiến dịch & soạn thảo brief"
         className="bg-white border border-slate-200 rounded-xl w-full max-w-xl shadow-2xl overflow-hidden my-6"
       >
         {/* Header */}
@@ -103,7 +103,7 @@ export const CampaignCreateModal: React.FC<CampaignCreateModalProps> = ({
               <Target className="w-4 h-4 text-blue-700" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-slate-900">Tạo Chiến Dịch &amp; Soạn Thảo Brief</h3>
+              <h3 className="text-base font-semibold text-slate-900">Tạo Chiến Dịch &amp; Soạn Thảo Brief</h3>
               <p className="text-xs text-slate-500">Brand Team xác lập mục tiêu &amp; chuyển giao sang Content Studio SLA 24h</p>
             </div>
           </div>
@@ -121,12 +121,12 @@ export const CampaignCreateModal: React.FC<CampaignCreateModalProps> = ({
           {/* Campaign Title & Code */}
           <div className="grid grid-cols-3 gap-3">
             <div className="col-span-2">
-              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
-                Tên Chiến Dịch *
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                Tên chiến dịch *
               </label>
               <input
                 type="text"
-                placeholder="VD: Mega Sale 11.11 — Cứu Rỗi Làn Da Dầu Mụn"
+                placeholder="VD: Mega Sale 11.11 — Cứu rỗi làn da dầu mụn"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 className="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-blue-500 focus:bg-white"
@@ -134,7 +134,7 @@ export const CampaignCreateModal: React.FC<CampaignCreateModalProps> = ({
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
                 Mã Code *
               </label>
               <input
@@ -151,30 +151,30 @@ export const CampaignCreateModal: React.FC<CampaignCreateModalProps> = ({
           {/* Brand & Content PIC */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
-                Brand / Nhãn Hàng *
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                Brand / nhãn hàng *
               </label>
               <select
                 value={brand}
                 onChange={(e) => setBrand(e.target.value)}
                 className="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-blue-500"
               >
-                <option value="Senka">Senka (Chăm sóc da Nhật Bản)</option>
-                <option value="Kutieskin">Kutieskin (Mẹ & Bé Hữu Cơ)</option>
+                <option value="Senka">Senka (chăm sóc da Nhật Bản)</option>
+                <option value="Kutieskin">Kutieskin (mẹ & bé hữu cơ)</option>
                 <option value="Nature's Way">Nature&apos;s Way (Vitamin Trẻ Em Úc)</option>
-                <option value="Babe">Babe (Dược Mỹ Phẩm Tây Ban Nha)</option>
-                <option value="Bio-Essence">Bio-Essence (Vàng 24K Chống Lão Hóa)</option>
-                <option value="pHCare">pHCare (Dung Dịch Phụ Nữ)</option>
-                <option value="Cure Natural">Cure Natural (Tẩy Da Chết Nhật Bản)</option>
-                <option value="Keyshu">Keyshu (Mặt Nạ Rau Má)</option>
+                <option value="Babe">Babe (dược mỹ phẩm Tây Ban Nha)</option>
+                <option value="Bio-Essence">Bio-Essence (vàng 24K chống lão hóa)</option>
+                <option value="pHCare">pHCare (dung dịch phụ nữ)</option>
+                <option value="Cure Natural">Cure Natural (tẩy da chết Nhật Bản)</option>
+                <option value="Keyshu">Keyshu (mặt nạ rau má)</option>
                 <option value="Royal Ausnz">Royal Ausnz (Sữa Hoàng Gia Úc)</option>
-                <option value="Peripera">Peripera (Son Môi & Makeup Hàn Quốc)</option>
+                <option value="Peripera">Peripera (son môi & Makeup Hàn Quốc)</option>
               </select>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
-                Người Nhận Bàn Giao (Content PIC)
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                Người nhận bàn giao
               </label>
               <select
                 value={contentPic}
@@ -190,12 +190,12 @@ export const CampaignCreateModal: React.FC<CampaignCreateModalProps> = ({
 
           {/* Big Idea */}
           <div>
-            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
-              Big Idea Chiến Dịch *
+            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+              Big Idea chiến dịch *
             </label>
             <input
               type="text"
-              placeholder="VD: 'Lá Chắn Đa Tầng — Bảo Vệ Toàn Diện Cả Ngày Dài'"
+              placeholder="VD: 'Lá chắn đa tầng — Bảo vệ toàn diện cả ngày dài'"
               value={bigIdea}
               onChange={(e) => setBigIdea(e.target.value)}
               className="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-blue-500 focus:bg-white"
@@ -205,8 +205,8 @@ export const CampaignCreateModal: React.FC<CampaignCreateModalProps> = ({
 
           {/* Key Message */}
           <div>
-            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
-              Thông Điệp Cốt Lõi (Key Message)
+            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+              Thông điệp cốt lõi
             </label>
             <input
               type="text"
@@ -219,12 +219,12 @@ export const CampaignCreateModal: React.FC<CampaignCreateModalProps> = ({
 
           {/* Hero SKUs Input */}
           <div>
-            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
-              Sản Phẩm Chủ Lực (Hero SKUs, phân cách bằng dấu phẩy)
+            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+              Sản phẩm chủ lực (Hero SKUs, phân cách bằng dấu phẩy)
             </label>
             <input
               type="text"
-              placeholder="VD: Sữa Rửa Mặt Perfect Whip 120g, Nước Tẩy Trang All Clear Water 500ml"
+              placeholder="VD: Sữa rửa mặt Perfect Whip 120g, nước tẩy trang All Clear Water 500ml"
               value={heroSkusInput}
               onChange={(e) => setHeroSkusInput(e.target.value)}
               className="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-blue-500 focus:bg-white"
@@ -233,8 +233,8 @@ export const CampaignCreateModal: React.FC<CampaignCreateModalProps> = ({
 
           {/* Target Audience */}
           <div>
-            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
-              Chân Dung Khách Hàng Mục Tiêu (Target Persona) *
+            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+              Chân dung khách hàng mục tiêu *
             </label>
             <textarea
               rows={2}
@@ -249,42 +249,42 @@ export const CampaignCreateModal: React.FC<CampaignCreateModalProps> = ({
           {/* Financials & Target CIR */}
           <div className="grid grid-cols-4 gap-2">
             <div>
-              <label className="block text-[11px] text-slate-500 mb-1">Ngân Sách (VNĐ)</label>
+              <label className="block text-2xs text-slate-500 mb-1">Ngân Sách (VNĐ)</label>
               <input
                 type="number"
                 step={10000000}
                 value={budget}
                 onChange={(e) => setBudget(Number(e.target.value))}
-                className="w-full bg-slate-50 border border-slate-200 rounded px-2.5 py-1.5 text-xs text-slate-900 font-bold"
+                className="w-full bg-slate-50 border border-slate-200 rounded px-2.5 py-1.5 text-xs text-slate-900 font-semibold"
               />
             </div>
             <div>
-              <label className="block text-[11px] text-emerald-600 mb-1">Target GMV (VNĐ)</label>
+              <label className="block text-2xs text-emerald-600 mb-1">Target GMV (VNĐ)</label>
               <input
                 type="number"
                 step={50000000}
                 value={targetGmv}
                 onChange={(e) => setTargetGmv(Number(e.target.value))}
-                className="w-full bg-slate-50 border border-slate-200 rounded px-2.5 py-1.5 text-xs text-emerald-700 font-bold"
+                className="w-full bg-slate-50 border border-slate-200 rounded px-2.5 py-1.5 text-xs text-emerald-700 font-semibold"
               />
             </div>
             <div>
-              <label className="block text-[11px] text-blue-600 mb-1">Target CIR (%)</label>
+              <label className="block text-2xs text-blue-600 mb-1">Target CIR (%)</label>
               <input
                 type="number"
                 step={0.5}
                 value={targetCir}
                 onChange={(e) => setTargetCir(Number(e.target.value))}
-                className="w-full bg-slate-50 border border-slate-200 rounded px-2.5 py-1.5 text-xs text-blue-700 font-bold"
+                className="w-full bg-slate-50 border border-slate-200 rounded px-2.5 py-1.5 text-xs text-blue-700 font-semibold"
               />
             </div>
             <div>
-              <label className="block text-[11px] text-slate-500 mb-1">Target KOC</label>
+              <label className="block text-2xs text-slate-500 mb-1">Target KOC</label>
               <input
                 type="number"
                 value={targetKocCount}
                 onChange={(e) => setTargetKocCount(Number(e.target.value))}
-                className="w-full bg-slate-50 border border-slate-200 rounded px-2.5 py-1.5 text-xs text-slate-800 font-bold"
+                className="w-full bg-slate-50 border border-slate-200 rounded px-2.5 py-1.5 text-xs text-slate-800 font-semibold"
               />
             </div>
           </div>
@@ -292,8 +292,8 @@ export const CampaignCreateModal: React.FC<CampaignCreateModalProps> = ({
           {/* Start and End Date */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
-                Ngày Bắt Đầu
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                Ngày bắt đầu
               </label>
               <input
                 type="date"
@@ -303,8 +303,8 @@ export const CampaignCreateModal: React.FC<CampaignCreateModalProps> = ({
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
-                Hạn Kết Thúc
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                Hạn kết thúc
               </label>
               <input
                 type="date"
@@ -318,10 +318,10 @@ export const CampaignCreateModal: React.FC<CampaignCreateModalProps> = ({
           <div className="pt-2">
             <button
               type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-4 rounded shadow-sm transition flex items-center justify-center gap-2 text-xs"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 px-4 rounded shadow-sm transition flex items-center justify-center gap-2 text-xs"
             >
               <Send className="w-4 h-4" />
-              <span>Tạo Brief & Tự Động Bàn Giao Sang Content (SLA 24h)</span>
+              <span>Tạo brief & tự động bàn giao Sang Content</span>
             </button>
           </div>
         </form>

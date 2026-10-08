@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { ChannelTag , Avatar } from '../ui';
 import { 
   Award, 
   Coins, 
@@ -65,9 +66,9 @@ export default function PerformanceP3View() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200 pb-4">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-xl font-bold text-slate-900">Đánh Giá Hiệu Suất 4P & Tính Thưởng P3</h1>
+            <h1 className="text-xl font-semibold text-slate-900">Đánh Giá Hiệu Suất 4P & Tính Thưởng P3</h1>
             <span className="px-2 py-0.5 text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 rounded">
-              Công Thức Chuẩn Upbase
+              Công thức chuẩn Upbase
             </span>
           </div>
           <p className="text-sm text-slate-500 mt-1">
@@ -83,7 +84,7 @@ export default function PerformanceP3View() {
               activeTab === 'CALC' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            Bảng Tính Thưởng P3
+            Bảng tính thưởng P3
           </button>
           <button
             onClick={() => setActiveTab('STORE_MATRIX')}
@@ -91,7 +92,7 @@ export default function PerformanceP3View() {
               activeTab === 'STORE_MATRIX' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            Hệ Số Độ Khó Store
+            Hệ số độ khó Store
           </button>
         </div>
       </div>
@@ -100,38 +101,38 @@ export default function PerformanceP3View() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div className="bg-white border border-slate-200 rounded-md p-3.5 shadow-sm">
           <div className="flex items-center justify-between text-slate-500 mb-1">
-            <span className="text-xs font-medium">Tổng Quỹ Thưởng P3</span>
+            <span className="text-xs font-medium">Tổng quỹ thưởng P3</span>
             <Coins className="w-4 h-4 text-amber-500" />
           </div>
-          <div className="text-xl font-bold text-slate-900 font-mono whitespace-nowrap">{totalBonusFund.toLocaleString('vi-VN')}&nbsp;₫</div>
-          <div className="text-[11px] text-emerald-600 font-medium mt-0.5">Dự toán ngân sách tháng</div>
+          <div className="text-xl font-semibold text-slate-900 font-mono whitespace-nowrap">{totalBonusFund.toLocaleString('vi-VN')}&nbsp;₫</div>
+          <div className="text-2xs text-emerald-600 font-medium mt-0.5">Dự toán ngân sách tháng</div>
         </div>
 
         <div className="bg-white border border-slate-200 rounded-md p-3.5 shadow-sm">
           <div className="flex items-center justify-between text-slate-500 mb-1">
-            <span className="text-xs font-medium">Tổng Điểm Workload</span>
+            <span className="text-xs font-medium">Tổng điểm Workload</span>
             <TrendingUp className="w-4 h-4 text-blue-500" />
           </div>
-          <div className="text-xl font-bold text-slate-900">{totalWorkloadPoints.toFixed(1)} pts</div>
-          <div className="text-[11px] text-slate-500 mt-0.5">Đã quy đổi theo độ khó Store</div>
+          <div className="text-xl font-semibold text-slate-900">{totalWorkloadPoints.toFixed(1)} pts</div>
+          <div className="text-2xs text-slate-500 mt-0.5">Đã quy đổi theo độ khó Store</div>
         </div>
 
         <div className="bg-white border border-slate-200 rounded-md p-3.5 shadow-sm">
           <div className="flex items-center justify-between text-slate-500 mb-1">
-            <span className="text-xs font-medium">Hồ Sơ Đã Duyệt</span>
+            <span className="text-xs font-medium">Hồ sơ đã duyệt</span>
             <CheckCircle2 className="w-4 h-4 text-emerald-500" />
           </div>
-          <div className="text-xl font-bold text-emerald-600">{approvedCount} / {staffRecords.length}</div>
-          <div className="text-[11px] text-slate-500 mt-0.5">Lead đã thẩm định</div>
+          <div className="text-xl font-semibold text-emerald-600">{approvedCount} / {staffRecords.length}</div>
+          <div className="text-2xs text-slate-500 mt-0.5">Lead đã thẩm định</div>
         </div>
 
         <div className="bg-white border border-slate-200 rounded-md p-3.5 shadow-sm">
           <div className="flex items-center justify-between text-slate-500 mb-1">
-            <span className="text-xs font-medium">Chờ Duyệt Thưởng</span>
+            <span className="text-xs font-medium">Chờ duyệt thưởng</span>
             <AlertCircle className="w-4 h-4 text-amber-500" />
           </div>
-          <div className="text-xl font-bold text-amber-600">{pendingCount} hồ sơ</div>
-          <div className="text-[11px] text-slate-500 mt-0.5">Cần Lead xác nhận</div>
+          <div className="text-xl font-semibold text-amber-600">{pendingCount} hồ sơ</div>
+          <div className="text-2xs text-slate-500 mt-0.5">Cần Lead xác nhận</div>
         </div>
       </div>
 
@@ -145,7 +146,7 @@ export default function PerformanceP3View() {
               <div className="font-mono text-slate-600 mt-1 bg-white px-2.5 py-1.5 rounded border border-slate-200 inline-block">
                 Điểm Workload = Số Ca Hoàn Thành × Hệ Số Độ Khó Store (1.0 - 1.6) × Hệ Số Chất Lượng (0.9 - 1.15) × Hệ Số SLA (0.8 - 1.2)
               </div>
-              <p className="text-[11px] text-slate-500 mt-1">
+              <p className="text-2xs text-slate-500 mt-1">
                 Tiền thưởng = Điểm Workload × Đơn giá điểm theo Level (Intern: 30.000&nbsp;₫, Junior: 35.000&nbsp;₫, Senior: 40.000&nbsp;₫).
               </p>
             </div>
@@ -179,14 +180,14 @@ export default function PerformanceP3View() {
               <table className="w-full text-left text-xs">
                 <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-medium">
                   <tr>
-                    <th className="py-3 px-3">Nhân Sự & Level</th>
-                    <th className="py-3 px-3">Store Phụ Trách & Hệ Số</th>
-                    <th className="py-3 px-3 text-center">Số Ca Đã Làm</th>
-                    <th className="py-3 px-3 text-center">Chất Lượng & SLA</th>
+                    <th className="py-3 px-3">Nhân sự & Level</th>
+                    <th className="py-3 px-3">Store phụ trách & hệ số</th>
+                    <th className="py-3 px-3 text-center">Số ca đã làm</th>
+                    <th className="py-3 px-3 text-center">Chất lượng & SLA</th>
                     <th className="py-3 px-3 text-right">Điểm Workload</th>
                     <th className="py-3 px-3 text-right">Thưởng P3 (VND)</th>
                     <th className="py-3 px-3 text-center">Trạng Thái</th>
-                    <th className="py-3 px-3 text-right">Hành Động</th>
+                    <th className="py-3 px-3 text-right">Hành động</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -194,8 +195,8 @@ export default function PerformanceP3View() {
                     <tr key={item.id} className="hover:bg-slate-50/70 transition">
                       {/* Name & Role */}
                       <td className="py-3 px-3">
-                        <div className="font-semibold text-slate-900">{item.staffName}</div>
-                        <div className="text-[11px] text-slate-500 mt-0.5 flex items-center gap-1.5">
+                        <div className="flex items-center gap-2 font-medium text-slate-900"><Avatar name={item.staffName} size={22} />{item.staffName}</div>
+                        <div className="text-2xs text-slate-500 mt-0.5 flex items-center gap-1.5">
                           <span className="px-1.5 py-0.2 bg-slate-100 rounded text-slate-700 font-medium">{item.role}</span>
                           <span>• {item.level}</span>
                         </div>
@@ -206,7 +207,7 @@ export default function PerformanceP3View() {
                         <div className="font-medium text-slate-800 line-clamp-1 max-w-[220px]" title={item.assignedStore}>
                           {item.assignedStore}
                         </div>
-                        <div className="text-[11px] mt-0.5">
+                        <div className="text-2xs mt-0.5">
                           <span className={`inline-block px-1.5 py-0.2 font-semibold rounded ${
                             item.storeMultiplier >= 1.6 ? 'bg-rose-50 text-rose-700 border border-rose-200' :
                             item.storeMultiplier >= 1.4 ? 'bg-amber-50 text-amber-700 border border-amber-200' :
@@ -220,31 +221,31 @@ export default function PerformanceP3View() {
                       {/* Completed Cases */}
                       <td className="py-3 px-3 text-center">
                         <span className="font-semibold text-slate-900">{item.completedCases}</span>
-                        <div className="text-[10px] text-slate-400">cases/jobs</div>
+                        <div className="text-2xs text-slate-400">cases/jobs</div>
                       </td>
 
                       {/* Quality & SLA Multipliers */}
                       <td className="py-3 px-3 text-center">
-                        <div className="font-mono text-[11px] text-slate-700">
+                        <div className="font-mono text-2xs text-slate-700">
                           CL: <span className="font-semibold text-emerald-600">{item.qualityMultiplier}</span> | SLA: <span className="font-semibold text-blue-600">{item.slaMultiplier}</span>
                         </div>
-                        <div className="text-[10px] text-slate-400 mt-0.5">
+                        <div className="text-2xs text-slate-400 mt-0.5">
                           {item.slaMultiplier >= 1.05 ? 'Vượt SLA' : item.slaMultiplier < 1.0 ? 'Có lỗi SLA' : 'Đạt chuẩn'}
                         </div>
                       </td>
 
                       {/* Workload Points */}
                       <td className="py-3 px-3 text-right">
-                        <div className="font-bold text-slate-900 text-sm">{item.calculatedWorkloadPoints.toFixed(1)}</div>
-                        <div className="text-[10px] text-slate-400 font-mono">pts</div>
+                        <div className="font-semibold text-slate-900 text-sm">{item.calculatedWorkloadPoints.toFixed(1)}</div>
+                        <div className="text-2xs text-slate-400 font-mono">pts</div>
                       </td>
 
                       {/* Bonus VND */}
                       <td className="py-3 px-3 text-right">
-                        <div className="font-bold text-emerald-600 text-sm font-mono whitespace-nowrap">
+                        <div className="font-semibold text-emerald-600 text-sm font-mono whitespace-nowrap">
                           {item.estimatedBonusVnd.toLocaleString('vi-VN')}&nbsp;₫
                         </div>
-                        <div className="text-[10px] text-slate-400 font-mono">
+                        <div className="text-2xs text-slate-400 font-mono">
                           {item.baseP3UnitRate.toLocaleString('vi-VN')}&nbsp;₫/điểm
                         </div>
                       </td>
@@ -252,11 +253,11 @@ export default function PerformanceP3View() {
                       {/* Status */}
                       <td className="py-3 px-3 text-center">
                         {item.approvalStatus === 'ĐÃ_DUYỆT' ? (
-                          <span className="badge-emerald inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold">
+                          <span className="badge-emerald inline-flex items-center gap-1 px-2 py-0.5 text-2xs font-semibold">
                             <CheckCircle2 className="w-3 h-3" /> Đã Duyệt
                           </span>
                         ) : (
-                          <span className="badge-amber inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold">
+                          <span className="badge-amber inline-flex items-center gap-1 px-2 py-0.5 text-2xs font-semibold">
                             <AlertCircle className="w-3 h-3" /> Chờ Duyệt
                           </span>
                         )}
@@ -270,7 +271,7 @@ export default function PerformanceP3View() {
                             className="btn-sm bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 rounded-lg transition flex items-center gap-1 shadow-2xs font-semibold"
                             title="AI Nhận xét hiệu suất &amp; đề xuất thưởng P3"
                           >
-                            <Sparkles className="w-3 h-3 text-purple-600 animate-pulse" />
+                            <Sparkles className="w-3 h-3 text-purple-600" />
                             <span>AI Review</span>
                           </button>
                           {item.approvalStatus === 'CHỜ_DUYỆT' ? (
@@ -278,10 +279,10 @@ export default function PerformanceP3View() {
                               onClick={() => handleApprove(item.id)}
                               className="btn-sm bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition shadow-2xs"
                             >
-                              Duyệt Thưởng
+                              Duyệt thưởng
                             </button>
                           ) : (
-                            <span className="text-[11px] text-slate-400 italic">Đã chốt</span>
+                            <span className="text-2xs text-slate-400 italic">Đã chốt</span>
                           )}
                         </div>
                       </td>
@@ -296,23 +297,23 @@ export default function PerformanceP3View() {
         /* Store Matrix Tab */
         <div className="space-y-4">
           <div className="bg-slate-50 border border-slate-200 rounded-md p-3 text-xs text-slate-700">
-            <span className="font-semibold text-slate-900">Nguyên tắc phân tầng độ khó Store (Workload Map P1 - Upbase):</span>
+            <span className="font-semibold text-slate-900">Nguyên tắc phân tầng độ khó Store:</span>
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 mt-2">
               <div className="bg-white p-2 border border-slate-200 rounded">
-                <div className="font-semibold text-slate-800">Cơ bản (x1.0)</div>
-                <div className="text-[11px] text-slate-500 mt-0.5">Sản phẩm đơn lẻ, tệp KOC quen thuộc, Brand duyệt nhanh.</div>
+                <div className="font-semibold text-slate-800">Cơ bản</div>
+                <div className="text-2xs text-slate-500 mt-0.5">Sản phẩm đơn lẻ, tệp KOC quen thuộc, Brand duyệt nhanh.</div>
               </div>
               <div className="bg-white p-2 border border-slate-200 rounded">
-                <div className="font-semibold text-slate-800">Tiêu chuẩn (x1.2)</div>
-                <div className="text-[11px] text-slate-500 mt-0.5">Store ổn định, quy trình đàm phán và gửi mẫu chuẩn mực.</div>
+                <div className="font-semibold text-slate-800">Tiêu chuẩn</div>
+                <div className="text-2xs text-slate-500 mt-0.5">Store ổn định, quy trình đàm phán và gửi mẫu chuẩn mực.</div>
               </div>
               <div className="bg-white p-2 border border-slate-200 rounded">
-                <div className="font-semibold text-slate-800">Vừa (x1.4)</div>
-                <div className="text-[11px] text-slate-500 mt-0.5">Dược mỹ phẩm trị mụn, yêu cầu chuyên môn cao, nhiều SKU.</div>
+                <div className="font-semibold text-slate-800">Vừa</div>
+                <div className="text-2xs text-slate-500 mt-0.5">Dược mỹ phẩm trị mụn, yêu cầu chuyên môn cao, nhiều SKU.</div>
               </div>
               <div className="bg-white p-2 border border-slate-200 rounded">
-                <div className="font-semibold text-rose-700">Khó (x1.6)</div>
-                <div className="text-[11px] text-slate-500 mt-0.5">Casting khắt khe, Brand quốc tế duyệt lâu, tỷ lệ từ chối cao.</div>
+                <div className="font-semibold text-rose-700">Khó</div>
+                <div className="text-2xs text-slate-500 mt-0.5">Casting khắt khe, Brand quốc tế duyệt lâu, tỷ lệ từ chối cao.</div>
               </div>
             </div>
           </div>
@@ -322,12 +323,12 @@ export default function PerformanceP3View() {
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-medium">
                 <tr>
-                  <th className="py-3 px-3">Tên Store & Kênh</th>
-                  <th className="py-3 px-3">Ngành Hàng</th>
-                  <th className="py-3 px-3">PIC Phụ Trách</th>
-                  <th className="py-3 px-3 text-right">Chỉ Tiêu GMV Tháng</th>
-                  <th className="py-3 px-3 text-center">Tầng Độ Khó</th>
-                  <th className="py-3 px-3 text-center">Hệ Số Quy Đổi</th>
+                  <th className="py-3 px-3">Tên Store & kênh</th>
+                  <th className="py-3 px-3">Ngành hàng</th>
+                  <th className="py-3 px-3">PIC phụ trách</th>
+                  <th className="py-3 px-3 text-right">Chỉ tiêu GMV tháng</th>
+                  <th className="py-3 px-3 text-center">Tầng độ khó</th>
+                  <th className="py-3 px-3 text-center">Hệ số quy đổi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -335,7 +336,7 @@ export default function PerformanceP3View() {
                   <tr key={store.id} className="hover:bg-slate-50/70 transition">
                     <td className="py-3 px-3">
                       <div className="font-semibold text-slate-900">{store.storeName}</div>
-                      <div className="text-[11px] text-slate-500 mt-0.5">{store.platform}</div>
+                      <ChannelTag channel={store.platform} className="mt-0.5" />
                     </td>
                     <td className="py-3 px-3 text-slate-700">{store.category}</td>
                     <td className="py-3 px-3 font-medium text-slate-800">{store.assignedPic}</td>
@@ -343,7 +344,7 @@ export default function PerformanceP3View() {
                       {store.monthlyTargetGmv.toLocaleString('vi-VN')}&nbsp;₫
                     </td>
                     <td className="py-3 px-3 text-center">
-                      <span className={`inline-block px-2 py-0.5 text-[10px] font-semibold rounded ${
+                      <span className={`inline-block px-2 py-0.5 text-2xs font-semibold rounded ${
                         store.difficultyTier === 'Khó' ? 'bg-rose-100 text-rose-800' :
                         store.difficultyTier === 'Vừa' ? 'bg-amber-100 text-amber-800' :
                         store.difficultyTier === 'Tiêu chuẩn' ? 'bg-blue-100 text-blue-800' :

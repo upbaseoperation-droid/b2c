@@ -111,7 +111,7 @@ export const INITIAL_KOCS: KocItem[] = [
     realName: 'Phạm Ngọc Hiếu An',
     tier: 'TIER_2_MACRO',
     tierLabel: 'Tier 2 (Macro)',
-    // 🌟 4 Trường phân loại cốt lõi
+    // 4 Trường phân loại cốt lõi
     salaryGrade: 'KL6',
     segment: 'Key Creator',
     tepKenh: 'Review Nữ',
@@ -165,7 +165,7 @@ export const INITIAL_KOCS: KocItem[] = [
     realName: 'Lê Thị Bích Chanh',
     tier: 'TIER_3_MICRO',
     tierLabel: 'Tier 3 (Micro)',
-    // 🌟 4 Trường phân loại cốt lõi
+    // 4 Trường phân loại cốt lõi
     salaryGrade: 'KL5',
     segment: 'Mid Creator',
     tepKenh: 'Beauty',
@@ -219,7 +219,7 @@ export const INITIAL_KOCS: KocItem[] = [
     realName: 'Hannah Nguyễn',
     tier: 'TIER_1_CELEB',
     tierLabel: 'Tier 1 (Celeb)',
-    // 🌟 4 Trường phân loại cốt lõi
+    // 4 Trường phân loại cốt lõi
     salaryGrade: 'KL7',
     segment: 'Top Creator',
     tepKenh: 'Review Nữ',
@@ -271,7 +271,7 @@ export const INITIAL_KOCS: KocItem[] = [
     realName: 'Võ Thị Hà Linh',
     tier: 'TIER_1_CELEB',
     tierLabel: 'Tier 1 (Celeb)',
-    // 🌟 4 Trường phân loại cốt lõi
+    // 4 Trường phân loại cốt lõi
     salaryGrade: 'KL7',
     segment: 'Top Creator',
     tepKenh: 'Review Nữ',
@@ -322,7 +322,7 @@ export const INITIAL_KOCS: KocItem[] = [
     realName: 'Vũ Duy',
     tier: 'TIER_2_MACRO',
     tierLabel: 'Tier 2 (Macro)',
-    // 🌟 4 Trường phân loại cốt lõi
+    // 4 Trường phân loại cốt lõi
     salaryGrade: 'KL7',
     segment: 'Top Creator',
     tepKenh: 'Review Nam',
@@ -373,7 +373,7 @@ export const INITIAL_KOCS: KocItem[] = [
     realName: 'Trần Minh Đan',
     tier: 'TIER_3_MICRO',
     tierLabel: 'Tier 3 (Micro)',
-    // 🌟 4 Trường phân loại cốt lõi
+    // 4 Trường phân loại cốt lõi
     salaryGrade: 'KL5',
     segment: 'Mid Creator',
     tepKenh: 'Review Nữ',
@@ -424,7 +424,7 @@ export const INITIAL_KOCS: KocItem[] = [
     realName: 'Đặng Bảo Ngọc',
     tier: 'TIER_4_AFFILIATE',
     tierLabel: 'Tier 4 (Affiliate)',
-    // 🌟 4 Trường phân loại cốt lõi
+    // 4 Trường phân loại cốt lõi
     salaryGrade: 'KL3',
     segment: 'Massive Creator',
     tepKenh: 'Review Nữ',
@@ -475,7 +475,7 @@ export const INITIAL_KOCS: KocItem[] = [
     realName: 'Bác Sĩ Nguyễn Văn Nguyên',
     tier: 'TIER_3_MICRO',
     tierLabel: 'Tier 3 (Micro)',
-    // 🌟 4 Trường phân loại cốt lõi
+    // 4 Trường phân loại cốt lõi
     salaryGrade: 'KL4',
     segment: 'Mid Creator',
     tepKenh: 'Bác sỹ/chuyên gia',
@@ -527,7 +527,7 @@ export const INITIAL_KOCS: KocItem[] = [
     realName: 'Trần Kiên & Loan Hoàng',
     tier: 'TIER_2_MACRO',
     tierLabel: 'Tier 2 (Macro)',
-    // 🌟 4 Trường phân loại cốt lõi
+    // 4 Trường phân loại cốt lõi
     salaryGrade: 'KL6',
     segment: 'Key Creator',
     tepKenh: 'Gia đình',
@@ -578,7 +578,7 @@ export const INITIAL_KOCS: KocItem[] = [
     realName: 'Lê Tuấn Anh',
     tier: 'TIER_4_AFFILIATE',
     tierLabel: 'Tier 4 (Affiliate)',
-    // 🌟 4 Trường phân loại cốt lõi
+    // 4 Trường phân loại cốt lõi
     salaryGrade: 'KL1',
     segment: 'Massive Creator',
     tepKenh: 'Unboxing',
@@ -629,7 +629,7 @@ export const INITIAL_KOCS: KocItem[] = [
     realName: 'Đỗ Thảo Vy',
     tier: 'TIER_4_AFFILIATE',
     tierLabel: 'Tier 4 (Affiliate)',
-    // 🌟 4 Trường phân loại cốt lõi
+    // 4 Trường phân loại cốt lõi
     salaryGrade: 'TAP UpAffiliate',
     segment: 'Massive Creator',
     tepKenh: 'Mẹ bé (bầu)',
@@ -680,7 +680,7 @@ export const INITIAL_KOCS: KocItem[] = [
     realName: 'Đặng Tuấn Vũ',
     tier: 'TIER_2_MACRO',
     tierLabel: 'Tier 2 (Macro)',
-    // 🌟 4 Trường phân loại cốt lõi
+    // 4 Trường phân loại cốt lõi
     salaryGrade: 'TAP đối tác ngoài',
     segment: 'Key Creator',
     tepKenh: 'Cooking',
@@ -1041,7 +1041,7 @@ export const INITIAL_DEALS: BookingDealItem[] = [
     kocStageName: 'Chanh Beauty Review',
     kocChannelId: '@chanhbeauty',
     kocTier: 'TIER_3_MICRO',
-    // 🌟 4 Phân loại cốt lõi
+    // 4 Phân loại cốt lõi
     salaryGrade: 'KL5',
     segment: 'Mid Creator',
     tepKenh: 'Beauty',
@@ -1087,7 +1087,7 @@ export const INITIAL_DEALS: BookingDealItem[] = [
     remainingSlaHours: 3.5,
     isSlaWarning: true,
 
-    // 🌟 SLA B2C Verification Fields
+    // SLA B2C Verification Fields
     contractScanUrl: 'https://drive.google.com/file/d/hd-chanh-beauty-signed.pdf',
     contractCreatedAt: '2026-09-20',
     contractSignDaysPrior: 4,
@@ -1115,7 +1115,7 @@ export const INITIAL_DEALS: BookingDealItem[] = [
     kocStageName: 'Mega Uri Review',
     kocChannelId: '@megauriviu',
     kocTier: 'TIER_2_MACRO',
-    // 🌟 4 Phân loại cốt lõi
+    // 4 Phân loại cốt lõi
     salaryGrade: 'KL6',
     segment: 'Key Creator',
     tepKenh: 'Review Nữ',
@@ -1161,7 +1161,7 @@ export const INITIAL_DEALS: BookingDealItem[] = [
     remainingSlaHours: 8.0,
     isSlaWarning: false,
 
-    // 🌟 SLA B2C Triggers (VI PHẠM: Deal > 9M nhưng THIẾU SCAN HỢP ĐỒNG & CHƯA KÝ TRƯỚC 2 NGÀY)
+    // SLA B2C Triggers (VI PHẠM: Deal > 9M nhưng THIẾU SCAN HỢP ĐỒNG & CHƯA KÝ TRƯỚC 2 NGÀY)
     contractScanUrl: undefined,
     contractCreatedAt: undefined,
     contractSignDaysPrior: 0,
@@ -1191,7 +1191,7 @@ export const INITIAL_DEALS: BookingDealItem[] = [
     kocStageName: 'Minh Đan Daily',
     kocChannelId: '@danxinhdaily',
     kocTier: 'TIER_3_MICRO',
-    // 🌟 4 Phân loại cốt lõi
+    // 4 Phân loại cốt lõi
     salaryGrade: 'KL5',
     segment: 'Mid Creator',
     tepKenh: 'Review Nữ',
@@ -1238,7 +1238,7 @@ export const INITIAL_DEALS: BookingDealItem[] = [
     remainingSlaHours: 12.0,
     isSlaWarning: false,
 
-    // 🌟 SLA B2C Triggers (VI PHẠM: Video nghiệm thu hôm trước nhưng quá 10h sáng hôm sau chưa lập DNTT)
+    // SLA B2C Triggers (VI PHẠM: Video nghiệm thu hôm trước nhưng quá 10h sáng hôm sau chưa lập DNTT)
     contractScanUrl: 'https://drive.google.com/file/d/hd-minh-dan-signed.pdf',
     contractCreatedAt: '2026-09-18',
     contractSignDaysPrior: 5,
@@ -1267,7 +1267,7 @@ export const INITIAL_DEALS: BookingDealItem[] = [
     kocStageName: 'Bác Sĩ Da Liễu Nguyên',
     kocChannelId: '@drnguyen',
     kocTier: 'TIER_3_MICRO',
-    // 🌟 4 Phân loại cốt lõi
+    // 4 Phân loại cốt lõi
     salaryGrade: 'KL4',
     segment: 'Mid Creator',
     tepKenh: 'Bác sỹ/chuyên gia',
@@ -1312,7 +1312,7 @@ export const INITIAL_DEALS: BookingDealItem[] = [
     remainingSlaHours: 0,
     isSlaWarning: true,
 
-    // 🌟 SLA B2C Triggers (Brand ngâm định hướng > 3 ngày -> Kích hoạt đề xuất Auto-Air)
+    // SLA B2C Triggers (Brand ngâm định hướng > 3 ngày -> Kích hoạt đề xuất Auto-Air)
     brandOrientationPendingDays: 4,
     isAutoAirProposed: true,
     autoAirProposalDate: '2026-09-24'
@@ -1332,7 +1332,7 @@ export const INITIAL_DEALS: BookingDealItem[] = [
     kocStageName: 'Tuấn Anh Unbox',
     kocChannelId: '@unboxwithtuan',
     kocTier: 'TIER_4_AFFILIATE',
-    // 🌟 4 Phân loại cốt lõi
+    // 4 Phân loại cốt lõi
     salaryGrade: 'KL1',
     segment: 'Massive Creator',
     tepKenh: 'Unboxing',
@@ -1390,7 +1390,7 @@ export const INITIAL_DEALS: BookingDealItem[] = [
     kocStageName: 'Võ Hà Linh Official',
     kocChannelId: '@halinhofficial',
     kocTier: 'TIER_1_CELEB',
-    // 🌟 4 Phân loại cốt lõi
+    // 4 Phân loại cốt lõi
     salaryGrade: 'KL7',
     segment: 'Top Creator',
     tepKenh: 'Review Nữ',
@@ -1448,7 +1448,7 @@ export const INITIAL_DEALS: BookingDealItem[] = [
     kocStageName: 'Gia Đình Cam Cam',
     kocChannelId: '@camcam',
     kocTier: 'TIER_2_MACRO',
-    // 🌟 4 Phân loại cốt lõi
+    // 4 Phân loại cốt lõi
     salaryGrade: 'KL6',
     segment: 'Key Creator',
     tepKenh: 'Gia đình',
@@ -1892,7 +1892,7 @@ export const INITIAL_DEALS: BookingDealItem[] = [
 ];
 
 export const INITIAL_TASKS: SlaTask[] = [
-  // --- 🌟 CÁC ĐẦU VIỆC B2C SLA ESCALATION MỚI ---
+  // --- CÁC ĐẦU VIỆC B2C SLA ESCALATION MỚI ---
   {
     id: 'task-esc-9m',
     title: 'Deal > 9M (BO260952684 - Mega Uri 15tr) chưa có bản Scan HĐ ký trước 2 ngày khi làm DNTT!',
@@ -2666,7 +2666,7 @@ export const INITIAL_BRAND_GUIDELINES: BrandGuidelineAsset[] = [
     id: 'bg-senka',
     brandName: 'Senka',
     category: 'Chăm Sóc Da / Sữa Rửa Mặt & Tẩy Trang',
-    colorTheme: 'from-blue-600 to-cyan-500',
+    colorTheme: 'bg-blue-600 ',
     toneOfVoice: 'Chuyên gia Nhật Bản, nhẹ nhàng, trong trẻo, khoa học nhưng gần gũi với học sinh sinh viên.',
     toneTag: 'BÁC_SĨ_CHUYÊN_GIA',
     logoRules: 'Logo Senka phải hiển thị rõ nét góc trên bên phải trong 3 giây đầu tiên và xuất hiện cùng sản phẩm thực tế.',
@@ -2743,7 +2743,7 @@ export const INITIAL_BRAND_GUIDELINES: BrandGuidelineAsset[] = [
     id: 'bg-kutieskin',
     brandName: 'Kutieskin',
     category: 'Mẹ & Bé / Kem Bôi Da Trẻ Em',
-    colorTheme: 'from-pink-500 to-rose-400',
+    colorTheme: 'bg-pink-500 ',
     toneOfVoice: 'Ấm áp, đồng cảm, chuyên môn y khoa nhẹ nhàng, mẹ bỉm thông thái tin dùng.',
     toneTag: 'MẸ_BỈM_CHÂN_THỰC',
     logoRules: 'Logo Kutieskin kèm linh vật chú gấu nhỏ góc trái màn hình, màu sắc ấm cúng.',
@@ -2797,7 +2797,7 @@ export const INITIAL_BRAND_GUIDELINES: BrandGuidelineAsset[] = [
     id: 'bg-naturesway',
     brandName: "Nature's Way",
     category: 'Thực Phẩm Bảo Vệ Sức Khỏe Trẻ Em & Gia Đình',
-    colorTheme: 'from-emerald-600 to-teal-500',
+    colorTheme: 'bg-emerald-600 ',
     toneOfVoice: 'Chuẩn Úc, khoa học, uy tín số 1 về vitamin trẻ em, bảo chứng chất lượng.',
     toneTag: 'BÁC_SĨ_CHUYÊN_GIA',
     logoRules: 'Logo Nature\'s Way hình chiếc lá xanh và cờ Úc góc trên bên phải.',
@@ -2851,7 +2851,7 @@ export const INITIAL_BRAND_GUIDELINES: BrandGuidelineAsset[] = [
     id: 'bg-babe',
     brandName: 'Babe',
     category: 'Dược Mỹ Phẩm Trị Mụn & Phục Hồi Chuyên Sâu',
-    colorTheme: 'from-amber-600 to-orange-500',
+    colorTheme: 'bg-amber-600 ',
     toneOfVoice: 'Dược mỹ phẩm Châu Âu, tối giản khoa học, kê đơn chuẩn da liễu Tây Ban Nha.',
     toneTag: 'BÁC_SĨ_CHUYÊN_GIA',
     logoRules: 'Logo Laboratorios BABÉ phong cách tối giản y tế góc trên.',
@@ -2897,7 +2897,7 @@ export const INITIAL_BRAND_GUIDELINES: BrandGuidelineAsset[] = [
     id: 'bg-bioessence',
     brandName: 'Bio-Essence',
     category: 'Mỹ Phẩm Chống Lão Hóa Vàng 24K',
-    colorTheme: 'from-amber-500 to-yellow-400',
+    colorTheme: 'bg-amber-500 ',
     toneOfVoice: 'Sang trọng, quý phái, công nghệ sinh học Bio-Energy Complex kích hoạt làn da.',
     toneTag: 'SANG_TRỌNG_CAO_CẤP',
     logoRules: 'Logo Bio-Essence ánh kim trên nền tối trang nhã.',
@@ -3874,7 +3874,7 @@ export const INITIAL_BRANDS: BrandDetail[] = [
     name: 'Kutieskin Mama & Baby',
     companyName: 'Công ty Cổ Phần Dược Mỹ Phẩm CVI',
     category: 'Mẹ & Bé / Chăm Sóc Da Trẻ Em',
-    color: 'from-pink-500 to-rose-600',
+    color: 'bg-pink-500 ',
     status: 'ACTIVE',
     planBudget: 280000000,
     spentBudget: 209164545,
@@ -3961,7 +3961,7 @@ export const INITIAL_BRANDS: BrandDetail[] = [
     name: 'Royal Ausnz (Sữa Hoàng Gia Úc)',
     companyName: 'GOTOP Healthcare Pty Ltd (Australia)',
     category: 'Sữa & Dinh Dưỡng Cao Cấp',
-    color: 'from-blue-600 to-indigo-700',
+    color: 'bg-blue-600 ',
     status: 'ACTIVE',
     planBudget: 350000000,
     spentBudget: 320000000,
@@ -4036,7 +4036,7 @@ export const INITIAL_BRANDS: BrandDetail[] = [
     name: 'Bye Bye Blemish',
     companyName: 'American International Industries (USA)',
     category: 'Trị Mụn & Skincare Chuyên Sâu',
-    color: 'from-emerald-500 to-teal-700',
+    color: 'bg-emerald-500 ',
     status: 'ACTIVE',
     planBudget: 320000000,
     spentBudget: 196539919,
@@ -4111,7 +4111,7 @@ export const INITIAL_BRANDS: BrandDetail[] = [
     name: 'pHCare Japan',
     companyName: 'J&P Corporation (Japan)',
     category: 'Chăm Sóc Cá Nhân & Phụ Khoa Nữ',
-    color: 'from-purple-500 to-violet-700',
+    color: 'bg-purple-500 ',
     status: 'ACTIVE',
     planBudget: 180000000,
     spentBudget: 130000000,
@@ -4186,7 +4186,7 @@ export const INITIAL_BRANDS: BrandDetail[] = [
     name: 'Babe Laboratorios',
     companyName: 'Laboratorios Babe S.L. (Spain)',
     category: 'Dược Mỹ Phẩm Đặc Trị Châu Âu',
-    color: 'from-amber-500 to-orange-600',
+    color: 'bg-amber-500 ',
     status: 'ACTIVE',
     planBudget: 220000000,
     spentBudget: 245000000,
@@ -4260,7 +4260,7 @@ export const INITIAL_BRANDS: BrandDetail[] = [
     name: 'EUPC Home Care',
     companyName: 'Tập đoàn Hóa chất & Tiêu dùng Châu Âu',
     category: 'Gia Dụng & FMCG',
-    color: 'from-cyan-500 to-blue-600',
+    color: 'bg-cyan-500 ',
     status: 'ACTIVE',
     planBudget: 250000000,
     spentBudget: 46761819,
@@ -4322,7 +4322,7 @@ export const INITIAL_BRANDS: BrandDetail[] = [
     name: 'Keyshu & Natural Care',
     companyName: 'Keyshu Cosmetics Vietnam',
     category: 'Mỹ Phẩm Thiên Nhiên & Thảo Mộc',
-    color: 'from-teal-600 to-emerald-700',
+    color: 'bg-teal-600 ',
     status: 'ACTIVE',
     planBudget: 150000000,
     spentBudget: 75000000,
@@ -5744,7 +5744,7 @@ export const INITIAL_BRAND_PORTAL_DATA: BrandCampaignPortalData[] = [
 ];
 
 // ==========================================
-// 📦 DỮ LIỆU GIÁM SÁT VẬN ĐƠN MẪU & CHỐNG BÙNG MẪU (MEUP PLAYBOOK)
+// DỮ LIỆU GIÁM SÁT VẬN ĐƠN MẪU & CHỐNG BÙNG MẪU (MEUP PLAYBOOK)
 // ==========================================
 export const MOCK_SAMPLE_SHIPMENTS: SampleShipment[] = [
   {
@@ -5865,7 +5865,7 @@ export const MOCK_SAMPLE_SHIPMENTS: SampleShipment[] = [
 ];
 
 // ==========================================
-// 🎯 HỆ SỐ ĐỘ KHÓ STORE (THEO SHEET WORKLOAD THEO STORE - 4P B2C)
+// HỆ SỐ ĐỘ KHÓ STORE (THEO SHEET WORKLOAD THEO STORE - 4P B2C)
 // ==========================================
 export const MOCK_STORE_DIFFICULTIES: StoreDifficultyConfig[] = [
   {
@@ -5931,7 +5931,7 @@ export const MOCK_STORE_DIFFICULTIES: StoreDifficultyConfig[] = [
 ];
 
 // ==========================================
-// 🏆 BẢNG ĐÁNH GIÁ HIỆU SUẤT 4P & TÍNH THƯỞNG P3 (CHÍNH SÁCH THƯỞNG P3)
+// BẢNG ĐÁNH GIÁ HIỆU SUẤT 4P & TÍNH THƯỞNG P3 (CHÍNH SÁCH THƯỞNG P3)
 // ==========================================
 export const MOCK_P3_STAFF_RECORDS: StaffP3Record[] = [
   {
@@ -6033,7 +6033,7 @@ export const MOCK_P3_STAFF_RECORDS: StaffP3Record[] = [
 ];
 
 // ==========================================
-// 📊 KẾ HOẠCH TUẦN CHI TIẾT TỪ 4.1.1 INPUT PLAN (BẬC KL1 - KL7)
+// KẾ HOẠCH TUẦN CHI TIẾT TỪ 4.1.1 INPUT PLAN (BẬC KL1 - KL7)
 // ==========================================
 export const MOCK_WEEKLY_PLANS_411: WeeklyStorePlan411[] = [
   {
@@ -6149,7 +6149,7 @@ export const INITIAL_STORE_PORTFOLIOS: StorePortfolioItem[] = [
     monthlyBudget: 150000000,
     accountOwnerName: 'Phạm Thị Nhài',
     b2cOwnerName: 'Khánh Vy, Trần Minh Đức',
-    b2cOwners: ['Khánh Vy', 'Trần Minh Đức'], // 🌟 2 nhân viên cùng phụ trách 1 shop
+    b2cOwners: ['Khánh Vy', 'Trần Minh Đức'], // 2 nhân viên cùng phụ trách 1 shop
     assignmentNotes: 'Khánh Vy phụ trách KOC Tier 1 & Tier 2; Trần Minh Đức phụ trách Tier 3 & Seeding Affiliate',
     activeCandidatesCount: 18,
     activeBookingsCount: 12,
@@ -6215,7 +6215,7 @@ export const INITIAL_STORE_PORTFOLIOS: StorePortfolioItem[] = [
     monthlyBudget: 180000000,
     accountOwnerName: 'Phạm Thị Hồng Yến',
     b2cOwnerName: 'Quỳnh Như, Khánh Vy',
-    b2cOwners: ['Quỳnh Như', 'Khánh Vy'], // 🌟 2 nhân viên cùng phụ trách 1 shop
+    b2cOwners: ['Quỳnh Như', 'Khánh Vy'], // 2 nhân viên cùng phụ trách 1 shop
     assignmentNotes: 'Quỳnh Như lead phòng Live Hà Nội & kịch bản; Khánh Vy booking KOC đẩy traffic phiên Mega',
     activeCandidatesCount: 25,
     activeBookingsCount: 16,
@@ -6237,7 +6237,7 @@ export const INITIAL_STORE_PORTFOLIOS: StorePortfolioItem[] = [
     monthlyBudget: 85000000,
     accountOwnerName: 'Hoàng Long',
     b2cOwnerName: 'Đặng Mai Hà Linh, Nguyễn Ngọc Huyền',
-    b2cOwners: ['Đặng Mai Hà Linh', 'Nguyễn Ngọc Huyền'], // 🌟 2 nhân viên cùng phụ trách 1 shop
+    b2cOwners: ['Đặng Mai Hà Linh', 'Nguyễn Ngọc Huyền'], // 2 nhân viên cùng phụ trách 1 shop
     assignmentNotes: 'Hà Linh phụ trách TikTok Shop chính thức; Huyền phụ trách Shopee Mall & Seeding',
     activeCandidatesCount: 16,
     activeBookingsCount: 11,
@@ -6268,7 +6268,7 @@ export const INITIAL_STORE_PORTFOLIOS: StorePortfolioItem[] = [
   }
 ];
 
-// 🌟 MASTER DATA DANH BẠ NHÂN SỰ & QUẢN LÝ PHÂN CÔNG
+// MASTER DATA DANH BẠ NHÂN SỰ & QUẢN LÝ PHÂN CÔNG
 export const STAFF_MASTER_DIRECTORY: StaffMasterMember[] = [
   { id: 'st-1', name: 'Khánh Vy', role: 'BOOKING', team: 'Booking Team 1', roleTitle: 'Senior Booking Specialist', avatar: 'KV', email: 'khanhvy@upbase.vn', phone: '0981.234.567', maxStoresCapacity: 3 },
   { id: 'st-2', name: 'Trần Minh Đức', role: 'BOOKING', team: 'Booking Team 1', roleTitle: 'Junior Booking Specialist', avatar: 'MĐ', email: 'minhduc@upbase.vn', phone: '0982.345.678', maxStoresCapacity: 3 },
@@ -7205,7 +7205,7 @@ export const INITIAL_DETAILED_STAFF_PLANS: StaffDetailedPlanItem[] = [
 ];
 
 // =========================================================================
-// 🌟 MOCK DỮ LIỆU SLA B2C MỚI (THEO TÀI LIỆU CÁC SLA B2C.PDF)
+// MOCK DỮ LIỆU SLA B2C MỚI (THEO TÀI LIỆU CÁC SLA B2C.PDF)
 // =========================================================================
 
 export const INITIAL_SLA_BREACHES: SlaBreachItem[] = [
@@ -7437,6 +7437,9 @@ export const INITIAL_PUSH_PRODUCTS: PushProductItem[] = [
     doAndDonts: 'NÊN: Quay cận chất kem mềm mịn thẩm thấu nhanh, có em bé tương tác cùng mẹ. KHÔNG ĐƯỢC: So sánh dìm hàng nhãn khác, không cam kết "khỏi 100% sau 1 đêm".',
     sampleNotes: 'Cấp 01 tuýp fullsize 30g + túi quà CVI cho KOC có em bé từ 0-3 tuổi.',
     feasibilityScore: 'HIGH_VIRAL',
+    b2cBriefStatus: 'BRIEF_COMPLETED',
+    briefUpdatedBy: 'Khánh Vy (B2C Lead)',
+    briefUpdatedAt: '2026-09-27T10:00:00Z',
     b2cEvaluationNote: 'Sản phẩm chủ lực có uy tín sẵn trên thị trường. KOC nhận mẫu đạt tỷ lệ lên video 94%. Hoa hồng 20% rất hấp dẫn KOC sàn.',
     growthPic: 'Hoàng Long',
     b2cPic: 'Khánh Vy',
@@ -7490,6 +7493,66 @@ export const INITIAL_PUSH_PRODUCTS: PushProductItem[] = [
         actorName: 'Hoàng Long & Khánh Vy',
         actorRole: 'MANAGEMENT',
         description: 'Hai bên Growth và B2C thống nhất chốt duyệt khóa SKU cho chu kỳ Tháng 10.'
+      }
+    ]
+  },
+  {
+    id: 'push-kuti-lip-oct',
+    sku: 'KUTIE-LIP-5G',
+    productName: 'Sáp Dưỡng Môi & Má Thảo Dược Trẻ Em Kutieskin 5g',
+    brandId: 'brand-kutieskin',
+    brandName: 'Kutieskin Mama & Baby',
+    brandCategory: 'Mẹ & Bé / Chăm Sóc Da Trẻ Em',
+    storeId: 'store-kutieskin-tts',
+    storeName: 'Kutieskin Official Store (TikTok)',
+    platform: 'TIKTOK_SHOP',
+    storeUrl: 'https://shop.tiktok.com/view/product/kutieskin-official',
+    imageUrl: 'https://images.unsplash.com/photo-1586495777744-4413f21062fa?auto=format&fit=crop&w=400&q=80',
+    cycleMonth: '2026/10',
+    campaignName: 'TikTok Shop Mega 10.10 & Payday',
+    startDate: '2026-10-08',
+    endDate: '2026-10-31',
+    cycleType: 'MONTHLY',
+    originalPrice: 85000,
+    promotionalPrice: 69000,
+    discountPercent: 19,
+    affiliateRate: 22,
+    availableStock: 10000,
+    monthlySampleQuota: 200,
+    allocatedSampleCount: 0,
+    usp: '',
+    keyMessage: '',
+    viralAngle: '',
+    targetKocNiche: ['Mẹ Bỉm Sữa', 'Hot Mom & Bé', 'Reviewer'],
+    pdpUrl: 'https://shop.tiktok.com/view/product/kutieskin-sap-duong-5g',
+    briefUrl: '',
+    doAndDonts: '',
+    sampleNotes: '',
+    feasibilityScore: 'HIGH_VIRAL',
+    b2cBriefStatus: 'PENDING_BRIEF',
+    growthPic: 'Hoàng Long',
+    b2cPic: 'Khánh Vy',
+    status: 'PROPOSED',
+    proposedAt: '2026-10-08T09:00:00Z',
+    comments: [
+      {
+        id: 'comm-kuti-lip-1',
+        authorName: 'Hoàng Long (Growth Lead)',
+        authorRole: 'GROWTH',
+        content: 'Growth đã chốt deal độc quyền giá 69k và hoa hồng 22% cho sáp dưỡng môi mới. Nhờ B2C nghiên cứu tệp Creator và bổ sung thông tin Brief KOC (USP, Key Message, góc quay)!',
+        type: 'COMMENT',
+        createdAt: '2026-10-08T09:15:00Z'
+      }
+    ],
+    changeRequests: [],
+    auditLogs: [
+      {
+        id: 'log-kuti-lip-1',
+        timestamp: '2026-10-08 09:00',
+        action: 'Khởi Tạo Sản Phẩm Thúc Đẩy',
+        actorName: 'Hoàng Long',
+        actorRole: 'GROWTH',
+        description: 'Growth khởi tạo SKU [KUTIE-LIP-5G], chờ B2C tiếp nhận và bổ sung Brief Creator.'
       }
     ]
   },

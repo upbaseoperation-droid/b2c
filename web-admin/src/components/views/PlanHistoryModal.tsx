@@ -54,16 +54,16 @@ export const PlanHistoryModal: React.FC<PlanHistoryModalProps> = ({
         <div className="bg-white p-5 border-b border-slate-200 flex items-start justify-between gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+              <span className="px-2.5 py-0.5 rounded-full text-2xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
                 {plan.month} • {plan.week}
               </span>
-              <span className="font-bold text-xs text-slate-700">
+              <span className="font-semibold text-xs text-slate-700">
                 {plan.brandName}
               </span>
               <span className="text-xs text-slate-400">• PIC: <strong className="text-slate-800">{plan.pic}</strong></span>
               <span className="text-xs text-slate-400">• Growth: <strong className="text-amber-800">{plan.growthPic || 'Growth Team'}</strong></span>
             </div>
-            <h3 className="font-bold text-base text-slate-900 line-clamp-1">
+            <h3 className="font-semibold text-base text-slate-900 line-clamp-1">
               {plan.title}
             </h3>
           </div>
@@ -97,7 +97,7 @@ export const PlanHistoryModal: React.FC<PlanHistoryModalProps> = ({
           <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
             <button
               onClick={() => setActiveTab('DISCUSSION')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
                 activeTab === 'DISCUSSION'
                   ? 'bg-white text-indigo-700 shadow-2xs'
                   : 'text-slate-600 hover:text-slate-900'
@@ -108,14 +108,14 @@ export const PlanHistoryModal: React.FC<PlanHistoryModalProps> = ({
             </button>
             <button
               onClick={() => setActiveTab('APPROVAL_FLOW')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
                 activeTab === 'APPROVAL_FLOW'
                   ? 'bg-white text-indigo-700 shadow-2xs'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               <ShieldCheck className="w-3.5 h-3.5" />
-              <span>Tiến Trình & Thẩm Định</span>
+              <span>Tiến trình & thẩm định</span>
             </button>
           </div>
         </div>

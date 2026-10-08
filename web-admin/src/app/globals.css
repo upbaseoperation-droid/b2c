@@ -1,364 +1,407 @@
 @import "tailwindcss";
 
+/* =========================================================================
+   UPBASE OPS DESIGN SYSTEM — xem web-admin/DESIGN_SYSTEM.md
+   Mọi màu, cỡ chữ, bo góc, đổ bóng lấy từ khối @theme dưới đây.
+   ========================================================================= */
+
 @theme {
-  --font-sans: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-sans: var(--font-be-vietnam), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, "SFMono-Regular", Consolas, monospace;
+
+  /* ---- Token ngữ nghĩa: dùng cho code mới ---- */
+  --color-canvas: #F5F5F3;
+  --color-surface: #FFFFFF;
+  --color-sunken: #EFEFEC;
+  --color-line: #E3E3DE;
+  --color-line-strong: #CFCFC8;
+  --color-ink: #16171A;
+  --color-ink-2: #43454B;
+  --color-ink-3: #686B72;
+  --color-primary: #2B2B2B;       /* nút chính, logo chữ — lấy từ chữ "upbase" trong logo */
+  --color-primary-hover: #141414;
+  --color-accent: #24457A;        /* liên kết, trạng thái đang chạy, focus, dữ liệu */
+  --color-accent-hover: #1B355F;
+  --color-accent-soft: #E9EEF6;
+  --color-positive: #1E6E46;
+  --color-positive-soft: #E5F1E9;
+  --color-warning: #855000;
+  --color-warning-soft: #F7EDDB;
+  --color-critical: #A3241B;
+  --color-critical-soft: #F8E4E2;
+  --color-focus: #3D6BC4;
+
+  /* ---- Màu dữ liệu: mỗi kênh một màu cố định, chỉ dùng cho biểu đồ, thanh, chấm phân loại ----
+     Đã kiểm tra phân biệt cho người mù màu. Luôn đi kèm nhãn chữ (3 màu sau dưới 3:1 trên nền trắng). */
+  --color-ch-tiktok: #2A78D6;
+  --color-ch-shopee: #EB6834;
+  --color-ch-live: #1BAF7A;
+  --color-ch-self: #EDA100;
+  --color-ch-lazada: #E87BA4;
+  --color-ch-other: #A9ABB0;
+
+  /* ---- Bảng màu Tailwind được ánh xạ về 4 nhóm của design system ----
+     Code cũ dùng 12 họ màu (blue, indigo, purple, cyan…). Thay vì sửa
+     từng class, mỗi họ được trỏ về một thang: trung tính, nhấn, tích cực,
+     cảnh báo, lỗi. Code mới dùng token ngữ nghĩa ở trên. */
+
+  /* Trung tính (slate, gray, zinc, neutral, stone) */
+  --color-slate-50: #F5F5F3;  --color-slate-100: #EFEFEC; --color-slate-200: #E3E3DE;
+  --color-slate-300: #CFCFC8; --color-slate-400: #74777E; --color-slate-500: #686B72;
+  --color-slate-600: #55585E; --color-slate-700: #43454B; --color-slate-800: #2C2E33;
+  --color-slate-900: #16171A; --color-slate-950: #0F1012;
+  --color-gray-50: #F5F5F3;  --color-gray-100: #EFEFEC; --color-gray-200: #E3E3DE;
+  --color-gray-300: #CFCFC8; --color-gray-400: #74777E; --color-gray-500: #686B72;
+  --color-gray-600: #55585E; --color-gray-700: #43454B; --color-gray-800: #2C2E33;
+  --color-gray-900: #16171A; --color-gray-950: #0F1012;
+  --color-zinc-50: #F5F5F3;  --color-zinc-100: #EFEFEC; --color-zinc-200: #E3E3DE;
+  --color-zinc-300: #CFCFC8; --color-zinc-400: #74777E; --color-zinc-500: #686B72;
+  --color-zinc-600: #55585E; --color-zinc-700: #43454B; --color-zinc-800: #2C2E33;
+  --color-zinc-900: #16171A; --color-zinc-950: #0F1012;
+  --color-neutral-50: #F5F5F3;  --color-neutral-100: #EFEFEC; --color-neutral-200: #E3E3DE;
+  --color-neutral-300: #CFCFC8; --color-neutral-400: #74777E; --color-neutral-500: #686B72;
+  --color-neutral-600: #55585E; --color-neutral-700: #43454B; --color-neutral-800: #2C2E33;
+  --color-neutral-900: #16171A; --color-neutral-950: #0F1012;
+  --color-stone-50: #F5F5F3;  --color-stone-100: #EFEFEC; --color-stone-200: #E3E3DE;
+  --color-stone-300: #CFCFC8; --color-stone-400: #74777E; --color-stone-500: #686B72;
+  --color-stone-600: #55585E; --color-stone-700: #43454B; --color-stone-800: #2C2E33;
+  --color-stone-900: #16171A; --color-stone-950: #0F1012;
+
+  /* Nhấn — xanh mực (blue, indigo, violet, purple, fuchsia, sky, cyan, pink) */
+  --color-blue-50: #F2F5F9;  --color-blue-100: #E9EEF6; --color-blue-200: #D3DCEB;
+  --color-blue-300: #AFC0DA; --color-blue-400: #7F96BE; --color-blue-500: #4F6C9C;
+  --color-blue-600: #24457A; --color-blue-700: #1B355F; --color-blue-800: #172C4E;
+  --color-blue-900: #13243F; --color-blue-950: #0C172A;
+  --color-indigo-50: #F2F5F9;  --color-indigo-100: #E9EEF6; --color-indigo-200: #D3DCEB;
+  --color-indigo-300: #AFC0DA; --color-indigo-400: #7F96BE; --color-indigo-500: #4F6C9C;
+  --color-indigo-600: #24457A; --color-indigo-700: #1B355F; --color-indigo-800: #172C4E;
+  --color-indigo-900: #13243F; --color-indigo-950: #0C172A;
+  --color-violet-50: #F2F5F9;  --color-violet-100: #E9EEF6; --color-violet-200: #D3DCEB;
+  --color-violet-300: #AFC0DA; --color-violet-400: #7F96BE; --color-violet-500: #4F6C9C;
+  --color-violet-600: #24457A; --color-violet-700: #1B355F; --color-violet-800: #172C4E;
+  --color-violet-900: #13243F; --color-violet-950: #0C172A;
+  --color-purple-50: #F2F5F9;  --color-purple-100: #E9EEF6; --color-purple-200: #D3DCEB;
+  --color-purple-300: #AFC0DA; --color-purple-400: #7F96BE; --color-purple-500: #4F6C9C;
+  --color-purple-600: #24457A; --color-purple-700: #1B355F; --color-purple-800: #172C4E;
+  --color-purple-900: #13243F; --color-purple-950: #0C172A;
+  --color-fuchsia-50: #F2F5F9;  --color-fuchsia-100: #E9EEF6; --color-fuchsia-200: #D3DCEB;
+  --color-fuchsia-300: #AFC0DA; --color-fuchsia-400: #7F96BE; --color-fuchsia-500: #4F6C9C;
+  --color-fuchsia-600: #24457A; --color-fuchsia-700: #1B355F; --color-fuchsia-800: #172C4E;
+  --color-fuchsia-900: #13243F; --color-fuchsia-950: #0C172A;
+  --color-sky-50: #F2F5F9;  --color-sky-100: #E9EEF6; --color-sky-200: #D3DCEB;
+  --color-sky-300: #AFC0DA; --color-sky-400: #7F96BE; --color-sky-500: #4F6C9C;
+  --color-sky-600: #24457A; --color-sky-700: #1B355F; --color-sky-800: #172C4E;
+  --color-sky-900: #13243F; --color-sky-950: #0C172A;
+  --color-cyan-50: #F2F5F9;  --color-cyan-100: #E9EEF6; --color-cyan-200: #D3DCEB;
+  --color-cyan-300: #AFC0DA; --color-cyan-400: #7F96BE; --color-cyan-500: #4F6C9C;
+  --color-cyan-600: #24457A; --color-cyan-700: #1B355F; --color-cyan-800: #172C4E;
+  --color-cyan-900: #13243F; --color-cyan-950: #0C172A;
+  --color-pink-50: #F2F5F9;  --color-pink-100: #E9EEF6; --color-pink-200: #D3DCEB;
+  --color-pink-300: #AFC0DA; --color-pink-400: #7F96BE; --color-pink-500: #4F6C9C;
+  --color-pink-600: #24457A; --color-pink-700: #1B355F; --color-pink-800: #172C4E;
+  --color-pink-900: #13243F; --color-pink-950: #0C172A;
+
+  /* Tích cực (emerald, green, teal, lime) */
+  --color-emerald-50: #F1F7F3;  --color-emerald-100: #E5F1E9; --color-emerald-200: #C7E2D0;
+  --color-emerald-300: #9CCBAE; --color-emerald-400: #5FA77F; --color-emerald-500: #2F8659;
+  --color-emerald-600: #1E6E46; --color-emerald-700: #185A39; --color-emerald-800: #14482F;
+  --color-emerald-900: #103B27; --color-emerald-950: #0A2418;
+  --color-green-50: #F1F7F3;  --color-green-100: #E5F1E9; --color-green-200: #C7E2D0;
+  --color-green-300: #9CCBAE; --color-green-400: #5FA77F; --color-green-500: #2F8659;
+  --color-green-600: #1E6E46; --color-green-700: #185A39; --color-green-800: #14482F;
+  --color-green-900: #103B27; --color-green-950: #0A2418;
+  --color-teal-50: #F1F7F3;  --color-teal-100: #E5F1E9; --color-teal-200: #C7E2D0;
+  --color-teal-300: #9CCBAE; --color-teal-400: #5FA77F; --color-teal-500: #2F8659;
+  --color-teal-600: #1E6E46; --color-teal-700: #185A39; --color-teal-800: #14482F;
+  --color-teal-900: #103B27; --color-teal-950: #0A2418;
+  --color-lime-50: #F1F7F3;  --color-lime-100: #E5F1E9; --color-lime-200: #C7E2D0;
+  --color-lime-300: #9CCBAE; --color-lime-400: #5FA77F; --color-lime-500: #2F8659;
+  --color-lime-600: #1E6E46; --color-lime-700: #185A39; --color-lime-800: #14482F;
+  --color-lime-900: #103B27; --color-lime-950: #0A2418;
+
+  /* Cảnh báo (amber, yellow, orange) */
+  --color-amber-50: #FBF6EC;  --color-amber-100: #F7EDDB; --color-amber-200: #EED8B0;
+  --color-amber-300: #E2BB7A; --color-amber-400: #CC9545; --color-amber-500: #A96E14;
+  --color-amber-600: #855000; --color-amber-700: #6E4200; --color-amber-800: #573500;
+  --color-amber-900: #462B03; --color-amber-950: #2A1A02;
+  --color-yellow-50: #FBF6EC;  --color-yellow-100: #F7EDDB; --color-yellow-200: #EED8B0;
+  --color-yellow-300: #E2BB7A; --color-yellow-400: #CC9545; --color-yellow-500: #A96E14;
+  --color-yellow-600: #855000; --color-yellow-700: #6E4200; --color-yellow-800: #573500;
+  --color-yellow-900: #462B03; --color-yellow-950: #2A1A02;
+  --color-orange-50: #FBF6EC;  --color-orange-100: #F7EDDB; --color-orange-200: #EED8B0;
+  --color-orange-300: #E2BB7A; --color-orange-400: #CC9545; --color-orange-500: #A96E14;
+  --color-orange-600: #855000; --color-orange-700: #6E4200; --color-orange-800: #573500;
+  --color-orange-900: #462B03; --color-orange-950: #2A1A02;
+
+  /* Lỗi (red, rose) */
+  --color-red-50: #FBF2F1;  --color-red-100: #F8E4E2; --color-red-200: #F0C7C3;
+  --color-red-300: #E39C95; --color-red-400: #D06A61; --color-red-500: #BA4036;
+  --color-red-600: #A3241B; --color-red-700: #891D16; --color-red-800: #6F1812;
+  --color-red-900: #5A1511; --color-red-950: #360C09;
+  --color-rose-50: #FBF2F1;  --color-rose-100: #F8E4E2; --color-rose-200: #F0C7C3;
+  --color-rose-300: #E39C95; --color-rose-400: #D06A61; --color-rose-500: #BA4036;
+  --color-rose-600: #A3241B; --color-rose-700: #891D16; --color-rose-800: #6F1812;
+  --color-rose-900: #5A1511; --color-rose-950: #360C09;
+
+  /* ---- Chữ: nhỏ nhất 12px ---- */
+  --text-2xs: 0.75rem;      --text-2xs--line-height: 1.125rem;  /* 12/18 nhãn, chú thích */
+  --text-xs: 0.8125rem;     --text-xs--line-height: 1.25rem;    /* 13/20 ô bảng, nội dung dày */
+  --text-sm: 0.875rem;      --text-sm--line-height: 1.375rem;   /* 14/22 nội dung */
+  --text-base: 1rem;        --text-base--line-height: 1.5rem;   /* 16/24 tiêu đề khối */
+  --text-lg: 1.125rem;      --text-lg--line-height: 1.625rem;
+  --text-xl: 1.25rem;       --text-xl--line-height: 1.75rem;
+  --text-2xl: 1.375rem;     --text-2xl--line-height: 1.75rem;   /* 22/28 tiêu đề trang, số lớn */
+  --text-3xl: 1.75rem;      --text-3xl--line-height: 2.25rem;
+  --text-4xl: 2rem;         --text-4xl--line-height: 2.5rem;
+
+  /* ---- Bo góc: 4 / 6 / 10 ---- */
+  --radius-xs: 4px;
+  --radius-sm: 4px;
+  --radius: 4px;
+  --radius-md: 6px;
+  --radius-lg: 6px;
+  --radius-xl: 10px;
+  --radius-2xl: 10px;
+  --radius-3xl: 10px;
+
+  /* ---- Đổ bóng: thẻ không có bóng, chỉ lớp nổi (menu, modal, toast) ---- */
+  --shadow-2xs: 0 0 #0000;
+  --shadow-xs: 0 0 #0000;
+  --shadow-sm: 0 0 #0000;
+  --shadow: 0 0 #0000;
+  --shadow-md: 0 1px 2px rgb(22 23 26 / 0.06), 0 8px 24px rgb(22 23 26 / 0.08);
+  --shadow-lg: 0 1px 2px rgb(22 23 26 / 0.06), 0 8px 24px rgb(22 23 26 / 0.08);
+  --shadow-xl: 0 1px 2px rgb(22 23 26 / 0.06), 0 12px 32px rgb(22 23 26 / 0.12);
+  --shadow-2xl: 0 1px 2px rgb(22 23 26 / 0.06), 0 16px 48px rgb(22 23 26 / 0.16);
+  --shadow-pop: 0 1px 2px rgb(22 23 26 / 0.06), 0 8px 24px rgb(22 23 26 / 0.08);
 }
 
 /* ========================================================================= */
-/* UPBASE ENTERPRISE LIGHT THEME DESIGN TOKENS (CHUẨN SAAS SÁNG HIỆN ĐẠI)     */
+/* NỀN TẢNG                                                                   */
 /* ========================================================================= */
-
-:root {
-  --font-sans: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  --bg-base: #f8fafc;        /* slate-50: Nền tổng thể mềm mại */
-  --bg-surface: #ffffff;     /* white: Nền thẻ, popup, bảng */
-  --bg-surface-alt: #f1f5f9; /* slate-100: Header bảng, inner card */
-  --bg-hover: #f1f5f9;       /* slate-100: Trạng thái hover */
-  --border-subtle: #e2e8f0;  /* slate-200: Đường viền mảnh */
-  --border-accent: #cbd5e1;  /* slate-300: Đường viền nhấn */
-  --text-primary: #0f172a;   /* slate-900: Tiêu đề & chỉ số chính */
-  --text-secondary: #334155; /* slate-700: Văn bản nội dung */
-  --text-muted: #64748b;     /* slate-500: Chú thích phụ */
-  --primary-blue: #2563eb;   /* blue-600 */
-  --emerald-green: #059669;  /* emerald-600 */
-  --amber-gold: #d97706;     /* amber-600 */
-  --rose-red: #dc2626;       /* red-600 */
-}
-
-/* ========================================================================= */
-/* UNIVERSAL TYPOGRAPHY SYSTEM (ĐỒNG NHẤT TOÀN DIỆN FONT CHỮ TOÀN HỆ THỐNG)  */
-/* ========================================================================= */
-
-*, *::before, *::after {
-  font-family: inherit;
-}
 
 html, body {
-  background-color: var(--bg-base);
-  color: var(--text-primary);
+  background-color: var(--color-canvas);
+  color: var(--color-ink);
   min-height: 100vh;
-  font-family: var(--font-sans) !important;
+  font-family: var(--font-sans);
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 button, input, select, textarea, optgroup {
-  font-family: var(--font-sans) !important;
+  font-family: inherit;
 }
 
-/* Align numbers in tables and metrics cleanly with tabular figures */
+/* Số trong bảng và chỉ số luôn thẳng cột */
 table, .tabular-nums {
   font-variant-numeric: tabular-nums;
 }
 
-/* Harmonize font-mono elements to use the same unified Plus Jakarta Sans typography 
-   with tabular-nums for aligned columns, preventing jarring typewriter fonts in UI */
+/* font-mono trong code cũ dùng để căn số: hiển thị bằng font giao diện với số đều cột.
+   Mã (mã deal, SKU, mã hợp đồng) dùng class font-code. */
 .font-mono:not(pre):not(code):not(kbd) {
-  font-family: var(--font-sans) !important;
-  font-variant-numeric: tabular-nums !important;
-  letter-spacing: -0.01em;
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
+}
+.font-code, pre, code, kbd, samp {
+  font-family: var(--font-mono);
 }
 
-pre, code, kbd, samp {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace !important;
+/* Focus bàn phím: luôn nhìn thấy */
+:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+input:focus-visible, textarea:focus-visible, select:focus-visible {
+  outline-offset: -1px;
 }
 
-/* Light Mode Custom Scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: #f1f5f9;
-}
-::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 9999px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
-/* Ultra-slim unobtrusive scrollbar for Sidebar Navigation */
-.sidebar-scrollbar::-webkit-scrollbar {
-  width: 4px;
-}
-.sidebar-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
-}
-.sidebar-scrollbar::-webkit-scrollbar-thumb {
-  background: #e2e8f0;
-  border-radius: 9999px;
-}
-.sidebar-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #cbd5e1;
-}
-.sidebar-scrollbar {
-  scrollbar-width: thin;
-  scrollbar-color: #e2e8f0 transparent;
-}
+/* Thanh cuộn */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--color-line-strong); border-radius: 9999px; border: 2px solid var(--color-canvas); }
+::-webkit-scrollbar-thumb:hover { background: var(--color-ink-3); }
 
-/* Clean Enterprise Utility Classes - Light Theme */
+.sidebar-scrollbar { scrollbar-width: thin; scrollbar-color: var(--color-line) transparent; }
+.sidebar-scrollbar::-webkit-scrollbar { width: 4px; }
+.sidebar-scrollbar::-webkit-scrollbar-thumb { background: var(--color-line); border: 0; }
+
+/* ========================================================================= */
+/* LỚP THÀNH PHẦN DÙNG CHUNG                                                  */
+/* ========================================================================= */
+
 .card-enterprise {
-  background-color: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
-  border-radius: 0.375rem; /* 6px crisp corners */
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.02);
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.card-enterprise:hover {
-  border-color: var(--border-accent);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: 10px;
 }
 
 .card-inner-box {
-  background-color: var(--bg-surface-alt);
-  border: 1px solid var(--border-subtle);
-  border-radius: 0.25rem; /* 4px crisp inner radius */
+  background-color: var(--color-canvas);
+  border-radius: 6px;
 }
 
-/* Subtle Table Styling - Light Theme */
 .table-header-enterprise {
-  background-color: var(--bg-surface-alt);
-  color: var(--text-secondary);
-  font-size: 0.72rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  border-bottom: 1px solid var(--border-subtle);
+  background-color: var(--color-surface);
+  color: var(--color-ink-3);
+  font-size: 0.78rem;
+  font-weight: 500;
+  border-bottom: 1px solid var(--color-line);
 }
 
 .table-row-enterprise {
-  border-bottom: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--color-line);
   transition: background-color 0.12s ease;
 }
-
 .table-row-enterprise:hover {
-  background-color: var(--bg-hover);
+  background-color: var(--color-canvas);
 }
 
-/* Crisp Pastel Status Badges - Light Theme & Zero-Wrap Guarantee */
-.badge-emerald,
-.badge-blue,
-.badge-amber,
-.badge-rose,
-.badge-purple,
-.badge-slate,
-[class*="badge-"],
-span[class*="rounded-full"][class*="text-[1"],
-span[class*="rounded-full"][class*="text-xs"],
-span[class*="rounded"][class*="text-[1"],
-span[class*="rounded-md"][class*="text-[1"],
-span[class*="rounded-lg"][class*="text-[1"] {
-  white-space: nowrap !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  flex-shrink: 0 !important;
-  line-height: 1.25 !important;
-}
-
-.badge-emerald {
-  background-color: #ecfdf5;
-  color: #047857;
-  border: 1px solid #a7f3d0;
-  border-radius: 0.25rem;
-}
-
-.badge-blue {
-  background-color: #eff6ff;
-  color: #1d4ed8;
-  border: 1px solid #bfdbfe;
-  border-radius: 0.25rem;
-}
-
-.badge-amber {
-  background-color: #fffbeb;
-  color: #b45309;
-  border: 1px solid #fde68a;
-  border-radius: 0.25rem;
-}
-
-.badge-rose {
-  background-color: #fef2f2;
-  color: #b91c1c;
-  border: 1px solid #fecaca;
-  border-radius: 0.25rem;
-}
-
-.badge-purple {
-  background-color: #faf5ff;
-  color: #6d28d9;
-  border: 1px solid #ddd6fe;
-  border-radius: 0.25rem;
-}
-
-.badge-slate {
-  background-color: #f1f5f9;
-  color: #334155;
-  border: 1px solid #cbd5e1;
-  border-radius: 0.25rem;
-}
-
-/* ========================================================================= */
-/* STANDARDIZED BUTTON SYSTEM (ĐỒNG BỘ KÍCH THƯỚC NÚT TOÀN ỨNG DỤNG)        */
-/* ========================================================================= */
-
-/* General button hygiene: scoped to buttons with explicit button classes to prevent interfering with layout buttons */
-.btn-sm, .btn-md, .btn-lg {
+/* Nhãn trạng thái: nền nhạt, chữ đậm màu, không viền */
+.badge-emerald, .badge-blue, .badge-amber, .badge-rose, .badge-purple, .badge-slate {
+  display: inline-flex;
+  align-items: center;
   white-space: nowrap;
   flex-shrink: 0;
+  border-radius: 4px;
+  border: 0;
+  font-weight: 500;
+}
+.badge-emerald { background-color: var(--color-positive-soft); color: var(--color-positive); }
+.badge-blue, .badge-purple { background-color: var(--color-accent-soft); color: var(--color-accent); }
+.badge-amber { background-color: var(--color-warning-soft); color: var(--color-warning); }
+.badge-rose { background-color: var(--color-critical-soft); color: var(--color-critical); }
+.badge-slate { background-color: var(--color-sunken); color: var(--color-ink-2); }
+
+/* Nút: 3 cỡ */
+.btn-sm, .btn-md, .btn-lg {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  white-space: nowrap;
+  flex-shrink: 0;
+  font-weight: 500;
+  border-radius: 6px;
+}
+.btn-sm { height: 28px; padding: 0 10px; font-size: 13px; gap: 6px; }
+.btn-md { height: 34px; padding: 0 14px; font-size: 13.5px; gap: 6px; }
+.btn-lg { height: 40px; padding: 0 18px; font-size: 14px; gap: 8px; }
+
+/* Ô nhập */
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="submit"]):not([type="button"]),
+textarea,
+select {
+  background-color: var(--color-surface);
+  color: var(--color-ink);
+  border-color: var(--color-line-strong);
+}
+input::placeholder, textarea::placeholder {
+  color: var(--color-ink-3);
+  opacity: 0.8;
+}
+input:focus, textarea:focus, select:focus {
+  border-color: var(--color-focus);
 }
 
-/* Button Small: Table row actions, inline secondary actions */
-.btn-sm, button.btn-sm {
-  height: 28px !important;
-  min-height: 28px !important;
-  padding: 0 10px !important;
-  font-size: 11px !important;
-  font-weight: 500 !important;
-  border-radius: 6px !important;
-  gap: 5px !important;
+/* Nút chính cũ (bg-blue-600, bg-indigo-600…) hiển thị theo màu nút chính */
+button[class~="bg-blue-600"], button[class~="bg-blue-700"], button[class~="bg-indigo-600"],
+button[class~="bg-purple-600"], button[class~="bg-violet-600"] {
+  background-color: var(--color-primary);
+}
+button[class~="bg-blue-600"]:hover:not(:disabled), button[class~="bg-blue-700"]:hover:not(:disabled), button[class~="bg-indigo-600"]:hover:not(:disabled),
+button[class~="bg-purple-600"]:hover:not(:disabled), button[class~="bg-violet-600"]:hover:not(:disabled) {
+  background-color: var(--color-primary-hover);
 }
 
-/* Button Standard: Header CTA, Modals, Primary Toolbar actions */
-.btn-md, button.btn-md {
-  height: 32px !important;
-  min-height: 32px !important;
-  padding: 0 12px !important;
-  font-size: 12px !important;
-  font-weight: 600 !important;
-  border-radius: 8px !important;
-  gap: 6px !important;
-}
-
-/* Button Large: Prominent Primary Hero CTAs */
-.btn-lg, button.btn-lg {
-  height: 38px !important;
-  min-height: 38px !important;
-  padding: 0 16px !important;
-  font-size: 13px !important;
-  font-weight: 600 !important;
-  border-radius: 8px !important;
-  gap: 8px !important;
+/* Lớp phủ modal */
+.fixed.inset-0.bg-black\/70,
+.fixed.inset-0.bg-black\/60,
+.fixed.inset-0.bg-black\/50,
+.fixed.inset-0.bg-slate-950\/80,
+.fixed.inset-0.bg-slate-900\/60,
+.fixed.inset-0.bg-slate-900\/50 {
+  background-color: rgb(22 23 26 / 0.4);
 }
 
 /* ========================================================================= */
-/* DARK-TO-LIGHT UTILITY OVERRIDES (ÁNH XẠ TOÀN BỘ MÀU TỐI SANG MÀU SÁNG)    */
+/* LỚP TƯƠNG THÍCH CŨ — KHÔNG DÙNG CHO CODE MỚI                               */
+/* Một số màn hình còn viết theo nền tối (bg-slate-900, text-white…).          */
+/* Các quy tắc dưới đây đưa chúng về nền sáng. Xóa dần khi chuyển từng màn     */
+/* hình sang token (xem DESIGN_SYSTEM.md, mục Lộ trình).                       */
 /* ========================================================================= */
 
-/* Pure White Surfaces for all Dark Hex backgrounds */
-[class*="bg-[#0"]:not(button):not(button *):not([class*="bg-blue"]):not([class*="bg-emerald"]):not([class*="bg-rose"]):not([class*="bg-purple"]):not([class*="bg-amber"]),
-[class*="bg-[#1"]:not(button):not(button *):not([class*="bg-blue"]):not([class*="bg-emerald"]):not([class*="bg-rose"]):not([class*="bg-purple"]):not([class*="bg-amber"]),
-[class*="bg-slate-950"]:not(button):not(button *),
-[class*="bg-slate-900"]:not(button):not(button *),
+[class*="bg-[#0"]:not(button):not(button *),
+[class*="bg-[#1"]:not(button):not(button *),
+[class*="bg-slate-950"]:not(button):not(button *):not(.fixed),
+[class*="bg-slate-900"]:not(button):not(button *):not(.fixed),
 [class*="bg-slate-850"]:not(button):not(button *) {
-  background-color: #ffffff !important;
+  background-color: var(--color-surface);
 }
 
-/* Slate-50 Sub-surfaces & Headers */
-[class*="bg-[#101726]"],
-[class*="bg-[#121826]"],
-[class*="bg-[#0e1424]"],
-[class*="bg-[#090e18]"],
-[class*="bg-[#090d16]"],
-[class*="bg-[#0f172a]"],
-[class*="bg-[#162036]"],
-[class*="bg-[#131d31]"],
-[class*="bg-[#0e1628]"],
-[class*="bg-[#111827]"],
-[class*="bg-[#0d1019]"],
-[class*="bg-[#121622]"],
-[class*="bg-[#161c2a]"] {
-  background-color: #f8fafc !important;
+[class*="bg-slate-800"]:not(button):not(button *):not(.fixed) {
+  background-color: var(--color-canvas);
 }
 
-/* Slate-100 Accents & Table Rows */
-[class*="bg-[#182030]"],
-[class*="bg-[#1a2844]"],
-[class*="bg-[#1e293b]"] {
-  background-color: #f1f5f9 !important;
-}
-
-/* Hover Rows */
-[class*="hover:bg-[#"]:hover,
-[class*="hover:bg-slate-800"]:hover,
-[class*="hover:bg-slate-900"]:hover {
-  background-color: #f1f5f9 !important;
-}
-
-/* Crisp Slate Borders */
 [class*="border-[#"],
 [class*="border-slate-800"],
 [class*="border-slate-700"],
 [class*="border-slate-600"] {
-  border-color: #e2e8f0 !important;
+  border-color: var(--color-line);
 }
 
-/* Dividers */
 [class*="divide-[#"] > :not([hidden]) ~ :not([hidden]),
 [class*="divide-slate-800"] > :not([hidden]) ~ :not([hidden]),
 [class*="divide-slate-700"] > :not([hidden]) ~ :not([hidden]) {
-  border-color: #e2e8f0 !important;
+  border-color: var(--color-line);
 }
 
-/* Form Controls - Crisp White with Slate Borders */
-input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]),
-textarea,
-select {
-  background-color: #ffffff !important;
-  color: #0f172a !important;
-  border-color: #cbd5e1 !important;
+[class*="hover:bg-slate-800"]:not(button):hover,
+[class*="hover:bg-slate-900"]:not(button):hover {
+  background-color: var(--color-sunken);
 }
 
-input:focus,
-textarea:focus,
-select:focus {
-  border-color: #3b82f6 !important;
-  outline: none;
+.text-slate-100:not(button):not(button *):not([class*="bg-"]),
+.text-slate-200:not(button):not(button *):not([class*="bg-"]) {
+  color: var(--color-ink);
+}
+.text-slate-300:not(button):not(button *):not([class*="bg-"]) {
+  color: var(--color-ink-2);
 }
 
-input::placeholder,
-textarea::placeholder {
-  color: #94a3b8 !important;
+/* Chữ trắng nằm trên nền đã bị chuyển sang sáng */
+[class*="bg-slate-900"]:not(button):not(.fixed) .text-white:not(button *):not([class*="bg-"]),
+[class*="bg-slate-950"]:not(button):not(.fixed) .text-white:not(button *):not([class*="bg-"]),
+[class*="bg-[#0"]:not(button) .text-white:not(button *):not([class*="bg-"]),
+[class*="bg-[#1"]:not(button) .text-white:not(button *):not([class*="bg-"]),
+.text-white[class*="bg-slate-900"]:not(button):not(.fixed),
+.text-white[class*="bg-[#0"]:not(button),
+.text-white[class*="bg-[#1"]:not(button) {
+  color: var(--color-ink);
+}
+[class*="bg-slate-900"]:not(button):not(.fixed) [class*="bg-white/"]:not([class*="bg-white/9"]),
+[class*="bg-[#0"]:not(button) [class*="bg-white/"]:not([class*="bg-white/9"]) {
+  background-color: var(--color-sunken);
+  border-color: var(--color-line);
 }
 
-/* High-Contrast Typography for Light Theme */
-.text-slate-100:not(button):not(button *):not([class*="badge"]):not([class*="bg-blue"]):not([class*="bg-emerald"]):not([class*="bg-rose"]),
-.text-slate-200:not(button):not(button *):not([class*="badge"]):not([class*="bg-blue"]):not([class*="bg-emerald"]):not([class*="bg-rose"]) {
-  color: #0f172a !important;
+/* Bảng: tiêu đề cột, số và nút trong ô không xuống dòng */
+th,
+td.text-right,
+td.text-center,
+td button {
+  white-space: nowrap;
 }
 
-.text-slate-300:not(button):not(button *):not([class*="badge"]):not([class*="bg-blue"]):not([class*="bg-emerald"]):not([class*="bg-rose"]) {
-  color: #334155 !important;
-}
-
-.text-slate-400:not(button):not(button *):not([class*="badge"]):not([class*="bg-blue"]):not([class*="bg-emerald"]):not([class*="bg-rose"]) {
-  color: #64748b !important;
-}
-
-/* Turn text-white on light surfaces into dark slate, strictly excluding solid buttons & badges */
-body *:not(button):not(button *):not([class*="badge"]):not([class*="bg-blue"]):not([class*="bg-emerald"]):not([class*="bg-rose"]):not([class*="bg-purple"]):not([class*="bg-amber"]):not([class*="bg-red"]):not([class*="from-"]):not([class*="to-"]).text-white {
-  color: #0f172a !important;
-}
-
-/* Ensure white text is strictly preserved on solid colored buttons */
-button.bg-blue-600, button.bg-blue-600 *,
-button.bg-emerald-600, button.bg-emerald-600 *,
-button.bg-rose-600, button.bg-rose-600 *,
-button.bg-purple-600, button.bg-purple-600 *,
-button[class*="from-blue"], button[class*="from-blue"] *,
-.text-white.bg-blue-600 {
-  color: #ffffff !important;
-}
-
-/* Modal Overlay Backdrop */
-.fixed.inset-0.bg-black\/70,
-.fixed.inset-0.bg-slate-950\/80 {
-  background-color: rgba(15, 23, 42, 0.45) !important;
-  backdrop-filter: blur(2px);
+/* Nhãn nhỏ (span có padding + bo góc) không xuống dòng */
+span[class*="px-"][class*="rounded"]:not([class*="block"]) {
+  white-space: nowrap;
 }

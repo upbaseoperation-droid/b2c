@@ -149,17 +149,17 @@ export const KocProfileModal: React.FC<KocProfileModalProps> = ({
           </button>
 
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-            <div className="w-14 h-14 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-2xl shadow-sm shrink-0">
+            <div className="w-14 h-14 rounded-xl bg-blue-600 text-white flex items-center justify-center font-semibold text-2xl shadow-sm shrink-0">
               {koc.stageName.charAt(0)}
             </div>
 
             <div className="space-y-1">
               <div className="flex items-center flex-wrap gap-2">
-                <h3 id="koc-profile-title" className="text-lg font-bold text-slate-900">{koc.stageName}</h3>
+                <h3 id="koc-profile-title" className="text-lg font-semibold text-slate-900">{koc.stageName}</h3>
                 <span className="badge-blue px-2 py-0.5 rounded text-xs font-semibold">
                   {koc.tierLabel}
                 </span>
-                <span className="badge-purple px-2 py-0.5 rounded text-xs font-bold font-mono">
+                <span className="badge-purple px-2 py-0.5 rounded text-xs font-semibold font-mono">
                   KL: {koc.salaryGrade}
                 </span>
                 <span className={`px-2 py-0.5 rounded text-xs font-semibold ${
@@ -176,7 +176,7 @@ export const KocProfileModal: React.FC<KocProfileModalProps> = ({
                   {koc.kocCategory || 'Personal care'}
                 </span>
                 {koc.isWinnerTop20 && (
-                  <span className="badge-amber px-2 py-0.5 rounded text-xs font-bold flex items-center gap-1">
+                  <span className="badge-amber px-2 py-0.5 rounded text-xs font-semibold flex items-center gap-1">
                     <Flame className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
                     <span>Winner Top 20</span>
                   </span>
@@ -207,7 +207,7 @@ export const KocProfileModal: React.FC<KocProfileModalProps> = ({
               </div>
 
               <div className="text-xs text-slate-500">
-                🏷️ Chuyên môn ngách: <strong className="text-slate-700">{koc.niche}</strong>
+                Chuyên môn ngách: <strong className="text-slate-700">{koc.niche}</strong>
               </div>
             </div>
           </div>
@@ -215,10 +215,10 @@ export const KocProfileModal: React.FC<KocProfileModalProps> = ({
           {/* Navigation Tabs inside Modal */}
           <div className="flex items-center gap-2 mt-5 border-t border-slate-200 pt-3 overflow-x-auto">
             {[
-              { id: 'ECOMMERCE', label: '1. Hiệu Suất E-Commerce & GMV', icon: ShoppingBag },
-              { id: 'AUDIENCE', label: '2. Nhân Khẩu Học & Tệp Follower', icon: Users },
-              { id: 'LOGISTICS', label: '3. Hậu Cần Nhận Mẫu & Vận Hành', icon: Truck },
-              { id: 'CONTRACT_HISTORY', label: '4. Pháp Lý & Lịch Sử Booking', icon: FileText },
+              { id: 'ECOMMERCE', label: '1. Hiệu suất E-Commerce & GMV', icon: ShoppingBag },
+              { id: 'AUDIENCE', label: '2. Nhân khẩu học & tệp Follower', icon: Users },
+              { id: 'LOGISTICS', label: '3. Hậu cần nhận mẫu & vận hành', icon: Truck },
+              { id: 'CONTRACT_HISTORY', label: '4. Pháp lý & lịch sử booking', icon: FileText },
             ].map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
@@ -247,7 +247,7 @@ export const KocProfileModal: React.FC<KocProfileModalProps> = ({
             <div className="space-y-4 animate-in fade-in duration-150">
               {/* Classification Info Box */}
               <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
-                <div className="text-xs font-bold text-slate-800 flex items-center gap-1.5 mb-2.5 uppercase tracking-wider">
+                <div className="text-xs font-semibold text-slate-800 flex items-center gap-1.5 mb-2.5">
                   <ShieldCheck className="w-4 h-4 text-emerald-600" />
                   <span>Định Danh &amp; Phân Loại Creator Theo Quy Chuẩn Booking:</span>
                 </div>
@@ -255,22 +255,22 @@ export const KocProfileModal: React.FC<KocProfileModalProps> = ({
                   <div className="p-2.5 bg-white rounded-lg border border-slate-200 shadow-2xs">
                     <span className="text-xs text-slate-500 block font-medium">1. Khung Lương (KL):</span>
                     <strong className="text-purple-700 font-mono text-sm block mt-0.5">{koc.salaryGrade}</strong>
-                    <span className="text-[11px] text-slate-400">Đơn giá net video</span>
+                    <span className="text-2xs text-slate-400">Đơn giá net video</span>
                   </div>
                   <div className="p-2.5 bg-white rounded-lg border border-slate-200 shadow-2xs">
                     <span className="text-xs text-slate-500 block font-medium">2. Segment:</span>
                     <strong className="text-slate-900 font-semibold text-xs block mt-0.5">{koc.segment || 'Massive Creator'}</strong>
-                    <span className="text-[11px] text-slate-400">Cấp độ chiến lược</span>
+                    <span className="text-2xs text-slate-400">Cấp độ chiến lược</span>
                   </div>
                   <div className="p-2.5 bg-white rounded-lg border border-slate-200 shadow-2xs">
-                    <span className="text-xs text-slate-500 block font-medium">3. Tệp Kênh:</span>
+                    <span className="text-xs text-slate-500 block font-medium">3. Tệp kênh:</span>
                     <strong className="text-emerald-700 font-semibold text-xs block mt-0.5">{koc.tepKenh || koc.creatorCategory || 'Review Nữ'}</strong>
-                    <span className="text-[11px] text-slate-400">Định vị nội dung</span>
+                    <span className="text-2xs text-slate-400">Định vị nội dung</span>
                   </div>
                   <div className="p-2.5 bg-white rounded-lg border border-slate-200 shadow-2xs">
                     <span className="text-xs text-slate-500 block font-medium">4. KOC Category:</span>
                     <strong className="text-pink-700 font-semibold text-xs block mt-0.5">{koc.kocCategory || 'Personal care'}</strong>
-                    <span className="text-[11px] text-slate-400">Ngành hàng cốt lõi</span>
+                    <span className="text-2xs text-slate-400">Ngành hàng cốt lõi</span>
                   </div>
                 </div>
               </div>
@@ -279,53 +279,53 @@ export const KocProfileModal: React.FC<KocProfileModalProps> = ({
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className="p-3.5 bg-white rounded-xl border border-slate-200 shadow-2xs text-center">
                   <span className="text-xs text-slate-500 block">Followers Kênh</span>
-                  <span className="text-base font-bold text-slate-900 mt-0.5 block">
+                  <span className="text-base font-semibold text-slate-900 mt-0.5 block">
                     {koc.followers.toLocaleString('vi-VN')}
                   </span>
-                  <span className="text-[11px] text-slate-500">View TB: {koc.avgViews.toLocaleString('vi-VN')}</span>
+                  <span className="text-2xs text-slate-500">View TB: {koc.avgViews.toLocaleString('vi-VN')}</span>
                 </div>
 
                 <div className="p-3.5 bg-white rounded-xl border border-slate-200 shadow-2xs text-center">
-                  <span className="text-xs text-slate-500 block">Báo Giá Video Net</span>
-                  <span className="text-base font-bold text-blue-600 mt-0.5 block font-mono">
+                  <span className="text-xs text-slate-500 block">Báo giá video net</span>
+                  <span className="text-base font-semibold text-blue-600 mt-0.5 block font-mono">
                     {koc.rateCardVideo.toLocaleString('vi-VN')} đ
                   </span>
-                  <span className="badge-purple px-1.5 py-0.2 rounded text-[10px] font-bold mt-1 inline-block">
+                  <span className="badge-purple px-1.5 py-0.2 rounded text-2xs font-semibold mt-1 inline-block">
                     Khung {koc.salaryGrade}
                   </span>
                 </div>
 
                 <div className="p-3.5 bg-white rounded-xl border border-emerald-200 bg-emerald-50/20 shadow-2xs text-center">
-                  <span className="text-xs text-emerald-700 block font-semibold">Kỷ Lục GMV (Best Case)</span>
-                  <span className="text-base font-black text-emerald-700 mt-0.5 block font-mono">
+                  <span className="text-xs text-emerald-700 block font-semibold">Kỷ lục GMV</span>
+                  <span className="text-base font-semibold text-emerald-700 mt-0.5 block font-mono">
                     {(koc.gmvBestCase || totalGmv).toLocaleString('vi-VN')} đ
                   </span>
-                  <span className="text-[11px] text-slate-500">Đơn hàng: ~{(koc.itemsSold || 1200).toLocaleString('vi-VN')} món</span>
+                  <span className="text-2xs text-slate-500">Đơn hàng: ~{(koc.itemsSold || 1200).toLocaleString('vi-VN')} món</span>
                 </div>
 
                 <div className="p-3.5 bg-white rounded-xl border border-blue-200 bg-blue-50/20 shadow-2xs text-center">
-                  <span className="text-xs text-blue-700 font-semibold block">AOV (Giá Trị Đơn TB)</span>
-                  <span className="text-base font-black text-blue-700 mt-0.5 block font-mono">
+                  <span className="text-xs text-blue-700 font-semibold block">AOV (giá trị đơn TB)</span>
+                  <span className="text-base font-semibold text-blue-700 mt-0.5 block font-mono">
                     {(koc.aov || 245000).toLocaleString('vi-VN')} đ
                   </span>
-                  <span className="text-[11px] text-slate-500">GPM: {(koc.gpm || 28.5)}%</span>
+                  <span className="text-2xs text-slate-500">GPM: {(koc.gpm || 28.5)}%</span>
                 </div>
               </div>
 
               {/* GMV Channels Breakdown */}
               <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-3">
                 <div className="flex items-center justify-between">
-                  <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                  <h4 className="text-xs font-semibold text-slate-900 flex items-center gap-2">
                     <PieChart className="w-4 h-4 text-blue-600" />
-                    <span>Cơ Cấu Nguồn Doanh Thu (Tỉ Trọng GMV Thực Tế KOC Bán Được)</span>
+                    <span>Cơ cấu nguồn doanh thu (tỉ trọng GMV thực tế KOC bán được)</span>
                   </h4>
-                  <span className="text-[11px] text-slate-500">Đồng bộ TikTok Shop Analytics</span>
+                  <span className="text-2xs text-slate-500">Đồng bộ TikTok Shop Analytics</span>
                 </div>
 
                 <div className="space-y-3 pt-1">
                   <div>
                     <div className="flex justify-between text-xs mb-1">
-                      <span className="text-slate-600 font-medium">1. Tỉ Trọng GMV Từ Video Ngắn (Short Video)</span>
+                      <span className="text-slate-600 font-medium">1. Tỉ trọng GMV từ video ngắn</span>
                       <strong className="text-blue-700 font-mono">{gmvShareVideo}%</strong>
                     </div>
                     <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden border border-slate-200">
@@ -335,7 +335,7 @@ export const KocProfileModal: React.FC<KocProfileModalProps> = ({
 
                   <div>
                     <div className="flex justify-between text-xs mb-1">
-                      <span className="text-slate-600 font-medium">2. Tỉ Trọng GMV Từ Livestream</span>
+                      <span className="text-slate-600 font-medium">2. Tỉ trọng GMV từ livestream</span>
                       <strong className="text-purple-700 font-mono">{gmvShareLive}%</strong>
                     </div>
                     <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden border border-slate-200">
@@ -345,7 +345,7 @@ export const KocProfileModal: React.FC<KocProfileModalProps> = ({
 
                   <div>
                     <div className="flex justify-between text-xs mb-1">
-                      <span className="text-slate-600 font-medium">3. Tỉ Trọng GMV Từ Showcase Ghim Kênh</span>
+                      <span className="text-slate-600 font-medium">3. Tỉ trọng GMV từ Showcase Ghim kênh</span>
                       <strong className="text-emerald-700 font-mono">{gmvShareProductCard}%</strong>
                     </div>
                     <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden border border-slate-200">
@@ -359,7 +359,7 @@ export const KocProfileModal: React.FC<KocProfileModalProps> = ({
               <div className="p-3.5 bg-blue-50/70 border border-blue-200 rounded-xl flex items-start gap-3">
                 <Sparkles className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
                 <div>
-                  <strong className="text-slate-900 font-bold block mb-0.5">Gợi Ý Chiến Lược Booking Từ UpBase:</strong>
+                  <strong className="text-slate-900 font-semibold block mb-0.5">Gợi ý chiến lược booking từ Upbase:</strong>
                   <p className="text-slate-700 leading-relaxed text-xs">
                     {koc.contentNote || 'KOC có thế mạnh review chân thật, giọng truyền cảm, chuyển đổi tốt ở giỏ hàng video. Khuyến nghị chạy kèm Spark Ads 7 ngày sau khi video lên xu hướng để tối đa hóa điểm hoàn vốn (ROI).'}
                   </p>
@@ -373,7 +373,7 @@ export const KocProfileModal: React.FC<KocProfileModalProps> = ({
             <div className="space-y-4 animate-in fade-in duration-150">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-2">
-                  <h4 className="text-xs font-bold text-slate-900 uppercase">Tỷ Lệ Giới Tính Follower</h4>
+                  <h4 className="text-xs font-semibold text-slate-900">Tỷ lệ giới tính Follower</h4>
                   <div className="flex items-center justify-between text-xs pt-1">
                     <span className="text-slate-600">Nữ: <strong className="text-pink-600">{femaleRatio}%</strong></span>
                     <span className="text-slate-600">Nam: <strong className="text-blue-600">{maleRatio}%</strong></span>
@@ -385,18 +385,18 @@ export const KocProfileModal: React.FC<KocProfileModalProps> = ({
                 </div>
 
                 <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-2">
-                  <h4 className="text-xs font-bold text-slate-900 uppercase">Độ Tuổi Khán Giả Chính</h4>
+                  <h4 className="text-xs font-semibold text-slate-900">Độ tuổi khán giả chính</h4>
                   <div className="grid grid-cols-3 gap-2 text-center text-xs pt-1">
                     <div className="p-2 bg-slate-50 rounded-lg border border-slate-200">
-                      <span className="text-[11px] text-slate-500 block">18-24 tuổi</span>
+                      <span className="text-2xs text-slate-500 block">18-24 tuổi</span>
                       <strong className="text-slate-900 font-mono text-sm">{age18_24}%</strong>
                     </div>
                     <div className="p-2 bg-slate-50 rounded-lg border border-slate-200">
-                      <span className="text-[11px] text-slate-500 block">25-34 tuổi</span>
+                      <span className="text-2xs text-slate-500 block">25-34 tuổi</span>
                       <strong className="text-blue-700 font-mono text-sm">{age25_34}%</strong>
                     </div>
                     <div className="p-2 bg-slate-50 rounded-lg border border-slate-200">
-                      <span className="text-[11px] text-slate-500 block">&gt;35 tuổi</span>
+                      <span className="text-2xs text-slate-500 block">&gt;35 tuổi</span>
                       <strong className="text-slate-900 font-mono text-sm">{age35Plus}%</strong>
                     </div>
                   </div>
@@ -410,12 +410,12 @@ export const KocProfileModal: React.FC<KocProfileModalProps> = ({
             <div className="space-y-4 animate-in fade-in duration-150">
               <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-3">
                 <div className="flex items-center justify-between">
-                  <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                  <h4 className="text-xs font-semibold text-slate-900 flex items-center gap-2">
                     <Truck className="w-4 h-4 text-emerald-600" />
-                    <span>Thông Tin Nhận Hàng Gửi Mẫu</span>
+                    <span>Thông tin nhận hàng gửi mẫu</span>
                   </h4>
                   <span className="badge-emerald px-2 py-0.5 rounded text-xs font-semibold">
-                    Đã Xác Thực Địa Chỉ
+                    Đã xác thực địa chỉ
                   </span>
                 </div>
 
@@ -423,7 +423,7 @@ export const KocProfileModal: React.FC<KocProfileModalProps> = ({
                   <div className="flex items-start gap-2.5">
                     <MapPin className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
                     <div>
-                      <span className="text-xs text-slate-500 block">Địa Chỉ Nhận Hàng:</span>
+                      <span className="text-xs text-slate-500 block">Địa chỉ nhận hàng:</span>
                       <strong className="text-slate-900 text-xs block mt-0.5 leading-relaxed">
                         {koc.shippingAddress || `${koc.realName} — ${koc.phone} — Tòa nhà Upbase, Cầu Giấy, Hà Nội`}
                       </strong>
@@ -432,11 +432,11 @@ export const KocProfileModal: React.FC<KocProfileModalProps> = ({
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-slate-200">
                     <div>
-                      <span className="text-xs text-slate-500 block">Khu Vực Địa Lý:</span>
+                      <span className="text-xs text-slate-500 block">Khu vực địa lý:</span>
                       <strong className="text-slate-800">{koc.location || 'Hà Nội / Miền Bắc'}</strong>
                     </div>
                     <div>
-                      <span className="text-xs text-slate-500 block">Thời Gian Giao Mẫu Dự Kiến:</span>
+                      <span className="text-xs text-slate-500 block">Thời gian giao mẫu dự kiến:</span>
                       <span className="text-slate-700">1 - 2 Ngày làm việc</span>
                     </div>
                   </div>
@@ -445,25 +445,25 @@ export const KocProfileModal: React.FC<KocProfileModalProps> = ({
 
               {/* Contact Channels */}
               <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-3">
-                <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                <h4 className="text-xs font-semibold text-slate-900 flex items-center gap-2">
                   <Phone className="w-4 h-4 text-blue-600" />
                   <span>Kênh Liên Lạc &amp; Booking PIC Nội Bộ</span>
                 </h4>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-                    <span className="text-xs text-slate-500 block">Số Điện Thoại:</span>
-                    <span className="font-bold text-slate-900 font-mono text-xs block mt-0.5">{koc.phone}</span>
+                    <span className="text-xs text-slate-500 block">Số điện thoại:</span>
+                    <span className="font-semibold text-slate-900 font-mono text-xs block mt-0.5">{koc.phone}</span>
                   </div>
 
                   <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-                    <span className="text-xs text-slate-500 block">Zalo Làm Việc:</span>
-                    <span className="font-bold text-blue-700 font-mono text-xs block mt-0.5">{koc.zalo}</span>
+                    <span className="text-xs text-slate-500 block">Zalo làm việc:</span>
+                    <span className="font-semibold text-blue-700 font-mono text-xs block mt-0.5">{koc.zalo}</span>
                   </div>
 
                   <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-                    <span className="text-xs text-slate-500 block">Email Báo Giá:</span>
-                    <span className="font-bold text-slate-800 font-mono text-xs block mt-0.5 truncate">
+                    <span className="text-xs text-slate-500 block">Email báo giá:</span>
+                    <span className="font-semibold text-slate-800 font-mono text-xs block mt-0.5 truncate">
                       {koc.email || `${koc.channelId.replace('@', '')}@creator.vn`}
                     </span>
                   </div>
@@ -476,22 +476,22 @@ export const KocProfileModal: React.FC<KocProfileModalProps> = ({
           {activeTab === 'CONTRACT_HISTORY' && (
             <div className="space-y-4 animate-in fade-in duration-150">
               <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-2">
-                <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                <h4 className="text-xs font-semibold text-slate-900 flex items-center gap-2">
                   <ShieldCheck className="w-4 h-4 text-emerald-600" />
                   <span>Thông Tin Pháp Lý &amp; Tài Khoản Nhận Thanh Toán</span>
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs pt-1">
                   <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-200">
                     <span className="text-xs text-slate-500 block">Họ &amp; Tên Thật (Trên CCCD):</span>
-                    <span className="font-bold text-slate-900 mt-0.5 block">{koc.realName}</span>
+                    <span className="font-semibold text-slate-900 mt-0.5 block">{koc.realName}</span>
                   </div>
                   <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-200">
-                    <span className="text-xs text-slate-500 block">Số CCCD / Hộ Chiếu:</span>
+                    <span className="text-xs text-slate-500 block">Số CCCD / hộ chiếu:</span>
                     <span className="font-semibold text-slate-900 mt-0.5 block font-mono">{koc.cccd}</span>
                   </div>
                   <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-200 sm:col-span-2">
-                    <span className="text-xs text-slate-500 block">Tài Khoản Ngân Hàng KOC:</span>
-                    <span className="font-bold text-emerald-700 mt-0.5 block font-mono text-xs">
+                    <span className="text-xs text-slate-500 block">Tài khoản ngân hàng KOC:</span>
+                    <span className="font-semibold text-emerald-700 mt-0.5 block font-mono text-xs">
                       {koc.bankAccount} — Ngân Hàng {koc.bankName} ({koc.realName.toUpperCase()})
                     </span>
                   </div>
@@ -500,18 +500,18 @@ export const KocProfileModal: React.FC<KocProfileModalProps> = ({
 
               {/* Past Deals Table */}
               <div className="border border-slate-200 rounded-xl overflow-hidden shadow-2xs">
-                <div className="px-4 py-3 bg-slate-50 border-b border-slate-200 font-bold text-xs text-slate-900">
-                  Lịch Sử Các Deal Đã Thực Hiện Tại Upbase
+                <div className="px-4 py-3 bg-slate-50 border-b border-slate-200 font-semibold text-xs text-slate-900">
+                  Lịch sử các deal đã thực hiện tại Upbase
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs border-collapse">
                     <thead>
-                      <tr className="bg-slate-100 text-slate-600 text-[11px] font-semibold">
+                      <tr className="bg-slate-100 text-slate-600 text-2xs font-semibold">
                         <th className="p-2.5 pl-4">Thương Hiệu &amp; SP</th>
-                        <th className="p-2.5">Chiến Dịch</th>
-                        <th className="p-2.5">Phê Duyệt</th>
+                        <th className="p-2.5">Chiến dịch</th>
+                        <th className="p-2.5">Phê duyệt</th>
                         <th className="p-2.5">Doanh Số (GMV)</th>
-                        <th className="p-2.5 pr-4 text-right">Hiệu Quả</th>
+                        <th className="p-2.5 pr-4 text-right">Hiệu quả</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -519,14 +519,14 @@ export const KocProfileModal: React.FC<KocProfileModalProps> = ({
                         <tr key={idx} className="border-t border-slate-200 hover:bg-slate-50 transition-colors">
                           <td className="p-2.5 pl-4">
                             <strong className="text-slate-900 block">{deal.brandName}</strong>
-                            <span className="text-[11px] text-slate-500">{deal.productName}</span>
+                            <span className="text-2xs text-slate-500">{deal.productName}</span>
                           </td>
                           <td className="p-2.5">
                             <span className="text-slate-800">{deal.campaign}</span>
-                            <div className="text-[10px] text-slate-400 font-mono">{deal.date}</div>
+                            <div className="text-2xs text-slate-400 font-mono">{deal.date}</div>
                           </td>
                           <td className="p-2.5">
-                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                            <span className={`px-2 py-0.5 rounded text-2xs font-semibold ${
                               deal.brandApprovalStatus === 'ĐÃ_DUYỆT' ? 'badge-emerald' : 'badge-slate'
                             }`}>
                               {deal.brandApprovalStatus === 'ĐÃ_DUYỆT' ? '✓ Đã Duyệt' : '✕ Từ Chối'}
@@ -534,10 +534,10 @@ export const KocProfileModal: React.FC<KocProfileModalProps> = ({
                           </td>
                           <td className="p-2.5 font-mono">
                             <strong className="text-emerald-700 block">{deal.gmv30.toLocaleString('vi-VN')} đ</strong>
-                            <span className="text-[10px] text-slate-400">Phí: {deal.cost.toLocaleString('vi-VN')} đ</span>
+                            <span className="text-2xs text-slate-400">Phí: {deal.cost.toLocaleString('vi-VN')} đ</span>
                           </td>
                           <td className="p-2.5 pr-4 text-right">
-                            <span className="font-bold text-xs text-blue-700">ROI {deal.roi.toFixed(1)}</span>
+                            <span className="font-semibold text-xs text-blue-700">ROI {deal.roi.toFixed(1)}</span>
                           </td>
                         </tr>
                       ))}
@@ -555,7 +555,7 @@ export const KocProfileModal: React.FC<KocProfileModalProps> = ({
             onClick={onClose}
             className="px-4 py-2 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 text-xs font-semibold rounded-lg transition shadow-2xs"
           >
-            Đóng Hồ Sơ
+            Đóng hồ sơ
           </button>
 
           <button
@@ -563,10 +563,10 @@ export const KocProfileModal: React.FC<KocProfileModalProps> = ({
               onClose();
               onOpenQuickBook(koc);
             }}
-            className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-lg shadow-xs transition flex items-center gap-1.5"
+            className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-lg shadow-xs transition flex items-center gap-1.5"
           >
             <Zap className="w-3.5 h-3.5 fill-white" />
-            <span>Khởi Tạo Booking Với KOC Này</span>
+            <span>Khởi tạo booking với KOC này</span>
           </button>
         </div>
       </div>

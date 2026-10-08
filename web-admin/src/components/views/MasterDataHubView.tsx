@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { ChannelTag } from '../ui';
 import { 
   Search, 
   ExternalLink, 
@@ -10,11 +11,12 @@ import {
   Shield,
   Tag
 } from 'lucide-react';
-import { UserProfile, BrandDetail, StorePortfolioItem, KocItem } from '../../lib/types';
+import { UserProfile, BrandDetail, StorePortfolioItem, KocItem, MasterContentPillar } from '../../lib/types';
 import { INITIAL_BRANDS, INITIAL_STORE_PORTFOLIOS, USERS, INITIAL_KOCS, INITIAL_PUSH_PRODUCTS } from '../../lib/mockData';
+import { INITIAL_MASTER_PILLARS } from '../../lib/selfChannelData';
 import { KocMasterDataView } from './KocMasterDataView';
 
-export type MasterDataSubTab = 'brands' | 'stores' | 'products' | 'kocs' | 'staff';
+export type MasterDataSubTab = 'brands' | 'stores' | 'products' | 'pillars' | 'kocs' | 'staff';
 
 export interface MasterProductItem {
   id: string;
@@ -113,6 +115,26 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
   });
 
   // Staff state
+  // Master Content Pillars state (Trụ cột nội dung chuẩn)
+  const [pillarList, setPillarList] = useState<MasterContentPillar[]>(INITIAL_MASTER_PILLARS);
+  const [pillarSearch, setPillarSearch] = useState('');
+  const [selectedPillarNiche, setSelectedPillarNiche] = useState('ALL');
+  const [selectedPillarStatus, setSelectedPillarStatus] = useState<'ALL' | 'ACTIVE' | 'INACTIVE'>('ALL');
+  const [isPillarModalOpen, setIsPillarModalOpen] = useState(false);
+  const [editingPillar, setEditingPillar] = useState<MasterContentPillar | null>(null);
+  const [pillarForm, setPillarForm] = useState({
+    code: '',
+    name: '',
+    description: '',
+    applicableNiches: 'Mẹ & Bé, Chăm Sóc Da',
+    suggestedFormats: 'Voiceover chuyên gia + B-roll, Infographic trực quan',
+    benchmarkUnitCost: 1500000,
+    targetAudience: 'Phụ huynh có con nhỏ, người có vấn đề da liễu',
+    keyObjectives: 'Xây dựng uy tín nhãn hàng, định vị chuyên gia & gieo niềm tin',
+    status: 'ACTIVE' as 'ACTIVE' | 'INACTIVE',
+    colorTag: '#4F46E5'
+  });
+
   const [staffSearch, setStaffSearch] = useState('');
   const [selectedStaffRole, setSelectedStaffRole] = useState('ALL');
 
@@ -154,6 +176,26 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
     if (staffSearch.trim()) {
       const q = staffSearch.toLowerCase();
       return u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q) || u.roleTitle.toLowerCase().includes(q);
+    }
+    return true;
+  });
+
+  // Filtered Content Pillars
+  const filteredPillars = pillarList.filter(p => {
+    if (selectedPillarStatus !== 'ALL' && p.status !== selectedPillarStatus) return false;
+    if (selectedPillarNiche !== 'ALL') {
+      const matchNiche = p.applicableNiches.some(n => 
+        n.toLowerCase().includes(selectedPillarNiche.toLowerCase()) || n === 'Toàn ngành'
+      );
+      if (!matchNiche) return false;
+    }
+    if (pillarSearch.trim()) {
+      const q = pillarSearch.toLowerCase();
+      return p.name.toLowerCase().includes(q) || 
+             p.code.toLowerCase().includes(q) || 
+             p.description.toLowerCase().includes(q) ||
+             p.keyObjectives.toLowerCase().includes(q) ||
+             p.applicableNiches.some(n => n.toLowerCase().includes(q));
     }
     return true;
   });
@@ -275,15 +317,78 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
     setEditingProduct(null);
   };
 
+  // Handle Add / Edit Master Content Pillar
+  const handleSavePillar = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!pillarForm.code.trim() || !pillarForm.name.trim()) return;
+
+    const niches = pillarForm.applicableNiches
+      .split(',')
+      .map(s => s.trim())
+      .filter(Boolean);
+    const formats = pillarForm.suggestedFormats
+      .split(',')
+      .map(s => s.trim())
+      .filter(Boolean);
+
+    if (editingPillar) {
+      setPillarList(prev => prev.map(p => p.id === editingPillar.id ? {
+        ...p,
+        code: pillarForm.code.trim().toUpperCase(),
+        name: pillarForm.name.trim(),
+        description: pillarForm.description.trim(),
+        applicableNiches: niches.length > 0 ? niches : ['Toàn ngành'],
+        suggestedFormats: formats.length > 0 ? formats : ['Video ngắn chuẩn'],
+        benchmarkUnitCost: Number(pillarForm.benchmarkUnitCost) || 1000000,
+        targetAudience: pillarForm.targetAudience.trim() || 'Người dùng đa kênh',
+        keyObjectives: pillarForm.keyObjectives.trim() || 'Tăng độ nhận diện thương hiệu',
+        status: pillarForm.status,
+        colorTag: pillarForm.colorTag || '#4F46E5'
+      } : p));
+      if (onNotify) onNotify(`Đã cập nhật trụ cột nội dung: ${pillarForm.name}`);
+    } else {
+      const newPillar: MasterContentPillar = {
+        id: `MASTER-PIL-${Date.now()}`,
+        code: pillarForm.code.trim().toUpperCase(),
+        name: pillarForm.name.trim(),
+        description: pillarForm.description.trim(),
+        applicableNiches: niches.length > 0 ? niches : ['Toàn ngành'],
+        suggestedFormats: formats.length > 0 ? formats : ['Video ngắn chuẩn'],
+        benchmarkUnitCost: Number(pillarForm.benchmarkUnitCost) || 1000000,
+        targetAudience: pillarForm.targetAudience.trim() || 'Người dùng đa kênh',
+        keyObjectives: pillarForm.keyObjectives.trim() || 'Tăng độ nhận diện thương hiệu',
+        status: pillarForm.status,
+        colorTag: pillarForm.colorTag || '#4F46E5',
+        activeBrandsCount: 0,
+        createdAt: new Date().toISOString().split('T')[0]
+      };
+      setPillarList(prev => [newPillar, ...prev]);
+      if (onNotify) onNotify(`Đã thêm trụ cột nội dung mới: ${pillarForm.name}`);
+    }
+    setIsPillarModalOpen(false);
+    setEditingPillar(null);
+  };
+
+  const handleTogglePillarStatus = (pillarId: string) => {
+    setPillarList(prev => prev.map(p => {
+      if (p.id === pillarId) {
+        const nextStatus = p.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+        if (onNotify) onNotify(`${p.name} chuyển sang trạng thái ${nextStatus === 'ACTIVE' ? 'Áp dụng' : 'Tạm dừng'}`);
+        return { ...p, status: nextStatus };
+      }
+      return p;
+    }));
+  };
+
   return (
     <div className="space-y-5">
       {/* Sub-Tabs Navigation */}
       <div className="bg-white border border-slate-200 rounded-xl px-5 pt-3 shadow-xs">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-100 gap-2">
           <div>
-            <h1 className="text-base font-bold text-slate-900">Dữ liệu gốc</h1>
+            <h1 className="text-base font-semibold text-slate-900">Dữ liệu gốc</h1>
             <p className="text-xs text-slate-500 mt-0.5">
-              Quản lý các danh mục nền tảng: Thương hiệu, Gian hàng, Sản phẩm, KOC và Nhân sự
+              Quản lý các danh mục nền tảng: Thương hiệu, gian hàng, sản phẩm, trụ cột nội dung, KOC và nhân sự
             </p>
           </div>
         </div>
@@ -295,12 +400,12 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
             onClick={() => setActiveSubTab('brands')}
             className={`py-3 border-b-2 transition-colors whitespace-nowrap flex items-center gap-2 ${
               activeSubTab === 'brands'
-                ? 'border-slate-900 text-slate-900 font-bold'
+                ? 'border-slate-900 text-slate-900 font-semibold'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
             <span>Thương hiệu</span>
-            <span className="text-[11px] font-mono px-1.5 py-0.2 rounded bg-slate-100 text-slate-600">
+            <span className="text-2xs font-mono px-1.5 py-0.2 rounded bg-slate-100 text-slate-600">
               {brandList.length}
             </span>
           </button>
@@ -310,12 +415,12 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
             onClick={() => setActiveSubTab('stores')}
             className={`py-3 border-b-2 transition-colors whitespace-nowrap flex items-center gap-2 ${
               activeSubTab === 'stores'
-                ? 'border-slate-900 text-slate-900 font-bold'
+                ? 'border-slate-900 text-slate-900 font-semibold'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
             <span>Gian hàng</span>
-            <span className="text-[11px] font-mono px-1.5 py-0.2 rounded bg-slate-100 text-slate-600">
+            <span className="text-2xs font-mono px-1.5 py-0.2 rounded bg-slate-100 text-slate-600">
               {storeList.length}
             </span>
           </button>
@@ -325,13 +430,28 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
             onClick={() => setActiveSubTab('products')}
             className={`py-3 border-b-2 transition-colors whitespace-nowrap flex items-center gap-2 ${
               activeSubTab === 'products'
-                ? 'border-slate-900 text-slate-900 font-bold'
+                ? 'border-slate-900 text-slate-900 font-semibold'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
             <span>Sản phẩm</span>
-            <span className="text-[11px] font-mono px-1.5 py-0.2 rounded bg-slate-100 text-slate-600">
+            <span className="text-2xs font-mono px-1.5 py-0.2 rounded bg-slate-100 text-slate-600">
               {productList.length}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveSubTab('pillars')}
+            className={`py-3 border-b-2 transition-colors whitespace-nowrap flex items-center gap-2 ${
+              activeSubTab === 'pillars'
+                ? 'border-slate-900 text-slate-900 font-semibold'
+                : 'border-transparent text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <span>Trụ cột nội dung</span>
+            <span className="text-2xs font-mono px-1.5 py-0.2 rounded bg-slate-100 text-slate-600">
+              {pillarList.length}
             </span>
           </button>
 
@@ -340,12 +460,12 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
             onClick={() => setActiveSubTab('kocs')}
             className={`py-3 border-b-2 transition-colors whitespace-nowrap flex items-center gap-2 ${
               activeSubTab === 'kocs'
-                ? 'border-slate-900 text-slate-900 font-bold'
+                ? 'border-slate-900 text-slate-900 font-semibold'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
             <span>Danh bạ KOC</span>
-            <span className="text-[11px] font-mono px-1.5 py-0.2 rounded bg-slate-100 text-slate-600">
+            <span className="text-2xs font-mono px-1.5 py-0.2 rounded bg-slate-100 text-slate-600">
               {kocs.length}
             </span>
           </button>
@@ -355,12 +475,12 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
             onClick={() => setActiveSubTab('staff')}
             className={`py-3 border-b-2 transition-colors whitespace-nowrap flex items-center gap-2 ${
               activeSubTab === 'staff'
-                ? 'border-slate-900 text-slate-900 font-bold'
+                ? 'border-slate-900 text-slate-900 font-semibold'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
             <span>Nhân sự</span>
-            <span className="text-[11px] font-mono px-1.5 py-0.2 rounded bg-slate-100 text-slate-600">
+            <span className="text-2xs font-mono px-1.5 py-0.2 rounded bg-slate-100 text-slate-600">
               {USERS.length}
             </span>
           </button>
@@ -417,7 +537,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
 
           <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 text-slate-600 border-b border-slate-200 font-semibold text-[11px]">
+              <thead className="bg-slate-50 text-slate-600 border-b border-slate-200 font-semibold text-2xs">
                 <tr>
                   <th className="py-3 px-4">Tên thương hiệu</th>
                   <th className="py-3 px-4">Doanh nghiệp chủ quản</th>
@@ -433,7 +553,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                   <tr key={b.id} className="hover:bg-slate-50/70 transition-colors">
                     <td className="py-3 px-4">
                       <div className="font-semibold text-slate-900">{b.name}</div>
-                      <div className="text-[11px] text-slate-400 font-mono mt-0.5">{b.code || b.id}</div>
+                      <div className="text-2xs text-slate-400 font-mono mt-0.5">{b.code || b.id}</div>
                     </td>
                     <td className="py-3 px-4 text-slate-700">{b.companyName || b.name}</td>
                     <td className="py-3 px-4 text-slate-600">{b.category}</td>
@@ -444,7 +564,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                       {b.accountPic || b.brandPicName || 'Chưa phân công'}
                     </td>
                     <td className="py-3 px-4 text-center">
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-semibold ${
+                      <span className={`px-2 py-0.5 rounded text-2xs font-semibold ${
                         b.status === 'ACTIVE' 
                           ? 'bg-slate-100 text-slate-800' 
                           : 'bg-gray-100 text-gray-500'
@@ -539,7 +659,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
 
           <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 text-slate-600 border-b border-slate-200 font-semibold text-[11px]">
+              <thead className="bg-slate-50 text-slate-600 border-b border-slate-200 font-semibold text-2xs">
                 <tr>
                   <th className="py-3 px-4">Tên gian hàng</th>
                   <th className="py-3 px-4">Nền tảng</th>
@@ -556,20 +676,12 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                       {s.storeName}
                     </td>
                     <td className="py-3 px-4">
-                      <span className={`px-2 py-0.5 rounded text-[11px] font-medium ${
-                        s.platform === 'TikTok Shop' 
-                          ? 'bg-slate-900 text-white' 
-                          : s.platform === 'Shopee Mall' 
-                          ? 'bg-orange-100 text-orange-800' 
-                          : 'bg-blue-100 text-blue-800'
-                      }`}>
-                        {s.platform}
-                      </span>
+                      <ChannelTag channel={s.platform} />
                     </td>
                     <td className="py-3 px-4 text-slate-700">{s.brandName}</td>
                     <td className="py-3 px-4 text-slate-600">{s.accountOwnerName}</td>
                     <td className="py-3 px-4 text-center">
-                      <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                      <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
                         Đang hoạt động
                       </span>
                     </td>
@@ -661,9 +773,9 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
 
           <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 text-slate-600 border-b border-slate-200 font-semibold text-[11px]">
+              <thead className="bg-slate-50 text-slate-600 border-b border-slate-200 font-semibold text-2xs">
                 <tr>
-                  <th className="py-3 px-4">Mã SKU & Tên sản phẩm</th>
+                  <th className="py-3 px-4">Mã SKU & tên sản phẩm</th>
                   <th className="py-3 px-4">Thương hiệu</th>
                   <th className="py-3 px-4">Gian hàng & Sàn</th>
                   <th className="py-3 px-4">Ngành hàng</th>
@@ -676,22 +788,14 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                 {filteredProducts.map(p => (
                   <tr key={p.id} className="hover:bg-slate-50/70 transition-colors">
                     <td className="py-3 px-4">
-                      <div className="font-mono font-bold text-slate-800">{p.sku}</div>
+                      <div className="font-mono font-semibold text-slate-800">{p.sku}</div>
                       <div className="text-slate-900 font-medium line-clamp-1">{p.productName}</div>
                     </td>
                     <td className="py-3 px-4 text-slate-700">{p.brandName}</td>
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-1.5">
-                        <span className={`px-2 py-0.2 rounded text-[10px] font-medium ${
-                          p.platform === 'TikTok Shop' 
-                            ? 'bg-slate-900 text-white' 
-                            : p.platform === 'Shopee Mall' 
-                            ? 'bg-orange-100 text-orange-800' 
-                            : 'bg-blue-100 text-blue-800'
-                        }`}>
-                          {p.platform}
-                        </span>
-                        <span className="text-[11px] text-slate-600 truncate max-w-[140px]">{p.storeName}</span>
+                        <ChannelTag channel={p.platform} />
+                        <span className="text-2xs text-slate-600 truncate max-w-[140px]">{p.storeName}</span>
                       </div>
                     </td>
                     <td className="py-3 px-4 text-slate-600">{p.category}</td>
@@ -699,7 +803,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                       {formatVnd(p.originalPrice)}
                     </td>
                     <td className="py-3 px-4 text-center">
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-semibold ${
+                      <span className={`px-2 py-0.5 rounded text-2xs font-semibold ${
                         p.status === 'ACTIVE' 
                           ? 'bg-slate-100 text-slate-800' 
                           : 'bg-gray-100 text-gray-500'
@@ -751,6 +855,250 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
         </div>
       )}
 
+      {/* SUB-TAB: TRỤ CỘT NỘI DUNG (Content Pillars Master Data) */}
+      {activeSubTab === 'pillars' && (
+        <div className="space-y-4">
+          {/* Top Filter and Action Bar */}
+          <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-2 flex-1">
+              <div className="relative min-w-[240px] flex-1 max-w-sm">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Tìm theo mã, tên trụ cột, định hướng, ngành hàng..."
+                  value={pillarSearch}
+                  onChange={(e) => setPillarSearch(e.target.value)}
+                  className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-slate-400"
+                />
+              </div>
+
+              <select
+                value={selectedPillarNiche}
+                onChange={(e) => setSelectedPillarNiche(e.target.value)}
+                className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-700 focus:outline-none shrink-0"
+              >
+                <option value="ALL">Mọi ngành hàng</option>
+                <option value="Mẹ & Bé">Mẹ & Bé</option>
+                <option value="Chăm Sóc Da">Chăm Sóc Da</option>
+                <option value="Sức Khỏe">Sức Khỏe</option>
+                <option value="Gia Dụng">Gia Dụng</option>
+                <option value="F&B">F&B</option>
+                <option value="Toàn ngành">Toàn ngành</option>
+              </select>
+
+              <select
+                value={selectedPillarStatus}
+                onChange={(e) => setSelectedPillarStatus(e.target.value as any)}
+                className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-700 focus:outline-none shrink-0"
+              >
+                <option value="ALL">Mọi trạng thái</option>
+                <option value="ACTIVE">Đang áp dụng</option>
+                <option value="INACTIVE">Tạm dừng</option>
+              </select>
+
+              <div className="hidden xl:flex items-center gap-3 pl-2 border-l border-slate-200 text-2xs text-slate-500">
+                <span>
+                  <strong className="text-slate-800 font-semibold">{pillarList.filter(p => p.status === 'ACTIVE').length}</strong>/{pillarList.length} trụ cột hoạt động
+                </span>
+                <span>•</span>
+                <span>
+                  Định mức TB: <strong className="text-slate-800 font-semibold">{formatVnd(Math.round(pillarList.reduce((acc, p) => acc + p.benchmarkUnitCost, 0) / (pillarList.length || 1)))}</strong>
+                </span>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                setEditingPillar(null);
+                setPillarForm({
+                  code: '',
+                  name: '',
+                  description: '',
+                  applicableNiches: 'Mẹ & Bé, Chăm Sóc Da',
+                  suggestedFormats: 'Voiceover chuyên gia + B-roll, Infographic trực quan',
+                  benchmarkUnitCost: 1500000,
+                  targetAudience: 'Phụ huynh có con nhỏ, người có vấn đề da liễu',
+                  keyObjectives: 'Xây dựng uy tín nhãn hàng, định vị chuyên gia & gieo niềm tin',
+                  status: 'ACTIVE',
+                  colorTag: '#4F46E5'
+                });
+                setIsPillarModalOpen(true);
+              }}
+              className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg transition flex items-center gap-1.5 shrink-0 self-start sm:self-auto"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Thêm trụ cột nội dung
+            </button>
+          </div>
+
+          {/* Master Content Pillar Table */}
+          <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-50 text-slate-600 border-b border-slate-200 font-semibold text-2xs">
+                <tr>
+                  <th className="py-3 px-4 w-[240px]">Trụ cột & Mã chuẩn</th>
+                  <th className="py-3 px-4 min-w-[280px]">Định hướng sáng tạo & Mục tiêu</th>
+                  <th className="py-3 px-4 w-[180px]">Ngành hàng áp dụng</th>
+                  <th className="py-3 px-4 min-w-[180px]">Format video gợi ý</th>
+                  <th className="py-3 px-4 text-right w-[140px]">Định mức tham chiếu</th>
+                  <th className="py-3 px-4 text-center w-[110px]">Trạng thái</th>
+                  <th className="py-3 px-4 text-right w-[130px]">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {filteredPillars.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="py-12 text-center text-slate-400">
+                      Không tìm thấy trụ cột nội dung phù hợp với điều kiện lọc
+                    </td>
+                  </tr>
+                ) : (
+                  filteredPillars.map(p => (
+                    <tr key={p.id} className="hover:bg-slate-50/70 transition-colors">
+                      {/* Mã & Tên Pillar */}
+                      <td className="py-3.5 px-4 align-top">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-1.5">
+                            <span 
+                              className="w-2 h-2 rounded-full shrink-0" 
+                              style={{ backgroundColor: p.colorTag || '#4F46E5' }} 
+                            />
+                            <span className="font-semibold text-slate-900 text-xs">
+                              {p.name}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="font-mono text-2xs font-semibold px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">
+                              {p.code}
+                            </span>
+                          </div>
+                          {p.targetAudience && (
+                            <p className="text-2xs text-slate-500 line-clamp-1">
+                              Tệp: {p.targetAudience}
+                            </p>
+                          )}
+                        </div>
+                      </td>
+
+                      {/* Định hướng sáng tạo & Mục tiêu */}
+                      <td className="py-3.5 px-4 align-top">
+                        <div className="space-y-1.5 max-w-lg">
+                          <p className="text-slate-700 text-xs leading-relaxed">
+                            {p.description}
+                          </p>
+                          {p.keyObjectives && (
+                            <div className="flex items-start gap-1 text-2xs text-slate-500 bg-slate-50 p-1.5 rounded-lg border border-slate-100">
+                              <span className="font-medium text-slate-700 shrink-0">Mục tiêu:</span>
+                              <span className="line-clamp-2">{p.keyObjectives}</span>
+                            </div>
+                          )}
+                        </div>
+                      </td>
+
+                      {/* Ngành hàng áp dụng */}
+                      <td className="py-3.5 px-4 align-top">
+                        <div className="flex flex-wrap gap-1">
+                          {p.applicableNiches.map((n, idx) => (
+                            <span 
+                              key={idx}
+                              className="inline-block px-1.5 py-0.5 rounded text-2xs font-medium bg-slate-100 text-slate-600 border border-slate-200 whitespace-nowrap"
+                            >
+                              {n}
+                            </span>
+                          ))}
+                        </div>
+                      </td>
+
+                      {/* Format video gợi ý */}
+                      <td className="py-3.5 px-4 align-top">
+                        <div className="space-y-1">
+                          {p.suggestedFormats.map((fmt, idx) => (
+                            <div key={idx} className="flex items-center gap-1.5 text-2xs text-slate-600">
+                              <span className="w-1 h-1 rounded-full bg-slate-400 shrink-0" />
+                              <span className="line-clamp-1">{fmt}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </td>
+
+                      {/* Đơn giá tham chiếu */}
+                      <td className="py-3.5 px-4 align-top text-right">
+                        <div className="space-y-0.5">
+                          <div className="font-semibold text-slate-900 font-mono">
+                            {formatVnd(p.benchmarkUnitCost)}
+                          </div>
+                          <div className="text-2xs text-slate-400">
+                            / video CTV
+                          </div>
+                          {p.activeBrandsCount !== undefined && (
+                            <div className="text-2xs text-slate-500">
+                              {p.activeBrandsCount} brand áp dụng
+                            </div>
+                          )}
+                        </div>
+                      </td>
+
+                      {/* Trạng thái */}
+                      <td className="py-3.5 px-4 align-top text-center">
+                        <span 
+                          className={`inline-block px-2 py-0.5 rounded text-2xs font-semibold border ${
+                            p.status === 'ACTIVE'
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                              : 'bg-slate-100 text-slate-600 border-slate-200'
+                          }`}
+                        >
+                          {p.status === 'ACTIVE' ? 'Áp dụng' : 'Tạm dừng'}
+                        </span>
+                      </td>
+
+                      {/* Thao tác */}
+                      <td className="py-3.5 px-4 align-top text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingPillar(p);
+                              setPillarForm({
+                                code: p.code,
+                                name: p.name,
+                                description: p.description,
+                                applicableNiches: p.applicableNiches.join(', '),
+                                suggestedFormats: p.suggestedFormats.join(', '),
+                                benchmarkUnitCost: p.benchmarkUnitCost,
+                                targetAudience: p.targetAudience,
+                                keyObjectives: p.keyObjectives,
+                                status: p.status,
+                                colorTag: p.colorTag || '#4F46E5'
+                              });
+                              setIsPillarModalOpen(true);
+                            }}
+                            className="text-slate-600 hover:text-slate-900 font-medium text-xs px-2 py-1 rounded hover:bg-slate-100 transition"
+                          >
+                            Sửa
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleTogglePillarStatus(p.id)}
+                            className={`text-2xs font-medium px-2 py-1 rounded transition ${
+                              p.status === 'ACTIVE'
+                                ? 'text-slate-500 hover:text-amber-700 hover:bg-amber-50'
+                                : 'text-slate-500 hover:text-emerald-700 hover:bg-emerald-50'
+                            }`}
+                          >
+                            {p.status === 'ACTIVE' ? 'Tạm dừng' : 'Kích hoạt'}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
       {/* SUB-TAB 4: DANH BẠ KOC */}
       {activeSubTab === 'kocs' && (
         <KocMasterDataView
@@ -784,10 +1132,10 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                 className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-700 focus:outline-none shrink-0"
               >
                 <option value="ALL">Mọi vai trò</option>
-                <option value="MANAGER">Trưởng phòng (Manager)</option>
-                <option value="BRAND_MEMBER">Quản lý nhãn (Brand Lead)</option>
+                <option value="MANAGER">Trưởng phòng</option>
+                <option value="BRAND_MEMBER">Quản lý nhãn</option>
                 <option value="BOOKING_MEMBER">Chuyên viên Booking</option>
-                <option value="CONTENT_MEMBER">Chuyên viên Nội dung</option>
+                <option value="CONTENT_MEMBER">Chuyên viên nội dung</option>
               </select>
             </div>
 
@@ -799,7 +1147,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
 
           <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 text-slate-600 border-b border-slate-200 font-semibold text-[11px]">
+              <thead className="bg-slate-50 text-slate-600 border-b border-slate-200 font-semibold text-2xs">
                 <tr>
                   <th className="py-3 px-4">Nhân sự</th>
                   <th className="py-3 px-4">Email công ty</th>
@@ -813,7 +1161,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                   <tr key={u.id} className="hover:bg-slate-50/70 transition-colors">
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-2.5">
-                        <div className="w-7 h-7 rounded-lg bg-slate-100 text-slate-700 font-bold text-xs flex items-center justify-center border border-slate-200">
+                        <div className="w-7 h-7 rounded-lg bg-slate-100 text-slate-700 font-semibold text-xs flex items-center justify-center border border-slate-200">
                           {u.avatar}
                         </div>
                         <span className="font-semibold text-slate-900">{u.name}</span>
@@ -821,13 +1169,13 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                     </td>
                     <td className="py-3 px-4 font-mono text-slate-600">{u.email}</td>
                     <td className="py-3 px-4">
-                      <span className="px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-700 border border-slate-200">
+                      <span className="px-2 py-0.5 rounded text-2xs font-medium bg-slate-100 text-slate-700 border border-slate-200">
                         {u.role === 'MANAGER' ? 'Quản trị' : u.role === 'BRAND_MEMBER' ? 'Nhãn hàng' : u.role === 'CONTENT_MEMBER' ? 'Nội dung' : 'Booking'}
                       </span>
                     </td>
                     <td className="py-3 px-4 text-slate-600">{u.roleTitle}</td>
                     <td className="py-3 px-4 text-center">
-                      <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-700">
+                      <span className="inline-flex items-center gap-1 text-2xs font-medium text-emerald-700">
                         <CheckCircle2 className="w-3.5 h-3.5" />
                         Lark SSO
                       </span>
@@ -845,7 +1193,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
         <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-xl shadow-xl border border-slate-200 max-w-md w-full p-5 space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h3 className="font-bold text-sm text-slate-900">
+              <h3 className="font-semibold text-sm text-slate-900">
                 {editingBrand ? 'Cập nhật thương hiệu' : 'Thêm thương hiệu mới'}
               </h3>
               <button
@@ -874,7 +1222,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                 <label className="block text-slate-600 font-medium mb-1">Doanh nghiệp chủ quản</label>
                 <input
                   type="text"
-                  placeholder="Ví dụ: Công ty Cổ phần Dược Mỹ phẩm CVI"
+                  placeholder="Ví dụ: Công ty cổ phần dược mỹ phẩm CVI"
                   value={brandForm.companyName}
                   onChange={(e) => setBrandForm(prev => ({ ...prev, companyName: e.target.value }))}
                   className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-400"
@@ -945,7 +1293,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
         <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-xl shadow-xl border border-slate-200 max-w-md w-full p-5 space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h3 className="font-bold text-sm text-slate-900">Thêm gian hàng mới</h3>
+              <h3 className="font-semibold text-sm text-slate-900">Thêm gian hàng mới</h3>
               <button
                 type="button"
                 onClick={() => setIsStoreModalOpen(false)}
@@ -1042,7 +1390,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
         <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-xl shadow-xl border border-slate-200 max-w-md w-full p-5 space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h3 className="font-bold text-sm text-slate-900">
+              <h3 className="font-semibold text-sm text-slate-900">
                 {editingProduct ? 'Cập nhật thông tin sản phẩm' : 'Thêm sản phẩm vào dữ liệu gốc'}
               </h3>
               <button
@@ -1064,7 +1412,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                     placeholder="VD: KUTIE-SOOTH-30G"
                     value={productForm.sku}
                     onChange={(e) => setProductForm(prev => ({ ...prev, sku: e.target.value }))}
-                    className="w-full px-3 py-1.5 border border-slate-200 rounded-lg font-mono focus:outline-none focus:ring-1 focus:ring-slate-400 uppercase"
+                    className="w-full px-3 py-1.5 border border-slate-200 rounded-lg font-mono focus:outline-none focus:ring-1 focus:ring-slate-400"
                   />
                 </div>
                 <div>
@@ -1084,7 +1432,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                 <input
                   type="text"
                   required
-                  placeholder="Ví dụ: Kem Bôi Dịu Da Kutieskin 30g"
+                  placeholder="Ví dụ: Kem bôi dịu da Kutieskin 30g"
                   value={productForm.productName}
                   onChange={(e) => setProductForm(prev => ({ ...prev, productName: e.target.value }))}
                   className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-400"
@@ -1176,6 +1524,181 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                   className="px-4 py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-lg transition"
                 >
                   Lưu
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: THÊM / SỬA TRỤ CỘT NỘI DUNG (MASTER CONTENT PILLAR) */}
+      {isPillarModalOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-xl border border-slate-200 max-w-xl w-full p-5 space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div>
+                <h3 className="font-semibold text-sm text-slate-900">
+                  {editingPillar ? `Cập nhật trụ cột: ${editingPillar.name}` : 'Thêm trụ cột nội dung mới'}
+                </h3>
+                <p className="text-2xs text-slate-500 mt-0.5">
+                  Dữ liệu gốc này sẽ được sử dụng chung cho việc lập kế hoạch kênh nội bộ và giao task video cho CTV.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsPillarModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSavePillar} className="space-y-3.5 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-600 font-medium mb-1">Mã trụ cột (Code) *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="VD: EDUCATIONAL, STORYTELLING..."
+                    value={pillarForm.code}
+                    onChange={(e) => setPillarForm(prev => ({ ...prev, code: e.target.value.toUpperCase() }))}
+                    className="w-full px-3 py-1.5 border border-slate-200 rounded-lg font-mono uppercase focus:outline-none focus:ring-1 focus:ring-slate-400"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-600 font-medium mb-1">Tên trụ cột nội dung *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="VD: Giáo Dục & Lời Khuyên Chuyên Gia"
+                    value={pillarForm.name}
+                    onChange={(e) => setPillarForm(prev => ({ ...prev, name: e.target.value }))}
+                    className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-400"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-600 font-medium mb-1">Đơn giá định mức tham chiếu (VNĐ / video)</label>
+                  <input
+                    type="number"
+                    min="100000"
+                    step="50000"
+                    value={pillarForm.benchmarkUnitCost}
+                    onChange={(e) => setPillarForm(prev => ({ ...prev, benchmarkUnitCost: Number(e.target.value) }))}
+                    className="w-full px-3 py-1.5 border border-slate-200 rounded-lg font-mono focus:outline-none focus:ring-1 focus:ring-slate-400"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-600 font-medium mb-1">Màu nhận diện</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={pillarForm.colorTag}
+                      onChange={(e) => setPillarForm(prev => ({ ...prev, colorTag: e.target.value }))}
+                      className="w-8 h-8 rounded border border-slate-200 cursor-pointer p-0.5 bg-white shrink-0"
+                    />
+                    <input
+                      type="text"
+                      value={pillarForm.colorTag}
+                      onChange={(e) => setPillarForm(prev => ({ ...prev, colorTag: e.target.value }))}
+                      className="w-full px-3 py-1.5 border border-slate-200 rounded-lg font-mono focus:outline-none focus:ring-1 focus:ring-slate-400"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-600 font-medium mb-1">
+                  Ngành hàng áp dụng <span className="text-slate-400 font-normal">(Phân cách bằng dấu phẩy)</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="Mẹ & Bé, Chăm Sóc Da, Sức Khỏe, Toàn ngành"
+                  value={pillarForm.applicableNiches}
+                  onChange={(e) => setPillarForm(prev => ({ ...prev, applicableNiches: e.target.value }))}
+                  className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-400"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-600 font-medium mb-1">
+                  Định dạng video gợi ý <span className="text-slate-400 font-normal">(Phân cách bằng dấu phẩy)</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="Voiceover chuyên gia + B-roll, Q&A giải đáp thắc mắc, Infographic"
+                  value={pillarForm.suggestedFormats}
+                  onChange={(e) => setPillarForm(prev => ({ ...prev, suggestedFormats: e.target.value }))}
+                  className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-400"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-600 font-medium mb-1">Tệp khán giả mục tiêu</label>
+                  <input
+                    type="text"
+                    placeholder="VD: Phụ huynh có con nhỏ, Gen Z chuộng skincare..."
+                    value={pillarForm.targetAudience}
+                    onChange={(e) => setPillarForm(prev => ({ ...prev, targetAudience: e.target.value }))}
+                    className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-400"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-600 font-medium mb-1">Mục tiêu truyền thông cốt lõi</label>
+                  <input
+                    type="text"
+                    placeholder="VD: Xây dựng uy tín, thúc đẩy chuyển đổi giỏ hàng..."
+                    value={pillarForm.keyObjectives}
+                    onChange={(e) => setPillarForm(prev => ({ ...prev, keyObjectives: e.target.value }))}
+                    className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-400"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-600 font-medium mb-1">Định hướng nội dung & Tiêu chuẩn nghiệm thu *</label>
+                <textarea
+                  rows={3}
+                  required
+                  placeholder="Mô tả cụ thể góc nhìn nội dung, lưu ý kịch bản, các Do & Don'ts khi sản xuất video thuộc pillar này..."
+                  value={pillarForm.description}
+                  onChange={(e) => setPillarForm(prev => ({ ...prev, description: e.target.value }))}
+                  className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-400"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-600 font-medium mb-1">Trạng thái áp dụng</label>
+                <select
+                  value={pillarForm.status}
+                  onChange={(e) => setPillarForm(prev => ({ ...prev, status: e.target.value as any }))}
+                  className="w-full px-3 py-1.5 border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-slate-400"
+                >
+                  <option value="ACTIVE">Đang áp dụng (Khả dụng cho mọi Brand)</option>
+                  <option value="INACTIVE">Tạm dừng (Không gợi ý khi lập kế hoạch)</option>
+                </select>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setIsPillarModalOpen(false)}
+                  className="px-3 py-1.5 border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 transition"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-lg transition"
+                >
+                  Lưu thông tin
                 </button>
               </div>
             </form>

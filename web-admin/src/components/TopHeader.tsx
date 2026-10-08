@@ -1,9 +1,22 @@
 'use client';
 
 import React from 'react';
-import { Plus, Upload, FileText, Layers, Shield, Menu, LogOut, CheckCircle2 } from 'lucide-react';
+import { Plus, Upload, FileText, Layers, Menu, ChevronDown } from 'lucide-react';
 import { UserProfile } from '../lib/types';
 import { USERS } from '../lib/mockData';
+import type { TabKey } from './Sidebar';
+
+// Ô chuyển vai trò chỉ dùng khi phát triển hoặc demo, không hiện cho người dùng thật
+const SHOW_ROLE_SWITCHER =
+  process.env.NODE_ENV !== 'production' || process.env.NEXT_PUBLIC_ENABLE_ROLE_SWITCHER === '1';
+
+const ROLE_LABEL: Record<UserProfile['role'], string> = {
+  ADMIN: 'Quản trị',
+  MANAGER: 'Trưởng phòng',
+  BRAND_MEMBER: 'Brand PIC',
+  CONTENT_MEMBER: 'Content',
+  BOOKING_MEMBER: 'Booking',
+};
 
 interface TopHeaderProps {
   currentUser: UserProfile;
@@ -12,7 +25,7 @@ interface TopHeaderProps {
   onOpenImport: () => void;
   title: string;
   subtitle?: string;
-  onNavigateTab?: (tab: any) => void;
+  onNavigateTab?: (tab: TabKey) => void;
   onToggleMobileSidebar?: () => void;
   onLogout?: () => void;
 }
@@ -26,101 +39,69 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   subtitle,
   onNavigateTab,
   onToggleMobileSidebar,
-  onLogout
 }) => {
   const isBookingOrManager = currentUser.role === 'MANAGER' || currentUser.role === 'BOOKING_MEMBER';
   const isContent = currentUser.role === 'CONTENT_MEMBER';
   const isBrand = currentUser.role === 'BRAND_MEMBER';
 
   return (
-    <header className="sticky top-0 z-20 h-14 bg-white/95 backdrop-blur-md border-b border-slate-200 px-4 sm:px-6 flex items-center justify-between gap-4 shadow-2xs shrink-0">
-      {/* Mobile Menu Button & Page Title */}
+    <header className="sticky top-0 z-20 min-h-14 bg-canvas/95 backdrop-blur border-b border-line px-4 sm:px-6 lg:px-8 py-2 flex items-center justify-between gap-4 shrink-0">
       <div className="flex items-center gap-3 min-w-0">
         {onToggleMobileSidebar && (
           <button
             onClick={onToggleMobileSidebar}
-            className="lg:hidden p-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition shrink-0"
-            aria-label="Mở menu điều hướng"
+            className="lg:hidden p-1.5 -ml-1.5 rounded-md text-ink-2 hover:text-ink hover:bg-sunken transition-colors shrink-0"
+            aria-label="Mở menu"
           >
             <Menu className="w-5 h-5" />
           </button>
         )}
 
         <div className="min-w-0">
-          <h1 className="text-sm font-bold text-slate-900 tracking-tight truncate leading-tight">
-            {title}
-          </h1>
-          {subtitle && (
-            <p className="text-[11px] text-slate-500 truncate hidden md:block leading-tight mt-0.5">
-              {subtitle}
-            </p>
-          )}
+          <h1 className="text-lg font-semibold text-ink truncate leading-7 tracking-tight">{title}</h1>
+          {subtitle && <p className="text-2xs text-ink-3 truncate hidden md:block">{subtitle}</p>}
         </div>
       </div>
 
-      {/* Actions & Status */}
-      <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
-        {/* Lark Identity Badge */}
-        {currentUser.larkOpenId && (
-          <div className="hidden sm:inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-cyan-50 border border-cyan-200 text-cyan-800 text-[11px] font-semibold" title={`Lark Open ID: ${currentUser.larkOpenId}`}>
-            <span className="w-1.5 h-1.5 rounded-full bg-cyan-500 animate-pulse" />
-            Lark SSO
-          </div>
+      <div className="flex items-center gap-2 shrink-0">
+        {SHOW_ROLE_SWITCHER && (
+          <label className="relative hidden sm:flex items-center h-[34px] pl-3 pr-8 rounded-md border border-dashed border-line-strong text-[13px] text-ink-2 hover:border-ink-3 transition-colors cursor-pointer">
+            <span className="text-ink-3 mr-1.5">Xem với vai trò</span>
+            <select
+              value={currentUser.id}
+              onChange={(e) => {
+                const u = USERS.find((item) => item.id === e.target.value);
+                if (u) onUserChange(u);
+              }}
+              className="appearance-none bg-transparent font-medium text-ink focus:outline-none cursor-pointer"
+              style={{ backgroundColor: 'transparent' }}
+              aria-label="Xem với vai trò"
+            >
+              {USERS.map((user) => (
+                <option key={user.id} value={user.id}>
+                  {user.name} · {ROLE_LABEL[user.role]}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="w-3.5 h-3.5 text-ink-3 absolute right-2.5 pointer-events-none" />
+          </label>
         )}
 
-        {/* Role Switcher */}
-        <div className="h-8 flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2 text-xs shadow-2xs">
-          <div className="w-4 h-4 rounded-full bg-blue-600 text-white font-bold text-[9px] flex items-center justify-center shrink-0">
-            {currentUser.avatar}
-          </div>
-          <select
-            value={currentUser.id}
-            onChange={(e) => {
-              const u = USERS.find(item => item.id === e.target.value);
-              if (u) onUserChange(u);
-            }}
-            className="bg-transparent text-slate-800 font-semibold text-xs focus:outline-none cursor-pointer pr-1"
-            aria-label="Chọn tài khoản và vai trò"
-          >
-            {USERS.map(user => (
-              <option key={user.id} value={user.id} className="bg-white text-slate-800">
-                {user.name} ({user.role === 'MANAGER' ? 'Trưởng phòng' : user.role === 'BRAND_MEMBER' ? 'Brand PIC' : user.role === 'CONTENT_MEMBER' ? 'Content Lead' : 'Booking Specialist'})
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Logout Button */}
-        {onLogout && (
-          <button
-            onClick={onLogout}
-            className="h-8 w-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-rose-600 hover:bg-rose-50 border border-slate-200 hover:border-rose-200 transition shadow-2xs"
-            title="Đăng xuất khỏi Lark Workspace"
-            aria-label="Đăng xuất"
-          >
-            <LogOut className="w-3.5 h-3.5" />
-          </button>
-        )}
-
-        {/* Role-Aware Actions */}
         {isBookingOrManager && (
           <>
-            {/* Action Button: Quick Book */}
-            <button
-              onClick={onOpenQuickBook}
-              className="btn-md bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow-xs transition"
-            >
-              <Plus className="w-3.5 h-3.5" strokeWidth={2} />
-              <span className="hidden sm:inline">Tạo Booking</span>
-            </button>
-
-            {/* Action Button: Import Excel */}
             <button
               onClick={onOpenImport}
-              className="btn-md bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 font-medium text-xs shadow-2xs transition"
+              className="btn-md bg-surface hover:bg-sunken text-ink border border-line-strong transition-colors"
             >
-              <Upload className="w-3.5 h-3.5 text-slate-500" strokeWidth={1.75} />
+              <Upload className="w-4 h-4 text-ink-3" strokeWidth={1.75} />
               <span className="hidden sm:inline">Nhập Excel</span>
+            </button>
+            <button
+              onClick={onOpenQuickBook}
+              className="btn-md bg-primary hover:bg-primary-hover text-white transition-colors"
+            >
+              <Plus className="w-4 h-4" strokeWidth={2} />
+              <span className="hidden sm:inline">Tạo booking</span>
             </button>
           </>
         )}
@@ -128,20 +109,20 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
         {isContent && onNavigateTab && (
           <button
             onClick={() => onNavigateTab('content')}
-            className="btn-md bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-xs transition"
+            className="btn-md bg-primary hover:bg-primary-hover text-white transition-colors"
           >
-            <FileText className="w-3.5 h-3.5" strokeWidth={2} />
-            <span className="hidden sm:inline">Hàng Chờ Duyệt Kịch Bản</span>
+            <FileText className="w-4 h-4" strokeWidth={1.75} />
+            <span className="hidden sm:inline">Kịch bản chờ duyệt</span>
           </button>
         )}
 
         {isBrand && onNavigateTab && (
           <button
             onClick={() => onNavigateTab('campaigns')}
-            className="btn-md bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs shadow-xs transition"
+            className="btn-md bg-primary hover:bg-primary-hover text-white transition-colors"
           >
-            <Layers className="w-3.5 h-3.5" strokeWidth={2} />
-            <span className="hidden sm:inline">Chiến Dịch &amp; Brief Mới</span>
+            <Layers className="w-4 h-4" strokeWidth={1.75} />
+            <span className="hidden sm:inline">Tạo brief</span>
           </button>
         )}
       </div>

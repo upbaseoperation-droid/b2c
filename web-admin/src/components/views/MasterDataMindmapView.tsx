@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
+import { formatVndShort } from '../../lib/format';
 import {
   GitFork,
   Building2,
@@ -62,7 +63,7 @@ export interface MindmapStoreNode {
   monthlyTargetGmv: number;
   monthlyBudget: number;
   // Nhân sự: 1 PIC chính chịu trách nhiệm toàn diện + các PIC thành viên
-  primaryPic: string; // 👑 1 PIC Chính
+  primaryPic: string; // 1 PIC Chính
   memberPics: string[]; // Danh sách các PIC hỗ trợ
   assignmentNotes?: string;
   // Sản phẩm phân bổ trên gian này
@@ -97,7 +98,7 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
       status: 'ACTIVE',
       monthlyTargetGmv: 450000000,
       monthlyBudget: 150000000,
-      primaryPic: 'Khánh Vy', // 👑 PIC Chính
+      primaryPic: 'Khánh Vy', // PIC Chính
       memberPics: ['Trần Minh Đức', 'Lê Hoàng Yến'],
       assignmentNotes: 'Khánh Vy chủ trì phân rã plan và chốt ngân sách. Đức phụ trách KOC Affiliate, Yến phụ trách Livestream.',
       storeProducts: [
@@ -144,7 +145,7 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
       status: 'ACTIVE',
       monthlyTargetGmv: 400000000,
       monthlyBudget: 130000000,
-      primaryPic: 'Trần Minh Đức', // 👑 PIC Chính
+      primaryPic: 'Trần Minh Đức', // PIC Chính
       memberPics: ['Khánh Vy'],
       assignmentNotes: 'Trần Minh Đức làm PIC chính điều phối Shopee Mall, tối ưu voucher sàn và hoa hồng affiliate Shopee.',
       storeProducts: [
@@ -183,7 +184,7 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
       status: 'ACTIVE',
       monthlyTargetGmv: 620000000,
       monthlyBudget: 210000000,
-      primaryPic: 'Đặng Mai Hà Linh', // 👑 PIC Chính
+      primaryPic: 'Đặng Mai Hà Linh', // PIC Chính
       memberPics: ['Nguyễn Thu Trang', 'Phan Diệu Ánh'],
       assignmentNotes: 'Hà Linh phụ trách kế hoạch tổng. Trang đẩy KOC Review Dược mỹ phẩm, Ánh phụ trách live định kỳ.',
       storeProducts: [
@@ -220,7 +221,7 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
       status: 'ACTIVE',
       monthlyTargetGmv: 350000000,
       monthlyBudget: 90000000,
-      primaryPic: 'Nguyễn Thu Trang', // 👑 PIC Chính
+      primaryPic: 'Nguyễn Thu Trang', // PIC Chính
       memberPics: ['Đặng Mai Hà Linh'],
       assignmentNotes: 'Nguyễn Thu Trang làm PIC chính gian Shopee, tập trung flash sale và affiliate network.',
       storeProducts: [
@@ -249,7 +250,7 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
       status: 'ACTIVE',
       monthlyTargetGmv: 950000000,
       monthlyBudget: 320000000,
-      primaryPic: 'Phạm Thị Thu Hằng', // 👑 PIC Chính
+      primaryPic: 'Phạm Thị Thu Hằng', // PIC Chính
       memberPics: ['Khánh Vy', 'Trần Minh Đức'],
       assignmentNotes: 'Thu Hằng chịu trách nhiệm chính số Clio TTS. Phối hợp Vy book KOC make-up Beauty Guru.',
       storeProducts: [
@@ -424,21 +425,21 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
     switch (platform) {
       case 'TIKTOK_SHOP':
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-black text-cyan-300 border border-slate-700">
-            <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-semibold bg-black text-cyan-300 border border-slate-700">
+            <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
             TikTok Shop
           </span>
         );
       case 'SHOPEE_MALL':
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/30">
             <ShoppingBag className="w-2.5 h-2.5 text-amber-400" />
             Shopee Mall
           </span>
         );
       case 'LAZADA':
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-blue-500/10 text-blue-400 border border-blue-500/30">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/30">
             Lazada
           </span>
         );
@@ -449,21 +450,21 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
     <div className="space-y-4">
       {/* Top Header & Context Description */}
       <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-xs relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-bl from-blue-500/5 via-indigo-500/5 to-transparent rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl pointer-events-none" />
         
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 relative z-10">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200 flex items-center gap-1">
+              <span className="px-2.5 py-0.5 rounded-full text-2xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 flex items-center gap-1">
                 <GitFork className="w-3.5 h-3.5" />
                 MINDMAP MASTER DATA 4 CHIỀU
               </span>
-              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                Brand ➔ Gian Hàng ➔ PIC Chính ➔ Store SKUs
+              <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                Brand → Gian hàng → PIC chính → Store SKUs
               </span>
             </div>
-            <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-              Sơ Đồ Phân Cấp & Dữ Liệu Gốc Master Data
+            <h2 className="text-lg sm:text-xl font-semibold text-slate-900 tracking-tight flex items-center gap-2">
+              Sơ đồ phân cấp & dữ liệu gốc Master Data
             </h2>
             <p className="text-xs text-slate-600 max-w-3xl mt-1 leading-relaxed">
               Trực quan hóa cấu trúc thực tế: <strong>Brand</strong> là cấp cao nhất, rẽ nhánh sang các <strong>Gian hàng</strong> sàn. Mỗi gian hàng có đúng <strong>1 PIC chính</strong> chủ trì và tự phân bổ xuống các nhân sự thành viên, cùng danh mục <strong>Store Product ID</strong> tương ứng từng sàn.
@@ -475,22 +476,22 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
             <div className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl flex items-center gap-2.5">
               <Building2 className="w-4 h-4 text-blue-600" />
               <div>
-                <div className="text-[10px] text-slate-500 uppercase font-bold">Thương Hiệu</div>
-                <div className="text-sm font-black text-slate-900">{brands.length} Brands</div>
+                <div className="text-2xs text-slate-500 font-semibold">Thương hiệu</div>
+                <div className="text-sm font-semibold text-slate-900">{brands.length} Brands</div>
               </div>
             </div>
             <div className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl flex items-center gap-2.5">
               <Store className="w-4 h-4 text-purple-600" />
               <div>
-                <div className="text-[10px] text-slate-500 uppercase font-bold">Gian Hàng Sàn</div>
-                <div className="text-sm font-black text-slate-900">{stores.length} Shops</div>
+                <div className="text-2xs text-slate-500 font-semibold">Gian hàng sàn</div>
+                <div className="text-sm font-semibold text-slate-900">{stores.length} Shops</div>
               </div>
             </div>
             <div className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl flex items-center gap-2.5">
               <Crown className="w-4 h-4 text-amber-500" />
               <div>
-                <div className="text-[10px] text-slate-500 uppercase font-bold">PIC Chính Lead</div>
-                <div className="text-sm font-black text-amber-700">
+                <div className="text-2xs text-slate-500 font-semibold">PIC Chính Lead</div>
+                <div className="text-sm font-semibold text-amber-700">
                   {new Set(stores.map(s => s.primaryPic)).size} Lead PICs
                 </div>
               </div>
@@ -527,7 +528,7 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
               onChange={e => setFilterPlatform(e.target.value as any)}
               className="bg-slate-50 border border-slate-200 text-slate-700 rounded-lg px-2.5 py-1.5 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-xs"
             >
-              <option value="ALL">Tất Cả Sàn</option>
+              <option value="ALL">Tất cả sàn</option>
               <option value="TIKTOK_SHOP">TikTok Shop</option>
               <option value="SHOPEE_MALL">Shopee Mall</option>
               <option value="LAZADA">Lazada</option>
@@ -539,7 +540,7 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
               onChange={e => setFilterBrandId(e.target.value)}
               className="bg-slate-50 border border-slate-200 text-slate-700 rounded-lg px-2.5 py-1.5 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-xs"
             >
-              <option value="ALL">Tất Cả Brand</option>
+              <option value="ALL">Tất cả Brand</option>
               {brands.map(b => (
                 <option key={b.id} value={b.id}>{b.name}</option>
               ))}
@@ -551,7 +552,7 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
               onChange={e => setFilterPic(e.target.value)}
               className="bg-slate-50 border border-slate-200 text-slate-700 rounded-lg px-2.5 py-1.5 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-xs"
             >
-              <option value="ALL">Tất Cả PIC</option>
+              <option value="ALL">Tất cả PIC</option>
               {allPicOptions.map(pic => (
                 <option key={pic} value={pic}>PIC: {pic}</option>
               ))}
@@ -568,10 +569,10 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
                   ? 'bg-amber-50 border-amber-300 text-amber-800'
                   : 'bg-white border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50'
               }`}
-              title="Bật/Tắt hiển thị nhánh Nhân Sự & PIC"
+              title="Bật/tắt hiển thị nhánh nhân sự & PIC"
             >
               <Crown className="w-3 h-3" />
-              <span>Nhân Sự</span>
+              <span>Nhân sự</span>
             </button>
 
             <button
@@ -581,10 +582,10 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
                   ? 'bg-blue-50 border-blue-300 text-blue-800'
                   : 'bg-white border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50'
               }`}
-              title="Bật/Tắt hiển thị nhánh Sản Phẩm & Store SKUs"
+              title="Bật/tắt hiển thị nhánh sản phẩm & Store SKUs"
             >
               <Package className="w-3 h-3" />
-              <span>Sản Phẩm</span>
+              <span>Sản phẩm</span>
             </button>
 
             <div className="h-4 w-px bg-slate-300 mx-1" />
@@ -594,7 +595,7 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
               className="px-2.5 py-1.5 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg text-slate-700 font-medium transition"
               title="Mở rộng tất cả các nhánh"
             >
-              Xổ Hết
+              Xổ hết
             </button>
             <button
               onClick={collapseAll}
@@ -608,15 +609,15 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
             <div className="flex items-center bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-slate-700">
               <button
                 onClick={() => setZoomLevel(prev => Math.max(75, prev - 10))}
-                className="px-1 hover:text-slate-900 font-bold"
+                className="px-1 hover:text-slate-900 font-semibold"
                 title="Thu nhỏ"
               >
                 -
               </button>
-              <span className="text-[10px] px-1 font-mono">{zoomLevel}%</span>
+              <span className="text-2xs px-1 font-mono">{zoomLevel}%</span>
               <button
                 onClick={() => setZoomLevel(prev => Math.min(130, prev + 10))}
-                className="px-1 hover:text-slate-900 font-bold"
+                className="px-1 hover:text-slate-900 font-semibold"
                 title="Phóng to"
               >
                 +
@@ -658,23 +659,23 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
                   }`}
                 >
                   <div className="flex items-center justify-between">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-xs">
+                    <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-xs">
                       <Building2 className="w-5 h-5" />
                     </div>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                    <span className="text-2xs font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
                       MASTER ROOT
                     </span>
                   </div>
-                  <h3 className="text-sm font-black text-slate-900 mt-3">Hệ Thống Master Data B2C</h3>
-                  <p className="text-[11px] text-slate-500 mt-0.5">
+                  <h3 className="text-sm font-semibold text-slate-900 mt-3">Hệ thống Master Data B2C</h3>
+                  <p className="text-2xs text-slate-500 mt-0.5">
                     Quản trị tập trung {brands.length} Brands & {stores.length} Gian Hàng
                   </p>
                   
-                  <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px]">
+                  <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-2xs">
                     <span className="text-slate-500 flex items-center gap-1">
                       <Store className="w-3 h-3 text-purple-600" /> {stores.length} Shops
                     </span>
-                    <button className="text-blue-600 hover:text-blue-700 font-bold flex items-center gap-0.5">
+                    <button className="text-blue-600 hover:text-blue-700 font-semibold flex items-center gap-0.5">
                       {expandedNodes.has('root') ? (
                         <><span>Thu gọn</span> <ChevronDown className="w-3.5 h-3.5" /></>
                       ) : (
@@ -718,40 +719,40 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
                             }`}
                           >
                             <div className="flex items-center justify-between">
-                              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">
+                              <span className="text-2xs font-semibold px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">
                                 BRAND TỔNG
                               </span>
-                              <span className="text-[10px] text-slate-500">
+                              <span className="text-2xs text-slate-500">
                                 {brandStores.length} Gian Hàng
                               </span>
                             </div>
 
                             <div className="mt-2 flex items-center gap-2.5">
-                              <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center font-bold text-slate-700 text-xs border border-slate-200 shrink-0">
+                              <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center font-semibold text-slate-700 text-xs border border-slate-200 shrink-0">
                                 {brand.name.substring(0, 2).toUpperCase()}
                               </div>
                               <div className="min-w-0">
-                                <h4 className="text-xs font-black text-slate-900 truncate">{brand.name}</h4>
-                                <div className="text-[10px] text-slate-500 truncate">{brand.category}</div>
+                                <h4 className="text-xs font-semibold text-slate-900 truncate">{brand.name}</h4>
+                                <div className="text-2xs text-slate-500 truncate">{brand.category}</div>
                               </div>
                             </div>
 
-                            <div className="mt-2.5 pt-2 border-t border-slate-100 grid grid-cols-2 gap-2 text-[10px]">
+                            <div className="mt-2.5 pt-2 border-t border-slate-100 grid grid-cols-2 gap-2 text-2xs">
                               <div>
                                 <span className="text-slate-500 block">Account PIC:</span>
                                 <span className="font-semibold text-slate-700 truncate block">{brand.accountPic || 'Chưa gán'}</span>
                               </div>
                               <div>
                                 <span className="text-slate-500 block">Target GMV:</span>
-                                <span className="font-bold text-emerald-700">{(brand.targetGmv / 1000000).toFixed(0)}M đ</span>
+                                <span className="font-semibold text-emerald-700">{formatVndShort(brand.targetGmv)}</span>
                               </div>
                             </div>
 
-                            <div className="mt-2 flex items-center justify-between text-[10px] pt-1">
+                            <div className="mt-2 flex items-center justify-between text-2xs pt-1">
                               <span className="text-slate-500">
                                 {brand.heroProducts?.length || 0} Hero SKUs
                               </span>
-                              <span className="text-blue-600 font-bold flex items-center gap-0.5">
+                              <span className="text-blue-600 font-semibold flex items-center gap-0.5">
                                 {isBrandExpanded ? (
                                   <><span>Đóng gian hàng</span> <ChevronDown className="w-3 h-3" /></>
                                 ) : (
@@ -793,13 +794,13 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
                                         >
                                           <div className="flex items-center justify-between gap-1">
                                             {renderPlatformBadge(store.platform)}
-                                            <span className="text-[10px] font-mono text-slate-500 truncate">
+                                            <span className="text-2xs font-mono text-slate-500 truncate">
                                               {store.storeId}
                                             </span>
                                           </div>
 
                                           <div className="mt-2">
-                                            <h5 className="text-xs font-bold text-slate-900 truncate flex items-center gap-1.5">
+                                            <h5 className="text-xs font-semibold text-slate-900 truncate flex items-center gap-1.5">
                                               <Store className="w-3.5 h-3.5 text-purple-600 shrink-0" />
                                               <span className="truncate">{store.storeName}</span>
                                             </h5>
@@ -807,37 +808,37 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
 
                                           {/* Key Highlight: 1 PIC Chính */}
                                           <div className="mt-2.5 p-2 rounded-lg bg-amber-50 border border-amber-200">
-                                            <div className="flex items-center justify-between text-[10px]">
-                                              <span className="text-amber-800 font-bold flex items-center gap-1">
+                                            <div className="flex items-center justify-between text-2xs">
+                                              <span className="text-amber-800 font-semibold flex items-center gap-1">
                                                 <Crown className="w-3 h-3 text-amber-600" />
-                                                1 PIC CHÍNH (Lead):
+                                                1 PIC CHÍNH:
                                               </span>
-                                              <span className="text-slate-900 font-extrabold truncate">
+                                              <span className="text-slate-900 font-semibold truncate">
                                                 {store.primaryPic}
                                               </span>
                                             </div>
-                                            <div className="text-[9px] text-amber-700 mt-0.5">
+                                            <div className="text-2xs text-amber-700 mt-0.5">
                                               Chủ trì lập kế hoạch & phân bổ ngân sách
                                             </div>
                                           </div>
 
-                                          <div className="mt-2 pt-2 border-t border-slate-100 grid grid-cols-2 gap-1.5 text-[10px]">
+                                          <div className="mt-2 pt-2 border-t border-slate-100 grid grid-cols-2 gap-1.5 text-2xs">
                                             <div>
-                                              <span className="text-slate-500 block">Ngân Sách:</span>
-                                              <span className="font-semibold text-slate-900">{(store.monthlyBudget / 1000000).toFixed(0)}M đ</span>
+                                              <span className="text-slate-500 block">Ngân sách:</span>
+                                              <span className="font-semibold text-slate-900">{formatVndShort(store.monthlyBudget)}</span>
                                             </div>
                                             <div>
                                               <span className="text-slate-500 block">Target GMV:</span>
-                                              <span className="font-bold text-emerald-700">{(store.monthlyTargetGmv / 1000000).toFixed(0)}M đ</span>
+                                              <span className="font-semibold text-emerald-700">{formatVndShort(store.monthlyTargetGmv)}</span>
                                             </div>
                                           </div>
 
                                           {/* Sub-branch action toggles */}
-                                          <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between text-[10px]">
+                                          <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between text-2xs">
                                             <span className="text-slate-500">
                                               {store.memberPics.length} PIC phụ • {store.storeProducts.length} SKUs
                                             </span>
-                                            <span className="text-purple-600 font-bold flex items-center gap-0.5">
+                                            <span className="text-purple-600 font-semibold flex items-center gap-0.5">
                                               {isStoreExpanded ? (
                                                 <><span>Thu nhánh</span> <ChevronDown className="w-3 h-3" /></>
                                               ) : (
@@ -857,7 +858,7 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
                                                 
                                                 <div className="w-64 bg-white border border-amber-200 rounded-xl p-3 shadow-xs">
                                                   <div className="flex items-center justify-between pb-2 border-b border-amber-100">
-                                                    <span className="text-[10px] font-bold text-amber-900 flex items-center gap-1">
+                                                    <span className="text-2xs font-semibold text-amber-900 flex items-center gap-1">
                                                       <Users className="w-3 h-3 text-amber-600" />
                                                       ĐỘI NGŨ PHỤ TRÁCH ({1 + store.memberPics.length})
                                                     </span>
@@ -887,11 +888,11 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
                                                         <ShieldCheck className="w-3.5 h-3.5" />
                                                       </div>
                                                       <div className="min-w-0">
-                                                        <div className="text-[11px] font-black text-amber-900 truncate">
+                                                        <div className="text-2xs font-semibold text-amber-900 truncate">
                                                           {store.primaryPic}
                                                         </div>
-                                                        <div className="text-[9px] text-amber-700">
-                                                          PIC Chính (Chịu trách nhiệm số)
+                                                        <div className="text-2xs text-amber-700">
+                                                          PIC chính (chịu trách nhiệm số)
                                                         </div>
                                                       </div>
                                                     </div>
@@ -899,29 +900,29 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
 
                                                   {/* Nhân sự thành viên (Sub-PICs) */}
                                                   <div className="mt-2 space-y-1">
-                                                    <div className="text-[9px] font-bold text-slate-500 uppercase">
+                                                    <div className="text-2xs font-semibold text-slate-500">
                                                       Nhân sự phối hợp:
                                                     </div>
                                                     {store.memberPics.length === 0 ? (
-                                                      <div className="text-[10px] text-slate-500 italic">Chưa thêm PIC hỗ trợ</div>
+                                                      <div className="text-2xs text-slate-500 italic">Chưa thêm PIC hỗ trợ</div>
                                                     ) : (
                                                       store.memberPics.map((picName, pIdx) => (
                                                         <div
                                                           key={pIdx}
-                                                          className="flex items-center justify-between px-2 py-1 bg-slate-50 rounded text-[10px] border border-slate-200"
+                                                          className="flex items-center justify-between px-2 py-1 bg-slate-50 rounded text-2xs border border-slate-200"
                                                         >
                                                           <span className="text-slate-700 font-medium truncate flex items-center gap-1.5">
                                                             <span className="w-1.5 h-1.5 rounded-full bg-blue-600" />
                                                             {picName}
                                                           </span>
-                                                          <span className="text-[9px] text-slate-500">Phối hợp</span>
+                                                          <span className="text-2xs text-slate-500">Phối hợp</span>
                                                         </div>
                                                       ))
                                                     )}
                                                   </div>
 
                                                   {store.assignmentNotes && (
-                                                    <div className="mt-2 p-1.5 bg-amber-50/50 rounded text-[9px] text-amber-900 border border-amber-200/60 line-clamp-2">
+                                                    <div className="mt-2 p-1.5 bg-amber-50/50 rounded text-2xs text-amber-900 border border-amber-200/60 line-clamp-2">
                                                       {store.assignmentNotes}
                                                     </div>
                                                   )}
@@ -936,12 +937,12 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
 
                                                 <div className="w-72 bg-white border border-blue-200 rounded-xl p-3 shadow-xs">
                                                   <div className="flex items-center justify-between pb-2 border-b border-blue-100">
-                                                    <span className="text-[10px] font-bold text-blue-900 flex items-center gap-1">
+                                                    <span className="text-2xs font-semibold text-blue-900 flex items-center gap-1">
                                                       <Package className="w-3 h-3 text-blue-600" />
                                                       STORE SKUS MAPPING ({store.storeProducts.length})
                                                     </span>
-                                                    <span className="text-[9px] text-slate-500">
-                                                      ID Sàn Riêng
+                                                    <span className="text-2xs text-slate-500">
+                                                      ID sàn riêng
                                                     </span>
                                                   </div>
 
@@ -953,23 +954,23 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
                                                         className="p-2 bg-slate-50 hover:bg-blue-50/50 rounded-lg border border-slate-200 transition cursor-pointer"
                                                       >
                                                         <div className="flex items-center justify-between">
-                                                          <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-purple-50 text-purple-700 border border-purple-200">
-                                                            {prod.isHeroSku ? '⭐ HERO SKU' : 'CORE SKU'}
+                                                          <span className="text-2xs font-semibold px-1.5 py-0.2 rounded bg-purple-50 text-purple-700 border border-purple-200">
+                                                            {prod.isHeroSku ? 'HERO SKU' : 'CORE SKU'}
                                                           </span>
-                                                          <span className="text-[9px] font-mono text-emerald-700 font-bold">
+                                                          <span className="text-2xs font-mono text-emerald-700 font-semibold">
                                                             {prod.commissionRate}% hoa hồng
                                                           </span>
                                                         </div>
 
-                                                        <div className="text-[11px] font-bold text-slate-900 mt-1 truncate">
+                                                        <div className="text-2xs font-semibold text-slate-900 mt-1 truncate">
                                                           {prod.productName}
                                                         </div>
 
                                                         {/* Highlighting the Core Logic: Platform Product ID vs Master SKU */}
-                                                        <div className="mt-1.5 p-1.5 bg-white rounded text-[9px] space-y-0.5 border border-slate-200">
+                                                        <div className="mt-1.5 p-1.5 bg-white rounded text-2xs space-y-0.5 border border-slate-200">
                                                           <div className="flex items-center justify-between">
                                                             <span className="text-slate-500">Store Item ID:</span>
-                                                            <span className="font-mono text-blue-700 font-bold truncate">
+                                                            <span className="font-mono text-blue-700 font-semibold truncate">
                                                               {prod.platformProductId}
                                                             </span>
                                                           </div>
@@ -981,13 +982,13 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
                                                           </div>
                                                         </div>
 
-                                                        <div className="mt-1 text-[10px] text-slate-500 flex items-center justify-between">
+                                                        <div className="mt-1 text-2xs text-slate-500 flex items-center justify-between">
                                                           <span>Giá shop: <strong className="text-slate-800">{prod.storePrice.toLocaleString('vi-VN')} đ</strong></span>
                                                           <a
                                                             href={prod.platformUrl}
                                                             target="_blank"
                                                             rel="noreferrer"
-                                                            className="text-blue-600 hover:underline flex items-center gap-0.5 text-[9px] font-medium"
+                                                            className="text-blue-600 hover:underline flex items-center gap-0.5 text-2xs font-medium"
                                                             onClick={e => e.stopPropagation()}
                                                           >
                                                             Link sàn <ExternalLink className="w-2.5 h-2.5" />
@@ -1024,21 +1025,21 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
           <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-xs">
             <div className="flex items-center justify-between pb-3 border-b border-slate-200">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-600 font-bold">
+                <div className="w-8 h-8 rounded-lg bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-600 font-semibold">
                   <Info className="w-4 h-4" />
                 </div>
                 <div>
-                  <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider">
-                    Bảng Điều Khiển Master Data
+                  <h4 className="text-xs font-semibold text-slate-900">
+                    Bảng điều khiển Master Data
                   </h4>
-                  <div className="text-[10px] text-slate-500">
+                  <div className="text-2xs text-slate-500">
                     Chi tiết thực thể đang chọn
                   </div>
                 </div>
               </div>
 
               {selectedNode && (
-                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200 font-mono">
+                <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-slate-100 text-slate-700 border border-slate-200 font-mono">
                   {selectedNode.type}
                 </span>
               )}
@@ -1056,24 +1057,24 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
                   <div>
                     <div className="flex items-center justify-between">
                       {renderPlatformBadge(selectedNode.data.platform)}
-                      <span className="text-[10px] font-mono text-slate-500">
+                      <span className="text-2xs font-mono text-slate-500">
                         ID: {selectedNode.data.storeId}
                       </span>
                     </div>
-                    <h3 className="text-sm font-black text-slate-900 mt-1.5">
+                    <h3 className="text-sm font-semibold text-slate-900 mt-1.5">
                       {selectedNode.data.storeName}
                     </h3>
-                    <div className="text-[11px] text-slate-500">
+                    <div className="text-2xs text-slate-500">
                       Thuộc Brand: <strong className="text-slate-800">{selectedNode.data.brandName}</strong>
                     </div>
                   </div>
 
-                  {/* 👑 Section: Phân Công PIC Chính & Phân Quyền */}
+                  {/* Section: Phân Công PIC Chính & Phân Quyền */}
                   <div className="p-3.5 bg-amber-50/70 border border-amber-200 rounded-xl">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-[11px] font-black text-amber-900 flex items-center gap-1.5">
+                      <span className="text-2xs font-semibold text-amber-900 flex items-center gap-1.5">
                         <Crown className="w-4 h-4 text-amber-600" />
-                        TRÁCH NHIỆM & PIC CHÍNH
+                        Trách nhiệm & PIC chính
                       </span>
                       <button
                         onClick={() => {
@@ -1085,7 +1086,7 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
                           });
                           setIsEditingStorePic(true);
                         }}
-                        className="px-2.5 py-1 bg-white hover:bg-amber-100 text-amber-800 border border-amber-300 rounded-lg text-[10px] font-bold flex items-center gap-1 transition shadow-2xs"
+                        className="px-2.5 py-1 bg-white hover:bg-amber-100 text-amber-800 border border-amber-300 rounded-lg text-2xs font-semibold flex items-center gap-1 transition shadow-2xs"
                       >
                         <Edit3 className="w-3 h-3" /> Đổi PIC
                       </button>
@@ -1093,26 +1094,26 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
 
                     <div className="p-2.5 bg-white rounded-lg border border-amber-200 flex items-center justify-between shadow-2xs">
                       <div>
-                        <div className="text-[10px] text-slate-500">1 PIC Chính Phụ Trách:</div>
-                        <div className="text-xs font-black text-slate-900 flex items-center gap-1.5 mt-0.5">
-                          <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-100 text-amber-800 border border-amber-200">PIC CHÍNH</span>
+                        <div className="text-2xs text-slate-500">1 PIC chính phụ trách:</div>
+                        <div className="text-xs font-semibold text-slate-900 flex items-center gap-1.5 mt-0.5">
+                          <span className="px-1.5 py-0.2 rounded text-2xs font-semibold bg-amber-100 text-amber-800 border border-amber-200">PIC CHÍNH</span>
                           <span>{selectedNode.data.primaryPic}</span>
                         </div>
                       </div>
-                      <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                      <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-amber-100 text-amber-800 border border-amber-200">
                         Lead Shop
                       </span>
                     </div>
 
                     <div className="mt-2.5 space-y-1">
-                      <div className="text-[10px] text-slate-600 font-semibold">
+                      <div className="text-2xs text-slate-600 font-semibold">
                         Nhân sự phối hợp ({selectedNode.data.memberPics.length}):
                       </div>
                       <div className="flex flex-wrap gap-1.5">
                         {selectedNode.data.memberPics.map((pName: string, i: number) => (
                           <span
                             key={i}
-                            className="px-2 py-0.5 rounded bg-white text-slate-700 border border-slate-200 text-[10px]"
+                            className="px-2 py-0.5 rounded bg-white text-slate-700 border border-slate-200 text-2xs"
                           >
                             {pName}
                           </span>
@@ -1120,22 +1121,22 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
                       </div>
                     </div>
 
-                    <p className="text-[10px] text-slate-600 mt-2 italic bg-white p-2 rounded border border-slate-200">
-                      <strong>Nguyên tắc:</strong> Mọi kế hoạch tuần/tháng (Plan Studio) của gian hàng này sẽ do <strong>{selectedNode.data.primaryPic}</strong> chủ trì phân chia và giao task.
+                    <p className="text-2xs text-slate-600 mt-2 italic bg-white p-2 rounded border border-slate-200">
+                      <strong>Nguyên tắc:</strong> Mọi kế hoạch tuần/tháng của gian hàng này sẽ do <strong>{selectedNode.data.primaryPic}</strong> chủ trì phân chia và giao task.
                     </p>
                   </div>
 
                   {/* Financial Targets */}
                   <div className="grid grid-cols-2 gap-2 text-xs">
                     <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
-                      <div className="text-[10px] text-slate-500 uppercase font-bold">Ngân Sách Tháng</div>
-                      <div className="text-sm font-black text-slate-900 mt-1">
+                      <div className="text-2xs text-slate-500 font-semibold">Ngân sách tháng</div>
+                      <div className="text-sm font-semibold text-slate-900 mt-1">
                         {(selectedNode.data.monthlyBudget / 1000000).toFixed(0)} Triệu đ
                       </div>
                     </div>
                     <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
-                      <div className="text-[10px] text-slate-500 uppercase font-bold">Target GMV</div>
-                      <div className="text-sm font-black text-emerald-700 mt-1">
+                      <div className="text-2xs text-slate-500 font-semibold">Target GMV</div>
+                      <div className="text-sm font-semibold text-emerald-700 mt-1">
                         {(selectedNode.data.monthlyTargetGmv / 1000000).toFixed(0)} Triệu đ
                       </div>
                     </div>
@@ -1143,7 +1144,7 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
 
                   {/* Store Products List */}
                   <div>
-                    <div className="flex items-center justify-between text-xs font-bold text-slate-900 mb-2">
+                    <div className="flex items-center justify-between text-xs font-semibold text-slate-900 mb-2">
                       <span className="flex items-center gap-1.5">
                         <Package className="w-3.5 h-3.5 text-blue-600" />
                         Danh Mục Sản Phẩm Đang Bán ({selectedNode.data.storeProducts.length})
@@ -1153,12 +1154,12 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
                     <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
                       {selectedNode.data.storeProducts.map((p: StoreProductSkuMap) => (
                         <div key={p.platformProductId} className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl">
-                          <div className="flex items-center justify-between text-[10px]">
-                            <span className="font-bold text-slate-900 truncate max-w-[170px]">{p.productName}</span>
-                            <span className="text-emerald-700 font-bold">{p.commissionRate}% comm</span>
+                          <div className="flex items-center justify-between text-2xs">
+                            <span className="font-semibold text-slate-900 truncate max-w-[170px]">{p.productName}</span>
+                            <span className="text-emerald-700 font-semibold">{p.commissionRate}% comm</span>
                           </div>
-                          <div className="mt-1 flex items-center justify-between text-[9px] text-slate-500 font-mono">
-                            <span>Sàn ID: <strong className="text-blue-700 font-bold">{p.platformProductId}</strong></span>
+                          <div className="mt-1 flex items-center justify-between text-2xs text-slate-500 font-mono">
+                            <span>Sàn ID: <strong className="text-blue-700 font-semibold">{p.platformProductId}</strong></span>
                             <span>Giá: {p.storePrice.toLocaleString('vi-VN')} đ</span>
                           </div>
                         </div>
@@ -1171,10 +1172,10 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
                     {onOpenQuickBookWithBrand && (
                       <button
                         onClick={() => onOpenQuickBookWithBrand(selectedNode.data.brandName)}
-                        className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-xs transition"
+                        className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-xs transition"
                       >
                         <Sparkles className="w-3.5 h-3.5" />
-                        <span>Mở Lập Plan Cho Gian Hàng Này</span>
+                        <span>Mở lập Plan cho gian hàng này</span>
                       </button>
                     )}
                   </div>
@@ -1182,38 +1183,38 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
               ) : selectedNode.type === 'PRODUCT' ? (
                 <div className="space-y-4">
                   <div>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">
-                      SẢN PHẨM & STORE SKU MAPPING
+                    <span className="text-2xs font-semibold px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">
+                      Sản phẩm & store SKU mapping
                     </span>
-                    <h3 className="text-sm font-black text-slate-900 mt-2">
+                    <h3 className="text-sm font-semibold text-slate-900 mt-2">
                       {selectedNode.data.productName}
                     </h3>
-                    <div className="text-[11px] text-slate-500 mt-0.5">
+                    <div className="text-2xs text-slate-500 mt-0.5">
                       Đang bán tại gian: <strong className="text-slate-800">{selectedNode.data.storeName}</strong>
                     </div>
                   </div>
 
                   <div className="p-3 bg-blue-50/60 border border-blue-200 rounded-xl space-y-2">
-                    <div className="flex items-center justify-between text-[11px]">
+                    <div className="flex items-center justify-between text-2xs">
                       <span className="text-slate-600">Store Item ID sàn:</span>
-                      <span className="font-mono text-blue-700 font-bold">{selectedNode.data.platformProductId}</span>
+                      <span className="font-mono text-blue-700 font-semibold">{selectedNode.data.platformProductId}</span>
                     </div>
-                    <div className="flex items-center justify-between text-[11px]">
+                    <div className="flex items-center justify-between text-2xs">
                       <span className="text-slate-600">Mã Master SKU gốc:</span>
                       <span className="font-mono text-slate-800">{selectedNode.data.masterSku}</span>
                     </div>
-                    <div className="flex items-center justify-between text-[11px]">
+                    <div className="flex items-center justify-between text-2xs">
                       <span className="text-slate-600">Giá bán tại gian này:</span>
-                      <span className="font-bold text-slate-900">{selectedNode.data.storePrice.toLocaleString('vi-VN')} đ</span>
+                      <span className="font-semibold text-slate-900">{selectedNode.data.storePrice.toLocaleString('vi-VN')} đ</span>
                     </div>
-                    <div className="flex items-center justify-between text-[11px]">
+                    <div className="flex items-center justify-between text-2xs">
                       <span className="text-slate-600">Tỷ lệ hoa hồng affiliate:</span>
-                      <span className="font-bold text-emerald-700">{selectedNode.data.commissionRate}%</span>
+                      <span className="font-semibold text-emerald-700">{selectedNode.data.commissionRate}%</span>
                     </div>
                   </div>
 
-                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-[11px] text-slate-600 space-y-1.5">
-                    <div className="font-bold text-slate-800">Cơ chế ánh xạ ID tự động:</div>
+                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-2xs text-slate-600 space-y-1.5">
+                    <div className="font-semibold text-slate-800">Cơ chế ánh xạ ID tự động:</div>
                     <p>
                       Khi PIC lập Plan cho gian hàng này và chọn sản phẩm <em>{selectedNode.data.productName}</em>, hệ thống sẽ tự động gán mã <strong>{selectedNode.data.platformProductId}</strong> để KOC gắn đúng giỏ hàng, tránh nhầm lẫn giữa các sàn.
                     </p>
@@ -1222,33 +1223,33 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
               ) : selectedNode.type === 'BRAND' ? (
                 <div className="space-y-4">
                   <div>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200">
+                    <span className="text-2xs font-semibold px-2 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200">
                       BRAND TỔNG
                     </span>
-                    <h3 className="text-sm font-black text-slate-900 mt-2">
+                    <h3 className="text-sm font-semibold text-slate-900 mt-2">
                       {selectedNode.data.name}
                     </h3>
-                    <div className="text-[11px] text-slate-500">
+                    <div className="text-2xs text-slate-500">
                       {selectedNode.data.companyName}
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-2 text-xs">
                     <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
-                      <div className="text-[10px] text-slate-500 font-bold uppercase">Tổng Target GMV</div>
-                      <div className="text-sm font-black text-emerald-700 mt-1">
-                        {(selectedNode.data.targetGmv / 1000000).toFixed(0)}M đ
+                      <div className="text-2xs text-slate-500 font-semibold">Tổng Target GMV</div>
+                      <div className="text-sm font-semibold text-emerald-700 mt-1">
+                        {formatVndShort(selectedNode.data.targetGmv)}
                       </div>
                     </div>
                     <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
-                      <div className="text-[10px] text-slate-500 font-bold uppercase">Ngân Sách Brand</div>
-                      <div className="text-sm font-black text-slate-900 mt-1">
-                        {(selectedNode.data.planBudget / 1000000).toFixed(0)}M đ
+                      <div className="text-2xs text-slate-500 font-semibold">Ngân sách Brand</div>
+                      <div className="text-sm font-semibold text-slate-900 mt-1">
+                        {formatVndShort(selectedNode.data.planBudget)}
                       </div>
                     </div>
                   </div>
 
-                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1.5 text-[11px]">
+                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1.5 text-2xs">
                     <div className="text-slate-600">Account PIC: <strong className="text-slate-800">{selectedNode.data.accountPic}</strong></div>
                     <div className="text-slate-600">Growth PIC: <strong className="text-slate-800">{selectedNode.data.growthPic}</strong></div>
                     <div className="text-slate-600">Booking Lead: <strong className="text-slate-800">{selectedNode.data.bookingPicLead}</strong></div>
@@ -1256,9 +1257,9 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
                 </div>
               ) : (
                 <div className="space-y-3">
-                  <h3 className="text-sm font-black text-slate-900">Tổng Quan Master Data Toàn Hệ Thống</h3>
+                  <h3 className="text-sm font-semibold text-slate-900">Tổng quan Master Data toàn hệ thống</h3>
                   <p className="text-slate-600 text-xs">
-                    Hệ thống đang cấu trúc dữ liệu theo 4 chiều: <strong>Brand ➔ Gian hàng ➔ Nhân sự (1 PIC chính) ➔ Sản phẩm (Store SKU)</strong>.
+                    Hệ thống đang cấu trúc dữ liệu theo 4 chiều: <strong>Brand → Gian hàng → Nhân sự (1 PIC chính) → Sản phẩm</strong>.
                   </p>
                 </div>
               )}
@@ -1267,11 +1268,11 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
 
           {/* Quick Legend & Guidelines */}
           <div className="bg-white border border-slate-200 rounded-2xl p-4 text-xs space-y-2 shadow-2xs">
-            <h5 className="font-bold text-slate-900 text-[11px] uppercase tracking-wider flex items-center gap-1.5">
+            <h5 className="font-semibold text-slate-900 text-2xs flex items-center gap-1.5">
               <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
               Quy Chuẩn Master Data B2C
             </h5>
-            <ul className="space-y-1.5 text-[11px] text-slate-600 list-disc list-inside">
+            <ul className="space-y-1.5 text-2xs text-slate-600 list-disc list-inside">
               <li>Mỗi Gian hàng chỉ có đúng <strong>1 PIC Chính</strong> chịu trách nhiệm KPI và số cuối.</li>
               <li>Mỗi sản phẩm có <strong>1 Master SKU</strong> ở Brand nhưng có các <strong>Store Product ID khác nhau</strong> trên mỗi sàn.</li>
               <li>Khi làm <strong>Plan</strong>, PIC chính phân rã ngân sách xuống từng nhân sự theo đúng Store Product ID của shop.</li>
@@ -1299,10 +1300,10 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
                   <Crown className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-black text-slate-900">
-                    Phân Công PIC Chính & Đội Ngũ Gian Hàng
+                  <h3 className="text-sm font-semibold text-slate-900">
+                    Phân công PIC chính & đội ngũ gian hàng
                   </h3>
-                  <div className="text-[10px] text-slate-500">
+                  <div className="text-2xs text-slate-500">
                     Chỉ định 1 PIC chính chủ trì lập kế hoạch & các nhân sự phối hợp
                   </div>
                 </div>
@@ -1318,11 +1319,11 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
 
             {/* Modal Body */}
             <div className="p-5 space-y-4 text-xs">
-              {/* 👑 1 PIC Chính (Primary Store PIC) */}
+              {/* 1 PIC Chính (Primary Store PIC) */}
               <div>
-                <label className="block text-slate-700 font-bold mb-1.5 flex items-center gap-1.5">
+                <label className="block text-slate-700 font-semibold mb-1.5 flex items-center gap-1.5">
                   <Crown className="w-3.5 h-3.5 text-amber-600" />
-                  <span>1 PIC Chính Phụ Trách (Bắt buộc chọn 1 người):</span>
+                  <span>1 PIC chính phụ trách (bắt buộc chọn 1 người):</span>
                 </label>
                 <select
                   value={editingStoreForm.primaryPic}
@@ -1339,22 +1340,22 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
                       };
                     });
                   }}
-                  className="w-full bg-white border border-amber-300 text-amber-900 font-bold rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
+                  className="w-full bg-white border border-amber-300 text-amber-900 font-semibold rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
                 >
                   {allPicOptions.map(staff => (
                     <option key={staff} value={staff}>{staff} (Lead PIC Gian Hàng)</option>
                   ))}
                 </select>
-                <p className="text-[10px] text-amber-700 mt-1">
+                <p className="text-2xs text-amber-700 mt-1">
                   Nhân sự này sẽ có thẩm quyền lập, phân bổ ngân sách và giao việc cho các thành viên trong gian hàng này.
                 </p>
               </div>
 
               {/* Nhân sự phối hợp (Multi-select) */}
               <div>
-                <label className="block text-slate-700 font-bold mb-1.5 flex items-center gap-1.5">
+                <label className="block text-slate-700 font-semibold mb-1.5 flex items-center gap-1.5">
                   <Users className="w-3.5 h-3.5 text-blue-600" />
-                  <span>Các Nhân Sự Phối Hợp / Cùng Làm Shop (Sub-PICs):</span>
+                  <span>Các nhân sự phối hợp / cùng làm Shop:</span>
                 </label>
                 <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto p-2 bg-slate-50 rounded-xl border border-slate-200">
                   {allPicOptions
@@ -1377,7 +1378,7 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
                               };
                             });
                           }}
-                          className={`p-2 rounded-lg text-left text-[11px] font-medium border flex items-center justify-between transition ${
+                          className={`p-2 rounded-lg text-left text-2xs font-medium border flex items-center justify-between transition ${
                             isSelected
                               ? 'bg-blue-50 border-blue-400 text-blue-800 font-semibold'
                               : 'bg-white border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-100'
@@ -1393,14 +1394,14 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
 
               {/* Ghi chú phân chia */}
               <div>
-                <label className="block text-slate-700 font-bold mb-1.5">
-                  Ghi Chú Phân Chia Trách Nhiệm Giữa Các PICs:
+                <label className="block text-slate-700 font-semibold mb-1.5">
+                  Ghi chú phân Chia trách nhiệm giữa các PICs:
                 </label>
                 <textarea
                   rows={3}
                   value={editingStoreForm.assignmentNotes}
                   onChange={e => setEditingStoreForm(prev => prev ? { ...prev, assignmentNotes: e.target.value } : null)}
-                  placeholder="Ví dụ: PIC Chính quản lý budget tổng và KOC Celeb; Bạn B làm KOC Mass; Bạn C làm Livestream..."
+                  placeholder="Ví dụ: PIC chính quản lý budget tổng và KOC Celeb; bạn B làm KOC Mass; bạn C làm Livestream..."
                   className="w-full bg-white border border-slate-300 text-slate-900 rounded-xl p-2.5 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-xs"
                 />
               </div>
@@ -1418,10 +1419,10 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
               <button
                 type="button"
                 onClick={handleSaveStoreAssignment}
-                className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs shadow-xs transition flex items-center gap-1.5"
+                className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl text-xs shadow-xs transition flex items-center gap-1.5"
               >
                 <CheckCircle2 className="w-4 h-4" />
-                <span>Lưu Phân Công Master Data</span>
+                <span>Lưu phân công Master Data</span>
               </button>
             </div>
           </div>

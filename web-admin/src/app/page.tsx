@@ -25,6 +25,7 @@ import SampleTrackerView from '../components/views/SampleTrackerView';
 import PerformanceP3View from '../components/views/PerformanceP3View';
 import { PushProductsView } from '../components/views/PushProductsView';
 import { MasterDataHubView } from '../components/views/MasterDataHubView';
+import { SelfChannelCtvHubView } from '../components/views/SelfChannelCtvHubView';
 
 import { 
   USERS, 
@@ -117,7 +118,7 @@ export default function App() {
   // Plan Handlers
   const handleAddPlanItem = (newItem: StaffDetailedPlanItem) => {
     setDetailedPlans(prev => [newItem, ...prev]);
-    showToast(`Đã thêm KOC ${newItem.kocStageName} (${newItem.brandName}) vào Kế hoạch tuần ${newItem.targetWeek}!`);
+    showToast(`Đã thêm ${newItem.kocStageName} vào kế hoạch tuần ${newItem.targetWeek}`);
   };
 
   const handleUpdatePlanItem = (updated: StaffDetailedPlanItem) => {
@@ -126,7 +127,7 @@ export default function App() {
 
   const handleDeletePlanItem = (itemId: string) => {
     setDetailedPlans(prev => prev.filter(i => i.id !== itemId));
-    showToast('Đã xóa slot KOC khỏi kế hoạch.');
+    showToast('Đã xóa slot khỏi kế hoạch');
   };
 
   const handleSubmitPlanToLead = (staffName: string) => {
@@ -135,7 +136,7 @@ export default function App() {
       status: 'SUBMITTED',
       leadNotes: 'Đã gửi trình duyệt lên Trưởng phòng'
     } : i));
-    showToast(`Đã gửi trình duyệt toàn bộ Kế hoạch của ${staffName} lên Trưởng Phòng!`);
+    showToast(`Đã gửi duyệt kế hoạch của ${staffName}`);
   };
 
   const handleApproveEntirePlanFromLead = (staffName: string, managerFeedback: string) => {
@@ -144,7 +145,7 @@ export default function App() {
       status: 'APPROVED',
       leadNotes: managerFeedback || 'Trưởng phòng đã phê duyệt toàn bộ kế hoạch'
     } : item));
-    showToast(`Trưởng phòng đã phê duyệt Kế hoạch của ${staffName}! Kích hoạt chuyển giao sang Booking Execution.`);
+    showToast(`Đã duyệt kế hoạch của ${staffName}`);
   };
 
   const handleRequestPlanRevisionFromLead = (staffName: string, managerFeedback: string) => {
@@ -153,7 +154,7 @@ export default function App() {
       status: 'REVISION_REQUESTED',
       leadNotes: managerFeedback || 'Trưởng phòng yêu cầu điều chỉnh danh sách KOC'
     } : item));
-    showToast(`[Yêu Cầu Sửa] Đã gửi yêu cầu điều chỉnh Kế hoạch đến chuyên viên ${staffName}.`, 'warning');
+    showToast(`Đã trả kế hoạch về cho ${staffName} để sửa`, 'warning');
   };
 
   const handleUpdatePlanItemStatusFromLead = (itemId: string, newStatus: StaffPlanStatus, leadNotes?: string) => {
@@ -209,13 +210,13 @@ export default function App() {
       dealCode: newDeal.dealCode,
       leadNotes: 'Đã kích hoạt chuyển đổi sang Deal Booking chính thức'
     } : p));
-    showToast(`Đã chuyển đổi KOC ${item.kocStageName} (${item.brandName}) sang Deal Booking ${newDeal.dealCode}! Kích hoạt khâu Hợp đồng & Cọc.`);
+    showToast(`Đã tạo deal ${newDeal.dealCode} cho ${item.kocStageName}`);
   };
 
   const handleBatchConvertPlanToDeals = (staffName: string) => {
     const approvedItems = detailedPlans.filter(p => p.staffName === staffName && p.status === 'APPROVED');
     if (approvedItems.length === 0) {
-      showToast(`Không có KOC nào ở trạng thái ĐÃ DUYỆT để chuyển đổi cho ${staffName}!`, 'warning');
+      showToast(`Kế hoạch của ${staffName} chưa có KOC nào được duyệt. Duyệt ít nhất một KOC rồi thử lại.`, 'warning');
       return;
     }
 
@@ -274,7 +275,7 @@ export default function App() {
       return p;
     }));
 
-    showToast(`Trưởng phòng đã chuyển đổi thành công ${approvedItems.length} KOC của ${staffName} sang Booking Deals tác nghiệp!`);
+    showToast(`Đã tạo ${approvedItems.length} deal từ kế hoạch của ${staffName}`);
   };
 
   const handleGenerateDealsFromGrowthDemand = (demand: any) => {
@@ -318,7 +319,7 @@ export default function App() {
 
     if (newDealsGenerated.length > 0) {
       setDeals(prev => [...newDealsGenerated, ...prev]);
-      showToast(`Đã tự động khởi tạo ${newDealsGenerated.length} vị trí Deal Booking từ Kế Hoạch ${demand.code}! Bàn giao nhân sự Booking tác nghiệp.`);
+      showToast(`Đã tạo ${newDealsGenerated.length} deal từ kế hoạch ${demand.code}`);
     }
   };
 
@@ -337,32 +338,32 @@ export default function App() {
       dealCode: newDeal.dealCode
     };
     setTasks(prev => [newTask, ...prev]);
-    showToast(`Đã tạo thành công Deal ${newDeal.dealCode} cho KOC ${newDeal.kocStageName}! Kích hoạt SLA 24h duyệt kịch bản.`);
+    showToast(`Đã tạo deal ${newDeal.dealCode} cho ${newDeal.kocStageName}. Hạn duyệt kịch bản: 24 giờ.`);
   };
 
   const handleCompleteTask = (taskId: string) => {
     setTasks(prev => prev.map(t => t.id === taskId ? { ...t, urgency: 'done', remainingText: 'Đạt SLA 100%' } : t));
-    showToast('Đã hoàn thành đầu việc! Ghi nhận +5 điểm Kỷ luật SLA vào Bảng Vàng.');
+    showToast('Đã hoàn thành việc. +5 điểm SLA');
   };
 
   const handleAddTask = (newTask: SlaTask) => {
     setTasks(prev => [newTask, ...prev]);
-    showToast(`Trưởng phòng đã giao nhiệm vụ: "${newTask.title}" tới ${newTask.pic}!`);
+    showToast(`Đã giao việc cho ${newTask.pic}`);
   };
 
   const handleUpdateBrand = (updatedBrand: BrandDetail) => {
     setBrands(prev => prev.map(b => b.id === updatedBrand.id ? updatedBrand : b));
-    showToast(`Đã cập nhật phân bổ Brand: ${updatedBrand.name} (PIC: ${updatedBrand.bookingPicLead || updatedBrand.brandPicName || 'Chưa gán'})`);
+    showToast(`Đã cập nhật phân bổ ${updatedBrand.name}`);
   };
 
   const handleAddBrand = (newBrand: BrandDetail) => {
     setBrands(prev => [newBrand, ...prev]);
-    showToast(`Đã thêm mới nhãn hàng: ${newBrand.name} (Phụ trách: ${newBrand.bookingPicLead || newBrand.brandPicName || 'Chưa gán'})`);
+    showToast(`Đã thêm nhãn hàng ${newBrand.name}`);
   };
 
   const handleUpdateStore = (updatedStore: StorePortfolioItem) => {
     setStorePortfolios(prev => prev.map(s => s.id === updatedStore.id ? updatedStore : s));
-    showToast(`Đã cập nhật phân bổ gian hàng ${updatedStore.storeName} -> Phụ trách: ${updatedStore.b2cOwnerName || updatedStore.assignedStaff}`);
+    showToast(`Đã giao gian hàng ${updatedStore.storeName} cho ${updatedStore.b2cOwnerName || updatedStore.assignedStaff}`);
   };
 
   const handleApproveAdvance = (dealId: string) => {
@@ -371,7 +372,7 @@ export default function App() {
       status: 'ADVANCE_PAID',
       statusLabel: 'Đã Chi Cọc (Được Gửi Mẫu)'
     } : d));
-    showToast('Đã duyệt chi tạm ứng qua Lark Approval! Trạng thái chuyển sang: Đã kích hoạt xuất kho gửi sample.');
+    showToast('Đã duyệt tạm ứng. Có thể gửi hàng mẫu.');
   };
 
   const handleApproveFinal = (dealId: string) => {
@@ -380,11 +381,11 @@ export default function App() {
       status: 'FINAL_PAID',
       statusLabel: 'Đã Tất Toán (Hoàn Tất HĐ)'
     } : d));
-    showToast('Đã tất toán đợt 2 qua Lark Approval! Hợp đồng hoàn tất 100%, ghi nhận doanh số và cộng điểm Bảng Vàng.');
+    showToast('Đã thanh toán đợt 2. Hợp đồng hoàn tất.');
   };
 
   const handleImportSuccess = (result: { updatedDeals: number; totalGmvAdded: number }) => {
-    showToast(`Đã đồng bộ thành công ${result.updatedDeals} deals KOC, ghi nhận +${result.totalGmvAdded.toLocaleString('vi-VN')} đ GMV!`);
+    showToast(`Đã cập nhật ${result.updatedDeals} deal, GMV +${result.totalGmvAdded.toLocaleString('vi-VN')} đ`);
   };
 
   const handleOpenQuickBookWithKoc = (koc: KocItem) => {
@@ -393,11 +394,11 @@ export default function App() {
   };
 
   const handleCampaignCreatedNotification = (camp: CampaignItem) => {
-    showToast(`Brand đã khởi tạo Chiến Dịch ${camp.code}: ${camp.title} và bàn giao Brief sang Content!`);
+    showToast(`Đã tạo chiến dịch ${camp.code} và gửi brief cho team Content`);
   };
 
   const handleTriggerHandoffNotification = (title: string) => {
-    showToast(`Đã kích hoạt Handoff: Bàn giao toàn bộ tài liệu chiến dịch "${title}" sang Content Team!`);
+    showToast(`Đã bàn giao tài liệu chiến dịch ${title} cho team Content`);
   };
 
   const handleScriptApprovedNotification = (dealCode: string) => {
@@ -406,26 +407,26 @@ export default function App() {
       status: 'SCRIPT_APPROVED',
       statusLabel: 'Đã Duyệt Kịch Bản (Cần Trình Ký HĐ)'
     } : d));
-    showToast(`Content Team đã phê duyệt kịch bản ${dealCode}! Kích hoạt khâu Ký Hợp Đồng & Tạm Ứng.`);
+    showToast(`Đã duyệt kịch bản ${dealCode}. Bước tiếp theo: ký hợp đồng.`);
   };
 
   const handlePingStaffNotification = (staffName: string, taskTitle: string) => {
-    showToast(`[Manager Tower] Đã gửi ping cảnh báo khẩn đến ${staffName}: "${taskTitle}"`, 'warning');
+    showToast(`Đã nhắc ${staffName}: ${taskTitle}`, 'warning');
   };
 
   const handleUpdateDeal = (updatedDeal: BookingDealItem) => {
     setDeals(prev => prev.map(d => d.id === updatedDeal.id ? updatedDeal : d));
-    showToast(`Đã cập nhật deal ${updatedDeal.dealCode}: Video lên sóng, GMV 30 đạt ${updatedDeal.gmv30.toLocaleString('vi-VN')} đ (ROI ${updatedDeal.roi.toFixed(2)})!`);
+    showToast(`Đã cập nhật deal ${updatedDeal.dealCode}. GMV 30 ngày: ${updatedDeal.gmv30.toLocaleString('vi-VN')} đ (ROI ${updatedDeal.roi.toFixed(2)})`);
   };
 
   const handleKocCreated = (newKoc: KocItem) => {
     setKocs(prev => [newKoc, ...prev]);
-    showToast(`Đã thêm thành công KOC ${newKoc.stageName} (${newKoc.channelId}) vào Khung Lương ${newKoc.salaryGrade}!`);
+    showToast(`Đã thêm ${newKoc.stageName} vào danh bạ (${newKoc.salaryGrade})`);
   };
 
   const handleKocUpdated = (updatedKoc: KocItem) => {
     setKocs(prev => prev.map(k => k.id === updatedKoc.id ? updatedKoc : k));
-    showToast(`Đã cập nhật hồ sơ pháp lý KOC ${updatedKoc.stageName} (Định danh OCR)!`);
+    showToast(`Đã cập nhật hồ sơ pháp lý của ${updatedKoc.stageName}`);
   };
 
   const handleTaskActionClick = (task: SlaTask) => {
@@ -438,7 +439,7 @@ export default function App() {
     }
     if (task.type === 'SCRIPT_REVIEW') {
       setActiveTab('content');
-      showToast('Đã chuyển sang Phân hệ Content Studio — Hàng Chờ Duyệt Kịch Bản!', 'info');
+      showToast('Kịch bản chờ duyệt', 'info');
     } else if (task.type === 'CONTRACT_APPROVAL') {
       setActiveTab('contracts');
     } else if (task.type === 'CAMPAIGN_BRIEF') {
@@ -448,97 +449,42 @@ export default function App() {
     }
   };
 
-  // Titles mapping (clean & professional)
+  // Tiêu đề trang: khớp tên trên menu, mô tả chỉ khi thêm thông tin
   const titles: Record<TabKey, { title: string; subtitle: string }> = {
-    cockpit: {
-      title: 'Công Việc Của Tôi',
-      subtitle: ''
-    },
-    overview: {
-      title: 'Tổng Quan Vận Hành',
-      subtitle: ''
-    },
-    'input-plan': {
-      title: 'Quản Lý Kế Hoạch Theo Tháng (Monthly Plan Hub)',
-      subtitle: 'Hoạch định ngân sách theo chu kỳ tháng, phân rã đa kênh (TikTok Shop, Shopee, Live, Tự xây) và điều phối nhân sự Booking'
-    },
-    'master-data': {
-      title: 'Dữ liệu gốc',
-      subtitle: ''
-    },
-    'push-products': {
-      title: 'Sản phẩm',
-      subtitle: ''
-    },
-    stores: {
-      title: 'Gian Hàng & Nhãn Hàng',
-      subtitle: ''
-    },
-    campaigns: {
-      title: 'Không Gian Chiến Lược & Vận Hành Nhãn Hàng (Brand Team Workspace)',
-      subtitle: 'Soạn thảo & bàn giao brief SLA 24h, Brand Guideline & Blacklist từ khóa, Cổng thẩm định KOC và Sức khỏe Retainer P&L'
-    },
-    'brand-knowledge': {
-      title: 'Bách Khoa Toàn Thư Brand Guideline (Brand Knowledge Base)',
-      subtitle: 'Trung tâm tri thức chuẩn hóa: Brand DNA, Hồ sơ pháp lý & bằng chứng lâm sàng, Hero SKUs, Blacklist/Whitelist & FAQ phản biện KOC'
-    },
-    content: {
-      title: 'Kịch Bản & Content',
-      subtitle: ''
-    },
-    booking: {
-      title: 'Quản Lý Booking',
-      subtitle: ''
-    },
-    'koc-master': {
-      title: 'Danh Bạ Master KOC & Định Danh Pháp Lý OCR',
-      subtitle: 'Quản trị hồ sơ KOC toàn hệ thống, tự động bóc tách CCCD/ĐKKD bằng AI Vision và chuẩn hóa mẫu hợp đồng'
-    },
-    contracts: {
-      title: 'Hợp Đồng & Thanh Toán',
-      subtitle: ''
-    },
-    manager: {
-      title: 'Trung Tâm Phân Bổ & Điều Phối',
-      subtitle: 'Phân chia Brand, gán gian hàng, cân bằng tải nhân sự và giám sát SLA'
-    },
-    'sample-tracker': {
-      title: 'Giám Sát Vận Đơn Mẫu & Chống Bùng KOC',
-      subtitle: 'Theo dõi vận chuyển hàng mẫu, đếm ngược SLA 5 ngày nộp kịch bản và thu thập mã TikTok Spark Ads'
-    },
-    'performance-p3': {
-      title: 'Đánh Giá Hiệu Suất 4P & Tính Thưởng P3',
-      subtitle: 'Quy đổi điểm Workload theo hệ số độ khó Store, chất lượng và SLA để tính thưởng minh bạch'
-    },
-    leaderboard: {
-      title: 'Hiệu Suất Nhân Sự',
-      subtitle: ''
-    },
-    'brand-hub': {
-      title: 'Cổng Khách Hàng (Brand Client Portal)',
-      subtitle: 'Quy trình 4 chặng: Duyệt Kế hoạch ➔ Duyệt KOC ➔ Duyệt Kịch bản ➔ Nghiệm thu Video'
-    }
+    cockpit: { title: 'Việc của tôi', subtitle: '' },
+    overview: { title: 'Tổng quan', subtitle: '' },
+    'input-plan': { title: 'Kế hoạch tháng', subtitle: 'Ngân sách, kênh và nhân sự booking theo từng tháng' },
+    'self-channel-hub': { title: 'Self Channel & CTV', subtitle: 'Sản xuất video kênh thương hiệu theo Content Pillar và quản lý Cộng Tác Viên' },
+    'master-data': { title: 'Dữ liệu gốc', subtitle: '' },
+    'push-products': { title: 'Sản phẩm đẩy', subtitle: '' },
+    stores: { title: 'Gian hàng & nhãn hàng', subtitle: '' },
+    campaigns: { title: 'Brief & chiến dịch', subtitle: 'Brief, guideline, blacklist từ khóa và duyệt KOC của team Brand' },
+    'brand-knowledge': { title: 'Hướng dẫn nhãn hàng', subtitle: 'Thông tin thương hiệu, hồ sơ pháp lý, Hero SKU và từ khóa cần tránh' },
+    content: { title: 'Kịch bản', subtitle: '' },
+    booking: { title: 'Booking', subtitle: '' },
+    'koc-master': { title: 'Danh bạ KOC', subtitle: 'Hồ sơ KOC, giấy tờ pháp lý và mẫu hợp đồng' },
+    contracts: { title: 'Hợp đồng & thanh toán', subtitle: '' },
+    manager: { title: 'Phân bổ & điều phối', subtitle: 'Gán nhãn hàng, gian hàng và cân bằng khối lượng việc' },
+    'sample-tracker': { title: 'Hàng mẫu', subtitle: 'Vận đơn mẫu, hạn nộp kịch bản 5 ngày và mã Spark Ads' },
+    'performance-p3': { title: 'Đánh giá 4P & thưởng P3', subtitle: 'Điểm khối lượng việc theo độ khó gian hàng, chất lượng và SLA' },
+    leaderboard: { title: 'Hiệu suất nhân sự', subtitle: '' },
+    'brand-hub': { title: 'Cổng khách hàng', subtitle: 'Duyệt kế hoạch → Duyệt KOC → Duyệt kịch bản → Nghiệm thu video' },
   };
 
   return (
-    <div className="flex min-h-screen bg-slate-50 text-slate-900">
+    <div className="flex min-h-screen bg-canvas text-ink">
       {/* Toast Notification (Enterprise Multi-Type) */}
       {/* Toast Notification (Enterprise Multi-Type with Clean Lucide SVGs) */}
       {toastData && (
         <div 
-          className={`fixed bottom-6 right-6 z-50 px-4 py-3 rounded-xl text-xs font-medium shadow-2xl animate-in slide-in-from-bottom-3 duration-200 flex items-center gap-2.5 border ${
-            toastData.type === 'success' ? 'bg-slate-900 text-white border-slate-700' :
-            toastData.type === 'warning' ? 'bg-amber-950 text-amber-100 border-amber-800' :
-            toastData.type === 'error' ? 'bg-rose-950 text-rose-100 border-rose-800' :
-            'bg-slate-900 text-slate-100 border-slate-700'
-          }`}
+          className={`fixed bottom-6 right-6 z-50 max-w-sm pl-4 pr-2 py-2.5 rounded-md text-sm shadow-xl animate-in slide-in-from-bottom-3 duration-200 flex items-center gap-3 bg-slate-900 text-white`}
           role="status"
           aria-live="polite"
         >
-          {toastData.type === 'success' && <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />}
-          {toastData.type === 'warning' && <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />}
-          {toastData.type === 'error' && <XCircle className="w-4 h-4 text-rose-400 shrink-0" />}
-          {toastData.type === 'info' && <Info className="w-4 h-4 text-blue-400 shrink-0" />}
+          {toastData.type === 'success' && <CheckCircle2 className="w-4 h-4 text-emerald-300 shrink-0" />}
+          {toastData.type === 'warning' && <AlertCircle className="w-4 h-4 text-amber-300 shrink-0" />}
+          {toastData.type === 'error' && <XCircle className="w-4 h-4 text-rose-300 shrink-0" />}
+          {toastData.type === 'info' && <Info className="w-4 h-4 text-blue-300 shrink-0" />}
           <span>{toastData.message}</span>
           <button 
             onClick={() => setToastData(null)}
@@ -572,11 +518,12 @@ export default function App() {
           onOpenImport={() => setIsImportOpen(true)}
           title={titles[activeTab].title}
           subtitle={titles[activeTab].subtitle}
+          onNavigateTab={setActiveTab}
           onToggleMobileSidebar={() => setIsMobileSidebarOpen(prev => !prev)}
           onLogout={handleLogout}
         />
 
-        <main className="p-6 lg:p-8 w-full max-w-[1600px] space-y-6">
+        <main className="px-4 py-6 sm:px-6 lg:px-8 w-full max-w-[1600px] space-y-6">
           {activeTab === 'cockpit' && (
             <CockpitView
               currentUser={currentUser}
@@ -610,11 +557,11 @@ export default function App() {
               onNotify={showToast}
               onGenerateDealsFromPlan={(newSlots) => {
                 setDetailedPlans(prev => [...newSlots, ...prev]);
-                showToast(`Đã sinh ${newSlots.length} slot KOC tác nghiệp và tự động chuyển giao sang Quản Lý Booking!`);
+                showToast(`Đã tạo ${newSlots.length} slot KOC trong Booking`);
                 setActiveTab('booking');
               }}
               onApplyPlanToWeeklyStore={(weeklyPlan) => {
-                showToast(`Đã lưu và đồng bộ kế hoạch ${weeklyPlan.storeName} (${weeklyPlan.week}) vào Sổ Kế Hoạch Tuần Thực Tế!`);
+                showToast(`Đã lưu kế hoạch ${weeklyPlan.storeName}, ${weeklyPlan.week}`);
               }}
             />
           )}
@@ -636,6 +583,15 @@ export default function App() {
               currentUser={currentUser}
               brands={brands}
               onNotify={showToast}
+            />
+          )}
+
+          {activeTab === 'self-channel-hub' && (
+            <SelfChannelCtvHubView
+              currentUser={currentUser}
+              brands={brands}
+              onNotify={showToast}
+              onOpenPushProducts={() => setActiveTab('push-products')}
             />
           )}
 
@@ -728,7 +684,7 @@ export default function App() {
               onOpenInputPlan={() => setActiveTab('input-plan')}
               onUpdateStaffAllocation={(month, updatedList) => {
                 setStaffAllocations(prev => ({ ...prev, [month]: updatedList }));
-                showToast(`Đã lưu điều chỉnh Ma Trận Phân Bổ tháng ${month}!`);
+                showToast(`Đã lưu phân bổ tháng ${month}`);
               }}
               brands={brands}
               onUpdateBrand={handleUpdateBrand}

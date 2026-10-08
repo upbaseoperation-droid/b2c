@@ -148,7 +148,7 @@ export async function exportPlanOrderToExcel(demand: GrowthDemandItem, breakdown
     row.getCell(17).numFmt = '+#,##0;-#,##0;0';
 
     row.getCell(18).value = {
-      formula: `IF(P${rowIdx}>=N${rowIdx}*0.75,"✅ Đúng Tiến Độ",IF(P${rowIdx}>=N${rowIdx}*0.55,"⚠️ Chậm Tiến Độ","🔥 Báo Động Hụt NMV"))`
+      formula: `IF(P${rowIdx}>=N${rowIdx}*0.75,"Đúng Tiến Độ",IF(P${rowIdx}>=N${rowIdx}*0.55,"Chậm Tiến Độ","Báo Động Hụt NMV"))`
     };
 
     for (let c = 1; c <= 18; c++) {
@@ -521,7 +521,7 @@ export async function downloadWeeklyTemplate411() {
 }
 
 // =========================================================================
-// 🌟 XUẤT FILE 4.1.1 INPUT PLAN TỪ INPUT PLAN STUDIO (CHUẨN 61 CỘT UPBASE)
+// XUẤT FILE 4.1.1 INPUT PLAN TỪ INPUT PLAN STUDIO (CHUẨN 61 CỘT UPBASE)
 // =========================================================================
 export async function exportInputPlanStudioToExcel(state: InputPlanBreakdownState) {
   const workbook = new ExcelJS.Workbook();

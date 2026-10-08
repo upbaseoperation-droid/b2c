@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
+import { Stat, StatRow, ChannelBar, Progress, Avatar } from '../ui';
+import { formatVndShort } from '../../lib/format';
 import {
   Calendar,
   Layers,
@@ -238,7 +240,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
         return (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200">
             <Clock className="w-3.5 h-3.5 text-amber-600 animate-spin" />
-            Chờ Sơ Duyệt
+            Chờ sơ duyệt
           </span>
         );
       case 'PRE_APPROVED':
@@ -252,14 +254,14 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
         return (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-800 border border-rose-200">
             <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
-            Cần Hiệu Chỉnh
+            Cần hiệu chỉnh
           </span>
         );
       case 'PENDING_APPROVAL':
         return (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-800 border border-blue-200">
-            <Clock className="w-3.5 h-3.5 text-blue-600 animate-pulse" />
-            Chờ Duyệt Lead
+            <Clock className="w-3.5 h-3.5 text-blue-600" />
+            Chờ duyệt Lead
           </span>
         );
       case 'LEAD_APPROVED':
@@ -274,7 +276,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
       case 'IN_EXECUTION':
         return (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-800 border border-indigo-200">
-            <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
+            <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
             Đang Thực Thi
           </span>
         );
@@ -282,7 +284,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
         return (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-200">
             <Check className="w-3.5 h-3.5 text-purple-600" />
-            Đã Nghiệm Thu
+            Đã nghiệm thu
           </span>
         );
       case 'DRAFT':
@@ -298,30 +300,16 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* 🌟 1. BANNER CHÍNH: TƯ DUY QUẢN LÝ KẾ HOẠCH THEO THÁNG */}
-      <div className="bg-gradient-to-r from-indigo-900 via-indigo-800 to-blue-900 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden">
-        <div className="absolute right-0 top-0 translate-x-8 -translate-y-8 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-          <div className="space-y-2 max-w-2xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-sm text-xs font-semibold text-indigo-200 border border-white/10">
-              <Calendar className="w-3.5 h-3.5 text-amber-400" />
-              <span>Chu Kỳ Hoạch Định & Phân Rã B2C Upbase</span>
-            </div>
-            <h1 className="text-2xl lg:text-3xl font-bold tracking-tight text-white">
-              Quản Lý Kế Hoạch Theo Tháng (Monthly Plan Hub)
-            </h1>
-            <p className="text-indigo-100 text-sm leading-relaxed">
-              Tư duy quản trị theo chu kỳ tháng: Tiếp nhận ngân sách trần nhãn hàng, lập kế hoạch phân rã đa kênh (TikTok Shop, Shopee, Live, Kênh tự xây), và điều phối nhân sự Booking thực thi. Nhấn vào bất kỳ kế hoạch nào để mở Studio phân rã chi tiết.
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3">
+      {/* Thao tác chính */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-[13px] text-ink-3">Chọn một kế hoạch để mở bảng phân rã chi tiết.</p>
+          <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={() => setIsCreateModalOpen(true)}
-              className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-slate-950 font-bold text-sm shadow-lg shadow-amber-500/25 transition-all transform active:scale-95"
+              className="btn-md bg-primary hover:bg-primary-hover text-white transition-colors"
             >
               <Plus className="w-4 h-4" />
-              + Lập Kế Hoạch Tháng Mới
+              Tạo kế hoạch
             </button>
             <button
               onClick={() => {
@@ -351,17 +339,16 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                 onCreatePlan(newPlan);
                 notify(`Đã tạo nhanh kế hoạch mẫu "${newPlan.title}"!`);
               }}
-              className="inline-flex items-center gap-2 px-4 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white font-medium text-sm backdrop-blur-sm transition-all"
-              title="Tạo nhanh 1 kế hoạch mẫu ngẫu nhiên để trải nghiệm"
+              className="btn-md text-ink-2 hover:bg-sunken hover:text-ink transition-colors"
+              title="Tạo một kế hoạch mẫu ngẫu nhiên để thử"
             >
-              <Dices className="w-4 h-4 text-amber-300" />
-              Tạo Plan Mẫu Test
+              <Dices className="w-4 h-4 text-ink-3" />
+              Tạo kế hoạch mẫu
             </button>
           </div>
-        </div>
       </div>
 
-      {/* 🌟 2. BỘ CHỌN CHU KỲ THÁNG (MONTH TABS) */}
+      {/* 2. BỘ CHỌN CHU KỲ THÁNG (MONTH TABS) */}
       <div className="bg-white rounded-2xl p-2 border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-1.5">
           {AVAILABLE_MONTHS.map(m => {
@@ -376,13 +363,13 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                 onClick={() => setSelectedMonth(m.value)}
                 className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${
                   isSelected
-                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
+                    ? 'bg-indigo-600 text-white shadow-md '
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                 }`}
               >
                 <Calendar className={`w-4 h-4 ${isSelected ? 'text-amber-300' : 'text-slate-400'}`} />
                 <span>{m.label}</span>
-                <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+                <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
                   isSelected ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
                 }`}>
                   {countInMonth}
@@ -394,126 +381,66 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
 
         <div className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-slate-500">
           <span>Chu kỳ:</span>
-          <span className="font-bold text-slate-800">
+          <span className="font-semibold text-slate-800">
             {selectedMonth === 'ALL' ? 'Toàn bộ các tháng' : selectedMonth}
           </span>
         </div>
       </div>
 
-      {/* 🌟 3. 4 THẺ TỔNG QUAN CHỈ SỐ THÁNG (MONTHLY KPI SUMMARY) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Thẻ 1: Tổng Ngân Sách */}
-        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-              Tổng Ngân Sách Tháng
-            </span>
-            <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
-              <DollarSign className="w-5 h-5" />
+      {/* Chỉ số tháng, kèm xu hướng qua các tháng */}
+      {(() => {
+        const months = [...new Set(plans.map(p => p.month))].sort();
+        const series = (pick: (p: InputPlanBreakdownState) => number) =>
+          months.map(m => plans.filter(p => p.month === m).reduce((acc, p) => acc + (pick(p) || 0), 0));
+        const pool = selectedMonth === 'ALL' ? plans : plans.filter(p => p.month === selectedMonth);
+        return (
+          <div className="space-y-4">
+            <StatRow>
+              <Stat
+                label="Ngân sách"
+                value={formatVndShort(monthlyMetrics.totalBudget)}
+                trend={series(p => p.totalTargetBudget)}
+                note={`Trung bình ${formatVndShort(monthlyMetrics.planCount > 0 ? monthlyMetrics.totalBudget / monthlyMetrics.planCount : 0)} / kế hoạch`}
+              />
+              <Stat
+                label="GMV mục tiêu"
+                value={formatVndShort(monthlyMetrics.totalGmv)}
+                trend={series(p => p.targetGmv)}
+                note={`Gấp ${String(monthlyMetrics.avgRoi).replace('.', ',')} lần ngân sách`}
+              />
+              <Stat
+                label="Chỉ tiêu nội dung"
+                value={monthlyMetrics.totalContents.toLocaleString('vi-VN')}
+                trend={series(p => p.totalTargetContents)}
+                note="Video, livestream và kênh tự xây"
+              />
+              <Stat
+                label="Kế hoạch"
+                value={monthlyMetrics.planCount}
+                note={[
+                  monthlyMetrics.countExecuting && `${monthlyMetrics.countExecuting} đang chạy`,
+                  monthlyMetrics.countApproved && `${monthlyMetrics.countApproved} đã duyệt`,
+                  (monthlyMetrics.countPreApproval + monthlyMetrics.countPending) && `${monthlyMetrics.countPreApproval + monthlyMetrics.countPending} chờ duyệt`,
+                  monthlyMetrics.countRevision && `${monthlyMetrics.countRevision} cần sửa`,
+                ].filter(Boolean).join(' · ')}
+                tone={monthlyMetrics.countRevision > 0 ? 'warning' : undefined}
+              />
+            </StatRow>
+            <div className="bg-surface border border-line rounded-xl px-4 py-3.5 grid gap-2.5">
+              <div className="flex items-baseline justify-between gap-3">
+                <span className="text-[13px] font-medium text-ink">Ngân sách theo kênh</span>
+                <span className="text-2xs text-ink-3">{months.length > 1 ? `Xu hướng: ${months[0]} → ${months[months.length - 1]}` : ''}</span>
+              </div>
+              <ChannelBar
+                format={formatVndShort}
+                values={pool.flatMap(p => (p.items || []).map(it => ({ channel: it.channel, value: it.totalBudget || 0 })))}
+              />
             </div>
           </div>
-          <div>
-            <div className="text-2xl font-bold text-slate-900">
-              {(monthlyMetrics.totalBudget / 1000000).toLocaleString('vi-VN', { maximumFractionDigits: 1 })} Tr đ
-            </div>
-            <div className="text-xs text-slate-500 mt-1">
-              Trung bình {monthlyMetrics.planCount > 0 ? ((monthlyMetrics.totalBudget / monthlyMetrics.planCount) / 1000000).toFixed(0) : 0} Tr đ / Brand
-            </div>
-          </div>
-          <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-            <div className="bg-blue-600 h-full rounded-full" style={{ width: '100%' }} />
-          </div>
-        </div>
+        );
+      })()}
 
-        {/* Thẻ 2: Mục Tiêu GMV & ROI */}
-        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-              Mục Tiêu Doanh Số (GMV)
-            </span>
-            <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-              <TrendingUp className="w-5 h-5" />
-            </div>
-          </div>
-          <div>
-            <div className="text-2xl font-bold text-slate-900">
-              {(monthlyMetrics.totalGmv / 1000000000).toFixed(2)} Tỷ đ
-            </div>
-            <div className="text-xs font-semibold text-emerald-600 mt-1 flex items-center gap-1">
-              <span>ROI Dự Phóng: ~{monthlyMetrics.avgRoi}x</span>
-              <span className="text-slate-400 font-normal">(Doanh thu / Chi phí)</span>
-            </div>
-          </div>
-          <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-            <div className="bg-emerald-500 h-full rounded-full" style={{ width: '88%' }} />
-          </div>
-        </div>
-
-        {/* Thẻ 3: Tổng Chỉ Tiêu Nội Dung / Video */}
-        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-              Tổng Chỉ Tiêu Nội Dung
-            </span>
-            <div className="w-9 h-9 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
-              <Video className="w-5 h-5" />
-            </div>
-          </div>
-          <div>
-            <div className="text-2xl font-bold text-slate-900">
-              {monthlyMetrics.totalContents} <span className="text-sm font-normal text-slate-500">nội dung/ca</span>
-            </div>
-            <div className="text-xs text-slate-500 mt-1">
-              TikTok KOC, Shopee Video, Tự xây & Live
-            </div>
-          </div>
-          <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-            <div className="bg-purple-600 h-full rounded-full" style={{ width: '92%' }} />
-          </div>
-        </div>
-
-        {/* Thẻ 4: Tình Trạng Kế Hoạch */}
-        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-              Tình Trạng Kế Hoạch
-            </span>
-            <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
-              <BarChart3 className="w-5 h-5" />
-            </div>
-          </div>
-          <div>
-            <div className="text-2xl font-bold text-slate-900">
-              {monthlyMetrics.planCount} <span className="text-sm font-normal text-slate-500">kế hoạch</span>
-            </div>
-            <div className="flex flex-wrap items-center gap-1.5 mt-1.5 text-xs">
-              <span className="px-2 py-0.5 rounded bg-indigo-100 text-indigo-800 font-semibold">
-                {monthlyMetrics.countExecuting} Đang chạy
-              </span>
-              {monthlyMetrics.countPreApproval > 0 && (
-                <span className="px-2 py-0.5 rounded bg-amber-100 text-amber-800 font-semibold">
-                  {monthlyMetrics.countPreApproval} Chờ sơ duyệt
-                </span>
-              )}
-              {monthlyMetrics.countPreApproved > 0 && (
-                <span className="px-2 py-0.5 rounded bg-teal-100 text-teal-800 font-semibold">
-                  {monthlyMetrics.countPreApproved} Sơ duyệt đạt
-                </span>
-              )}
-              {monthlyMetrics.countRevision > 0 && (
-                <span className="px-2 py-0.5 rounded bg-rose-100 text-rose-800 font-semibold">
-                  {monthlyMetrics.countRevision} Cần hiệu chỉnh
-                </span>
-              )}
-              <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-semibold">
-                {monthlyMetrics.countApproved} Đã duyệt
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* 🌟 4. THANH BỘ LỌC & TÌM KIẾM */}
+      {/* 4. THANH BỘ LỌC & TÌM KIẾM */}
       <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="flex flex-1 flex-wrap items-center gap-3 w-full md:w-auto">
           {/* Ô Tìm Kiếm */}
@@ -554,14 +481,14 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
               className="bg-transparent font-semibold text-slate-900 focus:outline-none cursor-pointer"
             >
               <option value="ALL">Tất cả trạng thái</option>
-              <option value="PENDING_PRE_APPROVAL">Chờ Sơ Duyệt (Growth)</option>
+              <option value="PENDING_PRE_APPROVAL">Chờ sơ duyệt</option>
               <option value="PRE_APPROVED">Sơ Duyệt Đạt</option>
-              <option value="REVISION_REQUESTED">Cần Hiệu Chỉnh</option>
-              <option value="PENDING_APPROVAL">Chờ Duyệt Lead</option>
+              <option value="REVISION_REQUESTED">Cần hiệu chỉnh</option>
+              <option value="PENDING_APPROVAL">Chờ duyệt Lead</option>
               <option value="IN_EXECUTION">Đang Thực Thi</option>
               <option value="LEAD_APPROVED">Đã Phê Duyệt</option>
               <option value="DRAFT">Bản Nháp</option>
-              <option value="COMPLETED">Đã Nghiệm Thu</option>
+              <option value="COMPLETED">Đã nghiệm thu</option>
             </select>
           </div>
 
@@ -594,7 +521,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
             title="Xem dạng thẻ card"
           >
             <LayoutGrid className="w-4 h-4" />
-            <span>Dạng Thẻ</span>
+            <span>Dạng thẻ</span>
           </button>
           <button
             onClick={() => setViewMode('TABLE')}
@@ -606,29 +533,29 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
             title="Xem dạng bảng tổng hợp"
           >
             <TableIcon className="w-4 h-4" />
-            <span>Dạng Bảng</span>
+            <span>Dạng bảng</span>
           </button>
         </div>
       </div>
 
-      {/* 🌟 5. DANH SÁCH KẾ HOẠCH (GRID VIEW HOẶC TABLE VIEW) */}
+      {/* 5. DANH SÁCH KẾ HOẠCH (GRID VIEW HOẶC TABLE VIEW) */}
       {filteredPlans.length === 0 ? (
         <div className="bg-white rounded-2xl p-12 text-center border border-slate-200 shadow-sm space-y-4">
           <div className="w-16 h-16 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto">
             <Calendar className="w-8 h-8" />
           </div>
           <div className="space-y-1">
-            <h3 className="text-lg font-bold text-slate-900">Không tìm thấy kế hoạch nào</h3>
+            <h3 className="text-lg font-semibold text-slate-900">Không tìm thấy kế hoạch nào</h3>
             <p className="text-sm text-slate-500 max-w-md mx-auto">
               Không có kế hoạch nào khớp với bộ lọc tháng "{selectedMonth}" hoặc từ khóa tìm kiếm. Vui lòng thử chọn tháng khác hoặc bấm lập kế hoạch mới.
             </p>
           </div>
           <button
             onClick={() => setIsCreateModalOpen(true)}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm shadow-md shadow-indigo-600/20"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm shadow-md"
           >
             <Plus className="w-4 h-4" />
-            Lập Kế Hoạch Cho Tháng Này
+            Lập kế hoạch cho tháng này
           </button>
         </div>
       ) : viewMode === 'GRID' ? (
@@ -657,7 +584,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                 {/* Card Header */}
                 <div className="p-5 border-b border-slate-100 space-y-3">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-100">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100">
                       <Building2 className="w-3.5 h-3.5 text-indigo-500" />
                       {plan.brandName}
                     </span>
@@ -670,15 +597,13 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                   </div>
 
                   <div>
-                    <h3 className="font-bold text-base text-slate-900 group-hover:text-indigo-600 transition-colors line-clamp-2 leading-snug">
+                    <h3 className="font-semibold text-base text-slate-900 group-hover:text-indigo-600 transition-colors line-clamp-2 leading-snug">
                       {plan.title}
                     </h3>
                     <div className="flex items-center gap-2 mt-2 text-xs text-slate-500 flex-wrap">
                       <div className="flex items-center gap-1.5">
-                        <div className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-[10px]">
-                          {plan.pic?.charAt(0) || 'P'}
-                        </div>
-                        <span>Booking: <strong className="text-slate-800">{plan.pic}</strong></span>
+                        <Avatar name={plan.pic || 'PIC'} size={20} />
+                        <span>Booking: <strong className="text-slate-800 font-medium">{plan.pic}</strong></span>
                       </div>
                       <span>•</span>
                       <div className="flex items-center gap-1">
@@ -696,21 +621,26 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                   {/* Ngân sách */}
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between text-xs">
-                      <span className="text-slate-500">Ngân Sách Kế Hoạch:</span>
-                      <span className="font-bold text-slate-900">
-                        {(plan.totalTargetBudget / 1000000).toLocaleString('vi-VN')} Tr đ
+                      <span className="text-slate-500">Ngân sách kế hoạch:</span>
+                      <span className="font-semibold text-slate-900">
+                        {formatVndShort(plan.totalTargetBudget)}
                       </span>
                     </div>
-                    <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
-                      <div 
-                        className={`h-full rounded-full transition-all ${
-                          budgetMatchPct >= 95 && budgetMatchPct <= 105 ? 'bg-emerald-500' : 'bg-blue-600'
-                        }`}
-                        style={{ width: `${Math.min(budgetMatchPct, 100)}%` }}
-                      />
-                    </div>
-                    <div className="flex items-center justify-between text-[11px] text-slate-400">
-                      <span>Đã phân rã: {(currentTotalBudget / 1000000).toLocaleString('vi-VN', { maximumFractionDigits: 1 })} Tr đ</span>
+                    <Progress value={currentTotalBudget} max={plan.totalTargetBudget || 1} target={0.95} label="Ngân sách đã phân rã" />
+                    {plan.budgetAffiliate && plan.budgetSelfChannel && (
+                      <div className="p-2 rounded-lg bg-indigo-50/70 border border-indigo-100 text-2xs space-y-0.5 mt-1">
+                        <div className="flex items-center justify-between text-indigo-900 font-semibold">
+                          <span>Phân bổ 2 kênh:</span>
+                          <span className="font-mono">{formatVndShort(plan.totalTargetBudget)}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-slate-600">
+                          <span>Affiliate: <strong className="text-blue-700">{formatVndShort(plan.budgetAffiliate)}</strong></span>
+                          <span>Self: <strong className="text-indigo-700">{formatVndShort(plan.budgetSelfChannel)}</strong></span>
+                        </div>
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between text-2xs text-slate-400">
+                      <span>Đã phân rã {formatVndShort(currentTotalBudget)}</span>
                       <span className="font-semibold text-slate-600">{budgetMatchPct}%</span>
                     </div>
                   </div>
@@ -718,37 +648,26 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                   {/* Số lượng nội dung & Doanh thu */}
                   <div className="grid grid-cols-2 gap-3 pt-1">
                     <div className="bg-white p-2.5 rounded-xl border border-slate-200 text-xs">
-                      <span className="text-slate-400 block text-[11px]">Chỉ tiêu video</span>
-                      <span className="text-sm font-bold text-slate-800">
+                      <span className="text-slate-400 block text-2xs">Chỉ tiêu video</span>
+                      <span className="text-sm font-semibold text-slate-800">
                         {currentTotalQty} / {plan.totalTargetContents}
                       </span>
-                      <span className="block text-[10px] text-slate-400 mt-0.5">Khớp {qtyMatchPct}%</span>
+                      <span className="block text-2xs text-slate-400 mt-0.5">Khớp {qtyMatchPct}%</span>
                     </div>
                     <div className="bg-white p-2.5 rounded-xl border border-slate-200 text-xs">
-                      <span className="text-slate-400 block text-[11px]">Mục tiêu GMV</span>
-                      <span className="text-sm font-bold text-emerald-600">
-                        {(plan.targetGmv / 1000000000).toFixed(2)} Tỷ đ
+                      <span className="text-slate-400 block text-2xs">Mục tiêu GMV</span>
+                      <span className="text-sm font-semibold text-emerald-600">
+                        {formatVndShort(plan.targetGmv)}
                       </span>
-                      <span className="block text-[10px] text-emerald-500 font-semibold mt-0.5">
+                      <span className="block text-2xs text-emerald-500 font-semibold mt-0.5">
                         ROI: {(plan.targetGmv / (plan.totalTargetBudget || 1)).toFixed(1)}x
                       </span>
                     </div>
                   </div>
 
-                  {/* Mini badges 4 kênh */}
-                  <div className="flex flex-wrap items-center gap-1.5 pt-1 text-[11px]">
-                    <span className="px-2 py-0.5 rounded bg-pink-50 text-pink-700 font-medium border border-pink-100" title="TikTok Shop">
-                      TT: {tiktokQty}
-                    </span>
-                    <span className="px-2 py-0.5 rounded bg-orange-50 text-orange-700 font-medium border border-orange-100" title="Shopee & Đa sàn">
-                      Sàn: {multiQty}
-                    </span>
-                    <span className="px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 font-medium border border-indigo-100" title="Kênh tự xây">
-                      Tự xây: {selfQty}
-                    </span>
-                    <span className="px-2 py-0.5 rounded bg-rose-50 text-rose-700 font-medium border border-rose-100" title="Livestream">
-                      Live: {liveQty}
-                    </span>
+                  {/* Số nội dung theo kênh */}
+                  <div className="pt-1">
+                    <ChannelBar values={(plan.items || []).map(it => ({ channel: it.channel, value: it.qty || 0 }))} height={6} />
                   </div>
                 </div>
 
@@ -768,7 +687,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                   <button
                     onClick={() => setHistoryPlanId(plan.id)}
                     className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-50 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 border border-slate-200 text-xs font-semibold transition-all"
-                    title="Xem Lịch Sử Trao Đổi Booking & Growth & Luồng Phê Duyệt"
+                    title="Xem lịch sử Trao đổi booking & Growth & luồng phê duyệt"
                   >
                     <MessageSquare className="w-3.5 h-3.5 text-indigo-500" />
                     <span>Trao Đổi ({plan.discussions?.length || 0})</span>
@@ -776,9 +695,9 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
 
                   <button
                     onClick={() => onSelectPlan(plan)}
-                    className="flex-1 inline-flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white font-bold text-xs shadow-md shadow-indigo-600/20 group-hover:shadow-indigo-600/40 transition-all transform active:scale-95"
+                    className="flex-1 inline-flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 hover: text-white font-semibold text-xs shadow-md group-hover: transition-all transform active:scale-95"
                   >
-                    <span>Vào Phân Rã</span>
+                    <span>Vào phân rã</span>
                     <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                   </button>
                 </div>
@@ -791,15 +710,15 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 text-slate-600 border-b border-slate-200 uppercase font-semibold text-[11px]">
+              <thead className="bg-slate-50 text-slate-600 border-b border-slate-200 font-semibold text-2xs">
                 <tr>
-                  <th className="py-3.5 px-4">Tháng / Kế Hoạch</th>
-                  <th className="py-3.5 px-4">Nhãn Hàng</th>
+                  <th className="py-3.5 px-4">Tháng / kế hoạch</th>
+                  <th className="py-3.5 px-4">Nhãn hàng</th>
                   <th className="py-3.5 px-4">Brand PIC</th>
-                  <th className="py-3.5 px-4 text-right">Ngân Sách Trần</th>
-                  <th className="py-3.5 px-4 text-right">Đã Phân Rã</th>
-                  <th className="py-3.5 px-4 text-center">Chỉ Tiêu Video</th>
-                  <th className="py-3.5 px-4 text-right">GMV Dự Phóng</th>
+                  <th className="py-3.5 px-4 text-right">Ngân sách trần</th>
+                  <th className="py-3.5 px-4 text-right">Đã phân rã</th>
+                  <th className="py-3.5 px-4 text-center">Chỉ tiêu video</th>
+                  <th className="py-3.5 px-4 text-right">GMV dự phóng</th>
                   <th className="py-3.5 px-4 text-center">Trạng Thái</th>
                   <th className="py-3.5 px-4 text-center">Thao Tác</th>
                 </tr>
@@ -816,10 +735,10 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                       onClick={() => onSelectPlan(plan)}
                     >
                       <td className="py-3.5 px-4">
-                        <div className="font-bold text-slate-900 group-hover:text-indigo-600 text-sm">
+                        <div className="font-semibold text-slate-900 group-hover:text-indigo-600 text-sm">
                           {plan.title}
                         </div>
-                        <div className="text-[11px] text-slate-400 mt-0.5">
+                        <div className="text-2xs text-slate-400 mt-0.5">
                           Mã: {plan.id} • {plan.week}
                         </div>
                       </td>
@@ -828,19 +747,19 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                       </td>
                       <td className="py-3.5 px-4">
                         <div className="font-semibold text-slate-800">{plan.pic}</div>
-                        <div className="text-[10px] text-amber-700 font-medium">Growth: {plan.growthPic?.split(' ')[0] || 'Team'}</div>
+                        <div className="text-2xs text-amber-700 font-medium">Growth: {plan.growthPic?.split(' ')[0] || 'Team'}</div>
                       </td>
-                      <td className="py-3.5 px-4 text-right font-bold text-slate-900">
-                        {(plan.totalTargetBudget / 1000000).toLocaleString('vi-VN')} Tr đ
+                      <td className="py-3.5 px-4 text-right font-semibold text-slate-900">
+                        {formatVndShort(plan.totalTargetBudget)}
                       </td>
                       <td className="py-3.5 px-4 text-right font-semibold text-indigo-600">
                         {(currentTotalBudget / 1000000).toLocaleString('vi-VN')} Tr đ
                       </td>
                       <td className="py-3.5 px-4 text-center">
-                        <span className="font-bold text-slate-800">{currentTotalQty}</span>
+                        <span className="font-semibold text-slate-800">{currentTotalQty}</span>
                         <span className="text-slate-400"> / {plan.totalTargetContents}</span>
                       </td>
-                      <td className="py-3.5 px-4 text-right font-bold text-emerald-600">
+                      <td className="py-3.5 px-4 text-right font-semibold text-emerald-600">
                         {(plan.targetGmv / 1000000000).toFixed(2)} Tỷ
                       </td>
                       <td className="py-3.5 px-4 text-center">
@@ -851,14 +770,14 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                           <button
                             onClick={() => setHistoryPlanId(plan.id)}
                             className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 text-xs font-semibold transition-colors"
-                            title="Xem Lịch Sử Trao Đổi Booking & Growth & Luồng Phê Duyệt"
+                            title="Xem lịch sử Trao đổi booking & Growth & luồng phê duyệt"
                           >
                             <MessageSquare className="w-3.5 h-3.5 text-indigo-500" />
                             <span>({plan.discussions?.length || 0})</span>
                           </button>
                           <button
                             onClick={() => onSelectPlan(plan)}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs shadow-xs"
                           >
                             <span>Xem Studio</span>
                             <ArrowRight className="w-3 h-3" />
@@ -874,17 +793,17 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
         </div>
       )}
 
-      {/* 🌟 6. MODAL: LẬP KẾ HOẠCH THÁNG MỚI */}
+      {/* 6. MODAL: LẬP KẾ HOẠCH THÁNG MỚI */}
       {isCreateModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between pb-4 border-b border-slate-100">
               <div className="flex items-center gap-2">
-                <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
+                <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-semibold">
                   <Calendar className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-lg text-slate-900">Lập Kế Hoạch B2C Tháng Mới</h3>
+                  <h3 className="font-semibold text-lg text-slate-900">Lập kế hoạch B2C tháng mới</h3>
                   <p className="text-xs text-slate-500">Thiết lập ngân sách trần và mục tiêu cho chu kỳ tháng</p>
                 </div>
               </div>
@@ -900,7 +819,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Chu Kỳ Tháng:
+                    Chu kỳ tháng:
                   </label>
                   <select
                     value={newPlanMonth}
@@ -916,7 +835,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Tuần Áp Dụng:
+                    Tuần áp dụng:
                   </label>
                   <input
                     type="text"
@@ -931,7 +850,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Nhãn Hàng (Brand):
+                    Nhãn hàng:
                   </label>
                   <select
                     value={newPlanBrand}
@@ -952,32 +871,32 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
 
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Brand PIC Phụ Trách:
+                    Brand PIC phụ trách:
                   </label>
                   <select
                     value={newPlanPic}
                     onChange={(e) => setNewPlanPic(e.target.value)}
                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   >
-                    <option value="Đặng Mai Hà Linh">Đặng Mai Hà Linh (Brand PIC)</option>
-                    <option value="Phương Thảo">Phương Thảo (Brand Strategy)</option>
+                    <option value="Đặng Mai Hà Linh">Đặng Mai Hà Linh</option>
+                    <option value="Phương Thảo">Phương Thảo</option>
                     <option value="Khánh Vy">Khánh Vy (Senior Booking)</option>
-                    <option value="Nguyễn Thu Trang">Nguyễn Thu Trang (Booking)</option>
-                    <option value="Trần Minh Đức">Trần Minh Đức (Live & Booking)</option>
-                    <option value="Vân Ngọc">Vân Ngọc (Trưởng Phòng)</option>
+                    <option value="Nguyễn Thu Trang">Nguyễn Thu Trang</option>
+                    <option value="Trần Minh Đức">Trần Minh Đức</option>
+                    <option value="Vân Ngọc">Vân Ngọc (trưởng phòng)</option>
                   </select>
                 </div>
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Tiêu Đề Kế Hoạch:
+                  Tiêu đề kế hoạch:
                 </label>
                 <input
                   type="text"
                   value={newPlanTitle}
                   onChange={(e) => setNewPlanTitle(e.target.value)}
-                  placeholder={`VD: Chiến Dịch ${newPlanMonth} - ${newPlanBrand} Bứt Phá Doanh Số`}
+                  placeholder={`VD: Chiến dịch ${newPlanMonth} - ${newPlanBrand} Bứt phá doanh số`}
                   className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
@@ -985,45 +904,45 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
               <div className="grid grid-cols-3 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Ngân Sách (VNĐ):
+                    Ngân sách (VNĐ):
                   </label>
                   <input
                     type="number"
                     step="5000000"
                     value={newPlanBudget}
                     onChange={(e) => setNewPlanBudget(Number(e.target.value))}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
-                  <span className="text-[10px] text-slate-400 mt-0.5 block">
+                  <span className="text-2xs text-slate-400 mt-0.5 block">
                     {(newPlanBudget / 1000000).toLocaleString('vi-VN')} Tr đ
                   </span>
                 </div>
 
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Số Lượng Video:
+                    Số lượng video:
                   </label>
                   <input
                     type="number"
                     value={newPlanQty}
                     onChange={(e) => setNewPlanQty(Number(e.target.value))}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
-                  <span className="text-[10px] text-slate-400 mt-0.5 block">Nội dung/ca</span>
+                  <span className="text-2xs text-slate-400 mt-0.5 block">Nội dung/ca</span>
                 </div>
 
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Mục Tiêu GMV:
+                    Mục tiêu GMV:
                   </label>
                   <input
                     type="number"
                     step="10000000"
                     value={newPlanGmv}
                     onChange={(e) => setNewPlanGmv(Number(e.target.value))}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-emerald-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-emerald-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
-                  <span className="text-[10px] text-emerald-600 font-semibold mt-0.5 block">
+                  <span className="text-2xs text-emerald-600 font-semibold mt-0.5 block">
                     ROI: {(newPlanGmv / (newPlanBudget || 1)).toFixed(1)}x
                   </span>
                 </div>
@@ -1031,15 +950,15 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Chiến Lược Tự Động Cân Đối:
+                  Chiến lược tự động cân đối:
                 </label>
                 <div className="grid grid-cols-3 gap-2 text-xs">
                   {[
-                    { id: 'BALANCED', label: 'Cân Bằng Toàn Diện' },
-                    { id: 'GMV_MAX', label: 'Tối Đa GMV (Nano)' },
+                    { id: 'BALANCED', label: 'Cân bằng toàn diện' },
+                    { id: 'GMV_MAX', label: 'Tối đa GMV' },
                     { id: 'MEGA_SALE', label: 'Siêu Sale & Live' },
-                    { id: 'BRAND_PUSH', label: 'Phủ Thương Hiệu' },
-                    { id: 'COST_SAVER', label: 'Tiết Kiệm Chi Phí' }
+                    { id: 'BRAND_PUSH', label: 'Phủ thương hiệu' },
+                    { id: 'COST_SAVER', label: 'Tiết kiệm chi phí' }
                   ].map(p => (
                     <button
                       type="button"
@@ -1059,7 +978,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Ghi Chú Định Hướng:
+                  Ghi chú định hướng:
                 </label>
                 <textarea
                   rows={2}
@@ -1080,9 +999,9 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white font-bold text-sm shadow-lg shadow-indigo-600/25"
+                  className="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 hover: text-white font-semibold text-sm shadow-lg"
                 >
-                  Tạo & Mở Studio Phân Rã
+                  Tạo & mở Studio phân rã
                 </button>
               </div>
             </form>
@@ -1090,7 +1009,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
         </div>
       )}
 
-      {/* 🌟 7. MODAL: NHÂN BẢN KẾ HOẠCH SANG THÁNG TIẾP THEO */}
+      {/* 7. MODAL: NHÂN BẢN KẾ HOẠCH SANG THÁNG TIẾP THEO */}
       {cloningPlan && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
@@ -1099,7 +1018,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                 <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
                   <Copy className="w-5 h-5" />
                 </div>
-                <h3 className="font-bold text-base text-slate-900">Nhân Bản Kế Hoạch</h3>
+                <h3 className="font-semibold text-base text-slate-900">Nhân bản kế hoạch</h3>
               </div>
               <button onClick={() => setCloningPlan(null)} className="text-slate-400 hover:text-slate-600">
                 <X className="w-5 h-5" />
@@ -1112,7 +1031,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
 
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Chọn Chu Kỳ Tháng Đích:
+                Chọn Chu kỳ tháng đích:
               </label>
               <select
                 value={cloneTargetMonth}
@@ -1120,8 +1039,8 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                 className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500"
               >
                 <option value="2026/11">Tháng 11/2026 (Sắp tới)</option>
-                <option value="2026/12">Tháng 12/2026 (Cuối năm)</option>
-                <option value="2027/01">Tháng 01/2027 (Tết Nguyên Đán)</option>
+                <option value="2026/12">Tháng 12/2026 (cuối năm)</option>
+                <option value="2027/01">Tháng 01/2027 (Tết nguyên đán)</option>
                 <option value="2026/10">Tháng 10/2026</option>
               </select>
             </div>
@@ -1137,16 +1056,16 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
               <button
                 type="button"
                 onClick={handleCloneSubmit}
-                className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md shadow-indigo-600/20"
+                className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs shadow-md"
               >
-                Xác Nhận Nhân Bản
+                Xác nhận nhân bản
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* 🌟 8. MODAL XEM LỊCH SỬ TRAO ĐỔI & TIẾN TRÌNH DUYỆT */}
+      {/* 8. MODAL XEM LỊCH SỬ TRAO ĐỔI & TIẾN TRÌNH DUYỆT */}
       {viewingHistoryPlan && (
         <PlanHistoryModal
           plan={viewingHistoryPlan}

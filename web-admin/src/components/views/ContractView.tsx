@@ -48,7 +48,7 @@ export const ContractView: React.FC<ContractViewProps> = ({
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [isOcrModalOpen, setIsOcrModalOpen] = useState<boolean>(false);
 
-  // 🌟 SLA B2C: Modal Cảnh Báo Vi Phạm Điều Kiện Hợp Đồng & Thanh Toán
+  // SLA B2C: Modal Cảnh Báo Vi Phạm Điều Kiện Hợp Đồng & Thanh Toán
   const [complianceModalDeal, setComplianceModalDeal] = useState<{
     deal: BookingDealItem;
     reason: string;
@@ -56,7 +56,7 @@ export const ContractView: React.FC<ContractViewProps> = ({
   } | null>(null);
 
   const handleAttemptApproveAdvance = (deal: BookingDealItem) => {
-    // 🌟 SLA B2C Rule: Deal > 9.000.000 VNĐ bắt buộc có hợp đồng ký tối thiểu trước 2 ngày khi làm DNTT
+    // SLA B2C Rule: Deal > 9.000.000 VNĐ bắt buộc có hợp đồng ký tối thiểu trước 2 ngày khi làm DNTT
     if (deal.totalValue > 9000000) {
       const hasScan = Boolean(deal.contractScanUrl);
       const signedDays = deal.contractSignDaysPrior ?? 0;
@@ -175,14 +175,14 @@ export const ContractView: React.FC<ContractViewProps> = ({
         {/* Card 1: Tổng Giá Trị */}
         <div className="bg-white border border-slate-200 rounded-xl p-4.5 shadow-xs hover:border-slate-300 transition">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-              Tổng Giá Trị Hợp Đồng
+            <span className="text-xs font-semibold text-slate-500">
+              Tổng giá trị hợp đồng
             </span>
             <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
               <FileCheck className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-xl font-bold text-slate-900 mt-2 whitespace-nowrap">
+          <div className="text-xl font-semibold text-slate-900 mt-2 whitespace-nowrap">
             {totalContractValue.toLocaleString('vi-VN')} <span className="text-sm font-semibold text-slate-500">₫</span>
           </div>
           <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-100 text-xs">
@@ -194,20 +194,20 @@ export const ContractView: React.FC<ContractViewProps> = ({
         {/* Card 2: Đã Cọc Đợt 1 */}
         <div className="bg-white border border-slate-200 rounded-xl p-4.5 shadow-xs hover:border-slate-300 transition">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-              Đã Chi Tạm Ứng (Đợt 1)
+            <span className="text-xs font-semibold text-slate-500">
+              Đã chi tạm ứng (đợt 1)
             </span>
             <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
               <CheckCircle2 className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-xl font-bold text-emerald-600 mt-2 whitespace-nowrap">
+          <div className="text-xl font-semibold text-emerald-600 mt-2 whitespace-nowrap">
             {totalAdvancePaid.toLocaleString('vi-VN')} <span className="text-sm font-semibold text-emerald-500">₫</span>
           </div>
           <div className="mt-2 pt-2 border-t border-slate-100">
             <div className="flex items-center justify-between text-xs mb-1">
               <span className="text-slate-500">Tỷ lệ chi cọc:</span>
-              <span className="font-bold text-emerald-700">{advancePaidRate}%</span>
+              <span className="font-semibold text-emerald-700">{advancePaidRate}%</span>
             </div>
             <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
               <div
@@ -221,14 +221,14 @@ export const ContractView: React.FC<ContractViewProps> = ({
         {/* Card 3: Chờ Quyết Toán Đợt 2 */}
         <div className="bg-white border border-slate-200 rounded-xl p-4.5 shadow-xs hover:border-slate-300 transition">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-              Chờ Quyết Toán (Đợt 2)
+            <span className="text-xs font-semibold text-slate-500">
+              Chờ quyết toán (đợt 2)
             </span>
             <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
               <Clock className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-xl font-bold text-indigo-600 mt-2 whitespace-nowrap">
+          <div className="text-xl font-semibold text-indigo-600 mt-2 whitespace-nowrap">
             {totalPendingSettlement.toLocaleString('vi-VN')} <span className="text-sm font-semibold text-indigo-500">₫</span>
           </div>
           <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-100 text-xs">
@@ -240,15 +240,15 @@ export const ContractView: React.FC<ContractViewProps> = ({
         {/* Card 4: Tuân Thủ Pháp Lý & Thanh Toán */}
         <div className="bg-white border border-slate-200 rounded-xl p-4.5 shadow-xs hover:border-slate-300 transition">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-              Pháp Lý & VietQR
+            <span className="text-xs font-semibold text-slate-500">
+              Pháp lý & VietQR
             </span>
             <div className="w-8 h-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center">
               <ShieldCheck className="w-4 h-4" />
             </div>
           </div>
-          <div className="text-xl font-bold text-purple-700 mt-2 whitespace-nowrap">
-            100% <span className="text-sm font-semibold text-slate-500">HĐ Điện Tử</span>
+          <div className="text-xl font-semibold text-purple-700 mt-2 whitespace-nowrap">
+            100% <span className="text-sm font-semibold text-slate-500">HĐ điện tử</span>
           </div>
           <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-100 text-xs">
             <span className="text-purple-600 font-semibold">Tự động hóa Lark Approval</span>
@@ -301,7 +301,7 @@ export const ContractView: React.FC<ContractViewProps> = ({
             {/* OCR Scanner Button */}
             <button
               onClick={() => setIsOcrModalOpen(true)}
-              className="px-3.5 py-1.5 bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 active:scale-[0.99] text-white font-bold text-xs rounded-lg transition shadow-xs flex items-center gap-1.5 shrink-0 cursor-pointer"
+              className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 hover: active:scale-[0.99] text-white font-semibold text-xs rounded-lg transition shadow-xs flex items-center gap-1.5 shrink-0 cursor-pointer"
               title="Tải ảnh CCCD hoặc Giấy phép kinh doanh để bóc tách tự động"
             >
               <Sparkles className="w-3.5 h-3.5" />
@@ -312,13 +312,13 @@ export const ContractView: React.FC<ContractViewProps> = ({
 
         {/* Quick Filter Tabs */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs border-t border-slate-100 pt-2.5">
-          <span className="text-slate-400 flex items-center gap-1 mr-1 text-[11px] font-medium shrink-0">
+          <span className="text-slate-400 flex items-center gap-1 mr-1 text-2xs font-medium shrink-0">
             <Filter className="w-3.5 h-3.5" /> Trạng thái:
           </span>
           {[
             { key: 'ALL', label: 'Tất cả HĐ', count: deals.length },
-            { key: 'NEED_ADVANCE', label: 'Chờ chi cọc (Đợt 1)', count: needAdvanceCount, color: 'amber' },
-            { key: 'ADVANCE_PAID', label: 'Đã chi cọc (Đang làm video)', count: advancePaidCount, color: 'blue' },
+            { key: 'NEED_ADVANCE', label: 'Chờ chi cọc (đợt 1)', count: needAdvanceCount, color: 'amber' },
+            { key: 'ADVANCE_PAID', label: 'Đã chi cọc (đang làm video)', count: advancePaidCount, color: 'blue' },
             { key: 'NEED_SETTLE', label: 'Video lên sóng (Cần tất toán)', count: needSettleCount, color: 'indigo' },
             { key: 'COMPLETED', label: 'Đã tất toán xong', count: completedCount, color: 'emerald' },
           ].map(tab => {
@@ -335,7 +335,7 @@ export const ContractView: React.FC<ContractViewProps> = ({
               >
                 <span>{tab.label}</span>
                 <span
-                  className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+                  className={`px-1.5 py-0.2 rounded-full text-2xs font-semibold ${
                     isActive ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'
                   }`}
                 >
@@ -352,9 +352,9 @@ export const ContractView: React.FC<ContractViewProps> = ({
         {/* Table Header Summary Bar */}
         <div className="px-5 py-3.5 border-b border-slate-200 bg-slate-50/70 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-              <span>Danh Sách Hợp Đồng KOC & Trạng Thái Phê Duyệt</span>
-              <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-blue-100 text-blue-800 border border-blue-200">
+            <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
+              <span>Danh sách hợp đồng KOC & trạng thái phê duyệt</span>
+              <span className="px-2 py-0.5 rounded-full text-2xs font-semibold bg-blue-100 text-blue-800 border border-blue-200">
                 {filteredDeals.length} Hợp Đồng
               </span>
             </h3>
@@ -377,13 +377,13 @@ export const ContractView: React.FC<ContractViewProps> = ({
         <div className="overflow-x-auto">
           <table className="w-full text-left border-separate border-spacing-0 text-xs min-w-[1280px]">
             <thead>
-              <tr className="bg-slate-50 text-slate-700 font-semibold uppercase tracking-wider text-[11px]">
-                <th className="py-3.5 px-4 w-[170px] min-w-[170px] border-b border-slate-200 bg-slate-50">Mã HĐ & Nhãn Hàng</th>
-                <th className="py-3.5 px-4 w-[210px] min-w-[210px] border-b border-slate-200 bg-slate-50">KOC & Kênh Tác Nghiệp</th>
-                <th className="py-3.5 px-4 w-[230px] min-w-[230px] border-b border-slate-200 bg-slate-50">Chiến Dịch & Sản Phẩm</th>
-                <th className="py-3.5 px-4 w-[160px] min-w-[160px] border-b border-slate-200 bg-slate-50">Lên Sóng & Mẫu</th>
-                <th className="py-3.5 px-4 w-[210px] min-w-[210px] border-b border-slate-200 bg-slate-50">Tài Chính & Giải Ngân</th>
-                <th className="py-3.5 px-4 w-[190px] min-w-[190px] border-b border-slate-200 bg-slate-50">Trạng Thái Phê Duyệt</th>
+              <tr className="bg-slate-50 text-slate-700 font-semibold text-2xs">
+                <th className="py-3.5 px-4 w-[170px] min-w-[170px] border-b border-slate-200 bg-slate-50">Mã HĐ & nhãn hàng</th>
+                <th className="py-3.5 px-4 w-[210px] min-w-[210px] border-b border-slate-200 bg-slate-50">KOC & kênh tác nghiệp</th>
+                <th className="py-3.5 px-4 w-[230px] min-w-[230px] border-b border-slate-200 bg-slate-50">Chiến dịch & sản phẩm</th>
+                <th className="py-3.5 px-4 w-[160px] min-w-[160px] border-b border-slate-200 bg-slate-50">Lên sóng & mẫu</th>
+                <th className="py-3.5 px-4 w-[210px] min-w-[210px] border-b border-slate-200 bg-slate-50">Tài chính & giải ngân</th>
+                <th className="py-3.5 px-4 w-[190px] min-w-[190px] border-b border-slate-200 bg-slate-50">Trạng thái phê duyệt</th>
                 <th className="py-3.5 px-4 w-[180px] min-w-[180px] text-right sticky right-0 z-20 bg-slate-50 shadow-[-3px_0_6px_rgba(0,0,0,0.04)] border-b border-l border-slate-200">
                   Thao Tác / Lark
                 </th>
@@ -412,7 +412,7 @@ export const ContractView: React.FC<ContractViewProps> = ({
                         <div className="flex items-center gap-1.5">
                           <span
                             onClick={() => onSelectDeal(deal)}
-                            className="font-bold text-blue-600 hover:text-blue-800 cursor-pointer hover:underline text-xs tracking-tight"
+                            className="font-semibold text-blue-600 hover:text-blue-800 cursor-pointer hover:underline text-xs tracking-tight"
                             title="Bấm để xem chi tiết HĐ điện tử"
                           >
                             {deal.dealCode}
@@ -427,7 +427,7 @@ export const ContractView: React.FC<ContractViewProps> = ({
                         </div>
                         <div className="mt-1">
                           <span
-                            className={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold border ${getBrandBadgeClass(
+                            className={`inline-block px-2 py-0.5 rounded text-2xs font-semibold border ${getBrandBadgeClass(
                               deal.brandName
                             )}`}
                           >
@@ -435,12 +435,12 @@ export const ContractView: React.FC<ContractViewProps> = ({
                           </span>
                         </div>
 
-                        {/* 🌟 SLA B2C: Cảnh báo điều kiện hợp đồng > 9M & CCCD */}
+                        {/* SLA B2C: Cảnh báo điều kiện hợp đồng > 9M & CCCD */}
                         <div className="mt-1.5 space-y-0.5">
                           {deal.totalValue > 9000000 ? (
                             deal.contractScanUrl && (deal.contractSignDaysPrior ?? 0) >= 2 ? (
-                              <span className="inline-flex items-center gap-1 text-[9px] font-semibold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
-                                <ShieldCheck className="w-2.5 h-2.5 text-emerald-600" /> HĐ Scan (Đủ 2d)
+                              <span className="inline-flex items-center gap-1 text-2xs font-semibold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                                <ShieldCheck className="w-2.5 h-2.5 text-emerald-600" /> HĐ Scan (đủ 2d)
                               </span>
                             ) : (
                               <span 
@@ -451,24 +451,24 @@ export const ContractView: React.FC<ContractViewProps> = ({
                                     : `Hợp đồng ký cách đây ${deal.contractSignDaysPrior ?? 0} ngày (yêu cầu tối thiểu 2 ngày trước DNTT).`,
                                   requiredAction: 'Bổ sung file Scan Hợp Đồng ký 2 bên và CCCD trước khi duyệt chi.'
                                 })}
-                                className="inline-flex items-center gap-1 text-[9px] font-bold text-rose-700 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200 cursor-pointer hover:bg-rose-100 transition animate-pulse"
+                                className="inline-flex items-center gap-1 text-2xs font-semibold text-rose-700 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200 cursor-pointer hover:bg-rose-100 transition"
                                 title="Nhấp xem chi tiết vi phạm SLA"
                               >
                                 <AlertTriangle className="w-2.5 h-2.5 text-rose-600" /> HĐ &gt;9M (Thiếu Scan/2d)
                               </span>
                             )
                           ) : (
-                            <span className="text-[9px] text-slate-400 block">&lt; 9M: Khuyến khích HĐ</span>
+                            <span className="text-2xs text-slate-400 block">&lt; 9M: Khuyến khích HĐ</span>
                           )}
 
                           {deal.hasIdCardScan ? (
-                            <span className="text-[9px] text-slate-500 block">✓ CCCD: {deal.kocIdCardNumber || 'Hợp lệ'}</span>
+                            <span className="text-2xs text-slate-500 block">✓ CCCD: {deal.kocIdCardNumber || 'Hợp lệ'}</span>
                           ) : (
-                            <span className="text-[9px] text-amber-600 font-semibold block">⚠️ Chưa tải ảnh CCCD</span>
+                            <span className="text-2xs text-amber-600 font-semibold block">Chưa tải ảnh CCCD</span>
                           )}
                         </div>
 
-                        <div className="text-[10px] text-slate-400 mt-1">
+                        <div className="text-2xs text-slate-400 mt-1">
                           Ngày tạo: 22/09/2026
                         </div>
                       </td>
@@ -476,21 +476,21 @@ export const ContractView: React.FC<ContractViewProps> = ({
                       {/* Cột 2: KOC & Kênh Tác Nghiệp */}
                       <td className="py-3.5 px-4 align-top border-b border-slate-100">
                         <div className="flex items-start gap-2.5">
-                          <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-600 text-white font-bold text-[11px] flex items-center justify-center shrink-0 shadow-2xs">
+                          <div className="w-7 h-7 rounded-full bg-blue-500 text-white font-semibold text-2xs flex items-center justify-center shrink-0 shadow-2xs">
                             {deal.kocStageName.charAt(0)}
                           </div>
                           <div className="min-w-0">
-                            <div className="font-bold text-slate-900 text-xs truncate max-w-[150px]">
+                            <div className="font-semibold text-slate-900 text-xs truncate max-w-[150px]">
                               {deal.kocStageName}
                             </div>
-                            <div className="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5">
-                              <span>🎵 {deal.kocChannelId || '@koc'}</span>
+                            <div className="text-2xs text-slate-500 flex items-center gap-1 mt-0.5">
+                              <span>{deal.kocChannelId || '@koc'}</span>
                             </div>
                             <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                              <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
+                              <span className="px-1.5 py-0.2 rounded text-2xs font-semibold bg-purple-50 text-purple-700 border border-purple-200">
                                 {deal.salaryGrade || 'KL5'}
                               </span>
-                              <span className="text-[10px] text-slate-500">
+                              <span className="text-2xs text-slate-500">
                                 {deal.tepKenh || 'Review'}
                               </span>
                             </div>
@@ -507,13 +507,13 @@ export const ContractView: React.FC<ContractViewProps> = ({
                           {deal.campaignTitle}
                         </div>
                         <div
-                          className="text-[11px] text-blue-600 font-semibold flex items-center gap-1 mt-0.5 line-clamp-1 max-w-[210px]"
+                          className="text-2xs text-blue-600 font-semibold flex items-center gap-1 mt-0.5 line-clamp-1 max-w-[210px]"
                           title={deal.productName}
                         >
                           <Package className="w-3 h-3 text-blue-500 shrink-0" />
                           <span className="truncate">{deal.productName || 'Sản phẩm booking'}</span>
                         </div>
-                        <div className="text-[10px] text-slate-400 mt-1 flex items-center gap-1">
+                        <div className="text-2xs text-slate-400 mt-1 flex items-center gap-1">
                           <span>PIC:</span>
                           <strong className="text-slate-600 font-medium">{deal.assignedStaff || 'Khánh Vy'}</strong>
                         </div>
@@ -529,33 +529,33 @@ export const ContractView: React.FC<ContractViewProps> = ({
                         {/* Sample Status Badge */}
                         <div className="mt-1.5">
                           {deal.sampleStatus === 'ĐÃ_NHẬN' ? (
-                            <span className="badge-emerald px-1.5 py-0.5 rounded text-[10px] font-semibold flex items-center gap-1 w-fit">
+                            <span className="badge-emerald px-1.5 py-0.5 rounded text-2xs font-semibold flex items-center gap-1 w-fit">
                               <CheckCircle2 className="w-3 h-3" /> Đã nhận sample
                             </span>
                           ) : deal.sampleStatus === 'ĐANG_GIAO' ? (
-                            <span className="badge-amber px-1.5 py-0.5 rounded text-[10px] font-semibold flex items-center gap-1 w-fit">
+                            <span className="badge-amber px-1.5 py-0.5 rounded text-2xs font-semibold flex items-center gap-1 w-fit">
                               <Clock className="w-3 h-3" /> Đang giao sample
                             </span>
                           ) : (
-                            <span className="badge-slate px-1.5 py-0.5 rounded text-[10px] font-semibold flex items-center gap-1 w-fit">
+                            <span className="badge-slate px-1.5 py-0.5 rounded text-2xs font-semibold flex items-center gap-1 w-fit">
                               Chưa gửi sample
                             </span>
                           )}
                         </div>
 
                         {/* Spark Ads Code Status */}
-                        <div className="text-[10px] text-slate-500 mt-1 flex items-center gap-1">
+                        <div className="text-2xs text-slate-500 mt-1 flex items-center gap-1">
                           {deal.adsCodeStatus === 'ĐÃ_NGHIỆM_THU' ? (
-                            <span className="text-blue-600 font-medium">⚡ Mã Ads: Sẵn sàng</span>
+                            <span className="text-blue-600 font-medium">Mã Ads: Sẵn sàng</span>
                           ) : (
-                            <span className="text-slate-400">⏳ Mã Ads: Chưa cấp</span>
+                            <span className="text-slate-400">Mã Ads: Chưa cấp</span>
                           )}
                         </div>
                       </td>
 
                       {/* Cột 5: Tài Chính & Giải Ngân */}
                       <td className="py-3.5 px-4 align-top border-b border-slate-100">
-                        <div className="font-bold text-slate-900 text-sm whitespace-nowrap">
+                        <div className="font-semibold text-slate-900 text-sm whitespace-nowrap">
                           {deal.totalValue.toLocaleString('vi-VN')} <span className="text-xs font-medium text-slate-500">₫</span>
                         </div>
 
@@ -573,7 +573,7 @@ export const ContractView: React.FC<ContractViewProps> = ({
                               title={`Còn lại: ${finalPercent}%`}
                             />
                           </div>
-                          <div className="flex items-center justify-between text-[10px] text-slate-500 mt-1 whitespace-nowrap">
+                          <div className="flex items-center justify-between text-2xs text-slate-500 mt-1 whitespace-nowrap">
                             <span className="text-emerald-700 font-semibold">
                               Cọc: {deal.advanceAmount.toLocaleString('vi-VN')} ₫
                             </span>
@@ -588,24 +588,24 @@ export const ContractView: React.FC<ContractViewProps> = ({
                       <td className="py-3.5 px-4 align-top border-b border-slate-100">
                         <div className="w-fit whitespace-nowrap">
                           {deal.status === 'FINAL_PAID' ? (
-                            <span className="badge-emerald px-2 py-1 rounded-full text-[10px] font-bold flex items-center gap-1">
+                            <span className="badge-emerald px-2 py-1 rounded-full text-2xs font-semibold flex items-center gap-1">
                               <CheckCircle2 className="w-3 h-3" /> Đã tất toán xong
                             </span>
                           ) : deal.status === 'VIDEO_SUBMITTED' ? (
-                            <span className="badge-purple px-2 py-1 rounded-full text-[10px] font-bold flex items-center gap-1">
+                            <span className="badge-purple px-2 py-1 rounded-full text-2xs font-semibold flex items-center gap-1">
                               <Clock className="w-3 h-3" /> Video lên sóng (Cần tất toán)
                             </span>
                           ) : deal.status === 'ADVANCE_PAID' ? (
-                            <span className="badge-blue px-2 py-1 rounded-full text-[10px] font-bold flex items-center gap-1">
-                              <CheckCircle2 className="w-3 h-3" /> Đã chi cọc (Chờ video)
+                            <span className="badge-blue px-2 py-1 rounded-full text-2xs font-semibold flex items-center gap-1">
+                              <CheckCircle2 className="w-3 h-3" /> Đã chi cọc (chờ video)
                             </span>
                           ) : (
-                            <span className="badge-amber px-2 py-1 rounded-full text-[10px] font-bold flex items-center gap-1">
-                              <Clock className="w-3 h-3" /> Chờ duyệt Lark (Cọc)
+                            <span className="badge-amber px-2 py-1 rounded-full text-2xs font-semibold flex items-center gap-1">
+                              <Clock className="w-3 h-3" /> Chờ duyệt Lark (cọc)
                             </span>
                           )}
                         </div>
-                        <div className="text-[10px] text-slate-500 mt-1.5 flex items-center gap-1 whitespace-nowrap">
+                        <div className="text-2xs text-slate-500 mt-1.5 flex items-center gap-1 whitespace-nowrap">
                           <CreditCard className="w-3 h-3 text-slate-400" />
                           <span>VietQR • Sẵn sàng chi</span>
                         </div>
@@ -623,7 +623,7 @@ export const ContractView: React.FC<ContractViewProps> = ({
                                 className="btn-sm bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-2xs transition flex items-center gap-1 w-full justify-center"
                               >
                                 <CheckCircle2 className="w-3.5 h-3.5" />
-                                <span>Duyệt Lark (Cọc)</span>
+                                <span>Duyệt Lark (cọc)</span>
                               </button>
                             )}
 
@@ -634,7 +634,7 @@ export const ContractView: React.FC<ContractViewProps> = ({
                               className="btn-sm bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-2xs transition flex items-center gap-1 w-full justify-center"
                             >
                               <CheckCircle className="w-3.5 h-3.5" />
-                              <span>Duyệt Lark (Tất toán)</span>
+                              <span>Duyệt Lark (tất toán)</span>
                             </button>
                           )}
 
@@ -662,13 +662,13 @@ export const ContractView: React.FC<ContractViewProps> = ({
             Hiển thị <strong className="text-slate-800">{filteredDeals.length}</strong> trên tổng số{' '}
             <strong className="text-slate-800">{deals.length}</strong> hợp đồng
           </span>
-          <div className="text-[11px] text-slate-400">
+          <div className="text-2xs text-slate-400">
             Hệ thống đối soát hợp đồng điện tử Upbase B2C • Cập nhật tức thời
           </div>
         </div>
       </div>
 
-      {/* 🌟 SLA B2C: Modal Cảnh Báo Chặn Duyệt Chi Khi Vi Phạm Hợp Đồng > 9M */}
+      {/* SLA B2C: Modal Cảnh Báo Chặn Duyệt Chi Khi Vi Phạm Hợp Đồng > 9M */}
       {complianceModalDeal && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div className="bg-white rounded-2xl max-w-lg w-full border border-rose-200 shadow-2xl overflow-hidden">
@@ -679,8 +679,8 @@ export const ContractView: React.FC<ContractViewProps> = ({
                   <ShieldAlert className="w-6 h-6" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-slate-900 text-base">
-                    Cảnh Báo Vi Phạm SLA: Chặn Duyệt Lark
+                  <h3 className="font-semibold text-slate-900 text-base">
+                    Cảnh báo vi phạm SLA: Chặn duyệt Lark
                   </h3>
                   <p className="text-xs text-rose-700 font-semibold mt-0.5">
                     Hợp đồng không đủ điều kiện giải ngân tài chính
@@ -701,25 +701,25 @@ export const ContractView: React.FC<ContractViewProps> = ({
               <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="font-mono text-slate-500 font-semibold">{complianceModalDeal.deal.dealCode}</span>
-                  <span className="font-bold text-rose-600 text-sm">
+                  <span className="font-semibold text-rose-600 text-sm">
                     {complianceModalDeal.deal.totalValue.toLocaleString('vi-VN')} ₫
                   </span>
                 </div>
-                <div className="text-slate-900 font-bold text-sm">
+                <div className="text-slate-900 font-semibold text-sm">
                   {complianceModalDeal.deal.kocStageName} • <span className="text-slate-600 font-normal">{complianceModalDeal.deal.brandName}</span>
                 </div>
                 <div className="text-slate-600">
                   Chiến dịch: <strong className="text-slate-800">{complianceModalDeal.deal.campaignTitle}</strong>
                 </div>
-                <div className="text-slate-500 flex items-center gap-3 pt-1 border-t border-slate-200/60 text-[11px]">
+                <div className="text-slate-500 flex items-center gap-3 pt-1 border-t border-slate-200/60 text-2xs">
                   <span>PIC: <strong>{complianceModalDeal.deal.assignedStaff}</strong></span>
                   <span>Ngân hàng: <strong>{complianceModalDeal.deal.kocBankName || 'Techcombank'}</strong></span>
                 </div>
               </div>
 
-              {/* Chi Tiết Lỗi */}
+              {/* Chi tiết Lỗi */}
               <div className="p-3.5 bg-rose-50/60 rounded-xl border border-rose-200/80">
-                <div className="font-bold text-rose-800 text-xs flex items-center gap-1.5 mb-1.5">
+                <div className="font-semibold text-rose-800 text-xs flex items-center gap-1.5 mb-1.5">
                   <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
                   <span>Lý do kích hoạt cảnh báo vi phạm:</span>
                 </div>
@@ -730,7 +730,7 @@ export const ContractView: React.FC<ContractViewProps> = ({
 
               {/* Hành Động Khắc Phục */}
               <div className="p-3.5 bg-blue-50/60 rounded-xl border border-blue-200/80">
-                <div className="font-bold text-blue-900 text-xs flex items-center gap-1.5 mb-1">
+                <div className="font-semibold text-blue-900 text-xs flex items-center gap-1.5 mb-1">
                   <ShieldCheck className="w-4 h-4 text-blue-600 shrink-0" />
                   <span>Hành động bắt buộc để được phê duyệt:</span>
                 </div>
@@ -740,7 +740,7 @@ export const ContractView: React.FC<ContractViewProps> = ({
               </div>
 
               {/* Trích xuất điều khoản SLA B2C */}
-              <div className="p-3 bg-slate-100/80 rounded-lg text-[11px] text-slate-600 border border-slate-200 space-y-1">
+              <div className="p-3 bg-slate-100/80 rounded-lg text-2xs text-slate-600 border border-slate-200 space-y-1">
                 <strong className="text-slate-800 block">Quy chuẩn tài chính SLA B2C Upbase:</strong>
                 <p>
                   • Hợp đồng <strong>&gt; 9.000.000 VNĐ</strong> bắt buộc phải có bản scan 2 bên ký lưu trên Drive chung tối thiểu <strong>2 ngày làm việc</strong> trước khi làm ĐNTT.
@@ -762,13 +762,13 @@ export const ContractView: React.FC<ContractViewProps> = ({
                 className="px-4 py-2 text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-xl transition flex items-center gap-1.5"
               >
                 <Eye className="w-4 h-4" />
-                <span>Xem Hồ Sơ & Bổ Sung Chứng Từ</span>
+                <span>Xem hồ sơ & bổ Sung chứng từ</span>
               </button>
               <button
                 onClick={() => setComplianceModalDeal(null)}
-                className="px-5 py-2 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 rounded-xl transition shadow-xs"
+                className="px-5 py-2 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-xl transition shadow-xs"
               >
-                Đã Hiểu & Đóng
+                Đã hiểu & đóng
               </button>
             </div>
           </div>

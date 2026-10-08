@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { ChannelTag } from '../ui';
+import { formatVndShort } from '../../lib/format';
 import { 
   Building2, 
   Store, 
@@ -54,7 +56,7 @@ export const StoresView: React.FC<StoresViewProps> = ({
   const [selectedPlatform, setSelectedPlatform] = useState<string>('ALL');
   const [selectedStatus, setSelectedStatus] = useState<string>('ALL');
 
-  // 🌟 State Quản Trị & Phân Quyền Nhân Sự Phụ Trách
+  // State Quản Trị & Phân Quyền Nhân Sự Phụ Trách
   const [assignedStaffFilter, setAssignedStaffFilter] = useState<string>('ALL');
   const [assigningStore, setAssigningStore] = useState<StorePortfolioItem | null>(null);
   const [assignFormState, setAssignFormState] = useState<{
@@ -109,7 +111,7 @@ export const StoresView: React.FC<StoresViewProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [editingBrand, isCreatingBrand, viewingBrand, assigningStore]);
 
-  // 🌟 Hàm kiểm tra nhân viên có phụ trách gian hàng hay không (Hỗ trợ cả trường hợp 2+ nhân viên làm cùng 1 shop)
+  // Hàm kiểm tra nhân viên có phụ trách gian hàng hay không (Hỗ trợ cả trường hợp 2+ nhân viên làm cùng 1 shop)
   const isStoreAssignedToUser = (store: StorePortfolioItem, userName: string) => {
     if (!userName) return false;
     const u = userName.toLowerCase().trim();
@@ -119,7 +121,7 @@ export const StoresView: React.FC<StoresViewProps> = ({
     return false;
   };
 
-  // 🌟 PHÂN QUYỀN DỮ LIỆU GIAN HÀNG (DATA SCOPING):
+  // PHÂN QUYỀN DỮ LIỆU GIAN HÀNG (DATA SCOPING):
   // - Nếu không phải Manager: Bắt buộc chỉ hiển thị các gian hàng mà nhân sự đó phụ trách
   // - Nếu là Manager: Xem toàn bộ gian hàng, hoặc lọc theo một nhân sự cụ thể để kiểm tra tải
   const scopedPortfolios = storePortfolios.filter(store => {
@@ -134,10 +136,10 @@ export const StoresView: React.FC<StoresViewProps> = ({
 
   // Categories List
   const categories = [
-    { key: 'ALL', label: 'Tất Cả Ngành Hàng' },
+    { key: 'ALL', label: 'Tất cả ngành hàng' },
     { key: 'Mẹ & Bé', label: 'Mẹ & Bé / Sữa' },
     { key: 'Skincare', label: 'Trị Mụn & Skincare' },
-    { key: 'Chăm Sóc Cá Nhân', label: 'Phụ Khoa & Cá Nhân' },
+    { key: 'Chăm Sóc Cá Nhân', label: 'Phụ khoa & cá nhân' },
     { key: 'Dược Mỹ Phẩm', label: 'Dược Mỹ Phẩm Châu Âu' },
     { key: 'Gia Dụng', label: 'Gia Dụng & FMCG' },
   ];
@@ -191,7 +193,7 @@ export const StoresView: React.FC<StoresViewProps> = ({
   const totalSpent = brands.reduce((acc, b) => acc + b.spentBudget, 0);
   const totalGmv = brands.reduce((acc, b) => acc + b.currentGmv, 0);
 
-  // 🌟 Xử lý mở Modal Phân Công Gian Hàng
+  // Xử lý mở Modal Phân Công Gian Hàng
   const handleOpenAssignModal = (store: StorePortfolioItem) => {
     if (!isManager) return;
     setAssigningStore(store);
@@ -208,7 +210,7 @@ export const StoresView: React.FC<StoresViewProps> = ({
     });
   };
 
-  // 🌟 Toggle chọn/bỏ chọn nhân sự B2C Ops (Hỗ trợ chọn 2 hoặc nhiều nhân sự cùng làm 1 shop)
+  // Toggle chọn/bỏ chọn nhân sự B2C Ops (Hỗ trợ chọn 2 hoặc nhiều nhân sự cùng làm 1 shop)
   const handleToggleB2cOwner = (staffName: string) => {
     setAssignFormState(prev => {
       const exists = prev.b2cOwners.includes(staffName);
@@ -226,7 +228,7 @@ export const StoresView: React.FC<StoresViewProps> = ({
     });
   };
 
-  // 🌟 Lưu Phân Công Nhân Sự Cho Shop
+  // Lưu Phân Công Nhân Sự Cho Shop
   const handleSaveAssignment = (e: React.FormEvent) => {
     e.preventDefault();
     if (!assigningStore || !isManager) return;
@@ -280,7 +282,7 @@ export const StoresView: React.FC<StoresViewProps> = ({
         name: formData.name || 'Nhãn Hàng Mới',
         companyName: formData.companyName || 'Công ty Đối tác',
         category: formData.category || 'Mẹ & Bé',
-        color: 'from-blue-600 to-indigo-700',
+        color: 'bg-blue-600 ',
         status: 'ACTIVE',
         planBudget: Number(formData.planBudget) || 200000000,
         spentBudget: 0,
@@ -376,17 +378,17 @@ export const StoresView: React.FC<StoresViewProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-0.5">
         <div className="flex items-center gap-2">
           {isManager ? (
-            <span className="px-2.5 py-1 rounded-lg text-xs font-bold badge-emerald inline-flex items-center gap-1.5">
+            <span className="px-2.5 py-1 rounded-lg text-xs font-semibold badge-emerald inline-flex items-center gap-1.5">
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Quản trị Brand & Cấu hình Shop (Trưởng phòng)</span>
+              <span>Quản trị Brand & cấu hình Shop (trưởng phòng)</span>
             </span>
           ) : (
             <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-100 border border-slate-200 text-slate-600 inline-flex items-center gap-1.5 shadow-2xs">
               <Lock className="w-3.5 h-3.5 text-amber-600" />
-              <span>Chế độ xem tra cứu (Nhân viên)</span>
+              <span>Chế độ xem tra cứu (nhân viên)</span>
             </span>
           )}
-          <span className="text-[11px] text-slate-500 hidden md:inline">
+          <span className="text-2xs text-slate-500 hidden md:inline">
             • {brands.length} nhãn hàng • {totalStores} gian hàng
           </span>
         </div>
@@ -411,10 +413,10 @@ export const StoresView: React.FC<StoresViewProps> = ({
                 forbiddenNotes: ''
               });
             }}
-            className="px-3.5 py-1.5 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-bold text-xs rounded-xl shadow-sm transition flex items-center gap-1.5 self-start sm:self-auto"
+            className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 hover: text-white font-semibold text-xs rounded-xl shadow-sm transition flex items-center gap-1.5 self-start sm:self-auto"
           >
             <Plus className="w-3.5 h-3.5" />
-            <span>+ Thêm Brand Mới</span>
+            <span>+ Thêm Brand mới</span>
           </button>
         )}
       </div>
@@ -423,21 +425,21 @@ export const StoresView: React.FC<StoresViewProps> = ({
       <div className="flex items-center gap-2 p-1.5 bg-slate-100/80 border border-slate-200 rounded-xl text-xs overflow-x-auto shadow-2xs">
         <button
           onClick={() => setActiveStoreTab('MINDMAP')}
-          className={`px-4 py-2 rounded-lg font-bold transition flex items-center gap-2 whitespace-nowrap ${
+          className={`px-4 py-2 rounded-lg font-semibold transition flex items-center gap-2 whitespace-nowrap ${
             activeStoreTab === 'MINDMAP'
               ? 'bg-blue-600 text-white shadow-xs'
               : 'text-slate-600 hover:text-slate-900 hover:bg-white'
           }`}
         >
           <GitFork className="w-3.5 h-3.5" />
-          <span>1. Mindmap Master Data (Brand ➔ Gian ➔ PIC ➔ SKU)</span>
-          <span className="px-1.5 py-0.2 rounded text-[10px] bg-blue-100 text-blue-700 font-bold">
+          <span>1. Mindmap Master Data (Brand → Gian → PIC → SKU)</span>
+          <span className="px-1.5 py-0.2 rounded text-2xs bg-blue-100 text-blue-700 font-semibold">
             MỚI
           </span>
         </button>
         <button
           onClick={() => setActiveStoreTab('STORE_PORTFOLIO')}
-          className={`px-4 py-2 rounded-lg font-bold transition flex items-center gap-2 whitespace-nowrap ${
+          className={`px-4 py-2 rounded-lg font-semibold transition flex items-center gap-2 whitespace-nowrap ${
             activeStoreTab === 'STORE_PORTFOLIO'
               ? 'bg-blue-600 text-white shadow-xs'
               : 'text-slate-600 hover:text-slate-900 hover:bg-white'
@@ -448,7 +450,7 @@ export const StoresView: React.FC<StoresViewProps> = ({
         </button>
         <button
           onClick={() => setActiveStoreTab('BRAND_STRATEGY')}
-          className={`px-4 py-2 rounded-lg font-bold transition flex items-center gap-2 whitespace-nowrap ${
+          className={`px-4 py-2 rounded-lg font-semibold transition flex items-center gap-2 whitespace-nowrap ${
             activeStoreTab === 'BRAND_STRATEGY'
               ? 'bg-blue-600 text-white shadow-xs'
               : 'text-slate-600 hover:text-slate-900 hover:bg-white'
@@ -459,7 +461,7 @@ export const StoresView: React.FC<StoresViewProps> = ({
         </button>
         <button
           onClick={() => setActiveStoreTab('STAFF_MATRIX')}
-          className={`px-4 py-2 rounded-lg font-bold transition flex items-center gap-2 whitespace-nowrap ${
+          className={`px-4 py-2 rounded-lg font-semibold transition flex items-center gap-2 whitespace-nowrap ${
             activeStoreTab === 'STAFF_MATRIX'
               ? 'bg-blue-600 text-white shadow-xs'
               : 'text-slate-600 hover:text-slate-900 hover:bg-white'
@@ -490,17 +492,17 @@ export const StoresView: React.FC<StoresViewProps> = ({
             </div>
           )}
 
-          {/* 🌟 BANNER PHÂN QUYỀN DỮ LIỆU NHÂN SỰ (RBAC) */}
+          {/* BANNER PHÂN QUYỀN DỮ LIỆU NHÂN SỰ (RBAC) */}
           {!isManager && (
-            <div className="p-4 bg-gradient-to-r from-blue-950/60 to-slate-900 border border-blue-500/30 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-md">
+            <div className="p-4 bg-blue-950/60 border border-blue-500/30 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-md">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-blue-600/20 border border-blue-500/40 flex items-center justify-center text-blue-400 font-bold shrink-0">
+                <div className="w-9 h-9 rounded-xl bg-blue-600/20 border border-blue-500/40 flex items-center justify-center text-blue-400 font-semibold shrink-0">
                   <ShieldCheck className="w-4 h-4" />
                 </div>
                 <div>
-                  <div className="font-bold text-white flex items-center gap-2">
+                  <div className="font-semibold text-white flex items-center gap-2">
                     <span>Phân Quyền Dữ Liệu Gian Hàng — {currentUser.name}</span>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                    <span className="px-2 py-0.5 rounded-full text-2xs font-semibold bg-blue-500/20 text-blue-300 border border-blue-500/30">
                       {currentUser.roleTitle}
                     </span>
                   </div>
@@ -509,17 +511,17 @@ export const StoresView: React.FC<StoresViewProps> = ({
                   </p>
                 </div>
               </div>
-              <span className="px-3 py-1 bg-blue-500/10 border border-blue-500/30 rounded-lg text-[11px] font-bold text-blue-400 shrink-0">
-                Đang Áp Dụng Phân Quyền
+              <span className="px-3 py-1 bg-blue-500/10 border border-blue-500/30 rounded-lg text-2xs font-semibold text-blue-400 shrink-0">
+                Đang áp dụng phân quyền
               </span>
             </div>
           )}
 
-          {/* 🌟 THANH ĐIỀU KHIỂN DÀNH CHO TRƯỞNG PHÒNG (MANAGER FILTER BAR) */}
+          {/* THANH ĐIỀU KHIỂN DÀNH CHO TRƯỞNG PHÒNG (MANAGER FILTER BAR) */}
           {isManager && (
             <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-2xs">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-bold text-slate-800 flex items-center gap-1.5">
+                <span className="font-semibold text-slate-800 flex items-center gap-1.5">
                   <Filter className="w-3.5 h-3.5 text-blue-600" />
                   <span>Xem gian hàng theo nhân sự:</span>
                 </span>
@@ -541,13 +543,13 @@ export const StoresView: React.FC<StoresViewProps> = ({
                 {assignedStaffFilter !== 'ALL' && (
                   <button
                     onClick={() => setAssignedStaffFilter('ALL')}
-                    className="text-[11px] text-blue-600 hover:text-blue-800 font-semibold underline ml-1 cursor-pointer"
+                    className="text-2xs text-blue-600 hover:text-blue-800 font-semibold underline ml-1 cursor-pointer"
                   >
                     Xem tất cả ({storePortfolios.length})
                   </button>
                 )}
               </div>
-              <div className="flex items-center gap-2 text-slate-500 text-[11px]">
+              <div className="flex items-center gap-2 text-slate-500 text-2xs">
                 <span>Hiển thị <strong>{filteredStorePortfolios.length}</strong> / {storePortfolios.length} gian hàng</span>
               </div>
             </div>
@@ -556,32 +558,32 @@ export const StoresView: React.FC<StoresViewProps> = ({
           {/* Portfolio Metric Highlights */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div className="p-3.5 bg-white rounded-xl border border-slate-200 shadow-2xs">
-              <span className="text-[11px] text-slate-500 block font-medium">Gian Hàng Đang Xem</span>
-              <div className="text-xl font-black text-blue-600 mt-0.5">{filteredStorePortfolios.length} Gian Hàng</div>
-              <span className="text-[10px] text-slate-400">
+              <span className="text-2xs text-slate-500 block font-medium">Gian hàng đang xem</span>
+              <div className="text-xl font-semibold text-blue-600 mt-0.5">{filteredStorePortfolios.length} Gian Hàng</div>
+              <span className="text-2xs text-slate-400">
                 {isManager ? 'Toàn bộ danh mục hệ thống' : `Được gán cho ${currentUser.name}`}
               </span>
             </div>
             <div className="p-3.5 bg-white rounded-xl border border-slate-200 shadow-2xs">
-              <span className="text-[11px] text-slate-500 block font-medium">Tổng GMV Mục Tiêu</span>
-              <div className="text-xl font-black text-emerald-600 mt-0.5 font-mono">
+              <span className="text-2xs text-slate-500 block font-medium">Tổng GMV mục tiêu</span>
+              <div className="text-xl font-semibold text-emerald-600 mt-0.5 font-mono">
                 {(filteredStorePortfolios.reduce((s, p) => s + p.monthlyTargetGmv, 0) / 1000000000).toFixed(2)}B đ
               </div>
-              <span className="text-[10px] text-emerald-600 font-semibold">Kế hoạch chỉ tiêu tháng</span>
+              <span className="text-2xs text-emerald-600 font-semibold">Kế hoạch chỉ tiêu tháng</span>
             </div>
             <div className="p-3.5 bg-white rounded-xl border border-slate-200 shadow-2xs">
-              <span className="text-[11px] text-slate-500 block font-medium">Tổng Ngân Sách Phụ Trách</span>
-              <div className="text-xl font-black text-amber-600 mt-0.5 font-mono">
+              <span className="text-2xs text-slate-500 block font-medium">Tổng ngân sách phụ trách</span>
+              <div className="text-xl font-semibold text-amber-600 mt-0.5 font-mono">
                 {(filteredStorePortfolios.reduce((s, p) => s + p.monthlyBudget, 0) / 1000000).toLocaleString('vi-VN')}M đ
               </div>
-              <span className="text-[10px] text-slate-400">Hạn mức booking KOC</span>
+              <span className="text-2xs text-slate-400">Hạn mức booking KOC</span>
             </div>
             <div className="p-3.5 bg-white rounded-xl border border-slate-200 shadow-2xs">
-              <span className="text-[11px] text-slate-500 block font-medium">Tác Nghiệp Thực Thể</span>
-              <div className="text-xl font-black text-purple-600 mt-0.5">
+              <span className="text-2xs text-slate-500 block font-medium">Tác nghiệp thực thể</span>
+              <div className="text-xl font-semibold text-purple-600 mt-0.5">
                 {filteredStorePortfolios.reduce((s, p) => s + (p.activeCandidatesCount || 0), 0)} Can • {filteredStorePortfolios.reduce((s, p) => s + (p.activeBookingsCount || 0), 0)} BO
               </div>
-              <span className="text-[10px] text-purple-600 font-medium">Kế hoạch vận hành thực tế</span>
+              <span className="text-2xs text-purple-600 font-medium">Kế hoạch vận hành thực tế</span>
             </div>
           </div>
 
@@ -589,9 +591,9 @@ export const StoresView: React.FC<StoresViewProps> = ({
           <div className="card-enterprise overflow-hidden">
             <div className="px-5 py-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/80">
               <div>
-                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
                   <Building2 className="w-4 h-4 text-blue-600" />
-                  <span>Danh Mục Gian Hàng — Cấu Trúc Trách Nhiệm Kép & Phân Công Nhân Sự</span>
+                  <span>Danh mục gian hàng — Cấu trúc trách nhiệm kép & phân công nhân sự</span>
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">
                   Phân định minh bạch giữa <strong>Account/Growth Owner</strong> và <strong>B2C Ops Owner</strong> (Hỗ trợ 2+ nhân viên đồng phụ trách 1 gian hàng)
@@ -613,16 +615,16 @@ export const StoresView: React.FC<StoresViewProps> = ({
 
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
-                <thead className="bg-slate-100/70 text-slate-600 border-b border-slate-200 uppercase tracking-wider text-[11px]">
+                <thead className="bg-slate-100/70 text-slate-600 border-b border-slate-200 text-2xs">
                   <tr>
-                    <th className="p-3.5 pl-5">Gian Hàng & Kênh</th>
-                    <th className="p-3.5">Nhãn Hàng / Ngành</th>
-                    <th className="p-3.5">Mô Hình Dịch Vụ</th>
-                    <th className="p-3.5">Độ Khó (Tier 4P)</th>
-                    <th className="p-3.5">Trách Nhiệm Kép & PIC Phụ Trách</th>
+                    <th className="p-3.5 pl-5">Gian hàng & kênh</th>
+                    <th className="p-3.5">Nhãn hàng / ngành</th>
+                    <th className="p-3.5">Mô hình dịch vụ</th>
+                    <th className="p-3.5">Độ khó</th>
+                    <th className="p-3.5">Trách nhiệm kép & PIC phụ trách</th>
                     <th className="p-3.5 font-mono">Target GMV / Budget</th>
                     <th className="p-3.5 text-center">Trạng Thái</th>
-                    <th className="p-3.5 pr-5 text-right">Phân Công & Tác Nghiệp</th>
+                    <th className="p-3.5 pr-5 text-right">Phân công & tác nghiệp</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -631,7 +633,7 @@ export const StoresView: React.FC<StoresViewProps> = ({
                       <td colSpan={8} className="p-8 text-center text-slate-500">
                         <div className="max-w-md mx-auto space-y-2">
                           <AlertCircle className="w-8 h-8 text-slate-400 mx-auto" />
-                          <div className="font-bold text-slate-800 text-sm">Không tìm thấy gian hàng nào</div>
+                          <div className="font-semibold text-slate-800 text-sm">Không tìm thấy gian hàng nào</div>
                           <p className="text-xs text-slate-500">
                             {!isManager 
                               ? `Bạn (${currentUser.name}) chưa được phân công phụ trách gian hàng nào phù hợp với bộ lọc hiện tại. Vui lòng liên hệ Trưởng phòng để được cấp quyền.`
@@ -659,9 +661,9 @@ export const StoresView: React.FC<StoresViewProps> = ({
                       return (
                         <tr key={store.id} className="hover:bg-slate-50/80 transition">
                           <td className="p-3.5 pl-5">
-                            <div className="font-bold text-slate-900 text-xs">{store.storeName}</div>
-                            <div className="text-[11px] text-blue-600 flex items-center gap-1 mt-0.5">
-                              <span>{store.platform}</span>
+                            <div className="font-semibold text-slate-900 text-xs">{store.storeName}</div>
+                            <div className="text-2xs text-blue-600 flex items-center gap-1 mt-0.5">
+                              <ChannelTag channel={store.platform} />
                               {store.storeUrl && (
                                 <a href={store.storeUrl} target="_blank" rel="noreferrer" className="text-slate-400 hover:text-blue-700">
                                   <ExternalLink className="w-3 h-3" />
@@ -671,27 +673,27 @@ export const StoresView: React.FC<StoresViewProps> = ({
                           </td>
                           <td className="p-3.5">
                             <span className="font-semibold text-slate-800">{store.brandName}</span>
-                            <div className="text-[11px] text-slate-500">{store.category}</div>
+                            <div className="text-2xs text-slate-500">{store.category}</div>
                           </td>
                           <td className="p-3.5">
                             {store.serviceModel === 'FULL_SERVICE' && (
-                              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                              <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
                                 Full Service E2E
                               </span>
                             )}
                             {store.serviceModel === 'AFFILIATE_ONLY' && (
-                              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
+                              <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-purple-50 text-purple-700 border border-purple-200">
                                 Affiliate Only
                               </span>
                             )}
                             {store.serviceModel === 'LIVESTREAM_DEDICATED' && (
-                              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                              <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-rose-50 text-rose-700 border border-rose-200">
                                 Live Dedicated
                               </span>
                             )}
                           </td>
                           <td className="p-3.5">
-                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                            <span className={`px-2 py-0.5 rounded text-2xs font-semibold ${
                               store.difficultyTier === 'Khó'
                                 ? 'bg-red-50 text-red-700 border border-red-200'
                                 : store.difficultyTier === 'Vừa'
@@ -702,40 +704,40 @@ export const StoresView: React.FC<StoresViewProps> = ({
                             </span>
                           </td>
                           <td className="p-3.5 min-w-[260px]">
-                            <div className="text-[11px]">
+                            <div className="text-2xs">
                               <span className="text-slate-500">Account/Growth:</span>{' '}
                               <strong className="text-blue-700 font-semibold">{store.accountOwnerName}</strong>
                             </div>
-                            <div className="text-[11px] mt-1.5">
+                            <div className="text-2xs mt-1.5">
                               <span className="text-slate-500">B2C Ops PIC:</span>{' '}
                               {isMultiOwner ? (
                                 <div className="mt-1 space-y-1">
                                   <div className="flex items-center gap-1.5 flex-wrap">
-                                    <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 inline-flex items-center gap-1">
+                                    <span className="px-1.5 py-0.5 rounded text-2xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 inline-flex items-center gap-1">
                                       <Users className="w-2.5 h-2.5 text-indigo-600" />
                                       <span>{store.b2cOwners!.length} PICs Đồng Phụ Trách</span>
                                     </span>
                                   </div>
                                   <div className="flex items-center gap-1.5 flex-wrap mt-1">
                                     {store.b2cOwners!.map((owner) => (
-                                      <span key={owner} className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
+                                      <span key={owner} className="px-2 py-0.5 rounded-md text-2xs font-semibold bg-purple-50 text-purple-700 border border-purple-200">
                                         {owner}
                                       </span>
                                     ))}
                                   </div>
                                   {store.assignmentNotes && (
-                                    <div className="text-[10px] text-slate-600 italic mt-0.5 bg-slate-50 px-2 py-1 rounded border border-slate-200" title={store.assignmentNotes}>
+                                    <div className="text-2xs text-slate-600 italic mt-0.5 bg-slate-50 px-2 py-1 rounded border border-slate-200" title={store.assignmentNotes}>
                                       {store.assignmentNotes}
                                     </div>
                                   )}
                                 </div>
                               ) : (
                                 <div className="mt-0.5">
-                                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
+                                  <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-purple-50 text-purple-700 border border-purple-200">
                                     {store.b2cOwnerName}
                                   </span>
                                   {store.assignmentNotes && (
-                                    <div className="text-[10px] text-slate-500 italic mt-0.5">
+                                    <div className="text-2xs text-slate-500 italic mt-0.5">
                                       {store.assignmentNotes}
                                     </div>
                                   )}
@@ -744,15 +746,15 @@ export const StoresView: React.FC<StoresViewProps> = ({
                             </div>
                           </td>
                           <td className="p-3.5 font-mono">
-                            <div className="font-bold text-emerald-700">
+                            <div className="font-semibold text-emerald-700">
                               {(store.monthlyTargetGmv / 1000000).toLocaleString('vi-VN')}M
                             </div>
-                            <div className="text-[10px] text-slate-500">
+                            <div className="text-2xs text-slate-500">
                               CP: {(store.monthlyBudget / 1000000).toLocaleString('vi-VN')}M ({((store.monthlyBudget / store.monthlyTargetGmv) * 100).toFixed(1)}%)
                             </div>
                           </td>
                           <td className="p-3.5 text-center">
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            <span className="px-2 py-0.5 rounded-full text-2xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
                               ● {store.accountStatus}
                             </span>
                           </td>
@@ -765,16 +767,16 @@ export const StoresView: React.FC<StoresViewProps> = ({
                                   title="Phân công hoặc gán thêm nhân sự phụ trách gian hàng này"
                                 >
                                   <Users className="w-3 h-3 text-blue-600" />
-                                  <span>Phân Công PICs</span>
+                                  <span>Phân công PICs</span>
                                 </button>
                               ) : (
-                                <span className="px-2 py-1 rounded-md text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 inline-flex items-center gap-1">
+                                <span className="px-2 py-1 rounded-md text-2xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 inline-flex items-center gap-1">
                                   <Check className="w-3 h-3 text-emerald-600" />
-                                  <span>Đang Phụ Trách</span>
+                                  <span>Đang phụ trách</span>
                                 </span>
                               )}
                             </div>
-                            <div className="text-[10px] text-slate-500 mt-1">
+                            <div className="text-2xs text-slate-500 mt-1">
                               {store.activeBookingsCount} Bookings • {store.activeContentsCount} Content
                             </div>
                           </td>
@@ -789,22 +791,22 @@ export const StoresView: React.FC<StoresViewProps> = ({
         </div>
       )}
 
-      {/* 🌟 RENDER MODULE 1: STAFF & STORE ASSIGNMENT MATRIX (MASTER DATA TAB) */}
+      {/* RENDER MODULE 1: STAFF & STORE ASSIGNMENT MATRIX (MASTER DATA TAB) */}
       {activeStoreTab === 'STAFF_MATRIX' && (
         <div className="space-y-4 animate-in fade-in duration-150">
           <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-2xs">
             <div>
-              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+              <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
                 <Users className="w-4 h-4 text-blue-600" />
-                <span>Danh Bạ Master Data Nhân Sự & Ma Trận Phân Bổ Gian Hàng</span>
+                <span>Danh bạ Master Data nhân sự & Ma trận phân bổ gian hàng</span>
               </h3>
               <p className="text-xs text-slate-500 mt-0.5">
-                Quản lý phân công chuyên viên Booking, Content & Growth. Một gian hàng có thể được 2 hoặc nhiều nhân sự đồng phụ trách để tối ưu hiệu suất.
+                Quản lý phân công chuyên viên booking, Content & Growth. Một gian hàng có thể được 2 hoặc nhiều nhân sự đồng phụ trách để tối ưu hiệu suất.
               </p>
             </div>
             {isManager && (
-              <span className="px-3 py-1 bg-emerald-50 border border-emerald-200 rounded-lg text-[11px] font-bold text-emerald-700 shrink-0">
-                Quyền Trưởng Phòng: Toàn Quyền Phân Công
+              <span className="px-3 py-1 bg-emerald-50 border border-emerald-200 rounded-lg text-2xs font-semibold text-emerald-700 shrink-0">
+                Quyền trưởng phòng: Toàn quyền phân công
               </span>
             )}
           </div>
@@ -828,22 +830,22 @@ export const StoresView: React.FC<StoresViewProps> = ({
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-2.5">
-                      <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white font-bold text-xs flex items-center justify-center shadow-xs shrink-0">
+                      <div className="w-9 h-9 rounded-xl bg-blue-600 text-white font-semibold text-xs flex items-center justify-center shadow-xs shrink-0">
                         {staff.avatar}
                       </div>
                       <div>
-                        <div className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
+                        <div className="font-semibold text-slate-900 text-xs flex items-center gap-1.5">
                           <span>{staff.name}</span>
                           {isCurrentUser && (
-                            <span className="badge-blue px-1.5 py-0.2 rounded text-[9px] font-bold">
+                            <span className="badge-blue px-1.5 py-0.2 rounded text-2xs font-semibold">
                               Bạn
                             </span>
                           )}
                         </div>
-                        <div className="text-[11px] text-slate-500">{staff.roleTitle}</div>
+                        <div className="text-2xs text-slate-500">{staff.roleTitle}</div>
                       </div>
                     </div>
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                    <span className={`px-2 py-0.5 rounded text-2xs font-semibold ${
                       staff.role === 'BOOKING' ? 'badge-purple' :
                       staff.role === 'CONTENT' ? 'badge-rose' :
                       staff.role === 'ACCOUNT' ? 'badge-blue' :
@@ -854,16 +856,16 @@ export const StoresView: React.FC<StoresViewProps> = ({
                   </div>
 
                   {/* Contact info */}
-                  <div className="text-[11px] text-slate-500 mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between">
+                  <div className="text-2xs text-slate-500 mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between">
                     <span>Email: <strong className="text-slate-800">{staff.email}</strong></span>
                     {staff.phone && <span className="font-mono text-slate-500">{staff.phone}</span>}
                   </div>
 
                   {/* Workload Capacity Bar */}
                   <div className="mt-3">
-                    <div className="flex items-center justify-between text-[11px] mb-1">
+                    <div className="flex items-center justify-between text-2xs mb-1">
                       <span className="text-slate-500 font-medium">Định mức phụ trách:</span>
-                      <span className={`font-bold ${isOverloaded ? 'text-rose-600' : 'text-emerald-600'}`}>
+                      <span className={`font-semibold ${isOverloaded ? 'text-rose-600' : 'text-emerald-600'}`}>
                         {assignedStores.length} / {staff.maxStoresCapacity} Gian hàng ({loadPct}%)
                       </span>
                     </div>
@@ -879,11 +881,11 @@ export const StoresView: React.FC<StoresViewProps> = ({
 
                   {/* Assigned Stores List */}
                   <div className="mt-3 pt-2.5 border-t border-slate-100 space-y-1.5">
-                    <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">
+                    <span className="text-2xs text-slate-500 font-semibold block">
                       Các Gian Hàng Phụ Trách ({assignedStores.length}):
                     </span>
                     {assignedStores.length === 0 ? (
-                      <div className="text-[11px] text-slate-400 italic py-1">
+                      <div className="text-2xs text-slate-400 italic py-1">
                         Chưa được phân công gian hàng nào
                       </div>
                     ) : (
@@ -891,17 +893,17 @@ export const StoresView: React.FC<StoresViewProps> = ({
                         {assignedStores.map(st => {
                           const isCoWorking = st.b2cOwners && st.b2cOwners.length > 1;
                           return (
-                            <div key={st.id} className="p-1.5 bg-slate-50 rounded-md border border-slate-200 flex items-center justify-between text-[11px]">
+                            <div key={st.id} className="p-1.5 bg-slate-50 rounded-md border border-slate-200 flex items-center justify-between text-2xs">
                               <div className="truncate pr-2">
-                                <span className="font-bold text-slate-900 block truncate">{st.storeName}</span>
-                                <span className="text-[10px] text-slate-500">{st.brandName} • {st.platform}</span>
+                                <span className="font-semibold text-slate-900 block truncate">{st.storeName}</span>
+                                <span className="text-2xs text-slate-500">{st.brandName} • {st.platform}</span>
                               </div>
                               {isCoWorking ? (
-                                <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 shrink-0" title={`Đồng phụ trách cùng: ${st.b2cOwners?.filter(o => o !== staff.name).join(', ')}`}>
+                                <span className="px-1.5 py-0.5 rounded text-2xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 shrink-0" title={`Đồng phụ trách cùng: ${st.b2cOwners?.filter(o => o !== staff.name).join(', ')}`}>
                                   Đồng phụ trách
                                 </span>
                               ) : (
-                                <span className="badge-slate px-1.5 py-0.5 rounded text-[9px] font-bold shrink-0">
+                                <span className="badge-slate px-1.5 py-0.5 rounded text-2xs font-semibold shrink-0">
                                   Đơn nhiệm
                                 </span>
                               )}
@@ -925,8 +927,8 @@ export const StoresView: React.FC<StoresViewProps> = ({
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
         <div className="p-3 bg-white rounded-xl border border-slate-200 shadow-2xs flex items-center justify-between">
           <div>
-            <span className="text-slate-500 text-[11px] block">Nhãn Hàng</span>
-            <div className="text-base font-bold text-slate-900 mt-0.5">
+            <span className="text-slate-500 text-2xs block">Nhãn hàng</span>
+            <div className="text-base font-semibold text-slate-900 mt-0.5">
               {brands.length} <span className="text-xs font-normal text-slate-400">Brands</span>
             </div>
           </div>
@@ -935,8 +937,8 @@ export const StoresView: React.FC<StoresViewProps> = ({
 
         <div className="p-3 bg-white rounded-xl border border-slate-200 shadow-2xs flex items-center justify-between">
           <div>
-            <span className="text-slate-500 text-[11px] block">Gian Hàng E-com</span>
-            <div className="text-base font-bold text-blue-600 mt-0.5">
+            <span className="text-slate-500 text-2xs block">Gian Hàng E-com</span>
+            <div className="text-base font-semibold text-blue-600 mt-0.5">
               {totalStores} <span className="text-xs font-normal text-slate-400">Shops</span>
             </div>
           </div>
@@ -945,8 +947,8 @@ export const StoresView: React.FC<StoresViewProps> = ({
 
         <div className="p-3 bg-white rounded-xl border border-slate-200 shadow-2xs flex items-center justify-between">
           <div>
-            <span className="text-slate-500 text-[11px] block">Ngân Sách Quản Lý</span>
-            <div className="text-base font-bold text-amber-600 mt-0.5 font-mono">
+            <span className="text-slate-500 text-2xs block">Ngân sách quản lý</span>
+            <div className="text-base font-semibold text-amber-600 mt-0.5 font-mono">
               {(totalBudget / 1000000).toLocaleString('vi-VN')}M đ
             </div>
           </div>
@@ -955,8 +957,8 @@ export const StoresView: React.FC<StoresViewProps> = ({
 
         <div className="p-3 bg-white rounded-xl border border-slate-200 shadow-2xs flex items-center justify-between">
           <div>
-            <span className="text-slate-500 text-[11px] block">GMV 30 Ngày</span>
-            <div className="text-base font-bold text-emerald-600 mt-0.5 font-mono">
+            <span className="text-slate-500 text-2xs block">GMV 30 Ngày</span>
+            <div className="text-base font-semibold text-emerald-600 mt-0.5 font-mono">
               {(totalGmv / 1000000000).toFixed(2)}B đ
             </div>
           </div>
@@ -973,7 +975,7 @@ export const StoresView: React.FC<StoresViewProps> = ({
             <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder="Tìm theo tên Brand, Công ty, Gian hàng TikTok/Shopee, hoặc Sản phẩm chủ lực..."
+              placeholder="Tìm theo tên Brand, công ty, gian hàng TikTok/Shopee, hoặc sản phẩm chủ lực..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white transition"
@@ -984,14 +986,14 @@ export const StoresView: React.FC<StoresViewProps> = ({
             {/* Filter by Platform */}
             <div className="flex items-center gap-1 bg-slate-100 border border-slate-200 rounded-xl p-1">
               {[
-                { key: 'ALL', label: 'Tất Cả Kênh' },
+                { key: 'ALL', label: 'Tất cả kênh' },
                 { key: 'TIKTOK_SHOP', label: 'TikTok Shop' },
                 { key: 'SHOPEE_MALL', label: 'Shopee Mall' },
               ].map(p => (
                 <button
                   key={p.key}
                   onClick={() => setSelectedPlatform(p.key)}
-                  className={`px-2.5 py-1 rounded-lg font-semibold transition text-[11px] ${
+                  className={`px-2.5 py-1 rounded-lg font-semibold transition text-2xs ${
                     selectedPlatform === p.key ? 'bg-blue-600 text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
@@ -1006,23 +1008,23 @@ export const StoresView: React.FC<StoresViewProps> = ({
               onChange={(e) => setSelectedStatus(e.target.value)}
               className="bg-white border border-slate-200 text-slate-800 rounded-xl px-3 py-1.5 text-xs font-medium focus:outline-none focus:border-blue-500 cursor-pointer shadow-2xs"
             >
-              <option value="ALL">Tất Cả Trạng Thái</option>
-              <option value="ACTIVE">Đang Hoạt Động (Active)</option>
-              <option value="PAUSED">Tạm Dừng (Paused)</option>
+              <option value="ALL">Tất cả trạng thái</option>
+              <option value="ACTIVE">Đang hoạt động</option>
+              <option value="PAUSED">Tạm dừng</option>
             </select>
           </div>
         </div>
 
         {/* Categories Bar */}
         <div className="flex items-center gap-1.5 pt-2 border-t border-slate-200 overflow-x-auto text-xs">
-          <span className="text-slate-500 text-[11px] font-medium shrink-0 flex items-center gap-1">
+          <span className="text-slate-500 text-2xs font-medium shrink-0 flex items-center gap-1">
             <Filter className="w-3.5 h-3.5 text-blue-600" /> Ngành hàng:
           </span>
           {categories.map(c => (
             <button
               key={c.key}
               onClick={() => setSelectedCategory(c.key)}
-              className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition whitespace-nowrap ${
+              className={`px-2.5 py-1 rounded-lg text-2xs font-medium transition whitespace-nowrap ${
                 selectedCategory === c.key
                   ? 'bg-blue-600 text-white shadow-2xs'
                   : 'bg-slate-100 text-slate-600 hover:text-slate-900 hover:bg-slate-200'
@@ -1046,21 +1048,21 @@ export const StoresView: React.FC<StoresViewProps> = ({
           return (
             <div key={brand.id} className="card-enterprise overflow-hidden border-slate-200 hover:border-blue-400/60 transition-all shadow-2xs">
               {/* Card Header */}
-              <div className="p-5 bg-gradient-to-r from-slate-50 via-white to-slate-50/50 border-b border-slate-200 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+              <div className="p-5 bg-slate-50 border-b border-slate-200 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
                 <div className="flex items-start gap-3.5">
-                  <div className={`w-11 h-11 rounded-md bg-gradient-to-br ${brand.color} text-white flex items-center justify-center font-black text-xl shadow-xs shrink-0 mt-0.5`}>
+                  <div className={`w-11 h-11 rounded-md  ${brand.color} text-white flex items-center justify-center font-semibold text-xl shadow-xs shrink-0 mt-0.5`}>
                     {brand.name.charAt(0)}
                   </div>
                   <div>
                     <div className="flex items-center flex-wrap gap-2">
-                      <h3 className="text-base font-bold text-slate-900">{brand.name}</h3>
-                      <span className="badge-blue px-2 py-0.5 rounded text-[10px] font-mono font-bold">
+                      <h3 className="text-base font-semibold text-slate-900">{brand.name}</h3>
+                      <span className="badge-blue px-2 py-0.5 rounded text-2xs font-mono font-semibold">
                         {brand.code}
                       </span>
-                      <span className="badge-purple px-2 py-0.5 rounded text-[10px] font-semibold">
+                      <span className="badge-purple px-2 py-0.5 rounded text-2xs font-semibold">
                         {brand.category}
                       </span>
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                      <span className={`px-2 py-0.5 rounded text-2xs font-semibold ${
                         brand.status === 'ACTIVE' ? 'badge-emerald' : 'badge-amber'
                       }`}>
                         {brand.status === 'ACTIVE' ? 'Đang Hoạt Động' : 'Tạm Dừng'}
@@ -1080,7 +1082,7 @@ export const StoresView: React.FC<StoresViewProps> = ({
                     className="px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition shadow-2xs cursor-pointer"
                   >
                     <Eye className="w-3.5 h-3.5 text-blue-600" />
-                    <span>Hồ Sơ 360° Brand</span>
+                    <span>Hồ sơ 360° Brand</span>
                   </button>
 
                   {/* For Booking Staff: Quick Book directly for this Brand */}
@@ -1098,15 +1100,15 @@ export const StoresView: React.FC<StoresViewProps> = ({
                     <div className="flex items-center gap-1.5 pl-2 border-l border-slate-200">
                       <button
                         onClick={() => handleOpenEdit(brand)}
-                        className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-xl text-xs font-bold transition flex items-center gap-1 cursor-pointer shadow-2xs"
-                        title="Chỉnh sửa thông tin Brand & Ngân sách"
+                        className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-xl text-xs font-semibold transition flex items-center gap-1 cursor-pointer shadow-2xs"
+                        title="Chỉnh sửa thông tin Brand & ngân sách"
                       >
                         <Edit3 className="w-3.5 h-3.5" />
-                        <span>Sửa Cấu Hình</span>
+                        <span>Sửa cấu hình</span>
                       </button>
                       <button
                         onClick={() => handleToggleStatus(brand.id)}
-                        className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer shadow-2xs ${
+                        className={`px-2.5 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer shadow-2xs ${
                           brand.status === 'ACTIVE' 
                             ? 'bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200'
                             : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200'
@@ -1125,18 +1127,18 @@ export const StoresView: React.FC<StoresViewProps> = ({
                 {/* Column 1: E-commerce Stores (TikTok Shop & Shopee Mall) */}
                 <div className="space-y-3">
                   <div className="flex items-center justify-between pb-1 border-b border-slate-200">
-                    <span className="font-bold text-slate-700 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                    <span className="font-semibold text-slate-700 text-2xs flex items-center gap-1.5">
                       <Store className="w-3.5 h-3.5 text-blue-600" />
                       Gian Hàng E-Commerce ({brand.stores.length} Shops)
                     </span>
-                    <span className="text-[10px] text-slate-500">Kênh bán chính thức</span>
+                    <span className="text-2xs text-slate-500">Kênh bán chính thức</span>
                   </div>
 
                   <div className="space-y-2">
                     {brand.stores.map((store) => (
                       <div key={store.id} className="p-3 bg-slate-50 rounded-xl border border-slate-200 hover:border-blue-300 transition">
                         <div className="flex items-center justify-between">
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                          <span className={`px-2 py-0.5 rounded text-2xs font-semibold ${
                             store.platform === 'TIKTOK_SHOP' ? 'bg-cyan-50 text-cyan-700 border border-cyan-200' : 'bg-orange-50 text-orange-700 border border-orange-200'
                           }`}>
                             {store.platform === 'TIKTOK_SHOP' ? 'TikTok Shop' : 'Shopee Mall'}
@@ -1145,23 +1147,23 @@ export const StoresView: React.FC<StoresViewProps> = ({
                             href={store.storeUrl}
                             target="_blank"
                             rel="noreferrer"
-                            className="text-slate-500 hover:text-blue-700 flex items-center gap-1 text-[11px] transition"
+                            className="text-slate-500 hover:text-blue-700 flex items-center gap-1 text-2xs transition"
                           >
                             <span>Mở Shop</span>
                             <ExternalLink className="w-3 h-3" />
                           </a>
                         </div>
 
-                        <div className="font-bold text-slate-900 text-xs mt-1.5">{store.storeName}</div>
-                        <div className="text-[10px] text-slate-500 font-mono">Mã Shop: {store.storeId}</div>
+                        <div className="font-semibold text-slate-900 text-xs mt-1.5">{store.storeName}</div>
+                        <div className="text-2xs text-slate-500 font-mono">Mã Shop: {store.storeId}</div>
 
-                        <div className="flex items-center justify-between pt-2 mt-2 border-t border-slate-200 text-[11px]">
+                        <div className="flex items-center justify-between pt-2 mt-2 border-t border-slate-200 text-2xs">
                           <span className="text-slate-500">Hoa hồng Affiliate:</span>
-                          <span className="font-bold text-emerald-700 font-mono">{store.affiliateRate}%</span>
+                          <span className="font-semibold text-emerald-700 font-mono">{store.affiliateRate}%</span>
                         </div>
 
                         {store.requiresSparkAds && (
-                          <div className="mt-1.5 px-2 py-0.5 bg-amber-50 border border-amber-200 text-amber-700 rounded text-[10px] font-semibold flex items-center gap-1">
+                          <div className="mt-1.5 px-2 py-0.5 bg-amber-50 border border-amber-200 text-amber-700 rounded text-2xs font-semibold flex items-center gap-1">
                             <Sparkles className="w-3 h-3 text-amber-600 shrink-0" />
                             <span>Bắt buộc mã Spark Ads (tránh hụt gap ngân sách)</span>
                           </div>
@@ -1174,26 +1176,26 @@ export const StoresView: React.FC<StoresViewProps> = ({
                 {/* Column 2: Hero Products (Sản phẩm chủ lực) */}
                 <div className="space-y-3">
                   <div className="flex items-center justify-between pb-1 border-b border-slate-200">
-                    <span className="font-bold text-slate-700 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                    <span className="font-semibold text-slate-700 text-2xs flex items-center gap-1.5">
                       <ShoppingBag className="w-3.5 h-3.5 text-pink-600" />
                       Sản Phẩm Chủ Lực Booking ({brand.heroProducts.length} SP)
                     </span>
-                    <span className="text-[10px] text-slate-500">Được cấp mẫu test</span>
+                    <span className="text-2xs text-slate-500">Được cấp mẫu test</span>
                   </div>
 
                   <div className="space-y-2">
                     {brand.heroProducts.map((prod) => (
                       <div key={prod.id} className="p-2.5 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
                         <div className="flex items-start justify-between gap-2">
-                          <span className="font-bold text-slate-900 line-clamp-1">{prod.productName}</span>
-                          <span className="text-[10px] font-mono text-slate-500 shrink-0">{prod.sku}</span>
+                          <span className="font-semibold text-slate-900 line-clamp-1">{prod.productName}</span>
+                          <span className="text-2xs font-mono text-slate-500 shrink-0">{prod.sku}</span>
                         </div>
-                        <div className="flex items-center justify-between text-[11px]">
-                          <span className="font-bold text-blue-700 font-mono">{prod.price.toLocaleString('vi-VN')} đ</span>
-                          <span className="badge-emerald px-1.5 py-0.2 rounded text-[10px] font-bold">
+                        <div className="flex items-center justify-between text-2xs">
+                          <span className="font-semibold text-blue-700 font-mono">{prod.price.toLocaleString('vi-VN')} đ</span>
+                          <span className="badge-emerald px-1.5 py-0.2 rounded text-2xs font-semibold">
                             HH: {prod.commissionRate}%
                           </span>
-                          <span className="text-[10px] text-slate-500">
+                          <span className="text-2xs text-slate-500">
                             Kho mẫu: <strong className="text-slate-800">{prod.sampleStock}</strong>
                           </span>
                         </div>
@@ -1201,9 +1203,9 @@ export const StoresView: React.FC<StoresViewProps> = ({
                     ))}
 
                     {/* Booking Guideline snippet */}
-                    <div className="p-2.5 bg-blue-50/70 rounded-xl border border-blue-200 text-[11px] text-blue-900 space-y-1">
-                      <span className="font-bold text-blue-800 block flex items-center gap-1">
-                        <Info className="w-3 h-3 text-blue-600" /> Guideline Tóm Tắt:
+                    <div className="p-2.5 bg-blue-50/70 rounded-xl border border-blue-200 text-2xs text-blue-900 space-y-1">
+                      <span className="font-semibold text-blue-800 block flex items-center gap-1">
+                        <Info className="w-3 h-3 text-blue-600" /> Guideline tóm tắt:
                       </span>
                       <p className="line-clamp-2 text-slate-600">
                         {brand.brandGuideline}
@@ -1215,21 +1217,21 @@ export const StoresView: React.FC<StoresViewProps> = ({
                 {/* Column 3: Ngân Sách, Hiệu Suất & Đội Ngũ 3 Bên (PIC) */}
                 <div className="space-y-3">
                   <div className="flex items-center justify-between pb-1 border-b border-slate-200">
-                    <span className="font-bold text-slate-700 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                    <span className="font-semibold text-slate-700 text-2xs flex items-center gap-1.5">
                       <DollarSign className="w-3.5 h-3.5 text-amber-600" />
-                      Ngân Sách, GMV & PIC Phụ Trách
+                      Ngân sách, GMV & PIC phụ trách
                     </span>
-                    <span className="text-[10px] text-slate-500">Tháng hiện tại</span>
+                    <span className="text-2xs text-slate-500">Tháng hiện tại</span>
                   </div>
 
                   {/* Progress bars */}
                   <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2.5">
                     {/* Budget progress */}
                     <div>
-                      <div className="flex justify-between text-[11px] mb-1">
-                        <span className="text-slate-500">Tiến độ Ngân sách:</span>
-                        <span className="font-bold text-amber-700 font-mono">
-                          {(brand.spentBudget / 1000000).toFixed(1)}M / {(brand.planBudget / 1000000).toFixed(1)}M ({budgetPercent}%)
+                      <div className="flex justify-between text-2xs mb-1">
+                        <span className="text-slate-500">Tiến độ ngân sách:</span>
+                        <span className="font-semibold text-amber-700 font-mono">
+                          {formatVndShort(brand.spentBudget)} / {formatVndShort(brand.planBudget)} ({budgetPercent}%)
                         </span>
                       </div>
                       <div className="h-1.5 w-full bg-slate-200 rounded-full overflow-hidden">
@@ -1239,10 +1241,10 @@ export const StoresView: React.FC<StoresViewProps> = ({
 
                     {/* GMV progress */}
                     <div>
-                      <div className="flex justify-between text-[11px] mb-1">
+                      <div className="flex justify-between text-2xs mb-1">
                         <span className="text-slate-500">Mục tiêu GMV 30:</span>
-                        <span className="font-bold text-emerald-700 font-mono">
-                          {(brand.currentGmv / 1000000).toFixed(0)}M / {(brand.targetGmv / 1000000).toFixed(0)}M ({gmvPercent}%)
+                        <span className="font-semibold text-emerald-700 font-mono">
+                          {formatVndShort(brand.currentGmv)} / {formatVndShort(brand.targetGmv)} ({gmvPercent}%)
                         </span>
                       </div>
                       <div className="h-1.5 w-full bg-slate-200 rounded-full overflow-hidden">
@@ -1251,16 +1253,16 @@ export const StoresView: React.FC<StoresViewProps> = ({
                     </div>
 
                     {/* Video target */}
-                    <div className="flex items-center justify-between text-[11px] pt-1 border-t border-slate-200">
-                      <span className="text-slate-500">Số Video đã Air / Chỉ tiêu:</span>
-                      <span className="font-bold text-blue-700 font-mono">
+                    <div className="flex items-center justify-between text-2xs pt-1 border-t border-slate-200">
+                      <span className="text-slate-500">Số video đã Air / chỉ tiêu:</span>
+                      <span className="font-semibold text-blue-700 font-mono">
                         {brand.airedVideos} / {brand.targetVideos} video ({videoPercent}%)
                       </span>
                     </div>
                   </div>
 
                   {/* 3-sided PICs */}
-                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1.5 text-[11px]">
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1.5 text-2xs">
                     <div className="flex items-center justify-between">
                       <span className="text-slate-500">Account PIC (Với Brand):</span>
                       <strong className="text-pink-600 font-semibold">{brand.accountPic}</strong>
@@ -1299,15 +1301,15 @@ export const StoresView: React.FC<StoresViewProps> = ({
           <div 
             role="dialog"
             aria-modal="true"
-            aria-label="Cấu Hình Nhãn Hàng & Gian Hàng"
+            aria-label="Cấu hình nhãn hàng & gian hàng"
             className="bg-white border border-slate-200 rounded-xl max-w-2xl w-full p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto text-xs text-slate-800"
           >
             <div className="flex items-center justify-between pb-3 border-b border-slate-200">
               <div>
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                  Quyền Trưởng Phòng
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-2xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  Quyền trưởng phòng
                 </span>
-                <h3 className="text-base font-bold text-slate-900 mt-1">
+                <h3 className="text-base font-semibold text-slate-900 mt-1">
                   {editingBrand ? `Cập Nhật Cấu Hình: ${editingBrand.name}` : 'Thêm Nhãn Hàng & Cấu Hình Gian Hàng Mới'}
                 </h3>
                 <p className="text-xs text-slate-500">
@@ -1331,7 +1333,7 @@ export const StoresView: React.FC<StoresViewProps> = ({
               {/* Row 1: Tên Brand & Công Ty */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="text-slate-700 font-semibold block mb-1">Tên Thương Hiệu (Brand Name):</label>
+                  <label className="text-slate-700 font-semibold block mb-1">Tên thương hiệu:</label>
                   <input
                     type="text"
                     required
@@ -1342,13 +1344,13 @@ export const StoresView: React.FC<StoresViewProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="text-slate-700 font-semibold block mb-1">Công Ty Chủ Quản / Pháp Nhân:</label>
+                  <label className="text-slate-700 font-semibold block mb-1">Công Ty chủ quản / pháp nhân:</label>
                   <input
                     type="text"
                     required
                     value={formData.companyName || ''}
                     onChange={(e) => setFormData(prev => ({ ...prev, companyName: e.target.value }))}
-                    placeholder="Ví dụ: Công ty Cổ phần Dược Mỹ phẩm CVI..."
+                    placeholder="Ví dụ: Công ty cổ phần dược mỹ phẩm CVI..."
                     className="w-full bg-white border border-slate-300 rounded-lg px-3.5 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                   />
                 </div>
@@ -1357,7 +1359,7 @@ export const StoresView: React.FC<StoresViewProps> = ({
               {/* Row 2: Ngành Hàng & Trạng Thái */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="text-slate-700 font-semibold block mb-1">Danh Mục Ngành Hàng:</label>
+                  <label className="text-slate-700 font-semibold block mb-1">Danh mục ngành hàng:</label>
                   <select
                     value={formData.category || 'Mẹ & Bé'}
                     onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
@@ -1374,52 +1376,52 @@ export const StoresView: React.FC<StoresViewProps> = ({
                 </div>
 
                 <div>
-                  <label className="text-slate-700 font-semibold block mb-1">Trạng Thái Vận Hành:</label>
+                  <label className="text-slate-700 font-semibold block mb-1">Trạng thái vận hành:</label>
                   <select
                     value={formData.status || 'ACTIVE'}
                     onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value as any }))}
                     className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-semibold"
                   >
-                    <option value="ACTIVE">Đang Hoạt Động (Active)</option>
-                    <option value="PAUSED">Tạm Dừng Chiến Dịch (Paused)</option>
-                    <option value="UPCOMING">Sắp Triển Khai (Upcoming)</option>
+                    <option value="ACTIVE">Đang hoạt động</option>
+                    <option value="PAUSED">Tạm dừng chiến dịch</option>
+                    <option value="UPCOMING">Sắp triển khai</option>
                   </select>
                 </div>
               </div>
 
               {/* Row 3: Ngân Sách & Mục Tiêu */}
               <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
-                <span className="font-bold text-amber-700 block text-[11px]">
-                  Phân Bổ Ngân Sách Tháng & Chỉ Tiêu GMV:
+                <span className="font-semibold text-amber-700 block text-2xs">
+                  Phân bổ ngân sách tháng & chỉ tiêu GMV:
                 </span>
                 <div className="grid grid-cols-3 gap-2.5">
                   <div>
-                    <label className="text-slate-600 font-medium block mb-1">Ngân Sách Phân Bổ (đ):</label>
+                    <label className="text-slate-600 font-medium block mb-1">Ngân sách phân bổ (đ):</label>
                     <input
                       type="number"
                       step={10000000}
                       value={formData.planBudget || 0}
                       onChange={(e) => setFormData(prev => ({ ...prev, planBudget: Number(e.target.value) }))}
-                      className="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-amber-700 font-mono font-bold focus:outline-none focus:border-blue-500"
+                      className="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-amber-700 font-mono font-semibold focus:outline-none focus:border-blue-500"
                     />
                   </div>
                   <div>
-                    <label className="text-slate-600 font-medium block mb-1">Chỉ Tiêu GMV 30 (đ):</label>
+                    <label className="text-slate-600 font-medium block mb-1">Chỉ tiêu GMV 30 (đ):</label>
                     <input
                       type="number"
                       step={10000000}
                       value={formData.targetGmv || 0}
                       onChange={(e) => setFormData(prev => ({ ...prev, targetGmv: Number(e.target.value) }))}
-                      className="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-emerald-700 font-mono font-bold focus:outline-none focus:border-blue-500"
+                      className="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-emerald-700 font-mono font-semibold focus:outline-none focus:border-blue-500"
                     />
                   </div>
                   <div>
-                    <label className="text-slate-600 font-medium block mb-1">Chỉ Tiêu Số Video:</label>
+                    <label className="text-slate-600 font-medium block mb-1">Chỉ tiêu số video:</label>
                     <input
                       type="number"
                       value={formData.targetVideos || 0}
                       onChange={(e) => setFormData(prev => ({ ...prev, targetVideos: Number(e.target.value) }))}
-                      className="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-blue-700 font-mono font-bold focus:outline-none focus:border-blue-500"
+                      className="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-blue-700 font-mono font-semibold focus:outline-none focus:border-blue-500"
                     />
                   </div>
                 </div>
@@ -1427,8 +1429,8 @@ export const StoresView: React.FC<StoresViewProps> = ({
 
               {/* Row 4: Phân Công 3 PIC */}
               <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
-                <span className="font-bold text-blue-700 block text-[11px]">
-                  Phân Công Nhân Sự 3 Bên Phụ Trách Brand:
+                <span className="font-semibold text-blue-700 block text-2xs">
+                  Phân công nhân sự 3 bên phụ trách Brand:
                 </span>
                 <div className="grid grid-cols-3 gap-2.5">
                   <div>
@@ -1437,7 +1439,7 @@ export const StoresView: React.FC<StoresViewProps> = ({
                       type="text"
                       value={formData.accountPic || ''}
                       onChange={(e) => setFormData(prev => ({ ...prev, accountPic: e.target.value }))}
-                      className="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-pink-700 font-bold focus:outline-none focus:border-blue-500"
+                      className="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-pink-700 font-semibold focus:outline-none focus:border-blue-500"
                     />
                   </div>
                   <div>
@@ -1446,7 +1448,7 @@ export const StoresView: React.FC<StoresViewProps> = ({
                       type="text"
                       value={formData.growthPic || ''}
                       onChange={(e) => setFormData(prev => ({ ...prev, growthPic: e.target.value }))}
-                      className="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-blue-700 font-bold focus:outline-none focus:border-blue-500"
+                      className="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-blue-700 font-semibold focus:outline-none focus:border-blue-500"
                     />
                   </div>
                   <div>
@@ -1455,7 +1457,7 @@ export const StoresView: React.FC<StoresViewProps> = ({
                       type="text"
                       value={formData.bookingPicLead || ''}
                       onChange={(e) => setFormData(prev => ({ ...prev, bookingPicLead: e.target.value }))}
-                      className="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-amber-700 font-bold focus:outline-none focus:border-blue-500"
+                      className="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs text-amber-700 font-semibold focus:outline-none focus:border-blue-500"
                     />
                   </div>
                 </div>
@@ -1483,11 +1485,11 @@ export const StoresView: React.FC<StoresViewProps> = ({
                   }}
                   className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-semibold transition"
                 >
-                  Hủy Bỏ
+                  Hủy bỏ
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold shadow-sm transition"
+                  className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold shadow-sm transition"
                 >
                   {editingBrand ? 'Lưu Thay Đổi Cấu Hình' : 'Tạo Nhãn Hàng & Lưu Gian Hàng'}
                 </button>
@@ -1513,11 +1515,11 @@ export const StoresView: React.FC<StoresViewProps> = ({
           <div className="card-enterprise max-w-2xl w-full p-6 bg-white border-slate-200 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto text-xs text-slate-800 animate-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between pb-3 border-b border-slate-200">
               <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${viewingBrand.color} text-white flex items-center justify-center font-bold text-lg shadow-md`}>
+                <div className={`w-10 h-10 rounded-xl  ${viewingBrand.color} text-white flex items-center justify-center font-semibold text-lg shadow-md`}>
                   {viewingBrand.name.charAt(0)}
                 </div>
                 <div>
-                  <h3 className="text-base font-black text-slate-900">{viewingBrand.name}</h3>
+                  <h3 className="text-base font-semibold text-slate-900">{viewingBrand.name}</h3>
                   <p className="text-slate-500">{viewingBrand.companyName} • {viewingBrand.category}</p>
                 </div>
               </div>
@@ -1534,19 +1536,19 @@ export const StoresView: React.FC<StoresViewProps> = ({
             <div className="space-y-4">
               {/* Stores list */}
               <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
-                <span className="font-bold text-blue-700 block text-[11px] uppercase tracking-wider">
-                  Các Gian Hàng E-Commerce Trực Thuộc:
+                <span className="font-semibold text-blue-700 block text-2xs">
+                  Các gian hàng E-Commerce trực thuộc:
                 </span>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {viewingBrand.stores.map((s) => (
                     <div key={s.id} className="p-2.5 bg-white rounded-lg border border-slate-200 shadow-2xs">
                       <div className="flex items-center justify-between">
-                        <span className="font-bold text-slate-900">{s.storeName}</span>
+                        <span className="font-semibold text-slate-900">{s.storeName}</span>
                         <a href={s.storeUrl} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline flex items-center gap-1">
                           <ExternalLink className="w-3 h-3" />
                         </a>
                       </div>
-                      <div className="text-[10px] text-slate-500 font-mono mt-0.5">Mã: {s.storeId} • Hoa hồng: <strong className="text-emerald-600">{s.affiliateRate}%</strong></div>
+                      <div className="text-2xs text-slate-500 font-mono mt-0.5">Mã: {s.storeId} • Hoa hồng: <strong className="text-emerald-600">{s.affiliateRate}%</strong></div>
                     </div>
                   ))}
                 </div>
@@ -1554,19 +1556,19 @@ export const StoresView: React.FC<StoresViewProps> = ({
 
               {/* Hero products */}
               <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
-                <span className="font-bold text-pink-700 block text-[11px] uppercase tracking-wider">
-                  Sản Phẩm Chủ Lực Cần Đẩy Số:
+                <span className="font-semibold text-pink-700 block text-2xs">
+                  Sản phẩm chủ lực cần đẩy số:
                 </span>
                 <div className="space-y-1.5">
                   {viewingBrand.heroProducts.map((p) => (
                     <div key={p.id} className="p-2.5 bg-white rounded-lg flex items-center justify-between border border-slate-200 shadow-2xs">
                       <div>
                         <span className="text-slate-900 font-medium">{p.productName}</span>
-                        <span className="text-slate-400 font-mono text-[10px] block">SKU: {p.sku}</span>
+                        <span className="text-slate-400 font-mono text-2xs block">SKU: {p.sku}</span>
                       </div>
                       <div className="text-right">
-                        <div className="font-bold text-blue-700 font-mono">{p.price.toLocaleString('vi-VN')} đ</div>
-                        <span className="badge-emerald px-1.5 py-0.5 rounded text-[10px] font-bold">Hoa hồng: {p.commissionRate}%</span>
+                        <div className="font-semibold text-blue-700 font-mono">{p.price.toLocaleString('vi-VN')} đ</div>
+                        <span className="badge-emerald px-1.5 py-0.5 rounded text-2xs font-semibold">Hoa hồng: {p.commissionRate}%</span>
                       </div>
                     </div>
                   ))}
@@ -1575,12 +1577,12 @@ export const StoresView: React.FC<StoresViewProps> = ({
 
               {/* Guidelines */}
               <div className="p-3 bg-blue-50/60 rounded-xl border border-blue-200 space-y-1.5">
-                <span className="font-bold text-amber-800 block text-[11px] uppercase tracking-wider">
-                  Quy Định Duyệt Nội Dung & Tiêu Chí KOC:
+                <span className="font-semibold text-amber-800 block text-2xs">
+                  Quy định duyệt nội dung & tiêu chí KOC:
                 </span>
                 <p className="text-slate-700 leading-relaxed">{viewingBrand.brandGuideline}</p>
                 {viewingBrand.forbiddenNotes && (
-                  <p className="text-rose-600 text-[11px] pt-1.5 border-t border-blue-200 font-medium">
+                  <p className="text-rose-600 text-2xs pt-1.5 border-t border-blue-200 font-medium">
                     Điều Cấm Kỵ: {viewingBrand.forbiddenNotes}
                   </p>
                 )}
@@ -1589,16 +1591,16 @@ export const StoresView: React.FC<StoresViewProps> = ({
               {/* PICs */}
               <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between">
                 <div>
-                  <span className="text-slate-500 block text-[10px]">Account PIC:</span>
-                  <span className="font-bold text-pink-700">{viewingBrand.accountPic}</span>
+                  <span className="text-slate-500 block text-2xs">Account PIC:</span>
+                  <span className="font-semibold text-pink-700">{viewingBrand.accountPic}</span>
                 </div>
                 <div>
-                  <span className="text-slate-500 block text-[10px]">Growth PIC:</span>
-                  <span className="font-bold text-blue-700">{viewingBrand.growthPic}</span>
+                  <span className="text-slate-500 block text-2xs">Growth PIC:</span>
+                  <span className="font-semibold text-blue-700">{viewingBrand.growthPic}</span>
                 </div>
                 <div>
-                  <span className="text-slate-500 block text-[10px]">Booking Lead:</span>
-                  <span className="font-bold text-amber-700">{viewingBrand.bookingPicLead}</span>
+                  <span className="text-slate-500 block text-2xs">Booking Lead:</span>
+                  <span className="font-semibold text-amber-700">{viewingBrand.bookingPicLead}</span>
                 </div>
               </div>
             </div>
@@ -1620,7 +1622,7 @@ export const StoresView: React.FC<StoresViewProps> = ({
                   }}
                   className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-sm transition flex items-center gap-1.5 text-xs cursor-pointer"
                 >
-                  <span>+ Khởi Tạo Booking Cho Brand Này</span>
+                  <span>+ Khởi tạo booking cho Brand này</span>
                 </button>
               )}
             </div>
@@ -1629,7 +1631,7 @@ export const StoresView: React.FC<StoresViewProps> = ({
       )}
 
       {/* ========================================================================= */}
-      {/* 🌟 7. MODAL: PHÂN CÔNG NHÂN SỰ PHỤ TRÁCH GIAN HÀNG (MANAGER ONLY) */}
+      {/* 7. MODAL: PHÂN CÔNG NHÂN SỰ PHỤ TRÁCH GIAN HÀNG (MANAGER ONLY) */}
       {/* ========================================================================= */}
       {assigningStore && (
         <div 
@@ -1644,11 +1646,11 @@ export const StoresView: React.FC<StoresViewProps> = ({
             {/* Header */}
             <div className="flex items-center justify-between pb-3 border-b border-slate-200">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-600 font-bold shadow-2xs">
+                <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-600 font-semibold shadow-2xs">
                   <Users className="w-5 h-5 text-blue-600" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-slate-900">Phân Công Nhân Sự Phụ Trách Shop</h3>
+                  <h3 className="text-sm font-semibold text-slate-900">Phân công nhân sự phụ trách Shop</h3>
                   <p className="text-slate-500 text-xs mt-0.5">
                     {assigningStore.storeName} • <span className="text-blue-700 font-semibold">{assigningStore.platform}</span> ({assigningStore.brandName})
                   </p>
@@ -1667,16 +1669,16 @@ export const StoresView: React.FC<StoresViewProps> = ({
               {/* Shop Overview Badges */}
               <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between text-xs">
                 <div>
-                  <span className="text-slate-500 block text-[11px]">Độ Khó 4P:</span>
-                  <span className="font-bold text-amber-700">{assigningStore.difficultyTier} (x{assigningStore.difficultyMultiplier})</span>
+                  <span className="text-slate-500 block text-2xs">Độ khó 4P:</span>
+                  <span className="font-semibold text-amber-700">{assigningStore.difficultyTier} (x{assigningStore.difficultyMultiplier})</span>
                 </div>
                 <div>
-                  <span className="text-slate-500 block text-[11px]">Target GMV:</span>
-                  <span className="font-bold text-emerald-700 font-mono">{(assigningStore.monthlyTargetGmv / 1000000).toLocaleString('vi-VN')}M đ</span>
+                  <span className="text-slate-500 block text-2xs">Target GMV:</span>
+                  <span className="font-semibold text-emerald-700 font-mono">{(assigningStore.monthlyTargetGmv / 1000000).toLocaleString('vi-VN')}M đ</span>
                 </div>
                 <div>
-                  <span className="text-slate-500 block text-[11px]">Hạn Mức Ngân Sách:</span>
-                  <span className="font-bold text-blue-700 font-mono">{(assigningStore.monthlyBudget / 1000000).toLocaleString('vi-VN')}M đ</span>
+                  <span className="text-slate-500 block text-2xs">Hạn mức ngân sách:</span>
+                  <span className="font-semibold text-blue-700 font-mono">{(assigningStore.monthlyBudget / 1000000).toLocaleString('vi-VN')}M đ</span>
                 </div>
               </div>
 
@@ -1704,7 +1706,7 @@ export const StoresView: React.FC<StoresViewProps> = ({
                   <label className="text-slate-800 font-semibold block">
                     2. B2C Ops PIC(s) <span className="text-purple-700 font-normal">(Vận hành Booking KOC &amp; Content)</span>:
                   </label>
-                  <span className="px-2 py-0.5 rounded text-xs font-bold bg-purple-100 text-purple-700 border border-purple-200">
+                  <span className="px-2 py-0.5 rounded text-xs font-semibold bg-purple-100 text-purple-700 border border-purple-200">
                     {assignFormState.b2cOwners.length} nhân sự được chọn
                   </span>
                 </div>
@@ -1740,11 +1742,11 @@ export const StoresView: React.FC<StoresViewProps> = ({
                             className="rounded border-slate-300 text-blue-600 focus:ring-0 cursor-pointer"
                           />
                           <div className="truncate">
-                            <div className="font-bold text-slate-900 text-xs truncate">{s.name}</div>
-                            <div className="text-[11px] text-slate-500 truncate">{s.roleTitle}</div>
+                            <div className="font-semibold text-slate-900 text-xs truncate">{s.name}</div>
+                            <div className="text-2xs text-slate-500 truncate">{s.roleTitle}</div>
                           </div>
                         </div>
-                        <span className="text-[11px] text-slate-500 font-mono shrink-0 pl-1">
+                        <span className="text-2xs text-slate-500 font-mono shrink-0 pl-1">
                           {currentStoreCount}/{s.maxStoresCapacity} shop
                         </span>
                       </div>
@@ -1756,13 +1758,13 @@ export const StoresView: React.FC<StoresViewProps> = ({
               {/* 3. Assignment Notes */}
               <div>
                 <label className="text-slate-800 font-semibold block mb-1">
-                  3. Ghi Chú Phân Chia Trách Nhiệm <span className="text-slate-500 font-normal">(Phân định vai trò)</span>:
+                  3. Ghi chú phân Chia trách nhiệm <span className="text-slate-500 font-normal">(Phân định vai trò)</span>:
                 </label>
                 <textarea
                   rows={2}
                   value={assignFormState.assignmentNotes}
                   onChange={(e) => setAssignFormState(prev => ({ ...prev, assignmentNotes: e.target.value }))}
-                  placeholder="Ví dụ: Khánh Vy phụ trách KOC Tier 1 & 2 (Celeb/Macro); Trần Minh Đức phụ trách KOC Tier 3 & Seeding Affiliate..."
+                  placeholder="Ví dụ: Khánh Vy phụ trách KOC Tier 1 & 2; Trần Minh Đức phụ trách KOC Tier 3 & Seeding Affiliate..."
                   className="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none text-xs"
                 />
               </div>
@@ -1774,11 +1776,11 @@ export const StoresView: React.FC<StoresViewProps> = ({
                   onClick={() => setAssigningStore(null)}
                   className="px-4 py-2 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 rounded-lg font-semibold transition cursor-pointer"
                 >
-                  Hủy Bỏ
+                  Hủy bỏ
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold shadow-xs transition flex items-center gap-1.5 cursor-pointer"
                 >
                   <UserCheck className="w-4 h-4" />
                   <span>Lưu Phân Công &amp; Cập Nhật Quyền</span>

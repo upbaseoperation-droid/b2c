@@ -432,7 +432,7 @@ export const INITIAL_INPUT_PLAN_STATE: InputPlanBreakdownState = {
   items: INITIAL_INPUT_PLAN_ITEMS
 };
 
-// 🌟 THUẬT TOÁN CÂN ĐỐI TỰ ĐỘNG (AUTO-BALANCE)
+// THUẬT TOÁN CÂN ĐỐI TỰ ĐỘNG (AUTO-BALANCE)
 export function autoBalancePlanItems(
   items: InputPlanRowItem[],
   totalBudget: number,
@@ -567,7 +567,7 @@ export function autoBalancePlanItems(
 }
 
 // =========================================================================
-// 🧪 4 BỘ DỮ LIỆU TEST GIẢ LẬP THEO CASE STUDY THỰC TẾ UPBASE
+// 4 BỘ DỮ LIỆU TEST GIẢ LẬP THEO CASE STUDY THỰC TẾ UPBASE
 // =========================================================================
 
 export interface MockPlanScenario {

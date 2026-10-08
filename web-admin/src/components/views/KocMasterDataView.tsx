@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
+import { formatVndShort } from '../../lib/format';
 import { 
   Users, 
   Sparkles, 
@@ -83,7 +84,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
     setTimeout(() => setCopiedKey(null), 2000);
   };
 
-  // 🌟 Filtered KOC List
+  // Filtered KOC List
   const filteredKocs = useMemo(() => {
     return localKocs.filter(koc => {
       const matchSearch =
@@ -193,7 +194,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
     <div className="space-y-6 animate-in fade-in duration-200">
       
       {/* Header Banner & Title */}
-      <div className="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden">
+      <div className="bg-blue-900 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden">
         <div className="absolute right-0 top-0 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
         
         <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
@@ -202,11 +203,11 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
               <ShieldCheck className="w-3.5 h-3.5 text-cyan-300" />
               Master Data &amp; Quản Trị Hồ Sơ Pháp Lý KOC
             </div>
-            <h2 className="text-2xl font-extrabold tracking-tight text-white">
-              Danh Bạ Master KOC (Creator Directory)
+            <h2 className="text-2xl font-semibold tracking-tight text-white">
+              Danh Bạ Master KOC
             </h2>
             <p className="text-xs text-blue-100/90 max-w-2xl leading-relaxed">
-              Cơ sở dữ liệu gốc quản lý danh sách KOC toàn phòng B2C: 4 phân loại chuẩn hóa (Khung lương, Segment, Tệp, Ngành hàng) và tích hợp <strong className="text-cyan-300 font-semibold">AI OCR bóc tách CCCD / ĐKKD</strong> phục vụ hợp đồng &amp; chi trả hoa hồng.
+              Cơ sở dữ liệu gốc quản lý danh sách KOC toàn phòng B2C: 4 phân loại chuẩn hóa (khung lương, Segment, tệp, ngành hàng) và tích hợp <strong className="text-cyan-300 font-semibold">AI OCR bóc tách CCCD / ĐKKD</strong> phục vụ hợp đồng &amp; chi trả hoa hồng.
             </p>
           </div>
 
@@ -217,10 +218,10 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
                 setOcrTargetKoc(null);
                 setIsOcrModalOpen(true);
               }}
-              className="btn-md bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 active:scale-[0.99] text-white font-bold text-xs shadow-lg shadow-blue-500/25 flex items-center gap-2 cursor-pointer"
+              className="btn-md bg-cyan-500 hover:bg-cyan-400 hover: active:scale-[0.99] text-white font-semibold text-xs shadow-lg flex items-center gap-2 cursor-pointer"
             >
               <Sparkles className="w-4 h-4 text-white" />
-              <span>Quét OCR CCCD / ĐKKD Thêm KOC</span>
+              <span>Quét OCR CCCD / ĐKKD thêm KOC</span>
             </button>
 
             {/* Secondary Action: Manual Create */}
@@ -229,7 +230,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
               className="btn-md bg-white/10 hover:bg-white/20 text-white border border-white/20 font-semibold text-xs transition flex items-center gap-1.5 cursor-pointer backdrop-blur-xs"
             >
               <UserPlus className="w-3.5 h-3.5" />
-              <span>+ Thêm Thủ Công</span>
+              <span>+ Thêm thủ công</span>
             </button>
           </div>
         </div>
@@ -237,30 +238,30 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
         {/* Mini KPI Cards Bar */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6 pt-5 border-t border-white/10">
           <div className="p-3 rounded-xl bg-white/5 border border-white/10">
-            <span className="text-[11px] text-slate-200 font-medium block">Tổng KOC Trong Master Data</span>
-            <span className="text-xl font-extrabold text-white mt-0.5 block">{totalKocs}</span>
+            <span className="text-2xs text-slate-200 font-medium block">Tổng KOC Trong Master Data</span>
+            <span className="text-xl font-semibold text-white mt-0.5 block">{totalKocs}</span>
           </div>
 
           <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
-            <span className="text-[11px] text-emerald-200 font-medium block flex items-center gap-1">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Đã Xác Thực CCCD / ĐKKD
+            <span className="text-2xs text-emerald-200 font-medium block flex items-center gap-1">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Đã xác thực CCCD / ĐKKD
             </span>
             <div className="flex items-baseline gap-2 mt-0.5">
-              <span className="text-xl font-extrabold text-emerald-300">{verifiedCount}</span>
+              <span className="text-xl font-semibold text-emerald-300">{verifiedCount}</span>
               <span className="text-xs text-emerald-200">({verifiedPercent}%)</span>
             </div>
           </div>
 
           <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
-            <span className="text-[11px] text-amber-200 font-medium block flex items-center gap-1">
-              <AlertTriangle className="w-3.5 h-3.5 text-amber-400" /> Chưa Có Thông Tin CCCD
+            <span className="text-2xs text-amber-200 font-medium block flex items-center gap-1">
+              <AlertTriangle className="w-3.5 h-3.5 text-amber-400" /> Chưa có thông tin CCCD
             </span>
-            <span className="text-xl font-extrabold text-amber-300 mt-0.5 block">{totalKocs - verifiedCount}</span>
+            <span className="text-xl font-semibold text-amber-300 mt-0.5 block">{totalKocs - verifiedCount}</span>
           </div>
 
           <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20">
-            <span className="text-[11px] text-blue-200 font-medium block">Sẵn Sàng Xuất Hợp Đồng</span>
-            <span className="text-xl font-extrabold text-cyan-300 mt-0.5 block">{verifiedCount} KOC</span>
+            <span className="text-2xs text-blue-200 font-medium block">Sẵn sàng xuất hợp đồng</span>
+            <span className="text-xl font-semibold text-cyan-300 mt-0.5 block">{verifiedCount} KOC</span>
           </div>
         </div>
       </div>
@@ -283,7 +284,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
 
           {/* Quick Status Pill Filters */}
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
-            <span className="text-slate-400 font-semibold text-[11px] shrink-0 mr-1 flex items-center gap-1">
+            <span className="text-slate-400 font-semibold text-2xs shrink-0 mr-1 flex items-center gap-1">
               <Filter className="w-3 h-3" /> Pháp lý:
             </span>
             <button
@@ -324,13 +325,13 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
         {/* 4 Core UpBase Dimensions Filter Row */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-2.5 border-t border-slate-100 text-xs">
           <div>
-            <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">1. Khung Lương (KL):</label>
+            <label className="text-2xs font-semibold text-slate-400 block mb-1">1. Khung Lương (KL):</label>
             <select
               value={selectedKL}
               onChange={(e) => setSelectedKL(e.target.value)}
               className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 font-medium focus:outline-none"
             >
-              <option value="ALL">Tất cả Khung Lương</option>
+              <option value="ALL">Tất cả khung lương</option>
               <option value="TAP UpAffiliate">TAP UpAffiliate (0đ)</option>
               <option value="KL1">KL1 (&lt;500k)</option>
               <option value="KL2">KL2 (500k - 1.5M)</option>
@@ -343,7 +344,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
           </div>
 
           <div>
-            <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">2. Segment Creator:</label>
+            <label className="text-2xs font-semibold text-slate-400 block mb-1">2. Segment Creator:</label>
             <select
               value={selectedSegment}
               onChange={(e) => setSelectedSegment(e.target.value)}
@@ -358,7 +359,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
           </div>
 
           <div>
-            <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">3. Ngành Hàng (Category):</label>
+            <label className="text-2xs font-semibold text-slate-400 block mb-1">3. Ngành hàng:</label>
             <select
               value={selectedKocCategory}
               onChange={(e) => setSelectedKocCategory(e.target.value)}
@@ -376,7 +377,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
           </div>
 
           <div>
-            <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">4. Tệp Kênh (25 Tệp):</label>
+            <label className="text-2xs font-semibold text-slate-400 block mb-1">4. Tệp kênh (25 tệp):</label>
             <select
               value={selectedTepKenh}
               onChange={(e) => setSelectedTepKenh(e.target.value)}
@@ -390,7 +391,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
               <option value="Beauty">Beauty / Làm đẹp</option>
               <option value="Gia đình">Gia đình</option>
               <option value="Unboxing">Unboxing</option>
-              <option value="Bác sỹ/chuyên gia">Bác sỹ / Chuyên gia</option>
+              <option value="Bác sỹ/chuyên gia">Bác sỹ / chuyên gia</option>
             </select>
           </div>
         </div>
@@ -401,12 +402,12 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
-              <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-500 font-bold text-[11px] uppercase tracking-wider">
-                <th className="py-3 px-4">KOC / Tên Kênh</th>
+              <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-500 font-semibold text-2xs">
+                <th className="py-3 px-4">KOC / tên kênh</th>
                 <th className="py-3 px-3">Phân Loại (KL &amp; Segment)</th>
                 <th className="py-3 px-3">Tệp Kênh &amp; Ngành</th>
-                <th className="py-3 px-4">Định Danh Pháp Lý (CCCD / ĐKKD)</th>
-                <th className="py-3 px-3">Tài Khoản Chi Trả</th>
+                <th className="py-3 px-4">Định danh pháp lý (CCCD / ĐKKD)</th>
+                <th className="py-3 px-3">Tài khoản chi trả</th>
                 <th className="py-3 px-3 text-right">Thao Tác</th>
               </tr>
             </thead>
@@ -421,18 +422,18 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
                     {/* KOC Stage & Real Name */}
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-2.5">
-                        <div className="w-9 h-9 rounded-xl bg-blue-100 text-blue-700 font-bold flex items-center justify-center text-xs shrink-0 border border-blue-200">
+                        <div className="w-9 h-9 rounded-xl bg-blue-100 text-blue-700 font-semibold flex items-center justify-center text-xs shrink-0 border border-blue-200">
                           {koc.stageName.slice(0, 2).toUpperCase()}
                         </div>
                         <div className="min-w-0">
-                          <span className="font-bold text-slate-900 block truncate leading-tight">
+                          <span className="font-semibold text-slate-900 block truncate leading-tight">
                             {koc.stageName}
                           </span>
-                          <span className="text-[11px] text-slate-500 block truncate leading-tight mt-0.5">
+                          <span className="text-2xs text-slate-500 block truncate leading-tight mt-0.5">
                             {koc.realName ? `${koc.realName} • ` : ''}{koc.channelId}
                           </span>
-                          <span className="text-[10px] text-slate-400 block mt-0.5">
-                            {(koc.followers / 1000).toFixed(0)}k followers • {(koc.rateCardVideo / 1000000).toFixed(1)}M/clip
+                          <span className="text-2xs text-slate-400 block mt-0.5">
+                            {(koc.followers / 1000).toFixed(0)}k followers • {formatVndShort(koc.rateCardVideo)}/clip
                           </span>
                         </div>
                       </div>
@@ -441,10 +442,10 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
                     {/* Salary Grade & Segment */}
                     <td className="py-3 px-3">
                       <div className="space-y-1">
-                        <span className="inline-block px-2 py-0.5 rounded font-bold text-[10px] bg-blue-50 text-blue-700 border border-blue-200">
+                        <span className="inline-block px-2 py-0.5 rounded font-semibold text-2xs bg-blue-50 text-blue-700 border border-blue-200">
                           {koc.salaryGrade}
                         </span>
-                        <span className="block text-[11px] text-slate-600 font-medium truncate">
+                        <span className="block text-2xs text-slate-600 font-medium truncate">
                           {koc.segment}
                         </span>
                       </div>
@@ -456,7 +457,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
                         <span className="font-semibold text-slate-800 block text-xs truncate">
                           {koc.tepKenh || koc.creatorCategory}
                         </span>
-                        <span className="text-[11px] text-slate-500 block truncate">
+                        <span className="text-2xs text-slate-500 block truncate">
                           {koc.kocCategory}
                         </span>
                       </div>
@@ -467,7 +468,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
                       {hasCccd ? (
                         <div className="space-y-1">
                           <div className="flex items-center gap-1.5">
-                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold border ${
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-semibold border ${
                               isCompanyOcr 
                                 ? 'bg-purple-50 text-purple-700 border-purple-200' 
                                 : 'bg-emerald-50 text-emerald-700 border-emerald-200'
@@ -477,7 +478,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
                                 ? (isCompanyOcr ? 'ĐKKD (OCR)' : 'CCCD (OCR)') 
                                 : 'CCCD Hợp Lệ'}
                             </span>
-                            <span className="font-mono text-xs font-bold text-slate-900">
+                            <span className="font-mono text-xs font-semibold text-slate-900">
                               {koc.cccd}
                             </span>
                             <button
@@ -488,13 +489,13 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
                               {copiedKey === koc.id ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
                             </button>
                           </div>
-                          <span className="text-[10px] text-slate-500 block truncate max-w-xs" title={koc.permanentAddress || koc.shippingAddress}>
+                          <span className="text-2xs text-slate-500 block truncate max-w-xs" title={koc.permanentAddress || koc.shippingAddress}>
                             {koc.permanentAddress || koc.shippingAddress || 'Hà Nội'}
                           </span>
                         </div>
                       ) : (
                         <div className="flex items-center gap-2">
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
                             <AlertTriangle className="w-3 h-3" />
                             Thiếu CCCD
                           </span>
@@ -503,7 +504,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
                               setOcrTargetKoc(koc);
                               setIsOcrModalOpen(true);
                             }}
-                            className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-600 hover:bg-blue-700 text-white transition flex items-center gap-1 shadow-2xs"
+                            className="px-2 py-0.5 rounded text-2xs font-semibold bg-blue-600 hover:bg-blue-700 text-white transition flex items-center gap-1 shadow-2xs"
                             title="Quét CCCD bằng OCR cho KOC này"
                           >
                             <Camera className="w-3 h-3" />
@@ -516,10 +517,10 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
                     {/* Bank Account */}
                     <td className="py-3 px-3">
                       <div className="space-y-0.5">
-                        <span className="font-mono font-bold text-xs text-slate-900 block">
+                        <span className="font-mono font-semibold text-xs text-slate-900 block">
                           {koc.bankAccount || 'Chưa cập nhật'}
                         </span>
-                        <span className="text-[11px] text-slate-500 block">
+                        <span className="text-2xs text-slate-500 block">
                           {koc.bankName || 'Ngân hàng'}
                         </span>
                       </div>

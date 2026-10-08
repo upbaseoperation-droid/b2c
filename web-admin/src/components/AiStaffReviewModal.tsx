@@ -189,7 +189,7 @@ export const AiStaffReviewModal: React.FC<AiStaffReviewModalProps> = ({
           'Đẩy mạnh booking các creator nhóm KL2-KL3 để tối ưu CIR.'
         ],
         suggestedManagerNote: `Duyệt tiến độ của ${selectedStaffName}. Nhắc nhở nhân viên bám sát tiến độ video của các KOC trọng điểm tuần W4.`,
-        suggestedLarkPingMessage: `👋 ${selectedStaffName} ơi, kế hoạch tuần của bạn đã được duyệt. Tiếp tục bám sát tiến độ nhé!`,
+        suggestedLarkPingMessage: `${selectedStaffName} ơi, kế hoạch tuần của bạn đã được duyệt. Tiếp tục bám sát tiến độ nhé!`,
         evaluatedAt: new Date().toISOString(),
         providerUsed: 'Upbase B2C Operations Core Engine'
       });
@@ -227,11 +227,11 @@ export const AiStaffReviewModal: React.FC<AiStaffReviewModalProps> = ({
       <div 
         role="dialog"
         aria-modal="true"
-        aria-label="Trợ Lý AI Nhận Xét Báo Cáo, Tiến Độ & Hiệu Suất Nhân Viên"
+        aria-label="Trợ lý AI nhận xét báo cáo, tiến độ & hiệu suất nhân viên"
         className="bg-white border border-slate-200 rounded-xl w-full max-w-4xl shadow-2xl overflow-hidden my-6"
       >
         {/* Header Banner */}
-        <div className="p-5 bg-gradient-to-r from-purple-900 via-indigo-900 to-slate-900 text-white relative">
+        <div className="p-5 bg-purple-900 text-white relative">
           <button
             type="button"
             onClick={onClose}
@@ -243,20 +243,20 @@ export const AiStaffReviewModal: React.FC<AiStaffReviewModalProps> = ({
 
           <div className="space-y-1.5 max-w-2xl">
             <div className="flex items-center gap-2">
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider bg-purple-500/30 text-purple-200 border border-purple-400/40 uppercase flex items-center gap-1.5">
-                <Sparkles className="w-3 h-3 text-purple-300 animate-pulse" />
+              <span className="px-2.5 py-0.5 rounded-full text-2xs font-semibold bg-purple-500/30 text-purple-200 border border-purple-400/40 flex items-center gap-1.5">
+                <Sparkles className="w-3 h-3 text-purple-300" />
                 Next.js API Engine • /api/ai/employee-review
               </span>
               <span className="text-xs text-purple-300 font-medium">
                 Upbase Operations Suite v2.5
               </span>
             </div>
-            <h3 className="text-lg font-bold tracking-tight text-white flex items-center gap-2">
+            <h3 className="text-lg font-semibold tracking-tight text-white flex items-center gap-2">
               <Bot className="w-5 h-5 text-purple-400" />
               <span>Trợ Lý AI Nhận Xét Báo Cáo, Tiến Độ &amp; Hiệu Suất Nhân Viên</span>
             </h3>
             <p className="text-xs text-purple-200/90 leading-relaxed">
-              Tích hợp API thông minh phân tích toàn diện 4 trục: Tỷ lệ lấp đầy kế hoạch video, Kỷ luật tuân thủ 8 quy tắc SLA, Ma trận độ khó Store P3 và Đề xuất huấn luyện 1-on-1 cho Trưởng phòng.
+              Tích hợp API thông minh phân tích toàn diện 4 trục: Tỷ lệ lấp đầy kế hoạch video, kỷ luật tuân thủ 8 quy tắc SLA, Ma trận độ khó Store P3 và đề xuất huấn luyện 1-on-1 cho trưởng phòng.
             </p>
           </div>
         </div>
@@ -290,21 +290,21 @@ export const AiStaffReviewModal: React.FC<AiStaffReviewModalProps> = ({
 
               {/* Review Type Pills */}
               <div className="sm:col-span-8 space-y-1">
-                <label className="font-semibold text-slate-700">Trọng tâm nhận xét (Review Focus):</label>
+                <label className="font-semibold text-slate-700">Trọng tâm nhận xét:</label>
                 <div className="flex flex-wrap gap-1.5">
                   {[
-                    { key: 'COMPREHENSIVE', label: '🌟 Toàn Diện' },
-                    { key: 'PROGRESS_PACING', label: '⏱️ Tiến Độ Lên Sóng' },
-                    { key: 'SLA_QUALITY', label: '🛡️ Kỷ Luật SLA' },
-                    { key: 'P3_WORKLOAD', label: '🏆 Workload & P3' },
-                    { key: 'COACHING_ONE_ON_ONE', label: '💬 Coaching 1-on-1' }
+                    { key: 'COMPREHENSIVE', label: 'Toàn diện' },
+                    { key: 'PROGRESS_PACING', label: 'Tiến độ lên sóng' },
+                    { key: 'SLA_QUALITY', label: 'Kỷ luật SLA' },
+                    { key: 'P3_WORKLOAD', label: 'Workload & P3' },
+                    { key: 'COACHING_ONE_ON_ONE', label: 'Coaching 1-on-1' }
                   ].map((tab) => (
                     <button
                       key={tab.key}
                       onClick={() => setReviewType(tab.key as AiReviewType)}
-                      className={`px-2.5 py-1.5 rounded-md font-medium text-[11px] transition ${
+                      className={`px-2.5 py-1.5 rounded-md font-medium text-2xs transition ${
                         reviewType === tab.key
-                          ? 'bg-purple-600 text-white font-bold shadow-xs'
+                          ? 'bg-purple-600 text-white font-semibold shadow-xs'
                           : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
                       }`}
                     >
@@ -316,7 +316,7 @@ export const AiStaffReviewModal: React.FC<AiStaffReviewModalProps> = ({
             </div>
 
             {/* Quick Staff Metric Summary Strip */}
-            <div className="p-2.5 bg-white rounded border border-slate-200/80 flex flex-wrap items-center justify-between gap-3 text-[11px]">
+            <div className="p-2.5 bg-white rounded border border-slate-200/80 flex flex-wrap items-center justify-between gap-3 text-2xs">
               <div>
                 <span className="text-slate-500">Kế hoạch W1-W4: </span>
                 <strong className="text-slate-900">
@@ -324,7 +324,7 @@ export const AiStaffReviewModal: React.FC<AiStaffReviewModalProps> = ({
                 </strong>
               </div>
               <div>
-                <span className="text-slate-500">SLA Đúng Hạn: </span>
+                <span className="text-slate-500">SLA đúng hạn: </span>
                 <strong className={currentMetrics.slaData && currentMetrics.slaData.onTimeRate >= 92 ? 'text-emerald-700' : 'text-amber-700'}>
                   {currentMetrics.slaData?.onTimeRate || 94.5}%
                 </strong>
@@ -343,10 +343,10 @@ export const AiStaffReviewModal: React.FC<AiStaffReviewModalProps> = ({
               <button
                 type="button"
                 onClick={() => setShowApiSettings(!showApiSettings)}
-                className="text-[11px] font-semibold text-purple-700 hover:text-purple-800 flex items-center gap-1 transition"
+                className="text-2xs font-semibold text-purple-700 hover:text-purple-800 flex items-center gap-1 transition"
               >
                 <Key className="w-3 h-3" />
-                <span>Cấu hình API kết nối AI (Tùy chọn API Key Gemini / OpenAI)</span>
+                <span>Cấu hình API kết nối AI (tùy chọn API Key Gemini / OpenAI)</span>
                 {showApiSettings ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
               </button>
 
@@ -354,21 +354,21 @@ export const AiStaffReviewModal: React.FC<AiStaffReviewModalProps> = ({
                 <div className="mt-2.5 p-3 rounded-md bg-purple-50/50 border border-purple-200 space-y-2.5 animate-in fade-in duration-150">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-1">
-                      <label className="text-[11px] font-semibold text-purple-900">Nhà cung cấp AI API:</label>
+                      <label className="text-2xs font-semibold text-purple-900">Nhà cung cấp AI API:</label>
                       <select
                         value={apiProvider}
                         onChange={(e) => setApiProvider(e.target.value as any)}
                         className="w-full p-1.5 bg-white border border-purple-200 rounded text-xs text-slate-800 font-medium"
                       >
-                        <option value="AUTO">🤖 Tự động (Upbase Cloud Core / Khuyến nghị)</option>
-                        <option value="GEMINI">✨ Google Gemini 1.5 Flash (API Key)</option>
-                        <option value="OPENAI">🧠 OpenAI GPT-4o-mini (API Key)</option>
+                        <option value="AUTO">Tự động (Upbase Cloud Core / khuyến nghị)</option>
+                        <option value="GEMINI">Google Gemini 1.5 Flash (API Key)</option>
+                        <option value="OPENAI">OpenAI GPT-4o-mini (API Key)</option>
                       </select>
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-[11px] font-semibold text-purple-900">
-                        Khóa API Key (Tùy chọn, để trống nếu dùng Cloud mặc định):
+                      <label className="text-2xs font-semibold text-purple-900">
+                        Khóa API Key (tùy chọn, để trống nếu dùng Cloud mặc định):
                       </label>
                       <input
                         type="password"
@@ -381,8 +381,8 @@ export const AiStaffReviewModal: React.FC<AiStaffReviewModalProps> = ({
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[11px] font-semibold text-purple-900">
-                      Ghi chú / Chỉ đạo thêm cho AI (Custom Prompt):
+                    <label className="text-2xs font-semibold text-purple-900">
+                      Ghi chú / Chỉ đạo thêm cho AI:
                     </label>
                     <input
                       type="text"
@@ -402,7 +402,7 @@ export const AiStaffReviewModal: React.FC<AiStaffReviewModalProps> = ({
                 type="button"
                 onClick={handleRunAiReview}
                 disabled={isLoading}
-                className={`w-full py-2.5 px-4 rounded-md font-bold text-white text-xs shadow-sm flex items-center justify-center gap-2 transition ${
+                className={`w-full py-2.5 px-4 rounded-md font-semibold text-white text-xs shadow-sm flex items-center justify-center gap-2 transition ${
                   isLoading
                     ? 'bg-purple-300 cursor-not-allowed'
                     : 'bg-purple-600 hover:bg-purple-700 active:scale-98'
@@ -416,7 +416,7 @@ export const AiStaffReviewModal: React.FC<AiStaffReviewModalProps> = ({
                 ) : (
                   <>
                     <Sparkles className="w-4 h-4" />
-                    <span>Bắt Đầu Nhận Xét Bằng AI (Run AI API)</span>
+                    <span>Bắt đầu nhận xét bằng AI</span>
                   </>
                 )}
               </button>
@@ -437,7 +437,7 @@ export const AiStaffReviewModal: React.FC<AiStaffReviewModalProps> = ({
                   : 'border-l-rose-500 bg-rose-50/30 border-rose-200'
               }`}>
                 <div className="flex items-center gap-4">
-                  <div className={`w-14 h-14 rounded-full flex flex-col items-center justify-center font-bold border-4 shrink-0 ${
+                  <div className={`w-14 h-14 rounded-full flex flex-col items-center justify-center font-semibold border-4 shrink-0 ${
                     reviewResult.overallGrade === 'Xuất sắc'
                       ? 'border-emerald-500 text-emerald-800 bg-emerald-50'
                       : reviewResult.overallGrade === 'Đạt chuẩn'
@@ -447,12 +447,12 @@ export const AiStaffReviewModal: React.FC<AiStaffReviewModalProps> = ({
                       : 'border-rose-500 text-rose-800 bg-rose-50'
                   }`}>
                     <span className="text-lg leading-none">{reviewResult.performanceScore}</span>
-                    <span className="text-[9px] font-normal text-slate-500">/ 100đ</span>
+                    <span className="text-2xs font-normal text-slate-500">/ 100đ</span>
                   </div>
 
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
-                      <span className={`px-2 py-0.5 rounded text-[11px] font-extrabold uppercase border ${
+                      <span className={`px-2 py-0.5 rounded text-2xs font-semibold  border ${
                         reviewResult.overallGrade === 'Xuất sắc'
                           ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
                           : reviewResult.overallGrade === 'Đạt chuẩn'
@@ -464,7 +464,7 @@ export const AiStaffReviewModal: React.FC<AiStaffReviewModalProps> = ({
                         Xếp Loại: {reviewResult.overallGrade}
                       </span>
 
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                      <span className={`px-2 py-0.5 rounded text-2xs font-semibold ${
                         reviewResult.pacingStatus === 'AHEAD'
                           ? 'bg-emerald-100 text-emerald-800'
                           : reviewResult.pacingStatus === 'ON_TRACK'
@@ -473,10 +473,10 @@ export const AiStaffReviewModal: React.FC<AiStaffReviewModalProps> = ({
                           ? 'bg-amber-100 text-amber-800'
                           : 'bg-rose-100 text-rose-800'
                       }`}>
-                        {reviewResult.pacingStatus === 'AHEAD' && '⚡ Vượt tiến độ'}
-                        {reviewResult.pacingStatus === 'ON_TRACK' && '🟢 Đúng tiến độ'}
-                        {reviewResult.pacingStatus === 'BEHIND' && '🟡 Chậm tiến độ'}
-                        {reviewResult.pacingStatus === 'CRITICAL_DELAY' && '🔴 Báo động trễ hạn'}
+                        {reviewResult.pacingStatus === 'AHEAD' && 'Vượt tiến độ'}
+                        {reviewResult.pacingStatus === 'ON_TRACK' && 'Đúng tiến độ'}
+                        {reviewResult.pacingStatus === 'BEHIND' && 'Chậm tiến độ'}
+                        {reviewResult.pacingStatus === 'CRITICAL_DELAY' && 'Báo động trễ hạn'}
                       </span>
                     </div>
 
@@ -487,7 +487,7 @@ export const AiStaffReviewModal: React.FC<AiStaffReviewModalProps> = ({
                 </div>
 
                 <div className="text-right shrink-0">
-                  <span className="text-[10px] text-slate-500 block font-mono">
+                  <span className="text-2xs text-slate-500 block font-mono">
                     Provider: {reviewResult.providerUsed}
                   </span>
                 </div>
@@ -498,7 +498,7 @@ export const AiStaffReviewModal: React.FC<AiStaffReviewModalProps> = ({
                 <div className="p-3 bg-amber-50 border border-amber-300 rounded-md text-amber-900 text-xs flex items-start gap-2">
                   <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                   <div>
-                    <strong className="font-bold">Cảnh Báo Quản Trị Tải (Capacity Alert): </strong>
+                    <strong className="font-semibold">Cảnh báo quản trị tải: </strong>
                     <span>{reviewResult.burnoutOrCapacityAlert}</span>
                   </div>
                 </div>
@@ -508,14 +508,14 @@ export const AiStaffReviewModal: React.FC<AiStaffReviewModalProps> = ({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Strengths */}
                 <div className="card-enterprise p-4 border-emerald-200 bg-emerald-50/15 space-y-2">
-                  <h4 className="font-bold text-emerald-900 flex items-center gap-1.5 text-xs uppercase tracking-wider">
+                  <h4 className="font-semibold text-emerald-900 flex items-center gap-1.5 text-xs">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                     <span>Điểm Mạnh Nổi Bật ({reviewResult.strengths.length})</span>
                   </h4>
                   <ul className="space-y-1.5 text-slate-700 text-xs">
                     {reviewResult.strengths.map((s, idx) => (
                       <li key={idx} className="flex items-start gap-2">
-                        <span className="text-emerald-600 font-bold">•</span>
+                        <span className="text-emerald-600 font-semibold">•</span>
                         <span>{s}</span>
                       </li>
                     ))}
@@ -524,14 +524,14 @@ export const AiStaffReviewModal: React.FC<AiStaffReviewModalProps> = ({
 
                 {/* Bottlenecks & Risks */}
                 <div className="card-enterprise p-4 border-amber-200 bg-amber-50/15 space-y-2">
-                  <h4 className="font-bold text-amber-900 flex items-center gap-1.5 text-xs uppercase tracking-wider">
+                  <h4 className="font-semibold text-amber-900 flex items-center gap-1.5 text-xs">
                     <AlertTriangle className="w-4 h-4 text-amber-600" />
                     <span>Nút Thắt &amp; Rủi Ro Cần Khắc Phục ({reviewResult.bottlenecksAndRisks.length})</span>
                   </h4>
                   <ul className="space-y-1.5 text-slate-700 text-xs">
                     {reviewResult.bottlenecksAndRisks.map((b, idx) => (
                       <li key={idx} className="flex items-start gap-2">
-                        <span className="text-amber-600 font-bold">•</span>
+                        <span className="text-amber-600 font-semibold">•</span>
                         <span>{b}</span>
                       </li>
                     ))}
@@ -541,14 +541,14 @@ export const AiStaffReviewModal: React.FC<AiStaffReviewModalProps> = ({
 
               {/* Actionable Coaching for Manager */}
               <div className="card-enterprise p-4 bg-purple-50/30 border-purple-200 space-y-2">
-                <h4 className="font-bold text-purple-900 flex items-center gap-1.5 text-xs uppercase tracking-wider">
+                <h4 className="font-semibold text-purple-900 flex items-center gap-1.5 text-xs">
                   <TrendingUp className="w-4 h-4 text-purple-600" />
                   <span>Chỉ Dẫn Hành Động &amp; Huấn Luyện 1-on-1 Dành Cho Trưởng Phòng</span>
                 </h4>
                 <div className="space-y-1.5 text-slate-700 text-xs">
                   {reviewResult.actionableCoaching.map((c, idx) => (
                     <div key={idx} className="p-2 rounded bg-white border border-purple-100 flex items-start gap-2">
-                      <span className="px-1.5 py-0.2 bg-purple-100 text-purple-800 rounded font-bold text-[10px]">
+                      <span className="px-1.5 py-0.2 bg-purple-100 text-purple-800 rounded font-semibold text-2xs">
                         0{idx + 1}
                       </span>
                       <span>{c}</span>
@@ -560,9 +560,9 @@ export const AiStaffReviewModal: React.FC<AiStaffReviewModalProps> = ({
               {/* Suggested Manager Note (Ready to Paste) */}
               <div className="card-enterprise p-4 bg-white space-y-2 border-slate-300">
                 <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                  <h4 className="font-bold text-slate-900 flex items-center gap-1.5 text-xs uppercase tracking-wider">
+                  <h4 className="font-semibold text-slate-900 flex items-center gap-1.5 text-xs">
                     <MessageSquare className="w-4 h-4 text-blue-600" />
-                    <span>Lời Phê Mẫu Của Trưởng Phòng (Suggested Manager Note)</span>
+                    <span>Lời phê mẫu của trưởng phòng</span>
                   </h4>
                   <div className="flex items-center gap-2">
                     {onApplyManagerNote && (
@@ -571,15 +571,15 @@ export const AiStaffReviewModal: React.FC<AiStaffReviewModalProps> = ({
                           onApplyManagerNote(reviewResult.suggestedManagerNote);
                           onClose();
                         }}
-                        className="px-2.5 py-1 rounded bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold text-[11px] transition flex items-center gap-1"
+                        className="px-2.5 py-1 rounded bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold text-2xs transition flex items-center gap-1"
                       >
                         <Check className="w-3.5 h-3.5" />
-                        <span>Áp Dụng Vào Form Duyệt Plan</span>
+                        <span>Áp dụng vào Form duyệt Plan</span>
                       </button>
                     )}
                     <button
                       onClick={() => handleCopyText('manager-note', reviewResult.suggestedManagerNote)}
-                      className="px-2.5 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-[11px] transition flex items-center gap-1"
+                      className="px-2.5 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-2xs transition flex items-center gap-1"
                     >
                       {copiedKey === 'manager-note' ? (
                         <>
@@ -602,11 +602,11 @@ export const AiStaffReviewModal: React.FC<AiStaffReviewModalProps> = ({
               </div>
 
               {/* Lark Bot Quick Notification Message */}
-              <div className="card-enterprise p-4 bg-gradient-to-r from-blue-50/50 to-indigo-50/40 border-blue-200 space-y-2">
+              <div className="card-enterprise p-4 bg-blue-50/50 border-blue-200 space-y-2">
                 <div className="flex items-center justify-between">
-                  <h4 className="font-bold text-blue-950 flex items-center gap-1.5 text-xs">
+                  <h4 className="font-semibold text-blue-950 flex items-center gap-1.5 text-xs">
                     <Send className="w-4 h-4 text-blue-600" />
-                    <span>Tin Nhắn Nhắc Nhở Tức Thì Qua Lark Bot (Kèm Emoji)</span>
+                    <span>Tin nhắn nhắc nhở tức thì Qua Lark Bot (kèm Emoji)</span>
                   </h4>
                   <button
                     onClick={handleSendLarkPing}
@@ -615,7 +615,7 @@ export const AiStaffReviewModal: React.FC<AiStaffReviewModalProps> = ({
                     {pingSuccess ? (
                       <>
                         <Check className="w-3.5 h-3.5" />
-                        <span>Đã Bắn Tin Nhắn!</span>
+                        <span>Đã bắn tin nhắn!</span>
                       </>
                     ) : (
                       <>
@@ -625,7 +625,7 @@ export const AiStaffReviewModal: React.FC<AiStaffReviewModalProps> = ({
                     )}
                   </button>
                 </div>
-                <p className="text-[11px] text-blue-900 bg-white p-2.5 rounded border border-blue-200 font-medium">
+                <p className="text-2xs text-blue-900 bg-white p-2.5 rounded border border-blue-200 font-medium">
                   {reviewResult.suggestedLarkPingMessage}
                 </p>
               </div>
@@ -635,14 +635,14 @@ export const AiStaffReviewModal: React.FC<AiStaffReviewModalProps> = ({
 
         {/* Modal Footer */}
         <div className="flex items-center justify-between px-6 py-4 border-t border-slate-200 bg-slate-50">
-          <span className="text-[11px] text-slate-500">
+          <span className="text-2xs text-slate-500">
             Dữ liệu đối soát tự động từ Module 2 Planning &amp; Module 5 People &amp; Capacity
           </span>
           <button
             onClick={onClose}
             className="px-4 py-2 border border-slate-300 rounded font-semibold text-slate-700 hover:bg-slate-100 transition text-xs"
           >
-            Đóng Cửa Sổ
+            Đóng cửa sổ
           </button>
         </div>
       </div>

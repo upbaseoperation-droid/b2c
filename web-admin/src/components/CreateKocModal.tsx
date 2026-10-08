@@ -140,7 +140,7 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
       tierLabel: tier === 'TIER_1_CELEB' ? 'Tier 1 (Celeb)' :
                  tier === 'TIER_2_MACRO' ? 'Tier 2 (Macro)' :
                  tier === 'TIER_3_MICRO' ? 'Tier 3 (Micro)' : 'Tier 4 (Affiliate)',
-      // 🌟 4 Phân loại cốt lõi
+      // 4 Phân loại cốt lõi
       salaryGrade: salaryGrade,
       segment: segment,
       tepKenh: tepKenh,
@@ -208,18 +208,18 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
       <div 
         role="dialog"
         aria-modal="true"
-        aria-label="Tạo Hồ Sơ KOC Chuẩn 65 Trường Nghiệp Vụ"
+        aria-label="Tạo hồ sơ KOC chuẩn 65 trường nghiệp vụ"
         className="bg-white border border-slate-200 rounded-xl max-w-3xl w-full p-6 shadow-2xl space-y-5 max-h-[92vh] overflow-y-auto text-slate-800"
       >
         {/* Header */}
         <div className="flex items-center justify-between pb-3 border-b border-slate-200">
           <div>
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 w-fit mb-1">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 w-fit mb-1">
               <UserPlus className="w-3.5 h-3.5" />
-              Thêm KOC Mới Vào Danh Mục Upbase
+              Thêm KOC mới vào danh mục Upbase
             </span>
-            <h3 className="text-lg font-bold text-slate-900">
-              Tạo Hồ Sơ KOC Chuẩn 65 Trường Nghiệp Vụ
+            <h3 className="text-lg font-semibold text-slate-900">
+              Tạo hồ sơ KOC chuẩn 65 trường nghiệp vụ
             </h3>
             <p className="text-xs text-slate-500">
               Đầy đủ thông tin kênh, phân khung lương (KL1 - KL7), hậu cần nhận mẫu gửi hàng, nhân khẩu học & tài khoản ngân hàng
@@ -238,20 +238,20 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
         <form onSubmit={handleSubmit} className="space-y-4 text-xs">
           {/* Section 1: Channel & Stage Name & Booking Format */}
           <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
-            <span className="text-slate-800 font-bold flex items-center gap-1.5">
+            <span className="text-slate-800 font-semibold flex items-center gap-1.5">
               <Sparkles className="w-3.5 h-3.5 text-blue-600" />
-              1. Thông Tin Nhận Diện Kênh & Định Dạng Booking:
+              1. Thông tin nhận diện kênh & định dạng booking:
             </span>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <label className="text-slate-700 font-semibold block mb-1">
-                  Tên Kênh / KOC (Stage Name) <span className="text-rose-500">*</span>:
+                  Tên kênh / KOC <span className="text-rose-500">*</span>:
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="VD: Hải Yến Beauty, Chanh Review..."
+                  placeholder="VD: Hải yến Beauty, Chanh Review..."
                   value={stageName}
                   onChange={(e) => setStageName(e.target.value)}
                   className="w-full bg-white border border-slate-300 rounded-lg px-3.5 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium"
@@ -273,7 +273,7 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
               </div>
 
               <div>
-                <label className="text-slate-700 font-semibold block mb-1">Định Dạng Booking:</label>
+                <label className="text-slate-700 font-semibold block mb-1">Định dạng booking:</label>
                 <select
                   value={bookingFormat}
                   onChange={(e) => setBookingFormat(e.target.value as any)}
@@ -290,24 +290,24 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
           {/* Section 2: Rate Card & Auto Salary Grade Calculation */}
           <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-slate-800 font-bold flex items-center gap-1.5">
+              <span className="text-slate-800 font-semibold flex items-center gap-1.5">
                 <DollarSign className="w-3.5 h-3.5 text-emerald-600" />
-                2. Báo Giá Video & Tự Động Gán Khung Lương (KL):
+                2. Báo giá video & tự động gán khung lương (KL):
               </span>
-              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
+              <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-purple-50 text-purple-700 border border-purple-200">
                 {salaryGrade} • {tier}
               </span>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
               <div>
-                <label className="text-slate-600 font-medium block mb-1">Báo Giá Video Net (VNĐ):</label>
+                <label className="text-slate-600 font-medium block mb-1">Báo giá video net (VNĐ):</label>
                 <input
                   type="number"
                   step={100000}
                   value={rateCardVideo}
                   onChange={(e) => handleRateCardChange(Number(e.target.value))}
-                  className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-blue-700 font-mono font-bold focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-blue-700 font-mono font-semibold focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                 />
               </div>
 
@@ -326,7 +326,7 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
                   <option value="KL5">KL5 (5tr - 10tr)</option>
                   <option value="KL6">KL6 (10tr - 30tr)</option>
                   <option value="KL7">KL7 (&gt; 30tr)</option>
-                  <option value="TAP đối tác ngoài">TAP Ngoài (Agency/MCN)</option>
+                  <option value="TAP đối tác ngoài">TAP Ngoài</option>
                 </select>
               </div>
 
@@ -345,13 +345,13 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
               </div>
 
               <div>
-                <label className="text-slate-600 font-medium block mb-1">Kỷ Lục GMV (Best Case):</label>
+                <label className="text-slate-600 font-medium block mb-1">Kỷ lục GMV:</label>
                 <input
                   type="number"
                   step={1000000}
                   value={gmvBestCase}
                   onChange={(e) => setGmvBestCase(Number(e.target.value))}
-                  className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-emerald-700 font-mono font-bold focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-emerald-700 font-mono font-semibold focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                 />
               </div>
             </div>
@@ -359,14 +359,14 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
 
           {/* Section 3: Creator Niche & Follower Demographics */}
           <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
-            <span className="text-slate-800 font-bold flex items-center gap-1.5">
+            <span className="text-slate-800 font-semibold flex items-center gap-1.5">
               <Users className="w-3.5 h-3.5 text-pink-600" />
-              3. Tệp Kênh (25 Tệp) & KOC Category (9 Ngành) & Khán Giả:
+              3. Tệp kênh (25 tệp) & KOC Category (9 ngành) & khán giả:
             </span>
 
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
               <div>
-                <label className="text-slate-600 font-medium block mb-1">3. Tệp Kênh (25 Tệp):</label>
+                <label className="text-slate-600 font-medium block mb-1">3. Tệp kênh (25 tệp):</label>
                 <select
                   value={tepKenh}
                   onChange={(e) => setTepKenh(e.target.value as TepKenh)}
@@ -384,7 +384,7 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
                   <option value="Health">Health</option>
                   <option value="Makeup Artist">Makeup Artist</option>
                   <option value="Tóc">Tóc</option>
-                  <option value="Bác sỹ/chuyên gia">Bác sỹ / Chuyên gia</option>
+                  <option value="Bác sỹ/chuyên gia">Bác sỹ / chuyên gia</option>
                   <option value="Gym">Gym</option>
                   <option value="Eat Clean">Eat Clean</option>
                   <option value="Thời trang (review)">Thời trang (review)</option>
@@ -411,12 +411,12 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
                   className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-2 text-xs text-slate-800 font-semibold focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                 >
                   <option value="Personal care">Personal care (Mỹ phẩm/Skincare)</option>
-                  <option value="Mom and baby">Mom and baby (Mẹ & Bé)</option>
+                  <option value="Mom and baby">Mom and baby (mẹ & bé)</option>
                   <option value="Reviewer">Reviewer (Đánh giá chuyên sâu)</option>
                   <option value="Lifestyle">Lifestyle (Đời sống)</option>
                   <option value="Fashion">Fashion (Thời trang)</option>
                   <option value="ELHA">ELHA (Điện & Gia dụng)</option>
-                  <option value="F&B">F&B (Thực phẩm & Ẩm thực)</option>
+                  <option value="F&B">F&B (thực phẩm & ẩm thực)</option>
                   <option value="Social / Comedian">Social / Comedian (Giải trí)</option>
                   <option value="Travel/Hospitality">Travel/Hospitality (Du lịch)</option>
                 </select>
@@ -433,26 +433,26 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
               </div>
 
               <div>
-                <label className="text-slate-600 font-medium block mb-1">Tỉ Trọng Follower Nữ (%):</label>
+                <label className="text-slate-600 font-medium block mb-1">Tỉ trọng Follower nữ (%):</label>
                 <input
                   type="number"
                   min={0}
                   max={100}
                   value={femaleRatio}
                   onChange={(e) => setFemaleRatio(Number(e.target.value))}
-                  className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-pink-600 font-mono font-bold focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-pink-600 font-mono font-semibold focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                 />
               </div>
 
               <div>
-                <label className="text-slate-600 font-medium block mb-1">Nhóm Tuổi Khán Giả Chính:</label>
+                <label className="text-slate-600 font-medium block mb-1">Nhóm tuổi khán giả chính:</label>
                 <select
                   value={ageGroup}
                   onChange={(e) => setAgeGroup(e.target.value as any)}
                   className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-2 text-xs text-slate-800 font-semibold focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                 >
-                  <option value="18-24">18 - 24 Tuổi (Gen Z)</option>
-                  <option value="25-34">25 - 34 Tuổi (Dân VP, sức mua cao)</option>
+                  <option value="18-24">18 - 24 Tuổi</option>
+                  <option value="25-34">25 - 34 tuổi (dân VP, sức mua cao)</option>
                   <option value="35+">&gt; 35 Tuổi (Mẹ bỉm, gia đình)</option>
                 </select>
               </div>
@@ -461,14 +461,14 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
 
           {/* Section 4: Sample Logistics & Operational PIC */}
           <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
-            <span className="text-emerald-700 font-bold flex items-center gap-1.5">
+            <span className="text-emerald-700 font-semibold flex items-center gap-1.5">
               <Truck className="w-3.5 h-3.5 text-emerald-600" />
-              4. Hậu Cần Gửi Mẫu (Sample Dispatch) & Nhân Sự Booking Phụ Trách:
+              4. Hậu cần gửi mẫu & nhân sự booking phụ trách:
             </span>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <label className="text-slate-600 font-medium block mb-1">Khu Vực Địa Lý:</label>
+                <label className="text-slate-600 font-medium block mb-1">Khu vực địa lý:</label>
                 <select
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
@@ -476,14 +476,14 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
                 >
                   <option value="Hà Nội">Hà Nội</option>
                   <option value="TP. Hồ Chí Minh">TP. Hồ Chí Minh</option>
-                  <option value="Miền Bắc">Miền Bắc (Tỉnh khác)</option>
+                  <option value="Miền Bắc">Miền bắc (tỉnh khác)</option>
                   <option value="Miền Trung">Miền Trung</option>
-                  <option value="Miền Nam">Miền Nam (Tỉnh khác)</option>
+                  <option value="Miền Nam">Miền nam (tỉnh khác)</option>
                 </select>
               </div>
 
               <div>
-                <label className="text-slate-600 font-medium block mb-1">Nhân Sự PIC Phụ Trách:</label>
+                <label className="text-slate-600 font-medium block mb-1">Nhân sự PIC phụ trách:</label>
                 <select
                   value={bookingPic}
                   onChange={(e) => setBookingPic(e.target.value)}
@@ -498,7 +498,7 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
               </div>
 
               <div>
-                <label className="text-slate-600 font-medium block mb-1">Gian Hàng Phù Hợp Đề Xuất:</label>
+                <label className="text-slate-600 font-medium block mb-1">Gian hàng phù hợp đề xuất:</label>
                 <select
                   value={brandName}
                   onChange={(e) => setBrandName(e.target.value)}
@@ -516,11 +516,11 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
 
             <div>
               <label className="text-slate-600 font-medium block mb-1">
-                Thông Tin Nhận Hàng Chi Tiết (Tên người nhận, SĐT, Địa chỉ giao mẫu vật lý):
+                Thông tin nhận hàng chi tiết (tên người nhận, SĐT, địa chỉ giao mẫu vật lý):
               </label>
               <input
                 type="text"
-                placeholder="VD: Nguyễn Hải Yến — 0987654321 — Tầng 5, Tòa Charmvit, 117 Trần Duy Hưng, Hà Nội"
+                placeholder="VD: Nguyễn Hải Yến — 0987654321 — Tầng 5, tòa Charmvit, 117 Trần Duy Hưng, Hà Nội"
                 value={shippingAddress}
                 onChange={(e) => setShippingAddress(e.target.value)}
                 className="w-full bg-white border border-slate-300 rounded-lg px-3.5 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
@@ -530,14 +530,14 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
 
           {/* Section 5: Legal & Payment Data */}
           <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
-            <span className="text-blue-700 font-bold flex items-center gap-1.5">
+            <span className="text-blue-700 font-semibold flex items-center gap-1.5">
               <CreditCard className="w-3.5 h-3.5 text-blue-600" />
-              5. Pháp Lý & Thanh Toán (Tự Động Sinh Hợp Đồng & VietQR Cọc 50%):
+              5. Pháp lý & thanh toán (tự động sinh hợp đồng & VietQR cọc 50%):
             </span>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <label className="text-slate-600 font-medium block mb-1">Họ & Tên Thật (Trên CCCD):</label>
+                <label className="text-slate-600 font-medium block mb-1">Họ & tên thật (trên CCCD):</label>
                 <input
                   type="text"
                   placeholder="VD: Nguyễn Thị Hải Yến"
@@ -548,7 +548,7 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
               </div>
 
               <div>
-                <label className="text-slate-600 font-medium block mb-1">Số Điện Thoại / Zalo:</label>
+                <label className="text-slate-600 font-medium block mb-1">Số điện thoại / Zalo:</label>
                 <input
                   type="text"
                   placeholder="0987654321"
@@ -575,7 +575,7 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
               <div>
-                <label className="text-slate-600 font-medium block mb-1">Ngân Hàng Thụ Hưởng:</label>
+                <label className="text-slate-600 font-medium block mb-1">Ngân hàng thụ hưởng:</label>
                 <select
                   value={bankName}
                   onChange={(e) => setBankName(e.target.value)}
@@ -593,13 +593,13 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
               </div>
 
               <div>
-                <label className="text-slate-600 font-medium block mb-1">Số Tài Khoản Ngân Hàng (STK):</label>
+                <label className="text-slate-600 font-medium block mb-1">Số tài khoản ngân hàng (STK):</label>
                 <input
                   type="text"
                   placeholder="VD: 190394857281"
                   value={bankAccount}
                   onChange={(e) => setBankAccount(e.target.value)}
-                  className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-emerald-700 font-mono font-bold focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-emerald-700 font-mono font-semibold focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                 />
               </div>
             </div>
@@ -612,14 +612,14 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
               onClick={onClose}
               className="px-4 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 transition"
             >
-              Hủy Bỏ
+              Hủy bỏ
             </button>
             <button
               type="submit"
-              className="px-5 py-2.5 rounded-lg text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-sm transition flex items-center gap-1.5"
+              className="px-5 py-2.5 rounded-lg text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 shadow-sm transition flex items-center gap-1.5"
             >
               <Check className="w-3.5 h-3.5" />
-              <span>Lưu KOC & Đưa Vào Danh Mục</span>
+              <span>Lưu KOC & đưa vào danh mục</span>
             </button>
           </div>
         </form>

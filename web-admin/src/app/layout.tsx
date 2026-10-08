@@ -1,9 +1,24 @@
 import type { Metadata } from "next";
+import { Be_Vietnam_Pro, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
+const beVietnam = Be_Vietnam_Pro({
+  subsets: ["latin", "vietnamese"],
+  weight: ["400", "500", "600"],
+  variable: "--font-be-vietnam",
+  display: "swap",
+});
+
+const jetbrains = JetBrains_Mono({
+  subsets: ["latin", "vietnamese"],
+  weight: ["400", "500"],
+  variable: "--font-jetbrains",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
-  title: "Upbase B2C — Marketing Operations Hub",
-  description: "Enterprise Digital Workspace for Upbase B2C Marketing — Supabase, Prisma & Next.js on Vercel",
+  title: "Upbase Ops",
+  description: "Công cụ vận hành Marketing B2C của Upbase",
 };
 
 export default function RootLayout({
@@ -12,16 +27,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="vi" className="h-full light">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,600&display=swap"
-          rel="stylesheet"
-        />
-      </head>
-      <body className="min-h-full bg-[#f8fafc] text-[#0f172a] flex flex-col antialiased font-sans">
+    <html lang="vi" className={`h-full ${beVietnam.variable} ${jetbrains.variable}`}>
+      <body className="min-h-full bg-canvas text-ink flex flex-col antialiased font-sans">
         {children}
       </body>
     </html>

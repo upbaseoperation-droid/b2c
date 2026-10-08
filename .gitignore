@@ -40,4 +40,5 @@ pdf_preview/
 
 # Local Agent & Tooling
 .agents/
+.claude/
 ECC/

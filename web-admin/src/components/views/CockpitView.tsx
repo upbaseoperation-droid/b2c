@@ -1,4 +1,5 @@
 'use client';
+import { Avatar } from '../ui';
 
 import {
   Clock,
@@ -44,11 +45,9 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
       {/* User Greeting & Stats Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-5 py-4 rounded-xl bg-white border border-slate-200 shadow-xs">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-blue-50 text-blue-700 font-bold text-xs flex items-center justify-center border border-blue-200 shadow-2xs">
-            {currentUser.avatar}
-          </div>
+          <Avatar name={currentUser.name} src={currentUser.larkAvatarUrl} size={36} />
           <div>
-            <h2 className="text-sm font-bold text-slate-900">
+            <h2 className="text-sm font-semibold text-slate-900">
               Xin chào, {currentUser.name}
             </h2>
             <p className="text-xs text-slate-500">
@@ -61,45 +60,45 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
         <div className="flex items-center gap-2">
           <div className="px-3 py-1.5 rounded-lg bg-rose-50 border border-rose-200 text-xs">
             <span className="text-rose-700 mr-1.5 font-medium">Khẩn cấp:</span>
-            <span className="font-bold text-rose-800">{criticalCount}</span>
+            <span className="font-semibold text-rose-800">{criticalCount}</span>
           </div>
           <div className="px-3 py-1.5 rounded-lg bg-amber-50 border border-amber-200 text-xs">
             <span className="text-amber-800 mr-1.5 font-medium">Trong ngày:</span>
-            <span className="font-bold text-amber-900">{warningCount}</span>
+            <span className="font-semibold text-amber-900">{warningCount}</span>
           </div>
           <div className="px-3 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-xs">
             <span className="text-emerald-700 mr-1.5 font-medium">Hoàn thành:</span>
-            <span className="font-bold text-emerald-800">{doneCount}</span>
+            <span className="font-semibold text-emerald-800">{doneCount}</span>
           </div>
         </div>
       </div>
 
       {/* Quick Access to Input Plan Studio */}
       {onNavigateToInputPlan && (
-        <div className="p-4 rounded-xl bg-gradient-to-r from-slate-900 via-blue-950 to-indigo-950 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-blue-900/60 shadow-sm">
+        <div className="p-4 rounded-xl bg-slate-900 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-blue-900/60 shadow-sm">
           <div className="flex items-center gap-3.5">
             <div className="w-10 h-10 rounded-lg bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-xs">
               <Calculator className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-xs font-bold text-white uppercase tracking-wider">
-                  Phân Rã Kế Hoạch B2C (Input Plan Studio)
+                <h3 className="text-xs font-semibold text-white">
+                  Phân rã kế hoạch B2C
                 </h3>
-                <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-amber-400 text-slate-950 uppercase">
+                <span className="text-2xs font-semibold px-1.5 py-0.5 rounded bg-amber-400 text-slate-950">
                   Mới
                 </span>
               </div>
               <p className="text-xs text-slate-300 mt-0.5">
-                Nhập ngân sách & số lượng ➔ Break đa kênh, đa nền tảng, loại nội dung & 7 bậc KOC (KL1 ➔ KL7) với cân đối thời gian thực
+                Nhập ngân sách & số lượng → Break đa kênh, đa nền tảng, loại nội dung & 7 bậc KOC (KL1 → KL7) với cân đối thời gian thực
               </p>
             </div>
           </div>
           <button
             onClick={onNavigateToInputPlan}
-            className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold flex items-center justify-center gap-1.5 shrink-0 transition shadow-xs"
+            className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold flex items-center justify-center gap-1.5 shrink-0 transition shadow-xs"
           >
-            <span>Mở Lập Kế Hoạch</span>
+            <span>Mở lập kế hoạch</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>
@@ -108,7 +107,7 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
       {/* Task List */}
       <div className="rounded-xl bg-white border border-slate-200 shadow-xs overflow-hidden">
         <div className="px-5 py-3.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
-          <span className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+          <span className="text-xs font-semibold text-slate-800">
             Nhiệm vụ cần xử lý ({relevantTasks.length})
           </span>
           <span className="text-xs text-slate-500">
@@ -156,12 +155,12 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
                         >
                           {task.title}
                         </span>
-                        <span className="text-[10px] px-1.5 py-0.5 rounded font-medium bg-slate-100 text-slate-600 border border-slate-200/80">
+                        <span className="text-2xs px-1.5 py-0.5 rounded font-medium bg-slate-100 text-slate-600 border border-slate-200/80">
                           {task.team}
                         </span>
                       </div>
 
-                      <div className="flex items-center gap-2 text-[11px] text-slate-500 mt-1">
+                      <div className="flex items-center gap-2 text-2xs text-slate-500 mt-1">
                         <span>Phụ trách: <strong className="font-medium text-slate-700">{task.pic}</strong></span>
                         <span>•</span>
                         <span>Hạn xử lý: <strong className="font-medium text-slate-700">{task.deadline}</strong></span>
@@ -171,7 +170,7 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
 
                   <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
                     <span
-                      className={`text-[11px] px-2.5 py-1 rounded-full font-bold flex items-center gap-1 border ${
+                      className={`text-2xs px-2.5 py-1 rounded-full font-semibold flex items-center gap-1 border ${
                         task.urgency === 'critical' ? 'bg-rose-50 text-rose-700 border-rose-200' :
                         task.urgency === 'warning' ? 'bg-amber-50 text-amber-700 border-amber-200' :
                         task.urgency === 'done' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-700 border-slate-200'

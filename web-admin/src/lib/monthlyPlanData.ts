@@ -4,8 +4,9 @@ import {
   autoBalancePlanItems, 
   MOCK_PLAN_SCENARIOS 
 } from './inputPlanDefaults';
+import { DEFAULT_CONTENT_PILLARS } from './selfChannelData';
 
-// 🌟 HÀM TẠO ITEMS TỰ ĐỘNG THEO CHIẾN LƯỢC CHO KẾ HOẠCH THÁNG
+// HÀM TẠO ITEMS TỰ ĐỘNG THEO CHIẾN LƯỢC CHO KẾ HOẠCH THÁNG
 export function createPlanItemsForScenario(
   budget: number, 
   qty: number, 
@@ -23,11 +24,65 @@ export function createPlanItemsForScenario(
   }));
 }
 
-// 🌟 DANH MỤC MASTER 11 KẾ HOẠCH THEO THÁNG (MONTHLY PLAN REPOSITORY)
+// DANH MỤC MASTER 11 KẾ HOẠCH THEO THÁNG (MONTHLY PLAN REPOSITORY)
 export const INITIAL_MONTHLY_PLANS: InputPlanBreakdownState[] = [
   // =========================================================================
-  // 📅 THÁNG 10/2026 (THÁNG HIỆN TẠI - CÁC KẾ HOẠCH THEO CÁC GIAI ĐOẠN DUYỆT)
+  // THÁNG 10/2026 (THÁNG HIỆN TẠI - CÁC KẾ HOẠCH THEO CÁC GIAI ĐOẠN DUYỆT)
   // =========================================================================
+  {
+    id: 'PLAN-2026-10-KUTIESKIN',
+    title: 'Kế Hoạch B2C Tháng 10 - Kutieskin (Affiliate 150M + Self Channel 50M)',
+    brandName: 'Kutieskin Mama & Baby',
+    month: '2026/10',
+    week: 'W41 [05.10 - 11.10]',
+    pic: 'Khánh Vy',
+    growthPic: 'Hoàng Long (Senior Growth)',
+    totalTargetBudget: 200000000, // 200 Tr
+    budgetAffiliate: 150000000, // 150 Tr
+    budgetSelfChannel: 50000000, // 50 Tr
+    targetAffiliateContents: 85,
+    targetSelfChannelContents: 40,
+    totalTargetContents: 125, // 85 + 40
+    targetGmv: 1200000000,
+    cancellationRate: 0.08,
+    strategyPreset: 'BALANCED',
+    status: 'IN_EXECUTION',
+    statusLabel: 'Đang Thực Thi (Đã Duyệt)',
+    spentBudget: 132500000,
+    deliveredContents: 76,
+    actualGmv: 890000000,
+    preApprovedBy: 'Hoàng Long',
+    preApprovedAt: '2026-10-01T10:00:00Z',
+    approvedBy: 'Nguyễn Hoàng Long (Trưởng Phòng)',
+    approvedAt: '2026-10-02T09:00:00Z',
+    notes: 'Kế hoạch phân bổ kép: 150M Affiliate KOC theo cấp bậc lương KL1-KL4 & 50M Self Channel cho 40 video theo 4 Content Pillars.',
+    createdAt: '2026-09-28T09:00:00Z',
+    updatedAt: '2026-10-07T14:30:00Z',
+    items: createPlanItemsForScenario(150000000, 85, 'BALANCED', 'Khánh Vy'),
+    selfChannelPillars: DEFAULT_CONTENT_PILLARS,
+    discussions: [
+      {
+        id: 'DISC-KUTI-1',
+        authorName: 'Hoàng Long',
+        authorRole: 'GROWTH',
+        authorTitle: 'Growth Lead',
+        content: 'Tổng ngân sách nhãn hàng chốt 200 triệu cho tháng 10. Phân bổ: 150M kênh Affiliate KOC kéo số Mega và 50M kênh Self Channel xây dựng thương hiệu & Spark Ads.',
+        type: 'BUDGET_ADJUST',
+        timestamp: '2026-09-28T09:30:00Z',
+        tags: ['Ngân Sách', 'Affiliate', 'Self Channel']
+      },
+      {
+        id: 'DISC-KUTI-2',
+        authorName: 'Khánh Vy',
+        authorRole: 'BOOKING',
+        authorTitle: 'Booking Specialist PIC',
+        content: 'B2C đã phân rã xong: 150M Affiliate chia cho 85 Creator (KL1-KL4) và 50M Self Channel chia đều cho 4 Content Pillars (40 video qua CTV Hub).',
+        type: 'COMMENT',
+        timestamp: '2026-09-29T14:00:00Z',
+        tags: ['Content Pillar', 'CTV Hub']
+      }
+    ]
+  },
   {
     id: 'PLAN-2026-10-FRESH',
     title: 'Kế Hoạch B2C Tháng 10 - Fresh E2E Campaign W41',
@@ -320,7 +375,7 @@ export const INITIAL_MONTHLY_PLANS: InputPlanBreakdownState[] = [
   },
 
   // =========================================================================
-  // 📅 THÁNG 11/2026 (KẾ HOẠCH SẮP TỚI - CÓ KẾ HOẠCH BỊ YÊU CẦU HIỆU CHỈNH)
+  // THÁNG 11/2026 (KẾ HOẠCH SẮP TỚI - CÓ KẾ HOẠCH BỊ YÊU CẦU HIỆU CHỈNH)
   // =========================================================================
   {
     id: 'PLAN-2026-11-SUNPLAY',
@@ -405,7 +460,7 @@ export const INITIAL_MONTHLY_PLANS: InputPlanBreakdownState[] = [
   },
 
   // =========================================================================
-  // 📅 THÁNG 09/2026 (THÁNG TRƯỚC - ĐÃ HOÀN THÀNH NGHIỆM THU)
+  // THÁNG 09/2026 (THÁNG TRƯỚC - ĐÃ HOÀN THÀNH NGHIỆM THU)
   // =========================================================================
   {
     id: 'PLAN-2026-09-CLIO',
@@ -502,7 +557,7 @@ export const INITIAL_MONTHLY_PLANS: InputPlanBreakdownState[] = [
   },
 
   // =========================================================================
-  // 📅 THÁNG 08/2026 (LỊCH SỬ THÁNG 8)
+  // THÁNG 08/2026 (LỊCH SỬ THÁNG 8)
   // =========================================================================
   {
     id: 'PLAN-2026-08-TMCLEAN',

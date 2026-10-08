@@ -127,12 +127,12 @@ export const QuickBookModal: React.FC<QuickBookModalProps> = ({
         {/* Header - Enterprise Light Theme */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50/80">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-blue-50 border border-blue-200 text-blue-600 flex items-center justify-center font-bold shadow-2xs">
+            <div className="w-9 h-9 rounded-lg bg-blue-50 border border-blue-200 text-blue-600 flex items-center justify-center font-semibold shadow-2xs">
               <Zap className="w-5 h-5 text-blue-600 fill-blue-600" />
             </div>
             <div>
-              <h3 id="quick-book-title" className="text-sm font-bold text-slate-900">
-                Tạo Booking Deal Mới
+              <h3 id="quick-book-title" className="text-sm font-semibold text-slate-900">
+                Tạo booking deal mới
               </h3>
               <p className="text-xs text-slate-500">Khởi tạo hợp đồng, phân bổ ngân sách và kích hoạt quy trình SLA</p>
             </div>
@@ -150,8 +150,8 @@ export const QuickBookModal: React.FC<QuickBookModalProps> = ({
           {/* Field 1: Campaign & Brand */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label htmlFor="qb-campaign" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
-                1. Chiến Dịch Áp Dụng
+              <label htmlFor="qb-campaign" className="block text-xs font-semibold text-slate-700 mb-1.5">
+                1. Chiến dịch áp dụng
               </label>
               <select
                 id="qb-campaign"
@@ -160,19 +160,19 @@ export const QuickBookModal: React.FC<QuickBookModalProps> = ({
                 className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 font-medium focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition shadow-2xs"
               >
                 <option value="CAMP-1010">Mega Sale 10.10 — Kháng Nắng Đa Tầng</option>
-                <option value="CAMP-GLOW">Thu Đông Rạng Rỡ — Dược Mỹ Phẩm</option>
+                <option value="CAMP-GLOW">Thu đông rạng rỡ — Dược mỹ phẩm</option>
               </select>
             </div>
 
             <div>
-              <label htmlFor="qb-brand" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
-                2. Cụm Gian Hàng / Brand
+              <label htmlFor="qb-brand" className="block text-xs font-semibold text-slate-700 mb-1.5">
+                2. Cụm gian hàng / Brand
               </label>
               <select
                 id="qb-brand"
                 value={brandName}
                 onChange={(e) => setBrandName(e.target.value)}
-                className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-blue-700 font-bold focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition shadow-2xs"
+                className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-blue-700 font-semibold focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition shadow-2xs"
               >
                 <option value="Kutieskin Mama">Kutieskin Mama</option>
                 <option value="Royal Ausnz">Royal Ausnz</option>
@@ -189,8 +189,8 @@ export const QuickBookModal: React.FC<QuickBookModalProps> = ({
           {/* Field 2: Product & Batch & Format */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
             <div className="sm:col-span-2">
-              <label htmlFor="qb-product" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
-                3. Sản Phẩm / Mẫu:
+              <label htmlFor="qb-product" className="block text-xs font-semibold text-slate-700 mb-1">
+                3. Sản phẩm / mẫu:
               </label>
               <input
                 id="qb-product"
@@ -203,7 +203,7 @@ export const QuickBookModal: React.FC<QuickBookModalProps> = ({
             </div>
 
             <div>
-              <label htmlFor="qb-batch" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+              <label htmlFor="qb-batch" className="block text-xs font-semibold text-slate-700 mb-1">
                 Đợt Booking:
               </label>
               <select
@@ -221,8 +221,8 @@ export const QuickBookModal: React.FC<QuickBookModalProps> = ({
 
           {/* Field 3: KOC Selector */}
           <div>
-            <label htmlFor="qb-koc" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
-              4. Chọn KOC (Từ Danh Bạ Index)
+            <label htmlFor="qb-koc" className="block text-xs font-semibold text-slate-700 mb-1.5">
+              4. Chọn KOC (từ danh bạ Index)
             </label>
             <select
               id="qb-koc"
@@ -242,9 +242,9 @@ export const QuickBookModal: React.FC<QuickBookModalProps> = ({
             </select>
             {currentKoc && (
               <div className="mt-2 p-2.5 bg-blue-50/70 border border-blue-200/80 rounded-lg flex flex-wrap items-center justify-between gap-2 text-xs text-blue-900">
-                <span>👤 CCCD: <strong className="font-mono text-slate-800">{currentKoc.cccd}</strong></span>
-                <span>🏦 <strong>{currentKoc.bankName}</strong>: <span className="font-mono text-slate-800">{currentKoc.bankAccount}</span></span>
-                <span className="text-emerald-700 font-bold bg-emerald-100/60 px-2 py-0.5 rounded">★ {currentKoc.reliabilityScore}/10</span>
+                <span>CCCD: <strong className="font-mono text-slate-800">{currentKoc.cccd}</strong></span>
+                <span><strong>{currentKoc.bankName}</strong>: <span className="font-mono text-slate-800">{currentKoc.bankAccount}</span></span>
+                <span className="text-emerald-700 font-semibold bg-emerald-100/60 px-2 py-0.5 rounded">★ {currentKoc.reliabilityScore}/10</span>
               </div>
             )}
           </div>
@@ -252,7 +252,7 @@ export const QuickBookModal: React.FC<QuickBookModalProps> = ({
           {/* Field 4: Deal Value & Auto-Split Advance */}
           <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-2">
             <div className="flex items-center justify-between">
-              <label className="block text-xs font-semibold text-slate-800 uppercase tracking-wider">
+              <label className="block text-xs font-semibold text-slate-800">
                 5. Giá Deal &amp; Chia Đợt Tạm Ứng
               </label>
               <div className="flex items-center gap-1.5 text-xs">
@@ -274,31 +274,31 @@ export const QuickBookModal: React.FC<QuickBookModalProps> = ({
             </div>
             <div className="grid grid-cols-3 gap-2 pt-1">
               <div>
-                <span className="text-xs text-slate-600 font-medium block mb-1">Tổng Deal (VNĐ)</span>
+                <span className="text-xs text-slate-600 font-medium block mb-1">Tổng deal (VNĐ)</span>
                 <input
                   type="number"
                   value={rate}
                   step={500000}
                   onChange={(e) => setRate(Number(e.target.value))}
-                  className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 font-bold font-mono focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
+                  className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 font-semibold font-mono focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
                 />
               </div>
               <div>
-                <span className="text-xs text-emerald-700 font-medium block mb-1">Đợt 1 (Tạm ứng)</span>
+                <span className="text-xs text-emerald-700 font-medium block mb-1">Đợt 1 (tạm ứng)</span>
                 <input
                   type="text"
                   value={advanceAmount.toLocaleString('vi-VN') + ' đ'}
                   readOnly
-                  className="w-full bg-emerald-50 border border-emerald-300 rounded-lg px-2.5 py-1.5 text-xs text-emerald-700 font-bold font-mono"
+                  className="w-full bg-emerald-50 border border-emerald-300 rounded-lg px-2.5 py-1.5 text-xs text-emerald-700 font-semibold font-mono"
                 />
               </div>
               <div>
-                <span className="text-xs text-blue-700 font-medium block mb-1">Đợt 2 (Quyết toán)</span>
+                <span className="text-xs text-blue-700 font-medium block mb-1">Đợt 2 (quyết toán)</span>
                 <input
                   type="text"
                   value={finalAmount.toLocaleString('vi-VN') + ' đ'}
                   readOnly
-                  className="w-full bg-blue-50 border border-blue-300 rounded-lg px-2.5 py-1.5 text-xs text-blue-700 font-bold font-mono"
+                  className="w-full bg-blue-50 border border-blue-300 rounded-lg px-2.5 py-1.5 text-xs text-blue-700 font-semibold font-mono"
                 />
               </div>
             </div>
@@ -306,8 +306,8 @@ export const QuickBookModal: React.FC<QuickBookModalProps> = ({
 
           {/* Field 5: Post Deadline */}
           <div>
-            <label htmlFor="qb-deadline" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
-              6. Hạn Chót Nghiệm Thu Video Lên Sóng
+            <label htmlFor="qb-deadline" className="block text-xs font-semibold text-slate-700 mb-1.5">
+              6. Hạn chót nghiệm thu video lên sóng
             </label>
             <input
               id="qb-deadline"
@@ -323,7 +323,7 @@ export const QuickBookModal: React.FC<QuickBookModalProps> = ({
           <div className="pt-2">
             <button
               type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-4 rounded-lg shadow-xs transition flex items-center justify-center gap-2 text-xs"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 px-4 rounded-lg shadow-xs transition flex items-center justify-center gap-2 text-xs"
             >
               <Zap className="w-4 h-4 fill-white" />
               <span>Tạo Deal &amp; Kích Hoạt Luồng SLA 3 Team</span>

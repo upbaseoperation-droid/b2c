@@ -108,26 +108,26 @@ export const PlanDiscussionHub: React.FC<PlanDiscussionHubProps> = ({
     switch (role) {
       case 'GROWTH':
         return (
-          <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
+          <span className="px-2 py-0.5 rounded-md text-2xs font-semibold bg-amber-50 text-amber-800 border border-amber-200">
             Growth PIC
           </span>
         );
       case 'BOOKING':
         return (
-          <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-indigo-50 text-indigo-800 border border-indigo-200">
+          <span className="px-2 py-0.5 rounded-md text-2xs font-semibold bg-indigo-50 text-indigo-800 border border-indigo-200">
             Booking PIC
           </span>
         );
       case 'LEAD':
         return (
-          <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-purple-50 text-purple-800 border border-purple-200">
+          <span className="px-2 py-0.5 rounded-md text-2xs font-semibold bg-purple-50 text-purple-800 border border-purple-200">
             Trưởng Phòng
           </span>
         );
       case 'SYSTEM':
       default:
         return (
-          <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200">
+          <span className="px-2 py-0.5 rounded-md text-2xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">
             Hệ Thống
           </span>
         );
@@ -138,28 +138,28 @@ export const PlanDiscussionHub: React.FC<PlanDiscussionHubProps> = ({
     switch (type) {
       case 'REVISION_REQUEST':
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-semibold bg-rose-50 text-rose-700 border border-rose-200">
             <AlertTriangle className="w-3 h-3 text-rose-600" />
             Yêu Cầu Hiệu Chỉnh
           </span>
         );
       case 'PRE_APPROVAL_PASS':
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-teal-50 text-teal-700 border border-teal-200">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-semibold bg-teal-50 text-teal-700 border border-teal-200">
             <BadgeCheck className="w-3 h-3 text-teal-600" />
             Sơ Duyệt Đạt
           </span>
         );
       case 'FINAL_APPROVAL_PASS':
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
             <ShieldCheck className="w-3 h-3 text-emerald-600" />
             Phê Duyệt Chính Thức
           </span>
         );
       case 'STATUS_CHANGE':
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-600">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-semibold bg-slate-100 text-slate-600">
             <Clock className="w-3 h-3 text-slate-500" />
             Trạng Thái
           </span>
@@ -167,9 +167,9 @@ export const PlanDiscussionHub: React.FC<PlanDiscussionHubProps> = ({
       case 'COMMENT':
       default:
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-50 text-slate-600 border border-slate-200">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-semibold bg-slate-50 text-slate-600 border border-slate-200">
             <MessageSquare className="w-3 h-3 text-slate-400" />
-            Thảo Luận
+            Thảo luận
           </span>
         );
     }
@@ -177,7 +177,7 @@ export const PlanDiscussionHub: React.FC<PlanDiscussionHubProps> = ({
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden flex flex-col">
-      {/* 🌟 HEADER: LỊCH SỬ TRAO ĐỔI & THỐNG KÊ CẶP PHỐI HỢP */}
+      {/* HEADER: LỊCH SỬ TRAO ĐỔI & THỐNG KÊ CẶP PHỐI HỢP */}
       <div className="p-4 sm:p-5 border-b border-slate-100 bg-slate-50/60 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center shrink-0">
@@ -185,10 +185,10 @@ export const PlanDiscussionHub: React.FC<PlanDiscussionHubProps> = ({
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="font-bold text-sm text-slate-900">
-                Lịch Sử Trao Đổi Booking & Growth
+              <h3 className="font-semibold text-sm text-slate-900">
+                Lịch sử Trao đổi booking & Growth
               </h3>
-              <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+              <span className="px-2 py-0.5 rounded-full text-2xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
                 {discussions.length} Trao Đổi
               </span>
             </div>
@@ -201,18 +201,18 @@ export const PlanDiscussionHub: React.FC<PlanDiscussionHubProps> = ({
         {/* Cặp phối hợp: Growth PIC <-> Booking PIC */}
         <div className="flex items-center gap-3 bg-white px-3 py-2 rounded-xl border border-slate-200 text-xs shadow-2xs">
           <div className="flex items-center gap-1.5">
-            <span className="text-[11px] text-slate-400 font-medium">Growth PIC:</span>
+            <span className="text-2xs text-slate-400 font-medium">Growth PIC:</span>
             <strong className="text-amber-800 font-semibold">{plan.growthPic || 'Trần Thị Ánh'}</strong>
           </div>
           <span className="text-slate-300">⇄</span>
           <div className="flex items-center gap-1.5">
-            <span className="text-[11px] text-slate-400 font-medium">Booking PIC:</span>
+            <span className="text-2xs text-slate-400 font-medium">Booking PIC:</span>
             <strong className="text-indigo-800 font-semibold">{plan.pic}</strong>
           </div>
         </div>
       </div>
 
-      {/* 🌟 BỘ LỌC TIN NHẮN */}
+      {/* BỘ LỌC TIN NHẮN */}
       <div className="px-4 sm:px-5 py-2.5 border-b border-slate-100 flex items-center justify-between gap-2 flex-wrap text-xs bg-white">
         <div className="flex items-center gap-1.5">
           <Filter className="w-3.5 h-3.5 text-slate-400" />
@@ -252,14 +252,14 @@ export const PlanDiscussionHub: React.FC<PlanDiscussionHubProps> = ({
         </div>
 
         {selectedTag && (
-          <div className="flex items-center gap-1 text-[11px] text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">
+          <div className="flex items-center gap-1 text-2xs text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">
             <span>Tag: #{selectedTag}</span>
             <button onClick={() => setSelectedTag('')} className="text-slate-400 hover:text-slate-700 ml-1">✕</button>
           </div>
         )}
       </div>
 
-      {/* 🌟 NỘI DUNG FEED: TIMELINE DANH SÁCH TRAO ĐỔI */}
+      {/* NỘI DUNG FEED: TIMELINE DANH SÁCH TRAO ĐỔI */}
       <div className="p-4 sm:p-5 space-y-4 max-h-[460px] overflow-y-auto bg-slate-50/30">
         {filteredMessages.length === 0 ? (
           <div className="text-center py-10 space-y-2">
@@ -267,7 +267,7 @@ export const PlanDiscussionHub: React.FC<PlanDiscussionHubProps> = ({
             <div className="text-xs font-semibold text-slate-600">
               Chưa có trao đổi nào trong nhóm lọc này
             </div>
-            <p className="text-[11px] text-slate-400 max-w-sm mx-auto">
+            <p className="text-2xs text-slate-400 max-w-sm mx-auto">
               Nhân viên Booking và Growth có thể trao đổi ý kiến, đề xuất ngân sách hoặc thẩm định cơ cấu KOC bằng khung gửi phía dưới.
             </p>
           </div>
@@ -300,7 +300,7 @@ export const PlanDiscussionHub: React.FC<PlanDiscussionHubProps> = ({
                   <div className="flex items-center gap-2.5">
                     {/* Avatar initials */}
                     <div
-                      className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${
+                      className={`w-7 h-7 rounded-full flex items-center justify-center font-semibold text-xs shrink-0 ${
                         isGrowth
                           ? 'bg-amber-100 text-amber-800'
                           : isBooking
@@ -315,19 +315,19 @@ export const PlanDiscussionHub: React.FC<PlanDiscussionHubProps> = ({
 
                     <div>
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-bold text-xs text-slate-900">
+                        <span className="font-semibold text-xs text-slate-900">
                           {msg.authorName}
                         </span>
                         {getRoleBadge(msg.authorRole)}
                         {getTypeBadge(msg.type)}
                       </div>
-                      <div className="text-[11px] text-slate-400 mt-0.5">
+                      <div className="text-2xs text-slate-400 mt-0.5">
                         {msg.authorTitle}
                       </div>
                     </div>
                   </div>
 
-                  <div className="text-[11px] text-slate-400 shrink-0">
+                  <div className="text-2xs text-slate-400 shrink-0">
                     {new Date(msg.timestamp).toLocaleString('vi-VN', {
                       day: '2-digit',
                       month: '2-digit',
@@ -350,7 +350,7 @@ export const PlanDiscussionHub: React.FC<PlanDiscussionHubProps> = ({
                       <button
                         key={tg}
                         onClick={() => setSelectedTag(tg === selectedTag ? '' : tg)}
-                        className={`text-[10px] px-2 py-0.5 rounded-full font-medium transition-all ${
+                        className={`text-2xs px-2 py-0.5 rounded-full font-medium transition-all ${
                           selectedTag === tg
                             ? 'bg-slate-800 text-white'
                             : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -367,10 +367,10 @@ export const PlanDiscussionHub: React.FC<PlanDiscussionHubProps> = ({
         )}
       </div>
 
-      {/* 🌟 KHUNG GỬI PHẢN HỒI / TRAO ĐỔI MỚI */}
+      {/* KHUNG GỬI PHẢN HỒI / TRAO ĐỔI MỚI */}
       <div className="p-4 sm:p-5 border-t border-slate-200 bg-white space-y-3">
         {/* Quick Chips gợi ý */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-[11px]">
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-2xs">
           <span className="text-slate-400 font-medium shrink-0 flex items-center gap-1">
             <Sparkles className="w-3 h-3 text-amber-500" />
             Gợi ý nhanh:
@@ -435,9 +435,9 @@ export const PlanDiscussionHub: React.FC<PlanDiscussionHubProps> = ({
                 onChange={(e) => setMessageType(e.target.value as PlanDiscussionType)}
                 className="bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-xs font-medium text-slate-800 focus:outline-none"
               >
-                <option value="COMMENT">Thảo Luận Chung</option>
+                <option value="COMMENT">Thảo luận chung</option>
                 <option value="REVISION_REQUEST">Yêu Cầu Hiệu Chỉnh</option>
-                <option value="BUDGET_ADJUST">Góp Ý Ngân Sách / Kênh</option>
+                <option value="BUDGET_ADJUST">Góp ý ngân sách / kênh</option>
               </select>
             </div>
           </div>
@@ -453,16 +453,16 @@ export const PlanDiscussionHub: React.FC<PlanDiscussionHubProps> = ({
           </div>
 
           <div className="flex items-center justify-between gap-2">
-            <span className="text-[11px] text-slate-400">
-              Nhấn Gửi Trao Đổi để lưu vĩnh viễn vào nhật ký kế hoạch tháng.
+            <span className="text-2xs text-slate-400">
+              Nhấn gửi Trao đổi để lưu vĩnh viễn vào nhật ký kế hoạch tháng.
             </span>
             <button
               type="submit"
               disabled={!commentText.trim()}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 disabled:hover:bg-indigo-600 text-white font-bold text-xs shadow-xs transition-all active:scale-95"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 disabled:hover:bg-indigo-600 text-white font-semibold text-xs shadow-xs transition-all active:scale-95"
             >
               <Send className="w-3.5 h-3.5" />
-              <span>Gửi Trao Đổi</span>
+              <span>Gửi Trao đổi</span>
             </button>
           </div>
         </form>

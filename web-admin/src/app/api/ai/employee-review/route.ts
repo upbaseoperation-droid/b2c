@@ -273,8 +273,8 @@ function generateDomainEmployeeReview(req: AiEmployeeReviewRequest): AiEmployeeR
     : `Yêu cầu ${staffName} điều chỉnh lại phân bổ slot KOC theo góp ý, bổ sung phương án dự phòng cho các deal có nguy cơ trễ hạn trước khi trình duyệt lại.`;
 
   const suggestedLarkPingMessage = overallGrade === 'Xuất sắc'
-    ? `👏 Chúc mừng ${staffName} đã hoàn thành xuất sắc tiến độ tuần với SLA ${onTimeRate}%! Tiếp tục duy trì phong độ cho đợt Mega Sale nhé!`
-    : `⚠️ Nhắc nhở tiến độ: ${staffName} vui lòng kiểm tra lại ${bottlenecks.length} đầu việc có cảnh báo SLA trong hệ thống để kịp thời xử lý trước 17h hôm nay.`;
+    ? `Chúc mừng ${staffName} đã hoàn thành xuất sắc tiến độ tuần với SLA ${onTimeRate}%! Tiếp tục duy trì phong độ cho đợt Mega Sale nhé!`
+    : `Nhắc nhở tiến độ: ${staffName} vui lòng kiểm tra lại ${bottlenecks.length} đầu việc có cảnh báo SLA trong hệ thống để kịp thời xử lý trước 17h hôm nay.`;
 
   const burnoutAlert = cases >= 22 && storeMulti >= 1.4
     ? `Cảnh báo quá tải: Nhân sự đang gánh ${cases} ca việc trên gian hàng khó (x${storeMulti}). Khuyến nghị Lead cân đối bớt tải sang tuần sau.`

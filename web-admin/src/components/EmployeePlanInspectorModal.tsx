@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { formatVndShort } from '../lib/format';
 import { 
   X, 
   CheckCircle2, 
@@ -150,7 +151,7 @@ export const EmployeePlanInspectorModal: React.FC<EmployeePlanInspectorModalProp
       <div 
         role="dialog"
         aria-modal="true"
-        aria-label={`Kế Hoạch Triển Khai Chi Tiết — ${staffAllocation.staffName}`}
+        aria-label={`Kế hoạch triển khai chi tiết — ${staffAllocation.staffName}`}
         className="bg-white border border-slate-200 rounded-xl shadow-2xl w-full max-w-6xl max-h-[92vh] flex flex-col overflow-hidden text-slate-800"
       >
         
@@ -159,23 +160,23 @@ export const EmployeePlanInspectorModal: React.FC<EmployeePlanInspectorModalProp
         {/* ========================================================================= */}
         <div className="px-6 py-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-md bg-blue-50 border border-blue-200 text-blue-700 font-bold flex items-center justify-center text-sm shadow-2xs">
+            <div className="w-9 h-9 rounded-md bg-blue-50 border border-blue-200 text-blue-700 font-semibold flex items-center justify-center text-sm shadow-2xs">
               {staffAllocation.staffName.split(' ').map(n => n[0]).join('').slice(0, 2)}
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-sm font-bold text-slate-900 tracking-tight">
+                <h3 className="text-sm font-semibold text-slate-900 tracking-tight">
                   KẾ HOẠCH TRIỂN KHAI CHI TIẾT — {staffAllocation.staffName.toUpperCase()}
                 </h3>
-                <span className="text-[11px] px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 font-mono">
+                <span className="text-2xs px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 font-mono">
                   {staffAllocation.month}
                 </span>
-                <span className="text-[11px] px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 font-medium">
+                <span className="text-2xs px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 font-medium">
                   {staffAllocation.roleTitle}
                 </span>
               </div>
               <p className="text-xs text-slate-500 mt-0.5">
-                Nhãn hàng phụ trách: <strong className="text-slate-700">{staffAllocation.assignedBrands.join(', ')}</strong> • Đối soát giữa Chỉ Tiêu Ma Trận và Danh Sách KOC thực tế nhân viên đã lên lịch
+                Nhãn hàng phụ trách: <strong className="text-slate-700">{staffAllocation.assignedBrands.join(', ')}</strong> • Đối soát giữa chỉ tiêu Ma trận và danh sách KOC thực tế nhân viên đã lên lịch
               </p>
             </div>
           </div>
@@ -200,13 +201,13 @@ export const EmployeePlanInspectorModal: React.FC<EmployeePlanInspectorModalProp
             <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
               <span className="flex items-center gap-1.5 font-medium">
                 <Video className="w-3.5 h-3.5 text-blue-500" />
-                Độ Lấp Đầy Video (Fill Rate)
+                Độ lấp đầy video
               </span>
-              <span className={`font-bold font-mono text-[11px] ${fillRateVideos >= 90 ? 'text-emerald-600' : 'text-amber-600'}`}>
+              <span className={`font-semibold font-mono text-2xs ${fillRateVideos >= 90 ? 'text-emerald-600' : 'text-amber-600'}`}>
                 {fillRateVideos}%
               </span>
             </div>
-            <div className="text-lg font-bold text-slate-900 font-mono">
+            <div className="text-lg font-semibold text-slate-900 font-mono">
               {totalPlannedVideos} <span className="text-xs text-slate-500 font-normal">/ {targetVideos} clips giao</span>
             </div>
             {/* Progress bar */}
@@ -216,7 +217,7 @@ export const EmployeePlanInspectorModal: React.FC<EmployeePlanInspectorModalProp
                 style={{ width: `${Math.min(100, fillRateVideos)}%` }}
               />
             </div>
-            <div className="text-[10px] text-slate-500 mt-1 flex justify-between">
+            <div className="text-2xs text-slate-500 mt-1 flex justify-between">
               <span>Đã lên plan: {totalPlannedVideos}</span>
               <span>Còn thiếu: {Math.max(0, targetVideos - totalPlannedVideos)} slot</span>
             </div>
@@ -227,14 +228,14 @@ export const EmployeePlanInspectorModal: React.FC<EmployeePlanInspectorModalProp
             <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
               <span className="flex items-center gap-1.5 font-medium">
                 <DollarSign className="w-3.5 h-3.5 text-blue-600" />
-                Ngân Sách Dự Toán Plan
+                Ngân sách dự toán Plan
               </span>
-              <span className={`font-bold font-mono text-[11px] ${fillRateBudget <= 100 ? 'text-blue-600' : 'text-rose-600'}`}>
+              <span className={`font-semibold font-mono text-2xs ${fillRateBudget <= 100 ? 'text-blue-600' : 'text-rose-600'}`}>
                 {fillRateBudget}%
               </span>
             </div>
-            <div className="text-lg font-bold text-blue-600 font-mono">
-              {(totalPlannedBudget / 1000000).toFixed(1)}M <span className="text-xs text-slate-500 font-normal">/ {(targetBudget / 1000000).toFixed(1)}M đ</span>
+            <div className="text-lg font-semibold text-blue-600 font-mono">
+              {formatVndShort(totalPlannedBudget)} <span className="text-xs text-slate-500 font-normal">/ {formatVndShort(targetBudget)}</span>
             </div>
             <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden mt-2 border border-slate-200">
               <div 
@@ -242,10 +243,10 @@ export const EmployeePlanInspectorModal: React.FC<EmployeePlanInspectorModalProp
                 style={{ width: `${Math.min(100, fillRateBudget)}%` }}
               />
             </div>
-            <div className="text-[10px] text-slate-500 mt-1 flex justify-between">
-              <span>Hạn mức: {(targetBudget / 1000000).toFixed(1)}M</span>
+            <div className="text-2xs text-slate-500 mt-1 flex justify-between">
+              <span>Hạn mức: {formatVndShort(targetBudget)}</span>
               <span className={targetBudget >= totalPlannedBudget ? 'text-slate-500' : 'text-rose-600 font-medium'}>
-                {targetBudget >= totalPlannedBudget ? `Dư: ${((targetBudget - totalPlannedBudget) / 1000000).toFixed(1)}M` : `Vượt: ${((totalPlannedBudget - targetBudget) / 1000000).toFixed(1)}M`}
+                {targetBudget >= totalPlannedBudget ? `Dư: ${formatVndShort((targetBudget - totalPlannedBudget))}` : `Vượt: ${formatVndShort((totalPlannedBudget - targetBudget))}`}
               </span>
             </div>
           </div>
@@ -255,18 +256,18 @@ export const EmployeePlanInspectorModal: React.FC<EmployeePlanInspectorModalProp
             <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
               <span className="flex items-center gap-1.5 font-medium">
                 <Target className="w-3.5 h-3.5 text-emerald-600" />
-                Target GMV Dự Phóng
+                Target GMV dự phóng
               </span>
-              <span className="font-bold font-mono text-[11px] text-emerald-600">
+              <span className="font-semibold font-mono text-2xs text-emerald-600">
                 {Math.round((totalPlannedGmv / targetGmv) * 100)}%
               </span>
             </div>
-            <div className="text-lg font-bold text-emerald-600 font-mono">
-              {(totalPlannedGmv / 1000000).toFixed(1)}M <span className="text-xs text-slate-500 font-normal">/ {(targetGmv / 1000000).toFixed(1)}M đ</span>
+            <div className="text-lg font-semibold text-emerald-600 font-mono">
+              {formatVndShort(totalPlannedGmv)} <span className="text-xs text-slate-500 font-normal">/ {formatVndShort(targetGmv)}</span>
             </div>
-            <div className="text-[10px] text-slate-500 mt-2 flex items-center gap-1.5">
+            <div className="text-2xs text-slate-500 mt-2 flex items-center gap-1.5">
               <span>Blended ROI dự kiến:</span>
-              <span className="font-bold text-amber-600 font-mono">
+              <span className="font-semibold text-amber-600 font-mono">
                 {totalPlannedBudget > 0 ? (totalPlannedGmv / totalPlannedBudget).toFixed(1) : 0}x
               </span>
             </div>
@@ -276,24 +277,24 @@ export const EmployeePlanInspectorModal: React.FC<EmployeePlanInspectorModalProp
           <div className="p-3.5 rounded-md bg-white border border-slate-200 shadow-2xs">
             <span className="text-xs text-slate-500 block font-medium mb-1.5 flex items-center gap-1">
               <Layers className="w-3.5 h-3.5 text-purple-600" />
-              So Khớp 4 Tier (Plan / Giao)
+              So Khớp 4 Tier
             </span>
             <div className="grid grid-cols-4 gap-1.5 text-center font-mono">
               <div className="p-1 rounded bg-slate-50 border border-slate-200">
-                <span className="text-[9px] text-rose-600 block font-semibold">T1 Celeb</span>
-                <span className="text-xs font-bold text-slate-900">{planTierCounts.TIER_1_CELEB}/{targetTierCounts.TIER_1_CELEB}</span>
+                <span className="text-2xs text-rose-600 block font-semibold">T1 Celeb</span>
+                <span className="text-xs font-semibold text-slate-900">{planTierCounts.TIER_1_CELEB}/{targetTierCounts.TIER_1_CELEB}</span>
               </div>
               <div className="p-1 rounded bg-slate-50 border border-slate-200">
-                <span className="text-[9px] text-blue-600 block font-semibold">T2 Macro</span>
-                <span className="text-xs font-bold text-slate-900">{planTierCounts.TIER_2_MACRO}/{targetTierCounts.TIER_2_MACRO}</span>
+                <span className="text-2xs text-blue-600 block font-semibold">T2 Macro</span>
+                <span className="text-xs font-semibold text-slate-900">{planTierCounts.TIER_2_MACRO}/{targetTierCounts.TIER_2_MACRO}</span>
               </div>
               <div className="p-1 rounded bg-slate-50 border border-slate-200">
-                <span className="text-[9px] text-emerald-600 block font-semibold">T3 Micro</span>
-                <span className="text-xs font-bold text-slate-900">{planTierCounts.TIER_3_MICRO}/{targetTierCounts.TIER_3_MICRO}</span>
+                <span className="text-2xs text-emerald-600 block font-semibold">T3 Micro</span>
+                <span className="text-xs font-semibold text-slate-900">{planTierCounts.TIER_3_MICRO}/{targetTierCounts.TIER_3_MICRO}</span>
               </div>
               <div className="p-1 rounded bg-slate-50 border border-slate-200">
-                <span className="text-[9px] text-purple-600 block font-semibold">T4 Nano</span>
-                <span className="text-xs font-bold text-slate-900">{planTierCounts.TIER_4_AFFILIATE}/{targetTierCounts.TIER_4_AFFILIATE}</span>
+                <span className="text-2xs text-purple-600 block font-semibold">T4 Nano</span>
+                <span className="text-xs font-semibold text-slate-900">{planTierCounts.TIER_4_AFFILIATE}/{targetTierCounts.TIER_4_AFFILIATE}</span>
               </div>
             </div>
           </div>
@@ -307,12 +308,12 @@ export const EmployeePlanInspectorModal: React.FC<EmployeePlanInspectorModalProp
           <div className="flex items-center gap-2 flex-wrap text-xs">
             {/* Week Filter */}
             <div className="flex items-center gap-1 bg-slate-100 border border-slate-200 rounded-md p-1">
-              <span className="text-[10px] text-slate-500 font-semibold px-1.5">Tuần:</span>
+              <span className="text-2xs text-slate-500 font-semibold px-1.5">Tuần:</span>
               {(['ALL', 'W1', 'W2', 'W3', 'W4'] as const).map(w => (
                 <button
                   key={w}
                   onClick={() => setSelectedWeekFilter(w)}
-                  className={`px-2 py-0.5 rounded text-[11px] font-semibold transition ${
+                  className={`px-2 py-0.5 rounded text-2xs font-semibold transition ${
                     selectedWeekFilter === w ? 'bg-blue-600 text-white' : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
@@ -323,10 +324,10 @@ export const EmployeePlanInspectorModal: React.FC<EmployeePlanInspectorModalProp
 
             {/* Tier Filter */}
             <div className="flex items-center gap-1 bg-slate-100 border border-slate-200 rounded-md p-1">
-              <span className="text-[10px] text-slate-500 font-semibold px-1.5">Tier:</span>
+              <span className="text-2xs text-slate-500 font-semibold px-1.5">Tier:</span>
               <button
                 onClick={() => setSelectedTierFilter('ALL')}
-                className={`px-2 py-0.5 rounded text-[11px] font-semibold transition ${
+                className={`px-2 py-0.5 rounded text-2xs font-semibold transition ${
                   selectedTierFilter === 'ALL' ? 'bg-blue-600 text-white' : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
@@ -334,7 +335,7 @@ export const EmployeePlanInspectorModal: React.FC<EmployeePlanInspectorModalProp
               </button>
               <button
                 onClick={() => setSelectedTierFilter('TIER_1_CELEB')}
-                className={`px-2 py-0.5 rounded text-[11px] font-semibold transition ${
+                className={`px-2 py-0.5 rounded text-2xs font-semibold transition ${
                   selectedTierFilter === 'TIER_1_CELEB' ? 'bg-rose-600 text-white' : 'text-rose-700 hover:bg-rose-50'
                 }`}
               >
@@ -342,7 +343,7 @@ export const EmployeePlanInspectorModal: React.FC<EmployeePlanInspectorModalProp
               </button>
               <button
                 onClick={() => setSelectedTierFilter('TIER_2_MACRO')}
-                className={`px-2 py-0.5 rounded text-[11px] font-semibold transition ${
+                className={`px-2 py-0.5 rounded text-2xs font-semibold transition ${
                   selectedTierFilter === 'TIER_2_MACRO' ? 'bg-blue-600 text-white' : 'text-blue-700 hover:bg-blue-50'
                 }`}
               >
@@ -350,7 +351,7 @@ export const EmployeePlanInspectorModal: React.FC<EmployeePlanInspectorModalProp
               </button>
               <button
                 onClick={() => setSelectedTierFilter('TIER_3_MICRO')}
-                className={`px-2 py-0.5 rounded text-[11px] font-semibold transition ${
+                className={`px-2 py-0.5 rounded text-2xs font-semibold transition ${
                   selectedTierFilter === 'TIER_3_MICRO' ? 'bg-emerald-600 text-white' : 'text-emerald-700 hover:bg-emerald-50'
                 }`}
               >
@@ -358,7 +359,7 @@ export const EmployeePlanInspectorModal: React.FC<EmployeePlanInspectorModalProp
               </button>
               <button
                 onClick={() => setSelectedTierFilter('TIER_4_AFFILIATE')}
-                className={`px-2 py-0.5 rounded text-[11px] font-semibold transition ${
+                className={`px-2 py-0.5 rounded text-2xs font-semibold transition ${
                   selectedTierFilter === 'TIER_4_AFFILIATE' ? 'bg-purple-600 text-white' : 'text-purple-700 hover:bg-purple-50'
                 }`}
               >
@@ -389,14 +390,14 @@ export const EmployeePlanInspectorModal: React.FC<EmployeePlanInspectorModalProp
               <thead>
                 <tr className="bg-slate-50 text-slate-700 border-b border-slate-200 font-semibold">
                   <th className="p-3 pl-4">Tuần</th>
-                  <th className="p-3">Nhãn Hàng</th>
+                  <th className="p-3">Nhãn hàng</th>
                   <th className="p-3">KOC / Creator</th>
-                  <th className="p-3">Phân Hạng & Tệp Kênh</th>
+                  <th className="p-3">Phân hạng & tệp kênh</th>
                   <th className="p-3">Góc Quay / Pillar</th>
-                  <th className="p-3 text-right">Dự Toán Chi Phí</th>
-                  <th className="p-3 text-right">GMV Kỳ Vọng</th>
-                  <th className="p-3 text-center">Trạng Thái Plan</th>
-                  <th className="p-3">Ghi Chú Phê Duyệt</th>
+                  <th className="p-3 text-right">Dự toán chi phí</th>
+                  <th className="p-3 text-right">GMV kỳ vọng</th>
+                  <th className="p-3 text-center">Trạng thái Plan</th>
+                  <th className="p-3">Ghi chú phê duyệt</th>
                   <th className="p-3 pr-4 text-right">Thao Tác</th>
                 </tr>
               </thead>
@@ -428,7 +429,7 @@ export const EmployeePlanInspectorModal: React.FC<EmployeePlanInspectorModalProp
                     <tr key={item.id} className="hover:bg-slate-50 transition-colors">
                       {/* Tuần */}
                       <td className="p-3 pl-4">
-                        <span className="font-bold font-mono px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 text-[10px]">
+                        <span className="font-semibold font-mono px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 text-2xs">
                           {item.targetWeek}
                         </span>
                       </td>
@@ -440,9 +441,9 @@ export const EmployeePlanInspectorModal: React.FC<EmployeePlanInspectorModalProp
 
                       {/* KOC Info */}
                       <td className="p-3">
-                        <div className="font-bold text-slate-900 text-xs">{item.kocStageName}</div>
+                        <div className="font-semibold text-slate-900 text-xs">{item.kocStageName}</div>
                         {item.channelId && (
-                          <div className="text-[10px] text-slate-500 flex items-center gap-1 font-mono">
+                          <div className="text-2xs text-slate-500 flex items-center gap-1 font-mono">
                             <span>{item.channelId}</span>
                             {item.channelUrl && (
                               <a href={item.channelUrl} target="_blank" rel="noreferrer" className="text-slate-400 hover:text-blue-600">
@@ -455,7 +456,7 @@ export const EmployeePlanInspectorModal: React.FC<EmployeePlanInspectorModalProp
 
                       {/* Tier & Category */}
                       <td className="p-3">
-                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border inline-block ${
+                        <span className={`text-2xs font-semibold px-1.5 py-0.5 rounded border inline-block ${
                           item.tier === 'TIER_1_CELEB' ? 'bg-rose-500/20 text-rose-300 border-rose-500/30' :
                           item.tier === 'TIER_2_MACRO' ? 'bg-blue-500/20 text-blue-300 border-blue-500/30' :
                           item.tier === 'TIER_3_MICRO' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' :
@@ -464,30 +465,30 @@ export const EmployeePlanInspectorModal: React.FC<EmployeePlanInspectorModalProp
                           {item.salaryGrade} ({item.tier.replace('TIER_', '')})
                         </span>
                         {item.tepKenh && (
-                          <div className="text-[10px] text-slate-400 mt-0.5">{item.tepKenh}</div>
+                          <div className="text-2xs text-slate-400 mt-0.5">{item.tepKenh}</div>
                         )}
                       </td>
 
                       {/* Content Pillar */}
                       <td className="p-3">
-                        <span className="text-[11px] text-slate-300 block">
+                        <span className="text-2xs text-slate-300 block">
                           {item.contentPillar || 'Review trực tiếp'}
                         </span>
                       </td>
 
                       {/* Budget */}
-                      <td className="p-3 text-right font-mono font-bold text-cyan-300">
+                      <td className="p-3 text-right font-mono font-semibold text-cyan-300">
                         {item.budgetEstimated === 0 ? 'FOC (0đ)' : `${item.budgetEstimated.toLocaleString('vi-VN')} đ`}
                       </td>
 
                       {/* GMV */}
-                      <td className="p-3 text-right font-mono font-bold text-emerald-400">
+                      <td className="p-3 text-right font-mono font-semibold text-emerald-400">
                         {item.targetGmv.toLocaleString('vi-VN')} đ
                       </td>
 
                       {/* Status */}
                       <td className="p-3 text-center">
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded border inline-block ${
+                        <span className={`text-2xs font-semibold px-2 py-0.5 rounded border inline-block ${
                           item.status === 'APPROVED' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' :
                           item.status === 'CONVERTED' ? 'bg-purple-500/20 text-purple-300 border-purple-500/30' :
                           item.status === 'SUBMITTED' ? 'bg-blue-500/20 text-blue-300 border-blue-500/30' :
@@ -496,17 +497,17 @@ export const EmployeePlanInspectorModal: React.FC<EmployeePlanInspectorModalProp
                         }`}>
                           {item.status === 'APPROVED' ? '✓ Đã Duyệt' :
                            item.status === 'CONVERTED' ? '✓ Đã Lên Deal' :
-                           item.status === 'SUBMITTED' ? '⏳ Chờ Duyệt' :
-                           item.status === 'REVISION_REQUESTED' ? '⚠️ Cần Sửa' : 'Bản Nháp'}
+                           item.status === 'SUBMITTED' ? 'Chờ Duyệt' :
+                           item.status === 'REVISION_REQUESTED' ? 'Cần Sửa' : 'Bản Nháp'}
                         </span>
                         {item.dealCode && (
-                          <span className="block text-[9px] text-purple-400 font-mono mt-0.5">{item.dealCode}</span>
+                          <span className="block text-2xs text-purple-400 font-mono mt-0.5">{item.dealCode}</span>
                         )}
                       </td>
 
                       {/* Lead Notes */}
                       <td className="p-3 max-w-[180px]">
-                        <p className="text-[10px] text-slate-400 truncate hover:text-clip" title={item.leadNotes}>
+                        <p className="text-2xs text-slate-400 truncate hover:text-clip" title={item.leadNotes}>
                           {item.leadNotes || '—'}
                         </p>
                       </td>
@@ -536,7 +537,7 @@ export const EmployeePlanInspectorModal: React.FC<EmployeePlanInspectorModalProp
                             </button>
                           )}
                           {!isManager && (
-                            <span className="text-[10px] text-slate-500 italic">Chỉ xem</span>
+                            <span className="text-2xs text-slate-500 italic">Chỉ xem</span>
                           )}
                         </div>
                       </td>
@@ -551,7 +552,7 @@ export const EmployeePlanInspectorModal: React.FC<EmployeePlanInspectorModalProp
           {editingItem && isManager && (
             <div className="p-3.5 rounded-md bg-blue-50 border border-blue-200 space-y-2">
               <div className="flex items-center justify-between text-xs font-semibold text-slate-900">
-                <span>Ghi Chú Phản Hồi Cho KOC: <strong>{editingItem.kocStageName}</strong> ({editingItem.brandName})</span>
+                <span>Ghi chú phản hồi cho KOC: <strong>{editingItem.kocStageName}</strong> ({editingItem.brandName})</span>
                 <button onClick={() => setEditingItem(null)} className="text-slate-400 hover:text-slate-700">
                   <X className="w-4 h-4" />
                 </button>
@@ -566,15 +567,15 @@ export const EmployeePlanInspectorModal: React.FC<EmployeePlanInspectorModalProp
               <div className="flex items-center justify-end gap-2 pt-1">
                 <button
                   onClick={() => onUpdatePlanItemStatus(editingItem.id, 'REVISION_REQUESTED', editNotes)}
-                  className="px-2.5 py-1 rounded text-[11px] font-semibold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 transition"
+                  className="px-2.5 py-1 rounded text-2xs font-semibold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 transition"
                 >
                   Yêu Cầu Sửa
                 </button>
                 <button
                   onClick={handleSaveNotes}
-                  className="px-2.5 py-1 rounded text-[11px] font-semibold bg-blue-600 hover:bg-blue-500 text-white transition"
+                  className="px-2.5 py-1 rounded text-2xs font-semibold bg-blue-600 hover:bg-blue-500 text-white transition"
                 >
-                  Lưu Ghi Chú
+                  Lưu ghi chú
                 </button>
               </div>
             </div>
@@ -583,7 +584,7 @@ export const EmployeePlanInspectorModal: React.FC<EmployeePlanInspectorModalProp
           {/* Feedback & Decision Box */}
           <div className="p-4 rounded-md bg-slate-50 border border-slate-200 space-y-3">
             <div className="flex items-center justify-between">
-              <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+              <h4 className="text-xs font-semibold text-slate-900 flex items-center gap-1.5">
                 <MessageSquare className="w-3.5 h-3.5 text-blue-500" />
                 Chỉ Đạo &amp; Nhận Xét Của Trưởng Phòng:
               </h4>
@@ -594,7 +595,7 @@ export const EmployeePlanInspectorModal: React.FC<EmployeePlanInspectorModalProp
                   className="px-2.5 py-1 rounded bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 font-semibold text-xs transition flex items-center gap-1.5 shadow-2xs"
                   title="Nhận xét tiến độ bằng AI API và tự động gợi ý lời phê chuẩn mực"
                 >
-                  <Sparkles className="w-3.5 h-3.5 text-purple-600 animate-pulse" />
+                  <Sparkles className="w-3.5 h-3.5 text-purple-600" />
                   <span>AI Đánh Giá &amp; Gợi Ý Lời Phê</span>
                 </button>
               )}
@@ -621,7 +622,7 @@ export const EmployeePlanInspectorModal: React.FC<EmployeePlanInspectorModalProp
           {!isManager ? (
             <span className="text-xs text-amber-800 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-md flex items-center gap-1.5 font-medium">
               <Shield className="w-3.5 h-3.5" />
-              Chế độ xem (Chỉ Trưởng Phòng mới có quyền phê duyệt hoặc yêu cầu điều chỉnh kế hoạch)
+              Chế độ xem (chỉ trưởng phòng mới có quyền phê duyệt hoặc yêu cầu điều chỉnh kế hoạch)
             </span>
           ) : (
             <div className="flex items-center gap-2">
@@ -630,21 +631,21 @@ export const EmployeePlanInspectorModal: React.FC<EmployeePlanInspectorModalProp
                 className="px-3.5 py-2 rounded-md font-semibold text-xs bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 transition flex items-center gap-1.5 shadow-2xs"
               >
                 <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
-                Yêu Cầu Điều Chỉnh Kế Hoạch
+                Yêu cầu điều chỉnh kế hoạch
               </button>
 
               <button
                 onClick={() => onApproveEntirePlan(staffAllocation.staffName, managerFeedback)}
-                className="px-4 py-2 rounded-md font-bold text-xs bg-emerald-600 hover:bg-emerald-500 text-white transition flex items-center gap-1.5 shadow-sm"
+                className="px-4 py-2 rounded-md font-semibold text-xs bg-emerald-600 hover:bg-emerald-500 text-white transition flex items-center gap-1.5 shadow-sm"
               >
                 <CheckCircle2 className="w-4 h-4" />
-                Phê Duyệt Toàn Bộ Kế Hoạch
+                Phê duyệt toàn bộ kế hoạch
               </button>
 
               {onConvertPlanToDeals && (
                 <button
                   onClick={() => onConvertPlanToDeals(staffAllocation.staffName)}
-                  className="px-4 py-2 rounded-md font-bold text-xs bg-blue-600 hover:bg-blue-500 text-white transition flex items-center gap-1.5 shadow-sm"
+                  className="px-4 py-2 rounded-md font-semibold text-xs bg-blue-600 hover:bg-blue-500 text-white transition flex items-center gap-1.5 shadow-sm"
                   title="Khởi tạo danh sách Deal Booking từ các slot đã duyệt để bắt đầu liên hệ và gửi mẫu"
                 >
                   <Zap className="w-3.5 h-3.5 text-amber-300" />
