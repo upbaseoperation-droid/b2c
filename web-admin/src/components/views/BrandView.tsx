@@ -274,7 +274,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
       {/* TOP WORKSPACE NAVIGATION TABS */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-3">
+      <div className="border-b border-slate-200 pb-3">
         <div className="flex items-center gap-2 overflow-x-auto pb-1">
           <button
             onClick={() => setActiveTab('BRIEF_STUDIO')}
@@ -339,16 +339,6 @@ export const BrandView: React.FC<BrandViewProps> = ({
             <span>Sức khỏe hợp đồng & Retainer P&L</span>
           </button>
         </div>
-
-        {activeTab === 'BRIEF_STUDIO' && (
-          <button
-            onClick={() => setIsCreateModalOpen(true)}
-            className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-md shadow-sm transition flex items-center gap-2 self-start md:self-auto"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Soạn thảo brief mới</span>
-          </button>
-        )}
       </div>
 
       {/* ========================================================================= */}
@@ -425,15 +415,26 @@ export const BrandView: React.FC<BrandViewProps> = ({
               ))}
             </div>
 
-            <div className="relative w-full sm:w-64">
-              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                placeholder="Tìm mã code, chiến dịch, brand..."
-                value={searchCampaign}
-                onChange={(e) => setSearchCampaign(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-md pl-8 pr-3 py-1.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white"
-              />
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <div className="relative w-full sm:w-64">
+                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Tìm mã code, chiến dịch, brand..."
+                  value={searchCampaign}
+                  onChange={(e) => setSearchCampaign(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-md pl-8 pr-3 py-1.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white"
+                />
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsCreateModalOpen(true)}
+                className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-md shadow-xs transition flex items-center gap-1.5 shrink-0"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Soạn thảo brief mới</span>
+              </button>
             </div>
           </div>
 

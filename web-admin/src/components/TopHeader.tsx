@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Plus, Upload, FileText, Layers, Menu, ChevronDown } from 'lucide-react';
+import { Plus, Upload, Menu, ChevronDown } from 'lucide-react';
 import { UserProfile } from '../lib/types';
 import { USERS } from '../lib/mockData';
 import type { TabKey } from './Sidebar';
@@ -41,8 +41,6 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   onToggleMobileSidebar,
 }) => {
   const isBookingOrManager = currentUser.role === 'MANAGER' || currentUser.role === 'BOOKING_MEMBER';
-  const isContent = currentUser.role === 'CONTENT_MEMBER';
-  const isBrand = currentUser.role === 'BRAND_MEMBER';
 
   return (
     <header className="sticky top-0 z-20 min-h-14 bg-canvas/95 backdrop-blur border-b border-line px-4 sm:px-6 lg:px-8 py-2 flex items-center justify-between gap-4 shrink-0">
@@ -106,25 +104,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
           </>
         )}
 
-        {isContent && onNavigateTab && (
-          <button
-            onClick={() => onNavigateTab('content')}
-            className="btn-md bg-primary hover:bg-primary-hover text-white transition-colors"
-          >
-            <FileText className="w-4 h-4" strokeWidth={1.75} />
-            <span className="hidden sm:inline">Kịch bản chờ duyệt</span>
-          </button>
-        )}
 
-        {isBrand && onNavigateTab && (
-          <button
-            onClick={() => onNavigateTab('campaigns')}
-            className="btn-md bg-primary hover:bg-primary-hover text-white transition-colors"
-          >
-            <Layers className="w-4 h-4" strokeWidth={1.75} />
-            <span className="hidden sm:inline">Tạo brief</span>
-          </button>
-        )}
       </div>
     </header>
   );
