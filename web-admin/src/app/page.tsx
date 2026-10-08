@@ -29,6 +29,7 @@ import { SelfChannelCtvHubView } from '../components/views/SelfChannelCtvHubView
 import { KocKolHubView } from '../components/views/KocKolHubView';
 import { WeeklyAdsReportHubView } from '../components/views/WeeklyAdsReportHubView';
 import { ExecutiveDashboardReportsView } from '../components/views/ExecutiveDashboardReportsView';
+import { ContentAngleSetupView } from '../components/views/ContentAngleSetupView';
 
 import { 
   USERS, 
@@ -235,7 +236,8 @@ export default function App() {
         campaignCode: `CAMP-${item.brandName.toUpperCase().replace(/\s+/g, '')}`,
         campaignTitle: `Chiến Dịch Tháng 9 - ${item.brandName}`,
         brandName: item.brandName,
-        productName: `Combo Sản Phẩm Chủ Lực ${item.brandName}`,
+        storeName: item.storeName || `${item.brandName} Official Store`,
+        productName: item.productName || `Combo Sản Phẩm Chủ Lực ${item.brandName}`,
         totalValue: item.budgetEstimated || 5000000,
         advanceAmount: Math.round((item.budgetEstimated || 5000000) * 0.2),
         finalAmount: Math.round((item.budgetEstimated || 5000000) * 0.8),
@@ -244,6 +246,9 @@ export default function App() {
         tepKenh: item.tepKenh || 'Beauty',
         kocCategory: 'Personal care',
         contentPillar: (item.contentPillar as ContentPillarType) || 'Review trực tiếp',
+        contentAngleId: item.contentAngleId,
+        contentAngleName: item.contentAngleName,
+        contentHook: item.contentHook,
         status: 'CONTRACT_GENERATED',
         statusLabel: 'Đã Ký HĐ (Cần Duyệt Cọc)',
         pipelineText: 'Chờ chi cọc',
@@ -464,6 +469,7 @@ export default function App() {
     campaigns: { title: 'Làm việc với Brand', subtitle: 'Brief chiến dịch, Brand Guideline, Blacklist từ khóa và duyệt KOC của team Brand' },
     'brand-knowledge': { title: 'Hướng dẫn nhãn hàng', subtitle: 'Thông tin thương hiệu, hồ sơ pháp lý, Hero SKU và từ khóa cần tránh' },
     content: { title: 'Kịch bản', subtitle: '' },
+    'content-angles': { title: 'Thiết Lập Góc Nội Dung (Content Angles)', subtitle: 'Kho kịch bản phân rã theo Trụ cột nội dung và từng sản phẩm của gian hàng' },
     booking: { title: 'Booking', subtitle: '' },
     'koc-master': { title: 'Danh bạ KOC', subtitle: 'Hồ sơ KOC, giấy tờ pháp lý và mẫu hợp đồng' },
     contracts: { title: 'Hợp đồng & thanh toán', subtitle: '' },
@@ -639,6 +645,18 @@ export default function App() {
           {activeTab === 'content' && (
             <ContentView
               onScriptApprovedNotification={handleScriptApprovedNotification}
+              onNavigateToAngles={() => setActiveTab('content-angles')}
+            />
+          )}
+
+          {activeTab === 'content-angles' && (
+            <ContentAngleSetupView
+              currentUser={currentUser}
+              onNotify={showToast}
+              onSelectAngleForBooking={(angle) => {
+                setActiveTab('booking');
+                showToast(`Đã chọn góc kịch bản "${angle.name}" cho Booking`);
+              }}
             />
           )}
 

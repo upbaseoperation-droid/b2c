@@ -743,6 +743,14 @@ export const BookingView: React.FC<BookingViewProps> = ({
                         </div>
                         <div className="font-medium text-ink mt-1">{d.brandName || 'Upbase'}</div>
                         <div className="text-2xs text-ink-2 truncate max-w-[220px]">{d.productName || 'Sản phẩm booking'}{d.bookingBatch ? ` · ${d.bookingBatch}` : ''}</div>
+                        {d.contentAngleName ? (
+                          <div className="text-2xs font-semibold text-purple-700 flex items-center gap-1 mt-0.5 truncate max-w-[220px]" title={d.contentHook ? `Hook: "${d.contentHook}"` : d.contentAngleName}>
+                            <Sparkles className="w-3 h-3 text-purple-600 shrink-0" />
+                            <span className="truncate">{d.contentAngleName}</span>
+                          </div>
+                        ) : d.contentPillar ? (
+                          <div className="text-3xs text-ink-3 mt-0.5">{d.contentPillar}</div>
+                        ) : null}
                         <div className="text-2xs text-ink-3 truncate max-w-[220px]">{d.campaignTitle}</div>
                       </div>
                     ),

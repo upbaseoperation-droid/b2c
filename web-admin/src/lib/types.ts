@@ -301,6 +301,9 @@ export interface BookingDealItem {
   creatorCategory?: CreatorNiche; // Alias backward-compatibility
   kocCategory: KocCategory; // 4. KOC category
   contentPillar: ContentPillarType;
+  contentAngleId?: string; // ID góc nội dung (Content Angle) cụ thể của sản phẩm
+  contentAngleName?: string; // Tên góc tiếp cận (VD: Cứu nguy da bé chàm sữa nửa đêm)
+  contentHook?: string; // Hook 3 giây đầu gợi ý cho KOC
   
   // Phê duyệt của Brand (THEO TỪNG JOB CỤ THỂ)
   brandApprovalStatus: BrandApprovalStatus; // Brand duyệt (ĐÃ_DUYỆT, CHỜ_DUYỆT, TỪ_CHỐI)
@@ -1595,6 +1598,12 @@ export interface StaffDetailedPlanItem {
   channelUrl?: string;
   tepKenh?: TepKenh;
   contentPillar?: string; // Review trực tiếp, Nỗi đau - Giải pháp, Unboxing, FOMO, Daily Vlog...
+  storeName?: string; // Tên gian hàng phụ trách
+  productId?: string; // ID Sản phẩm đẩy
+  productName?: string; // Tên Sản phẩm đẩy
+  contentAngleId?: string; // ID Content Angle cụ thể
+  contentAngleName?: string; // Tên Angle
+  contentHook?: string; // Hook 3s gợi ý cho KOC
   budgetEstimated: number; // VNĐ
   targetGmv: number; // VNĐ
   status: StaffPlanStatus;
@@ -1836,6 +1845,52 @@ export interface MasterContentPillar {
   activeBrandsCount?: number; // Số brand đang áp dụng
   createdAt: string;
   lastUpdate?: string;
+}
+
+// =========================================================================
+// 8.1 CONTENT ANGLE BY PRODUCT (GÓC TIẾP CẬN NỘI DUNG THEO TỪNG SẢN PHẨM)
+// =========================================================================
+export interface ContentAngleItem {
+  id: string;
+  code: string; // VD: ANG-KUTI-01, ANG-LRP-02
+  name: string; // Tên hướng tiếp cận / Angle Title
+
+  // Liên kết Trụ cột nội dung (Content Pillar)
+  pillarId: string; // ID Pillar gốc (PIL-01, PIL-02...)
+  pillarName: string; // Tên Pillar (Review trực tiếp, Nỗi đau - Giải pháp, Unboxing...)
+  pillarCode?: string;
+
+  // Liên kết Sản phẩm & Gian hàng (Angle đi theo từng sản phẩm cụ thể)
+  productId: string; // ID sản phẩm (SKU)
+  productName: string; // Tên sản phẩm cụ thể
+  productSku?: string;
+  productImageUrl?: string;
+  brandId?: string;
+  brandName: string; // Tên Brand (Kutieskin, La Roche-Posay, Anessa...)
+  storeId?: string;
+  storeName: string; // Tên Gian hàng
+  platform?: 'TIKTOK_SHOP' | 'SHOPEE_MALL' | 'LAZADA';
+
+  // Cấu trúc kịch bản nội dung chuẩn hóa
+  hookIdea: string; // Câu Hook 3 giây đầu (Gây tò mò / giật gân / đánh trúng insight)
+  painPoint: string; // Nỗi đau khách hàng / Insight cốt lõi
+  solutionApproach: string; // Cách lồng ghép sản phẩm vào để giải quyết nỗi đau
+  keySellingPoints: string[]; // USP / Key messages bắt buộc nói
+  targetAudience: string; // Tệp khán giả mục tiêu (Gen Z, Mẹ bỉm, Dân văn phòng...)
+  callToAction: string; // CTA gợi ý (Gắn giỏ hàng vàng, Săn deal 1k, Flash sale...)
+  suggestedFormat?: string; // Định dạng video đề xuất (Voiceover B-roll, Talking Head, POV/Drama...)
+
+  // Quy chuẩn kiểm duyệt (Do's & Don'ts)
+  doList?: string[];
+  dontList?: string[];
+
+  // Thống kê & Trạng thái
+  status: 'ACTIVE' | 'DRAFT' | 'ARCHIVED';
+  usageCount: number; // Số lượt booking KOC đã áp dụng
+  avgViewsEstimate?: number; // Lượt xem ước tính
+  createdBy?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // Master Data: Bậc cast & Phân nhóm KOC (5.6 Tệp cast)

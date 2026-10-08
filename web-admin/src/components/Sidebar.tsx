@@ -22,6 +22,7 @@ import {
   Video,
   X,
   LogOut,
+  Sparkles,
   type LucideIcon,
 } from 'lucide-react';
 import { UserProfile } from '../lib/types';
@@ -39,6 +40,7 @@ export type TabKey =
   | 'campaigns'
   | 'brand-knowledge'
   | 'content'
+  | 'content-angles'
   | 'booking'
   | 'koc-master'
   | 'contracts'
@@ -103,6 +105,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         { key: 'campaigns', label: 'Làm việc với Brand', icon: Layers },
         { key: 'booking', label: 'Booking KOC', icon: Users },
         { key: 'content', label: 'Kịch bản video', icon: FileText },
+        { key: 'content-angles', label: 'Góc nội dung (Angles)', icon: Sparkles },
         { key: 'contracts', label: 'Hợp đồng & thanh toán', icon: FileCheck },
         { key: 'sample-tracker', label: 'Hàng mẫu', icon: Package },
       ],

@@ -33,6 +33,8 @@ import {
   TepKenh,
   StaffPlanStatus
 } from '../lib/types';
+import { INITIAL_CONTENT_ANGLES } from '../lib/contentAngleData';
+import { INITIAL_PUSH_PRODUCTS } from '../lib/mockData';
 
 interface MyPlanWorkspaceProps {
   currentStaffName: string;
@@ -74,6 +76,32 @@ export const MyPlanWorkspace: React.FC<MyPlanWorkspaceProps> = ({
   const [formBudget, setFormBudget] = useState(4000000);
   const [formGmv, setFormGmv] = useState(30000000);
 
+  // Product & Content Angle state for slot
+  const [formProduct, setFormProduct] = useState('Kem Bôi Dịu Da Kutieskin 30g');
+  const [formAngleId, setFormAngleId] = useState('');
+  const [formAngleName, setFormAngleName] = useState('');
+  const [formHook, setFormHook] = useState('');
+
+  const relevantAngles = React.useMemo(() => {
+    return INITIAL_CONTENT_ANGLES.filter(a => 
+      a.productName.toLowerCase().includes(formProduct.toLowerCase()) || 
+      a.brandName.toLowerCase().includes(formBrand.toLowerCase())
+    );
+  }, [formProduct, formBrand]);
+
+  const handleSelectAngle = (angleId: string) => {
+    setFormAngleId(angleId);
+    const matched = INITIAL_CONTENT_ANGLES.find(a => a.id === angleId);
+    if (matched) {
+      setFormAngleName(matched.name);
+      setFormHook(matched.hookIdea);
+      setFormPillar(matched.pillarName);
+    } else {
+      setFormAngleName('');
+      setFormHook('');
+    }
+  };
+
   // Suggested KOCs based on chosen brand/tier
   const handleSelectExistingKoc = (koc: KocItem) => {
     setFormKocName(koc.stageName);
@@ -98,15 +126,22 @@ export const MyPlanWorkspace: React.FC<MyPlanWorkspaceProps> = ({
       channelId: formChannelId.trim() || undefined,
       tepKenh: formTepKenh,
       contentPillar: formPillar,
+      productName: formProduct,
+      contentAngleId: formAngleId || undefined,
+      contentAngleName: formAngleName || undefined,
+      contentHook: formHook || undefined,
       budgetEstimated: Number(formBudget) || 0,
       targetGmv: Number(formGmv) || 0,
       status: 'DRAFT',
-      leadNotes: 'Đang chuẩn bị đề xuất kịch bản'
+      leadNotes: formHook ? `Góc: ${formAngleName} | Hook: "${formHook.slice(0, 45)}..."` : 'Đang chuẩn bị đề xuất kịch bản'
     });
 
     setIsAddModalOpen(false);
     setFormKocName('');
     setFormChannelId('');
+    setFormAngleId('');
+    setFormAngleName('');
+    setFormHook('');
   };
 
   // Metrics
@@ -339,9 +374,18 @@ export const MyPlanWorkspace: React.FC<MyPlanWorkspaceProps> = ({
                       )}
                     </td>
 
-                    {/* Pillar */}
+                    {/* Pillar & Angle */}
                     <td className="p-3 text-slate-700 text-2xs">
-                      {item.contentPillar}
+                      <div className="font-medium text-slate-800">{item.contentPillar}</div>
+                      {item.contentAngleName && (
+                        <div className="text-purple-700 font-semibold text-3xs mt-0.5 flex items-center gap-1" title={item.contentHook}>
+                          <Sparkles className="w-3 h-3 text-purple-600 shrink-0" />
+                          <span className="truncate max-w-[130px]">{item.contentAngleName}</span>
+                        </div>
+                      )}
+                      {item.productName && (
+                        <div className="text-slate-400 text-3xs truncate max-w-[130px]">{item.productName}</div>
+                      )}
                     </td>
 
                     {/* Cost */}
@@ -560,6 +604,52 @@ export const MyPlanWorkspace: React.FC<MyPlanWorkspaceProps> = ({
                     <option value="Unboxing">Unboxing</option>
                   </select>
                 </div>
+              </div>
+
+              {/* Product & Content Angle Selection */}
+              <div className="grid grid-cols-2 gap-3 p-3 bg-purple-50/50 rounded-xl border border-purple-200/80">
+                <div>
+                  <label className="text-slate-800 font-semibold block mb-1">Sản phẩm đẩy của gian hàng:</label>
+                  <select
+                    value={formProduct}
+                    onChange={(e) => setFormProduct(e.target.value)}
+                    className="w-full bg-white border border-slate-300 rounded-lg p-2 text-slate-900 focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 focus:outline-none truncate"
+                  >
+                    {INITIAL_PUSH_PRODUCTS.map(p => (
+                      <option key={p.id} value={p.productName}>{p.productName}</option>
+                    ))}
+                    <option value="Combo Sản Phẩm Chủ Lực">Combo Sản Phẩm Chủ Lực</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-slate-800 font-semibold block mb-1 flex items-center justify-between">
+                    <span>Góc tiếp cận (Content Angle):</span>
+                    {relevantAngles.length > 0 && (
+                      <span className="text-3xs text-purple-700 font-bold font-mono">({relevantAngles.length} góc)</span>
+                    )}
+                  </label>
+                  <select
+                    value={formAngleId}
+                    onChange={(e) => handleSelectAngle(e.target.value)}
+                    className="w-full bg-white border border-purple-300 rounded-lg p-2 text-slate-900 font-medium focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 focus:outline-none truncate"
+                  >
+                    <option value="">-- Chọn góc kịch bản có sẵn --</option>
+                    {relevantAngles.map(a => (
+                      <option key={a.id} value={a.id}>[{a.pillarName}] {a.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {formHook && (
+                  <div className="col-span-2 pt-2 border-t border-purple-100 text-xs">
+                    <div className="text-2xs font-bold text-purple-700 uppercase flex items-center gap-1 mb-0.5">
+                      <Sparkles className="w-3 h-3 text-amber-500" />
+                      Hook 3 giây đầu gợi ý cho KOC:
+                    </div>
+                    <p className="italic text-slate-800 text-2xs">&ldquo;{formHook}&rdquo;</p>
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-3">

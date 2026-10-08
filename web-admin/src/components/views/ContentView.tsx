@@ -26,9 +26,10 @@ import { ScriptReviewModal } from '../ScriptReviewModal';
 
 interface ContentViewProps {
   onScriptApprovedNotification?: (dealCode: string) => void;
+  onNavigateToAngles?: () => void;
 }
 
-export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotification }) => {
+export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotification, onNavigateToAngles }) => {
   const [scripts, setScripts] = useState<ScriptReviewItem[]>(INITIAL_SCRIPTS);
   const [contentItems, setContentItems] = useState<ContentItemModel[]>(INITIAL_CONTENT_ITEMS);
   const [publications, setPublications] = useState<PublicationItemModel[]>(INITIAL_PUBLICATIONS);
@@ -112,7 +113,7 @@ export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotifi
           }`}
         >
           <Award className="w-3.5 h-3.5" />
-          <span>5. 3 Master Pillars</span>
+          <span>5. Trụ Cột & Góc Tiếp Cận Theo SP</span>
         </button>
       </div>
 
@@ -431,6 +432,118 @@ export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotifi
                   ))}
                 </tbody>
               </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* View 5: Master Pillars & Product Angles */}
+      {activeSubTab === 'PILLARS' && (
+        <div className="space-y-4 animate-in fade-in duration-150">
+          <div className="card-enterprise overflow-hidden p-6 bg-white border border-slate-200 rounded-2xl shadow-xs">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-200">
+              <div className="space-y-1">
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-purple-50 text-purple-700 font-semibold text-2xs border border-purple-200">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Chuẩn Hóa Kiến Trúc Nội Dung UpBase</span>
+                </div>
+                <h3 className="text-base font-bold text-slate-900">
+                  Trụ Cột Nội Dung (Master Pillars) & Góc Tiếp Cận Theo Sản Phẩm (Content Angles)
+                </h3>
+                <p className="text-xs text-slate-500 max-w-2xl leading-relaxed">
+                  Trụ cột (Pillar) định hình phong cách kênh tổng thể. Mỗi sản phẩm đẩy của từng gian hàng cần được xây dựng các <strong>Content Angles cụ thể</strong> (Hook 3s, nỗi đau, giải pháp) thuộc các Pillar này để cung cấp sẵn cho đội ngũ Booking & KOC.
+                </p>
+              </div>
+
+              {onNavigateToAngles && (
+                <button
+                  onClick={onNavigateToAngles}
+                  className="px-4 py-2.5 rounded-xl text-xs font-semibold bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-xs hover:opacity-95 transition flex items-center gap-2 whitespace-nowrap cursor-pointer shrink-0"
+                >
+                  <Sparkles className="w-4 h-4 text-amber-300" />
+                  <span>Mở Màn Hình Setup Content Angle</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+
+            {/* 3 Master Pillars Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-6">
+              <div className="p-4 rounded-xl border border-rose-200 bg-rose-50/40 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="px-2 py-0.5 rounded text-2xs font-bold bg-rose-100 text-rose-800 border border-rose-200">
+                    PIL-02 · PROBLEM_SOLUTION
+                  </span>
+                  <span className="text-2xs text-rose-600 font-semibold">Tỷ lệ chuyển đổi cao</span>
+                </div>
+                <h4 className="text-sm font-bold text-slate-900">Nỗi Đau - Giải Pháp (Problem - Solution)</h4>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Đặt vấn đề (Pain Point) nhức nhối của khách hàng và đưa sản phẩm vào như một cứu cánh tất yếu. Thường dùng format Before/After và tình huống hoảng loạn.
+                </p>
+                <div className="text-2xs text-slate-500 space-y-1 pt-2 border-t border-rose-200/60">
+                  <div><strong>Định mức thù lao:</strong> 1.500.000 đ / video</div>
+                  <div><strong>Format đề xuất:</strong> POV nửa đêm, Review Voice, Before/After</div>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-xl border border-blue-200 bg-blue-50/40 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="px-2 py-0.5 rounded text-2xs font-bold bg-blue-100 text-blue-800 border border-blue-200">
+                    PIL-01 · DIRECT_REVIEW
+                  </span>
+                  <span className="text-2xs text-blue-600 font-semibold">Xây dựng uy tín</span>
+                </div>
+                <h4 className="text-sm font-bold text-slate-900">Review Trực Tiếp (Direct Review)</h4>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  KOC trải nghiệm thực tế sản phẩm, chiếm &gt;70% thời lượng video. Tập trung vào texture, thành phần, cảm nhận khi thoa/uống và kết quả thực chứng.
+                </p>
+                <div className="text-2xs text-slate-500 space-y-1 pt-2 border-t border-blue-200/60">
+                  <div><strong>Định mức thù lao:</strong> 1.500.000 đ / video</div>
+                  <div><strong>Format đề xuất:</strong> Talking Head, Review Voice, Macro cận cảnh</div>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-xl border border-emerald-200 bg-emerald-50/40 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="px-2 py-0.5 rounded text-2xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                    PIL-03 · UNBOXING
+                  </span>
+                  <span className="text-2xs text-emerald-600 font-semibold">Tự nhiên & Chân thực</span>
+                </div>
+                <h4 className="text-sm font-bold text-slate-900">Unboxing & Trải Nghiệm (UGC Unbox)</h4>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Đập hộp bao bì, âm thanh ASMR chân thực, tạo cảm giác người tiêu dùng tự đặt mua và hào hứng mở kiện hàng. Phù hợp cho Affiliate và Nano Creator.
+                </p>
+                <div className="text-2xs text-slate-500 space-y-1 pt-2 border-t border-emerald-200/60">
+                  <div><strong>Định mức thù lao:</strong> 1.000.000 đ / video</div>
+                  <div><strong>Format đề xuất:</strong> Unbox Voice, ASMR, Ảnh lướt</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Action Banner */}
+            <div className="mt-6 p-4 rounded-xl bg-purple-50 border border-purple-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-purple-600 text-white flex items-center justify-center shrink-0">
+                  <Sparkles className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-slate-900">
+                    Đã có phân hệ riêng: Thiết Lập Content Angle Theo Từng Sản Phẩm
+                  </div>
+                  <div className="text-2xs text-slate-600">
+                    Cấu hình ma trận phủ kịch bản (Product x Pillar Matrix), gợi ý Hook 3s bằng AI và kết nối trực tiếp vào luồng Booking Deals.
+                  </div>
+                </div>
+              </div>
+              {onNavigateToAngles && (
+                <button
+                  onClick={onNavigateToAngles}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold bg-purple-600 hover:bg-purple-700 text-white transition whitespace-nowrap"
+                >
+                  Truy cập ngay →
+                </button>
+              )}
             </div>
           </div>
         </div>
