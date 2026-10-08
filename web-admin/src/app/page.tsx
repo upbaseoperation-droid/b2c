@@ -26,6 +26,7 @@ import PerformanceP3View from '../components/views/PerformanceP3View';
 import { PushProductsView } from '../components/views/PushProductsView';
 import { MasterDataHubView } from '../components/views/MasterDataHubView';
 import { SelfChannelCtvHubView } from '../components/views/SelfChannelCtvHubView';
+import { KocKolHubView } from '../components/views/KocKolHubView';
 
 import { 
   USERS, 
@@ -469,6 +470,7 @@ export default function App() {
     'performance-p3': { title: 'Đánh giá 4P & thưởng P3', subtitle: 'Điểm khối lượng việc theo độ khó gian hàng, chất lượng và SLA' },
     leaderboard: { title: 'Hiệu suất nhân sự', subtitle: '' },
     'brand-hub': { title: 'Cổng đối tác Brand', subtitle: 'Duyệt kế hoạch → Duyệt KOC → Duyệt kịch bản → Nghiệm thu video' },
+    'koc-hub': { title: 'Hub đối tác KOC / KOL', subtitle: 'Xem lời mời booking, xác nhận nhận hàng mẫu, nộp link video review & mã Spark Ads' },
   };
 
   return (
@@ -705,7 +707,23 @@ export default function App() {
           {activeTab === 'leaderboard' && <LeaderboardView />}
 
           {activeTab === 'brand-hub' && (
-            <BrandHubView onNotify={showToast} />
+            <BrandHubView
+              onNotify={showToast}
+              onNavigateToCtvHub={() => setActiveTab('self-channel-hub')}
+              onNavigateToKocHub={() => setActiveTab('koc-hub')}
+            />
+          )}
+
+          {activeTab === 'koc-hub' && (
+            <KocKolHubView
+              currentUser={currentUser}
+              brands={brands}
+              initialKocs={kocs}
+              initialDeals={deals}
+              onNotify={showToast}
+              onNavigateToBrandHub={() => setActiveTab('brand-hub')}
+              onNavigateToCtvHub={() => setActiveTab('self-channel-hub')}
+            />
           )}
         </main>
       </div>

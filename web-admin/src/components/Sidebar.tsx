@@ -43,7 +43,8 @@ export type TabKey =
   | 'sample-tracker'
   | 'performance-p3'
   | 'leaderboard'
-  | 'brand-hub';
+  | 'brand-hub'
+  | 'koc-hub';
 
 interface NavItem {
   key: TabKey;
@@ -84,12 +85,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
       ],
     },
     {
-      title: 'Vận hành',
+      title: 'Vận hành nội bộ',
       items: [
         { key: 'input-plan', label: 'Kế hoạch tháng', icon: Calendar },
         { key: 'push-products', label: 'Sản phẩm đẩy', icon: TrendingUp },
         { key: 'campaigns', label: 'Làm việc với Brand', icon: Layers },
-        { key: 'self-channel-hub', label: 'Hub Cộng tác viên (CTV)', icon: Video },
         { key: 'booking', label: 'Booking', icon: Users },
         { key: 'content', label: 'Kịch bản', icon: FileText },
         { key: 'contracts', label: 'Hợp đồng & thanh toán', icon: FileCheck },
@@ -110,8 +110,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
       ],
     },
     {
-      title: 'Khách hàng',
-      items: [{ key: 'brand-hub', label: 'Cổng đối tác Brand', icon: ExternalLink }],
+      title: 'Cổng đối tác ngoài (3 Hubs)',
+      items: [
+        { key: 'brand-hub', label: 'Cổng đối tác Brand', icon: ExternalLink },
+        { key: 'self-channel-hub', label: 'Hub Cộng tác viên (CTV)', icon: Video },
+        { key: 'koc-hub', label: 'Hub đối tác KOC / KOL', icon: Users },
+      ],
     },
   ];
 

@@ -25,7 +25,8 @@ import {
   ChevronRight,
   Share2,
   Building,
-  UserCheck
+  UserCheck,
+  Users
 } from 'lucide-react';
 import {
   BrandCampaignPortalData,
@@ -37,9 +38,15 @@ import { INITIAL_BRAND_PORTAL_DATA } from '../../lib/mockData';
 
 interface BrandHubViewProps {
   onNotify?: (msg: string) => void;
+  onNavigateToCtvHub?: () => void;
+  onNavigateToKocHub?: () => void;
 }
 
-export const BrandHubView: React.FC<BrandHubViewProps> = ({ onNotify }) => {
+export const BrandHubView: React.FC<BrandHubViewProps> = ({ 
+  onNotify,
+  onNavigateToCtvHub,
+  onNavigateToKocHub
+}) => {
   const [portals, setPortals] = useState<BrandCampaignPortalData[]>(INITIAL_BRAND_PORTAL_DATA);
   const [selectedPortalId, setSelectedPortalId] = useState<string>(INITIAL_BRAND_PORTAL_DATA[0].id);
 
@@ -287,6 +294,30 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({ onNotify }) => {
               {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Share2 className="w-3.5 h-3.5 text-blue-600" />}
               <span>{copiedLink ? 'Đã Sao Chép Link' : 'Copy Magic Link Brand'}</span>
             </button>
+
+            {onNavigateToCtvHub && (
+              <button
+                type="button"
+                onClick={onNavigateToCtvHub}
+                className="btn-md bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition shadow-2xs"
+                title="Chuyển sang Hub Cộng tác viên (CTV)"
+              >
+                <Video className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Hub CTV</span>
+              </button>
+            )}
+
+            {onNavigateToKocHub && (
+              <button
+                type="button"
+                onClick={onNavigateToKocHub}
+                className="btn-md bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition shadow-2xs"
+                title="Chuyển sang Hub đối tác KOC / KOL"
+              >
+                <Users className="w-3.5 h-3.5 text-indigo-600" />
+                <span>Hub KOC</span>
+              </button>
+            )}
           </div>
         </div>
 
