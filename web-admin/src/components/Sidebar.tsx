@@ -5,6 +5,7 @@ import {
   CheckSquare,
   BarChart2,
   BarChart3,
+  LayoutDashboard,
   Layers,
   FileText,
   Users,
@@ -29,6 +30,7 @@ import { Avatar, BrandLogo } from './ui';
 export type TabKey =
   | 'cockpit'
   | 'overview'
+  | 'dashboard-bi'
   | 'input-plan'
   | 'self-channel-hub'
   | 'master-data'
@@ -83,7 +85,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
       title: 'Của tôi',
       items: [
         { key: 'cockpit', label: 'Việc của tôi', icon: CheckSquare },
-        { key: 'overview', label: 'Tổng quan', icon: BarChart2 },
+        { key: 'overview', label: 'Tổng quan nhanh', icon: BarChart2 },
+      ],
+    },
+    {
+      title: 'Dashboard & Báo cáo',
+      items: [
+        { key: 'dashboard-bi', label: 'Dashboard điều hành', icon: LayoutDashboard },
+        { key: 'ads-report', label: 'Báo cáo Ads TikTok', icon: BarChart3 },
+        { key: 'performance-p3', label: 'Đánh giá 4P & thưởng', icon: Coins },
+        { key: 'leaderboard', label: 'Hiệu suất nhân sự', icon: Award },
       ],
     },
     {
@@ -95,7 +106,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
         { key: 'booking', label: 'Booking', icon: Users },
         { key: 'content', label: 'Kịch bản', icon: FileText },
         { key: 'contracts', label: 'Hợp đồng & thanh toán', icon: FileCheck },
-        { key: 'ads-report', label: 'Báo cáo Ads TikTok', icon: BarChart3 },
         { key: 'sample-tracker', label: 'Hàng mẫu', icon: Package },
         { key: 'brand-knowledge', label: 'Hướng dẫn nhãn hàng', icon: BookOpen },
       ],
@@ -108,8 +118,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
       title: 'Quản lý',
       items: [
         { key: 'manager', label: isManager ? 'Phân bổ & điều phối' : 'Kế hoạch & báo cáo', icon: Split },
-        { key: 'performance-p3', label: 'Đánh giá 4P & thưởng', icon: Coins },
-        { key: 'leaderboard', label: 'Hiệu suất nhân sự', icon: Award },
       ],
     },
     {
