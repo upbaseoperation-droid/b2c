@@ -64,6 +64,7 @@ import { CampaignCreateModal } from '../CampaignCreateModal';
 interface BrandViewProps {
   onCampaignCreatedNotification?: (campaign: CampaignItem) => void;
   onTriggerHandoffNotification?: (campaignTitle: string) => void;
+  onNavigateToCtvHub?: () => void;
 }
 
 type BrandViewTab = 'BRIEF_STUDIO' | 'GUIDELINE_HUB' | 'APPROVAL_GATE' | 'RETAINER_HEALTH';
@@ -71,6 +72,7 @@ type BrandViewTab = 'BRIEF_STUDIO' | 'GUIDELINE_HUB' | 'APPROVAL_GATE' | 'RETAIN
 export const BrandView: React.FC<BrandViewProps> = ({
   onCampaignCreatedNotification,
   onTriggerHandoffNotification,
+  onNavigateToCtvHub,
 }) => {
   // Navigation Tab State
   const [activeTab, setActiveTab] = useState<BrandViewTab>('BRIEF_STUDIO');
@@ -338,6 +340,18 @@ export const BrandView: React.FC<BrandViewProps> = ({
             <BarChart3 className="w-3.5 h-3.5" />
             <span>Sức khỏe hợp đồng & Retainer P&L</span>
           </button>
+
+          {onNavigateToCtvHub && (
+            <button
+              onClick={onNavigateToCtvHub}
+              className="ml-auto px-3.5 py-2 text-xs font-semibold rounded-md transition flex items-center gap-1.5 whitespace-nowrap bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 shrink-0"
+              title="Mở Hub làm việc với Cộng tác viên sản xuất video Self-Channel"
+            >
+              <Video className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Hub Cộng tác viên (CTV)</span>
+              <ArrowRight className="w-3.5 h-3.5 text-emerald-600" />
+            </button>
+          )}
         </div>
       </div>
 

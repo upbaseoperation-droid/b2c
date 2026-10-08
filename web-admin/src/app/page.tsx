@@ -454,11 +454,11 @@ export default function App() {
     cockpit: { title: 'Việc của tôi', subtitle: '' },
     overview: { title: 'Tổng quan', subtitle: '' },
     'input-plan': { title: 'Kế hoạch tháng', subtitle: 'Ngân sách, kênh và nhân sự booking theo từng tháng' },
-    'self-channel-hub': { title: 'Self Channel & CTV', subtitle: 'Sản xuất video kênh thương hiệu theo Content Pillar và quản lý Cộng Tác Viên' },
+    'self-channel-hub': { title: 'Hub làm việc với Cộng tác viên (CTV)', subtitle: 'Sản xuất video kênh thương hiệu theo Content Pillar và quản lý Cộng Tác Viên' },
     'master-data': { title: 'Dữ liệu gốc', subtitle: '' },
     'push-products': { title: 'Sản phẩm đẩy', subtitle: '' },
     stores: { title: 'Gian hàng & nhãn hàng', subtitle: '' },
-    campaigns: { title: 'Brief & chiến dịch', subtitle: 'Brief, guideline, blacklist từ khóa và duyệt KOC của team Brand' },
+    campaigns: { title: 'Làm việc với Brand', subtitle: 'Brief chiến dịch, Brand Guideline, Blacklist từ khóa và duyệt KOC của team Brand' },
     'brand-knowledge': { title: 'Hướng dẫn nhãn hàng', subtitle: 'Thông tin thương hiệu, hồ sơ pháp lý, Hero SKU và từ khóa cần tránh' },
     content: { title: 'Kịch bản', subtitle: '' },
     booking: { title: 'Booking', subtitle: '' },
@@ -468,7 +468,7 @@ export default function App() {
     'sample-tracker': { title: 'Hàng mẫu', subtitle: 'Vận đơn mẫu, hạn nộp kịch bản 5 ngày và mã Spark Ads' },
     'performance-p3': { title: 'Đánh giá 4P & thưởng P3', subtitle: 'Điểm khối lượng việc theo độ khó gian hàng, chất lượng và SLA' },
     leaderboard: { title: 'Hiệu suất nhân sự', subtitle: '' },
-    'brand-hub': { title: 'Cổng khách hàng', subtitle: 'Duyệt kế hoạch → Duyệt KOC → Duyệt kịch bản → Nghiệm thu video' },
+    'brand-hub': { title: 'Cổng đối tác Brand', subtitle: 'Duyệt kế hoạch → Duyệt KOC → Duyệt kịch bản → Nghiệm thu video' },
   };
 
   return (
@@ -592,6 +592,7 @@ export default function App() {
               brands={brands}
               onNotify={showToast}
               onOpenPushProducts={() => setActiveTab('push-products')}
+              onNavigateToBrand={() => setActiveTab('campaigns')}
             />
           )}
 
@@ -609,6 +610,7 @@ export default function App() {
             <BrandView
               onCampaignCreatedNotification={handleCampaignCreatedNotification}
               onTriggerHandoffNotification={handleTriggerHandoffNotification}
+              onNavigateToCtvHub={() => setActiveTab('self-channel-hub')}
             />
           )}
 

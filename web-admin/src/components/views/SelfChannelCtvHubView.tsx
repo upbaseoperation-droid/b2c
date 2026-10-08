@@ -59,13 +59,15 @@ interface SelfChannelCtvHubViewProps {
   brands?: BrandDetail[];
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
   onOpenPushProducts?: () => void;
+  onNavigateToBrand?: () => void;
 }
 
 export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
   currentUser,
   brands = [],
   onNotify,
-  onOpenPushProducts
+  onOpenPushProducts,
+  onNavigateToBrand
 }) => {
   // Master State
   const [allocation, setAllocation] = useState<BrandChannelAllocation>(MOCK_BRAND_ALLOCATION);
@@ -722,6 +724,19 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
               <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
             )}
           </button>
+
+          {onNavigateToBrand && (
+            <button
+              type="button"
+              onClick={onNavigateToBrand}
+              className="ml-2 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors flex items-center gap-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 shrink-0"
+              title="Quay lại giao diện Làm việc với Brand"
+            >
+              <Layers className="w-3.5 h-3.5 text-blue-600" />
+              <span>Làm việc với Brand</span>
+              <ArrowRight className="w-3.5 h-3.5 text-blue-600" />
+            </button>
+          )}
         </div>
 
         {/* Global Search & Filter Bar */}

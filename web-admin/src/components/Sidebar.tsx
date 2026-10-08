@@ -88,10 +88,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
       items: [
         { key: 'input-plan', label: 'Kế hoạch tháng', icon: Calendar },
         { key: 'push-products', label: 'Sản phẩm đẩy', icon: TrendingUp },
-        { key: 'self-channel-hub', label: 'Self Channel & CTV', icon: Video },
+        { key: 'campaigns', label: 'Làm việc với Brand', icon: Layers },
+        { key: 'self-channel-hub', label: 'Hub Cộng tác viên (CTV)', icon: Video },
         { key: 'booking', label: 'Booking', icon: Users },
         { key: 'content', label: 'Kịch bản', icon: FileText },
-        { key: 'campaigns', label: 'Brief & chiến dịch', icon: Layers },
         { key: 'contracts', label: 'Hợp đồng & thanh toán', icon: FileCheck },
         { key: 'sample-tracker', label: 'Hàng mẫu', icon: Package },
         { key: 'brand-knowledge', label: 'Hướng dẫn nhãn hàng', icon: BookOpen },
@@ -111,7 +111,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     },
     {
       title: 'Khách hàng',
-      items: [{ key: 'brand-hub', label: 'Cổng khách hàng', icon: ExternalLink }],
+      items: [{ key: 'brand-hub', label: 'Cổng đối tác Brand', icon: ExternalLink }],
     },
   ];
 
