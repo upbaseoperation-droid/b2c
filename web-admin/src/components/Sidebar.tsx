@@ -23,6 +23,7 @@ import {
   X,
   LogOut,
   Sparkles,
+  KeyRound,
   type LucideIcon,
 } from 'lucide-react';
 import { UserProfile } from '../lib/types';
@@ -41,6 +42,7 @@ export type TabKey =
   | 'brand-knowledge'
   | 'content'
   | 'content-angles'
+  | 'partner-access'
   | 'booking'
   | 'koc-master'
   | 'contracts'
@@ -81,8 +83,44 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onLogout,
 }) => {
   const isManager = currentUser.role === 'MANAGER';
+  const isBrandPartner = currentUser.role === 'BRAND_PARTNER';
+  const isKocPartner = currentUser.role === 'KOC_PARTNER';
+  const isCtvPartner = currentUser.role === 'CTV_PARTNER';
 
-  const navSections: NavSection[] = [
+  // Phân quyền menu hiển thị theo vai trò (Bảo mật 100% dữ liệu nội bộ UpBase)
+  let navSections: NavSection[] = [];
+
+  if (isBrandPartner) {
+    navSections = [
+      {
+        title: 'Cổng Thương Hiệu',
+        items: [
+          { key: 'brand-hub', label: 'Cổng đối tác Brand', icon: ExternalLink },
+          { key: 'push-products', label: 'Sản phẩm đẩy của nhãn', icon: TrendingUp },
+          { key: 'content', label: 'Kịch bản video', icon: FileText },
+        ],
+      },
+    ];
+  } else if (isKocPartner) {
+    navSections = [
+      {
+        title: 'Không Gian KOC / KOL',
+        items: [
+          { key: 'koc-hub', label: 'Hub đối tác KOC / KOL', icon: Users },
+        ],
+      },
+    ];
+  } else if (isCtvPartner) {
+    navSections = [
+      {
+        title: 'Không Gian Cộng Tác Viên',
+        items: [
+          { key: 'self-channel-hub', label: 'Hub Cộng tác viên (CTV)', icon: Video },
+        ],
+      },
+    ];
+  } else {
+    navSections = [
     {
       title: 'Cá nhân',
       items: [
@@ -113,7 +151,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
     {
       title: 'Dữ liệu',
       items: [
-        { key: 'master-data', label: 'Dữ liệu gốc (Master Data)', icon: Database }
+        { key: 'master-data', label: 'Dữ liệu gốc (Master Data)', icon: Database },
+        { key: 'partner-access', label: 'Phân quyền đối tác (Gmail)', icon: KeyRound }
       ],
     },
     {
@@ -125,6 +164,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       ],
     },
   ];
+  }
 
   const handleItemClick = (key: TabKey) => {
     onTabSelect(key);

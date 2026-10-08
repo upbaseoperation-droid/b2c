@@ -16,6 +16,9 @@ const ROLE_LABEL: Record<UserProfile['role'], string> = {
   BRAND_MEMBER: 'Brand PIC',
   CONTENT_MEMBER: 'Content',
   BOOKING_MEMBER: 'Booking',
+  BRAND_PARTNER: 'Đối tác Brand (Gmail)',
+  KOC_PARTNER: 'KOC / KOL (Gmail)',
+  CTV_PARTNER: 'Cộng tác viên (Gmail)',
 };
 
 interface TopHeaderProps {

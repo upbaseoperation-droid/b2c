@@ -1,4 +1,12 @@
-export type UserRole = 'ADMIN' | 'BRAND_MEMBER' | 'CONTENT_MEMBER' | 'BOOKING_MEMBER' | 'MANAGER';
+export type UserRole = 
+  | 'ADMIN' 
+  | 'BRAND_MEMBER' 
+  | 'CONTENT_MEMBER' 
+  | 'BOOKING_MEMBER' 
+  | 'MANAGER'
+  | 'BRAND_PARTNER' // Đại diện đối tác Brand đăng nhập Gmail
+  | 'KOC_PARTNER'   // Creator / KOC đăng nhập Gmail
+  | 'CTV_PARTNER';  // Cộng tác viên kênh nội bộ đăng nhập Gmail
 
 export interface UserProfile {
   id: string;
@@ -9,6 +17,43 @@ export interface UserProfile {
   avatar: string;
   larkOpenId?: string;
   larkAvatarUrl?: string;
+  loginProvider?: 'LARK' | 'GMAIL' | 'SANDBOX';
+  partnerType?: 'BRAND' | 'KOC' | 'CTV';
+  linkedEntityId?: string; // ID của Brand / KOC / CTV
+  linkedEntityName?: string; // Tên của Brand / KOC / CTV
+  allowedStoreNames?: string[]; // Danh sách gian hàng được xem (đối với Brand)
+  permissions?: string[];
+}
+
+// =========================================================================
+// THIRD-PARTY GMAIL ACCESS & RBAC (PHÂN QUYỀN ĐỐI TÁC BÊN THỨ 3)
+// =========================================================================
+export interface ThirdPartyAccessAccount {
+  id: string;
+  gmail: string; // Email Gmail của đối tác
+  displayName: string; // Tên hiển thị người dùng
+  avatarUrl?: string;
+  partnerType: 'BRAND' | 'KOC' | 'CTV';
+  linkedEntityId: string; // ID Brand / KOC / CTV
+  linkedEntityName: string; // Tên Brand (Kutieskin) hoặc KOC (Chloe Nguyễn)
+  linkedStoreNames?: string[]; // Gian hàng được xem
+  permissions: {
+    canApproveDeals?: boolean; // Duyệt KOC / Job
+    canReviewScripts?: boolean; // Duyệt kịch bản
+    canViewGmvAndRoas?: boolean; // Xem GMV và ROAS
+    canViewFinancials?: boolean; // Xem chi phí giá net
+    canSubmitVideos?: boolean; // Nộp video
+    canProvideSparkAds?: boolean; // Cung cấp mã Ads
+    canClaimSamples?: boolean; // Nhận mẫu
+  };
+  status: 'ACTIVE' | 'SUSPENDED' | 'INVITED';
+  lastLoginAt?: string;
+  loginCount: number;
+  invitedAt?: string;
+  invitedBy?: string;
+  notes?: string;
+  createdAt?: string;
+  createdBy?: string;
 }
 
 export type KocTier = 'TIER_1_CELEB' | 'TIER_2_MACRO' | 'TIER_3_MICRO' | 'TIER_4_AFFILIATE';

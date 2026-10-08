@@ -30,6 +30,8 @@ import { KocKolHubView } from '../components/views/KocKolHubView';
 import { WeeklyAdsReportHubView } from '../components/views/WeeklyAdsReportHubView';
 import { ExecutiveDashboardReportsView } from '../components/views/ExecutiveDashboardReportsView';
 import { ContentAngleSetupView } from '../components/views/ContentAngleSetupView';
+import { ThirdPartyAccessSetupView } from '../components/views/ThirdPartyAccessSetupView';
+import { isThirdPartyPartner, getPartnerLandingTab } from '../lib/thirdPartyAccessData';
 
 import { 
   USERS, 
@@ -470,6 +472,7 @@ export default function App() {
     'brand-knowledge': { title: 'Hướng dẫn nhãn hàng', subtitle: 'Thông tin thương hiệu, hồ sơ pháp lý, Hero SKU và từ khóa cần tránh' },
     content: { title: 'Kịch bản', subtitle: '' },
     'content-angles': { title: 'Thiết Lập Góc Nội Dung (Content Angles)', subtitle: 'Kho kịch bản phân rã theo Trụ cột nội dung và từng sản phẩm của gian hàng' },
+    'partner-access': { title: 'Phân Quyền Đối Tác (Gmail SSO)', subtitle: 'Cấp quyền truy cập Gmail cho Brand, KOC/KOL và CTV phân quyền xem theo nhãn' },
     booking: { title: 'Booking', subtitle: '' },
     'koc-master': { title: 'Danh bạ KOC', subtitle: 'Hồ sơ KOC, giấy tờ pháp lý và mẫu hợp đồng' },
     contracts: { title: 'Hợp đồng & thanh toán', subtitle: '' },
@@ -534,6 +537,32 @@ export default function App() {
           onToggleMobileSidebar={() => setIsMobileSidebarOpen(prev => !prev)}
           onLogout={handleLogout}
         />
+
+        {isThirdPartyPartner(currentUser) && (
+          <div className="bg-gradient-to-r from-purple-800 via-indigo-800 to-slate-900 text-white px-4 sm:px-6 py-2.5 flex items-center justify-between text-xs shadow-md border-b border-purple-500/30">
+            <div className="flex items-center gap-2.5">
+              <span className="px-2.5 py-0.5 rounded-full bg-emerald-500 text-slate-950 font-bold text-2xs uppercase tracking-wider">
+                ĐỐI TÁC: {currentUser.roleTitle}
+              </span>
+              <span className="text-slate-200">
+                Đang xem với tư cách: <strong className="text-white font-semibold">{currentUser.name}</strong> ({currentUser.email})
+                {currentUser.linkedEntityName && (
+                  <span className="text-emerald-300 font-medium"> — Giới hạn theo: {currentUser.linkedEntityName}</span>
+                )}
+              </span>
+            </div>
+            <button
+              onClick={() => {
+                setCurrentUser(USERS[0]);
+                setActiveTab('partner-access');
+                showToast('Đã quay lại tài khoản Quản trị UpBase', 'info');
+              }}
+              className="px-3 py-1 rounded-lg bg-white/10 hover:bg-white text-white hover:text-slate-900 border border-white/30 font-bold transition text-2xs cursor-pointer shadow-xs"
+            >
+              Thoát Chế Độ Đối Tác ✕
+            </button>
+          </div>
+        )}
 
         <main className="px-4 py-6 sm:px-6 lg:px-8 w-full max-w-[1600px] space-y-6">
           {activeTab === 'cockpit' && (
@@ -660,6 +689,21 @@ export default function App() {
             />
           )}
 
+          {activeTab === 'partner-access' && (
+            <ThirdPartyAccessSetupView
+              currentUser={currentUser}
+              brands={brands}
+              kocs={kocs}
+              onNotify={showToast}
+              onImpersonatePartner={(partnerUser) => {
+                setCurrentUser(partnerUser);
+                const targetTab = getPartnerLandingTab(partnerUser);
+                setActiveTab(targetTab as any);
+                showToast(`Đã đăng nhập thử với tư cách ${partnerUser.name} (${partnerUser.roleTitle})`, 'info');
+              }}
+            />
+          )}
+
           {activeTab === 'booking' && (
             <BookingView 
               deals={deals}
@@ -776,6 +820,7 @@ export default function App() {
 
           {activeTab === 'brand-hub' && (
             <BrandHubView
+              currentUser={currentUser}
               deals={deals}
               brands={brands}
               onNotify={showToast}

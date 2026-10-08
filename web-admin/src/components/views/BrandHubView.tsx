@@ -38,11 +38,13 @@ import {
   BrandScriptItem,
   BrandRejectReasonType,
   BookingDealItem,
-  BrandDetail
+  BrandDetail,
+  UserProfile
 } from '../../lib/types';
 import { INITIAL_BRAND_PORTAL_DATA } from '../../lib/mockData';
 
 export interface BrandHubViewProps {
+  currentUser?: UserProfile;
   deals?: BookingDealItem[];
   brands?: BrandDetail[];
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
@@ -66,6 +68,7 @@ interface ChatMessage {
 }
 
 export const BrandHubView: React.FC<BrandHubViewProps> = ({ 
+  currentUser,
   deals = [],
   brands = [],
   onNotify,
@@ -75,7 +78,13 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
   onBrandRejectDeal
 }) => {
   const [portals, setPortals] = useState<BrandCampaignPortalData[]>(INITIAL_BRAND_PORTAL_DATA);
-  const [selectedPortalId, setSelectedPortalId] = useState<string>(INITIAL_BRAND_PORTAL_DATA[0].id);
+  const [selectedPortalId, setSelectedPortalId] = useState<string>(() => {
+    if (currentUser?.role === 'BRAND_PARTNER' && currentUser?.linkedEntityName) {
+      const match = INITIAL_BRAND_PORTAL_DATA.find(p => p.brandName.toLowerCase().includes(currentUser.linkedEntityName!.toLowerCase()));
+      if (match) return match.id;
+    }
+    return INITIAL_BRAND_PORTAL_DATA[0].id;
+  });
 
   const activePortal = portals.find(p => p.id === selectedPortalId) || portals[0];
 
