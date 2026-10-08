@@ -44,7 +44,7 @@ Nguồn: `B2C/Pain point Marketing B2C.xlsx` (Sheet1, Sheet3, Sheet5, *Khảo s�
 
 | Mã | Câu hỏi | Vì sao quan trọng | Chặn | Hỏi ai | Trạng thái |
 | --- | --- | --- | --- | --- | --- |
-| OI-005 | Nhà cung cấp định danh dùng chung với UpAffiliate (đề xuất Lark SSO) | Đăng nhập, phân quyền | G2 | Team DX | Mở |
+| OI-005 | Nhà cung cấp định danh dùng chung với UpAffiliate (đề xuất Lark SSO) | Đăng nhập, phân quyền | G2 | Team DX | **Đã triển khai** (OAuth 2.0 + Sandbox RBAC, xem [HUB-TECH-01](../LARK_SSO_SETUP.md)) |
 | OI-012 | Giữ tech stack của prototype (Next.js, Prisma, Supabase, Vercel) hay chọn lại ở giai đoạn 2? | Kiến trúc | G2 | Tech lead | Mở |
 
 ## Tổng hợp

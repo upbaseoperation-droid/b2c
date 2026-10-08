@@ -8,6 +8,7 @@ import {
   Layers,
   FileText,
   Users,
+  UserCheck,
   FileCheck,
   TrendingUp,
   Award,
@@ -17,7 +18,8 @@ import {
   BookOpen,
   Calculator,
   Calendar,
-  X
+  X,
+  LogOut
 } from 'lucide-react';
 import { UserProfile } from '../lib/types';
 
@@ -30,6 +32,7 @@ export type TabKey =
   | 'brand-knowledge'
   | 'content'
   | 'booking'
+  | 'koc-master'
   | 'contracts'
   | 'manager'
   | 'sample-tracker'
@@ -56,6 +59,7 @@ interface SidebarProps {
   currentUser: UserProfile;
   isMobileOpen?: boolean;
   onCloseMobile?: () => void;
+  onLogout?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -64,6 +68,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   currentUser,
   isMobileOpen = false,
   onCloseMobile,
+  onLogout,
 }) => {
   const isManager = currentUser.role === 'MANAGER';
 
@@ -98,6 +103,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
           label: 'Quản Lý Booking',
           icon: Users,
           badge: currentUser.role === 'BOOKING_MEMBER' ? 'Của Tôi' : undefined,
+          badgeType: 'team'
+        },
+        {
+          key: 'koc-master',
+          label: 'Danh Bạ Master KOC',
+          icon: UserCheck,
+          badge: 'OCR CCCD',
           badgeType: 'team'
         },
         {
@@ -284,18 +296,36 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         {/* User Footer: Fixed shrink-0 with 24px icon alignment */}
         <div className="shrink-0 p-3 border-t border-slate-200 bg-slate-50/70">
-          <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-white border border-slate-200 shadow-2xs">
-            <div className="w-8 h-8 rounded-lg bg-blue-100 border border-blue-200 text-blue-700 font-bold flex items-center justify-center text-xs shrink-0">
-              {currentUser.avatar}
+          <div className="flex items-center justify-between gap-2 p-2 rounded-xl bg-white border border-slate-200 shadow-2xs">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-8 h-8 rounded-lg bg-blue-100 border border-blue-200 text-blue-700 font-bold flex items-center justify-center text-xs shrink-0 relative">
+                {currentUser.avatar}
+                {currentUser.larkOpenId && (
+                  <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-cyan-500 border-2 border-white" title="Đã kết nối Lark SSO" />
+                )}
+              </div>
+              <div className="truncate min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs font-bold text-slate-900 block truncate leading-tight">
+                    {currentUser.name}
+                  </span>
+                </div>
+                <span className="text-[10px] text-slate-500 block truncate leading-tight mt-0.5">
+                  {currentUser.roleTitle}
+                </span>
+              </div>
             </div>
-            <div className="truncate min-w-0">
-              <span className="text-xs font-bold text-slate-900 block truncate leading-tight">
-                {currentUser.name}
-              </span>
-              <span className="text-[11px] text-slate-500 block truncate leading-tight mt-0.5">
-                {currentUser.roleTitle}
-              </span>
-            </div>
+
+            {onLogout && (
+              <button
+                onClick={onLogout}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition shrink-0"
+                title="Đăng xuất khỏi phiên làm việc"
+                aria-label="Đăng xuất"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
         </div>
       </aside>

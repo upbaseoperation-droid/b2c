@@ -26,7 +26,8 @@ import {
   X,
   CreditCard
 } from 'lucide-react';
-import { BookingDealItem } from '../../lib/types';
+import { BookingDealItem, OcrLegalExtractionResult } from '../../lib/types';
+import { LegalOcrModal } from '../LegalOcrModal';
 
 interface ContractViewProps {
   deals: BookingDealItem[];
@@ -45,6 +46,7 @@ export const ContractView: React.FC<ContractViewProps> = ({
   const [selectedBrand, setSelectedBrand] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const [isOcrModalOpen, setIsOcrModalOpen] = useState<boolean>(false);
 
   // 🌟 SLA B2C: Modal Cảnh Báo Vi Phạm Điều Kiện Hợp Đồng & Thanh Toán
   const [complianceModalDeal, setComplianceModalDeal] = useState<{
@@ -278,21 +280,33 @@ export const ContractView: React.FC<ContractViewProps> = ({
             )}
           </div>
 
-          {/* Brand Filter */}
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-500 whitespace-nowrap flex items-center gap-1 font-medium">
-              <Building2 className="w-3.5 h-3.5 text-slate-400" /> Nhãn hàng:
-            </span>
-            <select
-              value={selectedBrand}
-              onChange={(e) => setSelectedBrand(e.target.value)}
-              className="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 font-medium text-slate-800 focus:outline-none focus:border-blue-500"
+          {/* Brand Filter & OCR Button */}
+          <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-slate-500 whitespace-nowrap flex items-center gap-1 font-medium">
+                <Building2 className="w-3.5 h-3.5 text-slate-400" /> Nhãn hàng:
+              </span>
+              <select
+                value={selectedBrand}
+                onChange={(e) => setSelectedBrand(e.target.value)}
+                className="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 font-medium text-slate-800 focus:outline-none focus:border-blue-500"
+              >
+                <option value="ALL">Tất cả nhãn hàng ({deals.length})</option>
+                {brandsList.map(b => (
+                  <option key={b} value={b}>{b}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* OCR Scanner Button */}
+            <button
+              onClick={() => setIsOcrModalOpen(true)}
+              className="px-3.5 py-1.5 bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 active:scale-[0.99] text-white font-bold text-xs rounded-lg transition shadow-xs flex items-center gap-1.5 shrink-0 cursor-pointer"
+              title="Tải ảnh CCCD hoặc Giấy phép kinh doanh để bóc tách tự động"
             >
-              <option value="ALL">Tất cả nhãn hàng ({deals.length})</option>
-              {brandsList.map(b => (
-                <option key={b} value={b}>{b}</option>
-              ))}
-            </select>
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Quét OCR CCCD / ĐKKD</span>
+            </button>
           </div>
         </div>
 
@@ -760,6 +774,25 @@ export const ContractView: React.FC<ContractViewProps> = ({
           </div>
         </div>
       )}
+
+      {/* AI Legal OCR Scanner Modal */}
+      <LegalOcrModal
+        isOpen={isOcrModalOpen}
+        onClose={() => setIsOcrModalOpen(false)}
+        onApplyToContract={(ocrResult) => {
+          setIsOcrModalOpen(false);
+          // Tìm deal phù hợp hoặc mở deal đầu tiên để hiển thị hợp đồng kèm dữ liệu OCR
+          const targetName = (ocrResult.fields.fullName || ocrResult.fields.companyName || '').toLowerCase();
+          const matchedDeal = deals.find(d => 
+            d.kocStageName.toLowerCase().includes(targetName) ||
+            targetName.includes(d.kocStageName.toLowerCase())
+          ) || deals[0];
+
+          if (matchedDeal) {
+            onSelectDeal(matchedDeal);
+          }
+        }}
+      />
     </div>
   );
 };

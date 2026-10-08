@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Plus, Upload, FileText, Layers, Shield, Menu } from 'lucide-react';
+import { Plus, Upload, FileText, Layers, Shield, Menu, LogOut, CheckCircle2 } from 'lucide-react';
 import { UserProfile } from '../lib/types';
 import { USERS } from '../lib/mockData';
 
@@ -14,6 +14,7 @@ interface TopHeaderProps {
   subtitle?: string;
   onNavigateTab?: (tab: any) => void;
   onToggleMobileSidebar?: () => void;
+  onLogout?: () => void;
 }
 
 export const TopHeader: React.FC<TopHeaderProps> = ({
@@ -24,7 +25,8 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   title,
   subtitle,
   onNavigateTab,
-  onToggleMobileSidebar
+  onToggleMobileSidebar,
+  onLogout
 }) => {
   const isBookingOrManager = currentUser.role === 'MANAGER' || currentUser.role === 'BOOKING_MEMBER';
   const isContent = currentUser.role === 'CONTENT_MEMBER';
@@ -58,6 +60,14 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
 
       {/* Actions & Status */}
       <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+        {/* Lark Identity Badge */}
+        {currentUser.larkOpenId && (
+          <div className="hidden sm:inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-cyan-50 border border-cyan-200 text-cyan-800 text-[11px] font-semibold" title={`Lark Open ID: ${currentUser.larkOpenId}`}>
+            <span className="w-1.5 h-1.5 rounded-full bg-cyan-500 animate-pulse" />
+            Lark SSO
+          </div>
+        )}
+
         {/* Role Switcher */}
         <div className="h-8 flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2 text-xs shadow-2xs">
           <div className="w-4 h-4 rounded-full bg-blue-600 text-white font-bold text-[9px] flex items-center justify-center shrink-0">
@@ -79,6 +89,18 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
             ))}
           </select>
         </div>
+
+        {/* Logout Button */}
+        {onLogout && (
+          <button
+            onClick={onLogout}
+            className="h-8 w-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-rose-600 hover:bg-rose-50 border border-slate-200 hover:border-rose-200 transition shadow-2xs"
+            title="Đăng xuất khỏi Lark Workspace"
+            aria-label="Đăng xuất"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+          </button>
+        )}
 
         {/* Role-Aware Actions */}
         {isBookingOrManager && (

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CheckCircle2, AlertCircle, XCircle, Info, X } from 'lucide-react';
 import { Sidebar, TabKey } from '../components/Sidebar';
 import { TopHeader } from '../components/TopHeader';
@@ -15,6 +15,7 @@ import { BrandView } from '../components/views/BrandView';
 import { BrandKnowledgeView } from '../components/views/BrandKnowledgeView';
 import { ContentView } from '../components/views/ContentView';
 import { BookingView } from '../components/views/BookingView';
+import { KocMasterDataView } from '../components/views/KocMasterDataView';
 import { ContractView } from '../components/views/ContractView';
 import { ManagerView } from '../components/views/ManagerView';
 import { LeaderboardView } from '../components/views/LeaderboardView';
@@ -50,6 +51,32 @@ import {
 export default function App() {
   const [currentUser, setCurrentUser] = useState<UserProfile>(USERS[0]); // Default Vân Ngọc (Trưởng phòng)
   const [activeTab, setActiveTab] = useState<TabKey>('manager');
+
+  // Load Lark Auth session on mount
+  useEffect(() => {
+    async function loadUser() {
+      try {
+        const res = await fetch('/api/auth/me');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.authenticated && data.user) {
+            setCurrentUser(data.user);
+          }
+        }
+      } catch (err) {
+        console.warn('Could not fetch user session:', err);
+      }
+    }
+    loadUser();
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } finally {
+      window.location.href = '/login';
+    }
+  };
 
   const [kocs, setKocs] = useState<KocItem[]>(INITIAL_KOCS);
   const [deals, setDeals] = useState<BookingDealItem[]>(INITIAL_DEALS);
@@ -394,6 +421,11 @@ export default function App() {
     showToast(`Đã thêm thành công KOC ${newKoc.stageName} (${newKoc.channelId}) vào Khung Lương ${newKoc.salaryGrade}!`);
   };
 
+  const handleKocUpdated = (updatedKoc: KocItem) => {
+    setKocs(prev => prev.map(k => k.id === updatedKoc.id ? updatedKoc : k));
+    showToast(`Đã cập nhật hồ sơ pháp lý KOC ${updatedKoc.stageName} (Định danh OCR)!`);
+  };
+
   const handleTaskActionClick = (task: SlaTask) => {
     if (task.dealCode) {
       const matched = deals.find(d => d.dealCode === task.dealCode);
@@ -447,6 +479,10 @@ export default function App() {
     booking: {
       title: 'Quản Lý Booking',
       subtitle: ''
+    },
+    'koc-master': {
+      title: 'Danh Bạ Master KOC & Định Danh Pháp Lý OCR',
+      subtitle: 'Quản trị hồ sơ KOC toàn hệ thống, tự động bóc tách CCCD/ĐKKD bằng AI Vision và chuẩn hóa mẫu hợp đồng'
     },
     contracts: {
       title: 'Hợp Đồng & Thanh Toán',
@@ -511,6 +547,7 @@ export default function App() {
         currentUser={currentUser}
         isMobileOpen={isMobileSidebarOpen}
         onCloseMobile={() => setIsMobileSidebarOpen(false)}
+        onLogout={handleLogout}
       />
 
       {/* Main Content Space */}
@@ -526,6 +563,7 @@ export default function App() {
           title={titles[activeTab].title}
           subtitle={titles[activeTab].subtitle}
           onToggleMobileSidebar={() => setIsMobileSidebarOpen(prev => !prev)}
+          onLogout={handleLogout}
         />
 
         <main className="p-6 lg:p-8 w-full max-w-[1600px] space-y-6">
@@ -617,6 +655,16 @@ export default function App() {
               staffAllocations={staffAllocations['2026/09']}
               currentUserName={currentUser.name}
               onOpenInputPlan={() => setActiveTab('input-plan')}
+            />
+          )}
+
+          {activeTab === 'koc-master' && (
+            <KocMasterDataView
+              kocs={kocs}
+              currentUser={currentUser}
+              onOpenQuickBookWithKoc={handleOpenQuickBookWithKoc}
+              onKocCreated={handleKocCreated}
+              onKocUpdated={handleKocUpdated}
             />
           )}
 

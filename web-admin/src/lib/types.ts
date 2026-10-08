@@ -7,6 +7,8 @@ export interface UserProfile {
   role: UserRole;
   roleTitle: string;
   avatar: string;
+  larkOpenId?: string;
+  larkAvatarUrl?: string;
 }
 
 export type KocTier = 'TIER_1_CELEB' | 'TIER_2_MACRO' | 'TIER_3_MICRO' | 'TIER_4_AFFILIATE';
@@ -120,6 +122,58 @@ export type ContentPillarType =
   | 'Educate'
   | 'Chưa phân loại';
 
+// =========================================================================
+// 🌟 AI OCR LEGAL DOCUMENT EXTRACTION (CCCD & ĐĂNG KÝ KINH DOANH)
+// =========================================================================
+
+export type LegalDocumentType = 'CCCD' | 'BUSINESS_LICENSE' | 'BUSINESS_HOUSEHOLD' | 'UNKNOWN';
+
+export interface OcrExtractedFields {
+  // Cá nhân (CCCD)
+  idNumber?: string;            // Số CCCD / Số định danh (12 số)
+  fullName?: string;            // Họ và tên
+  dob?: string;                 // Ngày sinh
+  gender?: string;              // Giới tính
+  nationality?: string;         // Quốc tịch
+  originAddress?: string;       // Quê quán
+  permanentAddress?: string;    // Nơi thường trú
+  issueDate?: string;           // Ngày cấp
+  issuePlace?: string;          // Nơi cấp
+  expiryDate?: string;          // Có giá trị đến
+
+  // Doanh nghiệp / Hộ kinh doanh
+  companyName?: string;         // Tên công ty / Tên hộ kinh doanh
+  taxCode?: string;             // Mã số thuế / Mã số doanh nghiệp
+  headquartersAddress?: string; // Địa chỉ trụ sở chính
+  legalRepresentative?: string; // Người đại diện theo pháp luật / Chủ hộ
+  legalRepTitle?: string;       // Chức danh (Giám đốc, Người đại diện...)
+  registrationDate?: string;    // Ngày cấp đăng ký kinh doanh
+  charterCapital?: string;      // Vốn điều lệ (nếu có)
+  businessLines?: string[];     // Ngành nghề kinh doanh chính
+}
+
+export interface RecommendedContractTemplate {
+  templateCode: string;
+  templateName: string;
+  formType: 'INDIVIDUAL' | 'HOUSEHOLD' | 'COMPANY';
+  sampleFileName: string;
+  requiresContract: boolean;
+  legalRules: string[];
+}
+
+export interface OcrLegalExtractionResult {
+  documentType: LegalDocumentType;
+  documentTypeLabel: string;
+  confidence: number;           // 0.0 - 1.0 (ví dụ 0.96)
+  extractedAt: string;
+  fileName?: string;
+  filePreviewUrl?: string;
+  fields: OcrExtractedFields;
+  recommendedTemplate: RecommendedContractTemplate;
+  validationNotes: string[];
+  rawTextPreview?: string;
+}
+
 export interface KocItem {
   id: string;
   channelId: string; // 🎃 ID kênh (vd: megauriviu, chanhbeauty)
@@ -155,6 +209,18 @@ export interface KocItem {
   bankName: string;
   bankAccount: string;
   avatarUrl?: string;
+
+  // 🌟 Pháp lý & Xác thực OCR CCCD / ĐKKD
+  isOcrVerified?: boolean;
+  ocrDocumentType?: LegalDocumentType;
+  ocrVerifiedAt?: string;
+  taxCode?: string;
+  companyName?: string;
+  permanentAddress?: string;
+  dob?: string;
+  issueDate?: string;
+  issuePlace?: string;
+  legalRepresentative?: string;
 
   // Chỉ số E-Commerce & Bán hàng (TikTok Shop / Shopee Analytics)
   gmvBestCase?: number; // GMV best case

@@ -10,11 +10,15 @@ import {
   FileText, 
   ShieldCheck, 
   QrCode,
-  ExternalLink 
+  ExternalLink,
+  Sparkles,
+  Building2,
+  FileCheck
 } from 'lucide-react';
-import { BookingDealItem } from '../lib/types';
+import { BookingDealItem, OcrLegalExtractionResult } from '../lib/types';
 import { INITIAL_KOCS } from '../lib/mockData';
 import { jsPDF } from 'jspdf';
+import { LegalOcrModal } from './LegalOcrModal';
 
 interface ContractModalProps {
   deal: BookingDealItem | null;
@@ -22,6 +26,7 @@ interface ContractModalProps {
   onClose: () => void;
   onApproveAdvance?: (dealId: string) => void;
   onApproveFinal?: (dealId: string) => void;
+  initialOcrResult?: OcrLegalExtractionResult | null;
 }
 
 export const ContractModal: React.FC<ContractModalProps> = ({
@@ -30,8 +35,18 @@ export const ContractModal: React.FC<ContractModalProps> = ({
   onClose,
   onApproveAdvance,
   onApproveFinal,
+  initialOcrResult = null,
 }) => {
   const [isExportingPdf, setIsExportingPdf] = useState(false);
+  const [isOcrOpen, setIsOcrOpen] = useState(false);
+  const [ocrData, setOcrData] = useState<OcrLegalExtractionResult | null>(initialOcrResult);
+
+  // Sync initialOcrResult when changed
+  useEffect(() => {
+    if (initialOcrResult) {
+      setOcrData(initialOcrResult);
+    }
+  }, [initialOcrResult]);
 
   // Keyboard accessibility: ESC key to close modal
   useEffect(() => {
@@ -97,35 +112,55 @@ export const ContractModal: React.FC<ContractModalProps> = ({
       doc.text(`- Dai dien phu trach: ${deal.assignedStaff}`, 25, 64);
       doc.text('- Phong ban: Marketing B2C Operations', 25, 70);
 
+      // Determine Party B information based on OCR extraction if available
+      const isOcrCompany = ocrData && (ocrData.documentType === 'BUSINESS_LICENSE' || ocrData.documentType === 'BUSINESS_HOUSEHOLD');
+      const partyBTitle = isOcrCompany ? 'BEN B (BEN CUNG CAP DICH VU - DOANH NGHIEP):' : 'BEN B (BEN CUNG CAP DICH VU - KOC):';
+      const partyBName = isOcrCompany 
+        ? (ocrData.fields.companyName || deal.kocStageName)
+        : (ocrData?.fields.fullName || koc.realName || deal.kocStageName);
+      const partyBId = isOcrCompany
+        ? `MST / DKKD: ${ocrData.fields.taxCode || '0109876543'}`
+        : `So CCCD: ${ocrData?.fields.idNumber || koc.cccd}`;
+      const partyBAddress = isOcrCompany
+        ? `Dia chi tru so: ${ocrData.fields.headquartersAddress || 'Ha Noi'}`
+        : `Dia chi thuong tru: ${ocrData?.fields.permanentAddress || 'Ha Noi'}`;
+
       doc.setFont('helvetica', 'bold');
-      doc.text('BEN B (BEN CUNG CAP DICH VU - KOC):', 20, 82);
+      doc.text(partyBTitle, 20, 82);
       doc.setFont('helvetica', 'normal');
-      doc.text(`- Ho va ten: ${koc.realName || deal.kocStageName} (Kenh: ${deal.kocStageName})`, 25, 88);
-      doc.text(`- So CCCD: ${koc.cccd}`, 25, 94);
-      doc.text(`- So tai khoan: ${koc.bankAccount} tai Ngan hang ${koc.bankName}`, 25, 100);
+      doc.text(`- Ten: ${partyBName}`, 25, 88);
+      doc.text(`- ${partyBId}`, 25, 94);
+      if (isOcrCompany && ocrData?.fields.legalRepresentative) {
+        doc.text(`- Nguoi dai dien: ${ocrData.fields.legalRepresentative} (${ocrData.fields.legalRepTitle || 'Dai dien'})`, 25, 100);
+        doc.text(`- ${partyBAddress.slice(0, 75)}`, 25, 106);
+        doc.text(`- So tai khoan: ${koc.bankAccount} tai Ngan hang ${koc.bankName}`, 25, 112);
+      } else {
+        doc.text(`- ${partyBAddress.slice(0, 75)}`, 25, 100);
+        doc.text(`- So tai khoan: ${koc.bankAccount} tai Ngan hang ${koc.bankName}`, 25, 106);
+      }
 
       // Terms
       doc.setFont('helvetica', 'bold');
-      doc.text('DIEU 1: PHAM VI CONG VIEC', 20, 112);
+      doc.text('DIEU 1: PHAM VI CONG VIEC', 20, 122);
       doc.setFont('helvetica', 'normal');
-      doc.text(`- Chien dich: ${deal.campaignTitle}`, 25, 118);
-      doc.text(`- Nhan hang: ${deal.brandName} (San pham: ${deal.productName || 'Chinh hang'})`, 25, 124);
-      doc.text(`- Han chot dang video: ${deal.deadlinePost}`, 25, 130);
+      doc.text(`- Chien dich: ${deal.campaignTitle}`, 25, 128);
+      doc.text(`- Nhan hang: ${deal.brandName} (San pham: ${deal.productName || 'Chinh hang'})`, 25, 134);
+      doc.text(`- Han chot dang video: ${deal.deadlinePost}`, 25, 140);
 
       doc.setFont('helvetica', 'bold');
-      doc.text('DIEU 2: PHI DICH VU VA THANH TOAN', 20, 142);
+      doc.text('DIEU 2: PHI DICH VU VA THANH TOAN', 20, 150);
       doc.setFont('helvetica', 'normal');
-      doc.text(`- Tong gia tri hop dong: ${deal.totalValue.toLocaleString('vi-VN')} VND`, 25, 148);
-      doc.text(`  + Dot 1 (Tam ung sau duyet kich ban): ${deal.advanceAmount.toLocaleString('vi-VN')} VND`, 25, 154);
-      doc.text(`  + Dot 2 (Tat toan sau khi video len song): ${deal.finalAmount.toLocaleString('vi-VN')} VND`, 25, 160);
+      doc.text(`- Tong gia tri hop dong: ${deal.totalValue.toLocaleString('vi-VN')} VND`, 25, 156);
+      doc.text(`  + Dot 1 (Tam ung sau duyet kich ban): ${deal.advanceAmount.toLocaleString('vi-VN')} VND`, 25, 162);
+      doc.text(`  + Dot 2 (Tat toan sau khi video len song): ${deal.finalAmount.toLocaleString('vi-VN')} VND`, 25, 168);
 
       // Signatures
       doc.setFont('helvetica', 'bold');
-      doc.text('DAI DIEN BEN A', 45, 185, { align: 'center' });
-      doc.text('DAI DIEN BEN B', 160, 185, { align: 'center' });
+      doc.text('DAI DIEN BEN A', 45, 195, { align: 'center' });
+      doc.text('DAI DIEN BEN B', 160, 195, { align: 'center' });
       doc.setFont('helvetica', 'italic');
-      doc.text('(Ky dien tu)', 45, 191, { align: 'center' });
-      doc.text('(Ky, ghi ro ho ten)', 160, 191, { align: 'center' });
+      doc.text('(Ky dien tu)', 45, 201, { align: 'center' });
+      doc.text('(Ky, ghi ro ho ten)', 160, 201, { align: 'center' });
 
       doc.save(`HopDong_${deal.dealCode}.pdf`);
     } catch (err) {
@@ -135,6 +170,8 @@ export const ContractModal: React.FC<ContractModalProps> = ({
       setIsExportingPdf(false);
     }
   };
+
+  const isOcrCompany = ocrData && (ocrData.documentType === 'BUSINESS_LICENSE' || ocrData.documentType === 'BUSINESS_HOUSEHOLD');
 
   return (
     <div 
@@ -154,13 +191,35 @@ export const ContractModal: React.FC<ContractModalProps> = ({
               <ShieldCheck className="w-5 h-5 text-blue-600" />
             </div>
             <div>
-              <h3 id="contract-modal-title" className="text-sm font-bold text-slate-900">
-                Văn Bản Hợp Đồng KOC &amp; Cổng Chi Tiền
-              </h3>
+              <div className="flex items-center gap-2">
+                <h3 id="contract-modal-title" className="text-sm font-bold text-slate-900">
+                  Văn Bản Hợp Đồng KOC &amp; Cổng Chi Tiền
+                </h3>
+                {ocrData && (
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded border flex items-center gap-1 ${
+                    isOcrCompany 
+                      ? 'bg-purple-50 text-purple-700 border-purple-200' 
+                      : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                  }`}>
+                    <CheckCircle className="w-3 h-3" />
+                    Đã Khớp OCR ({ocrData.documentType === 'CCCD' ? 'CCCD' : 'ĐKKD'})
+                  </span>
+                )}
+              </div>
               <p className="text-xs text-slate-500">Mã văn bản: <strong className="font-mono text-blue-700">{deal.dealCode}</strong> — Sinh bởi Upbase Ops Hub</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {/* OCR Scanner Button */}
+            <button
+              onClick={() => setIsOcrOpen(true)}
+              className="px-3 py-1.5 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-xs font-semibold text-white rounded-lg flex items-center gap-1.5 transition shadow-xs cursor-pointer"
+              title="Tải ảnh CCCD hoặc Giấy phép kinh doanh để bóc tách tự động"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>{ocrData ? 'Quét Lại OCR' : 'Bóc Tách OCR'}</span>
+            </button>
+
             <button
               onClick={handleExportPdf}
               disabled={isExportingPdf}
@@ -188,11 +247,28 @@ export const ContractModal: React.FC<ContractModalProps> = ({
 
         {/* Paper Contract View */}
         <div className="p-8 bg-white text-slate-900 font-sans leading-relaxed text-xs space-y-4 max-h-[65vh] overflow-y-auto">
+          {/* Recommended Template Banner if OCR applied */}
+          {ocrData && (
+            <div className="p-3 rounded-lg bg-blue-50 border border-blue-200 text-blue-900 text-xs flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <FileCheck className="w-4 h-4 text-blue-600 shrink-0" />
+                <span>
+                  Đang áp dụng mẫu chuẩn: <strong>{ocrData.recommendedTemplate.templateName}</strong> ({ocrData.recommendedTemplate.templateCode})
+                </span>
+              </div>
+              <span className="text-[10px] font-mono bg-white px-2 py-0.5 rounded border border-blue-200 text-blue-800 font-bold">
+                {ocrData.recommendedTemplate.sampleFileName}
+              </span>
+            </div>
+          )}
+
           <div className="text-center pb-4 border-b border-slate-200">
             <h4 className="font-bold text-sm tracking-wide text-slate-900">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</h4>
             <p className="text-xs italic text-slate-600">Độc lập - Tự do - Hạnh phúc</p>
             <div className="mt-3 font-bold text-base text-blue-900 tracking-wide uppercase">
-              HỢP ĐỒNG DỊCH VỤ QUẢNG BÁ NỘI DUNG (KOC MARKETING)
+              {isOcrCompany 
+                ? 'HỢP ĐỒNG DỊCH VỤ QUẢNG BÁ NỘI DUNG — PHÁP NHÂN DOANH NGHIỆP' 
+                : 'HỢP ĐỒNG DỊCH VỤ QUẢNG BÁ NỘI DUNG (KOC MARKETING)'}
             </div>
             <div className="text-xs text-slate-500 mt-1">
               Số: {deal.dealCode} / 2026 / HĐDV-UPBASE | Ngày: 22/09/2026
@@ -206,11 +282,41 @@ export const ContractModal: React.FC<ContractModalProps> = ({
               <p className="text-slate-600">• Đại diện phụ trách: <strong className="text-slate-900">{deal.assignedStaff}</strong> (Phòng Marketing B2C)</p>
             </div>
 
-            <div className="p-3.5 bg-slate-50 rounded-lg border border-slate-200">
-              <p className="font-bold text-slate-800">BÊN B (BÊN CUNG CẤP DỊCH VỤ - KOC):</p>
-              <p className="text-slate-600 mt-0.5">• Họ và tên: <strong className="text-slate-900">{koc.realName || deal.kocStageName}</strong> (Kênh: <strong className="text-blue-700">{deal.kocStageName}</strong>)</p>
-              <p className="text-slate-600">• Số CCCD: <strong className="font-mono text-slate-800">{koc.cccd}</strong></p>
-              <p className="text-slate-600">• Tài khoản: <strong className="font-mono text-slate-800">{koc.bankAccount}</strong> tại ngân hàng <strong className="text-slate-900">{koc.bankName}</strong></p>
+            {/* Party B: Dynamically rendered based on OCR */}
+            <div className={`p-3.5 rounded-lg border ${
+              ocrData ? 'bg-blue-50/30 border-blue-200' : 'bg-slate-50 border border-slate-200'
+            }`}>
+              <div className="flex items-center justify-between">
+                <p className="font-bold text-slate-800">
+                  {isOcrCompany 
+                    ? 'BÊN B (BÊN CUNG CẤP DỊCH VỤ - PHÁP NHÂN DOANH NGHIỆP / HKD):' 
+                    : 'BÊN B (BÊN CUNG CẤP DỊCH VỤ - KOC / CÁ NHÂN):'}
+                </p>
+                {ocrData && (
+                  <span className="text-[10px] font-bold text-blue-600 bg-blue-100/70 px-2 py-0.5 rounded">
+                    Dữ liệu bóc tách từ {ocrData.fileName || 'ảnh'}
+                  </span>
+                )}
+              </div>
+
+              {isOcrCompany ? (
+                <div className="mt-1 space-y-0.5 text-slate-700">
+                  <p>• Tên đơn vị: <strong className="text-slate-900">{ocrData?.fields.companyName || deal.kocStageName}</strong></p>
+                  <p>• Mã số thuế / ĐKDN: <strong className="font-mono text-slate-900">{ocrData?.fields.taxCode || '0109876543'}</strong></p>
+                  <p>• Người đại diện: <strong className="text-slate-900">{ocrData?.fields.legalRepresentative}</strong> (Chức vụ: {ocrData?.fields.legalRepTitle || 'Giám đốc'})</p>
+                  <p>• Địa chỉ trụ sở chính: {ocrData?.fields.headquartersAddress || 'Hà Nội'}</p>
+                  <p>• Tài khoản ngân hàng: <strong className="font-mono text-slate-800">{koc.bankAccount}</strong> tại <strong className="text-slate-900">{koc.bankName}</strong></p>
+                </div>
+              ) : (
+                <div className="mt-1 space-y-0.5 text-slate-700">
+                  <p>• Họ và tên: <strong className="text-slate-900">{ocrData?.fields.fullName || koc.realName || deal.kocStageName}</strong> (Kênh: <strong className="text-blue-700">{deal.kocStageName}</strong>)</p>
+                  <p>• Số CCCD / Định danh: <strong className="font-mono text-slate-900">{ocrData?.fields.idNumber || koc.cccd}</strong> {ocrData?.fields.issueDate && <span className="text-slate-500">(Cấp ngày: {ocrData.fields.issueDate} tại {ocrData.fields.issuePlace})</span>}</p>
+                  {ocrData?.fields.permanentAddress && (
+                    <p>• Nơi thường trú: {ocrData.fields.permanentAddress}</p>
+                  )}
+                  <p>• Tài khoản ngân hàng: <strong className="font-mono text-slate-800">{koc.bankAccount}</strong> tại ngân hàng <strong className="text-slate-900">{koc.bankName}</strong></p>
+                </div>
+              )}
             </div>
           </div>
 
@@ -352,6 +458,16 @@ export const ContractModal: React.FC<ContractModalProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Embedded Legal OCR Scanner Modal */}
+      <LegalOcrModal
+        isOpen={isOcrOpen}
+        onClose={() => setIsOcrOpen(false)}
+        onApplyToContract={(res) => {
+          setOcrData(res);
+          setIsOcrOpen(false);
+        }}
+      />
     </div>
   );
 };
