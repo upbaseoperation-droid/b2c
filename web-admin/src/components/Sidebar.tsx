@@ -82,10 +82,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const navSections: NavSection[] = [
     {
-      title: 'Của tôi',
+      title: 'Cá nhân',
       items: [
         { key: 'cockpit', label: 'Việc của tôi', icon: CheckSquare },
-        { key: 'overview', label: 'Tổng quan nhanh', icon: BarChart2 },
       ],
     },
     {
@@ -94,30 +93,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
         { key: 'dashboard-bi', label: 'Dashboard điều hành', icon: LayoutDashboard },
         { key: 'ads-report', label: 'Báo cáo Ads TikTok', icon: BarChart3 },
         { key: 'performance-p3', label: 'Đánh giá 4P & thưởng', icon: Coins },
-        { key: 'leaderboard', label: 'Hiệu suất nhân sự', icon: Award },
       ],
     },
     {
-      title: 'Vận hành nội bộ',
+      title: 'Vận hành tác nghiệp',
       items: [
         { key: 'input-plan', label: 'Kế hoạch tháng', icon: Calendar },
         { key: 'push-products', label: 'Sản phẩm đẩy', icon: TrendingUp },
         { key: 'campaigns', label: 'Làm việc với Brand', icon: Layers },
-        { key: 'booking', label: 'Booking', icon: Users },
-        { key: 'content', label: 'Kịch bản', icon: FileText },
+        { key: 'booking', label: 'Booking KOC', icon: Users },
+        { key: 'content', label: 'Kịch bản video', icon: FileText },
         { key: 'contracts', label: 'Hợp đồng & thanh toán', icon: FileCheck },
         { key: 'sample-tracker', label: 'Hàng mẫu', icon: Package },
-        { key: 'brand-knowledge', label: 'Hướng dẫn nhãn hàng', icon: BookOpen },
       ],
     },
     {
       title: 'Dữ liệu',
-      items: [{ key: 'master-data', label: 'Dữ liệu gốc', icon: Database }],
-    },
-    {
-      title: 'Quản lý',
       items: [
-        { key: 'manager', label: isManager ? 'Phân bổ & điều phối' : 'Kế hoạch & báo cáo', icon: Split },
+        { key: 'master-data', label: 'Dữ liệu gốc (Master Data)', icon: Database }
       ],
     },
     {

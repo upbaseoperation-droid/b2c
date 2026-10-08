@@ -56,7 +56,7 @@ import {
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState<UserProfile>(USERS[0]); // Default Vân Ngọc (Trưởng phòng)
-  const [activeTab, setActiveTab] = useState<TabKey>('manager');
+  const [activeTab, setActiveTab] = useState<TabKey>('dashboard-bi');
 
   // Load Lark Auth session on mount
   useEffect(() => {
@@ -720,7 +720,17 @@ export default function App() {
             <PerformanceP3View />
           )}
 
-          {activeTab === 'leaderboard' && <LeaderboardView />}
+          {(activeTab === 'leaderboard') && (
+            <ExecutiveDashboardReportsView
+              currentUser={currentUser}
+              deals={deals}
+              brands={brands}
+              kocs={kocs}
+              storePortfolios={storePortfolios}
+              onNotify={showToast}
+              onNavigateToTab={setActiveTab}
+            />
+          )}
 
           {activeTab === 'brand-hub' && (
             <BrandHubView
