@@ -27,6 +27,7 @@ import { PushProductsView } from '../components/views/PushProductsView';
 import { MasterDataHubView } from '../components/views/MasterDataHubView';
 import { SelfChannelCtvHubView } from '../components/views/SelfChannelCtvHubView';
 import { KocKolHubView } from '../components/views/KocKolHubView';
+import { WeeklyAdsReportHubView } from '../components/views/WeeklyAdsReportHubView';
 
 import { 
   USERS, 
@@ -471,6 +472,7 @@ export default function App() {
     leaderboard: { title: 'Hiệu suất nhân sự', subtitle: '' },
     'brand-hub': { title: 'Cổng đối tác Brand', subtitle: 'Duyệt kế hoạch → Duyệt KOC → Duyệt kịch bản → Nghiệm thu video' },
     'koc-hub': { title: 'Hub đối tác KOC / KOL', subtitle: 'Xem lời mời booking, xác nhận nhận hàng mẫu, nộp link video review & mã Spark Ads' },
+    'ads-report': { title: 'Báo cáo Ads TikTok & Mapping Tuần', subtitle: 'Tự động đọc file báo cáo xuất từ TikTok Shop Seller, đối soát mã Spark Ads và đồng bộ ROAS thực tế' },
   };
 
   return (
@@ -723,6 +725,17 @@ export default function App() {
               onNotify={showToast}
               onNavigateToBrandHub={() => setActiveTab('brand-hub')}
               onNavigateToCtvHub={() => setActiveTab('self-channel-hub')}
+            />
+          )}
+
+          {activeTab === 'ads-report' && (
+            <WeeklyAdsReportHubView
+              currentUser={currentUser}
+              kocs={kocs}
+              deals={deals}
+              onNotify={showToast}
+              onUpdateKocsWithAdsData={(updated) => setKocs(updated)}
+              onUpdateDealsWithAdsData={(updated) => setDeals(updated)}
             />
           )}
         </main>

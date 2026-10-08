@@ -258,6 +258,8 @@ export interface KocItem {
   isWinnerTop20?: boolean;
 }
 
+export type KocMasterItem = KocItem;
+
 export type DealStatus = 
   | 'CONTACTING'
   | 'SCRIPT_PENDING'
@@ -384,6 +386,18 @@ export interface BookingDealItem {
   billSentToKocDate?: string; // Ngày gửi bill thanh toán cho KOC
   isBillSentWithin7Days?: boolean; // Đã gửi bill trong vòng 7 ngày sau on air
   isEmergencyUnder5Days?: boolean; // Đơn gấp < 5 ngày trước ngày air (cảnh báo vi phạm chính sách)
+
+  // 4. Báo cáo Ads TikTok thực tế (đối soát từ TikTok Seller Center)
+  adCost?: number; // Chi phí Ads đã chạy (VNĐ)
+  adGmv?: number; // Doanh thu gộp từ Ads (VNĐ)
+  adRoas?: number; // ROAS Ads thực tế
+  adOrders?: number; // Số đơn hàng phát sinh
+  adCpa?: number; // Chi phí / đơn hàng (CPA)
+  adHookRate2s?: number; // Tỷ lệ giữ chân 2s (%)
+  adCompletionRate?: number; // Tỷ lệ xem hết 100% (%)
+  adAuthorizationType?: string; // Loại ủy quyền (Video code, Affiliate...)
+  adExplorationStatus?: string; // Trạng thái phân phối ads (Performing, Authorization needed...)
+  adReportPeriod?: string; // Chu kỳ báo cáo (ví dụ: 2026-10-01 ~ 2026-10-08)
 }
 
 export interface MasterTierQuota {
@@ -2014,5 +2028,106 @@ export interface SelfChannelVideoTask {
   
   createdAt: string;
   updatedAt?: string;
+}
+
+// ============================================================================
+// HỆ THỐNG BÁO CÁO ADS TIKTOK SHOP SELLER & ENGINE MAPPING TUẦN
+// ============================================================================
+
+export interface WeeklyAdsReportMeta {
+  id: string;
+  fileName: string;
+  reportWeek: string; // e.g. "Tuần 40 (01/10 - 08/10/2026)"
+  dateRange: string; // "2026-10-01 ~ 2026-10-08"
+  uploadDate: string;
+  fileSizeBytes: number;
+  totalRows: number;
+  totalSpend: number;
+  totalGmv: number;
+  totalOrders: number;
+  overallRoas: number;
+  status: 'READY' | 'MAPPED' | 'PROCESSING';
+  formatType: 'TIKTOK_SELLER_PGM_EN' | 'TIKTOK_SELLER_CREATIVE_VN';
+}
+
+export interface AdsCampaignPerformance {
+  campaignName: string;
+  campaignId?: string;
+  productName?: string;
+  cost: number;
+  gmv: number;
+  orders: number;
+  roas: number;
+  cpa: number;
+  impressions: number;
+  clicks: number;
+  ctr: number;
+  cvr: number;
+  hookRate2s: number;
+  completionRate100: number;
+  videoCount: number;
+  creatorCount: number;
+  topCreatorName?: string;
+}
+
+export interface AdsCreatorPerformance {
+  accountName: string; // Tên kênh trên TikTok
+  mappedKocId?: string; // ID KOC khớp trong Master Data
+  mappedStageName?: string; // Tên KOC khớp trong Master Data
+  mappedTier?: string; // Tier (Celeb, Macro, Micro, Nano)
+  isMatched: boolean;
+  isWinnerTop20: boolean;
+  cost: number;
+  gmv: number;
+  orders: number;
+  roas: number;
+  cpa: number;
+  videoCount: number;
+  avgHookRate2s: number;
+  avgCtr: number;
+  authorizationType: string;
+  explorationStatus: string;
+  topVideoTitle?: string;
+  topVideoId?: string;
+}
+
+export interface AdsCreativeDetailItem {
+  id: string;
+  campaignName: string;
+  productId: string;
+  videoTitle: string;
+  videoId: string;
+  tiktokAccount: string;
+  timePosted?: string;
+  status: string;
+  explorationSecondaryStatus: string; // 'Performing' | 'Authorization needed' | 'Exploring' | 'Ineligible'
+  authorizationType: string; // 'Video code' | 'Affiliate mass authorization' | 'TikTok Shop official account' | 'Product card'
+  cost: number;
+  orders: number;
+  cpa: number;
+  gmv: number;
+  roas: number;
+  impressions: number;
+  clicks: number;
+  ctr: number;
+  cvr: number;
+  hookRate2s: number;
+  viewRate6s: number;
+  completionRate100: number;
+  isSparkAds: boolean;
+  mappedDealId?: string;
+  mappedKocId?: string;
+}
+
+export interface AdsReportParseResult {
+  meta: WeeklyAdsReportMeta;
+  campaigns: AdsCampaignPerformance[];
+  creators: AdsCreatorPerformance[];
+  topCreatives: AdsCreativeDetailItem[];
+  authorizationSummary: Record<string, { count: number; cost: number; gmv: number }>;
+  statusSummary: Record<string, { count: number; cost: number; gmv: number }>;
+  matchedKocCount: number;
+  totalCreatorCount: number;
+  matchRatePercent: number;
 }
 

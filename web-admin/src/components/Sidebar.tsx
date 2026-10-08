@@ -4,6 +4,7 @@ import React from 'react';
 import {
   CheckSquare,
   BarChart2,
+  BarChart3,
   Layers,
   FileText,
   Users,
@@ -44,7 +45,8 @@ export type TabKey =
   | 'performance-p3'
   | 'leaderboard'
   | 'brand-hub'
-  | 'koc-hub';
+  | 'koc-hub'
+  | 'ads-report';
 
 interface NavItem {
   key: TabKey;
@@ -93,6 +95,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         { key: 'booking', label: 'Booking', icon: Users },
         { key: 'content', label: 'Kịch bản', icon: FileText },
         { key: 'contracts', label: 'Hợp đồng & thanh toán', icon: FileCheck },
+        { key: 'ads-report', label: 'Báo cáo Ads TikTok', icon: BarChart3 },
         { key: 'sample-tracker', label: 'Hàng mẫu', icon: Package },
         { key: 'brand-knowledge', label: 'Hướng dẫn nhãn hàng', icon: BookOpen },
       ],
