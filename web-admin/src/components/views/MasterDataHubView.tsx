@@ -1,10 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { ChannelTag } from '../ui';
 import { 
   Search, 
   ExternalLink, 
+  Filter, 
+  RotateCcw, 
   Plus, 
   X, 
   CheckCircle2,
@@ -86,8 +88,30 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
   );
   const [brandSearch, setBrandSearch] = useState('');
   const [selectedBrandCategory, setSelectedBrandCategory] = useState('ALL');
+  const [selectedBrandStatus, setSelectedBrandStatus] = useState('ALL');
+  const [selectedBrandPic, setSelectedBrandPic] = useState('ALL');
+  const [selectedBrandBudgetTier, setSelectedBrandBudgetTier] = useState('ALL');
   const [brandPage, setBrandPage] = useState(1);
   const BRAND_PAGE_SIZE = 25;
+
+  // Dynamic Brand Categories & PICs
+  const brandCategories = useMemo(() => {
+    const set = new Set<string>();
+    brandList.forEach(b => {
+      if (b.category) set.add(b.category.trim());
+    });
+    return Array.from(set).sort();
+  }, [brandList]);
+
+  const brandPics = useMemo(() => {
+    const set = new Set<string>();
+    brandList.forEach(b => {
+      if (b.accountPic) set.add(b.accountPic.trim());
+      if (b.growthPic) set.add(b.growthPic.trim());
+      if (b.bookingPicLead) set.add(b.bookingPicLead.trim());
+    });
+    return Array.from(set).sort();
+  }, [brandList]);
   const [isBrandModalOpen, setIsBrandModalOpen] = useState(false);
   const [editingBrand, setEditingBrand] = useState<BrandDetail | null>(null);
   const [brandForm, setBrandForm] = useState({
@@ -130,6 +154,17 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
   const [productSearch, setProductSearch] = useState('');
   const [selectedProductBrand, setSelectedProductBrand] = useState('ALL');
   const [selectedProductPlatform, setSelectedProductPlatform] = useState('ALL');
+  const [selectedProductCategory, setSelectedProductCategory] = useState('ALL');
+  const [selectedProductPriceRange, setSelectedProductPriceRange] = useState('ALL');
+  const [selectedProductStatus, setSelectedProductStatus] = useState('ALL');
+
+  const productCategories = useMemo(() => {
+    const set = new Set<string>();
+    productList.forEach(p => {
+      if (p.category) set.add(p.category.trim());
+    });
+    return Array.from(set).sort();
+  }, [productList]);
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<MasterProductItem | null>(null);
   const [productForm, setProductForm] = useState({
@@ -150,6 +185,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
   const [pillarSearch, setPillarSearch] = useState('');
   const [selectedPillarNiche, setSelectedPillarNiche] = useState('ALL');
   const [selectedPillarStatus, setSelectedPillarStatus] = useState<'ALL' | 'ACTIVE' | 'INACTIVE'>('ALL');
+  const [selectedPillarCostTier, setSelectedPillarCostTier] = useState('ALL');
   const [isPillarModalOpen, setIsPillarModalOpen] = useState(false);
   const [editingPillar, setEditingPillar] = useState<MasterContentPillar | null>(null);
   const [pillarForm, setPillarForm] = useState({
@@ -168,15 +204,48 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
   const [staffSearch, setStaffSearch] = useState('');
   const [selectedStaffRole, setSelectedStaffRole] = useState('ALL');
 
-  // Filtered Brands
-  const filteredBrands = brandList.filter(b => {
-    if (selectedBrandCategory !== 'ALL' && b.category !== selectedBrandCategory) return false;
-    if (brandSearch.trim()) {
-      const q = brandSearch.toLowerCase();
-      return b.name.toLowerCase().includes(q) || b.companyName.toLowerCase().includes(q);
-    }
-    return true;
-  });
+  // Filtered Brands with Multi-dimensions
+  const filteredBrands = useMemo(() => {
+    return brandList.filter(b => {
+      if (selectedBrandCategory !== 'ALL' && b.category !== selectedBrandCategory) return false;
+      if (selectedBrandStatus !== 'ALL' && b.status !== selectedBrandStatus) return false;
+      if (selectedBrandPic !== 'ALL') {
+        const matchPic = (b.accountPic && b.accountPic.includes(selectedBrandPic)) ||
+                         (b.growthPic && b.growthPic.includes(selectedBrandPic)) ||
+                         (b.bookingPicLead && b.bookingPicLead.includes(selectedBrandPic));
+        if (!matchPic) return false;
+      }
+      if (selectedBrandBudgetTier !== 'ALL') {
+        const budget = b.planBudget || 0;
+        if (selectedBrandBudgetTier === 'TIER_TOP' && budget < 100000000) return false;
+        if (selectedBrandBudgetTier === 'TIER_MID' && (budget < 50000000 || budget >= 100000000)) return false;
+        if (selectedBrandBudgetTier === 'TIER_LOW' && (budget === 0 || budget >= 50000000)) return false;
+        if (selectedBrandBudgetTier === 'TIER_ZERO' && budget > 0) return false;
+      }
+      if (brandSearch.trim()) {
+        const q = brandSearch.toLowerCase();
+        return (
+          b.name.toLowerCase().includes(q) ||
+          b.companyName.toLowerCase().includes(q) ||
+          (b.code && b.code.toLowerCase().includes(q)) ||
+          (b.accountPic && b.accountPic.toLowerCase().includes(q))
+        );
+      }
+      return true;
+    });
+  }, [brandList, selectedBrandCategory, selectedBrandStatus, selectedBrandPic, selectedBrandBudgetTier, brandSearch]);
+
+  const isBrandFiltered = brandSearch.trim() !== '' || selectedBrandCategory !== 'ALL' || selectedBrandStatus !== 'ALL' || selectedBrandPic !== 'ALL' || selectedBrandBudgetTier !== 'ALL';
+
+  const handleResetBrandFilters = () => {
+    setBrandSearch('');
+    setSelectedBrandCategory('ALL');
+    setSelectedBrandStatus('ALL');
+    setSelectedBrandPic('ALL');
+    setSelectedBrandBudgetTier('ALL');
+    setBrandPage(1);
+  };
+
   const totalBrandPages = Math.ceil(filteredBrands.length / BRAND_PAGE_SIZE) || 1;
   const currentBrands = filteredBrands.slice((brandPage - 1) * BRAND_PAGE_SIZE, brandPage * BRAND_PAGE_SIZE);
 
@@ -191,16 +260,43 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
     return true;
   });
 
-  // Filtered Master Products
-  const filteredProducts = productList.filter(p => {
-    if (selectedProductBrand !== 'ALL' && p.brandName !== selectedProductBrand) return false;
-    if (selectedProductPlatform !== 'ALL' && p.platform !== selectedProductPlatform) return false;
-    if (productSearch.trim()) {
-      const q = productSearch.toLowerCase();
-      return p.productName.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q) || p.brandName.toLowerCase().includes(q);
-    }
-    return true;
-  });
+  // Filtered Master Products with Multi-dimensions
+  const filteredProducts = useMemo(() => {
+    return productList.filter(p => {
+      if (selectedProductBrand !== 'ALL' && p.brandName !== selectedProductBrand) return false;
+      if (selectedProductPlatform !== 'ALL' && p.platform !== selectedProductPlatform) return false;
+      if (selectedProductCategory !== 'ALL' && p.category !== selectedProductCategory) return false;
+      if (selectedProductStatus !== 'ALL' && p.status !== selectedProductStatus) return false;
+      if (selectedProductPriceRange !== 'ALL') {
+        const price = p.originalPrice || 0;
+        if (selectedProductPriceRange === 'UNDER_200K' && price >= 200000) return false;
+        if (selectedProductPriceRange === '200K_500K' && (price < 200000 || price > 500000)) return false;
+        if (selectedProductPriceRange === '500K_1M' && (price < 500000 || price > 1000000)) return false;
+        if (selectedProductPriceRange === 'OVER_1M' && price <= 1000000) return false;
+      }
+      if (productSearch.trim()) {
+        const q = productSearch.toLowerCase();
+        return (
+          p.productName.toLowerCase().includes(q) ||
+          p.sku.toLowerCase().includes(q) ||
+          p.brandName.toLowerCase().includes(q) ||
+          p.storeName.toLowerCase().includes(q)
+        );
+      }
+      return true;
+    });
+  }, [productList, selectedProductBrand, selectedProductPlatform, selectedProductCategory, selectedProductPriceRange, selectedProductStatus, productSearch]);
+
+  const isProductFiltered = productSearch.trim() !== '' || selectedProductBrand !== 'ALL' || selectedProductPlatform !== 'ALL' || selectedProductCategory !== 'ALL' || selectedProductPriceRange !== 'ALL' || selectedProductStatus !== 'ALL';
+
+  const handleResetProductFilters = () => {
+    setProductSearch('');
+    setSelectedProductBrand('ALL');
+    setSelectedProductPlatform('ALL');
+    setSelectedProductCategory('ALL');
+    setSelectedProductPriceRange('ALL');
+    setSelectedProductStatus('ALL');
+  };
 
   // Filtered Staff
   const filteredStaff = USERS.filter(u => {
@@ -212,25 +308,44 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
     return true;
   });
 
-  // Filtered Content Pillars
-  const filteredPillars = pillarList.filter(p => {
-    if (selectedPillarStatus !== 'ALL' && p.status !== selectedPillarStatus) return false;
-    if (selectedPillarNiche !== 'ALL') {
-      const matchNiche = p.applicableNiches.some(n => 
-        n.toLowerCase().includes(selectedPillarNiche.toLowerCase()) || n === 'Toàn ngành'
-      );
-      if (!matchNiche) return false;
-    }
-    if (pillarSearch.trim()) {
-      const q = pillarSearch.toLowerCase();
-      return p.name.toLowerCase().includes(q) || 
-             p.code.toLowerCase().includes(q) || 
-             p.description.toLowerCase().includes(q) ||
-             p.keyObjectives.toLowerCase().includes(q) ||
-             p.applicableNiches.some(n => n.toLowerCase().includes(q));
-    }
-    return true;
-  });
+  // Filtered Content Pillars with Multi-dimensions
+  const filteredPillars = useMemo(() => {
+    return pillarList.filter(p => {
+      if (selectedPillarStatus !== 'ALL' && p.status !== selectedPillarStatus) return false;
+      if (selectedPillarNiche !== 'ALL') {
+        const matchNiche = p.applicableNiches.some(n => 
+          n.toLowerCase().includes(selectedPillarNiche.toLowerCase()) || n === 'Toàn ngành'
+        );
+        if (!matchNiche) return false;
+      }
+      if (selectedPillarCostTier !== 'ALL') {
+        const cost = p.benchmarkUnitCost || 0;
+        if (selectedPillarCostTier === 'UNDER_1M' && cost >= 1000000) return false;
+        if (selectedPillarCostTier === '1M_2M' && (cost < 1000000 || cost > 2000000)) return false;
+        if (selectedPillarCostTier === 'OVER_2M' && cost <= 2000000) return false;
+      }
+      if (pillarSearch.trim()) {
+        const q = pillarSearch.toLowerCase();
+        return (
+          p.name.toLowerCase().includes(q) || 
+          p.code.toLowerCase().includes(q) || 
+          p.description.toLowerCase().includes(q) ||
+          p.keyObjectives.toLowerCase().includes(q) ||
+          p.applicableNiches.some(n => n.toLowerCase().includes(q))
+        );
+      }
+      return true;
+    });
+  }, [pillarList, selectedPillarStatus, selectedPillarNiche, selectedPillarCostTier, pillarSearch]);
+
+  const isPillarFiltered = pillarSearch.trim() !== '' || selectedPillarNiche !== 'ALL' || selectedPillarStatus !== 'ALL' || selectedPillarCostTier !== 'ALL';
+
+  const handleResetPillarFilters = () => {
+    setPillarSearch('');
+    setSelectedPillarNiche('ALL');
+    setSelectedPillarStatus('ALL');
+    setSelectedPillarCostTier('ALL');
+  };
 
   // Format Currency
   const formatVnd = (num: number) => {
@@ -567,49 +682,166 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
       {/* SUB-TAB 1: THƯƠNG HIỆU */}
       {activeSubTab === 'brands' && (
         <div className="space-y-4">
-          <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-2 flex-1 max-w-md">
-              <div className="relative w-full">
+          {/* Enhanced Brands Multi-Filter Bar */}
+          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs space-y-3">
+            {/* Top row: Search + Add button */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="relative flex-1 max-w-md">
                 <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
-                  placeholder="Tìm thương hiệu, công ty chủ quản..."
+                  placeholder="Tìm thương hiệu, công ty chủ quản, mã brand..."
                   value={brandSearch}
-                  onChange={(e) => setBrandSearch(e.target.value)}
-                  className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-slate-400"
+                  onChange={(e) => {
+                    setBrandSearch(e.target.value);
+                    setBrandPage(1);
+                  }}
+                  className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-slate-800 bg-slate-50/50"
                 />
+                {brandSearch && (
+                  <button
+                    onClick={() => setBrandSearch('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
               </div>
-              <select
-                value={selectedBrandCategory}
-                onChange={(e) => setSelectedBrandCategory(e.target.value)}
-                className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-700 focus:outline-none"
+
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingBrand(null);
+                  setBrandForm({
+                    name: '',
+                    companyName: '',
+                    category: 'Mẹ & Bé',
+                    contactPerson: '',
+                    status: 'ACTIVE'
+                  });
+                  setIsBrandModalOpen(true);
+                }}
+                className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-xl transition flex items-center gap-1.5 shrink-0 shadow-xs"
               >
-                <option value="ALL">Mọi ngành hàng</option>
-                <option value="Mẹ & Bé">Mẹ & Bé</option>
-                <option value="Chăm Sóc Da">Chăm Sóc Da</option>
-                <option value="Sữa Công Thức">Sữa Công Thức</option>
-                <option value="Chăm Sóc Cá Nhân">Chăm Sóc Cá Nhân</option>
-              </select>
+                <Plus className="w-3.5 h-3.5" />
+                Thêm thương hiệu
+              </button>
             </div>
 
-            <button
-              type="button"
-              onClick={() => {
-                setEditingBrand(null);
-                setBrandForm({
-                  name: '',
-                  companyName: '',
-                  category: 'Mẹ & Bé',
-                  contactPerson: '',
-                  status: 'ACTIVE'
-                });
-                setIsBrandModalOpen(true);
-              }}
-              className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg transition flex items-center gap-1.5 shrink-0"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              Thêm thương hiệu
-            </button>
+            {/* Bottom row: Multi-dimension filters */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-2 pt-2 border-t border-slate-100 text-xs">
+              <div>
+                <label className="text-3xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">
+                  1. Ngành hàng ({brandCategories.length}):
+                </label>
+                <select
+                  value={selectedBrandCategory}
+                  onChange={(e) => {
+                    setSelectedBrandCategory(e.target.value);
+                    setBrandPage(1);
+                  }}
+                  className="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-slate-50 font-medium text-slate-800 focus:outline-none focus:border-slate-800"
+                >
+                  <option value="ALL">Tất cả ngành hàng</option>
+                  {brandCategories.map(cat => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="text-3xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">
+                  2. Trạng thái vận hành:
+                </label>
+                <select
+                  value={selectedBrandStatus}
+                  onChange={(e) => {
+                    setSelectedBrandStatus(e.target.value);
+                    setBrandPage(1);
+                  }}
+                  className="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-slate-50 font-medium text-slate-800 focus:outline-none focus:border-slate-800"
+                >
+                  <option value="ALL">Tất cả trạng thái</option>
+                  <option value="ACTIVE">🟢 Đang hoạt động (ACTIVE)</option>
+                  <option value="PAUSED">🟡 Tạm dừng (PAUSED)</option>
+                  <option value="UPCOMING">🔵 Sắp diễn ra (UPCOMING)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-3xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">
+                  3. Nhân sự phụ trách (PIC):
+                </label>
+                <select
+                  value={selectedBrandPic}
+                  onChange={(e) => {
+                    setSelectedBrandPic(e.target.value);
+                    setBrandPage(1);
+                  }}
+                  className="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-slate-50 font-medium text-slate-800 focus:outline-none focus:border-slate-800"
+                >
+                  <option value="ALL">Tất cả nhân sự phụ trách</option>
+                  {brandPics.map(pic => (
+                    <option key={pic} value={pic}>{pic}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="text-3xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">
+                  4. Quy mô Ngân sách tháng:
+                </label>
+                <select
+                  value={selectedBrandBudgetTier}
+                  onChange={(e) => {
+                    setSelectedBrandBudgetTier(e.target.value);
+                    setBrandPage(1);
+                  }}
+                  className="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-slate-50 font-medium text-slate-800 focus:outline-none focus:border-slate-800"
+                >
+                  <option value="ALL">Mọi quy mô ngân sách</option>
+                  <option value="TIER_TOP">Top chiến lược (&gt; 100M)</option>
+                  <option value="TIER_MID">Trung bình (50M - 100M)</option>
+                  <option value="TIER_LOW">Khởi tạo (&lt; 50M)</option>
+                  <option value="TIER_ZERO">Chưa có ngân sách (0đ)</option>
+                </select>
+              </div>
+
+              <div className="flex items-end">
+                {isBrandFiltered ? (
+                  <button
+                    type="button"
+                    onClick={handleResetBrandFilters}
+                    className="w-full py-1.5 px-3 rounded-lg border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 text-xs font-semibold transition flex items-center justify-center gap-1.5"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>Xóa bộ lọc</span>
+                  </button>
+                ) : (
+                  <div className="text-2xs text-slate-400 px-2 py-1.5 flex items-center gap-1">
+                    <Filter className="w-3.5 h-3.5 text-slate-400" />
+                    <span>Bộ lọc đa chiều</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Filter Results Summary */}
+            <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-2xs text-slate-500">
+              <div className="flex items-center gap-2">
+                <span>
+                  Tìm thấy <strong className="text-slate-900 font-bold">{filteredBrands.length}</strong> / {brandList.length} thương hiệu
+                </span>
+                {isBrandFiltered && (
+                  <span className="px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200 font-semibold text-3xs">
+                    Đang lọc kết quả
+                  </span>
+                )}
+              </div>
+              <span className="text-slate-400">
+                Hiển thị trang {brandPage} / {totalBrandPages} (25 thương hiệu/trang)
+              </span>
+            </div>
           </div>
 
           <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
@@ -736,64 +968,166 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
       {/* SUB-TAB 3: SẢN PHẨM (Master Product Catalog) */}
       {activeSubTab === 'products' && (
         <div className="space-y-4">
-          <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-2 flex-1 max-w-lg">
-              <div className="relative w-full">
+          {/* Enhanced Products Multi-Filter Bar */}
+          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="relative flex-1 max-w-md">
                 <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
-                  placeholder="Tìm theo SKU, tên sản phẩm, thương hiệu..."
+                  placeholder="Tìm theo SKU, tên sản phẩm, thương hiệu, gian hàng..."
                   value={productSearch}
                   onChange={(e) => setProductSearch(e.target.value)}
-                  className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-slate-400"
+                  className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-slate-800 bg-slate-50/50"
                 />
+                {productSearch && (
+                  <button
+                    onClick={() => setProductSearch('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
               </div>
 
-              <select
-                value={selectedProductPlatform}
-                onChange={(e) => setSelectedProductPlatform(e.target.value)}
-                className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-700 focus:outline-none shrink-0"
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingProduct(null);
+                  setProductForm({
+                    sku: '',
+                    productName: '',
+                    brandName: brandList[0]?.name || 'Kutieskin',
+                    storeName: '',
+                    platform: 'Shopee Mall',
+                    category: 'Mẹ & Bé',
+                    originalPrice: 150000,
+                    pdpUrl: '',
+                    status: 'ACTIVE'
+                  });
+                  setIsProductModalOpen(true);
+                }}
+                className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-xl transition flex items-center gap-1.5 shrink-0 shadow-xs"
               >
-                <option value="ALL">Mọi nền tảng</option>
-                <option value="TikTok Shop">TikTok Shop</option>
-                <option value="Shopee Mall">Shopee Mall</option>
-                <option value="Lazada">Lazada</option>
-              </select>
-
-              <select
-                value={selectedProductBrand}
-                onChange={(e) => setSelectedProductBrand(e.target.value)}
-                className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-700 focus:outline-none shrink-0"
-              >
-                <option value="ALL">Mọi nhãn hàng</option>
-                {brandList.map(b => (
-                  <option key={b.id} value={b.name}>{b.name}</option>
-                ))}
-              </select>
+                <Plus className="w-3.5 h-3.5" />
+                Thêm sản phẩm
+              </button>
             </div>
 
-            <button
-              type="button"
-              onClick={() => {
-                setEditingProduct(null);
-                setProductForm({
-                  sku: '',
-                  productName: '',
-                  brandName: brandList[0]?.name || 'Kutieskin',
-                  storeName: '',
-                  platform: 'Shopee Mall',
-                  category: 'Mẹ & Bé',
-                  originalPrice: 150000,
-                  pdpUrl: '',
-                  status: 'ACTIVE'
-                });
-                setIsProductModalOpen(true);
-              }}
-              className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg transition flex items-center gap-1.5 shrink-0"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              Thêm sản phẩm
-            </button>
+            {/* Bottom Row Filters */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 pt-2 border-t border-slate-100 text-xs">
+              <div>
+                <label className="text-3xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">
+                  1. Sàn / Nền tảng:
+                </label>
+                <select
+                  value={selectedProductPlatform}
+                  onChange={(e) => setSelectedProductPlatform(e.target.value)}
+                  className="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-slate-50 font-medium text-slate-800 focus:outline-none focus:border-slate-800"
+                >
+                  <option value="ALL">Tất cả các sàn</option>
+                  <option value="TikTok Shop">TikTok Shop</option>
+                  <option value="Shopee Mall">Shopee Mall</option>
+                  <option value="Lazada">Lazada</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-3xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">
+                  2. Thương hiệu:
+                </label>
+                <select
+                  value={selectedProductBrand}
+                  onChange={(e) => setSelectedProductBrand(e.target.value)}
+                  className="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-slate-50 font-medium text-slate-800 focus:outline-none focus:border-slate-800"
+                >
+                  <option value="ALL">Mọi nhãn hàng ({brandList.length})</option>
+                  {brandList.slice(0, 60).map(b => (
+                    <option key={b.id} value={b.name}>{b.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="text-3xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">
+                  3. Ngành hàng:
+                </label>
+                <select
+                  value={selectedProductCategory}
+                  onChange={(e) => setSelectedProductCategory(e.target.value)}
+                  className="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-slate-50 font-medium text-slate-800 focus:outline-none focus:border-slate-800"
+                >
+                  <option value="ALL">Mọi ngành hàng ({productCategories.length})</option>
+                  {productCategories.map(cat => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="text-3xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">
+                  4. Khoảng giá niêm yết:
+                </label>
+                <select
+                  value={selectedProductPriceRange}
+                  onChange={(e) => setSelectedProductPriceRange(e.target.value)}
+                  className="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-slate-50 font-medium text-slate-800 focus:outline-none focus:border-slate-800"
+                >
+                  <option value="ALL">Mọi mức giá</option>
+                  <option value="UNDER_200K">Dưới 200.000đ</option>
+                  <option value="200K_500K">200.000đ - 500.000đ</option>
+                  <option value="500K_1M">500.000đ - 1.000.000đ</option>
+                  <option value="OVER_1M">Trên 1.000.000đ</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-3xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">
+                  5. Trạng thái kinh doanh:
+                </label>
+                <select
+                  value={selectedProductStatus}
+                  onChange={(e) => setSelectedProductStatus(e.target.value)}
+                  className="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-slate-50 font-medium text-slate-800 focus:outline-none focus:border-slate-800"
+                >
+                  <option value="ALL">Tất cả</option>
+                  <option value="ACTIVE">🟢 Đang bán</option>
+                  <option value="DISCONTINUED">🔴 Ngừng bán</option>
+                </select>
+              </div>
+
+              <div className="flex items-end">
+                {isProductFiltered ? (
+                  <button
+                    type="button"
+                    onClick={handleResetProductFilters}
+                    className="w-full py-1.5 px-3 rounded-lg border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 text-xs font-semibold transition flex items-center justify-center gap-1.5"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>Xóa bộ lọc</span>
+                  </button>
+                ) : (
+                  <div className="text-2xs text-slate-400 px-2 py-1.5 flex items-center gap-1">
+                    <Filter className="w-3.5 h-3.5 text-slate-400" />
+                    <span>Bộ lọc sản phẩm</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Filter Results Summary */}
+            <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-2xs text-slate-500">
+              <div className="flex items-center gap-2">
+                <span>
+                  Tìm thấy <strong className="text-slate-900 font-bold">{filteredProducts.length}</strong> / {productList.length} sản phẩm Master
+                </span>
+                {isProductFiltered && (
+                  <span className="px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200 font-semibold text-3xs">
+                    Đang lọc kết quả
+                  </span>
+                )}
+              </div>
+            </div>
           </div>
 
           <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
@@ -884,77 +1218,141 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
       {activeSubTab === 'pillars' && (
         <div className="space-y-4">
           {/* Top Filter and Action Bar */}
-          <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-            <div className="flex flex-wrap items-center gap-2 flex-1">
-              <div className="relative min-w-[240px] flex-1 max-w-sm">
+          <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="relative flex-1 max-w-md">
                 <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
                   placeholder="Tìm theo mã, tên trụ cột, định hướng, ngành hàng..."
                   value={pillarSearch}
                   onChange={(e) => setPillarSearch(e.target.value)}
-                  className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-slate-400"
+                  className="w-full pl-9 pr-8 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-slate-800 bg-slate-50/50"
                 />
+                {pillarSearch && (
+                  <button
+                    onClick={() => setPillarSearch('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
               </div>
 
-              <select
-                value={selectedPillarNiche}
-                onChange={(e) => setSelectedPillarNiche(e.target.value)}
-                className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-700 focus:outline-none shrink-0"
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingPillar(null);
+                  setPillarForm({
+                    code: '',
+                    name: '',
+                    description: '',
+                    applicableNiches: 'Mẹ & Bé, Chăm Sóc Da',
+                    suggestedFormats: 'Voiceover chuyên gia + B-roll, Infographic trực quan',
+                    benchmarkUnitCost: 1500000,
+                    targetAudience: 'Phụ huynh có con nhỏ, người có vấn đề da liễu',
+                    keyObjectives: 'Xây dựng uy tín nhãn hàng, định vị chuyên gia & gieo niềm tin',
+                    status: 'ACTIVE',
+                    colorTag: '#4F46E5'
+                  });
+                  setIsPillarModalOpen(true);
+                }}
+                className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-xl transition flex items-center gap-1.5 shrink-0 shadow-xs"
               >
-                <option value="ALL">Mọi ngành hàng</option>
-                <option value="Mẹ & Bé">Mẹ & Bé</option>
-                <option value="Chăm Sóc Da">Chăm Sóc Da</option>
-                <option value="Sức Khỏe">Sức Khỏe</option>
-                <option value="Gia Dụng">Gia Dụng</option>
-                <option value="F&B">F&B</option>
-                <option value="Toàn ngành">Toàn ngành</option>
-              </select>
+                <Plus className="w-3.5 h-3.5" />
+                Thêm trụ cột nội dung
+              </button>
+            </div>
 
-              <select
-                value={selectedPillarStatus}
-                onChange={(e) => setSelectedPillarStatus(e.target.value as any)}
-                className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-700 focus:outline-none shrink-0"
-              >
-                <option value="ALL">Mọi trạng thái</option>
-                <option value="ACTIVE">Đang áp dụng</option>
-                <option value="INACTIVE">Tạm dừng</option>
-              </select>
+            {/* Multi-dimensional filters for Pillars */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-slate-100 text-xs">
+              <div>
+                <label className="text-3xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">
+                  1. Ngành hàng áp dụng:
+                </label>
+                <select
+                  value={selectedPillarNiche}
+                  onChange={(e) => setSelectedPillarNiche(e.target.value)}
+                  className="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-slate-50 font-medium text-slate-800 focus:outline-none focus:border-slate-800"
+                >
+                  <option value="ALL">Mọi ngành hàng</option>
+                  <option value="Mẹ & Bé">Mẹ & Bé</option>
+                  <option value="Chăm Sóc Da">Chăm Sóc Da</option>
+                  <option value="Sức Khỏe">Sức Khỏe</option>
+                  <option value="Gia Dụng">Gia Dụng</option>
+                  <option value="F&B">F&B</option>
+                  <option value="Toàn ngành">Toàn ngành</option>
+                </select>
+              </div>
 
-              <div className="hidden xl:flex items-center gap-3 pl-2 border-l border-slate-200 text-2xs text-slate-500">
+              <div>
+                <label className="text-3xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">
+                  2. Trạng thái áp dụng:
+                </label>
+                <select
+                  value={selectedPillarStatus}
+                  onChange={(e) => setSelectedPillarStatus(e.target.value as any)}
+                  className="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-slate-50 font-medium text-slate-800 focus:outline-none focus:border-slate-800"
+                >
+                  <option value="ALL">Mọi trạng thái ({pillarList.length})</option>
+                  <option value="ACTIVE">🟢 Đang áp dụng ({pillarList.filter(p => p.status === 'ACTIVE').length})</option>
+                  <option value="INACTIVE">🔴 Tạm dừng ({pillarList.filter(p => p.status === 'INACTIVE').length})</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-3xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">
+                  3. Định mức benchmark:
+                </label>
+                <select
+                  value={selectedPillarCostTier}
+                  onChange={(e) => setSelectedPillarCostTier(e.target.value)}
+                  className="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-slate-50 font-medium text-slate-800 focus:outline-none focus:border-slate-800"
+                >
+                  <option value="ALL">Mọi mức chi phí</option>
+                  <option value="UNDER_1M">Dưới 1.000.000đ</option>
+                  <option value="1M_2M">1.000.000đ - 2.000.000đ</option>
+                  <option value="OVER_2M">Trên 2.000.000đ</option>
+                </select>
+              </div>
+
+              <div className="flex items-end">
+                {isPillarFiltered ? (
+                  <button
+                    type="button"
+                    onClick={handleResetPillarFilters}
+                    className="w-full py-1.5 px-3 rounded-lg border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 text-xs font-semibold transition flex items-center justify-center gap-1.5"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>Xóa bộ lọc</span>
+                  </button>
+                ) : (
+                  <div className="text-2xs text-slate-400 px-2 py-1.5 flex items-center gap-1">
+                    <Filter className="w-3.5 h-3.5 text-slate-400" />
+                    <span>Bộ lọc Content Pillar</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Filter Summary */}
+            <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-2xs text-slate-500">
+              <div className="flex items-center gap-2">
                 <span>
-                  <strong className="text-slate-800 font-semibold">{pillarList.filter(p => p.status === 'ACTIVE').length}</strong>/{pillarList.length} trụ cột hoạt động
+                  Tìm thấy <strong className="text-slate-900 font-bold">{filteredPillars.length}</strong> / {pillarList.length} trụ cột nội dung
                 </span>
-                <span>•</span>
+                {isPillarFiltered && (
+                  <span className="px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 font-semibold text-3xs">
+                    Đang lọc kết quả
+                  </span>
+                )}
+              </div>
+              <div className="hidden sm:flex items-center gap-2">
                 <span>
                   Định mức TB: <strong className="text-slate-800 font-semibold">{formatVnd(Math.round(pillarList.reduce((acc, p) => acc + p.benchmarkUnitCost, 0) / (pillarList.length || 1)))}</strong>
                 </span>
               </div>
             </div>
-
-            <button
-              type="button"
-              onClick={() => {
-                setEditingPillar(null);
-                setPillarForm({
-                  code: '',
-                  name: '',
-                  description: '',
-                  applicableNiches: 'Mẹ & Bé, Chăm Sóc Da',
-                  suggestedFormats: 'Voiceover chuyên gia + B-roll, Infographic trực quan',
-                  benchmarkUnitCost: 1500000,
-                  targetAudience: 'Phụ huynh có con nhỏ, người có vấn đề da liễu',
-                  keyObjectives: 'Xây dựng uy tín nhãn hàng, định vị chuyên gia & gieo niềm tin',
-                  status: 'ACTIVE',
-                  colorTag: '#4F46E5'
-                });
-                setIsPillarModalOpen(true);
-              }}
-              className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg transition flex items-center gap-1.5 shrink-0 self-start sm:self-auto"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              Thêm trụ cột nội dung
-            </button>
           </div>
 
           {/* Master Content Pillar Table */}

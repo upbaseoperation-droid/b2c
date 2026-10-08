@@ -25,7 +25,9 @@ import {
   RefreshCw,
   Camera,
   IdCard,
-  FileCheck
+  FileCheck,
+  RotateCcw,
+  X
 } from 'lucide-react';
 import { 
   KocItem, 
@@ -72,6 +74,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
   // Search & Filter States
   const [searchTerm, setSearchTerm] = useState('');
   const [filterOcrStatus, setFilterOcrStatus] = useState<'ALL' | 'VERIFIED' | 'UNVERIFIED'>('ALL');
+  const [selectedTier, setSelectedTier] = useState<string>('ALL');
   const [selectedKL, setSelectedKL] = useState<string>('ALL');
   const [selectedSegment, setSelectedSegment] = useState<string>('ALL');
   const [selectedKocCategory, setSelectedKocCategory] = useState<string>('ALL');
@@ -101,6 +104,9 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
       if (filterOcrStatus === 'VERIFIED' && !hasOcr) return false;
       if (filterOcrStatus === 'UNVERIFIED' && hasOcr) return false;
 
+      // Filter Tier
+      if (selectedTier !== 'ALL' && koc.tier !== selectedTier) return false;
+
       // Filter 4 Core Dimensions
       if (selectedKL !== 'ALL' && koc.salaryGrade !== selectedKL) return false;
       if (selectedSegment !== 'ALL' && koc.segment !== selectedSegment) return false;
@@ -109,7 +115,19 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
 
       return true;
     });
-  }, [localKocs, searchTerm, filterOcrStatus, selectedKL, selectedSegment, selectedKocCategory, selectedTepKenh]);
+  }, [localKocs, searchTerm, filterOcrStatus, selectedTier, selectedKL, selectedSegment, selectedKocCategory, selectedTepKenh]);
+
+  const isKocFiltered = searchTerm.trim() !== '' || filterOcrStatus !== 'ALL' || selectedTier !== 'ALL' || selectedKL !== 'ALL' || selectedSegment !== 'ALL' || selectedKocCategory !== 'ALL' || selectedTepKenh !== 'ALL';
+
+  const handleResetKocFilters = () => {
+    setSearchTerm('');
+    setFilterOcrStatus('ALL');
+    setSelectedTier('ALL');
+    setSelectedKL('ALL');
+    setSelectedSegment('ALL');
+    setSelectedKocCategory('ALL');
+    setSelectedTepKenh('ALL');
+  };
 
   // Handle OCR Apply: Either update existing KOC or create new KOC record
   const handleApplyOcrResult = (ocrResult: OcrLegalExtractionResult) => {
@@ -278,8 +296,16 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
               placeholder="Tìm theo tên kênh, tên thật, số CCCD / MST, SĐT..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500 text-slate-900 placeholder:text-slate-400"
+              className="w-full pl-9 pr-8 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-800 text-slate-900 placeholder:text-slate-400"
             />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
 
           {/* Quick Status Pill Filters */}
@@ -322,14 +348,33 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
           </div>
         </div>
 
-        {/* 4 Core UpBase Dimensions Filter Row */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-2.5 border-t border-slate-100 text-xs">
+        {/* Multi-Dimensional Filter Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 pt-2 border-t border-slate-100 text-xs">
           <div>
-            <label className="text-2xs font-semibold text-slate-400 block mb-1">1. Khung Lương (KL):</label>
+            <label className="text-3xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">
+              1. Cấp bậc (Tier):
+            </label>
+            <select
+              value={selectedTier}
+              onChange={(e) => setSelectedTier(e.target.value)}
+              className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 font-medium focus:outline-none focus:border-slate-800"
+            >
+              <option value="ALL">Mọi cấp bậc Tier</option>
+              <option value="TIER_1_CELEB">Tier 1 - Celeb / Key Talent</option>
+              <option value="TIER_2_MACRO">Tier 2 - Macro Creator</option>
+              <option value="TIER_3_MICRO">Tier 3 - Micro Creator</option>
+              <option value="TIER_4_NANO">Tier 4 - Nano / Community</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="text-3xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">
+              2. Khung Lương (KL):
+            </label>
             <select
               value={selectedKL}
               onChange={(e) => setSelectedKL(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 font-medium focus:outline-none"
+              className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 font-medium focus:outline-none focus:border-slate-800"
             >
               <option value="ALL">Tất cả khung lương</option>
               <option value="TAP UpAffiliate">TAP UpAffiliate (0đ)</option>
@@ -344,11 +389,13 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
           </div>
 
           <div>
-            <label className="text-2xs font-semibold text-slate-400 block mb-1">2. Segment Creator:</label>
+            <label className="text-3xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">
+              3. Segment Creator:
+            </label>
             <select
               value={selectedSegment}
               onChange={(e) => setSelectedSegment(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 font-medium focus:outline-none"
+              className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 font-medium focus:outline-none focus:border-slate-800"
             >
               <option value="ALL">Tất cả Segment</option>
               <option value="Massive Creator">Massive Creator (&lt;3M)</option>
@@ -359,15 +406,17 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
           </div>
 
           <div>
-            <label className="text-2xs font-semibold text-slate-400 block mb-1">3. Ngành hàng:</label>
+            <label className="text-3xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">
+              4. Ngành hàng:
+            </label>
             <select
               value={selectedKocCategory}
               onChange={(e) => setSelectedKocCategory(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 font-medium focus:outline-none"
+              className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 font-medium focus:outline-none focus:border-slate-800"
             >
               <option value="ALL">Tất cả ngành hàng</option>
-              <option value="Personal care">Personal Care (Mỹ phẩm/Skincare)</option>
-              <option value="Mom and baby">Mom &amp; Baby (Mẹ và bé)</option>
+              <option value="Personal care">Personal Care (Mỹ phẩm/Skin)</option>
+              <option value="Mom and baby">Mom &amp; Baby (Mẹ &amp; bé)</option>
               <option value="Reviewer">Reviewer chuyên sâu</option>
               <option value="Lifestyle">Lifestyle</option>
               <option value="Fashion">Fashion (Thời trang)</option>
@@ -377,11 +426,13 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
           </div>
 
           <div>
-            <label className="text-2xs font-semibold text-slate-400 block mb-1">4. Tệp kênh (25 tệp):</label>
+            <label className="text-3xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">
+              5. Tệp kênh (25 tệp):
+            </label>
             <select
               value={selectedTepKenh}
               onChange={(e) => setSelectedTepKenh(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 font-medium focus:outline-none"
+              className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 font-medium focus:outline-none focus:border-slate-800"
             >
               <option value="ALL">Tất cả tệp kênh</option>
               <option value="Review Nữ">Review Nữ</option>
@@ -393,6 +444,38 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
               <option value="Unboxing">Unboxing</option>
               <option value="Bác sỹ/chuyên gia">Bác sỹ / chuyên gia</option>
             </select>
+          </div>
+
+          <div className="flex items-end">
+            {isKocFiltered ? (
+              <button
+                type="button"
+                onClick={handleResetKocFilters}
+                className="w-full py-1.5 px-3 rounded-lg border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 text-xs font-semibold transition flex items-center justify-center gap-1.5"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>Xóa bộ lọc</span>
+              </button>
+            ) : (
+              <div className="text-2xs text-slate-400 px-2 py-1.5 flex items-center gap-1">
+                <Filter className="w-3.5 h-3.5 text-slate-400" />
+                <span>Bộ lọc KOC</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Filter Summary */}
+        <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-2xs text-slate-500">
+          <div className="flex items-center gap-2">
+            <span>
+              Tìm thấy <strong className="text-slate-900 font-bold">{filteredKocs.length}</strong> / {totalKocs} KOC trong danh bạ
+            </span>
+            {isKocFiltered && (
+              <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold text-3xs">
+                Đang lọc kết quả
+              </span>
+            )}
           </div>
         </div>
       </div>

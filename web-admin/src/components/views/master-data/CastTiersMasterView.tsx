@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Search, Plus, X, Layers, TrendingUp, DollarSign, ShieldAlert } from 'lucide-react';
+import { Search, Plus, X, Layers, TrendingUp, DollarSign, ShieldAlert, Filter, RotateCcw } from 'lucide-react';
 import { MasterCastTier } from '../../../lib/types';
 
 interface CastTiersMasterViewProps {
@@ -48,6 +48,13 @@ export const CastTiersMasterView: React.FC<CastTiersMasterViewProps> = ({
     }
     return true;
   });
+
+  const isTierFiltered = search.trim() !== '' || selectedGroup !== 'ALL';
+
+  const handleResetTierFilters = () => {
+    setSearch('');
+    setSelectedGroup('ALL');
+  };
 
   const handleOpenAdd = () => {
     setEditingTier(null);
@@ -196,40 +203,73 @@ export const CastTiersMasterView: React.FC<CastTiersMasterViewProps> = ({
       </div>
 
       {/* Filter and Action Bar */}
-      <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-2 flex-1 max-w-lg">
-          <div className="relative w-full sm:w-64">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              placeholder="Tìm mã bậc (KL1, KL2...), khoảng giá..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-slate-400"
-            />
+      <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2 flex-1 max-w-xl">
+            <div className="relative w-full sm:w-64">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Tìm mã bậc (KL1, KL2...), khoảng giá..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full pl-9 pr-8 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-slate-400"
+              />
+              {search && (
+                <button
+                  onClick={() => setSearch('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+
+            <select
+              value={selectedGroup}
+              onChange={(e) => setSelectedGroup(e.target.value)}
+              className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-700 focus:outline-none shrink-0"
+            >
+              <option value="ALL">Mọi phân nhóm</option>
+              <option value="Massive Creator">Massive Creator</option>
+              <option value="Mid Creator">Mid Creator</option>
+              <option value="Key Creator">Key Creator</option>
+              <option value="Top Creator">Top Creator</option>
+            </select>
+
+            {isTierFiltered && (
+              <button
+                type="button"
+                onClick={handleResetTierFilters}
+                className="py-1.5 px-2.5 rounded-lg border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 text-xs font-semibold transition flex items-center gap-1"
+              >
+                <RotateCcw className="w-3 h-3" />
+                <span>Xóa lọc</span>
+              </button>
+            )}
           </div>
 
-          <select
-            value={selectedGroup}
-            onChange={(e) => setSelectedGroup(e.target.value)}
-            className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-700 focus:outline-none shrink-0"
+          <button
+            type="button"
+            onClick={handleOpenAdd}
+            className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg transition flex items-center gap-1.5 shrink-0"
           >
-            <option value="ALL">Mọi phân nhóm</option>
-            <option value="Massive Creator">Massive Creator</option>
-            <option value="Mid Creator">Mid Creator</option>
-            <option value="Key Creator">Key Creator</option>
-            <option value="Top Creator">Top Creator</option>
-          </select>
+            <Plus className="w-3.5 h-3.5" />
+            Thêm bậc cast
+          </button>
         </div>
 
-        <button
-          type="button"
-          onClick={handleOpenAdd}
-          className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg transition flex items-center gap-1.5 shrink-0"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          Thêm bậc cast
-        </button>
+        {/* Results summary */}
+        <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-2xs text-slate-500">
+          <div className="flex items-center gap-2">
+            <span>Tìm thấy <strong className="text-slate-900 font-bold">{filteredTiers.length}</strong> / {tiers.length} bậc cast</span>
+            {isTierFiltered && (
+              <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold text-3xs">
+                Đang lọc kết quả
+              </span>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Master Cast Tier Table */}

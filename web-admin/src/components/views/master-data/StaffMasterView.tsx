@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { Search, Users, MapPin, Briefcase, ChevronLeft, ChevronRight, UserCheck, Shield } from 'lucide-react';
+import { Search, Users, MapPin, Briefcase, ChevronLeft, ChevronRight, UserCheck, Shield, Filter, RotateCcw, X } from 'lucide-react';
 import { StaffMasterMember } from '../../../lib/types';
 
 interface StaffMasterViewProps {
@@ -51,6 +51,16 @@ export const StaffMasterView: React.FC<StaffMasterViewProps> = ({
       return true;
     });
   }, [staffList, selectedLocation, selectedType, selectedDept, search]);
+
+  const isStaffFiltered = search.trim() !== '' || selectedLocation !== 'ALL' || selectedType !== 'ALL' || selectedDept !== 'ALL';
+
+  const handleResetStaffFilters = () => {
+    setSearch('');
+    setSelectedLocation('ALL');
+    setSelectedType('ALL');
+    setSelectedDept('ALL');
+    setPage(1);
+  };
 
   const totalPages = Math.ceil(filteredStaff.length / PAGE_SIZE) || 1;
   const currentStaff = useMemo(() => {
@@ -127,9 +137,9 @@ export const StaffMasterView: React.FC<StaffMasterViewProps> = ({
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-2 flex-1 max-w-2xl">
-          <div className="relative w-full sm:w-64">
+      <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="relative flex-1 max-w-md">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
@@ -139,57 +149,119 @@ export const StaffMasterView: React.FC<StaffMasterViewProps> = ({
                 setSearch(e.target.value);
                 setPage(1);
               }}
-              className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-slate-400"
+              className="w-full pl-9 pr-8 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-slate-800 bg-slate-50/50"
             />
+            {search && (
+              <button
+                onClick={() => {
+                  setSearch('');
+                  setPage(1);
+                }}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
 
-          <select
-            value={selectedLocation}
-            onChange={(e) => {
-              setSelectedLocation(e.target.value);
-              setPage(1);
-            }}
-            className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-700 focus:outline-none shrink-0"
-          >
-            <option value="ALL">Mọi khu vực</option>
-            <option value="HN">Hà Nội (HN)</option>
-            <option value="HCM">TP. Hồ Chí Minh (HCM)</option>
-          </select>
+          <div className="text-xs text-slate-500 flex items-center gap-1.5 shrink-0">
+            <Shield className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Xác thực SSO Upbase Lark</span>
+          </div>
+        </div>
 
-          <select
-            value={selectedType}
-            onChange={(e) => {
-              setSelectedType(e.target.value);
-              setPage(1);
-            }}
-            className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-700 focus:outline-none shrink-0"
-          >
-            <option value="ALL">Mọi loại hình</option>
-            <option value="Chính thức">Chính thức</option>
-            <option value="Cộng tác viên">Cộng tác viên</option>
-            <option value="Thực tập sinh">Thực tập sinh</option>
-          </select>
+        {/* Filter controls row */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-slate-100 text-xs">
+          <div>
+            <label className="text-3xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">
+              1. Khu vực:
+            </label>
+            <select
+              value={selectedLocation}
+              onChange={(e) => {
+                setSelectedLocation(e.target.value);
+                setPage(1);
+              }}
+              className="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-slate-50 font-medium text-slate-800 focus:outline-none focus:border-slate-800"
+            >
+              <option value="ALL">Mọi khu vực ({staffList.length})</option>
+              <option value="HN">Hà Nội (HN) ({hnCount})</option>
+              <option value="HCM">TP. Hồ Chí Minh (HCM) ({hcmCount})</option>
+            </select>
+          </div>
 
-          {departments.length > 0 && (
+          <div>
+            <label className="text-3xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">
+              2. Loại hình nhân sự:
+            </label>
+            <select
+              value={selectedType}
+              onChange={(e) => {
+                setSelectedType(e.target.value);
+                setPage(1);
+              }}
+              className="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-slate-50 font-medium text-slate-800 focus:outline-none focus:border-slate-800"
+            >
+              <option value="ALL">Mọi loại hình</option>
+              <option value="Chính thức">Chính thức ({officialCount})</option>
+              <option value="Cộng tác viên">Cộng tác viên ({ctvCount})</option>
+              <option value="Thực tập sinh">Thực tập sinh</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="text-3xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">
+              3. Phòng ban:
+            </label>
             <select
               value={selectedDept}
               onChange={(e) => {
                 setSelectedDept(e.target.value);
                 setPage(1);
               }}
-              className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-700 focus:outline-none shrink-0 max-w-[180px]"
+              className="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-slate-50 font-medium text-slate-800 focus:outline-none focus:border-slate-800"
             >
               <option value="ALL">Mọi phòng ban ({departments.length})</option>
               {departments.map(d => (
                 <option key={d} value={d}>{d}</option>
               ))}
             </select>
-          )}
+          </div>
+
+          <div className="flex items-end">
+            {isStaffFiltered ? (
+              <button
+                type="button"
+                onClick={handleResetStaffFilters}
+                className="w-full py-1.5 px-3 rounded-lg border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 text-xs font-semibold transition flex items-center justify-center gap-1.5"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>Xóa bộ lọc</span>
+              </button>
+            ) : (
+              <div className="text-2xs text-slate-400 px-2 py-1.5 flex items-center gap-1">
+                <Filter className="w-3.5 h-3.5 text-slate-400" />
+                <span>Bộ lọc nhân sự</span>
+              </div>
+            )}
+          </div>
         </div>
 
-        <div className="text-xs text-slate-500 flex items-center gap-1.5 shrink-0">
-          <Shield className="w-3.5 h-3.5 text-slate-400" />
-          <span>Xác thực SSO Upbase Lark</span>
+        {/* Filter Summary */}
+        <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-2xs text-slate-500">
+          <div className="flex items-center gap-2">
+            <span>
+              Tìm thấy <strong className="text-slate-900 font-bold">{filteredStaff.length}</strong> / {staffList.length} nhân sự Lark Base
+            </span>
+            {isStaffFiltered && (
+              <span className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 font-semibold text-3xs">
+                Đang lọc kết quả
+              </span>
+            )}
+          </div>
+          {totalPages > 1 && (
+            <span>Trang {page} / {totalPages}</span>
+          )}
         </div>
       </div>
 

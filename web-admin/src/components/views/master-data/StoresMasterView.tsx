@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { Search, Plus, X, ExternalLink, Store, ShoppingBag, ChevronLeft, ChevronRight, Users } from 'lucide-react';
+import { Search, Plus, X, ExternalLink, Store, ShoppingBag, ChevronLeft, ChevronRight, Users, Filter, RotateCcw } from 'lucide-react';
 import { ChannelTag } from '../../ui';
 import { StorePortfolioItem } from '../../../lib/types';
 import { StaffSearchSelect } from './StaffSearchSelect';
@@ -21,10 +21,36 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
 }) => {
   const [stores, setStores] = useState<StorePortfolioItem[]>(initialStores);
   const [search, setSearch] = useState('');
+  const [selectedBrand, setSelectedBrand] = useState('ALL');
   const [selectedPlatform, setSelectedPlatform] = useState('ALL');
   const [selectedPackage, setSelectedPackage] = useState('ALL');
   const [selectedStatus, setSelectedStatus] = useState('ALL');
+  const [selectedOwner, setSelectedOwner] = useState('ALL');
   const [page, setPage] = useState(1);
+
+  // Extract unique sorted brand list
+  const uniqueBrands = useMemo(() => {
+    const set = new Set<string>();
+    stores.forEach(s => {
+      if (s.brandName) set.add(s.brandName.trim());
+    });
+    brandNames.forEach(b => {
+      if (b) set.add(b.trim());
+    });
+    return Array.from(set).sort();
+  }, [stores, brandNames]);
+
+  // Extract unique account owners & PICs
+  const accountOwners = useMemo(() => {
+    const set = new Set<string>();
+    stores.forEach(s => {
+      if (s.accountOwnerName) set.add(s.accountOwnerName.trim());
+      if (s.growthPic) set.add(s.growthPic.trim());
+      if (s.contentPic) set.add(s.contentPic.trim());
+      if (s.mediaPic) set.add(s.mediaPic.trim());
+    });
+    return Array.from(set).sort();
+  }, [stores]);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -52,15 +78,23 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
     return Array.from(set).sort();
   }, [stores]);
 
-  // Filtered stores
+  // Filtered stores with multi-dimensions
   const filteredStores = useMemo(() => {
     return stores.filter(s => {
+      if (selectedBrand !== 'ALL' && s.brandName !== selectedBrand) return false;
       if (selectedPlatform !== 'ALL' && s.platform !== selectedPlatform) return false;
       if (selectedPackage !== 'ALL' && s.servicePackage !== selectedPackage) return false;
       if (selectedStatus !== 'ALL') {
         if (selectedStatus === 'Live' && s.operationStatus !== 'Live' && s.accountStatus !== 'ACTIVE') return false;
         if (selectedStatus === 'Off' && s.operationStatus !== 'Off' && s.accountStatus !== 'OFFBOARDED') return false;
         if (selectedStatus === 'Kênh nội bộ' && s.operationStatus !== 'Kênh nội bộ' && s.accountStatus !== 'MAINTENANCE') return false;
+      }
+      if (selectedOwner !== 'ALL') {
+        const matchOwner = (s.accountOwnerName && s.accountOwnerName.includes(selectedOwner)) ||
+                           (s.growthPic && s.growthPic.includes(selectedOwner)) ||
+                           (s.contentPic && s.contentPic.includes(selectedOwner)) ||
+                           (s.mediaPic && s.mediaPic.includes(selectedOwner));
+        if (!matchOwner) return false;
       }
       if (search.trim()) {
         const q = search.toLowerCase();
@@ -76,7 +110,19 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
       }
       return true;
     });
-  }, [stores, selectedPlatform, selectedPackage, selectedStatus, search]);
+  }, [stores, selectedBrand, selectedPlatform, selectedPackage, selectedStatus, selectedOwner, search]);
+
+  const isFiltered = search.trim() !== '' || selectedBrand !== 'ALL' || selectedPlatform !== 'ALL' || selectedPackage !== 'ALL' || selectedStatus !== 'ALL' || selectedOwner !== 'ALL';
+
+  const handleResetFilters = () => {
+    setSearch('');
+    setSelectedBrand('ALL');
+    setSelectedPlatform('ALL');
+    setSelectedPackage('ALL');
+    setSelectedStatus('ALL');
+    setSelectedOwner('ALL');
+    setPage(1);
+  };
 
   // Pagination slice
   const totalPages = Math.ceil(filteredStores.length / PAGE_SIZE) || 1;
@@ -252,75 +298,178 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
       </div>
 
       {/* Filter and Action Bar */}
-      <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-2 flex-1 max-w-2xl">
-          <div className="relative w-full sm:w-64">
+      <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs space-y-3">
+        {/* Top Row: Search & Add button */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="relative flex-1 max-w-md">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder="Tìm theo gian hàng, thương hiệu, PIC..."
+              placeholder="Tìm theo gian hàng, thương hiệu, mã gian, PIC vận hành..."
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
                 setPage(1);
               }}
-              className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-slate-400"
+              className="w-full pl-9 pr-8 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-slate-800 bg-slate-50/50"
             />
+            {search && (
+              <button
+                onClick={() => {
+                  setSearch('');
+                  setPage(1);
+                }}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
 
-          <select
-            value={selectedPlatform}
-            onChange={(e) => {
-              setSelectedPlatform(e.target.value);
-              setPage(1);
-            }}
-            className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-700 focus:outline-none shrink-0"
+          <button
+            type="button"
+            onClick={handleOpenAdd}
+            className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-xl transition flex items-center gap-1.5 shrink-0 shadow-xs"
           >
-            <option value="ALL">Mọi sàn</option>
-            <option value="Shopee Mall">Shopee Mall</option>
-            <option value="TikTok Shop">TikTok Shop</option>
-            <option value="Lazada">Lazada</option>
-          </select>
-
-          <select
-            value={selectedPackage}
-            onChange={(e) => {
-              setSelectedPackage(e.target.value);
-              setPage(1);
-            }}
-            className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-700 focus:outline-none shrink-0"
-          >
-            <option value="ALL">Mọi gói dịch vụ ({packages.length})</option>
-            {packages.map(p => (
-              <option key={p} value={p}>{p}</option>
-            ))}
-          </select>
-
-          <select
-            value={selectedStatus}
-            onChange={(e) => {
-              setSelectedStatus(e.target.value);
-              setPage(1);
-            }}
-            className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-700 focus:outline-none shrink-0"
-          >
-            <option value="ALL">Mọi trạng thái ({stores.length})</option>
-            <option value="Live">Đang Live ({liveCount})</option>
-            <option value="Off">Đã Off ({offCount})</option>
-            {internalCount > 0 && (
-              <option value="Kênh nội bộ">Kênh nội bộ ({internalCount})</option>
-            )}
-          </select>
+            <Plus className="w-3.5 h-3.5" />
+            Thêm gian hàng
+          </button>
         </div>
 
-        <button
-          type="button"
-          onClick={handleOpenAdd}
-          className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg transition flex items-center gap-1.5 shrink-0"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          Thêm gian hàng
-        </button>
+        {/* Bottom Row: Multi-dimensional Filters */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 pt-2 border-t border-slate-100 text-xs">
+          <div>
+            <label className="text-3xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">
+              1. Thương hiệu:
+            </label>
+            <select
+              value={selectedBrand}
+              onChange={(e) => {
+                setSelectedBrand(e.target.value);
+                setPage(1);
+              }}
+              className="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-slate-50 font-medium text-slate-800 focus:outline-none focus:border-slate-800"
+            >
+              <option value="ALL">Mọi thương hiệu ({uniqueBrands.length})</option>
+              {uniqueBrands.map(b => (
+                <option key={b} value={b}>{b}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="text-3xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">
+              2. Sàn / Nền tảng:
+            </label>
+            <select
+              value={selectedPlatform}
+              onChange={(e) => {
+                setSelectedPlatform(e.target.value);
+                setPage(1);
+              }}
+              className="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-slate-50 font-medium text-slate-800 focus:outline-none focus:border-slate-800"
+            >
+              <option value="ALL">Mọi sàn ({stores.length})</option>
+              <option value="Shopee Mall">Shopee Mall ({shopeeCount})</option>
+              <option value="TikTok Shop">TikTok Shop ({tiktokCount})</option>
+              <option value="Lazada">Lazada ({lazadaCount})</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="text-3xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">
+              3. Gói dịch vụ:
+            </label>
+            <select
+              value={selectedPackage}
+              onChange={(e) => {
+                setSelectedPackage(e.target.value);
+                setPage(1);
+              }}
+              className="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-slate-50 font-medium text-slate-800 focus:outline-none focus:border-slate-800"
+            >
+              <option value="ALL">Mọi gói ({packages.length})</option>
+              {packages.map(p => (
+                <option key={p} value={p}>{p}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="text-3xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">
+              4. Trạng thái vận hành:
+            </label>
+            <select
+              value={selectedStatus}
+              onChange={(e) => {
+                setSelectedStatus(e.target.value);
+                setPage(1);
+              }}
+              className="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-slate-50 font-medium text-slate-800 focus:outline-none focus:border-slate-800"
+            >
+              <option value="ALL">Mọi trạng thái ({stores.length})</option>
+              <option value="Live">🟢 Đang Live ({liveCount})</option>
+              <option value="Off">🔴 Đã Off ({offCount})</option>
+              {internalCount > 0 && (
+                <option value="Kênh nội bộ">🟣 Kênh nội bộ ({internalCount})</option>
+              )}
+            </select>
+          </div>
+
+          <div>
+            <label className="text-3xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">
+              5. Quản lý / PIC phụ trách:
+            </label>
+            <select
+              value={selectedOwner}
+              onChange={(e) => {
+                setSelectedOwner(e.target.value);
+                setPage(1);
+              }}
+              className="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-slate-50 font-medium text-slate-800 focus:outline-none focus:border-slate-800"
+            >
+              <option value="ALL">Mọi nhân sự ({accountOwners.length})</option>
+              {accountOwners.map(owner => (
+                <option key={owner} value={owner}>{owner}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex items-end">
+            {isFiltered ? (
+              <button
+                type="button"
+                onClick={handleResetFilters}
+                className="w-full py-1.5 px-3 rounded-lg border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 text-xs font-semibold transition flex items-center justify-center gap-1.5"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>Xóa bộ lọc</span>
+              </button>
+            ) : (
+              <div className="text-2xs text-slate-400 px-2 py-1.5 flex items-center gap-1">
+                <Filter className="w-3.5 h-3.5 text-slate-400" />
+                <span>Bộ lọc gian hàng</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Filter Results Summary */}
+        <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-2xs text-slate-500">
+          <div className="flex items-center gap-2">
+            <span>
+              Tìm thấy <strong className="text-slate-900 font-bold">{filteredStores.length}</strong> / {stores.length} gian hàng
+            </span>
+            {isFiltered && (
+              <span className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 font-semibold text-3xs">
+                Đang lọc kết quả
+              </span>
+            )}
+          </div>
+          {totalPages > 1 && (
+            <span>Trang {page} / {totalPages}</span>
+          )}
+        </div>
       </div>
 
       {/* Stores Table */}
