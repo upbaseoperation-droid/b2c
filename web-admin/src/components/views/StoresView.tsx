@@ -38,6 +38,7 @@ import {
 import { UserProfile, BrandDetail, EcomStore, HeroProduct, StorePortfolioItem, StaffMasterMember } from '../../lib/types';
 import { INITIAL_BRANDS, INITIAL_STORE_PORTFOLIOS, STAFF_MASTER_DIRECTORY } from '../../lib/mockData';
 import { MasterDataMindmapView } from './MasterDataMindmapView';
+import { StaffSearchSelect } from './master-data/StaffSearchSelect';
 
 interface StoresViewProps {
   currentUser: UserProfile;
@@ -68,6 +69,7 @@ export const StoresView: React.FC<StoresViewProps> = ({
     b2cOwners: [],
     assignmentNotes: ''
   });
+  const [b2cStaffSearch, setB2cStaffSearch] = useState('');
   const [assignmentToast, setAssignmentToast] = useState<string | null>(null);
 
   // Modal States Brand
@@ -197,6 +199,7 @@ export const StoresView: React.FC<StoresViewProps> = ({
   const handleOpenAssignModal = (store: StorePortfolioItem) => {
     if (!isManager) return;
     setAssigningStore(store);
+    setB2cStaffSearch('');
     let initialOwners: string[] = [];
     if (store.b2cOwners && store.b2cOwners.length > 0) {
       initialOwners = [...store.b2cOwners];
@@ -1685,20 +1688,15 @@ export const StoresView: React.FC<StoresViewProps> = ({
 
               {/* 1. Account / Growth Owner */}
               <div>
-                <label className="text-slate-800 font-semibold block mb-1">
-                  1. Account / Growth Owner <span className="text-blue-600 font-normal">(Doanh số &amp; Đối tác Brand/Sàn)</span>:
-                </label>
-                <select
+                <StaffSearchSelect
+                  label="1. Account / Growth Owner"
+                  sublabel="(Doanh số & Đối tác Brand/Sàn)"
+                  badgeColorClass="text-blue-600"
+                  placeholder="Gõ tên tìm kiếm Account / Growth Owner..."
                   value={assignFormState.accountOwnerName}
-                  onChange={(e) => setAssignFormState(prev => ({ ...prev, accountOwnerName: e.target.value }))}
-                  className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-900 font-medium focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none cursor-pointer"
-                >
-                  {STAFF_MASTER_DIRECTORY.filter(s => s.role === 'ACCOUNT' || s.role === 'GROWTH' || s.role === 'MANAGER').map((s) => (
-                    <option key={s.id} value={s.name}>
-                      {s.name} ({s.roleTitle} — {s.team})
-                    </option>
-                  ))}
-                </select>
+                  departmentHint="ACCOUNT"
+                  onChange={(name) => setAssignFormState(prev => ({ ...prev, accountOwnerName: name }))}
+                />
               </div>
 
               {/* 2. B2C Ops PIC(s) - Supports Multi-selection for 2+ staff */}
@@ -1720,9 +1718,35 @@ export const StoresView: React.FC<StoresViewProps> = ({
                   </span>
                 </div>
 
+                {/* Search filter for B2C PICs */}
+                <div className="relative mb-2">
+                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={b2cStaffSearch}
+                    onChange={(e) => setB2cStaffSearch(e.target.value)}
+                    placeholder="Gõ tên nhân sự Booking / Content để tìm nhanh..."
+                    className="w-full pl-8 pr-7 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-purple-500 bg-white"
+                  />
+                  {b2cStaffSearch && (
+                    <button
+                      type="button"
+                      onClick={() => setB2cStaffSearch('')}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+
                 {/* Staff Checkbox List */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto p-1.5 border border-slate-200 rounded-xl bg-slate-50">
-                  {STAFF_MASTER_DIRECTORY.filter(s => s.role === 'BOOKING' || s.role === 'CONTENT').map((s) => {
+                  {STAFF_MASTER_DIRECTORY.filter(s => {
+                    if (s.role !== 'BOOKING' && s.role !== 'CONTENT') return false;
+                    if (!b2cStaffSearch.trim()) return true;
+                    const q = b2cStaffSearch.toLowerCase().trim();
+                    return s.name.toLowerCase().includes(q) || (s.roleTitle || '').toLowerCase().includes(q) || (s.team || '').toLowerCase().includes(q);
+                  }).map((s) => {
                     const isSelected = assignFormState.b2cOwners.includes(s.name);
                     const currentStoreCount = storePortfolios.filter(st => isStoreAssignedToUser(st, s.name)).length;
                     return (

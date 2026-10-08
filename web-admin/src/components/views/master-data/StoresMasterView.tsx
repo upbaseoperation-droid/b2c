@@ -4,6 +4,7 @@ import React, { useState, useMemo } from 'react';
 import { Search, Plus, X, ExternalLink, Store, ShoppingBag, ChevronLeft, ChevronRight, Users } from 'lucide-react';
 import { ChannelTag } from '../../ui';
 import { StorePortfolioItem } from '../../../lib/types';
+import { StaffSearchSelect } from './StaffSearchSelect';
 
 interface StoresMasterViewProps {
   initialStores: StorePortfolioItem[];
@@ -587,69 +588,56 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                   <span>Đội ngũ nhân sự phụ trách các bộ phận (PICs)</span>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2.5">
-                  <div>
-                    <label className="block text-slate-600 font-medium mb-1 text-2xs">
-                      1. Account PIC <span className="text-blue-600 font-normal">(Quan hệ Brand & HĐ)</span>
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Họ tên Account PIC"
-                      value={form.accountOwnerName}
-                      onChange={(e) => setForm(prev => ({ ...prev, accountOwnerName: e.target.value }))}
-                      className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-400 text-xs"
-                    />
-                  </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <StaffSearchSelect
+                    label="1. Account PIC"
+                    sublabel="(Quan hệ Brand & HĐ)"
+                    badgeColorClass="text-blue-600"
+                    placeholder="Gõ tìm Account PIC..."
+                    value={form.accountOwnerName}
+                    departmentHint="ACCOUNT"
+                    onChange={(name) => setForm(prev => ({ ...prev, accountOwnerName: name }))}
+                  />
 
-                  <div>
-                    <label className="block text-slate-600 font-medium mb-1 text-2xs">
-                      2. Growth PIC <span className="text-emerald-600 font-normal">(Tăng trưởng & Sàn)</span>
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Họ tên Growth PIC"
-                      value={form.growthPic}
-                      onChange={(e) => setForm(prev => ({ ...prev, growthPic: e.target.value }))}
-                      className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-400 text-xs"
-                    />
-                  </div>
+                  <StaffSearchSelect
+                    label="2. Growth PIC"
+                    sublabel="(Tăng trưởng & Sàn)"
+                    badgeColorClass="text-emerald-600"
+                    placeholder="Gõ tìm Growth PIC..."
+                    value={form.growthPic}
+                    departmentHint="GROWTH"
+                    onChange={(name) => setForm(prev => ({ ...prev, growthPic: name }))}
+                  />
 
-                  <div>
-                    <label className="block text-slate-600 font-medium mb-1 text-2xs">
-                      3. Booking PIC <span className="text-purple-600 font-normal">(KOC/KOL & Booking)</span>
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Họ tên Booking PIC"
-                      value={form.b2cOwnerName}
-                      onChange={(e) => setForm(prev => ({ ...prev, b2cOwnerName: e.target.value }))}
-                      className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-400 text-xs"
-                    />
-                  </div>
+                  <StaffSearchSelect
+                    label="3. Booking PIC"
+                    sublabel="(KOC/KOL & Booking)"
+                    badgeColorClass="text-purple-600"
+                    placeholder="Gõ tìm Booking PIC..."
+                    value={form.b2cOwnerName}
+                    departmentHint="BOOKING"
+                    onChange={(name) => setForm(prev => ({ ...prev, b2cOwnerName: name }))}
+                  />
 
-                  <div>
-                    <label className="block text-slate-600 font-medium mb-1 text-2xs">
-                      4. Content PIC <span className="text-amber-600 font-normal">(Kịch bản & Clip)</span>
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Họ tên Content PIC"
-                      value={form.contentPic}
-                      onChange={(e) => setForm(prev => ({ ...prev, contentPic: e.target.value }))}
-                      className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-400 text-xs"
-                    />
-                  </div>
+                  <StaffSearchSelect
+                    label="4. Content PIC"
+                    sublabel="(Kịch bản & Clip)"
+                    badgeColorClass="text-amber-600"
+                    placeholder="Gõ tìm Content PIC..."
+                    value={form.contentPic}
+                    departmentHint="CONTENT"
+                    onChange={(name) => setForm(prev => ({ ...prev, contentPic: name }))}
+                  />
 
-                  <div className="col-span-2">
-                    <label className="block text-slate-600 font-medium mb-1 text-2xs">
-                      5. Media / Ads PIC <span className="text-indigo-600 font-normal">(Spark Ads & Chạy ads sàn)</span>
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Họ tên Media Ads PIC"
+                  <div className="sm:col-span-2">
+                    <StaffSearchSelect
+                      label="5. Media / Ads PIC"
+                      sublabel="(Spark Ads & Chạy ads sàn)"
+                      badgeColorClass="text-indigo-600"
+                      placeholder="Gõ tìm Media / Ads PIC..."
                       value={form.mediaPic}
-                      onChange={(e) => setForm(prev => ({ ...prev, mediaPic: e.target.value }))}
-                      className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-400 text-xs"
+                      departmentHint="MEDIA"
+                      onChange={(name) => setForm(prev => ({ ...prev, mediaPic: name }))}
                     />
                   </div>
                 </div>
