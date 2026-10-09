@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { formatVndShort } from '../../lib/format';
 import { 
   ShieldAlert, 
@@ -95,8 +95,10 @@ import {
   Table,
   CalendarDays,
   Store,
-  ShieldCheck
+  ShieldCheck,
+  Database
 } from 'lucide-react';
+import { UPBASE_BRANDS_MASTER } from '../../lib/importedMasterData';
 import { GrowthPlanBreakdownView } from './GrowthPlanBreakdownView';
 import { Button, Segmented, Tabs } from '../ui';
 import { EmployeePlanInspectorModal } from '../EmployeePlanInspectorModal';
@@ -428,7 +430,10 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
   };
 
   // Matrix Constants
-  const MATRIX_BRANDS = ['Senka', 'Cure Natural', 'Bio-Essence', 'Peripera', 'Kutieskin', 'Royal Ausnz'];
+  const MATRIX_BRANDS: string[] = useMemo(() => {
+    const list = currentBrands.map(b => b.name);
+    return list.length > 0 ? Array.from(new Set<string>(list)) : ['Senka', 'Cure Natural', 'Bio-Essence', 'Peripera', 'Kutieskin', 'Royal Ausnz'];
+  }, [currentBrands]);
   const MATRIX_WEEKS = ['W1', 'W2', 'W3', 'W4'] as const;
 
   // Handlers for Employee Plan Inspector
@@ -3137,15 +3142,103 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-slate-700 font-semibold mb-1">Nhãn hàng / Brand phụ trách (cách nhau dấu phẩy)</label>
-                  <input
-                    type="text"
-                    value={editAllocForm.assignedBrands}
-                    onChange={(e) => setEditAllocForm(prev => ({ ...prev, assignedBrands: e.target.value }))}
-                    placeholder="Royal Ausnz, Babe, Kutieskin..."
-                    className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                  />
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-slate-700 font-semibold">
+                      Nhãn hàng / Brand phụ trách
+                    </label>
+                    <span className="text-2xs text-slate-500 font-medium">
+                      Đã gán {(editAllocForm.assignedBrands || '').split(',').map(b => b.trim()).filter(Boolean).length} nhãn hàng
+                    </span>
+                  </div>
+
+                  {/* Active selected brand tags */}
+                  <div className="flex flex-wrap gap-1.5 min-h-[38px] p-2 bg-slate-50 border border-slate-200 rounded-lg">
+                    {(() => {
+                      const list = (editAllocForm.assignedBrands || '').split(',').map(b => b.trim()).filter(Boolean);
+                      if (list.length === 0) {
+                        return (
+                          <span className="text-slate-400 text-xs italic py-1 px-1">
+                            Chưa gán nhãn hàng nào. Hãy chọn từ danh mục Master Data bên dưới.
+                          </span>
+                        );
+                      }
+                      return list.map(brandName => (
+                        <span
+                          key={brandName}
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-100/80 text-blue-900 border border-blue-200 text-xs font-semibold shadow-2xs"
+                        >
+                          <span>{brandName}</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const updated = list.filter(b => b !== brandName);
+                              setEditAllocForm(prev => ({ ...prev, assignedBrands: updated.join(', ') }));
+                            }}
+                            className="w-4 h-4 rounded hover:bg-blue-200 text-blue-700 flex items-center justify-center transition cursor-pointer"
+                            title="Xóa nhãn hàng này"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </span>
+                      ));
+                    })()}
+                  </div>
+
+                  {/* Master Data Selector Dropdown */}
+                  <div className="flex items-center gap-2">
+                    <div className="relative flex-1">
+                      <select
+                        onChange={(e) => {
+                          const val = e.target.value.trim();
+                          if (val) {
+                            const list = (editAllocForm.assignedBrands || '').split(',').map(b => b.trim()).filter(Boolean);
+                            if (!list.includes(val)) {
+                              const updated = [...list, val];
+                              setEditAllocForm(prev => ({ ...prev, assignedBrands: updated.join(', ') }));
+                            }
+                            e.target.value = '';
+                          }
+                        }}
+                        defaultValue=""
+                        className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                      >
+                        <option value="" disabled>
+                          + Chọn nhãn hàng từ Master Data ({UPBASE_BRANDS_MASTER.length} Brands)...
+                        </option>
+                        <optgroup label="Nhãn hàng đang vận hành">
+                          {currentBrands.map(b => {
+                            const list = (editAllocForm.assignedBrands || '').split(',').map(item => item.trim()).filter(Boolean);
+                            const isSelected = list.includes(b.name);
+                            return (
+                              <option
+                                key={b.id}
+                                value={b.name}
+                                disabled={isSelected}
+                              >
+                                {b.name} {isSelected ? '(Đã chọn)' : ''}
+                              </option>
+                            );
+                          })}
+                        </optgroup>
+                        <optgroup label="Tất cả Master Data Brands (192 Brands)">
+                          {UPBASE_BRANDS_MASTER.map(mb => {
+                            const list = (editAllocForm.assignedBrands || '').split(',').map(item => item.trim()).filter(Boolean);
+                            const isSelected = list.includes(mb.name);
+                            return (
+                              <option
+                                key={mb.id}
+                                value={mb.name}
+                                disabled={isSelected}
+                              >
+                                {mb.name} - {mb.category} {isSelected ? '(Đã chọn)' : ''}
+                              </option>
+                            );
+                          })}
+                        </optgroup>
+                      </select>
+                    </div>
+                  </div>
                 </div>
 
                 <div>

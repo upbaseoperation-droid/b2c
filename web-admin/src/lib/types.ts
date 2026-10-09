@@ -1577,6 +1577,9 @@ export interface StorePortfolioItem {
   cmsRate?: number | string; // % CMS thu Brand
   fixFeeLivePerHour?: number; // Fix fee / giờ livestream
   operationStatus?: 'Live' | 'Off' | 'Kênh nội bộ';
+  platformStoreId?: string; // ID kỹ thuật gian hàng trên sàn (TTS shop_id, Shopee shopid)
+  affiliateRate?: number; // Tỷ lệ hoa hồng liên kết sàn (%)
+  requiresSparkAds?: boolean; // Yêu cầu ủy quyền mã QC Spark Ads / Ads Shopee
 
   // Quản trị vai trò dự phòng (Backup PIC) theo BRD
   backupOwnerId?: string; // ID nhân sự dự phòng khi PIC chính vắng mặt/nghỉ phép/quá tải

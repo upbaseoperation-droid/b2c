@@ -13,7 +13,14 @@ import {
   Shield,
   Tag,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Trash2,
+  Archive,
+  AlertTriangle,
+  Building2,
+  Store,
+  ShoppingBag,
+  AlertCircle
 } from 'lucide-react';
 import { UserProfile, BrandDetail, StorePortfolioItem, KocItem, MasterContentPillar } from '../../lib/types';
 import { INITIAL_BRANDS, INITIAL_STORE_PORTFOLIOS, USERS, INITIAL_KOCS, INITIAL_PUSH_PRODUCTS } from '../../lib/mockData';
@@ -67,6 +74,10 @@ export interface MasterProductItem {
   originalPrice: number;
   pdpUrl: string;
   status: 'ACTIVE' | 'DISCONTINUED';
+  commissionRate?: number;
+  heroType?: 'HERO' | 'ENTRY' | 'ADDON';
+  sampleAvailableCount?: number;
+  usp?: string;
 }
 
 interface MasterDataHubViewProps {
@@ -129,12 +140,23 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
   const [isBrandModalOpen, setIsBrandModalOpen] = useState(false);
   const [editingBrand, setEditingBrand] = useState<BrandDetail | null>(null);
   const [brandForm, setBrandForm] = useState({
+    code: '',
     name: '',
     companyName: '',
     category: 'Mẹ & Bé',
     contactPerson: '',
+    accountPic: 'Phương Thảo',
+    growthPic: 'Hoàng Long',
+    bookingPicLead: 'Khánh Vy',
+    monthlyBudget: 30000000,
+    targetGmv: 250000000,
+    platforms: ['Shopee Mall', 'TikTok Shop'] as ('TikTok Shop' | 'Shopee Mall' | 'Lazada')[],
+    brandGuideline: '',
+    kocCriteria: '',
     status: 'ACTIVE' as 'ACTIVE' | 'PAUSED' | 'UPCOMING'
   });
+  const [deletingBrand, setDeletingBrand] = useState<BrandDetail | null>(null);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
 
   // Store state (Đồng bộ danh mục 353 gian hàng chuẩn Upbase Master Data)
   const [storeList, setStoreList] = useState<StorePortfolioItem[]>(() => 
@@ -176,6 +198,10 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
       category: p.brandCategory,
       originalPrice: p.originalPrice,
       pdpUrl: p.pdpUrl || '',
+      commissionRate: (p as any).affiliateCommissionRate || 15,
+      heroType: ((p as any).heroType as any) || 'HERO',
+      sampleAvailableCount: (p as any).availableStock || 50,
+      usp: (p as any).keySellingPoints?.join(', ') || '',
       status: 'ACTIVE'
     }))
   );
@@ -204,8 +230,13 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
     category: 'Mẹ & Bé',
     originalPrice: 150000,
     pdpUrl: '',
+    commissionRate: 15,
+    heroType: 'HERO' as 'HERO' | 'ENTRY' | 'ADDON',
+    sampleAvailableCount: 50,
+    usp: '',
     status: 'ACTIVE' as 'ACTIVE' | 'DISCONTINUED'
   });
+  const [deletingProduct, setDeletingProduct] = useState<MasterProductItem | null>(null);
 
   // Staff state
   // Master Content Pillars state (15 Trụ cột nội dung chuẩn Upbase Master Data 5.5)
@@ -380,49 +411,118 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(num);
   };
 
+  // Check brand relational dependencies
+  const getBrandDependencies = (brandName: string) => {
+    const bNameLower = brandName.trim().toLowerCase();
+    const linkedStores = storeList.filter(s => s.brandName?.trim().toLowerCase() === bNameLower);
+    const linkedProducts = productList.filter(p => p.brandName?.trim().toLowerCase() === bNameLower);
+    return {
+      stores: linkedStores,
+      products: linkedProducts,
+      totalCount: linkedStores.length + linkedProducts.length
+    };
+  };
+
   // Handle Add/Edit Brand
   const handleSaveBrand = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!brandForm.name.trim()) return;
+    const cleanName = brandForm.name.trim();
+    if (!cleanName) return;
+
+    const brandCode = (brandForm.code.trim() || cleanName.slice(0, 4)).toUpperCase();
+
+    // Check duplicate brand name (excluding current editing brand)
+    const isDuplicateName = brandList.some(b => 
+      (!editingBrand || b.id !== editingBrand.id) && 
+      b.name.trim().toLowerCase() === cleanName.toLowerCase()
+    );
+    if (isDuplicateName) {
+      if (onNotify) onNotify(`Tên thương hiệu "${cleanName}" đã tồn tại trong Master Data!`, 'error');
+      return;
+    }
 
     if (editingBrand) {
+      const oldName = editingBrand.name;
+      const isNameChanged = oldName.toLowerCase() !== cleanName.toLowerCase();
+
       setBrandList(prev => prev.map(b => b.id === editingBrand.id ? {
         ...b,
-        name: brandForm.name.trim(),
-        companyName: brandForm.companyName.trim() || brandForm.name.trim(),
+        name: cleanName,
+        code: brandCode,
+        companyName: brandForm.companyName.trim() || cleanName,
         category: brandForm.category,
-        accountPic: brandForm.contactPerson.trim() || b.accountPic,
+        accountPic: brandForm.accountPic.trim() || brandForm.contactPerson.trim() || b.accountPic,
+        growthPic: brandForm.growthPic.trim() || b.growthPic,
+        bookingPicLead: brandForm.bookingPicLead.trim() || b.bookingPicLead,
+        planBudget: brandForm.monthlyBudget,
+        monthlyBudget: brandForm.monthlyBudget,
+        targetGmv: brandForm.targetGmv,
+        platforms: brandForm.platforms,
+        brandGuideline: brandForm.brandGuideline.trim() || b.brandGuideline,
+        kocCriteria: brandForm.kocCriteria.trim() || b.kocCriteria,
         status: brandForm.status
       } : b));
-      if (onNotify) onNotify(`Đã cập nhật thông tin thương hiệu ${brandForm.name}`);
+
+      // Cascade update to stores and products if brand name changed
+      if (isNameChanged) {
+        setStoreList(prev => prev.map(s => s.brandName === oldName ? { ...s, brandName: cleanName } : s));
+        setProductList(prev => prev.map(p => p.brandName === oldName ? { ...p, brandName: cleanName } : p));
+        if (onNotify) onNotify(`Đã cập nhật thương hiệu [${cleanName}] và đồng bộ tên sang gian hàng, sản phẩm liên quan!`, 'success');
+      } else {
+        if (onNotify) onNotify(`Đã cập nhật thông tin thương hiệu [${cleanName}]`, 'success');
+      }
     } else {
       const newBrand: BrandDetail = {
         id: `brand-${Date.now()}`,
-        code: brandForm.name.slice(0, 4).toUpperCase(),
-        name: brandForm.name.trim(),
-        companyName: brandForm.companyName.trim() || brandForm.name.trim(),
+        code: brandCode,
+        name: cleanName,
+        companyName: brandForm.companyName.trim() || cleanName,
         category: brandForm.category,
         color: '#4F46E5',
         status: brandForm.status,
-        planBudget: 0,
+        planBudget: brandForm.monthlyBudget,
+        monthlyBudget: brandForm.monthlyBudget,
         spentBudget: 0,
-        targetGmv: 0,
+        targetGmv: brandForm.targetGmv,
         currentGmv: 0,
         targetVideos: 0,
         airedVideos: 0,
-        accountPic: brandForm.contactPerson.trim() || 'Vân Ngọc',
-        growthPic: 'Hoàng Long',
-        bookingPicLead: 'Khánh Vy',
-        brandGuideline: 'Tài liệu hướng dẫn nhãn hàng',
-        kocCriteria: 'KOC uy tín, tỷ lệ hoàn tất tốt',
+        accountPic: brandForm.accountPic.trim() || brandForm.contactPerson.trim() || 'Phương Thảo',
+        growthPic: brandForm.growthPic.trim() || 'Hoàng Long',
+        bookingPicLead: brandForm.bookingPicLead.trim() || 'Khánh Vy',
+        platforms: brandForm.platforms,
+        brandGuideline: brandForm.brandGuideline.trim() || 'Tài liệu hướng dẫn nhãn hàng',
+        kocCriteria: brandForm.kocCriteria.trim() || 'KOC uy tín, tỷ lệ hoàn tất tốt',
         stores: [],
         heroProducts: []
       };
       setBrandList(prev => [newBrand, ...prev]);
-      if (onNotify) onNotify(`Đã thêm thương hiệu mới ${brandForm.name}`);
+      if (onNotify) onNotify(`Đã thêm thương hiệu mới [${cleanName}] vào Master Data`, 'success');
     }
     setIsBrandModalOpen(false);
     setEditingBrand(null);
+  };
+
+  // Handle Soft Archive Brand
+  const handleArchiveBrand = (brand: BrandDetail) => {
+    setBrandList(prev => prev.map(b => b.id === brand.id ? { ...b, status: 'PAUSED' } : b));
+    if (onNotify) onNotify(`Đã chuyển thương hiệu [${brand.name}] sang trạng thái Tạm dừng (Lưu trữ an toàn)`, 'info');
+    setDeletingBrand(null);
+    setDeleteConfirmText('');
+  };
+
+  // Handle Confirm Hard Delete Brand
+  const handleConfirmHardDeleteBrand = () => {
+    if (!deletingBrand) return;
+    const deps = getBrandDependencies(deletingBrand.name);
+    if (deps.totalCount > 0 && deleteConfirmText.trim() !== deletingBrand.name.trim()) {
+      if (onNotify) onNotify(`Vui lòng nhập chính xác tên thương hiệu "${deletingBrand.name}" để xác nhận xóa!`, 'error');
+      return;
+    }
+    setBrandList(prev => prev.filter(b => b.id !== deletingBrand.id));
+    if (onNotify) onNotify(`Đã xóa thương hiệu [${deletingBrand.name}] khỏi Master Data`, 'warning');
+    setDeletingBrand(null);
+    setDeleteConfirmText('');
   };
 
   // Handle Add Store
@@ -456,40 +556,72 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
   // Handle Add / Edit Master Product
   const handleSaveProduct = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!productForm.sku.trim() || !productForm.productName.trim()) return;
+    const cleanSku = productForm.sku.trim().toUpperCase();
+    const cleanName = productForm.productName.trim();
+    if (!cleanSku || !cleanName) return;
+
+    // Check duplicate SKU
+    const isDupSku = productList.some(p => 
+      (!editingProduct || p.id !== editingProduct.id) &&
+      p.sku.toUpperCase() === cleanSku
+    );
+    if (isDupSku) {
+      if (onNotify) onNotify(`Mã SKU "${cleanSku}" đã tồn tại trong danh mục sản phẩm gốc!`, 'error');
+      return;
+    }
 
     if (editingProduct) {
       setProductList(prev => prev.map(p => p.id === editingProduct.id ? {
         ...p,
-        sku: productForm.sku.trim().toUpperCase(),
-        productName: productForm.productName.trim(),
+        sku: cleanSku,
+        productName: cleanName,
         brandName: productForm.brandName,
         storeName: productForm.storeName.trim() || `${productForm.brandName} ${productForm.platform}`,
         platform: productForm.platform,
         category: productForm.category,
         originalPrice: Number(productForm.originalPrice),
         pdpUrl: productForm.pdpUrl.trim(),
+        commissionRate: Number(productForm.commissionRate) || 15,
+        heroType: productForm.heroType,
+        sampleAvailableCount: Number(productForm.sampleAvailableCount) || 0,
+        usp: productForm.usp.trim(),
         status: productForm.status
       } : p));
-      if (onNotify) onNotify(`Đã cập nhật sản phẩm [${productForm.sku}] vào dữ liệu gốc`);
+      if (onNotify) onNotify(`Đã cập nhật sản phẩm [${cleanSku}] vào dữ liệu gốc`, 'success');
     } else {
       const newProd: MasterProductItem = {
         id: `mp-${Date.now()}`,
-        sku: productForm.sku.trim().toUpperCase(),
-        productName: productForm.productName.trim(),
+        sku: cleanSku,
+        productName: cleanName,
         brandName: productForm.brandName,
         storeName: productForm.storeName.trim() || `${productForm.brandName} ${productForm.platform}`,
         platform: productForm.platform,
         category: productForm.category,
         originalPrice: Number(productForm.originalPrice),
         pdpUrl: productForm.pdpUrl.trim(),
+        commissionRate: Number(productForm.commissionRate) || 15,
+        heroType: productForm.heroType,
+        sampleAvailableCount: Number(productForm.sampleAvailableCount) || 0,
+        usp: productForm.usp.trim(),
         status: productForm.status
       };
       setProductList(prev => [newProd, ...prev]);
-      if (onNotify) onNotify(`Đã thêm sản phẩm [${newProd.sku}] vào dữ liệu gốc`);
+      if (onNotify) onNotify(`Đã thêm sản phẩm [${newProd.sku}] vào dữ liệu gốc`, 'success');
     }
     setIsProductModalOpen(false);
     setEditingProduct(null);
+  };
+
+  const handleDeleteProduct = (prod: MasterProductItem) => {
+    setProductList(prev => prev.filter(p => p.id !== prod.id));
+    if (onNotify) onNotify(`Đã xóa sản phẩm [${prod.sku}] khỏi danh mục gốc`, 'warning');
+    setDeletingProduct(null);
+  };
+
+  const handleDiscontinueProduct = (prod: MasterProductItem) => {
+    setProductList(prev => prev.map(p => p.id === prod.id ? { ...p, status: 'DISCONTINUED' } : p));
+    if (onNotify) onNotify(`Đã chuyển sản phẩm [${prod.sku}] sang trạng thái Tạm ngừng`, 'info');
+    setDeletingProduct(null);
   };
 
   // Handle Add / Edit Master Content Pillar
@@ -786,10 +918,19 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                 onClick={() => {
                   setEditingBrand(null);
                   setBrandForm({
+                    code: '',
                     name: '',
                     companyName: '',
-                    category: 'Mẹ & Bé',
+                    category: brandCategories[0] || 'Mẹ & Bé',
                     contactPerson: '',
+                    accountPic: 'Phương Thảo',
+                    growthPic: 'Hoàng Long',
+                    bookingPicLead: 'Khánh Vy',
+                    monthlyBudget: 30000000,
+                    targetGmv: 250000000,
+                    platforms: ['Shopee Mall', 'TikTok Shop'],
+                    brandGuideline: '',
+                    kocCriteria: '',
                     status: 'ACTIVE'
                   });
                   setIsBrandModalOpen(true);
@@ -974,23 +1115,46 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                       </span>
                     </td>
                     <td className="py-3 px-4 text-right">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEditingBrand(b);
-                          setBrandForm({
-                            name: b.name,
-                            companyName: b.companyName,
-                            category: b.category,
-                            contactPerson: b.accountPic || '',
-                            status: b.status
-                          });
-                          setIsBrandModalOpen(true);
-                        }}
-                        className="text-slate-600 hover:text-slate-900 font-medium text-xs px-2 py-1 rounded hover:bg-slate-100 transition"
-                      >
-                        Sửa
-                      </button>
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingBrand(b);
+                            setBrandForm({
+                              code: b.code || '',
+                              name: b.name,
+                              companyName: b.companyName || b.name,
+                              category: b.category,
+                              contactPerson: b.contactPerson || '',
+                              accountPic: b.accountPic || '',
+                              growthPic: b.growthPic || '',
+                              bookingPicLead: b.bookingPicLead || '',
+                              monthlyBudget: b.planBudget || b.monthlyBudget || 0,
+                              targetGmv: b.targetGmv || 0,
+                              platforms: (b.platforms as any) || ['Shopee Mall', 'TikTok Shop'],
+                              brandGuideline: b.brandGuideline || '',
+                              kocCriteria: b.kocCriteria || '',
+                              status: b.status
+                            });
+                            setIsBrandModalOpen(true);
+                          }}
+                          className="text-slate-600 hover:text-slate-900 font-medium text-xs px-2 py-1 rounded hover:bg-slate-100 transition"
+                        >
+                          Sửa
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setDeletingBrand(b);
+                            setDeleteConfirmText('');
+                          }}
+                          className="text-rose-600 hover:text-rose-800 font-medium text-xs px-2 py-1 rounded hover:bg-rose-50 transition flex items-center gap-1"
+                          title="Xóa hoặc lưu trữ thương hiệu"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>Xóa</span>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -1074,9 +1238,13 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                     brandName: brandList[0]?.name || 'Kutieskin',
                     storeName: '',
                     platform: 'Shopee Mall',
-                    category: 'Mẹ & Bé',
+                    category: productCategories[0] || 'Mẹ & Bé',
                     originalPrice: 150000,
                     pdpUrl: '',
+                    commissionRate: 15,
+                    heroType: 'HERO',
+                    sampleAvailableCount: 50,
+                    usp: '',
                     status: 'ACTIVE'
                   });
                   setIsProductModalOpen(true);
@@ -1221,17 +1389,41 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                 {filteredProducts.map(p => (
                   <tr key={p.id} className="hover:bg-slate-50/70 transition-colors">
                     <td className="py-3 px-4">
-                      <div className="font-mono font-semibold text-slate-800">{p.sku}</div>
+                      <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
+                        <span className="font-mono font-semibold text-slate-800">{p.sku}</span>
+                        {p.heroType && (
+                          <span className={`px-1.5 py-0.2 rounded text-3xs font-semibold ${
+                            p.heroType === 'HERO' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
+                            p.heroType === 'ENTRY' ? 'bg-blue-50 text-blue-700 border border-blue-200' :
+                            'bg-slate-100 text-slate-600 border border-slate-200'
+                          }`}>
+                            {p.heroType}
+                          </span>
+                        )}
+                        {p.sampleAvailableCount !== undefined && p.sampleAvailableCount > 0 && (
+                          <span className="px-1.5 py-0.2 rounded text-3xs font-mono text-emerald-700 bg-emerald-50 border border-emerald-200">
+                            Mẫu: {p.sampleAvailableCount}
+                          </span>
+                        )}
+                      </div>
                       <div className="text-slate-900 font-medium line-clamp-1">{p.productName}</div>
+                      {p.usp && <div className="text-3xs text-slate-400 line-clamp-1 mt-0.5">USP: {p.usp}</div>}
                     </td>
-                    <td className="py-3 px-4 text-slate-700">{p.brandName}</td>
+                    <td className="py-3 px-4 text-slate-700 font-medium">{p.brandName}</td>
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-1.5">
                         <ChannelTag channel={p.platform} />
                         <span className="text-2xs text-slate-600 truncate max-w-[140px]">{p.storeName}</span>
                       </div>
                     </td>
-                    <td className="py-3 px-4 text-slate-600">{p.category}</td>
+                    <td className="py-3 px-4 text-slate-600">
+                      <div>{p.category}</div>
+                      {p.commissionRate !== undefined && (
+                        <div className="text-3xs text-purple-600 font-semibold font-mono mt-0.5">
+                          CMS: {p.commissionRate}%
+                        </div>
+                      )}
+                    </td>
                     <td className="py-3 px-4 text-right font-mono font-semibold text-slate-900">
                       {formatVnd(p.originalPrice)}
                     </td>
@@ -1245,7 +1437,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                       </span>
                     </td>
                     <td className="py-3 px-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
+                      <div className="flex items-center justify-end gap-1.5">
                         {p.pdpUrl && (
                           <a
                             href={p.pdpUrl}
@@ -1270,6 +1462,10 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                               category: p.category,
                               originalPrice: p.originalPrice,
                               pdpUrl: p.pdpUrl,
+                              commissionRate: p.commissionRate || 15,
+                              heroType: p.heroType || 'HERO',
+                              sampleAvailableCount: p.sampleAvailableCount || 0,
+                              usp: p.usp || '',
                               status: p.status
                             });
                             setIsProductModalOpen(true);
@@ -1277,6 +1473,15 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                           className="text-slate-600 hover:text-slate-900 font-medium text-xs px-2 py-1 rounded hover:bg-slate-100 transition"
                         >
                           Sửa
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setDeletingProduct(p)}
+                          className="text-rose-600 hover:text-rose-800 font-medium text-xs px-2 py-1 rounded hover:bg-rose-50 transition flex items-center gap-1"
+                          title="Xóa hoặc ngừng kinh doanh sản phẩm"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>Xóa</span>
                         </button>
                       </div>
                     </td>
@@ -1646,103 +1851,383 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
 
       {/* MODAL: THÊM / SỬA THƯƠNG HIỆU */}
       {isBrandModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl border border-slate-200 max-w-md w-full p-5 space-y-4">
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-2xl w-full p-6 space-y-5 my-8 max-h-[92vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h3 className="font-semibold text-sm text-slate-900">
-                {editingBrand ? 'Cập nhật thương hiệu' : 'Thêm thương hiệu mới'}
-              </h3>
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center border border-purple-200">
+                  <Building2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-base text-slate-900">
+                    {editingBrand ? `Cập nhật thương hiệu: ${editingBrand.name}` : 'Thêm thương hiệu mới vào Master Data'}
+                  </h3>
+                  <p className="text-2xs text-slate-500">
+                    {editingBrand 
+                      ? 'Chỉnh sửa định danh, ngân sách, nhân sự phụ trách và chính sách nhãn hàng' 
+                      : 'Thiết lập nhãn hàng mới để đồng bộ phân bổ, điều phối và phân rã kế hoạch'}
+                  </p>
+                </div>
+              </div>
               <button
                 type="button"
                 onClick={() => setIsBrandModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600"
+                className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition"
               >
-                <X className="w-4 h-4" />
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleSaveBrand} className="space-y-3 text-xs">
-              <div>
-                <label className="block text-slate-600 font-medium mb-1">Tên thương hiệu *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Ví dụ: Kutieskin Mama & Baby"
-                  value={brandForm.name}
-                  onChange={(e) => setBrandForm(prev => ({ ...prev, name: e.target.value }))}
-                  className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-400"
-                />
+            <form onSubmit={handleSaveBrand} className="space-y-4 text-xs">
+              {/* PHẦN 1: ĐỊNH DANH THƯƠNG HIỆU & DOANH NGHIỆP */}
+              <div className="bg-slate-50/70 p-3.5 rounded-xl border border-slate-200/80 space-y-3">
+                <span className="text-2xs font-bold uppercase tracking-wider text-slate-700 block">
+                  1. Định danh nhãn hàng & Doanh nghiệp
+                </span>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-slate-700 font-medium mb-1">Mã Brand (Code)</label>
+                    <input
+                      type="text"
+                      placeholder="VD: KUTIE"
+                      value={brandForm.code}
+                      onChange={(e) => setBrandForm(prev => ({ ...prev, code: e.target.value.toUpperCase() }))}
+                      className="w-full px-3 py-1.5 border border-slate-200 rounded-lg font-mono focus:outline-none focus:ring-1 focus:ring-slate-400 bg-white"
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="block text-slate-700 font-medium mb-1">Tên thương hiệu *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Ví dụ: Kutieskin Baby Care"
+                      value={brandForm.name}
+                      onChange={(e) => setBrandForm(prev => ({ ...prev, name: e.target.value }))}
+                      className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-400 bg-white font-medium text-slate-900"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-slate-700 font-medium mb-1">Doanh nghiệp chủ quản</label>
+                    <input
+                      type="text"
+                      placeholder="Công ty CP Dược Mỹ Phẩm CVI"
+                      value={brandForm.companyName}
+                      onChange={(e) => setBrandForm(prev => ({ ...prev, companyName: e.target.value }))}
+                      className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-400 bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-700 font-medium mb-1">Ngành hàng chính</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Mẹ & Bé, Chăm sóc da..."
+                      value={brandForm.category}
+                      onChange={(e) => setBrandForm(prev => ({ ...prev, category: e.target.value }))}
+                      className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-400 bg-white"
+                    />
+                  </div>
+                </div>
               </div>
 
-              <div>
-                <label className="block text-slate-600 font-medium mb-1">Doanh nghiệp chủ quản</label>
-                <input
-                  type="text"
-                  placeholder="Ví dụ: Công ty cổ phần dược mỹ phẩm CVI"
-                  value={brandForm.companyName}
-                  onChange={(e) => setBrandForm(prev => ({ ...prev, companyName: e.target.value }))}
-                  className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-400"
-                />
+              {/* PHẦN 2: ĐỘI NGŨ PHỤ TRÁCH 3 BÊN (TRI-PARTY PICS) */}
+              <div className="bg-slate-50/70 p-3.5 rounded-xl border border-slate-200/80 space-y-3">
+                <span className="text-2xs font-bold uppercase tracking-wider text-slate-700 block">
+                  2. Đội ngũ phụ trách 3 bên (Tri-Party PICs)
+                </span>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-slate-700 font-medium mb-1">Account Manager</label>
+                    <input
+                      type="text"
+                      placeholder="VD: Phương Thảo"
+                      value={brandForm.accountPic}
+                      onChange={(e) => setBrandForm(prev => ({ ...prev, accountPic: e.target.value }))}
+                      className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-400 bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-700 font-medium mb-1">Growth Lead</label>
+                    <input
+                      type="text"
+                      placeholder="VD: Hoàng Long"
+                      value={brandForm.growthPic}
+                      onChange={(e) => setBrandForm(prev => ({ ...prev, growthPic: e.target.value }))}
+                      className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-400 bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-700 font-medium mb-1">Booking PIC Lead</label>
+                    <input
+                      type="text"
+                      placeholder="VD: Khánh Vy"
+                      value={brandForm.bookingPicLead}
+                      onChange={(e) => setBrandForm(prev => ({ ...prev, bookingPicLead: e.target.value }))}
+                      className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-400 bg-white"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-slate-700 font-medium mb-1">Đại diện nhãn hàng / Đối tác liên hệ</label>
+                  <input
+                    type="text"
+                    placeholder="VD: Nguyễn Văn Thắng (Brand Director) - 0988xxx"
+                    value={brandForm.contactPerson}
+                    onChange={(e) => setBrandForm(prev => ({ ...prev, contactPerson: e.target.value }))}
+                    className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-400 bg-white"
+                  />
+                </div>
               </div>
 
-              <div>
-                <label className="block text-slate-600 font-medium mb-1">Ngành hàng</label>
-                <select
-                  value={brandForm.category}
-                  onChange={(e) => setBrandForm(prev => ({ ...prev, category: e.target.value }))}
-                  className="w-full px-3 py-1.5 border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-slate-400"
-                >
-                  <option value="Mẹ & Bé">Mẹ & Bé</option>
-                  <option value="Chăm Sóc Da">Chăm Sóc Da</option>
-                  <option value="Sữa Công Thức">Sữa Công Thức</option>
-                  <option value="Chăm Sóc Cá Nhân">Chăm Sóc Cá Nhân</option>
-                  <option value="Gia Dụng & Đời Sống">Gia Dụng & Đời Sống</option>
-                </select>
+              {/* PHẦN 3: NGÂN SÁCH & MỤC TIÊU & SÀN */}
+              <div className="bg-slate-50/70 p-3.5 rounded-xl border border-slate-200/80 space-y-3">
+                <span className="text-2xs font-bold uppercase tracking-wider text-slate-700 block">
+                  3. Định mức ngân sách & Mục tiêu & Kênh sàn
+                </span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-slate-700 font-medium mb-1">Ngân sách tháng dự kiến (VNĐ)</label>
+                    <input
+                      type="number"
+                      step={5000000}
+                      value={brandForm.monthlyBudget}
+                      onChange={(e) => setBrandForm(prev => ({ ...prev, monthlyBudget: Number(e.target.value) }))}
+                      className="w-full px-3 py-1.5 border border-slate-200 rounded-lg font-mono focus:outline-none focus:ring-1 focus:ring-slate-400 bg-white"
+                    />
+                    <span className="text-3xs text-slate-500 font-mono mt-0.5 block">{formatVnd(brandForm.monthlyBudget)}</span>
+                  </div>
+                  <div>
+                    <label className="block text-slate-700 font-medium mb-1">Mục tiêu GMV tháng (VNĐ)</label>
+                    <input
+                      type="number"
+                      step={10000000}
+                      value={brandForm.targetGmv}
+                      onChange={(e) => setBrandForm(prev => ({ ...prev, targetGmv: Number(e.target.value) }))}
+                      className="w-full px-3 py-1.5 border border-slate-200 rounded-lg font-mono focus:outline-none focus:ring-1 focus:ring-slate-400 bg-white"
+                    />
+                    <span className="text-3xs text-slate-500 font-mono mt-0.5 block">{formatVnd(brandForm.targetGmv)}</span>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-slate-700 font-medium mb-1.5">Sàn phân phối triển khai</label>
+                  <div className="flex items-center gap-3">
+                    {(['Shopee Mall', 'TikTok Shop', 'Lazada'] as const).map(plat => {
+                      const isChecked = brandForm.platforms.includes(plat);
+                      return (
+                        <label key={plat} className="flex items-center gap-1.5 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setBrandForm(prev => ({ ...prev, platforms: [...prev.platforms, plat] }));
+                              } else {
+                                setBrandForm(prev => ({ ...prev, platforms: prev.platforms.filter(p => p !== plat) }));
+                              }
+                            }}
+                            className="rounded border-slate-300 text-purple-600 focus:ring-purple-500"
+                          />
+                          <span className="text-xs text-slate-800">{plat}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
 
-              <div>
-                <label className="block text-slate-600 font-medium mb-1">Người đại diện phụ trách</label>
-                <input
-                  type="text"
-                  placeholder="Họ và tên đại diện"
-                  value={brandForm.contactPerson}
-                  onChange={(e) => setBrandForm(prev => ({ ...prev, contactPerson: e.target.value }))}
-                  className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-400"
-                />
+              {/* PHẦN 4: GUIDELINES & TIÊU CHÍ KOC & TRẠNG THÁI */}
+              <div className="bg-slate-50/70 p-3.5 rounded-xl border border-slate-200/80 space-y-3">
+                <span className="text-2xs font-bold uppercase tracking-wider text-slate-700 block">
+                  4. Tiêu chí nhãn hàng & Trạng thái hợp tác
+                </span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-slate-700 font-medium mb-1">Brand Guideline / Định vị</label>
+                    <textarea
+                      rows={2}
+                      placeholder="Thông điệp chủ đạo, tone voice, không dùng từ cấm..."
+                      value={brandForm.brandGuideline}
+                      onChange={(e) => setBrandForm(prev => ({ ...prev, brandGuideline: e.target.value }))}
+                      className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-400 bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-700 font-medium mb-1">Tiêu chí lựa chọn KOC</label>
+                    <textarea
+                      rows={2}
+                      placeholder="Mẹ bỉm sữa, dược sĩ, bác sĩ da liễu, tỷ lệ chốt đơn..."
+                      value={brandForm.kocCriteria}
+                      onChange={(e) => setBrandForm(prev => ({ ...prev, kocCriteria: e.target.value }))}
+                      className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-400 bg-white"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-slate-700 font-medium mb-1">Trạng thái hợp tác</label>
+                  <select
+                    value={brandForm.status}
+                    onChange={(e) => setBrandForm(prev => ({ ...prev, status: e.target.value as any }))}
+                    className="w-full px-3 py-1.5 border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 font-medium"
+                  >
+                    <option value="ACTIVE">Đang hợp tác (Active)</option>
+                    <option value="UPCOMING">Sắp triển khai (Upcoming)</option>
+                    <option value="PAUSED">Tạm dừng / Đã dừng (Paused)</option>
+                  </select>
+                </div>
               </div>
 
-              <div>
-                <label className="block text-slate-600 font-medium mb-1">Trạng thái hợp tác</label>
-                <select
-                  value={brandForm.status}
-                  onChange={(e) => setBrandForm(prev => ({ ...prev, status: e.target.value as any }))}
-                  className="w-full px-3 py-1.5 border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-slate-400"
-                >
-                  <option value="ACTIVE">Đang hợp tác</option>
-                  <option value="UPCOMING">Sắp triển khai</option>
-                  <option value="PAUSED">Tạm dừng</option>
-                </select>
-              </div>
+              {editingBrand && (
+                <div className="p-2.5 rounded-lg bg-indigo-50/70 border border-indigo-200 text-3xs text-indigo-800 flex items-start gap-2">
+                  <Shield className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
+                  <span>
+                    <strong>Cơ chế tự động đồng bộ:</strong> Thay đổi tên thương hiệu tại đây sẽ tự động cập nhật tên liên kết trên tất cả gian hàng và sản phẩm trực thuộc trong hệ thống Master Data.
+                  </span>
+                </div>
+              )}
 
               <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => setIsBrandModalOpen(false)}
-                  className="px-3 py-1.5 border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 transition"
+                  className="px-4 py-2 border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 transition font-medium"
                 >
                   Hủy
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-lg transition"
+                  className="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-xl transition shadow-xs"
                 >
-                  Lưu
+                  {editingBrand ? 'Lưu cập nhật thương hiệu' : 'Tạo mới thương hiệu'}
                 </button>
               </div>
             </form>
           </div>
         </div>
       )}
+
+      {/* MODAL: XÓA / LƯU TRỮ THƯƠNG HIỆU (DEPENDENCY CHECK & ARCHIVE) */}
+      {deletingBrand && (() => {
+        const deps = getBrandDependencies(deletingBrand.name);
+        const hasDeps = deps.totalCount > 0;
+        const isConfirmMatch = deleteConfirmText.trim().toLowerCase() === deletingBrand.name.trim().toLowerCase();
+
+        return (
+          <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-lg w-full p-6 space-y-4">
+              <div className="flex items-start gap-3">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${
+                  hasDeps ? 'bg-amber-50 text-amber-600 border-amber-200' : 'bg-rose-50 text-rose-600 border-rose-200'
+                }`}>
+                  {hasDeps ? <AlertTriangle className="w-5 h-5" /> : <Trash2 className="w-5 h-5" />}
+                </div>
+                <div>
+                  <h3 className="font-bold text-base text-slate-900">
+                    {hasDeps ? 'Kiểm tra ràng buộc: Thương hiệu đang có liên kết!' : `Xác nhận xóa thương hiệu [${deletingBrand.name}]`}
+                  </h3>
+                  <p className="text-2xs text-slate-500 mt-0.5">
+                    Thương hiệu: <span className="font-semibold text-slate-800">{deletingBrand.name}</span> ({deletingBrand.category})
+                  </p>
+                </div>
+              </div>
+
+              {hasDeps ? (
+                <div className="space-y-3 text-xs">
+                  <div className="bg-amber-50/80 border border-amber-200 p-3 rounded-xl text-amber-900 space-y-2">
+                    <p className="font-semibold text-xs flex items-center gap-1.5">
+                      <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                      Phát hiện {deps.totalCount} đối tượng đang liên kết trực tiếp:
+                    </p>
+                    <div className="grid grid-cols-2 gap-2 text-2xs">
+                      <div className="bg-white/80 p-2 rounded-lg border border-amber-200/60">
+                        <div className="font-bold text-slate-800">{deps.stores.length} gian hàng:</div>
+                        <ul className="list-disc list-inside text-slate-600 truncate mt-0.5">
+                          {deps.stores.slice(0, 3).map(s => <li key={s.id}>{s.storeName}</li>)}
+                          {deps.stores.length > 3 && <li>...và {deps.stores.length - 3} gian hàng khác</li>}
+                        </ul>
+                      </div>
+                      <div className="bg-white/80 p-2 rounded-lg border border-amber-200/60">
+                        <div className="font-bold text-slate-800">{deps.products.length} sản phẩm Master:</div>
+                        <ul className="list-disc list-inside text-slate-600 truncate mt-0.5">
+                          {deps.products.slice(0, 3).map(p => <li key={p.id}>{p.sku}</li>)}
+                          {deps.products.length > 3 && <li>...và {deps.products.length - 3} sản phẩm khác</li>}
+                        </ul>
+                      </div>
+                    </div>
+                    <p className="text-3xs text-amber-800">
+                      <strong>Cảnh báo:</strong> Xóa vĩnh viễn sẽ làm mất mối quan hệ cha-con với các gian hàng và sản phẩm này trong phân bổ và báo cáo GMV.
+                    </p>
+                  </div>
+
+                  <div className="p-3 bg-purple-50/70 border border-purple-200 rounded-xl space-y-2">
+                    <div className="flex items-center gap-1.5 text-purple-900 font-semibold text-xs">
+                      <Archive className="w-4 h-4 text-purple-700" />
+                      <span>Khuyến nghị: Chuyển sang Tạm dừng (Lưu trữ an toàn)</span>
+                    </div>
+                    <p className="text-2xs text-purple-800 leading-relaxed">
+                      Giữ nguyên dữ liệu lịch sử booking và phân bổ, chỉ ẩn thương hiệu khỏi danh mục đề xuất đang hoạt động.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => handleArchiveBrand(deletingBrand)}
+                      className="w-full py-2 px-3 bg-purple-700 hover:bg-purple-800 text-white font-semibold rounded-lg transition text-xs flex items-center justify-center gap-1.5 shadow-xs"
+                    >
+                      <Archive className="w-3.5 h-3.5" />
+                      Chuyển thành Tạm dừng (Khuyên dùng)
+                    </button>
+                  </div>
+
+                  <div className="pt-2 border-t border-slate-100 space-y-2">
+                    <label className="block text-2xs text-slate-600">
+                      Nếu vẫn muốn <strong className="text-rose-600">xóa vĩnh viễn</strong>, hãy nhập chính xác tên: <span className="font-mono font-bold text-slate-900 select-all">{deletingBrand.name}</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Nhập tên thương hiệu để xác nhận..."
+                      value={deleteConfirmText}
+                      onChange={(e) => setDeleteConfirmText(e.target.value)}
+                      className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-medium focus:outline-none focus:ring-1 focus:ring-rose-400"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="text-xs text-slate-600 space-y-2">
+                  <p>
+                    Thương hiệu này hiện không có gian hàng hay sản phẩm nào liên kết. Bạn có thể xóa an toàn khỏi Master Data.
+                  </p>
+                </div>
+              )}
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDeletingBrand(null);
+                    setDeleteConfirmText('');
+                  }}
+                  className="px-3.5 py-1.5 border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 transition text-xs font-medium"
+                >
+                  Hủy bỏ
+                </button>
+                <button
+                  type="button"
+                  disabled={hasDeps && !isConfirmMatch}
+                  onClick={handleConfirmHardDeleteBrand}
+                  className="px-4 py-1.5 bg-rose-600 hover:bg-rose-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition text-xs flex items-center gap-1.5 shadow-xs"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  Xác nhận xóa vĩnh viễn
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* MODAL: THÊM GIAN HÀNG */}
       {isStoreModalOpen && (
@@ -1843,65 +2328,77 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
 
       {/* MODAL: THÊM / SỬA SẢN PHẨM GỐC */}
       {isProductModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl border border-slate-200 max-w-md w-full p-5 space-y-4">
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-lg w-full p-6 space-y-4 my-8 max-h-[92vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h3 className="font-semibold text-sm text-slate-900">
-                {editingProduct ? 'Cập nhật thông tin sản phẩm' : 'Thêm sản phẩm vào dữ liệu gốc'}
-              </h3>
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center border border-blue-200">
+                  <ShoppingBag className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-base text-slate-900">
+                    {editingProduct ? `Cập nhật sản phẩm: [${editingProduct.sku}]` : 'Thêm sản phẩm vào Master Catalog'}
+                  </h3>
+                  <p className="text-2xs text-slate-500">
+                    Dữ liệu gốc sản phẩm dùng cho phân bổ mẫu thử KOC và gắn giỏ hàng TikTok / Shopee
+                  </p>
+                </div>
+              </div>
               <button
                 type="button"
                 onClick={() => setIsProductModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600"
+                className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleSaveProduct} className="space-y-3 text-xs">
-              <div className="grid grid-cols-2 gap-2">
+            <form onSubmit={handleSaveProduct} className="space-y-3.5 text-xs">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-600 font-medium mb-1">Mã SKU *</label>
+                  <label className="block text-slate-700 font-medium mb-1">Mã SKU *</label>
                   <input
                     type="text"
                     required
                     placeholder="VD: KUTIE-SOOTH-30G"
                     value={productForm.sku}
-                    onChange={(e) => setProductForm(prev => ({ ...prev, sku: e.target.value }))}
-                    className="w-full px-3 py-1.5 border border-slate-200 rounded-lg font-mono focus:outline-none focus:ring-1 focus:ring-slate-400"
+                    onChange={(e) => setProductForm(prev => ({ ...prev, sku: e.target.value.toUpperCase() }))}
+                    className="w-full px-3 py-1.5 border border-slate-200 rounded-lg font-mono focus:outline-none focus:ring-1 focus:ring-slate-400 bg-white"
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-600 font-medium mb-1">Giá niêm yết (VNĐ) *</label>
+                  <label className="block text-slate-700 font-medium mb-1">Giá niêm yết (VNĐ) *</label>
                   <input
                     type="number"
                     required
+                    step={10000}
                     value={productForm.originalPrice}
                     onChange={(e) => setProductForm(prev => ({ ...prev, originalPrice: Number(e.target.value) }))}
-                    className="w-full px-3 py-1.5 border border-slate-200 rounded-lg font-mono focus:outline-none focus:ring-1 focus:ring-slate-400"
+                    className="w-full px-3 py-1.5 border border-slate-200 rounded-lg font-mono focus:outline-none focus:ring-1 focus:ring-slate-400 bg-white"
                   />
+                  <span className="text-3xs text-slate-400 font-mono mt-0.5 block">{formatVnd(productForm.originalPrice)}</span>
                 </div>
               </div>
 
               <div>
-                <label className="block text-slate-600 font-medium mb-1">Tên sản phẩm *</label>
+                <label className="block text-slate-700 font-medium mb-1">Tên sản phẩm *</label>
                 <input
                   type="text"
                   required
-                  placeholder="Ví dụ: Kem bôi dịu da Kutieskin 30g"
+                  placeholder="Ví dụ: Kem bôi dịu da Kutieskin 30g cho bé"
                   value={productForm.productName}
                   onChange={(e) => setProductForm(prev => ({ ...prev, productName: e.target.value }))}
-                  className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-400"
+                  className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-400 bg-white font-medium text-slate-900"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-600 font-medium mb-1">Thuộc thương hiệu</label>
+                  <label className="block text-slate-700 font-medium mb-1">Thuộc thương hiệu</label>
                   <select
                     value={productForm.brandName}
                     onChange={(e) => setProductForm(prev => ({ ...prev, brandName: e.target.value }))}
-                    className="w-full px-3 py-1.5 border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-slate-400"
+                    className="w-full px-3 py-1.5 border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 font-medium text-slate-800"
                   >
                     {brandList.map(b => (
                       <option key={b.id} value={b.name}>{b.name}</option>
@@ -1910,7 +2407,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-slate-600 font-medium mb-1">Nền tảng sàn</label>
+                  <label className="block text-slate-700 font-medium mb-1">Nền tảng sàn</label>
                   <select
                     value={productForm.platform}
                     onChange={(e) => setProductForm(prev => ({ ...prev, platform: e.target.value as any }))}
@@ -1923,47 +2420,101 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                 </div>
               </div>
 
-              <div>
-                <label className="block text-slate-600 font-medium mb-1">Tên gian hàng phân phối</label>
-                <input
-                  type="text"
-                  placeholder="Ví dụ: Kutieskin Shopee Mall"
-                  value={productForm.storeName}
-                  onChange={(e) => setProductForm(prev => ({ ...prev, storeName: e.target.value }))}
-                  className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-400"
-                />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-700 font-medium mb-1">Tên gian hàng phân phối</label>
+                  <input
+                    type="text"
+                    placeholder="Ví dụ: Kutieskin Shopee Mall"
+                    value={productForm.storeName}
+                    onChange={(e) => setProductForm(prev => ({ ...prev, storeName: e.target.value }))}
+                    className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-400 bg-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-700 font-medium mb-1">Ngành hàng</label>
+                  <input
+                    type="text"
+                    value={productForm.category}
+                    onChange={(e) => setProductForm(prev => ({ ...prev, category: e.target.value }))}
+                    className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-400 bg-white"
+                  />
+                </div>
+              </div>
+
+              {/* Tùy chọn B2C Marketing: Loại sản phẩm, Hoa hồng, Mẫu thử */}
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80 space-y-3">
+                <span className="text-2xs font-bold uppercase tracking-wider text-slate-700 block">
+                  Chính sách phân phối & Booking KOC
+                </span>
+                <div className="grid grid-cols-3 gap-2">
+                  <div>
+                    <label className="block text-slate-700 font-medium mb-1">Phân loại vai trò</label>
+                    <select
+                      value={productForm.heroType}
+                      onChange={(e) => setProductForm(prev => ({ ...prev, heroType: e.target.value as any }))}
+                      className="w-full px-2 py-1.5 border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 text-xs font-semibold text-slate-800"
+                    >
+                      <option value="HERO">HERO (Chủ lực)</option>
+                      <option value="ENTRY">ENTRY (Sản phẩm phễu)</option>
+                      <option value="ADDON">ADDON (Bán kèm)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-slate-700 font-medium mb-1">Hoa hồng Affiliate (%)</label>
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={productForm.commissionRate}
+                      onChange={(e) => setProductForm(prev => ({ ...prev, commissionRate: Number(e.target.value) }))}
+                      className="w-full px-2 py-1.5 border border-slate-200 rounded-lg font-mono focus:outline-none focus:ring-1 focus:ring-slate-400 bg-white text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-700 font-medium mb-1">Mẫu thử sẵn có</label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={productForm.sampleAvailableCount}
+                      onChange={(e) => setProductForm(prev => ({ ...prev, sampleAvailableCount: Number(e.target.value) }))}
+                      className="w-full px-2 py-1.5 border border-slate-200 rounded-lg font-mono focus:outline-none focus:ring-1 focus:ring-slate-400 bg-white text-xs"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-slate-700 font-medium mb-1">Điểm bán hàng độc nhất (USP)</label>
+                  <input
+                    type="text"
+                    placeholder="Chiết xuất thảo dược tự nhiên, chứng nhận an toàn cho trẻ sơ sinh..."
+                    value={productForm.usp}
+                    onChange={(e) => setProductForm(prev => ({ ...prev, usp: e.target.value }))}
+                    className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-400 bg-white"
+                  />
+                </div>
               </div>
 
               <div>
-                <label className="block text-slate-600 font-medium mb-1">Ngành hàng sản phẩm</label>
-                <input
-                  type="text"
-                  value={productForm.category}
-                  onChange={(e) => setProductForm(prev => ({ ...prev, category: e.target.value }))}
-                  className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-400"
-                />
-              </div>
-
-              <div>
-                <label className="block text-slate-600 font-medium mb-1">Link trang sản phẩm (PDP URL)</label>
+                <label className="block text-slate-700 font-medium mb-1">Link trang sản phẩm (PDP URL)</label>
                 <input
                   type="url"
-                  placeholder="https://..."
+                  placeholder="https://shopee.vn/... hoặc https://shop.tiktok.com/..."
                   value={productForm.pdpUrl}
                   onChange={(e) => setProductForm(prev => ({ ...prev, pdpUrl: e.target.value }))}
-                  className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-400"
+                  className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-400 bg-white"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-600 font-medium mb-1">Trạng thái kinh doanh</label>
+                <label className="block text-slate-700 font-medium mb-1">Trạng thái kinh doanh</label>
                 <select
                   value={productForm.status}
                   onChange={(e) => setProductForm(prev => ({ ...prev, status: e.target.value as any }))}
-                  className="w-full px-3 py-1.5 border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-slate-400"
+                  className="w-full px-3 py-1.5 border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-slate-400 font-medium"
                 >
-                  <option value="ACTIVE">Đang kinh doanh</option>
-                  <option value="DISCONTINUED">Tạm ngừng</option>
+                  <option value="ACTIVE">Đang kinh doanh (Active)</option>
+                  <option value="DISCONTINUED">Tạm ngừng kinh doanh (Discontinued)</option>
                 </select>
               </div>
 
@@ -1971,18 +2522,78 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsProductModalOpen(false)}
-                  className="px-3 py-1.5 border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 transition"
+                  className="px-4 py-2 border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 transition font-medium"
                 >
                   Hủy
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-lg transition"
+                  className="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-xl transition shadow-xs"
                 >
-                  Lưu
+                  {editingProduct ? 'Lưu cập nhật sản phẩm' : 'Thêm sản phẩm'}
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: XÓA SẢN PHẨM */}
+      {deletingProduct && (
+        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-md w-full p-6 space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0 border border-rose-200">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-bold text-base text-slate-900">Xác nhận xóa sản phẩm</h3>
+                <p className="text-2xs text-slate-500 mt-0.5">
+                  Mã SKU: <span className="font-mono font-semibold text-slate-800">{deletingProduct.sku}</span>
+                </p>
+              </div>
+            </div>
+
+            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1.5 text-xs">
+              <div className="font-semibold text-slate-900">{deletingProduct.productName}</div>
+              <div className="text-slate-500 text-2xs flex items-center gap-2">
+                <span>{deletingProduct.brandName}</span>
+                <span>•</span>
+                <span>{deletingProduct.platform}</span>
+                <span>•</span>
+                <span className="font-mono font-semibold text-slate-700">{formatVnd(deletingProduct.originalPrice)}</span>
+              </div>
+            </div>
+
+            <div className="space-y-2 text-xs text-slate-600">
+              <p>Bạn có thể lựa chọn một trong 2 phương án:</p>
+              <button
+                type="button"
+                onClick={() => handleDiscontinueProduct(deletingProduct)}
+                className="w-full py-2 px-3 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs flex items-center justify-center gap-1.5 transition"
+              >
+                <Archive className="w-3.5 h-3.5 text-slate-500" />
+                <span>Chuyển sang "Tạm ngừng kinh doanh" (An toàn)</span>
+              </button>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setDeletingProduct(null)}
+                className="px-3.5 py-1.5 border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 transition text-xs font-medium"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDeleteProduct(deletingProduct)}
+                className="px-4 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-semibold rounded-xl transition text-xs flex items-center gap-1.5 shadow-xs"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                Xóa vĩnh viễn khỏi catalog
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -33,10 +33,12 @@ import {
   SlidersHorizontal,
   ShieldAlert,
   Award,
-  GitFork
+  GitFork,
+  Database
 } from 'lucide-react';
 import { UserProfile, BrandDetail, EcomStore, HeroProduct, StorePortfolioItem, StaffMasterMember } from '../../lib/types';
 import { INITIAL_BRANDS, INITIAL_STORE_PORTFOLIOS, STAFF_MASTER_DIRECTORY } from '../../lib/mockData';
+import { UPBASE_BRANDS_MASTER } from '../../lib/importedMasterData';
 import { MasterDataMindmapView } from './MasterDataMindmapView';
 import { StaffSearchSelect } from './master-data/StaffSearchSelect';
 
@@ -1334,6 +1336,45 @@ export const StoresView: React.FC<StoresViewProps> = ({
             </div>
 
             <form onSubmit={handleSaveBrand} className="space-y-4 text-xs">
+              {!editingBrand && (
+                <div className="p-3 bg-blue-50/70 border border-blue-200 rounded-xl space-y-1.5">
+                  <div className="flex items-center gap-1.5 text-blue-900 font-semibold text-2xs">
+                    <Database className="w-3.5 h-3.5 text-blue-600" />
+                    <span>Lựa chọn từ Master Data ({UPBASE_BRANDS_MASTER.length} thương hiệu chuẩn hóa)</span>
+                  </div>
+                  <select
+                    onChange={(e) => {
+                      const selected = UPBASE_BRANDS_MASTER.find(b => b.id === e.target.value);
+                      if (selected) {
+                        setFormData({
+                          name: selected.name,
+                          companyName: selected.companyName || '',
+                          category: selected.category || 'Mẹ & Bé',
+                          planBudget: selected.planBudget || 150000000,
+                          targetGmv: selected.targetGmv || 450000000,
+                          bookingPicLead: selected.bookingPicLead || 'Khánh Vy',
+                          accountPic: selected.accountPic || 'Phương Thảo',
+                          growthPic: selected.growthPic || 'Hoàng Long',
+                          brandGuideline: selected.brandGuideline || '',
+                          kocCriteria: selected.kocCriteria || 'Phù hợp tệp khách hàng nhãn hàng',
+                          status: 'ACTIVE',
+                          color: selected.color || 'bg-blue-600'
+                        });
+                      }
+                    }}
+                    defaultValue=""
+                    className="w-full bg-white border border-blue-200 rounded-lg px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-blue-500 shadow-2xs font-medium"
+                  >
+                    <option value="" disabled>-- Chọn thương hiệu Master Data để tự động điền thông tin --</option>
+                    {UPBASE_BRANDS_MASTER.map(mb => (
+                      <option key={mb.id} value={mb.id}>
+                        {mb.name} - {mb.category} ({mb.companyName})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               {/* Row 1: Tên Brand & Công Ty */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>

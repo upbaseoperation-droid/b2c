@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { Search, Plus, X, ExternalLink, Store, ShoppingBag, ChevronLeft, ChevronRight, Users, Filter, RotateCcw, Shield } from 'lucide-react';
+import { Search, Plus, X, ExternalLink, Store, ShoppingBag, ChevronLeft, ChevronRight, Users, Filter, RotateCcw, Shield, Trash2, Archive, AlertTriangle } from 'lucide-react';
 import { ChannelTag } from '../../ui';
 import { StorePortfolioItem } from '../../../lib/types';
 import { StaffSearchSelect } from './StaffSearchSelect';
@@ -80,8 +80,12 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
     isB2cManaged: true,
     requiresB2cPlan: true,
     storeUrl: '',
-    operationStatus: 'Live' as 'Live' | 'Off' | 'Kênh nội bộ'
+    operationStatus: 'Live' as 'Live' | 'Off' | 'Kênh nội bộ',
+    platformStoreId: '',
+    affiliateRate: 12,
+    requiresSparkAds: false
   });
+  const [deletingStore, setDeletingStore] = useState<StorePortfolioItem | null>(null);
 
   // Extract unique packages
   const packages = useMemo(() => {
@@ -205,7 +209,10 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
       isB2cManaged: true,
       requiresB2cPlan: true,
       storeUrl: '',
-      operationStatus: 'Live'
+      operationStatus: 'Live',
+      platformStoreId: '',
+      affiliateRate: 12,
+      requiresSparkAds: false
     });
     setIsModalOpen(true);
   };
@@ -228,7 +235,10 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
       isB2cManaged: s.isB2cManaged !== false,
       requiresB2cPlan: s.requiresB2cPlan !== false,
       storeUrl: s.storeUrl || '',
-      operationStatus: s.operationStatus || (s.accountStatus === 'ACTIVE' ? 'Live' : 'Off')
+      operationStatus: s.operationStatus || (s.accountStatus === 'ACTIVE' ? 'Live' : 'Off'),
+      platformStoreId: s.platformStoreId || '',
+      affiliateRate: s.affiliateRate || 12,
+      requiresSparkAds: s.requiresSparkAds || false
     });
     setIsModalOpen(true);
   };
@@ -260,6 +270,9 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
         storeUrl: form.storeUrl.trim() || editingStore.storeUrl,
         operationStatus: opStatus,
         accountStatus: accStatus,
+        platformStoreId: form.platformStoreId.trim() || undefined,
+        affiliateRate: Number(form.affiliateRate) || undefined,
+        requiresSparkAds: form.requiresSparkAds,
         updatedAt: new Date().toISOString()
       };
       setStores(prev => prev.map(s => s.id === editingStore.id ? updatedStore : s));
@@ -292,6 +305,9 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
         isB2cManaged: form.isB2cManaged,
         requiresB2cPlan: form.requiresB2cPlan,
         storeUrl: form.storeUrl.trim() || '',
+        platformStoreId: form.platformStoreId.trim() || undefined,
+        affiliateRate: Number(form.affiliateRate) || 12,
+        requiresSparkAds: form.requiresSparkAds,
         updatedAt: new Date().toISOString()
       };
       setStores(prev => [newStore, ...prev]);
@@ -299,6 +315,25 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
       if (onNotify) onNotify(`Đã thêm gian hàng mới [${newStore.storeName}]`);
     }
     setIsModalOpen(false);
+  };
+
+  const handleOffboardStore = (store: StorePortfolioItem) => {
+    const updated: StorePortfolioItem = {
+      ...store,
+      operationStatus: 'Off',
+      accountStatus: 'OFFBOARDED',
+      updatedAt: new Date().toISOString()
+    };
+    setStores(prev => prev.map(s => s.id === store.id ? updated : s));
+    if (onUpdateStore) onUpdateStore(updated);
+    if (onNotify) onNotify(`Đã chuyển gian hàng [${store.storeName}] sang trạng thái Offboarded (Lưu trữ an toàn)`, 'info');
+    setDeletingStore(null);
+  };
+
+  const handleHardDeleteStore = (store: StorePortfolioItem) => {
+    setStores(prev => prev.filter(s => s.id !== store.id));
+    if (onNotify) onNotify(`Đã xóa vĩnh viễn gian hàng [${store.storeName}] khỏi danh mục`, 'warning');
+    setDeletingStore(null);
   };
 
   return (
@@ -745,6 +780,14 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                     >
                       Sửa
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => setDeletingStore(s)}
+                      className="text-rose-600 hover:text-rose-800 font-medium text-xs px-2 py-1 rounded hover:bg-rose-50 transition inline-block"
+                      title="Xóa hoặc lưu trữ gian hàng"
+                    >
+                      Xóa
+                    </button>
                   </td>
                 </tr>
               ))
@@ -859,6 +902,41 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                   onChange={(e) => setForm(prev => ({ ...prev, servicePackage: e.target.value }))}
                   className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-400"
                 />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <div>
+                  <label className="block text-slate-600 font-medium mb-1">Mã Shop ID sàn</label>
+                  <input
+                    type="text"
+                    placeholder="VD: TTS_VN_839219"
+                    value={form.platformStoreId}
+                    onChange={(e) => setForm(prev => ({ ...prev, platformStoreId: e.target.value }))}
+                    className="w-full px-3 py-1.5 border border-slate-200 rounded-lg font-mono focus:outline-none focus:ring-1 focus:ring-slate-400 bg-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-600 font-medium mb-1">Hoa hồng Affiliate (%)</label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    value={form.affiliateRate}
+                    onChange={(e) => setForm(prev => ({ ...prev, affiliateRate: Number(e.target.value) }))}
+                    className="w-full px-3 py-1.5 border border-slate-200 rounded-lg font-mono focus:outline-none focus:ring-1 focus:ring-slate-400 bg-white"
+                  />
+                </div>
+                <div className="flex items-center pt-5">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={form.requiresSparkAds}
+                      onChange={(e) => setForm(prev => ({ ...prev, requiresSparkAds: e.target.checked }))}
+                      className="rounded border-slate-300 text-purple-600 focus:ring-purple-500"
+                    />
+                    <span className="text-xs text-slate-700 font-medium">Cần mã Spark Ads</span>
+                  </label>
+                </div>
               </div>
 
               {/* Section: Phân công PIC các bộ phận */}
@@ -1028,6 +1106,69 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: XÓA / OFFBOARD GIAN HÀNG */}
+      {deletingStore && (
+        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-md w-full p-6 space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0 border border-rose-200">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-bold text-base text-slate-900">Xác nhận xử lý gian hàng</h3>
+                <p className="text-2xs text-slate-500 mt-0.5">
+                  Mã gian hàng: <span className="font-mono font-semibold text-slate-800">{deletingStore.storeOperationId || deletingStore.id}</span>
+                </p>
+              </div>
+            </div>
+
+            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1.5 text-xs">
+              <div className="font-semibold text-slate-900">{deletingStore.storeName}</div>
+              <div className="text-slate-500 text-2xs flex items-center gap-2">
+                <span>{deletingStore.brandName}</span>
+                <span>•</span>
+                <span>{deletingStore.platform}</span>
+                <span>•</span>
+                <span className="font-medium text-slate-700">{deletingStore.servicePackage || 'E2E-S'}</span>
+              </div>
+            </div>
+
+            <div className="space-y-2 text-xs text-slate-600">
+              <p>Khuyến nghị an toàn từ hệ thống Upbase:</p>
+              <button
+                type="button"
+                onClick={() => handleOffboardStore(deletingStore)}
+                className="w-full py-2.5 px-3 rounded-xl border border-purple-200 bg-purple-50 hover:bg-purple-100 text-purple-800 font-semibold text-xs flex items-center justify-center gap-1.5 transition"
+              >
+                <Archive className="w-3.5 h-3.5 text-purple-700" />
+                <span>Chuyển sang "Off / Dừng hợp tác" (Khuyên dùng)</span>
+              </button>
+              <p className="text-3xs text-slate-400">
+                Lưu trữ gian hàng giữ toàn bộ dữ liệu báo cáo GMV và lịch sử booking của nhãn hàng.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setDeletingStore(null)}
+                className="px-3.5 py-1.5 border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 transition text-xs font-medium"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                type="button"
+                onClick={() => handleHardDeleteStore(deletingStore)}
+                className="px-4 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-semibold rounded-xl transition text-xs flex items-center gap-1.5 shadow-xs"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                Xóa vĩnh viễn
+              </button>
+            </div>
           </div>
         </div>
       )}
