@@ -177,90 +177,54 @@ export const ContractView: React.FC<ContractViewProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* 4 Balanced KPI Analytics Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-        {/* Card 1: Tổng Giá Trị */}
-        <div className="bg-white border border-slate-200 rounded-xl p-4.5 shadow-xs hover:border-slate-300 transition">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500">
-              Tổng giá trị hợp đồng
-            </span>
-            <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
-              <FileCheck className="w-4 h-4" />
+      {/* Thanh Tóm Tắt Tài Chính Tinh Gọn */}
+      <div className="bg-white border border-slate-200 rounded-xl px-4 py-3 shadow-xs flex flex-wrap items-center justify-between gap-4 text-xs">
+        <div className="flex items-center gap-6 flex-wrap">
+          <div>
+            <span className="text-slate-400 block text-2xs uppercase tracking-wider font-medium">Tổng giá trị hợp đồng</span>
+            <div className="flex items-baseline gap-1 mt-0.5">
+              <span className="text-base font-bold text-slate-900 font-mono">
+                {totalContractValue.toLocaleString('vi-VN')}
+              </span>
+              <span className="text-xs text-slate-400">₫</span>
+              <span className="text-slate-400 text-2xs ml-1 font-normal">({deals.length} HĐ · {brandsList.length} nhãn)</span>
             </div>
           </div>
-          <div className="text-xl font-semibold text-slate-900 mt-2 whitespace-nowrap">
-            {totalContractValue.toLocaleString('vi-VN')} <span className="text-sm font-semibold text-slate-500">₫</span>
-          </div>
-          <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-100 text-xs">
-            <span className="text-blue-600 font-semibold">{deals.length} HĐ đang theo dõi</span>
-            <span className="text-slate-400">{brandsList.length} Nhãn hàng</span>
-          </div>
-        </div>
 
-        {/* Card 2: Đã Cọc Đợt 1 */}
-        <div className="bg-white border border-slate-200 rounded-xl p-4.5 shadow-xs hover:border-slate-300 transition">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500">
-              Đã chi tạm ứng (đợt 1)
-            </span>
-            <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
-              <CheckCircle2 className="w-4 h-4" />
+          <div className="h-7 w-px bg-slate-200 hidden sm:block" />
+
+          <div>
+            <span className="text-slate-400 block text-2xs uppercase tracking-wider font-medium">Đã chi tạm ứng (đợt 1)</span>
+            <div className="flex items-baseline gap-1 mt-0.5">
+              <span className="text-base font-bold text-emerald-600 font-mono">
+                {totalAdvancePaid.toLocaleString('vi-VN')}
+              </span>
+              <span className="text-xs text-emerald-500">₫</span>
+              <span className="text-emerald-700 text-2xs ml-1 font-semibold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100">
+                {advancePaidRate}%
+              </span>
             </div>
           </div>
-          <div className="text-xl font-semibold text-emerald-600 mt-2 whitespace-nowrap">
-            {totalAdvancePaid.toLocaleString('vi-VN')} <span className="text-sm font-semibold text-emerald-500">₫</span>
-          </div>
-          <div className="mt-2 pt-2 border-t border-slate-100">
-            <div className="flex items-center justify-between text-xs mb-1">
-              <span className="text-slate-500">Tỷ lệ chi cọc:</span>
-              <span className="font-semibold text-emerald-700">{advancePaidRate}%</span>
-            </div>
-            <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-emerald-500 rounded-full transition-all duration-500"
-                style={{ width: `${Math.min(advancePaidRate, 100)}%` }}
-              />
+
+          <div className="h-7 w-px bg-slate-200 hidden sm:block" />
+
+          <div>
+            <span className="text-slate-400 block text-2xs uppercase tracking-wider font-medium">Chờ quyết toán (đợt 2)</span>
+            <div className="flex items-baseline gap-1 mt-0.5">
+              <span className="text-base font-bold text-indigo-600 font-mono">
+                {totalPendingSettlement.toLocaleString('vi-VN')}
+              </span>
+              <span className="text-xs text-indigo-500">₫</span>
+              <span className="text-indigo-700 text-2xs ml-1 font-semibold bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-100">
+                {needSettleCount} video đã air
+              </span>
             </div>
           </div>
         </div>
 
-        {/* Card 3: Chờ Quyết Toán Đợt 2 */}
-        <div className="bg-white border border-slate-200 rounded-xl p-4.5 shadow-xs hover:border-slate-300 transition">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500">
-              Chờ quyết toán (đợt 2)
-            </span>
-            <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
-              <Clock className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="text-xl font-semibold text-indigo-600 mt-2 whitespace-nowrap">
-            {totalPendingSettlement.toLocaleString('vi-VN')} <span className="text-sm font-semibold text-indigo-500">₫</span>
-          </div>
-          <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-100 text-xs">
-            <span className="text-indigo-600 font-semibold">{needSettleCount} Video đã lên sóng</span>
-            <span className="text-slate-500">Cần nghiệm thu mã Ads</span>
-          </div>
-        </div>
-
-        {/* Card 4: Tuân Thủ Pháp Lý & Thanh Toán */}
-        <div className="bg-white border border-slate-200 rounded-xl p-4.5 shadow-xs hover:border-slate-300 transition">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500">
-              Pháp lý & VietQR
-            </span>
-            <div className="w-8 h-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center">
-              <ShieldCheck className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="text-xl font-semibold text-purple-700 mt-2 whitespace-nowrap">
-            100% <span className="text-sm font-semibold text-slate-500">HĐ điện tử</span>
-          </div>
-          <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-100 text-xs">
-            <span className="text-purple-600 font-semibold">Duyệt chi qua Lark</span>
-            <span className="text-slate-400">Mã QR ngân hàng</span>
-          </div>
+        <div className="flex items-center gap-2 text-2xs text-slate-600 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg">
+          <ShieldCheck className="w-3.5 h-3.5 text-purple-600 shrink-0" />
+          <span>Hợp đồng điện tử & Mã QR ngân hàng</span>
         </div>
       </div>
 

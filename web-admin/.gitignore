@@ -41,3 +41,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# output import dữ liệu Lark (có tên nhân sự) — không commit
+/.import-output/

@@ -64,41 +64,33 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           ],
         },
         {
-          title: 'Kế hoạch & Điều phối',
+          title: '1. Kế hoạch & Phân bổ',
           items: [
-            { key: 'manager', label: 'Điều phối & Quản lý', icon: Split },
             { key: 'input-plan', label: 'Kế hoạch tháng', icon: Calendar },
-            { key: 'koc-listing', label: 'Listing & Air Video', icon: Film },
-            { key: 'push-products', label: 'Sản phẩm đẩy', icon: TrendingUp },
+            { key: 'manager', label: 'Điều phối & Quản lý', icon: Split },
           ],
         },
         {
-          title: 'Vận hành tác nghiệp',
+          title: '2. Vận hành Booking & KOC',
           items: [
-            { key: 'booking', label: 'Booking KOC', icon: Users },
-            { key: 'content', label: 'Kịch bản video', icon: FileText },
-            { key: 'campaigns', label: 'Làm việc với Brand', icon: Layers },
-            { key: 'contracts', label: 'Hợp đồng & thanh toán', icon: FileCheck },
+            { key: 'booking', label: 'Quản lý Booking', icon: Users },
+            { key: 'content', label: 'Kịch bản & Video', icon: FileText },
+            { key: 'koc-master', label: 'Danh bạ KOC Master', icon: Users },
+          ],
+        },
+        {
+          title: '3. Hợp đồng & Cổng chi',
+          items: [
+            { key: 'contracts', label: 'Hợp đồng & Cổng chi', icon: FileCheck },
             { key: 'sample-tracker', label: 'Hàng mẫu & Spark Ads', icon: Package },
           ],
         },
         {
-          title: 'Báo cáo & Hiệu suất',
+          title: '4. Báo cáo & Dữ liệu',
           items: [
-            { key: 'overview', label: 'Tổng quan vận hành', icon: BarChart2 },
-            { key: 'dashboard-bi', label: 'Dashboard BI', icon: LayoutDashboard },
-            { key: 'ads-report', label: 'Báo cáo Ads TikTok', icon: BarChart3 },
-            { key: 'performance-p3', label: 'Đánh giá 4P & thưởng', icon: Coins },
-          ],
-        },
-        {
-          title: 'Dữ liệu & Cổng đối tác',
-          items: [
+            { key: 'dashboard-bi', label: 'Báo cáo hiệu suất & GMV', icon: LayoutDashboard },
             { key: 'master-data', label: 'Dữ liệu gốc & Mindmap', icon: Database },
-            { key: 'partner-access', label: 'Phân quyền & RBAC', icon: KeyRound },
-            { key: 'brand-hub', label: 'Cổng đối tác Brand', icon: ExternalLink },
-            { key: 'self-channel-hub', label: 'Hub CTV Video', icon: Video },
-            { key: 'koc-hub', label: 'Hub đối tác KOC / KOL', icon: Users },
+            { key: 'partner-access', label: 'Phân quyền & Tài khoản', icon: KeyRound },
           ],
         },
       ];
@@ -112,37 +104,32 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           ],
         },
         {
-          title: 'Kế hoạch & Điều phối',
+          title: '1. Kế hoạch & Phân bổ',
           items: [
-            { key: 'manager', label: 'Điều phối & Quản lý', icon: Split },
             { key: 'input-plan', label: 'Kế hoạch tháng', icon: Calendar },
-            { key: 'koc-listing', label: 'Listing & Air Video', icon: Film },
-            { key: 'push-products', label: 'Sản phẩm đẩy', icon: TrendingUp },
+            { key: 'manager', label: 'Điều phối nhóm', icon: Split },
           ],
         },
         {
-          title: 'Vận hành tác nghiệp',
+          title: '2. Vận hành Booking & KOC',
           items: [
-            { key: 'booking', label: 'Booking KOC', icon: Users },
-            { key: 'content', label: 'Kịch bản video', icon: FileText },
-            { key: 'campaigns', label: 'Làm việc với Brand', icon: Layers },
-            { key: 'contracts', label: 'Hợp đồng & thanh toán', icon: FileCheck },
+            { key: 'booking', label: 'Quản lý Booking', icon: Users },
+            { key: 'content', label: 'Kịch bản & Video', icon: FileText },
+            { key: 'koc-master', label: 'Danh bạ KOC Master', icon: Users },
+          ],
+        },
+        {
+          title: '3. Hợp đồng & Cổng chi',
+          items: [
+            { key: 'contracts', label: 'Hợp đồng & Cổng chi', icon: FileCheck },
             { key: 'sample-tracker', label: 'Hàng mẫu & Spark Ads', icon: Package },
           ],
         },
         {
-          title: 'Báo cáo & Hiệu suất',
+          title: '4. Báo cáo & Dữ liệu',
           items: [
-            { key: 'overview', label: 'Tổng quan vận hành', icon: BarChart2 },
-            { key: 'ads-report', label: 'Báo cáo Ads TikTok', icon: BarChart3 },
-            { key: 'performance-p3', label: 'Đánh giá 4P & thưởng', icon: Coins },
-          ],
-        },
-        {
-          title: 'Dữ liệu tham chiếu',
-          items: [
+            { key: 'dashboard-bi', label: 'Báo cáo hiệu suất', icon: LayoutDashboard },
             { key: 'master-data', label: 'Dữ liệu gốc & Mindmap', icon: Database },
-            { key: 'brand-knowledge', label: 'Hướng dẫn nhãn hàng', icon: BookOpen },
           ],
         },
       ];
@@ -156,22 +143,24 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           ],
         },
         {
-          title: 'Tác nghiệp Booking',
+          title: '1. Kế hoạch & Đợt chạy',
           items: [
-            { key: 'booking', label: 'Booking KOC', icon: Users },
-            { key: 'koc-listing', label: 'Listing & Air Video', icon: Film },
-            { key: 'koc-master', label: 'Danh bạ KOC Master', icon: Users },
             { key: 'input-plan', label: 'Kế hoạch tháng', icon: Calendar },
-            { key: 'contracts', label: 'Hợp đồng & thanh toán', icon: FileCheck },
-            { key: 'sample-tracker', label: 'Hàng mẫu', icon: Package },
-            { key: 'push-products', label: 'Sản phẩm đẩy', icon: TrendingUp },
+            { key: 'koc-listing', label: 'Listing & Air Video', icon: Film },
           ],
         },
         {
-          title: 'Hiệu suất & Tham chiếu',
+          title: '2. Vận hành Booking & KOC',
           items: [
-            { key: 'performance-p3', label: 'Đánh giá 4P & thưởng', icon: Coins },
-            { key: 'brand-knowledge', label: 'Hướng dẫn nhãn hàng', icon: BookOpen },
+            { key: 'booking', label: 'Quản lý Booking', icon: Users },
+            { key: 'koc-master', label: 'Danh bạ KOC Master', icon: Users },
+          ],
+        },
+        {
+          title: '3. Hợp đồng & Cổng chi',
+          items: [
+            { key: 'contracts', label: 'Hợp đồng & Cổng chi', icon: FileCheck },
+            { key: 'sample-tracker', label: 'Hàng mẫu', icon: Package },
           ],
         },
       ];
@@ -185,19 +174,24 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           ],
         },
         {
-          title: 'Sáng tạo & Kịch bản',
+          title: '1. Sáng tạo & Kịch bản',
           items: [
             { key: 'content', label: 'Kịch bản video', icon: FileText },
             { key: 'content-angles', label: 'Góc nội dung (Angles)', icon: Sparkles },
-            { key: 'campaigns', label: 'Làm việc với Brand', icon: Layers },
-            { key: 'brand-knowledge', label: 'Hướng dẫn nhãn hàng', icon: BookOpen },
           ],
         },
         {
-          title: 'Vận hành liên quan',
+          title: '2. Làm việc với Brand',
+          items: [
+            { key: 'campaigns', label: 'Chiến dịch Brand', icon: Layers },
+            { key: 'brand-knowledge', label: 'Hướng dẫn nhãn hàng', icon: BookOpen },
+            { key: 'push-products', label: 'Sản phẩm đẩy', icon: TrendingUp },
+          ],
+        },
+        {
+          title: '3. Vận hành & Đánh giá',
           items: [
             { key: 'sample-tracker', label: 'Hàng mẫu', icon: Package },
-            { key: 'push-products', label: 'Sản phẩm đẩy', icon: TrendingUp },
             { key: 'performance-p3', label: 'Đánh giá 4P & thưởng', icon: Coins },
           ],
         },
@@ -212,21 +206,25 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           ],
         },
         {
-          title: 'Chiến dịch & Nhãn hàng',
+          title: '1. Kế hoạch & Brand',
           items: [
-            { key: 'campaigns', label: 'Làm việc với Brand', icon: Layers },
-            { key: 'push-products', label: 'Sản phẩm đẩy', icon: TrendingUp },
+            { key: 'input-plan', label: 'Kế hoạch tháng', icon: Calendar },
+            { key: 'campaigns', label: 'Chiến dịch Brand', icon: Layers },
             { key: 'brand-knowledge', label: 'Hướng dẫn nhãn hàng', icon: BookOpen },
-            { key: 'content', label: 'Kịch bản video', icon: FileText },
           ],
         },
         {
-          title: 'Kế hoạch & Báo cáo',
+          title: '2. Vận hành & Sản phẩm',
           items: [
-            { key: 'input-plan', label: 'Kế hoạch tháng', icon: Calendar },
-            { key: 'ads-report', label: 'Báo cáo Ads TikTok', icon: BarChart3 },
-            { key: 'overview', label: 'Tổng quan vận hành', icon: BarChart2 },
+            { key: 'content', label: 'Kịch bản video', icon: FileText },
             { key: 'sample-tracker', label: 'Hàng mẫu', icon: Package },
+            { key: 'push-products', label: 'Sản phẩm đẩy', icon: TrendingUp },
+          ],
+        },
+        {
+          title: '3. Báo cáo hiệu suất',
+          items: [
+            { key: 'ads-report', label: 'Báo cáo Ads TikTok', icon: BarChart3 },
             { key: 'performance-p3', label: 'Đánh giá 4P & thưởng', icon: Coins },
           ],
         },
@@ -241,20 +239,23 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           ],
         },
         {
-          title: 'Vận hành tác nghiệp',
+          title: '1. Kế hoạch',
           items: [
-            { key: 'booking', label: 'Booking KOC', icon: Users },
-            { key: 'koc-listing', label: 'Listing & Air Video', icon: Film },
-            { key: 'koc-master', label: 'Danh bạ KOC Master', icon: Users },
-            { key: 'content', label: 'Kịch bản video', icon: FileText },
             { key: 'input-plan', label: 'Kế hoạch tháng', icon: Calendar },
-            { key: 'sample-tracker', label: 'Hàng mẫu', icon: Package },
-            { key: 'push-products', label: 'Sản phẩm đẩy', icon: TrendingUp },
           ],
         },
         {
-          title: 'Hiệu suất & Tham chiếu',
+          title: '2. Vận hành Booking & KOC',
           items: [
+            { key: 'booking', label: 'Quản lý Booking', icon: Users },
+            { key: 'content', label: 'Kịch bản video', icon: FileText },
+            { key: 'koc-master', label: 'Danh bạ KOC Master', icon: Users },
+          ],
+        },
+        {
+          title: '3. Hàng mẫu & Đánh giá',
+          items: [
+            { key: 'sample-tracker', label: 'Hàng mẫu', icon: Package },
             { key: 'performance-p3', label: 'Đánh giá 4P & thưởng', icon: Coins },
             { key: 'brand-knowledge', label: 'Hướng dẫn nhãn hàng', icon: BookOpen },
           ],

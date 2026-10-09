@@ -599,25 +599,19 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
       {/* ========================================================================= */}
       {activeTab === 'MINDMAP' && (
         <div className="space-y-4 animate-in fade-in duration-150">
-          <div className="bg-gradient-to-r from-blue-900 to-indigo-900 text-white p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-blue-500/20 border border-blue-400/30 flex items-center justify-center text-blue-300 shrink-0">
-                <GitFork className="w-5 h-5" />
+          <div className="bg-white border border-slate-200 px-4 py-3 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-600 shrink-0">
+                <GitFork className="w-4 h-4" />
               </div>
               <div>
-                <h2 className="text-sm font-semibold flex items-center gap-2">
-                  Sơ Đồ Dữ Liệu Mindmap Cây Phân Cấp Gian Hàng & Nhãn Hàng
-                  <span className="text-2xs font-normal px-2 py-0.5 rounded-full bg-blue-500/30 border border-blue-400/40 text-blue-200">
-                    4 Tầng Trực Quan
-                  </span>
+                <h2 className="text-xs font-semibold text-slate-900 flex items-center gap-2">
+                  Sơ đồ cây phân cấp: Nhãn hàng → Gian hàng → Nhân sự phụ trách → Doanh thu
                 </h2>
-                <p className="text-xs text-blue-200 mt-0.5">
-                  Trực quan hóa cấu trúc: Nhãn hàng (Brand) → Gian hàng sàn (TikTok Shop, Shopee, Lazada) → Nhân sự PIC phụ trách (Chính & Hỗ trợ) → Danh mục Hero SKU & Doanh thu.
+                <p className="text-2xs text-slate-500">
+                  Nhấn vào từng node để mở rộng hoặc thu gọn nhánh dữ liệu
                 </p>
               </div>
-            </div>
-            <div className="text-2xs text-slate-300 bg-white/10 px-3 py-1.5 rounded-lg border border-white/10 shrink-0">
-              Nhấn vào từng node để mở rộng / thu gọn nhánh
             </div>
           </div>
 

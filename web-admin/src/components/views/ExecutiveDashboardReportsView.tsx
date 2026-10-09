@@ -978,46 +978,35 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
     <div className="space-y-6">
       {/* ========================================================================= */}
       {/* HEADER & PERIOD FILTER BAR                                                */}
-      {/* ========================================================================= */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2.5 flex-wrap">
-              <span className="px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider bg-indigo-50 text-indigo-700 border border-indigo-200 flex items-center gap-1.5">
-                <LayoutDashboard className="w-3.5 h-3.5" />
-                Executive BI & Detailed Analytics
-              </span>
-              <span className="text-xs text-slate-500 font-mono">
-                Cập nhật: {new Date().toLocaleTimeString('vi-VN')} (Ngày {currentDayInMonth}/{totalDaysInMonth} của chu kỳ)
-              </span>
-            </div>
-            <h1 className="text-xl font-bold text-slate-900 mt-1">
-              Phân Hệ Dashboard Điều Hành & Trung Tâm Báo Cáo Đa Chiều
-            </h1>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Theo dõi chi tiết theo thời gian thực về: <strong>Tiến độ nhân sự</strong>, <strong>Sản lượng Air Video</strong>, <strong>Tốc độ đốt ngân sách (Burn Rate)</strong>, và <strong>Đối soát tài chính</strong>.
-            </p>
+      {/* THANH ĐIỀU KHIỂN & BỘ LỌC BÁO CÁO TINH GỌN */}
+      <div className="bg-white rounded-xl border border-slate-200 px-4 py-3 shadow-xs">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-slate-800">Tiến độ tháng:</span>
+            <span className="text-xs text-slate-500 font-mono">
+              Ngày {currentDayInMonth}/{totalDaysInMonth} (Pacing chuẩn: {expectedPacingPct}%)
+            </span>
           </div>
 
-          {/* Period & Filter Selectors */}
+          {/* Bộ chọn kỳ & bộ lọc */}
           <div className="flex items-center gap-2 flex-wrap">
-            <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg p-1 text-xs">
-              <Calendar className="w-3.5 h-3.5 text-slate-500 ml-1" />
+            <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-xs">
+              <Calendar className="w-3.5 h-3.5 text-slate-500" />
               <select
                 value={selectedPeriod}
                 onChange={e => setSelectedPeriod(e.target.value)}
-                className="bg-transparent font-medium text-slate-800 focus:outline-none pr-2 cursor-pointer"
+                className="bg-transparent font-medium text-slate-800 focus:outline-none pr-1 cursor-pointer"
               >
-                <option value="2026-10">Tháng 10/2026 (Hiện tại - Ngày 8/31)</option>
+                <option value="2026-10">Tháng 10/2026 (Ngày 8/31)</option>
                 <option value="2026-09">Tháng 09/2026 (Đã chốt)</option>
-                <option value="2026-Q4">Quý 4/2026 (Chiến dịch Mega)</option>
+                <option value="2026-Q4">Quý 4/2026 (Mega)</option>
               </select>
             </div>
 
             <select
               value={selectedBrand}
               onChange={e => setSelectedBrand(e.target.value)}
-              className="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-2 text-slate-700 font-medium focus:outline-none"
+              className="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700 font-medium focus:outline-none cursor-pointer"
             >
               <option value="ALL">Tất cả Nhãn Hàng ({brands.length || 7})</option>
               {brands.map(b => (
@@ -1028,10 +1017,10 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
             <select
               value={selectedChannel}
               onChange={e => setSelectedChannel(e.target.value)}
-              className="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-2 text-slate-700 font-medium focus:outline-none"
+              className="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700 font-medium focus:outline-none cursor-pointer"
             >
-              <option value="ALL">Tất cả Kênh Sàn</option>
-              <option value="TIKTOK">TikTok Shop (Core)</option>
+              <option value="ALL">Tất cả Sàn</option>
+              <option value="TIKTOK">TikTok Shop</option>
               <option value="SHOPEE">Shopee Mall</option>
               <option value="LAZADA">Lazada</option>
             </select>
@@ -1040,10 +1029,10 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
               type="button"
               disabled={isExporting}
               onClick={() => handleExportExcel('Bao_Cao_Tong_Hop_Executive_Full')}
-              className="btn-md bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition shadow-xs cursor-pointer"
+              className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition shadow-xs cursor-pointer"
             >
               <Download className="w-3.5 h-3.5 text-rose-300" />
-              <span>{isExporting ? 'Đang xuất...' : 'Xuất Excel Full Sheets'}</span>
+              <span>{isExporting ? 'Đang xuất...' : 'Xuất Excel'}</span>
             </button>
           </div>
         </div>
