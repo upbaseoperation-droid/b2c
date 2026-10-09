@@ -46,7 +46,8 @@ import {
   X,
   ChevronLeft,
   MessageSquare,
-  BadgeCheck
+  BadgeCheck,
+  SendHorizonal
 } from 'lucide-react';
 import { 
   InputPlanBreakdownState, 
@@ -58,7 +59,8 @@ import {
   WeeklyStorePlan411,
   PlanDiscussionMessage,
   PlanDiscussionRole,
-  MonthlyPlanStatus
+  MonthlyPlanStatus,
+  StorePortfolioItem
 } from '../../lib/types';
 import { 
   BENCHMARK_COSTS, 
@@ -77,6 +79,8 @@ import { PlanDiscussionHub } from './PlanDiscussionHub';
 
 interface InputPlanBreakdownViewProps {
   currentUser?: UserProfile;
+  storePortfolios?: StorePortfolioItem[];
+  onUpdateStore?: (store: StorePortfolioItem) => void;
   onNotify?: (msg: string) => void;
   onGenerateDealsFromPlan?: (slots: StaffDetailedPlanItem[]) => void;
   onApplyPlanToWeeklyStore?: (planData: WeeklyStorePlan411) => void;
@@ -85,6 +89,8 @@ interface InputPlanBreakdownViewProps {
 
 export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
   currentUser,
+  storePortfolios,
+  onUpdateStore,
   onNotify,
   onGenerateDealsFromPlan,
   onApplyPlanToWeeklyStore,
@@ -146,6 +152,33 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
   // State Modal Phân Bổ Kế Hoạch Cho Team của bạn PIC
   const [isAllocationModalOpen, setIsAllocationModalOpen] = useState(false);
   const [allocationFilterChannel, setAllocationFilterChannel] = useState<'ALL' | InputPlanChannelType>('ALL');
+
+  // State Gửi Duyệt Quản Lý sau khi trao đổi với Growth
+  const [isSubmitToManagerModalOpen, setIsSubmitToManagerModalOpen] = useState<boolean>(false);
+  const [growthAlignedConfirm, setGrowthAlignedConfirm] = useState<boolean>(true);
+  const [submissionNote, setSubmissionNote] = useState<string>('');
+
+  const handleSubmitPlanToManager = () => {
+    const actor = currentUser?.name || planState.pic || 'Nhân viên Booking';
+    const now = new Date().toISOString();
+    const finalNote = submissionNote.trim() || `Đã trao đổi thống nhất với Growth (${planState.growthPic || 'Growth Lead'}) về các chỉ số GMV và ngân sách B2C. Kính gửi Quản lý phê duyệt.`;
+    const log = `Nhân viên (${actor}) đã GỬI DUYỆT QUẢN LÝ sau khi thống nhất chỉ số với Growth team: "${finalNote}"`;
+
+    handleStatusChangeForPlan(planState.id, 'PENDING_APPROVAL', log, finalNote);
+
+    setPlanState(prev => ({
+      ...prev,
+      status: 'PENDING_APPROVAL',
+      growthAlignmentStatus: 'ĐÃ_THỐNG_NHẤT',
+      growthAlignmentNotes: finalNote,
+      submittedAt: now,
+      submittedBy: actor
+    }));
+
+    setIsSubmitToManagerModalOpen(false);
+    setSubmissionNote('');
+    notify(`Đã gửi duyệt Kế hoạch "${planState.title}" lên Quản lý thành công!`);
+  };
 
   const WEEK_OPTIONS = [
     'W40 [25.09 - 01.10]',
@@ -645,6 +678,8 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
     return (
       <MonthlyPlanHub
         plans={monthlyPlans}
+        storePortfolios={storePortfolios}
+        onUpdateStore={onUpdateStore}
         currentUser={currentUser}
         onNotify={notify}
         onSelectPlan={(selected) => {
@@ -740,6 +775,66 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
             ))}
           </select>
 
+          {/* NÚT GỬI DUYỆT QUẢN LÝ HOẶC TRẠNG THÁI DUYỆT TRÊN HEADER */}
+          {planState.status === 'PENDING_APPROVAL' ? (
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-500/20 text-blue-300 border border-blue-400/30 text-xs font-semibold">
+                <Clock className="w-3.5 h-3.5 animate-spin" />
+                <span>Chờ Quản Lý Duyệt</span>
+              </span>
+              {/* Nếu là Manager hoặc Role LEAD thì có nút Phê Duyệt / Yêu Cầu Sửa */}
+              {(['ADMIN', 'MANAGER', 'LEAD'].includes(currentUser?.role || '') || currentRole === 'LEAD') && (
+                <>
+                  <button
+                    onClick={() => {
+                      const log = `Quản lý (${currentUser?.name || 'Manager'}) đã PHÊ DUYỆT CHÍNH THỨC kế hoạch.`;
+                      handleStatusChangeForPlan(planState.id, 'LEAD_APPROVED', log);
+                      setPlanState(prev => ({ ...prev, status: 'LEAD_APPROVED' }));
+                      notify(`Đã phê duyệt kế hoạch thành công!`);
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold text-xs shadow-md transition-all cursor-pointer"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>Duyệt Kế Hoạch</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      const reason = prompt('Nhập lý do / nội dung yêu cầu nhân viên chỉnh sửa:') || '';
+                      if (reason.trim()) {
+                        const log = `Quản lý (${currentUser?.name || 'Manager'}) YÊU CẦU CHỈNH SỬA: "${reason}"`;
+                        handleStatusChangeForPlan(planState.id, 'REVISION_REQUESTED', log, reason);
+                        setPlanState(prev => ({ ...prev, status: 'REVISION_REQUESTED' }));
+                        notify(`Đã gửi yêu cầu chỉnh sửa cho nhân viên!`);
+                      }
+                    }}
+                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 text-xs font-semibold transition cursor-pointer"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>Yêu Cầu Sửa</span>
+                  </button>
+                </>
+              )}
+            </div>
+          ) : ['APPROVED', 'LEAD_APPROVED', 'BRAND_APPROVED', 'IN_EXECUTION'].includes(planState.status || '') ? (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 text-xs font-semibold">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Đã Phê Duyệt</span>
+            </span>
+          ) : (
+            <button
+              onClick={() => {
+                setSubmissionNote(`Em đã phân rã xong 4 kênh theo đúng chỉ tiêu GMV (${(planState.targetGmv / 1000000).toLocaleString('vi-VN')} Tr) và ngân sách trần (${(planState.totalTargetBudget / 1000000).toLocaleString('vi-VN')} Tr) đã thống nhất với Growth Lead. Kính gửi Quản lý phê duyệt giải ngân.`);
+                setGrowthAlignedConfirm(true);
+                setIsSubmitToManagerModalOpen(true);
+              }}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-lg shadow-indigo-600/30 transition-all cursor-pointer active:scale-95 border border-indigo-400/40"
+              title="Gửi duyệt kế hoạch lên Quản lý sau khi đã trao đổi thống nhất với Growth"
+            >
+              <SendHorizonal className="w-3.5 h-3.5" />
+              <span>Gửi Duyệt Quản Lý</span>
+            </button>
+          )}
+
           <button
             onClick={() => {
               setMonthlyPlans(prev => prev.map(p => p.id === planState.id ? { ...planState, updatedAt: new Date().toISOString() } : p));
@@ -750,6 +845,63 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
             <Save className="w-3.5 h-3.5" />
             Lưu kế hoạch
           </button>
+        </div>
+      </div>
+
+      {/* KHỐI PHỐI HỢP & THỐNG NHẤT VỚI GROWTH (SOP PHÂN RÃ PLAN) */}
+      <div className="bg-gradient-to-r from-amber-50/90 via-orange-50/50 to-indigo-50/80 rounded-2xl border border-amber-200/90 p-4 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center font-bold shadow-xs shrink-0">
+            <Users className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-slate-900">
+                Phối Hợp Chỉ Số Mục Tiêu Với Growth Team
+              </span>
+              <span className="text-2xs font-semibold px-2 py-0.5 rounded-full bg-white text-amber-800 border border-amber-300">
+                SOP Phân Rã B2C
+              </span>
+            </div>
+            <p className="text-xs text-slate-600 mt-0.5">
+              Growth Lead phụ trách: <strong className="text-slate-900 font-semibold">{planState.growthPic || 'Trần Thị Ánh (Growth Lead)'}</strong> • Sau khi trao đổi thống nhất GMV trần & ngân sách, nhân viên bấm <span className="font-semibold text-indigo-700">"Gửi Duyệt Quản Lý"</span>.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Trạng thái trao đổi với Growth */}
+          <div className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-xl border border-amber-200 shadow-2xs text-xs">
+            <span className="text-slate-500 font-medium">Trao đổi Growth:</span>
+            <select
+              value={planState.growthAlignmentStatus || 'ĐÃ_THỐNG_NHẤT'}
+              onChange={(e) => {
+                const newStatus = e.target.value as 'CHƯA_TRAO_ĐỔI' | 'ĐANG_TRAO_ĐỔI' | 'ĐÃ_THỐNG_NHẤT';
+                setPlanState(prev => ({ ...prev, growthAlignmentStatus: newStatus }));
+                notify(`Đã cập nhật trạng thái trao đổi với Growth: ${newStatus}`);
+              }}
+              className="font-bold text-slate-800 bg-transparent focus:outline-none cursor-pointer"
+            >
+              <option value="CHƯA_TRAO_ĐỔI">Chưa trao đổi</option>
+              <option value="ĐANG_TRAO_ĐỔI">Đang trao đổi...</option>
+              <option value="ĐÃ_THỐNG_NHẤT">Đã thống nhất chỉ số</option>
+            </select>
+          </div>
+
+          {/* Nút bấm nhanh Gửi duyệt nếu đang ở DRAFT hoặc REVISION */}
+          {(!planState.status || planState.status === 'DRAFT' || planState.status === 'REVISION_REQUESTED') && (
+            <button
+              onClick={() => {
+                setSubmissionNote(`Em đã phân rã xong 4 kênh theo đúng chỉ tiêu GMV (${(planState.targetGmv / 1000000).toLocaleString('vi-VN')} Tr) và ngân sách trần (${(planState.totalTargetBudget / 1000000).toLocaleString('vi-VN')} Tr) đã thống nhất với Growth Lead. Kính gửi Quản lý phê duyệt.`);
+                setGrowthAlignedConfirm(true);
+                setIsSubmitToManagerModalOpen(true);
+              }}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md transition-all active:scale-95 cursor-pointer"
+            >
+              <SendHorizonal className="w-3.5 h-3.5" />
+              <span>Gửi Duyệt Quản Lý</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -2027,6 +2179,107 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                   <span>Xác nhận & giao việc cho Team</span>
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: XÁC NHẬN GỬI DUYỆT QUẢN LÝ */}
+      {isSubmitToManagerModalOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto animate-in fade-in">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-5 animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold">
+                  <SendHorizonal className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-base text-slate-900">Gửi Kế Hoạch Lên Quản Lý Duyệt</h3>
+                  <p className="text-2xs text-slate-500">Trình duyệt kế hoạch phân rã chu kỳ {planState.month}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsSubmitToManagerModalOpen(false)}
+                className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Tóm tắt chỉ số kế hoạch */}
+            <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200 space-y-2 text-xs">
+              <div className="flex justify-between">
+                <span className="text-slate-500">Gian hàng / Brand:</span>
+                <strong className="text-slate-900 font-semibold">{planState.brandName}</strong>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Chu kỳ áp dụng:</span>
+                <span className="font-semibold text-slate-800">{planState.month} ({planState.week})</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Ngân sách trần phân rã:</span>
+                <strong className="text-indigo-600 font-bold">{formatVndShort(planState.totalTargetBudget)}</strong>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Số lượng nội dung / KOC:</span>
+                <span className="font-semibold text-slate-800">{planState.totalTargetContents} nội dung</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Doanh thu GMV mục tiêu:</span>
+                <strong className="text-emerald-600 font-bold">{formatVndShort(planState.targetGmv)}</strong>
+              </div>
+            </div>
+
+            {/* Xác nhận trao đổi với Growth */}
+            <div className="bg-indigo-50/70 p-3.5 rounded-2xl border border-indigo-200 space-y-2">
+              <label className="flex items-start gap-2.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={growthAlignedConfirm}
+                  onChange={(e) => setGrowthAlignedConfirm(e.target.checked)}
+                  className="mt-0.5 rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4 cursor-pointer"
+                />
+                <span className="text-xs text-indigo-950 font-medium leading-relaxed">
+                  Tôi xác nhận <strong>ĐÃ TRAO ĐỔI VÀ THỐNG NHẤT</strong> các chỉ số mục tiêu (ngân sách, GMV, số lượng KOC) với Growth Lead <strong>({planState.growthPic || 'Growth Team'})</strong>.
+                </span>
+              </label>
+            </div>
+
+            {/* Ghi chú trình duyệt */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                Ghi chú trình Quản lý phê duyệt:
+              </label>
+              <textarea
+                rows={3}
+                value={submissionNote}
+                onChange={(e) => setSubmissionNote(e.target.value)}
+                placeholder="Nhập ghi chú hoặc căn cứ chốt số với Growth..."
+                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setIsSubmitToManagerModalOpen(false)}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 cursor-pointer"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                type="button"
+                disabled={!growthAlignedConfirm}
+                onClick={handleSubmitPlanToManager}
+                className={`inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl font-bold text-xs text-white shadow-md transition-all ${
+                  growthAlignedConfirm
+                    ? 'bg-indigo-600 hover:bg-indigo-700 active:scale-95 cursor-pointer'
+                    : 'bg-slate-300 cursor-not-allowed'
+                }`}
+              >
+                <SendHorizonal className="w-4 h-4" />
+                <span>Xác Nhận & Gửi Duyệt Quản Lý</span>
+              </button>
             </div>
           </div>
         </div>

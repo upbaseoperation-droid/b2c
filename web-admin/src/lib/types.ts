@@ -1547,6 +1547,10 @@ export interface StorePortfolioItem {
   activeContentsCount?: number;
   createdAt?: string;
 
+  // Tùy chọn B2C Quản trị Kế hoạch
+  isB2cManaged?: boolean; // Marketing B2C có phụ trách gian hàng này không (mặc định true)
+  requiresB2cPlan?: boolean; // Gian hàng này có cần làm kế hoạch B2C tháng không (mặc định true)
+
   // Upbase Master Data (5.1 Stores)
   storeOperation?: string; // Tên nhận diện vận hành: Brand_Platform_Service
   servicePackage?: string; // E2E-S, Live-S, MCN-S, Standard...
@@ -1912,10 +1916,16 @@ export interface InputPlanBreakdownState {
   id: string;
   title: string;
   brandName: string;
+  storeId?: string; // ID gian hàng gắn với kế hoạch
+  storeName?: string; // Tên gian hàng gắn với kế hoạch
   month: string; // Chu kỳ tháng (e.g. '2026/10', '2026/09', '2026/08', '2026/11')
   week: string;
   pic: string;
   growthPic?: string; // Nhân sự Growth phụ trách thẩm định
+  growthAlignmentStatus?: 'CHƯA_TRAO_ĐỔI' | 'ĐANG_TRAO_ĐỔI' | 'ĐÃ_THỐNG_NHẤT'; // Trạng thái trao đổi với Growth
+  growthAlignmentNotes?: string;
+  submittedAt?: string;
+  submittedBy?: string;
   totalTargetBudget: number; // Ngân sách tổng ban đầu (VNĐ)
   totalTargetContents: number; // Số lượng nội dung tổng ban đầu
   targetGmv: number; // GMV mục tiêu

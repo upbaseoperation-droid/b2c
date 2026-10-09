@@ -5328,6 +5328,8 @@ const DEFAULT_SAMPLE_STORES: StorePortfolioItem[] = [
     activeCandidatesCount: 18,
     activeBookingsCount: 12,
     activeContentsCount: 22,
+    isB2cManaged: true,
+    requiresB2cPlan: true,
     createdAt: '2026-01-15'
   },
   {
@@ -5350,6 +5352,8 @@ const DEFAULT_SAMPLE_STORES: StorePortfolioItem[] = [
     activeCandidatesCount: 14,
     activeBookingsCount: 9,
     activeContentsCount: 12,
+    isB2cManaged: true,
+    requiresB2cPlan: true,
     createdAt: '2026-03-01'
   },
   {
@@ -5372,6 +5376,8 @@ const DEFAULT_SAMPLE_STORES: StorePortfolioItem[] = [
     activeCandidatesCount: 12,
     activeBookingsCount: 8,
     activeContentsCount: 15,
+    isB2cManaged: true,
+    requiresB2cPlan: true,
     createdAt: '2026-02-10'
   },
   {
@@ -5394,6 +5400,8 @@ const DEFAULT_SAMPLE_STORES: StorePortfolioItem[] = [
     activeCandidatesCount: 25,
     activeBookingsCount: 16,
     activeContentsCount: 28,
+    isB2cManaged: true,
+    requiresB2cPlan: true,
     createdAt: '2025-11-20'
   },
   {
@@ -5412,10 +5420,12 @@ const DEFAULT_SAMPLE_STORES: StorePortfolioItem[] = [
     accountOwnerName: 'Hoàng Long',
     b2cOwnerName: 'Đặng Mai Hà Linh, Nguyễn Ngọc Huyền',
     b2cOwners: ['Đặng Mai Hà Linh', 'Nguyễn Ngọc Huyền'], // 2 nhân viên cùng phụ trách 1 shop
-    assignmentNotes: 'Hà Linh phụ trách TikTok Shop chính thức; Huyền phụ trách Shopee Mall & Seeding',
+    assignmentNotes: 'Brand tự vận hành chiến dịch & booking in-house; Marketing B2C miễn trừ làm plan',
     activeCandidatesCount: 16,
     activeBookingsCount: 11,
     activeContentsCount: 18,
+    isB2cManaged: false,
+    requiresB2cPlan: false,
     createdAt: '2026-02-15'
   },
   {
@@ -5438,6 +5448,8 @@ const DEFAULT_SAMPLE_STORES: StorePortfolioItem[] = [
     activeCandidatesCount: 20,
     activeBookingsCount: 14,
     activeContentsCount: 24,
+    isB2cManaged: true,
+    requiresB2cPlan: true,
     createdAt: '2026-03-10'
   }
 ];
@@ -5445,7 +5457,15 @@ const DEFAULT_SAMPLE_STORES: StorePortfolioItem[] = [
 export const INITIAL_STORE_PORTFOLIOS: StorePortfolioItem[] = [
   ...DEFAULT_SAMPLE_STORES,
   ...LIVE_STORE_PORTFOLIOS_MASTER.filter(s => !DEFAULT_SAMPLE_STORES.some(d => d.storeName === s.storeName))
-];
+].map((store, index) => ({
+  ...store,
+  isB2cManaged: store.isB2cManaged !== undefined 
+    ? store.isB2cManaged 
+    : (index % 8 !== 0), // Giả lập phần lớn cần plan B2C, 1 vài shop brand tự vận hành
+  requiresB2cPlan: store.requiresB2cPlan !== undefined 
+    ? store.requiresB2cPlan 
+    : (index % 8 !== 0)
+}));
 
 // MASTER DATA DANH BẠ NHÂN SỰ & QUẢN LÝ PHÂN CÔNG
 export const STAFF_MASTER_DIRECTORY: StaffMasterMember[] = [

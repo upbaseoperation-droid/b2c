@@ -35,36 +35,63 @@ import {
   MessageSquare,
   ShieldCheck,
   BadgeCheck,
-  AlertTriangle
+  AlertTriangle,
+  Store,
+  CheckSquare,
+  Square,
+  ToggleLeft,
+  ToggleRight,
+  FileText,
+  FileCheck,
+  SendHorizonal,
+  Clock3,
+  Bell,
+  Zap,
+  HelpCircle,
+  ExternalLink
 } from 'lucide-react';
 import { 
   InputPlanBreakdownState, 
   MonthlyPlanStatus, 
   PlanDiscussionMessage,
-  UserProfile 
+  UserProfile,
+  StorePortfolioItem 
 } from '../../lib/types';
 import { AVAILABLE_MONTHS } from '../../lib/monthlyPlanData';
 import { autoBalancePlanItems, INITIAL_INPUT_PLAN_ITEMS } from '../../lib/inputPlanDefaults';
+import { INITIAL_STORE_PORTFOLIOS } from '../../lib/mockData';
 import { PlanHistoryModal } from './PlanHistoryModal';
+
+interface StoreGovernanceItem {
+  store: StorePortfolioItem;
+  isB2c: boolean;
+  plan: InputPlanBreakdownState | null;
+  hasPlan: boolean;
+  status: MonthlyPlanStatus | 'MISSING';
+}
 
 interface MonthlyPlanHubProps {
   plans: InputPlanBreakdownState[];
+  storePortfolios?: StorePortfolioItem[];
   onSelectPlan: (plan: InputPlanBreakdownState) => void;
   onCreatePlan: (newPlan: InputPlanBreakdownState) => void;
   onClonePlan: (sourcePlan: InputPlanBreakdownState, targetMonth: string) => void;
   onUpdatePlanStatus?: (planId: string, newStatus: MonthlyPlanStatus, logMessage?: string, note?: string) => void;
   onSendMessage?: (planId: string, msg: Omit<PlanDiscussionMessage, 'id' | 'timestamp'>) => void;
+  onUpdateStore?: (store: StorePortfolioItem) => void;
   currentUser?: UserProfile;
   onNotify?: (msg: string) => void;
 }
 
 export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
   plans,
+  storePortfolios,
   onSelectPlan,
   onCreatePlan,
   onClonePlan,
   onUpdatePlanStatus,
   onSendMessage,
+  onUpdateStore,
   currentUser,
   onNotify
 }) => {
@@ -75,6 +102,165 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
   const [selectedPic, setSelectedPic] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [viewMode, setViewMode] = useState<'GRID' | 'TABLE'>('GRID');
+
+  // Hub View Mode: 'STORE_GOVERNANCE' (Quản trị trạng thái gửi duyệt plan theo tháng trên gian hàng active) vs 'PLAN_CATALOG' (Danh sách plan)
+  const [activeHubTab, setActiveHubTab] = useState<'STORE_GOVERNANCE' | 'PLAN_CATALOG'>('STORE_GOVERNANCE');
+
+  // Lọc cho Ma Trận Gian Hàng
+  const [storeGovernanceFilter, setStoreGovernanceFilter] = useState<'ALL' | 'B2C_ONLY' | 'MISSING_PLAN' | 'PENDING_APPROVAL' | 'APPROVED' | 'EXEMPT'>('ALL');
+  const [storeSearchQuery, setStoreSearchQuery] = useState<string>('');
+
+  // Danh bạ gian hàng có hiệu lực
+  const effectiveStores = useMemo<StorePortfolioItem[]>(() => {
+    return (storePortfolios && storePortfolios.length > 0) ? storePortfolios : INITIAL_STORE_PORTFOLIOS;
+  }, [storePortfolios]);
+
+  // Các gian hàng Active
+  const activeStores = useMemo<StorePortfolioItem[]>(() => {
+    return effectiveStores.filter((s: StorePortfolioItem) => s.accountStatus === 'ACTIVE');
+  }, [effectiveStores]);
+
+  // Helper matching store và plan
+  const findPlanForStore = (store: StorePortfolioItem, month: string): InputPlanBreakdownState | null => {
+    return plans.find(p => {
+      const matchMonth = month === 'ALL' || p.month === month;
+      if (!matchMonth) return false;
+      if (p.storeId && p.storeId === store.id) return true;
+      if (p.storeName && p.storeName.trim().toLowerCase() === store.storeName.trim().toLowerCase()) return true;
+      
+      const b1 = (p.brandName || '').toLowerCase();
+      const b2 = (store.brandName || '').toLowerCase();
+      return b1.length >= 2 && b2.length >= 2 && (b1.includes(b2) || b2.includes(b1));
+    }) || null;
+  };
+
+  // Ma trận từng gian hàng và plan trong tháng
+  const storeGovernanceList = useMemo<StoreGovernanceItem[]>(() => {
+    return activeStores.map((store: StorePortfolioItem) => {
+      const isB2c = store.isB2cManaged !== false && store.requiresB2cPlan !== false;
+      const plan = findPlanForStore(store, selectedMonth);
+      return {
+        store,
+        isB2c,
+        plan,
+        hasPlan: !!plan,
+        status: (plan?.status || 'MISSING') as MonthlyPlanStatus | 'MISSING',
+      };
+    });
+  }, [activeStores, selectedMonth, plans]);
+
+  // Bộ chỉ số KPI Quản Trị Gửi Duyệt Plan Theo Tháng
+  const governanceStats = useMemo(() => {
+    const totalActive = activeStores.length;
+    const b2cList = storeGovernanceList.filter((item: StoreGovernanceItem) => item.isB2c);
+    const exemptList = storeGovernanceList.filter((item: StoreGovernanceItem) => !item.isB2c);
+
+    const totalB2cManaged = b2cList.length;
+    const totalExempt = exemptList.length;
+
+    const withPlan = b2cList.filter((item: StoreGovernanceItem) => item.hasPlan);
+    const missingPlan = b2cList.filter((item: StoreGovernanceItem) => !item.hasPlan);
+
+    const approved = b2cList.filter((item: StoreGovernanceItem) => item.plan && ['LEAD_APPROVED', 'BRAND_APPROVED', 'APPROVED', 'IN_EXECUTION', 'COMPLETED'].includes(item.plan.status || ''));
+    const pendingApproval = b2cList.filter((item: StoreGovernanceItem) => item.plan && item.plan.status === 'PENDING_APPROVAL');
+    const pendingPreApproval = b2cList.filter((item: StoreGovernanceItem) => item.plan && (item.plan.status === 'PENDING_PRE_APPROVAL' || item.plan.status === 'PRE_APPROVED'));
+    const revisionRequested = b2cList.filter((item: StoreGovernanceItem) => item.plan && item.plan.status === 'REVISION_REQUESTED');
+    const draft = b2cList.filter((item: StoreGovernanceItem) => item.plan && (item.plan.status === 'DRAFT' || !item.plan.status));
+
+    const coveragePct = totalB2cManaged > 0 ? Math.round((withPlan.length / totalB2cManaged) * 100) : 0;
+    const approvedPct = totalB2cManaged > 0 ? Math.round((approved.length / totalB2cManaged) * 100) : 0;
+
+    return {
+      totalActive,
+      totalB2cManaged,
+      totalExempt,
+      countWithPlan: withPlan.length,
+      countMissingPlan: missingPlan.length,
+      countApproved: approved.length,
+      countPendingApproval: pendingApproval.length,
+      countPendingPreApproval: pendingPreApproval.length,
+      countRevisionRequested: revisionRequested.length,
+      countDraft: draft.length,
+      coveragePct,
+      approvedPct
+    };
+  }, [activeStores, storeGovernanceList]);
+
+  // Lọc danh sách ma trận gian hàng
+  const filteredStoreGovernance = useMemo<StoreGovernanceItem[]>(() => {
+    return storeGovernanceList.filter((item: StoreGovernanceItem) => {
+      // Filter scope
+      if (storeGovernanceFilter === 'B2C_ONLY' && !item.isB2c) return false;
+      if (storeGovernanceFilter === 'EXEMPT' && item.isB2c) return false;
+      if (storeGovernanceFilter === 'MISSING_PLAN' && (!item.isB2c || item.hasPlan)) return false;
+      if (storeGovernanceFilter === 'PENDING_APPROVAL' && (!item.plan || item.plan.status !== 'PENDING_APPROVAL')) return false;
+      if (storeGovernanceFilter === 'APPROVED' && (!item.plan || !['LEAD_APPROVED', 'BRAND_APPROVED', 'APPROVED', 'IN_EXECUTION', 'COMPLETED'].includes(item.plan.status || ''))) return false;
+
+      // Search query
+      if (storeSearchQuery.trim()) {
+        const q = storeSearchQuery.toLowerCase();
+        const sName = (item.store.storeName || '').toLowerCase();
+        const bName = (item.store.brandName || '').toLowerCase();
+        const pOwner = (item.store.b2cOwnerName || '').toLowerCase();
+        const pPlatform = (item.store.platform || '').toLowerCase();
+        if (!sName.includes(q) && !bName.includes(q) && !pOwner.includes(q) && !pPlatform.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [storeGovernanceList, storeGovernanceFilter, storeSearchQuery]);
+
+  // Xử lý Toggle "Marketing B2C Phụ Trách & Cần Làm Plan"
+  const handleToggleB2cManaged = (store: StorePortfolioItem, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const currentVal = store.isB2cManaged !== false && store.requiresB2cPlan !== false;
+    const nextVal = !currentVal;
+    const updatedStore: StorePortfolioItem = {
+      ...store,
+      isB2cManaged: nextVal,
+      requiresB2cPlan: nextVal
+    };
+    if (onUpdateStore) {
+      onUpdateStore(updatedStore);
+    }
+    notify(
+      nextVal
+        ? `Đã BẬT: Gian hàng "${store.storeName}" thuộc diện Marketing B2C phụ trách & CẦN LÀM PLAN!`
+        : `Đã TẮT: Gian hàng "${store.storeName}" chuyển sang diện MIỄN TRỪ Plan B2C (Brand tự vận hành/Ads nội sàn).`
+    );
+  };
+
+  // Quản lý phê duyệt nhanh 1 click
+  const handleQuickApprovePlan = (planId: string, storeName: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onUpdatePlanStatus) {
+      onUpdatePlanStatus(
+        planId,
+        'LEAD_APPROVED',
+        `Quản lý / Trưởng phòng (${currentUser?.name || 'Lead'}) đã DUYỆT NHANH Kế hoạch gian hàng ${storeName} trên Dashboard Quản trị.`,
+        'Phê duyệt nhanh trên Dashboard Quản trị Gửi duyệt theo tháng.'
+      );
+    }
+    notify(`Đã phê duyệt thành công Kế hoạch cho gian hàng "${storeName}"!`);
+  };
+
+  // Tạo nhanh kế hoạch cho gian hàng
+  const handleCreatePlanForStore = (store: StorePortfolioItem, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setNewPlanMonth(selectedMonth === 'ALL' ? '2026/10' : selectedMonth);
+    setNewPlanBrand(store.brandName);
+    setNewPlanTitle(`Kế Hoạch B2C ${selectedMonth === 'ALL' ? '2026/10' : selectedMonth} - ${store.storeName}`);
+    setNewPlanPic(store.b2cOwners?.[0] || store.b2cOwnerName || currentUser?.name || 'Khánh Vy');
+    setNewPlanBudget(store.monthlyBudget || 120000000);
+    setNewPlanGmv(store.monthlyTargetGmv || 800000000);
+    setIsCreateModalOpen(true);
+  };
+
+  // Nhắc nhở nộp plan
+  const handleRemindSubmission = (store: StorePortfolioItem, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const pic = store.b2cOwners?.[0] || store.b2cOwnerName || 'Chuyên viên phụ trách B2C';
+    notify(`Đã gửi thông báo tự động đôn đốc gửi duyệt Plan tháng ${selectedMonth} tới ${pic} (Gian hàng: ${store.storeName}) qua Lark!`);
+  };
 
   // Modal State for New Plan
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -387,7 +573,618 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
         </div>
       </div>
 
-      {/* Chỉ số tháng, kèm xu hướng qua các tháng */}
+      {/* 3. EXECUTIVE PLAN SUBMISSION GOVERNANCE DASHBOARD */}
+      <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-6">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+          <div>
+            <div className="flex items-center gap-2.5">
+              <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-semibold shadow-xs">
+                <ShieldCheck className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="text-base font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                  <span>Dashboard Quản Trị Gửi Duyệt Kế Hoạch B2C</span>
+                  <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                    Chu kỳ: {selectedMonth === 'ALL' ? 'Toàn bộ các tháng' : selectedMonth}
+                  </span>
+                </h2>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Giám sát tiến độ lập & gửi duyệt plan trên toàn bộ các gian hàng Active. Gian hàng được tích chọn "Marketing B2C phụ trách" là đối tượng bắt buộc phải có plan được duyệt trước khi giải ngân.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Quick status counters */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-semibold">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Đã duyệt: {governanceStats.countApproved}</span>
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-50 text-blue-800 border border-blue-200 text-xs font-semibold">
+              <Clock className="w-3.5 h-3.5 text-blue-600" />
+              <span>Chờ quản lý duyệt: {governanceStats.countPendingApproval}</span>
+            </span>
+            {governanceStats.countMissingPlan > 0 && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50 text-rose-800 border border-rose-200 text-xs font-bold animate-pulse">
+                <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
+                <span>Chưa có plan: {governanceStats.countMissingPlan}</span>
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* 6 KPI CARDS */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5">
+          {/* KPI 1: Tổng gian hàng Active */}
+          <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 flex flex-col justify-between">
+            <div className="flex items-center justify-between text-slate-500 text-xs font-medium">
+              <span>Gian Hàng Active</span>
+              <Store className="w-4 h-4 text-slate-400" />
+            </div>
+            <div className="mt-2">
+              <span className="text-2xl font-black text-slate-900 tracking-tight">{governanceStats.totalActive}</span>
+              <span className="text-xs text-slate-400 ml-1">shop</span>
+            </div>
+            <div className="text-2xs text-slate-500 mt-1 font-medium">
+              Toàn hệ sinh thái UpBase
+            </div>
+          </div>
+
+          {/* KPI 2: B2C Phụ Trách & Cần Làm Plan */}
+          <div className="bg-indigo-50/60 p-4 rounded-2xl border border-indigo-100 flex flex-col justify-between">
+            <div className="flex items-center justify-between text-indigo-700 text-xs font-semibold">
+              <span>B2C Cần Làm Plan</span>
+              <CheckSquare className="w-4 h-4 text-indigo-600" />
+            </div>
+            <div className="mt-2">
+              <span className="text-2xl font-black text-indigo-900 tracking-tight">{governanceStats.totalB2cManaged}</span>
+              <span className="text-xs text-indigo-500 ml-1">/ {governanceStats.totalActive}</span>
+            </div>
+            <div className="text-2xs text-indigo-600/80 mt-1">
+              {governanceStats.totalExempt} shop miễn trừ plan
+            </div>
+          </div>
+
+          {/* KPI 3: Đã Có Plan Tháng */}
+          <div className="bg-blue-50/60 p-4 rounded-2xl border border-blue-100 flex flex-col justify-between">
+            <div className="flex items-center justify-between text-blue-700 text-xs font-semibold">
+              <span>Đã Có Plan Tháng</span>
+              <FileCheck className="w-4 h-4 text-blue-600" />
+            </div>
+            <div className="mt-2">
+              <span className="text-2xl font-black text-blue-900 tracking-tight">{governanceStats.countWithPlan}</span>
+              <span className="text-xs text-blue-500 ml-1">gian hàng</span>
+            </div>
+            <div className="text-2xs text-blue-600/80 mt-1">
+              Tỷ lệ nộp đạt {governanceStats.coveragePct}%
+            </div>
+          </div>
+
+          {/* KPI 4: Chưa Có Plan Tháng */}
+          <div className={`p-4 rounded-2xl border flex flex-col justify-between ${
+            governanceStats.countMissingPlan > 0
+              ? 'bg-amber-50/70 border-amber-200'
+              : 'bg-emerald-50/50 border-emerald-100'
+          }`}>
+            <div className={`flex items-center justify-between text-xs font-semibold ${
+              governanceStats.countMissingPlan > 0 ? 'text-amber-800' : 'text-emerald-700'
+            }`}>
+              <span>Chưa Có Plan</span>
+              <AlertCircle className={`w-4 h-4 ${governanceStats.countMissingPlan > 0 ? 'text-amber-600' : 'text-emerald-600'}`} />
+            </div>
+            <div className="mt-2">
+              <span className={`text-2xl font-black tracking-tight ${
+                governanceStats.countMissingPlan > 0 ? 'text-amber-900' : 'text-emerald-900'
+              }`}>{governanceStats.countMissingPlan}</span>
+              <span className="text-xs text-slate-400 ml-1">gian hàng</span>
+            </div>
+            <div className={`text-2xs font-semibold mt-1 ${
+              governanceStats.countMissingPlan > 0 ? 'text-amber-700' : 'text-emerald-600'
+            }`}>
+              {governanceStats.countMissingPlan > 0 ? 'Cần đôn đốc gửi duyệt' : 'Đã phủ 100% gian hàng'}
+            </div>
+          </div>
+
+          {/* KPI 5: Tỷ Lệ Phủ Plan (% Coverage) */}
+          <div className="bg-purple-50/60 p-4 rounded-2xl border border-purple-100 flex flex-col justify-between">
+            <div className="flex items-center justify-between text-purple-700 text-xs font-semibold">
+              <span>Tỷ Lệ Phủ Plan</span>
+              <TrendingUp className="w-4 h-4 text-purple-600" />
+            </div>
+            <div className="mt-2">
+              <span className="text-2xl font-black text-purple-900 tracking-tight">{governanceStats.coveragePct}%</span>
+            </div>
+            <div className="text-2xs text-purple-600/80 mt-1">
+              {governanceStats.countWithPlan}/{governanceStats.totalB2cManaged} shop cần plan
+            </div>
+          </div>
+
+          {/* KPI 6: Tỷ Lệ Đã Duyệt (% Approved) */}
+          <div className="bg-emerald-50/60 p-4 rounded-2xl border border-emerald-200 flex flex-col justify-between">
+            <div className="flex items-center justify-between text-emerald-800 text-xs font-semibold">
+              <span>Tỷ Lệ Đã Duyệt</span>
+              <ShieldCheck className="w-4 h-4 text-emerald-600" />
+            </div>
+            <div className="mt-2">
+              <span className="text-2xl font-black text-emerald-900 tracking-tight">{governanceStats.approvedPct}%</span>
+              <span className="text-xs text-emerald-600 ml-1">({governanceStats.countApproved} shop)</span>
+            </div>
+            <div className="text-2xs text-emerald-700 font-medium mt-1">
+              Đủ điều kiện triển khai
+            </div>
+          </div>
+        </div>
+
+        {/* TIẾN TRÌNH GỬI DUYỆT PHÂN ĐOẠN ĐA NĂNG */}
+        <div className="space-y-2 pt-2 border-t border-slate-100">
+          <div className="flex items-center justify-between text-xs font-semibold text-slate-700">
+            <span className="flex items-center gap-1.5">
+              <span>Tiến độ phê duyệt & phân bổ kế hoạch tháng {selectedMonth}:</span>
+              <span className="text-emerald-700 font-bold">{governanceStats.approvedPct}% hoàn tất</span>
+            </span>
+            <span className="text-slate-400 font-normal">
+              Mẫu số tính: {governanceStats.totalB2cManaged} gian hàng B2C phụ trách
+            </span>
+          </div>
+
+          {/* Segmented bar */}
+          <div className="h-3 w-full bg-slate-100 rounded-full overflow-hidden flex shadow-inner">
+            {governanceStats.countApproved > 0 && (
+              <div 
+                style={{ width: `${(governanceStats.countApproved / Math.max(governanceStats.totalB2cManaged, 1)) * 100}%` }}
+                className="bg-emerald-500 h-full transition-all"
+                title={`Đã duyệt: ${governanceStats.countApproved} gian hàng`}
+              />
+            )}
+            {governanceStats.countPendingApproval > 0 && (
+              <div 
+                style={{ width: `${(governanceStats.countPendingApproval / Math.max(governanceStats.totalB2cManaged, 1)) * 100}%` }}
+                className="bg-blue-500 h-full transition-all"
+                title={`Chờ duyệt: ${governanceStats.countPendingApproval} gian hàng`}
+              />
+            )}
+            {governanceStats.countPendingPreApproval > 0 && (
+              <div 
+                style={{ width: `${(governanceStats.countPendingPreApproval / Math.max(governanceStats.totalB2cManaged, 1)) * 100}%` }}
+                className="bg-teal-400 h-full transition-all"
+                title={`Sơ duyệt / Trao đổi: ${governanceStats.countPendingPreApproval} gian hàng`}
+              />
+            )}
+            {governanceStats.countRevisionRequested > 0 && (
+              <div 
+                style={{ width: `${(governanceStats.countRevisionRequested / Math.max(governanceStats.totalB2cManaged, 1)) * 100}%` }}
+                className="bg-rose-500 h-full transition-all"
+                title={`Cần hiệu chỉnh: ${governanceStats.countRevisionRequested} gian hàng`}
+              />
+            )}
+            {governanceStats.countDraft > 0 && (
+              <div 
+                style={{ width: `${(governanceStats.countDraft / Math.max(governanceStats.totalB2cManaged, 1)) * 100}%` }}
+                className="bg-slate-300 h-full transition-all"
+                title={`Bản nháp: ${governanceStats.countDraft} gian hàng`}
+              />
+            )}
+            {governanceStats.countMissingPlan > 0 && (
+              <div 
+                style={{ width: `${(governanceStats.countMissingPlan / Math.max(governanceStats.totalB2cManaged, 1)) * 100}%` }}
+                className="bg-amber-400 h-full transition-all"
+                title={`Chưa có plan: ${governanceStats.countMissingPlan} gian hàng`}
+              />
+            )}
+          </div>
+
+          {/* Chú thích màu sắc */}
+          <div className="flex flex-wrap items-center gap-4 text-2xs pt-1 text-slate-600">
+            <div className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+              <span>Đã duyệt ({governanceStats.countApproved})</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-blue-500" />
+              <span>Chờ duyệt Lead ({governanceStats.countPendingApproval})</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-teal-400" />
+              <span>Thống nhất Growth ({governanceStats.countPendingPreApproval})</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-rose-500" />
+              <span>Cần hiệu chỉnh ({governanceStats.countRevisionRequested})</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-slate-300" />
+              <span>Bản nháp ({governanceStats.countDraft})</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
+              <span>Chưa có plan ({governanceStats.countMissingPlan})</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 4. CHUYỂN ĐỔI GÓC NHÌN: MA TRẬN GIAN HÀNG vs DANH MỤC PLAN */}
+      <div className="flex flex-wrap items-center justify-between gap-4 bg-white p-2.5 rounded-2xl border border-slate-200 shadow-sm">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setActiveHubTab('STORE_GOVERNANCE')}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
+              activeHubTab === 'STORE_GOVERNANCE'
+                ? 'bg-indigo-600 text-white shadow-md'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+            }`}
+          >
+            <Store className="w-4 h-4" />
+            <span>Ma Trận Quản Trị Gian Hàng & Gửi Duyệt Plan</span>
+            <span className={`px-2 py-0.5 rounded-full text-2xs ${
+              activeHubTab === 'STORE_GOVERNANCE' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
+            }`}>
+              {governanceStats.totalActive} gian hàng
+            </span>
+          </button>
+
+          <button
+            onClick={() => setActiveHubTab('PLAN_CATALOG')}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
+              activeHubTab === 'PLAN_CATALOG'
+                ? 'bg-indigo-600 text-white shadow-md'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+            }`}
+          >
+            <Layers className="w-4 h-4" />
+            <span>Danh Mục Kế Hoạch Đã Phân Rã</span>
+            <span className={`px-2 py-0.5 rounded-full text-2xs ${
+              activeHubTab === 'PLAN_CATALOG' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
+            }`}>
+              {monthlyMetrics.planCount} kế hoạch
+            </span>
+          </button>
+        </div>
+
+        <div className="text-2xs text-slate-500 font-medium px-2">
+          {activeHubTab === 'STORE_GOVERNANCE'
+            ? 'Tích chọn để thiết lập Marketing B2C phụ trách & theo dõi trạng thái gửi duyệt từng gian hàng'
+            : 'Xem chi tiết cơ cấu ngân sách & phân rã các dòng KOC'}
+        </div>
+      </div>
+
+      {activeHubTab === 'STORE_GOVERNANCE' ? (
+        /* ========================================================================= */
+        /* TAB 1: MA TRẬN QUẢN TRỊ GIAN HÀNG ACTIVE & TRẠNG THÁI GỬI DUYỆT PLAN     */
+        /* ========================================================================= */
+        <div className="space-y-4">
+          {/* THANH BỘ LỌC VÀ TÌM KIẾM MA TRẬN GIAN HÀNG */}
+          <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
+            {/* Bộ lọc Scope */}
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                onClick={() => setStoreGovernanceFilter('ALL')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                  storeGovernanceFilter === 'ALL'
+                    ? 'bg-slate-900 text-white shadow-xs'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                Tất cả ({governanceStats.totalActive})
+              </button>
+              <button
+                onClick={() => setStoreGovernanceFilter('B2C_ONLY')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                  storeGovernanceFilter === 'B2C_ONLY'
+                    ? 'bg-indigo-600 text-white shadow-xs'
+                    : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-100'
+                }`}
+              >
+                B2C Cần Plan ({governanceStats.totalB2cManaged})
+              </button>
+              <button
+                onClick={() => setStoreGovernanceFilter('MISSING_PLAN')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                  storeGovernanceFilter === 'MISSING_PLAN'
+                    ? 'bg-amber-600 text-white shadow-xs'
+                    : 'bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-200'
+                }`}
+              >
+                <AlertCircle className="w-3.5 h-3.5" />
+                <span>Chưa Có Plan ({governanceStats.countMissingPlan})</span>
+              </button>
+              <button
+                onClick={() => setStoreGovernanceFilter('PENDING_APPROVAL')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                  storeGovernanceFilter === 'PENDING_APPROVAL'
+                    ? 'bg-blue-600 text-white shadow-xs'
+                    : 'bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200'
+                }`}
+              >
+                <Clock className="w-3.5 h-3.5" />
+                <span>Chờ Duyệt ({governanceStats.countPendingApproval})</span>
+              </button>
+              <button
+                onClick={() => setStoreGovernanceFilter('APPROVED')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                  storeGovernanceFilter === 'APPROVED'
+                    ? 'bg-emerald-600 text-white shadow-xs'
+                    : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200'
+                }`}
+              >
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>Đã Duyệt ({governanceStats.countApproved})</span>
+              </button>
+              <button
+                onClick={() => setStoreGovernanceFilter('EXEMPT')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                  storeGovernanceFilter === 'EXEMPT'
+                    ? 'bg-slate-600 text-white shadow-xs'
+                    : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                }`}
+              >
+                Miễn trừ ({governanceStats.totalExempt})
+              </button>
+            </div>
+
+            {/* Ô tìm kiếm */}
+            <div className="relative w-full md:w-72">
+              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Tìm gian hàng, brand, PIC..."
+                value={storeSearchQuery}
+                onChange={(e) => setStoreSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white"
+              />
+            </div>
+          </div>
+
+          {/* BẢNG MA TRẬN GIAN HÀNG */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider text-2xs">
+                    <th className="py-3.5 px-4 text-center">B2C Phụ Trách & Cần Làm Plan</th>
+                    <th className="py-3.5 px-4">Gian Hàng & Kênh Bán</th>
+                    <th className="py-3.5 px-4">Thương Hiệu & Ngành</th>
+                    <th className="py-3.5 px-4">Nhân Sự Phụ Trách</th>
+                    <th className="py-3.5 px-4 text-center">Trao Đổi Với Growth</th>
+                    <th className="py-3.5 px-4 text-center">Trạng Thái Plan Tháng {selectedMonth}</th>
+                    <th className="py-3.5 px-4 text-right">Ngân Sách / GMV</th>
+                    <th className="py-3.5 px-4 text-center">Hành Động</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filteredStoreGovernance.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} className="py-12 text-center text-slate-400">
+                        <Store className="w-8 h-8 mx-auto mb-2 text-slate-300" />
+                        <p className="font-semibold text-slate-600">Không tìm thấy gian hàng nào phù hợp bộ lọc</p>
+                        <p className="text-2xs text-slate-400 mt-0.5">Thử chọn bộ lọc khác hoặc nhập từ khóa tìm kiếm</p>
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredStoreGovernance.map((item: StoreGovernanceItem) => {
+                      const store = item.store;
+                      const plan = item.plan;
+                      const isB2c = item.isB2c;
+
+                      return (
+                        <tr 
+                          key={store.id}
+                          className={`hover:bg-indigo-50/30 transition-colors ${
+                            !isB2c ? 'bg-slate-50/40 opacity-75' : ''
+                          }`}
+                        >
+                          {/* 1. TÍCH CHỌN MARKETING B2C PHỤ TRÁCH & CẦN LÀM PLAN */}
+                          <td className="py-3.5 px-4 text-center">
+                            <button
+                              type="button"
+                              onClick={(e) => handleToggleB2cManaged(store, e)}
+                              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+                                isB2c
+                                  ? 'bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100 shadow-2xs'
+                                  : 'bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200'
+                              }`}
+                              title={isB2c ? "Click để chuyển sang MIỄN TRỪ không làm plan B2C" : "Click để đưa vào diện B2C PHỤ TRÁCH & CẦN LÀM PLAN"}
+                            >
+                              {isB2c ? (
+                                <>
+                                  <ToggleRight className="w-5 h-5 text-emerald-600 shrink-0" />
+                                  <span>B2C Cần Plan</span>
+                                </>
+                              ) : (
+                                <>
+                                  <ToggleLeft className="w-5 h-5 text-slate-400 shrink-0" />
+                                  <span className="text-slate-400">Miễn trừ Plan</span>
+                                </>
+                              )}
+                            </button>
+                          </td>
+
+                          {/* 2. GIAN HÀNG & KÊNH */}
+                          <td className="py-3.5 px-4">
+                            <div className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
+                              <span>{store.storeName}</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 mt-1">
+                              <span className={`px-2 py-0.5 rounded text-3xs font-semibold ${
+                                store.platform?.includes('TikTok')
+                                  ? 'bg-slate-900 text-white'
+                                  : store.platform?.includes('Shopee')
+                                  ? 'bg-amber-600 text-white'
+                                  : 'bg-blue-600 text-white'
+                              }`}>
+                                {store.platform || 'E-Commerce'}
+                              </span>
+                              <span className="text-2xs text-slate-400 font-mono">
+                                {store.serviceModel || 'Full Service'}
+                              </span>
+                            </div>
+                          </td>
+
+                          {/* 3. BRAND & NGÀNH */}
+                          <td className="py-3.5 px-4">
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100">
+                              <Building2 className="w-3 h-3 text-indigo-500" />
+                              {store.brandName}
+                            </span>
+                            <div className="text-2xs text-slate-400 mt-1 line-clamp-1">
+                              {store.category || 'Mỹ phẩm & Chăm sóc'}
+                            </div>
+                          </td>
+
+                          {/* 4. NHÂN SỰ PHỤ TRÁCH */}
+                          <td className="py-3.5 px-4">
+                            <div className="text-xs">
+                              <span className="text-slate-400 font-medium">B2C PIC: </span>
+                              <strong className="text-slate-800">
+                                {store.b2cOwners?.join(', ') || store.b2cOwnerName || 'Chưa gán'}
+                              </strong>
+                            </div>
+                            <div className="text-2xs text-amber-700 mt-0.5">
+                              <span>Growth: </span>
+                              <span className="font-medium">{store.growthPic || 'Trần Thị Ánh'}</span>
+                            </div>
+                          </td>
+
+                          {/* 5. TRAO ĐỔI VỚI GROWTH */}
+                          <td className="py-3.5 px-4 text-center">
+                            {plan ? (
+                              plan.growthAlignmentStatus === 'ĐÃ_THỐNG_NHẤT' ? (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-2xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                                  <span>Đã Thống Nhất</span>
+                                </span>
+                              ) : plan.growthAlignmentStatus === 'ĐANG_TRAO_ĐỔI' ? (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-2xs font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                                  <Clock className="w-3.5 h-3.5 text-amber-600 animate-spin" />
+                                  <span>Đang Trao Đổi</span>
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-2xs font-medium bg-slate-100 text-slate-600 border border-slate-200">
+                                  <span>Đã Khởi Tạo</span>
+                                </span>
+                              )
+                            ) : (
+                              <span className="text-2xs text-slate-400 italic">
+                                Chưa lập plan
+                              </span>
+                            )}
+                          </td>
+
+                          {/* 6. TRẠNG THÁI PLAN THÁNG */}
+                          <td className="py-3.5 px-4 text-center">
+                            {!isB2c ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-2xs font-semibold bg-slate-100 text-slate-500 border border-slate-200">
+                                <span>Miễn trừ Plan B2C</span>
+                              </span>
+                            ) : plan ? (
+                              <div className="space-y-1">
+                                {getStatusBadge(plan.status)}
+                                {plan.status === 'PENDING_APPROVAL' && (
+                                  <div className="text-3xs text-blue-600 font-semibold">
+                                    Đã nộp lên Quản lý
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-2xs font-bold bg-rose-50 text-rose-800 border border-rose-200">
+                                <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
+                                <span>Chưa Có Plan</span>
+                              </span>
+                            )}
+                          </td>
+
+                          {/* 7. NGÂN SÁCH / GMV */}
+                          <td className="py-3.5 px-4 text-right">
+                            {plan ? (
+                              <div>
+                                <div className="font-bold text-slate-900">
+                                  {formatVndShort(plan.totalTargetBudget)}
+                                </div>
+                                <div className="text-2xs text-emerald-600 font-semibold">
+                                  GMV: {formatVndShort(plan.targetGmv)}
+                                </div>
+                              </div>
+                            ) : (
+                              <div>
+                                <div className="font-semibold text-slate-400">
+                                  {formatVndShort(store.monthlyBudget || 0)}
+                                </div>
+                                <div className="text-2xs text-slate-400">
+                                  Target: {formatVndShort(store.monthlyTargetGmv || 0)}
+                                </div>
+                              </div>
+                            )}
+                          </td>
+
+                          {/* 8. HÀNH ĐỘNG */}
+                          <td className="py-3.5 px-4 text-center" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex items-center justify-center gap-1.5">
+                              {plan ? (
+                                <>
+                                  {plan.status === 'PENDING_APPROVAL' && (
+                                    <button
+                                      onClick={(e) => handleQuickApprovePlan(plan.id, store.storeName, e)}
+                                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition"
+                                      title="Quản lý phê duyệt nhanh kế hoạch này"
+                                    >
+                                      <ShieldCheck className="w-3.5 h-3.5" />
+                                      <span>Duyệt Nhanh</span>
+                                    </button>
+                                  )}
+                                  <button
+                                    onClick={() => onSelectPlan(plan)}
+                                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs shadow-xs transition"
+                                    title="Mở bảng phân rã chi tiết trong Studio"
+                                  >
+                                    <span>Xem Studio</span>
+                                    <ArrowRight className="w-3 h-3" />
+                                  </button>
+                                </>
+                              ) : isB2c ? (
+                                <>
+                                  <button
+                                    onClick={(e) => handleCreatePlanForStore(store, e)}
+                                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-semibold text-xs transition"
+                                    title="Tạo kế hoạch mới cho gian hàng này trong tháng"
+                                  >
+                                    <Plus className="w-3 h-3" />
+                                    <span>Tạo Plan</span>
+                                  </button>
+                                  <button
+                                    onClick={(e) => handleRemindSubmission(store, e)}
+                                    className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 font-medium text-xs transition"
+                                    title="Gửi thông báo nhắc nhở nộp plan cho PIC"
+                                  >
+                                    <Bell className="w-3 h-3 text-amber-600" />
+                                    <span>Nhắc Nộp</span>
+                                  </button>
+                                </>
+                              ) : (
+                                <button
+                                  onClick={(e) => handleToggleB2cManaged(store, e)}
+                                  className="text-2xs text-slate-400 hover:text-slate-700 hover:underline cursor-pointer"
+                                >
+                                  Bật làm plan
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      ) : (
+        /* ========================================================================= */
+        /* TAB 2: DANH MỤC KẾ HOẠCH ĐÃ PHÂN RÃ (GRID / TABLE)                        */
+        /* ========================================================================= */
+        <div className="space-y-6">
+          {/* Chỉ số tháng, kèm xu hướng qua các tháng */}
       {(() => {
         const months = [...new Set(plans.map(p => p.month))].sort();
         const series = (pick: (p: InputPlanBreakdownState) => number) =>
@@ -790,6 +1587,8 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
               </tbody>
             </table>
           </div>
+        </div>
+      )}
         </div>
       )}
 

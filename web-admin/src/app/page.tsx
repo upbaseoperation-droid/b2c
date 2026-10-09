@@ -664,6 +664,8 @@ export default function App() {
           {activeTab === 'input-plan' && (
             <InputPlanBreakdownView
               currentUser={currentUser}
+              storePortfolios={storePortfolios}
+              onUpdateStore={handleUpdateStore}
               onNotify={showToast}
               onGenerateDealsFromPlan={(newSlots) => {
                 setDetailedPlans(prev => [...newSlots, ...prev]);
