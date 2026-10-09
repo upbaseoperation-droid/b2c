@@ -869,6 +869,7 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'overview',
     'dashboard-bi',
     'input-plan',
+    'koc-listing',
     'self-channel-hub',
     'master-data',
     'push-products',
@@ -894,6 +895,7 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'overview',
     'dashboard-bi',
     'input-plan',
+    'koc-listing',
     'self-channel-hub',
     'master-data',
     'push-products',
@@ -920,6 +922,7 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'ads-report',
     'performance-p3',
     'input-plan',
+    'koc-listing',
     'push-products',
     'booking',
     'koc-master',
@@ -934,6 +937,7 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
   BOOKING_MEMBER: [
     'cockpit',
     'booking',
+    'koc-listing',
     'koc-master',
     'input-plan',
     'contracts',
@@ -957,6 +961,7 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'campaigns',
     'push-products',
     'brand-knowledge',
+    'koc-listing',
     'content',
     'input-plan',
     'ads-report',
@@ -967,6 +972,7 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
   MEMBER: [
     'cockpit',
     'booking',
+    'koc-listing',
     'koc-master',
     'content',
     'input-plan',
@@ -977,6 +983,7 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
   ],
   BRAND_PARTNER: [
     'brand-hub',
+    'koc-listing',
     'push-products',
     'content'
   ],

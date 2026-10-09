@@ -24,35 +24,12 @@ import {
   LogOut,
   Sparkles,
   KeyRound,
+  Film,
   type LucideIcon,
 } from 'lucide-react';
-import { UserProfile } from '../lib/types';
+import { UserProfile, TabKey } from '../lib/types';
 import { Avatar, BrandLogo } from './ui';
-
-export type TabKey =
-  | 'cockpit'
-  | 'overview'
-  | 'dashboard-bi'
-  | 'input-plan'
-  | 'self-channel-hub'
-  | 'master-data'
-  | 'push-products'
-  | 'stores'
-  | 'campaigns'
-  | 'brand-knowledge'
-  | 'content'
-  | 'content-angles'
-  | 'partner-access'
-  | 'booking'
-  | 'koc-master'
-  | 'contracts'
-  | 'manager'
-  | 'sample-tracker'
-  | 'performance-p3'
-  | 'leaderboard'
-  | 'brand-hub'
-  | 'koc-hub'
-  | 'ads-report';
+export type { TabKey };
 
 interface NavItem {
   key: TabKey;
@@ -100,6 +77,7 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           items: [
             { key: 'manager', label: 'Phân bổ & điều phối', icon: Split },
             { key: 'input-plan', label: 'Kế hoạch tháng', icon: Calendar },
+            { key: 'koc-listing', label: 'Listing & Air Video (10/20/30)', icon: Film },
             { key: 'push-products', label: 'Sản phẩm đẩy', icon: TrendingUp },
           ],
         },
@@ -152,6 +130,7 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           title: 'Kế hoạch & Vận hành',
           items: [
             { key: 'input-plan', label: 'Kế hoạch tháng (Duyệt slot)', icon: Calendar },
+            { key: 'koc-listing', label: 'Listing & Air Video (Duyệt đợt)', icon: Film },
             { key: 'push-products', label: 'Sản phẩm đẩy', icon: TrendingUp },
             { key: 'booking', label: 'Booking KOC (Duyệt deal)', icon: Users },
             { key: 'koc-master', label: 'Danh bạ KOC Master', icon: Users },
@@ -183,6 +162,7 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           title: 'Tác nghiệp Booking',
           items: [
             { key: 'booking', label: 'Booking KOC (Tạo & chăm sóc deal)', icon: Users },
+            { key: 'koc-listing', label: 'Listing & Air Video (Theo đợt)', icon: Film },
             { key: 'koc-master', label: 'Danh bạ KOC Master', icon: Users },
             { key: 'input-plan', label: 'Kế hoạch tháng (Slot cá nhân)', icon: Calendar },
             { key: 'contracts', label: 'Hợp đồng & thanh toán', icon: FileCheck },
@@ -267,6 +247,7 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           title: 'Vận hành tác nghiệp',
           items: [
             { key: 'booking', label: 'Booking KOC', icon: Users },
+            { key: 'koc-listing', label: 'Listing & Air Video', icon: Film },
             { key: 'koc-master', label: 'Danh bạ KOC Master', icon: Users },
             { key: 'content', label: 'Kịch bản video', icon: FileText },
             { key: 'input-plan', label: 'Kế hoạch tháng', icon: Calendar },
@@ -289,6 +270,7 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           title: 'Cổng Thương Hiệu',
           items: [
             { key: 'brand-hub', label: 'Cổng đối tác Brand (Duyệt KOC & Video)', icon: ExternalLink },
+            { key: 'koc-listing', label: 'Duyệt Listing KOC (Đợt 10/20/30)', icon: Film },
             { key: 'push-products', label: 'Sản phẩm đẩy của nhãn', icon: TrendingUp },
             { key: 'content', label: 'Kịch bản video của nhãn', icon: FileText },
           ],

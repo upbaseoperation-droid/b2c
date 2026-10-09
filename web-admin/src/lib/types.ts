@@ -15,6 +15,7 @@ export type TabKey =
   | 'overview'
   | 'dashboard-bi'
   | 'input-plan'
+  | 'koc-listing'
   | 'self-channel-hub'
   | 'master-data'
   | 'push-products'
@@ -2421,4 +2422,108 @@ export interface AuditLogEntry {
   timestamp: string;
   note?: string;
 }
+
+// =========================================================================
+// BRD MODULE: LISTING KOC HÀNG THÁNG THEO ĐỢT (10, 20, 30) & AIR VIDEO TRACKER
+// =========================================================================
+
+export type ListingBatchCycle = 'BATCH_10' | 'BATCH_20' | 'BATCH_30';
+
+export type BrandListingStatus = 'BRAND_PENDING' | 'BRAND_APPROVED' | 'BRAND_REJECTED';
+
+export type KocNegotiationStatus = 'NOT_CONTACTED' | 'CONTACTING' | 'TERMS_AGREED' | 'NEGOTIATION_FAILED';
+
+export type ListingItemStatus = 
+  | 'DRAFT'            // Đang lập danh sách nháp
+  | 'SUBMITTED'        // Đã gửi Brand theo đợt
+  | 'FINAL_APPROVED'   // Cả Brand duyệt & KOC chốt (Listing thành công)
+  | 'DROPPED';         // Thất bại (Brand từ chối hoặc KOC không nhận deal)
+
+export type AirVideoStage = 
+  | 'SAMPLE_DISPATCHED'  // Đã xuất hàng mẫu
+  | 'SAMPLE_DELIVERED'   // KOC đã nhận mẫu
+  | 'SCRIPT_PENDING'     // Chờ nộp kịch bản
+  | 'SCRIPT_APPROVED'    // Kịch bản đã duyệt
+  | 'VIDEO_DRAFT_REVIEW' // Kiểm duyệt bản dựng nháp
+  | 'AIRED'              // Đã lên sóng chính thức
+  | 'ANCHOR_VERIFIED'    // Đã kiểm tra gắn giỏ hàng & Spark Ads
+  | 'COMPLETED';         // Nghiệm thu hoàn tất
+
+export interface KocListingItem {
+  id: string;
+  batchId: string;
+  batchCycle: ListingBatchCycle;
+  monthKey: string;
+  storeId: string;
+  storeName: string;
+  brandName: string;
+  planSlotId?: string;
+  
+  // Thông tin KOC
+  kocId: string;
+  kocName: string;
+  kocHandle: string;
+  channel: 'TikTok Shop' | 'Shopee Mall' | 'Lazada' | 'Instagram' | 'Facebook';
+  followersCount: number;
+  tier: 'CELEB' | 'MEGA' | 'MACRO' | 'MICRO' | 'NANO';
+  niche: string;
+  
+  // Định hướng nội dung & Dự toán thù lao
+  videoFormat: string;
+  pillarName: string;
+  proposedFee: number;
+  finalFee?: number;
+  
+  // Tiến trình song song 1: Brand Review
+  brandApprovalStatus: BrandListingStatus;
+  brandFeedbackNote?: string;
+  brandApprovedAt?: string;
+  brandApprovedBy?: string;
+  
+  // Tiến trình song song 2: KOC Negotiation
+  kocNegotiationStatus: KocNegotiationStatus;
+  negotiationNote?: string;
+  negotiatedAt?: string;
+  
+  // Trạng thái tổng hợp
+  overallStatus: ListingItemStatus;
+  dropReason?: string;
+  
+  // Theo dõi Air Video
+  generatedDealId?: string;
+  expectedAirDate?: string;
+  actualAirDate?: string;
+  airVideoStage?: AirVideoStage;
+  publishedVideoUrl?: string;
+  isCartAnchored?: boolean;
+  sparkAdsCode?: string;
+  
+  assignedStaffId: string;
+  assignedStaffName: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface KocListingBatchHeader {
+  id: string;
+  storeId: string;
+  storeName: string;
+  brandName: string;
+  monthKey: string;
+  batchCycle: ListingBatchCycle;
+  cutoffDate: string;
+  totalKocs: number;
+  draftCount: number;
+  submittedCount: number;
+  approvedCount: number;
+  rejectedCount: number;
+  finalApprovedCount: number;
+  droppedCount: number;
+  totalEstimatedBudget: number;
+  totalActualBudget: number;
+  status: 'OPEN_DRAFT' | 'SUBMITTED_TO_BRAND' | 'REVIEWED_PARTIAL' | 'BATCH_CLOSED';
+  submittedAt?: string;
+  closedAt?: string;
+}
+
 

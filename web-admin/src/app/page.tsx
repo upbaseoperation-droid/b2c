@@ -38,6 +38,17 @@ const MasterDataHubView = dynamic(
     ),
   }
 );
+const KocListingBatchHubView = dynamic(
+  () => import('../components/views/KocListingBatchHubView').then((mod) => mod.KocListingBatchHubView),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="bg-white rounded-xl border border-slate-200 p-12 text-center text-slate-500 text-xs">
+        Đang tải Phân Hệ Listing KOC & Air Video...
+      </div>
+    ),
+  }
+);
 import { KocKolHubView } from '../components/views/KocKolHubView';
 import { WeeklyAdsReportHubView } from '../components/views/WeeklyAdsReportHubView';
 import { ExecutiveDashboardReportsView } from '../components/views/ExecutiveDashboardReportsView';
@@ -54,7 +65,8 @@ import {
   INITIAL_DETAILED_STAFF_PLANS, 
   INITIAL_STAFF_ALLOCATIONS_26,
   INITIAL_BRANDS,
-  INITIAL_STORE_PORTFOLIOS
+  INITIAL_STORE_PORTFOLIOS,
+  INITIAL_KOC_LISTINGS
 } from '../lib/mockData';
 import { 
   UserProfile, 
@@ -67,7 +79,8 @@ import {
   StaffPlanStatus,
   ContentPillarType,
   BrandDetail,
-  StorePortfolioItem
+  StorePortfolioItem,
+  KocListingItem
 } from '../lib/types';
 
 export default function App() {
@@ -141,6 +154,57 @@ export default function App() {
     '2026/09': INITIAL_STAFF_ALLOCATIONS_26,
     '2026/10': INITIAL_STAFF_ALLOCATIONS_26
   });
+
+  // Monthly KOC Listings (Batch 10, 20, 30 with parallel Brand/KOC approval and Air Video tracking)
+  const [kocListings, setKocListings] = useState<KocListingItem[]>(INITIAL_KOC_LISTINGS);
+
+  const handleGenerateDealFromListing = (listingItem: KocListingItem) => {
+    const existing = deals.find(d => d.dealCode === listingItem.generatedDealId);
+    if (!existing) {
+      const fee = listingItem.finalFee || listingItem.proposedFee;
+      const newDeal: BookingDealItem = {
+        id: `DEAL-${Date.now().toString().slice(-4)}`,
+        dealCode: listingItem.generatedDealId || `DEAL-AUTO-${Date.now().toString().slice(-4)}`,
+        campaignCode: 'CAMP-202610',
+        campaignTitle: 'Chiến Dịch Tháng 10/2026',
+        brandName: listingItem.brandName,
+        storeName: listingItem.storeName,
+        productName: listingItem.pillarName,
+        bookingBatch: listingItem.batchCycle === 'BATCH_10' ? 'Đợt 1' : listingItem.batchCycle === 'BATCH_20' ? 'Đợt 2' : 'Đợt 3',
+        kocId: listingItem.kocId,
+        kocStageName: listingItem.kocName,
+        kocTier: listingItem.tier === 'NANO' ? 'TIER_4_AFFILIATE' : listingItem.tier === 'MICRO' ? 'TIER_3_MICRO' : listingItem.tier === 'MACRO' ? 'TIER_2_MACRO' : 'TIER_1_CELEB',
+        salaryGrade: 'KL2',
+        segment: 'Mid Creator',
+        tepKenh: 'Mẹ bé (bé)',
+        kocCategory: 'Mom and baby',
+        contentPillar: 'Review trực tiếp',
+        brandApprovalStatus: 'ĐÃ_DUYỆT',
+        pipelineText: 'Chờ lên sóng bài review',
+        status: 'TERMS_AGREED',
+        statusLabel: 'Đã chốt điều khoản',
+        currentStage: '4_AIR_GROWTH',
+        holdingTeam: 'BOOKING',
+        adsCodeStatus: listingItem.sparkAdsCode ? 'ĐÃ_NGHIỆM_THU' : 'CHƯA_CẤP',
+        sparkAdsCode: listingItem.sparkAdsCode,
+        assignedStaff: listingItem.assignedStaffName,
+        totalValue: fee,
+        advanceAmount: Math.round(fee * 0.5),
+        finalAmount: Math.round(fee * 0.5),
+        deadlinePost: listingItem.expectedAirDate || '2026-10-15',
+        viewsCount: 0,
+        affiliateGmv: 0,
+        gmv30: 0,
+        roi: 0,
+        publishedDays: 0,
+        remainingSlaHours: 48,
+        isSlaWarning: false,
+        accountComment: `Tự động sinh từ Đợt Listing ${listingItem.batchCycle} tháng ${listingItem.monthKey}`
+      };
+      setDeals(prev => [newDeal, ...prev]);
+      showToast(`Đã tự động tạo Deal ${newDeal.dealCode} cho KOC ${newDeal.kocStageName}`, 'success');
+    }
+  };
 
   // Modals
   const [isQuickBookOpen, setIsQuickBookOpen] = useState(false);
@@ -505,6 +569,7 @@ export default function App() {
     cockpit: { title: 'Việc của tôi', subtitle: '' },
     overview: { title: 'Tổng quan vận hành', subtitle: 'Toàn cảnh GMV, doanh số, tiến độ deal và hiệu suất' },
     'input-plan': { title: 'Kế hoạch tháng', subtitle: 'Ngân sách, kênh và nhân sự booking theo từng tháng' },
+    'koc-listing': { title: 'Quản Lý Đợt Listing KOC & Air Video', subtitle: 'Chu kỳ đợt ngày 10-20-30, quy trình duyệt song song Brand & KOC, tự động chuyển giao Air Video' },
     'self-channel-hub': { title: 'Hub làm việc với Cộng tác viên (CTV)', subtitle: 'Sản xuất video kênh thương hiệu theo Content Pillar và quản lý Cộng Tác Viên' },
     'master-data': { title: 'Dữ liệu gốc (Master Data)', subtitle: 'Thương hiệu, gian hàng, sản phẩm, ngành hàng và định danh pháp lý KOC' },
     'push-products': { title: 'Sản phẩm đẩy của nhãn', subtitle: 'Danh mục sản phẩm trọng tâm, tồn kho và mức hoa hồng push' },
@@ -687,6 +752,16 @@ export default function App() {
               onApplyPlanToWeeklyStore={(weeklyPlan) => {
                 showToast(`Đã lưu kế hoạch ${weeklyPlan.storeName}, ${weeklyPlan.week}`);
               }}
+            />
+          )}
+
+          {activeTab === 'koc-listing' && (
+            <KocListingBatchHubView
+              listings={kocListings}
+              onUpdateListings={setKocListings}
+              onGenerateDeal={handleGenerateDealFromListing}
+              currentRole={currentUser.role}
+              currentUserName={currentUser.name}
             />
           )}
 
