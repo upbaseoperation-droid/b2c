@@ -258,8 +258,8 @@ export const ContractView: React.FC<ContractViewProps> = ({
             100% <span className="text-sm font-semibold text-slate-500">HĐ điện tử</span>
           </div>
           <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-100 text-xs">
-            <span className="text-purple-600 font-semibold">Tự động hóa Lark Approval</span>
-            <span className="text-slate-400">VietQR 1-chạm</span>
+            <span className="text-purple-600 font-semibold">Duyệt chi qua Lark</span>
+            <span className="text-slate-400">Mã QR ngân hàng</span>
           </div>
         </div>
       </div>
@@ -305,20 +305,20 @@ export const ContractView: React.FC<ContractViewProps> = ({
               </select>
             </div>
 
-            {/* OCR Scanner Button */}
+            {/* Đọc ảnh CCCD / ĐKKD Button */}
             <button
               onClick={() => setIsOcrModalOpen(true)}
-              className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 hover: active:scale-[0.99] text-white font-semibold text-xs rounded-lg transition shadow-xs flex items-center gap-1.5 shrink-0 cursor-pointer"
-              title="Tải ảnh CCCD hoặc Giấy phép kinh doanh để bóc tách tự động"
+              className="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 active:scale-[0.99] font-semibold text-xs rounded-lg transition shadow-xs flex items-center gap-1.5 shrink-0 cursor-pointer"
+              title="Tải ảnh CCCD hoặc Giấy phép kinh doanh để lấy thông tin"
             >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Quét OCR CCCD / ĐKKD</span>
+              <FileCheck className="w-3.5 h-3.5 text-blue-600" />
+              <span>Đọc ảnh CCCD / ĐKKD</span>
             </button>
 
             {/* Manual Contract Composer Button */}
             <button
               onClick={() => setIsManualComposeModalOpen(true)}
-              className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white font-semibold text-xs rounded-lg transition shadow-xs flex items-center gap-1.5 shrink-0 cursor-pointer"
+              className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white font-semibold text-xs rounded-lg transition shadow-xs flex items-center gap-1.5 shrink-0 cursor-pointer"
               title="Soạn thảo hợp đồng thủ công, chọn mẫu và điền thông tin trực tiếp"
             >
               <Edit3 className="w-3.5 h-3.5" />

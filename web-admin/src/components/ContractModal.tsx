@@ -477,12 +477,12 @@ export const ContractModal: React.FC<ContractModalProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <h3 id="contract-modal-title" className="text-sm font-semibold text-slate-900">
-                  Soạn Thảo &amp; Phê Duyệt Hợp Đồng KOC
+                  Hợp Đồng Dịch Vụ KOC
                 </h3>
                 {ocrData && (
                   <span className="text-2xs font-semibold px-2 py-0.5 rounded-full border bg-emerald-50 text-emerald-700 border-emerald-200 flex items-center gap-1">
                     <CheckCircle className="w-3 h-3" />
-                    Khớp OCR
+                    Đã lấy từ ảnh
                   </span>
                 )}
               </div>
@@ -501,7 +501,7 @@ export const ContractModal: React.FC<ContractModalProps> = ({
                   ? 'bg-white text-blue-700 shadow-xs'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
               }`}
-              title="Vừa điền thông tin vừa xem hợp đồng thay đổi theo thời gian thực"
+              title="Xem song song form điền và bản in hợp đồng"
             >
               <Columns className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Chia Đôi (Điền &amp; Xem)</span>
@@ -514,10 +514,10 @@ export const ContractModal: React.FC<ContractModalProps> = ({
                   ? 'bg-white text-blue-700 shadow-xs'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
               }`}
-              title="Giao diện điền thông tin thủ công toàn màn hình"
+              title="Chỉ hiển thị form điền thông tin"
             >
               <Edit3 className="w-3.5 h-3.5" />
-              <span>Điền Thủ Công</span>
+              <span>Điền Thông Tin</span>
             </button>
             <button
               onClick={() => setViewMode('PREVIEW')}
@@ -537,11 +537,11 @@ export const ContractModal: React.FC<ContractModalProps> = ({
           <div className="flex items-center gap-2">
             <button
               onClick={() => setIsOcrOpen(true)}
-              className="px-2.5 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition cursor-pointer"
-              title="Quét ảnh CCCD hoặc Giấy phép kinh doanh để tự động điền vào form"
+              className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition cursor-pointer"
+              title="Đọc thông tin từ ảnh chụp CCCD hoặc Giấy phép kinh doanh để điền vào form"
             >
-              <Sparkles className="w-3.5 h-3.5 text-purple-600" />
-              <span className="hidden md:inline">{ocrData ? 'Quét Lại OCR' : 'Bóc Tách OCR'}</span>
+              <FileCheck className="w-3.5 h-3.5 text-blue-600" />
+              <span className="hidden md:inline">{ocrData ? 'Đọc lại ảnh' : 'Đọc ảnh CCCD/ĐKKD'}</span>
             </button>
 
             <button
@@ -639,10 +639,10 @@ export const ContractModal: React.FC<ContractModalProps> = ({
               
               <div className="flex items-center justify-between pb-2 border-b border-slate-200">
                 <span className="font-semibold text-xs text-slate-800 uppercase tracking-wide flex items-center gap-1.5">
-                  <Edit3 className="w-4 h-4 text-blue-600" /> Biểu Mẫu Điền Thông Tin Thủ Công
+                  <Edit3 className="w-4 h-4 text-blue-600" /> Thông Tin Hợp Đồng
                 </span>
-                <span className="text-2xs text-slate-500 italic">
-                  Dữ liệu nhập tại đây sẽ tự động gắn trực tiếp vào mẫu hợp đồng
+                <span className="text-2xs text-slate-500">
+                  Nhập thông tin bên dưới để điền vào hợp đồng
                 </span>
               </div>
 
@@ -1164,7 +1164,7 @@ export const ContractModal: React.FC<ContractModalProps> = ({
                 <div className="text-xs space-y-1">
                   <span className="font-semibold text-emerald-800 text-xs flex items-center gap-1.5">
                     <QrCode className="w-4 h-4 text-emerald-600" />
-                    Cổng Chi Tiền VietQR (Tự Động Theo Thông Tin Form)
+                    Mã Thanh Toán QR (VietQR)
                   </span>
                   <p className="text-slate-600 text-2xs">
                     Ngân hàng: <strong>{formData.bankName}</strong> • STK: <strong className="font-mono text-slate-900">{formData.bankAccount}</strong> • Chủ TK: <strong>{formData.bankAccountName}</strong>
