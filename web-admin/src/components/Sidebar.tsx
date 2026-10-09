@@ -75,7 +75,7 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
         {
           title: 'Kế hoạch & Điều phối',
           items: [
-            { key: 'manager', label: 'Phân bổ & điều phối', icon: Split },
+            { key: 'manager', label: 'Điều phối & Quản lý', icon: Split },
             { key: 'input-plan', label: 'Kế hoạch tháng', icon: Calendar },
             { key: 'koc-listing', label: 'Listing & Air Video', icon: Film },
             { key: 'push-products', label: 'Sản phẩm đẩy', icon: TrendingUp },
@@ -127,8 +127,9 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           ],
         },
         {
-          title: 'Kế hoạch & Vận hành',
+          title: 'Kế hoạch & Điều phối',
           items: [
+            { key: 'manager', label: 'Điều phối & Quản lý', icon: Split },
             { key: 'input-plan', label: 'Kế hoạch tháng', icon: Calendar },
             { key: 'koc-listing', label: 'Listing & Air Video', icon: Film },
             { key: 'push-products', label: 'Sản phẩm đẩy', icon: TrendingUp },

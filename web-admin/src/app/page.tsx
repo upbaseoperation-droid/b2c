@@ -651,7 +651,7 @@ export default function App() {
     booking: { title: 'Kế hoạch & Vận hành Booking', subtitle: 'Phân rã kế hoạch theo Khung lương KL1-7, tuyển chọn KOC và quản lý deal hợp đồng' },
     'koc-master': { title: 'Danh bạ KOC', subtitle: 'Hồ sơ KOC, giấy tờ pháp lý và mẫu hợp đồng' },
     contracts: { title: 'Hợp đồng & thanh toán', subtitle: 'Theo dõi hợp đồng điện tử, tạm ứng và nghiệm thu thanh lý' },
-    manager: { title: 'Phân bổ & điều phối', subtitle: 'Gán nhãn hàng, gian hàng và cân bằng khối lượng việc' },
+    manager: { title: 'Điều phối & Quản lý', subtitle: 'Phân bổ nhãn hàng, gian hàng, nhân sự và cân bằng khối lượng việc' },
     'sample-tracker': { title: 'Hàng mẫu', subtitle: 'Vận đơn mẫu, hạn nộp kịch bản 5 ngày và mã Spark Ads' },
     'performance-p3': { title: 'Đánh giá 4P & thưởng P3', subtitle: 'Điểm khối lượng việc theo độ khó gian hàng, chất lượng và SLA' },
     leaderboard: { title: 'Hiệu suất nhân sự', subtitle: 'Bảng xếp hạng KPI và SLA toàn đội ngũ vận hành' },

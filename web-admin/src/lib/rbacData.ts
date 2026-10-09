@@ -921,6 +921,7 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'overview',
     'ads-report',
     'performance-p3',
+    'manager',
     'input-plan',
     'koc-listing',
     'push-products',
