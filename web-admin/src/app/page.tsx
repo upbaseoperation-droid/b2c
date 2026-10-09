@@ -975,6 +975,7 @@ export default function App() {
               onSelectDeal={setSelectedDealForContract}
               onApproveAdvance={handleApproveAdvance}
               onApproveFinal={handleApproveFinal}
+              onCreateDeal={handleDealCreated}
             />
           </KeepAliveTab>
 
@@ -1128,6 +1129,7 @@ export default function App() {
         deal={selectedDealForContract}
         onApproveAdvance={handleApproveAdvance}
         onApproveFinal={handleApproveFinal}
+        onSaveDeal={handleUpdateDeal}
       />
     </div>
   );

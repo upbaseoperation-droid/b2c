@@ -24,7 +24,10 @@ import {
   Lock,
   FileText,
   X,
-  CreditCard
+  CreditCard,
+  Edit3,
+  PlusCircle,
+  FilePlus
 } from 'lucide-react';
 import { BookingDealItem, OcrLegalExtractionResult } from '../../lib/types';
 import { LegalOcrModal } from '../LegalOcrModal';
@@ -34,6 +37,7 @@ interface ContractViewProps {
   onSelectDeal: (deal: BookingDealItem) => void;
   onApproveAdvance: (dealId: string) => void;
   onApproveFinal?: (dealId: string) => void;
+  onCreateDeal?: (newDeal: BookingDealItem) => void;
 }
 
 export const ContractView: React.FC<ContractViewProps> = ({
@@ -41,12 +45,15 @@ export const ContractView: React.FC<ContractViewProps> = ({
   onSelectDeal,
   onApproveAdvance,
   onApproveFinal,
+  onCreateDeal,
 }) => {
   const [filterStatus, setFilterStatus] = useState<string>('ALL');
   const [selectedBrand, setSelectedBrand] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [isOcrModalOpen, setIsOcrModalOpen] = useState<boolean>(false);
+  const [isManualComposeModalOpen, setIsManualComposeModalOpen] = useState<boolean>(false);
+  const [composeSearchTerm, setComposeSearchTerm] = useState<string>('');
 
   // SLA B2C: Modal Cảnh Báo Vi Phạm Điều Kiện Hợp Đồng & Thanh Toán
   const [complianceModalDeal, setComplianceModalDeal] = useState<{
@@ -306,6 +313,16 @@ export const ContractView: React.FC<ContractViewProps> = ({
             >
               <Sparkles className="w-3.5 h-3.5" />
               <span>Quét OCR CCCD / ĐKKD</span>
+            </button>
+
+            {/* Manual Contract Composer Button */}
+            <button
+              onClick={() => setIsManualComposeModalOpen(true)}
+              className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white font-semibold text-xs rounded-lg transition shadow-xs flex items-center gap-1.5 shrink-0 cursor-pointer"
+              title="Soạn thảo hợp đồng thủ công, chọn mẫu và điền thông tin trực tiếp"
+            >
+              <Edit3 className="w-3.5 h-3.5" />
+              <span>+ Soạn HĐ Thủ Công</span>
             </button>
           </div>
         </div>
@@ -638,14 +655,25 @@ export const ContractView: React.FC<ContractViewProps> = ({
                             </button>
                           )}
 
-                          {/* Nút Xem HĐ & QR */}
-                          <button
-                            onClick={() => onSelectDeal(deal)}
-                            className="btn-sm bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold border border-slate-200 transition flex items-center gap-1 w-full justify-center"
-                          >
-                            <Eye className="w-3.5 h-3.5 text-blue-600" />
-                            <span>Xem HĐ & QR</span>
-                          </button>
+                          {/* Nút Xem & Điền Sửa HĐ */}
+                          <div className="flex items-center gap-1 w-full">
+                            <button
+                              onClick={() => onSelectDeal(deal)}
+                              className="btn-sm bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold border border-blue-200 transition flex items-center gap-1 flex-1 justify-center"
+                              title="Điền và chỉnh sửa thông tin gắn vào mẫu HĐ"
+                            >
+                              <Edit3 className="w-3 h-3 text-blue-600" />
+                              <span>Sửa HĐ</span>
+                            </button>
+                            <button
+                              onClick={() => onSelectDeal(deal)}
+                              className="btn-sm bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold border border-slate-200 transition flex items-center gap-1 flex-1 justify-center"
+                              title="Xem văn bản hợp đồng và mã VietQR"
+                            >
+                              <Eye className="w-3 h-3 text-slate-600" />
+                              <span>Xem HĐ</span>
+                            </button>
+                          </div>
                         </div>
                       </td>
                     </tr>
@@ -781,7 +809,6 @@ export const ContractView: React.FC<ContractViewProps> = ({
         onClose={() => setIsOcrModalOpen(false)}
         onApplyToContract={(ocrResult) => {
           setIsOcrModalOpen(false);
-          // Tìm deal phù hợp hoặc mở deal đầu tiên để hiển thị hợp đồng kèm dữ liệu OCR
           const targetName = (ocrResult.fields.fullName || ocrResult.fields.companyName || '').toLowerCase();
           const matchedDeal = deals.find(d => 
             d.kocStageName.toLowerCase().includes(targetName) ||
@@ -793,6 +820,175 @@ export const ContractView: React.FC<ContractViewProps> = ({
           }
         }}
       />
+
+      {/* Manual Contract Composer Entry Modal */}
+      {isManualComposeModalOpen && (
+        <div 
+          className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setIsManualComposeModalOpen(false);
+          }}
+        >
+          <div className="bg-white rounded-2xl max-w-xl w-full border border-slate-200 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-150">
+            {/* Header */}
+            <div className="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-xs shrink-0">
+                  <Edit3 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-slate-900 text-sm">
+                    Soạn Thảo Hợp Đồng Thủ Công
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Chọn Deal có sẵn hoặc khởi tạo hợp đồng từ mẫu trống
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsManualComposeModalOpen(false)}
+                className="w-8 h-8 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 flex items-center justify-center transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 space-y-4 text-xs max-h-[70vh] overflow-y-auto">
+              {/* Option 1: Create Blank New Contract */}
+              <div className="p-4 bg-emerald-50/60 rounded-xl border border-emerald-200 flex items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <div className="font-semibold text-emerald-950 text-sm flex items-center gap-1.5">
+                    <PlusCircle className="w-4 h-4 text-emerald-600" />
+                    Tạo Hợp Đồng Mới Hoàn Toàn (Mẫu Trống)
+                  </div>
+                  <p className="text-slate-600 text-2xs leading-relaxed">
+                    Khởi tạo văn bản hợp đồng mới không gắn với deal cũ, tự do chọn mẫu Cá nhân/Doanh nghiệp và nhập thông tin từ đầu.
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    const newDraftDeal: BookingDealItem = {
+                      id: `deal-manual-${Date.now()}`,
+                      dealCode: `BO26_HD_${Date.now().toString().slice(-4)}`,
+                      campaignCode: 'CAMP-MANUAL',
+                      campaignTitle: 'Chiến Dịch Hợp Đồng Mới',
+                      brandName: selectedBrand !== 'ALL' ? selectedBrand : 'Kutieskin',
+                      productName: 'Combo Sản Phẩm Trọng Tâm',
+                      kocId: `koc-${Date.now()}`,
+                      kocStageName: 'KOC Mới',
+                      kocTier: 'TIER_3_MICRO',
+                      salaryGrade: 'KL3',
+                      segment: 'Mid Creator',
+                      tepKenh: 'Review Nữ',
+                      kocCategory: 'Personal care',
+                      contentPillar: 'Review trực tiếp',
+                      brandApprovalStatus: 'ĐÃ_DUYỆT',
+                      status: 'CONTRACT_GENERATED',
+                      statusLabel: 'Chờ Soạn HĐ',
+                      assignedStaff: 'Phạm Thị Thùy Dung',
+                      totalValue: 5000000,
+                      advanceAmount: 1000000,
+                      finalAmount: 4000000,
+                      deadlinePost: '2026-10-25',
+                      viewsCount: 0,
+                      publishedDays: 0,
+                      affiliateGmv: 0,
+                      gmv30: 0,
+                      roi: 0,
+                      remainingSlaHours: 48,
+                      isSlaWarning: false,
+                      hasIdCardScan: false,
+                      adsCodeStatus: 'CHƯA_CẤP',
+                      sampleStatus: 'CHƯA_GỬI'
+                    };
+                    onCreateDeal?.(newDraftDeal);
+                    setIsManualComposeModalOpen(false);
+                    onSelectDeal(newDraftDeal);
+                  }}
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-xl shadow-xs transition shrink-0 cursor-pointer"
+                >
+                  Tạo Mới Ngay
+                </button>
+              </div>
+
+              {/* Option 2: Select Existing Deal to compose/edit */}
+              <div className="space-y-2.5 pt-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-slate-800 text-xs">
+                    Hoặc Chọn Deal Có Sẵn Để Soạn / Sửa Hợp Đồng ({deals.length} deals):
+                  </span>
+                </div>
+
+                <div className="relative">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={composeSearchTerm}
+                    onChange={(e) => setComposeSearchTerm(e.target.value)}
+                    placeholder="Tìm theo KOC, mã BO, nhãn hàng..."
+                    className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+
+                <div className="divide-y divide-slate-100 border border-slate-200 rounded-xl max-h-56 overflow-y-auto bg-white">
+                  {deals
+                    .filter(d => {
+                      if (!composeSearchTerm.trim()) return true;
+                      const q = composeSearchTerm.toLowerCase();
+                      return (
+                        d.dealCode.toLowerCase().includes(q) ||
+                        d.kocStageName.toLowerCase().includes(q) ||
+                        d.brandName.toLowerCase().includes(q) ||
+                        d.campaignTitle.toLowerCase().includes(q)
+                      );
+                    })
+                    .slice(0, 10)
+                    .map((dealItem) => (
+                      <div
+                        key={dealItem.id}
+                        className="p-3 hover:bg-blue-50/50 transition flex items-center justify-between gap-3 group"
+                      >
+                        <div className="min-w-0">
+                          <div className="font-semibold text-slate-900 truncate">
+                            {dealItem.kocStageName} <span className="font-normal text-slate-500">({dealItem.brandName})</span>
+                          </div>
+                          <div className="text-2xs text-slate-500 flex items-center gap-2 mt-0.5">
+                            <span className="font-mono text-blue-700 font-semibold">{dealItem.dealCode}</span>
+                            <span>•</span>
+                            <span className="text-emerald-700 font-semibold">{dealItem.totalValue.toLocaleString('vi-VN')} ₫</span>
+                            <span>•</span>
+                            <span>PIC: {dealItem.assignedStaff}</span>
+                          </div>
+                        </div>
+
+                        <button
+                          onClick={() => {
+                            setIsManualComposeModalOpen(false);
+                            onSelectDeal(dealItem);
+                          }}
+                          className="px-3 py-1.5 bg-blue-50 hover:bg-blue-600 text-blue-700 hover:text-white font-semibold text-xs rounded-lg transition border border-blue-200 hover:border-transparent shrink-0 cursor-pointer"
+                        >
+                          Soạn HĐ
+                        </button>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 py-3.5 bg-slate-50 border-t border-slate-200 flex items-center justify-end">
+              <button
+                onClick={() => setIsManualComposeModalOpen(false)}
+                className="px-4 py-1.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 text-xs font-semibold rounded-lg transition"
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

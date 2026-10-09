@@ -285,6 +285,66 @@ export interface RecommendedContractTemplate {
   legalRules: string[];
 }
 
+// 4 MẪU HỢP ĐỒNG CHUẨN HOÁ CHO PHÉP CHỌN & ĐIỀN THỦ CÔNG
+export type ContractTemplateType = 
+  | 'KOC_INDIVIDUAL'       // HĐ Dịch Vụ Quảng Bá KOC Cá Nhân (Thuế TNCN 10%)
+  | 'BUSINESS_ENTERPRISE'  // HĐ Dịch Vụ Quảng Bá Pháp Nhân Doanh Nghiệp / Hộ Kinh Doanh (VAT)
+  | 'AFFILIATE_LIVESTREAM' // HĐ Tiếp Thị Liên Kết & Livestream (Hoa Hồng GMV)
+  | 'ANNEX_SETTLEMENT';    // Phụ Lục Hợp Đồng & Biên Bản Nghiệm Thu Quyết Toán
+
+export interface ManualContractFormData {
+  templateType: ContractTemplateType;
+  contractCode: string;
+  signDate: string;
+  effectiveDate: string;
+
+  // Bên A (Upbase)
+  partyAName: string;
+  partyARepresentative: string;
+  partyAPosition: string;
+  partyAAddress: string;
+  partyAPhone: string;
+  partyATaxCode: string;
+
+  // Bên B (KOC / Đối tác cung cấp dịch vụ)
+  partyBType: 'INDIVIDUAL' | 'BUSINESS';
+  partyBName: string;
+  partyBStageName: string;
+  partyBIdNumber: string; // CCCD (12 số) hoặc Mã số thuế
+  partyBIssueDate: string;
+  partyBIssuePlace: string;
+  partyBAddress: string;
+  partyBPhone: string;
+  partyBEmail: string;
+  partyBRepresentative?: string;
+  partyBRepTitle?: string;
+
+  // Ngân hàng Bên B
+  bankAccount: string;
+  bankName: string;
+  bankAccountName: string;
+
+  // Điều 1: Phạm vi dịch vụ & Cam kết
+  campaignTitle: string;
+  brandName: string;
+  productName: string;
+  deliverablesText: string;
+  videoCount: number;
+  sparkAdsDays: number;
+  deadlinePost: string;
+  scriptSlaHours: number;
+  customClauses: string;
+
+  // Điều 2: Giá trị dịch vụ & Lịch thanh toán
+  totalValue: number;
+  advanceRatePercent: number;
+  advanceAmount: number;
+  advanceCondition: string;
+  finalAmount: number;
+  finalCondition: string;
+  taxPolicyNote: string;
+}
+
 export interface OcrLegalExtractionResult {
   documentType: LegalDocumentType;
   documentTypeLabel: string;
