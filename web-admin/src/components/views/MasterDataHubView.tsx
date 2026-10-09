@@ -20,7 +20,8 @@ import {
   Building2,
   Store,
   ShoppingBag,
-  AlertCircle
+  AlertCircle,
+  GitFork
 } from 'lucide-react';
 import { UserProfile, BrandDetail, StorePortfolioItem, KocItem, MasterContentPillar } from '../../lib/types';
 import { INITIAL_BRANDS, INITIAL_STORE_PORTFOLIOS, USERS, INITIAL_KOCS, INITIAL_PUSH_PRODUCTS } from '../../lib/mockData';
@@ -41,6 +42,7 @@ import {
   StoresMasterView, 
   StaffMasterView 
 } from './master-data';
+import { MasterDataMindmapView } from './MasterDataMindmapView';
 import {
   UPBASE_MASTER_SLA_CONFIG,
   UPBASE_MASTER_KPI_DEFINITIONS,
@@ -52,6 +54,7 @@ import {
 export type MasterDataSubTab = 
   | 'brands' 
   | 'stores' 
+  | 'mindmap'
   | 'products' 
   | 'pillars' 
   | 'cast-tiers' 
@@ -734,6 +737,22 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
 
           <button
             type="button"
+            onClick={() => setActiveSubTab('mindmap')}
+            className={`py-3 border-b-2 transition-colors whitespace-nowrap flex items-center gap-2 ${
+              activeSubTab === 'mindmap'
+                ? 'border-blue-600 text-blue-600 font-semibold'
+                : 'border-transparent text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <GitFork className="w-3.5 h-3.5 text-blue-600" />
+            <span>Sơ đồ Mindmap</span>
+            <span className="text-2xs font-semibold px-1.5 py-0.2 rounded bg-blue-50 text-blue-700">
+              Cây phân cấp
+            </span>
+          </button>
+
+          <button
+            type="button"
             onClick={() => setActiveSubTab('products')}
             className={`py-3 border-b-2 transition-colors whitespace-nowrap flex items-center gap-2 ${
               activeSubTab === 'products'
@@ -883,6 +902,40 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
           </button>
         </div>
       </div>
+
+      {/* SUB-TAB: SƠ ĐỒ MINDMAP (BRAND → GIAN HÀNG → PIC → SKU) */}
+      {activeSubTab === 'mindmap' && (
+        <div className="space-y-4 animate-in fade-in duration-150">
+          <div className="bg-gradient-to-r from-blue-900 to-indigo-900 text-white p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-blue-500/20 border border-blue-400/30 flex items-center justify-center text-blue-300 shrink-0">
+                <GitFork className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="text-sm font-semibold flex items-center gap-2">
+                  Sơ Đồ Mindmap Cây Phân Cấp Gian Hàng & Nhãn Hàng
+                  <span className="text-2xs font-normal px-2 py-0.5 rounded-full bg-blue-500/30 border border-blue-400/40 text-blue-200">
+                    4 Tầng Trực Quan
+                  </span>
+                </h2>
+                <p className="text-xs text-blue-200 mt-0.5">
+                  Trực quan hóa cấu trúc: Nhãn hàng (Brand) → Gian hàng sàn (TikTok Shop, Shopee, Lazada) → PICs phụ trách (Lead & Hỗ trợ) → Danh mục SKU Hero & Doanh thu.
+                </p>
+              </div>
+            </div>
+            <div className="text-2xs text-slate-300 bg-white/10 px-3 py-1.5 rounded-lg border border-white/10 shrink-0">
+              Nhấp từng node để mở rộng / thu gọn nhánh
+            </div>
+          </div>
+
+          <MasterDataMindmapView
+            currentUser={currentUser}
+            brands={brandList}
+            storePortfolios={storeList}
+            onNotify={(msg) => onNotify?.(msg)}
+          />
+        </div>
+      )}
 
       {/* SUB-TAB 1: THƯƠNG HIỆU */}
       {activeSubTab === 'brands' && (
