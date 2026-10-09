@@ -673,7 +673,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                   }}
                   className="bg-transparent font-semibold text-slate-800 text-xs focus:outline-none cursor-pointer pr-1"
                 >
-                  <option value="ALL">🌐 Tất Cả Nhãn Hàng ({availableAllocations.length})</option>
+                  <option value="ALL">Tất Cả Nhãn Hàng ({availableAllocations.length})</option>
                   {availableAllocations.map(a => (
                     <option key={a.brandId} value={a.brandId}>{a.brandName}</option>
                   ))}

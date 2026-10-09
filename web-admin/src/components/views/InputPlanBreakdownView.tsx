@@ -779,7 +779,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
           {planState.status === 'PENDING_APPROVAL' ? (
             <div className="flex items-center gap-2">
               <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-500/20 text-blue-300 border border-blue-400/30 text-xs font-semibold">
-                <Clock className="w-3.5 h-3.5 animate-spin" />
+                <Clock className="w-3.5 h-3.5 text-blue-300" />
                 <span>Chờ Quản Lý Duyệt</span>
               </span>
               {/* Nếu là Manager hoặc Role LEAD thì có nút Phê Duyệt / Yêu Cầu Sửa */}

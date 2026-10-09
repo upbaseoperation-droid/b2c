@@ -532,7 +532,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
       {
         id: 'vid-2',
         title: 'Test Khả Năng Kiềm Dầu & Kháng Nước Kem Chống Nắng',
-        creatorName: 'Sandy ✿',
+        creatorName: 'Sandy',
         creatorTier: 'Micro',
         brandName: 'Face Republic',
         storeName: 'Face Republic Official Shop',
@@ -549,7 +549,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
       {
         id: 'vid-3',
         title: 'Mẹ Bỉm Trị Hăm Tã Khẩn Cấp Cho Bé 3 Tháng Tuổi',
-        creatorName: 'Heda ☁︎ ᯓ',
+        creatorName: 'Heda',
         creatorTier: 'Micro',
         brandName: 'Kutieskin',
         storeName: 'Kutieskin Official Store',
@@ -566,7 +566,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
       {
         id: 'vid-4',
         title: 'Thử Thách Makeup Căng Bóng Hàn Quốc Với Phấn Nước Clio',
-        creatorName: 'Ngọc Matcha ☘️',
+        creatorName: 'Ngọc Matcha',
         creatorTier: 'Key',
         brandName: 'Clio',
         storeName: 'Clio Vietnam Official TikTok Shop',
@@ -879,7 +879,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
         r.getCell(7).value = `${formatVndShort(s.currentGmv)} / ${formatVndShort(s.targetGmv)}`;
         r.getCell(8).value = `${formatVndShort(s.spentBudget)} (${s.burnRatePct}%)`;
         r.getCell(9).value = `${s.slaScore}%`;
-        r.getCell(10).value = s.status === 'AHEAD_OF_SCHEDULE' ? 'Vượt Tiến Độ 🚀' : s.status === 'ON_TRACK' ? 'Đúng Kế Hoạch ✅' : 'Rủi Ro Chậm ⚠️';
+        r.getCell(10).value = s.status === 'AHEAD_OF_SCHEDULE' ? 'Vượt Tiến Độ' : s.status === 'ON_TRACK' ? 'Đúng Kế Hoạch' : 'Rủi Ro Chậm';
       });
 
       // ================= SHEET 3: AIR VIDEO PIPELINE =================
@@ -933,7 +933,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
         r.getCell(5).value = `${p.spentBudget.toLocaleString('vi-VN')} đ`;
         r.getCell(6).value = `${p.remainingBudget.toLocaleString('vi-VN')} đ`;
         r.getCell(7).value = `${p.burnRatePct}%`;
-        r.getCell(8).value = p.pacingStatus === 'ON_TRACK' ? 'Đúng Tiến Độ ✅' : p.pacingStatus === 'OVER_PACING' ? 'Đốt Nhanh ⚠️' : 'Giải Ngân Chậm ⏳';
+        r.getCell(8).value = p.pacingStatus === 'ON_TRACK' ? 'Đúng Tiến Độ' : p.pacingStatus === 'OVER_PACING' ? 'Đốt Nhanh' : 'Giải Ngân Chậm';
         r.getCell(9).value = `${p.currentGmv.toLocaleString('vi-VN')} đ`;
         r.getCell(10).value = `${p.roas}x`;
       });
@@ -1531,9 +1531,9 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                 className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700 font-medium"
               >
                 <option value="ALL">Tất cả trạng thái</option>
-                <option value="AHEAD_OF_SCHEDULE">Vượt tiến độ 🚀</option>
-                <option value="ON_TRACK">Đúng kế hoạch ✅</option>
-                <option value="AT_RISK">Rủi ro chậm ⚠️</option>
+                <option value="AHEAD_OF_SCHEDULE">Vượt tiến độ</option>
+                <option value="ON_TRACK">Đúng kế hoạch</option>
+                <option value="AT_RISK">Rủi ro chậm</option>
               </select>
             </div>
 
@@ -1629,17 +1629,17 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                         <td className="py-3.5 px-3 text-center">
                           {s.status === 'AHEAD_OF_SCHEDULE' && (
                             <span className="px-2 py-0.5 rounded-full text-3xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                              Vượt tiến độ 🚀
+                              Vượt tiến độ
                             </span>
                           )}
                           {s.status === 'ON_TRACK' && (
                             <span className="px-2 py-0.5 rounded-full text-3xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
-                              Đúng kế hoạch ✅
+                              Đúng kế hoạch
                             </span>
                           )}
                           {s.status === 'AT_RISK' && (
                             <span className="px-2 py-0.5 rounded-full text-3xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
-                              Cần đẩy nhanh ⚠️
+                              Cần đẩy nhanh
                             </span>
                           )}
                         </td>
@@ -1768,9 +1768,9 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                   className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 font-medium"
                 >
                   <option value="ALL">Tất cả trạng thái video</option>
-                  <option value="AIRED_VERIFIED">Đã lên sóng ✅</option>
-                  <option value="RUNNING_ADS">Đang chạy Ads Spark 🔥</option>
-                  <option value="PENDING_APPROVAL">Chờ duyệt kịch bản ⏳</option>
+                  <option value="AIRED_VERIFIED">Đã lên sóng</option>
+                  <option value="RUNNING_ADS">Đang chạy Ads Spark</option>
+                  <option value="PENDING_APPROVAL">Chờ duyệt kịch bản</option>
                 </select>
 
                 <button
@@ -1866,12 +1866,12 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                         )}
                         {v.status === 'AIRED_VERIFIED' && (
                           <span className="px-2 py-0.5 rounded-full text-3xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                            Đã Nghiệm Thu ✅
+                            Đã Nghiệm Thu
                           </span>
                         )}
                         {v.status === 'PENDING_APPROVAL' && (
                           <span className="px-2 py-0.5 rounded-full text-3xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
-                            Chờ Duyệt ⏳
+                            Chờ Duyệt
                           </span>
                         )}
                       </td>
@@ -1980,9 +1980,9 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                   className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 font-medium"
                 >
                   <option value="ALL">Tất cả tình trạng Pacing</option>
-                  <option value="ON_TRACK">Đúng tiến độ an toàn ✅</option>
-                  <option value="OVER_PACING">Đốt nhanh (&gt;30%) ⚠️</option>
-                  <option value="UNDER_PACING">Giải ngân chậm (&lt;20%) ⏳</option>
+                  <option value="ON_TRACK">Đúng tiến độ an toàn</option>
+                  <option value="OVER_PACING">Đốt nhanh (&gt;30%)</option>
+                  <option value="UNDER_PACING">Giải ngân chậm (&lt;20%)</option>
                 </select>
 
                 <button
@@ -2051,17 +2051,17 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                       <td className="py-3.5 px-3 text-center">
                         {p.pacingStatus === 'ON_TRACK' && (
                           <span className="px-2 py-0.5 rounded-full text-3xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                            Đúng Tiến Độ ✅
+                            Đúng Tiến Độ
                           </span>
                         )}
                         {p.pacingStatus === 'OVER_PACING' && (
                           <span className="px-2 py-0.5 rounded-full text-3xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
-                            Đốt Nhanh ⚠️
+                            Đốt Nhanh
                           </span>
                         )}
                         {p.pacingStatus === 'UNDER_PACING' && (
                           <span className="px-2 py-0.5 rounded-full text-3xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
-                            Chậm Giải Ngân ⏳
+                            Chậm Giải Ngân
                           </span>
                         )}
                       </td>
@@ -2128,10 +2128,10 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {[
-                    { name: 'Kim Chung Phan', tier: 'Macro', niche: 'Review Nữ', cost: 15000000, gmv: 166050000, roas: 11.07, hook2s: '36.8%', ads: 'Đang chạy', winner: 'Top 1 Winner 👑' },
-                    { name: 'Sandy ✿', tier: 'Micro', niche: 'Chăm sóc da', cost: 8000000, gmv: 54880000, roas: 6.86, hook2s: '32.1%', ads: 'Đang chạy', winner: 'Top 2 Winner' },
-                    { name: 'Heda ☁︎ ᯓ', tier: 'Micro', niche: 'Lifestyle', cost: 7000000, gmv: 43610000, roas: 6.23, hook2s: '29.5%', ads: 'Đang chạy', winner: 'Winner Đạt KPI' },
-                    { name: 'Ngọc Matcha ☘️', tier: 'Key', niche: 'Beauty & Vlog', cost: 25000000, gmv: 146000000, roas: 5.84, hook2s: '34.2%', ads: 'Đang chạy', winner: 'Winner Đạt KPI' },
+                    { name: 'Kim Chung Phan', tier: 'Macro', niche: 'Review Nữ', cost: 15000000, gmv: 166050000, roas: 11.07, hook2s: '36.8%', ads: 'Đang chạy', winner: 'Top 1 Winner' },
+                    { name: 'Sandy', tier: 'Micro', niche: 'Chăm sóc da', cost: 8000000, gmv: 54880000, roas: 6.86, hook2s: '32.1%', ads: 'Đang chạy', winner: 'Top 2 Winner' },
+                    { name: 'Heda', tier: 'Micro', niche: 'Lifestyle', cost: 7000000, gmv: 43610000, roas: 6.23, hook2s: '29.5%', ads: 'Đang chạy', winner: 'Winner Đạt KPI' },
+                    { name: 'Ngọc Matcha', tier: 'Key', niche: 'Beauty & Vlog', cost: 25000000, gmv: 146000000, roas: 5.84, hook2s: '34.2%', ads: 'Đang chạy', winner: 'Winner Đạt KPI' },
                     { name: 'bui_imeo', tier: 'Micro', niche: 'Makeup Hàn', cost: 12000000, gmv: 61800000, roas: 5.15, hook2s: '31.0%', ads: 'Đang chạy', winner: 'Winner Đạt KPI' },
                     { name: 'Lương Thục Hiền', tier: 'Macro', niche: 'Chuyên gia Kẻ mắt', cost: 18000000, gmv: 89460000, roas: 4.97, hook2s: '28.3%', ads: 'Đang chạy', winner: 'Winner Đạt KPI' },
                     { name: 'Cô Học Chăm Da', tier: 'Key', niche: 'Skincare Khoa học', cost: 20000000, gmv: 83200000, roas: 4.16, hook2s: '27.4%', ads: 'Cần cấp lại mã', winner: 'Tiềm Năng' },

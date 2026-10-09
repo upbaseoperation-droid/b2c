@@ -498,11 +498,11 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
             {/* Quick Badge Legend */}
             <div className="flex items-center gap-2 text-2xs text-slate-600 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200">
               <span className="font-semibold text-slate-700">Chú giải:</span>
-              <span className="inline-flex items-center text-emerald-700 font-bold">🟢 ALL</span>
-              <span className="inline-flex items-center text-blue-700 font-bold">🔵 SCOPED</span>
-              <span className="inline-flex items-center text-amber-700 font-bold">🟡 VIEW</span>
-              <span className="inline-flex items-center text-purple-700 font-bold">🟣 APPROVE</span>
-              <span className="inline-flex items-center text-slate-400 font-medium">⛔ DENIED</span>
+              <span className="inline-flex items-center text-emerald-700 font-bold">ALL</span>
+              <span className="inline-flex items-center text-blue-700 font-bold">SCOPED</span>
+              <span className="inline-flex items-center text-amber-700 font-bold">VIEW</span>
+              <span className="inline-flex items-center text-purple-700 font-bold">APPROVE</span>
+              <span className="inline-flex items-center text-slate-400 font-medium">DENIED</span>
             </div>
           </div>
 
@@ -774,7 +774,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                         <div className="flex flex-wrap gap-1 max-w-xs">
                           {staff.picBrands.includes('ALL_BRANDS') ? (
                             <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 text-3xs font-bold">
-                              🌟 Tất cả nhãn hàng
+                              Tất cả nhãn hàng
                             </span>
                           ) : staff.picBrands.length > 0 ? (
                             staff.picBrands.map((b, i) => (

@@ -551,7 +551,7 @@ export const WeeklyAdsReportHubView: React.FC<WeeklyAdsReportHubViewProps> = ({
                       <td className="py-3 px-4 text-center">
                         {camp.roas >= 5.0 ? (
                           <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded text-3xs font-semibold">
-                            Scale ngân sách 🚀
+                            Scale ngân sách
                           </span>
                         ) : camp.roas >= 3.5 ? (
                           <span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded text-3xs font-semibold">
@@ -559,7 +559,7 @@ export const WeeklyAdsReportHubView: React.FC<WeeklyAdsReportHubViewProps> = ({
                           </span>
                         ) : (
                           <span className="px-2 py-0.5 bg-amber-100 text-amber-800 rounded text-3xs font-semibold">
-                            Tối ưu kịch bản ⚠️
+                            Tối ưu kịch bản
                           </span>
                         )}
                       </td>
@@ -709,7 +709,7 @@ export const WeeklyAdsReportHubView: React.FC<WeeklyAdsReportHubViewProps> = ({
                       <td className="py-3 px-4 text-center">
                         {cr.roas >= 6.0 ? (
                           <span className="px-2 py-0.5 bg-amber-50 text-amber-700 border border-amber-200 rounded text-3xs font-bold">
-                            Top 1 Winner 👑
+                            Top 1 Winner
                           </span>
                         ) : cr.roas >= 4.0 ? (
                           <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded text-3xs font-semibold">

@@ -97,8 +97,8 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
             >
               <option value="ALL">
                 {['ADMIN', 'MANAGER'].includes(currentUser.role)
-                  ? '🌐 Tất cả nhãn hàng'
-                  : `📁 Tất cả brand phụ trách (${userAssignedBrands.filter(b => b !== 'Tất cả nhãn hàng').length})`}
+                  ? 'Tất cả nhãn hàng'
+                  : `Tất cả brand phụ trách (${userAssignedBrands.filter(b => b !== 'Tất cả nhãn hàng').length})`}
               </option>
               {userAssignedBrands
                 .filter(b => b !== 'Tất cả nhãn hàng')
@@ -141,21 +141,21 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
                 style={{ backgroundColor: 'transparent' }}
                 aria-label="Xem với vai trò"
               >
-                <optgroup label="👑 Ban Điều Hành & Quản Trị">
+                <optgroup label="Ban Điều Hành & Quản Trị">
                   {USERS.filter(u => u.role === 'ADMIN' || u.role === 'MANAGER').map((user) => (
                     <option key={user.id} value={user.id}>
                       {user.name} · {ROLE_LABEL[user.role] ?? user.role}
                     </option>
                   ))}
                 </optgroup>
-                <optgroup label="💼 Trưởng Nhóm & Chuyên Viên Nội Bộ">
+                <optgroup label="Trưởng Nhóm & Chuyên Viên Nội Bộ">
                   {USERS.filter(u => ['LEADER', 'BOOKING_MEMBER', 'CONTENT_MEMBER', 'BRAND_MEMBER', 'MEMBER'].includes(u.role)).map((user) => (
                     <option key={user.id} value={user.id}>
                       {user.name} · {ROLE_LABEL[user.role] ?? user.role}
                     </option>
                   ))}
                 </optgroup>
-                <optgroup label="🌐 Đối Tác Bên Thứ 3 (Gmail SSO)">
+                <optgroup label="Đối Tác Bên Thứ 3 (Gmail SSO)">
                   {USERS.filter(u => ['BRAND_PARTNER', 'KOC_PARTNER', 'CTV_PARTNER'].includes(u.role)).map((user) => (
                     <option key={user.id} value={user.id}>
                       {user.name} · {ROLE_LABEL[user.role] ?? user.role}

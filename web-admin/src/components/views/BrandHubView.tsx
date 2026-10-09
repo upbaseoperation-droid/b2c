@@ -436,7 +436,7 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
               >
                 {isManagerOrLeader && (
                   <option value="ALL">
-                    🌐 Bảng Giám Sát Toàn Bộ Cổng Brand ({portals.length} nhãn)
+                    Bảng Giám Sát Toàn Bộ Cổng Brand ({portals.length} nhãn)
                   </option>
                 )}
                 {portals.map(p => (

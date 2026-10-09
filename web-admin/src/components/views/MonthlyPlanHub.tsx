@@ -425,7 +425,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
       case 'PENDING_PRE_APPROVAL':
         return (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200">
-            <Clock className="w-3.5 h-3.5 text-amber-600 animate-spin" />
+            <Clock className="w-3.5 h-3.5 text-amber-600" />
             Chờ sơ duyệt
           </span>
         );
@@ -606,7 +606,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
               <span>Chờ quản lý duyệt: {governanceStats.countPendingApproval}</span>
             </span>
             {governanceStats.countMissingPlan > 0 && (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50 text-rose-800 border border-rose-200 text-xs font-bold animate-pulse">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50 text-rose-800 border border-rose-200 text-xs font-bold">
                 <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
                 <span>Chưa có plan: {governanceStats.countMissingPlan}</span>
               </span>
@@ -1056,7 +1056,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                                 </span>
                               ) : plan.growthAlignmentStatus === 'ĐANG_TRAO_ĐỔI' ? (
                                 <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-2xs font-bold bg-amber-50 text-amber-800 border border-amber-200">
-                                  <Clock className="w-3.5 h-3.5 text-amber-600 animate-spin" />
+                                  <Clock className="w-3.5 h-3.5 text-amber-600" />
                                   <span>Đang Trao Đổi</span>
                                 </span>
                               ) : (

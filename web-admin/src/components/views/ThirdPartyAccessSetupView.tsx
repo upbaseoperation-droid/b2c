@@ -325,9 +325,9 @@ export const ThirdPartyAccessSetupView: React.FC<ThirdPartyAccessSetupViewProps>
             className="text-xs h-9 px-3 rounded-lg border border-slate-200 bg-white text-slate-700 font-medium focus:outline-none focus:border-emerald-500"
           >
             <option value="ALL">Tất cả loại đối tác ({accounts.length})</option>
-            <option value="BRAND">🏢 Đối tác Brand ({brandCount})</option>
-            <option value="KOC">🌟 KOC / KOL ({kocCount})</option>
-            <option value="CTV">🎬 Cộng tác viên CTV ({ctvCount})</option>
+            <option value="BRAND">Đối tác Brand ({brandCount})</option>
+            <option value="KOC">KOC / KOL ({kocCount})</option>
+            <option value="CTV">Cộng tác viên CTV ({ctvCount})</option>
           </select>
 
           {/* Status */}
@@ -441,32 +441,32 @@ export const ThirdPartyAccessSetupView: React.FC<ThirdPartyAccessSetupViewProps>
                       <div className="flex flex-wrap gap-1 max-w-[280px]">
                         {acc.permissions.canApproveDeals && (
                           <span className="px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 text-3xs font-semibold border border-purple-200">
-                            ✓ Duyệt KOC
+                            Duyệt KOC
                           </span>
                         )}
                         {acc.permissions.canReviewScripts && (
                           <span className="px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 text-3xs font-semibold border border-blue-200">
-                            ✓ Duyệt Kịch Bản
+                            Duyệt Kịch Bản
                           </span>
                         )}
                         {acc.permissions.canViewGmvAndRoas && (
                           <span className="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 text-3xs font-semibold border border-emerald-200">
-                            ✓ Xem GMV & ROI
+                            Xem GMV & ROI
                           </span>
                         )}
                         {acc.permissions.canSubmitVideos && (
                           <span className="px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 text-3xs font-semibold border border-indigo-200">
-                            ✓ Nộp Link Video
+                            Nộp Link Video
                           </span>
                         )}
                         {acc.permissions.canProvideSparkAds && (
                           <span className="px-1.5 py-0.5 rounded bg-amber-50 text-amber-800 text-3xs font-semibold border border-amber-200">
-                            ✓ Cung Cấp Mã Ads
+                            Cung Cấp Mã Ads
                           </span>
                         )}
                         {acc.permissions.canClaimSamples && (
                           <span className="px-1.5 py-0.5 rounded bg-teal-50 text-teal-700 text-3xs font-semibold border border-teal-200">
-                            ✓ Nhận Mẫu
+                            Nhận Mẫu
                           </span>
                         )}
                       </div>

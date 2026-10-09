@@ -408,10 +408,10 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
               className="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-slate-50 font-medium text-slate-800 focus:outline-none focus:border-slate-800"
             >
               <option value="ALL">Mọi trạng thái ({stores.length})</option>
-              <option value="Live">🟢 Đang Live ({liveCount})</option>
-              <option value="Off">🔴 Đã Off ({offCount})</option>
+              <option value="Live">Đang Live ({liveCount})</option>
+              <option value="Off">Đã Off ({offCount})</option>
               {internalCount > 0 && (
-                <option value="Kênh nội bộ">🟣 Kênh nội bộ ({internalCount})</option>
+                <option value="Kênh nội bộ">Kênh nội bộ ({internalCount})</option>
               )}
             </select>
           </div>

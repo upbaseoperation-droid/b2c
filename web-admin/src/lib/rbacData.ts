@@ -818,7 +818,7 @@ export const INITIAL_RBAC_AUDIT_LOGS: RbacAuditLogItem[] = [
 // =========================================================================
 export const PERMISSION_BADGE_CONFIG: Record<PermissionAccessLevel, { label: string; shortLabel: string; bg: string; text: string; border: string; description: string }> = {
   ALL: {
-    label: '🟢 ALL (Toàn quyền)',
+    label: 'ALL (Toàn quyền)',
     shortLabel: 'ALL',
     bg: 'bg-emerald-50',
     text: 'text-emerald-700 font-bold',
@@ -826,7 +826,7 @@ export const PERMISSION_BADGE_CONFIG: Record<PermissionAccessLevel, { label: str
     description: 'Toàn quyền tạo, sửa, xóa, duyệt không giới hạn phạm vi.'
   },
   SCOPED: {
-    label: '🔵 SCOPED (Theo phân công)',
+    label: 'SCOPED (Theo phân công)',
     shortLabel: 'SCOPED',
     bg: 'bg-blue-50',
     text: 'text-blue-700 font-bold',
@@ -834,7 +834,7 @@ export const PERMISSION_BADGE_CONFIG: Record<PermissionAccessLevel, { label: str
     description: 'Chỉ được thao tác trên Brand/Store/Job được giao phụ trách trực tiếp.'
   },
   VIEW: {
-    label: '🟡 VIEW (Chỉ xem)',
+    label: 'VIEW (Chỉ xem)',
     shortLabel: 'VIEW',
     bg: 'bg-amber-50',
     text: 'text-amber-700 font-bold',
@@ -842,7 +842,7 @@ export const PERMISSION_BADGE_CONFIG: Record<PermissionAccessLevel, { label: str
     description: 'Chỉ có quyền xem thông tin, không được tạo, sửa hoặc xóa.'
   },
   APPROVE: {
-    label: '🟣 APPROVE (Phê duyệt)',
+    label: 'APPROVE (Phê duyệt)',
     shortLabel: 'APPROVE',
     bg: 'bg-purple-50',
     text: 'text-purple-700 font-bold',
@@ -850,7 +850,7 @@ export const PERMISSION_BADGE_CONFIG: Record<PermissionAccessLevel, { label: str
     description: 'Có thẩm quyền ký duyệt chính sách, duyệt deal, duyệt tiền, duyệt kịch bản.'
   },
   DENIED: {
-    label: '⛔ DENIED (Cấm truy cập)',
+    label: 'DENIED (Cấm truy cập)',
     shortLabel: 'DENIED',
     bg: 'bg-slate-50',
     text: 'text-slate-400 font-medium',

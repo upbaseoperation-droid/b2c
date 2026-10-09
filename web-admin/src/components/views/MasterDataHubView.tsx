@@ -762,9 +762,9 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                   className="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-slate-50 font-medium text-slate-800 focus:outline-none focus:border-slate-800"
                 >
                   <option value="ALL">Tất cả trạng thái</option>
-                  <option value="ACTIVE">🟢 Đang hoạt động (ACTIVE)</option>
-                  <option value="PAUSED">🟡 Tạm dừng (PAUSED)</option>
-                  <option value="UPCOMING">🔵 Sắp diễn ra (UPCOMING)</option>
+                  <option value="ACTIVE">Đang hoạt động (ACTIVE)</option>
+                  <option value="PAUSED">Tạm dừng (PAUSED)</option>
+                  <option value="UPCOMING">Sắp diễn ra (UPCOMING)</option>
                 </select>
               </div>
 
@@ -1091,8 +1091,8 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                   className="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-slate-50 font-medium text-slate-800 focus:outline-none focus:border-slate-800"
                 >
                   <option value="ALL">Tất cả</option>
-                  <option value="ACTIVE">🟢 Đang bán</option>
-                  <option value="DISCONTINUED">🔴 Ngừng bán</option>
+                  <option value="ACTIVE">Đang bán</option>
+                  <option value="DISCONTINUED">Ngừng bán</option>
                 </select>
               </div>
 
@@ -1295,8 +1295,8 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                   className="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-slate-50 font-medium text-slate-800 focus:outline-none focus:border-slate-800"
                 >
                   <option value="ALL">Mọi trạng thái ({pillarList.length})</option>
-                  <option value="ACTIVE">🟢 Đang áp dụng ({pillarList.filter(p => p.status === 'ACTIVE').length})</option>
-                  <option value="INACTIVE">🔴 Tạm dừng ({pillarList.filter(p => p.status === 'INACTIVE').length})</option>
+                  <option value="ACTIVE">Đang áp dụng ({pillarList.filter(p => p.status === 'ACTIVE').length})</option>
+                  <option value="INACTIVE">Tạm dừng ({pillarList.filter(p => p.status === 'INACTIVE').length})</option>
                 </select>
               </div>
 

@@ -380,7 +380,7 @@ export const KocKolHubView: React.FC<KocKolHubViewProps> = ({
                 }`}
               >
                 <Layers className="w-3.5 h-3.5" />
-                <span>🌐 Giám Sát Mạng Lưới KOC</span>
+                <span>Giám Sát Mạng Lưới KOC</span>
               </button>
 
               <button
@@ -393,7 +393,7 @@ export const KocKolHubView: React.FC<KocKolHubViewProps> = ({
                 }`}
               >
                 <Users className="w-3.5 h-3.5" />
-                <span>👤 Cổng KOC Đang Chọn ({activeKoc.stageName})</span>
+                <span>Cổng KOC Đang Chọn ({activeKoc.stageName})</span>
               </button>
             </div>
           </div>
@@ -425,7 +425,7 @@ export const KocKolHubView: React.FC<KocKolHubViewProps> = ({
                 }}
                 className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 font-medium focus:outline-none focus:border-indigo-500"
               >
-                <option value="ALL">🏢 Tất cả nhãn hàng</option>
+                <option value="ALL">Tất cả nhãn hàng</option>
                 {availableBrands.map(b => (
                   <option key={b} value={b}>{b}</option>
                 ))}
@@ -442,7 +442,7 @@ export const KocKolHubView: React.FC<KocKolHubViewProps> = ({
                 }}
                 className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 font-medium focus:outline-none focus:border-indigo-500"
               >
-                <option value="ALL">⭐ Tất cả Cấp bậc (Tier)</option>
+                <option value="ALL">Tất cả Cấp bậc (Tier)</option>
                 <option value="TIER_1_CELEB">Mega / Celeb (&gt;1M)</option>
                 <option value="TIER_2_MACRO">Macro (250K - 1M)</option>
                 <option value="TIER_3_MICRO">Micro (50K - 250K)</option>
@@ -460,7 +460,7 @@ export const KocKolHubView: React.FC<KocKolHubViewProps> = ({
                 }}
                 className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 font-medium focus:outline-none focus:border-indigo-500"
               >
-                <option value="ALL">💰 Tất cả Khung lương (KL)</option>
+                <option value="ALL">Tất cả Khung lương (KL)</option>
                 <option value="KL1">KL1 (&lt; 1 Triệu)</option>
                 <option value="KL2">KL2 (1 - 3 Triệu)</option>
                 <option value="KL3">KL3 (3 - 6 Triệu)</option>
@@ -481,7 +481,7 @@ export const KocKolHubView: React.FC<KocKolHubViewProps> = ({
                 }}
                 className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 font-medium focus:outline-none focus:border-indigo-500 truncate"
               >
-                <option value="ALL">🎯 Tất cả Tệp kênh</option>
+                <option value="ALL">Tất cả Tệp kênh</option>
                 {availableTepKenhs.map(t => (
                   <option key={t} value={t}>{t}</option>
                 ))}
@@ -498,7 +498,7 @@ export const KocKolHubView: React.FC<KocKolHubViewProps> = ({
                 }}
                 className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 font-medium focus:outline-none focus:border-indigo-500 truncate"
               >
-                <option value="ALL">👤 Tất cả PIC Booking</option>
+                <option value="ALL">Tất cả PIC Booking</option>
                 {availablePics.map(p => (
                   <option key={p} value={p}>{p}</option>
                 ))}
