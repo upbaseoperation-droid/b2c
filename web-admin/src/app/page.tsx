@@ -129,8 +129,21 @@ export default function App() {
     }
   }, [currentUser, activeTab]);
 
-  const handleUserChange = (newUser: UserProfile) => {
+  const handleUserChange = (newUser: UserProfile, isSilent: boolean = false) => {
     setCurrentUser(newUser);
+
+    // Lưu vai trò được chọn vào localStorage để duy trì sau khi tải lại trang
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('upbase_selected_user_id', newUser.id);
+    }
+
+    // Đồng bộ session cookie máy chủ qua API sandbox ngầm
+    fetch('/api/auth/lark/sandbox', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: newUser.id }),
+    }).catch(err => console.warn('Sync server session failed:', err));
+
     if (newUser.role === 'BRAND_PARTNER') {
       const userBrand = newUser.assignedBrands?.[0] || newUser.linkedEntityName || 'Kutieskin';
       setSelectedBrandContext(userBrand);
@@ -141,30 +154,49 @@ export default function App() {
     if (!allowed.includes(activeTab)) {
       const defaultTab = getDefaultLandingTabForRole(newUser.role);
       setActiveTab(defaultTab);
-      showToast(`Chuyển vai trò: ${newUser.name} (${newUser.roleTitle})`, 'info');
-    } else {
+      if (!isSilent) {
+        showToast(`Chuyển vai trò: ${newUser.name} (${newUser.roleTitle})`, 'info');
+      }
+    } else if (!isSilent) {
       showToast(`Đang xem với vai trò: ${newUser.name} (${newUser.roleTitle})`, 'info');
     }
   };
 
-  // Load Lark Auth session on mount with strict redirect
+  // Tải session hoặc vai trò đã chọn, tự động cấp quyền không cần bắt buộc đăng nhập Lark/Gmail
   useEffect(() => {
     async function loadUser() {
       try {
+        const savedUserId = typeof window !== 'undefined' ? localStorage.getItem('upbase_selected_user_id') : null;
         const res = await fetch('/api/auth/me');
+
         if (res.ok) {
           const data = await res.json();
           if (data.authenticated && data.user) {
-            handleUserChange(data.user);
+            // Nếu người dùng đã chọn vai trò trước đó trong localStorage, ưu tiên áp dụng vai trò đó
+            if (savedUserId && savedUserId !== data.user.id) {
+              const matched = USERS.find(u => u.id === savedUserId);
+              if (matched) {
+                handleUserChange(matched, true);
+                setIsLoadingAuth(false);
+                return;
+              }
+            }
+            handleUserChange(data.user, true);
             setIsLoadingAuth(false);
             return;
           }
         }
-        // Phiên không hợp lệ hoặc chưa đăng nhập -> Chuyển hướng về trang đăng nhập
-        window.location.href = '/login';
+
+        // Dự phòng: Mặc định cấp quyền Quản trị BOD hoặc vai trò đã lưu mà không chuyển sang /login
+        const fallbackUser = (savedUserId && USERS.find(u => u.id === savedUserId)) || USERS[0];
+        handleUserChange(fallbackUser, true);
+        setIsLoadingAuth(false);
       } catch (err) {
-        console.warn('Could not fetch user session:', err);
-        window.location.href = '/login';
+        console.warn('Could not fetch user session, using fallback user:', err);
+        const savedUserId = typeof window !== 'undefined' ? localStorage.getItem('upbase_selected_user_id') : null;
+        const fallbackUser = (savedUserId && USERS.find(u => u.id === savedUserId)) || USERS[0];
+        handleUserChange(fallbackUser, true);
+        setIsLoadingAuth(false);
       }
     }
     loadUser();

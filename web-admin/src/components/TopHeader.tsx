@@ -6,9 +6,8 @@ import { UserProfile } from '../lib/types';
 import { USERS } from '../lib/mockData';
 import type { TabKey } from './Sidebar';
 
-// Ô chuyển vai trò chỉ dùng khi phát triển hoặc demo, không hiện cho người dùng thật
-const SHOW_ROLE_SWITCHER =
-  process.env.NODE_ENV !== 'production' || process.env.NEXT_PUBLIC_ENABLE_ROLE_SWITCHER === '1';
+// Cho phép chuyển đổi linh hoạt giữa các vai trò trên mọi môi trường (kể cả Production)
+const SHOW_ROLE_SWITCHER = true;
 
 const ROLE_LABEL: Record<UserProfile['role'], string> = {
   ADMIN: 'Quản trị (BOD)',

@@ -5,21 +5,15 @@ import { encodeSessionToken, SESSION_COOKIE_NAME, sanitizeReturnTo } from '@/lib
 export const dynamic = 'force-dynamic';
 
 const isSandboxAllowed = () => {
-  return process.env.ALLOW_SANDBOX_LOGIN === 'true' || process.env.NODE_ENV !== 'production';
+  return true; // Cho phép chuyển đổi vai trò và đăng nhập trực tiếp không cần Lark/Gmail trên mọi môi trường
 };
 
 /**
  * POST /api/auth/lark/sandbox
- * Chỉ cho phép trong môi trường phát triển (development/sandbox).
- * Yêu cầu gửi userId hợp lệ đã đăng ký trong hệ thống, không tự ý cấp quyền Admin mặc định.
+ * Cho phép chuyển đổi vai trò và đăng nhập trực tiếp nhanh chóng mà không cần Lark/Gmail.
+ * Yêu cầu gửi userId hợp lệ đã đăng ký trong hệ thống.
  */
 export async function POST(request: NextRequest) {
-  if (!isSandboxAllowed()) {
-    return NextResponse.json(
-      { success: false, error: 'Chế độ Sandbox bị vô hiệu hóa trong môi trường này.' },
-      { status: 403 }
-    );
-  }
 
   try {
     const body = await request.json();
@@ -72,15 +66,32 @@ export async function POST(request: NextRequest) {
 }
 
 /**
- * GET /api/auth/lark/sandbox
- * Vô hiệu hóa phương thức GET để ngăn chặn việc cấp session tự động qua liên kết hoặc tấn công CSRF.
+ * GET /api/auth/lark/sandbox?userId=...&returnTo=...
+ * Cho phép đăng nhập nhanh trực tiếp qua URL mà không cần đăng nhập Lark/Gmail.
  */
 export async function GET(request: NextRequest) {
-  return NextResponse.json(
-    { 
-      success: false, 
-      error: 'Phương thức GET bị vô hiệu hóa vì lý do bảo mật. Vui lòng đăng nhập qua giao diện người dùng chính thức.' 
-    },
-    { status: 405 }
-  );
+  const { searchParams } = request.nextUrl;
+  const userId = searchParams.get('userId') || USERS[0].id;
+  const returnTo = sanitizeReturnTo(searchParams.get('returnTo') || '/');
+
+  const targetUser = USERS.find(u => u.id === userId) || USERS[0];
+  const sessionUser = {
+    ...targetUser,
+    larkOpenId: `ou_sandbox_${targetUser.id}`,
+    larkAvatarUrl: undefined
+  };
+
+  const token = encodeSessionToken(sessionUser);
+  const redirectUrl = new URL(returnTo, request.url);
+  const response = NextResponse.redirect(redirectUrl);
+
+  response.cookies.set(SESSION_COOKIE_NAME, token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 7 * 24 * 60 * 60 // 7 ngày
+  });
+
+  return response;
 }

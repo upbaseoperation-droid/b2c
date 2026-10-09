@@ -77,11 +77,11 @@ function LoginContent() {
   const [selectedPartnerId, setSelectedPartnerId] = useState<string>(INITIAL_THIRD_PARTY_ACCOUNTS[0]?.id || '');
   const [partnerError, setPartnerError] = useState<string | null>(null);
 
-  // Đã đăng nhập thì chuyển thẳng vào app
+  // Đã đăng nhập thì chuyển thẳng vào app (dùng strict=1 để tránh tự động cấp phiên khi vừa logout)
   useEffect(() => {
     async function checkAuth() {
       try {
-        const res = await fetch('/api/auth/me');
+        const res = await fetch('/api/auth/me?strict=1');
         const data = await res.json();
         if (data.authenticated) router.replace(returnTo);
       } catch (err) {
@@ -100,6 +100,9 @@ function LoginContent() {
     setIsLoading(true);
     setSandboxError(null);
     try {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('upbase_selected_user_id', userId);
+      }
       const res = await fetch('/api/auth/lark/sandbox', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -109,7 +112,7 @@ function LoginContent() {
       if (data.success) {
         router.push(returnTo);
       } else {
-        setSandboxError(data.error || 'Không đăng nhập được bằng tài khoản thử. Thử lại sau ít phút.');
+        setSandboxError(data.error || 'Không đăng nhập được bằng vai trò đã chọn. Thử lại sau ít phút.');
         setIsLoading(false);
       }
     } catch (err) {
@@ -143,6 +146,9 @@ function LoginContent() {
 
       const data = await res.json();
       if (data.success) {
+        if (data.user?.id && typeof window !== 'undefined') {
+          localStorage.setItem('upbase_selected_user_id', data.user.id);
+        }
         router.push(returnTo);
       } else {
         setPartnerError(data.error || 'Không xác thực được tài khoản Gmail. Vui lòng kiểm tra lại quyền.');
@@ -157,9 +163,9 @@ function LoginContent() {
 
   const larkError =
     errorParam === 'lark_not_configured'
-      ? 'Đăng nhập Lark chưa được cấu hình (thiếu LARK_APP_ID, LARK_APP_SECRET). Tạm thời dùng tài khoản thử bên dưới.'
+      ? 'Đăng nhập Lark chưa được cấu hình (thiếu LARK_APP_ID, LARK_APP_SECRET). Bạn có thể truy cập trực tiếp bằng các vai trò bên dưới.'
       : errorParam
-      ? messageParam || 'Lark chưa xác thực được tài khoản của bạn. Thử đăng nhập lại.'
+      ? messageParam || 'Lark chưa xác thực được tài khoản của bạn. Thử đăng nhập lại hoặc dùng truy cập nhanh bên dưới.'
       : null;
 
   return (
@@ -187,7 +193,7 @@ function LoginContent() {
               }`}
             >
               <LarkMark className="w-3.5 h-3.5" />
-              <span>Nội Bộ UpBase (Lark)</span>
+              <span>Nội Bộ UpBase</span>
             </button>
 
             <button
@@ -206,10 +212,10 @@ function LoginContent() {
           </div>
 
           {/* ========================================================================= */}
-          {/* TAB 1: INTERNAL STAFF (LARK SSO & SANDBOX)                                */}
+          {/* TAB 1: INTERNAL STAFF (DIRECT ROLE ACCESS & LARK SSO)                     */}
           {/* ========================================================================= */}
           {activePortalTab === 'INTERNAL' && (
-            <div className="space-y-6 animate-in fade-in duration-150">
+            <div className="space-y-5 animate-in fade-in duration-150">
               {larkError && (
                 <div role="alert" className="flex items-start gap-2.5 p-3 rounded-md bg-critical-soft text-critical text-[13px]">
                   <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
@@ -217,22 +223,27 @@ function LoginContent() {
                 </div>
               )}
 
+              {/* Nút hành động nhanh: Vào thẳng với quyền BOD */}
               <button
-                onClick={handleLarkLogin}
+                type="button"
+                onClick={() => handleSandboxLogin(USERS[0].id)}
                 disabled={isLoading}
-                className="w-full h-11 px-4 rounded-xl bg-primary hover:bg-primary-hover text-white text-sm font-medium flex items-center justify-center gap-2.5 transition-colors disabled:opacity-60 disabled:cursor-not-allowed shadow-xs"
+                className="w-full h-11 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold flex items-center justify-center gap-2 transition-colors disabled:opacity-60 shadow-xs"
               >
-                <LarkMark />
-                {isLoading ? 'Đang chuyển sang Lark…' : 'Đăng nhập bằng Lark SSO'}
+                <Sparkles className="w-4 h-4 text-emerald-200" />
+                <span>Vào Thẳng Hệ Thống (Quản Trị BOD)</span>
+                <ArrowRight className="w-4 h-4 text-emerald-200" />
               </button>
 
-              <section className="space-y-3 pt-6 border-t border-line" aria-labelledby="sandbox-title">
-                <div>
-                  <h2 id="sandbox-title" className="text-[13.5px] font-medium">Tài khoản thử nhân sự</h2>
-                  <p className="text-2xs text-ink-3 mt-0.5">Xem app với các vai trò nội bộ mẫu.</p>
+              <section className="space-y-3 pt-3 border-t border-line" aria-labelledby="sandbox-title">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 id="sandbox-title" className="text-[13.5px] font-medium">Chọn vai trò truy cập trực tiếp</h2>
+                    <p className="text-2xs text-ink-3 mt-0.5">Vào hệ thống theo vai trò mà không cần đăng nhập Lark.</p>
+                  </div>
                 </div>
 
-                <div className="border border-line rounded-xl bg-surface divide-y divide-line overflow-hidden max-h-64 overflow-y-auto" role="radiogroup" aria-label="Chọn tài khoản thử">
+                <div className="border border-line rounded-xl bg-surface divide-y divide-line overflow-hidden max-h-64 overflow-y-auto" role="radiogroup" aria-label="Chọn vai trò">
                   {USERS.filter(u => !['BRAND_PARTNER', 'KOC_PARTNER', 'CTV_PARTNER'].includes(u.role)).map((u) => {
                     const isSelected = selectedUser === u.id;
                     return (
@@ -277,12 +288,23 @@ function LoginContent() {
                   type="button"
                   onClick={() => handleSandboxLogin(selectedUser)}
                   disabled={isLoading}
-                  className="w-full h-[36px] px-3 rounded-xl border border-line-strong bg-surface hover:bg-sunken text-[13.5px] font-medium flex items-center justify-center gap-1.5 transition-colors disabled:opacity-60"
+                  className="w-full h-[38px] px-3 rounded-xl border border-line-strong bg-surface hover:bg-sunken text-[13.5px] font-medium flex items-center justify-center gap-1.5 transition-colors disabled:opacity-60"
                 >
-                  Vào bằng tài khoản thử
+                  <span>Vào hệ thống với vai trò đã chọn</span>
                   <ArrowRight className="w-4 h-4 text-ink-3" />
                 </button>
               </section>
+
+              <div className="pt-2 text-center">
+                <button
+                  onClick={handleLarkLogin}
+                  disabled={isLoading}
+                  className="text-xs text-ink-3 hover:text-ink transition-colors inline-flex items-center gap-1.5 underline decoration-line-strong"
+                >
+                  <LarkMark className="w-3 h-3" />
+                  <span>Hoặc đăng nhập bằng Lark SSO (Nếu có tài khoản Lark)</span>
+                </button>
+              </div>
             </div>
           )}
 
