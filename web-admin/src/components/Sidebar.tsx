@@ -64,15 +64,6 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           ],
         },
         {
-          title: 'Dashboard & Báo cáo',
-          items: [
-            { key: 'dashboard-bi', label: 'Dashboard BI', icon: LayoutDashboard },
-            { key: 'ads-report', label: 'Báo cáo Ads TikTok', icon: BarChart3 },
-            { key: 'performance-p3', label: 'Đánh giá 4P & thưởng', icon: Coins },
-            { key: 'overview', label: 'Tổng quan vận hành', icon: BarChart2 },
-          ],
-        },
-        {
           title: 'Kế hoạch & Điều phối',
           items: [
             { key: 'manager', label: 'Điều phối & Quản lý', icon: Split },
@@ -85,24 +76,26 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           title: 'Vận hành tác nghiệp',
           items: [
             { key: 'booking', label: 'Booking KOC', icon: Users },
-            { key: 'koc-master', label: 'Danh bạ KOC Master', icon: Users },
             { key: 'content', label: 'Kịch bản video', icon: FileText },
-            { key: 'content-angles', label: 'Góc nội dung (Angles)', icon: Sparkles },
             { key: 'campaigns', label: 'Làm việc với Brand', icon: Layers },
             { key: 'contracts', label: 'Hợp đồng & thanh toán', icon: FileCheck },
-            { key: 'sample-tracker', label: 'Hàng mẫu', icon: Package },
+            { key: 'sample-tracker', label: 'Hàng mẫu & Spark Ads', icon: Package },
           ],
         },
         {
-          title: 'Dữ liệu & Quản trị',
+          title: 'Báo cáo & Hiệu suất',
           items: [
-            { key: 'master-data', label: 'Dữ liệu gốc', icon: Database },
+            { key: 'overview', label: 'Tổng quan vận hành', icon: BarChart2 },
+            { key: 'dashboard-bi', label: 'Dashboard BI', icon: LayoutDashboard },
+            { key: 'ads-report', label: 'Báo cáo Ads TikTok', icon: BarChart3 },
+            { key: 'performance-p3', label: 'Đánh giá 4P & thưởng', icon: Coins },
+          ],
+        },
+        {
+          title: 'Dữ liệu & Cổng đối tác',
+          items: [
+            { key: 'master-data', label: 'Dữ liệu gốc & Mindmap', icon: Database },
             { key: 'partner-access', label: 'Phân quyền & RBAC', icon: KeyRound },
-          ],
-        },
-        {
-          title: 'Cổng đối tác ngoài (Giám sát)',
-          items: [
             { key: 'brand-hub', label: 'Cổng đối tác Brand', icon: ExternalLink },
             { key: 'self-channel-hub', label: 'Hub CTV Video', icon: Video },
             { key: 'koc-hub', label: 'Hub đối tác KOC / KOL', icon: Users },
@@ -119,33 +112,36 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           ],
         },
         {
-          title: 'Báo cáo & Giám sát',
-          items: [
-            { key: 'ads-report', label: 'Báo cáo Ads TikTok', icon: BarChart3 },
-            { key: 'performance-p3', label: 'Đánh giá 4P & thưởng', icon: Coins },
-            { key: 'overview', label: 'Tổng quan vận hành', icon: BarChart2 },
-          ],
-        },
-        {
           title: 'Kế hoạch & Điều phối',
           items: [
             { key: 'manager', label: 'Điều phối & Quản lý', icon: Split },
             { key: 'input-plan', label: 'Kế hoạch tháng', icon: Calendar },
             { key: 'koc-listing', label: 'Listing & Air Video', icon: Film },
             { key: 'push-products', label: 'Sản phẩm đẩy', icon: TrendingUp },
+          ],
+        },
+        {
+          title: 'Vận hành tác nghiệp',
+          items: [
             { key: 'booking', label: 'Booking KOC', icon: Users },
-            { key: 'koc-master', label: 'Danh bạ KOC Master', icon: Users },
             { key: 'content', label: 'Kịch bản video', icon: FileText },
-            { key: 'content-angles', label: 'Góc nội dung (Angles)', icon: Sparkles },
             { key: 'campaigns', label: 'Làm việc với Brand', icon: Layers },
             { key: 'contracts', label: 'Hợp đồng & thanh toán', icon: FileCheck },
-            { key: 'sample-tracker', label: 'Hàng mẫu', icon: Package },
+            { key: 'sample-tracker', label: 'Hàng mẫu & Spark Ads', icon: Package },
+          ],
+        },
+        {
+          title: 'Báo cáo & Hiệu suất',
+          items: [
+            { key: 'overview', label: 'Tổng quan vận hành', icon: BarChart2 },
+            { key: 'ads-report', label: 'Báo cáo Ads TikTok', icon: BarChart3 },
+            { key: 'performance-p3', label: 'Đánh giá 4P & thưởng', icon: Coins },
           ],
         },
         {
           title: 'Dữ liệu tham chiếu',
           items: [
-            { key: 'master-data', label: 'Dữ liệu gốc', icon: Database },
+            { key: 'master-data', label: 'Dữ liệu gốc & Mindmap', icon: Database },
             { key: 'brand-knowledge', label: 'Hướng dẫn nhãn hàng', icon: BookOpen },
           ],
         },

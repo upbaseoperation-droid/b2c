@@ -150,8 +150,11 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
   tasks: externalTasks,
   onAddTask: externalOnAddTask
 }) => {
-  const isManager = currentUser ? currentUser.role === 'MANAGER' : true;
-  const [activeTab, setActiveTab] = useState<'DELEGATION_HUB' | 'MINDMAP' | 'CONTROL_TOWER' | 'GROWTH_BREAKDOWN' | 'ALLOCATION' | 'MONTHLY_PLAN' | 'STAFF_AIR_PROGRESS' | 'STAFF_REVENUE_GMV' | 'PLAN_GAP_466M' | 'DEEP_ANALYTICS' | 'SLA_MANAGEMENT'>('DELEGATION_HUB');
+  const isManager = currentUser ? ['MANAGER', 'ADMIN'].includes(currentUser.role) : true;
+  const [activeTab, setActiveTab] = useState<'DELEGATION' | 'MINDMAP' | 'ALLOCATION' | 'MONITORING' | 'SLA_MANAGEMENT'>('DELEGATION');
+  const [allocationSubTab, setAllocationSubTab] = useState<'4_TIER' | 'GROWTH'>('4_TIER');
+  const [monitoringSubTab, setMonitoringSubTab] = useState<'CONTROL_TOWER' | 'AIR_PROGRESS' | 'STAFF_GMV' | 'MONTHLY_PLAN' | 'PLAN_GAP'>('CONTROL_TOWER');
+  const [slaSubTab, setSlaSubTab] = useState<'BREACHES' | 'ANALYTICS'>('BREACHES');
   
   // State phân quyền Brand, Gian Hàng, Giao Việc của Trưởng Phòng
   const [internalBrands, setInternalBrands] = useState<BrandDetail[]>(externalBrands || INITIAL_BRANDS);
@@ -582,17 +585,11 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
           value={activeTab}
           onChange={setActiveTab}
           items={[
-            { key: 'DELEGATION_HUB', label: 'Phân bổ & giao việc' },
-            { key: 'MINDMAP', label: 'Sơ đồ dữ liệu' },
-            { key: 'CONTROL_TOWER', label: 'Giám sát' },
-            { key: 'GROWTH_BREAKDOWN', label: 'KOC từ Growth' },
-            { key: 'ALLOCATION', label: 'Phân bổ kế hoạch' },
-            { key: 'MONTHLY_PLAN', label: 'Kế hoạch & thực đạt' },
-            { key: 'STAFF_AIR_PROGRESS', label: 'Tiến độ air' },
-            { key: 'STAFF_REVENUE_GMV', label: 'GMV theo nhân sự' },
-            { key: 'PLAN_GAP_466M', label: 'Khoảng trống ngân sách' },
-            { key: 'DEEP_ANALYTICS', label: 'Phân tích' },
-            { key: 'SLA_MANAGEMENT', label: 'SLA', count: slaBreaches.filter(b => b.status !== 'RESOLVED').length, tone: 'critical' },
+            { key: 'DELEGATION', label: '1. Phân bổ & Giao việc' },
+            { key: 'MINDMAP', label: '2. Sơ đồ dữ liệu' },
+            { key: 'ALLOCATION', label: '3. Kế hoạch & Hạn mức 4 Tier' },
+            { key: 'MONITORING', label: '4. Giám sát & Tiến độ Air' },
+            { key: 'SLA_MANAGEMENT', label: '5. Quản trị SLA & Vi phạm', count: slaBreaches.filter(b => b.status !== 'RESOLVED').length, tone: 'critical' },
           ]}
         />
       </div>
@@ -647,7 +644,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
       {/* ========================================================================= */}
       {/* TAB MỚI: TRUNG TÂM PHÂN BỔ & ĐIỀU PHỐI (MANAGER DELEGATION HUB)           */}
       {/* ========================================================================= */}
-      {activeTab === 'DELEGATION_HUB' && (
+      {activeTab === 'DELEGATION' && (
         <ManagerDelegationHub
           currentUser={currentUser || {
             id: 'user-van-ngoc',
@@ -675,217 +672,48 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
       )}
 
       {/* ========================================================================= */}
-      {/* MODULE 6: CONTROL TOWER (HEAD/LEAD ZERO INPUT - STRICTLY MONITORING ONLY) */}
-      {/* ========================================================================= */}
-      {activeTab === 'CONTROL_TOWER' && (
-        <div className="space-y-5 animate-in fade-in duration-150">
-          {/* Executive Read-Only Header */}
-          <div className="card-enterprise p-4 bg-white border border-slate-200 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-600 shrink-0">
-                <ShieldAlert className="w-5 h-5" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="text-sm font-semibold text-slate-900">Tháp điều khiển Trung tâm</h3>
-                  <span className="badge-emerald px-2 py-0.5 rounded-full text-2xs font-semibold">
-                    ● Hệ thống vận hành ổn định
-                  </span>
-                </div>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Dành riêng cho Head / Lead: <strong className="text-slate-700">Không nhập liệu thủ công</strong>. Giám sát tự động Plan vs Actual, SLA, điểm nghẽn, cân bằng tải & cảnh báo ngoại lệ.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 text-xs">
-              <div className="px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-600">
-                Chu kỳ: <strong className="text-blue-600 font-mono font-semibold">{selectedMonth}</strong>
-              </div>
-              <div className="px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-600">
-                SLA toàn phòng: <strong className="text-emerald-600 font-mono font-semibold">{controlTower.slaOnTimeRate}%</strong>
-              </div>
-            </div>
-          </div>
-
-          {/* 1. Plan vs Actual Cockpit Cards */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div className="card-enterprise p-4 bg-white border border-emerald-200/80 shadow-2xs space-y-1">
-              <span className="text-2xs text-slate-500 font-medium">GMV Plan vs Actual (MTD)</span>
-              <div className="text-xl font-semibold text-emerald-600 font-mono">
-                {(controlTower.actualGmv / 1000000000).toFixed(2)}B / {(controlTower.planGmv / 1000000000).toFixed(2)}B
-              </div>
-              <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden mt-1">
-                <div className="bg-emerald-500 h-full rounded-full" style={{ width: `${controlTower.gmvAchievementRate}%` }} />
-              </div>
-              <span className="text-2xs text-emerald-600 font-semibold block pt-0.5">
-                Đạt {controlTower.gmvAchievementRate}% kế hoạch
-              </span>
-            </div>
-
-            <div className="card-enterprise p-4 bg-white border border-amber-200/80 shadow-2xs space-y-1">
-              <span className="text-2xs text-slate-500 font-medium">Ngân sách giải ngân</span>
-              <div className="text-xl font-semibold text-amber-600 font-mono">
-                {(controlTower.actualSpentBudget / 1000000).toLocaleString('vi-VN')}M / {(controlTower.planBudget / 1000000).toLocaleString('vi-VN')}M
-              </div>
-              <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden mt-1">
-                <div className="bg-amber-500 h-full rounded-full" style={{ width: `${controlTower.budgetBurnRate}%` }} />
-              </div>
-              <span className="text-2xs text-slate-500 block pt-0.5">
-                Đã tiêu {controlTower.budgetBurnRate}% • CIR: <strong className="text-blue-600">{controlTower.cirCurrent}%</strong>
-              </span>
-            </div>
-
-            <div className="card-enterprise p-4 bg-white border border-rose-200/80 shadow-2xs space-y-1">
-              <span className="text-2xs text-slate-500 font-medium">Radar tắc nghẽn & Backlog</span>
-              <div className="text-xl font-semibold text-rose-600">{controlTower.pendingBacklogCases} Cases Tồn Đọng</div>
-              <div className="text-2xs text-amber-700 font-semibold truncate">
-                Điểm nghẽn: {controlTower.bottleneckTeam}
-              </div>
-              <span className="text-2xs text-slate-500 block pt-0.5">
-                4 ca trễ SLA &gt;24h ở khâu kịch bản
-              </span>
-            </div>
-
-            <div className="card-enterprise p-4 bg-white border border-purple-200/80 shadow-2xs space-y-1">
-              <span className="text-2xs text-slate-500 font-medium">Cân bằng tải</span>
-              <div className="text-xl font-semibold text-purple-600">26 nhân sự</div>
-              <div className="text-2xs text-slate-700 font-medium">
-                1 Quá tải (&gt;115%) • 3 Non tải (&lt;75%)
-              </div>
-              <span className="text-2xs text-purple-600 font-semibold block pt-0.5">
-                Tỷ lệ pass kịch bản Vòng 1: {controlTower.firstTimePassRate}%
-              </span>
-            </div>
-          </div>
-
-          {/* 2. Bottleneck & Exceptions Radar */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Bottlenecks by Stage */}
-            <div className="card-enterprise p-5 bg-white border border-slate-200 shadow-2xs space-y-3">
-              <div className="flex items-center justify-between border-b border-slate-200 pb-2.5">
-                <h4 className="text-xs font-semibold text-slate-900 flex items-center gap-2">
-                  <Flame className="w-4 h-4 text-amber-500" />
-                  <span>Điểm nghẽn quy trình tác nghiệp</span>
-                </h4>
-                <span className="badge-slate text-2xs font-mono px-2 py-0.5 rounded">14 Cases</span>
-              </div>
-
-              <div className="space-y-2 text-xs">
-                <div className="p-3 rounded-lg bg-amber-50/50 border border-amber-200 flex items-center justify-between">
-                  <div>
-                    <span className="font-semibold text-amber-900">Khâu 3: Thẩm định kịch bản 4 phần</span>
-                    <p className="text-2xs text-slate-500">Thời gian duyệt trung bình: 28.4h (vượt chuẩn SLA 24h)</p>
-                  </div>
-                  <span className="badge-amber px-2 py-0.5 rounded text-2xs font-semibold">4 Cases Trễ</span>
-                </div>
-
-                <div className="p-3 rounded-lg bg-emerald-50/50 border border-emerald-200 flex items-center justify-between">
-                  <div>
-                    <span className="font-semibold text-slate-900">Khâu 2: Đàm phán hợp đồng & chi tạm ứng Lark</span>
-                    <p className="text-2xs text-slate-500">Phê duyệt API tạm ứng 2M qua Lark: Trung bình 3.2h (rất tốt)</p>
-                  </div>
-                  <span className="badge-emerald px-2 py-0.5 rounded text-2xs font-semibold">Thông suốt</span>
-                </div>
-
-                <div className="p-3 rounded-lg bg-rose-50/50 border border-rose-200 flex items-center justify-between">
-                  <div>
-                    <span className="font-semibold text-rose-700">Khâu 5: Thu hồi mã Spark Ads sau khi video lên sóng</span>
-                    <p className="text-2xs text-slate-500">2 KOC đã lên video nhưng chưa cung cấp mã ủy quyền Ads</p>
-                  </div>
-                  <span className="badge-rose px-2 py-0.5 rounded text-2xs font-semibold">2 Cases cần đốc thúc</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Quality & Exception Alerts */}
-            <div className="card-enterprise p-5 bg-white border border-slate-200 shadow-2xs space-y-3">
-              <div className="flex items-center justify-between border-b border-slate-200 pb-2.5">
-                <h4 className="text-xs font-semibold text-slate-900 flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4 text-rose-500" />
-                  <span>Cảnh báo ngoại lệ & rủi Ro dự án</span>
-                </h4>
-                <span className="badge-rose px-2 py-0.5 rounded text-2xs font-semibold">3 cảnh báo</span>
-              </div>
-
-              <div className="space-y-2 text-xs">
-                <div className="p-3 rounded-lg bg-rose-50/60 border border-rose-200 space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold text-rose-800">Cảnh báo bùng mẫu</span>
-                    <span className="text-2xs font-mono font-semibold text-rose-600">SLA &gt; 5 Ngày</span>
-                  </div>
-                  <p className="text-2xs text-slate-600">
-                    KOC <strong className="text-slate-900">@thuydung_review</strong> đã nhận mẫu Kutieskin Mama 6 ngày trước nhưng chưa gửi video nháp demo.
-                  </p>
-                </div>
-
-                <div className="p-3 rounded-lg bg-amber-50/60 border border-amber-200 space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold text-amber-800">Lệch tiến độ Air cụm gian hàng FMCG</span>
-                    <span className="text-2xs font-mono font-semibold text-amber-600">Gap 42M GMV</span>
-                  </div>
-                  <p className="text-2xs text-slate-600">
-                    Cụm gian hàng Bio-Essence mới đạt 68% sản lượng video cam kết tuần W39, cần tăng tốc book KL3-KL4.
-                  </p>
-                </div>
-
-                <div className="p-3 rounded-lg bg-blue-50/60 border border-blue-200 space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold text-blue-800">Top Winner Video bứt phá doanh số</span>
-                    <span className="text-2xs font-mono font-semibold text-emerald-600">ROI 18.2x</span>
-                  </div>
-                  <p className="text-2xs text-slate-600">
-                    Video của Mega Uri Review đạt 182M GMV sau 3 ngày lên sóng, kích hoạt mở ngân sách Spark Ads quy mô lớn.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ========================================================================= */}
-      {/* TAB MỚI: PHÂN BỔ KOC / KOL TỪ YÊU CẦU GROWTH                             */}
-      {/* ========================================================================= */}
-      {activeTab === 'GROWTH_BREAKDOWN' && (
-        <GrowthPlanBreakdownView
-          onNotify={(msg) => {
-            if (onPingStaffNotification) {
-              onPingStaffNotification('Booking Lead', msg);
-            }
-          }}
-          onGenerateDealsFromPlan={onGenerateDealsFromPlan}
-        />
-      )}
-
-      {/* ========================================================================= */}
       {/* TAB 0: TWO-LEVEL TOP-DOWN ALLOCATION (QUẢN LÝ CHỈ TIÊU TRƯỞNG PHÒNG)     */}
       {/* ========================================================================= */}
       {activeTab === 'ALLOCATION' && (
-        <div className="space-y-6">
+        <div className="space-y-5 animate-in fade-in duration-150">
+          <div className="flex flex-wrap items-center justify-between gap-3 p-1.5 bg-slate-100/80 border border-slate-200 rounded-xl text-xs">
+            <Segmented
+              value={allocationSubTab}
+              onChange={setAllocationSubTab}
+              items={[
+                { key: '4_TIER', label: 'Hạn mức 4 Tier & Phân bổ 26 Chuyên viên' },
+                { key: 'GROWTH', label: 'Nhu cầu KOC từ team Growth' },
+              ]}
+            />
+          </div>
+
+          {allocationSubTab === 'GROWTH' && (
+            <div className="space-y-4">
+              <GrowthPlanBreakdownView
+                onNotify={(msg) => {
+                  if (onPingStaffNotification) {
+                    onPingStaffNotification('Booking Lead', msg);
+                  }
+                }}
+                onGenerateDealsFromPlan={onGenerateDealsFromPlan}
+              />
+            </div>
+          )}
+
+          {allocationSubTab === '4_TIER' && (
+            <div className="space-y-6">
           {/* Supervisor / Read-Only Notice if not Manager */}
           {!isManager && (
-            <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs shadow-2xs">
-              <div className="flex items-center gap-3 text-amber-900">
-                <div className="w-8 h-8 rounded-lg bg-amber-100 border border-amber-200 flex items-center justify-center text-amber-700 shrink-0">
-                  <ShieldAlert className="w-4 h-4" />
-                </div>
-                <div>
-                  <div className="font-semibold flex items-center gap-2 text-slate-900">
-                    <span>Chế độ giám sát kế hoạch</span>
-                    <span className="px-2 py-0.2 rounded-full text-2xs font-semibold bg-amber-100 text-amber-800 border border-amber-200">
-                      Vai trò: {currentUser?.roleTitle || 'Thành viên'}
-                    </span>
-                  </div>
-                  <p className="text-2xs text-slate-600 mt-0.5">
-                    Bạn có quyền xem tiến độ &amp; soi chi tiết kế hoạch các chuyên viên. Quyền thiết lập trần định mức 4 Tier, cân bằng tải và duyệt kế hoạch được bảo lưu cho Trưởng Phòng.
-                  </p>
-                </div>
+            <div className="p-2.5 bg-amber-50/80 border border-amber-200 rounded-xl flex items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-2 text-amber-900">
+                <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0" />
+                <span className="font-medium text-slate-800">
+                  Chế độ giám sát: Bạn có quyền xem tiến độ và chi tiết kế hoạch các chuyên viên.
+                </span>
               </div>
-              <div className="px-3 py-1 rounded bg-amber-100 border border-amber-200 text-amber-800 text-2xs font-semibold shrink-0 self-end sm:self-auto flex items-center gap-1.5">
-                <Lock className="w-3.5 h-3.5" />
-                <span>CHỈ XEM (READ-ONLY)</span>
-              </div>
+              <span className="px-2 py-0.5 rounded bg-amber-100 border border-amber-200 text-amber-800 text-2xs font-semibold shrink-0">
+                Chỉ xem
+              </span>
             </div>
           )}
 
@@ -1649,13 +1477,204 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
             </div>
           </div>
         </div>
+          )}
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* KHÔNG GIAN 4: GIÁM SÁT & TIẾN ĐỘ AIR                                      */}
+      {/* ========================================================================= */}
+      {activeTab === 'MONITORING' && (
+        <div className="space-y-5 animate-in fade-in duration-150">
+          <div className="flex flex-wrap items-center justify-between gap-3 p-1.5 bg-slate-100/80 border border-slate-200 rounded-xl text-xs overflow-x-auto">
+            <Segmented
+              value={monitoringSubTab}
+              onChange={setMonitoringSubTab}
+              items={[
+                { key: 'CONTROL_TOWER', label: 'Bảng điều hành Control Tower' },
+                { key: 'AIR_PROGRESS', label: 'Tiến độ Air Video' },
+                { key: 'STAFF_GMV', label: 'GMV theo nhân sự' },
+                { key: 'MONTHLY_PLAN', label: 'Kế hoạch vs Thực đạt' },
+                { key: 'PLAN_GAP', label: 'Khoảng trống ngân sách' },
+              ]}
+            />
+          </div>
+
+          {/* ========================================================================= */}
+      {/* MODULE 6: CONTROL TOWER (HEAD/LEAD ZERO INPUT - STRICTLY MONITORING ONLY) */}
+      {/* ========================================================================= */}
+      {monitoringSubTab === 'CONTROL_TOWER' && (
+        <div className="space-y-5 animate-in fade-in duration-150">
+          {/* Executive Read-Only Header */}
+          <div className="card-enterprise p-4 bg-white border border-slate-200 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-600 shrink-0">
+                <ShieldAlert className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-semibold text-slate-900">Tháp điều khiển Trung tâm</h3>
+                  <span className="badge-emerald px-2 py-0.5 rounded-full text-2xs font-semibold">
+                    ● Hệ thống vận hành ổn định
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Dành riêng cho Head / Lead: <strong className="text-slate-700">Không nhập liệu thủ công</strong>. Giám sát tự động Plan vs Actual, SLA, điểm nghẽn, cân bằng tải & cảnh báo ngoại lệ.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 text-xs">
+              <div className="px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-600">
+                Chu kỳ: <strong className="text-blue-600 font-mono font-semibold">{selectedMonth}</strong>
+              </div>
+              <div className="px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-600">
+                SLA toàn phòng: <strong className="text-emerald-600 font-mono font-semibold">{controlTower.slaOnTimeRate}%</strong>
+              </div>
+            </div>
+          </div>
+
+          {/* 1. Plan vs Actual Cockpit Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="card-enterprise p-4 bg-white border border-emerald-200/80 shadow-2xs space-y-1">
+              <span className="text-2xs text-slate-500 font-medium">GMV Plan vs Actual (MTD)</span>
+              <div className="text-xl font-semibold text-emerald-600 font-mono">
+                {(controlTower.actualGmv / 1000000000).toFixed(2)}B / {(controlTower.planGmv / 1000000000).toFixed(2)}B
+              </div>
+              <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden mt-1">
+                <div className="bg-emerald-500 h-full rounded-full" style={{ width: `${controlTower.gmvAchievementRate}%` }} />
+              </div>
+              <span className="text-2xs text-emerald-600 font-semibold block pt-0.5">
+                Đạt {controlTower.gmvAchievementRate}% kế hoạch
+              </span>
+            </div>
+
+            <div className="card-enterprise p-4 bg-white border border-amber-200/80 shadow-2xs space-y-1">
+              <span className="text-2xs text-slate-500 font-medium">Ngân sách giải ngân</span>
+              <div className="text-xl font-semibold text-amber-600 font-mono">
+                {(controlTower.actualSpentBudget / 1000000).toLocaleString('vi-VN')}M / {(controlTower.planBudget / 1000000).toLocaleString('vi-VN')}M
+              </div>
+              <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden mt-1">
+                <div className="bg-amber-500 h-full rounded-full" style={{ width: `${controlTower.budgetBurnRate}%` }} />
+              </div>
+              <span className="text-2xs text-slate-500 block pt-0.5">
+                Đã tiêu {controlTower.budgetBurnRate}% • CIR: <strong className="text-blue-600">{controlTower.cirCurrent}%</strong>
+              </span>
+            </div>
+
+            <div className="card-enterprise p-4 bg-white border border-rose-200/80 shadow-2xs space-y-1">
+              <span className="text-2xs text-slate-500 font-medium">Radar tắc nghẽn & Backlog</span>
+              <div className="text-xl font-semibold text-rose-600">{controlTower.pendingBacklogCases} Cases Tồn Đọng</div>
+              <div className="text-2xs text-amber-700 font-semibold truncate">
+                Điểm nghẽn: {controlTower.bottleneckTeam}
+              </div>
+              <span className="text-2xs text-slate-500 block pt-0.5">
+                4 ca trễ SLA &gt;24h ở khâu kịch bản
+              </span>
+            </div>
+
+            <div className="card-enterprise p-4 bg-white border border-purple-200/80 shadow-2xs space-y-1">
+              <span className="text-2xs text-slate-500 font-medium">Cân bằng tải</span>
+              <div className="text-xl font-semibold text-purple-600">26 nhân sự</div>
+              <div className="text-2xs text-slate-700 font-medium">
+                1 Quá tải (&gt;115%) • 3 Non tải (&lt;75%)
+              </div>
+              <span className="text-2xs text-purple-600 font-semibold block pt-0.5">
+                Tỷ lệ pass kịch bản Vòng 1: {controlTower.firstTimePassRate}%
+              </span>
+            </div>
+          </div>
+
+          {/* 2. Bottleneck & Exceptions Radar */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Bottlenecks by Stage */}
+            <div className="card-enterprise p-5 bg-white border border-slate-200 shadow-2xs space-y-3">
+              <div className="flex items-center justify-between border-b border-slate-200 pb-2.5">
+                <h4 className="text-xs font-semibold text-slate-900 flex items-center gap-2">
+                  <Flame className="w-4 h-4 text-amber-500" />
+                  <span>Điểm nghẽn quy trình tác nghiệp</span>
+                </h4>
+                <span className="badge-slate text-2xs font-mono px-2 py-0.5 rounded">14 Cases</span>
+              </div>
+
+              <div className="space-y-2 text-xs">
+                <div className="p-3 rounded-lg bg-amber-50/50 border border-amber-200 flex items-center justify-between">
+                  <div>
+                    <span className="font-semibold text-amber-900">Khâu 3: Thẩm định kịch bản 4 phần</span>
+                    <p className="text-2xs text-slate-500">Thời gian duyệt trung bình: 28.4h (vượt chuẩn SLA 24h)</p>
+                  </div>
+                  <span className="badge-amber px-2 py-0.5 rounded text-2xs font-semibold">4 Cases Trễ</span>
+                </div>
+
+                <div className="p-3 rounded-lg bg-emerald-50/50 border border-emerald-200 flex items-center justify-between">
+                  <div>
+                    <span className="font-semibold text-slate-900">Khâu 2: Đàm phán hợp đồng & chi tạm ứng Lark</span>
+                    <p className="text-2xs text-slate-500">Phê duyệt API tạm ứng 2M qua Lark: Trung bình 3.2h (rất tốt)</p>
+                  </div>
+                  <span className="badge-emerald px-2 py-0.5 rounded text-2xs font-semibold">Thông suốt</span>
+                </div>
+
+                <div className="p-3 rounded-lg bg-rose-50/50 border border-rose-200 flex items-center justify-between">
+                  <div>
+                    <span className="font-semibold text-rose-700">Khâu 5: Thu hồi mã Spark Ads sau khi video lên sóng</span>
+                    <p className="text-2xs text-slate-500">2 KOC đã lên video nhưng chưa cung cấp mã ủy quyền Ads</p>
+                  </div>
+                  <span className="badge-rose px-2 py-0.5 rounded text-2xs font-semibold">2 Cases cần đốc thúc</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Quality & Exception Alerts */}
+            <div className="card-enterprise p-5 bg-white border border-slate-200 shadow-2xs space-y-3">
+              <div className="flex items-center justify-between border-b border-slate-200 pb-2.5">
+                <h4 className="text-xs font-semibold text-slate-900 flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-rose-500" />
+                  <span>Cảnh báo ngoại lệ & rủi Ro dự án</span>
+                </h4>
+                <span className="badge-rose px-2 py-0.5 rounded text-2xs font-semibold">3 cảnh báo</span>
+              </div>
+
+              <div className="space-y-2 text-xs">
+                <div className="p-3 rounded-lg bg-rose-50/60 border border-rose-200 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-rose-800">Cảnh báo bùng mẫu</span>
+                    <span className="text-2xs font-mono font-semibold text-rose-600">SLA &gt; 5 Ngày</span>
+                  </div>
+                  <p className="text-2xs text-slate-600">
+                    KOC <strong className="text-slate-900">@thuydung_review</strong> đã nhận mẫu Kutieskin Mama 6 ngày trước nhưng chưa gửi video nháp demo.
+                  </p>
+                </div>
+
+                <div className="p-3 rounded-lg bg-amber-50/60 border border-amber-200 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-amber-800">Lệch tiến độ Air cụm gian hàng FMCG</span>
+                    <span className="text-2xs font-mono font-semibold text-amber-600">Gap 42M GMV</span>
+                  </div>
+                  <p className="text-2xs text-slate-600">
+                    Cụm gian hàng Bio-Essence mới đạt 68% sản lượng video cam kết tuần W39, cần tăng tốc book KL3-KL4.
+                  </p>
+                </div>
+
+                <div className="p-3 rounded-lg bg-blue-50/60 border border-blue-200 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-blue-800">Top Winner Video bứt phá doanh số</span>
+                    <span className="text-2xs font-mono font-semibold text-emerald-600">ROI 18.2x</span>
+                  </div>
+                  <p className="text-2xs text-slate-600">
+                    Video của Mega Uri Review đạt 182M GMV sau 3 ngày lên sóng, kích hoạt mở ngân sách Spark Ads quy mô lớn.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* ========================================================================= */}
 
       {/* TAB 1: MONTHLY PLAN VS REVISE VS ACTUAL & SELF CHANNEL (IMAGES 1, 2, 8) */}
       {/* ========================================================================= */}
-      {activeTab === 'MONTHLY_PLAN' && (
+      {monitoringSubTab === 'MONTHLY_PLAN' && (
         <div className="space-y-6">
           {/* Executive Summary 4 Cards (From Image 1) */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -1804,7 +1823,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
       {/* ========================================================================= */}
       {/* TAB 2: STAFF AIR PROGRESS & BUDGET TRACKING (IMAGE 6: 26 NHÂN SỰ) */}
       {/* ========================================================================= */}
-      {activeTab === 'STAFF_AIR_PROGRESS' && (
+      {monitoringSubTab === 'AIR_PROGRESS' && (
         <div className="space-y-6">
           {/* Action Header & Quick Filters */}
           <div className="card-enterprise p-5 bg-white border border-slate-200 shadow-2xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
@@ -2013,7 +2032,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
       {/* ========================================================================= */}
       {/* TAB 3: STAFF REVENUE & GMV GROWTH (IMAGE 7: REPORT THEO HIỆU QUẢ) */}
       {/* ========================================================================= */}
-      {activeTab === 'STAFF_REVENUE_GMV' && (
+      {monitoringSubTab === 'STAFF_GMV' && (
         <div className="space-y-6">
           {/* Caveat Banner from Image 7 */}
           <div className="p-4 bg-blue-50/80 rounded-xl border border-blue-200 flex items-center justify-between text-xs">
@@ -2135,7 +2154,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
       {/* ========================================================================= */}
       {/* TAB 4: PLAN GAP ANALYSIS (IMAGE 8: HỤT 466 TRIỆU THEO 5 NHÓM NGUYÊN NHÂN) */}
       {/* ========================================================================= */}
-      {activeTab === 'PLAN_GAP_466M' && (
+      {monitoringSubTab === 'PLAN_GAP' && (
         <div className="space-y-6">
           {/* Executive Overview Banner of the 466M Gap */}
           <div className="card-enterprise p-6 bg-rose-50/50 border border-rose-200 shadow-2xs">
@@ -2255,216 +2274,26 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
           </div>
         </div>
       )}
-
-      {/* ========================================================================= */}
-      {/* TAB 5: DEEP ANALYTICS: KL1-KL7, CONTENT PILLAR, CREATOR NICHE */}
-      {/* ========================================================================= */}
-      {activeTab === 'DEEP_ANALYTICS' && (
-        <div className="space-y-6">
-          {/* Sub-navigation between 3 Analysis Dimensions */}
-          <div className="flex items-center gap-2 text-xs">
-            <button
-              onClick={() => setAnalyticsSubTab('KL')}
-              className={`px-3.5 py-2 rounded-xl font-semibold transition ${
-                analyticsSubTab === 'KL'
-                  ? 'bg-amber-600 text-white shadow-xs'
-                  : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200'
-              }`}
-            >
-              2.2 hiệu quả theo khung lương (KL1 → KL7)
-            </button>
-            <button
-              onClick={() => setAnalyticsSubTab('PILLAR')}
-              className={`px-3.5 py-2 rounded-xl font-semibold transition ${
-                analyticsSubTab === 'PILLAR'
-                  ? 'bg-amber-600 text-white shadow-xs'
-                  : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200'
-              }`}
-            >
-              2.3 hiệu quả theo Content Pillar (6 trụ cột)
-            </button>
-            <button
-              onClick={() => setAnalyticsSubTab('CREATOR_NICHE')}
-              className={`px-3.5 py-2 rounded-xl font-semibold transition ${
-                analyticsSubTab === 'CREATOR_NICHE'
-                  ? 'bg-amber-600 text-white shadow-xs'
-                  : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200'
-              }`}
-            >
-              2.4 báo cáo theo tệp Creator (Review nữ, mẹ bé...)
-            </button>
-          </div>
-
-          {/* Dimension 1: Khung Lương KL1 -> KL7 (Table 2.2 from Image 4) */}
-          {analyticsSubTab === 'KL' && (
-            <div className="card-enterprise overflow-hidden">
-              <div className="px-6 py-4 border-b border-slate-200 bg-slate-50/80 flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-semibold text-slate-900">2.2 báo cáo hiệu quả theo khung lương KOC (KL)</h3>
-                  <p className="text-xs text-slate-500 mt-0.5">Đánh giá sản lượng video, chi phí bỏ ra, GMV30 và tỷ suất hoàn vốn ROI từng khung</p>
-                </div>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse text-xs">
-                  <thead>
-                    <tr className="bg-slate-100/70 border-b border-slate-200">
-                      <th className="p-3.5 pl-6 font-semibold text-slate-600">Khung Lương (KL)</th>
-                      <th className="p-3.5 font-semibold text-slate-600">Số Video</th>
-                      <th className="p-3.5 font-semibold text-slate-600">% Video</th>
-                      <th className="p-3.5 font-semibold text-slate-600">Chi Phí (CP)</th>
-                      <th className="p-3.5 font-semibold text-slate-600">% CP</th>
-                      <th className="p-3.5 font-semibold text-slate-600">GMV 30 Ngày</th>
-                      <th className="p-3.5 font-semibold text-slate-600">% GMV</th>
-                      <th className="p-3.5 pr-6 font-semibold text-slate-600 text-right">ROI thực đạt</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {KL_PERFORMANCE_DATA.map((r) => (
-                      <tr key={r.kl} className="hover:bg-slate-50/80 transition-colors">
-                        <td className="p-3.5 pl-6 font-semibold text-slate-900 font-mono">{r.kl}</td>
-                        <td className="p-3.5 font-semibold text-slate-800">{r.videoCount}</td>
-                        <td className="p-3.5 text-slate-500">{r.pctVideo}</td>
-                        <td className="p-3.5 font-mono text-slate-700">{r.cost}</td>
-                        <td className="p-3.5 text-slate-500">{r.pctCost}</td>
-                        <td className="p-3.5 font-mono font-semibold text-emerald-700">{r.gmv30}</td>
-                        <td className="p-3.5 text-slate-500">{r.pctGmv}</td>
-                        <td className="p-3.5 pr-6 text-right">
-                          <span className={`px-2 py-0.5 rounded font-semibold text-2xs ${
-                            r.roi >= 0.8 ? 'badge-emerald' : r.roi >= 0.5 ? 'badge-blue' : 'badge-amber'
-                          }`}>
-                            ROI {r.roi.toFixed(2)}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {/* Dimension 2: Content Pillar (Table 2.3 from Image 4) */}
-          {analyticsSubTab === 'PILLAR' && (
-            <div className="card-enterprise overflow-hidden">
-              <div className="px-6 py-4 border-b border-slate-200 bg-slate-50/80 flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-semibold text-slate-900">2.3 báo cáo hiệu quả theo Content Pillar</h3>
-                  <p className="text-xs text-slate-500 mt-0.5">Xác định trụ cột nội dung nào mang lại ROI cao nhất để tập trung nguồn lực</p>
-                </div>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse text-xs">
-                  <thead>
-                    <tr className="bg-slate-100/70 border-b border-slate-200">
-                      <th className="p-3.5 pl-6 font-semibold text-slate-600">Content Pillar</th>
-                      <th className="p-3.5 font-semibold text-slate-600">Số Video</th>
-                      <th className="p-3.5 font-semibold text-slate-600">% Video</th>
-                      <th className="p-3.5 font-semibold text-slate-600">Chi Phí</th>
-                      <th className="p-3.5 font-semibold text-slate-600">% CP</th>
-                      <th className="p-3.5 font-semibold text-slate-600">GMV 30 Ngày</th>
-                      <th className="p-3.5 font-semibold text-slate-600">% GMV</th>
-                      <th className="p-3.5 pr-6 font-semibold text-slate-600 text-right">ROI</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {PILLAR_PERFORMANCE_DATA.map((p) => (
-                      <tr key={p.pillar} className="hover:bg-slate-50/80 transition-colors">
-                        <td className="p-3.5 pl-6 font-semibold text-slate-900">{p.pillar}</td>
-                        <td className="p-3.5 font-semibold text-slate-800">{p.videoCount}</td>
-                        <td className="p-3.5 text-slate-500">{p.pctVideo}</td>
-                        <td className="p-3.5 font-mono text-slate-700">{p.cost}</td>
-                        <td className="p-3.5 text-slate-500">{p.pctCost}</td>
-                        <td className="p-3.5 font-mono font-semibold text-emerald-700">{p.gmv30}</td>
-                        <td className="p-3.5 text-slate-500">{p.pctGmv}</td>
-                        <td className="p-3.5 pr-6 text-right">
-                          <span className={`px-2 py-0.5 rounded font-semibold text-2xs ${
-                            p.roi >= 0.8 ? 'badge-emerald' : p.roi >= 0.4 ? 'badge-blue' : 'badge-amber'
-                          }`}>
-                            ROI {p.roi.toFixed(2)}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {/* Dimension 3: Creator Niche (Table 2.4 from Image 5) */}
-          {analyticsSubTab === 'CREATOR_NICHE' && (
-            <div className="card-enterprise overflow-hidden">
-              <div className="px-6 py-4 border-b border-slate-200 bg-slate-50/80 flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-semibold text-slate-900">2.4 Report hiệu quả theo tệp Creator</h3>
-                  <p className="text-xs text-slate-500 mt-0.5">Phân tích hiệu suất theo từng nhóm đối tượng Creator booking</p>
-                </div>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse text-xs">
-                  <thead>
-                    <tr className="bg-slate-100/70 border-b border-slate-200">
-                      <th className="p-3.5 pl-6 font-semibold text-slate-600">Tệp Creator</th>
-                      <th className="p-3.5 font-semibold text-slate-600">Số Video</th>
-                      <th className="p-3.5 font-semibold text-slate-600">% Video</th>
-                      <th className="p-3.5 font-semibold text-slate-600">Chi Phí</th>
-                      <th className="p-3.5 font-semibold text-slate-600">% CP</th>
-                      <th className="p-3.5 font-semibold text-slate-200">GMV 30 Ngày</th>
-                      <th className="p-3.5 font-semibold text-slate-200">% GMV</th>
-                      <th className="p-3.5 pr-6 font-semibold text-slate-200 text-right">ROI</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {CREATOR_NICHE_PERFORMANCE_DATA.map((c) => (
-                      <tr key={c.niche} className="hover:bg-slate-50/80 transition-colors">
-                        <td className="p-3.5 pl-6 font-semibold text-slate-900">{c.niche}</td>
-                        <td className="p-3.5 font-semibold text-slate-800">{c.videoCount}</td>
-                        <td className="p-3.5 text-slate-500">{c.pctVideo}</td>
-                        <td className="p-3.5 font-mono text-slate-700">{c.cost}</td>
-                        <td className="p-3.5 text-slate-500">{c.pctCost}</td>
-                        <td className="p-3.5 font-mono font-semibold text-emerald-700">{c.gmv30}</td>
-                        <td className="p-3.5 text-slate-500">{c.pctGmv}</td>
-                        <td className="p-3.5 pr-6 text-right">
-                          <span className={`px-2 py-0.5 rounded font-semibold text-2xs ${
-                            c.roi >= 0.8 ? 'badge-emerald' : c.roi >= 0.4 ? 'badge-blue' : 'badge-amber'
-                          }`}>
-                            ROI {c.roi.toFixed(2)}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {/* Strategic Action Insight from Real Data */}
-          <div className="card-enterprise p-5 bg-white border border-slate-200 shadow-xs space-y-3">
-            <h4 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-              <Check className="w-4 h-4 text-blue-600" />
-              Định hướng điều phối kế hoạch cho quản lý:
-            </h4>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-slate-700">
-              <div className="p-3 bg-emerald-50/60 rounded-xl border border-emerald-200/80">
-                <strong className="text-emerald-800 block mb-1">1. Đẩy mạnh KL1 & Unboxing (ROI &gt; 0.85):</strong>
-                Unboxing chi phí chỉ chiếm 0,52% nhưng đạt ROI 1.01 (hoàn vốn 100%). Cần tăng tỷ trọng video Unboxing và KL1 trong tháng 9.
-              </div>
-              <div className="p-3 bg-amber-50/60 rounded-xl border border-amber-200/80">
-                <strong className="text-amber-800 block mb-1">2. Tái ký KOC Gia Đình & Bác Sĩ (ROI 0.96 &amp; 0.86):</strong>
-                Nhóm bác sĩ và gia đình có độ tin cậy vượt trội và tỷ lệ chuyển đổi đơn hàng rất cao so với nhóm Review nữ phổ thông.
-              </div>
-              <div className="p-3 bg-blue-50/60 rounded-xl border border-blue-200/80">
-                <strong className="text-blue-800 block mb-1">3. Kiểm soát ngân sách KL6 &amp; KL7:</strong>
-                KL6 và KL7 chiếm tới 67,6% ngân sách (hơn 1,9 tỷ đ) nhưng ROI chỉ đạt 0.30 - 0.62. Cần đàm phán gắt gao điều khoản cam kết view/GMV.
-              </div>
-            </div>
-          </div>
         </div>
       )}
 
-      {/* TAB 9: QUẢN TRỊ TUÂN THỦ SLA B2C & BÁO CÁO NHÂN SỰ & CỬA SỔ NGHIỆM THU E2E */}
+      {/* ========================================================================= */}
+      {/* KHÔNG GIAN 5: QUẢN TRỊ SLA & PHÂN TÍCH                                    */}
+      {/* ========================================================================= */}
       {activeTab === 'SLA_MANAGEMENT' && (
+        <div className="space-y-5 animate-in fade-in duration-150">
+          <div className="flex flex-wrap items-center justify-between gap-3 p-1.5 bg-slate-100/80 border border-slate-200 rounded-xl text-xs">
+            <Segmented
+              value={slaSubTab}
+              onChange={setSlaSubTab}
+              items={[
+                { key: 'BREACHES', label: 'Xử lý vi phạm SLA' },
+                { key: 'ANALYTICS', label: 'Báo cáo phân tích chuyên sâu' },
+              ]}
+            />
+          </div>
+
+          {slaSubTab === 'BREACHES' && (
         <div className="space-y-6">
           {/* Notification Toast Banner when pinging */}
           {pingSuccessStaff && (
@@ -3654,6 +3483,215 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+          {/* ========================================================================= */}
+      {/* TAB 5: DEEP ANALYTICS: KL1-KL7, CONTENT PILLAR, CREATOR NICHE */}
+      {/* ========================================================================= */}
+      {slaSubTab === 'ANALYTICS' && (
+        <div className="space-y-6">
+          {/* Sub-navigation between 3 Analysis Dimensions */}
+          <div className="flex items-center gap-2 text-xs">
+            <button
+              onClick={() => setAnalyticsSubTab('KL')}
+              className={`px-3.5 py-2 rounded-xl font-semibold transition ${
+                analyticsSubTab === 'KL'
+                  ? 'bg-amber-600 text-white shadow-xs'
+                  : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200'
+              }`}
+            >
+              2.2 hiệu quả theo khung lương (KL1 → KL7)
+            </button>
+            <button
+              onClick={() => setAnalyticsSubTab('PILLAR')}
+              className={`px-3.5 py-2 rounded-xl font-semibold transition ${
+                analyticsSubTab === 'PILLAR'
+                  ? 'bg-amber-600 text-white shadow-xs'
+                  : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200'
+              }`}
+            >
+              2.3 hiệu quả theo Content Pillar (6 trụ cột)
+            </button>
+            <button
+              onClick={() => setAnalyticsSubTab('CREATOR_NICHE')}
+              className={`px-3.5 py-2 rounded-xl font-semibold transition ${
+                analyticsSubTab === 'CREATOR_NICHE'
+                  ? 'bg-amber-600 text-white shadow-xs'
+                  : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200'
+              }`}
+            >
+              2.4 báo cáo theo tệp Creator (Review nữ, mẹ bé...)
+            </button>
+          </div>
+
+          {/* Dimension 1: Khung Lương KL1 -> KL7 (Table 2.2 from Image 4) */}
+          {analyticsSubTab === 'KL' && (
+            <div className="card-enterprise overflow-hidden">
+              <div className="px-6 py-4 border-b border-slate-200 bg-slate-50/80 flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-900">2.2 báo cáo hiệu quả theo khung lương KOC (KL)</h3>
+                  <p className="text-xs text-slate-500 mt-0.5">Đánh giá sản lượng video, chi phí bỏ ra, GMV30 và tỷ suất hoàn vốn ROI từng khung</p>
+                </div>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr className="bg-slate-100/70 border-b border-slate-200">
+                      <th className="p-3.5 pl-6 font-semibold text-slate-600">Khung Lương (KL)</th>
+                      <th className="p-3.5 font-semibold text-slate-600">Số Video</th>
+                      <th className="p-3.5 font-semibold text-slate-600">% Video</th>
+                      <th className="p-3.5 font-semibold text-slate-600">Chi Phí (CP)</th>
+                      <th className="p-3.5 font-semibold text-slate-600">% CP</th>
+                      <th className="p-3.5 font-semibold text-slate-600">GMV 30 Ngày</th>
+                      <th className="p-3.5 font-semibold text-slate-600">% GMV</th>
+                      <th className="p-3.5 pr-6 font-semibold text-slate-600 text-right">ROI thực đạt</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {KL_PERFORMANCE_DATA.map((r) => (
+                      <tr key={r.kl} className="hover:bg-slate-50/80 transition-colors">
+                        <td className="p-3.5 pl-6 font-semibold text-slate-900 font-mono">{r.kl}</td>
+                        <td className="p-3.5 font-semibold text-slate-800">{r.videoCount}</td>
+                        <td className="p-3.5 text-slate-500">{r.pctVideo}</td>
+                        <td className="p-3.5 font-mono text-slate-700">{r.cost}</td>
+                        <td className="p-3.5 text-slate-500">{r.pctCost}</td>
+                        <td className="p-3.5 font-mono font-semibold text-emerald-700">{r.gmv30}</td>
+                        <td className="p-3.5 text-slate-500">{r.pctGmv}</td>
+                        <td className="p-3.5 pr-6 text-right">
+                          <span className={`px-2 py-0.5 rounded font-semibold text-2xs ${
+                            r.roi >= 0.8 ? 'badge-emerald' : r.roi >= 0.5 ? 'badge-blue' : 'badge-amber'
+                          }`}>
+                            ROI {r.roi.toFixed(2)}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Dimension 2: Content Pillar (Table 2.3 from Image 4) */}
+          {analyticsSubTab === 'PILLAR' && (
+            <div className="card-enterprise overflow-hidden">
+              <div className="px-6 py-4 border-b border-slate-200 bg-slate-50/80 flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-900">2.3 báo cáo hiệu quả theo Content Pillar</h3>
+                  <p className="text-xs text-slate-500 mt-0.5">Xác định trụ cột nội dung nào mang lại ROI cao nhất để tập trung nguồn lực</p>
+                </div>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr className="bg-slate-100/70 border-b border-slate-200">
+                      <th className="p-3.5 pl-6 font-semibold text-slate-600">Content Pillar</th>
+                      <th className="p-3.5 font-semibold text-slate-600">Số Video</th>
+                      <th className="p-3.5 font-semibold text-slate-600">% Video</th>
+                      <th className="p-3.5 font-semibold text-slate-600">Chi Phí</th>
+                      <th className="p-3.5 font-semibold text-slate-600">% CP</th>
+                      <th className="p-3.5 font-semibold text-slate-600">GMV 30 Ngày</th>
+                      <th className="p-3.5 font-semibold text-slate-600">% GMV</th>
+                      <th className="p-3.5 pr-6 font-semibold text-slate-600 text-right">ROI</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {PILLAR_PERFORMANCE_DATA.map((p) => (
+                      <tr key={p.pillar} className="hover:bg-slate-50/80 transition-colors">
+                        <td className="p-3.5 pl-6 font-semibold text-slate-900">{p.pillar}</td>
+                        <td className="p-3.5 font-semibold text-slate-800">{p.videoCount}</td>
+                        <td className="p-3.5 text-slate-500">{p.pctVideo}</td>
+                        <td className="p-3.5 font-mono text-slate-700">{p.cost}</td>
+                        <td className="p-3.5 text-slate-500">{p.pctCost}</td>
+                        <td className="p-3.5 font-mono font-semibold text-emerald-700">{p.gmv30}</td>
+                        <td className="p-3.5 text-slate-500">{p.pctGmv}</td>
+                        <td className="p-3.5 pr-6 text-right">
+                          <span className={`px-2 py-0.5 rounded font-semibold text-2xs ${
+                            p.roi >= 0.8 ? 'badge-emerald' : p.roi >= 0.4 ? 'badge-blue' : 'badge-amber'
+                          }`}>
+                            ROI {p.roi.toFixed(2)}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Dimension 3: Creator Niche (Table 2.4 from Image 5) */}
+          {analyticsSubTab === 'CREATOR_NICHE' && (
+            <div className="card-enterprise overflow-hidden">
+              <div className="px-6 py-4 border-b border-slate-200 bg-slate-50/80 flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-900">2.4 Report hiệu quả theo tệp Creator</h3>
+                  <p className="text-xs text-slate-500 mt-0.5">Phân tích hiệu suất theo từng nhóm đối tượng Creator booking</p>
+                </div>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr className="bg-slate-100/70 border-b border-slate-200">
+                      <th className="p-3.5 pl-6 font-semibold text-slate-600">Tệp Creator</th>
+                      <th className="p-3.5 font-semibold text-slate-600">Số Video</th>
+                      <th className="p-3.5 font-semibold text-slate-600">% Video</th>
+                      <th className="p-3.5 font-semibold text-slate-600">Chi Phí</th>
+                      <th className="p-3.5 font-semibold text-slate-600">% CP</th>
+                      <th className="p-3.5 font-semibold text-slate-200">GMV 30 Ngày</th>
+                      <th className="p-3.5 font-semibold text-slate-200">% GMV</th>
+                      <th className="p-3.5 pr-6 font-semibold text-slate-200 text-right">ROI</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {CREATOR_NICHE_PERFORMANCE_DATA.map((c) => (
+                      <tr key={c.niche} className="hover:bg-slate-50/80 transition-colors">
+                        <td className="p-3.5 pl-6 font-semibold text-slate-900">{c.niche}</td>
+                        <td className="p-3.5 font-semibold text-slate-800">{c.videoCount}</td>
+                        <td className="p-3.5 text-slate-500">{c.pctVideo}</td>
+                        <td className="p-3.5 font-mono text-slate-700">{c.cost}</td>
+                        <td className="p-3.5 text-slate-500">{c.pctCost}</td>
+                        <td className="p-3.5 font-mono font-semibold text-emerald-700">{c.gmv30}</td>
+                        <td className="p-3.5 text-slate-500">{c.pctGmv}</td>
+                        <td className="p-3.5 pr-6 text-right">
+                          <span className={`px-2 py-0.5 rounded font-semibold text-2xs ${
+                            c.roi >= 0.8 ? 'badge-emerald' : c.roi >= 0.4 ? 'badge-blue' : 'badge-amber'
+                          }`}>
+                            ROI {c.roi.toFixed(2)}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Strategic Action Insight from Real Data */}
+          <div className="card-enterprise p-5 bg-white border border-slate-200 shadow-xs space-y-3">
+            <h4 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
+              <Check className="w-4 h-4 text-blue-600" />
+              Định hướng điều phối kế hoạch cho quản lý:
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-slate-700">
+              <div className="p-3 bg-emerald-50/60 rounded-xl border border-emerald-200/80">
+                <strong className="text-emerald-800 block mb-1">1. Đẩy mạnh KL1 & Unboxing (ROI &gt; 0.85):</strong>
+                Unboxing chi phí chỉ chiếm 0,52% nhưng đạt ROI 1.01 (hoàn vốn 100%). Cần tăng tỷ trọng video Unboxing và KL1 trong tháng 9.
+              </div>
+              <div className="p-3 bg-amber-50/60 rounded-xl border border-amber-200/80">
+                <strong className="text-amber-800 block mb-1">2. Tái ký KOC Gia Đình & Bác Sĩ (ROI 0.96 &amp; 0.86):</strong>
+                Nhóm bác sĩ và gia đình có độ tin cậy vượt trội và tỷ lệ chuyển đổi đơn hàng rất cao so với nhóm Review nữ phổ thông.
+              </div>
+              <div className="p-3 bg-blue-50/60 rounded-xl border border-blue-200/80">
+                <strong className="text-blue-800 block mb-1">3. Kiểm soát ngân sách KL6 &amp; KL7:</strong>
+                KL6 và KL7 chiếm tới 67,6% ngân sách (hơn 1,9 tỷ đ) nhưng ROI chỉ đạt 0.30 - 0.62. Cần đàm phán gắt gao điều khoản cam kết view/GMV.
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
         </div>
       )}
 
