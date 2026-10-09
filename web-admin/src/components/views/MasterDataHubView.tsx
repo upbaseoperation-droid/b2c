@@ -34,6 +34,13 @@ import {
   StoresMasterView, 
   StaffMasterView 
 } from './master-data';
+import {
+  UPBASE_MASTER_SLA_CONFIG,
+  UPBASE_MASTER_KPI_DEFINITIONS,
+  INITIAL_BACKUP_ASSIGNMENTS,
+  INITIAL_STORE_ASSIGNMENT_HISTORY,
+  INITIAL_AUDIT_LOGS
+} from '../../lib/enterpriseMasterConfig';
 
 export type MasterDataSubTab = 
   | 'brands' 
@@ -44,7 +51,10 @@ export type MasterDataSubTab =
   | 'koc-niches' 
   | 'video-formats' 
   | 'kocs' 
-  | 'staff';
+  | 'staff'
+  | 'sla-kpi'
+  | 'assignment-history'
+  | 'audit-trail';
 
 export interface MasterProductItem {
   id: string;
@@ -63,22 +73,26 @@ interface MasterDataHubViewProps {
   currentUser: UserProfile;
   initialSubTab?: MasterDataSubTab;
   brands?: BrandDetail[];
+  stores?: StorePortfolioItem[];
   kocs?: KocItem[];
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
   onOpenQuickBookWithKoc?: (koc: KocItem) => void;
   onKocCreated?: (koc: KocItem) => void;
   onKocUpdated?: (koc: KocItem) => void;
+  onUpdateStore?: (store: StorePortfolioItem) => void;
 }
 
 export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
   currentUser,
   initialSubTab = 'brands',
   brands = INITIAL_BRANDS,
+  stores,
   kocs = INITIAL_KOCS,
   onNotify,
   onOpenQuickBookWithKoc,
   onKocCreated,
-  onKocUpdated
+  onKocUpdated,
+  onUpdateStore
 }) => {
   const [activeSubTab, setActiveSubTab] = useState<MasterDataSubTab>(initialSubTab);
 
@@ -122,8 +136,22 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
     status: 'ACTIVE' as 'ACTIVE' | 'PAUSED' | 'UPCOMING'
   });
 
-  // Store state (Tải 957 gian hàng chuẩn Upbase Master Data)
-  const [storeList, setStoreList] = useState<StorePortfolioItem[]>(UPBASE_STORES_MASTER);
+  // Store state (Đồng bộ danh mục 353 gian hàng chuẩn Upbase Master Data)
+  const [storeList, setStoreList] = useState<StorePortfolioItem[]>(() => 
+    stores && stores.length > 0 ? stores : UPBASE_STORES_MASTER
+  );
+
+  React.useEffect(() => {
+    if (stores && stores.length > 0) {
+      setStoreList(stores);
+    }
+  }, [stores]);
+
+  const handleStoreUpdated = (updated: StorePortfolioItem) => {
+    setStoreList(prev => prev.map(s => s.id === updated.id ? updated : s));
+    if (onUpdateStore) onUpdateStore(updated);
+  };
+
   const [storeSearch, setStoreSearch] = useState('');
   const [selectedStorePlatform, setSelectedStorePlatform] = useState('ALL');
   const [selectedStoreBrand, setSelectedStoreBrand] = useState('ALL');
@@ -676,6 +704,51 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
               {UPBASE_STAFF_MASTER.length}
             </span>
           </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveSubTab('sla-kpi')}
+            className={`py-3 border-b-2 transition-colors whitespace-nowrap flex items-center gap-2 ${
+              activeSubTab === 'sla-kpi'
+                ? 'border-slate-900 text-slate-900 font-semibold'
+                : 'border-transparent text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <span>Chuẩn SLA & KPI</span>
+            <span className="text-2xs font-mono px-1.5 py-0.2 rounded bg-indigo-50 text-indigo-700 font-semibold">
+              {UPBASE_MASTER_SLA_CONFIG.length + UPBASE_MASTER_KPI_DEFINITIONS.length}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveSubTab('assignment-history')}
+            className={`py-3 border-b-2 transition-colors whitespace-nowrap flex items-center gap-2 ${
+              activeSubTab === 'assignment-history'
+                ? 'border-slate-900 text-slate-900 font-semibold'
+                : 'border-transparent text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <span>Lịch sử & Backup PIC</span>
+            <span className="text-2xs font-mono px-1.5 py-0.2 rounded bg-amber-50 text-amber-700 font-semibold">
+              {INITIAL_STORE_ASSIGNMENT_HISTORY.length}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveSubTab('audit-trail')}
+            className={`py-3 border-b-2 transition-colors whitespace-nowrap flex items-center gap-2 ${
+              activeSubTab === 'audit-trail'
+                ? 'border-slate-900 text-slate-900 font-semibold'
+                : 'border-transparent text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <span>Nhật ký Audit</span>
+            <span className="text-2xs font-mono px-1.5 py-0.2 rounded bg-slate-100 text-slate-700 font-semibold">
+              {INITIAL_AUDIT_LOGS.length}
+            </span>
+          </button>
         </div>
       </div>
 
@@ -962,6 +1035,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
           initialStores={storeList}
           brandNames={brandList.map(b => b.name)}
           onNotify={onNotify}
+          onUpdateStore={handleStoreUpdated}
         />
       )}
 
@@ -2084,6 +2158,353 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* SUB-TAB: CHUẨN SLA & KPI */}
+      {activeSubTab === 'sla-kpi' && (
+        <div className="space-y-6">
+          {/* Section 1: SLA Milestones Config */}
+          <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
+            <div className="p-4 border-b border-slate-200 bg-slate-50/60 flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold text-xs text-slate-900 uppercase tracking-wide">
+                  1. Bảng định nghĩa chuẩn 7 mốc thời gian cam kết dịch vụ (SLA Milestones)
+                </h3>
+                <p className="text-2xs text-slate-500 mt-0.5">
+                  Quy định giới hạn thời gian phản hồi, xử lý kịch bản, điều phối hàng mẫu và nghiệm thu video cho toàn bộ chu trình Booking
+                </p>
+              </div>
+              <span className="px-2.5 py-1 rounded-md bg-indigo-50 text-indigo-700 font-mono text-2xs font-semibold border border-indigo-200">
+                {UPBASE_MASTER_SLA_CONFIG.length} Mốc chuẩn hóa
+              </span>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-50 text-slate-600 border-b border-slate-200 font-semibold text-2xs">
+                  <tr>
+                    <th className="py-2.5 px-4 w-[110px]">Mã mốc</th>
+                    <th className="py-2.5 px-4 min-w-[200px]">Tên mốc vận hành</th>
+                    <th className="py-2.5 px-4 text-center w-[100px]">SLA Chuẩn</th>
+                    <th className="py-2.5 px-4 text-center w-[110px]">Cảnh báo</th>
+                    <th className="py-2.5 px-4 w-[130px]">Vai trò PIC</th>
+                    <th className="py-2.5 px-4 w-[130px]">Leo thang đến</th>
+                    <th className="py-2.5 px-4 text-center w-[100px]">Điểm phạt SLA</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {UPBASE_MASTER_SLA_CONFIG.map((sla) => (
+                    <tr key={sla.milestoneCode} className="hover:bg-slate-50/60 transition-colors">
+                      <td className="py-3 px-4 font-mono font-semibold text-slate-800 text-2xs">
+                        {sla.milestoneCode}
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="font-semibold text-slate-900">{sla.milestoneName}</div>
+                        <div className="text-2xs text-slate-500 mt-0.5">{sla.description}</div>
+                      </td>
+                      <td className="py-3 px-4 text-center font-mono font-bold text-slate-900">
+                        {sla.standardSlaHours}h
+                      </td>
+                      <td className="py-3 px-4 text-center font-mono text-amber-600 font-semibold">
+                        {sla.warningThresholdHours}h
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-slate-100 text-slate-700">
+                          {sla.responsibleRole}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-red-50 text-red-700 border border-red-200">
+                          {sla.escalateToRole}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-center font-mono font-bold text-red-600">
+                        -{sla.penaltyWeight} đ
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Section 2: Master KPI Definitions */}
+          <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
+            <div className="p-4 border-b border-slate-200 bg-slate-50/60 flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold text-xs text-slate-900 uppercase tracking-wide">
+                  2. Bảng định nghĩa định mức & trọng số KPI chuẩn theo chức danh
+                </h3>
+                <p className="text-2xs text-slate-500 mt-0.5">
+                  Khung đánh giá hiệu suất (KPI Framework) chuẩn hóa cho các bộ phận Account, Growth, Booking và Content
+                </p>
+              </div>
+              <span className="px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-700 font-mono text-2xs font-semibold border border-emerald-200">
+                {UPBASE_MASTER_KPI_DEFINITIONS.length} Chỉ số KPI
+              </span>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-50 text-slate-600 border-b border-slate-200 font-semibold text-2xs">
+                  <tr>
+                    <th className="py-2.5 px-4 w-[100px]">Mã KPI</th>
+                    <th className="py-2.5 px-4 w-[110px]">Chức danh</th>
+                    <th className="py-2.5 px-4 min-w-[220px]">Tên chỉ số KPI</th>
+                    <th className="py-2.5 px-4 text-center w-[120px]">Chỉ tiêu chuẩn</th>
+                    <th className="py-2.5 px-4 text-center w-[90px]">Trọng số</th>
+                    <th className="py-2.5 px-4 w-[90px]">Chu kỳ</th>
+                    <th className="py-2.5 px-4 min-w-[240px]">Tiêu chí đối chuẩn</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {UPBASE_MASTER_KPI_DEFINITIONS.map((kpi) => (
+                    <tr key={kpi.kpiCode} className="hover:bg-slate-50/60 transition-colors">
+                      <td className="py-3 px-4 font-mono font-semibold text-slate-800 text-2xs">
+                        {kpi.kpiCode}
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-slate-100 text-slate-700">
+                          {kpi.role}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 font-semibold text-slate-900">
+                        {kpi.kpiName}
+                      </td>
+                      <td className="py-3 px-4 text-center font-mono font-bold text-emerald-700">
+                        {kpi.targetValue} {kpi.unit}
+                      </td>
+                      <td className="py-3 px-4 text-center font-mono font-semibold text-slate-800">
+                        {kpi.weightPct}%
+                      </td>
+                      <td className="py-3 px-4 text-2xs text-slate-600 font-mono">
+                        {kpi.cycle}
+                      </td>
+                      <td className="py-3 px-4 text-2xs text-slate-600">
+                        {kpi.benchmarkCriteria}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* SUB-TAB: LỊCH SỬ PHÂN CÔNG & BACKUP PIC */}
+      {activeSubTab === 'assignment-history' && (
+        <div className="space-y-6">
+          {/* Section 1: Store Assignment History */}
+          <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
+            <div className="p-4 border-b border-slate-200 bg-slate-50/60 flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold text-xs text-slate-900 uppercase tracking-wide">
+                  1. Nhật ký lịch sử điều chuyển & phân công gian hàng (Store Assignment History)
+                </h3>
+                <p className="text-2xs text-slate-500 mt-0.5">
+                  Lưu vết toàn bộ các lần thay đổi nhân sự Account, Growth, Booking và Content trên từng gian hàng vận hành
+                </p>
+              </div>
+              <span className="px-2.5 py-1 rounded-md bg-amber-50 text-amber-700 font-mono text-2xs font-semibold border border-amber-200">
+                {INITIAL_STORE_ASSIGNMENT_HISTORY.length} Bản ghi
+              </span>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-50 text-slate-600 border-b border-slate-200 font-semibold text-2xs">
+                  <tr>
+                    <th className="py-2.5 px-4 w-[110px]">Mã gian</th>
+                    <th className="py-2.5 px-4 min-w-[200px]">Gian hàng</th>
+                    <th className="py-2.5 px-4 w-[130px]">Hành động</th>
+                    <th className="py-2.5 px-4 min-w-[180px]">Nhân sự đảm nhận</th>
+                    <th className="py-2.5 px-4 min-w-[240px]">Lý do điều chuyển</th>
+                    <th className="py-2.5 px-4 w-[140px]">Người thực hiện</th>
+                    <th className="py-2.5 px-4 text-right w-[110px]">Hiệu lực</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {INITIAL_STORE_ASSIGNMENT_HISTORY.map((h) => (
+                    <tr key={h.id} className="hover:bg-slate-50/60 transition-colors">
+                      <td className="py-3 px-4 font-mono font-semibold text-slate-800 text-2xs">
+                        {h.storeId}
+                      </td>
+                      <td className="py-3 px-4 font-medium text-slate-900">
+                        {h.storeName}
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className={`px-2 py-0.5 rounded text-3xs font-semibold uppercase tracking-wider ${
+                          h.action === 'ASSIGNED'
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                            : h.action === 'REASSIGNED'
+                            ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                            : 'bg-amber-50 text-amber-700 border border-amber-200'
+                        }`}>
+                          {h.action}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-2xs">
+                        <strong className="text-slate-900 font-semibold">{h.staffName}</strong>
+                        <div className="text-3xs text-slate-400 font-mono">{h.roleType}</div>
+                      </td>
+                      <td className="py-3 px-4 text-2xs text-slate-600">
+                        {h.reason || h.handoverNotes || '—'}
+                      </td>
+                      <td className="py-3 px-4 text-2xs font-medium text-slate-700">
+                        {h.assignedByName}
+                      </td>
+                      <td className="py-3 px-4 text-right font-mono text-2xs text-slate-500">
+                        {h.effectiveDate}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Section 2: Backup Staff Assignments */}
+          <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
+            <div className="p-4 border-b border-slate-200 bg-slate-50/60 flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold text-xs text-slate-900 uppercase tracking-wide">
+                  2. Danh sách nhân sự dự phòng được ủy quyền (Backup Staff Assignments)
+                </h3>
+                <p className="text-2xs text-slate-500 mt-0.5">
+                  Ủy quyền xử lý nghiệp vụ khi PIC chính vắng mặt, đảm bảo không tắc nghẽn cam kết SLA
+                </p>
+              </div>
+              <span className="px-2.5 py-1 rounded-md bg-blue-50 text-blue-700 font-mono text-2xs font-semibold border border-blue-200">
+                {INITIAL_BACKUP_ASSIGNMENTS.length} Cặp ủy quyền
+              </span>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-50 text-slate-600 border-b border-slate-200 font-semibold text-2xs">
+                  <tr>
+                    <th className="py-2.5 px-4 min-w-[160px]">Nhân sự chính</th>
+                    <th className="py-2.5 px-4 w-[110px]">Chức danh</th>
+                    <th className="py-2.5 px-4 min-w-[160px]">Nhân sự dự phòng (Backup)</th>
+                    <th className="py-2.5 px-4 min-w-[240px]">Lý do & Ghi chú ủy quyền</th>
+                    <th className="py-2.5 px-4 text-center w-[120px]">Trạng thái</th>
+                    <th className="py-2.5 px-4 text-right w-[180px]">Thời hạn ủy quyền</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {INITIAL_BACKUP_ASSIGNMENTS.map((b) => (
+                    <tr key={b.id} className="hover:bg-slate-50/60 transition-colors">
+                      <td className="py-3 px-4 font-semibold text-slate-900">
+                        {b.primaryStaffName}
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-slate-100 text-slate-700">
+                          {b.role}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 font-semibold text-amber-800">
+                        {b.backupStaffName}
+                      </td>
+                      <td className="py-3 px-4 text-2xs text-slate-600">
+                        <div><strong className="text-slate-800">{b.reason}</strong></div>
+                        {b.notes && <div className="text-slate-400 text-3xs mt-0.5">{b.notes}</div>}
+                      </td>
+                      <td className="py-3 px-4 text-center">
+                        <span className={`px-2 py-0.5 rounded text-3xs font-semibold uppercase tracking-wider ${
+                          b.isActive
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                            : 'bg-slate-100 text-slate-500 border border-slate-200'
+                        }`}>
+                          {b.isActive ? 'Đang kích hoạt' : 'Chờ sẵn sàng'}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-right font-mono text-2xs text-slate-500">
+                        {b.startDate} → {b.endDate || 'Vô thời hạn'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* SUB-TAB: NHẬT KÝ KIỂM TOÁN AUDIT */}
+      {activeSubTab === 'audit-trail' && (
+        <div className="space-y-4">
+          <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
+            <div className="p-4 border-b border-slate-200 bg-slate-50/60 flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold text-xs text-slate-900 uppercase tracking-wide">
+                  Nhật ký kiểm toán hệ thống nghiệp vụ (Audit Trail & Change Logs)
+                </h3>
+                <p className="text-2xs text-slate-500 mt-0.5">
+                  Ghi nhận đầy đủ thông tin kiểm toán (ai làm gì, tác động lên thực thể nào, thời gian và địa chỉ IP) theo chuẩn BRD
+                </p>
+              </div>
+              <span className="px-2.5 py-1 rounded-md bg-slate-100 text-slate-800 font-mono text-2xs font-semibold border border-slate-200">
+                {INITIAL_AUDIT_LOGS.length} Sự kiện kiểm toán
+              </span>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-50 text-slate-600 border-b border-slate-200 font-semibold text-2xs">
+                  <tr>
+                    <th className="py-2.5 px-4 w-[110px]">Mã Audit</th>
+                    <th className="py-2.5 px-4 w-[160px]">Thời gian</th>
+                    <th className="py-2.5 px-4 w-[100px]">Hành động</th>
+                    <th className="py-2.5 px-4 w-[140px]">Đối tượng</th>
+                    <th className="py-2.5 px-4 min-w-[160px]">Người thực hiện</th>
+                    <th className="py-2.5 px-4 min-w-[280px]">Nội dung thay đổi chi tiết</th>
+                    <th className="py-2.5 px-4 text-right w-[110px]">Địa chỉ IP</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {INITIAL_AUDIT_LOGS.map((log) => (
+                    <tr key={log.id} className="hover:bg-slate-50/60 transition-colors">
+                      <td className="py-3 px-4 font-mono font-semibold text-slate-800 text-2xs">
+                        {log.id}
+                      </td>
+                      <td className="py-3 px-4 font-mono text-2xs text-slate-500">
+                        {log.timestamp}
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className={`px-2 py-0.5 rounded text-3xs font-bold uppercase tracking-wider ${
+                          log.action === 'CREATE'
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                            : log.action === 'UPDATE'
+                            ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                            : log.action === 'APPROVE'
+                            ? 'bg-purple-50 text-purple-700 border border-purple-200'
+                            : 'bg-red-50 text-red-700 border border-red-200'
+                        }`}>
+                          {log.action}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-2xs font-mono">
+                        <span className="text-slate-500">{log.entityType}:</span>{' '}
+                        <strong className="text-slate-800">{log.entityId}</strong>
+                      </td>
+                      <td className="py-3 px-4 text-2xs">
+                        <div className="font-semibold text-slate-900">{log.actorName}</div>
+                        <div className="text-3xs text-slate-400">{log.actorRole}</div>
+                      </td>
+                      <td className="py-3 px-4 text-2xs text-slate-700">
+                        {log.note || (log.changedFields ? JSON.stringify(log.changedFields) : '—')}
+                      </td>
+                      <td className="py-3 px-4 text-right font-mono text-2xs text-slate-400">
+                        {log.ipAddress || '127.0.0.1'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}

@@ -384,7 +384,9 @@ export interface KocItem {
 export type KocMasterItem = KocItem;
 
 export type DealStatus = 
+  | 'DRAFT'
   | 'CONTACTING'
+  | 'TERMS_AGREED'
   | 'SCRIPT_PENDING'
   | 'SCRIPT_APPROVED'
   | 'CONTRACT_GENERATED'
@@ -394,6 +396,7 @@ export type DealStatus =
   | 'VIDEO_SUBMITTED'
   | 'VIDEO_VERIFIED'
   | 'FINAL_PAID'
+  | 'COMPLETED'
   | 'CANCELLED';
 
 export type BrandApprovalStatus = 'ĐÃ_DUYỆT' | 'CHỜ_DUYỆT' | 'TỪ_CHỐI';
@@ -403,15 +406,18 @@ export interface BookingDealItem {
   id: string;
   dealCode: string; // Mã BO (ví dụ: BO260757834, BO26_CHANH_1010)
   jobId?: string; // Mã ID Job tác nghiệp (ví dụ: ID260952684, ID260747077)
+  campaignId?: string; // Khóa ngoại trỏ tới Campaign chuẩn (e.g. camp-1, camp-2)
   campaignCode: string;
   campaignTitle: string;
   
   // Brand & Store & Sản phẩm của Job này (Cốt lõi theo Job)
   brandName: string; // Brand (Kutieskin Mama, Royal Ausnz, Nature's Way, Bye Bye Blemish, pHCare, Babe...)
+  storeId?: string; // Khóa ngoại trỏ tới Store chuẩn (e.g. ST-SO0001, ST-SO1000)
   storeName?: string; // Store (Kutieskin Mama_TikTok_E2E-S, Fresh_TikTok_E2E-C...)
   productName?: string; // Sản phẩm (Mặt nạ rau má Premium, Nước tắm/kem tuti, Quạt tuần hoàn...)
   bookingBatch?: string; // Đợt (Đợt 1, Đợt 2, Đợt 3)
   bookingFormat?: 'Booking Video KOC' | 'Booking Livestream KOC' | 'Affiliate Thuần';
+  assignedStaffId?: string; // Khóa ngoại nhân sự phụ trách trực tiếp deal (e.g. st-1, st-2)
   
   // KOC Reference & 4 Phân loại cốt lõi (Sheet 3.1 & 3.2)
   kocId: string;
@@ -1429,6 +1435,7 @@ export interface BrandCampaignPortalData {
 // Quản lý Vận đơn gửi mẫu & Chống bùng mẫu (KOC Sample Delivery & Anti-Ghosting)
 export interface SampleShipment {
   id: string;
+  dealId?: string; // Khóa ngoại trỏ trực tiếp đến BookingDealItem.id
   dealCode: string;
   kocName: string;
   kocPhone: string;
@@ -1552,6 +1559,7 @@ export interface StorePortfolioItem {
   requiresB2cPlan?: boolean; // Gian hàng này có cần làm kế hoạch B2C tháng không (mặc định true)
 
   // Upbase Master Data (5.1 Stores)
+  storeOperationId?: string; // Mã vận hành chuẩn SOxxxx (SO0001, SO1000...)
   storeOperation?: string; // Tên nhận diện vận hành: Brand_Platform_Service
   servicePackage?: string; // E2E-S, Live-S, MCN-S, Standard...
   servicePackageName?: string; // E2E - Service, Live - Service...
@@ -1568,6 +1576,17 @@ export interface StorePortfolioItem {
   cmsRate?: number | string; // % CMS thu Brand
   fixFeeLivePerHour?: number; // Fix fee / giờ livestream
   operationStatus?: 'Live' | 'Off' | 'Kênh nội bộ';
+
+  // Quản trị vai trò dự phòng (Backup PIC) theo BRD
+  backupOwnerId?: string; // ID nhân sự dự phòng khi PIC chính vắng mặt/nghỉ phép/quá tải
+  backupOwnerName?: string; // Tên nhân sự dự phòng
+  isBackupActive?: boolean; // Trạng thái kích hoạt chuyển quyền backup
+  backupReason?: string; // Lý do chuyển giao: Nghỉ phép, Đi công tác, Quá tải
+
+  // Trường kiểm toán (Audit Fields) theo BRD
+  createdBy?: string;
+  updatedAt?: string;
+  updatedBy?: string;
 }
 
 // MASTER DATA NHÂN VIÊN & PHÂN CÔNG GIAN HÀNG
@@ -2317,5 +2336,89 @@ export interface AdsReportParseResult {
   matchedKocCount: number;
   totalCreatorCount: number;
   matchRatePercent: number;
+}
+
+// =========================================================================
+// BRD ENTERPRISE EXTENSIONS: VAI TRÒ BACKUP, LỊCH SỬ PHÂN CÔNG, SLA/KPI, AUDIT
+// =========================================================================
+
+// 1. VAI TRÒ DỰ PHÒNG / BACKUP PIC KHI NHÂN SỰ CHÍNH VẮNG MẶT
+export interface BackupStaffAssignment {
+  id: string;
+  primaryStaffId: string;
+  primaryStaffName: string;
+  backupStaffId: string;
+  backupStaffName: string;
+  role: UserRole;
+  storeIds: string[];
+  isActive: boolean;
+  reason: 'NGHỈ_PHÉP' | 'CÔNG_TÁC' | 'QUÁ_TẢI' | 'ĐỘT_XUẤT' | 'ĐÀO_TẠO';
+  startDate: string;
+  endDate?: string;
+  assignedBy: string;
+  assignedByName: string;
+  notes?: string;
+  createdAt: string;
+}
+
+// 2. LỊCH SỬ PHÂN CÔNG GIAN HÀNG & NHÂN SỰ (ASSIGNMENT HISTORY)
+export interface StoreAssignmentHistoryRecord {
+  id: string;
+  storeId: string;
+  storeName: string;
+  brandName: string;
+  staffId: string;
+  staffName: string;
+  roleType: 'PRIMARY_B2C' | 'CO_OWNER' | 'GROWTH_LEAD' | 'CONTENT_PIC' | 'BACKUP_PIC';
+  action: 'ASSIGNED' | 'REASSIGNED' | 'REVOKED' | 'BACKUP_ACTIVATED' | 'BACKUP_DEACTIVATED';
+  assignedBy: string;
+  assignedByName: string;
+  effectiveDate: string;
+  endDate?: string;
+  reason?: string;
+  handoverNotes?: string;
+}
+
+// 3. BẢNG ĐỊNH NGHĨA SLA CHUẨN DOANH NGHIỆP
+export interface MasterSlaMilestoneConfig {
+  id: string;
+  milestoneCode: string;
+  milestoneName: string;
+  description: string;
+  standardSlaHours: number;
+  warningThresholdHours: number;
+  escalateToRole: UserRole;
+  responsibleRole: UserRole;
+  slaType: 'WORKING_HOURS' | 'CALENDAR_HOURS';
+  penaltyWeight: number; // Điểm trừ SLA nếu vi phạm
+}
+
+// 4. BẢNG ĐỊNH NGHĨA KPI CHUẨN DOANH NGHIỆP
+export interface MasterKpiDefinition {
+  id: string;
+  role: UserRole;
+  kpiCode: string;
+  kpiName: string;
+  targetValue: number;
+  unit: string; // 'video', '%', 'VNĐ', 'ROAS'
+  cycle: 'MONTHLY' | 'WEEKLY' | 'QUARTERLY';
+  weightPct: number;
+  benchmarkCriteria: string;
+}
+
+// 5. TRƯỜNG VÀ NHẬT KÝ KIỂM TOÁN (AUDIT TRAIL)
+export interface AuditLogEntry {
+  id: string;
+  entityType: 'STORE' | 'PLAN' | 'DEAL' | 'CAMPAIGN' | 'STAFF' | 'CONTRACT' | 'BACKUP';
+  entityId: string;
+  entityName?: string;
+  action: 'CREATE' | 'UPDATE' | 'DELETE' | 'APPROVE' | 'REJECT' | 'REASSIGN' | 'SUBMIT' | 'ACTIVATE_BACKUP';
+  changedFields?: Record<string, { oldValue: any; newValue: any }>;
+  actorId: string;
+  actorName: string;
+  actorRole: UserRole;
+  ipAddress?: string;
+  timestamp: string;
+  note?: string;
 }
 

@@ -3,7 +3,7 @@ import path from 'path';
 import fs from 'fs';
 
 const masterDir = 'E:/Upbase/B2C/Master data';
-const outFile = path.join(__dirname, '../src/lib/importedMasterData.ts');
+const outFile = path.resolve('src/lib/importedMasterData.ts');
 
 function cleanStr(val: any): string {
   if (val === null || val === undefined) return '';
@@ -210,10 +210,10 @@ async function run() {
     if (!validStatuses.has(statusRaw)) return;
     if (!brandName || !storeOp) return;
 
-    const brandId = cleanStr(vals[30]); // Brand ID
-    const servicePkg = cleanStr(vals[4]); // Service_package
-    const servicePkgName = cleanStr(vals[34]); // Service_Package_Name
-    const rawPlatform = cleanStr(vals[5]); // Platform
+    const brandId = cleanStr(vals[29]); // Brand ID (Col 30)
+    const servicePkg = cleanStr(vals[4]); // Service_package (Col 5)
+    const servicePkgName = cleanStr(vals[33]); // Service_Package_Name (Col 34)
+    const rawPlatform = cleanStr(vals[5]); // Platform (Col 6)
     let platform: 'TikTok Shop' | 'Shopee Mall' | 'Lazada' = 'Shopee Mall';
     if (rawPlatform.toLowerCase().includes('tiktok')) platform = 'TikTok Shop';
     else if (rawPlatform.toLowerCase().includes('laza')) platform = 'Lazada';
@@ -239,11 +239,15 @@ async function run() {
     if (statusRaw === 'Off') accountStatus = 'OFFBOARDED';
     else if (statusRaw === 'Kênh nội bộ') accountStatus = 'MAINTENANCE';
 
-    const storeId = `ST-${String(stores.length + 1).padStart(4, '0')}`;
+    const storeOpId = cleanStr(vals[47]); // Store_Operation_ID (Col 48)
+    const b2cPhuTrach = cleanStr(vals[46]); // B2C phụ trách (Col 47)
+    const isB2cManaged = b2cPhuTrach === '1' || b2cPhuTrach.toLowerCase() === 'true';
+    const storeId = storeOpId ? `ST-${storeOpId}` : `ST-${String(stores.length + 1).padStart(4, '0')}`;
     const storeUrl = cleanStr(vals[7]) || `https://${platform.toLowerCase().replace(/\s+/g, '')}.vn/${storeOp.replace(/[^a-zA-Z0-9]/g, '').toLowerCase()}`;
 
     const storeItem = {
       id: storeId,
+      storeOperationId: storeOpId || storeId,
       brandName,
       storeName: storeOp,
       platform,
@@ -258,6 +262,8 @@ async function run() {
       monthlyBudget: 25000000,
       accountOwnerName: accountPic || growthPic || 'Nguyễn Thu Trang',
       b2cOwnerName: contentPic || growthPic || 'Đặng Thị Linh',
+      isB2cManaged,
+      requiresB2cPlan: isB2cManaged,
       storeOperation: storeOp,
       servicePackage: servicePkg,
       servicePackageName: servicePkgName,
@@ -382,7 +388,7 @@ async function run() {
     const department = cleanStr(vals[9]);
     const position = cleanStr(vals[10]);
     const team = cleanStr(vals[11]);
-    const email = cleanStr(vals[12]) || `${code.toLowerCase()}@upbase.vn`;
+    const email = `staff_${code.toLowerCase()}@upbase.vn`;
 
     let role: 'BOOKING' | 'CONTENT' | 'ACCOUNT' | 'GROWTH' | 'MANAGER' = 'BOOKING';
     const posLower = (position + ' ' + department + ' ' + team).toLowerCase();

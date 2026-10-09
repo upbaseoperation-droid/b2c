@@ -1597,8 +1597,8 @@
         [
           "HN782",
           "Dương Quỳnh Anh",
-          "NzQ0MzgzODA1NTUwMjQ2MzAwNzpyZWN2YTJwc1Yzcjh3Ujo0YzM0MDQ3NDNjYThkNTg0MDdiNTk3YjEzODY2MmQ1MDox",
-          "25/07/2000",
+          "masked_source_1",
+          "01/01/2000",
           "Nữ",
           "01/02/2026",
           null,
@@ -1611,8 +1611,8 @@
         [
           "HN783",
           "Vũ Đình Lan Nhi",
-          "NzQ0MzgzODA1NTUwMjQ2MzAwNzpyZWN2YTJwdE9vUmROdjo2Yjg2YmRhYmNjN2I4MGM4OTg5NTY5MGZmNTEyNzllNTox",
-          "18/02/2003",
+          "masked_source_2",
+          "01/01/2000",
           "Nữ",
           "01/02/2026",
           null,
@@ -1625,8 +1625,8 @@
         [
           "HN222",
           "Đỗ Thị Thanh Loan",
-          "NzQ0MzgzODA1NTUwMjQ2MzAwNzpyZWN1c0ptTEw3Tm9RNDpiOTRiZDYxZDg2M2MzNzIxM2ZiZDJjOTVjYWE0ODc5ODox",
-          "24/03/1999",
+          "masked_source_3",
+          "01/01/2000",
           "Nữ",
           "01/03/2023",
           "Đỗ Thị Thanh Loan",
@@ -1635,13 +1635,13 @@
           "Growth 1",
           "Growth Executive",
           "Growth 1",
-          "loandtt@upbase.asia"
+          "staff_3@upbase.vn"
         ],
         [
           "HN225",
           "Đỗ Đức Nguyên",
-          "NzQ0MzgzODA1NTUwMjQ2MzAwNzpyZWN1c0ptTjk1MzN5VTo0ZTRkZDQ5NjE5MWNkY2Y5MjM2ZTNlMGUzYTc2YzI3Mjox",
-          "09/02/2001",
+          "masked_source_4",
+          "01/01/2000",
           "Nam",
           "01/03/2023",
           null,
@@ -1654,8 +1654,8 @@
         [
           "HCM001",
           "Phạm Anh Ngọc",
-          "NzQ0MzgzODA1NTUwMjQ2MzAwNzpyZWN1c0ptUDVpZFFMTTpkZmUwNDY1MmIxZDI3MjcwMjk1Njk3ZjQ4NmU0OWJhYjox",
-          "27/01/1990",
+          "masked_source_5",
+          "01/01/2000",
           "Nam",
           "01/03/2024",
           null,
@@ -1668,8 +1668,8 @@
         [
           "HN509",
           "Bùi Phương Linh ",
-          "NzQ0MzgzODA1NTUwMjQ2MzAwNzpyZWN1RWxiZWpUQnYwSTo4OWQyOTJhYTkxNWM1YWE2ZGEwZTgwMDA0OWFjZGM0Mzox",
-          "22/08/2004",
+          "masked_source_6",
+          "01/01/2000",
           "Nữ",
           "01/03/2025",
           null,
@@ -1682,8 +1682,8 @@
         [
           "HN799",
           "Nguyễn Châu Thương Thương",
-          "NzQ0MzgzODA1NTUwMjQ2MzAwNzpyZWN2Y0xLT01qck5PSzo3ZDZiNWMwZjY1ZWIyZThjOTcwMGM5MjBmMjg5NjEwZDox",
-          "31/05/1998",
+          "masked_source_7",
+          "01/01/2000",
           "Nữ",
           "01/03/2026",
           null,
@@ -1696,8 +1696,8 @@
         [
           "HCM007",
           "Nguyễn Thị Kim Ngân",
-          "NzQ0MzgzODA1NTUwMjQ2MzAwNzpyZWN1c0ptUWRjWndwczpiMDlhM2ViNjI5ZjI5MWUwMTc2NzU3OThjZmMzZTViNjox",
-          "17/05/1991",
+          "masked_source_8",
+          "01/01/2000",
           "Nữ",
           "01/04/2024",
           "Nguyễn Thị Kim Ngân",
@@ -1706,13 +1706,13 @@
           "UpBase, Fulfillment",
           "Nhân viên Kho (HCM)",
           "Fulfillment",
-          "nganntk@upbase.asia"
+          "staff_8@upbase.vn"
         ],
         [
           "HCM008",
           "Nguyễn Thị Thùy Liên",
-          "NzQ0MzgzODA1NTUwMjQ2MzAwNzpyZWN1c0ptTlp0WnR1Nzo2MjY5MjJkMjg1MjRmNzBlODc3ZjUwNTc5NTVlZGIyNTox",
-          "13/08/1997",
+          "masked_source_9",
+          "01/01/2000",
           "Nữ",
           "01/04/2024",
           "Nguyễn Thị Thùy Liên",
@@ -1721,7 +1721,7 @@
           "MCN",
           "MCN Revenue Manager",
           "MCN",
-          "lienntt@upbase.asia"
+          "staff_9@upbase.vn"
         ]
       ]
     }

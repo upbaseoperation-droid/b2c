@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { Search, Plus, X, ExternalLink, Store, ShoppingBag, ChevronLeft, ChevronRight, Users, Filter, RotateCcw } from 'lucide-react';
+import { Search, Plus, X, ExternalLink, Store, ShoppingBag, ChevronLeft, ChevronRight, Users, Filter, RotateCcw, Shield } from 'lucide-react';
 import { ChannelTag } from '../../ui';
 import { StorePortfolioItem } from '../../../lib/types';
 import { StaffSearchSelect } from './StaffSearchSelect';
@@ -10,6 +10,7 @@ interface StoresMasterViewProps {
   initialStores: StorePortfolioItem[];
   brandNames: string[];
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
+  onUpdateStore?: (store: StorePortfolioItem) => void;
 }
 
 const PAGE_SIZE = 25;
@@ -17,15 +18,22 @@ const PAGE_SIZE = 25;
 export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
   initialStores,
   brandNames,
-  onNotify
+  onNotify,
+  onUpdateStore
 }) => {
   const [stores, setStores] = useState<StorePortfolioItem[]>(initialStores);
+
+  React.useEffect(() => {
+    setStores(initialStores);
+  }, [initialStores]);
+
   const [search, setSearch] = useState('');
   const [selectedBrand, setSelectedBrand] = useState('ALL');
   const [selectedPlatform, setSelectedPlatform] = useState('ALL');
   const [selectedPackage, setSelectedPackage] = useState('ALL');
   const [selectedStatus, setSelectedStatus] = useState('ALL');
   const [selectedOwner, setSelectedOwner] = useState('ALL');
+  const [selectedB2cPlan, setSelectedB2cPlan] = useState<'ALL' | 'B2C_MANAGED' | 'REQUIRES_PLAN'>('ALL');
   const [page, setPage] = useState(1);
 
   // Extract unique sorted brand list
@@ -48,6 +56,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
       if (s.growthPic) set.add(s.growthPic.trim());
       if (s.contentPic) set.add(s.contentPic.trim());
       if (s.mediaPic) set.add(s.mediaPic.trim());
+      if (s.backupOwnerName) set.add(s.backupOwnerName.trim());
     });
     return Array.from(set).sort();
   }, [stores]);
@@ -65,6 +74,11 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
     b2cOwnerName: '',
     contentPic: '',
     mediaPic: '',
+    backupOwnerName: '',
+    isBackupActive: false,
+    backupReason: '',
+    isB2cManaged: true,
+    requiresB2cPlan: true,
     storeUrl: '',
     operationStatus: 'Live' as 'Live' | 'Off' | 'Kênh nội bộ'
   });
@@ -89,11 +103,14 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
         if (selectedStatus === 'Off' && s.operationStatus !== 'Off' && s.accountStatus !== 'OFFBOARDED') return false;
         if (selectedStatus === 'Kênh nội bộ' && s.operationStatus !== 'Kênh nội bộ' && s.accountStatus !== 'MAINTENANCE') return false;
       }
+      if (selectedB2cPlan === 'B2C_MANAGED' && !s.isB2cManaged) return false;
+      if (selectedB2cPlan === 'REQUIRES_PLAN' && !s.requiresB2cPlan) return false;
       if (selectedOwner !== 'ALL') {
         const matchOwner = (s.accountOwnerName && s.accountOwnerName.includes(selectedOwner)) ||
                            (s.growthPic && s.growthPic.includes(selectedOwner)) ||
                            (s.contentPic && s.contentPic.includes(selectedOwner)) ||
-                           (s.mediaPic && s.mediaPic.includes(selectedOwner));
+                           (s.mediaPic && s.mediaPic.includes(selectedOwner)) ||
+                           (s.backupOwnerName && s.backupOwnerName.includes(selectedOwner));
         if (!matchOwner) return false;
       }
       if (search.trim()) {
@@ -105,14 +122,15 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
           (s.accountOwnerName && s.accountOwnerName.toLowerCase().includes(q)) ||
           (s.growthPic && s.growthPic.toLowerCase().includes(q)) ||
           (s.contentPic && s.contentPic.toLowerCase().includes(q)) ||
-          (s.mediaPic && s.mediaPic.toLowerCase().includes(q))
+          (s.mediaPic && s.mediaPic.toLowerCase().includes(q)) ||
+          (s.backupOwnerName && s.backupOwnerName.toLowerCase().includes(q))
         );
       }
       return true;
     });
-  }, [stores, selectedBrand, selectedPlatform, selectedPackage, selectedStatus, selectedOwner, search]);
+  }, [stores, selectedBrand, selectedPlatform, selectedPackage, selectedStatus, selectedOwner, selectedB2cPlan, search]);
 
-  const isFiltered = search.trim() !== '' || selectedBrand !== 'ALL' || selectedPlatform !== 'ALL' || selectedPackage !== 'ALL' || selectedStatus !== 'ALL' || selectedOwner !== 'ALL';
+  const isFiltered = search.trim() !== '' || selectedBrand !== 'ALL' || selectedPlatform !== 'ALL' || selectedPackage !== 'ALL' || selectedStatus !== 'ALL' || selectedOwner !== 'ALL' || selectedB2cPlan !== 'ALL';
 
   const handleResetFilters = () => {
     setSearch('');
@@ -121,7 +139,35 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
     setSelectedPackage('ALL');
     setSelectedStatus('ALL');
     setSelectedOwner('ALL');
+    setSelectedB2cPlan('ALL');
     setPage(1);
+  };
+
+  const handleToggleB2cManaged = (store: StorePortfolioItem) => {
+    const updated: StorePortfolioItem = {
+      ...store,
+      isB2cManaged: !store.isB2cManaged,
+      requiresB2cPlan: !store.isB2cManaged ? (store.requiresB2cPlan ?? true) : false,
+      updatedAt: new Date().toISOString()
+    };
+    setStores(prev => prev.map(s => s.id === store.id ? updated : s));
+    if (onUpdateStore) onUpdateStore(updated);
+    if (onNotify) {
+      onNotify(`Đã ${updated.isB2cManaged ? 'bật' : 'tắt'} Marketing B2C phụ trách cho [${store.storeName}]`);
+    }
+  };
+
+  const handleToggleRequiresPlan = (store: StorePortfolioItem) => {
+    const updated: StorePortfolioItem = {
+      ...store,
+      requiresB2cPlan: !store.requiresB2cPlan,
+      updatedAt: new Date().toISOString()
+    };
+    setStores(prev => prev.map(s => s.id === store.id ? updated : s));
+    if (onUpdateStore) onUpdateStore(updated);
+    if (onNotify) {
+      onNotify(`Đã ${updated.requiresB2cPlan ? 'yêu cầu' : 'bỏ yêu cầu'} làm Plan cho [${store.storeName}]`);
+    }
   };
 
   // Pagination slice
@@ -138,6 +184,8 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
   const liveCount = stores.filter(s => s.operationStatus === 'Live' || s.accountStatus === 'ACTIVE').length;
   const offCount = stores.filter(s => s.operationStatus === 'Off' || s.accountStatus === 'OFFBOARDED').length;
   const internalCount = stores.filter(s => s.operationStatus === 'Kênh nội bộ' || s.accountStatus === 'MAINTENANCE').length;
+  const b2cManagedCount = stores.filter(s => s.isB2cManaged).length;
+  const requiresPlanCount = stores.filter(s => s.requiresB2cPlan).length;
 
   const handleOpenAdd = () => {
     setEditingStore(null);
@@ -145,12 +193,17 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
       storeName: '',
       brandName: brandNames[0] || '',
       platform: 'Shopee Mall',
-      servicePackage: 'E2E-S',
+      servicePackage: 'E2E - Service',
       accountOwnerName: '',
       growthPic: '',
       b2cOwnerName: '',
       contentPic: '',
       mediaPic: '',
+      backupOwnerName: '',
+      isBackupActive: false,
+      backupReason: '',
+      isB2cManaged: true,
+      requiresB2cPlan: true,
       storeUrl: '',
       operationStatus: 'Live'
     });
@@ -163,12 +216,17 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
       storeName: s.storeName,
       brandName: s.brandName,
       platform: s.platform,
-      servicePackage: s.servicePackage || 'E2E-S',
+      servicePackage: s.servicePackage || 'E2E - Service',
       accountOwnerName: s.accountOwnerName || '',
       growthPic: s.growthPic || '',
       b2cOwnerName: s.b2cOwnerName || (s.b2cOwners ? s.b2cOwners.join(', ') : ''),
       contentPic: s.contentPic || '',
       mediaPic: s.mediaPic || '',
+      backupOwnerName: s.backupOwnerName || '',
+      isBackupActive: s.isBackupActive || false,
+      backupReason: s.backupReason || '',
+      isB2cManaged: s.isB2cManaged !== false,
+      requiresB2cPlan: s.requiresB2cPlan !== false,
       storeUrl: s.storeUrl || '',
       operationStatus: s.operationStatus || (s.accountStatus === 'ACTIVE' ? 'Live' : 'Off')
     });
@@ -183,21 +241,29 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
     const accStatus = opStatus === 'Live' ? 'ACTIVE' : (opStatus === 'Off' ? 'OFFBOARDED' : 'MAINTENANCE');
 
     if (editingStore) {
-      setStores(prev => prev.map(s => s.id === editingStore.id ? {
-        ...s,
+      const updatedStore: StorePortfolioItem = {
+        ...editingStore,
         storeName: form.storeName.trim(),
         brandName: form.brandName,
         platform: form.platform,
         servicePackage: form.servicePackage,
-        accountOwnerName: form.accountOwnerName.trim() || s.accountOwnerName,
-        growthPic: form.growthPic.trim() || s.growthPic,
-        b2cOwnerName: form.b2cOwnerName.trim() || s.b2cOwnerName,
-        contentPic: form.contentPic.trim() || s.contentPic,
-        mediaPic: form.mediaPic.trim() || s.mediaPic,
-        storeUrl: form.storeUrl.trim() || s.storeUrl,
+        accountOwnerName: form.accountOwnerName.trim() || editingStore.accountOwnerName,
+        growthPic: form.growthPic.trim() || editingStore.growthPic,
+        b2cOwnerName: form.b2cOwnerName.trim() || editingStore.b2cOwnerName,
+        contentPic: form.contentPic.trim() || editingStore.contentPic,
+        mediaPic: form.mediaPic.trim() || editingStore.mediaPic,
+        backupOwnerName: form.backupOwnerName.trim() || undefined,
+        isBackupActive: form.isBackupActive,
+        backupReason: form.backupReason.trim() || undefined,
+        isB2cManaged: form.isB2cManaged,
+        requiresB2cPlan: form.requiresB2cPlan,
+        storeUrl: form.storeUrl.trim() || editingStore.storeUrl,
         operationStatus: opStatus,
-        accountStatus: accStatus
-      } : s));
+        accountStatus: accStatus,
+        updatedAt: new Date().toISOString()
+      };
+      setStores(prev => prev.map(s => s.id === editingStore.id ? updatedStore : s));
+      if (onUpdateStore) onUpdateStore(updatedStore);
       if (onNotify) onNotify(`Đã cập nhật gian hàng [${form.storeName}]`);
     } else {
       const newStore: StorePortfolioItem = {
@@ -220,9 +286,16 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
         growthPic: form.growthPic.trim(),
         contentPic: form.contentPic.trim(),
         mediaPic: form.mediaPic.trim(),
-        storeUrl: form.storeUrl.trim() || ''
+        backupOwnerName: form.backupOwnerName.trim() || undefined,
+        isBackupActive: form.isBackupActive,
+        backupReason: form.backupReason.trim() || undefined,
+        isB2cManaged: form.isB2cManaged,
+        requiresB2cPlan: form.requiresB2cPlan,
+        storeUrl: form.storeUrl.trim() || '',
+        updatedAt: new Date().toISOString()
       };
       setStores(prev => [newStore, ...prev]);
+      if (onUpdateStore) onUpdateStore(newStore);
       if (onNotify) onNotify(`Đã thêm gian hàng mới [${newStore.storeName}]`);
     }
     setIsModalOpen(false);
@@ -435,12 +508,30 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
             </select>
           </div>
 
-          <div className="flex items-end">
+          <div>
+            <label className="text-3xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">
+              6. Phụ trách & Kế hoạch:
+            </label>
+            <select
+              value={selectedB2cPlan}
+              onChange={(e) => {
+                setSelectedB2cPlan(e.target.value as any);
+                setPage(1);
+              }}
+              className="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-slate-50 font-medium text-slate-800 focus:outline-none focus:border-slate-800"
+            >
+              <option value="ALL">Tất cả ({stores.length})</option>
+              <option value="B2C_MANAGED">B2C phụ trách ({b2cManagedCount})</option>
+              <option value="REQUIRES_PLAN">Cần làm Plan ({requiresPlanCount})</option>
+            </select>
+          </div>
+
+          <div className="flex items-end col-span-2 sm:col-span-3 lg:col-span-6 justify-end pt-1">
             {isFiltered ? (
               <button
                 type="button"
                 onClick={handleResetFilters}
-                className="w-full py-1.5 px-3 rounded-lg border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 text-xs font-semibold transition flex items-center justify-center gap-1.5"
+                className="py-1.5 px-3 rounded-lg border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 text-xs font-semibold transition flex items-center justify-center gap-1.5"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
                 <span>Xóa bộ lọc</span>
@@ -448,7 +539,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
             ) : (
               <div className="text-2xs text-slate-400 px-2 py-1.5 flex items-center gap-1">
                 <Filter className="w-3.5 h-3.5 text-slate-400" />
-                <span>Bộ lọc gian hàng</span>
+                <span>Đang hiển thị toàn bộ {stores.length} gian hàng</span>
               </div>
             )}
           </div>
@@ -478,19 +569,20 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
           <thead className="bg-slate-50 text-slate-600 border-b border-slate-200 font-semibold text-2xs">
             <tr>
               <th className="py-3 px-4 min-w-[200px]">Gian hàng & Mã</th>
-              <th className="py-3 px-4 w-[130px]">Nền tảng</th>
-              <th className="py-3 px-4 w-[160px]">Thương hiệu</th>
+              <th className="py-3 px-4 w-[120px]">Nền tảng</th>
+              <th className="py-3 px-4 w-[150px]">Thương hiệu</th>
               <th className="py-3 px-4 w-[110px]">Gói dịch vụ</th>
               <th className="py-3 px-4 min-w-[220px]">Đội ngũ phụ trách (PICs)</th>
-              <th className="py-3 px-4 w-[140px]">Thời hạn HĐ</th>
+              <th className="py-3 px-3 text-center w-[130px]">B2C & Plan</th>
+              <th className="py-3 px-4 w-[130px]">Thời hạn HĐ</th>
               <th className="py-3 px-4 text-center w-[90px]">Trạng thái</th>
-              <th className="py-3 px-4 text-right w-[100px]">Thao tác</th>
+              <th className="py-3 px-4 text-right w-[90px]">Thao tác</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {currentStores.length === 0 ? (
               <tr>
-                <td colSpan={8} className="py-12 text-center text-slate-400">
+                <td colSpan={9} className="py-12 text-center text-slate-400">
                   Không tìm thấy gian hàng phù hợp với điều kiện lọc
                 </td>
               </tr>
@@ -563,6 +655,45 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                         <span>{s.mediaPic}</span>
                       </div>
                     )}
+                    {s.backupOwnerName && (
+                      <div className="flex items-center gap-1 text-amber-700 font-medium pt-0.5">
+                        <span className="text-amber-500">Backup:</span>
+                        <span>{s.backupOwnerName}</span>
+                        <span className={`text-3xs px-1 rounded font-mono ${s.isBackupActive ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-500'}`}>
+                          {s.isBackupActive ? 'Đang trực' : 'Dự phòng'}
+                        </span>
+                      </div>
+                    )}
+                  </td>
+
+                  {/* B2C Phụ trách & Yêu cầu Plan */}
+                  <td className="py-3 px-3 text-center">
+                    <div className="flex flex-col items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => handleToggleB2cManaged(s)}
+                        title="Bật/tắt Marketing B2C phụ trách"
+                        className={`w-24 px-2 py-0.5 rounded-full text-3xs font-semibold border transition ${
+                          s.isB2cManaged !== false
+                            ? 'bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100'
+                            : 'bg-slate-50 text-slate-400 border-slate-200 hover:bg-slate-100'
+                        }`}
+                      >
+                        {s.isB2cManaged !== false ? 'B2C Quản lý' : 'Không phụ trách'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleToggleRequiresPlan(s)}
+                        title="Bật/tắt yêu cầu lập Plan tháng"
+                        className={`w-24 px-2 py-0.5 rounded-full text-3xs font-semibold border transition ${
+                          s.requiresB2cPlan !== false
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+                            : 'bg-slate-50 text-slate-400 border-slate-200 hover:bg-slate-100'
+                        }`}
+                      >
+                        {s.requiresB2cPlan !== false ? 'Cần làm Plan' : 'Miễn Plan'}
+                      </button>
+                    </div>
                   </td>
 
                   {/* Thời hạn HĐ */}
@@ -789,6 +920,84 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                       onChange={(name) => setForm(prev => ({ ...prev, mediaPic: name }))}
                     />
                   </div>
+                </div>
+              </div>
+
+              {/* Section: BRD Phân công dự phòng (Backup PIC) */}
+              <div className="pt-2 border-t border-slate-100">
+                <div className="text-xs font-semibold text-slate-900 mb-2 flex items-center gap-1.5">
+                  <Shield className="w-4 h-4 text-amber-600" />
+                  <span>Cơ chế nhân sự dự phòng (Backup PIC - BRD SLA)</span>
+                </div>
+                <div className="space-y-2 bg-amber-50/40 p-3 rounded-lg border border-amber-200/60">
+                  <StaffSearchSelect
+                    label="Nhân sự Backup được ủy quyền"
+                    sublabel="(Tiếp quản duyệt deal, duyệt kịch bản khi PIC chính vắng mặt)"
+                    badgeColorClass="text-amber-700"
+                    placeholder="Chọn nhân sự backup..."
+                    value={form.backupOwnerName}
+                    departmentHint="ALL"
+                    onChange={(name) => setForm(prev => ({ ...prev, backupOwnerName: name }))}
+                  />
+
+                  <div className="flex items-center gap-2 pt-1">
+                    <input
+                      type="checkbox"
+                      id="isBackupActive"
+                      checked={form.isBackupActive}
+                      onChange={(e) => setForm(prev => ({ ...prev, isBackupActive: e.target.checked }))}
+                      className="rounded border-slate-300 text-amber-600 focus:ring-amber-500"
+                    />
+                    <label htmlFor="isBackupActive" className="text-2xs font-medium text-slate-700">
+                      Kích hoạt bàn giao quyền hạn tạm thời ngay bây giờ
+                    </label>
+                  </div>
+
+                  {form.isBackupActive && (
+                    <div>
+                      <input
+                        type="text"
+                        placeholder="Lý do bàn giao (VD: Nghỉ phép, công tác, bàn giao chuyển tiếp)..."
+                        value={form.backupReason}
+                        onChange={(e) => setForm(prev => ({ ...prev, backupReason: e.target.value }))}
+                        className="w-full px-2.5 py-1 text-2xs border border-amber-300 rounded bg-white focus:outline-none"
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Section: Phân công B2C & Plan Requirement */}
+              <div className="pt-2 border-t border-slate-100 space-y-2">
+                <div className="text-xs font-semibold text-slate-900">
+                  Phạm vi nghiệp vụ Marketing B2C
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-2xs">
+                  <label className="flex items-start gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={form.isB2cManaged}
+                      onChange={(e) => setForm(prev => ({ ...prev, isB2cManaged: e.target.checked }))}
+                      className="mt-0.5 rounded border-slate-300 text-purple-600 focus:ring-purple-500"
+                    />
+                    <div>
+                      <span className="font-semibold text-slate-800">Marketing B2C phụ trách</span>
+                      <p className="text-slate-500 text-3xs">Nhân sự B2C chịu trách nhiệm booking và video</p>
+                    </div>
+                  </label>
+
+                  <label className="flex items-start gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={form.requiresB2cPlan}
+                      onChange={(e) => setForm(prev => ({ ...prev, requiresB2cPlan: e.target.checked }))}
+                      className="mt-0.5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                    />
+                    <div>
+                      <span className="font-semibold text-slate-800">Yêu cầu lập Kế hoạch tháng</span>
+                      <p className="text-slate-500 text-3xs">Phải có bản phân rã Plan gửi Quản lý duyệt</p>
+                    </div>
+                  </label>
                 </div>
               </div>
 

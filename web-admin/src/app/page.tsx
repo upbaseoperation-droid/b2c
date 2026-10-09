@@ -23,9 +23,21 @@ import { BrandHubView } from '../components/views/BrandHubView';
 import { InputPlanBreakdownView } from '../components/views/InputPlanBreakdownView';
 import SampleTrackerView from '../components/views/SampleTrackerView';
 import PerformanceP3View from '../components/views/PerformanceP3View';
+import dynamic from 'next/dynamic';
 import { PushProductsView } from '../components/views/PushProductsView';
-import { MasterDataHubView } from '../components/views/MasterDataHubView';
 import { SelfChannelCtvHubView } from '../components/views/SelfChannelCtvHubView';
+
+const MasterDataHubView = dynamic(
+  () => import('../components/views/MasterDataHubView').then((mod) => mod.MasterDataHubView),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="bg-white rounded-xl border border-slate-200 p-12 text-center text-slate-500 text-xs">
+        Đang tải Trung tâm Dữ liệu Gốc (Master Data Hub)...
+      </div>
+    ),
+  }
+);
 import { KocKolHubView } from '../components/views/KocKolHubView';
 import { WeeklyAdsReportHubView } from '../components/views/WeeklyAdsReportHubView';
 import { ExecutiveDashboardReportsView } from '../components/views/ExecutiveDashboardReportsView';
@@ -682,11 +694,13 @@ export default function App() {
             <MasterDataHubView
               currentUser={currentUser}
               brands={brands}
+              stores={storePortfolios}
               kocs={kocs}
               onNotify={showToast}
               onOpenQuickBookWithKoc={handleOpenQuickBookWithKoc}
               onKocCreated={handleKocCreated}
               onKocUpdated={handleKocUpdated}
+              onUpdateStore={handleUpdateStore}
             />
           )}
 
@@ -713,8 +727,10 @@ export default function App() {
               initialSubTab="stores"
               currentUser={currentUser}
               brands={brands}
+              stores={storePortfolios}
               kocs={kocs}
               onNotify={showToast}
+              onUpdateStore={handleUpdateStore}
             />
           )}
 
