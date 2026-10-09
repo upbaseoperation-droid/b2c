@@ -84,6 +84,7 @@ interface BookingViewProps {
   onOpenInputPlan?: () => void;
   onOpenQuickBook?: () => void;
   onOpenImport?: () => void;
+  selectedBrand?: string;
 }
 
 export const BookingView: React.FC<BookingViewProps> = ({ 
@@ -104,7 +105,8 @@ export const BookingView: React.FC<BookingViewProps> = ({
   currentUserName,
   onOpenInputPlan,
   onOpenQuickBook,
-  onOpenImport
+  onOpenImport,
+  selectedBrand = 'ALL'
 }) => {
   const [activeSubTab, setActiveSubTab] = useState<'MY_PLAN' | 'CANDIDATES' | 'BOOKING_DEALS' | 'KOC_DIRECTORY'>('MY_PLAN');
   const [candidates, setCandidates] = useState<KocCandidateItem[]>(INITIAL_KOC_CANDIDATES);
@@ -164,7 +166,13 @@ export const BookingView: React.FC<BookingViewProps> = ({
   // Filters for Booking Deals
   const [dealsFilter, setDealsFilter] = useState<'ALL' | 'BRAND_PENDING' | 'BRAND_APPROVED' | 'BRAND_REJECTED' | 'WINNER_TOP20' | 'HAS_GMV' | 'BREAK_EVEN' | 'OVERDUE_SLA' | 'ADS_CODE_PENDING'>('ALL');
   const [dealsSearch, setDealsSearch] = useState('');
-  const [selectedBrandFilter, setSelectedBrandFilter] = useState<string>('ALL');
+  const [selectedBrandFilter, setSelectedBrandFilter] = useState<string>(selectedBrand || 'ALL');
+
+  React.useEffect(() => {
+    if (selectedBrand) {
+      setSelectedBrandFilter(selectedBrand);
+    }
+  }, [selectedBrand]);
 
   // Modal Editing Deal State
   const [editingDeal, setEditingDeal] = useState<BookingDealItem | null>(null);

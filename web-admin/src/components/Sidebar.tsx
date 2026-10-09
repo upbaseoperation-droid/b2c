@@ -107,6 +107,7 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           title: 'Vận hành tác nghiệp',
           items: [
             { key: 'booking', label: 'Booking KOC', icon: Users },
+            { key: 'koc-master', label: 'Danh bạ KOC Master', icon: Users },
             { key: 'content', label: 'Kịch bản video', icon: FileText },
             { key: 'content-angles', label: 'Góc nội dung (Angles)', icon: Sparkles },
             { key: 'campaigns', label: 'Làm việc với Brand', icon: Layers },
@@ -153,6 +154,7 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
             { key: 'input-plan', label: 'Kế hoạch tháng (Duyệt slot)', icon: Calendar },
             { key: 'push-products', label: 'Sản phẩm đẩy', icon: TrendingUp },
             { key: 'booking', label: 'Booking KOC (Duyệt deal)', icon: Users },
+            { key: 'koc-master', label: 'Danh bạ KOC Master', icon: Users },
             { key: 'content', label: 'Kịch bản video (Duyệt sơ bộ)', icon: FileText },
             { key: 'content-angles', label: 'Góc nội dung (Angles)', icon: Sparkles },
             { key: 'campaigns', label: 'Làm việc với Brand', icon: Layers },
@@ -181,6 +183,7 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           title: 'Tác nghiệp Booking',
           items: [
             { key: 'booking', label: 'Booking KOC (Tạo & chăm sóc deal)', icon: Users },
+            { key: 'koc-master', label: 'Danh bạ KOC Master', icon: Users },
             { key: 'input-plan', label: 'Kế hoạch tháng (Slot cá nhân)', icon: Calendar },
             { key: 'contracts', label: 'Hợp đồng & thanh toán', icon: FileCheck },
             { key: 'sample-tracker', label: 'Theo dõi hàng mẫu', icon: Package },
@@ -264,6 +267,7 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           title: 'Vận hành tác nghiệp',
           items: [
             { key: 'booking', label: 'Booking KOC', icon: Users },
+            { key: 'koc-master', label: 'Danh bạ KOC Master', icon: Users },
             { key: 'content', label: 'Kịch bản video', icon: FileText },
             { key: 'input-plan', label: 'Kế hoạch tháng', icon: Calendar },
             { key: 'sample-tracker', label: 'Hàng mẫu', icon: Package },

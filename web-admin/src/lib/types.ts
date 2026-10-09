@@ -49,6 +49,7 @@ export interface UserProfile {
   linkedEntityId?: string; // ID của Brand / KOC / CTV
   linkedEntityName?: string; // Tên của Brand / KOC / CTV
   allowedStoreNames?: string[]; // Danh sách gian hàng được xem (đối với Brand)
+  assignedBrands?: string[]; // Danh sách các nhãn hàng nhân viên được phân công phụ trách (dành cho Specialist/Leader làm việc với 2-3 brand)
   permissions?: string[];
 }
 

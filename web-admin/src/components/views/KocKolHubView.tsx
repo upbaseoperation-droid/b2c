@@ -2,6 +2,10 @@
 
 import React, { useState, useMemo } from 'react';
 import {
+  ArrowLeft,
+  ChevronLeft,
+  ChevronRight,
+  SlidersHorizontal,
   Users,
   Briefcase,
   History as HistoryIcon,
@@ -69,6 +73,96 @@ export const KocKolHubView: React.FC<KocKolHubViewProps> = ({
   onNavigateToBrandHub,
   onNavigateToCtvHub
 }) => {
+  // Phân quyền: KOC Partner chỉ xem được KOC của họ, Quản lý/Trưởng phòng/Nhân viên có Bảng Giám Sát Toàn Mạng Lưới
+  const isKocPartner = currentUser?.role === 'KOC_PARTNER';
+  const isManagerOrStaff = !isKocPartner;
+
+  // Chế độ xem: 'NETWORK_COCKPIT' (Toàn cảnh mạng lưới KOC) | 'KOC_PORTAL' (Giao diện KOC đơn lẻ)
+  const [viewMode, setViewMode] = useState<'NETWORK_COCKPIT' | 'KOC_PORTAL'>(
+    isKocPartner ? 'KOC_PORTAL' : 'NETWORK_COCKPIT'
+  );
+
+  // Bộ lọc đa chiều cho Quản lý & Trưởng phòng
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterBrand, setFilterBrand] = useState('ALL');
+  const [filterTier, setFilterTier] = useState('ALL');
+  const [filterSalaryGrade, setFilterSalaryGrade] = useState('ALL');
+  const [filterTepKenh, setFilterTepKenh] = useState('ALL');
+  const [filterPic, setFilterPic] = useState('ALL');
+  const [cockpitPage, setCockpitPage] = useState(1);
+  const COCKPIT_PAGE_SIZE = 12;
+
+  // Danh sách các Brand & PIC & Tệp kênh duy nhất từ initialKocs
+  const availableBrands = useMemo(() => {
+    const set = new Set<string>();
+    initialKocs.forEach(k => {
+      if (k.brandName) set.add(k.brandName);
+    });
+    return Array.from(set).sort();
+  }, [initialKocs]);
+
+  const availablePics = useMemo(() => {
+    const set = new Set<string>();
+    initialKocs.forEach(k => {
+      if (k.bookingPic) set.add(k.bookingPic);
+    });
+    return Array.from(set).sort();
+  }, [initialKocs]);
+
+  const availableTepKenhs = useMemo(() => {
+    const set = new Set<string>();
+    initialKocs.forEach(k => {
+      if (k.tepKenh) set.add(k.tepKenh);
+    });
+    return Array.from(set).sort();
+  }, [initialKocs]);
+
+  // Lọc KOC theo các tiêu chí đa chiều
+  const filteredKocs = useMemo(() => {
+    return initialKocs.filter(k => {
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const matchName = k.stageName.toLowerCase().includes(q);
+        const matchChannel = (k.channelId || '').toLowerCase().includes(q);
+        const matchReal = (k.realName || '').toLowerCase().includes(q);
+        const matchPhone = (k.phone || '').includes(q);
+        if (!matchName && !matchChannel && !matchReal && !matchPhone) return false;
+      }
+      if (filterBrand !== 'ALL') {
+        const b = filterBrand.toLowerCase();
+        const matchBrand = (k.brandName || '').toLowerCase().includes(b);
+        if (!matchBrand) return false;
+      }
+      if (filterTier !== 'ALL' && k.tier !== filterTier) return false;
+      if (filterSalaryGrade !== 'ALL' && k.salaryGrade !== filterSalaryGrade) return false;
+      if (filterTepKenh !== 'ALL' && k.tepKenh !== filterTepKenh) return false;
+      if (filterPic !== 'ALL' && k.bookingPic !== filterPic) return false;
+      return true;
+    });
+  }, [initialKocs, searchQuery, filterBrand, filterTier, filterSalaryGrade, filterTepKenh, filterPic]);
+
+  // Phân trang danh bạ giám sát
+  const totalCockpitPages = Math.max(1, Math.ceil(filteredKocs.length / COCKPIT_PAGE_SIZE));
+  const paginatedKocs = useMemo(() => {
+    const start = (cockpitPage - 1) * COCKPIT_PAGE_SIZE;
+    return filteredKocs.slice(start, start + COCKPIT_PAGE_SIZE);
+  }, [filteredKocs, cockpitPage]);
+
+  // Local Deals State for active KOC
+  const [deals, setDeals] = useState<BookingDealItem[]>(initialDeals);
+
+  // Thống kê toàn mạng lưới KOC cho Quản lý & Trưởng phòng
+  const networkStats = useMemo(() => {
+    const totalKocs = initialKocs.length;
+    const activeDeals = deals.filter(d => d.status !== 'CANCELLED');
+    const pendingSamples = deals.filter(d => d.sampleStatus === 'ĐANG_GIAO' || d.sampleStatus === 'CHƯA_GỬI').length;
+    const pendingReviews = deals.filter(d => d.status === 'SCRIPT_PENDING' || d.status === 'VIDEO_SUBMITTED').length;
+    const totalCastValue = activeDeals.reduce((sum, d) => sum + (d.totalValue || 0), 0);
+    const totalGmvEstimate = activeDeals.reduce((sum, d) => sum + (d.affiliateGmv || d.gmv30 || 0), 0);
+    return { totalKocs, activeDealsCount: activeDeals.length, pendingSamples, pendingReviews, totalCastValue, totalGmvEstimate };
+  }, [initialKocs, deals]);
+
+
   // Simulator State: Active KOC profile currently being simulated
   const [selectedKocId, setSelectedKocId] = useState<string>(initialKocs[0]?.id || 'koc-1');
   const activeKoc = useMemo(() => {
@@ -123,8 +217,7 @@ export const KocKolHubView: React.FC<KocKolHubViewProps> = ({
     notify('Đã gửi tin nhắn đến Booking PIC Upbase!');
   };
 
-  // Local Deals State for active KOC
-  const [deals, setDeals] = useState<BookingDealItem[]>(initialDeals);
+
 
   // Filter deals belonging to current KOC or generic demo deals
   const currentKocDeals = useMemo(() => {
@@ -251,6 +344,489 @@ export const KocKolHubView: React.FC<KocKolHubViewProps> = ({
 
   return (
     <div className="space-y-6">
+      {/* ========================================================================= */}
+      {/* 0. ENTERPRISE FILTER & ROLE-AWARE COCKPIT CONTROLLER                      */}
+      {/* Dành cho Quản lý & Trưởng phòng bao quát 125+ KOC đa nhãn hàng            */}
+      {/* ========================================================================= */}
+      {isManagerOrStaff && (
+        <div className="bg-white rounded-2xl border border-slate-200/90 p-4 shadow-xs space-y-3.5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold text-xs shadow-2xs">
+                <Users className="w-4 h-4" />
+              </div>
+              <div>
+                <h2 className="text-sm font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                  <span>Trung Tâm Điều Hành KOC Đối Tác</span>
+                  <span className="text-2xs font-semibold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
+                    {filteredKocs.length}/{initialKocs.length} KOC
+                  </span>
+                </h2>
+                <p className="text-2xs text-slate-500">
+                  Dành cho Quản trị, Trưởng phòng &amp; Booking Lead giám sát toàn mạng lưới KOC ngoại sàn
+                </p>
+              </div>
+            </div>
+
+            {/* Mode Switcher */}
+            <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-xl border border-slate-200/80 self-start sm:self-auto">
+              <button
+                type="button"
+                onClick={() => setViewMode('NETWORK_COCKPIT')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 ${
+                  viewMode === 'NETWORK_COCKPIT'
+                    ? 'bg-white text-indigo-700 shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <Layers className="w-3.5 h-3.5" />
+                <span>🌐 Giám Sát Mạng Lưới KOC</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setViewMode('KOC_PORTAL')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 ${
+                  viewMode === 'KOC_PORTAL'
+                    ? 'bg-white text-indigo-700 shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <Users className="w-3.5 h-3.5" />
+                <span>👤 Cổng KOC Đang Chọn ({activeKoc.stageName})</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Multi-dimensional Filters */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 text-xs">
+            {/* Search query */}
+            <div className="relative">
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Tìm tên, kênh @, SĐT..."
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setCockpitPage(1);
+                }}
+                className="w-full pl-8 pr-2.5 py-1.5 rounded-lg border border-slate-200 bg-slate-50/50 text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-indigo-500"
+              />
+            </div>
+
+            {/* Filter Brand */}
+            <div>
+              <select
+                value={filterBrand}
+                onChange={(e) => {
+                  setFilterBrand(e.target.value);
+                  setCockpitPage(1);
+                }}
+                className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 font-medium focus:outline-none focus:border-indigo-500"
+              >
+                <option value="ALL">🏢 Tất cả nhãn hàng</option>
+                {availableBrands.map(b => (
+                  <option key={b} value={b}>{b}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Filter Tier */}
+            <div>
+              <select
+                value={filterTier}
+                onChange={(e) => {
+                  setFilterTier(e.target.value);
+                  setCockpitPage(1);
+                }}
+                className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 font-medium focus:outline-none focus:border-indigo-500"
+              >
+                <option value="ALL">⭐ Tất cả Cấp bậc (Tier)</option>
+                <option value="TIER_1_CELEB">Mega / Celeb (&gt;1M)</option>
+                <option value="TIER_2_MACRO">Macro (250K - 1M)</option>
+                <option value="TIER_3_MICRO">Micro (50K - 250K)</option>
+                <option value="TIER_4_NANO">Nano (&lt;50K)</option>
+              </select>
+            </div>
+
+            {/* Filter Salary Grade */}
+            <div>
+              <select
+                value={filterSalaryGrade}
+                onChange={(e) => {
+                  setFilterSalaryGrade(e.target.value);
+                  setCockpitPage(1);
+                }}
+                className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 font-medium focus:outline-none focus:border-indigo-500"
+              >
+                <option value="ALL">💰 Tất cả Khung lương (KL)</option>
+                <option value="KL1">KL1 (&lt; 1 Triệu)</option>
+                <option value="KL2">KL2 (1 - 3 Triệu)</option>
+                <option value="KL3">KL3 (3 - 6 Triệu)</option>
+                <option value="KL4">KL4 (6 - 10 Triệu)</option>
+                <option value="KL5">KL5 (10 - 18 Triệu)</option>
+                <option value="KL6">KL6 (18 - 35 Triệu)</option>
+                <option value="KL7">KL7 (&gt; 35 Triệu)</option>
+              </select>
+            </div>
+
+            {/* Filter Tệp kênh */}
+            <div>
+              <select
+                value={filterTepKenh}
+                onChange={(e) => {
+                  setFilterTepKenh(e.target.value);
+                  setCockpitPage(1);
+                }}
+                className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 font-medium focus:outline-none focus:border-indigo-500 truncate"
+              >
+                <option value="ALL">🎯 Tất cả Tệp kênh</option>
+                {availableTepKenhs.map(t => (
+                  <option key={t} value={t}>{t}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Filter PIC */}
+            <div className="flex items-center gap-1.5">
+              <select
+                value={filterPic}
+                onChange={(e) => {
+                  setFilterPic(e.target.value);
+                  setCockpitPage(1);
+                }}
+                className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 font-medium focus:outline-none focus:border-indigo-500 truncate"
+              >
+                <option value="ALL">👤 Tất cả PIC Booking</option>
+                {availablePics.map(p => (
+                  <option key={p} value={p}>{p}</option>
+                ))}
+              </select>
+
+              {(searchQuery || filterBrand !== 'ALL' || filterTier !== 'ALL' || filterSalaryGrade !== 'ALL' || filterTepKenh !== 'ALL' || filterPic !== 'ALL') && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchQuery('');
+                    setFilterBrand('ALL');
+                    setFilterTier('ALL');
+                    setFilterSalaryGrade('ALL');
+                    setFilterTepKenh('ALL');
+                    setFilterPic('ALL');
+                    setCockpitPage(1);
+                  }}
+                  className="px-2 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 transition shrink-0"
+                  title="Xóa bộ lọc"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 1. VIEW MODE: NETWORK COCKPIT (BẢNG GIÁM SÁT TOÀN MẠNG LƯỚI KOC ĐỐI TÁC)  */}
+      {/* ========================================================================= */}
+      {viewMode === 'NETWORK_COCKPIT' && isManagerOrStaff ? (
+        <div className="space-y-6">
+          {/* KPI Cards Mạng Lưới KOC */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs">
+              <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
+                <span>Mạng Lưới KOC Hợp Tác</span>
+                <Users className="w-4 h-4 text-indigo-600" />
+              </div>
+              <div className="text-xl font-bold text-slate-900 tracking-tight">
+                {filteredKocs.length} <span className="text-xs font-normal text-slate-500">/ {initialKocs.length} KOC</span>
+              </div>
+              <p className="text-2xs text-slate-500 mt-1">
+                Chuẩn hóa 4 Tier &amp; 7 Khung lương KL1-KL7
+              </p>
+            </div>
+
+            <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs">
+              <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
+                <span>Hợp Đồng Booking Active</span>
+                <Briefcase className="w-4 h-4 text-emerald-600" />
+              </div>
+              <div className="text-xl font-bold text-emerald-700 tracking-tight">
+                {networkStats.activeDealsCount} <span className="text-xs font-normal text-slate-500">deals</span>
+              </div>
+              <p className="text-2xs text-slate-500 mt-1">
+                Đang vận hành trên các chiến dịch nhãn hàng
+              </p>
+            </div>
+
+            <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs">
+              <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
+                <span>Hàng Mẫu &amp; Video Đang Chạy</span>
+                <Truck className="w-4 h-4 text-amber-600" />
+              </div>
+              <div className="text-xl font-bold text-amber-700 tracking-tight">
+                {networkStats.pendingSamples} <span className="text-xs font-normal text-slate-500">mẫu</span> • {networkStats.pendingReviews} <span className="text-xs font-normal text-slate-500">video chờ</span>
+              </div>
+              <p className="text-2xs text-slate-500 mt-1">
+                SLA 5 ngày sau nhận mẫu để nộp video nháp
+              </p>
+            </div>
+
+            <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs">
+              <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
+                <span>Tổng GMV Dự Kiến 30 Ngày</span>
+                <DollarSign className="w-4 h-4 text-blue-600" />
+              </div>
+              <div className="text-xl font-bold text-blue-700 tracking-tight">
+                {formatVndShort(networkStats.totalGmvEstimate)}
+              </div>
+              <p className="text-2xs text-slate-500 mt-1">
+                Tổng ngân sách cast: <strong className="text-slate-700 font-mono">{formatVndShort(networkStats.totalCastValue)}</strong>
+              </p>
+            </div>
+          </div>
+
+          {/* Bảng Danh Sách Giám Sát KOC Đối Tác */}
+          <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+            <div className="px-5 py-4 border-b border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h3 className="text-sm font-bold text-slate-900 tracking-tight">
+                  Danh Bạ Mạng Lưới KOC Đối Tác ({filteredKocs.length} KOC)
+                </h3>
+                <p className="text-2xs text-slate-500">
+                  Bấm &quot;Mở Hub KOC Này&quot; để chuyển sang giao diện đối tác của KOC đó để kiểm tra lời mời, kịch bản và chat
+                </p>
+              </div>
+
+              {/* Pagination controls top */}
+              <div className="flex items-center gap-2 text-xs">
+                <span className="text-slate-500 text-2xs">
+                  Trang {cockpitPage}/{totalCockpitPages}
+                </span>
+                <button
+                  type="button"
+                  disabled={cockpitPage <= 1}
+                  onClick={() => setCockpitPage(prev => Math.max(1, prev - 1))}
+                  className="p-1 rounded-md border border-slate-200 hover:bg-slate-50 disabled:opacity-40 transition"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
+                  disabled={cockpitPage >= totalCockpitPages}
+                  onClick={() => setCockpitPage(prev => Math.min(totalCockpitPages, prev + 1))}
+                  className="p-1 rounded-md border border-slate-200 hover:bg-slate-50 disabled:opacity-40 transition"
+                >
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="bg-slate-50/75 border-b border-slate-200 text-2xs font-semibold text-slate-500 uppercase tracking-wider">
+                    <th className="py-3 px-4">KOC / Creator</th>
+                    <th className="py-3 px-3">Cấp Bậc &amp; Cast Chuẩn</th>
+                    <th className="py-3 px-3">Tệp Kênh</th>
+                    <th className="py-3 px-3">Nhãn Hàng Hợp Tác</th>
+                    <th className="py-3 px-3">PIC Booking</th>
+                    <th className="py-3 px-3">Hồ Sơ &amp; Pháp Lý</th>
+                    <th className="py-3 px-4 text-right">Thao Tác</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {paginatedKocs.map((koc) => {
+                    const kocDealsCount = deals.filter(d => d.kocId === koc.id || d.kocStageName === koc.stageName).length;
+                    return (
+                      <tr key={koc.id} className="hover:bg-slate-50/60 transition group">
+                        {/* KOC Info */}
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-3">
+                            <img
+                              src={koc.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80'}
+                              alt={koc.stageName}
+                              className="w-9 h-9 rounded-full object-cover border border-slate-200 shrink-0"
+                            />
+                            <div className="min-w-0">
+                              <div className="font-bold text-slate-900 group-hover:text-indigo-600 transition flex items-center gap-1.5">
+                                <span>{koc.stageName}</span>
+                                {koc.realName && (
+                                  <span className="text-2xs font-normal text-slate-400">({koc.realName})</span>
+                                )}
+                              </div>
+                              <div className="text-2xs text-slate-500 flex items-center gap-2 mt-0.5 font-mono">
+                                <span>@{koc.channelId}</span>
+                                <span>•</span>
+                                <span>{(koc.followers / 1000).toFixed(0)}K flw</span>
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* Tier & Cast */}
+                        <td className="py-3 px-3">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="px-1.5 py-0.5 rounded text-2xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                                {koc.tierLabel || koc.tier}
+                              </span>
+                              <span className="px-1.5 py-0.5 rounded text-2xs font-bold bg-amber-50 text-amber-700 border border-amber-200 font-mono">
+                                {koc.salaryGrade}
+                              </span>
+                            </div>
+                            <div className="text-2xs text-slate-600 font-mono font-semibold">
+                              {formatVndShort(koc.rateCardVideo || 3000000)}
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* Tệp kênh */}
+                        <td className="py-3 px-3">
+                          <span className="inline-block px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 text-2xs font-medium">
+                            {koc.tepKenh || 'Beauty & Skincare'}
+                          </span>
+                        </td>
+
+                        {/* Nhãn hàng hợp tác */}
+                        <td className="py-3 px-3">
+                          <div className="flex items-center gap-1 flex-wrap">
+                            <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                              {koc.brandName || 'Kutieskin'}
+                            </span>
+                            {kocDealsCount > 0 && (
+                              <span className="px-1.5 py-0.5 rounded text-2xs font-bold bg-emerald-50 text-emerald-700">
+                                {kocDealsCount} deal
+                              </span>
+                            )}
+                          </div>
+                        </td>
+
+                        {/* PIC Booking */}
+                        <td className="py-3 px-3">
+                          <div className="text-2xs text-slate-700 font-medium flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                            <span>{koc.bookingPic || 'Khánh Vy'}</span>
+                          </div>
+                        </td>
+
+                        {/* Hồ sơ & Pháp lý */}
+                        <td className="py-3 px-3">
+                          <div className="space-y-0.5 text-2xs">
+                            <div className="flex items-center gap-1 text-emerald-600 font-medium">
+                              <ShieldCheck className="w-3 h-3" />
+                              <span>CCCD: {koc.cccd ? 'Đã xác thực' : 'Chưa có'}</span>
+                            </div>
+                            <div className="text-slate-500 font-mono">
+                              MST: {koc.taxCode || '0315894125'}
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* Thao tác */}
+                        <td className="py-3 px-4 text-right">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedKocId(koc.id);
+                              setViewMode('KOC_PORTAL');
+                              notify(`Đang mở Cổng KOC: ${koc.stageName}`, 'info');
+                            }}
+                            className="px-2.5 py-1.5 bg-indigo-50 hover:bg-indigo-600 text-indigo-700 hover:text-white rounded-lg text-2xs font-bold transition flex items-center gap-1 ml-auto"
+                          >
+                            <span>Mở Hub KOC</span>
+                            <ArrowRight className="w-3 h-3" />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination footer */}
+            <div className="px-5 py-3 border-t border-slate-200/80 bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+              <span className="text-slate-500 text-2xs">
+                Hiển thị {paginatedKocs.length} trên tổng số {filteredKocs.length} KOC phù hợp bộ lọc
+              </span>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  disabled={cockpitPage <= 1}
+                  onClick={() => setCockpitPage(prev => Math.max(1, prev - 1))}
+                  className="px-2.5 py-1 rounded-md border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-2xs font-semibold disabled:opacity-40 transition"
+                >
+                  Trang Trước
+                </button>
+                {Array.from({ length: Math.min(5, totalCockpitPages) }, (_, i) => {
+                  const p = i + 1;
+                  return (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => setCockpitPage(p)}
+                      className={`w-7 h-7 rounded-md text-2xs font-semibold transition ${
+                        cockpitPage === p
+                          ? 'bg-indigo-600 text-white shadow-2xs'
+                          : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'
+                      }`}
+                    >
+                      {p}
+                    </button>
+                  );
+                })}
+                <button
+                  type="button"
+                  disabled={cockpitPage >= totalCockpitPages}
+                  onClick={() => setCockpitPage(prev => Math.min(totalCockpitPages, prev + 1))}
+                  className="px-2.5 py-1 rounded-md border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-2xs font-semibold disabled:opacity-40 transition"
+                >
+                  Trang Sau
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : (
+        /* ========================================================================= */
+        /* 2. VIEW MODE: KOC DEDICATED PORTAL (CỔNG KOC ĐANG CHỌN)                   */
+        /* ========================================================================= */
+        <div className="space-y-6">
+          {/* Breadcrumb banner quay lại Bảng Giám Sát Mạng Lưới */}
+          {isManagerOrStaff && (
+            <div className="flex items-center justify-between bg-indigo-50/70 border border-indigo-200/80 px-4 py-2.5 rounded-xl text-xs">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setViewMode('NETWORK_COCKPIT')}
+                  className="font-bold text-indigo-700 hover:text-indigo-900 flex items-center gap-1.5 transition"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>Quay lại Bảng Giám Sát Mạng Lưới ({filteredKocs.length} KOC)</span>
+                </button>
+                <span className="text-slate-300">|</span>
+                <span className="text-slate-600">Đang mô phỏng giao diện đối tác KOC: <strong className="text-slate-900">{activeKoc.stageName}</strong></span>
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                <span className="text-2xs text-slate-500 hidden sm:inline">Chuyển KOC khác:</span>
+                <select
+                  value={selectedKocId}
+                  onChange={(e) => setSelectedKocId(e.target.value)}
+                  className="bg-white border border-indigo-200 text-indigo-900 font-semibold text-xs rounded-lg px-2 py-1 focus:outline-none cursor-pointer"
+                >
+                  {filteredKocs.map(k => (
+                    <option key={k.id} value={k.id}>
+                      {k.stageName} ({k.tierLabel || k.tier})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
+
       {/* ========================================================================= */}
       {/* 1. SLEEK ENTERPRISE HEADER                                               */}
       {/* ========================================================================= */}
@@ -970,6 +1546,9 @@ export const KocKolHubView: React.FC<KocKolHubViewProps> = ({
               </div>
             </div>
           </div>
+        </div>
+      )}
+
         </div>
       )}
 

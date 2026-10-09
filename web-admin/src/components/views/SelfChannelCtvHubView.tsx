@@ -51,6 +51,7 @@ import {
 import {
   DEFAULT_CONTENT_PILLARS,
   MOCK_BRAND_ALLOCATION,
+  MULTI_BRAND_ALLOCATIONS,
   INITIAL_CONTRIBUTORS,
   INITIAL_SELF_CHANNEL_TASKS
 } from '../../lib/selfChannelData';
@@ -122,6 +123,70 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
     setNewCtvChatText('');
     notify('Đã gửi tin nhắn đến Upbase Video Production Team!');
   };
+
+  // Brand Selection State for Manager & Multi-Brand Staff
+  const isCtvPartner = currentUser?.role === 'CTV_PARTNER';
+  const isManagerOrAdmin = currentUser?.role === 'ADMIN' || currentUser?.role === 'MANAGER';
+  
+  // Danh sách các brand được phép truy cập theo phân quyền
+  const userAssignedBrands = useMemo(() => {
+    if (!currentUser) return [];
+    if (currentUser.assignedBrands && currentUser.assignedBrands.length > 0) {
+      return currentUser.assignedBrands;
+    }
+    if (currentUser.linkedEntityName) {
+      return currentUser.linkedEntityName.split(',').map(s => s.trim());
+    }
+    return [];
+  }, [currentUser]);
+
+  // Các Brand Allocation khả dụng
+  const availableAllocations = useMemo(() => {
+    if (isManagerOrAdmin) {
+      return MULTI_BRAND_ALLOCATIONS;
+    }
+    if (userAssignedBrands.length > 0) {
+      return MULTI_BRAND_ALLOCATIONS.filter(a => 
+        userAssignedBrands.some(ub => a.brandName.toLowerCase().includes(ub.toLowerCase()) || a.brandId.toLowerCase().includes(ub.toLowerCase()))
+      );
+    }
+    return MULTI_BRAND_ALLOCATIONS;
+  }, [isManagerOrAdmin, userAssignedBrands]);
+
+  // Brand ID đang chọn ('ALL' hoặc brandId cụ thể)
+  const [selectedBrandId, setSelectedBrandId] = useState<string>(
+    isCtvPartner ? 'ALL' : 'ALL'
+  );
+
+  // Active Allocation dựa trên brand đang chọn
+  const activeAllocation = useMemo<BrandChannelAllocation>(() => {
+    if (selectedBrandId === 'ALL') {
+      // Tổng hợp dữ liệu từ tất cả các nhãn hàng
+      const totalBudget = availableAllocations.reduce((sum, a) => sum + a.totalBudget, 0);
+      const budgetAffiliate = availableAllocations.reduce((sum, a) => sum + a.budgetAffiliate, 0);
+      const targetAffiliateVideos = availableAllocations.reduce((sum, a) => sum + a.targetAffiliateVideos, 0);
+      const targetAffiliateGmv = availableAllocations.reduce((sum, a) => sum + a.targetAffiliateGmv, 0);
+      const budgetSelfChannel = availableAllocations.reduce((sum, a) => sum + a.budgetSelfChannel, 0);
+      const targetSelfChannelVideos = availableAllocations.reduce((sum, a) => sum + a.targetSelfChannelVideos, 0);
+      
+      const allPillars = availableAllocations.flatMap(a => a.pillars);
+
+      return {
+        brandId: 'ALL',
+        brandName: 'Toàn Bộ Nhãn Hàng (Multi-Brand Network)',
+        totalBudget,
+        budgetAffiliate,
+        targetAffiliateVideos,
+        targetAffiliateGmv,
+        affiliateNotes: 'Tổng ngân sách Affiliate ngoại sàn toàn bộ các brand phụ trách.',
+        budgetSelfChannel,
+        targetSelfChannelVideos,
+        selfChannelNotes: 'Tổng ngân sách sản xuất video kênh chính chủ toàn bộ các brand.',
+        pillars: allPillars
+      };
+    }
+    return availableAllocations.find(a => a.brandId === selectedBrandId) || availableAllocations[0] || MOCK_BRAND_ALLOCATION;
+  }, [selectedBrandId, availableAllocations]);
 
   // Filter States
   const [selectedPillarId, setSelectedPillarId] = useState<string>('ALL');
@@ -197,9 +262,56 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
     return dateStr;
   };
 
-  // Stats Calculations
+  // Stats Calculations (Tính theo Brand đang chọn hoặc Toàn bộ Brand)
   const stats = useMemo(() => {
-    const totalTasks = tasks.length;
+    const relevantTasks = selectedBrandId === 'ALL'
+      ? tasks
+      : tasks.filter(t => t.brandId === selectedBrandId || t.brandName.toLowerCase().includes(activeAllocation.brandName.toLowerCase()));
+
+    const totalTasks = relevantTasks.length;
+    const completedTasks = relevantTasks.filter(t => t.status === 'ACCEPTED_COMPLETED' || t.status === 'PAID').length;
+    const inProgressTasks = relevantTasks.filter(t => t.status === 'SCRIPT_APPROVED' || t.status === 'DRAFT_VIDEO_SUBMITTED').length;
+    const scriptPendingTasks = relevantTasks.filter(t => t.status === 'SCRIPT_PENDING_REVIEW').length;
+    const openTasks = relevantTasks.filter(t => t.status === 'OPEN_TASK').length;
+
+    const totalSpent = relevantTasks
+      .filter(t => t.status === 'ACCEPTED_COMPLETED' || t.status === 'PAID')
+      .reduce((sum, t) => sum + t.remuneration, 0);
+
+    const pendingPayment = relevantTasks
+      .filter(t => t.status === 'ACCEPTED_COMPLETED')
+      .reduce((sum, t) => sum + t.remuneration, 0);
+
+    const paidTotal = relevantTasks
+      .filter(t => t.status === 'PAID')
+      .reduce((sum, t) => sum + t.remuneration, 0);
+
+    const targetVideos = activeAllocation.targetSelfChannelVideos || 40;
+    const budgetTotal = activeAllocation.budgetSelfChannel || 50000000;
+    const progressPercent = targetVideos > 0 ? Math.round((completedTasks / targetVideos) * 100) : 0;
+
+    const pendingApprovalsCount = scriptPendingTasks + 
+      relevantTasks.filter(t => t.status === 'DRAFT_VIDEO_SUBMITTED').length + 
+      relevantTasks.filter(t => t.status === 'ACCEPTED_COMPLETED').length;
+
+    return {
+      totalTasks,
+      completedTasks,
+      inProgressTasks,
+      scriptPendingTasks,
+      openTasks,
+      totalSpent,
+      pendingPayment,
+      paidTotal,
+      targetVideos,
+      budgetTotal,
+      progressPercent,
+      pendingApprovalsCount
+    };
+  }, [tasks, activeAllocation, selectedBrandId]);
+
+  const oldStatsIgnored = useMemo(() => {
+    const totalTasks = 0;
     const completedTasks = tasks.filter(t => t.status === 'ACCEPTED_COMPLETED' || t.status === 'PAID').length;
     const inProgressTasks = tasks.filter(t => t.status === 'SCRIPT_APPROVED' || t.status === 'DRAFT_VIDEO_SUBMITTED').length;
     const scriptPendingTasks = tasks.filter(t => t.status === 'SCRIPT_PENDING_REVIEW').length;
@@ -218,7 +330,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
       .reduce((sum, t) => sum + t.remuneration, 0);
 
     const targetVideos = allocation.targetSelfChannelVideos;
-    const budgetTotal = allocation.budgetSelfChannel;
+    const budgetTotal = activeAllocation.budgetSelfChannel;
     const progressPercent = Math.round((completedTasks / targetVideos) * 100);
 
     const pendingApprovalsCount = scriptPendingTasks + 
@@ -244,6 +356,11 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
   // Filtered Tasks
   const filteredTasks = useMemo(() => {
     return tasks.filter(t => {
+      if (selectedBrandId !== 'ALL') {
+        const matchBrandId = t.brandId === selectedBrandId;
+        const matchBrandName = (t.brandName || '').toLowerCase().includes((activeAllocation.brandName || '').toLowerCase());
+        if (!matchBrandId && !matchBrandName) return false;
+      }
       if (selectedPillarId !== 'ALL' && t.pillarId !== selectedPillarId) return false;
       if (selectedStatus !== 'ALL' && t.status !== selectedStatus) return false;
       if (selectedContributorId !== 'ALL' && t.contributorId !== selectedContributorId) return false;
@@ -257,7 +374,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
       }
       return true;
     });
-  }, [tasks, selectedPillarId, selectedStatus, selectedContributorId, searchQuery]);
+  }, [tasks, selectedBrandId, activeAllocation, selectedPillarId, selectedStatus, selectedContributorId, searchQuery]);
 
   // Status Badge Helper
   const renderStatusBadge = (status: VideoTaskStatus) => {
@@ -329,7 +446,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
       return;
     }
 
-    const selectedPillar = allocation.pillars.find(p => p.id === newTaskForm.pillarId) || allocation.pillars[0];
+    const selectedPillar = activeAllocation.pillars.find(p => p.id === newTaskForm.pillarId) || activeAllocation.pillars[0];
     const assignedCtv = contributors.find(c => c.id === newTaskForm.contributorId);
 
     const newTask: SelfChannelVideoTask = {
@@ -337,7 +454,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
       taskCode: `SC-KUTI-${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(tasks.length + 1).padStart(2, '0')}`,
       title: newTaskForm.title.trim(),
       brandId: allocation.brandId,
-      brandName: allocation.brandName,
+      brandName: activeAllocation.brandName,
       storeId: 'store-kutieskin-tts',
       storeName: 'Kutieskin Official Store (TikTok)',
       pillarId: selectedPillar.id,
@@ -533,7 +650,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                   Kênh Chính Chủ Brand
                 </span>
                 <span className="font-mono text-2xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
-                  {allocation.brandName}
+                  {activeAllocation.brandName}
                 </span>
               </div>
               <p className="text-xs text-slate-500 mt-0.5">
@@ -543,6 +660,26 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
           </div>
 
           <div className="flex items-center gap-2 flex-wrap self-start lg:self-auto">
+            {/* Bộ Chọn Nhãn Hàng Cho Quản Lý & Nhân Viên Phụ Trách 2-3 Brand */}
+            {!isCtvPartner && (
+              <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-slate-50 text-xs">
+                <Building2 className="w-3.5 h-3.5 text-indigo-600" />
+                <span className="text-slate-500 hidden sm:inline text-2xs">Nhãn:</span>
+                <select
+                  value={selectedBrandId}
+                  onChange={(e) => {
+                    setSelectedBrandId(e.target.value);
+                    setSelectedPillarId('ALL');
+                  }}
+                  className="bg-transparent font-semibold text-slate-800 text-xs focus:outline-none cursor-pointer pr-1"
+                >
+                  <option value="ALL">🌐 Tất Cả Nhãn Hàng ({availableAllocations.length})</option>
+                  {availableAllocations.map(a => (
+                    <option key={a.brandId} value={a.brandId}>{a.brandName}</option>
+                  ))}
+                </select>
+              </div>
+            )}
             {onOpenPushProducts && (
               <button
                 type="button"
@@ -679,7 +816,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
               <span className="text-2xs font-medium text-slate-500 uppercase tracking-wide">Ngân Sách Self Channel</span>
               <div className="mt-1 flex items-baseline justify-between">
                 <span className="text-lg font-bold font-mono text-slate-900">
-                  {formatVnd(allocation.budgetSelfChannel)}
+                  {formatVnd(activeAllocation.budgetSelfChannel)}
                 </span>
                 <span className="text-2xs text-indigo-600 font-medium">25% tổng gói</span>
               </div>
@@ -725,34 +862,135 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
             </div>
           </div>
 
+          {/* EXECUTIVE MULTI-BRAND ALLOCATION MATRIX (Hiển thị khi Quản lý/Trưởng phòng xem Toàn bộ Brand) */}
+          {selectedBrandId === 'ALL' && (
+            <div className="bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-hidden">
+              <div className="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                    <Building2 className="w-4 h-4 text-indigo-600" />
+                    <span>Ma Trận Phân Bổ Kênh Chính Chủ Các Thương Hiệu ({availableAllocations.length} Brands)</span>
+                  </h3>
+                  <p className="text-2xs text-slate-500">
+                    Bao quát phân bổ ngân sách, mục tiêu video và tiến độ nghiệm thu video tự xây của từng brand
+                  </p>
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="bg-slate-50/75 border-b border-slate-200 text-2xs font-semibold text-slate-500 uppercase tracking-wider">
+                      <th className="py-2.5 px-4">Thương Hiệu / Cổng Kênh</th>
+                      <th className="py-2.5 px-3 text-center">Số Pillar</th>
+                      <th className="py-2.5 px-3 text-center">Mục Tiêu Video</th>
+                      <th className="py-2.5 px-3 text-center">Đã Nghiệm Thu</th>
+                      <th className="py-2.5 px-3 text-center">Tiến Độ</th>
+                      <th className="py-2.5 px-3 text-right">Ngân Sách Tự Xây</th>
+                      <th className="py-2.5 px-3 text-right">Đã Chi (Thù Lao)</th>
+                      <th className="py-2.5 px-4 text-right">Thao Tác</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {availableAllocations.map(alloc => {
+                      const brandTasks = tasks.filter(t => t.brandId === alloc.brandId || t.brandName.toLowerCase().includes(alloc.brandName.toLowerCase()));
+                      const brandCompleted = brandTasks.filter(t => t.status === 'ACCEPTED_COMPLETED' || t.status === 'PAID').length;
+                      const brandSpent = brandTasks.filter(t => t.status === 'ACCEPTED_COMPLETED' || t.status === 'PAID').reduce((sum, t) => sum + t.remuneration, 0);
+                      const brandProgress = alloc.targetSelfChannelVideos > 0 ? Math.round((brandCompleted / alloc.targetSelfChannelVideos) * 100) : 0;
+
+                      return (
+                        <tr key={alloc.brandId} className="hover:bg-slate-50/60 transition">
+                          <td className="py-3 px-4 font-bold text-slate-900">
+                            <div className="flex items-center gap-2">
+                              <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
+                              <span>{alloc.brandName}</span>
+                            </div>
+                          </td>
+                          <td className="py-3 px-3 text-center font-mono">
+                            {alloc.pillars.length}
+                          </td>
+                          <td className="py-3 px-3 text-center font-mono font-semibold">
+                            {alloc.targetSelfChannelVideos} video
+                          </td>
+                          <td className="py-3 px-3 text-center font-mono text-emerald-700 font-bold">
+                            {brandCompleted} video
+                          </td>
+                          <td className="py-3 px-3 text-center">
+                            <span className="px-2 py-0.5 rounded-full text-2xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                              {brandProgress}%
+                            </span>
+                          </td>
+                          <td className="py-3 px-3 text-right font-mono font-bold text-slate-900">
+                            {formatVnd(alloc.budgetSelfChannel)}
+                          </td>
+                          <td className="py-3 px-3 text-right font-mono text-slate-600">
+                            {formatVnd(brandSpent)}
+                          </td>
+                          <td className="py-3 px-4 text-right">
+                            <button
+                              type="button"
+                              onClick={() => setSelectedBrandId(alloc.brandId)}
+                              className="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-600 text-indigo-700 hover:text-white rounded-lg text-2xs font-bold transition flex items-center gap-1 ml-auto"
+                            >
+                              <span>Vào Brand Này</span>
+                              <ArrowRight className="w-3 h-3" />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Banner khi đang xem 1 Brand cụ thể */}
+          {selectedBrandId !== 'ALL' && (
+            <div className="flex items-center justify-between bg-indigo-50/80 border border-indigo-200 px-4 py-2.5 rounded-xl text-xs">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSelectedBrandId('ALL')}
+                  className="font-bold text-indigo-700 hover:text-indigo-900 flex items-center gap-1 transition"
+                >
+                  <ArrowRight className="w-3.5 h-3.5 rotate-180" />
+                  <span>Xem Tất Cả Nhãn Hàng</span>
+                </button>
+                <span className="text-slate-300">|</span>
+                <span className="text-slate-600">Đang xem phân bổ kênh tự xây: <strong className="text-slate-900">{activeAllocation.brandName}</strong></span>
+              </div>
+            </div>
+          )}
+          
           {/* Budget Split Comparison Bar */}
           <div className="bg-white rounded-xl p-5 border border-slate-200/80 shadow-xs space-y-3">
             <div className="flex items-center justify-between text-xs">
               <span className="font-semibold text-slate-900">
-                Cơ Cấu Ngân Sách Brand: <strong className="text-indigo-700">{formatVnd(allocation.totalBudget)}</strong>
+                Cơ Cấu Ngân Sách Brand: <strong className="text-indigo-700">{formatVnd(activeAllocation.totalBudget)}</strong>
               </span>
               <div className="flex items-center gap-4 text-2xs text-slate-500">
                 <span className="flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-blue-500 inline-block"></span>
-                  Affiliate KOC: {formatVnd(allocation.budgetAffiliate)} (75%)
+                  Affiliate KOC: {formatVnd(activeAllocation.budgetAffiliate)} (75%)
                 </span>
                 <span className="flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-indigo-600 inline-block"></span>
-                  Self Channel CTV: {formatVnd(allocation.budgetSelfChannel)} (25%)
+                  Self Channel CTV: {formatVnd(activeAllocation.budgetSelfChannel)} (25%)
                 </span>
               </div>
             </div>
 
             <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden flex">
               <div 
-                style={{ width: `${(allocation.budgetAffiliate / allocation.totalBudget) * 100}%` }}
+                style={{ width: `${(activeAllocation.budgetAffiliate / activeAllocation.totalBudget) * 100}%` }}
                 className="bg-blue-500 h-full"
-                title={`Affiliate KOC: ${formatVnd(allocation.budgetAffiliate)}`}
+                title={`Affiliate KOC: ${formatVnd(activeAllocation.budgetAffiliate)}`}
               />
               <div 
-                style={{ width: `${(allocation.budgetSelfChannel / allocation.totalBudget) * 100}%` }}
+                style={{ width: `${(activeAllocation.budgetSelfChannel / activeAllocation.totalBudget) * 100}%` }}
                 className="bg-indigo-600 h-full"
-                title={`Self Channel: ${formatVnd(allocation.budgetSelfChannel)}`}
+                title={`Self Channel: ${formatVnd(activeAllocation.budgetSelfChannel)}`}
               />
             </div>
           </div>
@@ -768,7 +1006,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
-              {allocation.pillars.map((pillar) => {
+              {activeAllocation.pillars.map((pillar) => {
                 const pillarTasks = tasks.filter(t => t.pillarId === pillar.id);
                 const pillarCompleted = pillarTasks.filter(t => t.status === 'ACCEPTED_COMPLETED' || t.status === 'PAID').length;
                 const percent = Math.round((pillarCompleted / pillar.targetVideos) * 100);
@@ -1385,7 +1623,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                   value={newTaskForm.pillarId}
                   onChange={(e) => {
                     const pid = e.target.value;
-                    const p = allocation.pillars.find(item => item.id === pid);
+                    const p = activeAllocation.pillars.find(item => item.id === pid);
                     setNewTaskForm(prev => ({
                       ...prev,
                       pillarId: pid,
@@ -1394,7 +1632,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                   }}
                   className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white"
                 >
-                  {allocation.pillars.map(p => (
+                  {activeAllocation.pillars.map(p => (
                     <option key={p.id} value={p.id}>{p.name} (Định mức: {formatVnd(p.unitCostPerVideo)})</option>
                   ))}
                 </select>

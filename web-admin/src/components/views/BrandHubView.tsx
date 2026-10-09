@@ -42,6 +42,7 @@ import {
   UserProfile
 } from '../../lib/types';
 import { INITIAL_BRAND_PORTAL_DATA } from '../../lib/mockData';
+import { formatVndShort } from '../../lib/format';
 
 export interface BrandHubViewProps {
   currentUser?: UserProfile;
@@ -52,6 +53,7 @@ export interface BrandHubViewProps {
   onNavigateToKocHub?: () => void;
   onBrandApproveDeal?: (kocOrDeal: string) => void;
   onBrandRejectDeal?: (kocOrDeal: string, reason: string) => void;
+  selectedBrand?: string;
 }
 
 export type BrandHubPillarTab = 'OVERVIEW' | 'APPROVALS' | 'ACTIVE_JOBS' | 'DISCUSSION' | 'HISTORY';
@@ -75,7 +77,8 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
   onNavigateToCtvHub,
   onNavigateToKocHub,
   onBrandApproveDeal,
-  onBrandRejectDeal
+  onBrandRejectDeal,
+  selectedBrand = 'ALL'
 }) => {
   const [portals, setPortals] = useState<BrandCampaignPortalData[]>(INITIAL_BRAND_PORTAL_DATA);
   const [selectedPortalId, setSelectedPortalId] = useState<string>(() => {
@@ -85,6 +88,22 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
     }
     return INITIAL_BRAND_PORTAL_DATA[0].id;
   });
+
+  // Đồng bộ với Bộ Chọn Nhãn Hàng Toàn Cục (Brand Context Switcher)
+  React.useEffect(() => {
+    if (selectedBrand) {
+      if (selectedBrand === 'ALL') {
+        if (['ADMIN', 'MANAGER', 'LEADER'].includes(currentUser?.role || '')) {
+          setSelectedPortalId('ALL');
+        }
+      } else {
+        const match = portals.find(p => p.brandName.toLowerCase().includes(selectedBrand.toLowerCase()));
+        if (match) {
+          setSelectedPortalId(match.id);
+        }
+      }
+    }
+  }, [selectedBrand, portals, currentUser]);
 
   const activePortal = portals.find(p => p.id === selectedPortalId) || portals[0];
 
@@ -108,6 +127,30 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
   // Stage filter for Active Jobs
   const [jobStatusFilter, setJobStatusFilter] = useState<string>('ALL');
   const [jobSearchQuery, setJobSearchQuery] = useState<string>('');
+
+  // Manager & Leader Executive Filters (Bộ lọc đa chiều cho Trưởng phòng & Quản lý)
+  const isManagerOrLeader = ['ADMIN', 'MANAGER', 'LEADER'].includes(currentUser?.role || '');
+  const [executiveBrandFilter, setExecutiveBrandFilter] = useState<string>('ALL');
+  const [executivePlanStatusFilter, setExecutivePlanStatusFilter] = useState<string>('ALL');
+  const [executivePicFilter, setExecutivePicFilter] = useState<string>('ALL');
+  const [executiveSearchQuery, setExecutiveSearchQuery] = useState<string>('');
+
+  const filteredExecutivePortals = useMemo(() => {
+    return portals.filter(p => {
+      if (executiveBrandFilter !== 'ALL' && p.brandName !== executiveBrandFilter) return false;
+      if (executivePlanStatusFilter !== 'ALL' && p.planApprovalStatus !== executivePlanStatusFilter) return false;
+      if (executivePicFilter !== 'ALL' && p.accountPic !== executivePicFilter) return false;
+      if (executiveSearchQuery.trim()) {
+        const q = executiveSearchQuery.toLowerCase();
+        const matchBrand = p.brandName.toLowerCase().includes(q);
+        const matchCode = p.campaignCode.toLowerCase().includes(q);
+        const matchTitle = p.campaignTitle.toLowerCase().includes(q);
+        const matchPic = (p.accountPic || '').toLowerCase().includes(q) || (p.bookingPic || '').toLowerCase().includes(q);
+        if (!matchBrand && !matchCode && !matchTitle && !matchPic) return false;
+      }
+      return true;
+    });
+  }, [portals, executiveBrandFilter, executivePlanStatusFilter, executivePicFilter, executiveSearchQuery]);
 
   // Discussion Chat State
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
@@ -383,14 +426,19 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
           </div>
 
           <div className="flex items-center gap-2 flex-wrap self-start lg:self-auto">
-            {/* Brand Switcher */}
+            {/* Brand Switcher - Cho phép Trưởng phòng & Quản lý lọc hoặc xem Tất cả nhãn hàng */}
             <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs">
-              <Building className="w-3.5 h-3.5 text-slate-400" />
+              <Building className="w-3.5 h-3.5 text-blue-600" />
               <select
-                value={activePortal.id}
+                value={selectedPortalId}
                 onChange={(e) => handleSwitchPortal(e.target.value)}
                 className="bg-transparent text-slate-800 font-semibold text-xs focus:outline-none cursor-pointer pr-1"
               >
+                {isManagerOrLeader && (
+                  <option value="ALL">
+                    🌐 Bảng Giám Sát Toàn Bộ Cổng Brand ({portals.length} nhãn)
+                  </option>
+                )}
                 {portals.map(p => (
                   <option key={p.id} value={p.id}>
                     {p.brandName} ({p.campaignCode})
@@ -398,6 +446,18 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
                 ))}
               </select>
             </div>
+
+            {selectedPortalId !== 'ALL' && isManagerOrLeader && (
+              <button
+                type="button"
+                onClick={() => setSelectedPortalId('ALL')}
+                className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition"
+                title="Quay lại bảng giám sát tất cả cổng nhãn"
+              >
+                <LayoutDashboard className="w-3.5 h-3.5 text-blue-600" />
+                <span>Xem Tất Cả Nhãn</span>
+              </button>
+            )}
 
             <button
               type="button"
@@ -435,10 +495,196 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
         </div>
       </div>
 
-      {/* ========================================================================= */}
-      {/* 2. MINIMALIST SEGMENTED TABS                                             */}
-      {/* ========================================================================= */}
-      <div className="flex items-center gap-1.5 border-b border-slate-200/80 pb-3 overflow-x-auto text-xs">
+      {selectedPortalId === 'ALL' ? (
+        /* ========================================================================= */
+        /* BẢNG TỔNG HỢP GIÁM SÁT TOÀN BỘ CỔNG BRAND (DÀNH CHO TRƯỞNG PHÒNG & QUẢN LÝ) */
+        /* ========================================================================= */
+        <div className="space-y-6">
+          {/* Quick Stats Header */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
+              <span className="text-2xs font-semibold text-slate-500 uppercase tracking-wider block">Cổng Brand Hoạt Động</span>
+              <span className="text-2xl font-bold text-slate-900 mt-1 block">{portals.length}</span>
+              <span className="text-2xs text-emerald-600 mt-0.5 block">100% kết nối realtime</span>
+            </div>
+            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
+              <span className="text-2xs font-semibold text-slate-500 uppercase tracking-wider block">Kế Hoạch Đã Phê Duyệt</span>
+              <span className="text-2xl font-bold text-emerald-600 mt-1 block">
+                {portals.filter(p => p.planApprovalStatus === 'BRAND_PLAN_APPROVED').length} / {portals.length}
+              </span>
+              <span className="text-2xs text-slate-500 mt-0.5 block">Ngân sách đã chốt</span>
+            </div>
+            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
+              <span className="text-2xs font-semibold text-slate-500 uppercase tracking-wider block">Tổng KOC Chờ Duyệt</span>
+              <span className="text-2xl font-bold text-amber-600 mt-1 block">
+                {portals.reduce((acc, p) => acc + p.kocCandidates.filter(k => k.brandApprovalStatus === 'CHỜ_DUYỆT').length, 0)}
+              </span>
+              <span className="text-2xs text-slate-500 mt-0.5 block">Toàn bộ các chiến dịch</span>
+            </div>
+            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
+              <span className="text-2xs font-semibold text-slate-500 uppercase tracking-wider block">Cam Kết SLA Phản Hồi</span>
+              <span className="text-2xl font-bold text-blue-600 mt-1 block">&lt; 18 giờ</span>
+              <span className="text-2xs text-emerald-600 mt-0.5 block">Đạt chuẩn 98.4%</span>
+            </div>
+          </div>
+
+          {/* Executive Filter Bar */}
+          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs space-y-3">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+              <div className="relative flex-1 max-w-md">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Tìm theo tên nhãn, mã chiến dịch, tên PIC..."
+                  value={executiveSearchQuery}
+                  onChange={(e) => setExecutiveSearchQuery(e.target.value)}
+                  className="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-slate-800 text-slate-800"
+                />
+              </div>
+
+              <div className="flex items-center gap-2 flex-wrap text-xs">
+                <select
+                  value={executivePlanStatusFilter}
+                  onChange={(e) => setExecutivePlanStatusFilter(e.target.value)}
+                  className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 font-medium text-slate-700 focus:outline-none cursor-pointer"
+                >
+                  <option value="ALL">Mọi trạng thái kế hoạch</option>
+                  <option value="BRAND_PLAN_APPROVED">Đã duyệt kế hoạch</option>
+                  <option value="BRAND_PLAN_PENDING">Chờ Brand duyệt</option>
+                  <option value="BRAND_PLAN_REVISION_REQUESTED">Yêu cầu sửa đổi</option>
+                </select>
+
+                <select
+                  value={executivePicFilter}
+                  onChange={(e) => setExecutivePicFilter(e.target.value)}
+                  className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 font-medium text-slate-700 focus:outline-none cursor-pointer"
+                >
+                  <option value="ALL">Mọi Account Lead</option>
+                  <option value="Vân Ngọc">Vân Ngọc</option>
+                  <option value="Tuấn Anh">Tuấn Anh</option>
+                  <option value="Khánh Vy">Khánh Vy</option>
+                </select>
+
+                {(executiveSearchQuery || executivePlanStatusFilter !== 'ALL' || executivePicFilter !== 'ALL') && (
+                  <button
+                    onClick={() => {
+                      setExecutiveSearchQuery('');
+                      setExecutivePlanStatusFilter('ALL');
+                      setExecutivePicFilter('ALL');
+                    }}
+                    className="p-1.5 text-slate-400 hover:text-slate-600 rounded-md cursor-pointer"
+                    title="Xóa bộ lọc"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Portals Monitoring Grid / Table */}
+          <div className="bg-white rounded-xl border border-slate-200 shadow-2xs overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-500 font-semibold text-2xs">
+                    <th className="py-3 px-4">Thương Hiệu / Cổng</th>
+                    <th className="py-3 px-3">Chiến Dịch &amp; Tháng</th>
+                    <th className="py-3 px-3">Ngân Sách &amp; GMV Target</th>
+                    <th className="py-3 px-3">Trạng Thái Kế Hoạch</th>
+                    <th className="py-3 px-3">Tiến Độ KOC</th>
+                    <th className="py-3 px-3">Kịch Bản &amp; Video</th>
+                    <th className="py-3 px-3">Account Lead</th>
+                    <th className="py-3 px-4 text-right">Thao Tác</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 text-slate-800">
+                  {filteredExecutivePortals.map((p) => {
+                    const pendingKocs = p.kocCandidates.filter(k => k.brandApprovalStatus === 'CHỜ_DUYỆT').length;
+                    const approvedKocs = p.kocCandidates.filter(k => k.brandApprovalStatus === 'ĐÃ_DUYỆT').length;
+                    const approvedScripts = p.scripts.filter(s => s.status === 'APPROVED').length;
+                    const airedVideos = p.scripts.filter(s => !!s.publishedVideoUrl).length;
+
+                    return (
+                      <tr key={p.id} className="hover:bg-slate-50/70 transition">
+                        <td className="py-3.5 px-4">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-9 h-9 rounded-lg bg-slate-900 text-white font-bold flex items-center justify-center text-xs shrink-0">
+                              {p.brandLogoText.slice(0, 3)}
+                            </div>
+                            <div>
+                              <span className="font-semibold text-slate-900 block">{p.brandName}</span>
+                              <span className="text-2xs text-slate-500 font-mono">{p.campaignCode}</span>
+                            </div>
+                          </div>
+                        </td>
+
+                        <td className="py-3.5 px-3">
+                          <span className="font-medium text-slate-900 block truncate max-w-xs">{p.campaignTitle}</span>
+                          <span className="text-2xs text-slate-500">{p.month}</span>
+                        </td>
+
+                        <td className="py-3.5 px-3">
+                          <span className="font-mono font-semibold text-slate-900 block">{formatVndShort(p.totalBudget)}</span>
+                          <span className="text-2xs text-slate-500 font-mono">GMV: {formatVndShort(p.targetGmv)}</span>
+                        </td>
+
+                        <td className="py-3.5 px-3">
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-2xs font-semibold ${
+                            p.planApprovalStatus === 'BRAND_PLAN_APPROVED'
+                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                              : p.planApprovalStatus === 'BRAND_PLAN_REVISION_REQUESTED'
+                              ? 'bg-rose-50 text-rose-700 border border-rose-200'
+                              : 'bg-amber-50 text-amber-700 border border-amber-200'
+                          }`}>
+                            {p.planApprovalStatus === 'BRAND_PLAN_APPROVED' ? 'Đã duyệt' : p.planApprovalStatus === 'BRAND_PLAN_REVISION_REQUESTED' ? 'Cần sửa đổi' : 'Chờ duyệt'}
+                          </span>
+                        </td>
+
+                        <td className="py-3.5 px-3">
+                          <div className="space-y-0.5">
+                            <span className="text-xs font-semibold text-slate-800">{approvedKocs} / {p.kocCandidates.length} KOC duyệt</span>
+                            {pendingKocs > 0 && (
+                              <span className="block text-2xs text-amber-600 font-medium">({pendingKocs} đang chờ Brand)</span>
+                            )}
+                          </div>
+                        </td>
+
+                        <td className="py-3.5 px-3">
+                          <div className="space-y-0.5">
+                            <span className="text-xs font-semibold text-slate-800">{approvedScripts} KB • {airedVideos} Video lên sàn</span>
+                          </div>
+                        </td>
+
+                        <td className="py-3.5 px-3">
+                          <span className="text-slate-800 font-medium block">{p.accountPic}</span>
+                          <span className="text-2xs text-slate-500">Booking: {p.bookingPic}</span>
+                        </td>
+
+                        <td className="py-3.5 px-4 text-right">
+                          <button
+                            type="button"
+                            onClick={() => handleSwitchPortal(p.id)}
+                            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 ml-auto transition shadow-2xs cursor-pointer"
+                          >
+                            <span>Vào Cổng Nhãn</span>
+                            <ArrowRight className="w-3.5 h-3.5" />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      ) : (
+        /* ========================================================================= */
+        /* 2. GIAO DIỆN CỔNG CHI TIẾT CỦA TỪNG NHÃN HÀNG                             */
+        /* ========================================================================= */
+        <div className="space-y-6">
+          <div className="flex items-center gap-1.5 border-b border-slate-200/80 pb-3 overflow-x-auto text-xs">
         <button
           type="button"
           onClick={() => setActiveTab('OVERVIEW')}
@@ -1438,6 +1684,8 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
               </div>
             </div>
           </div>
+        </div>
+      )}
         </div>
       )}
     </div>

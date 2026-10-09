@@ -98,6 +98,210 @@ export const MOCK_BRAND_ALLOCATION: BrandChannelAllocation = {
 };
 
 // ==========================================
+// 2.1 MULTI-BRAND CHANNEL ALLOCATIONS (Chuẩn hóa Đa Nhãn Hàng cho Trưởng phòng & Nhân viên phụ trách 2-3 Brand)
+// ==========================================
+export const MULTI_BRAND_ALLOCATIONS: BrandChannelAllocation[] = [
+  MOCK_BRAND_ALLOCATION,
+  {
+    brandId: 'brand-phcare',
+    brandName: 'pHCare Chăm Sóc Vệ Sinh Nữ',
+    totalBudget: 150000000,
+    budgetAffiliate: 105000000,
+    targetAffiliateVideos: 60,
+    targetAffiliateGmv: 420000000,
+    affiliateNotes: 'Chiến dịch tháng 10 đẩy mạnh tệp KOC Nữ & Chăm sóc cá nhân.',
+    budgetSelfChannel: 45000000,
+    targetSelfChannelVideos: 35,
+    selfChannelNotes: 'Tập trung sản xuất video chuyên gia phụ khoa và giải đáp bí quyết phụ nữ.',
+    pillars: [
+      {
+        id: 'pil-ph-01',
+        masterPillarId: 'MASTER-PIL-01',
+        name: 'Tư Vấn Chuyên Gia & Bác Sĩ',
+        code: 'EDUCATIONAL',
+        description: 'Bác sĩ phụ khoa hướng dẫn chăm sóc đúng cách hàng ngày.',
+        targetVideos: 10,
+        completedVideos: 7,
+        allocatedBudget: 15000000,
+        unitCostPerVideo: 1500000,
+        targetViews: 300000,
+        coreSkuIds: ['PH-WASH-150ML'],
+        color: '#0284C7'
+      },
+      {
+        id: 'pil-ph-02',
+        masterPillarId: 'MASTER-PIL-02',
+        name: 'Demo Độ pH & Trải Nghiệm Mùi Hương',
+        code: 'PRODUCT_SHOWCASE',
+        description: 'Test giấy quỳ tím độ pH 5.0 chuẩn tự nhiên, dịu nhẹ an toàn.',
+        targetVideos: 15,
+        completedVideos: 10,
+        allocatedBudget: 18000000,
+        unitCostPerVideo: 1200000,
+        targetViews: 350000,
+        coreSkuIds: ['PH-WASH-150ML', 'PH-FOAM-100ML'],
+        color: '#EC4899'
+      },
+      {
+        id: 'pil-ph-03',
+        masterPillarId: 'MASTER-PIL-04',
+        name: 'Bắt Trend & Tự Tin Phái Đẹp',
+        code: 'TREND_JACKING',
+        description: 'Tình huống thường ngày nơi công sở và tự tin hẹn hò.',
+        targetVideos: 10,
+        completedVideos: 6,
+        allocatedBudget: 12000000,
+        unitCostPerVideo: 1200000,
+        targetViews: 200000,
+        coreSkuIds: ['PH-WASH-150ML'],
+        color: '#F59E0B'
+      }
+    ]
+  },
+  {
+    brandId: 'brand-royal-ausnz',
+    brandName: 'Royal Ausnz Sữa Hoàng Gia',
+    totalBudget: 250000000,
+    budgetAffiliate: 180000000,
+    targetAffiliateVideos: 90,
+    targetAffiliateGmv: 950000000,
+    affiliateNotes: 'Tập trung tệp mẹ bỉm cao cấp và chuyên gia dinh dưỡng.',
+    budgetSelfChannel: 70000000,
+    targetSelfChannelVideos: 50,
+    selfChannelNotes: 'Sản xuất video quy trình sữa tươi 20 phút - 12 giờ tại Úc.',
+    pillars: [
+      {
+        id: 'pil-ro-01',
+        masterPillarId: 'MASTER-PIL-01',
+        name: 'Dinh Dưỡng Chuẩn Úc & Chuyên Gia',
+        code: 'EDUCATIONAL',
+        description: 'Giải thích công thức Lactoferrin tăng đề kháng cho trẻ sơ sinh.',
+        targetVideos: 18,
+        completedVideos: 12,
+        allocatedBudget: 27000000,
+        unitCostPerVideo: 1500000,
+        targetViews: 450000,
+        coreSkuIds: ['RO-PREM-900G'],
+        color: '#4F46E5'
+      },
+      {
+        id: 'pil-ro-02',
+        masterPillarId: 'MASTER-PIL-02',
+        name: 'Quy Trình Trộn Ướt 20 Phút 12 Giờ',
+        code: 'PRODUCT_SHOWCASE',
+        description: 'Minh họa công nghệ Wet-Blending độc quyền giữ trọn dưỡng chất sinh học.',
+        targetVideos: 20,
+        completedVideos: 15,
+        allocatedBudget: 26000000,
+        unitCostPerVideo: 1300000,
+        targetViews: 500000,
+        coreSkuIds: ['RO-PREM-900G', 'RO-LACTO-100G'],
+        color: '#10B981'
+      },
+      {
+        id: 'pil-ro-03',
+        masterPillarId: 'MASTER-PIL-03',
+        name: 'Trải Nghiệm Mẹ Bỉm Hiện Đại',
+        code: 'STORYTELLING',
+        description: 'Bé tăng cân đều, tiêu hóa khỏe, không táo bón.',
+        targetVideos: 12,
+        completedVideos: 8,
+        allocatedBudget: 17000000,
+        unitCostPerVideo: 1400000,
+        targetViews: 300000,
+        coreSkuIds: ['RO-PREM-900G'],
+        color: '#8B5CF6'
+      }
+    ]
+  },
+  {
+    brandId: 'brand-mega-uri',
+    brandName: 'Mega Uri Hỗ Trợ Đề Kháng & Sức Khỏe',
+    totalBudget: 140000000,
+    budgetAffiliate: 100000000,
+    targetAffiliateVideos: 50,
+    targetAffiliateGmv: 400000000,
+    affiliateNotes: 'Tập trung tệp phụ huynh có con trong độ tuổi đi học.',
+    budgetSelfChannel: 40000000,
+    targetSelfChannelVideos: 30,
+    selfChannelNotes: 'Sản xuất video chia sẻ bài thuốc & giải pháp thảo dược bảo vệ đường hô hấp.',
+    pillars: [
+      {
+        id: 'pil-mu-01',
+        masterPillarId: 'MASTER-PIL-01',
+        name: 'Bác Sĩ Chia Sẻ Đề Kháng Hô Hấp',
+        code: 'EDUCATIONAL',
+        description: 'Phòng ngừa ho, sổ mũi và viêm họng lúc giao mùa.',
+        targetVideos: 12,
+        completedVideos: 9,
+        allocatedBudget: 18000000,
+        unitCostPerVideo: 1500000,
+        targetViews: 350000,
+        coreSkuIds: ['MU-SYRUP-120ML'],
+        color: '#059669'
+      },
+      {
+        id: 'pil-mu-02',
+        masterPillarId: 'MASTER-PIL-02',
+        name: 'Hướng Dẫn Sử Dụng & Test Vị Ngon',
+        code: 'PRODUCT_SHOWCASE',
+        description: 'Vị siro ngọt dịu tự nhiên, các bé cực kỳ hợp tác khi uống.',
+        targetVideos: 18,
+        completedVideos: 13,
+        allocatedBudget: 22000000,
+        unitCostPerVideo: 1200000,
+        targetViews: 400000,
+        coreSkuIds: ['MU-SYRUP-120ML'],
+        color: '#D97706'
+      }
+    ]
+  },
+  {
+    brandId: 'brand-senka',
+    brandName: 'Senka Skincare Nhật Bản',
+    totalBudget: 180000000,
+    budgetAffiliate: 120000000,
+    targetAffiliateVideos: 70,
+    targetAffiliateGmv: 550000000,
+    affiliateNotes: 'Đẩy mạnh dòng sữa rửa mặt tạo bọt tơ tằm trắng và kem chống nắng.',
+    budgetSelfChannel: 60000000,
+    targetSelfChannelVideos: 45,
+    selfChannelNotes: 'Tạo bọt siêu mịn tơ tằm trắng và test độ sạch sâu không gây khô da.',
+    pillars: [
+      {
+        id: 'pil-sen-01',
+        masterPillarId: 'MASTER-PIL-02',
+        name: 'Test Tạo Bọt Tơ Tằm Trắng Khổng Lồ',
+        code: 'PRODUCT_SHOWCASE',
+        description: 'Tạo bọt bông xốp dày đặc rửa mặt không chạm tay vào da.',
+        targetVideos: 25,
+        completedVideos: 19,
+        allocatedBudget: 32000000,
+        unitCostPerVideo: 1300000,
+        targetViews: 600000,
+        coreSkuIds: ['SEN-WHIP-120G'],
+        color: '#2563EB'
+      },
+      {
+        id: 'pil-sen-02',
+        masterPillarId: 'MASTER-PIL-01',
+        name: 'Bí Quyết Làm Sạch Sâu Cho Da Dầu Mụn',
+        code: 'EDUCATIONAL',
+        description: 'Dược sĩ hướng dẫn làm sạch lỗ chân lông ngừa mụn đầu đen.',
+        targetVideos: 20,
+        completedVideos: 14,
+        allocatedBudget: 28000000,
+        unitCostPerVideo: 1400000,
+        targetViews: 450000,
+        coreSkuIds: ['SEN-WHIP-ACNE-100G'],
+        color: '#10B981'
+      }
+    ]
+  }
+];
+
+
+// ==========================================
 // 3. DANH SÁCH CỘNG TÁC VIÊN LÀM VIDEO (CTV ROSTER)
 // ==========================================
 export const INITIAL_CONTRIBUTORS: Contributor[] = [
@@ -437,5 +641,150 @@ export const INITIAL_SELF_CHANNEL_TASKS: SelfChannelVideoTask[] = [
     paidAt: '2026-10-05T14:00:00Z',
     paymentRef: 'UNC-TCB-982134',
     createdAt: '2026-09-28T09:00:00Z'
+  },
+  // 7. TASK pHCare - SCRIPT_PENDING_REVIEW
+  {
+    id: 'task-sc-07',
+    taskCode: 'SC-PHC-202610-07',
+    title: 'Thử nghiệm quỳ tím chứng minh pH 5.0 dịu nhẹ cho vùng nhạy cảm',
+    brandId: 'brand-phcare',
+    brandName: 'pHCare Chăm Sóc Vệ Sinh Nữ',
+    storeId: 'store-phcare-tts',
+    storeName: 'pHCare Official Store (TikTok)',
+    pillarId: 'pil-ph-02',
+    pillarName: 'Demo Độ pH & Trải Nghiệm Mùi Hương',
+    pillarCode: 'PRODUCT_SHOWCASE',
+    linkedSku: 'PH-WASH-150ML',
+    productName: 'Dung Dịch Vệ Sinh Nữ pHCare 150ml',
+    remuneration: 1200000,
+    deadline: '2026-10-20',
+    contributorId: 'ctv-2',
+    contributorName: 'Trần Thu Thảo (Dược Sĩ)',
+    contributorAvatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80',
+    status: 'SCRIPT_PENDING_REVIEW',
+    scriptContent: {
+      hook: 'Nhiều bạn nghĩ bọt càng nhiều càng sạch, nhưng pH mất cân bằng là nguyên nhân gây ngứa ngáy đấy!',
+      body: 'Test quỳ tím so sánh nước máy thông thường với dung dịch pHCare. Giấy quỳ giữ màu vàng cam tự nhiên đạt chuẩn pH 5.0 sinh lý.',
+      cta: 'Bảo vệ sức khỏe vùng nhạy cảm mỗi ngày cùng pHCare deal hời trên live nha!',
+      submittedAt: '2026-10-08T09:00:00Z'
+    },
+    feedbackLogs: [],
+    createdAt: '2026-10-06T10:00:00Z'
+  },
+
+  // 8. TASK Royal Ausnz - DRAFT_VIDEO_SUBMITTED
+  {
+    id: 'task-sc-08',
+    taskCode: 'SC-RO-202610-08',
+    title: 'Quy trình sản xuất sữa tươi 20 phút 12 giờ tại nông trại Úc',
+    brandId: 'brand-royal-ausnz',
+    brandName: 'Royal Ausnz Sữa Hoàng Gia',
+    storeId: 'store-royal-tts',
+    storeName: 'Royal Ausnz Official Store (TikTok)',
+    pillarId: 'pil-ro-02',
+    pillarName: 'Quy Trình Trộn Ướt 20 Phút 12 Giờ',
+    pillarCode: 'PRODUCT_SHOWCASE',
+    linkedSku: 'RO-PREM-900G',
+    productName: 'Sữa Hoàng Gia Úc Premium Gold 900g',
+    remuneration: 1300000,
+    deadline: '2026-10-16',
+    contributorId: 'ctv-4',
+    contributorName: 'Phạm Đức Minh & Bé Gấu',
+    contributorAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80',
+    status: 'DRAFT_VIDEO_SUBMITTED',
+    videoDeliverables: {
+      currentVersion: 1,
+      draftVideoUrl: 'https://drive.google.com/royal-ausnz-wet-blend-v1.mp4',
+      captionSuggested: 'Bí mật đằng sau hạt sữa vàng óng tan ngay trong nước của Hoàng Gia Úc #royalausnz #suauc',
+      durationSeconds: 48,
+      submittedAt: '2026-10-08T11:30:00Z'
+    },
+    feedbackLogs: [],
+    createdAt: '2026-10-04T08:00:00Z'
+  },
+
+  // 9. TASK Mega Uri - ACCEPTED_COMPLETED
+  {
+    id: 'task-sc-09',
+    taskCode: 'SC-MU-202610-09',
+    title: 'Bác sĩ giải đáp: Tăng đề kháng hô hấp cho bé lúc giao mùa như thế nào?',
+    brandId: 'brand-mega-uri',
+    brandName: 'Mega Uri Hỗ Trợ Đề Kháng & Sức Khỏe',
+    storeId: 'store-megauri-tts',
+    storeName: 'Mega Uri Official Store (TikTok)',
+    pillarId: 'pil-mu-01',
+    pillarName: 'Bác Sĩ Chia Sẻ Đề Kháng Hô Hấp',
+    pillarCode: 'EDUCATIONAL',
+    linkedSku: 'MU-SYRUP-120ML',
+    productName: 'Siro Hỗ Trợ Đường Hô Hấp Mega Uri 120ml',
+    remuneration: 1500000,
+    deadline: '2026-10-10',
+    contributorId: 'ctv-2',
+    contributorName: 'Trần Thu Thảo (Dược Sĩ)',
+    contributorAvatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80',
+    status: 'ACCEPTED_COMPLETED',
+    videoDeliverables: {
+      currentVersion: 1,
+      draftVideoUrl: 'https://drive.google.com/megauri-dr-v1.mp4',
+      finalVideoUrl: 'https://drive.google.com/megauri-dr-final.mp4',
+      captionSuggested: 'Bí kíp phòng ho sổ mũi từ thảo dược tự nhiên cho con #megauri #dekhang',
+      durationSeconds: 52,
+      submittedAt: '2026-10-06T15:00:00Z'
+    },
+    feedbackLogs: [
+      {
+        id: 'fb-09',
+        version: 1,
+        reviewedBy: 'Khánh Vy (B2C Lead)',
+        reviewedAt: '2026-10-07T10:00:00Z',
+        type: 'VIDEO',
+        verdict: 'APPROVED',
+        comment: 'Dược sĩ giải thích khoa học, chất lượng hình ảnh sắc nét chuẩn Do & Donts!'
+      }
+    ],
+    acceptedAt: '2026-10-07T10:00:00Z',
+    acceptedBy: 'Khánh Vy (Booking Lead)',
+    createdAt: '2026-10-01T08:00:00Z'
+  },
+
+  // 10. TASK Senka - SCRIPT_APPROVED
+  {
+    id: 'task-sc-10',
+    taskCode: 'SC-SEN-202610-10',
+    title: 'Thử thách tạo bọt tơ tằm trắng Senka bông xốp không rơi',
+    brandId: 'brand-senka',
+    brandName: 'Senka Skincare Nhật Bản',
+    storeId: 'store-senka-tts',
+    storeName: 'Senka Official Store (TikTok)',
+    pillarId: 'pil-sen-01',
+    pillarName: 'Test Tạo Bọt Tơ Tằm Trắng Khổng Lồ',
+    pillarCode: 'PRODUCT_SHOWCASE',
+    linkedSku: 'SEN-WHIP-120G',
+    productName: 'Sữa Rửa Mặt Tạo Bọt Senka Perfect Whip 120g',
+    remuneration: 1300000,
+    deadline: '2026-10-18',
+    contributorId: 'ctv-1',
+    contributorName: 'Nguyễn Hoàng Yến',
+    contributorAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
+    status: 'SCRIPT_APPROVED',
+    scriptContent: {
+      hook: 'Lớp bọt này có thể giữ được đồng xu mà không hề xẹp, tin được không?',
+      body: 'Tạo bọt bằng lưới tạo bọt trong 15 giây. Úp ngược bát bọt không rơi, đặt đồng xu lên trên. Rửa mặt lướt nhẹ không ma sát mạnh lên da.',
+      cta: 'Săn deal độc quyền tặng mini size tại giỏ hàng TikTok Shop Senka ngay!',
+      submittedAt: '2026-10-07T16:00:00Z'
+    },
+    feedbackLogs: [
+      {
+        id: 'fb-10',
+        version: 1,
+        reviewedBy: 'Khánh Vy (B2C Lead)',
+        reviewedAt: '2026-10-08T08:30:00Z',
+        type: 'SCRIPT',
+        verdict: 'APPROVED',
+        comment: 'Kịch bản hook rất mạnh, đã duyệt quay dựng!'
+      }
+    ],
+    createdAt: '2026-10-05T14:00:00Z'
   }
+
 ];

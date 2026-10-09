@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Plus, Upload, Menu, ChevronDown, Sparkles, ArrowRight } from 'lucide-react';
+import { Plus, Upload, Menu, ChevronDown, Sparkles, ArrowRight, Building2, Layers } from 'lucide-react';
 import { UserProfile } from '../lib/types';
 import { USERS } from '../lib/mockData';
 import type { TabKey } from './Sidebar';
@@ -31,6 +31,8 @@ interface TopHeaderProps {
   title: string;
   subtitle?: string;
   activeTab?: TabKey;
+  selectedBrand?: string;
+  onBrandChange?: (brand: string) => void;
   onNavigateTab?: (tab: TabKey) => void;
   onToggleMobileSidebar?: () => void;
   onLogout?: () => void;
@@ -44,10 +46,17 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   title,
   subtitle,
   activeTab,
+  selectedBrand = 'ALL',
+  onBrandChange,
   onNavigateTab,
   onToggleMobileSidebar,
 }) => {
   const isBookingOrManager = currentUser.role === 'MANAGER' || currentUser.role === 'ADMIN' || currentUser.role === 'BOOKING_MEMBER';
+
+  // Danh sách các brand được phép chọn của tài khoản hiện tại
+  const userAssignedBrands = currentUser.assignedBrands || (
+    currentUser.linkedEntityName ? currentUser.linkedEntityName.split(',').map(s => s.trim()) : []
+  );
 
   return (
     <header className="sticky top-0 z-20 min-h-14 bg-canvas/95 backdrop-blur border-b border-line px-4 sm:px-6 lg:px-8 py-2 flex items-center justify-between gap-4 shrink-0">
@@ -69,6 +78,40 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
       </div>
 
       <div className="flex items-center gap-2 shrink-0">
+        {/* ========================================================================= */}
+        {/* BỘ CHỌN NHÃN HÀNG (BRAND CONTEXT SWITCHER) DÀNH CHO NHÂN VIÊN 2-3 BRAND   */}
+        {/* ========================================================================= */}
+        {currentUser.role === 'BRAND_PARTNER' ? (
+          <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold">
+            <Building2 className="w-3.5 h-3.5 text-emerald-600" />
+            <span>{currentUser.assignedBrands?.[0] || currentUser.linkedEntityName || 'Kutieskin'}</span>
+          </div>
+        ) : !['KOC_PARTNER', 'CTV_PARTNER'].includes(currentUser.role) && onBrandChange && (
+          <label className="relative hidden sm:flex items-center h-[34px] pl-2.5 pr-7 rounded-md border border-line-strong text-[12px] text-ink hover:border-slate-400 bg-surface transition-colors cursor-pointer" title="Lọc dữ liệu theo nhãn hàng bạn đang phụ trách">
+            <Building2 className="w-3.5 h-3.5 text-blue-600 mr-1.5 shrink-0" />
+            <span className="text-ink-3 mr-1 text-2xs hidden md:inline">Nhãn:</span>
+            <select
+              value={selectedBrand}
+              onChange={(e) => onBrandChange(e.target.value)}
+              className="appearance-none bg-transparent font-semibold text-slate-800 focus:outline-none cursor-pointer pr-1"
+            >
+              <option value="ALL">
+                {['ADMIN', 'MANAGER'].includes(currentUser.role)
+                  ? '🌐 Tất cả nhãn hàng'
+                  : `📁 Tất cả brand phụ trách (${userAssignedBrands.filter(b => b !== 'Tất cả nhãn hàng').length})`}
+              </option>
+              {userAssignedBrands
+                .filter(b => b !== 'Tất cả nhãn hàng')
+                .map((brand) => (
+                  <option key={brand} value={brand}>
+                    {brand}
+                  </option>
+                ))}
+            </select>
+            <ChevronDown className="w-3.5 h-3.5 text-ink-3 absolute right-2 pointer-events-none" />
+          </label>
+        )}
+
         {SHOW_ROLE_SWITCHER && (
           <div className="hidden sm:flex items-center gap-2">
             <span className={`px-2 py-1 rounded text-2xs font-bold border shrink-0 ${

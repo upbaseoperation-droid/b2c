@@ -922,6 +922,7 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'input-plan',
     'push-products',
     'booking',
+    'koc-master',
     'content',
     'content-angles',
     'campaigns',
@@ -933,6 +934,7 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
   BOOKING_MEMBER: [
     'cockpit',
     'booking',
+    'koc-master',
     'input-plan',
     'contracts',
     'sample-tracker',
@@ -965,6 +967,7 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
   MEMBER: [
     'cockpit',
     'booking',
+    'koc-master',
     'content',
     'input-plan',
     'sample-tracker',

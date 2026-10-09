@@ -79,7 +79,28 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
   const [selectedSegment, setSelectedSegment] = useState<string>('ALL');
   const [selectedKocCategory, setSelectedKocCategory] = useState<string>('ALL');
   const [selectedTepKenh, setSelectedTepKenh] = useState<string>('ALL');
+  const [selectedBrand, setSelectedBrand] = useState<string>('ALL');
+  const [selectedPic, setSelectedPic] = useState<string>('ALL');
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(20);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+
+  // Danh sách các Brand & PIC động từ dữ liệu KOC
+  const availableBrands = useMemo(() => {
+    const set = new Set<string>();
+    localKocs.forEach(k => {
+      if (k.brandName) set.add(k.brandName.trim());
+    });
+    return Array.from(set).sort();
+  }, [localKocs]);
+
+  const availablePics = useMemo(() => {
+    const set = new Set<string>();
+    localKocs.forEach(k => {
+      if (k.bookingPic) set.add(k.bookingPic.trim());
+    });
+    return Array.from(set).sort();
+  }, [localKocs]);
 
   const handleCopy = (text: string, key: string) => {
     navigator.clipboard.writeText(text);
@@ -113,11 +134,15 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
       if (selectedKocCategory !== 'ALL' && koc.kocCategory !== selectedKocCategory) return false;
       if (selectedTepKenh !== 'ALL' && koc.tepKenh !== selectedTepKenh) return false;
 
+      // Filter Brand & PIC
+      if (selectedBrand !== 'ALL' && koc.brandName !== selectedBrand) return false;
+      if (selectedPic !== 'ALL' && koc.bookingPic !== selectedPic) return false;
+
       return true;
     });
-  }, [localKocs, searchTerm, filterOcrStatus, selectedTier, selectedKL, selectedSegment, selectedKocCategory, selectedTepKenh]);
+  }, [localKocs, searchTerm, filterOcrStatus, selectedTier, selectedKL, selectedSegment, selectedKocCategory, selectedTepKenh, selectedBrand, selectedPic]);
 
-  const isKocFiltered = searchTerm.trim() !== '' || filterOcrStatus !== 'ALL' || selectedTier !== 'ALL' || selectedKL !== 'ALL' || selectedSegment !== 'ALL' || selectedKocCategory !== 'ALL' || selectedTepKenh !== 'ALL';
+  const isKocFiltered = searchTerm.trim() !== '' || filterOcrStatus !== 'ALL' || selectedTier !== 'ALL' || selectedKL !== 'ALL' || selectedSegment !== 'ALL' || selectedKocCategory !== 'ALL' || selectedTepKenh !== 'ALL' || selectedBrand !== 'ALL' || selectedPic !== 'ALL';
 
   const handleResetKocFilters = () => {
     setSearchTerm('');
@@ -127,7 +152,22 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
     setSelectedSegment('ALL');
     setSelectedKocCategory('ALL');
     setSelectedTepKenh('ALL');
+    setSelectedBrand('ALL');
+    setSelectedPic('ALL');
+    setCurrentPage(1);
   };
+
+  // Reset to page 1 whenever any filter changes
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterOcrStatus, selectedTier, selectedKL, selectedSegment, selectedKocCategory, selectedTepKenh, selectedBrand, selectedPic, pageSize]);
+
+  // Pagination slicing
+  const totalPages = Math.ceil(filteredKocs.length / pageSize) || 1;
+  const paginatedKocs = useMemo(() => {
+    const startIndex = (currentPage - 1) * pageSize;
+    return filteredKocs.slice(startIndex, startIndex + pageSize);
+  }, [filteredKocs, currentPage, pageSize]);
 
   // Handle OCR Apply: Either update existing KOC or create new KOC record
   const handleApplyOcrResult = (ocrResult: OcrLegalExtractionResult) => {
@@ -349,7 +389,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
         </div>
 
         {/* Multi-Dimensional Filter Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 pt-2 border-t border-slate-100 text-xs">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2 pt-2 border-t border-slate-100 text-xs">
           <div>
             <label className="text-3xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">
               1. Cấp bậc (Tier):
@@ -363,7 +403,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
               <option value="TIER_1_CELEB">Tier 1 - Celeb / Key Talent</option>
               <option value="TIER_2_MACRO">Tier 2 - Macro Creator</option>
               <option value="TIER_3_MICRO">Tier 3 - Micro Creator</option>
-              <option value="TIER_4_NANO">Tier 4 - Nano / Community</option>
+              <option value="TIER_4_AFFILIATE">Tier 4 - Nano / Affiliate</option>
             </select>
           </div>
 
@@ -378,19 +418,19 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
             >
               <option value="ALL">Tất cả khung lương</option>
               <option value="TAP UpAffiliate">TAP UpAffiliate (0đ)</option>
-              <option value="KL1">KL1 (&lt;500k)</option>
-              <option value="KL2">KL2 (500k - 1.5M)</option>
-              <option value="KL3">KL3 (1.5M - 3M)</option>
-              <option value="KL4">KL4 (3M - 5M)</option>
-              <option value="KL5">KL5 (5M - 10M)</option>
-              <option value="KL6">KL6 (10M - 30M)</option>
-              <option value="KL7">KL7 (&gt;30M Celeb)</option>
+              <option value="KL1">KL1 (&lt;1.5M)</option>
+              <option value="KL2">KL2 (1.5M - 3M)</option>
+              <option value="KL3">KL3 (3M - 5M)</option>
+              <option value="KL4">KL4 (5M - 8M)</option>
+              <option value="KL5">KL5 (8M - 15M)</option>
+              <option value="KL6">KL6 (15M - 25M)</option>
+              <option value="KL7">KL7 (&gt;25M Celeb)</option>
             </select>
           </div>
 
           <div>
             <label className="text-3xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">
-              3. Segment Creator:
+              3. Segment:
             </label>
             <select
               value={selectedSegment}
@@ -407,27 +447,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
 
           <div>
             <label className="text-3xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">
-              4. Ngành hàng:
-            </label>
-            <select
-              value={selectedKocCategory}
-              onChange={(e) => setSelectedKocCategory(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 font-medium focus:outline-none focus:border-slate-800"
-            >
-              <option value="ALL">Tất cả ngành hàng</option>
-              <option value="Personal care">Personal Care (Mỹ phẩm/Skin)</option>
-              <option value="Mom and baby">Mom &amp; Baby (Mẹ &amp; bé)</option>
-              <option value="Reviewer">Reviewer chuyên sâu</option>
-              <option value="Lifestyle">Lifestyle</option>
-              <option value="Fashion">Fashion (Thời trang)</option>
-              <option value="ELHA">ELHA (Gia dụng/Công nghệ)</option>
-              <option value="F&B">F&amp;B (Thực phẩm/Ăn uống)</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="text-3xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">
-              5. Tệp kênh (25 tệp):
+              4. Tệp kênh (25 tệp):
             </label>
             <select
               value={selectedTepKenh}
@@ -436,13 +456,44 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
             >
               <option value="ALL">Tất cả tệp kênh</option>
               <option value="Review Nữ">Review Nữ</option>
-              <option value="Review Nam">Review Nam</option>
               <option value="Mẹ bé (bầu)">Mẹ bé (bầu)</option>
-              <option value="Mẹ bé (bé)">Mẹ bé (bé)</option>
               <option value="Beauty">Beauty / Làm đẹp</option>
-              <option value="Gia đình">Gia đình</option>
-              <option value="Unboxing">Unboxing</option>
               <option value="Bác sỹ/chuyên gia">Bác sỹ / chuyên gia</option>
+              <option value="Gia đình">Gia đình</option>
+              <option value="Cooking">Cooking / Nấu ăn</option>
+              <option value="Couple">Couple</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="text-3xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">
+              5. Nhãn Hàng:
+            </label>
+            <select
+              value={selectedBrand}
+              onChange={(e) => setSelectedBrand(e.target.value)}
+              className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 font-medium focus:outline-none focus:border-slate-800"
+            >
+              <option value="ALL">Tất cả nhãn hàng</option>
+              {availableBrands.map((b) => (
+                <option key={b} value={b}>{b}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="text-3xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">
+              6. PIC Booking:
+            </label>
+            <select
+              value={selectedPic}
+              onChange={(e) => setSelectedPic(e.target.value)}
+              className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 font-medium focus:outline-none focus:border-slate-800"
+            >
+              <option value="ALL">Tất cả PIC phụ trách</option>
+              {availablePics.map((p) => (
+                <option key={p} value={p}>{p}</option>
+              ))}
             </select>
           </div>
 
@@ -465,8 +516,8 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
           </div>
         </div>
 
-        {/* Filter Summary */}
-        <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-2xs text-slate-500">
+        {/* Filter Summary & Pagination Size Selector */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-2 border-t border-slate-100 text-2xs text-slate-500">
           <div className="flex items-center gap-2">
             <span>
               Tìm thấy <strong className="text-slate-900 font-bold">{filteredKocs.length}</strong> / {totalKocs} KOC trong danh bạ
@@ -476,6 +527,24 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
                 Đang lọc kết quả
               </span>
             )}
+            <span className="text-slate-300">|</span>
+            <span>
+              Trang <strong className="text-slate-800">{currentPage}</strong> / {totalPages}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-slate-500 text-2xs">Hiển thị:</span>
+            <select
+              value={pageSize}
+              onChange={(e) => setPageSize(Number(e.target.value))}
+              className="bg-slate-50 border border-slate-200 rounded px-2 py-0.5 text-2xs font-semibold text-slate-700 focus:outline-none"
+            >
+              <option value={10}>10 KOC / trang</option>
+              <option value={20}>20 KOC / trang</option>
+              <option value={50}>50 KOC / trang</option>
+              <option value={100}>100 KOC / trang</option>
+            </select>
           </div>
         </div>
       </div>
@@ -489,13 +558,14 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
                 <th className="py-3 px-4">KOC / tên kênh</th>
                 <th className="py-3 px-3">Phân Loại (KL &amp; Segment)</th>
                 <th className="py-3 px-3">Tệp Kênh &amp; Ngành</th>
+                <th className="py-3 px-3">Nhãn Hàng &amp; PIC</th>
                 <th className="py-3 px-4">Định danh pháp lý (CCCD / ĐKKD)</th>
                 <th className="py-3 px-3">Tài khoản chi trả</th>
                 <th className="py-3 px-3 text-right">Thao Tác</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-slate-800">
-              {filteredKocs.map((koc) => {
+              {paginatedKocs.map((koc) => {
                 const hasCccd = Boolean(koc.isOcrVerified || (koc.cccd && koc.cccd !== 'Chưa có' && koc.cccd.length >= 9));
                 const isCompanyOcr = koc.ocrDocumentType === 'BUSINESS_LICENSE' || koc.ocrDocumentType === 'BUSINESS_HOUSEHOLD';
 
@@ -513,7 +583,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
                             {koc.stageName}
                           </span>
                           <span className="text-2xs text-slate-500 block truncate leading-tight mt-0.5">
-                            {koc.realName ? `${koc.realName} • ` : ''}{koc.channelId}
+                            {koc.realName ? `${koc.realName} • ` : ''}@{koc.channelId}
                           </span>
                           <span className="text-2xs text-slate-400 block mt-0.5">
                             {(koc.followers / 1000).toFixed(0)}k followers • {formatVndShort(koc.rateCardVideo)}/clip
@@ -546,6 +616,18 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
                       </div>
                     </td>
 
+                    {/* Brand & PIC Phụ Trách */}
+                    <td className="py-3 px-3">
+                      <div className="space-y-1">
+                        <span className="inline-block px-2 py-0.5 rounded font-semibold text-2xs bg-emerald-50 text-emerald-800 border border-emerald-200">
+                          {koc.brandName || 'Chung'}
+                        </span>
+                        <span className="block text-2xs text-slate-600 truncate">
+                          PIC: <strong className="text-slate-800">{koc.bookingPic || 'Chưa gán'}</strong>
+                        </span>
+                      </div>
+                    </td>
+
                     {/* Legal Status & OCR Verified */}
                     <td className="py-3 px-4">
                       {hasCccd ? (
@@ -566,7 +648,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
                             </span>
                             <button
                               onClick={() => handleCopy(koc.cccd, koc.id)}
-                              className="text-slate-400 hover:text-blue-600 p-0.5 rounded"
+                              className="text-slate-400 hover:text-blue-600 p-0.5 rounded cursor-pointer"
                               title="Sao chép số định danh"
                             >
                               {copiedKey === koc.id ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
@@ -587,7 +669,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
                               setOcrTargetKoc(koc);
                               setIsOcrModalOpen(true);
                             }}
-                            className="px-2 py-0.5 rounded text-2xs font-semibold bg-blue-600 hover:bg-blue-700 text-white transition flex items-center gap-1 shadow-2xs"
+                            className="px-2 py-0.5 rounded text-2xs font-semibold bg-blue-600 hover:bg-blue-700 text-white transition flex items-center gap-1 shadow-2xs cursor-pointer"
                             title="Quét CCCD bằng OCR cho KOC này"
                           >
                             <Camera className="w-3 h-3" />
@@ -615,7 +697,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
                         {/* Quick View Profile */}
                         <button
                           onClick={() => setInspectedKoc(koc)}
-                          className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                          className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition cursor-pointer"
                           title="Xem toàn bộ hồ sơ 360 độ"
                         >
                           <Eye className="w-4 h-4" />
@@ -627,7 +709,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
                             setOcrTargetKoc(koc);
                             setIsOcrModalOpen(true);
                           }}
-                          className="p-1.5 text-slate-400 hover:text-cyan-600 hover:bg-cyan-50 rounded-lg transition"
+                          className="p-1.5 text-slate-400 hover:text-cyan-600 hover:bg-cyan-50 rounded-lg transition cursor-pointer"
                           title="Bóc tách OCR CCCD / ĐKKD để cập nhật hồ sơ"
                         >
                           <Sparkles className="w-4 h-4 text-cyan-600" />
@@ -636,7 +718,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
                         {/* Quick Book */}
                         <button
                           onClick={() => onOpenQuickBookWithKoc(koc)}
-                          className="px-2.5 py-1 bg-blue-50 hover:bg-blue-600 text-blue-700 hover:text-white rounded-lg text-xs font-semibold transition"
+                          className="px-2.5 py-1 bg-blue-50 hover:bg-blue-600 text-blue-700 hover:text-white rounded-lg text-xs font-semibold transition cursor-pointer"
                         >
                           Lên Deal
                         </button>
@@ -650,10 +732,60 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
           </table>
         </div>
 
-        {filteredKocs.length === 0 && (
+        {filteredKocs.length === 0 ? (
           <div className="p-12 text-center text-slate-400 space-y-2">
             <Users className="w-8 h-8 mx-auto text-slate-300" />
             <p className="text-xs font-medium">Không tìm thấy KOC nào khớp với điều kiện lọc.</p>
+          </div>
+        ) : (
+          /* Pagination Controls Footer */
+          <div className="px-4 py-3 bg-slate-50/70 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+            <div className="text-slate-500 text-2xs">
+              Hiển thị <strong className="text-slate-800">{(currentPage - 1) * pageSize + 1} - {Math.min(currentPage * pageSize, filteredKocs.length)}</strong> trong tổng số <strong className="text-slate-800">{filteredKocs.length}</strong> KOC
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="px-2.5 py-1 rounded-lg border border-slate-200 bg-white text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-100 font-medium text-xs transition"
+              >
+                Trang trước
+              </button>
+
+              <div className="flex items-center gap-1 px-1">
+                {Array.from({ length: Math.min(5, totalPages) }, (_, idx) => {
+                  let pageNum = idx + 1;
+                  if (totalPages > 5 && currentPage > 3) {
+                    pageNum = Math.min(currentPage - 2 + idx, totalPages - 4 + idx);
+                  }
+                  return (
+                    <button
+                      key={pageNum}
+                      type="button"
+                      onClick={() => setCurrentPage(pageNum)}
+                      className={`w-7 h-7 rounded-lg text-xs font-semibold transition ${
+                        currentPage === pageNum
+                          ? 'bg-slate-900 text-white shadow-xs'
+                          : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="px-2.5 py-1 rounded-lg border border-slate-200 bg-white text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-100 font-medium text-xs transition"
+              >
+                Trang sau
+              </button>
+            </div>
           </div>
         )}
       </div>

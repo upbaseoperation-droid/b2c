@@ -61,6 +61,7 @@ import {
 export default function App() {
   const [currentUser, setCurrentUser] = useState<UserProfile>(USERS[0]); // Default: Nguyễn Trọng Chỉnh (BOD/Admin)
   const [activeTab, setActiveTab] = useState<TabKey>('dashboard-bi');
+  const [selectedBrandContext, setSelectedBrandContext] = useState<string>('ALL');
 
   // Đảm bảo activeTab luôn hợp lệ theo phân quyền của vai trò hiện tại
   useEffect(() => {
@@ -73,6 +74,12 @@ export default function App() {
 
   const handleUserChange = (newUser: UserProfile) => {
     setCurrentUser(newUser);
+    if (newUser.role === 'BRAND_PARTNER') {
+      const userBrand = newUser.assignedBrands?.[0] || newUser.linkedEntityName || 'Kutieskin';
+      setSelectedBrandContext(userBrand);
+    } else {
+      setSelectedBrandContext('ALL');
+    }
     const allowed = getAllowedTabsForRole(newUser.role);
     if (!allowed.includes(activeTab)) {
       const defaultTab = getDefaultLandingTabForRole(newUser.role);
@@ -548,6 +555,8 @@ export default function App() {
         <TopHeader
           currentUser={currentUser}
           onUserChange={handleUserChange}
+          selectedBrand={selectedBrandContext}
+          onBrandChange={setSelectedBrandContext}
           onOpenQuickBook={() => {
             setPreselectedKoc(null);
             setIsQuickBookOpen(true);
@@ -757,6 +766,7 @@ export default function App() {
               deals={deals}
               kocs={kocs}
               currentUser={currentUser}
+              selectedBrand={selectedBrandContext}
               onOpenQuickBookWithKoc={handleOpenQuickBookWithKoc}
               onOpenQuickBook={() => {
                 setPreselectedKoc(null);
@@ -779,12 +789,9 @@ export default function App() {
           )}
 
           {activeTab === 'koc-master' && (
-            <MasterDataHubView
-              initialSubTab="kocs"
-              currentUser={currentUser}
-              brands={brands}
+            <KocMasterDataView
               kocs={kocs}
-              onNotify={showToast}
+              currentUser={currentUser}
               onOpenQuickBookWithKoc={handleOpenQuickBookWithKoc}
               onKocCreated={handleKocCreated}
               onKocUpdated={handleKocUpdated}
@@ -876,6 +883,7 @@ export default function App() {
               currentUser={currentUser}
               deals={deals}
               brands={brands}
+              selectedBrand={selectedBrandContext}
               onNotify={showToast}
               onNavigateToCtvHub={['ADMIN', 'MANAGER'].includes(currentUser.role) ? () => setActiveTab('self-channel-hub') : undefined}
               onNavigateToKocHub={['ADMIN', 'MANAGER'].includes(currentUser.role) ? () => setActiveTab('koc-hub') : undefined}
