@@ -1,6 +1,7 @@
 // ==============================================================================
 // UPBASE B2C MARKETING OPERATIONS HUB — LARK OAUTH 2.0 / SSO SERVICE
 // ==============================================================================
+import crypto from 'crypto';
 import { UserProfile, UserRole } from './types';
 import { USERS } from './mockData';
 
@@ -182,6 +183,28 @@ export function resolveUserProfile(larkUser: LarkUserRaw): UserProfile {
   };
 }
 
+
+// Khóa bí mật dùng để ký HMAC token phiên làm việc
+const AUTH_SECRET = process.env.AUTH_SECRET || process.env.SESSION_SECRET || 'upbase_b2c_ops_hub_super_secret_auth_key_2026';
+
+function signData(data: string): string {
+  return crypto.createHmac('sha256', AUTH_SECRET).update(data).digest('base64url');
+}
+
+function verifySignature(data: string, signature: string): boolean {
+  try {
+    const expected = signData(data);
+    const expectedBuf = Buffer.from(expected);
+    const sigBuf = Buffer.from(signature);
+    if (expectedBuf.length !== sigBuf.length) return false;
+    return crypto.timingSafeEqual(expectedBuf, sigBuf);
+  } catch {
+    return false;
+  }
+}
+
+export { sanitizeReturnTo } from './urlUtils';
+
 function getInitials(name: string): string {
   const parts = name.trim().split(/\s+/);
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
@@ -189,7 +212,8 @@ function getInitials(name: string): string {
 }
 
 /**
- * Mã hóa UserProfile thành token lưu cookie (Base64 Safe Token)
+ * Mã hóa UserProfile thành token lưu cookie với chữ ký số HMAC-SHA256
+ * Cấu trúc: <base64url(payload)>.<signature>
  */
 export function encodeSessionToken(user: UserProfile): string {
   const payload = {
@@ -197,19 +221,47 @@ export function encodeSessionToken(user: UserProfile): string {
     issuedAt: Date.now(),
     expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000 // 7 ngày
   };
-  return Buffer.from(JSON.stringify(payload)).toString('base64url');
+  const data = Buffer.from(JSON.stringify(payload)).toString('base64url');
+  const signature = signData(data);
+  return `${data}.${signature}`;
 }
 
 /**
- * Giải mã token từ cookie
+ * Giải mã và xác minh tính toàn vẹn của token từ cookie
+ * Bắt buộc kiểm tra chữ ký số HMAC, ngăn chặn tuyệt đối giả mạo session
  */
 export function decodeSessionToken(token: string): UserProfile | null {
   try {
-    const raw = Buffer.from(token, 'base64url').toString('utf8');
+    if (!token || typeof token !== 'string') return null;
+    const parts = token.split('.');
+    if (parts.length !== 2) {
+      // Từ chối token không có chữ ký số HMAC
+      return null;
+    }
+    const [data, signature] = parts;
+    if (!verifySignature(data, signature)) {
+      // Chữ ký sai hoặc bị can thiệp
+      return null;
+    }
+    const raw = Buffer.from(data, 'base64url').toString('utf8');
     const parsed = JSON.parse(raw);
     if (!parsed.user || !parsed.expiresAt) return null;
     if (Date.now() > parsed.expiresAt) return null;
     return parsed.user as UserProfile;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Kiểm tra xác thực phiên từ NextRequest trong các API route
+ * Trả về UserProfile nếu hợp lệ và chữ ký HMAC đúng, ngược lại trả về null
+ */
+export function getAuthenticatedUser(request: any): UserProfile | null {
+  try {
+    const token = request.cookies?.get?.(SESSION_COOKIE_NAME)?.value;
+    if (!token) return null;
+    return decodeSessionToken(token);
   } catch {
     return null;
   }

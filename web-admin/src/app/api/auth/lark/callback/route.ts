@@ -3,7 +3,8 @@ import {
   exchangeLarkCodeForUser, 
   resolveUserProfile, 
   encodeSessionToken, 
-  SESSION_COOKIE_NAME 
+  SESSION_COOKIE_NAME,
+  sanitizeReturnTo
 } from '@/lib/larkAuth';
 
 export const dynamic = 'force-dynamic';
@@ -29,7 +30,7 @@ export async function GET(request: NextRequest) {
     try {
       const stateObj = JSON.parse(Buffer.from(stateRaw, 'base64url').toString('utf8'));
       if (stateObj.returnTo) {
-        returnTo = stateObj.returnTo;
+        returnTo = sanitizeReturnTo(stateObj.returnTo);
       }
       const savedCsrf = request.cookies.get('lark_oauth_state')?.value;
       if (savedCsrf && stateObj.csrf && savedCsrf !== stateObj.csrf) {
@@ -51,7 +52,7 @@ export async function GET(request: NextRequest) {
     const sessionToken = encodeSessionToken(userProfile);
 
     // 4. Chuyển hướng về trang đích và set cookie session
-    const destinationUrl = new URL(returnTo.startsWith('/') ? returnTo : '/', appBaseUrl);
+    const destinationUrl = new URL(sanitizeReturnTo(returnTo), appBaseUrl);
     const response = NextResponse.redirect(destinationUrl);
 
     // Set cookie bảo mật cho phiên đăng nhập

@@ -84,18 +84,20 @@ import {
 } from '../lib/types';
 
 export default function App() {
-  const [currentUser, setCurrentUser] = useState<UserProfile>(USERS[0]); // Default: Nguyễn Trọng Chỉnh (BOD/Admin)
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
+  const [isLoadingAuth, setIsLoadingAuth] = useState<boolean>(true);
   const [activeTab, setActiveTab] = useState<TabKey>('dashboard-bi');
   const [selectedBrandContext, setSelectedBrandContext] = useState<string>('ALL');
 
   // Đảm bảo activeTab luôn hợp lệ theo phân quyền của vai trò hiện tại
   useEffect(() => {
+    if (!currentUser) return;
     const allowed = getAllowedTabsForRole(currentUser.role);
     if (!allowed.includes(activeTab)) {
       const defaultTab = getDefaultLandingTabForRole(currentUser.role);
       setActiveTab(defaultTab);
     }
-  }, [currentUser]);
+  }, [currentUser, activeTab]);
 
   const handleUserChange = (newUser: UserProfile) => {
     setCurrentUser(newUser);
@@ -115,7 +117,7 @@ export default function App() {
     }
   };
 
-  // Load Lark Auth session on mount
+  // Load Lark Auth session on mount with strict redirect
   useEffect(() => {
     async function loadUser() {
       try {
@@ -124,10 +126,15 @@ export default function App() {
           const data = await res.json();
           if (data.authenticated && data.user) {
             handleUserChange(data.user);
+            setIsLoadingAuth(false);
+            return;
           }
         }
+        // Phiên không hợp lệ hoặc chưa đăng nhập -> Chuyển hướng về trang đăng nhập
+        window.location.href = '/login';
       } catch (err) {
         console.warn('Could not fetch user session:', err);
+        window.location.href = '/login';
       }
     }
     loadUser();
@@ -591,6 +598,15 @@ export default function App() {
     'ads-report': { title: 'Báo cáo Ads TikTok & Mapping Tuần', subtitle: 'Tự động đọc file báo cáo xuất từ TikTok Shop Seller, đối soát mã Spark Ads và đồng bộ ROAS thực tế' },
     'dashboard-bi': { title: 'Dashboard Điều Hành & Báo Cáo Tổng Hợp', subtitle: 'Bức tranh đa chiều về GMV toàn sàn, PnL vận hành, ROAS chiến dịch và đối soát tài chính 3 bên' },
   };
+
+  if (isLoadingAuth || !currentUser) {
+    return (
+      <div className="min-h-screen bg-canvas flex flex-col items-center justify-center space-y-3">
+        <div className="w-8 h-8 border-2 border-slate-300 border-t-slate-800 rounded-full animate-spin"></div>
+        <p className="text-xs text-slate-500 font-medium">Đang xác minh phiên làm việc UpBase...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen bg-canvas text-ink">

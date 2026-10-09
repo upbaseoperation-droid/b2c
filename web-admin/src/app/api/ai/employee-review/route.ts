@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AiEmployeeReviewRequest, AiEmployeeReviewResponse } from '@/lib/types';
+import { getAuthenticatedUser } from '@/lib/larkAuth';
 
 // =========================================================================
 // AI EMPLOYEE REVIEW ROUTE HANDLER (API ROUTE)
@@ -7,6 +8,15 @@ import { AiEmployeeReviewRequest, AiEmployeeReviewResponse } from '@/lib/types';
 // =========================================================================
 
 export async function POST(req: NextRequest) {
+  // 1. Kiểm tra xác thực phiên đăng nhập bắt buộc
+  const user = getAuthenticatedUser(req);
+  if (!user) {
+    return NextResponse.json(
+      { error: 'Unauthorized: Vui lòng đăng nhập để sử dụng tính năng đánh giá nhân sự AI.' },
+      { status: 401 }
+    );
+  }
+
   try {
     const body: AiEmployeeReviewRequest = await req.json();
 

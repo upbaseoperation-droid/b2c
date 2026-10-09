@@ -6,6 +6,7 @@ import { AlertTriangle, ArrowRight, Building, Users, Video, KeyRound, Check, Mai
 import { USERS } from '@/lib/mockData';
 import { INITIAL_THIRD_PARTY_ACCOUNTS } from '@/lib/thirdPartyAccessData';
 import { BrandLogo } from '@/components/ui';
+import { sanitizeReturnTo } from '@/lib/urlUtils';
 
 const ROLE_LABEL: Record<string, string> = {
   ADMIN: 'Quản trị (BOD)',
@@ -64,7 +65,7 @@ function LoginContent() {
   const searchParams = useSearchParams();
   const errorParam = searchParams.get('error');
   const messageParam = searchParams.get('message');
-  const returnTo = searchParams.get('returnTo') || '/';
+  const returnTo = sanitizeReturnTo(searchParams.get('returnTo'));
 
   const [activePortalTab, setActivePortalTab] = useState<'INTERNAL' | 'GMAIL_PARTNER'>('INTERNAL');
   const [isLoading, setIsLoading] = useState(false);

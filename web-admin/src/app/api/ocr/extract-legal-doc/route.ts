@@ -1,9 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { processLegalOcr } from '@/lib/legalOcrService';
+import { getAuthenticatedUser } from '@/lib/larkAuth';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
+  // 1. Kiểm tra xác thực phiên đăng nhập bắt buộc
+  const user = getAuthenticatedUser(request);
+  if (!user) {
+    return NextResponse.json(
+      { success: false, error: 'Unauthorized: Vui lòng đăng nhập để sử dụng tính năng bóc tách OCR tài liệu pháp lý.' },
+      { status: 401 }
+    );
+  }
+
   try {
     const body = await request.json();
 

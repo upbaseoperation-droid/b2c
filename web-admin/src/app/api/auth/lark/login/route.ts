@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getLarkConfig, buildLarkAuthUrl } from '@/lib/larkAuth';
+import { getLarkConfig, buildLarkAuthUrl, sanitizeReturnTo } from '@/lib/larkAuth';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   const config = getLarkConfig();
   const searchParams = request.nextUrl.searchParams;
-  const returnTo = searchParams.get('returnTo') || '/';
+  const returnTo = sanitizeReturnTo(searchParams.get('returnTo'));
 
   if (!config.isConfigured) {
     // Nếu chưa cấu hình App ID & App Secret trong .env, chuyển hướng về trang login với cảnh báo

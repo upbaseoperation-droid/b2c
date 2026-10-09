@@ -23,45 +23,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Nếu không tìm thấy trong danh sách đã cấp quyền, tạo tài khoản Guest Brand hoặc báo lỗi
+    // Bắt buộc email/accountId phải nằm trong danh sách đối tác đã được cấp quyền trước
     if (!targetAccount) {
-      // Cho phép test linh hoạt với bất kỳ email gmail nào nếu người dùng gõ
-      if (email && email.toLowerCase().includes('@')) {
-        const isKoc = email.toLowerCase().includes('koc') || email.toLowerCase().includes('creator');
-        const isCtv = email.toLowerCase().includes('ctv');
-        const partnerType: 'BRAND' | 'KOC' | 'CTV' = isKoc ? 'KOC' : isCtv ? 'CTV' : 'BRAND';
-
-        targetAccount = {
-          id: `tpa-auto-${Date.now()}`,
-          gmail: email.trim().toLowerCase(),
-          displayName: email.split('@')[0],
-          partnerType,
-          linkedEntityId: isKoc ? 'koc-1' : isCtv ? 'ctv-hamy' : 'brand-kutieskin',
-          linkedEntityName: isKoc ? 'Mega Uri Review' : isCtv ? 'Hà My Content' : 'Kutieskin Mama & Baby',
-          permissions: {
-            canApproveDeals: true,
-            canReviewScripts: true,
-            canViewGmvAndRoas: true,
-            canViewFinancials: true,
-            canSubmitVideos: true,
-            canProvideSparkAds: true,
-            canClaimSamples: true
-          },
-          status: 'ACTIVE' as const,
-          lastLoginAt: new Date().toISOString().substring(0, 16).replace('T', ' '),
-          loginCount: 1,
-          createdAt: new Date().toISOString().substring(0, 10),
-          createdBy: 'Gmail OAuth / Self SSO'
-        };
-      } else {
-        return NextResponse.json(
-          { 
-            success: false, 
-            error: 'Email Gmail chưa được cấp quyền trong hệ thống. Vui lòng liên hệ Admin / Trưởng phòng UpBase để được cấp quyền truy cập.' 
-          },
-          { status: 403 }
-        );
-      }
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'Email Gmail chưa được cấp quyền trong hệ thống. Vui lòng liên hệ Admin / Trưởng phòng UpBase để được cấp quyền truy cập.' 
+        },
+        { status: 403 }
+      );
     }
 
     if (targetAccount.status === 'SUSPENDED') {
