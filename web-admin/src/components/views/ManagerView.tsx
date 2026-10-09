@@ -35,7 +35,8 @@ import {
   Send,
   CheckCircle,
   Clock,
-  Calculator
+  Calculator,
+  GitFork
 } from 'lucide-react';
 import { 
   BookingDealItem, 
@@ -104,6 +105,7 @@ import { Button, Segmented, Tabs } from '../ui';
 import { EmployeePlanInspectorModal } from '../EmployeePlanInspectorModal';
 import { AiStaffReviewModal } from '../AiStaffReviewModal';
 import { ManagerDelegationHub } from './ManagerDelegationHub';
+import { MasterDataMindmapView } from './MasterDataMindmapView';
 
 interface ManagerViewProps {
   deals: BookingDealItem[];
@@ -149,7 +151,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
   onAddTask: externalOnAddTask
 }) => {
   const isManager = currentUser ? currentUser.role === 'MANAGER' : true;
-  const [activeTab, setActiveTab] = useState<'DELEGATION_HUB' | 'CONTROL_TOWER' | 'GROWTH_BREAKDOWN' | 'ALLOCATION' | 'MONTHLY_PLAN' | 'STAFF_AIR_PROGRESS' | 'STAFF_REVENUE_GMV' | 'PLAN_GAP_466M' | 'DEEP_ANALYTICS' | 'SLA_MANAGEMENT'>('DELEGATION_HUB');
+  const [activeTab, setActiveTab] = useState<'DELEGATION_HUB' | 'MINDMAP' | 'CONTROL_TOWER' | 'GROWTH_BREAKDOWN' | 'ALLOCATION' | 'MONTHLY_PLAN' | 'STAFF_AIR_PROGRESS' | 'STAFF_REVENUE_GMV' | 'PLAN_GAP_466M' | 'DEEP_ANALYTICS' | 'SLA_MANAGEMENT'>('DELEGATION_HUB');
   
   // State phân quyền Brand, Gian Hàng, Giao Việc của Trưởng Phòng
   const [internalBrands, setInternalBrands] = useState<BrandDetail[]>(externalBrands || INITIAL_BRANDS);
@@ -581,6 +583,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
           onChange={setActiveTab}
           items={[
             { key: 'DELEGATION_HUB', label: 'Phân bổ & giao việc' },
+            { key: 'MINDMAP', label: 'Sơ đồ dữ liệu' },
             { key: 'CONTROL_TOWER', label: 'Giám sát' },
             { key: 'GROWTH_BREAKDOWN', label: 'KOC từ Growth' },
             { key: 'ALLOCATION', label: 'Phân bổ kế hoạch' },
@@ -593,6 +596,53 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
           ]}
         />
       </div>
+
+      {/* ========================================================================= */}
+      {/* TAB MỚI: SƠ ĐỒ DỮ LIỆU MINDMAP (MASTER DATA MINDMAP VIEW)                */}
+      {/* ========================================================================= */}
+      {activeTab === 'MINDMAP' && (
+        <div className="space-y-4 animate-in fade-in duration-150">
+          <div className="bg-gradient-to-r from-blue-900 to-indigo-900 text-white p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-blue-500/20 border border-blue-400/30 flex items-center justify-center text-blue-300 shrink-0">
+                <GitFork className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="text-sm font-semibold flex items-center gap-2">
+                  Sơ Đồ Dữ Liệu Mindmap Cây Phân Cấp Gian Hàng & Nhãn Hàng
+                  <span className="text-2xs font-normal px-2 py-0.5 rounded-full bg-blue-500/30 border border-blue-400/40 text-blue-200">
+                    4 Tầng Trực Quan
+                  </span>
+                </h2>
+                <p className="text-xs text-blue-200 mt-0.5">
+                  Trực quan hóa cấu trúc: Nhãn hàng (Brand) → Gian hàng sàn (TikTok Shop, Shopee, Lazada) → Nhân sự PIC phụ trách (Chính & Hỗ trợ) → Danh mục Hero SKU & Doanh thu.
+                </p>
+              </div>
+            </div>
+            <div className="text-2xs text-slate-300 bg-white/10 px-3 py-1.5 rounded-lg border border-white/10 shrink-0">
+              Nhấn vào từng node để mở rộng / thu gọn nhánh
+            </div>
+          </div>
+
+          <MasterDataMindmapView
+            currentUser={currentUser || {
+              id: 'user-van-ngoc',
+              name: 'Vân Ngọc',
+              email: 'vanngoc@upbase.vn',
+              role: 'MANAGER',
+              roleTitle: 'Operations & Division Head',
+              avatar: 'VN'
+            }}
+            brands={currentBrands}
+            storePortfolios={currentStores}
+            onNotify={(msg) => {
+              if (onPingStaffNotification) {
+                onPingStaffNotification('Trưởng Phòng', msg);
+              }
+            }}
+          />
+        </div>
+      )}
 
       {/* ========================================================================= */}
       {/* TAB MỚI: TRUNG TÂM PHÂN BỔ & ĐIỀU PHỐI (MANAGER DELEGATION HUB)           */}
