@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { CheckCircle2, AlertCircle, XCircle, Info, X } from 'lucide-react';
+import { CheckCircle2, AlertCircle, XCircle, Info, X, ShieldAlert } from 'lucide-react';
 import { Sidebar, TabKey } from '../components/Sidebar';
 import { TopHeader } from '../components/TopHeader';
 import { QuickBookModal } from '../components/QuickBookModal';
@@ -32,6 +32,7 @@ import { ExecutiveDashboardReportsView } from '../components/views/ExecutiveDash
 import { ContentAngleSetupView } from '../components/views/ContentAngleSetupView';
 import { CentralizedRbacHubView } from '../components/views/CentralizedRbacHubView';
 import { isThirdPartyPartner, getPartnerLandingTab } from '../lib/thirdPartyAccessData';
+import { isTabAllowedForRole, getAllowedTabsForRole, getDefaultLandingTabForRole } from '../lib/rbacData';
 
 import { 
   USERS, 
@@ -58,8 +59,29 @@ import {
 } from '../lib/types';
 
 export default function App() {
-  const [currentUser, setCurrentUser] = useState<UserProfile>(USERS[0]); // Default Vân Ngọc (Trưởng phòng)
+  const [currentUser, setCurrentUser] = useState<UserProfile>(USERS[0]); // Default: Nguyễn Trọng Chỉnh (BOD/Admin)
   const [activeTab, setActiveTab] = useState<TabKey>('dashboard-bi');
+
+  // Đảm bảo activeTab luôn hợp lệ theo phân quyền của vai trò hiện tại
+  useEffect(() => {
+    const allowed = getAllowedTabsForRole(currentUser.role);
+    if (!allowed.includes(activeTab)) {
+      const defaultTab = getDefaultLandingTabForRole(currentUser.role);
+      setActiveTab(defaultTab);
+    }
+  }, [currentUser]);
+
+  const handleUserChange = (newUser: UserProfile) => {
+    setCurrentUser(newUser);
+    const allowed = getAllowedTabsForRole(newUser.role);
+    if (!allowed.includes(activeTab)) {
+      const defaultTab = getDefaultLandingTabForRole(newUser.role);
+      setActiveTab(defaultTab);
+      showToast(`Chuyển vai trò: ${newUser.name} (${newUser.roleTitle})`, 'info');
+    } else {
+      showToast(`Đang xem với vai trò: ${newUser.name} (${newUser.roleTitle})`, 'info');
+    }
+  };
 
   // Load Lark Auth session on mount
   useEffect(() => {
@@ -69,7 +91,7 @@ export default function App() {
         if (res.ok) {
           const data = await res.json();
           if (data.authenticated && data.user) {
-            setCurrentUser(data.user);
+            handleUserChange(data.user);
           }
         }
       } catch (err) {
@@ -525,7 +547,7 @@ export default function App() {
       <div className="flex-1 flex flex-col min-w-0 lg:pl-60">
         <TopHeader
           currentUser={currentUser}
-          onUserChange={setCurrentUser}
+          onUserChange={handleUserChange}
           onOpenQuickBook={() => {
             setPreselectedKoc(null);
             setIsQuickBookOpen(true);
@@ -554,7 +576,7 @@ export default function App() {
             </div>
             <button
               onClick={() => {
-                setCurrentUser(USERS[0]);
+                handleUserChange(USERS[0]);
                 setActiveTab('partner-access');
                 showToast('Đã quay lại tài khoản Quản trị UpBase', 'info');
               }}
@@ -566,6 +588,31 @@ export default function App() {
         )}
 
         <main className="px-4 py-6 sm:px-6 lg:px-8 w-full max-w-[1600px] space-y-6">
+          {!isTabAllowedForRole(currentUser.role, activeTab) ? (
+            <div className="p-8 sm:p-12 rounded-2xl bg-surface border border-rose-200 shadow-sm text-center max-w-lg mx-auto my-12 space-y-4 animate-in fade-in">
+              <div className="w-14 h-14 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mx-auto border border-rose-100 shadow-2xs">
+                <ShieldAlert className="w-7 h-7" />
+              </div>
+              <div className="space-y-1.5">
+                <h2 className="text-lg font-bold text-ink">Không Có Quyền Truy Cập Màn Hình Này</h2>
+                <p className="text-xs text-ink-2 leading-relaxed">
+                  Tài khoản hiện tại <strong className="text-ink">{currentUser.name}</strong> ({currentUser.roleTitle}) không có thẩm quyền truy cập màn hình <strong className="text-rose-600">{titles[activeTab]?.title || activeTab}</strong>.
+                </p>
+                <div className="p-2.5 rounded-lg bg-sunken border border-line text-2xs text-ink-3">
+                  Quy định bảo mật theo <strong>Ma Trận Phân Quyền RBAC UpBase</strong>
+                </div>
+              </div>
+              <div className="pt-2">
+                <button
+                  onClick={() => setActiveTab(getDefaultLandingTabForRole(currentUser.role))}
+                  className="px-4 py-2 bg-primary hover:bg-primary-hover text-white text-xs font-semibold rounded-xl transition shadow-xs cursor-pointer"
+                >
+                  Quay về màn hình chính ({titles[getDefaultLandingTabForRole(currentUser.role)]?.title || 'Trang chủ'})
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
           {activeTab === 'cockpit' && (
             <CockpitView
               currentUser={currentUser}
@@ -646,7 +693,7 @@ export default function App() {
               brands={brands}
               onNotify={showToast}
               onOpenPushProducts={() => setActiveTab('push-products')}
-              onNavigateToBrand={() => setActiveTab('campaigns')}
+              onNavigateToBrand={['ADMIN', 'MANAGER'].includes(currentUser.role) ? () => setActiveTab('campaigns') : undefined}
             />
           )}
 
@@ -697,14 +744,10 @@ export default function App() {
               kocs={kocs}
               onNotify={showToast}
               onImpersonateUser={(user) => {
-                setCurrentUser(user);
-                showToast(`Đã đóng vai nhân sự ${user.name} (${user.roleTitle})`, 'info');
+                handleUserChange(user);
               }}
               onImpersonatePartner={(partnerUser) => {
-                setCurrentUser(partnerUser);
-                const targetTab = getPartnerLandingTab(partnerUser);
-                setActiveTab(targetTab as any);
-                showToast(`Đã đăng nhập thử với tư cách ${partnerUser.name} (${partnerUser.roleTitle})`, 'info');
+                handleUserChange(partnerUser);
               }}
             />
           )}
@@ -834,8 +877,8 @@ export default function App() {
               deals={deals}
               brands={brands}
               onNotify={showToast}
-              onNavigateToCtvHub={() => setActiveTab('self-channel-hub')}
-              onNavigateToKocHub={() => setActiveTab('koc-hub')}
+              onNavigateToCtvHub={['ADMIN', 'MANAGER'].includes(currentUser.role) ? () => setActiveTab('self-channel-hub') : undefined}
+              onNavigateToKocHub={['ADMIN', 'MANAGER'].includes(currentUser.role) ? () => setActiveTab('koc-hub') : undefined}
               onBrandApproveDeal={(kocOrDeal) => {
                 setDeals(prev => prev.map(d => 
                   (d.kocStageName.toLowerCase().includes(kocOrDeal.toLowerCase()) || d.dealCode === kocOrDeal)
@@ -860,8 +903,8 @@ export default function App() {
               initialKocs={kocs}
               initialDeals={deals}
               onNotify={showToast}
-              onNavigateToBrandHub={() => setActiveTab('brand-hub')}
-              onNavigateToCtvHub={() => setActiveTab('self-channel-hub')}
+              onNavigateToBrandHub={['ADMIN', 'MANAGER'].includes(currentUser.role) ? () => setActiveTab('brand-hub') : undefined}
+              onNavigateToCtvHub={['ADMIN', 'MANAGER'].includes(currentUser.role) ? () => setActiveTab('self-channel-hub') : undefined}
             />
           )}
 
@@ -874,6 +917,8 @@ export default function App() {
               onUpdateKocsWithAdsData={(updated) => setKocs(updated)}
               onUpdateDealsWithAdsData={(updated) => setDeals(updated)}
             />
+          )}
+            </>
           )}
         </main>
       </div>

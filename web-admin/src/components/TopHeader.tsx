@@ -47,7 +47,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   onNavigateTab,
   onToggleMobileSidebar,
 }) => {
-  const isBookingOrManager = currentUser.role === 'MANAGER' || currentUser.role === 'BOOKING_MEMBER';
+  const isBookingOrManager = currentUser.role === 'MANAGER' || currentUser.role === 'ADMIN' || currentUser.role === 'BOOKING_MEMBER';
 
   return (
     <header className="sticky top-0 z-20 min-h-14 bg-canvas/95 backdrop-blur border-b border-line px-4 sm:px-6 lg:px-8 py-2 flex items-center justify-between gap-4 shrink-0">
@@ -70,26 +70,59 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
 
       <div className="flex items-center gap-2 shrink-0">
         {SHOW_ROLE_SWITCHER && (
-          <label className="relative hidden sm:flex items-center h-[34px] pl-3 pr-8 rounded-md border border-dashed border-line-strong text-[13px] text-ink-2 hover:border-ink-3 transition-colors cursor-pointer">
-            <span className="text-ink-3 mr-1.5">Xem với vai trò</span>
-            <select
-              value={currentUser.id}
-              onChange={(e) => {
-                const u = USERS.find((item) => item.id === e.target.value);
-                if (u) onUserChange(u);
-              }}
-              className="appearance-none bg-transparent font-medium text-ink focus:outline-none cursor-pointer"
-              style={{ backgroundColor: 'transparent' }}
-              aria-label="Xem với vai trò"
-            >
-              {USERS.map((user) => (
-                <option key={user.id} value={user.id}>
-                  {user.name} · {ROLE_LABEL[user.role]}
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="w-3.5 h-3.5 text-ink-3 absolute right-2.5 pointer-events-none" />
-          </label>
+          <div className="hidden sm:flex items-center gap-2">
+            <span className={`px-2 py-1 rounded text-2xs font-bold border shrink-0 ${
+              currentUser.role === 'ADMIN' ? 'bg-red-50 text-red-700 border-red-200' :
+              currentUser.role === 'MANAGER' ? 'bg-purple-50 text-purple-700 border-purple-200' :
+              currentUser.role === 'LEADER' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+              currentUser.role === 'BOOKING_MEMBER' ? 'bg-cyan-50 text-cyan-800 border-cyan-200' :
+              currentUser.role === 'CONTENT_MEMBER' ? 'bg-amber-50 text-amber-800 border-amber-200' :
+              currentUser.role === 'BRAND_MEMBER' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' :
+              currentUser.role === 'BRAND_PARTNER' ? 'bg-purple-50 text-purple-800 border-purple-200' :
+              currentUser.role === 'KOC_PARTNER' ? 'bg-amber-50 text-amber-800 border-amber-200' :
+              currentUser.role === 'CTV_PARTNER' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' :
+              'bg-slate-50 text-slate-700 border-slate-200'
+            }`}>
+              {ROLE_LABEL[currentUser.role] ?? currentUser.role}
+            </span>
+
+            <label className="relative flex items-center h-[34px] pl-3 pr-8 rounded-md border border-dashed border-line-strong text-[13px] text-ink-2 hover:border-ink-3 transition-colors cursor-pointer bg-surface/50">
+              <span className="text-ink-3 mr-1.5 hidden md:inline">Tài khoản:</span>
+              <select
+                value={currentUser.id}
+                onChange={(e) => {
+                  const u = USERS.find((item) => item.id === e.target.value);
+                  if (u) onUserChange(u);
+                }}
+                className="appearance-none bg-transparent font-medium text-ink focus:outline-none cursor-pointer pr-2"
+                style={{ backgroundColor: 'transparent' }}
+                aria-label="Xem với vai trò"
+              >
+                <optgroup label="👑 Ban Điều Hành & Quản Trị">
+                  {USERS.filter(u => u.role === 'ADMIN' || u.role === 'MANAGER').map((user) => (
+                    <option key={user.id} value={user.id}>
+                      {user.name} · {ROLE_LABEL[user.role] ?? user.role}
+                    </option>
+                  ))}
+                </optgroup>
+                <optgroup label="💼 Trưởng Nhóm & Chuyên Viên Nội Bộ">
+                  {USERS.filter(u => ['LEADER', 'BOOKING_MEMBER', 'CONTENT_MEMBER', 'BRAND_MEMBER', 'MEMBER'].includes(u.role)).map((user) => (
+                    <option key={user.id} value={user.id}>
+                      {user.name} · {ROLE_LABEL[user.role] ?? user.role}
+                    </option>
+                  ))}
+                </optgroup>
+                <optgroup label="🌐 Đối Tác Bên Thứ 3 (Gmail SSO)">
+                  {USERS.filter(u => ['BRAND_PARTNER', 'KOC_PARTNER', 'CTV_PARTNER'].includes(u.role)).map((user) => (
+                    <option key={user.id} value={user.id}>
+                      {user.name} · {ROLE_LABEL[user.role] ?? user.role}
+                    </option>
+                  ))}
+                </optgroup>
+              </select>
+              <ChevronDown className="w-3.5 h-3.5 text-ink-3 absolute right-2.5 pointer-events-none" />
+            </label>
+          </div>
         )}
 
         {/* Nút thao tác Booking chỉ xuất hiện khi đang ở tab Booking */}

@@ -10,6 +10,31 @@ export type UserRole =
   | 'KOC_PARTNER'   // Creator / KOC đăng nhập Gmail
   | 'CTV_PARTNER';  // Cộng tác viên kênh nội bộ đăng nhập Gmail
 
+export type TabKey =
+  | 'cockpit'
+  | 'overview'
+  | 'dashboard-bi'
+  | 'input-plan'
+  | 'self-channel-hub'
+  | 'master-data'
+  | 'push-products'
+  | 'stores'
+  | 'campaigns'
+  | 'brand-knowledge'
+  | 'content'
+  | 'content-angles'
+  | 'partner-access'
+  | 'booking'
+  | 'koc-master'
+  | 'contracts'
+  | 'manager'
+  | 'sample-tracker'
+  | 'performance-p3'
+  | 'leaderboard'
+  | 'brand-hub'
+  | 'koc-hub'
+  | 'ads-report';
+
 export interface UserProfile {
   id: string;
   name: string;

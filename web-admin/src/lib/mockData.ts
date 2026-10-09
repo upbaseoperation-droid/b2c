@@ -45,29 +45,81 @@ import { LIVE_STORE_PORTFOLIOS_MASTER } from './liveStoresData';
 
 
 export const USERS: UserProfile[] = [
+  // =========================================================================
+  // 1. BAN ĐIỀU HÀNH & QUẢN TRỊ (BOD / OPERATIONS HEAD)
+  // =========================================================================
+  {
+    id: 'user-admin-chinh',
+    name: 'Nguyễn Trọng Chỉnh',
+    email: 'chinhnt@upbase.vn',
+    role: 'ADMIN',
+    roleTitle: 'Ban Giám Đốc (BOD / Super Admin)',
+    avatar: 'NC',
+    loginProvider: 'LARK',
+    permissions: ['ALL_PERMISSIONS']
+  },
   {
     id: 'user-van-ngoc',
     name: 'Vân Ngọc',
     email: 'vanngoc@upbase.vn',
     role: 'MANAGER',
-    roleTitle: 'Operations & Division Head (Trưởng Phòng)',
-    avatar: 'VN'
+    roleTitle: 'Trưởng Phòng Vận Hành (Operations Head)',
+    avatar: 'VN',
+    loginProvider: 'LARK'
   },
+
+  // =========================================================================
+  // 2. TRƯỞNG NHÓM & CHUYÊN VIÊN TÁC NGHIỆP NỘI BỘ
+  // =========================================================================
   {
-    id: 'user-ha-linh',
-    name: 'Đặng Mai Hà Linh',
-    email: 'halinh@upbase.vn',
-    role: 'BRAND_MEMBER',
-    roleTitle: 'Brand PIC / Senior Campaign Lead',
-    avatar: 'HL'
+    id: 'user-tuan-anh',
+    name: 'Nguyễn Tuấn Anh',
+    email: 'tuananh@upbase.vn',
+    role: 'LEADER',
+    roleTitle: 'Trưởng Nhóm Booking (Booking Lead)',
+    avatar: 'TA',
+    loginProvider: 'LARK',
+    linkedEntityName: 'Kutieskin, Royal Ausnz, Mega Uri'
   },
   {
     id: 'user-khanh-vy',
     name: 'Khánh Vy',
     email: 'khanhvy@upbase.vn',
     role: 'BOOKING_MEMBER',
-    roleTitle: 'Senior Booking Execution Specialist',
-    avatar: 'KV'
+    roleTitle: 'Chuyên Viên Booking (Booking Specialist)',
+    avatar: 'KV',
+    loginProvider: 'LARK',
+    linkedEntityName: 'Kutieskin Mama & Baby'
+  },
+  {
+    id: 'user-quynh-nhu',
+    name: 'Quỳnh Như',
+    email: 'quynhnhu@upbase.vn',
+    role: 'CONTENT_MEMBER',
+    roleTitle: 'Chuyên Viên Kịch Bản & Content (Script Lead)',
+    avatar: 'QN',
+    loginProvider: 'LARK',
+    linkedEntityName: 'Kutieskin, La Roche-Posay'
+  },
+  {
+    id: 'user-ha-linh',
+    name: 'Đặng Mai Hà Linh',
+    email: 'halinh@upbase.vn',
+    role: 'BRAND_MEMBER',
+    roleTitle: 'Chuyên Viên Quản Lý Nhãn Hàng (Brand PIC)',
+    avatar: 'HL',
+    loginProvider: 'LARK',
+    linkedEntityName: 'Kutieskin, Royal Ausnz'
+  },
+  {
+    id: 'user-minh-duc',
+    name: 'Trần Minh Đức',
+    email: 'minhduc@upbase.vn',
+    role: 'MEMBER',
+    roleTitle: 'Chuyên Viên Vận Hành (General Member)',
+    avatar: 'MĐ',
+    loginProvider: 'LARK',
+    linkedEntityName: 'Mega Uri'
   },
   {
     id: 'user-thu-trang',
@@ -75,23 +127,9 @@ export const USERS: UserProfile[] = [
     email: 'thutrang@upbase.vn',
     role: 'BOOKING_MEMBER',
     roleTitle: 'Booking Specialist (Micro & Sàn)',
-    avatar: 'TT'
-  },
-  {
-    id: 'user-minh-duc',
-    name: 'Trần Minh Đức',
-    email: 'minhduc@upbase.vn',
-    role: 'BOOKING_MEMBER',
-    roleTitle: 'Live & Creator Specialist',
-    avatar: 'MĐ'
-  },
-  {
-    id: 'user-quynh-nhu',
-    name: 'Quỳnh Như',
-    email: 'quynhnhu@upbase.vn',
-    role: 'CONTENT_MEMBER',
-    roleTitle: 'Content Creative & Script Lead',
-    avatar: 'QN'
+    avatar: 'TT',
+    loginProvider: 'LARK',
+    linkedEntityName: 'La Roche-Posay'
   },
   {
     id: 'user-phuong-thao',
@@ -99,7 +137,52 @@ export const USERS: UserProfile[] = [
     email: 'phuongthao@upbase.vn',
     role: 'BRAND_MEMBER',
     roleTitle: 'Brand Strategy & Campaign Lead',
-    avatar: 'PT'
+    avatar: 'PT',
+    loginProvider: 'LARK'
+  },
+
+  // =========================================================================
+  // 3. ĐỐI TÁC BÊN THỨ 3 (BRAND, KOC, CTV - GMAIL SSO)
+  // =========================================================================
+  {
+    id: 'user-brand-kutieskin',
+    name: 'Minh Tuấn (Brand Lead Kutieskin)',
+    email: 'marketing.kutieskin@gmail.com',
+    role: 'BRAND_PARTNER',
+    roleTitle: 'Đại Diện Thương Hiệu (Brand Partner)',
+    avatar: 'MT',
+    loginProvider: 'GMAIL',
+    partnerType: 'BRAND',
+    linkedEntityId: 'brand-kutieskin',
+    linkedEntityName: 'Kutieskin Mama & Baby',
+    allowedStoreNames: [
+      'Shopee Mall Kutieskin Chính Hãng',
+      'Kutieskin Official TikTok Shop'
+    ]
+  },
+  {
+    id: 'user-koc-megauri',
+    name: 'Mega Uri Review (Hiếu An)',
+    email: 'megauri.creator@gmail.com',
+    role: 'KOC_PARTNER',
+    roleTitle: 'Creator / KOC Đối Tác (Tier 2 Macro)',
+    avatar: 'MU',
+    loginProvider: 'GMAIL',
+    partnerType: 'KOC',
+    linkedEntityId: 'koc-1',
+    linkedEntityName: 'Mega Uri Review'
+  },
+  {
+    id: 'user-ctv-hamy',
+    name: 'Hà My Content (CTV Creator)',
+    email: 'hamy.creator@gmail.com',
+    role: 'CTV_PARTNER',
+    roleTitle: 'Cộng Tác Viên Kênh Nội Bộ (CTV)',
+    avatar: 'HM',
+    loginProvider: 'GMAIL',
+    partnerType: 'CTV',
+    linkedEntityId: 'ctv-hamy',
+    linkedEntityName: 'Hà My Content'
   }
 ];
 

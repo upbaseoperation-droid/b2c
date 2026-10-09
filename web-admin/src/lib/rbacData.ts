@@ -1,5 +1,6 @@
 import { 
   UserRole, 
+  TabKey,
   PermissionAccessLevel, 
   PermissionMatrixItem, 
   InternalStaffRbacMember, 
@@ -857,3 +858,157 @@ export const PERMISSION_BADGE_CONFIG: Record<PermissionAccessLevel, { label: str
     description: 'Bị ẩn hoàn toàn, không có quyền truy cập tính năng này.'
   }
 };
+
+// =========================================================================
+// 6. PHÂN QUYỀN MÀN HÌNH & ĐIỀU HƯỚNG THEO VAI TRÒ (SCREEN RBAC PERMISSIONS)
+// =========================================================================
+
+export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
+  ADMIN: [
+    'cockpit',
+    'overview',
+    'dashboard-bi',
+    'input-plan',
+    'self-channel-hub',
+    'master-data',
+    'push-products',
+    'stores',
+    'campaigns',
+    'brand-knowledge',
+    'content',
+    'content-angles',
+    'partner-access',
+    'booking',
+    'koc-master',
+    'contracts',
+    'manager',
+    'sample-tracker',
+    'performance-p3',
+    'leaderboard',
+    'brand-hub',
+    'koc-hub',
+    'ads-report'
+  ],
+  MANAGER: [
+    'cockpit',
+    'overview',
+    'dashboard-bi',
+    'input-plan',
+    'self-channel-hub',
+    'master-data',
+    'push-products',
+    'stores',
+    'campaigns',
+    'brand-knowledge',
+    'content',
+    'content-angles',
+    'partner-access',
+    'booking',
+    'koc-master',
+    'contracts',
+    'manager',
+    'sample-tracker',
+    'performance-p3',
+    'leaderboard',
+    'brand-hub',
+    'koc-hub',
+    'ads-report'
+  ],
+  LEADER: [
+    'cockpit',
+    'overview',
+    'ads-report',
+    'performance-p3',
+    'input-plan',
+    'push-products',
+    'booking',
+    'content',
+    'content-angles',
+    'campaigns',
+    'contracts',
+    'sample-tracker',
+    'master-data',
+    'brand-knowledge'
+  ],
+  BOOKING_MEMBER: [
+    'cockpit',
+    'booking',
+    'input-plan',
+    'contracts',
+    'sample-tracker',
+    'push-products',
+    'performance-p3',
+    'brand-knowledge'
+  ],
+  CONTENT_MEMBER: [
+    'cockpit',
+    'content',
+    'content-angles',
+    'campaigns',
+    'brand-knowledge',
+    'sample-tracker',
+    'push-products',
+    'performance-p3'
+  ],
+  BRAND_MEMBER: [
+    'cockpit',
+    'campaigns',
+    'push-products',
+    'brand-knowledge',
+    'content',
+    'input-plan',
+    'ads-report',
+    'overview',
+    'sample-tracker',
+    'performance-p3'
+  ],
+  MEMBER: [
+    'cockpit',
+    'booking',
+    'content',
+    'input-plan',
+    'sample-tracker',
+    'push-products',
+    'performance-p3',
+    'brand-knowledge'
+  ],
+  BRAND_PARTNER: [
+    'brand-hub',
+    'push-products',
+    'content'
+  ],
+  KOC_PARTNER: [
+    'koc-hub'
+  ],
+  CTV_PARTNER: [
+    'self-channel-hub'
+  ]
+};
+
+export const ROLE_DEFAULT_LANDING: Record<UserRole, TabKey> = {
+  ADMIN: 'dashboard-bi',
+  MANAGER: 'cockpit',
+  LEADER: 'cockpit',
+  BOOKING_MEMBER: 'booking',
+  CONTENT_MEMBER: 'content',
+  BRAND_MEMBER: 'campaigns',
+  MEMBER: 'cockpit',
+  BRAND_PARTNER: 'brand-hub',
+  KOC_PARTNER: 'koc-hub',
+  CTV_PARTNER: 'self-channel-hub'
+};
+
+export function isTabAllowedForRole(role: UserRole, tab: TabKey): boolean {
+  const allowed = ROLE_ALLOWED_TABS[role];
+  if (!allowed) return false;
+  return allowed.includes(tab);
+}
+
+export function getAllowedTabsForRole(role: UserRole): TabKey[] {
+  return ROLE_ALLOWED_TABS[role] || ['cockpit'];
+}
+
+export function getDefaultLandingTabForRole(role: UserRole): TabKey {
+  return ROLE_DEFAULT_LANDING[role] || 'cockpit';
+}
+

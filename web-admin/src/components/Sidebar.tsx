@@ -74,6 +74,255 @@ interface SidebarProps {
   onLogout?: () => void;
 }
 
+// Hàm phân quyền danh mục điều hướng theo vai trò (Bảo mật 100% dữ liệu nội bộ UpBase)
+function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
+  switch (role) {
+    case 'ADMIN':
+    case 'MANAGER':
+      return [
+        {
+          title: 'Cá nhân',
+          items: [
+            { key: 'cockpit', label: 'Việc của tôi', icon: CheckSquare },
+          ],
+        },
+        {
+          title: 'Dashboard & Báo cáo',
+          items: [
+            { key: 'dashboard-bi', label: 'Dashboard điều hành BI', icon: LayoutDashboard },
+            { key: 'ads-report', label: 'Báo cáo Ads TikTok', icon: BarChart3 },
+            { key: 'performance-p3', label: 'Đánh giá 4P & thưởng', icon: Coins },
+            { key: 'overview', label: 'Tổng quan vận hành', icon: BarChart2 },
+          ],
+        },
+        {
+          title: 'Kế hoạch & Điều phối',
+          items: [
+            { key: 'manager', label: 'Phân bổ & điều phối', icon: Split },
+            { key: 'input-plan', label: 'Kế hoạch tháng', icon: Calendar },
+            { key: 'push-products', label: 'Sản phẩm đẩy', icon: TrendingUp },
+          ],
+        },
+        {
+          title: 'Vận hành tác nghiệp',
+          items: [
+            { key: 'booking', label: 'Booking KOC', icon: Users },
+            { key: 'content', label: 'Kịch bản video', icon: FileText },
+            { key: 'content-angles', label: 'Góc nội dung (Angles)', icon: Sparkles },
+            { key: 'campaigns', label: 'Làm việc với Brand', icon: Layers },
+            { key: 'contracts', label: 'Hợp đồng & thanh toán', icon: FileCheck },
+            { key: 'sample-tracker', label: 'Hàng mẫu', icon: Package },
+          ],
+        },
+        {
+          title: 'Dữ liệu & Quản trị',
+          items: [
+            { key: 'master-data', label: 'Dữ liệu gốc (Master Data)', icon: Database },
+            { key: 'partner-access', label: 'Phân quyền & RBAC tập trung', icon: KeyRound },
+          ],
+        },
+        {
+          title: 'Cổng đối tác ngoài (Giám sát)',
+          items: [
+            { key: 'brand-hub', label: 'Cổng đối tác Brand', icon: ExternalLink },
+            { key: 'self-channel-hub', label: 'Hub Cộng tác viên (CTV)', icon: Video },
+            { key: 'koc-hub', label: 'Hub đối tác KOC / KOL', icon: Users },
+          ],
+        },
+      ];
+
+    case 'LEADER':
+      return [
+        {
+          title: 'Cá nhân',
+          items: [
+            { key: 'cockpit', label: 'Việc của tôi', icon: CheckSquare },
+          ],
+        },
+        {
+          title: 'Báo cáo & Giám sát',
+          items: [
+            { key: 'ads-report', label: 'Báo cáo Ads TikTok', icon: BarChart3 },
+            { key: 'performance-p3', label: 'Đánh giá 4P & thưởng', icon: Coins },
+            { key: 'overview', label: 'Tổng quan vận hành', icon: BarChart2 },
+          ],
+        },
+        {
+          title: 'Kế hoạch & Vận hành',
+          items: [
+            { key: 'input-plan', label: 'Kế hoạch tháng (Duyệt slot)', icon: Calendar },
+            { key: 'push-products', label: 'Sản phẩm đẩy', icon: TrendingUp },
+            { key: 'booking', label: 'Booking KOC (Duyệt deal)', icon: Users },
+            { key: 'content', label: 'Kịch bản video (Duyệt sơ bộ)', icon: FileText },
+            { key: 'content-angles', label: 'Góc nội dung (Angles)', icon: Sparkles },
+            { key: 'campaigns', label: 'Làm việc với Brand', icon: Layers },
+            { key: 'contracts', label: 'Hợp đồng & thanh toán', icon: FileCheck },
+            { key: 'sample-tracker', label: 'Hàng mẫu', icon: Package },
+          ],
+        },
+        {
+          title: 'Dữ liệu tham chiếu',
+          items: [
+            { key: 'master-data', label: 'Dữ liệu gốc (Tra cứu)', icon: Database },
+            { key: 'brand-knowledge', label: 'Hướng dẫn nhãn hàng', icon: BookOpen },
+          ],
+        },
+      ];
+
+    case 'BOOKING_MEMBER':
+      return [
+        {
+          title: 'Cá nhân',
+          items: [
+            { key: 'cockpit', label: 'Việc của tôi', icon: CheckSquare },
+          ],
+        },
+        {
+          title: 'Tác nghiệp Booking',
+          items: [
+            { key: 'booking', label: 'Booking KOC (Tạo & chăm sóc deal)', icon: Users },
+            { key: 'input-plan', label: 'Kế hoạch tháng (Slot cá nhân)', icon: Calendar },
+            { key: 'contracts', label: 'Hợp đồng & thanh toán', icon: FileCheck },
+            { key: 'sample-tracker', label: 'Theo dõi hàng mẫu', icon: Package },
+            { key: 'push-products', label: 'Sản phẩm đẩy', icon: TrendingUp },
+          ],
+        },
+        {
+          title: 'Hiệu suất & Tham chiếu',
+          items: [
+            { key: 'performance-p3', label: 'Đánh giá 4P & thưởng cá nhân', icon: Coins },
+            { key: 'brand-knowledge', label: 'Hướng dẫn nhãn hàng & Hero SKU', icon: BookOpen },
+          ],
+        },
+      ];
+
+    case 'CONTENT_MEMBER':
+      return [
+        {
+          title: 'Cá nhân',
+          items: [
+            { key: 'cockpit', label: 'Việc của tôi', icon: CheckSquare },
+          ],
+        },
+        {
+          title: 'Sáng tạo & Kịch bản',
+          items: [
+            { key: 'content', label: 'Quản lý kịch bản video', icon: FileText },
+            { key: 'content-angles', label: 'Góc nội dung & Hook 3s theo SP', icon: Sparkles },
+            { key: 'campaigns', label: 'Làm việc với Brand & Brief', icon: Layers },
+            { key: 'brand-knowledge', label: 'Hướng dẫn nhãn & Từ khóa cấm', icon: BookOpen },
+          ],
+        },
+        {
+          title: 'Vận hành liên quan',
+          items: [
+            { key: 'sample-tracker', label: 'Theo dõi hàng mẫu', icon: Package },
+            { key: 'push-products', label: 'Sản phẩm đẩy & USP', icon: TrendingUp },
+            { key: 'performance-p3', label: 'Đánh giá 4P & thưởng cá nhân', icon: Coins },
+          ],
+        },
+      ];
+
+    case 'BRAND_MEMBER':
+      return [
+        {
+          title: 'Cá nhân',
+          items: [
+            { key: 'cockpit', label: 'Việc của tôi', icon: CheckSquare },
+          ],
+        },
+        {
+          title: 'Chiến dịch & Nhãn hàng',
+          items: [
+            { key: 'campaigns', label: 'Làm việc với Brand & Brief', icon: Layers },
+            { key: 'push-products', label: 'Sản phẩm đẩy của nhãn', icon: TrendingUp },
+            { key: 'brand-knowledge', label: 'Hướng dẫn nhãn hàng & Hero SKU', icon: BookOpen },
+            { key: 'content', label: 'Kịch bản video theo guideline', icon: FileText },
+          ],
+        },
+        {
+          title: 'Kế hoạch & Báo cáo',
+          items: [
+            { key: 'input-plan', label: 'Kế hoạch tháng nhãn hàng', icon: Calendar },
+            { key: 'ads-report', label: 'Báo cáo Ads TikTok', icon: BarChart3 },
+            { key: 'overview', label: 'Tổng quan vận hành', icon: BarChart2 },
+            { key: 'sample-tracker', label: 'Theo dõi hàng mẫu', icon: Package },
+            { key: 'performance-p3', label: 'Đánh giá 4P & thưởng cá nhân', icon: Coins },
+          ],
+        },
+      ];
+
+    case 'MEMBER':
+      return [
+        {
+          title: 'Cá nhân',
+          items: [
+            { key: 'cockpit', label: 'Việc của tôi', icon: CheckSquare },
+          ],
+        },
+        {
+          title: 'Vận hành tác nghiệp',
+          items: [
+            { key: 'booking', label: 'Booking KOC', icon: Users },
+            { key: 'content', label: 'Kịch bản video', icon: FileText },
+            { key: 'input-plan', label: 'Kế hoạch tháng', icon: Calendar },
+            { key: 'sample-tracker', label: 'Hàng mẫu', icon: Package },
+            { key: 'push-products', label: 'Sản phẩm đẩy', icon: TrendingUp },
+          ],
+        },
+        {
+          title: 'Hiệu suất & Tham chiếu',
+          items: [
+            { key: 'performance-p3', label: 'Đánh giá 4P & thưởng', icon: Coins },
+            { key: 'brand-knowledge', label: 'Hướng dẫn nhãn hàng', icon: BookOpen },
+          ],
+        },
+      ];
+
+    case 'BRAND_PARTNER':
+      return [
+        {
+          title: 'Cổng Thương Hiệu',
+          items: [
+            { key: 'brand-hub', label: 'Cổng đối tác Brand (Duyệt KOC & Video)', icon: ExternalLink },
+            { key: 'push-products', label: 'Sản phẩm đẩy của nhãn', icon: TrendingUp },
+            { key: 'content', label: 'Kịch bản video của nhãn', icon: FileText },
+          ],
+        },
+      ];
+
+    case 'KOC_PARTNER':
+      return [
+        {
+          title: 'Không Gian KOC / KOL',
+          items: [
+            { key: 'koc-hub', label: 'Hub đối tác KOC / KOL (Việc của tôi)', icon: Users },
+          ],
+        },
+      ];
+
+    case 'CTV_PARTNER':
+      return [
+        {
+          title: 'Không Gian Cộng Tác Viên',
+          items: [
+            { key: 'self-channel-hub', label: 'Hub Cộng tác viên (CTV Video)', icon: Video },
+          ],
+        },
+      ];
+
+    default:
+      return [
+        {
+          title: 'Cá nhân',
+          items: [
+            { key: 'cockpit', label: 'Việc của tôi', icon: CheckSquare },
+          ],
+        },
+      ];
+  }
+}
+
 export const Sidebar: React.FC<SidebarProps> = ({
   activeTab,
   onTabSelect,
@@ -82,89 +331,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onCloseMobile,
   onLogout,
 }) => {
-  const isManager = currentUser.role === 'MANAGER';
-  const isBrandPartner = currentUser.role === 'BRAND_PARTNER';
-  const isKocPartner = currentUser.role === 'KOC_PARTNER';
-  const isCtvPartner = currentUser.role === 'CTV_PARTNER';
-
   // Phân quyền menu hiển thị theo vai trò (Bảo mật 100% dữ liệu nội bộ UpBase)
-  let navSections: NavSection[] = [];
-
-  if (isBrandPartner) {
-    navSections = [
-      {
-        title: 'Cổng Thương Hiệu',
-        items: [
-          { key: 'brand-hub', label: 'Cổng đối tác Brand', icon: ExternalLink },
-          { key: 'push-products', label: 'Sản phẩm đẩy của nhãn', icon: TrendingUp },
-          { key: 'content', label: 'Kịch bản video', icon: FileText },
-        ],
-      },
-    ];
-  } else if (isKocPartner) {
-    navSections = [
-      {
-        title: 'Không Gian KOC / KOL',
-        items: [
-          { key: 'koc-hub', label: 'Hub đối tác KOC / KOL', icon: Users },
-        ],
-      },
-    ];
-  } else if (isCtvPartner) {
-    navSections = [
-      {
-        title: 'Không Gian Cộng Tác Viên',
-        items: [
-          { key: 'self-channel-hub', label: 'Hub Cộng tác viên (CTV)', icon: Video },
-        ],
-      },
-    ];
-  } else {
-    navSections = [
-    {
-      title: 'Cá nhân',
-      items: [
-        { key: 'cockpit', label: 'Việc của tôi', icon: CheckSquare },
-      ],
-    },
-    {
-      title: 'Dashboard & Báo cáo',
-      items: [
-        { key: 'dashboard-bi', label: 'Dashboard điều hành', icon: LayoutDashboard },
-        { key: 'ads-report', label: 'Báo cáo Ads TikTok', icon: BarChart3 },
-        { key: 'performance-p3', label: 'Đánh giá 4P & thưởng', icon: Coins },
-      ],
-    },
-    {
-      title: 'Vận hành tác nghiệp',
-      items: [
-        { key: 'input-plan', label: 'Kế hoạch tháng', icon: Calendar },
-        { key: 'push-products', label: 'Sản phẩm đẩy', icon: TrendingUp },
-        { key: 'campaigns', label: 'Làm việc với Brand', icon: Layers },
-        { key: 'booking', label: 'Booking KOC', icon: Users },
-        { key: 'content', label: 'Kịch bản video', icon: FileText },
-        { key: 'content-angles', label: 'Góc nội dung (Angles)', icon: Sparkles },
-        { key: 'contracts', label: 'Hợp đồng & thanh toán', icon: FileCheck },
-        { key: 'sample-tracker', label: 'Hàng mẫu', icon: Package },
-      ],
-    },
-    {
-      title: 'Dữ liệu',
-      items: [
-        { key: 'master-data', label: 'Dữ liệu gốc (Master Data)', icon: Database },
-        { key: 'partner-access', label: 'Phân quyền & RBAC tập trung', icon: KeyRound }
-      ],
-    },
-    {
-      title: 'Cổng đối tác ngoài (3 Hubs)',
-      items: [
-        { key: 'brand-hub', label: 'Cổng đối tác Brand', icon: ExternalLink },
-        { key: 'self-channel-hub', label: 'Hub Cộng tác viên (CTV)', icon: Video },
-        { key: 'koc-hub', label: 'Hub đối tác KOC / KOL', icon: Users },
-      ],
-    },
-  ];
-  }
+  const navSections = getNavSectionsForUserRole(currentUser.role);
 
   const handleItemClick = (key: TabKey) => {
     onTabSelect(key);
@@ -238,7 +406,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <Avatar name={currentUser.name} src={currentUser.larkAvatarUrl} size={28} />
               <div className="min-w-0 leading-tight">
                 <span className="block text-[13px] font-medium text-ink truncate">{currentUser.name}</span>
-                <span className="block text-2xs text-ink-3 truncate">{currentUser.roleTitle}</span>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span className={`inline-block px-1.5 py-0.5 rounded text-[9.5px] font-bold tracking-wider uppercase shrink-0 ${
+                    currentUser.role === 'ADMIN' ? 'bg-red-100 text-red-700' :
+                    currentUser.role === 'MANAGER' ? 'bg-purple-100 text-purple-700' :
+                    currentUser.role === 'LEADER' ? 'bg-blue-100 text-blue-700' :
+                    currentUser.role === 'BOOKING_MEMBER' ? 'bg-cyan-100 text-cyan-800' :
+                    currentUser.role === 'CONTENT_MEMBER' ? 'bg-amber-100 text-amber-800' :
+                    currentUser.role === 'BRAND_MEMBER' ? 'bg-emerald-100 text-emerald-800' :
+                    currentUser.role === 'BRAND_PARTNER' ? 'bg-purple-100 text-purple-800' :
+                    currentUser.role === 'KOC_PARTNER' ? 'bg-amber-100 text-amber-800' :
+                    currentUser.role === 'CTV_PARTNER' ? 'bg-emerald-100 text-emerald-800' :
+                    'bg-slate-100 text-slate-700'
+                  }`}>
+                    {currentUser.role.replace('_PARTNER', ' (Đối tác)').replace('_MEMBER', '')}
+                  </span>
+                  <span className="text-2xs text-ink-3 truncate">{currentUser.roleTitle}</span>
+                </div>
               </div>
             </div>
 

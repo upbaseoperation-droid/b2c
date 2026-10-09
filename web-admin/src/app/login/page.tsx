@@ -8,8 +8,10 @@ import { INITIAL_THIRD_PARTY_ACCOUNTS } from '@/lib/thirdPartyAccessData';
 import { BrandLogo } from '@/components/ui';
 
 const ROLE_LABEL: Record<string, string> = {
-  ADMIN: 'Quản trị',
+  ADMIN: 'Quản trị (BOD)',
   MANAGER: 'Trưởng phòng',
+  LEADER: 'Trưởng nhóm',
+  MEMBER: 'Chuyên viên',
   BRAND_MEMBER: 'Brand PIC',
   CONTENT_MEMBER: 'Content',
   BOOKING_MEMBER: 'Booking',
@@ -229,8 +231,8 @@ function LoginContent() {
                   <p className="text-2xs text-ink-3 mt-0.5">Xem app với các vai trò nội bộ mẫu.</p>
                 </div>
 
-                <div className="border border-line rounded-xl bg-surface divide-y divide-line overflow-hidden" role="radiogroup" aria-label="Chọn tài khoản thử">
-                  {USERS.slice(0, 4).map((u) => {
+                <div className="border border-line rounded-xl bg-surface divide-y divide-line overflow-hidden max-h-64 overflow-y-auto" role="radiogroup" aria-label="Chọn tài khoản thử">
+                  {USERS.filter(u => !['BRAND_PARTNER', 'KOC_PARTNER', 'CTV_PARTNER'].includes(u.role)).map((u) => {
                     const isSelected = selectedUser === u.id;
                     return (
                       <button
@@ -251,7 +253,16 @@ function LoginContent() {
                           <span className="block text-[13.5px] font-medium truncate">{u.name}</span>
                           <span className="block text-2xs text-ink-3 truncate">{u.roleTitle}</span>
                         </span>
-                        <span className="text-2xs text-ink-3 shrink-0">{ROLE_LABEL[u.role] ?? u.role}</span>
+                        <span className={`text-3xs font-bold px-2 py-0.5 rounded-full border shrink-0 ${
+                          u.role === 'ADMIN' ? 'bg-red-50 text-red-700 border-red-200' :
+                          u.role === 'MANAGER' ? 'bg-purple-50 text-purple-700 border-purple-200' :
+                          u.role === 'LEADER' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                          u.role === 'BOOKING_MEMBER' ? 'bg-cyan-50 text-cyan-800 border-cyan-200' :
+                          u.role === 'CONTENT_MEMBER' ? 'bg-amber-50 text-amber-800 border-amber-200' :
+                          'bg-emerald-50 text-emerald-800 border-emerald-200'
+                        }`}>
+                          {ROLE_LABEL[u.role] ?? u.role}
+                        </span>
                       </button>
                     );
                   })}
