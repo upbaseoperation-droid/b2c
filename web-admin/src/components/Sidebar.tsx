@@ -66,7 +66,7 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
         {
           title: 'Dashboard & Báo cáo',
           items: [
-            { key: 'dashboard-bi', label: 'Dashboard điều hành BI', icon: LayoutDashboard },
+            { key: 'dashboard-bi', label: 'Dashboard BI', icon: LayoutDashboard },
             { key: 'ads-report', label: 'Báo cáo Ads TikTok', icon: BarChart3 },
             { key: 'performance-p3', label: 'Đánh giá 4P & thưởng', icon: Coins },
             { key: 'overview', label: 'Tổng quan vận hành', icon: BarChart2 },
@@ -77,7 +77,7 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           items: [
             { key: 'manager', label: 'Phân bổ & điều phối', icon: Split },
             { key: 'input-plan', label: 'Kế hoạch tháng', icon: Calendar },
-            { key: 'koc-listing', label: 'Listing & Air Video (10/20/30)', icon: Film },
+            { key: 'koc-listing', label: 'Listing & Air Video', icon: Film },
             { key: 'push-products', label: 'Sản phẩm đẩy', icon: TrendingUp },
           ],
         },
@@ -96,15 +96,15 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
         {
           title: 'Dữ liệu & Quản trị',
           items: [
-            { key: 'master-data', label: 'Dữ liệu gốc (Master Data)', icon: Database },
-            { key: 'partner-access', label: 'Phân quyền & RBAC tập trung', icon: KeyRound },
+            { key: 'master-data', label: 'Dữ liệu gốc', icon: Database },
+            { key: 'partner-access', label: 'Phân quyền & RBAC', icon: KeyRound },
           ],
         },
         {
           title: 'Cổng đối tác ngoài (Giám sát)',
           items: [
             { key: 'brand-hub', label: 'Cổng đối tác Brand', icon: ExternalLink },
-            { key: 'self-channel-hub', label: 'Hub Cộng tác viên (CTV)', icon: Video },
+            { key: 'self-channel-hub', label: 'Hub CTV Video', icon: Video },
             { key: 'koc-hub', label: 'Hub đối tác KOC / KOL', icon: Users },
           ],
         },
@@ -129,12 +129,12 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
         {
           title: 'Kế hoạch & Vận hành',
           items: [
-            { key: 'input-plan', label: 'Kế hoạch tháng (Duyệt slot)', icon: Calendar },
-            { key: 'koc-listing', label: 'Listing & Air Video (Duyệt đợt)', icon: Film },
+            { key: 'input-plan', label: 'Kế hoạch tháng', icon: Calendar },
+            { key: 'koc-listing', label: 'Listing & Air Video', icon: Film },
             { key: 'push-products', label: 'Sản phẩm đẩy', icon: TrendingUp },
-            { key: 'booking', label: 'Booking KOC (Duyệt deal)', icon: Users },
+            { key: 'booking', label: 'Booking KOC', icon: Users },
             { key: 'koc-master', label: 'Danh bạ KOC Master', icon: Users },
-            { key: 'content', label: 'Kịch bản video (Duyệt sơ bộ)', icon: FileText },
+            { key: 'content', label: 'Kịch bản video', icon: FileText },
             { key: 'content-angles', label: 'Góc nội dung (Angles)', icon: Sparkles },
             { key: 'campaigns', label: 'Làm việc với Brand', icon: Layers },
             { key: 'contracts', label: 'Hợp đồng & thanh toán', icon: FileCheck },
@@ -144,7 +144,7 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
         {
           title: 'Dữ liệu tham chiếu',
           items: [
-            { key: 'master-data', label: 'Dữ liệu gốc (Tra cứu)', icon: Database },
+            { key: 'master-data', label: 'Dữ liệu gốc', icon: Database },
             { key: 'brand-knowledge', label: 'Hướng dẫn nhãn hàng', icon: BookOpen },
           ],
         },
@@ -161,20 +161,20 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
         {
           title: 'Tác nghiệp Booking',
           items: [
-            { key: 'booking', label: 'Booking KOC (Tạo & chăm sóc deal)', icon: Users },
-            { key: 'koc-listing', label: 'Listing & Air Video (Theo đợt)', icon: Film },
+            { key: 'booking', label: 'Booking KOC', icon: Users },
+            { key: 'koc-listing', label: 'Listing & Air Video', icon: Film },
             { key: 'koc-master', label: 'Danh bạ KOC Master', icon: Users },
-            { key: 'input-plan', label: 'Kế hoạch tháng (Slot cá nhân)', icon: Calendar },
+            { key: 'input-plan', label: 'Kế hoạch tháng', icon: Calendar },
             { key: 'contracts', label: 'Hợp đồng & thanh toán', icon: FileCheck },
-            { key: 'sample-tracker', label: 'Theo dõi hàng mẫu', icon: Package },
+            { key: 'sample-tracker', label: 'Hàng mẫu', icon: Package },
             { key: 'push-products', label: 'Sản phẩm đẩy', icon: TrendingUp },
           ],
         },
         {
           title: 'Hiệu suất & Tham chiếu',
           items: [
-            { key: 'performance-p3', label: 'Đánh giá 4P & thưởng cá nhân', icon: Coins },
-            { key: 'brand-knowledge', label: 'Hướng dẫn nhãn hàng & Hero SKU', icon: BookOpen },
+            { key: 'performance-p3', label: 'Đánh giá 4P & thưởng', icon: Coins },
+            { key: 'brand-knowledge', label: 'Hướng dẫn nhãn hàng', icon: BookOpen },
           ],
         },
       ];
@@ -190,18 +190,18 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
         {
           title: 'Sáng tạo & Kịch bản',
           items: [
-            { key: 'content', label: 'Quản lý kịch bản video', icon: FileText },
-            { key: 'content-angles', label: 'Góc nội dung & Hook 3s theo SP', icon: Sparkles },
-            { key: 'campaigns', label: 'Làm việc với Brand & Brief', icon: Layers },
-            { key: 'brand-knowledge', label: 'Hướng dẫn nhãn & Từ khóa cấm', icon: BookOpen },
+            { key: 'content', label: 'Kịch bản video', icon: FileText },
+            { key: 'content-angles', label: 'Góc nội dung (Angles)', icon: Sparkles },
+            { key: 'campaigns', label: 'Làm việc với Brand', icon: Layers },
+            { key: 'brand-knowledge', label: 'Hướng dẫn nhãn hàng', icon: BookOpen },
           ],
         },
         {
           title: 'Vận hành liên quan',
           items: [
-            { key: 'sample-tracker', label: 'Theo dõi hàng mẫu', icon: Package },
-            { key: 'push-products', label: 'Sản phẩm đẩy & USP', icon: TrendingUp },
-            { key: 'performance-p3', label: 'Đánh giá 4P & thưởng cá nhân', icon: Coins },
+            { key: 'sample-tracker', label: 'Hàng mẫu', icon: Package },
+            { key: 'push-products', label: 'Sản phẩm đẩy', icon: TrendingUp },
+            { key: 'performance-p3', label: 'Đánh giá 4P & thưởng', icon: Coins },
           ],
         },
       ];
@@ -217,20 +217,20 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
         {
           title: 'Chiến dịch & Nhãn hàng',
           items: [
-            { key: 'campaigns', label: 'Làm việc với Brand & Brief', icon: Layers },
-            { key: 'push-products', label: 'Sản phẩm đẩy của nhãn', icon: TrendingUp },
-            { key: 'brand-knowledge', label: 'Hướng dẫn nhãn hàng & Hero SKU', icon: BookOpen },
-            { key: 'content', label: 'Kịch bản video theo guideline', icon: FileText },
+            { key: 'campaigns', label: 'Làm việc với Brand', icon: Layers },
+            { key: 'push-products', label: 'Sản phẩm đẩy', icon: TrendingUp },
+            { key: 'brand-knowledge', label: 'Hướng dẫn nhãn hàng', icon: BookOpen },
+            { key: 'content', label: 'Kịch bản video', icon: FileText },
           ],
         },
         {
           title: 'Kế hoạch & Báo cáo',
           items: [
-            { key: 'input-plan', label: 'Kế hoạch tháng nhãn hàng', icon: Calendar },
+            { key: 'input-plan', label: 'Kế hoạch tháng', icon: Calendar },
             { key: 'ads-report', label: 'Báo cáo Ads TikTok', icon: BarChart3 },
             { key: 'overview', label: 'Tổng quan vận hành', icon: BarChart2 },
-            { key: 'sample-tracker', label: 'Theo dõi hàng mẫu', icon: Package },
-            { key: 'performance-p3', label: 'Đánh giá 4P & thưởng cá nhân', icon: Coins },
+            { key: 'sample-tracker', label: 'Hàng mẫu', icon: Package },
+            { key: 'performance-p3', label: 'Đánh giá 4P & thưởng', icon: Coins },
           ],
         },
       ];
@@ -269,10 +269,10 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
         {
           title: 'Cổng Thương Hiệu',
           items: [
-            { key: 'brand-hub', label: 'Cổng đối tác Brand (Duyệt KOC & Video)', icon: ExternalLink },
-            { key: 'koc-listing', label: 'Duyệt Listing KOC (Đợt 10/20/30)', icon: Film },
-            { key: 'push-products', label: 'Sản phẩm đẩy của nhãn', icon: TrendingUp },
-            { key: 'content', label: 'Kịch bản video của nhãn', icon: FileText },
+            { key: 'brand-hub', label: 'Cổng đối tác Brand', icon: ExternalLink },
+            { key: 'koc-listing', label: 'Duyệt Listing KOC', icon: Film },
+            { key: 'push-products', label: 'Sản phẩm đẩy', icon: TrendingUp },
+            { key: 'content', label: 'Kịch bản video', icon: FileText },
           ],
         },
       ];
@@ -282,7 +282,7 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
         {
           title: 'Không Gian KOC / KOL',
           items: [
-            { key: 'koc-hub', label: 'Hub đối tác KOC / KOL (Việc của tôi)', icon: Users },
+            { key: 'koc-hub', label: 'Hub đối tác KOC / KOL', icon: Users },
           ],
         },
       ];
@@ -290,9 +290,9 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
     case 'CTV_PARTNER':
       return [
         {
-          title: 'Không Gian Cộng Tác Viên',
+          title: 'Không Gian CTV Video',
           items: [
-            { key: 'self-channel-hub', label: 'Hub Cộng tác viên (CTV Video)', icon: Video },
+            { key: 'self-channel-hub', label: 'Hub CTV Video', icon: Video },
           ],
         },
       ];

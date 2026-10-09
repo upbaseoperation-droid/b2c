@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { formatVndShort } from '../../lib/format';
+import { ConfirmDialog } from '../ui';
 import { 
   FileText, 
   CheckCircle, 
@@ -35,6 +36,8 @@ export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotifi
   const [publications, setPublications] = useState<PublicationItemModel[]>(INITIAL_PUBLICATIONS);
   const [selectedScript, setSelectedScript] = useState<ScriptReviewItem | null>(null);
   const [activeSubTab, setActiveSubTab] = useState<'CONTENT_ITEMS' | 'SCRIPTS' | 'DRAFT_VIDEOS' | 'PUBLICATIONS' | 'PILLARS'>('CONTENT_ITEMS');
+  const [approvingDraftVideo, setApprovingDraftVideo] = useState<string | null>(null);
+  const [approvedDraftVideos, setApprovedDraftVideos] = useState<Set<string>>(new Set());
 
   const handleApprove = (scriptId: string) => {
     setScripts(prev => prev.map(item => item.id === scriptId ? { ...item, status: 'APPROVED', remainingHours: 0 } : item));
@@ -281,13 +284,20 @@ export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotifi
             </div>
             <div className="flex items-center justify-between pt-2">
               <span className="text-xs text-slate-500">Thời lượng: <strong className="text-slate-900">62 giây</strong> (Full HD)</span>
-              <button
-                onClick={() => alert('Đã duyệt video nháp! Chuyển trạng thái cho Booking duyệt link lên sóng TikTok Shop.')}
-                className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-xl transition flex items-center gap-1.5 shadow-xs"
-              >
-                <CheckCircle className="w-3.5 h-3.5" />
-                <span>Duyệt video cho lên sóng</span>
-              </button>
+              {approvedDraftVideos.has('DF-VID-1') ? (
+                <span className="badge-emerald px-3 py-1 text-xs font-semibold inline-flex items-center gap-1.5">
+                  <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Đã duyệt cho lên sóng</span>
+                </span>
+              ) : (
+                <button
+                  onClick={() => setApprovingDraftVideo('DF-VID-1')}
+                  className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-xl transition flex items-center gap-1.5 shadow-xs"
+                >
+                  <CheckCircle className="w-3.5 h-3.5" />
+                  <span>Duyệt video cho lên sóng</span>
+                </button>
+              )}
             </div>
           </div>
 
@@ -568,6 +578,23 @@ export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotifi
         script={selectedScript}
         onApproveScript={handleApprove}
         onRequestRevision={handleRequestRevision}
+      />
+
+      {/* Confirm Approve Draft Video Dialog */}
+      <ConfirmDialog
+        open={Boolean(approvingDraftVideo)}
+        onOpenChange={(open) => !open && setApprovingDraftVideo(null)}
+        title="Xác nhận phê duyệt video nháp"
+        description="Bạn có chắc chắn muốn phê duyệt video nháp này? Trạng thái sẽ được chuyển sang đội ngũ Booking để kiểm tra link lên sóng và hoàn tất nghiệm thu hợp đồng."
+        confirmLabel="Phê duyệt lên sóng"
+        cancelLabel="Hủy"
+        variant="primary"
+        onConfirm={() => {
+          if (approvingDraftVideo) {
+            setApprovedDraftVideos(prev => new Set([...prev, approvingDraftVideo]));
+            setApprovingDraftVideo(null);
+          }
+        }}
       />
     </div>
   );

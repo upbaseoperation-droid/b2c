@@ -203,6 +203,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
   // State for Growth Handoff Modal (Bàn giao quét mã Spark Ads & setup Ads)
   const [handoffDeal, setHandoffDeal] = useState<BookingDealItem | null>(null);
   const [rejectingDeal, setRejectingDeal] = useState<BookingDealItem | null>(null);
+  const [approvingDeal, setApprovingDeal] = useState<BookingDealItem | null>(null);
   const [autoAirDeal, setAutoAirDeal] = useState<BookingDealItem | null>(null);
   const [handoffForm, setHandoffForm] = useState({
     sparkAdsCode: '',
@@ -392,16 +393,23 @@ export const BookingView: React.FC<BookingViewProps> = ({
     return true;
   });
 
-  // Tìm thông tin tiến độ cá nhân từ bảng 26 nhân sự
-  const personalStaffProgress = BOOKING_STAFF_PROGRESS_26.find(s => s.staffName.includes(selectedStaffName)) || {
+  // Tìm thông tin tiến độ cá nhân đồng bộ trực tiếp với allocation và plan items
+  const currentStaffAllocation = (externalStaffAllocations || INITIAL_STAFF_ALLOCATIONS_26).find(a => a.staffName.includes(selectedStaffName));
+  const staffPlannedItems = localPlanItems.filter(i => i.staffName.includes(selectedStaffName));
+  const targetVideosCount = currentStaffAllocation?.planVideos || 50;
+  const targetBudgetAmount = currentStaffAllocation?.planBudget || 150000000;
+  const plannedBudgetSum = staffPlannedItems.reduce((sum, i) => sum + (i.budgetEstimated || 0), 0);
+  const airVideosDone = staffPlannedItems.filter(i => i.status === 'CONVERTED' || i.status === 'APPROVED').length;
+
+  const personalStaffProgress = {
     staffName: selectedStaffName,
-    planVideos: 50,
-    reportVideos: 38,
-    airProgress: 76,
-    planBudget: 150000000,
-    reportBudget: 125000000,
-    budgetProgress: 83,
-    isLagging: false
+    planVideos: targetVideosCount,
+    reportVideos: airVideosDone,
+    airProgress: targetVideosCount > 0 ? Math.round((airVideosDone / targetVideosCount) * 100) : 0,
+    planBudget: targetBudgetAmount,
+    reportBudget: plannedBudgetSum,
+    budgetProgress: targetBudgetAmount > 0 ? Math.round((plannedBudgetSum / targetBudgetAmount) * 100) : 0,
+    isLagging: targetVideosCount > 0 ? (airVideosDone / targetVideosCount) < 0.5 : false
   };
 
   // Quick Brand Approval Action (One-click)
@@ -800,7 +808,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
                         <div className="grid gap-1.5 justify-items-start">
                           <Status tone="warning">Chờ duyệt</Status>
                           <div className="flex gap-1">
-                            <Button size="sm" icon={Check} onClick={() => handleQuickBrandApproval(d, 'ĐÃ_DUYỆT')}>Duyệt</Button>
+                            <Button size="sm" icon={Check} onClick={() => setApprovingDeal(d)}>Duyệt</Button>
                             <Button size="sm" variant="ghost" onClick={() => setRejectingDeal(d)}>Từ chối</Button>
                           </div>
                         </div>
@@ -1136,6 +1144,21 @@ export const BookingView: React.FC<BookingViewProps> = ({
           </>
         )}
       </Modal>
+
+      {/* Duyệt nhanh từ bảng: cần xác nhận */}
+      <ConfirmDialog
+        open={!!approvingDeal}
+        title="Xác nhận phê duyệt deal booking?"
+        message={approvingDeal ? `Duyệt deal ${approvingDeal.dealCode} cho KOC "${approvingDeal.kocStageName}" (Giá trị: ${approvingDeal.totalValue?.toLocaleString('vi-VN')} đ)? Sau khi duyệt, deal sẽ chuyển sang trạng thái sẵn sàng xuất hợp đồng và giải ngân cọc.` : undefined}
+        confirmLabel="Xác nhận duyệt deal"
+        onCancel={() => setApprovingDeal(null)}
+        onConfirm={() => {
+          if (approvingDeal) {
+            handleQuickBrandApproval(approvingDeal, 'ĐÃ_DUYỆT');
+            setApprovingDeal(null);
+          }
+        }}
+      />
 
       {/* Từ chối nhanh từ bảng: cần lý do */}
       <ConfirmDialog

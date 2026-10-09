@@ -7,6 +7,7 @@ import {
   Sparkles, 
   FileText, 
   CheckCircle2, 
+  AlertCircle,
   AlertTriangle, 
   Copy, 
   Check, 
@@ -44,6 +45,7 @@ export const LegalOcrModal: React.FC<LegalOcrModalProps> = ({
   const [activeTab, setActiveTab] = useState<'AUTO' | 'CCCD' | 'BUSINESS'>('AUTO');
   const [showRawText, setShowRawText] = useState<boolean>(false);
   const [imageLoadError, setImageLoadError] = useState<boolean>(false);
+  const [ocrError, setOcrError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Keyboard accessibility: ESC to close
@@ -140,21 +142,22 @@ export const LegalOcrModal: React.FC<LegalOcrModalProps> = ({
 
       const data = await res.json();
       if (data.success && data.data) {
+        setOcrError(null);
         setExtractionResult({
           ...data.data,
           fileName
         });
         setEditableFields(data.data.fields || {});
       } else {
-        alert(data.error || 'Không thể bóc tách tài liệu từ ảnh');
+        setOcrError(data.error || 'Không thể bóc tách tài liệu từ ảnh');
       }
     } catch (err: any) {
       clearTimeout(timeoutId);
       console.error('[Upload OCR error]:', err);
       if (err.name === 'AbortError') {
-        alert('Quá trình nhận diện vượt quá 20 giây. Vui lòng thử lại với ảnh rõ nét hoặc dung lượng nhỏ hơn.');
+        setOcrError('Quá trình nhận diện vượt quá 20 giây. Vui lòng thử lại với ảnh rõ nét hoặc dung lượng nhỏ hơn.');
       } else {
-        alert('Đã xảy ra lỗi khi bóc tách OCR từ ảnh: ' + (err?.message || 'Lỗi kết nối'));
+        setOcrError('Đã xảy ra lỗi khi bóc tách OCR từ ảnh: ' + (err?.message || 'Lỗi kết nối'));
       }
     } finally {
       setIsScanning(false);
@@ -265,6 +268,16 @@ export const LegalOcrModal: React.FC<LegalOcrModalProps> = ({
             Bảo mật thông tin nhân thân theo luật an ninh mạng Việt Nam
           </div>
         </div>
+
+        {ocrError && (
+          <div className="mx-6 mt-4 p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs font-semibold flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+              <span>{ocrError}</span>
+            </div>
+            <button type="button" onClick={() => setOcrError(null)} className="text-rose-500 hover:text-rose-800 font-bold">×</button>
+          </div>
+        )}
 
         {/* Modal Body: 2 Columns */}
         <div className="p-6 overflow-y-auto grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1">

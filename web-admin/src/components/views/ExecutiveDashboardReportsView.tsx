@@ -174,47 +174,64 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
   // Executive KPI Aggregations
   const stats = useMemo(() => {
     const totalDeals = filteredDeals.length;
+    const isBrandFiltered = selectedBrand !== 'ALL';
+
     // Deal costs (Net cast booking)
-    const bookingCost = filteredDeals.reduce((sum, d) => sum + (d.totalValue || 0), 0) || 241000000;
+    const bookingCost = filteredDeals.reduce((sum, d) => sum + (d.totalValue || 0), 0);
     // TikTok Ads PGM spend
-    const adsSpend = filteredDeals.reduce((sum, d) => sum + (d.adCost || 0), 0) || 146500000;
-    // CTV Video Production cost
-    const ctvCost = 78500000;
+    const adsSpend = filteredDeals.reduce((sum, d) => sum + (d.adCost || 0), 0);
+    // CTV Video Production cost: only include in system-wide overview or when not brand filtered
+    const ctvCost = isBrandFiltered ? 0 : 78500000;
     // Sample & Logistics
-    const sampleLogisticsCost = 31000000;
+    const sampleLogisticsCost = isBrandFiltered
+      ? (totalDeals > 0 ? totalDeals * 250000 : 0)
+      : 31000000;
     // Total investment
     const totalSpend = bookingCost + adsSpend + ctvCost + sampleLogisticsCost;
 
     // Gross GMV
-    const bookingGmv = filteredDeals.reduce((sum, d) => sum + (d.affiliateGmv || d.gmv30 || 0), 0) || 1850000000;
-    const adsGmv = filteredDeals.reduce((sum, d) => sum + (d.adGmv || 0), 0) || 1160000000;
-    const ctvGmv = 840000000;
+    const bookingGmv = filteredDeals.reduce((sum, d) => sum + (d.affiliateGmv || d.gmv30 || 0), 0);
+    const adsGmv = filteredDeals.reduce((sum, d) => sum + (d.adGmv || 0), 0);
+    const ctvGmv = isBrandFiltered ? 0 : 840000000;
     const totalGmv = bookingGmv + adsGmv + ctvGmv;
 
     // Overall ROAS
-    const overallRoas = totalSpend > 0 ? Number((totalGmv / totalSpend).toFixed(2)) : 7.69;
+    const overallRoas = totalSpend > 0 ? Number((totalGmv / totalSpend).toFixed(2)) : 0;
     const netProfitContribution = totalGmv - totalSpend;
 
     // SLA & Outputs
-    const totalOnAirVideos = 1025; // Tổng video đã on air toàn sàn
-    const inProductionVideos = 285;
-    const pendingScriptVideos = 94;
-    const totalViews = 48600000; // 48.6M views
+    const totalOnAirVideos = isBrandFiltered
+      ? filteredDeals.filter(d => d.status === 'VIDEO_VERIFIED' || d.status === 'FINAL_PAID' || d.status === 'COMPLETED' || Boolean(d.videoUrl || d.tiktokVideoUrl)).length
+      : 1025;
+    const inProductionVideos = isBrandFiltered
+      ? filteredDeals.filter(d => d.status === 'SCRIPT_APPROVED' || d.status === 'CONTRACT_GENERATED' || d.status === 'SAMPLE_SHIPPED' || d.status === 'SAMPLE_RECEIVED' || d.status === 'VIDEO_SUBMITTED').length
+      : 285;
+    const pendingScriptVideos = isBrandFiltered
+      ? filteredDeals.filter(d => d.status === 'SCRIPT_PENDING' || d.status === 'TERMS_AGREED' || d.status === 'CONTACTING').length
+      : 94;
+    const totalViews = isBrandFiltered
+      ? filteredDeals.reduce((sum, d) => sum + (d.viewsCount || 0), 0)
+      : 48600000;
     const onTimeSlaCount = filteredDeals.filter(d => d.slaStatus !== 'OVERDUE').length;
-    const slaComplianceRate = totalDeals > 0 ? Math.round((onTimeSlaCount / totalDeals) * 100) : 95;
+    const slaComplianceRate = totalDeals > 0 ? Math.round((onTimeSlaCount / totalDeals) * 100) : 100;
 
     // Advance & Final Paid
-    const totalAdvancePaid = filteredDeals.reduce((sum, d) => sum + (d.advanceAmount || 0), 0) || 98000000;
-    const totalFinalPaid = filteredDeals.reduce((sum, d) => sum + (d.finalAmount || 0), 0) || 285000000;
+    const totalAdvancePaid = filteredDeals.reduce((sum, d) => sum + (d.advanceAmount || 0), 0);
+    const totalFinalPaid = filteredDeals.reduce((sum, d) => sum + (d.finalAmount || 0), 0);
     // 10% PIT Withholding Tax
     const totalPitTaxWithheld = Math.round(totalSpend * 0.1);
 
     // Total Portfolio Budget & Spend
-    const totalPlanBudget = storePortfolios.reduce((acc, s) => acc + (s.monthlyBudget || 100000000), 0) || 13450000000;
-    const totalSpentBudget = Math.round(totalPlanBudget * 0.284); // 28.4%
-    const totalRemainingBudget = totalPlanBudget - totalSpentBudget;
-    const overallBurnRate = Math.round((totalSpentBudget / totalPlanBudget) * 100);
-    const overallPacingIndex = Number((overallBurnRate / expectedPacingPct).toFixed(2));
+    const relevantPortfolios = isBrandFiltered
+      ? storePortfolios.filter(s => s.brandName === selectedBrand || s.storeName.toLowerCase().includes(selectedBrand.toLowerCase()))
+      : storePortfolios;
+    const totalPlanBudget = relevantPortfolios.length > 0
+      ? relevantPortfolios.reduce((acc, s) => acc + (s.monthlyBudget || 0), 0)
+      : (isBrandFiltered ? (totalSpend > 0 ? Math.round(totalSpend * 1.5) : 0) : 13450000000);
+    const totalSpentBudget = totalSpend > 0 ? totalSpend : (isBrandFiltered ? 0 : Math.round(totalPlanBudget * 0.284));
+    const totalRemainingBudget = Math.max(0, totalPlanBudget - totalSpentBudget);
+    const overallBurnRate = totalPlanBudget > 0 ? Math.round((totalSpentBudget / totalPlanBudget) * 100) : 0;
+    const overallPacingIndex = expectedPacingPct > 0 ? Number((overallBurnRate / expectedPacingPct).toFixed(2)) : 0;
 
     return {
       totalDeals,
@@ -243,7 +260,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
       overallBurnRate,
       overallPacingIndex
     };
-  }, [filteredDeals, storePortfolios, expectedPacingPct]);
+  }, [filteredDeals, storePortfolios, expectedPacingPct, selectedBrand]);
 
   // =========================================================================
   // 1. DATA: TIẾN ĐỘ NHÂN VIÊN & SQUAD PICS
@@ -1305,29 +1322,35 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
               {/* Simulated Chart Bars */}
               <div className="grid grid-cols-4 gap-3 pt-3">
                 {[
-                  { week: 'Tuần 37 (01-07/10)', gmv: 380000000, spend: 62000000, roas: '6.1x', pct: 68 },
-                  { week: 'Tuần 38 (08-14/10)', gmv: 420000000, spend: 68000000, roas: '6.2x', pct: 75 },
-                  { week: 'Tuần 39 (15-21/10)', gmv: 494000000, spend: 78000000, roas: '6.3x', pct: 88 },
-                  { week: 'Tuần 40 (22-28/10)', gmv: 554000000, spend: 85250000, roas: '6.5x', pct: 100 }
-                ].map((w, idx) => (
-                  <div key={idx} className="bg-slate-50 rounded-xl p-3 border border-slate-200/80 flex flex-col justify-between space-y-2">
-                    <div className="text-2xs font-semibold text-slate-600 truncate">{w.week}</div>
-                    <div>
-                      <div className="text-base font-extrabold font-mono text-emerald-600">
-                        {formatVndShort(w.gmv)}
+                  { week: 'Tuần 40 (01-07/10)', ratioGmv: 0.20, ratioSpend: 0.21, pct: 68 },
+                  { week: 'Tuần 41 (08-14/10)', ratioGmv: 0.23, ratioSpend: 0.23, pct: 75 },
+                  { week: 'Tuần 42 (15-21/10)', ratioGmv: 0.27, ratioSpend: 0.27, pct: 88 },
+                  { week: 'Tuần 43 (22-28/10)', ratioGmv: 0.30, ratioSpend: 0.29, pct: 100 }
+                ].map((item, idx) => {
+                  const wGmv = Math.round(stats.totalGmv * item.ratioGmv);
+                  const wSpend = Math.round(stats.totalSpend * item.ratioSpend);
+                  const wRoas = wSpend > 0 ? (wGmv / wSpend).toFixed(1) + 'x' : '0.0x';
+                  const wPct = stats.totalGmv > 0 ? item.pct : 0;
+                  return (
+                    <div key={idx} className="bg-slate-50 rounded-xl p-3 border border-slate-200/80 flex flex-col justify-between space-y-2">
+                      <div className="text-2xs font-semibold text-slate-600 truncate">{item.week}</div>
+                      <div>
+                        <div className="text-base font-extrabold font-mono text-emerald-600">
+                          {formatVndShort(wGmv)}
+                        </div>
+                        <div className="text-3xs text-slate-500 font-mono">
+                          Chi phí: {formatVndShort(wSpend)}
+                        </div>
                       </div>
-                      <div className="text-3xs text-slate-500 font-mono">
-                        Chi phí: {formatVndShort(w.spend)}
+                      <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+                        <div className="bg-emerald-500 h-full rounded-full transition-all duration-500" style={{ width: `${wPct}%` }} />
+                      </div>
+                      <div className="text-3xs font-mono font-bold text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded w-fit">
+                        ROAS: {wRoas}
                       </div>
                     </div>
-                    <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
-                      <div className="bg-emerald-500 h-full rounded-full transition-all duration-500" style={{ width: `${w.pct}%` }} />
-                    </div>
-                    <div className="text-3xs font-mono font-bold text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded w-fit">
-                      ROAS: {w.roas}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
@@ -1342,44 +1365,53 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
               </div>
 
               <div className="space-y-3.5 pt-1">
-                <div>
-                  <div className="flex justify-between text-xs font-semibold mb-1">
-                    <span className="flex items-center gap-1.5 text-slate-800">
-                      <span className="w-2.5 h-2.5 rounded-full bg-indigo-600" />
-                      1. KOC Booking Ngoài (Affiliate + Cast)
-                    </span>
-                    <span className="font-mono text-indigo-600">48% ({formatVndShort(stats.bookingGmv)})</span>
-                  </div>
-                  <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                    <div className="bg-indigo-600 h-full rounded-full" style={{ width: '48%' }} />
-                  </div>
-                </div>
+                {(() => {
+                  const bPct = stats.totalGmv > 0 ? Math.round((stats.bookingGmv / stats.totalGmv) * 100) : 0;
+                  const aPct = stats.totalGmv > 0 ? Math.round((stats.adsGmv / stats.totalGmv) * 100) : 0;
+                  const cPct = stats.totalGmv > 0 ? Math.max(0, 100 - bPct - aPct) : 0;
+                  return (
+                    <>
+                      <div>
+                        <div className="flex justify-between text-xs font-semibold mb-1">
+                          <span className="flex items-center gap-1.5 text-slate-800">
+                            <span className="w-2.5 h-2.5 rounded-full bg-indigo-600" />
+                            1. KOC Booking Ngoài (Affiliate + Cast)
+                          </span>
+                          <span className="font-mono text-indigo-600">{bPct}% ({formatVndShort(stats.bookingGmv)})</span>
+                        </div>
+                        <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                          <div className="bg-indigo-600 h-full rounded-full" style={{ width: `${bPct}%` }} />
+                        </div>
+                      </div>
 
-                <div>
-                  <div className="flex justify-between text-xs font-semibold mb-1">
-                    <span className="flex items-center gap-1.5 text-slate-800">
-                      <span className="w-2.5 h-2.5 rounded-full bg-rose-500" />
-                      2. TikTok Seller Ads PGM
-                    </span>
-                    <span className="font-mono text-rose-600">30% ({formatVndShort(stats.adsGmv)})</span>
-                  </div>
-                  <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                    <div className="bg-rose-500 h-full rounded-full" style={{ width: '30%' }} />
-                  </div>
-                </div>
+                      <div>
+                        <div className="flex justify-between text-xs font-semibold mb-1">
+                          <span className="flex items-center gap-1.5 text-slate-800">
+                            <span className="w-2.5 h-2.5 rounded-full bg-rose-500" />
+                            2. TikTok Seller Ads PGM
+                          </span>
+                          <span className="font-mono text-rose-600">{aPct}% ({formatVndShort(stats.adsGmv)})</span>
+                        </div>
+                        <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                          <div className="bg-rose-500 h-full rounded-full" style={{ width: `${aPct}%` }} />
+                        </div>
+                      </div>
 
-                <div>
-                  <div className="flex justify-between text-xs font-semibold mb-1">
-                    <span className="flex items-center gap-1.5 text-slate-800">
-                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-                      3. Kênh Sở Hữu & CTV Nội Bộ
-                    </span>
-                    <span className="font-mono text-emerald-600">22% ({formatVndShort(stats.ctvGmv)})</span>
-                  </div>
-                  <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                    <div className="bg-emerald-500 h-full rounded-full" style={{ width: '22%' }} />
-                  </div>
-                </div>
+                      <div>
+                        <div className="flex justify-between text-xs font-semibold mb-1">
+                          <span className="flex items-center gap-1.5 text-slate-800">
+                            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                            3. Kênh Sở Hữu & CTV Nội Bộ
+                          </span>
+                          <span className="font-mono text-emerald-600">{cPct}% ({formatVndShort(stats.ctvGmv)})</span>
+                        </div>
+                        <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                          <div className="bg-emerald-500 h-full rounded-full" style={{ width: `${cPct}%` }} />
+                        </div>
+                      </div>
+                    </>
+                  );
+                })()}
 
                 <div className="pt-2 border-t border-slate-100 text-2xs text-slate-500">
                   Mô hình kiềng 3 chân giúp tối ưu hóa biên độ lợi nhuận và giảm thiểu phụ thuộc vào một nguồn traffic duy nhất.

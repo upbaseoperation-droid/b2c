@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Plus, Upload, Menu, ChevronDown, Sparkles, ArrowRight, Building2, Layers } from 'lucide-react';
+import { Menu, ChevronDown, Sparkles, ArrowRight, Building2 } from 'lucide-react';
 import { UserProfile } from '../lib/types';
 import { USERS } from '../lib/mockData';
 import type { TabKey } from './Sidebar';
@@ -23,11 +23,19 @@ const ROLE_LABEL: Record<UserProfile['role'], string> = {
   CTV_PARTNER: 'Cộng tác viên (Gmail)',
 };
 
+// Các tab có phạm vi theo nhãn hàng
+const BRAND_FILTERABLE_TABS = new Set<TabKey>([
+  'dashboard-bi', 'ads-report', 'performance-p3', 'overview',
+  'manager', 'input-plan', 'koc-listing', 'push-products',
+  'booking', 'koc-master', 'content', 'content-angles',
+  'campaigns', 'sample-tracker', 'brand-hub', 'self-channel-hub', 'koc-hub'
+]);
+
 interface TopHeaderProps {
   currentUser: UserProfile;
   onUserChange: (user: UserProfile) => void;
-  onOpenQuickBook: () => void;
-  onOpenImport: () => void;
+  onOpenQuickBook?: () => void;
+  onOpenImport?: () => void;
   title: string;
   subtitle?: string;
   activeTab?: TabKey;
@@ -41,8 +49,6 @@ interface TopHeaderProps {
 export const TopHeader: React.FC<TopHeaderProps> = ({
   currentUser,
   onUserChange,
-  onOpenQuickBook,
-  onOpenImport,
   title,
   subtitle,
   activeTab,
@@ -51,8 +57,6 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   onNavigateTab,
   onToggleMobileSidebar,
 }) => {
-  const isBookingOrManager = currentUser.role === 'MANAGER' || currentUser.role === 'ADMIN' || currentUser.role === 'BOOKING_MEMBER';
-
   // Danh sách các brand được phép chọn của tài khoản hiện tại
   const userAssignedBrands = currentUser.assignedBrands || (
     currentUser.linkedEntityName ? currentUser.linkedEntityName.split(',').map(s => s.trim()) : []
@@ -60,7 +64,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
 
   return (
     <header className="sticky top-0 z-20 min-h-14 bg-canvas/95 backdrop-blur border-b border-line px-4 sm:px-6 lg:px-8 py-2 flex items-center justify-between gap-4 shrink-0">
-      <div className="flex items-center gap-3 min-w-0">
+      <div className="flex items-center gap-3 min-w-0 flex-1">
         {onToggleMobileSidebar && (
           <button
             onClick={onToggleMobileSidebar}
@@ -71,7 +75,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
           </button>
         )}
 
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <h1 className="text-lg font-semibold text-ink truncate leading-7 tracking-tight">{title}</h1>
           {subtitle && <p className="text-2xs text-ink-3 truncate hidden md:block">{subtitle}</p>}
         </div>
@@ -86,7 +90,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
             <Building2 className="w-3.5 h-3.5 text-emerald-600" />
             <span>{currentUser.assignedBrands?.[0] || currentUser.linkedEntityName || 'Kutieskin'}</span>
           </div>
-        ) : !['KOC_PARTNER', 'CTV_PARTNER'].includes(currentUser.role) && onBrandChange && (
+        ) : !['KOC_PARTNER', 'CTV_PARTNER'].includes(currentUser.role) && onBrandChange && (!activeTab || BRAND_FILTERABLE_TABS.has(activeTab)) && (
           <label className="relative hidden sm:flex items-center h-[34px] pl-2.5 pr-7 rounded-md border border-line-strong text-[12px] text-ink hover:border-slate-400 bg-surface transition-colors cursor-pointer" title="Lọc dữ liệu theo nhãn hàng bạn đang phụ trách">
             <Building2 className="w-3.5 h-3.5 text-blue-600 mr-1.5 shrink-0" />
             <span className="text-ink-3 mr-1 text-2xs hidden md:inline">Nhãn:</span>
@@ -166,26 +170,6 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
               <ChevronDown className="w-3.5 h-3.5 text-ink-3 absolute right-2.5 pointer-events-none" />
             </label>
           </div>
-        )}
-
-        {/* Nút thao tác Booking chỉ xuất hiện khi đang ở tab Booking */}
-        {isBookingOrManager && activeTab === 'booking' && (
-          <>
-            <button
-              onClick={onOpenImport}
-              className="btn-md bg-surface hover:bg-sunken text-ink border border-line-strong transition-colors"
-            >
-              <Upload className="w-4 h-4 text-ink-3" strokeWidth={1.75} />
-              <span className="hidden sm:inline">Nhập Excel</span>
-            </button>
-            <button
-              onClick={onOpenQuickBook}
-              className="btn-md bg-primary hover:bg-primary-hover text-white transition-colors"
-            >
-              <Plus className="w-4 h-4" strokeWidth={2} />
-              <span className="hidden sm:inline">Tạo booking</span>
-            </button>
-          </>
         )}
 
         {/* Nút thao tác nhanh chuyển sang Content Angle khi ở tab Kịch bản */}

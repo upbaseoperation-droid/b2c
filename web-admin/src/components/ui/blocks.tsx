@@ -267,9 +267,14 @@ export function Modal({
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
     document.addEventListener('keydown', onKey);
-    const first = panelRef.current?.querySelector<HTMLElement>('input, select, textarea, button:not([data-close])');
-    first?.focus();
-    return () => document.removeEventListener('keydown', onKey);
+    const timer = setTimeout(() => {
+      const first = panelRef.current?.querySelector<HTMLElement>('input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([data-close]):not([disabled])');
+      first?.focus();
+    }, 50);
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener('keydown', onKey);
+    };
   }, [open, onClose]);
   if (!open) return null;
   return (
@@ -306,45 +311,60 @@ export function ConfirmDialog({
   open,
   title,
   message,
+  description,
   confirmLabel,
   cancelLabel = 'Hủy',
   tone = 'default',
+  variant,
   reason,
   onConfirm,
   onCancel,
+  onOpenChange,
 }: {
   open: boolean;
   title: string;
   message?: React.ReactNode;
+  description?: React.ReactNode;
   confirmLabel: string;
   cancelLabel?: string;
   tone?: 'default' | 'danger';
+  variant?: 'primary' | 'danger' | 'default';
   /** Có ô nhập lý do. `required`: không cho xác nhận khi trống. */
   reason?: { label: string; placeholder?: string; defaultValue?: string; required?: boolean };
-  onConfirm: (reason: string) => void;
-  onCancel: () => void;
+  onConfirm: (reason?: string) => void;
+  onCancel?: () => void;
+  onOpenChange?: (open: boolean) => void;
 }) {
   const [text, setText] = useState(reason?.defaultValue || '');
   const fieldId = useId();
   useEffect(() => { if (open) setText(reason?.defaultValue || ''); }, [open, reason?.defaultValue]);
   const blocked = !!reason?.required && !text.trim();
+  const handleClose = () => {
+    onCancel?.();
+    onOpenChange?.(false);
+  };
+  const effectiveTone = variant === 'danger' ? 'danger' : tone;
+  const effectiveMessage = description !== undefined ? description : message;
   return (
     <Modal
       open={open}
-      onClose={onCancel}
+      onClose={handleClose}
       title={title}
-      description={message}
+      description={effectiveMessage}
       size="sm"
       footer={
         <>
-          <button type="button" onClick={onCancel} className="h-[34px] px-3.5 rounded-md text-[13.5px] font-medium text-ink-2 hover:bg-sunken">{cancelLabel}</button>
+          <button type="button" onClick={handleClose} className="h-[34px] px-3.5 rounded-md text-[13.5px] font-medium text-ink-2 hover:bg-sunken">{cancelLabel}</button>
           <button
             type="button"
             disabled={blocked}
-            onClick={() => onConfirm(text.trim())}
+            onClick={() => {
+              onConfirm(text.trim());
+              onOpenChange?.(false);
+            }}
             className={cx(
               'h-[34px] px-3.5 rounded-md text-[13.5px] font-medium text-white disabled:opacity-50',
-              tone === 'danger' ? 'bg-critical hover:opacity-90' : 'bg-primary hover:bg-primary-hover',
+              effectiveTone === 'danger' ? 'bg-critical hover:opacity-90' : 'bg-primary hover:bg-primary-hover',
             )}
           >
             {confirmLabel}

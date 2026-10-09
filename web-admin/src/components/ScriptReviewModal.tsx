@@ -21,6 +21,7 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
 }) => {
   const [feedbackNotes, setFeedbackNotes] = useState('');
   const [isRevisionMode, setIsRevisionMode] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   // Checklists
   const [checkUsp, setCheckUsp] = useState(true);
@@ -49,9 +50,10 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
 
   const handleSendRevision = () => {
     if (!feedbackNotes.trim()) {
-      alert('Vui lòng nhập ghi chú phản hồi để KOC biết cần chỉnh sửa điểm nào!');
+      setErrorMsg('Vui lòng nhập ghi chú phản hồi để KOC biết cần chỉnh sửa điểm nào!');
       return;
     }
+    setErrorMsg(null);
     onRequestRevision(script.id, feedbackNotes);
     setIsRevisionMode(false);
     onClose();
@@ -232,6 +234,9 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
                 onChange={(e) => setFeedbackNotes(e.target.value)}
                 className="w-full bg-white border border-slate-300 rounded-lg p-3 text-xs text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 focus:outline-none"
               />
+              {errorMsg && (
+                <p className="text-xs text-rose-600 font-medium">{errorMsg}</p>
+              )}
               <button
                 onClick={handleSendRevision}
                 className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-semibold text-xs rounded-lg transition shadow-xs"

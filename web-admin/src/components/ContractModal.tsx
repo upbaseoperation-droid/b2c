@@ -17,8 +17,8 @@ import {
 } from 'lucide-react';
 import { BookingDealItem, OcrLegalExtractionResult } from '../lib/types';
 import { INITIAL_KOCS } from '../lib/mockData';
-import { jsPDF } from 'jspdf';
 import { LegalOcrModal } from './LegalOcrModal';
+import { ConfirmDialog } from './ui';
 
 interface ContractModalProps {
   deal: BookingDealItem | null;
@@ -40,6 +40,7 @@ export const ContractModal: React.FC<ContractModalProps> = ({
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [isOcrOpen, setIsOcrOpen] = useState(false);
   const [ocrData, setOcrData] = useState<OcrLegalExtractionResult | null>(initialOcrResult);
+  const [confirmAction, setConfirmAction] = useState<'ADVANCE' | 'FINAL' | null>(null);
 
   // Sync initialOcrResult when changed
   useEffect(() => {
@@ -81,6 +82,7 @@ export const ContractModal: React.FC<ContractModalProps> = ({
   const handleExportPdf = async () => {
     try {
       setIsExportingPdf(true);
+      const { jsPDF } = await import('jspdf');
       const doc = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
@@ -425,10 +427,7 @@ export const ContractModal: React.FC<ContractModalProps> = ({
           <div className="flex items-center gap-2">
             {onApproveAdvance && deal.status !== 'ADVANCE_PAID' && deal.status !== 'FINAL_PAID' && deal.status !== 'VIDEO_SUBMITTED' && (
               <button
-                onClick={() => {
-                  onApproveAdvance(deal.id);
-                  onClose();
-                }}
+                onClick={() => setConfirmAction('ADVANCE')}
                 className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-lg flex items-center gap-1.5 transition shadow-xs"
               >
                 <CheckCircle2 className="w-4 h-4" />
@@ -438,10 +437,7 @@ export const ContractModal: React.FC<ContractModalProps> = ({
 
             {onApproveFinal && (deal.status === 'VIDEO_SUBMITTED' || deal.status === 'ADVANCE_PAID') && (
               <button
-                onClick={() => {
-                  onApproveFinal(deal.id);
-                  onClose();
-                }}
+                onClick={() => setConfirmAction('FINAL')}
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-lg flex items-center gap-1.5 transition shadow-xs"
               >
                 <CheckCircle className="w-4 h-4" />
@@ -458,6 +454,33 @@ export const ContractModal: React.FC<ContractModalProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Confirmation Dialogs for Money Disbursement */}
+      <ConfirmDialog
+        open={confirmAction === 'ADVANCE'}
+        title="Xác nhận duyệt chi tạm ứng cọc"
+        message={`Bạn có chắc chắn duyệt chi khoản tạm ứng ${deal.advanceAmount.toLocaleString('vi-VN')} đ (20% giá trị hợp đồng) cho KOC ${deal.kocStageName}? Thao tác này sẽ ghi nhận vào sổ phụ kế toán và mở lệnh giải ngân.`}
+        confirmLabel="Xác nhận duyệt chi cọc"
+        onConfirm={() => {
+          onApproveAdvance?.(deal.id);
+          setConfirmAction(null);
+          onClose();
+        }}
+        onCancel={() => setConfirmAction(null)}
+      />
+
+      <ConfirmDialog
+        open={confirmAction === 'FINAL'}
+        title="Xác nhận duyệt chi tất toán hợp đồng"
+        message={`Bạn có chắc chắn duyệt chi tất toán khoản ${deal.finalAmount.toLocaleString('vi-VN')} đ (80% giá trị hợp đồng) cho KOC ${deal.kocStageName}? Thao tác này sẽ nghiệm thu hoàn tất và lưu trữ hồ sơ hợp đồng.`}
+        confirmLabel="Xác nhận duyệt tất toán"
+        onConfirm={() => {
+          onApproveFinal?.(deal.id);
+          setConfirmAction(null);
+          onClose();
+        }}
+        onCancel={() => setConfirmAction(null)}
+      />
 
       {/* Embedded Legal OCR Scanner Modal */}
       <LegalOcrModal

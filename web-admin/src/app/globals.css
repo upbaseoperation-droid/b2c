@@ -143,7 +143,8 @@
   --color-rose-600: #A3241B; --color-rose-700: #891D16; --color-rose-800: #6F1812;
   --color-rose-900: #5A1511; --color-rose-950: #360C09;
 
-  /* ---- Chữ: nhỏ nhất 12px ---- */
+  /* ---- Chữ: nhỏ nhất 11px cho nhãn siêu nhỏ ---- */
+  --text-3xs: 0.6875rem;    --text-3xs--line-height: 1rem;      /* 11/16 nhãn phụ siêu nhỏ */
   --text-2xs: 0.75rem;      --text-2xs--line-height: 1.125rem;  /* 12/18 nhãn, chú thích */
   --text-xs: 0.8125rem;     --text-xs--line-height: 1.25rem;    /* 13/20 ô bảng, nội dung dày */
   --text-sm: 0.875rem;      --text-sm--line-height: 1.375rem;   /* 14/22 nội dung */
@@ -405,3 +406,10 @@ td button {
 span[class*="px-"][class*="rounded"]:not([class*="block"]) {
   white-space: nowrap;
 }
+
+/* Utility class cho cỡ chữ siêu nhỏ 11px */
+.text-3xs {
+  font-size: 0.6875rem;
+  line-height: 1rem;
+}
+

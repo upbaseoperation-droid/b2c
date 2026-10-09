@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { ChannelTag , Avatar } from '../ui';
+import { ChannelTag, Avatar, ConfirmDialog } from '../ui';
 import { 
   Award, 
   Coins, 
@@ -81,6 +81,7 @@ export default function PerformanceP3View({
   }, [storePortfolios]);
   const [selectedRole, setSelectedRole] = useState<string>('ALL');
   const [aiReviewStaff, setAiReviewStaff] = useState<string | null>(null);
+  const [approvingRecord, setApprovingRecord] = useState<StaffP3Record | null>(null);
 
   // KPI summaries
   const totalBonusFund = staffRecords.reduce((sum, r) => sum + r.estimatedBonusVnd, 0);
@@ -338,7 +339,7 @@ export default function PerformanceP3View({
                           </button>
                           {item.approvalStatus === 'CHỜ_DUYỆT' ? (
                             <button
-                              onClick={() => handleApprove(item.id)}
+                              onClick={() => setApprovingRecord(item)}
                               className="btn-sm bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition shadow-2xs"
                             >
                               Duyệt thưởng
@@ -443,6 +444,26 @@ export default function PerformanceP3View({
           initialStaffName={aiReviewStaff}
         />
       )}
+
+      {/* Confirm Approve P3 Bonus Dialog */}
+      <ConfirmDialog
+        open={Boolean(approvingRecord)}
+        onOpenChange={(open) => !open && setApprovingRecord(null)}
+        title="Xác nhận phê duyệt thưởng hiệu suất P3"
+        description={`Bạn có chắc chắn muốn phê duyệt khoản tiền thưởng P3 trị giá ${approvingRecord?.estimatedBonusVnd.toLocaleString('vi-VN')} ₫ (${approvingRecord?.calculatedWorkloadPoints} điểm) cho nhân sự ${approvingRecord?.staffName} (${approvingRecord?.role} - ${approvingRecord?.level})?`}
+        confirmLabel="Duyệt chi thưởng"
+        cancelLabel="Hủy"
+        variant="primary"
+        onConfirm={() => {
+          if (approvingRecord) {
+            handleApprove(approvingRecord.id);
+            if (onNotify) {
+              onNotify(`Đã phê duyệt thưởng P3 (${approvingRecord.estimatedBonusVnd.toLocaleString('vi-VN')} ₫) cho ${approvingRecord.staffName}`, 'success');
+            }
+            setApprovingRecord(null);
+          }
+        }}
+      />
     </div>
   );
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { Stat, StatRow, ChannelBar, Progress, Avatar } from '../ui';
+import { Stat, StatRow, ChannelBar, Progress, Avatar, ConfirmDialog } from '../ui';
 import { formatVndShort } from '../../lib/format';
 import {
   Calendar,
@@ -109,6 +109,9 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
   // Lọc cho Ma Trận Gian Hàng
   const [storeGovernanceFilter, setStoreGovernanceFilter] = useState<'ALL' | 'B2C_ONLY' | 'MISSING_PLAN' | 'PENDING_APPROVAL' | 'APPROVED' | 'EXEMPT'>('ALL');
   const [storeSearchQuery, setStoreSearchQuery] = useState<string>('');
+  const [governancePage, setGovernancePage] = useState<number>(1);
+  const GOVERNANCE_PAGE_SIZE = 15;
+  const [approvingQuickPlan, setApprovingQuickPlan] = useState<{ planId: string; storeName: string } | null>(null);
 
   // Danh bạ gian hàng có hiệu lực
   const effectiveStores = useMemo<StorePortfolioItem[]>(() => {
@@ -130,7 +133,9 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
       
       const b1 = (p.brandName || '').toLowerCase();
       const b2 = (store.brandName || '').toLowerCase();
-      return b1.length >= 2 && b2.length >= 2 && (b1.includes(b2) || b2.includes(b1));
+      const sName = (store.storeName || '').toLowerCase();
+      return (b1.length >= 2 && b2.length >= 2 && (b1.includes(b2) || b2.includes(b1))) ||
+             (b1.length >= 2 && sName.includes(b1.split('_')[0].trim()));
     }) || null;
   };
 
@@ -208,6 +213,13 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
       return true;
     });
   }, [storeGovernanceList, storeGovernanceFilter, storeSearchQuery]);
+
+  // Phân trang danh sách gian hàng (tránh quá tải DOM)
+  const totalGovernancePages = Math.ceil(filteredStoreGovernance.length / GOVERNANCE_PAGE_SIZE) || 1;
+  const paginatedStoreGovernance = useMemo(() => {
+    const start = (governancePage - 1) * GOVERNANCE_PAGE_SIZE;
+    return filteredStoreGovernance.slice(start, start + GOVERNANCE_PAGE_SIZE);
+  }, [filteredStoreGovernance, governancePage]);
 
   // Xử lý Toggle "Marketing B2C Phụ Trách & Cần Làm Plan"
   const handleToggleB2cManaged = (store: StorePortfolioItem, e: React.MouseEvent) => {
@@ -962,7 +974,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                       </td>
                     </tr>
                   ) : (
-                    filteredStoreGovernance.map((item: StoreGovernanceItem) => {
+                    paginatedStoreGovernance.map((item: StoreGovernanceItem) => {
                       const store = item.store;
                       const plan = item.plan;
                       const isB2c = item.isB2c;
@@ -1124,7 +1136,10 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                                 <>
                                   {plan.status === 'PENDING_APPROVAL' && (
                                     <button
-                                      onClick={(e) => handleQuickApprovePlan(plan.id, store.storeName, e)}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setApprovingQuickPlan({ planId: plan.id, storeName: store.storeName });
+                                      }}
                                       className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition"
                                       title="Quản lý phê duyệt nhanh kế hoạch này"
                                     >
@@ -1177,6 +1192,36 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                 </tbody>
               </table>
             </div>
+
+            {/* Pagination Controls */}
+            {totalGovernancePages > 1 && (
+              <div className="p-3 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-600">
+                <span>
+                  Hiển thị {(governancePage - 1) * GOVERNANCE_PAGE_SIZE + 1} - {Math.min(governancePage * GOVERNANCE_PAGE_SIZE, filteredStoreGovernance.length)} trên tổng số {filteredStoreGovernance.length} gian hàng
+                </span>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    disabled={governancePage <= 1}
+                    onClick={() => setGovernancePage(p => Math.max(1, p - 1))}
+                    className="px-3 py-1 rounded bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed font-medium"
+                  >
+                    Trước
+                  </button>
+                  <span className="px-2 font-semibold text-slate-800">
+                    Trang {governancePage} / {totalGovernancePages}
+                  </span>
+                  <button
+                    type="button"
+                    disabled={governancePage >= totalGovernancePages}
+                    onClick={() => setGovernancePage(p => Math.min(totalGovernancePages, p + 1))}
+                    className="px-3 py-1 rounded bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed font-medium"
+                  >
+                    Sau
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       ) : (
@@ -1883,6 +1928,21 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
           onNotify={notify}
         />
       )}
+
+      {/* Modal xác nhận Duyệt Nhanh Kế Hoạch */}
+      <ConfirmDialog
+        open={!!approvingQuickPlan}
+        title="Xác nhận phê duyệt nhanh kế hoạch"
+        message={`Bạn có chắc chắn muốn phê duyệt nhanh kế hoạch của gian hàng "${approvingQuickPlan?.storeName}"? Thao tác này sẽ chuyển trạng thái kế hoạch sang ĐÃ PHÊ DUYỆT.`}
+        confirmLabel="Xác nhận duyệt nhanh"
+        onConfirm={() => {
+          if (approvingQuickPlan) {
+            handleQuickApprovePlan(approvingQuickPlan.planId, approvingQuickPlan.storeName, { stopPropagation: () => {} } as any);
+            setApprovingQuickPlan(null);
+          }
+        }}
+        onCancel={() => setApprovingQuickPlan(null)}
+      />
     </div>
   );
 };

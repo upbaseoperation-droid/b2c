@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
+import { ConfirmDialog } from '../ui';
 import {
   ShieldCheck,
   ShieldAlert,
@@ -88,6 +89,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
   const [searchMatrix, setSearchMatrix] = useState<string>('');
   const [roleColumnFilter, setRoleColumnFilter] = useState<string>('ALL');
   const [selectedCell, setSelectedCell] = useState<{ itemId: string; role: string; currentLevel: PermissionAccessLevel } | null>(null);
+  const [isConfirmingResetMatrix, setIsConfirmingResetMatrix] = useState(false);
 
   // --- STATE TAB 2: NHÂN SỰ NỘI BỘ ---
   const [internalStaff, setInternalStaff] = useState<InternalStaffRbacMember[]>(INITIAL_INTERNAL_STAFF_RBAC);
@@ -164,10 +166,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
 
   // Khôi phục ma trận về mặc định
   const handleResetMatrix = () => {
-    if (window.confirm('Bạn có chắc chắn muốn khôi phục toàn bộ Ma trận phân quyền về cấu hình mặc định chuẩn UpBase B2C?')) {
-      setMatrixItems(INITIAL_PERMISSION_MATRIX);
-      if (onNotify) onNotify('Đã khôi phục Ma trận phân quyền chuẩn UpBase B2C thành công!', 'info');
-    }
+    setIsConfirmingResetMatrix(true);
   };
 
   // Áp dụng Template Ma trận
@@ -1085,6 +1084,22 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
           </div>
         </div>
       )}
+
+      {/* Confirm Reset RBAC Matrix Dialog */}
+      <ConfirmDialog
+        open={isConfirmingResetMatrix}
+        onOpenChange={setIsConfirmingResetMatrix}
+        title="Xác nhận khôi phục ma trận phân quyền"
+        description="Bạn có chắc chắn muốn khôi phục toàn bộ Ma trận phân quyền RBAC về cấu hình mặc định chuẩn UpBase B2C? Mọi thay đổi quyền tùy chỉnh sẽ được đặt lại."
+        confirmLabel="Khôi phục mặc định"
+        cancelLabel="Hủy"
+        variant="danger"
+        onConfirm={() => {
+          setMatrixItems(INITIAL_PERMISSION_MATRIX);
+          if (onNotify) onNotify('Đã khôi phục Ma trận phân quyền chuẩn UpBase B2C thành công!', 'info');
+          setIsConfirmingResetMatrix(false);
+        }}
+      />
     </div>
   );
 };

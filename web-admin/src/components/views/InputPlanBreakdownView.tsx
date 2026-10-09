@@ -76,6 +76,7 @@ import { MonthlyPlanHub } from './MonthlyPlanHub';
 import { INITIAL_MONTHLY_PLANS } from '../../lib/monthlyPlanData';
 import { PlanApprovalStepper } from './PlanApprovalStepper';
 import { PlanDiscussionHub } from './PlanDiscussionHub';
+import { ConfirmDialog } from '../ui';
 
 interface InputPlanBreakdownViewProps {
   currentUser?: UserProfile;
@@ -113,6 +114,8 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
 
   // View Mode: 'CARDS' (Intuitive & Visual) or 'TABLE' (Clean & Fast)
   const [viewMode, setViewMode] = useState<'CARDS' | 'TABLE'>('TABLE');
+  const [showApproveConfirm, setShowApproveConfirm] = useState(false);
+  const [showRejectConfirm, setShowRejectConfirm] = useState(false);
 
   const notify = (msg: string) => {
     if (onNotify) onNotify(msg);
@@ -786,27 +789,14 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
               {(['ADMIN', 'MANAGER', 'LEAD'].includes(currentUser?.role || '') || currentRole === 'LEAD') && (
                 <>
                   <button
-                    onClick={() => {
-                      const log = `Quản lý (${currentUser?.name || 'Manager'}) đã PHÊ DUYỆT CHÍNH THỨC kế hoạch.`;
-                      handleStatusChangeForPlan(planState.id, 'LEAD_APPROVED', log);
-                      setPlanState(prev => ({ ...prev, status: 'LEAD_APPROVED' }));
-                      notify(`Đã phê duyệt kế hoạch thành công!`);
-                    }}
+                    onClick={() => setShowApproveConfirm(true)}
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold text-xs shadow-md transition-all cursor-pointer"
                   >
                     <CheckCircle2 className="w-3.5 h-3.5" />
                     <span>Duyệt Kế Hoạch</span>
                   </button>
                   <button
-                    onClick={() => {
-                      const reason = prompt('Nhập lý do / nội dung yêu cầu nhân viên chỉnh sửa:') || '';
-                      if (reason.trim()) {
-                        const log = `Quản lý (${currentUser?.name || 'Manager'}) YÊU CẦU CHỈNH SỬA: "${reason}"`;
-                        handleStatusChangeForPlan(planState.id, 'REVISION_REQUESTED', log, reason);
-                        setPlanState(prev => ({ ...prev, status: 'REVISION_REQUESTED' }));
-                        notify(`Đã gửi yêu cầu chỉnh sửa cho nhân viên!`);
-                      }
-                    }}
+                    onClick={() => setShowRejectConfirm(true)}
                     className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 text-xs font-semibold transition cursor-pointer"
                   >
                     <RotateCcw className="w-3.5 h-3.5" />
@@ -2284,6 +2274,44 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
           </div>
         </div>
       )}
+
+      {/* Dialog xác nhận duyệt kế hoạch */}
+      <ConfirmDialog
+        open={showApproveConfirm}
+        title="Xác nhận phê duyệt kế hoạch tháng"
+        message={`Bạn có chắc chắn muốn phê duyệt kế hoạch "${planState.title}" với tổng ngân sách ${formatVndShort(planState.totalTargetBudget)}? Kế hoạch sẽ được mở khóa chuyển giao sang khâu Booking để tuyển chọn KOC và ký hợp đồng.`}
+        confirmLabel="Phê duyệt kế hoạch"
+        onConfirm={() => {
+          const log = `Quản lý (${currentUser?.name || 'Manager'}) đã PHÊ DUYỆT CHÍNH THỨC kế hoạch.`;
+          handleStatusChangeForPlan(planState.id, 'LEAD_APPROVED', log);
+          setPlanState(prev => ({ ...prev, status: 'LEAD_APPROVED' }));
+          setShowApproveConfirm(false);
+          notify(`Đã phê duyệt kế hoạch thành công!`);
+        }}
+        onCancel={() => setShowApproveConfirm(false)}
+      />
+
+      {/* Dialog yêu cầu chỉnh sửa kế hoạch (bắt buộc nhập lý do) */}
+      <ConfirmDialog
+        open={showRejectConfirm}
+        title="Yêu cầu chỉnh sửa kế hoạch"
+        message={`Vui lòng nhập nội dung chỉ đạo hoặc lý do yêu cầu chuyên viên (${planState.pic}) chỉnh sửa kế hoạch:`}
+        confirmLabel="Gửi yêu cầu chỉnh sửa"
+        tone="danger"
+        reason={{
+          label: "Nội dung yêu cầu chỉnh sửa",
+          placeholder: "Ví dụ: Giảm tỷ trọng kênh Shopee Video, tăng số lượng KOC Micro, điều chỉnh ngân sách...",
+          required: true
+        }}
+        onConfirm={(reason) => {
+          const log = `Quản lý (${currentUser?.name || 'Manager'}) YÊU CẦU CHỈNH SỬA: "${reason}"`;
+          handleStatusChangeForPlan(planState.id, 'REVISION_REQUESTED', log, reason);
+          setPlanState(prev => ({ ...prev, status: 'REVISION_REQUESTED' }));
+          setShowRejectConfirm(false);
+          notify(`Đã gửi yêu cầu chỉnh sửa cho nhân viên!`);
+        }}
+        onCancel={() => setShowRejectConfirm(false)}
+      />
     </div>
   );
 };

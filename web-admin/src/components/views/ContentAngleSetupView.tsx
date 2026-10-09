@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
+import { ConfirmDialog } from '../ui';
 import { 
   Sparkles, 
   Layers, 
@@ -95,6 +96,7 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
 
   // Copy feedback state
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [deletingAngle, setDeletingAngle] = useState<{ id: string; name: string } | null>(null);
 
   // Extract unique Stores from Products & Angles
   const availableStores = useMemo(() => {
@@ -273,10 +275,7 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
 
   // Handle Delete
   const handleDeleteAngle = (id: string, name: string) => {
-    if (window.confirm(`Bạn có chắc chắn muốn xóa góc kịch bản "${name}" không?`)) {
-      setAngles(prev => prev.filter(a => a.id !== id));
-      if (onNotify) onNotify(`Đã xóa góc kịch bản "${name}"`, 'info');
-    }
+    setDeletingAngle({ id, name });
   };
 
   // Handle Copy Hook
@@ -1257,6 +1256,23 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
           </div>
         </div>
       )}
+      {/* Confirm Delete Angle Dialog */}
+      <ConfirmDialog
+        open={Boolean(deletingAngle)}
+        onOpenChange={(open) => !open && setDeletingAngle(null)}
+        title="Xác nhận xóa góc kịch bản"
+        description={`Bạn có chắc chắn muốn xóa góc kịch bản "${deletingAngle?.name}" không? Thao tác này không thể hoàn tác.`}
+        confirmLabel="Xóa góc kịch bản"
+        cancelLabel="Hủy"
+        variant="danger"
+        onConfirm={() => {
+          if (deletingAngle) {
+            setAngles(prev => prev.filter(a => a.id !== deletingAngle.id));
+            if (onNotify) onNotify(`Đã xóa góc kịch bản "${deletingAngle.name}"`, 'info');
+            setDeletingAngle(null);
+          }
+        }}
+      />
     </div>
   );
 };

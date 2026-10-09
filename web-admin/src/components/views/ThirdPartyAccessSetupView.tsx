@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
+import { ConfirmDialog } from '../ui';
 import {
   ShieldCheck,
   KeyRound,
@@ -74,6 +75,7 @@ export const ThirdPartyAccessSetupView: React.FC<ThirdPartyAccessSetupViewProps>
     canClaimSamples: false
   });
   const [formNotes, setFormNotes] = useState('');
+  const [deletingAccount, setDeletingAccount] = useState<ThirdPartyAccessAccount | null>(null);
 
   // Filtered accounts
   const filteredAccounts = useMemo(() => {
@@ -206,10 +208,7 @@ export const ThirdPartyAccessSetupView: React.FC<ThirdPartyAccessSetupViewProps>
 
   // Delete Account
   const handleDeleteAccount = (acc: ThirdPartyAccessAccount) => {
-    if (window.confirm(`Bạn có chắc chắn muốn thu hồi và xóa quyền truy cập của ${acc.gmail}?`)) {
-      setAccounts(prev => prev.filter(a => a.id !== acc.id));
-      if (onNotify) onNotify(`Đã xóa tài khoản đối tác ${acc.gmail}`, 'info');
-    }
+    setDeletingAccount(acc);
   };
 
   // Impersonate / Test View
@@ -902,6 +901,24 @@ export const ThirdPartyAccessSetupView: React.FC<ThirdPartyAccessSetupViewProps>
           </div>
         </div>
       )}
+
+      {/* Confirm Revoke Partner Access Dialog */}
+      <ConfirmDialog
+        open={Boolean(deletingAccount)}
+        onOpenChange={(open) => !open && setDeletingAccount(null)}
+        title="Xác nhận thu hồi quyền truy cập đối tác"
+        description={`Bạn có chắc chắn muốn thu hồi và xóa tài khoản truy cập đối tác "${deletingAccount?.gmail}" (${deletingAccount?.displayName})? Đối tác sẽ không thể đăng nhập vào cổng thông tin nữa.`}
+        confirmLabel="Thu hồi & Xóa"
+        cancelLabel="Hủy"
+        variant="danger"
+        onConfirm={() => {
+          if (deletingAccount) {
+            setAccounts(prev => prev.filter(a => a.id !== deletingAccount.id));
+            if (onNotify) onNotify(`Đã xóa tài khoản đối tác ${deletingAccount.gmail}`, 'info');
+            setDeletingAccount(null);
+          }
+        }}
+      />
     </div>
   );
 };

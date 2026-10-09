@@ -56,11 +56,11 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
     }
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
-  // 1. Channel & Stage Name
   const [stageName, setStageName] = useState('');
   const [channelId, setChannelId] = useState('');
   const [realName, setRealName] = useState('');
   const [bookingFormat, setBookingFormat] = useState<'Booking Video KOC' | 'Booking Livestream KOC' | 'Affiliate Thuần'>('Booking Video KOC');
+  const [formError, setFormError] = useState<string | null>(null);
   
   // 2. Rate Card & 4 Phân Loại Cốt Lõi (Sheet 3.1 & 3.2 & 5.4 & 5.6)
   const [rateCardVideo, setRateCardVideo] = useState<number>(3000000);
@@ -124,9 +124,10 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!stageName.trim() || !channelId.trim()) {
-      alert('Vui lòng nhập Tên KOC / Kênh TikTok!');
+      setFormError('Vui lòng nhập đầy đủ Tên KOC và Tên Kênh TikTok!');
       return;
     }
+    setFormError(null);
 
     const formattedChannel = channelId.startsWith('@') ? channelId : `@${channelId}`;
 
@@ -236,6 +237,12 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+          {formError && (
+            <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs font-semibold flex items-center justify-between">
+              <span>{formError}</span>
+              <button type="button" onClick={() => setFormError(null)} className="text-rose-500 font-bold hover:text-rose-800">×</button>
+            </div>
+          )}
           {/* Section 1: Channel & Stage Name & Booking Format */}
           <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
             <span className="text-slate-800 font-semibold flex items-center gap-1.5">

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
+import { ConfirmDialog } from '../ui';
 import { 
   Package, 
   Truck, 
@@ -65,6 +66,7 @@ export default function SampleTrackerView({
   }, [deals]);
 
   const [shipments, setShipments] = useState<SampleShipment[]>(mergedInitialShipments);
+  const [blacklistingItem, setBlacklistingItem] = useState<SampleShipment | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [selectedBrand, setSelectedBrand] = useState<string>('ALL');
@@ -130,18 +132,8 @@ export default function SampleTrackerView({
     }
   };
 
-  const handleMarkBlacklist = (id: string) => {
-    if (!confirm('Xác nhận đưa KOC này vào danh sách Blacklist bùng mẫu? Thông tin sẽ được cảnh báo toàn công ty.')) return;
-    setShipments(prev => prev.map(item => {
-      if (item.id === id) {
-        return {
-          ...item,
-          status: 'BLACKLISTED',
-          notes: 'Đã đưa vào Blacklist vì nhận mẫu quá hạn không trả video.'
-        };
-      }
-      return item;
-    }));
+  const handleMarkBlacklist = (item: SampleShipment) => {
+    setBlacklistingItem(item);
   };
 
   return (
@@ -162,7 +154,7 @@ export default function SampleTrackerView({
 
         <div className="flex items-center gap-2">
           <button 
-            onClick={() => alert('Mở form tạo phiếu xuất kho gửi mẫu cho KOC')}
+            onClick={() => onNotify?.('Tính năng tạo phiếu xuất kho gửi mẫu đang được kết nối với hệ thống WMS kho UpBase', 'info')}
             className="btn-md bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg transition shadow-2xs flex items-center gap-2"
           >
             <Plus className="w-3.5 h-3.5" />
@@ -470,7 +462,7 @@ export default function SampleTrackerView({
                               <MessageSquare className="w-3 h-3" /> Giục Zalo
                             </a>
                             <button 
-                              onClick={() => handleMarkBlacklist(item.id)}
+                              onClick={() => handleMarkBlacklist(item)}
                               className="px-2 py-1 text-2xs font-medium bg-slate-100 hover:bg-rose-100 text-rose-700 rounded transition border border-rose-200"
                               title="Báo cáo bùng & đưa vào Blacklist"
                             >
@@ -481,7 +473,7 @@ export default function SampleTrackerView({
 
                         {item.status === 'DELIVERING' && (
                           <button 
-                            onClick={() => alert(`Tra cứu hành trình vận đơn ${item.trackingCode} trên cổng ${item.carrier}`)}
+                            onClick={() => onNotify?.(`Mở hành trình vận đơn ${item.trackingCode} (${item.carrier})`, 'info')}
                             className="px-2.5 py-1 text-2xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 rounded transition border border-slate-200"
                           >
                             Tra cứu
@@ -501,7 +493,7 @@ export default function SampleTrackerView({
 
                         {item.status === 'AIRED' && item.sparkAdsCode && (
                           <button 
-                            onClick={() => alert(`Đã gửi thông báo bàn giao mã ${item.sparkAdsCode} sang Team Media (Zalo/Slack)`)}
+                            onClick={() => onNotify?.(`Đã gửi thông báo bàn giao mã Spark Ads [${item.sparkAdsCode}] sang Media (Slack/Zalo)`, 'success')}
                             className="inline-flex items-center gap-1 px-2.5 py-1 text-2xs font-medium bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded transition"
                           >
                             <Share2 className="w-3 h-3" /> Bàn giao Media
@@ -516,6 +508,28 @@ export default function SampleTrackerView({
           </table>
         </div>
       </div>
+
+      {/* Confirm Blacklist KOC Dialog */}
+      <ConfirmDialog
+        open={Boolean(blacklistingItem)}
+        onOpenChange={(open) => !open && setBlacklistingItem(null)}
+        title="Xác nhận đưa KOC vào Blacklist bùng mẫu"
+        description={`Bạn có chắc chắn muốn đưa KOC "${blacklistingItem?.kocName}" (${blacklistingItem?.kocPhone}) vào danh sách Blacklist? Thông tin bùng mẫu sẽ được cảnh báo toàn công ty và chặn gửi mẫu ở các chiến dịch kế tiếp.`}
+        confirmLabel="Đưa vào Blacklist"
+        cancelLabel="Hủy"
+        variant="danger"
+        onConfirm={() => {
+          if (blacklistingItem) {
+            setShipments(prev => prev.map(item => item.id === blacklistingItem.id ? {
+              ...item,
+              status: 'BLACKLISTED',
+              notes: 'Đã đưa vào Blacklist vì nhận mẫu quá hạn không trả video.'
+            } : item));
+            onNotify?.(`Đã đưa KOC ${blacklistingItem.kocName} vào danh sách Blacklist bùng mẫu`, 'warning');
+            setBlacklistingItem(null);
+          }
+        }}
+      />
     </div>
   );
 }

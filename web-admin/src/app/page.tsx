@@ -7,6 +7,7 @@ import { TopHeader } from '../components/TopHeader';
 import { QuickBookModal } from '../components/QuickBookModal';
 import { ImportExcelModal } from '../components/ImportExcelModal';
 import { ContractModal } from '../components/ContractModal';
+import { ErrorBoundary } from '../components/ErrorBoundary';
 
 import { CockpitView } from '../components/views/CockpitView';
 import { OverviewView } from '../components/views/OverviewView';
@@ -82,6 +83,35 @@ import {
   StorePortfolioItem,
   KocListingItem
 } from '../lib/types';
+
+function KeepAliveTab({
+  tabKey,
+  currentTab,
+  children,
+}: {
+  tabKey: TabKey;
+  currentTab: TabKey;
+  children: React.ReactNode;
+}) {
+  const [hasMounted, setHasMounted] = useState(tabKey === currentTab);
+  useEffect(() => {
+    if (tabKey === currentTab && !hasMounted) {
+      setHasMounted(true);
+    }
+  }, [tabKey, currentTab, hasMounted]);
+
+  if (!hasMounted) return null;
+  return (
+    <div
+      style={{ display: tabKey === currentTab ? 'block' : 'none' }}
+      className="space-y-6"
+    >
+      <ErrorBoundary fallbackTitle={`Lỗi tải màn hình (${tabKey})`}>
+        {children}
+      </ErrorBoundary>
+    </div>
+  );
+}
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
@@ -655,8 +685,8 @@ export default function App() {
             setIsQuickBookOpen(true);
           }}
           onOpenImport={() => setIsImportOpen(true)}
-          title={titles[activeTab].title}
-          subtitle={titles[activeTab].subtitle}
+          title={titles[activeTab]?.title ?? 'Bàn điều phối vận hành'}
+          subtitle={titles[activeTab]?.subtitle ?? ''}
           activeTab={activeTab}
           onNavigateTab={setActiveTab}
           onToggleMobileSidebar={() => setIsMobileSidebarOpen(prev => !prev)}
@@ -715,7 +745,7 @@ export default function App() {
             </div>
           ) : (
             <>
-          {activeTab === 'cockpit' && (
+          <KeepAliveTab tabKey="cockpit" currentTab={activeTab}>
             <CockpitView
               currentUser={currentUser}
               tasks={tasks}
@@ -729,9 +759,9 @@ export default function App() {
               onTaskActionClick={handleTaskActionClick}
               onNavigateToInputPlan={() => setActiveTab('input-plan')}
             />
-          )}
+          </KeepAliveTab>
 
-          {activeTab === 'overview' && (
+          <KeepAliveTab tabKey="overview" currentTab={activeTab}>
             <OverviewView
               deals={deals}
               onOpenQuickBook={() => {
@@ -740,9 +770,9 @@ export default function App() {
               }}
               onSelectDeal={setSelectedDealForContract}
             />
-          )}
+          </KeepAliveTab>
 
-          {activeTab === 'dashboard-bi' && (
+          <KeepAliveTab tabKey="dashboard-bi" currentTab={activeTab}>
             <ExecutiveDashboardReportsView
               currentUser={currentUser}
               deals={deals}
@@ -752,9 +782,9 @@ export default function App() {
               onNotify={showToast}
               onNavigateToTab={setActiveTab}
             />
-          )}
+          </KeepAliveTab>
 
-          {activeTab === 'input-plan' && (
+          <KeepAliveTab tabKey="input-plan" currentTab={activeTab}>
             <InputPlanBreakdownView
               currentUser={currentUser}
               storePortfolios={storePortfolios}
@@ -769,9 +799,9 @@ export default function App() {
                 showToast(`Đã lưu kế hoạch ${weeklyPlan.storeName}, ${weeklyPlan.week}`);
               }}
             />
-          )}
+          </KeepAliveTab>
 
-          {activeTab === 'koc-listing' && (
+          <KeepAliveTab tabKey="koc-listing" currentTab={activeTab}>
             <KocListingBatchHubView
               listings={kocListings}
               onUpdateListings={setKocListings}
@@ -779,9 +809,9 @@ export default function App() {
               currentRole={currentUser.role}
               currentUserName={currentUser.name}
             />
-          )}
+          </KeepAliveTab>
 
-          {activeTab === 'master-data' && (
+          <KeepAliveTab tabKey="master-data" currentTab={activeTab}>
             <MasterDataHubView
               currentUser={currentUser}
               brands={brands}
@@ -793,17 +823,17 @@ export default function App() {
               onKocUpdated={handleKocUpdated}
               onUpdateStore={handleUpdateStore}
             />
-          )}
+          </KeepAliveTab>
 
-          {activeTab === 'push-products' && (
+          <KeepAliveTab tabKey="push-products" currentTab={activeTab}>
             <PushProductsView
               currentUser={currentUser}
               brands={brands}
               onNotify={showToast}
             />
-          )}
+          </KeepAliveTab>
 
-          {activeTab === 'self-channel-hub' && (
+          <KeepAliveTab tabKey="self-channel-hub" currentTab={activeTab}>
             <SelfChannelCtvHubView
               currentUser={currentUser}
               brands={brands}
@@ -811,9 +841,9 @@ export default function App() {
               onOpenPushProducts={() => setActiveTab('push-products')}
               onNavigateToBrand={['ADMIN', 'MANAGER'].includes(currentUser.role) ? () => setActiveTab('campaigns') : undefined}
             />
-          )}
+          </KeepAliveTab>
 
-          {activeTab === 'stores' && (
+          <KeepAliveTab tabKey="stores" currentTab={activeTab}>
             <MasterDataHubView
               initialSubTab="stores"
               currentUser={currentUser}
@@ -823,28 +853,28 @@ export default function App() {
               onNotify={showToast}
               onUpdateStore={handleUpdateStore}
             />
-          )}
+          </KeepAliveTab>
 
-          {activeTab === 'campaigns' && (
+          <KeepAliveTab tabKey="campaigns" currentTab={activeTab}>
             <BrandView
               onCampaignCreatedNotification={handleCampaignCreatedNotification}
               onTriggerHandoffNotification={handleTriggerHandoffNotification}
               onNavigateToCtvHub={() => setActiveTab('self-channel-hub')}
             />
-          )}
+          </KeepAliveTab>
 
-          {activeTab === 'brand-knowledge' && (
+          <KeepAliveTab tabKey="brand-knowledge" currentTab={activeTab}>
             <BrandKnowledgeView />
-          )}
+          </KeepAliveTab>
 
-          {activeTab === 'content' && (
+          <KeepAliveTab tabKey="content" currentTab={activeTab}>
             <ContentView
               onScriptApprovedNotification={handleScriptApprovedNotification}
               onNavigateToAngles={() => setActiveTab('content-angles')}
             />
-          )}
+          </KeepAliveTab>
 
-          {activeTab === 'content-angles' && (
+          <KeepAliveTab tabKey="content-angles" currentTab={activeTab}>
             <ContentAngleSetupView
               currentUser={currentUser}
               onNotify={showToast}
@@ -853,9 +883,9 @@ export default function App() {
                 showToast(`Đã chọn góc kịch bản "${angle.name}" cho Booking`);
               }}
             />
-          )}
+          </KeepAliveTab>
 
-          {activeTab === 'partner-access' && (
+          <KeepAliveTab tabKey="partner-access" currentTab={activeTab}>
             <CentralizedRbacHubView
               currentUser={currentUser}
               brands={brands}
@@ -868,9 +898,9 @@ export default function App() {
                 handleUserChange(partnerUser);
               }}
             />
-          )}
+          </KeepAliveTab>
 
-          {activeTab === 'booking' && (
+          <KeepAliveTab tabKey="booking" currentTab={activeTab}>
             <BookingView 
               deals={deals}
               kocs={kocs}
@@ -891,13 +921,13 @@ export default function App() {
               onDeletePlanItem={handleDeletePlanItem}
               onSubmitPlanToLead={handleSubmitPlanToLead}
               onConvertPlanItemToDeal={handleConvertPlanItemToDeal}
-              staffAllocations={staffAllocations['2026/09']}
+              staffAllocations={staffAllocations['2026/10'] || staffAllocations['2026/09']}
               currentUserName={currentUser.name}
               onOpenInputPlan={() => setActiveTab('input-plan')}
             />
-          )}
+          </KeepAliveTab>
 
-          {activeTab === 'koc-master' && (
+          <KeepAliveTab tabKey="koc-master" currentTab={activeTab}>
             <KocMasterDataView
               kocs={kocs}
               currentUser={currentUser}
@@ -905,18 +935,18 @@ export default function App() {
               onKocCreated={handleKocCreated}
               onKocUpdated={handleKocUpdated}
             />
-          )}
+          </KeepAliveTab>
 
-          {activeTab === 'contracts' && (
+          <KeepAliveTab tabKey="contracts" currentTab={activeTab}>
             <ContractView
               deals={deals}
               onSelectDeal={setSelectedDealForContract}
               onApproveAdvance={handleApproveAdvance}
               onApproveFinal={handleApproveFinal}
             />
-          )}
+          </KeepAliveTab>
 
-          {activeTab === 'sample-tracker' && (
+          <KeepAliveTab tabKey="sample-tracker" currentTab={activeTab}>
             <SampleTrackerView
               deals={deals}
               currentUser={currentUser}
@@ -930,9 +960,9 @@ export default function App() {
                 } : d));
               }}
             />
-          )}
+          </KeepAliveTab>
 
-          {activeTab === 'manager' && (
+          <KeepAliveTab tabKey="manager" currentTab={activeTab}>
             <ManagerView
               currentUser={currentUser}
               deals={deals}
@@ -957,9 +987,9 @@ export default function App() {
               tasks={tasks}
               onAddTask={handleAddTask}
             />
-          )}
+          </KeepAliveTab>
 
-          {activeTab === 'performance-p3' && (
+          <KeepAliveTab tabKey="performance-p3" currentTab={activeTab}>
             <PerformanceP3View
               storePortfolios={storePortfolios}
               deals={deals}
@@ -973,9 +1003,9 @@ export default function App() {
                 } : s));
               }}
             />
-          )}
+          </KeepAliveTab>
 
-          {(activeTab === 'leaderboard') && (
+          <KeepAliveTab tabKey="leaderboard" currentTab={activeTab}>
             <ExecutiveDashboardReportsView
               currentUser={currentUser}
               deals={deals}
@@ -985,9 +1015,9 @@ export default function App() {
               onNotify={showToast}
               onNavigateToTab={setActiveTab}
             />
-          )}
+          </KeepAliveTab>
 
-          {activeTab === 'brand-hub' && (
+          <KeepAliveTab tabKey="brand-hub" currentTab={activeTab}>
             <BrandHubView
               currentUser={currentUser}
               deals={deals}
@@ -1011,9 +1041,9 @@ export default function App() {
                 ));
               }}
             />
-          )}
+          </KeepAliveTab>
 
-          {activeTab === 'koc-hub' && (
+          <KeepAliveTab tabKey="koc-hub" currentTab={activeTab}>
             <KocKolHubView
               currentUser={currentUser}
               brands={brands}
@@ -1023,9 +1053,9 @@ export default function App() {
               onNavigateToBrandHub={['ADMIN', 'MANAGER'].includes(currentUser.role) ? () => setActiveTab('brand-hub') : undefined}
               onNavigateToCtvHub={['ADMIN', 'MANAGER'].includes(currentUser.role) ? () => setActiveTab('self-channel-hub') : undefined}
             />
-          )}
+          </KeepAliveTab>
 
-          {activeTab === 'ads-report' && (
+          <KeepAliveTab tabKey="ads-report" currentTab={activeTab}>
             <WeeklyAdsReportHubView
               currentUser={currentUser}
               kocs={kocs}
@@ -1034,7 +1064,7 @@ export default function App() {
               onUpdateKocsWithAdsData={(updated) => setKocs(updated)}
               onUpdateDealsWithAdsData={(updated) => setDeals(updated)}
             />
-          )}
+          </KeepAliveTab>
             </>
           )}
         </main>

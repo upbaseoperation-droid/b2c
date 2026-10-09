@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { formatVndShort } from '../lib/format';
-import { Button, EmptyState } from './ui';
+import { Button, EmptyState, ConfirmDialog } from './ui';
 import { 
   Target, 
   DollarSign, 
@@ -63,6 +63,7 @@ export const MyPlanWorkspace: React.FC<MyPlanWorkspaceProps> = ({
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedWeekFilter, setSelectedWeekFilter] = useState<'ALL' | 'W1' | 'W2' | 'W3' | 'W4'>('ALL');
+  const [deletingSlotItem, setDeletingSlotItem] = useState<StaffDetailedPlanItem | null>(null);
 
   // Form for adding new plan slot
   const [formBrand, setFormBrand] = useState(allocation?.assignedBrands[0] || 'Senka');
@@ -435,8 +436,9 @@ export const MyPlanWorkspace: React.FC<MyPlanWorkspaceProps> = ({
                           </button>
                         )}
                         <button
-                          onClick={() => onDeletePlanItem(item.id)}
+                          onClick={() => setDeletingSlotItem(item)}
                           title="Xóa slot khỏi plan"
+                          aria-label={`Xóa slot KOC ${item.kocStageName}`}
                           className="h-7 w-7 rounded-md text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition flex items-center justify-center"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -692,6 +694,23 @@ export const MyPlanWorkspace: React.FC<MyPlanWorkspaceProps> = ({
           </div>
         </div>
       )}
+
+      {/* Confirm Delete Slot Dialog */}
+      <ConfirmDialog
+        open={Boolean(deletingSlotItem)}
+        onOpenChange={(open) => !open && setDeletingSlotItem(null)}
+        title="Xác nhận xóa slot KOC khỏi kế hoạch"
+        description={`Bạn có chắc chắn muốn xóa slot KOC "${deletingSlotItem?.kocStageName || 'chưa gán'}" (Brand: ${deletingSlotItem?.brandName || '—'}, Tuần ${deletingSlotItem?.targetWeek || '—'})? Thao tác này sẽ xóa slot và giải phóng định mức ngân sách của tuần.`}
+        confirmLabel="Xóa slot"
+        cancelLabel="Hủy"
+        variant="danger"
+        onConfirm={() => {
+          if (deletingSlotItem) {
+            onDeletePlanItem(deletingSlotItem.id);
+            setDeletingSlotItem(null);
+          }
+        }}
+      />
 
     </div>
   );

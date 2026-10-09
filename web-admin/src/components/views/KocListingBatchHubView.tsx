@@ -10,6 +10,7 @@ import {
   AirVideoStage,
   UserRole
 } from '@/lib/types';
+import { ConfirmDialog } from '../ui';
 import {
   Filter,
   Search,
@@ -67,6 +68,8 @@ export function KocListingBatchHubView({
   const [showAddModal, setShowAddModal] = useState<boolean>(false);
   const [showAirUpdateModal, setShowAirUpdateModal] = useState<boolean>(false);
   const [selectedListingForAir, setSelectedListingForAir] = useState<KocListingItem | null>(null);
+  const [approvingItem, setApprovingItem] = useState<KocListingItem | null>(null);
+  const [rejectingItem, setRejectingItem] = useState<KocListingItem | null>(null);
 
   // New KOC form state
   const [newKocForm, setNewKocForm] = useState({
@@ -727,18 +730,13 @@ export function KocListingBatchHubView({
                             {item.brandApprovalStatus === 'BRAND_PENDING' && (
                               <div className="flex items-center gap-1.5 pt-0.5">
                                 <button
-                                  onClick={() => handleBrandDecision(item.id, 'APPROVE')}
+                                  onClick={() => setApprovingItem(item)}
                                   className="px-2 py-0.5 text-2xs font-medium bg-emerald-600 text-white hover:bg-emerald-700 rounded transition-colors"
                                 >
                                   Duyệt
                                 </button>
                                 <button
-                                  onClick={() => {
-                                    const note = prompt('Nhập lý do từ chối hồ sơ KOC này:');
-                                    if (note !== null) {
-                                      handleBrandDecision(item.id, 'REJECT', note || 'Không phù hợp nhãn hàng');
-                                    }
-                                  }}
+                                  onClick={() => setRejectingItem(item)}
                                   className="px-2 py-0.5 text-2xs font-medium bg-white text-rose-600 border border-rose-300 hover:bg-rose-50 rounded transition-colors"
                                 >
                                   Từ chối
@@ -1368,6 +1366,42 @@ export function KocListingBatchHubView({
           </div>
         </div>
       )}
+
+      {/* Modal xác nhận duyệt KOC */}
+      <ConfirmDialog
+        open={!!approvingItem}
+        title="Xác nhận duyệt hồ sơ KOC"
+        message={`Bạn có chắc chắn muốn phê duyệt hồ sơ KOC "${approvingItem?.kocName}" (${approvingItem?.brandName} - ${approvingItem?.pillarName}) cho đợt listing ngày ${approvingItem?.batchCycle}? Sau khi duyệt, hồ sơ sẽ đủ điều kiện chuyển sang Air Video.`}
+        confirmLabel="Xác nhận duyệt"
+        onConfirm={() => {
+          if (approvingItem) {
+            handleBrandDecision(approvingItem.id, 'APPROVE');
+            setApprovingItem(null);
+          }
+        }}
+        onCancel={() => setApprovingItem(null)}
+      />
+
+      {/* Modal từ chối KOC (bắt buộc nhập lý do) */}
+      <ConfirmDialog
+        open={!!rejectingItem}
+        title="Từ chối hồ sơ KOC"
+        message={`Vui lòng nhập lý do từ chối hồ sơ KOC "${rejectingItem?.kocName}" để bộ phận Booking điều chỉnh hoặc tìm Creator thay thế:`}
+        confirmLabel="Xác nhận từ chối"
+        tone="danger"
+        reason={{
+          label: "Lý do từ chối",
+          placeholder: "Ví dụ: Lệch phong cách nhãn hàng, hình ảnh chưa phù hợp, cast đề xuất quá cao...",
+          required: true
+        }}
+        onConfirm={(reason) => {
+          if (rejectingItem) {
+            handleBrandDecision(rejectingItem.id, 'REJECT', reason);
+            setRejectingItem(null);
+          }
+        }}
+        onCancel={() => setRejectingItem(null)}
+      />
     </div>
   );
 }

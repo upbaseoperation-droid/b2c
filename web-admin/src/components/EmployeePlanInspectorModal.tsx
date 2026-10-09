@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { formatVndShort } from '../lib/format';
+import { ConfirmDialog } from './ui';
 import { 
   X, 
   CheckCircle2, 
@@ -67,6 +68,9 @@ export const EmployeePlanInspectorModal: React.FC<EmployeePlanInspectorModalProp
   const [editingItem, setEditingItem] = useState<StaffDetailedPlanItem | null>(null);
   const [editNotes, setEditNotes] = useState('');
   const [isAiReviewOpen, setIsAiReviewOpen] = useState(false);
+  const [isConfirmingApproveAll, setIsConfirmingApproveAll] = useState(false);
+  const [isConfirmingConvertDeals, setIsConfirmingConvertDeals] = useState(false);
+  const [isConfirmingRevision, setIsConfirmingRevision] = useState(false);
 
   useEffect(() => {
     if (staffAllocation?.managerNote) {
@@ -627,7 +631,7 @@ export const EmployeePlanInspectorModal: React.FC<EmployeePlanInspectorModalProp
           ) : (
             <div className="flex items-center gap-2">
               <button
-                onClick={() => onRequestPlanRevision(staffAllocation.staffName, managerFeedback)}
+                onClick={() => setIsConfirmingRevision(true)}
                 className="px-3.5 py-2 rounded-md font-semibold text-xs bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 transition flex items-center gap-1.5 shadow-2xs"
               >
                 <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
@@ -635,7 +639,7 @@ export const EmployeePlanInspectorModal: React.FC<EmployeePlanInspectorModalProp
               </button>
 
               <button
-                onClick={() => onApproveEntirePlan(staffAllocation.staffName, managerFeedback)}
+                onClick={() => setIsConfirmingApproveAll(true)}
                 className="px-4 py-2 rounded-md font-semibold text-xs bg-emerald-600 hover:bg-emerald-500 text-white transition flex items-center gap-1.5 shadow-sm"
               >
                 <CheckCircle2 className="w-4 h-4" />
@@ -644,7 +648,7 @@ export const EmployeePlanInspectorModal: React.FC<EmployeePlanInspectorModalProp
 
               {onConvertPlanToDeals && (
                 <button
-                  onClick={() => onConvertPlanToDeals(staffAllocation.staffName)}
+                  onClick={() => setIsConfirmingConvertDeals(true)}
                   className="px-4 py-2 rounded-md font-semibold text-xs bg-blue-600 hover:bg-blue-500 text-white transition flex items-center gap-1.5 shadow-sm"
                   title="Khởi tạo danh sách Deal Booking từ các slot đã duyệt để bắt đầu liên hệ và gửi mẫu"
                 >
@@ -665,6 +669,53 @@ export const EmployeePlanInspectorModal: React.FC<EmployeePlanInspectorModalProp
           onClose={() => setIsAiReviewOpen(false)}
           initialStaffName={staffAllocation.staffName}
           onApplyManagerNote={(note) => setManagerFeedback(note)}
+        />
+      )}
+
+      {/* Confirm Approve Entire Plan */}
+      <ConfirmDialog
+        open={isConfirmingApproveAll}
+        onOpenChange={setIsConfirmingApproveAll}
+        title="Xác nhận phê duyệt toàn bộ kế hoạch"
+        description={`Bạn có chắc chắn muốn phê duyệt toàn bộ kế hoạch tháng của nhân sự ${staffAllocation.staffName} (${totalPlannedVideos} slot KOC, tổng ngân sách dự kiến ${formatVndShort(totalPlannedBudget)})?`}
+        confirmLabel="Phê duyệt kế hoạch"
+        cancelLabel="Hủy"
+        variant="primary"
+        onConfirm={() => {
+          onApproveEntirePlan(staffAllocation.staffName, managerFeedback);
+          setIsConfirmingApproveAll(false);
+        }}
+      />
+
+      {/* Confirm Request Revision */}
+      <ConfirmDialog
+        open={isConfirmingRevision}
+        onOpenChange={setIsConfirmingRevision}
+        title="Xác nhận yêu cầu điều chỉnh kế hoạch"
+        description={`Bạn có chắc chắn muốn trả lại kế hoạch cho ${staffAllocation.staffName} để điều chỉnh? ${managerFeedback ? `Nội dung chỉ đạo: "${managerFeedback}"` : 'Lưu ý: Bạn chưa nhập ghi chú chỉ đạo ở ô phía trên.'}`}
+        confirmLabel="Gửi yêu cầu sửa"
+        cancelLabel="Hủy"
+        variant="danger"
+        onConfirm={() => {
+          onRequestPlanRevision(staffAllocation.staffName, managerFeedback);
+          setIsConfirmingRevision(false);
+        }}
+      />
+
+      {/* Confirm Batch Convert Deals */}
+      {onConvertPlanToDeals && (
+        <ConfirmDialog
+          open={isConfirmingConvertDeals}
+          onOpenChange={setIsConfirmingConvertDeals}
+          title="Xác nhận tạo hàng loạt Deal Booking"
+          description={`Hệ thống sẽ tự động khởi tạo ${approvedCount} Booking Deal tác nghiệp thực tế tương ứng với các slot KOC đã duyệt của ${staffAllocation.staffName}. Bạn có muốn tiếp tục?`}
+          confirmLabel={`Tạo ${approvedCount} Deals`}
+          cancelLabel="Hủy"
+          variant="primary"
+          onConfirm={() => {
+            onConvertPlanToDeals(staffAllocation.staffName);
+            setIsConfirmingConvertDeals(false);
+          }}
         />
       )}
     </div>

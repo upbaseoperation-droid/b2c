@@ -49,6 +49,7 @@ interface KocMasterDataViewProps {
   onOpenQuickBookWithKoc: (koc: KocItem) => void;
   onKocUpdated?: (updatedKoc: KocItem) => void;
   onKocCreated?: (newKoc: KocItem) => void;
+  onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
 }
 
 export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
@@ -57,8 +58,10 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
   onOpenQuickBookWithKoc,
   onKocUpdated,
   onKocCreated,
+  onNotify,
 }) => {
   const [localKocs, setLocalKocs] = useState<KocItem[]>(kocs);
+  const [successBanner, setSuccessBanner] = useState<string | null>(null);
   
   // Sync when prop updates
   React.useEffect(() => {
@@ -196,7 +199,10 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
 
       setLocalKocs(prev => prev.map(k => k.id === updated.id ? updated : k));
       if (onKocUpdated) onKocUpdated(updated);
-      alert(`Đã cập nhật dữ liệu pháp lý OCR thành công cho KOC ${updated.stageName}!`);
+      const msg = `Đã cập nhật dữ liệu pháp lý OCR thành công cho KOC ${updated.stageName}!`;
+      if (onNotify) onNotify(msg, 'success');
+      setSuccessBanner(msg);
+      setTimeout(() => setSuccessBanner(null), 4000);
     } else {
       // Tạo KOC Mới từ OCR
       const newKoc: KocItem = {
@@ -236,7 +242,10 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
 
       setLocalKocs(prev => [newKoc, ...prev]);
       if (onKocCreated) onKocCreated(newKoc);
-      alert(`Đã tạo hồ sơ KOC mới từ OCR: "${newKoc.stageName}" (CCCD/MST: ${legalId})!`);
+      const msg = `Đã tạo hồ sơ KOC mới từ OCR: "${newKoc.stageName}" (CCCD/MST: ${legalId})!`;
+      if (onNotify) onNotify(msg, 'success');
+      setSuccessBanner(msg);
+      setTimeout(() => setSuccessBanner(null), 4000);
     }
 
     setOcrTargetKoc(null);
@@ -250,6 +259,15 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
 
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
+      {successBanner && (
+        <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs font-semibold flex items-center justify-between animate-in fade-in duration-150">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+            <span>{successBanner}</span>
+          </div>
+          <button onClick={() => setSuccessBanner(null)} className="text-emerald-600 hover:text-emerald-800 font-bold text-sm">×</button>
+        </div>
+      )}
       
       {/* Header Banner & Title */}
       <div className="bg-blue-900 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden">
