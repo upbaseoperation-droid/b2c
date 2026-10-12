@@ -718,6 +718,27 @@ export function KocListingBatchHubView({
                             <span>•</span>
                             <span>{(item.followersCount / 1000).toFixed(0)}K</span>
                           </div>
+                          {(() => {
+                            const handleKey = `${(item.kocHandle || '').toLowerCase().trim().replace('@', '')}|${item.brandName.toLowerCase().trim()}|${item.monthKey}`;
+                            const conflictingListings = duplicateHandleMap.get(handleKey) || [];
+                            const otherStaffs = conflictingListings
+                              .filter((l) => l.id !== item.id)
+                              .map((l) => l.assignedStaffName || 'Nhân sự khác');
+                            if (otherStaffs.length > 0) {
+                              return (
+                                <div className="mt-1">
+                                  <span
+                                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-3xs font-semibold bg-amber-50 text-amber-800 border border-amber-300"
+                                    title={`Trùng KOC trong cùng nhãn với: ${otherStaffs.join(', ')}`}
+                                  >
+                                    <AlertTriangle className="w-2.5 h-2.5 text-amber-600 shrink-0" />
+                                    Trùng: {otherStaffs.join(', ')}
+                                  </span>
+                                </div>
+                              );
+                            }
+                            return null;
+                          })()}
                           <div className="text-2xs text-slate-500 mt-1">
                             <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">
                               {item.tier}
@@ -1198,6 +1219,22 @@ export function KocListingBatchHubView({
                   />
                 </div>
               </div>
+
+              {/* Duplicate Listing Real-time Alert */}
+              {newKocDuplicate && (
+                <div className="p-3 bg-amber-50 border border-amber-300 rounded-md text-amber-900 text-xs">
+                  <div className="flex items-center gap-1.5 font-bold text-amber-800">
+                    <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                    Cảnh báo: KOC đã có trong đợt listing của nhãn này!
+                  </div>
+                  <div className="mt-1 text-2xs space-y-0.5 text-amber-800/90">
+                    <div>Nhân sự đã list: <strong>{newKocDuplicate.assignedStaffName || 'Chưa rõ'}</strong></div>
+                    <div>Hồ sơ: <strong>{newKocDuplicate.kocName}</strong> ({newKocDuplicate.kocHandle}) · Nhãn: <strong>{newKocDuplicate.brandName}</strong> ({newKocDuplicate.batchCycle})</div>
+                    <div>Trạng thái hiện tại: <strong>{newKocDuplicate.overallStatus}</strong> · Thù lao: <strong>{newKocDuplicate.proposedFee.toLocaleString('vi-VN')} đ</strong></div>
+                    <div className="text-amber-700 italic pt-0.5">Vui lòng kiểm tra với đồng nghiệp để tránh gọi trùng KOC hoặc bị loạn giá.</div>
+                  </div>
+                </div>
+              )}
 
               <div className="grid grid-cols-3 gap-3">
                 <div>

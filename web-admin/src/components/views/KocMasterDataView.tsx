@@ -1018,6 +1018,18 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
         }}
       />
 
+      {/* Kalodata Commerce Sync Modal */}
+      <KalodataSyncModal
+        isOpen={isKalodataModalOpen}
+        onClose={() => {
+          setIsKalodataModalOpen(false);
+          setKalodataTargetKoc(null);
+        }}
+        targetKoc={kalodataTargetKoc}
+        onApplyUpdates={handleApplyKalodataUpdates}
+        onNotify={onNotify}
+      />
+
     </div>
   );
 };
