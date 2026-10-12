@@ -875,6 +875,18 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
                     {/* Actions */}
                     <td className="py-3 px-3 text-right">
                       <div className="flex items-center justify-end gap-1.5">
+                        {/* Kalodata Sync Button */}
+                        <button
+                          onClick={() => {
+                            setKalodataTargetKoc(koc);
+                            setIsKalodataModalOpen(true);
+                          }}
+                          className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition cursor-pointer"
+                          title="Tra cứu & đồng bộ chỉ số bán hàng từ Kalodata"
+                        >
+                          <TrendingUp className="w-4 h-4 text-indigo-600" />
+                        </button>
+
                         {/* Quick View Profile */}
                         <button
                           onClick={() => setInspectedKoc(koc)}
@@ -891,7 +903,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
                             setIsOcrModalOpen(true);
                           }}
                           className="p-1.5 text-slate-400 hover:text-cyan-600 hover:bg-cyan-50 rounded-lg transition cursor-pointer"
-                          title="Bóc tách OCR CCCD / ĐKKD để cập nhật hồ sơ"
+                          title="Đọc ảnh CCCD / ĐKKD để cập nhật hồ sơ"
                         >
                           <Sparkles className="w-4 h-4 text-cyan-600" />
                         </button>

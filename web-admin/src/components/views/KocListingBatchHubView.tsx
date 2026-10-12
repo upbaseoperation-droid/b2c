@@ -601,15 +601,31 @@ export function KocListingBatchHubView({
 
         {/* Search bar and bulk actions */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 border-t border-slate-100">
-          <div className="relative w-full sm:w-80">
-            <Search className="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Tìm theo tên KOC, handle, shop, nhãn..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full text-xs pl-8 pr-3 py-1.5 border border-slate-300 rounded bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-slate-400"
-            />
+          <div className="flex items-center gap-2 w-full sm:w-auto flex-1 max-w-lg">
+            <div className="relative flex-1">
+              <Search className="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Tìm theo tên KOC, handle, shop, nhãn..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full text-xs pl-8 pr-3 py-1.5 border border-slate-300 rounded bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-slate-400"
+              />
+            </div>
+
+            <button
+              onClick={() => setFilterOnlyDuplicates((prev) => !prev)}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded transition-colors whitespace-nowrap border shrink-0 ${
+                filterOnlyDuplicates
+                  ? 'bg-amber-600 text-white border-amber-600 shadow-xs'
+                  : totalDuplicateListingsCount > 0
+                  ? 'bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100'
+                  : 'bg-slate-50 text-slate-400 border-slate-200 hover:bg-slate-100'
+              }`}
+            >
+              <AlertTriangle className="w-3.5 h-3.5" />
+              <span>Trùng KOC ({totalDuplicateListingsCount})</span>
+            </button>
           </div>
 
           {activeSubTab === 'LISTING_APPROVAL' && (
