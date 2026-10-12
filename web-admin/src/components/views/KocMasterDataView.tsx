@@ -381,11 +381,23 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
               Danh Bạ Master KOC
             </h2>
             <p className="text-xs text-blue-100/90 max-w-2xl leading-relaxed">
-              Cơ sở dữ liệu gốc quản lý danh sách KOC toàn phòng B2C: 4 phân loại chuẩn hóa (khung lương, Segment, tệp, ngành hàng) và tích hợp <strong className="text-cyan-300 font-semibold">AI OCR bóc tách CCCD / ĐKKD</strong> phục vụ hợp đồng &amp; chi trả hoa hồng.
+              Cơ sở dữ liệu gốc quản lý danh sách KOC toàn phòng B2C: 4 phân loại chuẩn hóa (khung lương, Segment, tệp, ngành hàng), đọc ảnh CCCD / ĐKKD phục vụ hợp đồng và tích hợp <strong className="text-cyan-300 font-semibold">số liệu thương mại Kalodata</strong>.
             </p>
           </div>
 
           <div className="flex items-center gap-2.5 shrink-0 flex-wrap">
+            {/* Kalodata Sync Button */}
+            <button
+              onClick={() => {
+                setKalodataTargetKoc(null);
+                setIsKalodataModalOpen(true);
+              }}
+              className="btn-md bg-blue-600 hover:bg-blue-500 active:scale-[0.99] text-white font-semibold text-xs shadow-lg flex items-center gap-2 cursor-pointer"
+            >
+              <TrendingUp className="w-4 h-4 text-white" />
+              <span>Đồng bộ Kalodata</span>
+            </button>
+
             {/* Primary Action Button: Scan OCR */}
             <button
               onClick={() => {
@@ -395,7 +407,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
               className="btn-md bg-cyan-500 hover:bg-cyan-400 hover: active:scale-[0.99] text-white font-semibold text-xs shadow-lg flex items-center gap-2 cursor-pointer"
             >
               <Sparkles className="w-4 h-4 text-white" />
-              <span>Quét OCR CCCD / ĐKKD thêm KOC</span>
+              <span>Đọc ảnh CCCD / ĐKKD thêm KOC</span>
             </button>
 
             {/* Secondary Action: Manual Create */}

@@ -63,6 +63,7 @@ export function KocListingBatchHubView({
 
   // Bulk Selection
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [filterOnlyDuplicates, setFilterOnlyDuplicates] = useState<boolean>(false);
 
   // Modals state
   const [showAddModal, setShowAddModal] = useState<boolean>(false);
@@ -94,9 +95,61 @@ export function KocListingBatchHubView({
     return Array.from(set);
   }, [listings]);
 
+  // Kiểm tra trùng lặp KOC giữa các nhân sự listing (Check trùng handle trong cùng nhãn và tháng/đợt)
+  const duplicateHandleMap = useMemo(() => {
+    const map = new Map<string, KocListingItem[]>();
+    listings.forEach((item) => {
+      const handle = (item.kocHandle || '').toLowerCase().trim().replace('@', '');
+      const brand = (item.brandName || '').toLowerCase().trim();
+      if (handle.length > 2) {
+        const key = `${handle}|${brand}|${item.monthKey}`;
+        const list = map.get(key) || [];
+        list.push(item);
+        map.set(key, list);
+      }
+    });
+    return map;
+  }, [listings]);
+
+  const totalDuplicateListingsCount = useMemo(() => {
+    let count = 0;
+    duplicateHandleMap.forEach((items) => {
+      if (items.length > 1) {
+        count += items.length;
+      }
+    });
+    return count;
+  }, [duplicateHandleMap]);
+
+  // Kiểm tra trùng lặp thời gian thực khi tạo mới KOC vào đợt listing
+  const newKocDuplicate = useMemo(() => {
+    if (!newKocForm.kocHandle.trim() && !newKocForm.kocName.trim()) return null;
+    const cleanHandle = newKocForm.kocHandle.trim().toLowerCase().replace('@', '');
+    const cleanName = newKocForm.kocName.trim().toLowerCase();
+
+    return listings.find((item) => {
+      const itemHandle = (item.kocHandle || '').toLowerCase().trim().replace('@', '');
+      const itemName = (item.kocName || '').toLowerCase().trim();
+      const isSameBrand = item.brandName.toLowerCase().trim() === newKocForm.brandName.toLowerCase().trim();
+      const isSameCycle = item.batchCycle === newKocForm.batchCycle;
+
+      const handleMatch = cleanHandle.length > 2 && itemHandle === cleanHandle;
+      const nameMatch = cleanName.length > 3 && itemName === cleanName;
+
+      return (handleMatch || nameMatch) && isSameBrand && isSameCycle;
+    });
+  }, [newKocForm.kocHandle, newKocForm.kocName, newKocForm.brandName, newKocForm.batchCycle, listings]);
+
   // Filtered listings
   const filteredListings = useMemo(() => {
     return listings.filter((item) => {
+      if (filterOnlyDuplicates) {
+        const handle = (item.kocHandle || '').toLowerCase().trim().replace('@', '');
+        const brand = (item.brandName || '').toLowerCase().trim();
+        const key = `${handle}|${brand}|${item.monthKey}`;
+        const dups = duplicateHandleMap.get(key);
+        if (!dups || dups.length <= 1) return false;
+      }
       if (selectedMonth !== 'ALL' && item.monthKey !== selectedMonth) return false;
       if (selectedCycle !== 'ALL' && item.batchCycle !== selectedCycle) return false;
       if (selectedStore !== 'ALL' && item.storeName !== selectedStore) return false;
@@ -112,7 +165,7 @@ export function KocListingBatchHubView({
       }
       return true;
     });
-  }, [listings, selectedMonth, selectedCycle, selectedStore, selectedBrandStatus, selectedKocStatus, searchQuery]);
+  }, [listings, filterOnlyDuplicates, duplicateHandleMap, selectedMonth, selectedCycle, selectedStore, selectedBrandStatus, selectedKocStatus, searchQuery]);
 
   // KPI Metrics
   const metrics = useMemo(() => {

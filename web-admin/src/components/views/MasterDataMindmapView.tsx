@@ -490,6 +490,7 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
   });
 
   // Filters
+  const [filterB2cOnly, setFilterB2cOnly] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterPlatform, setFilterPlatform] = useState<'ALL' | 'TIKTOK_SHOP' | 'SHOPEE_MALL' | 'LAZADA'>('ALL');
   const [filterBrandId, setFilterBrandId] = useState<string>('ALL');
@@ -549,6 +550,8 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
   // Filtered stores
   const filteredStores = useMemo(() => {
     return stores.filter(s => {
+      // 1. Mặc định lọc gian B2C làm plan
+      if (filterB2cOnly && !s.requiresB2cPlan && !s.isB2cManaged) return false;
       if (filterPlatform !== 'ALL' && s.platform !== filterPlatform) return false;
       if (filterBrandId !== 'ALL' && s.brandId !== filterBrandId) return false;
       if (filterPic !== 'ALL') {
@@ -707,8 +710,34 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
         {/* Toolbar & Filters */}
         <div className="mt-4 pt-4 border-t border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
           <div className="flex items-center gap-2 flex-wrap flex-1">
+            {/* Toggle B2C Only vs All */}
+            <div className="inline-flex p-0.5 bg-slate-200/70 rounded-lg text-xs font-medium">
+              <button
+                type="button"
+                onClick={() => setFilterB2cOnly(true)}
+                className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-all ${
+                  filterB2cOnly
+                    ? 'bg-white text-blue-700 shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Gian B2C làm plan
+              </button>
+              <button
+                type="button"
+                onClick={() => setFilterB2cOnly(false)}
+                className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-all ${
+                  !filterB2cOnly
+                    ? 'bg-white text-slate-900 shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Tất cả gian ({stores.length})
+              </button>
+            </div>
+
             {/* Search Input */}
-            <div className="relative min-w-[220px] flex-1 max-w-xs">
+            <div className="relative min-w-[200px] flex-1 max-w-xs">
               <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
