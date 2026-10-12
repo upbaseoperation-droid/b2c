@@ -227,7 +227,7 @@ export const AiStaffReviewModal: React.FC<AiStaffReviewModalProps> = ({
       <div 
         role="dialog"
         aria-modal="true"
-        aria-label="Trợ lý AI nhận xét báo cáo, tiến độ & hiệu suất nhân viên"
+        aria-label="Gợi ý nhận xét tiến độ &amp; hiệu suất nhân sự"
         className="bg-white border border-slate-200 rounded-xl w-full max-w-4xl shadow-2xl overflow-hidden my-6"
       >
         {/* Header Banner */}
@@ -253,10 +253,10 @@ export const AiStaffReviewModal: React.FC<AiStaffReviewModalProps> = ({
             </div>
             <h3 className="text-lg font-semibold tracking-tight text-white flex items-center gap-2">
               <Bot className="w-5 h-5 text-purple-400" />
-              <span>Trợ Lý AI Nhận Xét Báo Cáo, Tiến Độ &amp; Hiệu Suất Nhân Viên</span>
+              <span>Gợi Ý Nhận Xét Tiến Độ &amp; Đánh Giá Hiệu Suất Nhân Viên</span>
             </h3>
             <p className="text-xs text-purple-200/90 leading-relaxed">
-              Tích hợp API thông minh phân tích toàn diện 4 trục: Tỷ lệ lấp đầy kế hoạch video, kỷ luật tuân thủ 8 quy tắc SLA, Ma trận độ khó Store P3 và đề xuất huấn luyện 1-on-1 cho trưởng phòng.
+              Tổng hợp và phân tích 4 nhóm dữ liệu: Tỷ lệ thực hiện kế hoạch video, kỷ luật tuân thủ quy tắc SLA, danh mục gian hàng P3 và đề xuất nội dung trao đổi 1-on-1 cho trưởng phòng.
             </p>
           </div>
         </div>
@@ -293,7 +293,7 @@ export const AiStaffReviewModal: React.FC<AiStaffReviewModalProps> = ({
                 <label className="font-semibold text-slate-700">Trọng tâm nhận xét:</label>
                 <div className="flex flex-wrap gap-1.5">
                   {[
-                    { key: 'COMPREHENSIVE', label: 'Toàn diện' },
+                    { key: 'COMPREHENSIVE', label: 'Tổng quan' },
                     { key: 'PROGRESS_PACING', label: 'Tiến độ lên sóng' },
                     { key: 'SLA_QUALITY', label: 'Kỷ luật SLA' },
                     { key: 'P3_WORKLOAD', label: 'Workload & P3' },
@@ -346,7 +346,7 @@ export const AiStaffReviewModal: React.FC<AiStaffReviewModalProps> = ({
                 className="text-2xs font-semibold text-purple-700 hover:text-purple-800 flex items-center gap-1 transition"
               >
                 <Key className="w-3 h-3" />
-                <span>Cấu hình API kết nối AI (tùy chọn API Key Gemini / OpenAI)</span>
+                <span>Cấu hình kết nối mô hình phân tích (tùy chọn API Key Gemini / OpenAI)</span>
                 {showApiSettings ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
               </button>
 
@@ -354,7 +354,7 @@ export const AiStaffReviewModal: React.FC<AiStaffReviewModalProps> = ({
                 <div className="mt-2.5 p-3 rounded-md bg-purple-50/50 border border-purple-200 space-y-2.5 animate-in fade-in duration-150">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-1">
-                      <label className="text-2xs font-semibold text-purple-900">Nhà cung cấp AI API:</label>
+                      <label className="text-2xs font-semibold text-purple-900">Mô hình phân tích:</label>
                       <select
                         value={apiProvider}
                         onChange={(e) => setApiProvider(e.target.value as any)}
@@ -382,7 +382,7 @@ export const AiStaffReviewModal: React.FC<AiStaffReviewModalProps> = ({
 
                   <div className="space-y-1">
                     <label className="text-2xs font-semibold text-purple-900">
-                      Ghi chú / Chỉ đạo thêm cho AI:
+                      Ghi chú / Yêu cầu thêm khi đánh giá:
                     </label>
                     <input
                       type="text"
@@ -411,12 +411,12 @@ export const AiStaffReviewModal: React.FC<AiStaffReviewModalProps> = ({
                 {isLoading ? (
                   <>
                     <RefreshCw className="w-4 h-4 animate-spin" />
-                    <span>Đang gọi API &amp; phân tích tiến độ {selectedStaffName}...</span>
+                    <span>Đang phân tích số liệu tiến độ của {selectedStaffName}...</span>
                   </>
                 ) : (
                   <>
                     <Sparkles className="w-4 h-4" />
-                    <span>Bắt đầu nhận xét bằng AI</span>
+                    <span>Tạo gợi ý nhận xét</span>
                   </>
                 )}
               </button>

@@ -475,7 +475,7 @@ export const WeeklyAdsReportHubView: React.FC<WeeklyAdsReportHubViewProps> = ({
             }`}
           >
             <Sparkles className="w-4 h-4 text-purple-600" />
-            <span>Khuyến nghị Tối ưu AI Growth</span>
+            <span>Khuyến nghị Tối ưu Growth Ads</span>
           </button>
         </div>
       </div>
@@ -871,7 +871,7 @@ export const WeeklyAdsReportHubView: React.FC<WeeklyAdsReportHubViewProps> = ({
       )}
 
       {/* ========================================================================= */}
-      {/* TAB 4: KHUYẾN NGHỊ TỐI ƯU AI GROWTH                                       */}
+      {/* TAB 4: KHUYẾN NGHỊ TỐI ƯU GROWTH ADS                                     */}
       {/* ========================================================================= */}
       {activeTab === 'INSIGHTS' && activeReportData && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

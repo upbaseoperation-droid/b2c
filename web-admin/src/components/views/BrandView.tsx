@@ -1096,10 +1096,10 @@ export const BrandView: React.FC<BrandViewProps> = ({
                               <button
                                 onClick={() => handleAiInspectScript(item)}
                                 className="px-2.5 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 rounded font-semibold text-xs transition flex items-center gap-1.5"
-                                title="AI thẩm định kịch bản theo Brand Guideline"
+                                title="Kiểm tra kịch bản theo Brand Guideline"
                               >
                                 <Sparkles className="w-3.5 h-3.5 text-purple-600" />
-                                <span>AI thẩm định</span>
+                                <span>Kiểm tra kịch bản</span>
                               </button>
                             )}
                             <button
@@ -1573,7 +1573,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
                 <Sparkles className="w-5 h-5 text-purple-600" />
                 <div>
                   <h3 className="text-sm font-semibold text-slate-900">
-                    AI Thẩm Định Kịch Bản — KOC {aiScanModalData.item.kocName}
+                    Thẩm Định Kịch Bản — KOC {aiScanModalData.item.kocName}
                   </h3>
                   <p className="text-xs text-slate-500">
                     Đối soát theo chuẩn mực nhãn hàng: <strong>{aiScanModalData.item.brandName}</strong> (Mã deal: {aiScanModalData.item.dealCode})
@@ -1675,7 +1675,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
               {/* AI Rewritten Script */}
               <div className="p-3 bg-purple-50/50 rounded-md border border-purple-200 space-y-1.5 font-mono text-2xs">
                 <span className="font-semibold text-purple-900 font-sans block">
-                  Lời thoại đã được AI viết lại chuẩn 100%:
+                  Lời thoại gợi ý đã điều chỉnh từ khóa vi phạm:
                 </span>
                 <p className="whitespace-pre-line text-slate-800 bg-white p-2.5 rounded border border-purple-100">
                   {aiScanModalData.result.rewrittenScript.fullText}
@@ -1706,7 +1706,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
                     }}
                     className="px-3.5 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded font-semibold text-xs transition flex items-center gap-1.5"
                   >
-                    <span>Chèn góp ý AI vào Form từ chối</span>
+                    <span>Chèn nhận xét vào Form từ chối</span>
                   </button>
                 )}
 

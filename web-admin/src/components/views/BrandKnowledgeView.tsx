@@ -1246,7 +1246,7 @@ export const BrandKnowledgeView: React.FC<BrandKnowledgeViewProps> = ({
                 <div className="flex items-center gap-2">
                   <span className="px-2.5 py-0.5 rounded-full text-2xs font-semibold bg-purple-500/30 text-purple-200 border border-purple-400/40 flex items-center gap-1.5">
                     <Sparkles className="w-3 h-3 text-purple-300" />
-                    AI Compliance Engine v2.4
+                    Bộ kiểm tra & đối soát quy chuẩn
                   </span>
                   <span className="text-xs text-purple-300 font-medium">
                     Chuẩn hóa theo Brand Guideline: <strong>{currentBrand.brandName}</strong>
@@ -1256,7 +1256,7 @@ export const BrandKnowledgeView: React.FC<BrandKnowledgeViewProps> = ({
                   <span>Thẩm Định &amp; Góp Ý Kịch Bản KOC Tự Động</span>
                 </h3>
                 <p className="text-xs text-purple-200/90 leading-relaxed">
-                  Đối soát kịch bản KOC theo 5 trục chuẩn mực: Quét từ cấm Blacklist, tuyên bố pháp lý bộ Y tế, USPs sản phẩm, Tone of Voice và cấu trúc 4 phần TikTok. Phát hiện lỗi và tự động viết lại kịch bản chuẩn trong 0.5s.
+                  Đối soát kịch bản KOC theo 5 tiêu chí: quét từ cấm, quy định pháp lý, đặc tính sản phẩm, giọng văn và cấu trúc kịch bản. Gợi ý điều chỉnh từ ngữ vi phạm.
                 </p>
               </div>
 
@@ -1368,12 +1368,12 @@ export const BrandKnowledgeView: React.FC<BrandKnowledgeViewProps> = ({
                     {isAnalyzing ? (
                       <>
                         <RefreshCw className="w-4 h-4 animate-spin" />
-                        <span>AI Đang Phân Tích &amp; Đối Soát...</span>
+                        <span>Đang kiểm tra &amp; đối soát kịch bản...</span>
                       </>
                     ) : (
                       <>
                         <Sparkles className="w-4 h-4" />
-                        <span>Phân tích bằng AI</span>
+                        <span>Kiểm tra kịch bản</span>
                       </>
                     )}
                   </button>
@@ -1401,7 +1401,7 @@ export const BrandKnowledgeView: React.FC<BrandKnowledgeViewProps> = ({
                   </div>
                   <h4 className="text-sm font-semibold text-slate-800">Chưa có dữ liệu phân tích kịch bản</h4>
                   <p className="text-xs text-slate-500 max-w-md mx-auto">
-                    Vui lòng nhập kịch bản ở khung bên trái hoặc bấm vào một trong các kịch bản mẫu ở trên, sau đó nhấn <strong>&ldquo;Phân Tích Bằng AI&rdquo;</strong>.
+                    Vui lòng nhập kịch bản ở khung bên trái hoặc bấm vào một trong các kịch bản mẫu ở trên, sau đó nhấn <strong>&ldquo;Kiểm tra kịch bản&rdquo;</strong>.
                   </p>
                 </div>
               ) : (
@@ -1457,7 +1457,7 @@ export const BrandKnowledgeView: React.FC<BrandKnowledgeViewProps> = ({
                   <div className="card-enterprise p-4 bg-white space-y-3">
                     <h5 className="text-xs font-semibold text-slate-800 flex items-center justify-between">
                       <span>Bảng điểm 5 trục chuẩn mực Brand Guideline</span>
-                      <span className="text-2xs text-slate-400 font-normal">Độ tin cậy AI: 99.4%</span>
+                      <span className="text-2xs text-slate-400 font-normal">Độ tin cậy đối soát: 99.4%</span>
                     </h5>
 
                     <div className="grid grid-cols-1 gap-2.5">
@@ -1570,7 +1570,7 @@ export const BrandKnowledgeView: React.FC<BrandKnowledgeViewProps> = ({
                       <div>
                         <h5 className="text-sm font-semibold text-purple-950 flex items-center gap-2">
                           <Wand2 className="w-4 h-4 text-purple-600" />
-                          <span>Kịch bản đã được AI chuẩn hóa 100%</span>
+                          <span>Kịch bản gợi ý sau khi sửa từ khóa vi phạm</span>
                         </h5>
                         <p className="text-2xs text-slate-500">
                           Tự động khử từ cấm, thay thế bằng thuật ngữ y khoa và chèn tuyên bố pháp lý

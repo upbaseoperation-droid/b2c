@@ -554,7 +554,7 @@ export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotifi
                     Đã có phân hệ riêng: Thiết Lập Content Angle Theo Từng Sản Phẩm
                   </div>
                   <div className="text-2xs text-slate-600">
-                    Cấu hình ma trận phủ kịch bản (Product x Pillar Matrix), gợi ý Hook 3s bằng AI và kết nối trực tiếp vào luồng Booking Deals.
+                    Cấu hình ma trận phủ kịch bản (Product x Pillar Matrix), gợi ý Hook 3 giây và kết nối trực tiếp vào luồng Booking Deals.
                   </div>
                 </div>
               </div>

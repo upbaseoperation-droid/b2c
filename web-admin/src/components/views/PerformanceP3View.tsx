@@ -332,10 +332,10 @@ export default function PerformanceP3View({
                           <button
                             onClick={() => setAiReviewStaff(item.staffName)}
                             className="btn-sm bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 rounded-lg transition flex items-center gap-1 shadow-2xs font-semibold"
-                            title="AI Nhận xét hiệu suất &amp; đề xuất thưởng P3"
+                            title="Nhận xét hiệu suất &amp; đề xuất thưởng P3"
                           >
                             <Sparkles className="w-3 h-3 text-purple-600" />
-                            <span>AI Review</span>
+                            <span>Gợi ý nhận xét</span>
                           </button>
                           {item.approvalStatus === 'CHỜ_DUYỆT' ? (
                             <button

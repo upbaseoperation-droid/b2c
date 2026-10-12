@@ -193,7 +193,7 @@ export const LegalOcrModal: React.FC<LegalOcrModalProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="text-sm font-semibold text-slate-900">
-                  Tesseract OCR bóc tách giấy tờ pháp lý (CCCD / ĐKKD)
+                  Đọc ảnh giấy tờ pháp lý (CCCD / ĐKKD)
                 </h3>
                 <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200 flex items-center gap-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
@@ -201,7 +201,7 @@ export const LegalOcrModal: React.FC<LegalOcrModalProps> = ({
                 </span>
               </div>
               <p className="text-xs text-slate-500 mt-0.5">
-                Động cơ Tesseract OCR nội bộ (vie + eng) quét ảnh trực tiếp trên máy chủ — Không gửi ảnh ra ngoài — Tự động điền &amp; cho phép chỉnh sửa.
+                Đọc thông tin trực tiếp từ ảnh chụp trên máy chủ nội bộ — Bảo mật thông tin — Tự động điền &amp; cho phép chỉnh sửa.
               </p>
             </div>
           </div>
@@ -209,7 +209,7 @@ export const LegalOcrModal: React.FC<LegalOcrModalProps> = ({
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold shadow-2xs">
               <ShieldCheck className="w-4 h-4 text-emerald-600" />
-              <span>Tesseract Local Engine</span>
+              <span>Xử lý nội bộ</span>
             </div>
 
             <button 
@@ -418,7 +418,7 @@ export const LegalOcrModal: React.FC<LegalOcrModalProps> = ({
               <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2 text-xs">
                 <span className="font-semibold text-slate-800 flex items-center gap-1.5">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                  Nhật ký kiểm định OCR:
+                  Nhật ký kiểm tra thông tin:
                 </span>
                 <ul className="space-y-1 text-2xs text-slate-600 list-disc pl-4">
                   {extractionResult.validationNotes.map((note, idx) => (
@@ -473,10 +473,10 @@ export const LegalOcrModal: React.FC<LegalOcrModalProps> = ({
               <div className="p-12 rounded-2xl border border-emerald-200 bg-emerald-50/50 text-center space-y-3">
                 <RefreshCw className="w-8 h-8 text-emerald-600 animate-spin mx-auto" />
                 <h4 className="text-sm font-semibold text-emerald-950">
-                  Đang nhận diện ký tự bằng Tesseract Local Engine...
+                  Đang đọc thông tin từ ảnh chụp...
                 </h4>
                 <p className="text-xs text-emerald-700 max-w-sm mx-auto leading-relaxed">
-                  Động cơ Tesseract OCR đang xử lý ảnh ngoại tuyến trên máy chủ Upbase, bóc tách số CCCD/MST, họ tên, ngày sinh và địa chỉ...
+                  Hệ thống đang đọc thông tin từ ảnh trên máy chủ Upbase, trích xuất số CCCD/MST, họ tên, ngày sinh và địa chỉ...
                 </p>
                 <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-2xs font-semibold border border-emerald-200">
                   <ShieldCheck className="w-3.5 h-3.5" />

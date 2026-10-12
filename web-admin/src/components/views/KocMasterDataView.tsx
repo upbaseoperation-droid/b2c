@@ -280,7 +280,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
 
       setLocalKocs(prev => prev.map(k => k.id === updated.id ? updated : k));
       if (onKocUpdated) onKocUpdated(updated);
-      const msg = `Đã cập nhật dữ liệu pháp lý OCR thành công cho KOC ${updated.stageName}!`;
+      const msg = `Đã cập nhật dữ liệu pháp lý từ ảnh giấy tờ cho KOC ${updated.stageName}!`;
       if (onNotify) onNotify(msg, 'success');
       setSuccessBanner(msg);
       setTimeout(() => setSuccessBanner(null), 4000);
@@ -323,7 +323,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
 
       setLocalKocs(prev => [newKoc, ...prev]);
       if (onKocCreated) onKocCreated(newKoc);
-      const msg = `Đã tạo hồ sơ KOC mới từ OCR: "${newKoc.stageName}" (CCCD/MST: ${legalId})!`;
+      const msg = `Đã tạo hồ sơ KOC mới từ ảnh giấy tờ: "${newKoc.stageName}" (CCCD/MST: ${legalId})!`;
       if (onNotify) onNotify(msg, 'success');
       setSuccessBanner(msg);
       setTimeout(() => setSuccessBanner(null), 4000);
@@ -851,10 +851,10 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
                               setIsOcrModalOpen(true);
                             }}
                             className="px-2 py-0.5 rounded text-2xs font-semibold bg-blue-600 hover:bg-blue-700 text-white transition flex items-center gap-1 shadow-2xs cursor-pointer"
-                            title="Quét CCCD bằng OCR cho KOC này"
+                            title="Đọc ảnh CCCD cho KOC này"
                           >
                             <Camera className="w-3 h-3" />
-                            Quét OCR
+                            Đọc CCCD
                           </button>
                         </div>
                       )}

@@ -1950,10 +1950,10 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                           <button
                             onClick={() => setAiReviewTargetStaff(staff.staffName)}
                             className="px-2 py-1 rounded bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 font-semibold text-2xs transition flex items-center gap-1 shadow-2xs cursor-pointer"
-                            title={`Khởi chạy AI nhận xét tiến độ của ${staff.staffName}`}
+                            title={`Gợi ý nhận xét tiến độ của ${staff.staffName}`}
                           >
                             <Sparkles className="w-3 h-3 text-purple-600" />
-                            <span>AI Review</span>
+                            <span>Nhận xét</span>
                           </button>
                           <button
                             onClick={() => handlePing(staff.id, staff.staffName, 'Đốc thúc trả link video TikTok lên sóng')}

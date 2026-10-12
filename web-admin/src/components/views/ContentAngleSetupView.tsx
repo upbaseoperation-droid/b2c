@@ -319,7 +319,7 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
 
     setIsAiModalOpen(false);
     setIsModalOpen(true);
-    if (onNotify) onNotify('Đã áp dụng gợi ý kịch bản AI vào biểu mẫu!', 'info');
+    if (onNotify) onNotify('Đã áp dụng góc kịch bản mẫu vào biểu mẫu!', 'info');
   };
 
   // Pillar color map
@@ -362,7 +362,7 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
               className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-xs hover:opacity-95 transition flex items-center gap-2 cursor-pointer"
             >
               <Lightbulb className="w-4 h-4 text-amber-300" />
-              <span>Gợi ý kịch bản AI</span>
+              <span>Gợi ý góc kịch bản</span>
             </button>
 
             <button
@@ -1163,7 +1163,7 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
               <div className="flex items-center gap-2">
                 <Lightbulb className="w-5 h-5 text-amber-500" />
                 <h2 className="text-base font-bold text-slate-900">
-                  Trợ Lý AI Gợi Ý Góc Kịch Bản (Smart Content Angles Generator)
+                  Gợi ý góc kịch bản & Hook mở đầu (Content Angles & Hooks)
                 </h2>
               </div>
               <button
@@ -1214,7 +1214,7 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
               {/* Suggestions Cards */}
               <div className="space-y-3">
                 <div className="text-xs font-bold text-slate-800 flex items-center justify-between">
-                  <span>3 Hướng tiếp cận được AI đề xuất cho sản phẩm này:</span>
+                  <span>3 Hướng tiếp cận đề xuất cho sản phẩm này:</span>
                   <span className="text-2xs text-purple-600 font-semibold">Tối ưu theo thị hiếu TikTok Shop 2026</span>
                 </div>
 

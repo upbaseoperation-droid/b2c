@@ -1817,7 +1817,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                 </label>
                 <div className="grid grid-cols-3 gap-2 text-xs">
                   {[
-                    { id: 'BALANCED', label: 'Cân bằng toàn diện' },
+                    { id: 'BALANCED', label: 'Cân bằng các nhóm kênh' },
                     { id: 'GMV_MAX', label: 'Tối đa GMV' },
                     { id: 'MEGA_SALE', label: 'Siêu Sale & Live' },
                     { id: 'BRAND_PUSH', label: 'Phủ thương hiệu' },

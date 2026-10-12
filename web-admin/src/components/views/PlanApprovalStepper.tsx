@@ -99,7 +99,7 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
       confirmed: ['LEAD_APPROVED', 'APPROVED', 'IN_EXECUTION', 'COMPLETED'].includes(status),
       confirmedBy: plan.approvedBy || 'Vân Ngọc (Trưởng Phòng B2C)',
       confirmedAt: plan.approvedAt,
-      note: 'Phê duyệt toàn diện kế hoạch tháng.'
+      note: 'Phê duyệt kế hoạch tháng.'
     }
   };
 
