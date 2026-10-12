@@ -5,7 +5,7 @@
 | Mã tài liệu | HUB-GOV-01 |
 | Dự án | B2C Ops Hub |
 | Trạng thái | Đang dùng (sổ ghi liên tục) |
-| Cập nhật | 30/09/2026 |
+| Cập nhật | 09/10/2026 |
 
 Mẫu: [SDLC-03 mục 1.5](../../../sdlc/03_DOCUMENT_TEMPLATES.md#15-decision-log--một-mục). Không xóa mục; quyết định bị thay thế ghi *Thay thế bởi DEC-…*.
 
@@ -35,3 +35,12 @@ Mẫu: [SDLC-03 mục 1.5](../../../sdlc/03_DOCUMENT_TEMPLATES.md#15-decision-lo
 ### DEC-005 — Ranh giới dữ liệu Lark / UpAffiliate / B2C Ops Hub
 - Ngày: 30/09/2026 · Trạng thái: **Đề xuất** — chờ chủ dự án hai bên duyệt
 - Nội dung: [SDLC-02](../../../sdlc/02_SYSTEM_BOUNDARY.md).
+
+### DEC-006 — Quy tắc đọc Lark 4.1 Plan order tổng
+- Ngày: 09/10/2026 · Người xác nhận: owner prototype (buổi rà soát dữ liệu 09/10/2026) · Trạng thái: **Đã xác nhận quy tắc** — chờ owner bảng 4.1 đồng ý mapping
+- Quyết định:
+  1. Phạm vi B2C lấy theo cột `B2C phụ trách`.
+  2. KL1–KL7 chỉ tính video có cast; FOC = TAP Brand + TAP + TAP UpAffiliate; Ops Hub tự tính Cast và tổng video affiliate.
+  3. Plan chốt là cột gốc; `(sau điều chỉnh)`, `(Duyệt)` không phải phiên bản plan.
+  4. Chi phí dùng Net, lưu song song Gross; Gross = Net × 1,08 (VAT 8%) × 1,10 (TNCN 10%). Hệ số là cấu hình theo kỳ.
+- Hệ quả: mapping 36/228 cột và script import ([HUB-1.9](../1-requirements/1.9_DATA_SOURCE_LARK_4.1_PLAN_ORDER.md)); câu hỏi còn mở OI-017, 018, 019.

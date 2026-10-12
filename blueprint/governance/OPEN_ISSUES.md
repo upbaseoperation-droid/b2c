@@ -5,7 +5,7 @@
 | Mã tài liệu | HUB-GOV-02 |
 | Dự án | B2C Ops Hub |
 | Trạng thái | Đang dùng (sổ ghi liên tục) |
-| Cập nhật | 30/09/2026 |
+| Cập nhật | 09/10/2026 |
 
 Nguồn: `B2C/Pain point Marketing B2C.xlsx` (Sheet1, Sheet3, Sheet5, *Khảo sát nhân viên*), [HUB-1.6 Mục tiêu vận hành](../1-requirements/1.6_OPERATING_GOALS.md) mục "Việc cần xác nhận", rà soát 30/09/2026.
 
@@ -29,7 +29,10 @@ Nguồn: `B2C/Pain point Marketing B2C.xlsx` (Sheet1, Sheet3, Sheet5, *Khảo s�
 | OI-003 | Chọn **5–7 chỉ số** điều hành nào (đề xuất từ khảo sát: tiến độ air video, tiến độ gửi báo cáo, tiến độ gửi list duyệt, chủ động nghiệm thu…)? Công thức, mẫu số, thời điểm chốt? | Lõi của BRD Ops Hub | **G1** | Giám đốc khối, Lead | Mở |
 | OI-009 | **Số gốc** hiện tại: trễ air, thời gian duyệt, lỗi nghiệm thu, chi phí, workload | Không có số gốc thì không đặt mục tiêu | **G1** | Lấy từ Lark + khảo sát | Mở |
 | OI-004 | Báo cáo tuần (thứ 6, điền vào report của Growth để gửi brand) và báo cáo tháng (trước ngày 5) thuộc hệ thống nào: Ops Hub, UpAffiliate hay vẫn ở Growth? | Ranh giới hệ thống | G1 | Lead Growth, Lead Booking | Mở |
-| OI-013 | Khi UpAffiliate chưa chạy, Ops Hub lấy dữ liệu chỉ số từ đâu (Lark Base, Seller Center, file đo lường riêng)? Dashboard hiện chưa kéo được NMV, tỷ lệ hủy. | Thứ tự phát hành giữa hai dự án | G2 | Team DX | Mở |
+| OI-013 | Khi UpAffiliate chưa chạy, Ops Hub lấy dữ liệu chỉ số từ đâu (Lark Base, Seller Center, file đo lường riêng)? Dashboard hiện chưa kéo được NMV, tỷ lệ hủy. | Thứ tự phát hành giữa hai dự án | G2 | Team DX | **Đề xuất trả lời:** plan và thực đạt đọc từ Lark 4.1 Plan order tổng ([HUB-1.9](../1-requirements/1.9_DATA_SOURCE_LARK_4.1_PLAN_ORDER.md)); NMV đã có trong 4.1, tỷ lệ hủy chưa đủ |
+| OI-017 | Vì sao cột `Cast` (plan) trong Lark 4.1 không bằng ΣKL1–7 ở 72% dòng 07–10/2026; cột `Số video affiliate` nguồn lấy từ đâu? | Dùng cột nguồn thì workload tính thiếu (493/580 dòng B2C lệch) | G2 | Owner bảng 4.1 | Mở |
+| OI-018 | `(Duyệt) Số video affiliate` trong 4.1 nghĩa là brand đã duyệt hay đã book? | Định nghĩa chỉ số tiến độ | G2 | Owner bảng 4.1 | Mở |
+| OI-019 | TNCN 10% áp cho mọi dòng chi phí, kể cả KOC là doanh nghiệp/hộ kinh doanh xuất hóa đơn? VAT 8% áp đến kỳ nào? | Quy đổi Net/Gross (`DEC-006`) | G2 | Kế toán | Mở |
 
 ## 3. Workload, đánh giá, P2/P3
 

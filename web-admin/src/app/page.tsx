@@ -892,11 +892,16 @@ export default function App() {
               onCampaignCreatedNotification={handleCampaignCreatedNotification}
               onTriggerHandoffNotification={handleTriggerHandoffNotification}
               onNavigateToCtvHub={() => setActiveTab('self-channel-hub')}
+              onNavigateToBrandKnowledge={() => setActiveTab('brand-knowledge')}
             />
           </KeepAliveTab>
 
           <KeepAliveTab tabKey="brand-knowledge" currentTab={activeTab}>
-            <BrandKnowledgeView />
+            <BrandKnowledgeView
+              currentUser={currentUser}
+              selectedBrand={selectedBrandContext}
+              onNotify={showToast}
+            />
           </KeepAliveTab>
 
           <KeepAliveTab tabKey="content" currentTab={activeTab}>

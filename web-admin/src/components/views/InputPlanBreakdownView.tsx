@@ -206,11 +206,13 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
     return planState.items.reduce((sum, item) => sum + item.targetGmv, 0);
   }, [planState.items]);
 
-  // Budget Headroom & Status
-  const budgetHeadroom = planState.totalTargetBudget - totalAllocatedBudget;
+  // Budget Headroom & Status: Tổng chi phí = Phân rã KOC & kênh + Gói Ads tổng do Growth giao cho Media
+  const totalAdsBudget = planState.budgetAdsTotal || 0;
+  const totalCombinedBudget = totalAllocatedBudget + totalAdsBudget;
+  const budgetHeadroom = planState.totalTargetBudget - totalCombinedBudget;
   const isOverBudget = budgetHeadroom < 0;
   const budgetUsagePct = planState.totalTargetBudget > 0
-    ? (totalAllocatedBudget / planState.totalTargetBudget) * 100
+    ? (totalCombinedBudget / planState.totalTargetBudget) * 100
     : 0;
 
   // Content Headroom & Status
@@ -895,12 +897,16 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
         </div>
       </div>
 
-      {/* 0. LUỒNG PHÊ DUYỆT 2 CẤP & TIẾN TRÌNH SƠ DUYỆT (APPROVAL STEPPER) */}
+      {/* 0. LUỒNG ĐỒNG THUẬN 3 BÊN & QUẢN LÝ PHIÊN BẢN (APPROVAL & VERSION STEPPER) */}
       <PlanApprovalStepper
         plan={planState}
         currentRole={currentRole}
         onRoleChange={setCurrentRole}
         onStatusChange={(newStatus, log, note) => handleStatusChangeForPlan(planState.id, newStatus, log, note)}
+        onUpdatePlan={(updated) => {
+          setPlanState(prev => ({ ...prev, ...updated }));
+          setMonthlyPlans(prev => prev.map(p => p.id === planState.id ? { ...p, ...updated } : p));
+        }}
         onNotify={notify}
       />
 

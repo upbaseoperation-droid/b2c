@@ -27,7 +27,8 @@ const BRAND_FILTERABLE_TABS = new Set<TabKey>([
   'dashboard-bi', 'ads-report', 'performance-p3', 'overview',
   'manager', 'input-plan', 'koc-listing', 'push-products',
   'booking', 'koc-master', 'content', 'content-angles',
-  'campaigns', 'sample-tracker', 'brand-hub', 'self-channel-hub', 'koc-hub'
+  'campaigns', 'sample-tracker', 'brand-hub', 'self-channel-hub', 'koc-hub',
+  'brand-knowledge'
 ]);
 
 interface TopHeaderProps {

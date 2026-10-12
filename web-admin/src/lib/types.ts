@@ -1012,7 +1012,63 @@ export interface BrandKnowledgeBase {
   lastUpdated: string;
   updatedBy: string;
   publicShareSlug: string; // e.g. "senka-japan-official"
-  shareAccessPin?: string; // Mã PIN xem tài liệu (nếu có)
+  shareAccessPin?: string;
+  documents?: BrandDocumentFile[];
+}
+
+// ==========================================
+// BRAND DOCUMENT STORAGE & EXTRACTION TYPES
+// ==========================================
+
+export type BrandFileCategory = 
+  | 'BRAND_GUIDELINE'     // Bộ quy chuẩn thương hiệu & Tone of Voice
+  | 'LEGAL_CERTIFICATE'   // Giấy phép quảng cáo & Phiếu công bố BYT
+  | 'CLINICAL_TRIAL'      // Báo cáo thử nghiệm lâm sàng & Viện da liễu
+  | 'PRODUCT_CATALOG'     // Hồ sơ sản phẩm & Danh mục Hero SKU
+  | 'CAMPAIGN_BRIEF'      // Tài liệu chiến dịch & Yêu cầu nội dung
+  | 'ASSET_MEDIA';        // Bộ nhận diện, File thiết kế, Logo
+
+export type BrandFileStatus = 'CHƯA_ĐỌC' | 'ĐANG_ĐỌC' | 'ĐÃ_TRÍCH_XUẤT' | 'ĐÃ_ĐỒNG_BỘ' | 'LỖI';
+
+export interface ExtractedBrandInfo {
+  documentType: BrandFileCategory;
+  brandName?: string;
+  slogan?: string;
+  toneOfVoice?: string;
+  targetAudience?: string;
+  productName?: string;
+  skuCode?: string;
+  priceVnd?: number;
+  certNumber?: string;
+  issuingAuthority?: string;
+  mandatoryDisclaimer?: string;
+  clinicalClaims?: string;
+  scientificMechanism?: string;
+  ingredients?: { name: string; percentage?: string; benefit?: string }[];
+  keyUsps?: string[];
+  blacklistKeywords?: { keyword: string; rationale: string; alternativeSuggestion?: string }[];
+  whitelistKeywords?: { phrase: string; exampleUsage?: string }[];
+  visualDos?: string[];
+  visualDonts?: string[];
+  rawTextPreview?: string;
+  extractedAt?: string;
+  confidenceScore?: number;
+}
+
+export interface BrandDocumentFile {
+  id: string;
+  brandId: string;
+  brandName: string;
+  fileName: string;
+  fileSizeFormatted: string;
+  fileType: 'pdf' | 'docx' | 'image' | 'xlsx';
+  category: BrandFileCategory;
+  uploadDate: string;
+  uploadedBy: string;
+  status: BrandFileStatus;
+  fileUrl?: string;
+  extractedData?: ExtractedBrandInfo;
+  notes?: string;
 }
 
 // ==========================================
@@ -1954,10 +2010,11 @@ export type MonthlyPlanStatus =
   | 'LEAD_APPROVED'          // Trưởng phòng đã duyệt
   | 'BRAND_APPROVED'         // Brand đã thông qua
   | 'APPROVED'               // Đã phê duyệt chính thức
+  | 'LOCKED'                 // Đã đóng băng phiên bản chốt
   | 'IN_EXECUTION'           // Đang triển khai booking
   | 'COMPLETED';             // Đã nghiệm thu & đóng số tháng
 
-export type PlanDiscussionRole = 'GROWTH' | 'BOOKING' | 'LEAD' | 'SYSTEM';
+export type PlanDiscussionRole = 'GROWTH' | 'BOOKING' | 'MEDIA' | 'LEAD' | 'SYSTEM';
 
 export type PlanDiscussionType = 
   | 'COMMENT' 
@@ -1965,13 +2022,15 @@ export type PlanDiscussionType =
   | 'PRE_APPROVAL_PASS' 
   | 'FINAL_APPROVAL_PASS' 
   | 'STATUS_CHANGE'
-  | 'BUDGET_ADJUST';
+  | 'BUDGET_ADJUST'
+  | 'VERSION_CREATED'
+  | 'VERSION_LOCKED';
 
 export interface PlanDiscussionMessage {
   id: string;
   authorName: string;
   authorRole: PlanDiscussionRole;
-  authorTitle: string; // "Growth PIC", "Booking Specialist", "Trưởng Phòng B2C", "Hệ Thống"
+  authorTitle: string; // "Growth PIC", "Booking Specialist", "Media Specialist", "Trưởng Phòng B2C", "Hệ Thống"
   content: string;
   type: PlanDiscussionType;
   timestamp: string;
@@ -1995,6 +2054,92 @@ export interface PlanApprovalStep {
   feedback?: string;
 }
 
+// Trạng thái ký duyệt đồng thuận 3 bên: Growth, Booking B2C, Media (+ Trưởng phòng)
+export interface MultiPartySignOff {
+  growth: {
+    confirmed: boolean;
+    confirmedBy?: string;
+    confirmedAt?: string;
+    note?: string;
+    targetNmv?: number;
+    totalBudget?: number;
+    adsBudget?: number;
+  };
+  booking: {
+    confirmed: boolean;
+    confirmedBy?: string;
+    confirmedAt?: string;
+    note?: string;
+    totalContents?: number;
+    allocatedBudget?: number;
+  };
+  media: {
+    confirmed: boolean;
+    confirmedBy?: string;
+    confirmedAt?: string;
+    note?: string;
+    targetRoas?: number;
+    acceptedAdsBudget?: number;
+  };
+  leadB2c: {
+    confirmed: boolean;
+    confirmedBy?: string;
+    confirmedAt?: string;
+    note?: string;
+  };
+}
+
+// Bản chụp bất biến của Phiên Bản Kế Hoạch đã chốt (Immutable Version Snapshot)
+export interface PlanVersionSnapshot {
+  id: string;
+  versionCode: string; // 'v1.0', 'v1.1', 'v2.0'
+  versionName: string; // 'Bản chốt đầu tháng (Baseline)', 'Điều chỉnh Đợt 2 (Top-up)'
+  status: 'LOCKED' | 'SUPERSEDED';
+  createdAt: string;
+  createdBy: string;
+  creatorRole: PlanDiscussionRole;
+  changeReason?: string;
+  totalTargetBudget: number;
+  totalTargetContents: number;
+  targetGmv: number;
+  budgetAdsTotal: number; // Gói tổng Ads không phân tách kênh
+  budgetAffiliate: number;
+  budgetSelfChannel: number;
+  items: InputPlanRowItem[];
+  signOffRecord: MultiPartySignOff;
+}
+
+// =========================================================================
+// BIÊN BẢN LÀM VIỆC & THỐNG NHẤT KẾ HOẠCH (PLANNING ALIGNMENT PROTOCOLS)
+// =========================================================================
+export interface PlanAlignmentProtocol {
+  id: string; // VD: "BB-202610-KUTI-01"
+  protocolNumber: string; // "BB-01/MKT-GROWTH/2026-10"
+  planId: string;
+  type: 'INITIAL_ALIGNMENT' | 'REVISION_REQUEST' | 'FINAL_SETTLEMENT';
+  typeName: string; // 'Biên bản Thống nhất Đầu kỳ', 'Biên bản Điều chỉnh Giữa kỳ', 'Biên bản Nghiệm thu'
+  title: string;
+  targetVersionCode: string; // 'v1.0', 'v1.1'
+  status: 'DRAFTING' | 'IN_DISCUSSION' | 'SIGNED_LOCKED';
+  createdAt: string;
+  createdBy: string;
+  creatorRole: PlanDiscussionRole;
+  summary: {
+    totalBudget: number;
+    adsBudgetTotal: number;
+    targetGmv: number;
+    totalContents: number;
+    changeReason?: string;
+  };
+  messages: PlanDiscussionMessage[];
+  signatures: {
+    growth?: { signed: boolean; signedBy?: string; signedAt?: string; note?: string };
+    booking?: { signed: boolean; signedBy?: string; signedAt?: string; note?: string };
+    media?: { signed: boolean; signedBy?: string; signedAt?: string; note?: string };
+    leadB2c?: { signed: boolean; signedBy?: string; signedAt?: string; note?: string };
+  };
+}
+
 export interface InputPlanBreakdownState {
   id: string;
   title: string;
@@ -2004,7 +2149,8 @@ export interface InputPlanBreakdownState {
   month: string; // Chu kỳ tháng (e.g. '2026/10', '2026/09', '2026/08', '2026/11')
   week: string;
   pic: string;
-  growthPic?: string; // Nhân sự Growth phụ trách thẩm định
+  growthPic?: string; // Nhân sự Growth phụ trách thẩm định & giao số
+  mediaPic?: string; // Nhân sự Media phụ trách gói quảng cáo
   growthAlignmentStatus?: 'CHƯA_TRAO_ĐỔI' | 'ĐANG_TRAO_ĐỔI' | 'ĐÃ_THỐNG_NHẤT'; // Trạng thái trao đổi với Growth
   growthAlignmentNotes?: string;
   submittedAt?: string;
@@ -2026,10 +2172,17 @@ export interface InputPlanBreakdownState {
   // Phân bổ 2 kênh độc lập: Affiliate vs Self Channel (Kênh thương hiệu)
   budgetAffiliate?: number; // Ngân sách Affiliate (VD: 150,000,000 VNĐ)
   budgetSelfChannel?: number; // Ngân sách Self Channel (VD: 50,000,000 VNĐ)
+  budgetAdsTotal?: number; // Gói Tổng ngân sách Ads do Growth giao cho Media (không tách theo kênh)
   targetAffiliateContents?: number; // Target số video KOC ngoại sàn
   targetSelfChannelContents?: number; // Target số video kênh thương hiệu
   selfChannelPillars?: SelfChannelContentPillar[]; // Phân rã theo Content Pillar
-  // Luồng duyệt & Lịch sử trao đổi Booking <-> Growth
+  // Quản lý phiên bản & Biên bản làm việc 3 bên
+  currentVersionCode?: string; // 'v1.0', 'v1.1 Draft', v.v.
+  isVersionLocked?: boolean; // Khóa chỉ đọc khi đã chốt phiên bản
+  versionSnapshots?: PlanVersionSnapshot[]; // Danh sách các phiên bản đã chốt
+  protocols?: PlanAlignmentProtocol[]; // Danh sách các Biên bản làm việc & thống nhất
+  multiPartySignOff?: MultiPartySignOff; // Dữ liệu ký duyệt 3 bên: Growth, Booking, Media, Lead
+  // Luồng duyệt & Lịch sử trao đổi
   approvalSteps?: PlanApprovalStep[];
   discussions?: PlanDiscussionMessage[];
   preApprovedBy?: string;

@@ -36,7 +36,9 @@ Thumbs.db
 *.xlsm
 *.pdf
 *.docx
+*.zip
 pdf_preview/
+tmp/
 
 # Local Agent & Tooling
 .agents/

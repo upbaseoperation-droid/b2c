@@ -38,8 +38,11 @@ import {
   RotateCcw,
   RefreshCw,
   ArrowRight,
+  ArrowLeft,
   Wand2,
   Lightbulb,
+  FolderOpen,
+  LayoutDashboard,
   CheckCheck
 } from 'lucide-react';
 import {
@@ -50,19 +53,65 @@ import {
   BlacklistKeyword,
   WhitelistKeyword,
   CrisisProtocol,
-  AiScriptAnalysisResult
+  AiScriptAnalysisResult,
+  UserProfile
 } from '../../lib/types';
 import { INITIAL_BRAND_KNOWLEDGE_BASES } from '../../lib/mockData';
 import { analyzeScriptWithAi } from '../../lib/aiScriptAnalyzer';
+import { BrandDocumentsTab } from './BrandDocumentsTab';
+import { SAMPLE_BRAND_DOCUMENTS } from '../../lib/brandDocumentExtractor';
 
-type KnowledgeTabKey = 'SKUS' | 'LEGAL' | 'KEYWORDS' | 'OBJECTIONS' | 'VISUAL_IDENTITY' | 'AI_INSPECTOR';
+export interface BrandKnowledgeViewProps {
+  currentUser?: UserProfile | null;
+  selectedBrand?: string;
+  onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
+}
 
-export const BrandKnowledgeView: React.FC = () => {
-  const [knowledgeBases, setKnowledgeBases] = useState<BrandKnowledgeBase[]>(INITIAL_BRAND_KNOWLEDGE_BASES);
-  const [selectedBrandId, setSelectedBrandId] = useState<string>(INITIAL_BRAND_KNOWLEDGE_BASES[0]?.id || 'kb-senka');
-  const [activeKnowledgeTab, setActiveKnowledgeTab] = useState<KnowledgeTabKey>('SKUS');
+type KnowledgeTabKey = 'DOCUMENTS' | 'SKUS' | 'LEGAL' | 'KEYWORDS' | 'OBJECTIONS' | 'VISUAL_IDENTITY' | 'AI_INSPECTOR';
+
+export const BrandKnowledgeView: React.FC<BrandKnowledgeViewProps> = ({
+  currentUser,
+  selectedBrand = 'ALL',
+  onNotify
+}) => {
+  const [knowledgeBases, setKnowledgeBases] = useState<BrandKnowledgeBase[]>(() => {
+    return INITIAL_BRAND_KNOWLEDGE_BASES.map(brand => ({
+      ...brand,
+      documents: brand.documents || SAMPLE_BRAND_DOCUMENTS.filter(
+        d => d.brandId === brand.id || d.brandName.toLowerCase() === brand.brandName.toLowerCase()
+      )
+    }));
+  });
+
+  const isManagerOrBOD = !currentUser || ['ADMIN', 'MANAGER', 'LEADER'].includes(currentUser.role);
+  const [selectedBrandId, setSelectedBrandId] = useState<string>(() => {
+    if (selectedBrand && selectedBrand !== 'ALL') {
+      const match = INITIAL_BRAND_KNOWLEDGE_BASES.find(b => b.brandName.toLowerCase().includes(selectedBrand.toLowerCase()));
+      if (match) return match.id;
+    }
+    return isManagerOrBOD ? 'ALL' : (INITIAL_BRAND_KNOWLEDGE_BASES[0]?.id || 'kb-senka');
+  });
+
+  // Đồng bộ khi đổi nhãn hàng trên TopHeader
+  React.useEffect(() => {
+    if (selectedBrand) {
+      if (selectedBrand === 'ALL') {
+        setSelectedBrandId('ALL');
+      } else {
+        const match = knowledgeBases.find(b => b.brandName.toLowerCase().includes(selectedBrand.toLowerCase()));
+        if (match) {
+          setSelectedBrandId(match.id);
+        }
+      }
+    }
+  }, [selectedBrand, knowledgeBases]);
+  const [activeKnowledgeTab, setActiveKnowledgeTab] = useState<KnowledgeTabKey>('DOCUMENTS');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string>('ALL');
+
+  const handleUpdateBrand = (updatedBrand: BrandKnowledgeBase) => {
+    setKnowledgeBases(prev => prev.map(b => b.id === updatedBrand.id ? updatedBrand : b));
+  };
 
   // Copy Feedback State
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -190,6 +239,18 @@ export const BrandKnowledgeView: React.FC = () => {
       || faq.doMentionPoints.some(p => p.toLowerCase().includes(q));
   });
 
+  // Filtered Brands for ALL view
+  const filteredBrands = knowledgeBases.filter((b) => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      b.brandName.toLowerCase().includes(q) ||
+      b.category.toLowerCase().includes(q) ||
+      b.originCountry.toLowerCase().includes(q) ||
+      b.slogan.toLowerCase().includes(q)
+    );
+  });
+
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
       {/* TOP TOOLBAR & GLOBAL ACTIONS */}
@@ -199,6 +260,24 @@ export const BrandKnowledgeView: React.FC = () => {
           <span className="text-xs text-slate-500 font-semibold flex items-center gap-1.5 whitespace-nowrap">
             <Building className="w-4 h-4 text-blue-600" /> Nhãn hàng:
           </span>
+
+          <button
+            onClick={() => setSelectedBrandId('ALL')}
+            className={`px-3 py-1.5 rounded-md text-xs font-semibold transition flex items-center gap-1.5 whitespace-nowrap ${
+              selectedBrandId === 'ALL'
+                ? 'bg-slate-900 text-white shadow-sm'
+                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+            }`}
+          >
+            <LayoutDashboard className="w-3.5 h-3.5" />
+            <span>Tất cả nhãn hàng</span>
+            <span className={`text-2xs px-1.5 py-0.2 rounded-full ${
+              selectedBrandId === 'ALL' ? 'bg-slate-700 text-white' : 'bg-white text-slate-500'
+            }`}>
+              {knowledgeBases.length}
+            </span>
+          </button>
+
           {knowledgeBases.map((brand) => (
             <button
               key={brand.id}
@@ -250,8 +329,237 @@ export const BrandKnowledgeView: React.FC = () => {
         </div>
       </div>
 
-      {/* BRAND PROFILE HEADER HERO BANNER */}
-      <div className="card-enterprise p-5 bg-slate-50 border-slate-200">
+      {selectedBrandId === 'ALL' ? (
+        <div className="space-y-6 animate-in fade-in duration-200">
+          {/* 1. THỐNG KÊ TOÀN KHỐI THƯƠNG HIỆU */}
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div className="card-enterprise p-4 flex items-center gap-3 bg-white">
+              <div className="w-10 h-10 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                <Building className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-2xs text-slate-500 font-medium">Nhãn hàng quản lý</p>
+                <p className="text-lg font-semibold text-slate-900">{knowledgeBases.length} nhãn</p>
+              </div>
+            </div>
+
+            <div className="card-enterprise p-4 flex items-center gap-3 bg-white">
+              <div className="w-10 h-10 rounded-md bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+                <Flame className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-2xs text-slate-500 font-medium">SKU chủ lực (Hero)</p>
+                <p className="text-lg font-semibold text-slate-900">
+                  {knowledgeBases.reduce((acc, b) => acc + b.skus.length, 0)} SKU
+                </p>
+              </div>
+            </div>
+
+            <div className="card-enterprise p-4 flex items-center gap-3 bg-white">
+              <div className="w-10 h-10 rounded-md bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                <ShieldCheck className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-2xs text-slate-500 font-medium">Hồ sơ pháp lý / BYT</p>
+                <p className="text-lg font-semibold text-slate-900">
+                  {knowledgeBases.reduce((acc, b) => acc + b.certifications.length, 0)} hồ sơ
+                </p>
+              </div>
+            </div>
+
+            <div className="card-enterprise p-4 flex items-center gap-3 bg-white">
+              <div className="w-10 h-10 rounded-md bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
+                <FolderOpen className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-2xs text-slate-500 font-medium">Tệp tài liệu lưu kho</p>
+                <p className="text-lg font-semibold text-purple-700">
+                  {knowledgeBases.reduce((acc, b) => acc + (b.documents?.length || 0), 0)} tệp
+                </p>
+              </div>
+            </div>
+
+            <div className="card-enterprise p-4 flex items-center gap-3 bg-white">
+              <div className="w-10 h-10 rounded-md bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
+                <ShieldAlert className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-2xs text-slate-500 font-medium">Từ cấm (Blacklist)</p>
+                <p className="text-lg font-semibold text-rose-700">
+                  {knowledgeBases.reduce((acc, b) => acc + b.blacklistKeywords.length, 0)} từ
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* 2. MA TRẬN ĐỐI SOÁT & HOÀN THIỆN GUIDELINE TỪNG NHÃN */}
+          <div className="card-enterprise overflow-hidden bg-white">
+            <div className="px-5 py-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-semibold text-slate-900">
+                  Ma Trận Quản Trị Brand Guideline &amp; Hồ Sơ Pháp Lý Toàn Bộ Nhãn Hàng
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Dành cho Cấp Quản lý &amp; Trưởng phòng theo dõi mức độ hoàn thiện quy chuẩn của từng nhãn hàng
+                </p>
+              </div>
+              <span className="text-2xs px-2.5 py-1 rounded bg-slate-200 text-slate-700 font-semibold">
+                Chế độ xem Quản lý (BOD/Manager)
+              </span>
+            </div>
+
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="bg-slate-100 border-b border-slate-200 text-slate-700 font-semibold">
+                  <th className="py-3 px-4">Thương hiệu &amp; Xuất xứ</th>
+                  <th className="py-3 px-3">Ngành hàng</th>
+                  <th className="py-3 px-3">Tone of Voice (Phong cách)</th>
+                  <th className="py-3 px-3">Tệp tài liệu</th>
+                  <th className="py-3 px-3">Hero SKUs</th>
+                  <th className="py-3 px-3">Hồ sơ pháp lý</th>
+                  <th className="py-3 px-3">Từ cấm Blacklist</th>
+                  <th className="py-3 px-4">Mức độ hoàn thiện</th>
+                  <th className="py-3 px-4 text-right">Chi Tiết</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-200">
+                {filteredBrands.map((brand) => {
+                  const hasStory = !!brand.brandStory;
+                  const hasSkus = brand.skus.length > 0;
+                  const hasLegal = brand.certifications.length > 0;
+                  const hasBlacklist = brand.blacklistKeywords.length > 0;
+                  const hasDocs = (brand.documents?.length || 0) > 0;
+                  const completenessScore = Math.min(100, (
+                    (hasStory ? 20 : 0) +
+                    (hasSkus ? 20 : 0) +
+                    (hasLegal ? 20 : 0) +
+                    (hasBlacklist ? 20 : 0) +
+                    (hasDocs ? 20 : 0)
+                  ));
+
+                  return (
+                    <tr key={brand.id} className="hover:bg-slate-50/80 transition">
+                      <td className="py-3.5 px-4">
+                        <div className="font-semibold text-slate-900 flex items-center gap-2">
+                          <span>{brand.brandName}</span>
+                          <span className="text-2xs font-normal text-slate-500">({brand.originCountry})</span>
+                        </div>
+                        <p className="text-2xs text-blue-700 italic mt-0.5 truncate max-w-xs">&ldquo;{brand.slogan}&rdquo;</p>
+                      </td>
+
+                      <td className="py-3.5 px-3 text-slate-700 font-medium">
+                        {brand.category}
+                      </td>
+
+                      <td className="py-3.5 px-3">
+                        <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-purple-50 text-purple-800 border border-purple-200">
+                          {brand.toneTag.replace(/_/g, ' ')}
+                        </span>
+                      </td>
+
+                      <td className="py-3.5 px-3 font-semibold text-slate-800">
+                        <span className="flex items-center gap-1">
+                          <FolderOpen className="w-3.5 h-3.5 text-blue-600" />
+                          <span>{brand.documents?.length || 0} tệp</span>
+                        </span>
+                      </td>
+
+                      <td className="py-3.5 px-3 font-semibold text-slate-800">
+                        {brand.skus.length} SKU
+                      </td>
+
+                      <td className="py-3.5 px-3 font-semibold text-emerald-700">
+                        {brand.certifications.length} văn bản
+                      </td>
+
+                      <td className="py-3.5 px-3 font-semibold text-rose-700">
+                        {brand.blacklistKeywords.length} từ
+                      </td>
+
+                      <td className="py-3.5 px-4">
+                        <div className="w-32 space-y-1">
+                          <div className="flex justify-between text-2xs text-slate-600">
+                            <span>Hoàn thiện</span>
+                            <span className="font-semibold text-slate-900">{completenessScore}%</span>
+                          </div>
+                          <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
+                            <div
+                              className={`h-full rounded-full ${
+                                completenessScore >= 80
+                                  ? 'bg-emerald-500'
+                                  : completenessScore >= 60
+                                  ? 'bg-blue-500'
+                                  : 'bg-amber-500'
+                              }`}
+                              style={{ width: `${completenessScore}%` }}
+                            />
+                          </div>
+                        </div>
+                      </td>
+
+                      <td className="py-3.5 px-4 text-right">
+                        <button
+                          onClick={() => setSelectedBrandId(brand.id)}
+                          className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded text-xs font-semibold transition border border-blue-200 shadow-2xs flex items-center gap-1 ml-auto"
+                        >
+                          <span>Vào nhãn</span>
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* 3. KHỐI NGUYÊN TẮC TUÂN THỦ PHÁP LÝ TOÀN BỘ NHÃN HÀNG */}
+          <div className="card-enterprise p-5 bg-amber-50/30 border-amber-200 space-y-3">
+            <div className="flex items-center gap-2 text-amber-900 font-semibold text-xs">
+              <ShieldAlert className="w-4 h-4 text-amber-600" />
+              <span>Nguyên Tắc Pháp Lý &amp; Kiểm Soát Rủi Ro Áp Dụng Chung Cho Toàn Khối B2C</span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs text-slate-700">
+              <div className="p-3 bg-white rounded border border-amber-200 space-y-1">
+                <p className="font-semibold text-slate-900">1. Quy chế Quản lý Mỹ phẩm BYT</p>
+                <p className="text-2xs text-slate-600 leading-relaxed">
+                  Tuyệt đối cấm dùng từ &ldquo;trị mụn dứt điểm&rdquo;, &ldquo;chữa khỏi thâm nám&rdquo;. Mỹ phẩm chỉ có tính năng làm sạch, dưỡng ẩm và hỗ trợ ngăn ngừa.
+                </p>
+              </div>
+
+              <div className="p-3 bg-white rounded border border-amber-200 space-y-1">
+                <p className="font-semibold text-slate-900">2. Nghị định 15 về Thực phẩm chức năng</p>
+                <p className="text-2xs text-slate-600 leading-relaxed">
+                  Bắt buộc xuất hiện câu tuyên bố: &ldquo;Thực phẩm này không phải là thuốc, không có tác dụng thay thế thuốc chữa bệnh&rdquo;. Cấm gọi TPCN là &ldquo;thuốc bổ&rdquo;.
+                </p>
+              </div>
+
+              <div className="p-3 bg-white rounded border border-amber-200 space-y-1">
+                <p className="font-semibold text-slate-900">3. Chính sách TikTok Shop Seller</p>
+                <p className="text-2xs text-slate-600 leading-relaxed">
+                  Không so sánh dìm hàng thương hiệu đối thủ, không dùng từ tuyệt đối &ldquo;100%&rdquo; không có số liệu kiểm nghiệm lâm sàng, tránh bị quét bóp tương tác kênh.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {/* Back to all brands button for Manager/Leader */}
+          {isManagerOrBOD && (
+            <div className="flex items-center justify-between pb-1">
+              <button
+                onClick={() => setSelectedBrandId('ALL')}
+                className="text-xs font-semibold text-blue-600 hover:text-blue-800 flex items-center gap-1.5 transition px-2 py-1 rounded hover:bg-blue-50"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>Quay lại Bảng tổng quan ma trận nhãn hàng</span>
+              </button>
+            </div>
+          )}
+
+          {/* BRAND PROFILE HEADER HERO BANNER */}
+          <div className="card-enterprise p-5 bg-slate-50 border-slate-200">
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-5">
           <div className="space-y-3 max-w-3xl">
             <div className="flex items-center gap-2 flex-wrap">
@@ -337,9 +645,24 @@ export const BrandKnowledgeView: React.FC = () => {
         </div>
       </div>
 
-      {/* 5 KNOWLEDGE CATEGORY SUB-TABS */}
+      {/* KNOWLEDGE CATEGORY SUB-TABS */}
       <div className="border-b border-slate-200">
         <div className="flex items-center gap-2 overflow-x-auto pb-1">
+          <button
+            onClick={() => setActiveKnowledgeTab('DOCUMENTS')}
+            className={`px-4 py-2.5 text-xs font-semibold border-b-2 transition flex items-center gap-2 whitespace-nowrap ${
+              activeKnowledgeTab === 'DOCUMENTS'
+                ? 'border-blue-600 text-blue-700 bg-blue-50/50'
+                : 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+            }`}
+          >
+            <FolderOpen className="w-4 h-4 text-blue-600" />
+            <span>Kho tài liệu &amp; Đọc tệp</span>
+            <span className="px-1.5 py-0.2 rounded-full text-2xs bg-blue-100 text-blue-800 font-semibold">
+              {(currentBrand.documents || []).length}
+            </span>
+          </button>
+
           <button
             onClick={() => setActiveKnowledgeTab('SKUS')}
             className={`px-4 py-2.5 text-xs font-semibold border-b-2 transition flex items-center gap-2 whitespace-nowrap ${
@@ -434,6 +757,16 @@ export const BrandKnowledgeView: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* ========================================================================= */}
+      {/* TAB 0: KHO TÀI LIỆU & ĐỌC TỆP TRÍCH XUẤT THÔNG TIN                       */}
+      {/* ========================================================================= */}
+      {activeKnowledgeTab === 'DOCUMENTS' && (
+        <BrandDocumentsTab
+          currentBrand={currentBrand}
+          onUpdateBrand={handleUpdateBrand}
+        />
+      )}
 
       {/* ========================================================================= */}
       {/* TAB 1: BÁCH KHOA TOÀN THƯ HERO SKUS                                       */}
@@ -1317,6 +1650,8 @@ export const BrandKnowledgeView: React.FC = () => {
               )}
             </div>
           </div>
+        </div>
+      )}
         </div>
       )}
 

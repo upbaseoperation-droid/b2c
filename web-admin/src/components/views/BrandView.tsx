@@ -38,7 +38,8 @@ import {
   X,
   RefreshCw,
   Video,
-  Info
+  Info,
+  FolderOpen
 } from 'lucide-react';
 import {
   CampaignItem,
@@ -65,6 +66,7 @@ interface BrandViewProps {
   onCampaignCreatedNotification?: (campaign: CampaignItem) => void;
   onTriggerHandoffNotification?: (campaignTitle: string) => void;
   onNavigateToCtvHub?: () => void;
+  onNavigateToBrandKnowledge?: () => void;
 }
 
 type BrandViewTab = 'BRIEF_STUDIO' | 'GUIDELINE_HUB' | 'APPROVAL_GATE' | 'RETAINER_HEALTH';
@@ -73,6 +75,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
   onCampaignCreatedNotification,
   onTriggerHandoffNotification,
   onNavigateToCtvHub,
+  onNavigateToBrandKnowledge,
 }) => {
   // Navigation Tab State
   const [activeTab, setActiveTab] = useState<BrandViewTab>('BRIEF_STUDIO');
@@ -642,6 +645,15 @@ export const BrandView: React.FC<BrandViewProps> = ({
               </div>
 
               <div className="flex items-center gap-2 self-start md:self-auto">
+                {onNavigateToBrandKnowledge && (
+                  <button
+                    onClick={onNavigateToBrandKnowledge}
+                    className="px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded border border-slate-300 shadow-2xs flex items-center gap-1.5 transition"
+                  >
+                    <FolderOpen className="w-3.5 h-3.5 text-blue-600" />
+                    <span>Kho tài liệu &amp; Đọc tệp</span>
+                  </button>
+                )}
                 <button
                   onClick={() => setIsAddKeywordModalOpen(true)}
                   className="px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold rounded shadow-sm flex items-center gap-1.5 transition"

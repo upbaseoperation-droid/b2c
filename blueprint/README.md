@@ -5,7 +5,7 @@
 | Mã tài liệu | HUB-REG |
 | Dự án | B2C Ops Hub — quản trị phòng Marketing B2C |
 | Giai đoạn hiện tại | **1 — Yêu cầu** (chưa qua G1) |
-| Cập nhật | 30/09/2026 |
+| Cập nhật | 09/10/2026 |
 
 Danh sách **mọi tài liệu bắt buộc** theo [SDLC-00](../../sdlc/00_SDLC_PROTOCOL.md), kể cả tài liệu chưa tạo. Cập nhật bảng này mỗi khi tạo tài liệu hoặc đổi trạng thái.
 
@@ -29,8 +29,8 @@ Danh sách **mọi tài liệu bắt buộc** theo [SDLC-00](../../sdlc/00_SDLC_
 
 | Mã | Tài liệu | Trạng thái |
 | --- | --- | --- |
-| HUB-GOV-01 | [Decision log](governance/DECISION_LOG.md) | Đang dùng — 5 mục |
-| HUB-GOV-02 | [Open issues](governance/OPEN_ISSUES.md) | Đang dùng — 16 mục, 7 chặn G1 |
+| HUB-GOV-01 | [Decision log](governance/DECISION_LOG.md) | Đang dùng — 6 mục |
+| HUB-GOV-02 | [Open issues](governance/OPEN_ISSUES.md) | Đang dùng — 19 mục, 7 chặn G1 |
 | HUB-GOV-03 | [Ma trận truy vết](governance/TRACEABILITY.md) | Đang dùng — mới có cột BR |
 
 ## Giai đoạn 1 — Yêu cầu
@@ -45,6 +45,7 @@ Danh sách **mọi tài liệu bắt buộc** theo [SDLC-00](../../sdlc/00_SDLC_
 | HUB-1.6 | [Mục tiêu vận hành (bản thảo luận)](1-requirements/1.6_OPERATING_GOALS.md) | Nháp — giả thuyết | Team DX | Chờ Giám đốc khối chọn 3 mục tiêu (OI-010) |
 | HUB-1.7 | [BRD Ops Hub](1-requirements/1.7_BRD_OPS_HUB.md) | Nháp đề xuất | _chưa gán_ | 9 BR rút từ khảo sát, chưa xác nhận |
 | HUB-1.8 | Số đo gốc (baseline) | **Chưa tạo** | _chưa gán_ | Xem HUB-1.3 mục 6 |
+| HUB-1.9 | [Nguồn dữ liệu Lark 4.1 Plan order tổng](1-requirements/1.9_DATA_SOURCE_LARK_4.1_PLAN_ORDER.md) | Nháp | Team DX | Mapping 36/228 cột; quy tắc DEC-006; OI-017–019 |
 
 Tài liệu gốc (giữ nguyên ở `B2C/`): `Pain point Marketing B2C.xlsx`, `4P Marketing B2C.xlsx`, `Bang_Danh_Gia_Workload_Va_Hieu_Suat_MKT_B2C.xlsx`, `Các SLA B2C.pdf`, `Định hướng Marketing B2C _ Cơ cấu team.pdf`, `Quy trình Booking - Tech.md`, `MeUp_Playbook_02_Booking_KOC.docx`, `Luồng quản lý job/`.
 
