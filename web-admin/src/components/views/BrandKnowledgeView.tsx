@@ -750,9 +750,9 @@ export const BrandKnowledgeView: React.FC<BrandKnowledgeViewProps> = ({
             }`}
           >
             <Sparkles className="w-4 h-4 text-purple-600" />
-            <span>AI thẩm định kịch bản</span>
+            <span>Thẩm định kịch bản</span>
             <span className="px-1.5 py-0.2 rounded-full text-2xs bg-purple-600 text-white font-semibold">
-              AI Bot
+              Tự động
             </span>
           </button>
         </div>
@@ -1253,7 +1253,7 @@ export const BrandKnowledgeView: React.FC<BrandKnowledgeViewProps> = ({
                   </span>
                 </div>
                 <h3 className="text-lg font-semibold tracking-tight text-white flex items-center gap-2">
-                  <span>Trợ Lý AI Thẩm Định &amp; Sửa Kịch Bản KOC Tự Động</span>
+                  <span>Thẩm Định &amp; Góp Ý Kịch Bản KOC Tự Động</span>
                 </h3>
                 <p className="text-xs text-purple-200/90 leading-relaxed">
                   Đối soát kịch bản KOC theo 5 trục chuẩn mực: Quét từ cấm Blacklist, tuyên bố pháp lý bộ Y tế, USPs sản phẩm, Tone of Voice và cấu trúc 4 phần TikTok. Phát hiện lỗi và tự động viết lại kịch bản chuẩn trong 0.5s.

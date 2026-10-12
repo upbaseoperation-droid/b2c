@@ -76,7 +76,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
 
   // Search & Filter States
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterOcrStatus, setFilterOcrStatus] = useState<'ALL' | 'VERIFIED' | 'UNVERIFIED'>('ALL');
+  const [filterOcrStatus, setFilterOcrStatus] = useState<'ALL' | 'INDIVIDUAL' | 'BUSINESS_HOUSEHOLD' | 'BUSINESS_COMPANY' | 'UNVERIFIED'>('ALL');
   const [selectedTier, setSelectedTier] = useState<string>('ALL');
   const [selectedKL, setSelectedKL] = useState<string>('ALL');
   const [selectedSegment, setSelectedSegment] = useState<string>('ALL');
@@ -123,10 +123,12 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
 
       if (!matchSearch) return false;
 
-      // Filter OCR Status
-      const hasOcr = Boolean(koc.isOcrVerified || (koc.cccd && koc.cccd !== 'Chưa có' && koc.cccd.length >= 9));
-      if (filterOcrStatus === 'VERIFIED' && !hasOcr) return false;
+      // Filter OCR Status & Legal Entity
+      const hasOcr = Boolean(koc.isOcrVerified || (koc.cccd && koc.cccd !== 'Chưa có' && koc.cccd.length >= 9) || koc.taxCode);
       if (filterOcrStatus === 'UNVERIFIED' && hasOcr) return false;
+      if (filterOcrStatus === 'INDIVIDUAL' && (!hasOcr || koc.ocrDocumentType === 'BUSINESS_LICENSE' || koc.ocrDocumentType === 'BUSINESS_HOUSEHOLD')) return false;
+      if (filterOcrStatus === 'BUSINESS_HOUSEHOLD' && koc.ocrDocumentType !== 'BUSINESS_HOUSEHOLD') return false;
+      if (filterOcrStatus === 'BUSINESS_COMPANY' && koc.ocrDocumentType !== 'BUSINESS_LICENSE') return false;
 
       // Filter Tier
       if (selectedTier !== 'ALL' && koc.tier !== selectedTier) return false;
@@ -382,22 +384,44 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
               Tất Cả ({totalKocs})
             </button>
             <button
-              onClick={() => setFilterOcrStatus('VERIFIED')}
+              onClick={() => setFilterOcrStatus('INDIVIDUAL')}
               className={`px-3 py-1.5 rounded-lg font-semibold whitespace-nowrap transition flex items-center gap-1.5 ${
-                filterOcrStatus === 'VERIFIED'
+                filterOcrStatus === 'INDIVIDUAL'
                   ? 'bg-emerald-600 text-white shadow-2xs'
                   : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200'
               }`}
             >
               <CheckCircle2 className="w-3.5 h-3.5" />
-              Đã Quét OCR ({verifiedCount})
+              Cá Nhân (CCCD)
+            </button>
+            <button
+              onClick={() => setFilterOcrStatus('BUSINESS_HOUSEHOLD')}
+              className={`px-3 py-1.5 rounded-lg font-semibold whitespace-nowrap transition flex items-center gap-1.5 ${
+                filterOcrStatus === 'BUSINESS_HOUSEHOLD'
+                  ? 'bg-amber-600 text-white shadow-2xs'
+                  : 'bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200'
+              }`}
+            >
+              <Building2 className="w-3.5 h-3.5" />
+              Hộ Kinh Doanh
+            </button>
+            <button
+              onClick={() => setFilterOcrStatus('BUSINESS_COMPANY')}
+              className={`px-3 py-1.5 rounded-lg font-semibold whitespace-nowrap transition flex items-center gap-1.5 ${
+                filterOcrStatus === 'BUSINESS_COMPANY'
+                  ? 'bg-purple-600 text-white shadow-2xs'
+                  : 'bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200'
+              }`}
+            >
+              <Building2 className="w-3.5 h-3.5" />
+              Công Ty / MCN
             </button>
             <button
               onClick={() => setFilterOcrStatus('UNVERIFIED')}
               className={`px-3 py-1.5 rounded-lg font-semibold whitespace-nowrap transition flex items-center gap-1.5 ${
                 filterOcrStatus === 'UNVERIFIED'
-                  ? 'bg-amber-600 text-white shadow-2xs'
-                  : 'bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200'
+                  ? 'bg-rose-600 text-white shadow-2xs'
+                  : 'bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200'
               }`}
             >
               <AlertTriangle className="w-3.5 h-3.5" />
@@ -650,28 +674,37 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
                     <td className="py-3 px-4">
                       {hasCccd ? (
                         <div className="space-y-1">
-                          <div className="flex items-center gap-1.5">
+                          <div className="flex items-center gap-1.5 flex-wrap">
                             <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-semibold border ${
-                              isCompanyOcr 
+                              koc.ocrDocumentType === 'BUSINESS_LICENSE'
                                 ? 'bg-purple-50 text-purple-700 border-purple-200' 
-                                : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                : koc.ocrDocumentType === 'BUSINESS_HOUSEHOLD'
+                                  ? 'bg-amber-50 text-amber-700 border-amber-200'
+                                  : 'bg-emerald-50 text-emerald-700 border-emerald-200'
                             }`}>
                               <CheckCircle2 className="w-3 h-3" />
-                              {koc.isOcrVerified 
-                                ? (isCompanyOcr ? 'ĐKKD (OCR)' : 'CCCD (OCR)') 
-                                : 'CCCD Hợp Lệ'}
+                              {koc.ocrDocumentType === 'BUSINESS_LICENSE'
+                                ? 'Công ty (ĐKKD)'
+                                : koc.ocrDocumentType === 'BUSINESS_HOUSEHOLD'
+                                  ? 'Hộ kinh doanh'
+                                  : (koc.isOcrVerified ? 'Cá nhân (CCCD)' : 'Cá nhân')}
                             </span>
                             <span className="font-mono text-xs font-semibold text-slate-900">
-                              {koc.cccd}
+                              {koc.taxCode || koc.cccd}
                             </span>
                             <button
-                              onClick={() => handleCopy(koc.cccd, koc.id)}
+                              onClick={() => handleCopy(koc.taxCode || koc.cccd, koc.id)}
                               className="text-slate-400 hover:text-blue-600 p-0.5 rounded cursor-pointer"
-                              title="Sao chép số định danh"
+                              title="Sao chép số định danh / MST"
                             >
                               {copiedKey === koc.id ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
                             </button>
                           </div>
+                          {koc.companyName && (
+                            <span className="text-2xs font-semibold text-slate-800 block truncate max-w-xs" title={koc.companyName}>
+                              {koc.companyName}
+                            </span>
+                          )}
                           <span className="text-2xs text-slate-500 block truncate max-w-xs" title={koc.permanentAddress || koc.shippingAddress}>
                             {koc.permanentAddress || koc.shippingAddress || 'Hà Nội'}
                           </span>

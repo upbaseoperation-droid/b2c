@@ -482,17 +482,58 @@ export const KocProfileModal: React.FC<KocProfileModalProps> = ({
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs pt-1">
                   <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-200">
-                    <span className="text-xs text-slate-500 block">Họ &amp; Tên Thật (Trên CCCD):</span>
-                    <span className="font-semibold text-slate-900 mt-0.5 block">{koc.realName}</span>
+                    <span className="text-2xs text-slate-500 block">Hình thức pháp lý ký kết:</span>
+                    <span className={`inline-flex items-center gap-1 font-semibold mt-0.5 px-2 py-0.5 rounded text-2xs border ${
+                      koc.ocrDocumentType === 'BUSINESS_LICENSE'
+                        ? 'bg-purple-50 text-purple-700 border-purple-200'
+                        : koc.ocrDocumentType === 'BUSINESS_HOUSEHOLD'
+                          ? 'bg-amber-50 text-amber-700 border-amber-200'
+                          : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                    }`}>
+                      {koc.ocrDocumentType === 'BUSINESS_LICENSE'
+                        ? 'Công ty / Pháp nhân (Xuất VAT)'
+                        : koc.ocrDocumentType === 'BUSINESS_HOUSEHOLD'
+                          ? 'Hộ kinh doanh cá thể (HKD)'
+                          : 'Cá nhân (Khấu trừ thuế TNCN 10%)'}
+                    </span>
                   </div>
+
                   <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-200">
-                    <span className="text-xs text-slate-500 block">Số CCCD / hộ chiếu:</span>
-                    <span className="font-semibold text-slate-900 mt-0.5 block font-mono">{koc.cccd}</span>
+                    <span className="text-2xs text-slate-500 block">
+                      {koc.ocrDocumentType === 'BUSINESS_LICENSE' ? 'Mã số thuế doanh nghiệp:' : koc.ocrDocumentType === 'BUSINESS_HOUSEHOLD' ? 'Mã số thuế HKD:' : 'Số CCCD / Hộ chiếu:'}
+                    </span>
+                    <span className="font-semibold text-slate-900 mt-0.5 block font-mono">
+                      {koc.taxCode || koc.cccd || 'Chưa cập nhật'}
+                    </span>
                   </div>
+
+                  {koc.companyName && (
+                    <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-200 sm:col-span-2">
+                      <span className="text-2xs text-slate-500 block">Tên đơn vị pháp nhân:</span>
+                      <span className="font-semibold text-slate-900 mt-0.5 block">{koc.companyName}</span>
+                    </div>
+                  )}
+
+                  <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-200">
+                    <span className="text-2xs text-slate-500 block">
+                      {koc.companyName ? 'Người đại diện / Chủ hộ:' : 'Họ & tên thật (trên CCCD):'}
+                    </span>
+                    <span className="font-semibold text-slate-900 mt-0.5 block">
+                      {koc.legalRepresentative || koc.realName}
+                    </span>
+                  </div>
+
+                  <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-200">
+                    <span className="text-2xs text-slate-500 block">Địa chỉ thường trú / Trụ sở:</span>
+                    <span className="font-semibold text-slate-900 mt-0.5 block truncate">
+                      {koc.permanentAddress || koc.shippingAddress || 'Hà Nội'}
+                    </span>
+                  </div>
+
                   <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-200 sm:col-span-2">
-                    <span className="text-xs text-slate-500 block">Tài khoản ngân hàng KOC:</span>
+                    <span className="text-2xs text-slate-500 block">Tài khoản ngân hàng thụ hưởng:</span>
                     <span className="font-semibold text-emerald-700 mt-0.5 block font-mono text-xs">
-                      {koc.bankAccount} — Ngân Hàng {koc.bankName} ({koc.realName.toUpperCase()})
+                      {koc.bankAccount} — Ngân Hàng {koc.bankName} ({koc.companyName ? koc.companyName : koc.realName.toUpperCase()})
                     </span>
                   </div>
                 </div>

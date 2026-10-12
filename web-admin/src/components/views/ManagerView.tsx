@@ -35,7 +35,6 @@ import {
   Send,
   CheckCircle,
   Clock,
-  Calculator,
   GitFork
 } from 'lucide-react';
 import { 
@@ -571,14 +570,6 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
             value={selectedMonth}
             onChange={setSelectedMonth}
           />
-          <div className="flex items-center gap-2">
-            {onOpenInputPlan && (
-              <Button icon={Calculator} onClick={onOpenInputPlan}>Kế hoạch đầu vào</Button>
-            )}
-            <Button icon={Sparkles} onClick={() => setAiReviewTargetStaff('Khánh Vy')} title="Tạo bản nhận xét gợi ý cho nhân viên">
-              Gợi ý nhận xét
-            </Button>
-          </div>
         </div>
 
         <Tabs

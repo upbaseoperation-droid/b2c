@@ -751,7 +751,7 @@ export default function App() {
           </div>
         )}
 
-        <main className="px-4 py-6 sm:px-6 lg:px-8 w-full max-w-[1600px] space-y-6">
+        <main className="px-3 sm:px-6 lg:px-8 py-3 sm:py-4 w-full max-w-[1600px] space-y-3 sm:space-y-3.5">
           {!isTabAllowedForRole(currentUser.role, activeTab) ? (
             <div className="p-8 sm:p-12 rounded-2xl bg-surface border border-rose-200 shadow-sm text-center max-w-lg mx-auto my-12 space-y-4 animate-in fade-in">
               <div className="w-14 h-14 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mx-auto border border-rose-100 shadow-2xs">

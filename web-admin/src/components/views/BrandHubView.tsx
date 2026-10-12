@@ -27,6 +27,7 @@ import {
   Download,
   Search,
   ArrowRight,
+  ArrowLeft,
   ChevronRight,
   TrendingUp,
   X,
@@ -205,14 +206,25 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
   // Check if Stage 1 is completed
   const isPlanApproved = activePortal.planApprovalStatus === 'BRAND_PLAN_APPROVED';
 
+  // Sub-filter for Approvals tab
+  const [approvalCategoryFilter, setApprovalCategoryFilter] = useState<'ALL' | 'PLAN' | 'KOC' | 'SCRIPT'>('ALL');
+
+  const pendingKocs = useMemo(() => {
+    return activePortal.kocCandidates.filter(k => k.brandApprovalStatus === 'CHỜ_DUYỆT');
+  }, [activePortal]);
+
+  const pendingScripts = useMemo(() => {
+    return activePortal.scripts.filter(s => s.status !== 'APPROVED');
+  }, [activePortal]);
+
   // Count pending items for Approvals badge
   const pendingApprovalsCount = useMemo(() => {
     let count = 0;
     if (!isPlanApproved) count += 1;
-    count += activePortal.kocCandidates.filter(k => k.brandApprovalStatus === 'CHỜ_DUYỆT').length;
-    count += activePortal.scripts.filter(s => s.status !== 'APPROVED').length;
+    count += pendingKocs.length;
+    count += pendingScripts.length;
     return count;
-  }, [isPlanApproved, activePortal]);
+  }, [isPlanApproved, pendingKocs, pendingScripts]);
 
   // Handle Switch Brand Portal
   const handleSwitchPortal = (portalId: string) => {

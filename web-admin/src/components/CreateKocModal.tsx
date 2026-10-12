@@ -92,6 +92,10 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
   const [contentNote, setContentNote] = useState('');
 
   // 6. Legal & Banking
+  const [legalType, setLegalType] = useState<'INDIVIDUAL' | 'BUSINESS_HOUSEHOLD' | 'BUSINESS_COMPANY'>('INDIVIDUAL');
+  const [companyName, setCompanyName] = useState('');
+  const [taxCode, setTaxCode] = useState('');
+  const [legalRepresentative, setLegalRepresentative] = useState('');
   const [cccd, setCccd] = useState('');
   const [bankName, setBankName] = useState('Techcombank');
   const [bankAccount, setBankAccount] = useState('');
@@ -180,7 +184,12 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
       age35Plus: ageGroup === '35+' ? 50 : 10,
 
       // Legal & Banking
-      cccd: cccd.trim() || '001203948576',
+      cccd: legalType === 'INDIVIDUAL' ? (cccd.trim() || '001203948576') : (taxCode.trim() || cccd.trim() || '0109876543'),
+      taxCode: legalType !== 'INDIVIDUAL' ? taxCode.trim() : (cccd.trim() || undefined),
+      companyName: legalType !== 'INDIVIDUAL' ? companyName.trim() : undefined,
+      legalRepresentative: legalType !== 'INDIVIDUAL' ? (legalRepresentative.trim() || realName.trim()) : undefined,
+      ocrDocumentType: legalType === 'INDIVIDUAL' ? 'CCCD' : legalType === 'BUSINESS_HOUSEHOLD' ? 'BUSINESS_HOUSEHOLD' : 'BUSINESS_LICENSE',
+      isOcrVerified: Boolean(cccd.trim() || taxCode.trim()),
       bankName: bankName,
       bankAccount: bankAccount.trim() || '190384759201',
       
@@ -542,43 +551,159 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
               5. Pháp lý & thanh toán (tự động sinh hợp đồng & VietQR cọc 50%):
             </span>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div>
-                <label className="text-slate-600 font-medium block mb-1">Họ & tên thật (trên CCCD):</label>
-                <input
-                  type="text"
-                  placeholder="VD: Nguyễn Thị Hải Yến"
-                  value={realName}
-                  onChange={(e) => setRealName(e.target.value)}
-                  className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="text-slate-600 font-medium block mb-1">Số điện thoại / Zalo:</label>
-                <input
-                  type="text"
-                  placeholder="0987654321"
-                  value={phone}
-                  onChange={(e) => {
-                    setPhone(e.target.value);
-                    if (!zalo) setZalo(e.target.value);
-                  }}
-                  className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-800 font-mono focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="text-slate-600 font-medium block mb-1">Số CCCD (12 số):</label>
-                <input
-                  type="text"
-                  placeholder="001203004567"
-                  value={cccd}
-                  onChange={(e) => setCccd(e.target.value)}
-                  className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-800 font-mono focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                />
+            {/* Legal Entity Type Selector */}
+            <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-200">
+              <span className="text-2xs font-semibold text-slate-500 uppercase">Hình thức pháp lý ký kết & thuế:</span>
+              <div className="flex items-center gap-1 bg-white p-1 rounded-lg border border-slate-200">
+                <button
+                  type="button"
+                  onClick={() => setLegalType('INDIVIDUAL')}
+                  className={`px-2.5 py-1 rounded text-2xs font-semibold transition cursor-pointer ${
+                    legalType === 'INDIVIDUAL'
+                      ? 'bg-emerald-600 text-white shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  Cá nhân (CCCD · Thuế 10%)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLegalType('BUSINESS_HOUSEHOLD')}
+                  className={`px-2.5 py-1 rounded text-2xs font-semibold transition cursor-pointer ${
+                    legalType === 'BUSINESS_HOUSEHOLD'
+                      ? 'bg-amber-600 text-white shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  Hộ kinh doanh (HKD)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLegalType('BUSINESS_COMPANY')}
+                  className={`px-2.5 py-1 rounded text-2xs font-semibold transition cursor-pointer ${
+                    legalType === 'BUSINESS_COMPANY'
+                      ? 'bg-purple-600 text-white shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  Công ty / MCN (Xuất VAT)
+                </button>
               </div>
             </div>
+
+            {/* Dynamic fields based on legalType */}
+            {legalType === 'INDIVIDUAL' ? (
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="text-slate-600 font-medium block mb-1">Họ &amp; tên thật (trên CCCD):</label>
+                  <input
+                    type="text"
+                    placeholder="VD: Nguyễn Thị Hải Yến"
+                    value={realName}
+                    onChange={(e) => setRealName(e.target.value)}
+                    className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-slate-600 font-medium block mb-1">Số điện thoại / Zalo:</label>
+                  <input
+                    type="text"
+                    placeholder="0987654321"
+                    value={phone}
+                    onChange={(e) => {
+                      setPhone(e.target.value);
+                      if (!zalo) setZalo(e.target.value);
+                    }}
+                    className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-800 font-mono focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-slate-600 font-medium block mb-1">Số CCCD (12 số):</label>
+                  <input
+                    type="text"
+                    placeholder="001203004567"
+                    value={cccd}
+                    onChange={(e) => setCccd(e.target.value)}
+                    className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-800 font-mono focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-slate-600 font-medium block mb-1">
+                      {legalType === 'BUSINESS_COMPANY' ? 'Tên Công Ty / Pháp Nhân (Theo ĐKKD):' : 'Tên Hộ Kinh Doanh Cá Thể:'}
+                    </label>
+                    <input
+                      type="text"
+                      placeholder={legalType === 'BUSINESS_COMPANY' ? 'CÔNG TY TNHH TRUYỀN THÔNG CREATOR VIỆT' : 'HỘ KINH DOANH VY STUDIO & MEDIA'}
+                      value={companyName}
+                      onChange={(e) => setCompanyName(e.target.value)}
+                      className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-800 font-semibold focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-slate-600 font-medium block mb-1">
+                      Mã Số Thuế (MST Doanh nghiệp / HKD):
+                    </label>
+                    <input
+                      type="text"
+                      placeholder={legalType === 'BUSINESS_COMPANY' ? '0109876543' : '8491238475-001'}
+                      value={taxCode}
+                      onChange={(e) => setTaxCode(e.target.value)}
+                      className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-800 font-mono font-semibold focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="text-slate-600 font-medium block mb-1">
+                      {legalType === 'BUSINESS_COMPANY' ? 'Người Đại Diện Theo Pháp Luật:' : 'Tên Chủ Hộ Kinh Doanh:'}
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="VD: Lê Quang Huy"
+                      value={legalRepresentative}
+                      onChange={(e) => {
+                        setLegalRepresentative(e.target.value);
+                        if (!realName) setRealName(e.target.value);
+                      }}
+                      className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-slate-600 font-medium block mb-1">Số CCCD Người Đại Diện / Chủ Hộ:</label>
+                    <input
+                      type="text"
+                      placeholder="001201019876"
+                      value={cccd}
+                      onChange={(e) => setCccd(e.target.value)}
+                      className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-800 font-mono focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-slate-600 font-medium block mb-1">Số điện thoại liên hệ:</label>
+                    <input
+                      type="text"
+                      placeholder="0987654321"
+                      value={phone}
+                      onChange={(e) => {
+                        setPhone(e.target.value);
+                        if (!zalo) setZalo(e.target.value);
+                      }}
+                      className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-800 font-mono focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
               <div>
