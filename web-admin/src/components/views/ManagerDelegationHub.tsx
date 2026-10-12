@@ -81,6 +81,52 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
   const [selectedStaffFilter, setSelectedStaffFilter] = useState('ALL');
   const [selectedBrandFilter, setSelectedBrandFilter] = useState('ALL');
 
+  // Bộ lọc danh sách gian hàng (mặc định chỉ lọc gian B2C làm plan)
+  const [storeFilterMode, setStoreFilterMode] = useState<'B2C_ONLY' | 'ALL'>('B2C_ONLY');
+  const [storePlatformFilter, setStorePlatformFilter] = useState<'ALL' | 'TikTok Shop' | 'Shopee Mall' | 'Lazada'>('ALL');
+  const [storeSearchTerm, setStoreSearchTerm] = useState('');
+
+  // Danh sách gian hàng B2C làm kế hoạch tháng (16 gian hàng)
+  const b2cPlanStores = useMemo(() => {
+    return storePortfolios.filter(s => Boolean(s.requiresB2cPlan || s.isB2cManaged));
+  }, [storePortfolios]);
+
+  // Danh sách gian hàng hiển thị theo bộ lọc
+  const displayedStores = useMemo(() => {
+    return storePortfolios.filter(store => {
+      // 1. Mặc định chỉ hiển thị gian hàng B2C làm kế hoạch
+      if (storeFilterMode === 'B2C_ONLY') {
+        const isB2c = Boolean(store.requiresB2cPlan || store.isB2cManaged);
+        if (!isB2c) return false;
+      }
+
+      // 2. Lọc theo nhân sự phụ trách
+      if (selectedStaffFilter !== 'ALL') {
+        const matchStaff = (store.b2cOwners && store.b2cOwners.includes(selectedStaffFilter)) ||
+                           (store.b2cOwnerName && store.b2cOwnerName.includes(selectedStaffFilter));
+        if (!matchStaff) return false;
+      }
+
+      // 3. Lọc theo sàn thương mại điện tử
+      if (storePlatformFilter !== 'ALL') {
+        if (store.platform !== storePlatformFilter) return false;
+      }
+
+      // 4. Tìm kiếm từ khóa
+      if (storeSearchTerm.trim()) {
+        const q = storeSearchTerm.toLowerCase().trim();
+        const matchName = store.storeName.toLowerCase().includes(q);
+        const matchBrand = (store.brandName || '').toLowerCase().includes(q);
+        const matchPic = (store.b2cOwnerName || '').toLowerCase().includes(q) || 
+                         (store.accountOwnerName || '').toLowerCase().includes(q) ||
+                         (store.b2cOwners && store.b2cOwners.some(bo => bo.toLowerCase().includes(q)));
+        if (!matchName && !matchBrand && !matchPic) return false;
+      }
+
+      return true;
+    });
+  }, [storePortfolios, storeFilterMode, selectedStaffFilter, storePlatformFilter, storeSearchTerm]);
+
   // Modals
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [isBrandModalOpen, setIsBrandModalOpen] = useState(false);
@@ -350,23 +396,24 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
   const handleAutoRebalance = () => {
     let rebalancedCount = 0;
     const availableStaff = staffList.filter(s => s.role === 'BOOKING');
+    const targetPool = storeFilterMode === 'B2C_ONLY' ? b2cPlanStores : storePortfolios;
     
-    storePortfolios.forEach((store, index) => {
+    targetPool.forEach((store, index) => {
       // If store has no assigned owner or assigned to an overloaded staff
       const currentOwners = store.b2cOwners || [store.b2cOwnerName];
       const primaryStaff = staffList.find(s => s.name === currentOwners[0]);
       
-      const currentLoad = storePortfolios.filter(s => 
+      const currentLoad = targetPool.filter(s => 
         (s.b2cOwners && s.b2cOwners.includes(primaryStaff?.name || '')) || s.b2cOwnerName === primaryStaff?.name
       ).length;
 
       if (!primaryStaff || currentLoad > (primaryStaff.maxStoresCapacity || 3)) {
         // Find staff with least load
         const leastLoadedStaff = availableStaff.reduce((min, s) => {
-          const sLoad = storePortfolios.filter(st => 
+          const sLoad = targetPool.filter(st => 
             (st.b2cOwners && st.b2cOwners.includes(s.name)) || st.b2cOwnerName === s.name
           ).length;
-          const minLoad = storePortfolios.filter(st => 
+          const minLoad = targetPool.filter(st => 
             (st.b2cOwners && st.b2cOwners.includes(min.name)) || st.b2cOwnerName === min.name
           ).length;
           return sLoad < minLoad ? s : min;
@@ -396,7 +443,12 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
           onChange={setActiveSection}
           items={[
             { key: 'BRANDS', label: `Nhãn hàng · ${brands.length}` },
-            { key: 'STORES', label: `Gian hàng · ${storePortfolios.length}` },
+            { 
+              key: 'STORES', 
+              label: storeFilterMode === 'B2C_ONLY' 
+                ? `Gian B2C làm plan · ${b2cPlanStores.length}` 
+                : `Tất cả gian hàng · ${storePortfolios.length}` 
+            },
             { key: 'STAFF', label: `Tải nhân sự · ${staffList.length}` },
             { key: 'TASKS', label: `Giao việc · ${tasks.length}` },
             { key: 'MINDMAP', label: 'Sơ đồ dữ liệu' },
@@ -476,7 +528,10 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {brands.map((brand) => {
-                  const brandStoresCount = storePortfolios.filter(s => s.brandName.toLowerCase().includes(brand.name.toLowerCase())).length;
+                  const brandStoresCount = storePortfolios.filter(s => 
+                    s.brandName.toLowerCase().includes(brand.name.toLowerCase()) && 
+                    (storeFilterMode === 'ALL' ? true : Boolean(s.requiresB2cPlan || s.isB2cManaged))
+                  ).length;
 
                   return (
                     <tr key={brand.id} className="hover:bg-slate-50 transition group">
@@ -585,17 +640,71 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
       {/* ========================================================================= */}
       {activeSection === 'STORES' && (
         <div className="bg-white rounded-2xl border border-slate-200/90 overflow-hidden shadow-xs">
-          <div className="p-4 border-b border-slate-200 bg-slate-50/70 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="p-4 border-b border-slate-200 bg-slate-50/70 flex flex-col xl:flex-row xl:items-center justify-between gap-3">
             <div>
               <h3 className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
                 <Store className="w-4 h-4 text-blue-600" />
                 Danh sách gian hàng & chuyên viên tác nghiệp
               </h3>
               <p className="text-2xs text-slate-500 mt-0.5">
-                Phân bổ chuyên viên Booking / B2C Ops phụ trách từng gian hàng TikTok Shop, Shopee Mall, Lazada
+                {storeFilterMode === 'B2C_ONLY'
+                  ? `Đang lọc mặc định: ${displayedStores.length}/${b2cPlanStores.length} gian hàng Marketing B2C phụ trách lập kế hoạch tháng`
+                  : `Đang hiển thị toàn bộ: ${displayedStores.length}/${storePortfolios.length} gian hàng trên hệ thống Upbase`}
               </p>
             </div>
-            <div className="flex items-center gap-2">
+            
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* Segmented Switcher: B2C Plan Only (Default) vs All */}
+              <div className="inline-flex p-0.5 bg-slate-200/70 rounded-lg text-xs font-medium">
+                <button
+                  type="button"
+                  onClick={() => setStoreFilterMode('B2C_ONLY')}
+                  className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-all ${
+                    storeFilterMode === 'B2C_ONLY'
+                      ? 'bg-white text-blue-700 shadow-2xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  Chỉ gian B2C làm plan ({b2cPlanStores.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStoreFilterMode('ALL')}
+                  className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-all ${
+                    storeFilterMode === 'ALL'
+                      ? 'bg-white text-slate-900 shadow-2xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  Tất cả gian ({storePortfolios.length})
+                </button>
+              </div>
+
+              {/* Search input */}
+              <div className="relative">
+                <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Tìm tên gian hàng, PIC..."
+                  value={storeSearchTerm}
+                  onChange={(e) => setStoreSearchTerm(e.target.value)}
+                  className="pl-8 pr-2.5 py-1.5 text-xs bg-white border border-slate-200 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500"
+                />
+              </div>
+
+              {/* Platform Filter */}
+              <select
+                value={storePlatformFilter}
+                onChange={(e) => setStorePlatformFilter(e.target.value as any)}
+                className="text-xs font-medium px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-slate-700 focus:outline-none"
+              >
+                <option value="ALL">Tất cả sàn</option>
+                <option value="TikTok Shop">TikTok Shop</option>
+                <option value="Shopee Mall">Shopee Mall</option>
+                <option value="Lazada">Lazada</option>
+              </select>
+
+              {/* Staff Filter */}
               <select
                 value={selectedStaffFilter}
                 onChange={(e) => setSelectedStaffFilter(e.target.value)}
@@ -615,6 +724,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                 <tr className="bg-slate-100/70 text-slate-600 font-semibold border-b border-slate-200 text-2xs">
                   <th className="py-3 px-4 min-w-[200px]">Gian hàng & sàn</th>
                   <th className="py-3 px-3">Nhãn hàng</th>
+                  <th className="py-3 px-3 text-center">Diện quản lý</th>
                   <th className="py-3 px-4 min-w-[220px]">Nhân sự B2C Ops phụ trách</th>
                   <th className="py-3 px-3">Account Owner</th>
                   <th className="py-3 px-3 text-right">Target GMV</th>
@@ -623,12 +733,15 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {storePortfolios
-                  .filter(store => {
-                    if (selectedStaffFilter === 'ALL') return true;
-                    return (store.b2cOwners && store.b2cOwners.includes(selectedStaffFilter)) || store.b2cOwnerName.includes(selectedStaffFilter);
-                  })
-                  .map((store) => {
+                {displayedStores.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} className="py-10 text-center text-slate-400 text-xs">
+                      Không có gian hàng nào phù hợp với bộ lọc hiện tại.
+                    </td>
+                  </tr>
+                ) : (
+                  displayedStores.map((store) => {
+                    const isB2c = Boolean(store.requiresB2cPlan || store.isB2cManaged);
                     const owners = store.b2cOwners || (store.b2cOwnerName ? store.b2cOwnerName.split(',').map(s => s.trim()) : ['Khánh Vy']);
 
                     return (
@@ -640,6 +753,18 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
 
                         <td className="py-3 px-3 font-semibold text-slate-700">
                           {store.brandName}
+                        </td>
+
+                        <td className="py-3 px-3 text-center">
+                          {isB2c ? (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-3xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                              Làm plan B2C
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-3xs font-medium bg-slate-100 text-slate-500 border border-slate-200">
+                              Miễn trừ plan
+                            </span>
+                          )}
                         </td>
 
                         {/* Assignee Selector */}
@@ -693,7 +818,8 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                         </td>
                       </tr>
                     );
-                  })}
+                  })
+                )}
               </tbody>
             </table>
           </div>
@@ -705,9 +831,51 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
       {/* ========================================================================= */}
       {activeSection === 'STAFF' && (
         <div className="space-y-4">
+          <div className="bg-white border border-slate-200 p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+            <div>
+              <h3 className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
+                <Users className="w-4 h-4 text-blue-600" />
+                Cân bằng tải năng lực chuyên viên B2C
+              </h3>
+              <p className="text-2xs text-slate-500 mt-0.5">
+                {storeFilterMode === 'B2C_ONLY'
+                  ? `Đang tính tải theo ${b2cPlanStores.length} gian hàng B2C làm plan (trần năng lực tiêu chuẩn 3 shop/chuyên viên)`
+                  : `Đang tính tải theo toàn bộ ${storePortfolios.length} gian hàng hệ thống`}
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-slate-500">Phạm vi tính tải:</span>
+              <div className="inline-flex p-0.5 bg-slate-100 rounded-lg text-xs font-medium">
+                <button
+                  type="button"
+                  onClick={() => setStoreFilterMode('B2C_ONLY')}
+                  className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-all ${
+                    storeFilterMode === 'B2C_ONLY'
+                      ? 'bg-white text-blue-700 shadow-2xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  Gian B2C làm plan ({b2cPlanStores.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStoreFilterMode('ALL')}
+                  className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-all ${
+                    storeFilterMode === 'ALL'
+                      ? 'bg-white text-slate-900 shadow-2xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  Tất cả gian ({storePortfolios.length})
+                </button>
+              </div>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {staffList.map((staff) => {
-              const assignedStores = storePortfolios.filter(st => 
+              const targetPool = storeFilterMode === 'B2C_ONLY' ? b2cPlanStores : storePortfolios;
+              const assignedStores = targetPool.filter(st => 
                 (st.b2cOwners && st.b2cOwners.includes(staff.name)) || st.b2cOwnerName.includes(staff.name)
               );
               const maxCap = staff.maxStoresCapacity || 3;
@@ -1530,6 +1698,32 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                     </option>
                   ))}
                 </select>
+              </div>
+
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-between">
+                <div>
+                  <span className="font-semibold text-slate-800 text-xs block">Thuộc diện B2C làm Kế hoạch tháng</span>
+                  <p className="text-2xs text-slate-500 mt-0.5">Bật để đưa gian hàng vào danh sách lập kế hoạch và phân bổ ngân sách KOC</p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={Boolean(editingStore.requiresB2cPlan || editingStore.isB2cManaged)}
+                  onChange={(e) => {
+                    const isChecked = e.target.checked;
+                    const updated: StorePortfolioItem = {
+                      ...editingStore,
+                      requiresB2cPlan: isChecked,
+                      isB2cManaged: isChecked
+                    };
+                    onUpdateStore(updated);
+                    setEditingStore(updated);
+                    notify(isChecked
+                      ? `Đã bật: Gian "${editingStore.storeName}" thuộc diện Marketing B2C làm plan!`
+                      : `Đã chuyển: Gian "${editingStore.storeName}" sang diện Miễn trừ plan B2C.`
+                    );
+                  }}
+                  className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 cursor-pointer"
+                />
               </div>
 
               <div>

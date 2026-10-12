@@ -1197,6 +1197,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
       <CreateKocModal
         isOpen={isCreateKocOpen}
         onClose={() => setIsCreateKocOpen(false)}
+        existingKocs={localKocs}
         onKocCreated={handleCreateKocSuccess}
       />
     </div>

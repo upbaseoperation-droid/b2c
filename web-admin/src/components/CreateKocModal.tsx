@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   X, 
+  AlertTriangle,
   UserPlus, 
   ShieldCheck, 
   DollarSign, 
@@ -37,12 +38,14 @@ interface CreateKocModalProps {
   isOpen: boolean;
   onClose: () => void;
   onKocCreated: (newKoc: KocItem) => void;
+  existingKocs?: KocItem[];
 }
 
 export const CreateKocModal: React.FC<CreateKocModalProps> = ({
   isOpen,
   onClose,
-  onKocCreated
+  onKocCreated,
+  existingKocs = []
 }) => {
   // ESC key listener
   useEffect(() => {
@@ -124,6 +127,52 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
     setSalaryGrade(kl);
     setSegment(getSegmentFromSalaryGrade(kl));
   };
+
+  // Kiểm tra trùng lặp KOC thời gian thực
+  const duplicateMatch = useMemo(() => {
+    if (!existingKocs || existingKocs.length === 0) return null;
+    const cleanHandle = channelId.trim().toLowerCase().replace('@', '');
+    const cleanPhone = phone.trim().replace(/\D/g, '');
+    const cleanCccd = cccd.trim();
+    const cleanTax = taxCode.trim();
+
+    for (const k of existingKocs) {
+      const kHandle = (k.channelId || '').toLowerCase().replace('@', '');
+      const kPhone = (k.phone || '').replace(/\D/g, '');
+      const kCccd = k.cccd ? k.cccd.trim() : '';
+      const kTax = k.taxCode ? k.taxCode.trim() : '';
+
+      if (cleanHandle && cleanHandle.length >= 3 && kHandle === cleanHandle) {
+        return {
+          type: 'TRÙNG_KÊNH' as const,
+          reason: `Trùng ID kênh TikTok (@${kHandle})`,
+          koc: k
+        };
+      }
+      if (cleanPhone && cleanPhone.length >= 9 && kPhone === cleanPhone) {
+        return {
+          type: 'TRÙNG_SĐT' as const,
+          reason: `Trùng số điện thoại / Zalo (${k.phone})`,
+          koc: k
+        };
+      }
+      if (cleanCccd && cleanCccd.length >= 9 && kCccd === cleanCccd) {
+        return {
+          type: 'TRÙNG_CCCD' as const,
+          reason: `Trùng số CCCD / Định danh (${k.cccd})`,
+          koc: k
+        };
+      }
+      if (cleanTax && cleanTax.length >= 9 && (kTax === cleanTax || kCccd === cleanTax)) {
+        return {
+          type: 'TRÙNG_MST' as const,
+          reason: `Trùng Mã số thuế (${kTax || kCccd})`,
+          koc: k
+        };
+      }
+    }
+    return null;
+  }, [channelId, phone, cccd, taxCode, existingKocs]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -252,6 +301,25 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
               <button type="button" onClick={() => setFormError(null)} className="text-rose-500 font-bold hover:text-rose-800">×</button>
             </div>
           )}
+          {duplicateMatch && (
+            <div className="p-3 bg-amber-50 border-2 border-amber-400 rounded-xl text-xs space-y-1.5 animate-in fade-in">
+              <div className="flex items-center gap-2 text-amber-900 font-bold">
+                <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                <span>CẢNH BÁO TRÙNG KOC: {duplicateMatch.reason}</span>
+              </div>
+              <p className="text-amber-900 text-2xs leading-relaxed">
+                KOC <strong>{duplicateMatch.koc.stageName}</strong> (@{duplicateMatch.koc.channelId}) đã tồn tại trong danh bạ hệ thống!
+                <br />
+                • Nhân sự phụ trách: <strong className="text-slate-900">{duplicateMatch.koc.bookingPic || 'Chưa gán'}</strong>
+                {' '}• Nhãn hàng: <strong>{duplicateMatch.koc.brandName || 'Chung'}</strong>
+                {' '}• Trạng thái: <span className="font-semibold text-slate-800">{duplicateMatch.koc.statusKoc || 'Sẵn sàng'}</span>
+              </p>
+              <div className="text-2xs text-amber-800 font-medium">
+                ⚠️ Vui lòng liên hệ với nhân sự phụ trách để tránh 2 người cùng liên hệ một KOC gây xung đột giá cast và mất uy tín.
+              </div>
+            </div>
+          )}
+
           {/* Section 1: Channel & Stage Name & Booking Format */}
           <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
             <span className="text-slate-800 font-semibold flex items-center gap-1.5">

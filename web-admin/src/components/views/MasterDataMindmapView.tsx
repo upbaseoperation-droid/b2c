@@ -68,6 +68,8 @@ export interface MindmapStoreNode {
   assignmentNotes?: string;
   // Sản phẩm phân bổ trên gian này
   storeProducts: StoreProductSkuMap[];
+  isB2cManaged?: boolean;
+  requiresB2cPlan?: boolean;
 }
 
 // 5 Demo stores with rich manually-tuned SKUs

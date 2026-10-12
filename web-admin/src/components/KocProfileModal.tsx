@@ -27,7 +27,8 @@ import {
   Calendar,
   Layers,
   Sparkles,
-  Info
+  Info,
+  AlertTriangle
 } from 'lucide-react';
 import { KocItem } from '../lib/types';
 
@@ -36,6 +37,7 @@ interface KocProfileModalProps {
   onClose: () => void;
   koc: KocItem | null;
   onOpenQuickBook: (koc: KocItem) => void;
+  duplicateReasons?: string[];
 }
 
 export const KocProfileModal: React.FC<KocProfileModalProps> = ({
@@ -43,6 +45,7 @@ export const KocProfileModal: React.FC<KocProfileModalProps> = ({
   onClose,
   koc,
   onOpenQuickBook,
+  duplicateReasons,
 }) => {
   const [activeTab, setActiveTab] = useState<'ECOMMERCE' | 'AUDIENCE' | 'LOGISTICS' | 'CONTRACT_HISTORY'>('ECOMMERCE');
 
@@ -211,6 +214,19 @@ export const KocProfileModal: React.FC<KocProfileModalProps> = ({
               </div>
             </div>
           </div>
+
+          {/* Duplicate Warning Banner */}
+          {duplicateReasons && duplicateReasons.length > 0 && (
+            <div className="mt-4 p-3 bg-amber-50 border border-amber-300 rounded-lg text-amber-900 text-xs flex items-start gap-2.5">
+              <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+              <div>
+                <div className="font-bold text-amber-800">Cảnh báo: Hồ sơ KOC này có dấu hiệu trùng lặp trong hệ thống</div>
+                <div className="text-2xs text-amber-700 mt-0.5">
+                  Chi tiết: {duplicateReasons.join(' · ')}. Vui lòng kiểm tra lại để tránh đàm phán hoặc lập hợp đồng trùng.
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Navigation Tabs inside Modal */}
           <div className="flex items-center gap-2 mt-5 border-t border-slate-200 pt-3 overflow-x-auto">

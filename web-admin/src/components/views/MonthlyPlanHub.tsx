@@ -107,8 +107,8 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
   // Hub View Mode: 'STORE_GOVERNANCE' (Quản trị trạng thái gửi duyệt plan theo tháng trên gian hàng active) vs 'PLAN_CATALOG' (Danh sách plan)
   const [activeHubTab, setActiveHubTab] = useState<'STORE_GOVERNANCE' | 'PLAN_CATALOG'>('STORE_GOVERNANCE');
 
-  // Lọc cho Ma Trận Gian Hàng
-  const [storeGovernanceFilter, setStoreGovernanceFilter] = useState<'ALL' | 'B2C_ONLY' | 'MISSING_PLAN' | 'PENDING_APPROVAL' | 'APPROVED' | 'EXEMPT'>('ALL');
+  // Lọc cho Ma Trận Gian Hàng (mặc định lọc gian B2C làm plan)
+  const [storeGovernanceFilter, setStoreGovernanceFilter] = useState<'ALL' | 'B2C_ONLY' | 'MISSING_PLAN' | 'PENDING_APPROVAL' | 'APPROVED' | 'EXEMPT'>('B2C_ONLY');
   const [storeSearchQuery, setStoreSearchQuery] = useState<string>('');
   const [governancePage, setGovernancePage] = useState<number>(1);
   const GOVERNANCE_PAGE_SIZE = 15;

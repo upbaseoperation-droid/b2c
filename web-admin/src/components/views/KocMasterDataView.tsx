@@ -42,6 +42,7 @@ import { INITIAL_KOCS } from '../../lib/mockData';
 import { LegalOcrModal } from '../LegalOcrModal';
 import { KocProfileModal } from '../KocProfileModal';
 import { CreateKocModal } from '../CreateKocModal';
+import { KalodataSyncModal } from '../kalodata/KalodataSyncModal';
 
 interface KocMasterDataViewProps {
   kocs?: KocItem[];
@@ -76,7 +77,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
 
   // Search & Filter States
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterOcrStatus, setFilterOcrStatus] = useState<'ALL' | 'INDIVIDUAL' | 'BUSINESS_HOUSEHOLD' | 'BUSINESS_COMPANY' | 'UNVERIFIED'>('ALL');
+  const [filterOcrStatus, setFilterOcrStatus] = useState<'ALL' | 'INDIVIDUAL' | 'BUSINESS_HOUSEHOLD' | 'BUSINESS_COMPANY' | 'UNVERIFIED' | 'DUPLICATES'>('ALL');
   const [selectedTier, setSelectedTier] = useState<string>('ALL');
   const [selectedKL, setSelectedKL] = useState<string>('ALL');
   const [selectedSegment, setSelectedSegment] = useState<string>('ALL');
@@ -87,6 +88,81 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(20);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+
+  // Cơ chế phân tích & cảnh báo trùng lặp KOC đa tầng (Kênh, Số điện thoại, Số CCCD, Mã số thuế)
+  const duplicateAnalysis = useMemo(() => {
+    const channelMap = new Map<string, string[]>();
+    const phoneMap = new Map<string, string[]>();
+    const cccdMap = new Map<string, string[]>();
+    const taxMap = new Map<string, string[]>();
+    const kocDuplicateReasons = new Map<string, string[]>();
+
+    localKocs.forEach(k => {
+      // 1. Channel Handle
+      const normChannel = (k.channelId || '').trim().toLowerCase().replace('@', '');
+      if (normChannel.length > 2) {
+        const arr = channelMap.get(normChannel) || [];
+        arr.push(k.id);
+        channelMap.set(normChannel, arr);
+      }
+
+      // 2. Phone
+      const normPhone = (k.phone || '').trim().replace(/\D/g, '');
+      if (normPhone.length >= 9) {
+        const arr = phoneMap.get(normPhone) || [];
+        arr.push(k.id);
+        phoneMap.set(normPhone, arr);
+      }
+
+      // 3. CCCD
+      const normCccd = (k.cccd || '').trim().replace(/\D/g, '');
+      if (normCccd.length >= 9 && normCccd !== '000000000') {
+        const arr = cccdMap.get(normCccd) || [];
+        arr.push(k.id);
+        cccdMap.set(normCccd, arr);
+      }
+
+      // 4. Tax Code
+      const normTax = (k.taxCode || '').trim();
+      if (normTax.length >= 7) {
+        const arr = taxMap.get(normTax) || [];
+        arr.push(k.id);
+        taxMap.set(normTax, arr);
+      }
+    });
+
+    localKocs.forEach(k => {
+      const reasons: string[] = [];
+      const normChannel = (k.channelId || '').trim().toLowerCase().replace('@', '');
+      if (normChannel.length > 2 && (channelMap.get(normChannel)?.length ?? 0) > 1) {
+        reasons.push(`Trùng kênh (@${normChannel})`);
+      }
+
+      const normPhone = (k.phone || '').trim().replace(/\D/g, '');
+      if (normPhone.length >= 9 && (phoneMap.get(normPhone)?.length ?? 0) > 1) {
+        reasons.push(`Trùng SĐT (${normPhone})`);
+      }
+
+      const normCccd = (k.cccd || '').trim().replace(/\D/g, '');
+      if (normCccd.length >= 9 && normCccd !== '000000000' && (cccdMap.get(normCccd)?.length ?? 0) > 1) {
+        reasons.push(`Trùng CCCD (${normCccd})`);
+      }
+
+      const normTax = (k.taxCode || '').trim();
+      if (normTax.length >= 7 && (taxMap.get(normTax)?.length ?? 0) > 1) {
+        reasons.push(`Trùng MST (${normTax})`);
+      }
+
+      if (reasons.length > 0) {
+        kocDuplicateReasons.set(k.id, reasons);
+      }
+    });
+
+    return {
+      kocDuplicateReasons,
+      totalDuplicates: kocDuplicateReasons.size
+    };
+  }, [localKocs]);
 
   // Danh sách các Brand & PIC động từ dữ liệu KOC
   const availableBrands = useMemo(() => {
@@ -123,7 +199,8 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
 
       if (!matchSearch) return false;
 
-      // Filter OCR Status & Legal Entity
+      // Filter OCR Status & Legal Entity & Duplicates
+      if (filterOcrStatus === 'DUPLICATES' && !duplicateAnalysis.kocDuplicateReasons.has(koc.id)) return false;
       const hasOcr = Boolean(koc.isOcrVerified || (koc.cccd && koc.cccd !== 'Chưa có' && koc.cccd.length >= 9) || koc.taxCode);
       if (filterOcrStatus === 'UNVERIFIED' && hasOcr) return false;
       if (filterOcrStatus === 'INDIVIDUAL' && (!hasOcr || koc.ocrDocumentType === 'BUSINESS_LICENSE' || koc.ocrDocumentType === 'BUSINESS_HOUSEHOLD')) return false;
@@ -145,7 +222,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
 
       return true;
     });
-  }, [localKocs, searchTerm, filterOcrStatus, selectedTier, selectedKL, selectedSegment, selectedKocCategory, selectedTepKenh, selectedBrand, selectedPic]);
+  }, [localKocs, searchTerm, filterOcrStatus, duplicateAnalysis, selectedTier, selectedKL, selectedSegment, selectedKocCategory, selectedTepKenh, selectedBrand, selectedPic]);
 
   const isKocFiltered = searchTerm.trim() !== '' || filterOcrStatus !== 'ALL' || selectedTier !== 'ALL' || selectedKL !== 'ALL' || selectedSegment !== 'ALL' || selectedKocCategory !== 'ALL' || selectedTepKenh !== 'ALL' || selectedBrand !== 'ALL' || selectedPic !== 'ALL';
 
@@ -427,6 +504,17 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
               <AlertTriangle className="w-3.5 h-3.5" />
               Chưa Có CCCD ({totalKocs - verifiedCount})
             </button>
+            <button
+              onClick={() => setFilterOcrStatus(filterOcrStatus === 'DUPLICATES' ? 'ALL' : 'DUPLICATES')}
+              className={`px-3 py-1.5 rounded-lg font-semibold whitespace-nowrap transition flex items-center gap-1.5 ${
+                filterOcrStatus === 'DUPLICATES'
+                  ? 'bg-amber-600 text-white shadow-2xs'
+                  : 'bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-300'
+              }`}
+            >
+              <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+              Nghi Trùng Lặp ({duplicateAnalysis.totalDuplicates})
+            </button>
           </div>
         </div>
 
@@ -630,6 +718,17 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
                           <span className="text-2xs text-slate-400 block mt-0.5">
                             {(koc.followers / 1000).toFixed(0)}k followers • {formatVndShort(koc.rateCardVideo)}/clip
                           </span>
+                          {duplicateAnalysis.kocDuplicateReasons.has(koc.id) && (
+                            <div className="mt-1">
+                              <span 
+                                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-3xs font-semibold bg-amber-50 text-amber-800 border border-amber-300"
+                                title={duplicateAnalysis.kocDuplicateReasons.get(koc.id)?.join(' · ')}
+                              >
+                                <AlertTriangle className="w-2.5 h-2.5 text-amber-600 shrink-0" />
+                                {duplicateAnalysis.kocDuplicateReasons.get(koc.id)?.join(' · ')}
+                              </span>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </td>
@@ -857,6 +956,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
         isOpen={!!inspectedKoc}
         onClose={() => setInspectedKoc(null)}
         koc={inspectedKoc}
+        duplicateReasons={inspectedKoc ? duplicateAnalysis.kocDuplicateReasons.get(inspectedKoc.id) : undefined}
         onOpenQuickBook={(k) => {
           setInspectedKoc(null);
           onOpenQuickBookWithKoc(k);
@@ -867,6 +967,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
       <CreateKocModal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
+        existingKocs={localKocs}
         onKocCreated={(newK) => {
           setLocalKocs(prev => [newK, ...prev]);
           if (onKocCreated) onKocCreated(newK);
