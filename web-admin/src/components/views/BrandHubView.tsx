@@ -410,55 +410,58 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
   return (
     <div className="space-y-6">
       {/* ========================================================================= */}
-      {/* 1. SLEEK ENTERPRISE HEADER (Single line, low noise, high context)        */}
+      {/* 1. ENTERPRISE HEADER (Context-aware, low noise, high clarity)             */}
       {/* ========================================================================= */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs">
+      <div className="bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-xs">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div className="flex items-center gap-3.5">
-            <div className="w-11 h-11 rounded-xl bg-slate-900 text-white font-bold flex items-center justify-center text-sm shadow-xs shrink-0">
-              {activePortal.brandLogoText.slice(0, 3)}
-            </div>
-            <div>
-              <div className="flex items-center gap-2.5 flex-wrap">
-                <h1 className="text-base font-bold text-slate-900 tracking-tight">
-                  {activePortal.brandName}
-                </h1>
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-2xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                  <ShieldCheck className="w-3 h-3 mr-1" />
-                  Cổng Nhãn Hàng
-                </span>
-                <span className="font-mono text-2xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
-                  {activePortal.campaignCode}
-                </span>
+          {selectedPortalId === 'ALL' ? (
+            <div className="flex items-center gap-3.5">
+              <div className="w-11 h-11 rounded-xl bg-slate-900 text-white font-bold flex items-center justify-center text-sm shadow-xs shrink-0">
+                <LayoutDashboard className="w-5 h-5 text-blue-400" />
               </div>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Chiến dịch: <span className="font-medium text-slate-700">{activePortal.campaignTitle}</span> ({activePortal.month}) • Phụ trách: <span className="text-slate-700 font-medium">{activePortal.accountPic}</span> (Account Lead) &amp; <span className="text-slate-700 font-medium">{activePortal.bookingPic}</span> (Booking Lead) • Cam kết SLA: &lt; 24h
-              </p>
+              <div>
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  <h1 className="text-base font-bold text-slate-900 tracking-tight">
+                    Bảng Giám Sát Cổng Đối Tác Brand
+                  </h1>
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-2xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                    Chế độ Quản lý
+                  </span>
+                  <span className="font-mono text-2xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
+                    {portals.length} Nhãn hàng
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Theo dõi tiến độ duyệt kế hoạch ngân sách, danh sách KOC và kịch bản video của toàn bộ thương hiệu
+                </p>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="flex items-center gap-3.5">
+              <div className="w-11 h-11 rounded-xl bg-slate-900 text-white font-bold flex items-center justify-center text-sm shadow-xs shrink-0">
+                {activePortal.brandLogoText.slice(0, 3)}
+              </div>
+              <div>
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  <h1 className="text-base font-bold text-slate-900 tracking-tight">
+                    {activePortal.brandName}
+                  </h1>
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-2xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    <ShieldCheck className="w-3 h-3 mr-1" />
+                    Cổng Nhãn Hàng
+                  </span>
+                  <span className="font-mono text-2xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
+                    {activePortal.campaignCode}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Chiến dịch: <span className="font-medium text-slate-700">{activePortal.campaignTitle}</span> ({activePortal.month}) • Phụ trách: <span className="text-slate-700 font-medium">{activePortal.accountPic}</span> &amp; <span className="text-slate-700 font-medium">{activePortal.bookingPic}</span> • SLA: &lt; 24h
+                </p>
+              </div>
+            </div>
+          )}
 
           <div className="flex items-center gap-2 flex-wrap self-start lg:self-auto">
-            {/* Brand Switcher - Cho phép Trưởng phòng & Quản lý lọc hoặc xem Tất cả nhãn hàng */}
-            <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs">
-              <Building className="w-3.5 h-3.5 text-blue-600" />
-              <select
-                value={selectedPortalId}
-                onChange={(e) => handleSwitchPortal(e.target.value)}
-                className="bg-transparent text-slate-800 font-semibold text-xs focus:outline-none cursor-pointer pr-1"
-              >
-                {isManagerOrLeader && (
-                  <option value="ALL">
-                    Bảng Giám Sát Toàn Bộ Cổng Brand ({portals.length} nhãn)
-                  </option>
-                )}
-                {portals.map(p => (
-                  <option key={p.id} value={p.id}>
-                    {p.brandName} ({p.campaignCode})
-                  </option>
-                ))}
-              </select>
-            </div>
-
             {selectedPortalId !== 'ALL' && isManagerOrLeader && (
               <button
                 type="button"
@@ -466,41 +469,19 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
                 className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition"
                 title="Quay lại bảng giám sát tất cả cổng nhãn"
               >
-                <LayoutDashboard className="w-3.5 h-3.5 text-blue-600" />
-                <span>Xem Tất Cả Nhãn</span>
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>Bảng giám sát tổng</span>
               </button>
             )}
 
-            <button
-              type="button"
-              onClick={handleCopyMagicLink}
-              className="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition"
-            >
-              {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Share2 className="w-3.5 h-3.5 text-slate-500" />}
-              <span>{copiedLink ? 'Đã chép Link' : 'Chia sẻ Cổng Brand'}</span>
-            </button>
-
-            {onNavigateToCtvHub && (
+            {selectedPortalId !== 'ALL' && (
               <button
                 type="button"
-                onClick={onNavigateToCtvHub}
-                className="px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 rounded-lg text-xs font-medium flex items-center gap-1.5 transition"
-                title="Chuyển sang Hub CTV"
+                onClick={handleCopyMagicLink}
+                className="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition"
               >
-                <Video className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Hub CTV</span>
-              </button>
-            )}
-
-            {onNavigateToKocHub && (
-              <button
-                type="button"
-                onClick={onNavigateToKocHub}
-                className="px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 rounded-lg text-xs font-medium flex items-center gap-1.5 transition"
-                title="Chuyển sang Hub KOC"
-              >
-                <Users className="w-3.5 h-3.5 text-indigo-600" />
-                <span>Hub KOC</span>
+                {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Share2 className="w-3.5 h-3.5 text-slate-500" />}
+                <span>{copiedLink ? 'Đã chép link' : 'Chia sẻ cổng Brand'}</span>
               </button>
             )}
           </div>
@@ -602,11 +583,10 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
                   <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-500 font-semibold text-2xs">
                     <th className="py-3 px-4">Thương Hiệu / Cổng</th>
                     <th className="py-3 px-3">Chiến Dịch &amp; Tháng</th>
-                    <th className="py-3 px-3">Ngân Sách &amp; GMV Target</th>
-                    <th className="py-3 px-3">Trạng Thái Kế Hoạch</th>
-                    <th className="py-3 px-3">Tiến Độ KOC</th>
-                    <th className="py-3 px-3">Kịch Bản &amp; Video</th>
-                    <th className="py-3 px-3">Account Lead</th>
+                    <th className="py-3 px-3">Ngân Sách &amp; GMV</th>
+                    <th className="py-3 px-3">Tiến Độ Kế Hoạch &amp; KOC</th>
+                    <th className="py-3 px-3">Tình Trạng SLA / Tồn Đọng</th>
+                    <th className="py-3 px-3">Phụ Trách (PIC)</th>
                     <th className="py-3 px-4 text-right">Thao Tác</th>
                   </tr>
                 </thead>
@@ -614,8 +594,10 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
                   {filteredExecutivePortals.map((p) => {
                     const pendingKocs = p.kocCandidates.filter(k => k.brandApprovalStatus === 'CHỜ_DUYỆT').length;
                     const approvedKocs = p.kocCandidates.filter(k => k.brandApprovalStatus === 'ĐÃ_DUYỆT').length;
+                    const pendingScripts = p.scripts.filter(s => s.status !== 'APPROVED').length;
                     const approvedScripts = p.scripts.filter(s => s.status === 'APPROVED').length;
                     const airedVideos = p.scripts.filter(s => !!s.publishedVideoUrl).length;
+                    const isPlanPending = p.planApprovalStatus !== 'BRAND_PLAN_APPROVED';
 
                     return (
                       <tr key={p.id} className="hover:bg-slate-50/70 transition">
@@ -642,30 +624,47 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
                         </td>
 
                         <td className="py-3.5 px-3">
-                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-2xs font-semibold ${
-                            p.planApprovalStatus === 'BRAND_PLAN_APPROVED'
-                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                              : p.planApprovalStatus === 'BRAND_PLAN_REVISION_REQUESTED'
-                              ? 'bg-rose-50 text-rose-700 border border-rose-200'
-                              : 'bg-amber-50 text-amber-700 border border-amber-200'
-                          }`}>
-                            {p.planApprovalStatus === 'BRAND_PLAN_APPROVED' ? 'Đã duyệt' : p.planApprovalStatus === 'BRAND_PLAN_REVISION_REQUESTED' ? 'Cần sửa đổi' : 'Chờ duyệt'}
-                          </span>
-                        </td>
-
-                        <td className="py-3.5 px-3">
-                          <div className="space-y-0.5">
-                            <span className="text-xs font-semibold text-slate-800">{approvedKocs} / {p.kocCandidates.length} KOC duyệt</span>
-                            {pendingKocs > 0 && (
-                              <span className="block text-2xs text-amber-600 font-medium">({pendingKocs} đang chờ Brand)</span>
-                            )}
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className={`inline-flex items-center px-1.5 py-0.2 rounded text-2xs font-semibold ${
+                                p.planApprovalStatus === 'BRAND_PLAN_APPROVED'
+                                  ? 'bg-emerald-50 text-emerald-700'
+                                  : 'bg-amber-50 text-amber-700'
+                              }`}>
+                                {p.planApprovalStatus === 'BRAND_PLAN_APPROVED' ? 'Đã chốt KH' : 'Chờ duyệt KH'}
+                              </span>
+                              <span className="text-2xs text-slate-600 font-medium">
+                                {approvedKocs}/{p.kocCandidates.length} KOC
+                              </span>
+                            </div>
+                            <span className="text-2xs text-slate-500 block">
+                              {approvedScripts} kịch bản • {airedVideos} clips lên sàn
+                            </span>
                           </div>
                         </td>
 
                         <td className="py-3.5 px-3">
-                          <div className="space-y-0.5">
-                            <span className="text-xs font-semibold text-slate-800">{approvedScripts} KB • {airedVideos} Video lên sàn</span>
-                          </div>
+                          {isPlanPending ? (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-2xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                              <Clock className="w-3 h-3 mr-1" />
+                              Chờ duyệt kế hoạch
+                            </span>
+                          ) : pendingKocs > 0 ? (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-2xs font-semibold bg-rose-50 text-rose-700 border border-rose-200">
+                              <AlertCircle className="w-3 h-3 mr-1" />
+                              {pendingKocs} KOC chờ Brand duyệt
+                            </span>
+                          ) : pendingScripts > 0 ? (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-2xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                              <Eye className="w-3 h-3 mr-1" />
+                              {pendingScripts} kịch bản chờ góp ý
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-2xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                              <CheckCircle2 className="w-3 h-3 mr-1" />
+                              Đúng hạn SLA
+                            </span>
+                          )}
                         </td>
 
                         <td className="py-3.5 px-3">
@@ -679,7 +678,7 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
                             onClick={() => handleSwitchPortal(p.id)}
                             className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 ml-auto transition shadow-2xs cursor-pointer"
                           >
-                            <span>Vào Cổng Nhãn</span>
+                            <span>Vào Cổng</span>
                             <ArrowRight className="w-3.5 h-3.5" />
                           </button>
                         </td>
