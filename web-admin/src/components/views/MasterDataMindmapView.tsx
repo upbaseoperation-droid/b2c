@@ -334,6 +334,8 @@ export function buildMindmapStoresAndBrands(
       return {
         ...existing,
         id: s.id || existing.id,
+        isB2cManaged: s.isB2cManaged ?? existing.isB2cManaged,
+        requiresB2cPlan: s.requiresB2cPlan ?? existing.requiresB2cPlan,
         primaryPic: s.accountOwnerName || existing.primaryPic,
         memberPics: [
           ...(s.growthPic && s.growthPic !== 'Chưa gán' ? [`Growth: ${s.growthPic}`] : []),
@@ -426,7 +428,9 @@ export function buildMindmapStoresAndBrands(
       primaryPic,
       memberPics,
       assignmentNotes: s.assignmentNotes || `PIC Chính: ${primaryPic} | Squad hỗ trợ: ${memberPics.join(', ') || 'Chưa gán'}`,
-      storeProducts
+      storeProducts,
+      isB2cManaged: s.isB2cManaged,
+      requiresB2cPlan: s.requiresB2cPlan
     };
   });
 

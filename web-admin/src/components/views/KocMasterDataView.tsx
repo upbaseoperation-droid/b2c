@@ -74,6 +74,8 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
   const [ocrTargetKoc, setOcrTargetKoc] = useState<KocItem | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [inspectedKoc, setInspectedKoc] = useState<KocItem | null>(null);
+  const [isKalodataModalOpen, setIsKalodataModalOpen] = useState(false);
+  const [kalodataTargetKoc, setKalodataTargetKoc] = useState<KocItem | null>(null);
 
   // Search & Filter States
   const [searchTerm, setSearchTerm] = useState('');
@@ -329,6 +331,23 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
 
     setOcrTargetKoc(null);
     setIsOcrModalOpen(false);
+  };
+
+  // Cập nhật số liệu bán hàng từ Kalodata vào Master Data
+  const handleApplyKalodataUpdates = (kocId: string, updates: Partial<KocItem>) => {
+    setLocalKocs(prev =>
+      prev.map(k => (k.id === kocId ? { ...k, ...updates } : k))
+    );
+    if (onKocUpdated) {
+      const target = localKocs.find(k => k.id === kocId);
+      if (target) {
+        onKocUpdated({ ...target, ...updates });
+      }
+    }
+    const msg = 'Đã cập nhật chỉ số bán hàng từ Kalodata thành công.';
+    setSuccessBanner(msg);
+    if (onNotify) onNotify(msg, 'success');
+    setTimeout(() => setSuccessBanner(null), 4000);
   };
 
   // KPIs
