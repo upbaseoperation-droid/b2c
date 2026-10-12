@@ -78,6 +78,7 @@ interface MonthlyPlanHubProps {
   onCreatePlan: (newPlan: InputPlanBreakdownState) => void;
   onClonePlan: (sourcePlan: InputPlanBreakdownState, targetMonth: string) => void;
   onUpdatePlanStatus?: (planId: string, newStatus: MonthlyPlanStatus, logMessage?: string, note?: string) => void;
+  onUpdatePlan?: (planId: string, updated: Partial<InputPlanBreakdownState>) => void;
   onSendMessage?: (planId: string, msg: Omit<PlanDiscussionMessage, 'id' | 'timestamp'>) => void;
   onUpdateStore?: (store: StorePortfolioItem) => void;
   currentUser?: UserProfile;
@@ -91,6 +92,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
   onCreatePlan,
   onClonePlan,
   onUpdatePlanStatus,
+  onUpdatePlan,
   onSendMessage,
   onUpdateStore,
   currentUser,
@@ -1931,6 +1933,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
         <PlanHistoryModal
           plan={viewingHistoryPlan}
           isOpen={!!viewingHistoryPlan}
+          currentUser={currentUser}
           onClose={() => setHistoryPlanId(null)}
           onSendMessage={(planId, msg) => {
             if (onSendMessage) {
@@ -1940,6 +1943,11 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
           onStatusChange={(planId, newStatus, log, note) => {
             if (onUpdatePlanStatus) {
               onUpdatePlanStatus(planId, newStatus, log, note);
+            }
+          }}
+          onUpdatePlan={(updated) => {
+            if (onUpdatePlan) {
+              onUpdatePlan(viewingHistoryPlan.id, updated);
             }
           }}
           onNotify={notify}

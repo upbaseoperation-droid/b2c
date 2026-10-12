@@ -41,6 +41,7 @@ import { INITIAL_BRANDS, INITIAL_STORE_PORTFOLIOS, STAFF_MASTER_DIRECTORY } from
 import { UPBASE_BRANDS_MASTER } from '../../lib/importedMasterData';
 import { MasterDataMindmapView } from './MasterDataMindmapView';
 import { StaffSearchSelect } from './master-data/StaffSearchSelect';
+import { StoreShortlistFilterModal } from '../shortlist/StoreShortlistFilterModal';
 
 interface StoresViewProps {
   currentUser: UserProfile;
@@ -73,6 +74,8 @@ export const StoresView: React.FC<StoresViewProps> = ({
   });
   const [b2cStaffSearch, setB2cStaffSearch] = useState('');
   const [assignmentToast, setAssignmentToast] = useState<string | null>(null);
+  const [isShortlistModalOpen, setIsShortlistModalOpen] = useState(false);
+  const [selectedStoreForShortlist, setSelectedStoreForShortlist] = useState<string | undefined>(undefined);
 
   // Modal States Brand
   const [editingBrand, setEditingBrand] = useState<BrandDetail | null>(null);
@@ -399,30 +402,43 @@ export const StoresView: React.FC<StoresViewProps> = ({
         </div>
 
         {isManager && (
-          <button
-            onClick={() => {
-              setIsCreatingBrand(true);
-              setFormData({
-                name: '',
-                companyName: '',
-                category: 'Mẹ & Bé / Chăm Sóc Da',
-                status: 'ACTIVE',
-                planBudget: 250000000,
-                targetGmv: 800000000,
-                targetVideos: 300,
-                accountPic: 'Phương Thảo',
-                growthPic: 'Hoàng Long',
-                bookingPicLead: 'Khánh Vy',
-                brandGuideline: '',
-                kocCriteria: '',
-                forbiddenNotes: ''
-              });
-            }}
-            className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 hover: text-white font-semibold text-xs rounded-xl shadow-sm transition flex items-center gap-1.5 self-start sm:self-auto"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>+ Thêm Brand mới</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                setSelectedStoreForShortlist(undefined);
+                setIsShortlistModalOpen(true);
+              }}
+              className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded-xl shadow-sm transition flex items-center gap-1.5 cursor-pointer self-start sm:self-auto"
+            >
+              <Filter className="w-3.5 h-3.5" />
+              <span>Lọc Shortlist KOC</span>
+            </button>
+
+            <button
+              onClick={() => {
+                setIsCreatingBrand(true);
+                setFormData({
+                  name: '',
+                  companyName: '',
+                  category: 'Mẹ & Bé / Chăm Sóc Da',
+                  status: 'ACTIVE',
+                  planBudget: 250000000,
+                  targetGmv: 800000000,
+                  targetVideos: 300,
+                  accountPic: 'Phương Thảo',
+                  growthPic: 'Hoàng Long',
+                  bookingPicLead: 'Khánh Vy',
+                  brandGuideline: '',
+                  kocCriteria: '',
+                  forbiddenNotes: ''
+                });
+              }}
+              className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 hover: text-white font-semibold text-xs rounded-xl shadow-sm transition flex items-center gap-1.5 self-start sm:self-auto"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>+ Thêm Brand mới</span>
+            </button>
+          </div>
         )}
       </div>
 
@@ -766,6 +782,18 @@ export const StoresView: React.FC<StoresViewProps> = ({
                           </td>
                           <td className="p-3.5 pr-5 text-right">
                             <div className="flex items-center justify-end gap-1.5">
+                              <button
+                                onClick={() => {
+                                  setSelectedStoreForShortlist(store.id);
+                                  setIsShortlistModalOpen(true);
+                                }}
+                                className="px-2.5 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg text-xs font-semibold transition flex items-center gap-1 cursor-pointer shadow-2xs"
+                                title="Lọc danh sách KOC đề xuất (Shortlist) cho gian hàng này"
+                              >
+                                <Filter className="w-3 h-3 text-indigo-600" />
+                                <span>Lọc Shortlist</span>
+                              </button>
+
                               {isManager ? (
                                 <button
                                   onClick={() => handleOpenAssignModal(store)}
@@ -1856,6 +1884,16 @@ export const StoresView: React.FC<StoresViewProps> = ({
           </div>
         </div>
       )}
+
+      {/* Modal Lọc Shortlist KOC cho gian hàng */}
+      <StoreShortlistFilterModal
+        isOpen={isShortlistModalOpen}
+        onClose={() => {
+          setIsShortlistModalOpen(false);
+          setSelectedStoreForShortlist(undefined);
+        }}
+        initialStoreId={selectedStoreForShortlist}
+      />
     </div>
   );
 };

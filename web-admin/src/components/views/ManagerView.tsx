@@ -726,22 +726,13 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
 
               <div className="flex items-center gap-2">
                 {isManager ? (
-                  <>
-                    <button
-                      onClick={handleOpenEditTierQuota}
-                      className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-xs font-semibold transition flex items-center gap-1.5"
-                    >
-                      <SlidersHorizontal className="w-3.5 h-3.5" />
-                      <span>Cấu hình hạn mức 4 Tier</span>
-                    </button>
-                    <button
-                      onClick={handleRebalanceCapacity}
-                      className="px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 shadow-2xs"
-                    >
-                      <Sliders className="w-3.5 h-3.5 text-slate-500" />
-                      <span>Cân bằng tải tự động</span>
-                    </button>
-                  </>
+                  <button
+                    onClick={handleOpenEditTierQuota}
+                    className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-xs font-semibold transition flex items-center gap-1.5"
+                  >
+                    <SlidersHorizontal className="w-3.5 h-3.5" />
+                    <span>Cấu hình hạn mức 4 Tier</span>
+                  </button>
                 ) : (
                   <span className="px-3 py-1.5 bg-slate-100 border border-slate-200 text-slate-500 rounded-lg text-xs font-medium flex items-center gap-1.5 cursor-not-allowed">
                     <SlidersHorizontal className="w-3.5 h-3.5 text-slate-400" />

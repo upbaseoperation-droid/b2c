@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   Layers,
   FileText,
+  Building2,
   Users,
   FileCheck,
   TrendingUp,
@@ -230,6 +231,58 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
         },
       ];
 
+    case 'GROWTH_MEMBER':
+      return [
+        {
+          title: 'Cá nhân',
+          items: [
+            { key: 'cockpit', label: 'Việc của tôi', icon: CheckSquare },
+          ],
+        },
+        {
+          title: '1. Kế hoạch & Doanh số',
+          items: [
+            { key: 'input-plan', label: 'Kế hoạch tháng', icon: Calendar },
+            { key: 'dashboard-bi', label: 'Dashboard điều hành', icon: BarChart3 },
+            { key: 'stores', label: 'Danh mục gian hàng', icon: Building2 },
+          ],
+        },
+        {
+          title: '2. Chiến dịch & Báo cáo',
+          items: [
+            { key: 'campaigns', label: 'Chiến dịch Brand', icon: Layers },
+            { key: 'ads-report', label: 'Báo cáo Ads TikTok', icon: BarChart3 },
+            { key: 'performance-p3', label: 'Đánh giá 4P & thưởng', icon: Coins },
+            { key: 'brand-knowledge', label: 'Hướng dẫn nhãn hàng', icon: BookOpen },
+          ],
+        },
+      ];
+
+    case 'MEDIA_MEMBER':
+      return [
+        {
+          title: 'Cá nhân',
+          items: [
+            { key: 'cockpit', label: 'Việc của tôi', icon: CheckSquare },
+          ],
+        },
+        {
+          title: '1. Kế hoạch & Ads',
+          items: [
+            { key: 'input-plan', label: 'Kế hoạch tháng', icon: Calendar },
+            { key: 'ads-report', label: 'Báo cáo Ads TikTok', icon: BarChart3 },
+          ],
+        },
+        {
+          title: '2. Báo cáo & Hiệu suất',
+          items: [
+            { key: 'dashboard-bi', label: 'Dashboard điều hành', icon: BarChart3 },
+            { key: 'campaigns', label: 'Chiến dịch Brand', icon: Layers },
+            { key: 'performance-p3', label: 'Đánh giá 4P & thưởng', icon: Coins },
+          ],
+        },
+      ];
+
     case 'MEMBER':
       return [
         {
@@ -396,6 +449,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     currentUser.role === 'MANAGER' ? 'bg-purple-100 text-purple-700' :
                     currentUser.role === 'LEADER' ? 'bg-blue-100 text-blue-700' :
                     currentUser.role === 'BOOKING_MEMBER' ? 'bg-cyan-100 text-cyan-800' :
+                    currentUser.role === 'GROWTH_MEMBER' ? 'bg-amber-100 text-amber-900 border border-amber-300 font-black' :
+                    currentUser.role === 'MEDIA_MEMBER' ? 'bg-blue-100 text-blue-900 border border-blue-300 font-black' :
                     currentUser.role === 'CONTENT_MEMBER' ? 'bg-amber-100 text-amber-800' :
                     currentUser.role === 'BRAND_MEMBER' ? 'bg-emerald-100 text-emerald-800' :
                     currentUser.role === 'BRAND_PARTNER' ? 'bg-purple-100 text-purple-800' :

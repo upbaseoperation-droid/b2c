@@ -982,6 +982,27 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'performance-p3',
     'brand-knowledge'
   ],
+  GROWTH_MEMBER: [
+    'input-plan',
+    'cockpit',
+    'overview',
+    'dashboard-bi',
+    'stores',
+    'campaigns',
+    'performance-p3',
+    'ads-report',
+    'brand-knowledge'
+  ],
+  MEDIA_MEMBER: [
+    'input-plan',
+    'ads-report',
+    'cockpit',
+    'overview',
+    'dashboard-bi',
+    'campaigns',
+    'performance-p3',
+    'brand-knowledge'
+  ],
   BRAND_PARTNER: [
     'brand-hub',
     'koc-listing',
@@ -1003,6 +1024,8 @@ export const ROLE_DEFAULT_LANDING: Record<UserRole, TabKey> = {
   BOOKING_MEMBER: 'booking',
   CONTENT_MEMBER: 'content',
   BRAND_MEMBER: 'campaigns',
+  GROWTH_MEMBER: 'input-plan',
+  MEDIA_MEMBER: 'input-plan',
   MEMBER: 'cockpit',
   BRAND_PARTNER: 'brand-hub',
   KOC_PARTNER: 'koc-hub',

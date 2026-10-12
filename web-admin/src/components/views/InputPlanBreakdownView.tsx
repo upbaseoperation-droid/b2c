@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { formatVndShort } from '../../lib/format';
 import {
   Layers,
@@ -108,6 +108,21 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
 
   // Simulation Role: Booking PIC vs Growth PIC vs Trưởng Phòng
   const [currentRole, setCurrentRole] = useState<PlanDiscussionRole>('BOOKING');
+  const [isDiscussionNotebookOpen, setIsDiscussionNotebookOpen] = useState(true);
+
+  // Đồng bộ vai trò thao tác theo tài khoản đang đăng nhập
+  useEffect(() => {
+    if (!currentUser) return;
+    if (currentUser.role === 'GROWTH_MEMBER') {
+      setCurrentRole('GROWTH');
+    } else if (currentUser.role === 'MEDIA_MEMBER') {
+      setCurrentRole('MEDIA');
+    } else if (['ADMIN', 'MANAGER'].includes(currentUser.role)) {
+      setCurrentRole('LEAD');
+    } else if (currentUser.role === 'BOOKING_MEMBER' || currentUser.role === 'LEADER') {
+      setCurrentRole('BOOKING');
+    }
+  }, [currentUser]);
 
   // Active Channel Sub-Tab
   const [activeTab, setActiveTab] = useState<'TIKTOK' | 'MULTI_PLATFORM' | 'SELF_CHANNEL' | 'LIVESTREAM' | 'DISCUSSIONS' | 'ALL_SUMMARY' | 'EXCEL_PREVIEW'>('TIKTOK');
@@ -604,14 +619,20 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
     const targetPlan = isTargetCurrent ? planState : monthlyPlans.find(p => p.id === planId);
     if (!targetPlan) return;
 
-    let authorName = targetPlan.pic;
-    let authorTitle = 'Booking PIC';
+    let authorName = currentUser?.name || targetPlan.pic;
+    let authorTitle = 'Booking Specialist PIC';
     if (currentRole === 'GROWTH') {
-      authorName = targetPlan.growthPic || 'Trần Thị Ánh';
-      authorTitle = 'Growth PIC / Brand Growth Lead';
+      authorName = (currentUser?.role === 'GROWTH_MEMBER' ? currentUser.name : null) || targetPlan.growthPic || 'Trần Thị Ánh';
+      authorTitle = 'Growth PIC / Chiến lược & PnL';
+    } else if (currentRole === 'MEDIA') {
+      authorName = (currentUser?.role === 'MEDIA_MEMBER' ? currentUser.name : null) || targetPlan.mediaPic || 'Phan Thành Đạt';
+      authorTitle = 'Media PIC / Quảng cáo & Ads';
     } else if (currentRole === 'LEAD') {
-      authorName = 'Nguyễn Hoàng Long';
+      authorName = (['ADMIN', 'MANAGER'].includes(currentUser?.role || '') ? currentUser?.name : null) || targetPlan.approvedBy || 'Vân Ngọc';
       authorTitle = 'Trưởng Phòng B2C';
+    } else if (currentRole === 'BOOKING') {
+      authorName = (currentUser?.role === 'BOOKING_MEMBER' ? currentUser.name : null) || targetPlan.pic || 'Khánh Vy';
+      authorTitle = 'Booking Specialist PIC';
     }
 
     const newMsg: PlanDiscussionMessage = {
@@ -714,6 +735,12 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
         }}
         onUpdatePlanStatus={(planId, newStatus, log, note) => {
           handleStatusChangeForPlan(planId, newStatus, log || `Cập nhật trạng thái kế hoạch sang ${newStatus}`, note);
+        }}
+        onUpdatePlan={(planId, updated) => {
+          setMonthlyPlans(prev => prev.map(p => p.id === planId ? { ...p, ...updated } : p));
+          if (planState.id === planId) {
+            setPlanState(prev => ({ ...prev, ...updated }));
+          }
         }}
         onSendMessage={(planId, msg) => {
           handleSendMessageToPlan(planId, msg);
@@ -897,10 +924,11 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
         </div>
       </div>
 
-      {/* 0. LUỒNG ĐỒNG THUẬN 3 BÊN & QUẢN LÝ PHIÊN BẢN (APPROVAL & VERSION STEPPER) */}
+      {/* 0. LUỒNG ĐỒNG THUẬN 4 BÊN & QUẢN LÝ PHIÊN BẢN (APPROVAL & VERSION STEPPER) */}
       <PlanApprovalStepper
         plan={planState}
         currentRole={currentRole}
+        currentUser={currentUser}
         onRoleChange={setCurrentRole}
         onStatusChange={(newStatus, log, note) => handleStatusChangeForPlan(planState.id, newStatus, log, note)}
         onUpdatePlan={(updated) => {
@@ -909,6 +937,53 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
         }}
         onNotify={notify}
       />
+
+      {/* SỔ BIÊN BẢN & LỊCH SỬ TRAO ĐỔI TRỰC DIỆN (4-PARTY ALIGNMENT NOTEBOOK) */}
+      <div className="bg-white rounded-2xl border border-slate-200/90 overflow-hidden shadow-xs">
+        <button
+          type="button"
+          onClick={() => setIsDiscussionNotebookOpen(prev => !prev)}
+          className="w-full px-5 py-3.5 bg-slate-50/80 hover:bg-slate-100/80 transition-colors flex items-center justify-between text-left cursor-pointer border-b border-slate-200/60"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-700 flex items-center justify-center font-bold">
+              <MessageSquare className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-bold text-xs text-slate-900">
+                  Sổ Biên Bản & Lịch Sử Trao Đổi 4 Bên
+                </span>
+                <span className="text-2xs font-bold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800">
+                  {planState.discussions?.length || 0} trao đổi
+                </span>
+                <span className="text-2xs text-slate-500 hidden sm:inline">
+                  (Growth: {planState.growthPic?.split(' ')[0] || 'Ánh'} • Media: {planState.mediaPic?.split(' ')[0] || 'Đạt'} • Booking: {planState.pic?.split(' ')[0] || 'Vy'} • Trưởng phòng: {planState.approvedBy?.split(' ')[0] || 'Ngọc'})
+                </span>
+              </div>
+              <p className="text-2xs text-slate-500 mt-0.5">
+                Nhấn để {isDiscussionNotebookOpen ? 'thu gọn' : 'mở rộng xem chi tiết'} các ý kiến đối soát ngân sách, thẩm định gói Ads và chỉ đạo phê duyệt.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-2xs font-semibold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-200">
+              {isDiscussionNotebookOpen ? 'Thu gọn sổ' : 'Mở sổ trao đổi'}
+            </span>
+            <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${isDiscussionNotebookOpen ? 'rotate-180' : ''}`} />
+          </div>
+        </button>
+
+        {isDiscussionNotebookOpen && (
+          <PlanDiscussionHub
+            plan={planState}
+            currentRole={currentRole}
+            currentUser={currentUser}
+            onSendMessage={(msg) => handleSendMessageToPlan(planState.id, msg)}
+            onNotify={notify}
+          />
+        )}
+      </div>
 
       {/* ========================================================================= */}
       {/* 1. TOP HEADER & QUICK METRICS COCKPIT                                    */}

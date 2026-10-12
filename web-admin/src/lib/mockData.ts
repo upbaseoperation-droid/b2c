@@ -100,6 +100,26 @@ export const USERS: UserProfile[] = [
     assignedBrands: ['Kutieskin', 'pHCare', 'Mega Uri']
   },
   {
+    id: 'user-growth-anh',
+    name: 'Trần Thị Ánh',
+    email: 'anhtt@upbase.vn',
+    role: 'GROWTH_MEMBER',
+    roleTitle: 'Chuyên Viên Chiến Lược & PnL (Growth PIC)',
+    avatar: 'Á',
+    loginProvider: 'LARK',
+    assignedBrands: ['Tất cả nhãn hàng', 'Cocoon', 'Kutieskin', 'Senka', 'Lemonade']
+  },
+  {
+    id: 'user-media-dat',
+    name: 'Phan Thành Đạt',
+    email: 'datpt@upbase.vn',
+    role: 'MEDIA_MEMBER',
+    roleTitle: 'Chuyên Viên Quảng Cáo & Ads (Media PIC)',
+    avatar: 'Đ',
+    loginProvider: 'LARK',
+    assignedBrands: ['Tất cả nhãn hàng', 'Cocoon', 'Kutieskin', 'Senka', 'Lemonade']
+  },
+  {
     id: 'user-quynh-nhu',
     name: 'Quỳnh Như',
     email: 'quynhnhu@upbase.vn',

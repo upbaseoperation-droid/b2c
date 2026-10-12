@@ -11,6 +11,7 @@ import {
   UserRole
 } from '@/lib/types';
 import { ConfirmDialog } from '../ui';
+import { StoreShortlistFilterModal } from '../shortlist/StoreShortlistFilterModal';
 import {
   Filter,
   Search,
@@ -67,6 +68,7 @@ export function KocListingBatchHubView({
 
   // Modals state
   const [showAddModal, setShowAddModal] = useState<boolean>(false);
+  const [showShortlistModal, setShowShortlistModal] = useState<boolean>(false);
   const [showAirUpdateModal, setShowAirUpdateModal] = useState<boolean>(false);
   const [selectedListingForAir, setSelectedListingForAir] = useState<KocListingItem | null>(null);
   const [approvingItem, setApprovingItem] = useState<KocListingItem | null>(null);
@@ -366,6 +368,15 @@ export function KocListingBatchHubView({
     });
   };
 
+  // Thêm danh sách KOC từ bộ lọc Shortlist vào đợt duyệt
+  const handleAddShortlistToListings = (
+    newListings: Partial<KocListingItem>[]
+  ) => {
+    const fullListings = newListings as KocListingItem[];
+    onUpdateListings([...fullListings, ...listings]);
+    setShowShortlistModal(false);
+  };
+
   // Update Air Video stage
   const handleSaveAirUpdate = (
     stage: AirVideoStage,
@@ -419,13 +430,20 @@ export function KocListingBatchHubView({
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
+            <button
+              onClick={() => setShowShortlistModal(true)}
+              className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors shadow-sm cursor-pointer"
+            >
+              <Filter className="w-3.5 h-3.5" />
+              Lọc Shortlist cho gian hàng
+            </button>
             <button
               onClick={() => setShowAddModal(true)}
-              className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-medium text-white bg-slate-900 hover:bg-slate-800 rounded-md transition-colors shadow-sm"
+              className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-medium text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded-md transition-colors shadow-2xs"
             >
               <Plus className="w-3.5 h-3.5" />
-              Thêm KOC vào đợt listing
+              Thêm KOC thủ công
             </button>
           </div>
         </div>
@@ -1507,6 +1525,13 @@ export function KocListingBatchHubView({
           }
         }}
         onCancel={() => setRejectingItem(null)}
+      />
+
+      {/* Modal Lọc Shortlist KOC cho gian hàng */}
+      <StoreShortlistFilterModal
+        isOpen={showShortlistModal}
+        onClose={() => setShowShortlistModal(false)}
+        onAddToListingBatch={handleAddShortlistToListings}
       />
     </div>
   );

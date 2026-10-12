@@ -26,7 +26,8 @@ import {
   MonthlyPlanStatus, 
   PlanDiscussionMessage, 
   PlanDiscussionRole,
-  PlanVersionSnapshot
+  PlanVersionSnapshot,
+  UserProfile
 } from '../../lib/types';
 import { PlanApprovalStepper } from './PlanApprovalStepper';
 import { PlanDiscussionHub } from './PlanDiscussionHub';
@@ -35,6 +36,7 @@ import { formatVndShort } from '../../lib/format';
 interface PlanHistoryModalProps {
   plan: InputPlanBreakdownState | null;
   isOpen: boolean;
+  currentUser?: UserProfile;
   onClose: () => void;
   onSendMessage: (planId: string, msg: Omit<PlanDiscussionMessage, 'id' | 'timestamp'>) => void;
   onStatusChange: (planId: string, newStatus: MonthlyPlanStatus, logMessage: string, note?: string) => void;
@@ -45,6 +47,7 @@ interface PlanHistoryModalProps {
 export const PlanHistoryModal: React.FC<PlanHistoryModalProps> = ({
   plan,
   isOpen,
+  currentUser,
   onClose,
   onSendMessage,
   onStatusChange,
@@ -54,6 +57,20 @@ export const PlanHistoryModal: React.FC<PlanHistoryModalProps> = ({
   const [activeTab, setActiveTab] = useState<'DISCUSSION' | 'APPROVAL_FLOW' | 'VERSION_HISTORY'>('APPROVAL_FLOW');
   const [currentRole, setCurrentRole] = useState<PlanDiscussionRole>('GROWTH');
   const [selectedSnapshotId, setSelectedSnapshotId] = useState<string | null>(null);
+
+  // Đồng bộ vai trò theo tài khoản đăng nhập thực tế
+  React.useEffect(() => {
+    if (!currentUser) return;
+    if (currentUser.role === 'GROWTH_MEMBER') {
+      setCurrentRole('GROWTH');
+    } else if (currentUser.role === 'MEDIA_MEMBER') {
+      setCurrentRole('MEDIA');
+    } else if (['ADMIN', 'MANAGER'].includes(currentUser.role)) {
+      setCurrentRole('LEAD');
+    } else if (currentUser.role === 'BOOKING_MEMBER' || currentUser.role === 'LEADER') {
+      setCurrentRole('BOOKING');
+    }
+  }, [currentUser]);
 
   if (!isOpen || !plan) return null;
 
@@ -171,7 +188,7 @@ export const PlanHistoryModal: React.FC<PlanHistoryModalProps> = ({
               }`}
             >
               <MessageSquare className="w-3.5 h-3.5" />
-              <span>Trao đổi 3 bên ({plan.discussions?.length || 0})</span>
+              <span>Sổ Trao Đổi 4 Bên ({plan.discussions?.length || 0})</span>
             </button>
           </div>
         </div>
@@ -182,6 +199,7 @@ export const PlanHistoryModal: React.FC<PlanHistoryModalProps> = ({
             <PlanApprovalStepper
               plan={plan}
               currentRole={currentRole}
+              currentUser={currentUser}
               onRoleChange={setCurrentRole}
               onStatusChange={(newStatus, log, note) => onStatusChange(plan.id, newStatus, log, note)}
               onUpdatePlan={onUpdatePlan}
@@ -289,11 +307,11 @@ export const PlanHistoryModal: React.FC<PlanHistoryModalProps> = ({
                   <div className="text-2xs font-bold text-slate-500 uppercase tracking-wider">
                     Bằng Chứng Ký Duyệt Đồng Thuận Tại Thời Điểm Chốt:
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 text-xs">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 text-xs">
                     <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
                       <div className="font-bold text-slate-800 flex items-center gap-1">
                         <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                        Growth: {activeSnapshot.signOffRecord?.growth?.confirmedBy || 'Growth Lead'}
+                        Growth: {activeSnapshot.signOffRecord?.growth?.confirmedBy || 'Trần Thị Ánh'}
                       </div>
                       <p className="text-2xs text-slate-500">
                         {activeSnapshot.signOffRecord?.growth?.note || 'Đã giao trần ngân sách'}
@@ -314,7 +332,16 @@ export const PlanHistoryModal: React.FC<PlanHistoryModalProps> = ({
                         Media: {activeSnapshot.signOffRecord?.media?.confirmedBy || 'Phan Thành Đạt'}
                       </div>
                       <p className="text-2xs text-slate-500">
-                        {activeSnapshot.signOffRecord?.media?.note || 'Đã nhận gói Ads tổng'}
+                        {activeSnapshot.signOffRecord?.media?.note || 'Đã nhận gói Ads & cam kết ROAS'}
+                      </p>
+                    </div>
+                    <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+                      <div className="font-bold text-slate-800 flex items-center gap-1">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                        Trưởng phòng: {activeSnapshot.signOffRecord?.leadB2c?.confirmedBy || 'Vân Ngọc'}
+                      </div>
+                      <p className="text-2xs text-slate-500">
+                        {activeSnapshot.signOffRecord?.leadB2c?.note || 'Phê duyệt & đóng băng phiên bản'}
                       </p>
                     </div>
                   </div>
@@ -328,6 +355,7 @@ export const PlanHistoryModal: React.FC<PlanHistoryModalProps> = ({
               <PlanApprovalStepper
                 plan={plan}
                 currentRole={currentRole}
+                currentUser={currentUser}
                 onRoleChange={setCurrentRole}
                 onStatusChange={(newStatus, log, note) => onStatusChange(plan.id, newStatus, log, note)}
                 onUpdatePlan={onUpdatePlan}
@@ -336,6 +364,7 @@ export const PlanHistoryModal: React.FC<PlanHistoryModalProps> = ({
               <PlanDiscussionHub
                 plan={plan}
                 currentRole={currentRole}
+                currentUser={currentUser}
                 onSendMessage={(msg) => onSendMessage(plan.id, msg)}
                 onNotify={onNotify}
               />

@@ -36,8 +36,10 @@ export const INITIAL_MONTHLY_PLANS: InputPlanBreakdownState[] = [
     month: '2026/10',
     week: 'W41 [05.10 - 11.10]',
     pic: 'Khánh Vy',
-    growthPic: 'Hoàng Long (Senior Growth)',
+    growthPic: 'Trần Thị Ánh (Growth PIC)',
+    mediaPic: 'Phan Thành Đạt (Media PIC)',
     totalTargetBudget: 200000000, // 200 Tr
+    budgetAdsTotal: 50000000, // Gói Ads tổng 50 Tr
     budgetAffiliate: 150000000, // 150 Tr
     budgetSelfChannel: 50000000, // 50 Tr
     targetAffiliateContents: 85,
@@ -51,35 +53,83 @@ export const INITIAL_MONTHLY_PLANS: InputPlanBreakdownState[] = [
     spentBudget: 132500000,
     deliveredContents: 76,
     actualGmv: 890000000,
-    preApprovedBy: 'Hoàng Long',
+    preApprovedBy: 'Trần Thị Ánh',
     preApprovedAt: '2026-10-01T10:00:00Z',
-    approvedBy: 'Nguyễn Hoàng Long (Trưởng Phòng)',
+    approvedBy: 'Vân Ngọc (Trưởng Phòng)',
     approvedAt: '2026-10-02T09:00:00Z',
-    notes: 'Kế hoạch phân bổ kép: 150M Affiliate KOC theo cấp bậc lương KL1-KL4 & 50M Self Channel cho 40 video theo 4 Content Pillars.',
+    notes: 'Kế hoạch phân bổ: 150M Affiliate KOC theo cấp bậc lương KL1-KL4 & 50M Self Channel cho 40 video theo 4 Content Pillars. Media nhận trọn gói Ads 50M.',
     createdAt: '2026-09-28T09:00:00Z',
     updatedAt: '2026-10-07T14:30:00Z',
     items: createPlanItemsForScenario(150000000, 85, 'BALANCED', 'Khánh Vy'),
     selfChannelPillars: DEFAULT_CONTENT_PILLARS,
+    multiPartySignOff: {
+      growth: {
+        confirmed: true,
+        confirmedBy: 'Trần Thị Ánh',
+        confirmedAt: '2026-09-30T10:00:00Z',
+        note: 'Đã giao trần ngân sách 200 triệu và hạn mức Ads tổng 50 triệu.'
+      },
+      booking: {
+        confirmed: true,
+        confirmedBy: 'Khánh Vy',
+        confirmedAt: '2026-10-01T09:00:00Z',
+        note: 'Đã phân rã chi tiết 85 video Affiliate KOC và 40 video Self Channel theo 4 Content Pillars.'
+      },
+      media: {
+        confirmed: true,
+        confirmedBy: 'Phan Thành Đạt',
+        confirmedAt: '2026-10-01T14:30:00Z',
+        targetRoas: 4.8,
+        acceptedAdsBudget: 50000000,
+        note: 'Media đã nhận gói Ads tổng 50M, cam kết ROAS tối thiểu 4.8x và sẽ vít Spark Ads cho top video KOC chuyển đổi tốt.'
+      },
+      leadB2c: {
+        confirmed: true,
+        confirmedBy: 'Vân Ngọc (Trưởng Phòng)',
+        confirmedAt: '2026-10-02T09:00:00Z',
+        note: 'Phê duyệt toàn diện cơ cấu 3 bên và đóng băng phiên bản v1.0.'
+      }
+    },
     discussions: [
       {
         id: 'DISC-KUTI-1',
-        authorName: 'Hoàng Long',
+        authorName: 'Trần Thị Ánh',
         authorRole: 'GROWTH',
-        authorTitle: 'Growth Lead',
-        content: 'Tổng ngân sách nhãn hàng chốt 200 triệu cho tháng 10. Phân bổ: 150M kênh Affiliate KOC kéo số Mega và 50M kênh Self Channel xây dựng thương hiệu & Spark Ads.',
+        authorTitle: 'Growth PIC / Chiến lược & PnL',
+        content: 'Tổng ngân sách nhãn hàng chốt 200 triệu cho tháng 10. Giao B2C trần booking 150M và giao Media gói Ads tổng 50M để kéo số Mega 10.10. Mục tiêu NMV tối thiểu 1.2 Tỷ.',
         type: 'BUDGET_ADJUST',
         timestamp: '2026-09-28T09:30:00Z',
-        tags: ['Ngân Sách', 'Affiliate', 'Self Channel']
+        tags: ['Ngân Sách', 'Affiliate', 'Media Ads']
       },
       {
         id: 'DISC-KUTI-2',
         authorName: 'Khánh Vy',
         authorRole: 'BOOKING',
         authorTitle: 'Booking Specialist PIC',
-        content: 'B2C đã phân rã xong: 150M Affiliate chia cho 85 Creator (KL1-KL4) và 50M Self Channel chia đều cho 4 Content Pillars (40 video qua CTV Hub).',
+        content: 'B2C đã phân rã xong: 150M Affiliate chia cho 85 Creator (KL1-KL4) và 50M Self Channel chia đều cho 4 Content Pillars (40 video qua CTV Hub). Cơ cấu khớp 100% trần chi phí.',
         type: 'COMMENT',
         timestamp: '2026-09-29T14:00:00Z',
         tags: ['Content Pillar', 'CTV Hub']
+      },
+      {
+        id: 'DISC-KUTI-3',
+        authorName: 'Phan Thành Đạt',
+        authorRole: 'MEDIA',
+        authorTitle: 'Media PIC / Quảng cáo & Ads',
+        content: 'Media xác nhận nhận gói Tổng Ads 50M (không phân chia kênh). Media sẽ dùng 35M cho Spark Ads vít mạnh các video KOC có chuyển đổi cao và 15M cho Ads chuyển đổi kênh Brand. Cam kết ROAS đạt 4.8x.',
+        type: 'COMMENT',
+        timestamp: '2026-09-30T16:20:00Z',
+        tags: ['Media Ads', 'Chỉ Số KPI']
+      },
+      {
+        id: 'DISC-KUTI-4',
+        authorName: 'Vân Ngọc',
+        authorRole: 'LEAD',
+        authorTitle: 'Trưởng Phòng B2C',
+        content: 'Trưởng phòng đã rà soát toàn bộ lịch sử trao đổi của Growth, Media và Booking. Cơ cấu 3 bên rất chặt chẽ, phê duyệt chính thức và đóng băng kế hoạch phiên bản v1.0.',
+        type: 'FINAL_APPROVAL_PASS',
+        timestamp: '2026-10-02T09:00:00Z',
+        tags: ['Phê Duyệt Chính Thức', 'Đóng Băng Phiên Bản']
       }
     ]
   },
@@ -90,8 +140,10 @@ export const INITIAL_MONTHLY_PLANS: InputPlanBreakdownState[] = [
     month: '2026/10',
     week: 'W41 [05.10 - 11.10]',
     pic: 'Đặng Mai Hà Linh',
-    growthPic: 'Hoàng Quốc Bảo (Senior Growth)',
+    growthPic: 'Trần Thị Ánh (Growth PIC)',
+    mediaPic: 'Phan Thành Đạt (Media PIC)',
     totalTargetBudget: 150000000,
+    budgetAdsTotal: 35000000, // Gói Ads tổng 35 Tr
     totalTargetContents: 76,
     targetGmv: 920000000,
     cancellationRate: 0.08,
@@ -101,21 +153,49 @@ export const INITIAL_MONTHLY_PLANS: InputPlanBreakdownState[] = [
     spentBudget: 98000000,
     deliveredContents: 48,
     actualGmv: 610000000,
-    preApprovedBy: 'Hoàng Quốc Bảo',
+    preApprovedBy: 'Trần Thị Ánh',
     preApprovedAt: '2026-10-01T10:00:00Z',
-    approvedBy: 'Nguyễn Hoàng Long (Trưởng Phòng)',
+    approvedBy: 'Vân Ngọc (Trưởng Phòng)',
     approvedAt: '2026-10-02T09:00:00Z',
-    notes: 'Trọng tâm đẩy dòng Sữa Rửa Mặt Đậu Nành & Nước Hoa Hồng qua mạng lưới Creator KL1-KL4 kết hợp Shopee Video Reup.',
+    notes: 'Trọng tâm đẩy dòng Sữa Rửa Mặt Đậu Nành & Nước Hoa Hồng qua mạng lưới Creator KL1-KL4 kết hợp Shopee Video Reup. Media nhận gói Ads tổng 35M.',
     createdAt: '2026-09-28T09:00:00Z',
     updatedAt: '2026-10-06T14:30:00Z',
     items: MOCK_PLAN_SCENARIOS[0].state.items,
+    multiPartySignOff: {
+      growth: {
+        confirmed: true,
+        confirmedBy: 'Trần Thị Ánh',
+        confirmedAt: '2026-09-29T10:15:00Z',
+        note: 'Ngân sách trần 150M, gói Ads tổng 35M, target GMV 920M.'
+      },
+      booking: {
+        confirmed: true,
+        confirmedBy: 'Đặng Mai Hà Linh',
+        confirmedAt: '2026-09-30T14:30:00Z',
+        note: 'Đã phân rã 76 video cho TikTok Shop, Shopee và Livestream.'
+      },
+      media: {
+        confirmed: true,
+        confirmedBy: 'Phan Thành Đạt',
+        confirmedAt: '2026-10-01T11:00:00Z',
+        targetRoas: 5.2,
+        acceptedAdsBudget: 35000000,
+        note: 'Đã nhận gói Ads tổng 35M, cam kết ROAS tối thiểu 5.2x.'
+      },
+      leadB2c: {
+        confirmed: true,
+        confirmedBy: 'Vân Ngọc (Trưởng Phòng)',
+        confirmedAt: '2026-10-02T09:00:00Z',
+        note: 'Phê duyệt chính thức và đóng băng kế hoạch tháng 10 Fresh.'
+      }
+    },
     discussions: [
       {
         id: 'DISC-FRESH-1',
-        authorName: 'Hoàng Quốc Bảo',
+        authorName: 'Trần Thị Ánh',
         authorRole: 'GROWTH',
-        authorTitle: 'Senior Growth Specialist',
-        content: 'Chào Hà Linh, ngân sách tháng 10 nhãn Fresh chốt trần 150M. Nhãn yêu cầu đẩy mạnh combo Sữa Rửa Mặt Đậu Nành và Nước Hoa Hồng. Kỳ vọng GMV tối thiểu 920M để đạt ROI trên 6.0x.',
+        authorTitle: 'Growth PIC / Chiến lược & PnL',
+        content: 'Chào Hà Linh và Đạt, ngân sách tháng 10 nhãn Fresh chốt trần 150M, trong đó gói Ads tổng giao Media là 35M. Nhãn yêu cầu đẩy mạnh combo Sữa Rửa Mặt Đậu Nành và Nước Hoa Hồng. Kỳ vọng GMV tối thiểu 920M để đạt ROI trên 6.0x.',
         type: 'COMMENT',
         timestamp: '2026-09-29T10:15:00Z',
         tags: ['Ngân Sách', 'HeroSKU', 'Chỉ Số KPI']
@@ -125,40 +205,40 @@ export const INITIAL_MONTHLY_PLANS: InputPlanBreakdownState[] = [
         authorName: 'Đặng Mai Hà Linh',
         authorRole: 'BOOKING',
         authorTitle: 'Booking Specialist PIC',
-        content: 'Dạ anh Bảo, em đã phân rã xong 76 video cho W41. Trong đó TikTok Shop chiếm 45 video (58M), Shopee Video 25 video (30M) và 2 ca Livestream độc quyền (35M). Dự phòng định mức hủy đúng 8%. Nhờ anh xem qua.',
+        content: 'Dạ chị Ánh, em đã phân rã xong 76 video cho W41. Trong đó TikTok Shop chiếm 45 video (58M), Shopee Video 25 video (30M) và 2 ca Livestream độc quyền (35M). Dự phòng định mức hủy đúng 8%. Nhờ anh Đạt Media và chị Ánh xem qua.',
         type: 'COMMENT',
         timestamp: '2026-09-30T14:30:00Z',
         tags: ['TikTok Shop', 'Shopee Video', 'Cơ Cấu Creator']
       },
       {
         id: 'DISC-FRESH-3',
-        authorName: 'Hoàng Quốc Bảo',
-        authorRole: 'GROWTH',
-        authorTitle: 'Senior Growth Specialist',
-        content: 'Anh đã kiểm tra cơ cấu phân rã: Tỷ lệ phân bổ kênh hợp lý, CIR dự kiến 16.3% nằm trong biên độ an toàn của nhãn. Xác nhận SƠ DUYỆT ĐẠT để trình Trưởng phòng duyệt chính thức.',
-        type: 'PRE_APPROVAL_PASS',
-        timestamp: '2026-10-01T10:00:00Z',
-        tags: ['Sơ Duyệt Đạt', 'CIR']
+        authorName: 'Phan Thành Đạt',
+        authorRole: 'MEDIA',
+        authorTitle: 'Media PIC / Quảng cáo & Ads',
+        content: 'Media đã kiểm tra: Với dàn 45 video TikTok Shop của Hà Linh, team Media sẽ chọn ra 8 video có hook giữ chân tốt nhất để chạy Spark Ads từ ngày 08/10. Gói Ads 35M đảm bảo cam kết ROAS tối thiểu 5.2x cho nhãn.',
+        type: 'COMMENT',
+        timestamp: '2026-10-01T10:30:00Z',
+        tags: ['Media Ads', 'Chỉ Số KPI']
       },
       {
         id: 'DISC-FRESH-4',
-        authorName: 'Nguyễn Hoàng Long',
-        authorRole: 'LEAD',
-        authorTitle: 'Trưởng Phòng B2C',
-        content: 'Trưởng phòng phê duyệt chính thức kế hoạch tháng 10 của Fresh. Team Booking tiến hành ký cam kết creator và bắt đầu giải ngân tạm ứng.',
-        type: 'FINAL_APPROVAL_PASS',
-        timestamp: '2026-10-02T09:00:00Z',
-        tags: ['Phê Duyệt Chính Thức']
+        authorName: 'Trần Thị Ánh',
+        authorRole: 'GROWTH',
+        authorTitle: 'Growth PIC / Chiến lược & PnL',
+        content: 'Chị đã kiểm tra cơ cấu phân rã và cam kết ROAS từ Media: Tỷ lệ phân bổ kênh hợp lý, CIR dự kiến 16.3% an toàn. Xác nhận SƠ DUYỆT ĐẠT để trình Trưởng phòng duyệt chính thức.',
+        type: 'PRE_APPROVAL_PASS',
+        timestamp: '2026-10-01T14:00:00Z',
+        tags: ['Sơ Duyệt Đạt', 'CIR']
       },
       {
         id: 'DISC-FRESH-5',
-        authorName: 'Hệ Thống',
-        authorRole: 'SYSTEM',
-        authorTitle: 'B2C Operations Bot',
-        content: 'Kế hoạch đã chuyển sang trạng thái Đang Thực Thi. Đã đồng bộ phân công công việc cho 4 nhân sự Booking phụ trách.',
-        type: 'STATUS_CHANGE',
-        timestamp: '2026-10-02T09:05:00Z',
-        tags: ['Trạng Thái']
+        authorName: 'Vân Ngọc',
+        authorRole: 'LEAD',
+        authorTitle: 'Trưởng Phòng B2C',
+        content: 'Trưởng phòng phê duyệt chính thức kế hoạch tháng 10 của Fresh. Team Booking tiến hành ký cam kết creator và Media chuẩn bị tài khoản quảng cáo giải ngân.',
+        type: 'FINAL_APPROVAL_PASS',
+        timestamp: '2026-10-02T09:00:00Z',
+        tags: ['Phê Duyệt Chính Thức']
       }
     ]
   },
@@ -169,8 +249,10 @@ export const INITIAL_MONTHLY_PLANS: InputPlanBreakdownState[] = [
     month: '2026/10',
     week: 'W42 [12.10 - 18.10]',
     pic: 'Phương Thảo',
-    growthPic: 'Trần Thị Ánh (Growth Manager)',
+    growthPic: 'Trần Thị Ánh (Growth PIC)',
+    mediaPic: 'Phan Thành Đạt (Media PIC)',
     totalTargetBudget: 180000000,
+    budgetAdsTotal: 40000000,
     totalTargetContents: 85,
     targetGmv: 1100000000,
     cancellationRate: 0.08,
@@ -184,6 +266,30 @@ export const INITIAL_MONTHLY_PLANS: InputPlanBreakdownState[] = [
     createdAt: '2026-10-04T08:30:00Z',
     updatedAt: '2026-10-07T11:00:00Z',
     items: createPlanItemsForScenario(180000000, 85, 'BRAND_PUSH', 'Phương Thảo'),
+    multiPartySignOff: {
+      growth: {
+        confirmed: true,
+        confirmedBy: 'Trần Thị Ánh',
+        confirmedAt: '2026-10-04T09:00:00Z',
+        note: 'Đã giao trần ngân sách 180M và gói Ads tổng 40M.'
+      },
+      booking: {
+        confirmed: true,
+        confirmedBy: 'Phương Thảo',
+        confirmedAt: '2026-10-07T10:45:00Z',
+        note: 'Đã phân rã chi tiết 85 video đẩy Tẩy da chết Cà Phê Đắk Lắk và Dưỡng tóc Bưởi.'
+      },
+      media: {
+        confirmed: false,
+        confirmedBy: 'Phan Thành Đạt',
+        targetRoas: 4.5,
+        acceptedAdsBudget: 40000000,
+        note: 'Đang rà soát góc video kịch bản và định mức ROAS 4.5x.'
+      },
+      leadB2c: {
+        confirmed: false
+      }
+    },
     discussions: [
       {
         id: 'DISC-COCOON-1',
@@ -199,7 +305,7 @@ export const INITIAL_MONTHLY_PLANS: InputPlanBreakdownState[] = [
         id: 'DISC-COCOON-2',
         authorName: 'Trần Thị Ánh',
         authorRole: 'GROWTH',
-        authorTitle: 'Growth Manager',
+        authorTitle: 'Growth PIC / Chiến lược & PnL',
         content: 'Thảo ơi, dòng Tẩy da chết Cà Phê Đắk Lắk đang là hero SKU mùa này. Chị thấy tỷ trọng ngân sách TikTok Shop đang hơi thấp (42%), trong khi tuần Mega 10.10 TikTok đang trợ giá voucher 18%. Em cân nhắc tăng slot KL3-KL4 TikTok Shop lên khoảng 55-60% ngân sách được không?',
         type: 'COMMENT',
         timestamp: '2026-10-06T09:30:00Z',
@@ -214,6 +320,16 @@ export const INITIAL_MONTHLY_PLANS: InputPlanBreakdownState[] = [
         type: 'COMMENT',
         timestamp: '2026-10-07T10:45:00Z',
         tags: ['TikTok Shop', 'Chỉ Số KPI']
+      },
+      {
+        id: 'DISC-COCOON-4',
+        authorName: 'Phan Thành Đạt',
+        authorRole: 'MEDIA',
+        authorTitle: 'Media PIC / Quảng cáo & Ads',
+        content: 'Media đã xem qua cơ cấu: Đồng ý với chị Ánh về việc tăng slot TikTok Shop. Gói Ads tổng 40M này team Media sẽ dồn vào ngày Mega 10.10 và Payday 15.10 để tối ưu chỉ số ROAS sàn. Đạt chuẩn bị bấm xác nhận nhận gói Ads.',
+        type: 'COMMENT',
+        timestamp: '2026-10-07T11:20:00Z',
+        tags: ['Media Ads', 'TikTok Shop']
       }
     ]
   },
@@ -224,8 +340,10 @@ export const INITIAL_MONTHLY_PLANS: InputPlanBreakdownState[] = [
     month: '2026/10',
     week: 'W41 [05.10 - 11.10]',
     pic: 'Khánh Vy',
-    growthPic: 'Vũ Thùy Linh (Growth Lead)',
+    growthPic: 'Trần Thị Ánh (Growth PIC)',
+    mediaPic: 'Phan Thành Đạt (Media PIC)',
     totalTargetBudget: 70000000,
+    budgetAdsTotal: 15000000,
     totalTargetContents: 54,
     targetGmv: 480000000,
     cancellationRate: 0.08,
@@ -235,30 +353,65 @@ export const INITIAL_MONTHLY_PLANS: InputPlanBreakdownState[] = [
     spentBudget: 42000000,
     deliveredContents: 32,
     actualGmv: 310000000,
-    preApprovedBy: 'Vũ Thùy Linh',
+    preApprovedBy: 'Trần Thị Ánh',
     preApprovedAt: '2026-10-06T15:30:00Z',
     preApprovalNotes: 'Đồng ý cơ cấu ngân sách 70M tối ưu, CIR 14.5%, GMV mục tiêu 480M khả thi.',
-    notes: 'Ngân sách tối ưu 70M, tập trung KOC KL1-KL3 review chân thực kết hợp Shopee Video Reup.',
+    notes: 'Ngân sách tối ưu 70M, tập trung KOC KL1-KL3 review chân thực kết hợp Shopee Video Reup. Media gói Ads 15M.',
     createdAt: '2026-10-01T11:20:00Z',
     updatedAt: '2026-10-06T09:45:00Z',
     items: MOCK_PLAN_SCENARIOS[1]?.state?.items || createPlanItemsForScenario(70000000, 54, 'COST_SAVER', 'Khánh Vy'),
+    multiPartySignOff: {
+      growth: {
+        confirmed: true,
+        confirmedBy: 'Trần Thị Ánh',
+        confirmedAt: '2026-10-06T15:30:00Z',
+        note: 'Đã giao trần ngân sách 70M và gói Ads tổng 15M.'
+      },
+      booking: {
+        confirmed: true,
+        confirmedBy: 'Khánh Vy',
+        confirmedAt: '2026-10-05T10:00:00Z',
+        note: 'Đã phân rã 54 video tập trung KOC KL1-KL3.'
+      },
+      media: {
+        confirmed: true,
+        confirmedBy: 'Phan Thành Đạt',
+        confirmedAt: '2026-10-06T11:00:00Z',
+        targetRoas: 5.5,
+        acceptedAdsBudget: 15000000,
+        note: 'Nhận gói Ads 15M cho Spark Ads, cam kết ROAS 5.5x.'
+      },
+      leadB2c: {
+        confirmed: false
+      }
+    },
     discussions: [
       {
         id: 'DISC-FACE-1',
         authorName: 'Khánh Vy',
         authorRole: 'BOOKING',
         authorTitle: 'Senior Booking Specialist',
-        content: 'Gửi chị Linh phương án Cost Saver 70M cho Face Republic, tập trung phủ KOC KL1-KL3 review chân thực, chi phí trung bình 1.2M/video.',
+        content: 'Gửi chị Ánh và anh Đạt phương án Cost Saver 70M cho Face Republic, tập trung phủ KOC KL1-KL3 review chân thực, chi phí trung bình 1.2M/video.',
         type: 'COMMENT',
         timestamp: '2026-10-05T10:00:00Z',
         tags: ['Ngân Sách', 'Cơ Cấu Creator']
       },
       {
         id: 'DISC-FACE-2',
-        authorName: 'Vũ Thùy Linh',
+        authorName: 'Phan Thành Đạt',
+        authorRole: 'MEDIA',
+        authorTitle: 'Media PIC / Quảng cáo & Ads',
+        content: 'Media xác nhận gói Ads 15M. Do đây là chiến dịch tối ưu chi phí nên Media sẽ chỉ chạy Spark Ads cho 5 video đạt tỷ lệ giữ chân người xem trên 3 giây cao nhất. Cam kết ROAS đạt 5.5x.',
+        type: 'COMMENT',
+        timestamp: '2026-10-06T11:00:00Z',
+        tags: ['Media Ads', 'Chỉ Số KPI']
+      },
+      {
+        id: 'DISC-FACE-3',
+        authorName: 'Trần Thị Ánh',
         authorRole: 'GROWTH',
-        authorTitle: 'Growth Lead',
-        content: 'Chị đồng ý với cơ cấu này. CIR đạt 14.5% rất đẹp, tỷ lệ hoàn 8% được kiểm soát tốt. Chị đã bấm [Sơ Duyệt Đạt], Vy trình Trưởng phòng Long duyệt chính thức nhé.',
+        authorTitle: 'Growth PIC / Chiến lược & PnL',
+        content: 'Chị đồng ý với cơ cấu này. CIR đạt 14.5% rất đẹp, tỷ lệ hoàn 8% được kiểm soát tốt. Chị đã bấm [Sơ Duyệt Đạt], Vy trình Trưởng phòng Ngọc duyệt chính thức nhé.',
         type: 'PRE_APPROVAL_PASS',
         timestamp: '2026-10-06T15:30:00Z',
         tags: ['Sơ Duyệt Đạt', 'CIR']

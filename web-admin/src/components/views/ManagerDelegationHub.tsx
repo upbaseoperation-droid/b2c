@@ -11,7 +11,6 @@ import {
   Check,
   Edit3,
   Sliders,
-  Zap,
   AlertTriangle,
   Send,
   Clock,
@@ -392,48 +391,6 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
     setEditingStore(null);
   };
 
-  // Auto Rebalance Staff Stores Capacity
-  const handleAutoRebalance = () => {
-    let rebalancedCount = 0;
-    const availableStaff = staffList.filter(s => s.role === 'BOOKING');
-    const targetPool = storeFilterMode === 'B2C_ONLY' ? b2cPlanStores : storePortfolios;
-    
-    targetPool.forEach((store, index) => {
-      // If store has no assigned owner or assigned to an overloaded staff
-      const currentOwners = store.b2cOwners || [store.b2cOwnerName];
-      const primaryStaff = staffList.find(s => s.name === currentOwners[0]);
-      
-      const currentLoad = targetPool.filter(s => 
-        (s.b2cOwners && s.b2cOwners.includes(primaryStaff?.name || '')) || s.b2cOwnerName === primaryStaff?.name
-      ).length;
-
-      if (!primaryStaff || currentLoad > (primaryStaff.maxStoresCapacity || 3)) {
-        // Find staff with least load
-        const leastLoadedStaff = availableStaff.reduce((min, s) => {
-          const sLoad = targetPool.filter(st => 
-            (st.b2cOwners && st.b2cOwners.includes(s.name)) || st.b2cOwnerName === s.name
-          ).length;
-          const minLoad = targetPool.filter(st => 
-            (st.b2cOwners && st.b2cOwners.includes(min.name)) || st.b2cOwnerName === min.name
-          ).length;
-          return sLoad < minLoad ? s : min;
-        }, availableStaff[0]);
-
-        if (leastLoadedStaff) {
-          onUpdateStore({
-            ...store,
-            b2cOwners: [leastLoadedStaff.name],
-            b2cOwnerName: leastLoadedStaff.name,
-            assignmentNotes: `[Cân bằng tải tự động bởi Trưởng phòng ${currentUser.name}]: Đảm bảo trần năng lực 3 shop/người`
-          });
-          rebalancedCount++;
-        }
-      }
-    });
-
-    notify(`Đã tự động cân bằng tải thành công cho ${rebalancedCount} gian hàng trên toàn phòng!`);
-  };
-
   return (
     <div className="space-y-5">
       {/* Thanh phân khu: chọn mục, thao tác chính bên phải */}
@@ -455,11 +412,6 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
           ]}
         />
         <div className="flex items-center gap-2">
-          {activeSection === 'STAFF' && (
-            <Button icon={Zap} onClick={handleAutoRebalance} title="Phân bổ lại gian hàng để không ai bị quá tải">
-              Cân bằng tải
-            </Button>
-          )}
           <Button icon={Send} onClick={() => setIsTaskModalOpen(true)}>Giao việc</Button>
           <Button
             variant="primary"
@@ -827,7 +779,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
       )}
 
       {/* ========================================================================= */}
-      {/* 5. SECTION 3: CÂN BẰNG TẢI NHÂN SỰ TOÀN PHÒNG (STAFF CAPACITY)             */}
+      {/* 5. SECTION 3: THEO DÕI TẢI NHÂN SỰ TOÀN PHÒNG (STAFF CAPACITY)             */}
       {/* ========================================================================= */}
       {activeSection === 'STAFF' && (
         <div className="space-y-4">
@@ -835,11 +787,11 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
             <div>
               <h3 className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
                 <Users className="w-4 h-4 text-blue-600" />
-                Cân bằng tải năng lực chuyên viên B2C
+                Theo dõi tải gian hàng nhân sự B2C
               </h3>
               <p className="text-2xs text-slate-500 mt-0.5">
                 {storeFilterMode === 'B2C_ONLY'
-                  ? `Đang tính tải theo ${b2cPlanStores.length} gian hàng B2C làm plan (trần năng lực tiêu chuẩn 3 shop/chuyên viên)`
+                  ? `Nhân sự chủ động tự phân công và nhận gian hàng (tối đa định mức 3 shop/chuyên viên trên ${b2cPlanStores.length} gian B2C làm plan)`
                   : `Đang tính tải theo toàn bộ ${storePortfolios.length} gian hàng hệ thống`}
               </p>
             </div>

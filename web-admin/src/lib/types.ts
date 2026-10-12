@@ -3,6 +3,8 @@ export type UserRole =
   | 'BRAND_MEMBER' 
   | 'CONTENT_MEMBER' 
   | 'BOOKING_MEMBER' 
+  | 'GROWTH_MEMBER'
+  | 'MEDIA_MEMBER'
   | 'MANAGER'
   | 'LEADER'
   | 'MEMBER'
