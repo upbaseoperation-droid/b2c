@@ -15,8 +15,7 @@ import { BrandView } from '../components/views/BrandView';
 import { BrandProfilesView } from '../components/views/BrandProfilesView';
 import { ContentView } from '../components/views/ContentView';
 import { BookingView } from '../components/views/BookingView';
-import { KocMasterDataView } from '../components/views/KocMasterDataView';
-import { ContractManagementView, type ContractIntent } from '../components/views/ContractManagementView';
+import type { ContractIntent } from '../components/views/ContractManagementView';
 import { ManagerView } from '../components/views/ManagerView';
 import { LeaderboardView } from '../components/views/LeaderboardView';
 import { BrandHubView } from '../components/views/BrandHubView';
@@ -51,13 +50,29 @@ const KocListingBatchHubView = dynamic(
   }
 );
 import { KocKolHubView } from '../components/views/KocKolHubView';
-import { WeeklyAdsReportHubView } from '../components/views/WeeklyAdsReportHubView';
-import { ExecutiveDashboardReportsView } from '../components/views/ExecutiveDashboardReportsView';
 import { ContentAngleSetupView } from '../components/views/ContentAngleSetupView';
 import { CentralizedRbacHubView } from '../components/views/CentralizedRbacHubView';
 import { isThirdPartyPartner, getPartnerLandingTab } from '../lib/thirdPartyAccessData';
 import { isTabAllowedForRole, getAllowedTabsForRole, getDefaultLandingTabForRole } from '../lib/rbacData';
 import { PageActiveContext } from '../components/ui';
+
+function ViewLoading() {
+  return (
+    <div role="status" aria-live="polite" className="bg-surface border border-line rounded-xl p-6 space-y-4">
+      <p className="text-sm text-ink-3">Đang chuẩn bị không gian làm việc…</p>
+      <div aria-hidden="true" className="space-y-3">
+        <div className="h-8 w-1/3 rounded-md bg-sunken" />
+        <div className="h-24 rounded-lg bg-sunken" />
+        <div className="h-24 rounded-lg bg-sunken" />
+      </div>
+    </div>
+  );
+}
+
+const KocMasterDataView = dynamic(() => import('../components/views/KocMasterDataView').then(mod => mod.KocMasterDataView), { loading: ViewLoading });
+const ContractManagementView = dynamic(() => import('../components/views/ContractManagementView').then(mod => mod.ContractManagementView), { loading: ViewLoading });
+const WeeklyAdsReportHubView = dynamic(() => import('../components/views/WeeklyAdsReportHubView').then(mod => mod.WeeklyAdsReportHubView), { loading: ViewLoading });
+const ExecutiveDashboardReportsView = dynamic(() => import('../components/views/ExecutiveDashboardReportsView').then(mod => mod.ExecutiveDashboardReportsView), { loading: ViewLoading });
 
 import { 
   USERS, 
@@ -105,7 +120,7 @@ function KeepAliveTab({
   return (
     <div
       style={{ display: tabKey === currentTab ? 'block' : 'none' }}
-      className="space-y-6"
+      className="workspace-view space-y-6"
     >
       <PageActiveContext.Provider value={tabKey === currentTab}>
         <ErrorBoundary fallbackTitle={`Lỗi tải màn hình (${tabKey})`}>
@@ -745,7 +760,7 @@ export default function App() {
           </div>
         )}
 
-        <main className="px-3 sm:px-6 lg:px-8 py-3 sm:py-4 w-full max-w-[1600px] space-y-3 sm:space-y-3.5">
+        <main id="workspace" className="px-4 sm:px-6 lg:px-8 py-5 sm:py-6 w-full max-w-[1600px] mx-auto space-y-5">
           {!isTabAllowedForRole(currentUser.role, activeTab) ? (
             <div className="p-8 sm:p-12 rounded-2xl bg-surface border border-rose-200 shadow-sm text-center max-w-lg mx-auto my-12 space-y-4 animate-in fade-in">
               <div className="w-14 h-14 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mx-auto border border-rose-100 shadow-2xs">

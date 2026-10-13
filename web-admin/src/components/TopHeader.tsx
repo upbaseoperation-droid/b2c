@@ -46,7 +46,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   );
 
   return (
-    <header className="sticky top-0 z-20 min-h-14 bg-canvas/95 backdrop-blur border-b border-line px-4 sm:px-6 lg:px-8 py-2 flex items-center justify-between gap-4 shrink-0">
+    <header className="app-header sticky top-0 z-20 min-h-20 bg-surface/95 backdrop-blur border-b border-line px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap items-center justify-between gap-3 shrink-0">
       <div className="flex items-center gap-3 min-w-0 flex-1">
         {onToggleMobileSidebar && (
           <button
@@ -59,12 +59,12 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
         )}
 
         <div className="min-w-0 flex-1">
-          <h1 className="text-lg font-semibold text-ink truncate leading-7 tracking-tight">{title}</h1>
+          <h1 className="text-xl font-semibold text-ink leading-7 tracking-tight">{title}</h1>
           {subtitle && <p className="text-2xs text-ink-3 truncate hidden md:block">{subtitle}</p>}
         </div>
       </div>
 
-      <div className="flex items-center gap-2 shrink-0">
+      <div className="flex flex-wrap items-center gap-2 min-w-0 max-w-full">
         {/* ========================================================================= */}
         {/* BỘ CHỌN NHÃN HÀNG (BRAND CONTEXT SWITCHER) DÀNH CHO NHÂN VIÊN 2-3 BRAND   */}
         {/* ========================================================================= */}
@@ -78,6 +78,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
             <Building2 className="w-3.5 h-3.5 text-blue-600 mr-1.5 shrink-0" />
             <span className="text-ink-3 mr-1 text-2xs hidden md:inline">Nhãn:</span>
             <select
+              aria-label="Lọc theo nhãn hàng"
               value={selectedBrand}
               onChange={(e) => onBrandChange(e.target.value)}
               className="appearance-none bg-transparent font-semibold text-slate-800 focus:outline-none cursor-pointer pr-1"
@@ -105,11 +106,11 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
         {activeTab === 'content' && onNavigateTab && (
           <button
             onClick={() => onNavigateTab('content-angles')}
-            className="btn-md bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 transition-colors flex items-center gap-1.5 shadow-2xs"
+            className="btn-md bg-accent-soft hover:bg-sunken text-accent border border-line transition-colors flex items-center gap-1.5"
           >
-            <Sparkles className="w-3.5 h-3.5 text-purple-600" />
+            <Sparkles className="w-3.5 h-3.5 text-accent" />
             <span className="hidden sm:inline font-semibold">Góc tiếp cận theo SP</span>
-            <ArrowRight className="w-3 h-3 text-purple-500" />
+            <ArrowRight className="w-3 h-3 text-accent" />
           </button>
         )}
 

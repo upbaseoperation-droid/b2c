@@ -45,7 +45,7 @@ export function Panel({
   className?: string;
 }) {
   return (
-    <section className={cx('bg-surface border border-line rounded-xl overflow-hidden', className)}>
+    <section className={cx('workspace-panel bg-surface border border-line rounded-xl overflow-hidden', className)}>
       {(title || actions) && (
         <header className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-b border-line">
           <div className="min-w-0">

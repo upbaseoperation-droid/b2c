@@ -9,6 +9,14 @@ Quy chuẩn giao diện và từ ngữ cho `web-admin`. Áp dụng cho mọi mà
 
 Thứ tự ưu tiên khi có mâu thuẫn: yêu cầu của người dùng → file này → thói quen của code cũ.
 
+### Cập nhật trải nghiệm 14/10/2026
+
+- Menu có ô tìm trang, hỗ trợ tiếng Việt không dấu, chỉ tìm trong danh mục của vai trò hiện tại. Chọn trang sẽ xóa từ khóa. Mục hiện tại dùng nền `accent-soft`, chữ `accent` và vạch chỉ báo.
+- Thanh tiêu đề cao tối thiểu 80px, thao tác tự xuống hàng khi thiếu chỗ. Nội dung có khoảng đệm 20–24px theo chiều dọc và căn giữa ở màn hình rộng.
+- Khung `Panel` có đệm tiêu đề 16 × 20px. Nút `.btn-md` cao 38px; nhóm `.btn-*` có chiều cao tối thiểu 44px trên thiết bị cảm ứng. Thành phần `Button` dùng kích thước riêng như bảng thành phần bên dưới.
+- Hiệu ứng xuất hiện 180ms, phản hồi nút và ô nhập 150ms. Tôn trọng `prefers-reduced-motion`; không thêm chuyển động lặp liên tục.
+- Danh bạ KOC, hợp đồng, báo cáo Ads và báo cáo điều hành được chia gói tải theo nhu cầu, có thông báo đang tải và khung giữ chỗ. Chưa có số đo tốc độ trước/sau.
+
 ---
 
 ## 1. Nguyên tắc
@@ -27,11 +35,11 @@ Dùng **token ngữ nghĩa** trong code mới. Tailwind sinh class từ token: `
 
 | Token | Giá trị | Dùng cho |
 |---|---|---|
-| `canvas` | `#F5F5F3` | Nền trang, nền hàng khi rê chuột |
+| `canvas` | `#F6F7F9` | Nền trang, nền hàng khi rê chuột |
 | `surface` | `#FFFFFF` | Bảng, menu trái, modal, ô nhập |
-| `sunken` | `#EFEFEC` | Mục menu đang chọn, nền nhãn trung tính, segmented control |
-| `line` | `#E3E3DE` | Đường kẻ bảng, viền khung |
-| `line-strong` | `#CFCFC8` | Viền ô nhập, nút phụ |
+| `sunken` | `#EEF1F5` | Nền nhãn trung tính, segmented control |
+| `line` | `#E4E8EE` | Đường kẻ bảng, viền khung |
+| `line-strong` | `#C9D1DC` | Viền ô nhập, nút phụ |
 | `ink` | `#16171A` | Tiêu đề, nội dung bảng, con số |
 | `ink-2` | `#43454B` | Đoạn văn, mô tả |
 | `ink-3` | `#686B72` | Nhãn cột, chú thích, icon phụ (4,9:1 trên nền trắng) |
@@ -90,7 +98,7 @@ Code cũ dùng 12 họ màu. Trong `@theme`, mỗi họ đã được trỏ về
 
 | Vai trò | Class | Cỡ / dòng / độ đậm |
 |---|---|---|
-| Tiêu đề trang (thanh trên) | `text-lg font-semibold` | 18/28 · 600 |
+| Tiêu đề trang (thanh trên) | `text-xl font-semibold` | 20/28 · 600 |
 | Con số trong ô chỉ số | `text-[26px] font-semibold` | 26/32 · 600 |
 | Tiêu đề khối | `text-base font-semibold` | 16/24 · 600 |
 | Nội dung | `text-sm` | 14/22 · 400 |
@@ -113,11 +121,11 @@ Quy tắc:
 | Class | Giá trị | Dùng cho |
 |---|---|---|
 | `rounded`, `rounded-sm` | 4px | Nhãn trạng thái, ô mã |
-| `rounded-md`, `rounded-lg` | 6px | Nút, ô nhập, mục menu |
-| `rounded-xl`, `rounded-2xl` | 10px | Bảng, modal, khung |
+| `rounded-md`, `rounded-lg` | 8px / 10px | Nút, ô nhập, mục menu |
+| `rounded-xl`, `rounded-2xl` | 12px / 16px | Bảng, modal, khung |
 | `rounded-full` | | Chỉ ảnh đại diện và chấm trạng thái |
 
-**Đổ bóng:** thẻ và bảng không có bóng, chỉ có viền `border-line`. `shadow-sm` trở xuống đã được tắt. Chỉ lớp nổi (menu thả, popover, modal, toast) dùng `shadow-md`, `shadow-xl`, `shadow-2xl`.
+**Đổ bóng:** khung `Panel` và `card-enterprise` dùng bóng trung tính rất nhẹ (2px / 6px, độ mờ 2,5%) cùng viền `border-line`. `shadow-sm` trở xuống đã được tắt. Chỉ lớp nổi (menu thả, popover, modal, toast) dùng `shadow-md`, `shadow-xl`, `shadow-2xl`.
 
 **Chuyển động:** chỉ dùng khi có nghĩa (đang tải: `animate-spin`; mở modal: `animate-in`). Không dùng `animate-pulse`, `animate-bounce`, `animate-ping` để trang trí.
 

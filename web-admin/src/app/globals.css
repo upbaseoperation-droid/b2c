@@ -10,11 +10,11 @@
   --font-mono: var(--font-jetbrains), ui-monospace, "SFMono-Regular", Consolas, monospace;
 
   /* ---- Token ngữ nghĩa: dùng cho code mới ---- */
-  --color-canvas: #F5F5F3;
+  --color-canvas: #F6F7F9;
   --color-surface: #FFFFFF;
-  --color-sunken: #EFEFEC;
-  --color-line: #E3E3DE;
-  --color-line-strong: #CFCFC8;
+  --color-sunken: #EEF1F5;
+  --color-line: #E4E8EE;
+  --color-line-strong: #C9D1DC;
   --color-ink: #16171A;
   --color-ink-2: #43454B;
   --color-ink-3: #686B72;
@@ -155,15 +155,15 @@
   --text-3xl: 1.75rem;      --text-3xl--line-height: 2.25rem;
   --text-4xl: 2rem;         --text-4xl--line-height: 2.5rem;
 
-  /* ---- Bo góc: 4 / 6 / 10 ---- */
+  /* ---- Bo góc: nhãn 4, điều khiển 8, khung 12 ---- */
   --radius-xs: 4px;
   --radius-sm: 4px;
   --radius: 4px;
-  --radius-md: 6px;
-  --radius-lg: 6px;
-  --radius-xl: 10px;
-  --radius-2xl: 10px;
-  --radius-3xl: 10px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 12px;
+  --radius-2xl: 16px;
+  --radius-3xl: 20px;
 
   /* ---- Đổ bóng: thẻ không có bóng, chỉ lớp nổi (menu, modal, toast) ---- */
   --shadow-2xs: 0 0 #0000;
@@ -243,12 +243,12 @@ input:focus-visible, textarea:focus-visible, select:focus-visible {
 .card-enterprise {
   background-color: var(--color-surface);
   border: 1px solid var(--color-line);
-  border-radius: 10px;
+  border-radius: 12px;
 }
 
 .card-inner-box {
   background-color: var(--color-canvas);
-  border-radius: 6px;
+  border-radius: 8px;
 }
 
 .table-header-enterprise {
@@ -294,7 +294,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible {
   border-radius: 6px;
 }
 .btn-sm { height: 28px; padding: 0 10px; font-size: 13px; gap: 6px; }
-.btn-md { height: 34px; padding: 0 14px; font-size: 13.5px; gap: 6px; }
+.btn-md { height: 38px; padding: 0 14px; font-size: 13.5px; gap: 6px; }
 .btn-lg { height: 40px; padding: 0 18px; font-size: 14px; gap: 8px; }
 
 /* Ô nhập */
@@ -411,5 +411,47 @@ span[class*="px-"][class*="rounded"]:not([class*="block"]) {
 .text-3xs {
   font-size: 0.6875rem;
   line-height: 1rem;
+}
+
+/* Workspace polish: scoped surfaces, short transitions, no layout animation. */
+.app-sidebar { box-shadow: 1px 0 0 rgb(22 23 26 / 0.02); }
+.sidebar-item { position: relative; min-height: 40px; }
+.sidebar-item[aria-current="page"]::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 12px;
+  bottom: 12px;
+  width: 3px;
+  border-radius: 4px;
+  background: var(--color-accent);
+}
+.workspace-panel, .card-enterprise {
+  box-shadow: 0 2px 6px rgb(22 23 26 / 0.025);
+}
+.workspace-panel > header { padding: 16px 20px; }
+.app-header { box-shadow: 0 1px 8px rgb(22 23 26 / 0.025); }
+.workspace-view { animation: workspace-reveal 180ms ease-out; }
+@keyframes workspace-reveal {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+button { -webkit-tap-highlight-color: transparent; }
+button:not(:disabled), summary { cursor: pointer; }
+button:disabled { cursor: not-allowed; }
+.btn-sm, .btn-md, .btn-lg {
+  border-radius: 8px;
+  transition: background-color 150ms ease, border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+}
+.btn-sm:active:not(:disabled), .btn-md:active:not(:disabled), .btn-lg:active:not(:disabled) {
+  transform: translateY(1px);
+}
+input, textarea, select { transition: border-color 150ms ease, box-shadow 150ms ease; }
+input:focus-visible, textarea:focus-visible, select:focus-visible {
+  box-shadow: 0 0 0 3px rgb(61 107 196 / 0.12);
+}
+::selection { background: var(--color-accent-soft); color: var(--color-accent); }
+@media (pointer: coarse) {
+  .btn-sm, .btn-md, .btn-lg { min-height: 44px; }
 }
 
