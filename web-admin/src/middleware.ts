@@ -36,6 +36,7 @@ export async function middleware(request: NextRequest) {
     const defaultUser = USERS[0];
     const defaultToken = encodeSessionToken(defaultUser);
 
+    const response = await updateSession(request);
     const isHttps = request.nextUrl.protocol === 'https:' || request.headers.get('x-forwarded-proto') === 'https';
     response.cookies.set(SESSION_COOKIE_NAME, defaultToken, {
       httpOnly: true,

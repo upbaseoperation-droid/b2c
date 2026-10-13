@@ -5,6 +5,27 @@ const path = require('path');
 const rawDataPath = path.resolve(__dirname, '../../real_plan_extracted_data.json');
 const raw = JSON.parse(fs.readFileSync(rawDataPath, 'utf8'));
 
+const actPlanPath = path.resolve(__dirname, '../../actual_vs_plan_b2c.json');
+const actPlan = fs.existsSync(actPlanPath) ? JSON.parse(fs.readFileSync(actPlanPath, 'utf8')) : [];
+const actMap = new Map(actPlan.map(x => [x.store.toLowerCase().trim(), x]));
+
+const auditPath = path.resolve(__dirname, '../../audit_data_raw.json');
+const audit = fs.existsSync(auditPath) ? JSON.parse(fs.readFileSync(auditPath, 'utf8')) : { order_records: {} };
+const ordMap = new Map(Object.entries(audit.order_records || {}).map(([k, v]) => [v.store_raw.toLowerCase().trim(), v]));
+
+const b2cFinPath = path.resolve(__dirname, '../../b2c_analysis_final.json');
+const b2cFin = fs.existsSync(b2cFinPath) ? JSON.parse(fs.readFileSync(b2cFinPath, 'utf8')) : { matched_stores_detail: [], missing_stores: [] };
+const matchedMap = new Map((b2cFin.matched_stores_detail || []).map(x => [x.store.toLowerCase().trim(), x]));
+const missingMap = new Map((b2cFin.missing_stores || []).map(x => [x.store_raw.toLowerCase().trim(), x]));
+
+const actOctPath = path.resolve(__dirname, '../../actual_booking_oct_2026.json');
+const actOct = fs.existsSync(actOctPath) ? JSON.parse(fs.readFileSync(actOctPath, 'utf8')) : { records_oct_plan: [], records_oct_air: [] };
+const airByStore = new Map();
+(actOct.records_oct_air || []).forEach(r => {
+  const k = (r.store || '').toLowerCase().trim();
+  airByStore.set(k, (airByStore.get(k) || 0) + 1);
+});
+
 // Format VND helper
 function formatVnd(n) {
   return new Intl.NumberFormat('vi-VN').format(Math.round(n)) + ' ₫';
@@ -79,7 +100,13 @@ let directVideos = 0;
 const directMembers = new Set();
 
 raw.stores41.forEach((s, idx) => {
+  const k = s.storeName.toLowerCase().trim();
   const detailed = raw.detailed411ByStore[s.storeName];
+  const ord = ordMap.get(k);
+  const act = actMap.get(k);
+  const mat = matchedMap.get(k);
+  const mis = missingMap.get(k);
+
   const leader = assignStoreLeader(s, detailed);
   const pic = assignStorePic(s, detailed);
   const allPics = getAllStorePics(s, detailed, pic);
@@ -89,6 +116,45 @@ raw.stores41.forEach((s, idx) => {
   
   const totalClips = (s.affVideos || 0) + (s.selfVideos || 0);
 
+  // Gross & Net breakdown
+  const affGross = Math.round(ord ? (ord.aff_budget_gross || 0) : (s.affBudget || 0));
+  const affNet = Math.round(ord ? (ord.aff_budget_net || 0) : Math.round(affGross * 0.84175));
+  const selfGross = Math.round(ord ? (ord.self_budget_gross || 0) : (s.selfBudget || 0));
+  const selfNet = Math.round(ord ? (ord.self_budget_net || 0) : Math.round(selfGross * 0.84175));
+  const liveBudget = Math.round(ord ? ((ord.live_aff_budget || 0) + (ord.inhouse_live_budget || 0)) : 0);
+  const liveSessions = Math.round(ord ? ((ord.live_aff_sessions || 0) + (ord.inhouse_live_sessions || 0)) : 0);
+
+  const budgetGross = Math.round(s.totalBudget || (affGross + selfGross));
+  const budgetNet = act && typeof act.order_net === 'number'
+    ? Math.round(act.order_net)
+    : (affNet + selfNet);
+
+  // Paid vs FOC videos
+  const focVideos = mat ? (mat.foc || 0) : (mis ? (mis.foc || 0) : (s.tap || 0));
+  const paidVideos = mat ? (mat.cast || 0) : (mis ? (mis.cast || 0) : Math.max(0, (s.affVideos || 0) - focVideos));
+
+  // Actual spent & aired videos from File 3.2
+  const actualSpentNet = act ? Math.round(act.actual_cost || 0) : 0;
+  const actualBookedCount = act ? (act.actual_bookings || 0) : 0;
+  const airedInOct = airByStore.get(k) || 0;
+  const actualAiredVideos = Math.max(actualBookedCount, airedInOct);
+
+  // Financial risk status
+  let financialRiskStatus = 'NORMAL';
+  let financialRiskNotes = 'Trong hạn mức ngân sách Net cho phép.';
+  if (budgetNet === 0 && actualSpentNet > 0) {
+    financialRiskStatus = 'UNBUDGETED';
+    financialRiskNotes = `Báo động đỏ: Phát sinh thực chi ${formatVnd(actualSpentNet)} nhưng hạn mức Order Net = 0 ₫. Cần trình bổ sung phê duyệt ngay.`;
+  } else if (budgetNet > 0 && actualSpentNet > budgetNet) {
+    financialRiskStatus = 'OVERBUDGET';
+    financialRiskNotes = `Cảnh báo vượt trần: Thực chi ${formatVnd(actualSpentNet)} vượt hạn mức Order Net ${formatVnd(budgetNet)} (+${formatVnd(actualSpentNet - budgetNet)}).`;
+  } else if (budgetNet > 50000000 && actualSpentNet < budgetNet * 0.15) {
+    financialRiskStatus = 'SLOW_BURN';
+    financialRiskNotes = `Giải ngân chậm (${Math.round((actualSpentNet / budgetNet) * 100)}% hạn mức Net). Cần đẩy nhanh tiến độ booking KOC.`;
+  }
+
+  const nmvTarget = Math.round(ord ? (ord.nmv || 0) : (s.nmv || 0));
+
   const storeItem = {
     id: `store-b2c-${idx + 1}-${slug}`,
     storeOperationId: `SO-B2C-${String(idx + 1).padStart(3, '0')}`,
@@ -96,13 +162,31 @@ raw.stores41.forEach((s, idx) => {
     storeName: s.storeName,
     platform: platform,
     serviceModel: 'FULL_SERVICE',
-    difficultyTier: s.totalBudget > 200000000 ? 'Khó' : 'Tiêu chuẩn',
-    difficultyMultiplier: s.totalBudget > 200000000 ? 1.4 : 1.2,
+    difficultyTier: budgetGross > 200000000 ? 'Khó' : 'Tiêu chuẩn',
+    difficultyMultiplier: budgetGross > 200000000 ? 1.4 : 1.2,
     accountStatus: 'ACTIVE',
     category: cat,
-    monthlyTargetGmv: s.nmv,
-    monthlyBudget: Math.round(s.totalBudget),
-    accountOwnerName: s.growthPic || 'Growth Team',
+    monthlyTargetGmv: nmvTarget,
+    monthlyBudget: budgetGross,
+    budgetGross: budgetGross,
+    budgetNet: budgetNet,
+    budgetAffiliate: affGross,
+    budgetAffiliateGross: affGross,
+    budgetAffiliateNet: affNet,
+    budgetSelfChannel: selfGross,
+    budgetSelfChannelGross: selfGross,
+    budgetSelfChannelNet: selfNet,
+    budgetLive: liveBudget,
+    targetAffiliateContents: s.affVideos || 0,
+    targetSelfChannelContents: s.selfVideos || 0,
+    targetPaidVideos: paidVideos,
+    targetFocVideos: focVideos,
+    targetLiveSessions: liveSessions,
+    actualSpentNet: actualSpentNet,
+    actualAiredVideos: actualAiredVideos,
+    financialRiskStatus: financialRiskStatus,
+    financialRiskNotes: financialRiskNotes,
+    accountOwnerName: (ord && ord.account_pic) || s.accountPic || s.growthPic || 'Growth Team',
     b2cOwnerName: pic,
     assignedStaff: pic,
     hasBookingLeader: Boolean(leader),
@@ -111,17 +195,13 @@ raw.stores41.forEach((s, idx) => {
     assignedMembers: allPics.length > 0 ? allPics : [pic],
     b2cOwners: allPics.length > 0 ? allPics : [pic],
     assignmentNotes: leader
-      ? `Hạn mức: ${(s.totalBudget/1e6).toFixed(1)}M (${totalClips} video). Leader: ${leader}, PIC: ${pic}`
-      : `Hạn mức: ${(s.totalBudget/1e6).toFixed(1)}M (${totalClips} video). PIC phụ trách: ${pic} (Không có leader)`,
+      ? `Hạn mức Net: ${(budgetNet/1e6).toFixed(1)}M / Gross: ${(budgetGross/1e6).toFixed(1)}M (${totalClips} video). Leader: ${leader}, PIC: ${pic}`
+      : `Hạn mức Net: ${(budgetNet/1e6).toFixed(1)}M / Gross: ${(budgetGross/1e6).toFixed(1)}M (${totalClips} video). PIC phụ trách: ${pic} (Không có leader)`,
     isB2cManaged: true,
     requiresB2cPlan: true,
     growthPic: s.growthPic,
     contentPic: s.growthPic,
     mediaPic: 'Media Team',
-    budgetAffiliate: Math.round(s.affBudget),
-    budgetSelfChannel: Math.round(s.selfBudget),
-    targetAffiliateContents: s.affVideos,
-    targetSelfChannelContents: s.selfVideos,
     createdAt: '2026-10-01'
   };
 
@@ -129,12 +209,12 @@ raw.stores41.forEach((s, idx) => {
 
   if (leader === 'Nguyễn Thị Ngọc Tâm') {
     tamStoresCount++;
-    tamBudget += s.totalBudget;
+    tamBudget += budgetGross;
     tamVideos += totalClips;
     allPics.forEach(p => tamMembers.add(p));
   } else {
     directStoresCount++;
-    directBudget += s.totalBudget;
+    directBudget += budgetGross;
     directVideos += totalClips;
     allPics.forEach(p => directMembers.add(p));
   }
