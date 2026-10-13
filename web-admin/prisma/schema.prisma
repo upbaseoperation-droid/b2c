@@ -4,6 +4,20 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+// Hồ sơ contract hub; quyền truy cập được kiểm tra bởi API, không truy cập từ client.
+model ContractHubRecord {
+  id        String   @id
+  revision  Int      @default(1)
+  data      Json
+  updatedAt DateTime @default(now()) @db.Timestamp(3)
+  @@index([updatedAt])
+}
+
+model ContractWeSignBinding {
+  documentId String @id
+  contractId String
+}
+
 generator client {
   provider = "prisma-client-js"
 }

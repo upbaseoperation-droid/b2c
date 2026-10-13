@@ -46,6 +46,7 @@ export interface UserProfile {
   roleTitle: string;
   avatar: string;
   larkOpenId?: string;
+  larkTenantKey?: string;
   larkAvatarUrl?: string;
   loginProvider?: 'LARK' | 'GMAIL' | 'SANDBOX';
   partnerType?: 'BRAND' | 'KOC' | 'CTV';

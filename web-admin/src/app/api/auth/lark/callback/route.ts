@@ -33,20 +33,19 @@ export async function GET(request: NextRequest) {
         returnTo = sanitizeReturnTo(stateObj.returnTo);
       }
       const savedCsrf = request.cookies.get('lark_oauth_state')?.value;
-      if (savedCsrf && stateObj.csrf && savedCsrf !== stateObj.csrf) {
-        console.warn('[Lark SSO] CSRF token mismatch, but proceeding with caution in dev');
-      }
+      if (!savedCsrf || !stateObj.csrf || savedCsrf !== stateObj.csrf) return NextResponse.redirect(new URL('/login?error=invalid_state', appBaseUrl));
     } catch (e) {
-      console.warn('[Lark SSO] Failed to decode state payload:', e);
+      return NextResponse.redirect(new URL('/login?error=invalid_state', appBaseUrl));
     }
-  }
+  } else return NextResponse.redirect(new URL('/login?error=missing_state', appBaseUrl));
 
   try {
     // 1. Đổi code lấy Lark User Profile
     const rawLarkUser = await exchangeLarkCodeForUser(code);
     
     // 2. Map sang UserProfile của hệ thống B2C Ops Hub
-    const userProfile = resolveUserProfile(rawLarkUser);
+    if (process.env.LARK_TENANT_KEY && rawLarkUser.tenant_key !== process.env.LARK_TENANT_KEY) return NextResponse.redirect(new URL('/login?error=tenant_not_allowed', appBaseUrl));
+    const userProfile = { ...resolveUserProfile(rawLarkUser), loginProvider: 'LARK' as const, larkTenantKey: rawLarkUser.tenant_key };
 
     // 3. Mã hóa token phiên làm việc
     const sessionToken = encodeSessionToken(userProfile);

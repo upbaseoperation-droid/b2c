@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { randomBytes } from 'node:crypto';
 import { getLarkConfig, buildLarkAuthUrl, sanitizeReturnTo } from '@/lib/larkAuth';
 
 export const dynamic = 'force-dynamic';
@@ -18,7 +19,7 @@ export async function GET(request: NextRequest) {
 
   // Tạo CSRF State ngẫu nhiên kết hợp với returnTo
   const statePayload = {
-    csrf: Math.random().toString(36).substring(2, 15),
+    csrf: randomBytes(24).toString('base64url'),
     returnTo
   };
   const state = Buffer.from(JSON.stringify(statePayload)).toString('base64url');

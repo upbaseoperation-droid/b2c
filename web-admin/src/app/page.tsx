@@ -994,8 +994,6 @@ export default function App() {
               deals={deals}
               onSelectDeal={setSelectedDealForContract}
               onApproveAdvance={handleApproveAdvance}
-              onApproveFinal={handleApproveFinal}
-              onCreateDeal={handleDealCreated}
             />
           </KeepAliveTab>
 

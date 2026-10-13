@@ -77,7 +77,8 @@ export async function renderTemplate(id: string, expectedHash: string, values: R
   for (const part of Object.keys(zip.files).filter(p => /^word\/(document|header\d+|footer\d+)\.xml$/.test(p)).sort()) {
     const xml = await zip.file(part)!.async('string'); let index = 0;
     const filled = xml.replace(/<w:p\b[^>]*>[\s\S]*?<\/w:p>/g, paragraph => {
-      const fields = template.fields.filter(f => f.part === part && f.paragraph === index++).sort((a, b) => (b.start || 0) - (a.start || 0));
+      const paragraphIndex = index++;
+      const fields = template.fields.filter(f => f.part === part && f.paragraph === paragraphIndex).sort((a, b) => (b.start || 0) - (a.start || 0));
       let next = paragraph;
       for (const field of fields) { const value = values[field.key]; if (value?.trim()) next = replaceRange(next, field.start || 0, field.end || 0, value); }
       texts.push(paragraphText(next)); return next;

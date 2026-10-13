@@ -19,11 +19,18 @@ export async function getContract(id: string) { const record = (await listContra
 export async function saveContract(record: ContractRecord, expected?: number) {
   const next = structuredClone(record); next.revision = expected === undefined ? 1 : expected + 1;
   if (!local()) {
-    if (expected === undefined) await prisma.$executeRaw`INSERT INTO "ContractHubRecord" (id, revision, data, "updatedAt") VALUES (${next.id}, 1, ${JSON.stringify(next)}::jsonb, NOW())`;
-    else {
-      const count = await prisma.$executeRaw`UPDATE "ContractHubRecord" SET revision=${next.revision}, data=${JSON.stringify(next)}::jsonb, "updatedAt"=NOW() WHERE id=${next.id} AND revision=${expected}`;
-      requireCondition(count === 1, 'Hồ sơ đã được người khác cập nhật. Vui lòng tải lại.', 409);
-    }
+    await prisma.$transaction(async tx => {
+      for (const attempt of next.signing) {
+        const binding = await tx.$queryRaw<Array<{ contractId: string }>>`SELECT "contractId" FROM "ContractWeSignBinding" WHERE "documentId"=${attempt.documentId}`;
+        requireCondition(!binding.length || binding[0].contractId === next.id, 'Luồng weSign đã liên kết hồ sơ khác.', 409);
+        if (!binding.length) await tx.$executeRaw`INSERT INTO "ContractWeSignBinding" ("documentId", "contractId") VALUES (${attempt.documentId}, ${next.id})`;
+      }
+      if (expected === undefined) await tx.$executeRaw`INSERT INTO "ContractHubRecord" (id, revision, data, "updatedAt") VALUES (${next.id}, 1, ${JSON.stringify(next)}::jsonb, NOW())`;
+      else {
+        const count = await tx.$executeRaw`UPDATE "ContractHubRecord" SET revision=${next.revision}, data=${JSON.stringify(next)}::jsonb, "updatedAt"=NOW() WHERE id=${next.id} AND revision=${expected}`;
+        requireCondition(count === 1, 'Hồ sơ đã được người khác cập nhật. Vui lòng tải lại.', 409);
+      }
+    });
     return next;
   }
   await mkdir(directory(), { recursive: true });
@@ -33,6 +40,7 @@ export async function saveContract(record: ContractRecord, expected?: number) {
   const temp = path.join(directory(), `${randomUUID()}.tmp`);
   try {
     const records = await localRecords(); const index = records.findIndex(r => r.id === next.id);
+    requireCondition(!records.some(r => r.id !== next.id && r.signing.some(s => next.signing.some(n => n.documentId === s.documentId))), 'Luồng weSign đã liên kết hồ sơ khác.', 409);
     requireCondition(expected === undefined ? index < 0 : index >= 0 && records[index].revision === expected, 'Hồ sơ đã được người khác cập nhật. Vui lòng tải lại.', 409);
     if (index < 0) records.push(next); else records[index] = next;
     await writeFile(temp, JSON.stringify(records), { mode: 0o600 }); await rename(temp, path.join(directory(), 'records.json')); return next;

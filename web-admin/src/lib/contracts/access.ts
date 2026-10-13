@@ -22,6 +22,7 @@ export function actorFromRequest(req: NextRequest): ContractActor {
   if (process.env.NODE_ENV === 'production') {
     requireCondition(process.env.AUTH_SECRET || process.env.SESSION_SECRET, 'Chưa cấu hình khóa bảo vệ phiên.', 503);
     requireCondition(user.loginProvider === 'LARK' && user.larkOpenId && !user.larkOpenId.startsWith('ou_sandbox_'), 'Module hợp đồng yêu cầu phiên Lark thực.', 401);
+    requireCondition(process.env.LARK_TENANT_KEY && user.larkTenantKey === process.env.LARK_TENANT_KEY, 'Chưa xác minh tổ chức Lark được phép.', 403);
   }
   // Không lấy role/permissions từ giao diện hoặc suy ra quyền theo email/tên.
   const grant = configuredActors().find(a => a.id === user.larkOpenId || a.id === user.id);

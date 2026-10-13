@@ -17,6 +17,7 @@ export interface LarkConfig {
 
 export interface LarkUserRaw {
   open_id: string;
+  tenant_key?: string;
   union_id?: string;
   user_id?: string;
   name: string;
@@ -129,7 +130,8 @@ export async function exchangeLarkCodeForUser(code: string): Promise<LarkUserRaw
     email: userData.enterprise_email || userData.email,
     enterprise_email: userData.enterprise_email,
     avatar_url: userData.avatar_url || userData.avatar_big || userData.avatar_thumb,
-    mobile: userData.mobile
+    mobile: userData.mobile,
+    tenant_key: userData.tenant_key
   };
 }
 

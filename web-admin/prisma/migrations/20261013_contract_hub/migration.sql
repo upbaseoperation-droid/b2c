@@ -5,3 +5,7 @@ CREATE TABLE "ContractHubRecord" (
   "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX "ContractHubRecord_updatedAt_idx" ON "ContractHubRecord" ("updatedAt");
+CREATE TABLE "ContractWeSignBinding" (
+  "documentId" TEXT PRIMARY KEY,
+  "contractId" TEXT NOT NULL
+);

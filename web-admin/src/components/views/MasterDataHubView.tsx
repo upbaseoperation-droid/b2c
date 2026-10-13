@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { ChannelTag } from '../ui';
+import { formatVndShort } from '../../lib/format';
 import { 
   Search, 
   ExternalLink, 
@@ -26,7 +27,13 @@ import {
   ArrowRight,
   Database,
   RefreshCw,
-  CloudDownload
+  CloudDownload,
+  Edit3,
+  ShieldCheck,
+  Clock,
+  UserCheck,
+  Users,
+  Layers
 } from 'lucide-react';
 import { UserProfile, BrandDetail, StorePortfolioItem, KocItem, MasterContentPillar } from '../../lib/types';
 import { INITIAL_BRANDS, INITIAL_STORE_PORTFOLIOS, USERS, INITIAL_KOCS, INITIAL_PUSH_PRODUCTS } from '../../lib/mockData';
@@ -119,8 +126,14 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
 
   // Brand state (Tải 625 thương hiệu chuẩn Upbase Master Data)
   const [brandList, setBrandList] = useState<BrandDetail[]>(() => 
-    UPBASE_BRANDS_MASTER.length > 0 ? UPBASE_BRANDS_MASTER : brands
+    brands && brands.length > 0 ? brands : INITIAL_BRANDS
   );
+
+  React.useEffect(() => {
+    if (brands && brands.length > 0) {
+      setBrandList(brands);
+    }
+  }, [brands]);
   const [brandSearch, setBrandSearch] = useState('');
   const [selectedBrandCategory, setSelectedBrandCategory] = useState('ALL');
   const [selectedBrandStatus, setSelectedBrandStatus] = useState('ALL');
@@ -172,7 +185,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
 
   // Store state (Đồng bộ danh mục 353 gian hàng chuẩn Upbase Master Data)
   const [storeList, setStoreList] = useState<StorePortfolioItem[]>(() => 
-    stores && stores.length > 0 ? stores : UPBASE_STORES_MASTER
+    stores && stores.length > 0 ? stores : INITIAL_STORE_PORTFOLIOS
   );
 
   React.useEffect(() => {
@@ -831,216 +844,74 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
 
   return (
     <div className="space-y-5">
-      {/* Sub-Tabs Navigation */}
-      <div className="bg-white border border-slate-200 rounded-xl px-5 pt-3 shadow-xs">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-100 gap-2">
+      {/* Sub-Tabs Navigation: Clean, elevated pill layout */}
+      <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-100 gap-2 mb-3">
           <div>
-            <h1 className="text-base font-semibold text-slate-900">Dữ liệu gốc</h1>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Quản lý các danh mục nền tảng: Thương hiệu, gian hàng, sản phẩm, trụ cột nội dung, KOC và nhân sự
+            <h1 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+              <Database className="w-4 h-4 text-indigo-600" />
+              <span>Dữ liệu gốc (Master Data)</span>
+            </h1>
+            <p className="text-2xs text-slate-500 mt-0.5">
+              Hệ thống danh mục nền tảng: 42 Thương hiệu B2C, 69 Gian hàng sàn, Sản phẩm, Trụ cột nội dung và KOC
             </p>
+          </div>
+          <div className="flex items-center gap-2 self-start sm:self-auto">
+            <span className="text-3xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200 font-mono">
+              B2C Master Registry
+            </span>
           </div>
         </div>
 
-        {/* Minimalist Sub-Tabs */}
-        <div className="flex space-x-6 overflow-x-auto text-xs font-medium pt-1">
-          <button
-            type="button"
-            onClick={() => setActiveSubTab('brands')}
-            className={`py-3 border-b-2 transition-colors whitespace-nowrap flex items-center gap-2 ${
-              activeSubTab === 'brands'
-                ? 'border-slate-900 text-slate-900 font-semibold'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            <span>Thương hiệu</span>
-            <span className="text-2xs font-mono px-1.5 py-0.2 rounded bg-slate-100 text-slate-600">
-              {brandList.length}
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveSubTab('stores')}
-            className={`py-3 border-b-2 transition-colors whitespace-nowrap flex items-center gap-2 ${
-              activeSubTab === 'stores'
-                ? 'border-slate-900 text-slate-900 font-semibold'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            <span>Gian hàng</span>
-            <span className="text-2xs font-mono px-1.5 py-0.2 rounded bg-slate-100 text-slate-600">
-              {storeList.length}
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveSubTab('mindmap')}
-            className={`py-3 border-b-2 transition-colors whitespace-nowrap flex items-center gap-2 ${
-              activeSubTab === 'mindmap'
-                ? 'border-blue-600 text-blue-600 font-semibold'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            <GitFork className="w-3.5 h-3.5 text-blue-600" />
-            <span>Sơ đồ Mindmap</span>
-            <span className="text-2xs font-semibold px-1.5 py-0.2 rounded bg-blue-50 text-blue-700">
-              Cây phân cấp
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveSubTab('products')}
-            className={`py-3 border-b-2 transition-colors whitespace-nowrap flex items-center gap-2 ${
-              activeSubTab === 'products'
-                ? 'border-slate-900 text-slate-900 font-semibold'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            <span>Sản phẩm</span>
-            <span className="text-2xs font-mono px-1.5 py-0.2 rounded bg-slate-100 text-slate-600">
-              {productList.length}
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveSubTab('pillars')}
-            className={`py-3 border-b-2 transition-colors whitespace-nowrap flex items-center gap-2 ${
-              activeSubTab === 'pillars'
-                ? 'border-slate-900 text-slate-900 font-semibold'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            <span>Trụ cột nội dung</span>
-            <span className="text-2xs font-mono px-1.5 py-0.2 rounded bg-slate-100 text-slate-600">
-              {pillarList.length}
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveSubTab('cast-tiers')}
-            className={`py-3 border-b-2 transition-colors whitespace-nowrap flex items-center gap-2 ${
-              activeSubTab === 'cast-tiers'
-                ? 'border-slate-900 text-slate-900 font-semibold'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            <span>Bậc cast & Phân nhóm</span>
-            <span className="text-2xs font-mono px-1.5 py-0.2 rounded bg-slate-100 text-slate-600">
-              {UPBASE_CAST_TIERS.length}
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveSubTab('koc-niches')}
-            className={`py-3 border-b-2 transition-colors whitespace-nowrap flex items-center gap-2 ${
-              activeSubTab === 'koc-niches'
-                ? 'border-slate-900 text-slate-900 font-semibold'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            <span>Tệp kênh KOC</span>
-            <span className="text-2xs font-mono px-1.5 py-0.2 rounded bg-slate-100 text-slate-600">
-              {UPBASE_KOC_NICHES.length}
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveSubTab('video-formats')}
-            className={`py-3 border-b-2 transition-colors whitespace-nowrap flex items-center gap-2 ${
-              activeSubTab === 'video-formats'
-                ? 'border-slate-900 text-slate-900 font-semibold'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            <span>Định dạng video</span>
-            <span className="text-2xs font-mono px-1.5 py-0.2 rounded bg-slate-100 text-slate-600">
-              {UPBASE_VIDEO_FORMATS.length}
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveSubTab('kocs')}
-            className={`py-3 border-b-2 transition-colors whitespace-nowrap flex items-center gap-2 ${
-              activeSubTab === 'kocs'
-                ? 'border-slate-900 text-slate-900 font-semibold'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            <span>Danh bạ KOC</span>
-            <span className="text-2xs font-mono px-1.5 py-0.2 rounded bg-slate-100 text-slate-600">
-              {kocs.length}
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveSubTab('staff')}
-            className={`py-3 border-b-2 transition-colors whitespace-nowrap flex items-center gap-2 ${
-              activeSubTab === 'staff'
-                ? 'border-slate-900 text-slate-900 font-semibold'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            <span>Nhân sự Booking</span>
-            <span className="text-2xs font-mono px-1.5 py-0.2 rounded bg-slate-100 text-slate-600">
-              {UPBASE_STAFF_MASTER.length}
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveSubTab('sla-kpi')}
-            className={`py-3 border-b-2 transition-colors whitespace-nowrap flex items-center gap-2 ${
-              activeSubTab === 'sla-kpi'
-                ? 'border-slate-900 text-slate-900 font-semibold'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            <span>Chuẩn SLA & KPI</span>
-            <span className="text-2xs font-mono px-1.5 py-0.2 rounded bg-indigo-50 text-indigo-700 font-semibold">
-              {UPBASE_MASTER_SLA_CONFIG.length + UPBASE_MASTER_KPI_DEFINITIONS.length}
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveSubTab('assignment-history')}
-            className={`py-3 border-b-2 transition-colors whitespace-nowrap flex items-center gap-2 ${
-              activeSubTab === 'assignment-history'
-                ? 'border-slate-900 text-slate-900 font-semibold'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            <span>Lịch sử & Backup PIC</span>
-            <span className="text-2xs font-mono px-1.5 py-0.2 rounded bg-amber-50 text-amber-700 font-semibold">
-              {INITIAL_STORE_ASSIGNMENT_HISTORY.length}
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveSubTab('audit-trail')}
-            className={`py-3 border-b-2 transition-colors whitespace-nowrap flex items-center gap-2 ${
-              activeSubTab === 'audit-trail'
-                ? 'border-slate-900 text-slate-900 font-semibold'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            <span>Nhật ký Audit</span>
-            <span className="text-2xs font-mono px-1.5 py-0.2 rounded bg-slate-100 text-slate-700 font-semibold">
-              {INITIAL_AUDIT_LOGS.length}
-            </span>
-          </button>
+        {/* Modern Pill Sub-Tabs */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs font-medium">
+          {[
+            { id: 'brands', label: 'Thương hiệu', count: brandList.length, icon: Building2 },
+            { id: 'stores', label: 'Gian hàng', count: storeList.length, icon: Store },
+            { id: 'mindmap', label: 'Sơ đồ Mindmap', count: 'Cây phân cấp', icon: GitFork, isSpecial: true },
+            { id: 'products', label: 'Sản phẩm', count: productList.length, icon: ShoppingBag },
+            { id: 'pillars', label: 'Trụ cột nội dung', count: pillarList.length, icon: BookOpen },
+            { id: 'cast-tiers', label: 'Bậc cast', count: UPBASE_CAST_TIERS.length, icon: Shield },
+            { id: 'koc-niches', label: 'Tệp kênh', count: UPBASE_KOC_NICHES.length, icon: Tag },
+            { id: 'video-formats', label: 'Định dạng video', count: UPBASE_VIDEO_FORMATS.length, icon: Layers },
+            { id: 'kocs', label: 'Danh bạ KOC', count: kocs.length, icon: Users },
+            { id: 'staff', label: 'Nhân sự Booking', count: UPBASE_STAFF_MASTER.length, icon: UserCheck },
+            { id: 'sla-kpi', label: 'Chuẩn SLA & KPI', count: UPBASE_MASTER_SLA_CONFIG.length + UPBASE_MASTER_KPI_DEFINITIONS.length, icon: ShieldCheck },
+            { id: 'assignment-history', label: 'Lịch sử PIC', count: INITIAL_STORE_ASSIGNMENT_HISTORY.length, icon: Clock },
+            { id: 'audit-trail', label: 'Nhật ký Audit', count: INITIAL_AUDIT_LOGS.length, icon: Archive },
+          ].map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeSubTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveSubTab(tab.id as any)}
+                className={`px-3 py-2 rounded-xl text-xs font-medium transition-all whitespace-nowrap flex items-center gap-2 cursor-pointer ${
+                  isActive
+                    ? 'bg-slate-900 text-white shadow-2xs font-semibold'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                }`}
+              >
+                <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-indigo-300' : 'text-slate-400'}`} />
+                <span>{tab.label}</span>
+                <span
+                  className={`text-3xs font-mono px-1.5 py-0.2 rounded-md transition-colors ${
+                    isActive
+                      ? 'bg-white/20 text-white font-semibold'
+                      : tab.isSpecial
+                      ? 'bg-blue-50 text-blue-700 font-semibold'
+                      : 'bg-slate-100 text-slate-500'
+                  }`}
+                >
+                  {tab.count}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
+
 
       {/* SUB-TAB: SƠ ĐỒ MINDMAP (BRAND → GIAN HÀNG → PIC → SKU) */}
       {activeSubTab === 'mindmap' && (
@@ -1079,79 +950,54 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
       {/* SUB-TAB 1: THƯƠNG HIỆU */}
       {activeSubTab === 'brands' && (
         <div className="space-y-4">
-          {/* Banner hướng dẫn nghiệp vụ: Tách rời Danh sách Brand & Hồ sơ thương hiệu */}
-          <div className="bg-gradient-to-r from-slate-900 to-indigo-950 text-white p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm border border-slate-800">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center text-indigo-300 shrink-0">
-                <Building2 className="w-5 h-5" />
-              </div>
-              <div>
-                <h2 className="text-sm font-semibold flex items-center gap-2">
-                  Danh Sách Thương Hiệu (Master Brand Registry)
-                  <span className="text-2xs font-normal px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-300">
-                    Đồng bộ Lark Base
-                  </span>
-                </h2>
-                <p className="text-xs text-slate-300 mt-0.5">
-                  Danh sách được tinh giản tối đa: Cho phép tạo nhanh tên thương hiệu hoặc đồng bộ hàng loạt từ Lark Base. Phần thiết lập hồ sơ thương hiệu (Guidelines, trần thù lao Creator, Hero SKU, hồ sơ pháp lý) được tách riêng thành màn hình độc lập.
-                </p>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => {
-                if (onNavigateToBrandProfile) {
-                  onNavigateToBrandProfile('ALL');
-                } else if (onNotify) {
-                  onNotify('Chuyển sang Màn hình Hồ sơ thương hiệu', 'info');
-                }
-              }}
-              className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold transition flex items-center gap-2 shrink-0 shadow-xs border border-indigo-400/30 cursor-pointer"
-            >
-              <BookOpen className="w-4 h-4" />
-              <span>Mở Màn hình Hồ sơ thương hiệu</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-
-          {/* Enhanced Brands Multi-Filter Bar */}
-          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs space-y-3">
-            {/* Top row: Search + Quick Add + Lark Sync button */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div className="relative flex-1 max-w-md">
-                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  placeholder="Tìm thương hiệu, công ty chủ quản, mã brand..."
-                  value={brandSearch}
-                  onChange={(e) => {
-                    setBrandSearch(e.target.value);
-                    setBrandPage(1);
-                  }}
-                  className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-slate-800 bg-slate-50/50"
-                />
-                {brandSearch && (
-                  <button
-                    onClick={() => setBrandSearch('')}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                )}
+          {/* 1. Header & Quick Stats */}
+          <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-xs">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center font-bold shadow-2xs">
+                  <Building2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                    Danh Mục Thương Hiệu B2C
+                    <span className="text-2xs font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                      42 Thương hiệu thực tế
+                    </span>
+                  </h2>
+                  <p className="text-2xs text-slate-500 mt-0.5">
+                    Quản lý danh mục nhãn hàng B2C, gắn kết gian hàng sàn thương mại và theo dõi hồ sơ Brand Guideline
+                  </p>
+                </div>
               </div>
 
-              <div className="flex items-center gap-2 shrink-0">
+              {/* Action buttons */}
+              <div className="flex items-center gap-2 flex-wrap">
                 <button
                   type="button"
                   onClick={() => {
                     setLarkRawText('');
                     setIsLarkSyncModalOpen(true);
                   }}
-                  className="px-3 py-2 bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 text-xs font-semibold rounded-xl transition flex items-center gap-1.5 shadow-xs cursor-pointer"
-                  title="Nhập hàng loạt hoặc đồng bộ từ Lark Base"
+                  className="px-3 py-2 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 text-xs font-semibold rounded-xl transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
                 >
-                  <Database className="w-3.5 h-3.5 text-sky-600" />
-                  <span>Nhập từ Lark Base</span>
+                  <Database className="w-3.5 h-3.5 text-slate-600" />
+                  <span>Đồng bộ Lark Base</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (onNavigateToBrandProfile) {
+                      onNavigateToBrandProfile('ALL');
+                    } else if (onNotify) {
+                      onNotify('Chuyển sang Màn hình Hồ sơ thương hiệu', 'info');
+                    }
+                  }}
+                  className="px-3 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-semibold rounded-xl transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
+                >
+                  <BookOpen className="w-3.5 h-3.5 text-indigo-600" />
+                  <span>Hồ sơ thương hiệu</span>
+                  <ArrowRight className="w-3 h-3 text-indigo-500" />
                 </button>
 
                 <button
@@ -1162,252 +1008,337 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                     setQuickBrandCategory(brandCategories[0] || 'Mỹ phẩm & Làm đẹp');
                     setIsQuickBrandModalOpen(true);
                   }}
-                  className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-xl transition flex items-center gap-1.5 shadow-xs cursor-pointer"
+                  className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-xl transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
                 >
                   <Plus className="w-3.5 h-3.5" />
-                  <span>Thêm tên Brand</span>
+                  <span>Thêm thương hiệu</span>
                 </button>
               </div>
             </div>
 
-            {/* Bottom row: Multi-dimension filters */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-2 pt-2 border-t border-slate-100 text-xs">
-              <div>
-                <label className="text-3xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">
-                  1. Ngành hàng ({brandCategories.length}):
-                </label>
+            {/* Quick 4 Stats */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 pt-4">
+              <div className="bg-slate-50/70 border border-slate-200/60 rounded-xl p-3">
+                <div className="text-3xs uppercase tracking-wider font-semibold text-slate-400">Tổng thương hiệu B2C</div>
+                <div className="text-xl font-bold text-slate-900 mt-0.5">{brandList.length}</div>
+                <div className="text-3xs text-emerald-600 font-medium mt-0.5 flex items-center gap-1">
+                  <CheckCircle2 className="w-3 h-3" />
+                  <span>Đã chuẩn hóa 100%</span>
+                </div>
+              </div>
+
+              <div className="bg-slate-50/70 border border-slate-200/60 rounded-xl p-3">
+                <div className="text-3xs uppercase tracking-wider font-semibold text-slate-400">Gian hàng trực thuộc</div>
+                <div className="text-xl font-bold text-slate-900 mt-0.5">
+                  {storeList.length}
+                </div>
+                <div className="text-3xs text-blue-600 font-medium mt-0.5">
+                  {storeList.filter(s => s.platform.includes('TikTok')).length} TikTok Shop • {storeList.filter(s => s.platform.includes('Shopee')).length} Shopee Mall
+                </div>
+              </div>
+
+              <div className="bg-slate-50/70 border border-slate-200/60 rounded-xl p-3">
+                <div className="text-3xs uppercase tracking-wider font-semibold text-slate-400">Tổng ngân sách tháng</div>
+                <div className="text-xl font-bold text-slate-900 font-mono mt-0.5">
+                  {formatVndShort(brandList.reduce((s, b) => s + (b.planBudget || b.monthlyBudget || 0), 0))}
+                </div>
+                <div className="text-3xs text-slate-500 font-medium mt-0.5">Hạn mức chi tiêu tháng 10/2026</div>
+              </div>
+
+              <div className="bg-slate-50/70 border border-slate-200/60 rounded-xl p-3">
+                <div className="text-3xs uppercase tracking-wider font-semibold text-slate-400">Hồ sơ thương hiệu</div>
+                <div className="text-xl font-bold text-indigo-700 mt-0.5">
+                  {brandList.filter(b => b.brandGuideline && b.brandGuideline.length > 5).length} <span className="text-xs text-slate-400 font-normal">/ {brandList.length}</span>
+                </div>
+                <div className="text-3xs text-indigo-600 font-medium mt-0.5">Có guideline & tiêu chuẩn</div>
+              </div>
+            </div>
+          </div>
+
+          {/* 2. Filter & Search Toolbar */}
+          <div className="bg-white p-3.5 rounded-2xl border border-slate-200/90 shadow-xs space-y-3">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+              {/* Search */}
+              <div className="relative flex-1 max-w-md">
+                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Tìm thương hiệu, mã, ngành hàng, PIC..."
+                  value={brandSearch}
+                  onChange={(e) => {
+                    setBrandSearch(e.target.value);
+                    setBrandPage(1);
+                  }}
+                  className="w-full pl-8 pr-7 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 bg-slate-50/70 font-medium text-slate-800 transition"
+                />
+                {brandSearch && (
+                  <button
+                    onClick={() => setBrandSearch('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
+              {/* Filters */}
+              <div className="flex items-center gap-2 flex-wrap">
                 <select
                   value={selectedBrandCategory}
                   onChange={(e) => {
                     setSelectedBrandCategory(e.target.value);
                     setBrandPage(1);
                   }}
-                  className="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-slate-50 font-medium text-slate-800 focus:outline-none focus:border-slate-800"
+                  className="text-xs border border-slate-200 rounded-xl px-2.5 py-2 bg-slate-50 font-medium text-slate-700 focus:outline-none focus:border-indigo-500"
                 >
-                  <option value="ALL">Tất cả ngành hàng</option>
+                  <option value="ALL">Tất cả ngành hàng ({brandCategories.length})</option>
                   {brandCategories.map(cat => (
                     <option key={cat} value={cat}>{cat}</option>
                   ))}
                 </select>
-              </div>
 
-              <div>
-                <label className="text-3xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">
-                  2. Trạng thái vận hành:
-                </label>
                 <select
                   value={selectedBrandStatus}
                   onChange={(e) => {
                     setSelectedBrandStatus(e.target.value);
                     setBrandPage(1);
                   }}
-                  className="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-slate-50 font-medium text-slate-800 focus:outline-none focus:border-slate-800"
+                  className="text-xs border border-slate-200 rounded-xl px-2.5 py-2 bg-slate-50 font-medium text-slate-700 focus:outline-none focus:border-indigo-500"
                 >
                   <option value="ALL">Tất cả trạng thái</option>
-                  <option value="ACTIVE">Đang hoạt động (ACTIVE)</option>
-                  <option value="PAUSED">Tạm dừng (PAUSED)</option>
-                  <option value="UPCOMING">Sắp diễn ra (UPCOMING)</option>
+                  <option value="ACTIVE">Đang hợp tác</option>
+                  <option value="PAUSED">Tạm dừng</option>
                 </select>
-              </div>
 
-              <div>
-                <label className="text-3xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">
-                  3. Nhân sự phụ trách (PIC):
-                </label>
-                <select
-                  value={selectedBrandPic}
-                  onChange={(e) => {
-                    setSelectedBrandPic(e.target.value);
-                    setBrandPage(1);
-                  }}
-                  className="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-slate-50 font-medium text-slate-800 focus:outline-none focus:border-slate-800"
-                >
-                  <option value="ALL">Tất cả nhân sự phụ trách</option>
-                  {brandPics.map(pic => (
-                    <option key={pic} value={pic}>{pic}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="text-3xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">
-                  4. Quy mô Ngân sách tháng:
-                </label>
                 <select
                   value={selectedBrandBudgetTier}
                   onChange={(e) => {
                     setSelectedBrandBudgetTier(e.target.value);
                     setBrandPage(1);
                   }}
-                  className="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-slate-50 font-medium text-slate-800 focus:outline-none focus:border-slate-800"
+                  className="text-xs border border-slate-200 rounded-xl px-2.5 py-2 bg-slate-50 font-medium text-slate-700 focus:outline-none focus:border-indigo-500"
                 >
                   <option value="ALL">Mọi quy mô ngân sách</option>
-                  <option value="TIER_TOP">Top chiến lược (&gt; 100M)</option>
+                  <option value="TIER_TOP">Trọng điểm (&gt; 100M)</option>
                   <option value="TIER_MID">Trung bình (50M - 100M)</option>
                   <option value="TIER_LOW">Khởi tạo (&lt; 50M)</option>
                   <option value="TIER_ZERO">Chưa có ngân sách (0đ)</option>
                 </select>
-              </div>
 
-              <div className="flex items-end">
-                {isBrandFiltered ? (
+                {isBrandFiltered && (
                   <button
                     type="button"
                     onClick={handleResetBrandFilters}
-                    className="w-full py-1.5 px-3 rounded-lg border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 text-xs font-semibold transition flex items-center justify-center gap-1.5"
+                    className="py-2 px-3 rounded-xl border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 text-xs font-semibold transition flex items-center gap-1 cursor-pointer"
                   >
                     <RotateCcw className="w-3.5 h-3.5" />
-                    <span>Xóa bộ lọc</span>
+                    <span>Đặt lại</span>
                   </button>
-                ) : (
-                  <div className="text-2xs text-slate-400 px-2 py-1.5 flex items-center gap-1">
-                    <Filter className="w-3.5 h-3.5 text-slate-400" />
-                    <span>Bộ lọc đa chiều</span>
-                  </div>
                 )}
               </div>
             </div>
 
-            {/* Filter Results Summary */}
+            {/* Results Counter */}
             <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-2xs text-slate-500">
               <div className="flex items-center gap-2">
                 <span>
-                  Tìm thấy <strong className="text-slate-900 font-bold">{filteredBrands.length}</strong> / {brandList.length} thương hiệu
+                  Đang hiển thị <strong className="text-slate-900 font-bold">{filteredBrands.length}</strong> / {brandList.length} thương hiệu B2C
                 </span>
                 {isBrandFiltered && (
-                  <span className="px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200 font-semibold text-3xs">
+                  <span className="px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 font-semibold text-3xs">
                     Đang lọc kết quả
                   </span>
                 )}
               </div>
               <span className="text-slate-400">
-                Hiển thị trang {brandPage} / {totalBrandPages} (25 thương hiệu/trang)
+                Trang {brandPage} / {totalBrandPages} (25 thương hiệu/trang)
               </span>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 text-slate-600 border-b border-slate-200 font-semibold text-2xs">
-                <tr>
-                  <th className="py-3 px-4">Tên thương hiệu</th>
-                  <th className="py-3 px-4">Doanh nghiệp chủ quản</th>
-                  <th className="py-3 px-4">Ngành hàng</th>
-                  <th className="py-3 px-4 text-center">Số gian hàng</th>
-                  <th className="py-3 px-4">Hồ sơ thương hiệu</th>
-                  <th className="py-3 px-4 text-center">Trạng thái</th>
-                  <th className="py-3 px-4 text-right">Thao tác</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {currentBrands.map(b => (
-                  <tr key={b.id} className="hover:bg-slate-50/70 transition-colors">
-                    <td className="py-3 px-4">
-                      <div className="font-semibold text-slate-900">{b.name}</div>
-                      <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                        <span className="text-2xs text-slate-400 font-mono">{b.code || b.id}</span>
-                        {b.platforms && b.platforms.length > 0 && (
-                          <div className="flex items-center gap-1">
-                            {b.platforms.map(p => (
-                              <span key={p} className="px-1.5 py-0.2 rounded text-3xs font-medium bg-slate-100 text-slate-600 border border-slate-200">
-                                {p.replace(' Mall', '').replace(' Shop', '')}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </td>
-                    <td className="py-3 px-4 text-slate-700">{b.companyName || b.name}</td>
-                    <td className="py-3 px-4 text-slate-600">{b.category}</td>
-                    <td className="py-3 px-4 text-center">
-                      <div className="font-mono font-semibold text-slate-900">
-                        {b.storeCount || b.stores?.length || 0}
-                      </div>
-                      {(b.liveStoreCount !== undefined || b.offStoreCount !== undefined) && (
-                        <div className="text-3xs text-slate-400 mt-0.5">
-                          {b.liveStoreCount || 0} Live • {b.offStoreCount || 0} Off
-                        </div>
-                      )}
-                    </td>
-                    <td className="py-3 px-4">
-                      {(() => {
-                        const hasProfile = b.profileStatus === 'CONFIGURED' || (b.brandGuideline && b.brandGuideline !== 'Tài liệu hướng dẫn nhãn hàng' && b.brandGuideline.length > 5);
-                        return (
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className={`px-2 py-0.5 rounded text-3xs font-semibold ${
-                              hasProfile 
-                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
-                                : 'bg-amber-50 text-amber-700 border border-amber-200'
-                            }`}>
-                              {hasProfile ? 'Đã có hồ sơ' : 'Chưa thiết lập'}
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                if (onNavigateToBrandProfile) {
-                                  onNavigateToBrandProfile(b.name);
-                                } else if (onNotify) {
-                                  onNotify(`Chuyển đến màn hình hồ sơ thương hiệu: ${b.name}`, 'info');
-                                }
-                              }}
-                              className="px-2 py-0.5 text-3xs font-semibold text-indigo-700 hover:text-indigo-900 bg-indigo-50 hover:bg-indigo-100 rounded border border-indigo-200 transition flex items-center gap-1 shrink-0 cursor-pointer"
-                              title="Mở màn hình hồ sơ thương hiệu để cấu hình chi tiết"
-                            >
-                              <BookOpen className="w-3 h-3 text-indigo-600" />
-                              <span>{hasProfile ? 'Xem hồ sơ' : 'Thiết lập'}</span>
-                            </button>
-                          </div>
-                        );
-                      })()}
-                    </td>
-                    <td className="py-3 px-4 text-center">
-                      <span className={`px-2 py-0.5 rounded text-2xs font-semibold ${
-                        b.status === 'ACTIVE' 
-                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
-                          : 'bg-slate-100 text-slate-500 border border-slate-200'
-                      }`}>
-                        {b.status === 'ACTIVE' ? 'Đang hợp tác' : 'Đã dừng / Hết HĐ'}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4 text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setEditingBrand(b);
-                            setEditBrandName(b.name);
-                            setEditBrandCode(b.code || '');
-                            setEditBrandCategory(b.category || 'Mỹ phẩm & Làm đẹp');
-                            setEditBrandStatus(b.status || 'ACTIVE');
-                            setIsEditBrandModalOpen(true);
-                          }}
-                          className="text-slate-600 hover:text-slate-900 font-medium text-xs px-2 py-1 rounded hover:bg-slate-100 transition cursor-pointer"
-                        >
-                          Sửa
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setDeletingBrand(b);
-                            setDeleteConfirmText('');
-                          }}
-                          className="text-rose-600 hover:text-rose-800 font-medium text-xs px-2 py-1 rounded hover:bg-rose-50 transition flex items-center gap-1 cursor-pointer"
-                          title="Xóa hoặc lưu trữ thương hiệu"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                          <span>Xóa</span>
-                        </button>
-                      </div>
-                    </td>
+          {/* 3. Brands Table */}
+          <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="bg-slate-50/80 text-slate-600 font-semibold border-b border-slate-200 text-2xs">
+                    <th className="py-3.5 px-4 min-w-[220px]">Thương hiệu & Mã</th>
+                    <th className="py-3.5 px-3 min-w-[150px]">Ngành hàng</th>
+                    <th className="py-3.5 px-3 text-center min-w-[140px]">Gian hàng trực thuộc</th>
+                    <th className="py-3.5 px-3 min-w-[160px]">Chuyên viên phụ trách</th>
+                    <th className="py-3.5 px-3 text-right min-w-[130px]">Ngân sách tháng</th>
+                    <th className="py-3.5 px-3 min-w-[170px]">Hồ sơ thương hiệu</th>
+                    <th className="py-3.5 px-3 text-center min-w-[110px]">Trạng thái</th>
+                    <th className="py-3.5 px-4 text-right min-w-[90px]"><span className="sr-only">Thao tác</span></th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {currentBrands.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} className="py-12 text-center text-slate-400 text-xs">
+                        Không tìm thấy thương hiệu nào phù hợp với bộ lọc hiện tại.
+                      </td>
+                    </tr>
+                  ) : (
+                    currentBrands.map((b) => {
+                      const brandStores = storeList.filter(s => 
+                        s.brandName?.toLowerCase() === b.name?.toLowerCase() ||
+                        s.storeName?.toLowerCase().startsWith(b.name?.toLowerCase() || '')
+                      );
+                      const storeCount = b.stores?.length || brandStores.length || b.storeCount || 0;
+                      const hasProfile = Boolean(b.brandGuideline && b.brandGuideline.length > 5);
+                      const budget = b.planBudget || b.monthlyBudget || 0;
+                      const initials = b.name.substring(0, 2).toUpperCase();
 
-            {/* Pagination for Brands */}
-            <div className="px-4 py-3 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-slate-600">
+                      return (
+                        <tr key={b.id} className="hover:bg-slate-50/80 transition-colors group">
+                          {/* 1. Brand name & Code */}
+                          <td className="py-3 px-4">
+                            <div className="flex items-center gap-3">
+                              <div 
+                                className="w-8 h-8 rounded-lg text-white font-bold text-2xs flex items-center justify-center shrink-0 shadow-2xs"
+                                style={{ backgroundColor: b.color || '#4f46e5' }}
+                              >
+                                {initials}
+                              </div>
+                              <div>
+                                <span className="font-semibold text-slate-900 text-xs block group-hover:text-indigo-600 transition-colors">
+                                  {b.name}
+                                </span>
+                                <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                                  <span className="text-3xs font-mono font-medium px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 border border-slate-200">
+                                    {b.code || b.id.replace('brand-b2c-', '').toUpperCase()}
+                                  </span>
+                                  {b.platforms && b.platforms.map(p => (
+                                    <ChannelTag key={p} channel={p as any} />
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+
+                          {/* 2. Category */}
+                          <td className="py-3 px-3">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-md text-2xs font-medium bg-slate-100/80 text-slate-700 border border-slate-200/60">
+                              {b.category || 'Mỹ phẩm & Làm đẹp'}
+                            </span>
+                          </td>
+
+                          {/* 3. Stores count & details */}
+                          <td className="py-3 px-3 text-center">
+                            <div className="font-semibold text-slate-900 text-xs">
+                              {storeCount} gian hàng
+                            </div>
+                            {b.platforms && b.platforms.length > 0 && (
+                              <div className="text-3xs text-slate-400 mt-0.5">
+                                {b.platforms.join(' • ')}
+                              </div>
+                            )}
+                          </td>
+
+                          {/* 4. PIC */}
+                          <td className="py-3 px-3">
+                            <div className="font-medium text-slate-900 text-xs">
+                              {b.brandPicName || b.bookingPicLead || 'Chưa phân công'}
+                            </div>
+                            <div className="text-3xs text-slate-400 mt-0.5">
+                              {b.accountPic ? `AM: ${b.accountPic}` : ''}
+                            </div>
+                          </td>
+
+                          {/* 5. Budget */}
+                          <td className="py-3 px-3 text-right">
+                            <div className="font-mono font-semibold text-slate-900 text-xs">
+                              {budget > 0 ? formatVndShort(budget) : <span className="text-slate-400 font-normal">0 đ</span>}
+                            </div>
+                            {b.targetGmv ? (
+                              <div className="text-3xs text-emerald-600 font-mono mt-0.5">
+                                GMV: {formatVndShort(b.targetGmv)}
+                              </div>
+                            ) : null}
+                          </td>
+
+                          {/* 6. Profile Status */}
+                          <td className="py-3 px-3">
+                            <div className="flex items-center gap-2">
+                              <span className={`px-2 py-0.5 rounded-full text-3xs font-semibold ${
+                                hasProfile
+                                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                  : 'bg-amber-50 text-amber-700 border border-amber-200'
+                              }`}>
+                                {hasProfile ? 'Đã có hồ sơ' : 'Chưa thiết lập'}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (onNavigateToBrandProfile) {
+                                    onNavigateToBrandProfile(b.name);
+                                  } else if (onNotify) {
+                                    onNotify(`Chuyển đến màn hình hồ sơ thương hiệu: ${b.name}`, 'info');
+                                  }
+                                }}
+                                className="text-3xs font-semibold text-indigo-600 hover:text-indigo-800 hover:underline flex items-center gap-0.5 cursor-pointer"
+                              >
+                                <span>{hasProfile ? 'Xem' : 'Tạo'}</span>
+                                <ChevronRight className="w-2.5 h-2.5" />
+                              </button>
+                            </div>
+                          </td>
+
+                          {/* 7. Status */}
+                          <td className="py-3 px-3 text-center">
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-3xs font-semibold ${
+                              b.status === 'ACTIVE'
+                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                : 'bg-slate-100 text-slate-500 border border-slate-200'
+                            }`}>
+                              {b.status === 'ACTIVE' ? 'Đang hợp tác' : 'Tạm dừng'}
+                            </span>
+                          </td>
+
+                          {/* 8. Actions */}
+                          <td className="py-3 px-4 text-right">
+                            <div className="flex items-center justify-end gap-1">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingBrand(b);
+                                  setEditBrandName(b.name);
+                                  setEditBrandCode(b.code || '');
+                                  setEditBrandCategory(b.category || 'Mỹ phẩm & Làm đẹp');
+                                  setEditBrandStatus(b.status || 'ACTIVE');
+                                  setIsEditBrandModalOpen(true);
+                                }}
+                                className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition cursor-pointer"
+                                title="Chỉnh sửa thông tin cơ bản"
+                              >
+                                <Edit3 className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setDeletingBrand(b);
+                                  setDeleteConfirmText('');
+                                }}
+                                className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+                                title="Xóa thương hiệu"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination */}
+            <div className="px-4 py-3 bg-slate-50/70 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-slate-600">
               <div>
-                Hiển thị <span className="font-semibold text-slate-900">{Math.min(filteredBrands.length, (brandPage - 1) * BRAND_PAGE_SIZE + 1)}</span> - <span className="font-semibold text-slate-900">{Math.min(filteredBrands.length, brandPage * BRAND_PAGE_SIZE)}</span> trên tổng số <span className="font-semibold text-slate-900">{filteredBrands.length}</span> thương hiệu
+                Hiển thị <span className="font-semibold text-slate-900">{Math.min(filteredBrands.length, (brandPage - 1) * BRAND_PAGE_SIZE + 1)}</span> - <span className="font-semibold text-slate-900">{Math.min(filteredBrands.length, brandPage * BRAND_PAGE_SIZE)}</span> trên tổng số <span className="font-semibold text-slate-900">{filteredBrands.length}</span> thương hiệu B2C
               </div>
 
               <div className="flex items-center gap-1.5 self-end sm:self-auto">
@@ -1415,7 +1346,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                   type="button"
                   disabled={brandPage <= 1}
                   onClick={() => setBrandPage(p => Math.max(1, p - 1))}
-                  className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                 >
                   <ChevronLeft className="w-3.5 h-3.5" />
                 </button>
@@ -1426,7 +1357,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                   type="button"
                   disabled={brandPage >= totalBrandPages}
                   onClick={() => setBrandPage(p => Math.min(totalBrandPages, p + 1))}
-                  className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                 >
                   <ChevronRight className="w-3.5 h-3.5" />
                 </button>
@@ -1435,6 +1366,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
           </div>
         </div>
       )}
+
 
       {/* SUB-TAB 2: GIAN HÀNG */}
       {activeSubTab === 'stores' && (
