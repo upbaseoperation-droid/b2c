@@ -8,6 +8,7 @@
 import React, { useContext, useEffect, useId, useRef, useState, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronLeft, ChevronRight, MoreHorizontal, Search, X } from 'lucide-react';
+import { SkeletonRows, SlidingIndicator, useActiveBox, useFlipList, usePresence } from './motion';
 
 const cx = (...parts: Array<string | false | null | undefined>) => parts.filter(Boolean).join(' ');
 
@@ -70,8 +71,11 @@ export interface ChipOption<K extends string> {
 
 /** Nhóm nút lọc dạng chip (khi có hơn 5 lựa chọn; ít hơn dùng Segmented). */
 export function Chips<K extends string>({ items, value, onChange, label }: { items: ChipOption<K>[]; value: K; onChange: (k: K) => void; label?: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const { box, ready } = useActiveBox(ref, value);
   return (
-    <div className="flex items-center gap-1.5 overflow-x-auto" role="group" aria-label={label}>
+    <div ref={ref} className="relative flex items-center gap-1.5 overflow-x-auto" role="group" aria-label={label}>
+      <SlidingIndicator box={box} ready={ready} className="rounded-full bg-ink" />
       {label && <span className="text-2xs text-ink-3 shrink-0 mr-1">{label}</span>}
       {items.map((it) => {
         const on = it.key === value;
@@ -80,10 +84,11 @@ export function Chips<K extends string>({ items, value, onChange, label }: { ite
             key={it.key}
             type="button"
             aria-pressed={on}
+            data-active={on}
             onClick={() => onChange(it.key)}
             className={cx(
-              'h-7 px-2.5 rounded-full text-[12.5px] whitespace-nowrap border transition-colors',
-              on ? 'bg-ink text-white border-ink' : 'bg-surface text-ink-2 border-line hover:border-line-strong hover:text-ink',
+              'relative h-7 px-2.5 rounded-full text-[12.5px] whitespace-nowrap border transition-colors duration-(--motion-base)',
+              on ? 'text-white border-transparent' : 'bg-transparent text-ink-2 border-line hover:border-line-strong hover:text-ink',
             )}
           >
             {it.label}
@@ -168,6 +173,7 @@ export function DataTable<T>({
   stickyLast = false,
   onRowClick,
   rowClassName,
+  loading = false,
 }: {
   columns: Column<T>[];
   rows: T[];
@@ -176,7 +182,12 @@ export function DataTable<T>({
   stickyLast?: boolean;
   onRowClick?: (row: T) => void;
   rowClassName?: (row: T) => string | undefined;
+  /** Đang tải: giữ khung bảng, hiện hàng giữ chỗ. */
+  loading?: boolean;
 }) {
+  const bodyRef = useRef<HTMLTableSectionElement>(null);
+  // Sắp xếp/lọc: hàng còn lại trượt về chỗ mới, hàng mới hiện dần (DESIGN_SYSTEM.md §9).
+  useFlipList(bodyRef, rows.map(rowKey).join('|'));
   const align = (a?: Column<T>['align']) => (a === 'right' ? 'text-right' : a === 'center' ? 'text-center' : 'text-left');
   const minWidth = columns.reduce((s, c) => s + (c.width || 120), 0);
   const last = columns.length - 1;
@@ -201,8 +212,10 @@ export function DataTable<T>({
             ))}
           </tr>
         </thead>
-        <tbody>
-          {rows.length === 0 ? (
+        <tbody ref={bodyRef}>
+          {loading && rows.length === 0 ? (
+            <SkeletonRows columns={columns.length} />
+          ) : rows.length === 0 ? (
             <tr>
               <td colSpan={columns.length} className="px-4">
                 {empty ?? <p className="py-10 text-[13px] text-ink-3">Không có dữ liệu phù hợp.</p>}
@@ -212,6 +225,7 @@ export function DataTable<T>({
             rows.map((row) => (
               <tr
                 key={rowKey(row)}
+                data-flip={rowKey(row)}
                 onClick={onRowClick ? () => onRowClick(row) : undefined}
                 className={cx('group border-b border-line last:border-b-0 transition-colors hover:bg-canvas', onRowClick && 'cursor-pointer', rowClassName?.(row))}
               >
@@ -264,6 +278,13 @@ export function Modal({
 }) {
   const titleId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
+  const { mounted, closing } = usePresence(open);
+  // Trong nhịp đóng, dữ liệu của màn cha thường đã bị xóa: giữ nội dung lúc còn mở để không lỗi.
+  const [shown, setShown] = useState({ title, description, children, footer });
+  if (open && (shown.title !== title || shown.description !== description || shown.children !== children || shown.footer !== footer)) {
+    setShown({ title, description, children, footer });
+  }
+  const view = open ? { title, description, children, footer } : shown;
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
@@ -277,28 +298,28 @@ export function Modal({
       document.removeEventListener('keydown', onKey);
     };
   }, [open, onClose]);
-  if (!open) return null;
+  if (!mounted) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-4 overflow-y-auto" role="presentation">
-      <div className="fixed inset-0 bg-[rgb(22_23_26/0.4)] animate-in fade-in duration-150" onClick={onClose} aria-hidden="true" />
+    <div className={cx('fixed inset-0 z-50 flex items-start sm:items-center justify-center p-4 overflow-y-auto', closing && 'pointer-events-none')} role="presentation">
+      <div className={cx('fixed inset-0 bg-[rgb(22_23_26/0.4)]', closing ? 'motion-exit-fade' : 'animate-in fade-in duration-(--motion-base)')} onClick={onClose} aria-hidden="true" />
       <div
         ref={panelRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className={cx('relative w-full bg-surface rounded-xl shadow-2xl animate-in fade-in zoom-in-95 duration-150 my-8', MODAL_SIZE[size])}
+        className={cx('relative w-full bg-surface rounded-xl shadow-2xl my-8', closing ? 'motion-exit-pop' : 'animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter', MODAL_SIZE[size])}
       >
         <header className="flex items-start justify-between gap-4 px-5 pt-4 pb-3">
           <div className="min-w-0">
-            <h2 id={titleId} className="text-base font-semibold text-ink">{title}</h2>
-            {description && <p className="text-[13px] text-ink-3 mt-0.5">{description}</p>}
+            <h2 id={titleId} className="text-base font-semibold text-ink">{view.title}</h2>
+            {view.description && <p className="text-[13px] text-ink-3 mt-0.5">{view.description}</p>}
           </div>
           <button type="button" data-close onClick={onClose} className="p-1 -mr-1 rounded-md text-ink-3 hover:text-ink hover:bg-sunken" aria-label="Đóng">
             <X className="w-4 h-4" />
           </button>
         </header>
-        {children && <div className="px-5 pb-4 grid gap-4">{children}</div>}
-        {footer && <footer className="flex flex-wrap items-center justify-end gap-2 px-5 py-3 border-t border-line bg-canvas rounded-b-xl">{footer}</footer>}
+        {view.children && <div className="px-5 pb-4 grid gap-4">{view.children}</div>}
+        {view.footer && <footer className="flex flex-wrap items-center justify-end gap-2 px-5 py-3 border-t border-line bg-canvas rounded-b-xl">{view.footer}</footer>}
       </div>
     </div>
   );
@@ -454,7 +475,7 @@ export function ActionMenu({ items, label = 'Thao tác khác' }: { items: Action
         <MoreHorizontal className="w-4 h-4" strokeWidth={1.75} />
       </button>
       {open && (
-        <div role="menu" className="absolute right-0 top-8 z-30 min-w-[180px] py-1 bg-surface border border-line rounded-lg shadow-md text-left">
+        <div role="menu" className="absolute right-0 top-8 z-30 min-w-[180px] py-1 bg-surface border border-line rounded-lg shadow-md text-left origin-top-right animate-in fade-in zoom-in-95 duration-(--motion-fast) ease-enter">
           {items.map((it) => {
             const Icon = it.icon;
             return (

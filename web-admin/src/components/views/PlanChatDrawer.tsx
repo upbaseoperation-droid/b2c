@@ -378,7 +378,7 @@ export function PlanChatDrawer({ open, onClose, plan, currentUser, chat, reviewS
     <>
       {/* Lớp phủ mờ */}
       <div
-        className={`fixed inset-0 z-[90] bg-slate-900/30 transition-opacity duration-200 ${
+        className={`fixed inset-0 z-[90] bg-slate-900/30 transition-opacity duration-(--motion-base) ${
           open ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
         onClick={onClose}
@@ -390,8 +390,8 @@ export function PlanChatDrawer({ open, onClose, plan, currentUser, chat, reviewS
         aria-modal="true"
         aria-label="Trao đổi kế hoạch"
         inert={!open}
-        className={`fixed top-0 right-0 z-[91] h-screen w-full sm:w-[420px] bg-slate-50 shadow-2xl border-l border-slate-200 flex flex-col transition-transform duration-200 ease-out ${
-          open ? 'translate-x-0' : 'translate-x-full'
+        className={`fixed top-0 right-0 z-[91] h-screen w-full sm:w-[420px] bg-slate-50 shadow-2xl border-l border-slate-200 flex flex-col transition-transform ${
+          open ? 'translate-x-0 duration-(--motion-slow) ease-enter' : 'translate-x-full duration-(--motion-base) ease-exit'
         }`}
       >
         {/* Header */}

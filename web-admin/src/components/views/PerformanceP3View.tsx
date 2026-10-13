@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { ChannelTag, Avatar, ConfirmDialog, Tabs, Status } from '../ui';
+import React, { useRef, useState } from 'react';
+import { ChannelTag, Avatar, ConfirmDialog, Tabs, Status, useFlipList } from '../ui';
 import { 
   Coins, 
   TrendingUp, 
@@ -71,6 +71,8 @@ export default function PerformanceP3View({
   const filteredStaff = staffRecords.filter(r => {
     return selectedRole === 'ALL' || r.role === selectedRole;
   });
+  const staffBodyRef = useRef<HTMLTableSectionElement>(null);
+  useFlipList(staffBodyRef, filteredStaff.map(r => r.id).join('|'));
 
   const handleApprove = (id: string) => {
     setStaffRecords(prev => prev.map(r => {
@@ -207,9 +209,9 @@ export default function PerformanceP3View({
                     <th className="py-3 px-3 text-right">Thao tác</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-line">
+                <tbody ref={staffBodyRef} className="divide-y divide-line">
                   {filteredStaff.map(item => (
-                    <tr key={item.id} className="hover:bg-canvas transition">
+                    <tr key={item.id} data-flip={item.id} className="hover:bg-canvas transition">
                       {/* Name & Role */}
                       <td className="py-3 px-3">
                         <div className="flex items-center gap-2 font-medium text-ink"><Avatar name={item.staffName} size={22} />{item.staffName}</div>

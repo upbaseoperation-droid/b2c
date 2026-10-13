@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { Presence } from './ui';
 import { X, UploadCloud, FileSpreadsheet, CheckCircle2, ArrowRight, Loader2 } from 'lucide-react';
 import { formatVnd } from '../lib/format';
 
@@ -35,7 +36,7 @@ export const ImportExcelModal: React.FC<ImportExcelModalProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, handleClose]);
 
-  if (!isOpen) return null;
+  if (!isOpen) return <Presence show={false} />;
 
   const handleSimulateImport = () => {
     setIsProcessing(true);
@@ -54,8 +55,9 @@ export const ImportExcelModal: React.FC<ImportExcelModalProps> = ({
   };
 
   return (
+    <Presence show>
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-ink/50 backdrop-blur-xs p-4 animate-in fade-in duration-150"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-ink/50 p-4 animate-in fade-in duration-(--motion-base)"
       onClick={(e) => {
         if (e.target === e.currentTarget) handleClose();
       }}
@@ -63,7 +65,7 @@ export const ImportExcelModal: React.FC<ImportExcelModalProps> = ({
       aria-modal="true"
       aria-labelledby="import-excel-title"
     >
-      <div className="bg-surface border border-line rounded-xl w-full max-w-lg shadow-2xl overflow-hidden animate-in zoom-in-95 duration-150">
+      <div data-motion-panel className="bg-surface border border-line rounded-xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-line bg-sunken">
           <div className="flex items-center gap-3">
@@ -102,7 +104,7 @@ export const ImportExcelModal: React.FC<ImportExcelModalProps> = ({
                   </div>
                 ) : (
                   <>
-                    <div className="w-12 h-12 rounded-xl bg-success-soft text-success flex items-center justify-center mb-3 group-hover:scale-105 transition">
+                    <div className="w-12 h-12 rounded-xl bg-success-soft text-success flex items-center justify-center mb-3">
                       <UploadCloud className="w-6 h-6" />
                     </div>
                     <span className="text-xs font-semibold text-ink">Kéo thả file Excel/CSV báo cáo vào đây</span>
@@ -161,6 +163,7 @@ export const ImportExcelModal: React.FC<ImportExcelModalProps> = ({
         </div>
       </div>
     </div>
+    </Presence>
   );
 };
 

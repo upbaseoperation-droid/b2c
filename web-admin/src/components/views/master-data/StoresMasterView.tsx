@@ -21,7 +21,7 @@ import {
   Edit3,
   Building2
 } from 'lucide-react';
-import { ChannelTag } from '../../ui';
+import { ChannelTag, Presence } from '../../ui';
 import { StorePortfolioItem, BrandDetail, BookingDealItem } from '../../../lib/types';
 import { StaffSearchSelect } from './StaffSearchSelect';
 import { StoreDetailModal } from './StoreDetailModal';
@@ -720,7 +720,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                           <div className="mt-1">
                             <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
                               <div
-                                className={`h-full rounded-full ${
+                                className={`data-bar h-full rounded-full ${
                                   isStoreOverbudget ? 'bg-rose-500' : burnPct > 80 ? 'bg-amber-500' : 'bg-emerald-500'
                                 }`}
                                 style={{ width: `${Math.min(100, burnPct)}%` }}
@@ -935,6 +935,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
       </div>
 
       {/* 4. MODAL: CHI TIẾT CHUYÊN SÂU GIAN HÀNG (STORE DETAIL MODAL) */}
+      <Presence show={!!selectedStoreForDetail}>
       {selectedStoreForDetail && (
         <StoreDetailModal
           store={selectedStoreForDetail}
@@ -948,8 +949,10 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
           onOpenHandover={handleOpenHandover}
         />
       )}
+      </Presence>
 
       {/* 5. MODAL: LẬP LỆNH BÀN GIAO GIỮA KỲ */}
+      <Presence show={!!handoverStore}>
       {handoverStore && (
         <StoreHandoverModal
           store={handoverStore}
@@ -958,11 +961,13 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
           onConfirmHandover={handleConfirmHandover}
         />
       )}
+      </Presence>
 
       {/* 6. MODAL: TẠO GIAN HÀNG MASTER DATA (CHỈ KHAI BÁO THUỘC BRAND NÀO & SÀN) */}
+      <Presence show={!!isQuickAddModalOpen}>
       {isQuickAddModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
-          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-lg w-full p-5 space-y-4 my-auto">
+        <div className="fixed inset-0 z-50 bg-slate-900/50 flex items-center justify-center p-3 sm:p-5 overflow-y-auto animate-in fade-in duration-(--motion-base)">
+          <div data-motion-panel className="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-lg w-full p-5 space-y-4 my-auto animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2.5">
                 <div className="w-9 h-9 rounded-xl bg-slate-100 text-slate-800 flex items-center justify-center font-semibold">
@@ -1081,11 +1086,13 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
           </div>
         </div>
       )}
+      </Presence>
 
       {/* 7. MODAL: SỬA THÔNG SỐ GIAN HÀNG */}
+      <Presence show={!!(isModalOpen && editingStore)}>
       {isModalOpen && editingStore && (
-        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
-          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-2xl w-full p-5 space-y-4 my-auto max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 bg-slate-900/50 flex items-center justify-center p-3 sm:p-5 overflow-y-auto animate-in fade-in duration-(--motion-base)">
+          <div data-motion-panel className="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-2xl w-full p-5 space-y-4 my-auto max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div>
                 <h3 className="font-semibold text-sm text-slate-900">
@@ -1417,11 +1424,13 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
           </div>
         </div>
       )}
+      </Presence>
 
       {/* 7. MODAL: XÓA / OFFBOARD GIAN HÀNG */}
+      <Presence show={!!deletingStore}>
       {deletingStore && (
-        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-md w-full p-6 space-y-4">
+        <div className="fixed inset-0 z-50 bg-slate-900/50 flex items-center justify-center p-4 animate-in fade-in duration-(--motion-base)">
+          <div data-motion-panel className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-md w-full p-6 space-y-4 animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
             <div className="flex items-start gap-3">
               <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0 border border-rose-200">
                 <Trash2 className="w-5 h-5" />
@@ -1480,6 +1489,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
           </div>
         </div>
       )}
+      </Presence>
     </div>
   );
 };

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { Presence } from '../ui';
 import {
   X,
   RefreshCw,
@@ -195,11 +196,12 @@ export const KalodataSyncModal: React.FC<KalodataSyncModalProps> = ({
     }
   };
 
-  if (!isOpen) return null;
+  if (!isOpen) return <Presence show={false} />;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/50 backdrop-blur-xs p-4 overflow-y-auto animate-in fade-in duration-200">
-      <div className="relative w-full max-w-4xl bg-surface rounded-2xl shadow-2xl border border-line overflow-hidden flex flex-col max-h-[92vh]">
+    <Presence show>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/50 p-4 overflow-y-auto animate-in fade-in duration-(--motion-base)">
+      <div data-motion-panel className="relative w-full max-w-4xl bg-surface rounded-2xl shadow-2xl border border-line overflow-hidden flex flex-col max-h-[92vh] animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
         {/* Header */}
         <div className="px-6 py-4 border-b border-line flex items-center justify-between bg-sunken">
           <div className="flex items-center gap-3">
@@ -666,6 +668,7 @@ export const KalodataSyncModal: React.FC<KalodataSyncModalProps> = ({
         </div>
       </div>
     </div>
+    </Presence>
   );
 };
 

@@ -1088,7 +1088,7 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
               {/* Progress Bar */}
               <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden border border-slate-200">
                 <div
-                  className={`h-full transition-all duration-300 ${
+                  className={`data-bar h-full ${
                     isOverBudget ? 'bg-rose-500' : 'bg-emerald-500'
                   }`}
                   style={{ width: `${Math.min(100, (totalAllocatedBudget / activeDemand.totalAssignedBudget) * 100)}%` }}
@@ -1158,7 +1158,7 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
               {/* Progress */}
               <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden border border-slate-200">
                 <div
-                  className="h-full bg-blue-600 transition-all duration-300"
+                  className="data-bar h-full bg-blue-600"
                   style={{ width: `${Math.min(100, nmvAchievementRate)}%` }}
                 />
               </div>

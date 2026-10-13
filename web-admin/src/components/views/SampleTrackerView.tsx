@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
-import { ConfirmDialog, PageActions, StatRow, Stat, Button } from '../ui';
+import React, { useState, useMemo, useRef } from 'react';
+import { ConfirmDialog, PageActions, StatRow, Stat, Button, useFlipList } from '../ui';
 import { 
   Truck, 
   AlertTriangle, 
@@ -80,6 +80,8 @@ export default function SampleTrackerView({
     const matchBrand = selectedBrand === 'ALL' || s.brandName === selectedBrand;
     return matchSearch && matchStatus && matchBrand;
   });
+  const shipmentsBodyRef = useRef<HTMLTableSectionElement>(null);
+  useFlipList(shipmentsBodyRef, filteredShipments.map(s => s.id).join('|'));
 
   // KPI counts
   const totalSent = shipments.length;
@@ -201,12 +203,12 @@ export default function SampleTrackerView({
                 <th className="py-3 px-3 pr-4 text-right w-[160px] min-w-[160px] sticky right-0 bg-slate-50 border-l border-slate-200">Xử lý & hành động</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody ref={shipmentsBodyRef} className="divide-y divide-slate-100">
               {filteredShipments.map(item => {
                 const isOverdue = item.status === 'GHOST_WARNING';
 
                 return (
-                  <tr key={item.id} className={`hover:bg-slate-50/70 transition ${isOverdue ? 'bg-rose-50/30' : ''}`}>
+                  <tr key={item.id} data-flip={item.id} className={`hover:bg-slate-50/70 transition ${isOverdue ? 'bg-rose-50/30' : ''}`}>
                     {/* KOC Info */}
                     <td className="py-3 px-3">
                       <div className="font-semibold text-slate-900">{item.kocName}</div>

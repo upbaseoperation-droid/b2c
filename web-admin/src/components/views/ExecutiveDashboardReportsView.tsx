@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
-import { Avatar, Tabs, Modal } from '../ui';
+import React, { useState, useMemo, useRef } from 'react';
+import { Avatar, Tabs, Modal, NumberRoll, useActiveBox, SlidingIndicator } from '../ui';
 import {
   TrendingUp,
   Award,
@@ -93,6 +93,8 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
 
   // State bộ lọc chung
   const [activeTab, setActiveTab] = useState<DashboardMainTab>('OVERVIEW_FINANCE');
+  const tabBarRef = useRef<HTMLDivElement>(null);
+  const tabBox = useActiveBox(tabBarRef, activeTab);
   const [selectedBrand, setSelectedBrand] = useState<string>('ALL');
   const [selectedPlatform, setSelectedPlatform] = useState<'ALL' | 'TikTok Shop' | 'Shopee Mall'>('ALL');
   const [selectedGovernance, setSelectedGovernance] = useState<'ALL' | 'WITH_LEADER' | 'DIRECT_HEAD'>('ALL');
@@ -793,7 +795,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
             <TrendingUp className="w-4 h-4 text-indigo-600" />
           </div>
           <div className="text-xl font-extrabold text-slate-900 font-mono">
-            {formatVndShort(kpiSummary.totalTargetGmv)}
+            <NumberRoll value={formatVndShort(kpiSummary.totalTargetGmv)} />
           </div>
           <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
             <span className="text-slate-500">GMV Ads TikTok Seller:</span>
@@ -810,7 +812,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
             <DollarSign className="w-4 h-4 text-emerald-600" />
           </div>
           <div className="text-xl font-extrabold text-emerald-700 font-mono">
-            {formatVndShort(kpiSummary.totalBudgetNet)}
+            <NumberRoll value={formatVndShort(kpiSummary.totalBudgetNet)} />
           </div>
           <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
             <span className="text-slate-500">Order Gross (Gồm thuế/phí):</span>
@@ -828,10 +830,10 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
           </div>
           <div className="flex items-baseline gap-2">
             <span className="text-xl font-extrabold text-slate-900 font-mono">
-              {formatVndShort(kpiSummary.totalActualSpentNet)}
+              <NumberRoll value={formatVndShort(kpiSummary.totalActualSpentNet)} />
             </span>
             <span className="text-xs font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded">
-              {kpiSummary.pacingNetPct}% Net
+              <NumberRoll value={kpiSummary.pacingNetPct + '% Net'} />
             </span>
           </div>
           <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
@@ -850,7 +852,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
           </div>
           <div className="flex items-baseline gap-2">
             <span className="text-xl font-extrabold text-slate-900 font-mono">
-              {kpiSummary.totalActualAiredVideos.toLocaleString('vi-VN')} video
+              <NumberRoll value={kpiSummary.totalActualAiredVideos.toLocaleString('vi-VN') + ' video'} />
             </span>
             <span className="text-[11px] font-semibold text-slate-500">
               / 786 đơn book T10
@@ -876,14 +878,14 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
           <div className="flex items-center gap-3">
             <div>
               <span className="text-xl font-extrabold text-rose-700 font-mono">
-                {kpiSummary.unbudgetedCount} gian
+                <NumberRoll value={kpiSummary.unbudgetedCount + ' gian'} />
               </span>
               <span className="block text-[10px] font-semibold text-rose-800">Báo động đỏ (0đ Net)</span>
             </div>
             <div className="h-7 w-px bg-rose-200" />
             <div>
               <span className="text-xl font-extrabold text-amber-700 font-mono">
-                {kpiSummary.overbudgetCount} gian
+                <NumberRoll value={kpiSummary.overbudgetCount + ' gian'} />
               </span>
               <span className="block text-[10px] font-semibold text-amber-800">Vượt trần Net</span>
             </div>
@@ -897,7 +899,8 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
 
       {/* THANH ĐIỀU HƯỚNG 5 PHÂN HỆ BIỂU ĐỒ & ĐỐI SOÁT */}
       <div className="bg-white rounded-xl border border-slate-200 px-4 pt-2 shadow-xs">
-        <div className="flex flex-wrap gap-1 border-b border-slate-100">
+        <div ref={tabBarRef} className="relative flex flex-wrap gap-1 border-b border-slate-100">
+          <SlidingIndicator box={tabBox.box} ready={tabBox.ready} className="rounded-t-lg bg-accent-soft/50 border-b-2 border-accent" />
           {[
             {
               key: 'OVERVIEW_FINANCE',
@@ -932,9 +935,10 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                 key={tab.key}
                 type="button"
                 onClick={() => setActiveTab(tab.key as DashboardMainTab)}
-                className={`inline-flex items-center gap-2 px-3.5 py-2.5 text-xs font-bold border-b-2 transition cursor-pointer ${
+                data-active={active}
+                className={`relative inline-flex items-center gap-2 px-3.5 py-2.5 text-xs font-bold border-b-2 transition cursor-pointer ${
                   active
-                    ? 'border-indigo-600 text-indigo-700 bg-indigo-50/50 rounded-t-lg'
+                    ? 'border-transparent text-accent rounded-t-lg'
                     : 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-t-lg'
                 }`}
               >
@@ -955,7 +959,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
           <div className="bg-white rounded-xl border border-rose-200 overflow-hidden shadow-xs">
             <div className="bg-rose-50/80 px-5 py-3.5 border-b border-rose-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
               <div className="flex items-center gap-2.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-rose-600 animate-pulse" />
+                <span className="w-2.5 h-2.5 rounded-full bg-rose-600" />
                 <h2 className="text-sm font-bold text-rose-950">
                   Bảng Cảnh Báo Tài Chính Trọng Yếu: Gian Hàng Phát Sinh Chi Phí Ngoài Hạn Mức (0đ) & Vượt Trần Order Net
                 </h2>
@@ -1144,19 +1148,19 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                       <div className="space-y-1">
                         <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden relative">
                           <div
-                            className="h-full bg-slate-300 rounded-full"
+                            className="data-bar h-full bg-slate-300 rounded-full"
                             style={{ width: `${Math.max(grossPct, 1)}%` }}
                             title={`Order Gross: ${formatVndShort(b.budgetGross)}`}
                           />
                           <div
-                            className="h-full bg-indigo-600 rounded-full absolute top-0 left-0"
+                            className="data-bar h-full bg-indigo-600 rounded-full absolute top-0 left-0"
                             style={{ width: `${Math.max(netPct, 0.5)}%` }}
                             title={`Hạn mức Order Net: ${formatVndShort(b.budgetNet)}`}
                           />
                         </div>
                         <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
                           <div
-                            className={`h-full rounded-full ${isOver ? 'bg-rose-500' : 'bg-emerald-500'}`}
+                            className={`data-bar h-full rounded-full ${isOver ? 'bg-rose-500' : 'bg-emerald-500'}`}
                             style={{ width: `${Math.max(spentPct, b.actualSpentNet > 0 ? 2 : 0)}%` }}
                             title={`Thực chi File 3.2: ${formatVndShort(b.actualSpentNet)}`}
                           />
@@ -1200,7 +1204,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                     </div>
                     <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-indigo-600 rounded-full"
+                        className="data-bar h-full bg-indigo-600 rounded-full"
                         style={{
                           width: `${
                             kpiSummary.totalBudgetNet > 0
@@ -1226,7 +1230,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                     </div>
                     <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-emerald-500 rounded-full"
+                        className="data-bar h-full bg-emerald-500 rounded-full"
                         style={{
                           width: `${
                             kpiSummary.totalBudgetNet > 0
@@ -1285,21 +1289,21 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                       <div className="w-full h-5 rounded-lg overflow-hidden flex border border-slate-200">
                         <div
                           style={{ width: `${focPct}%` }}
-                          className="bg-sky-500 h-full flex items-center justify-center text-[10px] font-bold text-white"
+                          className="data-bar bg-sky-500 h-full flex items-center justify-center text-[10px] font-bold text-white"
                           title={`Mẫu miễn phí FOC (0đ): ${kpiSummary.totalTargetFocVideos}`}
                         >
                           {focPct > 10 ? `FOC ${focPct}%` : ''}
                         </div>
                         <div
                           style={{ width: `${paidPct}%` }}
-                          className="bg-indigo-600 h-full flex items-center justify-center text-[10px] font-bold text-white"
+                          className="data-bar bg-indigo-600 h-full flex items-center justify-center text-[10px] font-bold text-white"
                           title={`Video KOC trả phí (Paid): ${kpiSummary.totalTargetPaidVideos}`}
                         >
                           {paidPct > 8 ? `Paid ${paidPct}%` : ''}
                         </div>
                         <div
                           style={{ width: `${selfPct}%` }}
-                          className="bg-emerald-500 h-full flex items-center justify-center text-[10px] font-bold text-white"
+                          className="data-bar bg-emerald-500 h-full flex items-center justify-center text-[10px] font-bold text-white"
                           title={`Video kênh Brand (Self-channel): ${kpiSummary.totalTargetSelfVideos}`}
                         >
                           {selfPct > 8 ? `Brand ${selfPct}%` : ''}
@@ -1427,7 +1431,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                         </div>
                         <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
                           <div
-                            className="h-full bg-indigo-600 rounded-full"
+                            className="data-bar h-full bg-indigo-600 rounded-full"
                             style={{ width: `${Math.max(gmvBarPct, 4)}%` }}
                           />
                         </div>
@@ -1441,7 +1445,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                         </div>
                         <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
                           <div
-                            className="h-full bg-amber-500 rounded-full"
+                            className="data-bar h-full bg-amber-500 rounded-full"
                             style={{ width: `${Math.max(costBarPct, 3)}%` }}
                           />
                         </div>
@@ -1673,7 +1677,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                           </div>
                           <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
                             <div
-                              className="h-full bg-sky-500 rounded-full"
+                              className="data-bar h-full bg-sky-500 rounded-full"
                               style={{ width: `${Math.max(countPct, 4)}%` }}
                             />
                           </div>
@@ -1685,7 +1689,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                           </div>
                           <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
                             <div
-                              className="h-full bg-indigo-600 rounded-full"
+                              className="data-bar h-full bg-indigo-600 rounded-full"
                               style={{ width: `${Math.max(costPct, item.totalCost > 0 ? 4 : 0)}%` }}
                             />
                           </div>
@@ -1752,7 +1756,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                         <span className="font-mono font-extrabold text-slate-900">{f.val}</span>
                       </div>
                       <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden mb-1">
-                        <div className={`h-full ${f.color} rounded-full`} style={{ width: `${f.pct}%` }} />
+                        <div className={`data-bar h-full ${f.color} rounded-full`} style={{ width: `${f.pct}%` }} />
                       </div>
                       <span className="text-[10px] text-slate-500">{f.note}</span>
                     </div>
@@ -2184,14 +2188,14 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                       <div className="space-y-1 mt-2">
                         <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
                           <div
-                            className="h-full bg-indigo-600 rounded-full"
+                            className="data-bar h-full bg-indigo-600 rounded-full"
                             style={{ width: `${Math.max(netBar, st.orderBudgetNet > 0 ? 3 : 0)}%` }}
                             title={`Hạn mức Order Net: ${formatVndShort(st.orderBudgetNet)}`}
                           />
                         </div>
                         <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
                           <div
-                            className={`h-full rounded-full ${
+                            className={`data-bar h-full rounded-full ${
                               st.overbudgetStoresCount > 0 || st.unbudgetedStoresCount > 0
                                 ? 'bg-rose-500'
                                 : 'bg-emerald-500'
@@ -2205,13 +2209,13 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                       <div className="space-y-1 mt-2">
                         <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
                           <div
-                            className="h-full bg-indigo-500 rounded-full"
+                            className="data-bar h-full bg-indigo-500 rounded-full"
                             style={{ width: `${Math.max(targetPaidBar, 4)}%` }}
                           />
                         </div>
                         <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
                           <div
-                            className="h-full bg-emerald-500 rounded-full"
+                            className="data-bar h-full bg-emerald-500 rounded-full"
                             style={{ width: `${Math.max(airedBar, st.actualAiredVideos > 0 ? 4 : 0)}%` }}
                           />
                         </div>

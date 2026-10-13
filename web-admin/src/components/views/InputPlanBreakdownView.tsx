@@ -95,6 +95,7 @@ import {
   InstagramLogo,
   ThreadsLogo,
   TikTokLogo,
+  Presence,
 } from '../ui';
 import { StorePlanMindmap } from './StorePlanMindmap';
 
@@ -1937,7 +1938,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
           </div>
           <div className="h-1.5 rounded-full bg-slate-200 overflow-hidden">
             <div
-              className={`h-full rounded-full ${isOverBudget ? 'bg-rose-500' : 'bg-blue-500'}`}
+              className={`data-bar h-full rounded-full ${isOverBudget ? 'bg-rose-500' : 'bg-blue-500'}`}
               style={{ width: `${Math.min(100, budgetUsagePct)}%` }}
             />
           </div>
@@ -3237,9 +3238,10 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
       {/* ========================================================================= */}
       {/* 6. MODAL PHÂN BỔ KẾ HOẠCH CHO TEAM BOOKING (PIC COORDINATION STUDIO)     */}
       {/* ========================================================================= */}
+      <Presence show={!!isAllocationModalOpen}>
       {isAllocationModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white w-full max-w-5xl max-h-[92vh] rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 animate-in fade-in duration-(--motion-base)">
+          <div data-motion-panel className="bg-white w-full max-w-5xl max-h-[92vh] rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
             {/* Modal Header */}
             <div className="px-6 py-4 border-b border-line flex items-center justify-between bg-surface text-ink">
               <div className="flex items-center gap-3">
@@ -3362,7 +3364,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                         {/* Progress Bar of workload */}
                         <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden mt-2">
                           <div
-                            className={`h-full rounded-full transition-all ${
+                            className={`data-bar h-full rounded-full ${
                               pctOfTotal > 40 ? 'bg-amber-500' : 'bg-blue-600'
                             }`}
                             style={{ width: `${Math.min(100, pctOfTotal)}%` }}
@@ -3550,13 +3552,15 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
           </div>
         </div>
       )}
+      </Presence>
 
       {/* ========================================================================= */}
       {/* MODAL LEADER SƠ DUYỆT NỘI BỘ (INTERNAL LEADER APPROVAL GATE)              */}
       {/* ========================================================================= */}
+      <Presence show={!!isLeaderApprovalModalOpen}>
       {isLeaderApprovalModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 animate-in fade-in duration-(--motion-base)">
+          <div data-motion-panel className="bg-white w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
             <div className="px-6 py-4 border-b border-line bg-surface text-ink flex items-center justify-between">
               <div className="flex items-center gap-2.5">
                 <ShieldCheck className="w-5 h-5 text-amber-600" />
@@ -3664,11 +3668,13 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
           </div>
         </div>
       )}
+      </Presence>
 
       {/* MODAL: XÁC NHẬN GỬI DUYỆT QUẢN LÝ */}
+      <Presence show={!!isSubmitToManagerModalOpen}>
       {isSubmitToManagerModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto animate-in fade-in">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-5 animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-(--motion-base)">
+          <div data-motion-panel className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-5 animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2.5">
                 <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center font-semibold">
@@ -3765,6 +3771,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
           </div>
         </div>
       )}
+      </Presence>
 
       {/* Dialog xác nhận duyệt kế hoạch */}
       <ConfirmDialog

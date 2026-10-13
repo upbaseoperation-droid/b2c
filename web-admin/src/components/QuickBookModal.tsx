@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { Presence } from './ui';
 import { X, Zap } from 'lucide-react';
 import { KocItem, BookingDealItem } from '../lib/types';
 import { INITIAL_KOCS } from '../lib/mockData';
@@ -61,7 +62,7 @@ export const QuickBookModal: React.FC<QuickBookModalProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
-  if (!isOpen) return null;
+  if (!isOpen) return <Presence show={false} />;
 
   const currentKoc = INITIAL_KOCS.find(k => k.id === selectedKocId) || preselectedKoc || INITIAL_KOCS[0];
   const advanceAmount = advanceType === 'FIXED_2M' ? Math.min(2000000, rate) : Math.round(rate * 0.2);
@@ -131,8 +132,9 @@ export const QuickBookModal: React.FC<QuickBookModalProps> = ({
   };
 
   return (
+    <Presence show>
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-ink/50 backdrop-blur-xs p-4 animate-in fade-in duration-150"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-ink/50 p-4 animate-in fade-in duration-(--motion-base)"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
@@ -140,7 +142,7 @@ export const QuickBookModal: React.FC<QuickBookModalProps> = ({
       aria-modal="true"
       aria-labelledby="quick-book-title"
     >
-      <div className="bg-surface border border-line rounded-xl w-full max-w-lg shadow-2xl overflow-hidden animate-in zoom-in-95 duration-150">
+      <div data-motion-panel className="bg-surface border border-line rounded-xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-line bg-sunken">
           <div className="flex items-center gap-3">
@@ -349,6 +351,7 @@ export const QuickBookModal: React.FC<QuickBookModalProps> = ({
         </form>
       </div>
     </div>
+    </Presence>
   );
 };
 

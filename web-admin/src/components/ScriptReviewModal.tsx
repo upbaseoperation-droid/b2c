@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { Presence } from './ui';
 import { X, CheckCircle, RotateCcw, Clock, FileText, CheckSquare, MessageSquare } from 'lucide-react';
 import { ScriptReviewItem } from '../lib/types';
 
@@ -41,7 +42,7 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
-  if (!isOpen || !script) return null;
+  if (!isOpen || !script) return <Presence show={false} />;
 
   const handleApprove = () => {
     onApproveScript(script.id);
@@ -60,8 +61,9 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
   };
 
   return (
+    <Presence show>
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto animate-in fade-in duration-150"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 overflow-y-auto animate-in fade-in duration-(--motion-base)"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
@@ -69,7 +71,7 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
       aria-modal="true"
       aria-labelledby="script-review-title"
     >
-      <div className="bg-white border border-slate-200 rounded-xl w-full max-w-3xl shadow-2xl overflow-hidden my-6 animate-in zoom-in-95 duration-150">
+      <div data-motion-panel className="bg-white border border-slate-200 rounded-xl w-full max-w-3xl shadow-2xl overflow-hidden my-6 animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
         {/* Header - Enterprise Light */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50/80">
           <div className="flex items-center gap-3">
@@ -284,5 +286,6 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
         </div>
       </div>
     </div>
+    </Presence>
   );
 };

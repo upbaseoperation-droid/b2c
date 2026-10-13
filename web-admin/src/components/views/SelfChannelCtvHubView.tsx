@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useRef } from 'react';
-import { Avatar } from '../ui';
+import { Avatar, Presence } from '../ui';
 import {
   Video,
   CheckCircle2,
@@ -1477,7 +1477,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
               </div>
               <div className="w-full bg-slate-100 h-1.5 rounded-full mt-2 overflow-hidden">
                 <div
-                  className="bg-emerald-600 h-full rounded-full transition-all"
+                  className="data-bar bg-emerald-600 h-full rounded-full"
                   style={{ width: `${Math.min(100, stats.progressPercent)}%` }}
                 />
               </div>
@@ -1813,7 +1813,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                       </div>
                       <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
                         <div
-                          className="bg-blue-600 h-full rounded-full"
+                          className="data-bar bg-blue-600 h-full rounded-full"
                           style={{ width: `${Math.min(100, percent)}%` }}
                         />
                       </div>
@@ -2934,9 +2934,10 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
       {/* ============================================================== */}
       {/* MODAL 1: TẠO HOẶC GIAO TASK VIDEO (CÓ CHECK ĐƠN GẤP < 5 NGÀY)    */}
       {/* ============================================================== */}
+      <Presence show={!!isCreateTaskModalOpen}>
       {isCreateTaskModalOpen && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
-          <div className="bg-white rounded-2xl max-w-xl w-full shadow-xl border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-150">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/40 flex items-center justify-center p-4 animate-in fade-in duration-(--motion-base)">
+          <div data-motion-panel className="bg-white rounded-2xl max-w-xl w-full shadow-xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
               <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
                 <Plus className="w-4 h-4 text-blue-600" />
@@ -3198,13 +3199,15 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
           </div>
         </div>
       )}
+      </Presence>
 
       {/* ============================================================== */}
       {/* MODAL 2: NHẬN CHỈ TIÊU TỪ KẾ HOẠCH THÁNG (SYNC PLAN MODAL)      */}
       {/* ============================================================== */}
+      <Presence show={!!isSyncPlanModalOpen}>
       {isSyncPlanModalOpen && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
-          <div className="bg-white rounded-2xl max-w-lg w-full shadow-xl border border-slate-200 overflow-hidden">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/40 flex items-center justify-center p-4 animate-in fade-in duration-(--motion-base)">
+          <div data-motion-panel className="bg-white rounded-2xl max-w-lg w-full shadow-xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
               <div>
                 <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
@@ -3287,13 +3290,15 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
           </div>
         </div>
       )}
+      </Presence>
 
       {/* ============================================================== */}
       {/* MODAL 3: CẬP NHẬT VẬN ĐƠN HÀNG MẪU (SLA 48H)                    */}
       {/* ============================================================== */}
+      <Presence show={!!(isSampleShippingModalOpen && selectedTask)}>
       {isSampleShippingModalOpen && selectedTask && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
-          <div className="bg-white rounded-2xl max-w-md w-full shadow-xl border border-slate-200 overflow-hidden">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/40 flex items-center justify-center p-4 animate-in fade-in duration-(--motion-base)">
+          <div data-motion-panel className="bg-white rounded-2xl max-w-md w-full shadow-xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
               <div>
                 <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
@@ -3363,13 +3368,15 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
           </div>
         </div>
       )}
+      </Presence>
 
       {/* ============================================================== */}
       {/* MODAL 4: DUYỆT KỊCH BẢN (SCRIPT REVIEW MODAL - SLA 24H)         */}
       {/* ============================================================== */}
+      <Presence show={!!(isScriptReviewModalOpen && selectedTask)}>
       {isScriptReviewModalOpen && selectedTask && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
-          <div className="bg-white rounded-2xl max-w-xl w-full shadow-xl border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-150">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/40 flex items-center justify-center p-4 animate-in fade-in duration-(--motion-base)">
+          <div data-motion-panel className="bg-white rounded-2xl max-w-xl w-full shadow-xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
               <div>
                 <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
@@ -3477,13 +3484,15 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
           </div>
         </div>
       )}
+      </Presence>
 
       {/* ============================================================== */}
       {/* MODAL 5: VÒNG 1 — DUYỆT QA VIDEO NỘI BỘ & LƯU DRIVE GIAN HÀNG  */}
       {/* ============================================================== */}
+      <Presence show={!!(isVideoQaModalOpen && selectedTask)}>
       {isVideoQaModalOpen && selectedTask && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
-          <div className="bg-white rounded-2xl max-w-xl w-full shadow-xl border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-150">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/40 flex items-center justify-center p-4 animate-in fade-in duration-(--motion-base)">
+          <div data-motion-panel className="bg-white rounded-2xl max-w-xl w-full shadow-xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
               <div>
                 <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
@@ -3639,13 +3648,15 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
           </div>
         </div>
       )}
+      </Presence>
 
       {/* ============================================================== */}
       {/* MODAL 6: VÒNG 2 — BRAND NGHIỆM THU & GẮN LINK ĐĂNG KÊNH         */}
       {/* ============================================================== */}
+      <Presence show={!!(isBrandAcceptModalOpen && selectedTask)}>
       {isBrandAcceptModalOpen && selectedTask && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
-          <div className="bg-white rounded-2xl max-w-lg w-full shadow-xl border border-slate-200 overflow-hidden">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/40 flex items-center justify-center p-4 animate-in fade-in duration-(--motion-base)">
+          <div data-motion-panel className="bg-white rounded-2xl max-w-lg w-full shadow-xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
               <div>
                 <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
@@ -3758,13 +3769,15 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
           </div>
         </div>
       )}
+      </Presence>
 
       {/* ============================================================== */}
       {/* MODAL 7: CỔNG CTV NỘP KỊCH BẢN / LINK VIDEO DEMO               */}
       {/* ============================================================== */}
+      <Presence show={!!(isCtvSubmitModalOpen && selectedTask)}>
       {isCtvSubmitModalOpen && selectedTask && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
-          <div className="bg-white rounded-2xl max-w-lg w-full shadow-xl border border-slate-200 overflow-hidden">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/40 flex items-center justify-center p-4 animate-in fade-in duration-(--motion-base)">
+          <div data-motion-panel className="bg-white rounded-2xl max-w-lg w-full shadow-xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
               <h3 className="text-sm font-semibold text-slate-900">
                 {ctvSubmitType === 'SCRIPT'
@@ -3874,13 +3887,15 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
           </div>
         </div>
       )}
+      </Presence>
 
       {/* ============================================================== */}
       {/* MODAL 8: LẬP PHIẾU ĐỀ NGHỊ THANH TOÁN (DNTT) & MÃ QR           */}
       {/* ============================================================== */}
+      <Presence show={!!(isDnttModalOpen && dnttTargetCtv)}>
       {isDnttModalOpen && dnttTargetCtv && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
-          <div className="bg-white rounded-2xl max-w-lg w-full shadow-xl border border-slate-200 overflow-hidden">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/40 flex items-center justify-center p-4 animate-in fade-in duration-(--motion-base)">
+          <div data-motion-panel className="bg-white rounded-2xl max-w-lg w-full shadow-xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
               <div>
                 <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
@@ -3998,6 +4013,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
           </div>
         </div>
       )}
+      </Presence>
     </div>
   );
 };

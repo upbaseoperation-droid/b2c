@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
+import { Presence } from '../ui';
 import {
   X,
   Filter,
@@ -577,11 +578,12 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
     }
   };
 
-  if (!isOpen) return null;
+  if (!isOpen) return <Presence show={false} />;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/50 backdrop-blur-xs p-3 overflow-y-auto animate-in fade-in duration-200">
-      <div className="relative w-full max-w-6xl bg-surface rounded-2xl shadow-2xl border border-line overflow-hidden flex flex-col max-h-[94vh]">
+    <Presence show>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/50 p-3 overflow-y-auto animate-in fade-in duration-(--motion-base)">
+      <div data-motion-panel className="relative w-full max-w-6xl bg-surface rounded-2xl shadow-2xl border border-line overflow-hidden flex flex-col max-h-[94vh] animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
         {/* Header Modal */}
         <div className="px-6 py-4 border-b border-line flex items-center justify-between bg-surface text-ink">
           <div className="flex items-center gap-3">
@@ -1204,9 +1206,10 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
       </div>
 
       {/* Popover / Modal nhỏ: Xem toàn bộ các Deal lịch sử của 1 KOC */}
+      <Presence show={!!inspectingHistoryKoc}>
       {inspectingHistoryKoc && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center bg-ink/50 backdrop-blur-2xs p-4 animate-in fade-in duration-150">
-          <div className="bg-surface rounded-2xl shadow-2xl border border-line w-full max-w-2xl overflow-hidden flex flex-col max-h-[85vh]">
+        <div className="fixed inset-0 z-60 flex items-center justify-center bg-ink/50 p-4 animate-in fade-in duration-(--motion-base)">
+          <div data-motion-panel className="bg-surface rounded-2xl shadow-2xl border border-line w-full max-w-2xl overflow-hidden flex flex-col max-h-[85vh] animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
             <div className="px-5 py-3.5 border-b border-line bg-sunken flex items-center justify-between">
               <div className="flex items-center gap-2.5">
                 <History className="w-4 h-4 text-primary" />
@@ -1326,7 +1329,9 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
           </div>
         </div>
       )}
+      </Presence>
     </div>
+    </Presence>
   );
 };
 

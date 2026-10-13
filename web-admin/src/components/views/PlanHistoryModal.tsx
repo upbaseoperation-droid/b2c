@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { Presence } from '../ui';
 import {
   X,
   MessageSquare,
@@ -91,7 +92,7 @@ export const PlanHistoryModal: React.FC<PlanHistoryModalProps> = ({
     }
   }, [currentUser]);
 
-  if (!isOpen || !plan) return null;
+  if (!isOpen || !plan) return <Presence show={false} />;
 
   const snapshots: PlanVersionSnapshot[] = getPlanVersionSnapshots(plan);
   const baselineSnapshot = snapshots[0];
@@ -256,8 +257,9 @@ export const PlanHistoryModal: React.FC<PlanHistoryModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
-      <div className="bg-slate-50 rounded-2xl max-w-5xl w-full max-h-[92vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95">
+    <Presence show>
+    <div className="fixed inset-0 bg-slate-900/60 flex items-center justify-center z-50 p-4 animate-in fade-in duration-(--motion-base)">
+      <div data-motion-panel className="bg-slate-50 rounded-2xl max-w-5xl w-full max-h-[92vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
         {/* MODAL HEADER */}
         <div className="bg-white p-5 border-b border-slate-200 flex items-start justify-between gap-4">
           <div className="space-y-1">
@@ -862,6 +864,7 @@ export const PlanHistoryModal: React.FC<PlanHistoryModalProps> = ({
         </div>
       </div>
     </div>
+    </Presence>
   );
 };
 

@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { formatVndShort } from '../../lib/format';
-import { Tabs, PageActions, Button } from '../ui';
+import { Tabs, PageActions, Button, Presence } from '../ui';
 import {
   Target,
   ArrowRight,
@@ -468,7 +468,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
                           <span className="font-semibold text-blue-600">{budgetPercent}%</span>
                         </div>
                         <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                          <div className="h-full bg-blue-600 rounded-full" style={{ width: `${budgetPercent}%` }} />
+                          <div className="data-bar h-full bg-blue-600 rounded-full" style={{ width: `${budgetPercent}%` }} />
                         </div>
                       </div>
 
@@ -480,7 +480,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
                           <span className="font-semibold text-emerald-600">{gmvPercent}%</span>
                         </div>
                         <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                          <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${gmvPercent}%` }} />
+                          <div className="data-bar h-full bg-emerald-500 rounded-full" style={{ width: `${gmvPercent}%` }} />
                         </div>
                       </div>
                     </div>
@@ -1207,7 +1207,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
                             <span className="font-semibold text-blue-600">{budgetPct}%</span>
                           </div>
                           <div className="w-28 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                            <div className="h-full bg-blue-600 rounded-full" style={{ width: `${budgetPct}%` }} />
+                            <div className="data-bar h-full bg-blue-600 rounded-full" style={{ width: `${budgetPct}%` }} />
                           </div>
                         </div>
                       </td>
@@ -1220,7 +1220,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
                             <span className="font-semibold text-emerald-600">{gmvPct}%</span>
                           </div>
                           <div className="w-28 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                            <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${gmvPct}%` }} />
+                            <div className="data-bar h-full bg-emerald-500 rounded-full" style={{ width: `${gmvPct}%` }} />
                           </div>
                         </div>
                       </td>
@@ -1277,9 +1277,10 @@ export const BrandView: React.FC<BrandViewProps> = ({
       {/* ========================================================================= */}
       {/* MODAL: THÊM TỪ KHÓA BLACKLIST                                             */}
       {/* ========================================================================= */}
+      <Presence show={!!isAddKeywordModalOpen}>
       {isAddKeywordModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-150">
-          <div className="bg-white border border-slate-200 rounded-lg w-full max-w-lg shadow-2xl overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 animate-in fade-in duration-(--motion-base)">
+          <div data-motion-panel className="bg-white border border-slate-200 rounded-lg w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
             <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-200 bg-slate-50">
               <div className="flex items-center gap-2">
                 <ShieldAlert className="w-4 h-4 text-rose-600" />
@@ -1388,13 +1389,15 @@ export const BrandView: React.FC<BrandViewProps> = ({
           </div>
         </div>
       )}
+      </Presence>
 
       {/* ========================================================================= */}
       {/* MODAL: TỪ CHỐI KOC HOẶC KỊCH BẢN (REJECT MODAL)                           */}
       {/* ========================================================================= */}
+      <Presence show={!!rejectModalItem}>
       {rejectModalItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-150">
-          <div className="bg-white border border-slate-200 rounded-lg w-full max-w-md shadow-2xl overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 animate-in fade-in duration-(--motion-base)">
+          <div data-motion-panel className="bg-white border border-slate-200 rounded-lg w-full max-w-md shadow-2xl overflow-hidden animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
             <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-200 bg-rose-50/50">
               <div className="flex items-center gap-2">
                 <X className="w-4 h-4 text-rose-600" />
@@ -1467,13 +1470,15 @@ export const BrandView: React.FC<BrandViewProps> = ({
           </div>
         </div>
       )}
+      </Presence>
 
       {/* ========================================================================= */}
       {/* MODAL: THÔNG BÁO BÀN GIAO THÀNH CÔNG                                      */}
       {/* ========================================================================= */}
+      <Presence show={!!handoffSuccessModal}>
       {handoffSuccessModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-150">
-          <div className="bg-white border border-slate-200 rounded-lg w-full max-w-sm shadow-2xl p-5 space-y-4 text-center">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 animate-in fade-in duration-(--motion-base)">
+          <div data-motion-panel className="bg-white border border-slate-200 rounded-lg w-full max-w-sm shadow-2xl p-5 space-y-4 text-center animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
             <div className="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto">
               <CheckCircle2 className="w-7 h-7" />
             </div>
@@ -1497,13 +1502,15 @@ export const BrandView: React.FC<BrandViewProps> = ({
           </div>
         </div>
       )}
+      </Presence>
 
       {/* ========================================================================= */}
       {/* MODAL: KIỂM TRA KỊCH BẢN                                                  */}
       {/* ========================================================================= */}
+      <Presence show={!!aiScanModalData}>
       {aiScanModalData && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 overflow-y-auto animate-in fade-in duration-150">
-          <div className="bg-white border border-slate-200 rounded-lg w-full max-w-2xl shadow-2xl overflow-hidden my-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 overflow-y-auto animate-in fade-in duration-(--motion-base)">
+          <div data-motion-panel className="bg-white border border-slate-200 rounded-lg w-full max-w-2xl shadow-2xl overflow-hidden my-6 animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50">
               <div className="flex items-center gap-2">
@@ -1663,6 +1670,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
           </div>
         </div>
       )}
+      </Presence>
     </div>
   );
 };

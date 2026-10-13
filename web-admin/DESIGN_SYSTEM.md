@@ -14,7 +14,7 @@ Thứ tự ưu tiên khi có mâu thuẫn: yêu cầu của người dùng → f
 - Menu trái hiển thị trọn bộ danh mục trong một màn hình (mỗi mục cao 32px, đầu trang cao 56px), không để phát sinh thanh cuộn dọc. Mục hiện tại dùng nền `accent-soft`, chữ `accent` và vạch chỉ báo.
 - Thanh tiêu đề cao tối thiểu 56px (khớp với đầu menu trái), thao tác tự xuống hàng khi thiếu chỗ. Nội dung có khoảng đệm 20–24px theo chiều dọc và căn giữa ở màn hình rộng.
 - Khung `Panel` có đệm tiêu đề 16 × 20px. Nút `.btn-md` cao 38px; nhóm `.btn-*` có chiều cao tối thiểu 44px trên thiết bị cảm ứng. Thành phần `Button` dùng kích thước riêng như bảng thành phần bên dưới.
-- Hiệu ứng xuất hiện 180ms, phản hồi nút và ô nhập 150ms. Tôn trọng `prefers-reduced-motion`; không thêm chuyển động lặp liên tục.
+- Chuyển động theo quy chuẩn riêng ở §9: token thời lượng/đường cong, số KPI lăn, thanh biểu đồ mọc, vạch chỉ báo trượt, hàng bảng trượt khi sắp xếp, dấu duyệt bước, toast xếp chồng, chuyển cảnh danh sách → hồ sơ. Tôn trọng `prefers-reduced-motion`; không thêm chuyển động lặp liên tục.
 - Danh bạ KOC, hợp đồng, báo cáo Ads và báo cáo điều hành được chia gói tải theo nhu cầu, có thông báo đang tải và khung giữ chỗ. Chưa có số đo tốc độ trước/sau.
 
 ---
@@ -127,7 +127,7 @@ Quy tắc:
 
 **Đổ bóng:** khung `Panel` và `card-enterprise` dùng bóng trung tính rất nhẹ (2px / 6px, độ mờ 2,5%) cùng viền `border-line`. `shadow-sm` trở xuống đã được tắt. Chỉ lớp nổi (menu thả, popover, modal, toast) dùng `shadow-md`, `shadow-xl`, `shadow-2xl`.
 
-**Chuyển động:** chỉ dùng khi có nghĩa (đang tải: `animate-spin`; mở modal: `animate-in`). Không dùng `animate-pulse`, `animate-bounce`, `animate-ping` để trang trí.
+**Chuyển động:** xem §9. Tóm tắt: chỉ dùng khi có nghĩa, dùng token `--motion-*` / `ease-*` và thành phần trong `ui/motion.tsx`; không `animate-pulse`, `animate-bounce`, `animate-ping`, không phóng to khi rê chuột.
 
 ---
 
@@ -172,7 +172,9 @@ Import từ `@/components/ui` (hoặc đường dẫn tương đối `../ui`).
 | `ConfirmDialog` | Thao tác không hoàn tác được, hoặc cần lý do | Thay cho `alert`, `confirm`, `prompt` (ESLint chặn ở màn đã chuyển). `tone="danger"` cho từ chối, xóa, hủy |
 | `Field`, `Input`, `Select`, `Textarea` | Mọi form | Nhãn ở trên. `hint` giải thích, `error` nói cách sửa. Lựa chọn ≤ 3 dùng `Segmented`, nhiều hơn dùng `Select` |
 
-Toast: dùng `showToast(message, type)` trong `app/page.tsx`. Nền `ink`, chữ trắng, icon theo loại.
+Toast: dùng `showToast(message, type)` trong `app/page.tsx` (hàng đợi `useToastQueue` + `ToastStack` trong `ui/toast.tsx`). Nền `ink`, chữ trắng, icon theo loại. Nhiều thông báo xếp chồng, không đè nhau.
+
+Chuyển động (`NumberRoll`, `SlidingIndicator`, `StepMark`, `ChangeFlash`, `Skeleton`, `withViewTransition`…): xem §9.
 
 Cần thành phần mới (Modal, Table, Menu…)? Thêm vào `src/components/ui/` thay vì viết style riêng trong màn hình.
 
@@ -304,6 +306,7 @@ Màn mẫu: hồ sơ KOC (`components/koc/KocProfile.tsx`).
 - [ ] Câu chữ theo §6; không emoji
 - [ ] Không có giá trị mẫu điền bằng `??` / `||` (§1.5)
 - [ ] Màn danh sách / hồ sơ theo 17 quy tắc ở §7; CCCD, MST, STK được che
+- [ ] Chuyển động theo §9: mỗi chuyển động nói lên một điều, dùng thành phần trong `ui/motion`, không tự viết keyframe; đã thử với “giảm chuyển động”
 - [ ] `npx eslint <file>` không còn cảnh báo design system → thêm file vào danh sách “đã chuyển” trong `eslint.config.mjs`
 
 ## 8. Trạng thái chuyển đổi
@@ -320,3 +323,76 @@ Màn mẫu: hồ sơ KOC (`components/koc/KocProfile.tsx`).
 - Mọi file mới trong `src/components/**/*.tsx` và `src/app/**/*.tsx` mặc định chịu kiểm tra `error` từ `eslint.config.mjs`.
 - Hợp đồng in (`ContractModal.tsx`) giữ nguyên định dạng văn bản pháp lý.
 
+
+---
+
+## 9. Chuyển động
+
+Chuyển động trong app phải **nói lên một điều**: số vừa đổi, phần tử đến từ đâu, thao tác đã xong. Chuyển động chỉ để trang trí là dấu hiệu của giao diện làm vội (“AI slop”) và không được dùng.
+
+- Token: `--motion-*`, `--ease-*` trong [`src/app/globals.css`](src/app/globals.css)
+- Thành phần và hook: [`src/components/ui/motion.tsx`](src/components/ui/motion.tsx), [`src/components/ui/toast.tsx`](src/components/ui/toast.tsx), export qua `@/components/ui`
+- Kiểm tra tự động: biến `MOTION_CLASS` trong [`eslint.config.mjs`](eslint.config.mjs)
+
+### Nguyên tắc
+
+1. **Có nghĩa mới chuyển động.** Trước khi thêm, trả lời được câu “chuyển động này cho người dùng biết điều gì?”. Không trả lời được thì không thêm.
+2. **Mỗi màn một khoảnh khắc lớn.** Ví dụ: số KPI lăn ở Báo cáo điều hành, dấu duyệt ở stepper, chuyển cảnh danh sách → hồ sơ. Phần còn lại im lặng.
+3. **Không bắt người dùng chờ.** Thao tác bấm được ngay; dữ liệu không hiện chậm hơn vì hiệu ứng. Đi ra nhanh hơn đi vào.
+4. **Nhất quán.** Chỉ dùng 4 thời lượng và 3 đường cong dưới đây. Không tự đặt `duration-300`, `ease-in-out`, `cubic-bezier(…)` trong màn hình.
+5. **Nhẹ.** Ưu tiên `transform` và `opacity`. Không animate `width`/`height`/`top`/`left` trên nhiều phần tử, trừ thanh dữ liệu trong rãnh cố định (`.data-bar`). Danh sách dài chỉ animate khoảng 40 phần tử đầu.
+6. **Tôn trọng “giảm chuyển động”.** `globals.css` đã tắt mọi hiệu ứng khi hệ điều hành bật `prefers-reduced-motion`. Code JS dùng `useReducedMotion()` / `prefersReducedMotion()`. Không vượt qua thiết lập này.
+
+### Token
+
+| Token | Giá trị | Dùng cho |
+|---|---|---|
+| `--motion-fast` | 120ms | Phản hồi: rê chuột, nhấn, focus, đóng lớp nổi |
+| `--motion-base` | 200ms | Mở lớp nổi (modal, menu), vạch chỉ báo trượt, chuyển màn |
+| `--motion-slow` | 320ms | Chuỗi có thứ tự: duyệt bước, hàng bảng đổi chỗ, toast |
+| `--motion-data` | 640ms | Số liệu: số lăn, thanh và cột biểu đồ |
+| `ease-enter` | `cubic-bezier(0.2, 0.8, 0.2, 1)` | Phần tử xuất hiện, số liệu dừng lại |
+| `ease-exit` | `cubic-bezier(0.4, 0, 1, 1)` | Phần tử rời đi |
+| `ease-move` | `cubic-bezier(0.65, 0, 0.35, 1)` | Phần tử đổi chỗ: vạch chỉ báo, hàng bảng |
+
+Trong class: `duration-(--motion-base) ease-enter`. Trong JS (Web Animations API): `MOTION.base`, `MOTION.easeEnter`.
+
+### Dùng gì cho tình huống nào
+
+| Tình huống | Dùng | Ghi chú |
+|---|---|---|
+| Con số KPI, tổng tiền, số lượng | `NumberRoll`, hoặc truyền chuỗi/số vào `Stat` (tự lăn) | Chỉ chữ số thay đổi mới lăn. Mức chênh (`numeric` + `formatDelta`) **chỉ** khi dữ liệu cùng phạm vi được cập nhật (đồng bộ, nhập mới). Không hiện mức chênh khi đổi bộ lọc vì đó là so hai phạm vi khác nhau |
+| Thanh tiến độ, ngân sách, thanh ngang trong biểu đồ | `Progress`, hoặc class `data-bar` trên phần tử có `style={{ width }}` | Mọc từ trái khi xuất hiện, chạy từ giá trị cũ sang mới khi bộ lọc đổi |
+| Xu hướng nhỏ | `Sparkline` (đã có sẵn) | Đường được vẽ từ trái khi hiện; biến hình khi dữ liệu đổi |
+| Mục đang chọn: menu trái, `Tabs`, `Segmented`, `Chips`, thanh tab riêng | `useActiveBox(ref, activeKey)` + `SlidingIndicator`; đánh dấu nút bằng `data-active` | Container `position: relative`. `fit="underline"` cho gạch chân. Nút chưa chọn để nền trong suốt để vạch trượt không bị che |
+| Bảng sắp xếp/lọc lại | `DataTable` (đã bật sẵn); danh sách tự viết dùng `useFlipList(ref, orderKey)` + `data-flip` | Hàng còn lại trượt về chỗ mới, hàng mới hiện dần |
+| Bước quy trình vừa hoàn tất | `StepMark` | Đóng dấu + vẽ dấu tích **chỉ khi** vừa đổi trong phiên; bước xong từ trước hiện tĩnh |
+| Nhãn/khối vừa đổi trạng thái | `ChangeFlash on={giá trị}` | Hiện lại một lần, không chạy lần đầu |
+| Mở/đóng modal | `Modal`, `ConfirmDialog` (đã có hiệu ứng mở và đóng) | Ưu tiên dùng hai thành phần này |
+| Lớp nổi tự viết (`fixed inset-0`), drawer | `<Presence show={open}>{open && (…)}</Presence>`; khung trắng gắn `data-motion-panel`; drawer thêm `exit="drawer"` | Lớp phủ: `animate-in fade-in duration-(--motion-base)`. Khung: `animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter`; drawer: `animate-in slide-in-from-right duration-(--motion-slow) ease-enter`. Component tự trả `null`: `if (!open) return <Presence show={false} />` và bọc phần render bằng `<Presence show>`. Mẫu: drawer trong `PushProductsView.tsx` |
+| Menu thả, popover | `animate-in fade-in zoom-in-95 duration-(--motion-fast) ease-enter` + `origin-*` đúng góc mở | Lấy theo `ActionMenu` |
+| Thông báo sau thao tác | `showToast(message, type)` → `ToastStack` | Xếp chồng, rê chuột để xoè và dừng đếm giờ |
+| Danh sách → hồ sơ một bản ghi | Hàng: `<span {...sharedFrom('koc-avatar', id)}>`. Đầu hồ sơ: `style={sharedTo('koc-avatar')}`. Mở: `openShared(id, () => setOpenId(id))`. Quay lại: `closeShared(id, () => setOpenId(null))` | Ảnh và tên bay từ hàng bảng lên đầu hồ sơ và ngược lại. Mẫu: hồ sơ thương hiệu, KOC, gian hàng. Mỗi tên chỉ dùng cho một phần tử đang hiện |
+| Đang tải | `Skeleton`, `SkeletonRows`, `DataTable loading`; màn tải theo nhu cầu dùng `ViewLoading` trong `app/page.tsx` | Giữ hình dạng nội dung sắp hiện. Vòng xoay (`animate-spin`) chỉ cho nút hoặc tác vụ đang xử lý (đồng bộ, đọc giấy tờ, gửi tin) |
+
+### Không dùng
+
+| Không làm | Vì sao | Thay bằng |
+|---|---|---|
+| Mọi khối fade-up so le khi vào trang | Trang trí, làm dữ liệu hiện chậm | Màn đã có `workspace-reveal` chung; không thêm |
+| View Transition cho mọi lần chuyển màn | Trùng với `workspace-reveal`, chụp ảnh cả trang mỗi lần bấm menu | Chỉ dùng View Transition khi có phần tử bay giữa hai trạng thái (danh sách → hồ sơ) |
+| `hover:scale-*`, card nổi lên khi rê chuột | Không cho biết điều gì, làm bảng rung | Đổi nền `hover:bg-canvas` / viền |
+| `animate-bounce`, `animate-ping`, `animate-pulse`, hiệu ứng nảy (spring/elastic) | Gây xao nhãng, trông như đồ chơi | Màu trạng thái tĩnh (`Status`) |
+| Chuyển động lặp liên tục | Chiếm sự chú ý vô thời hạn | Chỉ `Skeleton` và `animate-spin` khi đang tải, tắt khi xong |
+| Gradient trôi, glow, viền phát sáng, glassmorphism, `backdrop-blur` trên vùng lớn | Ngoài phong cách, tốn GPU | Nền phẳng, `shadow-*` của lớp nổi |
+| Typewriter, parallax, số đếm từ 0 mỗi lần lọc | Bắt người dùng chờ để đọc số | `NumberRoll` (chỉ chữ số đổi mới lăn) |
+| `transition-all`, `duration-500` trở lên, `ease-in-out` | Animate cả thuộc tính không cần, chậm, thiếu nhất quán | `transition-colors` / `transition-transform` + token |
+
+ESLint chặn `hover:scale-*`, `group-hover:scale-*`, `animate-bounce|pulse|ping`, `duration-500|700|1000`, `ease-in-out` trong `className`.
+
+### Thêm chuyển động mới
+
+1. Kiểm tra bảng “Dùng gì” ở trên. Phần lớn trường hợp đã có thành phần.
+2. Nếu thật sự cần kiểu mới: thêm keyframe/class vào khối **CHUYỂN ĐỘNG** cuối `globals.css` (dùng token, có nhánh `prefers-reduced-motion`), thêm thành phần/hook vào `ui/motion.tsx`, rồi thêm một dòng vào bảng trên.
+3. Không viết `@keyframes`, `style={{ transition }}` hay `element.animate()` trực tiếp trong file màn hình.
+4. Tự kiểm tra: bật “Reduce motion” trong hệ điều hành (Windows: Settings → Accessibility → Visual effects → Animation effects), mở màn và xác nhận mọi thứ vẫn hiện đúng, chỉ không chuyển động.

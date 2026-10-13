@@ -35,6 +35,7 @@ import {
 } from '../../lib/types';
 import { INITIAL_BRAND_PORTAL_DATA } from '../../lib/mockData';
 import { formatVndShort } from '../../lib/format';
+import { Presence } from '../ui';
 
 export interface BrandHubViewProps {
   currentUser?: UserProfile;
@@ -809,7 +810,7 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
               </div>
               <div className="w-full bg-slate-100 h-1.5 rounded-full mt-2 overflow-hidden">
                 <div 
-                  className="bg-blue-600 h-full rounded-full transition-all"
+                  className="data-bar bg-blue-600 h-full rounded-full"
                   style={{ width: `${(activePortal.liveAiredVideosCount / activePortal.totalTargetVideos) * 100}%` }}
                 />
               </div>
@@ -1556,16 +1557,17 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
       {/* ========================================================================= */}
 
       {/* Modal 1: Plan Revision Request */}
+      <Presence show={!!isPlanRevisionModalOpen}>
       {isPlanRevisionModalOpen && (
         <div 
-          className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150"
+          className="fixed inset-0 z-50 bg-slate-900/40 flex items-center justify-center p-4 animate-in fade-in duration-(--motion-base)"
           onClick={(e) => {
             if (e.target === e.currentTarget) setIsPlanRevisionModalOpen(false);
           }}
           role="dialog"
           aria-modal="true"
         >
-          <div className="w-full max-w-lg p-6 bg-white rounded-2xl border border-slate-200 shadow-xl space-y-4 text-slate-800 animate-in zoom-in-95 duration-150">
+          <div data-motion-panel className="w-full max-w-lg p-6 bg-white rounded-2xl border border-slate-200 shadow-xl space-y-4 text-slate-800 animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <h4 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
                 <RotateCcw className="w-4 h-4 text-amber-600" />
@@ -1612,18 +1614,20 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
           </div>
         </div>
       )}
+      </Presence>
 
       {/* Modal 2: KOC Reject Reason */}
+      <Presence show={!!rejectingKoc}>
       {rejectingKoc && (
         <div 
-          className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150"
+          className="fixed inset-0 z-50 bg-slate-900/40 flex items-center justify-center p-4 animate-in fade-in duration-(--motion-base)"
           onClick={(e) => {
             if (e.target === e.currentTarget) setRejectingKoc(null);
           }}
           role="dialog"
           aria-modal="true"
         >
-          <div className="w-full max-w-md p-6 bg-white rounded-2xl border border-slate-200 shadow-xl space-y-4 text-slate-800 animate-in zoom-in-95 duration-150">
+          <div data-motion-panel className="w-full max-w-md p-6 bg-white rounded-2xl border border-slate-200 shadow-xl space-y-4 text-slate-800 animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <h4 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
                 <RotateCcw className="w-4 h-4 text-rose-600" />
@@ -1696,18 +1700,20 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
           </div>
         </div>
       )}
+      </Presence>
 
       {/* Modal 3: Script Review Drawer / Modal */}
+      <Presence show={!!inspectingScript}>
       {inspectingScript && (
         <div 
-          className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150"
+          className="fixed inset-0 z-50 bg-slate-900/40 flex items-center justify-center p-4 animate-in fade-in duration-(--motion-base)"
           onClick={(e) => {
             if (e.target === e.currentTarget) setInspectingScript(null);
           }}
           role="dialog"
           aria-modal="true"
         >
-          <div className="w-full max-w-2xl p-6 bg-white rounded-2xl border border-slate-200 shadow-xl space-y-4 text-slate-800 animate-in zoom-in-95 duration-150 max-h-[90vh] overflow-y-auto">
+          <div data-motion-panel className="w-full max-w-2xl p-6 bg-white rounded-2xl border border-slate-200 shadow-xl space-y-4 text-slate-800 max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div>
                 <h4 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
@@ -1804,6 +1810,7 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
           </div>
         </div>
       )}
+      </Presence>
         </div>
       )}
     </div>

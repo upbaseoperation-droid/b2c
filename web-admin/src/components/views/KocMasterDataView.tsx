@@ -22,7 +22,7 @@ import {
   legalTypeOf,
   type LegalType,
 } from '../koc/kocUtils';
-import { ActionMenu, Avatar, Button, Chips, DataTable, EmptyState, FilterBar, PageActions, Pagination, Panel, Person, Select, Status } from '../ui';
+import { ActionMenu, Avatar, Button, Chips, DataTable, EmptyState, FilterBar, PageActions, Pagination, Panel, Person, Select, Status, closeShared, openShared, sharedFrom } from '../ui';
 import type { Column } from '../ui';
 
 interface KocMasterDataViewProps {
@@ -217,6 +217,10 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
     requestAnimationFrame(() => rootRef.current?.scrollIntoView({ block: 'start' }));
   };
 
+  // Danh sách ↔ hồ sơ: ảnh và tên KOC bay giữa hàng bảng và đầu hồ sơ (DESIGN_SYSTEM.md §9).
+  const openFromList = (id: string) => openShared(id, () => openProfile(id));
+  const backToList = (id: string) => closeShared(id, () => setOpenKocId(null));
+
   const rowActions = (k: KocItem) => [
     { label: 'Tạo booking', icon: Plus, onSelect: () => onOpenQuickBookWithKoc(k) },
     { label: 'Cập nhật chỉ số', icon: RefreshCw, onSelect: () => setMetricsTarget(k) },
@@ -232,9 +236,9 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
       width: 210,
       render: (k) => (
         <div className="flex items-center gap-2.5 min-w-0 max-w-[280px]">
-          <Avatar name={k.stageName} src={k.avatarUrl} size={32} />
+          <span {...sharedFrom('koc-avatar', k.id)} className="shrink-0 inline-flex"><Avatar name={k.stageName} src={k.avatarUrl} size={32} /></span>
           <div className="min-w-0 leading-tight">
-            <span className="block truncate font-medium text-ink">{k.stageName}</span>
+            <span {...sharedFrom('koc-title', k.id)} className="block truncate font-medium text-ink">{k.stageName}</span>
             <span className="block truncate text-2xs text-ink-3">
               @{k.channelId.replace(/^@/, '')}
               {k.realName && k.realName !== k.stageName ? ` · ${k.realName}` : ''}
@@ -319,7 +323,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
           currentUser={currentUser}
           duplicates={duplicates.get(openKoc.id)}
           nav={{
-            onBack: () => setOpenKocId(null),
+            onBack: () => backToList(openKoc.id),
             onPrev: navIndex > 0 ? () => openProfile(navList[navIndex - 1].id) : undefined,
             onNext: navIndex >= 0 && navIndex < navList.length - 1 ? () => openProfile(navList[navIndex + 1].id) : undefined,
             position: navIndex + 1,
@@ -400,7 +404,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
               columns={columns}
               rows={rows}
               rowKey={(k) => k.id}
-              onRowClick={(k) => openProfile(k.id)}
+              onRowClick={(k) => openFromList(k.id)}
               stickyLast
               empty={
                 <EmptyState

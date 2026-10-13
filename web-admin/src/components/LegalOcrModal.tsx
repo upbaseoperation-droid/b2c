@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import { Presence } from './ui';
 import {
   X,
   Upload,
@@ -55,7 +56,7 @@ export const LegalOcrModal: React.FC<LegalOcrModalProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
-  if (!isOpen) return null;
+  if (!isOpen) return <Presence show={false} />;
 
   const handleCopy = (text: string, key: string) => {
     navigator.clipboard.writeText(text);
@@ -172,15 +173,16 @@ export const LegalOcrModal: React.FC<LegalOcrModalProps> = ({
   };
 
   return (
+    <Presence show>
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-ink/50 backdrop-blur-xs p-4 overflow-y-auto animate-in fade-in duration-150"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-ink/50 p-4 overflow-y-auto animate-in fade-in duration-(--motion-base)"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
       role="dialog"
       aria-modal="true"
     >
-      <div className="bg-surface border border-line rounded-2xl w-full max-w-5xl shadow-2xl overflow-hidden my-6 animate-in zoom-in-95 duration-150 flex flex-col max-h-[92vh]">
+      <div data-motion-panel className="bg-surface border border-line rounded-2xl w-full max-w-5xl shadow-2xl overflow-hidden my-6 flex flex-col max-h-[92vh] animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-line bg-sunken shrink-0">
           <div className="flex items-center gap-3">
@@ -376,7 +378,7 @@ export const LegalOcrModal: React.FC<LegalOcrModalProps> = ({
                 </div>
               ) : (
                 <div className="py-8 space-y-2.5">
-                  <div className="w-12 h-12 mx-auto rounded-full bg-info-soft text-primary flex items-center justify-center group-hover:scale-105 transition">
+                  <div className="w-12 h-12 mx-auto rounded-full bg-info-soft text-primary flex items-center justify-center">
                     <Upload className="w-6 h-6" />
                   </div>
                   <div className="text-xs font-semibold text-ink">
@@ -769,6 +771,7 @@ export const LegalOcrModal: React.FC<LegalOcrModalProps> = ({
         </div>
       </div>
     </div>
+    </Presence>
   );
 };
 

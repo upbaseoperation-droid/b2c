@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import type { BookingDealItem, BrandDetail, StorePortfolioItem, UserProfile } from '../../lib/types';
 import { formatNumber, formatPercent, formatVnd, formatVndShort } from '../../lib/format';
-import { Button, ChannelTag, DataTable, EmptyState, Panel, Person, Stat, StatRow, Status } from '../ui';
+import { Button, ChannelTag, DataTable, EmptyState, Panel, Person, Stat, StatRow, Status, sharedTo } from '../ui';
 import type { Column } from '../ui';
 import { INITIAL_PUSH_PRODUCTS } from '../../lib/mockData';
 
@@ -320,7 +320,8 @@ export function StoreProfile({
 
             <div className="min-w-0 space-y-1">
               <div className="flex items-center gap-2 flex-wrap">
-                <h2 className="text-lg font-semibold text-ink truncate">
+                {/* Tên chuyển cảnh khớp với hàng trong StoreManagementView */}
+                <h2 className="text-lg font-semibold text-ink truncate" style={layout === 'page' ? sharedTo('store-title') : undefined}>
                   {store.storeName}
                 </h2>
                 <ChannelTag channel={store.platform} />

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { ConfirmDialog, PageActions, StatRow, Stat, Button } from '../ui';
+import { ConfirmDialog, PageActions, StatRow, Stat, Button, Presence } from '../ui';
 import { 
   Layers, 
   Search, 
@@ -817,9 +817,10 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
       {/* ========================================================================= */}
       {/* 6. MODAL: CREATE / EDIT CONTENT ANGLE                                     */}
       {/* ========================================================================= */}
+      <Presence show={!!isModalOpen}>
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 animate-in fade-in duration-(--motion-base)">
+          <div data-motion-panel className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
             {/* Modal Header */}
             <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/80">
               <div className="flex items-center gap-2">
@@ -1083,13 +1084,15 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
           </div>
         </div>
       )}
+      </Presence>
 
       {/* ========================================================================= */}
       {/* 7. MODAL: ANGLE SUGGESTIONS                                               */}
       {/* ========================================================================= */}
+      <Presence show={!!isAiModalOpen}>
       {isAiModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 animate-in fade-in duration-(--motion-base)">
+          <div data-motion-panel className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
             <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-sunken">
               <div className="flex items-center gap-2">
                 <Lightbulb className="w-5 h-5 text-amber-500" />
@@ -1187,6 +1190,7 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
           </div>
         </div>
       )}
+      </Presence>
       {/* Confirm Delete Angle Dialog */}
       <ConfirmDialog
         open={Boolean(deletingAngle)}

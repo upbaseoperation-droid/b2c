@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { Avatar } from '../ui';
+import { Avatar, Presence } from '../ui';
 import {
   ArrowLeft,
   ChevronLeft,
@@ -1529,9 +1529,10 @@ export const KocKolHubView: React.FC<KocKolHubViewProps> = ({
       {/* ========================================================================= */}
       {/* MODAL: ĐÀM PHÁN GIÁ CAST */}
       {/* ========================================================================= */}
+      <Presence show={!!negotiatingDeal}>
       {negotiatingDeal && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-in fade-in duration-150">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200 space-y-4 animate-in zoom-in-95 duration-150">
+        <div className="fixed inset-0 bg-slate-900/40 z-50 flex items-center justify-center p-4 animate-in fade-in duration-(--motion-base)">
+          <div data-motion-panel className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200 space-y-4 animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="font-semibold text-slate-900 text-sm">Đề xuất mức thù lao Cast</h3>
               <button onClick={() => setNegotiatingDeal(null)} className="text-slate-400 hover:text-slate-700">
@@ -1586,13 +1587,15 @@ export const KocKolHubView: React.FC<KocKolHubViewProps> = ({
           </div>
         </div>
       )}
+      </Presence>
 
       {/* ========================================================================= */}
       {/* MODAL: TỪ CHỐI JOB */}
       {/* ========================================================================= */}
+      <Presence show={!!rejectingDeal}>
       {rejectingDeal && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-in fade-in duration-150">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200 space-y-4 animate-in zoom-in-95 duration-150">
+        <div className="fixed inset-0 bg-slate-900/40 z-50 flex items-center justify-center p-4 animate-in fade-in duration-(--motion-base)">
+          <div data-motion-panel className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200 space-y-4 animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="font-semibold text-slate-900 text-sm">Từ chối lời mời hợp tác</h3>
               <button onClick={() => setRejectingDeal(null)} className="text-slate-400 hover:text-slate-700">
@@ -1636,13 +1639,15 @@ export const KocKolHubView: React.FC<KocKolHubViewProps> = ({
           </div>
         </div>
       )}
+      </Presence>
 
       {/* ========================================================================= */}
       {/* MODAL: NỘP VIDEO DEMO & SPARK ADS */}
       {/* ========================================================================= */}
+      <Presence show={!!submittingDeal}>
       {submittingDeal && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-in fade-in duration-150">
-          <form onSubmit={handleSubmitVideoDemo} className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-slate-200 space-y-4 animate-in zoom-in-95 duration-150">
+        <div className="fixed inset-0 bg-slate-900/40 z-50 flex items-center justify-center p-4 animate-in fade-in duration-(--motion-base)">
+          <form onSubmit={handleSubmitVideoDemo} data-motion-panel className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-slate-200 space-y-4 animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div>
                 <h3 className="font-semibold text-slate-900 text-sm">Nộp Video Demo &amp; Mã Spark Ads</h3>
@@ -1709,13 +1714,15 @@ export const KocKolHubView: React.FC<KocKolHubViewProps> = ({
           </form>
         </div>
       )}
+      </Presence>
 
       {/* ========================================================================= */}
       {/* MODAL: SỬA ĐỊA CHỈ NHẬN HÀNG MẪU */}
       {/* ========================================================================= */}
+      <Presence show={!!editingAddress}>
       {editingAddress && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-in fade-in duration-150">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200 space-y-4 animate-in zoom-in-95 duration-150">
+        <div className="fixed inset-0 bg-slate-900/40 z-50 flex items-center justify-center p-4 animate-in fade-in duration-(--motion-base)">
+          <div data-motion-panel className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200 space-y-4 animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="font-semibold text-slate-900 text-sm">Cập nhật địa chỉ nhận hàng mẫu</h3>
               <button onClick={() => setEditingAddress(false)} className="text-slate-400 hover:text-slate-700">
@@ -1777,6 +1784,7 @@ export const KocKolHubView: React.FC<KocKolHubViewProps> = ({
           </div>
         </div>
       )}
+      </Presence>
     </div>
   );
 };

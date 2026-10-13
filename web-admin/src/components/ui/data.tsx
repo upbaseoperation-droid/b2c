@@ -190,7 +190,7 @@ export function Progress({
       aria-valuemax={100}
       aria-label={label}
     >
-      <div className="h-full rounded-full transition-[width] duration-500" style={{ width: `${pct}%`, background: color }} />
+      <div className="data-bar h-full rounded-full" style={{ width: `${pct}%`, background: color }} />
     </div>
   );
 }
@@ -222,11 +222,12 @@ export function Sparkline({
   const area = `${line} L${x(data.length - 1).toFixed(1)},${height} L${x(0).toFixed(1)},${height} Z`;
   const lx = x(data.length - 1);
   const ly = y(data[data.length - 1]);
+  // Lần đầu: đường được vẽ từ trái sang. Dữ liệu đổi (cùng số kỳ): đường biến hình sang dáng mới (DESIGN_SYSTEM.md §9).
   return (
-    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} role="img" aria-label={label} className="shrink-0 overflow-visible">
-      <path d={area} fill={color} opacity={0.1} />
-      <path d={line} fill="none" stroke={color} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
-      <circle cx={lx} cy={ly} r={3} fill={color} stroke="var(--color-surface)" strokeWidth={2} />
+    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} role="img" aria-label={label} className="sparkline shrink-0 overflow-visible">
+      <path d={area} style={{ d: `path('${area}')` } as React.CSSProperties} fill={color} opacity={0.1} className="sparkline-area" />
+      <path d={line} style={{ d: `path('${line}')` } as React.CSSProperties} pathLength={1} fill="none" stroke={color} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" className="sparkline-line" />
+      <circle cx={lx} cy={ly} r={3} fill={color} stroke="var(--color-surface)" strokeWidth={2} className="sparkline-dot" />
     </svg>
   );
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import {
   Stat,
   StatRow,
@@ -22,7 +22,8 @@ import {
   Textarea,
   Pagination,
   PageActions,
-  Status
+  Status,
+  useFlipList
 } from '../ui';
 import { formatVndShort } from '../../lib/format';
 import {
@@ -323,6 +324,8 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
     const start = (governancePage - 1) * GOVERNANCE_PAGE_SIZE;
     return filteredStoreGovernance.slice(start, start + GOVERNANCE_PAGE_SIZE);
   }, [filteredStoreGovernance, governancePage]);
+  const governanceBodyRef = useRef<HTMLTableSectionElement>(null);
+  useFlipList(governanceBodyRef, paginatedStoreGovernance.map(i => i.store.id).join('|'));
 
   // Bật/tắt B2C phụ trách
   const handleToggleB2cManaged = (store: StorePortfolioItem, e: React.MouseEvent) => {
@@ -439,6 +442,8 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
       return true;
     });
   }, [plans, selectedMonth, selectedBrand, selectedStatus, selectedPic, searchQuery]);
+  const plansBodyRef = useRef<HTMLTableSectionElement>(null);
+  useFlipList(plansBodyRef, filteredPlans.map(p => p.id).join('|'));
 
   // Chỉ số tổng hợp của danh mục theo tháng
   const monthlyMetrics = useMemo(() => {
@@ -776,7 +781,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                     <th className="py-2.5 px-2.5 text-center w-[12%]">Trạng thái &amp; Duyệt</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-line">
+                <tbody ref={governanceBodyRef} className="divide-y divide-line">
                   {filteredStoreGovernance.length === 0 ? (
                     <tr>
                       <td colSpan={8} className="py-12 text-center text-ink-3">
@@ -802,6 +807,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                       return (
                         <tr
                           key={store.id}
+                          data-flip={store.id}
                           className={cx(
                             'hover:bg-canvas transition-colors',
                             plan && 'cursor-pointer',
@@ -1340,7 +1346,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                       <th className="py-2.5 px-2.5 text-center w-[12%]">Trạng thái &amp; Mở</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-line">
+                  <tbody ref={plansBodyRef} className="divide-y divide-line">
                     {filteredPlans.map(plan => {
                       const bd = getB2cPlanBreakdown(plan);
                       const versionSnapshots = getPlanVersionSnapshots(plan);
@@ -1354,6 +1360,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                       return (
                         <tr
                           key={plan.id}
+                          data-flip={plan.id}
                           className="hover:bg-canvas transition-colors cursor-pointer"
                           onClick={() => onSelectPlan(plan)}
                         >

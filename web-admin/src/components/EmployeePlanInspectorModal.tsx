@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { formatVndShort } from '../lib/format';
-import { ConfirmDialog } from './ui';
+import { ConfirmDialog, Presence } from './ui';
 import { 
   X, 
   CheckCircle2, 
@@ -91,7 +91,7 @@ export const EmployeePlanInspectorModal: React.FC<EmployeePlanInspectorModalProp
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
-  if (!isOpen || !staffAllocation) return null;
+  if (!isOpen || !staffAllocation) return <Presence show={false} />;
 
   // Calculations
   const staffItems = planItems.filter(item => item.staffName === staffAllocation.staffName);
@@ -146,17 +146,18 @@ export const EmployeePlanInspectorModal: React.FC<EmployeePlanInspectorModalProp
   };
 
   return (
+    <Presence show>
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 animate-in fade-in duration-(--motion-base)"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div 
+      <div data-motion-panel
         role="dialog"
         aria-modal="true"
         aria-label={`Kế hoạch triển khai chi tiết — ${staffAllocation.staffName}`}
-        className="bg-white border border-slate-200 rounded-xl shadow-2xl w-full max-w-6xl max-h-[92vh] flex flex-col overflow-hidden text-slate-800"
+        className="bg-white border border-slate-200 rounded-xl shadow-2xl w-full max-w-6xl max-h-[92vh] flex flex-col overflow-hidden text-slate-800 animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter"
       >
         
         {/* ========================================================================= */}
@@ -719,5 +720,6 @@ export const EmployeePlanInspectorModal: React.FC<EmployeePlanInspectorModalProp
         />
       )}
     </div>
+    </Presence>
   );
 };

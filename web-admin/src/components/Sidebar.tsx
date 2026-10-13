@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useRef } from 'react';
 import {
   CheckSquare,
   BarChart3,
@@ -27,7 +27,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { UserProfile, TabKey } from '../lib/types';
-import { Avatar, BrandLogo } from './ui';
+import { Avatar, BrandLogo, Presence, SlidingIndicator, useActiveBox } from './ui';
 export type { TabKey };
 
 interface NavItem {
@@ -438,6 +438,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onLogout,
 }) => {
   const navSections = getNavSectionsForUserRole(currentUser.role);
+  // Nền + vạch của mục đang mở là một phần tử, trượt sang mục mới khi chuyển màn.
+  const navRef = useRef<HTMLElement>(null);
+  const { box, ready } = useActiveBox(navRef, activeTab);
 
   const handleItemClick = (key: TabKey) => {
     onTabSelect(key);
@@ -446,16 +449,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <>
-      {isMobileOpen && (
-        <div
-          className="fixed inset-0 bg-ink/40 z-40 lg:hidden animate-in fade-in duration-150"
-          onClick={onCloseMobile}
-          aria-hidden="true"
-        />
-      )}
+      <Presence show={isMobileOpen}>
+        {isMobileOpen && (
+          <div
+            className="fixed inset-0 bg-ink/40 z-40 lg:hidden animate-in fade-in duration-(--motion-base)"
+            onClick={onCloseMobile}
+            aria-hidden="true"
+          />
+        )}
+      </Presence>
 
       <aside
-        className={`app-sidebar w-60 bg-surface border-r border-line flex flex-col justify-between shrink-0 h-dvh select-none transition-transform duration-200 ease-in-out fixed inset-y-0 left-0 z-30 ${
+        className={`app-sidebar w-60 bg-surface border-r border-line flex flex-col justify-between shrink-0 h-dvh select-none transition-transform duration-(--motion-base) ease-move fixed inset-y-0 left-0 z-30 ${
           isMobileOpen
             ? 'translate-x-0 shadow-2xl z-50'
             : '-translate-x-full lg:translate-x-0'
@@ -477,7 +482,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
             )}
           </div>
 
-          <nav className="px-2.5 py-2.5 space-y-2.5">
+          <nav ref={navRef} className="relative px-2.5 py-2.5 space-y-2.5">
+            <SlidingIndicator box={box} ready={ready} className="sidebar-indicator rounded-md bg-accent-soft" />
             {navSections.map((section, idx) => (
               <div key={section.title || `sec-${idx}`}>
                 {section.title && (
@@ -494,9 +500,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         key={item.key}
                         onClick={() => handleItemClick(item.key)}
                         aria-current={isActive ? 'page' : undefined}
+                        data-active={isActive}
                         className={`sidebar-item w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-left text-[13px] leading-5 transition-colors ${
                           isActive
-                            ? 'bg-accent-soft text-accent font-semibold'
+                            ? 'text-accent font-semibold'
                             : 'text-ink-2 hover:text-ink hover:bg-sunken'
                         }`}
                       >

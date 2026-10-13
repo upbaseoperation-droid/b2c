@@ -45,7 +45,7 @@ import {
 } from '../../lib/types';
 import { INITIAL_PUSH_PRODUCTS } from '../../lib/mockData';
 import { formatDate, formatVnd } from '../../lib/format';
-import { Button, ChannelTag, PageActions } from '../ui';
+import { Button, ChannelTag, PageActions, Presence } from '../ui';
 
 interface PushProductsViewProps {
   currentUser: UserProfile;
@@ -1642,9 +1642,10 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
       )}
 
       {/* DETAIL / COLLABORATION ALIGNMENT DRAWER MODAL */}
+      <Presence show={!!selectedProduct} exit="drawer">
       {selectedProduct && (
-        <div className="fixed inset-0 z-50 overflow-hidden bg-slate-900/50 backdrop-blur-xs flex justify-end">
-          <div className="w-full max-w-3xl bg-white h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-200">
+        <div className="fixed inset-0 z-50 overflow-hidden bg-slate-900/50 flex justify-end animate-in fade-in duration-(--motion-base)">
+          <div data-motion-panel className="w-full max-w-3xl bg-white h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-(--motion-slow) ease-enter">
             {/* Drawer Header */}
             <div className="p-5 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
               <div className="space-y-1">
@@ -2196,11 +2197,13 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
           </div>
         </div>
       )}
+      </Presence>
 
       {/* MODAL: KHỞI TẠO ĐỀ XUẤT SẢN PHẨM THÚC ĐẨY MỚI (GROWTH KHỞI TẠO) */}
+      <Presence show={!!isCreateModalOpen}>
       {isCreateModalOpen && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-150">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/50 flex items-center justify-center p-4 animate-in fade-in duration-(--motion-base)">
+          <div data-motion-panel className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
             <div className="px-6 py-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
               <div>
                 <h3 className="text-base font-semibold text-slate-900 flex items-center gap-2">
@@ -2468,11 +2471,13 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
           </div>
         </div>
       )}
+      </Presence>
 
       {/* MODAL: B2C BỔ SUNG & CẬP NHẬT THÔNG TIN BRIEF KOC / CREATOR */}
+      <Presence show={!!(isEditBriefModalOpen && briefFormProduct)}>
       {isEditBriefModalOpen && briefFormProduct && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-150">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/50 flex items-center justify-center p-4 animate-in fade-in duration-(--motion-base)">
+          <div data-motion-panel className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
             <div className="px-6 py-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
               <div>
                 <h3 className="text-base font-semibold text-slate-900 flex items-center gap-2">
@@ -2634,11 +2639,13 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
           </div>
         </div>
       )}
+      </Presence>
 
       {/* MODAL: TẠO CHANGE REQUEST (YÊU CẦU THAY ĐỔI ĐIỀU KIỆN / CHU KỲ) */}
+      <Presence show={!!isChangeRequestModalOpen}>
       {isChangeRequestModalOpen && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-150">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/50 flex items-center justify-center p-4 animate-in fade-in duration-(--motion-base)">
+          <div data-motion-panel className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
             <div className="px-6 py-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
               <div>
                 <h3 className="text-base font-semibold text-slate-900 flex items-center gap-2">
@@ -2736,6 +2743,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
           </div>
         </div>
       )}
+      </Presence>
     </div>
   );
 };

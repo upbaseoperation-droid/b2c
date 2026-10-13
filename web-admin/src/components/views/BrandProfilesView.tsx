@@ -13,7 +13,7 @@ import type { BrandProfile, BrandSection } from '../../lib/brands/types';
 import { brandKey } from '../../lib/brands/types';
 import { UPBASE_BRANDS_MASTER, UPBASE_STORES_MASTER } from '../../lib/importedMasterData';
 import { formatDate, formatVndShort } from '../../lib/format';
-import { Button, ChannelTag, Chips, DataTable, EmptyState, FilterBar, Pagination, Panel, Person, Stat, StatRow, Status, channelOf } from '../ui';
+import { Avatar, Button, ChannelTag, Chips, DataTable, EmptyState, FilterBar, Pagination, Panel, Person, Stat, StatRow, Skeleton, Status, channelOf, closeShared, openShared, sharedFrom } from '../ui';
 import type { Column } from '../ui';
 import { BrandProfileDetail } from '../brands/BrandProfileDetail';
 import { buildRows, isExpired, permissionsOf, real, type BrandAccess, type BrandRow } from '../brands/brandUi';
@@ -199,6 +199,10 @@ export function BrandProfilesView({
     );
   }
 
+  // Danh sách ↔ hồ sơ: ảnh và tên thương hiệu bay giữa hàng bảng và đầu hồ sơ (DESIGN_SYSTEM.md §9).
+  const openBrand = (key: string) => openShared(key, () => setOpenKey(key));
+  const closeBrand = (key: string) => closeShared(key, () => setOpenKey(null));
+
   const open = openKey ? rows.find(r => r.key === openKey) : undefined;
   if (open) {
     const idx = visible.findIndex(r => r.key === open.key);
@@ -210,7 +214,7 @@ export function BrandProfilesView({
         deals={deals}
         stores={allStores}
         busy={busy}
-        onBack={() => setOpenKey(null)}
+        onBack={() => closeBrand(open.key)}
         nav={{
           onPrev: idx > 0 ? () => setOpenKey(visible[idx - 1].key) : undefined,
           onNext: idx >= 0 && idx < visible.length - 1 ? () => setOpenKey(visible[idx + 1].key) : undefined,
@@ -248,9 +252,11 @@ export function BrandProfilesView({
         const st = storeStatsByBrand.get(r.key);
         const platforms = st?.platforms.length ? st.platforms : (r.master?.platforms || []);
         return (
-          <div className="min-w-0 max-w-[270px] leading-tight">
+          <div className="min-w-0 max-w-[270px] leading-tight flex items-start gap-2.5">
+            <span {...sharedFrom('brand-avatar', r.key)} className="shrink-0 inline-flex"><Avatar name={r.name} size={28} /></span>
+            <div className="min-w-0">
             <div className="flex items-center gap-1.5">
-              <span className="truncate font-semibold text-ink">{r.name}</span>
+              <span {...sharedFrom('brand-title', r.key)} className="truncate font-semibold text-ink">{r.name}</span>
               {real(r.master?.code) && (
                 <span className="text-2xs font-mono text-ink-3 bg-surface-2 px-1 py-0.5 rounded border border-line shrink-0">
                   {real(r.master?.code)}
@@ -260,6 +266,7 @@ export function BrandProfilesView({
             <div className="flex items-center gap-1.5 mt-1 flex-wrap">
               <span className="truncate text-2xs text-ink-3 max-w-[140px]">{real(r.master?.category) || '—'}</span>
               {platforms.map(p => <ChannelTag key={p} channel={channelOf(p)} />)}
+            </div>
             </div>
           </div>
         );
@@ -320,7 +327,7 @@ export function BrandProfilesView({
       render: r => (
         <div className="grid gap-1 justify-items-start">
           {isSyncing ? (
-            <span className="text-2xs text-ink-3 italic">Đang đồng bộ…</span>
+            <Skeleton className="w-20" />
           ) : r.done === r.total ? (
             <Status tone="positive">Đủ {r.done}/{r.total} mục</Status>
           ) : r.done >= 5 ? (
@@ -336,7 +343,7 @@ export function BrandProfilesView({
       header: 'SKU · Từ cấm',
       width: 115,
       align: 'right',
-      render: r => isSyncing ? <span className="text-ink-3">—</span> : (
+      render: r => isSyncing ? <Skeleton className="w-16 ml-auto" /> : (
         <div className="leading-tight tabular-nums text-xs">
           <span className="text-ink font-medium">{r.profile.products.length}</span>
           <span className="text-ink-3"> SKU · </span>
@@ -428,7 +435,7 @@ export function BrandProfilesView({
           columns={columns}
           rows={visible.slice((page - 1) * 20, page * 20)}
           rowKey={r => r.key}
-          onRowClick={r => setOpenKey(r.key)}
+          onRowClick={r => openBrand(r.key)}
           empty={<EmptyState title="Không có nhãn hàng khớp" description="Đổi bộ lọc hoặc tìm bằng tên khác." />}
         />
         <Pagination page={page} pageSize={20} total={visible.length} onPageChange={setPage} />

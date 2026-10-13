@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { Presence } from './ui';
 import {
   X,
   AlertTriangle,
@@ -138,7 +139,7 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
     return null;
   })();
 
-  if (!isOpen) return null;
+  if (!isOpen) return <Presence show={false} />;
 
   // Auto detect Salary Grade (Khung lương) & Segment based on Rate card
   const handleRateCardChange = (value: number) => {
@@ -248,17 +249,18 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
   };
 
   return (
+    <Presence show>
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/50 backdrop-blur-xs animate-in fade-in duration-150"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/50 animate-in fade-in duration-(--motion-base)"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div
+      <div data-motion-panel
         role="dialog"
         aria-modal="true"
         aria-label="Tạo hồ sơ KOC chuẩn 65 trường nghiệp vụ"
-        className="bg-surface border border-line rounded-xl max-w-3xl w-full p-6 shadow-2xl space-y-5 max-h-[92vh] overflow-y-auto text-ink"
+        className="bg-surface border border-line rounded-xl max-w-3xl w-full p-6 shadow-2xl space-y-5 max-h-[92vh] overflow-y-auto text-ink animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter"
       >
         {/* Header */}
         <div className="flex items-center justify-between pb-3 border-b border-line">
@@ -815,6 +817,7 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
         </form>
       </div>
     </div>
+    </Presence>
   );
 };
 

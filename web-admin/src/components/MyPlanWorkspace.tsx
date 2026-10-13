@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { formatVnd, formatVndShort } from '../lib/format';
-import { Button, EmptyState, ConfirmDialog, Modal, Status } from './ui';
+import { Button, EmptyState, ConfirmDialog, Modal, Status, useFlipList } from './ui';
 import { 
   Target, 
   DollarSign, 
@@ -147,6 +147,8 @@ export const MyPlanWorkspace: React.FC<MyPlanWorkspaceProps> = ({
     if (selectedWeekFilter !== 'ALL' && i.targetWeek !== selectedWeekFilter) return false;
     return true;
   });
+  const planBodyRef = useRef<HTMLTableSectionElement>(null);
+  useFlipList(planBodyRef, filteredItems.map(i => i.id).join('|'));
 
   const approvedCount = staffItems.filter(i => i.status === 'APPROVED' || i.status === 'CONVERTED').length;
   const pendingCount = staffItems.filter(i => i.status === 'SUBMITTED').length;
@@ -197,7 +199,7 @@ export const MyPlanWorkspace: React.FC<MyPlanWorkspaceProps> = ({
             </div>
             <div className="w-full bg-line h-1.5 rounded-full overflow-hidden mt-2">
               <div 
-                className={`h-full ${fillRateVideos >= 90 ? 'bg-positive' : 'bg-warning'}`}
+                className={`data-bar h-full ${fillRateVideos >= 90 ? 'bg-positive' : 'bg-warning'}`}
                 style={{ width: `${Math.min(100, fillRateVideos)}%` }}
               />
             </div>
@@ -307,7 +309,7 @@ export const MyPlanWorkspace: React.FC<MyPlanWorkspaceProps> = ({
                 <th className="p-3 pr-4 text-right">Thao Tác</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-line">
+            <tbody ref={planBodyRef} className="divide-y divide-line">
               {filteredItems.length === 0 ? (
                 <tr>
                   <td colSpan={10} className="px-4">
@@ -320,7 +322,7 @@ export const MyPlanWorkspace: React.FC<MyPlanWorkspaceProps> = ({
                 </tr>
               ) : (
                 filteredItems.map(item => (
-                  <tr key={item.id} className="hover:bg-sunken/50 transition-colors">
+                  <tr key={item.id} data-flip={item.id} className="hover:bg-sunken/50 transition-colors">
                     {/* Week */}
                     <td className="p-3 pl-4">
                       <span className="font-semibold font-mono px-2 py-0.5 rounded bg-sunken text-ink-2 border border-line text-2xs">

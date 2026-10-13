@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "tw-animate-css"; /* animate-in, fade-in, zoom-in-95, slide-in-from-*… dùng trong modal, menu, toast */
 
 /* =========================================================================
    UPBASE OPS DESIGN SYSTEM — xem web-admin/DESIGN_SYSTEM.md
@@ -175,6 +176,20 @@
   --shadow-xl: 0 1px 2px rgb(22 23 26 / 0.06), 0 12px 32px rgb(22 23 26 / 0.12);
   --shadow-2xl: 0 1px 2px rgb(22 23 26 / 0.06), 0 16px 48px rgb(22 23 26 / 0.16);
   --shadow-pop: 0 1px 2px rgb(22 23 26 / 0.06), 0 8px 24px rgb(22 23 26 / 0.08);
+
+  /* ---- Chuyển động: xem DESIGN_SYSTEM.md §9. Chỉ dùng 3 đường cong này ----
+     Sinh class ease-enter, ease-exit, ease-move. */
+  --ease-enter: cubic-bezier(0.2, 0.8, 0.2, 1);  /* phần tử xuất hiện, số liệu dừng lại */
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);       /* phần tử rời đi */
+  --ease-move: cubic-bezier(0.65, 0, 0.35, 1);   /* phần tử đổi chỗ: vạch chỉ báo, hàng bảng */
+}
+
+/* Thời lượng chuyển động: dùng duration-(--motion-base) hoặc var(--motion-base) */
+:root {
+  --motion-fast: 120ms;   /* phản hồi: hover, nhấn, focus, đóng */
+  --motion-base: 200ms;   /* mở/đóng lớp nổi, vạch chỉ báo trượt */
+  --motion-slow: 320ms;   /* chuỗi có thứ tự: duyệt bước, hàng bảng đổi chỗ */
+  --motion-data: 640ms;   /* số liệu: số lăn, thanh và cột biểu đồ */
 }
 
 /* ========================================================================= */
@@ -416,7 +431,8 @@ span[class*="px-"][class*="rounded"]:not([class*="block"]) {
 /* Workspace polish: scoped surfaces, short transitions, no layout animation. */
 .app-sidebar { box-shadow: 1px 0 0 rgb(22 23 26 / 0.02); }
 .sidebar-item { position: relative; min-height: 32px; }
-.sidebar-item[aria-current="page"]::before {
+/* Vạch chỉ báo mục đang mở: một phần tử trượt giữa các mục (SlidingIndicator trong Sidebar) */
+.sidebar-indicator::before {
   content: "";
   position: absolute;
   left: 0;
@@ -431,7 +447,7 @@ span[class*="px-"][class*="rounded"]:not([class*="block"]) {
 }
 .workspace-panel > header { padding: 16px 20px; }
 .app-header { box-shadow: 0 1px 8px rgb(22 23 26 / 0.025); }
-.workspace-view { animation: workspace-reveal 180ms ease-out; }
+.workspace-view { animation: workspace-reveal var(--motion-base) var(--ease-enter); }
 @keyframes workspace-reveal {
   from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: translateY(0); }
@@ -455,3 +471,142 @@ input:focus-visible, textarea:focus-visible, select:focus-visible {
   .btn-sm, .btn-md, .btn-lg { min-height: 44px; }
 }
 
+
+/* ========================================================================= */
+/* CHUYỂN ĐỘNG — DESIGN_SYSTEM.md §9                                          */
+/* Mỗi chuyển động phải nói lên một điều: số đã đổi, phần tử đến từ đâu,       */
+/* thao tác đã xong. Ưu tiên transform và opacity.                             */
+/* ========================================================================= */
+
+/* Thanh dữ liệu (tiến độ, ngân sách, thanh ngang): mọc từ trái khi xuất hiện,
+   chạy từ giá trị cũ sang mới khi bộ lọc đổi. Đổi width chỉ trong rãnh có kích
+   thước cố định nên không đẩy bố cục xung quanh. */
+.data-bar {
+  transform-origin: left center;
+  transition: width var(--motion-data) var(--ease-enter), background-color var(--motion-base) ease;
+  animation: data-bar-grow var(--motion-data) var(--ease-enter) both;
+}
+@keyframes data-bar-grow {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+/* Số lăn (NumberRoll): mỗi chữ số là một cột 0–9 trượt dọc */
+.num-roll { display: inline-flex; align-items: baseline; white-space: pre; } /* pre: giữ khoảng trắng "136,37 tỷ" giữa các ô flex */
+.num-roll-digit { display: inline-block; height: 1lh; overflow: hidden; }
+.num-roll-strip {
+  display: flex;
+  flex-direction: column;
+  transition: transform var(--motion-data) var(--ease-enter);
+  transition-delay: var(--roll-delay, 0ms);
+  user-select: none; /* sao chép lấy chuỗi số thật trong sr-only, không lấy dải 0–9 */
+}
+.num-roll-strip > span { height: 1lh; text-align: center; }
+.num-roll-delta {
+  display: inline-block;
+  margin-left: 0.5rem;
+  font-size: var(--text-2xs);
+  line-height: var(--text-2xs--line-height);
+  font-weight: 500;
+  letter-spacing: 0;
+  animation: num-delta 2000ms var(--ease-enter) both;
+}
+@keyframes num-delta {
+  0% { opacity: 0; transform: translateY(4px); }
+  10%, 75% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(0); }
+}
+
+/* Sparkline: vẽ nét khi hiện, biến hình khi dữ liệu đổi (thuộc tính d, Chromium) */
+.sparkline-line { stroke-dasharray: 1; stroke-dashoffset: 0; animation: spark-draw var(--motion-data) var(--ease-enter) both; }
+.sparkline-line, .sparkline-area { transition: d var(--motion-data) var(--ease-enter); }
+.sparkline-area { animation: motion-fade-in var(--motion-data) var(--ease-enter) both; }
+.sparkline-dot { transition: cx var(--motion-data) var(--ease-enter), cy var(--motion-data) var(--ease-enter); animation: motion-fade-in var(--motion-base) var(--ease-enter) var(--motion-data) both; }
+@keyframes spark-draw { from { stroke-dashoffset: 1; } }
+@keyframes motion-fade-in { from { opacity: 0; } }
+
+/* Vạch chỉ báo trượt (menu trái, Tabs, Segmented) */
+.sliding-indicator {
+  position: absolute;
+  pointer-events: none;
+  transition: transform var(--motion-base) var(--ease-move), width var(--motion-base) var(--ease-move), height var(--motion-base) var(--ease-move);
+}
+.sliding-indicator[data-ready="false"] { transition: none; }
+
+/* Dấu hoàn tất (StepMark): vòng tròn đóng dấu, dấu tích được vẽ nét */
+.step-mark { transition: background-color var(--motion-base) var(--ease-enter), border-color var(--motion-base) var(--ease-enter), color var(--motion-base); }
+.step-mark.is-done-now { animation: step-stamp var(--motion-slow) var(--ease-enter); }
+.step-mark.is-done-now path { stroke-dasharray: 24; stroke-dashoffset: 24; animation: step-draw var(--motion-slow) var(--ease-enter) 120ms forwards; }
+@keyframes step-stamp {
+  0% { transform: scale(0.6); }
+  60% { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+@keyframes step-draw { to { stroke-dashoffset: 0; } }
+
+/* Khối vừa đổi trạng thái (ChangeFlash): hiện lại một lần */
+.state-changed { animation: state-pop var(--motion-slow) var(--ease-enter); }
+@keyframes state-pop {
+  0% { transform: scale(0.94); opacity: 0.5; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Lớp nổi đóng lại (Modal) */
+.motion-exit-fade { animation: motion-fade-out var(--motion-fast) var(--ease-exit) forwards; }
+.motion-exit-pop { animation: motion-pop-out var(--motion-fast) var(--ease-exit) forwards; }
+@keyframes motion-fade-out { to { opacity: 0; } }
+@keyframes motion-pop-out { to { opacity: 0; transform: scale(0.97); } }
+
+/* Lớp nổi tự viết (Presence): lúc mở không tạo hộp; lúc đóng phủ cả màn để không đẩy bố cục */
+.motion-presence { display: contents; }
+.motion-presence[data-presence="pop"],
+.motion-presence[data-presence="drawer"] {
+  display: block;
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  pointer-events: none;
+  animation: motion-fade-out var(--motion-fast) var(--ease-exit) forwards;
+}
+.motion-presence[data-presence="drawer"] { animation-duration: var(--motion-base); }
+.motion-presence[data-presence="pop"] [data-motion-panel] { animation: motion-pop-out var(--motion-fast) var(--ease-exit) forwards; }
+.motion-presence[data-presence="drawer"] [data-motion-panel] { animation: motion-drawer-out var(--motion-base) var(--ease-exit) forwards; }
+@keyframes motion-drawer-out { to { transform: translateX(100%); } }
+
+/* Toast xếp chồng (ToastStack): thẻ mới ở trước, thẻ cũ lùi ra sau; rê chuột để xoè */
+.toast-card {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  transform-origin: bottom center;
+  transition: transform var(--motion-slow) var(--ease-enter), opacity var(--motion-base) var(--ease-enter);
+}
+.toast-card[data-state="enter"] { animation: toast-in var(--motion-slow) var(--ease-enter) both; }
+.toast-card[data-state="exit"] { opacity: 0; transition-timing-function: var(--ease-exit); transition-duration: var(--motion-base); }
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(16px) scale(0.96); }
+}
+
+/* Khung giữ chỗ khi đang tải (Skeleton): một vệt sáng chậm. Chỉ hiện khi đang tải. */
+.skeleton {
+  background: linear-gradient(90deg, var(--color-sunken) 40%, var(--color-canvas) 50%, var(--color-sunken) 60%) 0 0 / 300% 100%;
+  border-radius: 4px;
+  animation: skeleton-sweep 1600ms linear infinite;
+}
+@keyframes skeleton-sweep {
+  from { background-position: 100% 0; }
+  to { background-position: 0 0; }
+}
+
+/* Chuyển cảnh danh sách → hồ sơ (View Transitions, xem withViewTransition) */
+::view-transition-old(root),
+::view-transition-new(root) { animation-duration: var(--motion-base); animation-timing-function: var(--ease-enter); }
+::view-transition-group(*) { animation-duration: var(--motion-slow); animation-timing-function: var(--ease-enter); }
+
+@media (prefers-reduced-motion: reduce) {
+  .data-bar, .step-mark.is-done-now, .state-changed, .toast-card[data-state="enter"], .num-roll-delta, .sparkline-line, .sparkline-area, .sparkline-dot { animation: none; }
+  .step-mark.is-done-now path { stroke-dashoffset: 0; animation: none; }
+  .skeleton { animation: none; }
+  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
+}

@@ -6,9 +6,10 @@
  * và token màu (bg-surface, text-ink-3, border-line…), không tự đặt màu Tailwind.
  */
 
-import React from 'react';
+import React, { useRef } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import { Progress, Sparkline } from './data';
+import { NumberRoll, SlidingIndicator, deltaPercent, useActiveBox } from './motion';
 
 export { Avatar, Person, initialsOf, CHANNELS, channelOf, ChannelTag, ChannelBar, Progress, Sparkline } from './data';
 export type { ChannelKey } from './data';
@@ -16,6 +17,9 @@ export { PlatformLogo, FacebookLogo, ThreadsLogo, InstagramLogo, ShopeeLogo, Tik
 export type { PlatformKey } from './PlatformLogos';
 export { Toolbar, Panel, Chips, SearchInput, FilterBar, DataTable, Modal, ConfirmDialog, Field, Input, Select, Textarea, ActionMenu, Pagination, PageActions, PageActionsSlot, PageActiveContext } from './blocks';
 export type { Column, ChipOption, ActionMenuItem } from './blocks';
+export { MOTION, NumberRoll, deltaPercent, useActiveBox, SlidingIndicator, useFlipList, StepMark, ChangeFlash, usePresence, Presence, withViewTransition, tagShared, sharedFrom, sharedTo, openShared, closeShared, Skeleton, SkeletonRows, useReducedMotion } from './motion';
+export { ToastStack, useToastQueue } from './toast';
+export type { ToastItem, ToastType } from './toast';
 
 const cx = (...parts: Array<string | false | null | undefined>) => parts.filter(Boolean).join(' ');
 
@@ -100,8 +104,11 @@ export interface TabItem<K extends string> {
 
 /** Tab gạch chân. Số đếm màu nhạt, không đóng khung. */
 export function Tabs<K extends string>({ items, value, onChange, className }: { items: TabItem<K>[]; value: K; onChange: (k: K) => void; className?: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const { box, ready } = useActiveBox(ref, value);
   return (
-    <div role="tablist" className={cx('flex gap-6 border-b border-line overflow-x-auto', className)}>
+    <div ref={ref} role="tablist" className={cx('relative flex gap-6 border-b border-line overflow-x-auto', className)}>
+      <SlidingIndicator box={box} ready={ready} fit="underline" className="bg-ink z-[1]" />
       {items.map((t) => {
         const on = t.key === value;
         return (
@@ -110,10 +117,11 @@ export function Tabs<K extends string>({ items, value, onChange, className }: { 
             role="tab"
             type="button"
             aria-selected={on}
+            data-active={on}
             onClick={() => onChange(t.key)}
             className={cx(
-              'relative -mb-px pb-2.5 pt-1 inline-flex items-center gap-1.5 text-[13.5px] font-medium whitespace-nowrap border-b-2 transition-colors',
-              on ? 'border-ink text-ink' : 'border-transparent text-ink-3 hover:text-ink',
+              'relative -mb-px pb-2.5 pt-1 inline-flex items-center gap-1.5 text-[13.5px] font-medium whitespace-nowrap border-b-2 border-transparent transition-colors',
+              on ? 'text-ink' : 'text-ink-3 hover:text-ink',
             )}
           >
             {t.label}
@@ -130,17 +138,21 @@ export function Tabs<K extends string>({ items, value, onChange, className }: { 
 /* --------------------------------------------------------- SegmentedControl */
 
 export function Segmented<K extends string>({ items, value, onChange }: { items: { key: K; label: string }[]; value: K; onChange: (k: K) => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const { box, ready } = useActiveBox(ref, value);
   return (
-    <div className="inline-flex p-0.5 rounded-md bg-sunken">
+    <div ref={ref} className="relative inline-flex p-0.5 rounded-md bg-sunken">
+      <SlidingIndicator box={box} ready={ready} className="rounded-[5px] bg-surface shadow-[0_1px_2px_rgb(22_23_26/0.08)]" />
       {items.map((it) => (
         <button
           key={it.key}
           type="button"
           onClick={() => onChange(it.key)}
           aria-pressed={it.key === value}
+          data-active={it.key === value}
           className={cx(
-            'h-7 px-3 rounded-[5px] text-[13px] whitespace-nowrap transition-colors',
-            it.key === value ? 'bg-surface text-ink font-medium shadow-[0_1px_2px_rgb(22_23_26/0.08)]' : 'text-ink-3 hover:text-ink',
+            'relative h-7 px-3 rounded-[5px] text-[13px] whitespace-nowrap transition-colors',
+            it.key === value ? 'text-ink font-medium' : 'text-ink-3 hover:text-ink',
           )}
         >
           {it.label}
@@ -178,9 +190,16 @@ export function Stat({
   tone,
   trend,
   progress,
+  numeric,
+  invert,
 }: {
   label: string;
+  /** Chuỗi hoặc số sẽ lăn khi đổi (NumberRoll). Truyền phần tử React nếu cần định dạng riêng. */
   value: React.ReactNode;
+  /** Giá trị số gốc: khi đổi, hiện mức chênh % cạnh con số trong vài giây. */
+  numeric?: number;
+  /** Chỉ số càng thấp càng tốt (chi phí, số việc quá hạn). */
+  invert?: boolean;
   note?: React.ReactNode;
   tone?: 'warning' | 'critical' | 'positive';
   trend?: number[];
@@ -191,7 +210,11 @@ export function Stat({
     <div className="bg-surface px-4 pt-3.5 pb-4 grid gap-1 content-start">
       <span className="text-[12.5px] text-ink-3">{label}</span>
       <div className="flex items-end justify-between gap-3">
-        <span className="text-[26px] leading-8 font-semibold text-ink tabular-nums tracking-tight">{value}</span>
+        <span className="text-[26px] leading-8 font-semibold text-ink tabular-nums tracking-tight">
+          {typeof value === 'string' || typeof value === 'number'
+            ? <NumberRoll value={value} numeric={numeric} invert={invert} formatDelta={numeric !== undefined ? deltaPercent : undefined} />
+            : value}
+        </span>
         {trend && trend.length > 1 && <Sparkline data={trend} label={`Xu hướng ${label}`} />}
       </div>
       {progress && <Progress {...progress} label={label} className="mt-1" />}

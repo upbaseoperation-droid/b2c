@@ -53,7 +53,7 @@ import {
   ROLE_DISPLAY_NAME
 } from '../../lib/rbacData';
 import { MasterDataMindmapView } from './MasterDataMindmapView';
-import { Avatar, Button, Segmented, Status , ChannelTag } from '../ui';
+import { Avatar, Button, Presence, Segmented, Status , ChannelTag } from '../ui';
 import { formatVndShort } from '../../lib/format';
 
 interface ManagerDelegationHubProps {
@@ -1272,7 +1272,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                             </div>
                             <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
                               <div
-                                className={`h-full rounded-full transition-all ${
+                                className={`data-bar h-full rounded-full ${
                                   isOverloaded ? 'bg-rose-500' : isNearFull ? 'bg-amber-500' : 'bg-emerald-500'
                                 }`}
                                 style={{ width: `${Math.min(100, workloadPct)}%` }}
@@ -1564,7 +1564,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                     {/* Progress Bar of Capacity */}
                     <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden mt-1.5">
                       <div
-                        className={`h-full rounded-full transition-all ${
+                        className={`data-bar h-full rounded-full ${
                           isOverloaded ? 'bg-rose-500' : isOptimal ? 'bg-emerald-500' : 'bg-blue-600'
                         }`}
                         style={{ width: `${Math.min(100, loadPct)}%` }}
@@ -1742,9 +1742,10 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
       {/* ========================================================================= */}
       {/* MODAL 1: GIAO VIỆC TRỰC TIẾP CHO NHÂN SỰ                                   */}
       {/* ========================================================================= */}
+      <Presence show={!!isTaskModalOpen}>
       {isTaskModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 animate-in fade-in duration-(--motion-base)">
+          <div data-motion-panel className="bg-white w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
             <div className="px-6 py-4 border-b border-line bg-surface text-ink flex items-center justify-between">
               <div className="flex items-center gap-2.5">
                 <Send className="w-5 h-5 text-blue-600" />
@@ -1889,13 +1890,15 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
           </div>
         </div>
       )}
+      </Presence>
 
       {/* ========================================================================= */}
       {/* MODAL 2: THÊM / CHỈNH SỬA PHÂN BỔ NHÃN HÀNG (MASTER DATA INTEGRATED)       */}
       {/* ========================================================================= */}
+      <Presence show={!!isBrandModalOpen}>
       {isBrandModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[92vh]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 animate-in fade-in duration-(--motion-base)">
+          <div data-motion-panel className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[92vh] animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
             {/* Modal Header */}
             <div className="px-6 py-4 border-b border-line bg-surface text-ink flex items-center justify-between shrink-0">
               <div className="flex items-center gap-2.5">
@@ -2310,13 +2313,15 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
           </div>
         </div>
       )}
+      </Presence>
 
       {/* ========================================================================= */}
       {/* MODAL 3: CHỈNH SỬA PHÂN CÔNG GIAN HÀNG                                   */}
       {/* ========================================================================= */}
+      <Presence show={!!editingStore}>
       {editingStore && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 animate-in fade-in duration-(--motion-base)">
+          <div data-motion-panel className="bg-white w-full max-w-md rounded-2xl shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
             <div className="px-6 py-4 border-b border-line bg-surface text-ink flex items-center justify-between">
               <div className="flex items-center gap-2.5">
                 <Store className="w-5 h-5 text-blue-600" />
@@ -2416,6 +2421,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
           </div>
         </div>
       )}
+      </Presence>
     </div>
   );
 };

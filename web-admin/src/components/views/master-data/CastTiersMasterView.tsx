@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { Search, Plus, X, RotateCcw } from 'lucide-react';
 import { MasterCastTier } from '../../../lib/types';
 import { formatVnd } from '../../../lib/format';
+import { Presence } from '../../ui';
 
 interface CastTiersMasterViewProps {
   initialTiers: MasterCastTier[];
@@ -284,9 +285,10 @@ export const CastTiersMasterView: React.FC<CastTiersMasterViewProps> = ({
       </div>
 
       {/* Modal Add / Edit Cast Tier */}
+      <Presence show={!!isModalOpen}>
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl border border-slate-200 max-w-md w-full p-5 space-y-4">
+        <div className="fixed inset-0 z-50 bg-slate-900/40 flex items-center justify-center p-4 animate-in fade-in duration-(--motion-base)">
+          <div data-motion-panel className="bg-white rounded-xl shadow-xl border border-slate-200 max-w-md w-full p-5 space-y-4 animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <h3 className="font-semibold text-sm text-slate-900">
                 {editingTier ? `Cập nhật bậc cast [${editingTier.tierCode}]` : 'Thêm bậc cast mới'}
@@ -422,6 +424,7 @@ export const CastTiersMasterView: React.FC<CastTiersMasterViewProps> = ({
           </div>
         </div>
       )}
+      </Presence>
     </div>
   );
 };

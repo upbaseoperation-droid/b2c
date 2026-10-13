@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { formatVndShort } from '../../lib/format';
-import { ChannelTag, channelOf } from '../ui';
+import { ChannelTag, channelOf, Presence } from '../ui';
 import {
   Building2,
   Store,
@@ -1497,15 +1497,16 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
       </div>
 
       {/* MODAL: CHỈNH SỬA / ĐỔI PIC CHÍNH VÀ NHÂN SỰ CỦA GIAN HÀNG */}
+      <Presence show={!!(isEditingStorePic && editingStoreForm)}>
       {isEditingStorePic && editingStoreForm && (
         <div 
-          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150"
+          className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4 animate-in fade-in duration-(--motion-base)"
           onClick={() => setIsEditingStorePic(false)}
           role="dialog"
           aria-modal="true"
         >
-          <div 
-            className="bg-white border border-slate-200 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden animate-in zoom-in-95 duration-150"
+          <div data-motion-panel
+            className="bg-white border border-slate-200 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter"
             onClick={e => e.stopPropagation()}
           >
             {/* Modal Header */}
@@ -1643,6 +1644,7 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
           </div>
         </div>
       )}
+      </Presence>
     </div>
   );
 };

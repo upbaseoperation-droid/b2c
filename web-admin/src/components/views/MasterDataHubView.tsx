@@ -1,13 +1,14 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { 
   Button, 
   Tabs, 
   Modal, 
   Pagination, 
   ChannelTag,
-  channelOf
+  channelOf,
+  useFlipList
 } from '../ui';
 import { formatVndShort, formatVnd } from '../../lib/format';
 import { 
@@ -378,6 +379,13 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
       return true;
     });
   }, [pillarList, selectedPillarStatus, selectedPillarNiche, selectedPillarCostTier, pillarSearch]);
+
+  const brandsBodyRef = useRef<HTMLTableSectionElement>(null);
+  const productsBodyRef = useRef<HTMLTableSectionElement>(null);
+  const pillarsBodyRef = useRef<HTMLTableSectionElement>(null);
+  useFlipList(brandsBodyRef, currentBrands.map(b => b.id).join('|'));
+  useFlipList(productsBodyRef, filteredProducts.map(p => p.id).join('|'));
+  useFlipList(pillarsBodyRef, filteredPillars.map(p => p.id).join('|'));
 
   const isPillarFiltered = pillarSearch.trim() !== '' || selectedPillarNiche !== 'ALL' || selectedPillarStatus !== 'ALL' || selectedPillarCostTier !== 'ALL';
 
@@ -937,7 +945,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                     <th className="py-2.5 px-4 text-right min-w-[90px]"><span className="sr-only">Thao tác</span></th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-line">
+                <tbody ref={brandsBodyRef} className="divide-y divide-line">
                   {currentBrands.length === 0 ? (
                     <tr>
                       <td colSpan={8} className="py-12 text-center text-ink-3 text-xs">
@@ -956,7 +964,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                       const initials = b.name.substring(0, 2).toUpperCase();
 
                       return (
-                        <tr key={b.id} className="hover:bg-canvas transition-colors group">
+                        <tr key={b.id} data-flip={b.id} className="hover:bg-canvas transition-colors group">
                           {/* 1. Brand name & Code */}
                           <td className="py-3 px-4">
                             <div className="flex items-center gap-3">
@@ -1257,9 +1265,9 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                   <th className="py-2.5 px-4 text-right">Thao tác</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-line">
+              <tbody ref={productsBodyRef} className="divide-y divide-line">
                 {filteredProducts.map(p => (
-                  <tr key={p.id} className="hover:bg-canvas transition-colors">
+                  <tr key={p.id} data-flip={p.id} className="hover:bg-canvas transition-colors">
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
                         <span className="font-mono font-medium text-ink">{p.sku}</span>
@@ -1475,7 +1483,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                   <th className="py-2.5 px-4 text-right w-[130px]">Thao tác</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-line">
+              <tbody ref={pillarsBodyRef} className="divide-y divide-line">
                 {filteredPillars.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="py-12 text-center text-ink-3">
@@ -1484,7 +1492,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                   </tr>
                 ) : (
                   filteredPillars.map(p => (
-                    <tr key={p.id} className="hover:bg-slate-50/70 transition-colors">
+                    <tr key={p.id} data-flip={p.id} className="hover:bg-slate-50/70 transition-colors">
                       {/* Mã & Tên Pillar */}
                       <td className="py-3.5 px-4 align-top">
                         <div className="space-y-1">

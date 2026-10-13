@@ -33,7 +33,7 @@ import {
 } from 'lucide-react';
 import type { BookingDealItem, KocItem, UserProfile } from '../../lib/types';
 import { formatDate, formatNumber, formatVndShort } from '../../lib/format';
-import { Avatar, Button, CHANNELS, DataTable, EmptyState, Field, Modal, Panel, Person, SectionHeader, Stat, StatRow, Status, Tabs, Textarea } from '../ui';
+import { Avatar, Button, CHANNELS, DataTable, EmptyState, Field, Modal, Panel, Person, SectionHeader, Stat, StatRow, Status, Tabs, Textarea, sharedTo } from '../ui';
 import type { Column, TabItem } from '../ui';
 import {
   LEGAL_TYPE_LABEL,
@@ -151,11 +151,12 @@ export function KocProfile({
       {/* Đầu hồ sơ */}
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex items-start gap-3 min-w-0">
-          {isPage && <Avatar name={koc.stageName} src={koc.avatarUrl} size={52} />}
+          {/* Tên chuyển cảnh khớp với hàng trong KocMasterDataView (chỉ ở dạng trang) */}
+          {isPage && <span className="shrink-0 inline-flex" style={sharedTo('koc-avatar')}><Avatar name={koc.stageName} src={koc.avatarUrl} size={52} /></span>}
           <div className="min-w-0 grid gap-1">
             {isPage && (
               <div className="flex flex-wrap items-center gap-2">
-                <h2 className="text-xl font-semibold text-ink">{koc.stageName}</h2>
+                <h2 className="text-xl font-semibold text-ink" style={isPage ? sharedTo('koc-title') : undefined}>{koc.stageName}</h2>
                 {koc.realName && koc.realName !== koc.stageName && (
                   <span className="text-sm text-ink-3 font-normal">({koc.realName})</span>
                 )}
@@ -439,7 +440,7 @@ function TikTokSellerMetricsSection({ koc, onUpdate }: { koc: KocItem; onUpdate?
               {shares.map((s) => (
                 <span
                   key={s.label}
-                  className="h-full rounded-sm transition-all"
+                  className="data-bar h-full rounded-sm"
                   style={{ width: `${(s.value / shareTotal) * 100}%`, background: s.color }}
                   title={`${s.label}: ${pct(s.value)}`}
                 />
@@ -478,8 +479,8 @@ function TikTokSellerMetricsSection({ koc, onUpdate }: { koc: KocItem; onUpdate?
                 <span>Nữ {koc.femaleRatio || 82}% · Nam {koc.maleRatio || 18}%</span>
               </div>
               <div className="flex h-2 rounded-full overflow-hidden bg-sunken">
-                <div style={{ width: `${koc.femaleRatio || 82}%` }} className="bg-accent" />
-                <div style={{ width: `${koc.maleRatio || 18}%` }} className="bg-ink-3" />
+                <div style={{ width: `${koc.femaleRatio || 82}%` }} className="data-bar bg-accent" />
+                <div style={{ width: `${koc.maleRatio || 18}%` }} className="data-bar bg-ink-3" />
               </div>
             </div>
 
@@ -1305,12 +1306,12 @@ function CollaborationDetailModal({
           <div className="flex h-3 rounded-full overflow-hidden bg-sunken gap-1">
             <div
               style={{ width: `${gmv > 0 ? (organicGmv / gmv) * 100 : 55}%` }}
-              className="bg-positive rounded-sm"
+              className="data-bar bg-positive rounded-sm"
               title={`Tự nhiên: ${formatVndShort(organicGmv)}`}
             />
             <div
               style={{ width: `${gmv > 0 ? (adsGmv / gmv) * 100 : 45}%` }}
-              className="bg-accent rounded-sm"
+              className="data-bar bg-accent rounded-sm"
               title={`Spark Ads: ${formatVndShort(adsGmv)}`}
             />
           </div>

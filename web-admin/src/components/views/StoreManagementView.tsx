@@ -10,7 +10,7 @@
 
 import React, { useState, useMemo, useCallback } from 'react';
 import type { BookingDealItem, BrandDetail, StorePortfolioItem, UserProfile } from '../../lib/types';
-import { ChannelTag, Chips, DataTable, EmptyState, FilterBar, Pagination, Panel, Person, Status } from '../ui';
+import { ChannelTag, Chips, DataTable, EmptyState, FilterBar, Pagination, Panel, Person, Status, closeShared, openShared, sharedFrom } from '../ui';
 import type { Column } from '../ui';
 import { formatNumber, formatVnd } from '../../lib/format';
 import { INITIAL_DEALS, INITIAL_STORE_PORTFOLIOS, INITIAL_BRANDS } from '../../lib/mockData';
@@ -197,7 +197,7 @@ export function StoreManagementView({
           currentUser={currentUser}
           layout="page"
           nav={{
-            onBack: () => setOpenStoreKey(null),
+            onBack: () => closeShared(openStore.id, () => setOpenStoreKey(null)),
             onPrev: prevStore ? () => setOpenStoreKey(prevStore.id) : undefined,
             onNext: nextStore ? () => setOpenStoreKey(nextStore.id) : undefined,
             position: currentStoreIndex >= 0 ? currentStoreIndex + 1 : undefined,
@@ -253,7 +253,7 @@ export function StoreManagementView({
       render: s => (
         <div className="min-w-0 max-w-[280px] leading-tight">
           <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="truncate font-medium text-ink">{s.storeName}</span>
+            <span {...sharedFrom('store-title', s.id)} className="truncate font-medium text-ink">{s.storeName}</span>
             <ChannelTag channel={s.platform} />
           </div>
           <span className="block truncate text-2xs text-ink-3 mt-0.5">
@@ -390,7 +390,7 @@ export function StoreManagementView({
         columns={columns}
         rows={visibleStores.slice((page - 1) * 20, page * 20)}
         rowKey={s => s.id}
-        onRowClick={s => setOpenStoreKey(s.id)}
+        onRowClick={s => openShared(s.id, () => setOpenStoreKey(s.id))}
         empty={
           <EmptyState
             title="Không tìm thấy gian hàng nào"

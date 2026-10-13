@@ -100,7 +100,7 @@ import {
 } from 'lucide-react';
 import { UPBASE_BRANDS_MASTER } from '../../lib/importedMasterData';
 import { GrowthPlanBreakdownView } from './GrowthPlanBreakdownView';
-import { Button, Segmented, Tabs } from '../ui';
+import { Button, Presence, Segmented, Tabs } from '../ui';
 import { EmployeePlanInspectorModal } from '../EmployeePlanInspectorModal';
 import { AiStaffReviewModal } from '../AiStaffReviewModal';
 import { ManagerDelegationHub } from './ManagerDelegationHub';
@@ -759,7 +759,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                 </div>
                 <div className="w-full h-1.5 bg-slate-200 rounded-full mt-2 overflow-hidden">
                   <div 
-                    className={`h-full rounded-full transition-all ${totalAllocatedBudget > TOTAL_CEILING_BUDGET ? 'bg-rose-500' : 'bg-blue-500'}`}
+                    className={`data-bar h-full rounded-full ${totalAllocatedBudget > TOTAL_CEILING_BUDGET ? 'bg-rose-500' : 'bg-blue-500'}`}
                     style={{ width: `${Math.min(100, (totalAllocatedBudget / TOTAL_CEILING_BUDGET) * 100)}%` }}
                   />
                 </div>
@@ -776,7 +776,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                 </div>
                 <div className="w-full h-1.5 bg-slate-200 rounded-full mt-2 overflow-hidden">
                   <div 
-                    className={`h-full rounded-full transition-all ${totalAllocatedVideos > TOTAL_TARGET_VIDEOS ? 'bg-rose-500' : 'bg-slate-500'}`}
+                    className={`data-bar h-full rounded-full ${totalAllocatedVideos > TOTAL_TARGET_VIDEOS ? 'bg-rose-500' : 'bg-slate-500'}`}
                     style={{ width: `${Math.min(100, (totalAllocatedVideos / TOTAL_TARGET_VIDEOS) * 100)}%` }}
                   />
                 </div>
@@ -793,7 +793,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                 </div>
                 <div className="w-full h-1.5 bg-slate-200 rounded-full mt-2 overflow-hidden">
                   <div 
-                    className="h-full bg-emerald-500 rounded-full" 
+                    className="data-bar h-full bg-emerald-500 rounded-full" 
                     style={{ width: `${totalTargetGmv > 0 ? Math.min(100, (allocations.reduce((sum, a) => sum + (a.actualGmv || 0), 0) / totalTargetGmv) * 100) : 0}%` }} 
                   />
                 </div>
@@ -808,7 +808,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                 </div>
                 <div className="w-full h-1.5 bg-slate-200 rounded-full mt-2 overflow-hidden">
                   <div 
-                    className="h-full bg-rose-500 rounded-full" 
+                    className="data-bar h-full bg-rose-500 rounded-full" 
                     style={{ width: `${(allocations.filter(a => a.isLagging).length / allocations.length) * 100}%` }} 
                   />
                 </div>
@@ -924,7 +924,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
 
                         <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
                           <div 
-                            className={`h-full rounded-full transition-all ${isOver ? 'bg-rose-500' : isBalanced ? 'bg-emerald-500' : tierMeta.barColor}`}
+                            className={`data-bar h-full rounded-full ${isOver ? 'bg-rose-500' : isBalanced ? 'bg-emerald-500' : tierMeta.barColor}`}
                             style={{ width: `${Math.min(100, pctAllocated)}%` }}
                           />
                         </div>
@@ -1250,7 +1250,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                             </span>
                             <div className="w-20 bg-slate-800 h-1.5 rounded-full overflow-hidden">
                               <div 
-                                className={`h-full ${fillPct >= 90 ? 'bg-emerald-500' : fillPct > 50 ? 'bg-amber-500' : 'bg-slate-600'}`}
+                                className={`data-bar h-full ${fillPct >= 90 ? 'bg-emerald-500' : fillPct > 50 ? 'bg-amber-500' : 'bg-slate-600'}`}
                                 style={{ width: `${Math.min(100, fillPct)}%` }}
                               />
                             </div>
@@ -1522,7 +1522,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                 {(controlTower.actualGmv / 1000000000).toFixed(2)}B / {(controlTower.planGmv / 1000000000).toFixed(2)}B
               </div>
               <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden mt-1">
-                <div className="bg-emerald-500 h-full rounded-full" style={{ width: `${controlTower.gmvAchievementRate}%` }} />
+                <div className="data-bar bg-emerald-500 h-full rounded-full" style={{ width: `${controlTower.gmvAchievementRate}%` }} />
               </div>
               <span className="text-2xs text-emerald-600 font-semibold block pt-0.5">
                 Đạt {controlTower.gmvAchievementRate}% kế hoạch
@@ -1535,7 +1535,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                 {(controlTower.actualSpentBudget / 1000000).toLocaleString('vi-VN')}M / {(controlTower.planBudget / 1000000).toLocaleString('vi-VN')}M
               </div>
               <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden mt-1">
-                <div className="bg-amber-500 h-full rounded-full" style={{ width: `${controlTower.budgetBurnRate}%` }} />
+                <div className="data-bar bg-amber-500 h-full rounded-full" style={{ width: `${controlTower.budgetBurnRate}%` }} />
               </div>
               <span className="text-2xs text-slate-500 block pt-0.5">
                 Đã tiêu {controlTower.budgetBurnRate}% • CIR: <strong className="text-blue-600">{controlTower.cirCurrent}%</strong>
@@ -1920,7 +1920,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                         <div className="inline-flex items-center gap-2">
                           <div className="w-16 bg-slate-200 rounded-full h-1.5 hidden sm:block">
                             <div 
-                              className={`h-1.5 rounded-full ${
+                              className={`data-bar h-1.5 rounded-full ${
                                 staff.airProgress < 50 ? 'bg-rose-500' :
                                 staff.airProgress >= 80 ? 'bg-emerald-500' : 'bg-blue-500'
                               }`} 
@@ -2384,7 +2384,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
               </div>
               <div className="text-2xl font-semibold text-slate-900 mt-1">91.8%</div>
               <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden mt-2">
-                <div className="bg-emerald-500 h-full rounded-full" style={{ width: '91.8%' }} />
+                <div className="data-bar bg-emerald-500 h-full rounded-full" style={{ width: '91.8%' }} />
               </div>
               <div className="flex items-center justify-between text-2xs text-slate-500 mt-1.5">
                 <span>Mục tiêu: &gt;= 90%</span>
@@ -2544,7 +2544,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                             </div>
                             <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
                               <div
-                                className={`h-full rounded-full ${staff.onTimeRate >= 90 ? 'bg-emerald-500' : 'bg-rose-500'}`}
+                                className={`data-bar h-full rounded-full ${staff.onTimeRate >= 90 ? 'bg-emerald-500' : 'bg-rose-500'}`}
                                 style={{ width: `${staff.onTimeRate}%` }}
                               />
                             </div>
@@ -2775,6 +2775,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
       )}
 
       {/* Modal: Chỉnh Sửa Phân Bổ Chỉ Tiêu Theo 4 Tier Cho Nhân Sự */}
+      <Presence show={!!editingAllocation}>
       {editingAllocation && (() => {
         const t1Avg = currentPlan.tierQuotas.find(t => t.tierId === 'TIER_1_CELEB')?.avgCostPerVideo || 41258000;
         const t2Avg = currentPlan.tierQuotas.find(t => t.tierId === 'TIER_2_MACRO')?.avgCostPerVideo || 14703000;
@@ -2809,13 +2810,13 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
 
         return (
           <div 
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150 overflow-y-auto"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 overflow-y-auto animate-in fade-in duration-(--motion-base)"
             onClick={() => setEditingAllocation(null)}
             role="dialog"
             aria-modal="true"
           >
-            <div 
-              className="bg-white border border-slate-200 rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden my-8"
+            <div data-motion-panel
+              className="bg-white border border-slate-200 rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden my-8 animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50">
@@ -3131,17 +3132,19 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
           </div>
         );
       })()}
+      </Presence>
 
       {/* Modal: Cấu Hình Hạn Mức 4 Tier Toàn Phòng (Top-Down Quota Configuration) */}
+      <Presence show={!!isTierQuotaModalOpen}>
       {isTierQuotaModalOpen && (
         <div 
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150 overflow-y-auto"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 overflow-y-auto animate-in fade-in duration-(--motion-base)"
           onClick={() => setIsTierQuotaModalOpen(false)}
           role="dialog"
           aria-modal="true"
         >
-          <div 
-            className="bg-white border border-slate-200 rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden my-8"
+          <div data-motion-panel
+            className="bg-white border border-slate-200 rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden my-8 animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50">
@@ -3267,6 +3270,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
           </div>
         </div>
       )}
+      </Presence>
 
       {/* Modal: Soi Kế Hoạch Triển Khai Chi tiết Của Nhân Viên (Employee Plan Inspector) */}
       <EmployeePlanInspectorModal
@@ -3282,9 +3286,10 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
       />
 
       {/* Modal: Chi tiết Tuân Thủ SLA Nhân Viên */}
+      <Presence show={!!inspectStaffModal}>
       {inspectStaffModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
-          <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 animate-in fade-in duration-(--motion-base)">
+          <div data-motion-panel className="bg-white border border-slate-200 rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
             {/* Header */}
             <div className="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -3387,11 +3392,13 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
           </div>
         </div>
       )}
+      </Presence>
 
       {/* Modal: Xử Lý Vi Phạm SLA */}
+      <Presence show={!!breachActionModal}>
       {breachActionModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
-          <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 animate-in fade-in duration-(--motion-base)">
+          <div data-motion-panel className="bg-white border border-slate-200 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
             <div className="px-6 py-4 bg-rose-50 border-b border-rose-100 flex items-center justify-between">
               <div className="flex items-center gap-2.5">
                 <ShieldAlert className="w-5 h-5 text-rose-600" />
@@ -3465,6 +3472,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
           </div>
         </div>
       )}
+      </Presence>
 
           {/* ========================================================================= */}
       {/* TAB 5: DEEP ANALYTICS: KL1-KL7, CONTENT PILLAR, CREATOR NICHE */}
@@ -3676,6 +3684,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
       )}
 
       {/* AI Staff Review Modal (API Powered) */}
+      <Presence show={!!aiReviewTargetStaff}>
       {aiReviewTargetStaff && (
         <AiStaffReviewModal
           isOpen={Boolean(aiReviewTargetStaff)}
@@ -3684,6 +3693,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
           onPingStaffNotification={handlePingStaff}
         />
       )}
+      </Presence>
 
     </div>
   );

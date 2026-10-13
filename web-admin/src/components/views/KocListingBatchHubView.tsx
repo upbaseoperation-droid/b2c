@@ -10,7 +10,7 @@ import {
   AirVideoStage,
   UserRole
 } from '@/lib/types';
-import { ConfirmDialog, PageActions, Button } from '../ui';
+import { ConfirmDialog, PageActions, Button, Presence } from '../ui';
 import { formatVnd } from '../../lib/format';
 import { StoreShortlistFilterModal } from '../shortlist/StoreShortlistFilterModal';
 import {
@@ -1126,9 +1126,10 @@ export function KocListingBatchHubView({
       )}
 
       {/* MODAL 1: ADD NEW KOC TO BATCH */}
+      <Presence show={!!showAddModal}>
       {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
-          <div className="bg-white rounded-lg shadow-xl border border-slate-200 w-full max-w-lg overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 animate-in fade-in duration-(--motion-base)">
+          <div data-motion-panel className="bg-white rounded-lg shadow-xl border border-slate-200 w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
             <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
               <h3 className="text-sm font-semibold text-slate-900">
                 Thêm KOC mới vào đợt đề xuất
@@ -1333,11 +1334,13 @@ export function KocListingBatchHubView({
           </div>
         </div>
       )}
+      </Presence>
 
       {/* MODAL 2: UPDATE AIR VIDEO PROGRESS */}
+      <Presence show={!!(showAirUpdateModal && selectedListingForAir)}>
       {showAirUpdateModal && selectedListingForAir && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
-          <div className="bg-white rounded-lg shadow-xl border border-slate-200 w-full max-w-md overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 animate-in fade-in duration-(--motion-base)">
+          <div data-motion-panel className="bg-white rounded-lg shadow-xl border border-slate-200 w-full max-w-md overflow-hidden animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
             <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
               <div>
                 <h3 className="text-sm font-semibold text-slate-900">
@@ -1464,6 +1467,7 @@ export function KocListingBatchHubView({
           </div>
         </div>
       )}
+      </Presence>
 
       {/* Modal xác nhận duyệt KOC */}
       <ConfirmDialog

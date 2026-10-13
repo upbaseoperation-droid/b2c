@@ -48,6 +48,7 @@ import {
   Status,
   Tabs,
   channelOf,
+  sharedTo,
   type Column,
 } from '../ui';
 import { ContentRulesDialog, EntityDialog, ItemDialog, PositioningDialog, RatecardDialog, type ItemField } from './BrandEditors';
@@ -542,10 +543,11 @@ export function BrandProfileDetail({
       {/* 2. ĐỊNH DANH THƯƠNG HIỆU */}
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex items-start gap-3.5 min-w-0">
-          <Avatar name={row.name} size={44} />
+          {/* Tên chuyển cảnh khớp với hàng trong BrandProfilesView */}
+          <span className="shrink-0 inline-flex" style={sharedTo('brand-avatar')}><Avatar name={row.name} size={44} /></span>
           <div className="min-w-0 grid gap-1">
             <div className="flex flex-wrap items-center gap-2">
-              <h2 className="text-lg font-semibold text-ink">{row.name}</h2>
+              <h2 className="text-lg font-semibold text-ink" style={sharedTo('brand-title')}>{row.name}</h2>
               {m?.code && (
                 <span className="px-1.5 py-0.5 rounded bg-sunken border border-line text-2xs font-code text-ink-2">
                   {m.code}

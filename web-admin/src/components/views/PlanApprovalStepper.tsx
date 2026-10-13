@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import {
-  CheckCircle2,
   Clock,
   AlertCircle,
   ArrowRight,
@@ -32,6 +31,7 @@ import {
   UserProfile
 } from '../../lib/types';
 import { formatVndShort } from '../../lib/format';
+import { ChangeFlash, Presence, StepMark } from '../ui';
 import { getPlanVersionSnapshots } from '../../lib/monthlyPlanData';
 
 interface PlanApprovalStepperProps {
@@ -429,11 +429,14 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
       {/* HEADER: TIÊU ĐỀ + PHIÊN BẢN + CÔNG CỤ */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 px-5 py-3.5 border-b border-slate-100">
         <div className="flex items-center gap-3 min-w-0">
-          <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border ${
-            isLocked ? 'bg-emerald-50 border-emerald-200' : 'bg-blue-50 border-blue-200'
-          }`}>
-            {isLocked ? <Lock className="w-4 h-4 text-emerald-600" /> : <Layers className="w-4 h-4 text-blue-600" />}
-          </div>
+          {/* Chốt phiên bản: biểu tượng khóa "đóng dấu" một lần */}
+          <ChangeFlash on={isLocked} className="shrink-0">
+            <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border ${
+              isLocked ? 'bg-emerald-50 border-emerald-200' : 'bg-blue-50 border-blue-200'
+            }`}>
+              {isLocked ? <Lock className="w-4 h-4 text-emerald-600" /> : <Layers className="w-4 h-4 text-blue-600" />}
+            </div>
+          </ChangeFlash>
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <h3 className="font-semibold text-sm text-slate-900">Đồng thuận & phê duyệt</h3>
@@ -443,6 +446,9 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
                 {currentVersion} • {isLocked ? 'Đã chốt' : 'Bản nháp'}
               </span>
               <span className="text-2xs font-semibold text-slate-500">{confirmedCount}/4 bước hoàn tất</span>
+              <span className="w-16 h-1 rounded-full bg-sunken overflow-hidden" aria-hidden="true">
+                <span className="data-bar block h-full rounded-full bg-positive" style={{ width: `${(confirmedCount / 4) * 100}%` }} />
+              </span>
             </div>
             <p className="text-2xs text-slate-500 mt-0.5 truncate">
               Growth giao số → Marketing B2C phân rã → Media nhận gói Ads → Trưởng phòng duyệt
@@ -490,25 +496,24 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
         {steps.map(step => (
           <div
             key={step.key}
-            className={`flex flex-col p-3 rounded-xl border ${
+            className={`flex flex-col p-3 rounded-xl border transition-colors duration-(--motion-slow) ease-enter ${
               step.confirmed ? 'bg-emerald-50/40 border-emerald-200' : 'bg-white border-slate-200'
             }`}
           >
             <div className="flex items-center gap-2">
-              <span className={`w-6 h-6 rounded-full flex items-center justify-center text-2xs font-semibold shrink-0 ${
-                step.confirmed ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600 border border-slate-200'
-              }`}>
-                {step.confirmed ? <CheckCircle2 className="w-3.5 h-3.5" /> : step.no}
-              </span>
+              {/* Bước vừa được xác nhận: vòng tròn đóng dấu, dấu tích vẽ nét (DESIGN_SYSTEM.md §9) */}
+              <StepMark done={step.confirmed} label={step.no} />
               <div className="min-w-0 flex-1">
                 <div className="text-2xs font-semibold text-slate-500">{step.team}</div>
                 <div className="text-xs font-semibold text-slate-900 truncate">{step.task}</div>
               </div>
-              <span className={`text-2xs font-semibold px-1.5 py-0.5 rounded-full whitespace-nowrap ${
-                step.confirmed ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-50 text-amber-700 border border-amber-200'
-              }`}>
-                {step.confirmed ? step.doneLabel : step.pendingLabel}
-              </span>
+              <ChangeFlash on={step.confirmed}>
+                <span className={`text-2xs font-semibold px-1.5 py-0.5 rounded-full whitespace-nowrap ${
+                  step.confirmed ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-50 text-amber-700 border border-amber-200'
+                }`}>
+                  {step.confirmed ? step.doneLabel : step.pendingLabel}
+                </span>
+              </ChangeFlash>
             </div>
 
             <dl className="mt-2.5 space-y-1 text-2xs flex-1">
@@ -521,7 +526,7 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
             </dl>
 
             {step.confirmed && step.confirmedBy && (
-              <div className="mt-2 text-2xs text-emerald-700 truncate" title={step.confirmedBy}>
+              <div className="mt-2 text-2xs text-emerald-700 truncate animate-in fade-in slide-in-from-bottom-1 duration-(--motion-slow) ease-enter" title={step.confirmedBy}>
                 ✓ {step.confirmedBy}
               </div>
             )}
@@ -556,9 +561,10 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
       </div>
 
       {/* MODAL: GROWTH TẠO PHIÊN BẢN MỚI */}
+      <Presence show={!!isGrowthNewVersionModalOpen}>
       {isGrowthNewVersionModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 border border-slate-200 animate-in fade-in zoom-in-95">
+        <div className="fixed inset-0 bg-slate-900/60 flex items-center justify-center z-50 p-4 animate-in fade-in duration-(--motion-base)">
+          <div data-motion-panel className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 border border-slate-200 animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center">
@@ -675,11 +681,13 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
           </div>
         </div>
       )}
+      </Presence>
 
       {/* MODAL: NHẬP GHI CHÚ KHI THỰC HIỆN HÀNH ĐỘNG DUYỆT */}
+      <Presence show={!!isActionNoteOpen}>
       {isActionNoteOpen && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 border border-slate-200 animate-in fade-in zoom-in-95">
+        <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4 animate-in fade-in duration-(--motion-base)">
+          <div data-motion-panel className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 border border-slate-200 animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2">
                 <BadgeCheck className="w-5 h-5 text-blue-600" />
@@ -773,11 +781,13 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
           </div>
         </div>
       )}
+      </Presence>
 
       {/* MODAL: YÊU CẦU HIỆU CHỈNH / TRẢ VỀ */}
+      <Presence show={!!isRevisionModalOpen}>
       {isRevisionModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 border border-slate-200 animate-in fade-in zoom-in-95">
+        <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4 animate-in fade-in duration-(--motion-base)">
+          <div data-motion-panel className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 border border-slate-200 animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2">
                 <RotateCcw className="w-5 h-5 text-rose-600" />
@@ -841,6 +851,7 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
           </div>
         </div>
       )}
+      </Presence>
     </div>
   );
 };
