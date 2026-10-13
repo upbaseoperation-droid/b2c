@@ -46,6 +46,18 @@ test('API toàn luồng: quyền, lưu bền vững, xung đột, duyệt và ch
     assert.equal((await mutate('contract-demo-owner', 'WITHDRAW', { note: 'Cần sửa thông tin' })).status, 200);
     assert.equal((await mutate('contract-demo-owner', 'EDIT', { title: 'Hợp đồng thử sửa', brand: 'Brand Test', partner: 'Đối tác giả lập', templateId: template.id, values })).status, 200);
     assert.equal(record.version, 2); assert.equal(record.approval, 'DRAFT');
+    assert.equal((await mutate('contract-demo-sign', 'DEMO_SIGN_START')).status, 400);
+    assert.equal((await mutate('contract-demo-owner', 'SUBMIT', { reviewers: ['contract-demo-legal', 'contract-demo-finance'] })).status, 200);
+    assert.equal((await mutate('contract-demo-legal', 'DECIDE', { decision: 'APPROVED', note: '' })).status, 200);
+    assert.equal((await mutate('contract-demo-finance', 'DECIDE', { decision: 'APPROVED', note: '' })).status, 200);
+    assert.equal((await mutate('contract-demo-sign', 'DEMO_SIGN_START')).status, 200);
+    assert.equal(record.signing.at(-1)?.provider, 'DEMO');
+    assert.equal((await mutate('contract-demo-sign', 'SYNC_WESIGN')).status, 400);
+    assert.equal((await mutate('contract-demo-sign', 'DEMO_SIGN_NEXT')).status, 200);
+    assert.equal(record.signing.at(-1)?.status, 'PARTIAL');
+    assert.equal((await mutate('contract-demo-sign', 'DEMO_SIGN_NEXT')).status, 200);
+    assert.equal(record.signing.at(-1)?.status, 'COMPLETED');
+    assert.equal((await documentGET(request('contract-demo-sign', undefined, `/api/contracts/${record.id}/document?signed=1`), { params: Promise.resolve({ id: record.id }) })).status, 400);
   } finally {
     if (oldDirectory === undefined) delete process.env.CONTRACT_DATA_DIR; else process.env.CONTRACT_DATA_DIR = oldDirectory;
     for (const file of await readdir(path.join(directory, 'sources'))) await unlink(path.join(directory, 'sources', file)); await rmdir(path.join(directory, 'sources'));

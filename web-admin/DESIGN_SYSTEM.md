@@ -153,7 +153,8 @@ Import từ `@/components/ui` (hoặc đường dẫn tương đối `../ui`).
 
 | Thành phần | Dùng khi | Quy tắc |
 |---|---|---|
-| `Toolbar` | Hàng ngay dưới tiêu đề trang | Trái: chọn kỳ, bộ lọc nhanh. Phải: thao tác, tối đa 1 nút `primary` |
+| `Toolbar` | Hàng ngay dưới tiêu đề trang, khi có bộ chọn kỳ hoặc lọc nhanh | Trái: chọn kỳ, bộ lọc nhanh. Phải: thao tác phụ. Không dùng Toolbar chỉ để chứa một nút — nút chính đưa lên thanh trên bằng `PageActions` |
+| `PageActions` | Nút chính của màn (Thêm KOC, Tạo booking…) | Đưa nút lên cuối thanh trên, cạnh tiêu đề trang. Chỉ hiện khi màn đang mở. Tối đa một `primary` |
 | `Panel` | Khung chứa bảng, form | Tiêu đề + mô tả một dòng + thao tác. `flush` cho bảng |
 | `FilterBar`, `SearchInput`, `Chips` | Lọc một bảng | Đặt ngay trên bảng, trong `Panel`. Ô tìm kiếm trái, ô chọn phải, chip trạng thái hàng dưới, số kết quả cuối hàng. Chip có số đếm |
 | `ActionMenu` | Thao tác phụ của một hàng | Nút “⋯” mở danh sách thao tác. Tự chặn lan sự kiện nên dùng được cùng `onRowClick` |
@@ -237,7 +238,7 @@ Dùng hàm trong `src/lib/format.ts`, không tự viết `toFixed(1)}M`.
 
 ## 7. Bố cục trang
 
-- Thanh trên: tiêu đề trang (khớp tên trên menu) + mô tả một dòng nếu cần + tối đa một nút chính.
+- Thanh trên: tiêu đề trang (khớp tên trên menu) + mô tả một dòng nếu cần + tối đa một nút chính (`PageActions`). Thanh trên và menu trái luôn đứng yên khi cuộn: thanh trên `sticky top-0`, menu trái `fixed`. Không đặt `overflow: hidden` lên `html`/`body` hay khung chứa thanh trên (làm hỏng `sticky`); cần chặn tràn ngang thì dùng `overflow-x: clip`.
 - Dưới thanh trên: bộ chọn kỳ (tháng/tuần) và thao tác phụ → `Tabs` → nội dung.
 - Không thêm tiêu đề lớn thứ hai trong trang. Không thêm thẻ “giới thiệu phân hệ”.
 - Lề trang `px-4 sm:px-6 lg:px-8`, khoảng cách giữa các khối `space-y-6`.
@@ -263,7 +264,7 @@ Dùng hàm trong `src/lib/format.ts`, không tự viết `toFixed(1)}M`.
 Áp dụng cho mọi màn liệt kê bản ghi (KOC, booking, hợp đồng, gian hàng…). Màn mẫu: Danh bạ KOC (`KocMasterDataView.tsx`).
 
 1. **Một màn, một tên.** Tên trên menu trái, thanh trên và nút quay lại giống hệt nhau. Không thêm tiêu đề lớn thứ hai trong trang.
-2. **Thanh trên tối đa 3 nút, nút `primary` là thao tác tạo mới.** Thao tác trên một bản ghi (đọc giấy tờ, cập nhật chỉ số) đặt trong hàng hoặc trong hồ sơ, không đặt ở đầu trang.
+2. **Nút tạo mới là nút `primary` duy nhất, đặt trên thanh trên qua `PageActions`.** Không dành cả một hàng chỉ để chứa nút. Thao tác trên một bản ghi (đọc giấy tờ, cập nhật chỉ số) đặt trong hàng hoặc trong hồ sơ, không đặt ở đầu trang.
 3. **Bộ lọc:** ô tìm kiếm + tối đa 3 ô chọn luôn hiện; phần còn lại vào nút “Lọc khác” (có số bộ lọc đang bật). Không lặp bộ lọc toàn cục của thanh trên (nhãn hàng). Nhãn viết kiểu câu, không đánh số. “Xóa bộ lọc” là nút `ghost`, chỉ hiện khi đang lọc. Số kết quả chỉ hiện khi đang lọc.
 4. **Chip: mỗi nhóm một chiều.** Phân loại (loại hồ sơ) và việc cần xử lý (thiếu giấy tờ, nghi trùng) là hai nhóm `Chips` riêng, mỗi nhóm có nhãn. Chip dùng màu trung tính; số đếm trên chip tính theo các bộ lọc khác đang bật.
 5. **Bảng:** tối đa 8 cột, mỗi ô tối đa 2 dòng (dòng 2 là `text-2xs text-ink-3`). Mỗi con số một cột riêng, căn phải. Tổng độ rộng cột phải vừa khung ở màn 1440px, không cuộn ngang.

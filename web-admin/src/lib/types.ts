@@ -420,6 +420,36 @@ export interface KocItem {
   gmvShareProductCard?: number; // Tỉ trọng GMV từ thẻ sản phẩm (%)
   metricsUpdatedAt?: string; // ISO — lần cập nhật chỉ số bán hàng / khán giả gần nhất
 
+  // ==========================================
+  // BỘ CHỈ SỐ TÍCH HỢP TỪ TIKTOK SELLER
+  // ==========================================
+  tiktokSellerSyncedAt?: string; // Thời điểm đồng bộ từ TikTok Seller Center
+  tiktokShopRating?: number; // Điểm uy tín nhà sáng tạo TikTok Shop (VD: 4.8 / 5.0)
+  tiktokCancellationRate?: number; // Tỷ lệ hủy/hoàn đơn hàng liên kết (VD: 1.8%)
+  tiktokAccountHealth?: 'TỐT' | 'CẢNH_BÁO' | 'VI_PHẠM'; // Tình trạng rủi ro tài khoản TikTok Shop
+  tiktokFollowerGrowth30d?: number; // Tăng trưởng follower 30 ngày (+12,400)
+  tiktokTotal30dViews?: number; // Tổng lượt xem video 30 ngày qua
+  tiktokAvgCtr?: number; // Tỷ lệ nhấp giỏ hàng / showcase (%)
+  tiktokAvgCvr?: number; // Tỷ lệ chốt đơn trên lượt nhấp (%)
+  tiktokAvgCommissionRate?: number; // Tỷ lệ hoa hồng trung bình (%)
+  tiktokTopCategories?: string[]; // Ngành hàng bán chạy trên kênh (Mỹ phẩm, Mẹ & Bé...)
+  tiktokAudienceLocations?: { city: string; ratio: number }[]; // Top tỉnh thành khán giả
+
+  // ==========================================
+  // HẬU CẦN GỬI HÀNG MẪU (SAMPLE SHIPPING)
+  // ==========================================
+  shippingRecipientName?: string; // Người nhận hàng (nếu khác tên KOC)
+  shippingPhone?: string; // Số điện thoại nhận hàng
+  shippingNotes?: string; // Ghi chú giao hàng (gửi lễ tân, giờ hành chính...)
+  samplePreferences?: {
+    skinType?: string; // Tình trạng da (Dược mỹ phẩm: da dầu mụn, nhạy cảm...)
+    clothingSize?: string; // Size quần áo (Fashion: S, M, L...)
+    shoeSize?: string; // Size giày
+    babyAgeMonths?: number; // Độ tuổi con (Mẹ & Bé: số tháng tuổi)
+    babyWeightKg?: number; // Cân nặng con
+    specialNotes?: string; // Lưu ý dị ứng/thành phần
+  };
+
   // Nhân khẩu học Follower (Audience Demographics)
   femaleRatio?: number; // Tỉ trọng follower Nữ (%)
   maleRatio?: number; // Tỉ trọng follower Nam (%)
@@ -548,6 +578,26 @@ export interface BookingDealItem {
   isBreakEven?: boolean;
   remainingSlaHours: number;
   isSlaWarning: boolean;
+
+  // ==========================================
+  // HIỆU QUẢ HỢP TÁC CHI TIẾT (COLLABORATION PERFORMANCE)
+  // ==========================================
+  ordersCount?: number; // Số đơn hàng phát sinh từ video
+  cpo?: number; // Chi phí trên mỗi đơn hàng (totalValue / ordersCount)
+  ctr?: number; // Tỷ lệ click vào giỏ hàng (%)
+  cvr?: number; // Tỷ lệ chuyển đổi đơn hàng (%)
+  focSampleCost?: number; // Chi phí gửi mẫu sản phẩm FOC (nếu có)
+  sparkAdsBudget?: number; // Ngân sách Growth đã đổ vào chạy Spark Ads
+  organicGmv?: number; // GMV từ lượt xem tự nhiên
+  adsGmv?: number; // GMV phát sinh từ chạy quảng cáo
+  postedDate?: string; // Ngày video lên sóng thực tế
+  isScriptOnTime?: boolean; // Đúng hạn kịch bản
+  isPostOnTime?: boolean; // Đúng hạn lên video
+  daysDelayed?: number; // Số ngày trễ (nếu có)
+  ratingScore?: number; // Điểm đánh giá chất lượng hợp tác (1 - 5 sao)
+  performanceRating?: 'XUẤT_SẮC' | 'ĐẠT_MỤC_TIÊU' | 'CẦN_CẢI_THIỆN' | 'KHÔNG_HIỆU_QUẢ';
+  brandFeedback?: string; // Đánh giá của Brand về chất lượng hình ảnh/thông điệp
+  picCollabReview?: string; // Đánh giá của Chuyên viên Booking về thái độ/độ phối hợp
 
   // Tách rời thực thể & Quy trình duyệt Lark
   committedOutputsCount?: number; // Số output cam kết (1 booking -> N content items)

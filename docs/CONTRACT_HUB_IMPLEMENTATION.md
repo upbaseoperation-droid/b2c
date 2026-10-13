@@ -15,6 +15,9 @@ MVP giữ thao tác trình ký trên weSign đang dùng tại công ty; B2C liê
 3. Lưu nháp; tải Word và đối chiếu với file nguồn. Dùng kiểm tra trường điền khi chưa cấu hình AI.
 4. Chọn hai reviewer kiểm thử Pháp chế và Kế toán, gửi duyệt.
 5. Chuyển từng tài khoản reviewer để duyệt/yêu cầu bổ sung. Chỉ sau đủ duyệt mới có luồng liên kết ký cho Điều phối ký.
+6. Khi chưa có tài khoản MISA, chọn Điều phối ký → mở hồ sơ đã duyệt → Bắt đầu ký giả lập. Dùng Giả lập người tiếp theo ký để thử chờ ký → ký một phần → hoàn tất, hoặc Giả lập từ chối ký để thử mở lượt mới. Dữ liệu ghi rõ provider DEMO và lưu lịch sử; không gọi MISA, không sinh file có chữ ký.
+
+Theo yêu cầu ngày 13/10/2026, kết nối thật để chờ vì chưa có môi trường thử. Chế độ giả lập chỉ mở trong môi trường phát triển; không bật lại sandbox trên production để thử.
 
 Hồ sơ cục bộ lưu dưới `web-admin/.contract-data/`, đã loại khỏi Git. Tài khoản kiểm thử chỉ có ở môi trường phát triển. Không dùng dữ liệu thật trong chế độ này.
 

@@ -22,7 +22,7 @@ import {
   legalTypeOf,
   type LegalType,
 } from '../koc/kocUtils';
-import { ActionMenu, Avatar, Button, Chips, DataTable, EmptyState, FilterBar, Pagination, Panel, Person, Select, Status, Toolbar } from '../ui';
+import { ActionMenu, Avatar, Button, Chips, DataTable, EmptyState, FilterBar, PageActions, Pagination, Panel, Person, Select, Status } from '../ui';
 import type { Column } from '../ui';
 
 interface KocMasterDataViewProps {
@@ -229,9 +229,9 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
     {
       key: 'koc',
       header: 'KOC',
-      width: 220,
+      width: 210,
       render: (k) => (
-        <div className="flex items-center gap-2.5 min-w-0">
+        <div className="flex items-center gap-2.5 min-w-0 max-w-[280px]">
           <Avatar name={k.stageName} src={k.avatarUrl} size={32} />
           <div className="min-w-0 leading-tight">
             <span className="block truncate font-medium text-ink">{k.stageName}</span>
@@ -246,18 +246,18 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
     {
       key: 'class',
       header: 'Phân loại',
-      width: 110,
+      width: 125,
       render: (k) => (
         <div className="leading-tight">
           <span className="block text-ink">{k.salaryGrade}</span>
-          <span className="block text-2xs text-ink-3">{k.segment}</span>
+          <span className="block text-2xs text-ink-3 whitespace-nowrap">{k.segment}</span>
         </div>
       ),
     },
     {
       key: 'tep',
       header: 'Tệp kênh',
-      width: 140,
+      width: 130,
       render: (k) => (
         <div className="leading-tight min-w-0">
           <span className="block truncate text-ink">{k.tepKenh || k.creatorCategory || '—'}</span>
@@ -268,7 +268,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
     {
       key: 'owner',
       header: 'Nhãn hàng · PIC',
-      width: 160,
+      width: 150,
       render: (k) => (
         <div className="grid gap-1 min-w-0">
           <span className="truncate text-ink">{k.brandName || <span className="text-ink-3">Chưa gán</span>}</span>
@@ -332,15 +332,11 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
         />
       ) : (
         <>
-          <Toolbar
-            actions={
-              <Button variant="primary" icon={Plus} onClick={() => setIsCreateOpen(true)}>
-                Thêm KOC
-              </Button>
-            }
-          >
-            {selectedBrand !== ALL && <p className="text-[13px] text-ink-3">Đang xem KOC của {selectedBrand}</p>}
-          </Toolbar>
+          <PageActions>
+            <Button variant="primary" icon={Plus} onClick={() => setIsCreateOpen(true)}>
+              Thêm KOC
+            </Button>
+          </PageActions>
 
           <Panel flush>
             <div className="p-4 border-b border-line grid gap-2.5">

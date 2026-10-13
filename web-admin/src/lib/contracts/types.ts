@@ -6,7 +6,7 @@ export interface ReviewStep { role: 'LEGAL' | 'FINANCE' | 'LEAD'; reviewerId: st
 export interface ContractFinding { severity: 'ERROR' | 'WARNING' | 'INFO'; message: string; evidence: string; fieldKey?: string }
 export interface AiCheck { version: number; at: string; provider: 'RULES' | 'AI'; findings: ContractFinding[] }
 export interface SigningPerson { name: string; email: string; action: number; status: string; at?: string }
-export interface SigningAttempt { documentId: string; version: number; linkedBy: string; linkedAt: string; status: string; sourceStatus: number; people: SigningPerson[]; syncedAt: string; error?: string; evidenceConfirmedBy: string; evidenceHash: string }
+export interface SigningAttempt { documentId: string; version: number; linkedBy: string; linkedAt: string; status: string; sourceStatus: number; people: SigningPerson[]; syncedAt: string; error?: string; evidenceConfirmedBy: string; evidenceHash: string; provider?: 'MISA' | 'DEMO' }
 export interface ContractEvent { at: string; actorId: string; actorName: string; action: string; note: string; version: number }
 export interface ContractRevision { version: number; values: Record<string, string>; at: string; actorId: string }
 export interface ContractRecord {

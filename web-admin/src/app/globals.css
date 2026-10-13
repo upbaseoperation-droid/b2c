@@ -186,7 +186,7 @@ html, body {
   color: var(--color-ink);
   min-height: 100vh;
   font-family: var(--font-sans);
-  overflow-x: hidden;
+  overflow-x: clip; /* clip, không phải hidden: hidden biến body thành vùng cuộn và làm hỏng sticky */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }

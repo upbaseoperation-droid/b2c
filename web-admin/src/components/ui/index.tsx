@@ -12,7 +12,7 @@ import { Progress, Sparkline } from './data';
 
 export { Avatar, Person, initialsOf, CHANNELS, channelOf, ChannelTag, ChannelBar, Progress, Sparkline } from './data';
 export type { ChannelKey } from './data';
-export { Toolbar, Panel, Chips, SearchInput, FilterBar, DataTable, Modal, ConfirmDialog, Field, Input, Select, Textarea, ActionMenu, Pagination } from './blocks';
+export { Toolbar, Panel, Chips, SearchInput, FilterBar, DataTable, Modal, ConfirmDialog, Field, Input, Select, Textarea, ActionMenu, Pagination, PageActions, PageActionsSlot, PageActiveContext } from './blocks';
 export type { Column, ChipOption, ActionMenuItem } from './blocks';
 
 const cx = (...parts: Array<string | false | null | undefined>) => parts.filter(Boolean).join(' ');

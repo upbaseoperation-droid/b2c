@@ -57,6 +57,7 @@ import { ContentAngleSetupView } from '../components/views/ContentAngleSetupView
 import { CentralizedRbacHubView } from '../components/views/CentralizedRbacHubView';
 import { isThirdPartyPartner, getPartnerLandingTab } from '../lib/thirdPartyAccessData';
 import { isTabAllowedForRole, getAllowedTabsForRole, getDefaultLandingTabForRole } from '../lib/rbacData';
+import { PageActiveContext } from '../components/ui';
 
 import { 
   USERS, 
@@ -106,9 +107,11 @@ function KeepAliveTab({
       style={{ display: tabKey === currentTab ? 'block' : 'none' }}
       className="space-y-6"
     >
-      <ErrorBoundary fallbackTitle={`Lỗi tải màn hình (${tabKey})`}>
-        {children}
-      </ErrorBoundary>
+      <PageActiveContext.Provider value={tabKey === currentTab}>
+        <ErrorBoundary fallbackTitle={`Lỗi tải màn hình (${tabKey})`}>
+          {children}
+        </ErrorBoundary>
+      </PageActiveContext.Provider>
     </div>
   );
 }
@@ -916,8 +919,13 @@ export default function App() {
               currentUser={currentUser}
               selectedBrand={selectedBrandContext}
               brands={brands}
+              stores={storePortfolios}
+              deals={deals}
               onNotify={showToast}
               onNavigateBackToBrands={() => setActiveTab('master-data')}
+              onNavigateToBookingWithStore={(storeName) => {
+                setActiveTab('booking');
+              }}
             />
           </KeepAliveTab>
 

@@ -5,7 +5,8 @@
  * Màn hình nào cũng ghép từ các khối này để cùng vị trí, cùng hành vi. Quy tắc: DESIGN_SYSTEM.md §5, §7.
  */
 
-import React, { useEffect, useId, useRef, useState } from 'react';
+import React, { useContext, useEffect, useId, useRef, useState, useSyncExternalStore } from 'react';
+import { createPortal } from 'react-dom';
 import { ChevronLeft, ChevronRight, MoreHorizontal, Search, X } from 'lucide-react';
 
 const cx = (...parts: Array<string | false | null | undefined>) => parts.filter(Boolean).join(' ');
@@ -527,4 +528,32 @@ export function Pagination({
       </div>
     </div>
   );
+}
+
+/* ------------------------------------------------------------- PageActions */
+
+/** Màn đang hiển thị hay đang ẩn (các tab giữ trạng thái vẫn mount khi ẩn). */
+export const PageActiveContext = React.createContext(true);
+
+const PAGE_ACTIONS_SLOT = 'page-actions';
+const noopSubscribe = () => () => {};
+
+/** Chỗ đặt nút chính của trang, nằm cuối thanh trên. Chỉ khung app (TopHeader) đặt. */
+export function PageActionsSlot() {
+  return <div id={PAGE_ACTIONS_SLOT} className="flex items-center gap-2 empty:hidden" />;
+}
+
+/**
+ * Đưa nút chính của màn lên thanh trên, cạnh tiêu đề trang (DESIGN_SYSTEM.md §7).
+ * Thay cho một hàng riêng chỉ chứa nút. Tối đa một nút `primary`.
+ */
+export function PageActions({ children }: { children: React.ReactNode }) {
+  const active = useContext(PageActiveContext);
+  const target = useSyncExternalStore(
+    noopSubscribe,
+    () => document.getElementById(PAGE_ACTIONS_SLOT),
+    () => null,
+  );
+  if (!active || !target) return null;
+  return createPortal(children, target);
 }

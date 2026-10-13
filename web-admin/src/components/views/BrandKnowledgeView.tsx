@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   BookOpen,
   Search,
@@ -17,6 +17,7 @@ import {
   ChevronDown,
   ChevronUp,
   Download,
+  AlertCircle,
   AlertTriangle,
   AlertOctagon,
   Sparkles,
@@ -47,7 +48,18 @@ import {
   Save,
   Coins,
   TrendingUp,
-  Building2
+  Building2,
+  Store,
+  ShoppingBag,
+  BadgeAlert,
+  Percent,
+  FileCheck,
+  BarChart3,
+  Calendar,
+  CalendarDays,
+  Target,
+  Activity,
+  Users
 } from 'lucide-react';
 import {
   BrandKnowledgeBase,
@@ -59,7 +71,9 @@ import {
   CrisisProtocol,
   AiScriptAnalysisResult,
   UserProfile,
-  BrandDetail
+  BrandDetail,
+  StorePortfolioItem,
+  BookingDealItem
 } from '../../lib/types';
 import { INITIAL_BRAND_KNOWLEDGE_BASES } from '../../lib/mockData';
 import { UPBASE_BRANDS_MASTER } from '../../lib/importedMasterData';
@@ -71,137 +85,169 @@ export interface BrandKnowledgeViewProps {
   currentUser?: UserProfile | null;
   selectedBrand?: string;
   brands?: BrandDetail[];
+  stores?: StorePortfolioItem[];
+  deals?: BookingDealItem[];
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
   onNavigateBackToBrands?: () => void;
+  onNavigateToBookingWithStore?: (storeName: string) => void;
 }
 
-type KnowledgeTabKey = 
+export type KnowledgeTabKey = 
+  | 'OPERATIONS_KPI'        // 1. Chỉ số vận hành & Hiệu suất BI
+  | 'MONTHLY_EXECUTION'     // 2. Kế hoạch & Thực thi các tháng
+  | 'STORES_CHANNELS'       // 3. Gian hàng & Phân bổ sàn
+  | 'BRAND_PROFILE'         // 4. Hồ sơ thương hiệu & Định vị
+  | 'SKUS_RATECARD'         // 5. Định mức trần & Sản phẩm chủ lực
+  | 'COMPLIANCE_LEGAL'      // 6. Pháp lý & Thẩm định quy chuẩn
+  | 'DOCUMENTS'             // 7. Kho tài liệu & Hồ sơ ký kết
+  // Backward compatibility aliases
   | 'OVERVIEW_PIC' 
   | 'RATECARD_CEILING' 
-  | 'DOCUMENTS' 
   | 'SKUS' 
   | 'LEGAL' 
   | 'KEYWORDS' 
   | 'OBJECTIONS' 
   | 'VISUAL_IDENTITY' 
-  | 'AI_INSPECTOR';
+  | 'SCRIPT_INSPECTOR';
+
+function formatVndShort(amount: number): string {
+  if (!amount || amount === 0) return '0 ₫';
+  if (Math.abs(amount) >= 1_000_000_000) {
+    return `${(amount / 1_000_000_000).toLocaleString('vi-VN', { maximumFractionDigits: 1 })} tỷ`;
+  }
+  if (Math.abs(amount) >= 1_000_000) {
+    return `${(amount / 1_000_000).toLocaleString('vi-VN', { maximumFractionDigits: 1 })} tr`;
+  }
+  return `${amount.toLocaleString('vi-VN')} ₫`;
+}
+
+function buildInitialKnowledgeBases(brandsProp?: BrandDetail[]): BrandKnowledgeBase[] {
+  const list: BrandKnowledgeBase[] = INITIAL_BRAND_KNOWLEDGE_BASES.map(brand => ({
+    ...brand,
+    documents: brand.documents || SAMPLE_BRAND_DOCUMENTS.filter(
+      d => d.brandId === brand.id || d.brandName.toLowerCase() === brand.brandName.toLowerCase()
+    ),
+    isConfigured: true,
+    ratecardCeiling: brand.ratecardCeiling || [
+      { grade: 'KL1', maxBudget: 500000, description: 'Creator khởi đầu / FOC (< 500k)' },
+      { grade: 'KL2', maxBudget: 1500000, description: 'Micro Creator (500k - 1.5tr)' },
+      { grade: 'KL3', maxBudget: 3500000, description: 'Mid Creator (1.5tr - 3.5tr)' },
+      { grade: 'KL4', maxBudget: 7000000, description: 'Key Creator (3.5tr - 7tr)' },
+      { grade: 'KL5', maxBudget: 12000000, description: 'Macro Creator (7tr - 12tr)' },
+      { grade: 'KL6', maxBudget: 20000000, description: 'Top Creator (12tr - 20tr)' },
+      { grade: 'KL7', maxBudget: 35000000, description: 'Celeb / Star (> 20tr)' }
+    ]
+  }));
+
+  // Merge in all brands from Master Data (UPBASE_BRANDS_MASTER + props)
+  const allMasterBrands = brandsProp && brandsProp.length > 0 ? brandsProp : UPBASE_BRANDS_MASTER;
+  allMasterBrands.forEach(b => {
+    const existing = list.find(item => item.brandName.toLowerCase() === b.name.toLowerCase());
+    if (existing) {
+      existing.companyName = existing.companyName || b.companyName || b.name;
+      existing.accountPic = existing.accountPic || b.accountPic;
+      existing.growthPic = existing.growthPic || b.growthPic;
+      existing.bookingPicLead = existing.bookingPicLead || b.bookingPicLead;
+      existing.monthlyBudget = existing.monthlyBudget || b.monthlyBudget || b.planBudget || 0;
+      existing.targetGmv = existing.targetGmv || b.targetGmv || 0;
+      existing.platforms = existing.platforms || (b.platforms as any) || ['Shopee Mall', 'TikTok Shop'];
+    } else {
+      const hasGuideline = b.brandGuideline && b.brandGuideline.length > 10;
+      const brandSlug = (b.code || b.name).toLowerCase().replace(/[^a-z0-9]/g, '-');
+      list.push({
+        id: `kb-${brandSlug}`,
+        brandName: b.name,
+        companyName: b.companyName || b.name,
+        category: b.category || 'Mỹ phẩm & Làm đẹp',
+        originCountry: 'Việt Nam',
+        foundedYear: 2024,
+        slogan: hasGuideline ? b.brandGuideline.slice(0, 80) : 'Chưa thiết lập tuyên ngôn',
+        brandStory: b.brandGuideline || 'Chưa thiết lập câu chuyện thương hiệu và định vị',
+        toneOfVoice: 'Chuyên nghiệp, tin cậy, gần gũi',
+        toneTag: 'BÁC_SĨ_CHUYÊN_GIA',
+        targetPersonaSummary: 'Khách hàng quan tâm đến chất lượng và nguồn gốc xuất xứ',
+        colors: [
+          { name: 'Chủ đạo', hex: '#4F46E5', role: 'PRIMARY' },
+          { name: 'Phụ trợ', hex: '#0284C7', role: 'SECONDARY' }
+        ],
+        logoAssetRules: 'Sử dụng logo chính thức',
+        logoDownloadUrls: [],
+        visualDoList: ['Sử dụng hình ảnh bao bì sắc nét', 'Đặt logo góc trên video', 'Hình ảnh sản phẩm rõ ràng'],
+        visualDontList: ['Không dùng từ ngữ phóng đại', 'Không vi phạm chính sách sàn', 'Không nhắc tên đối thủ'],
+        certifications: [],
+        skus: (b.heroProducts || []).map(p => ({
+          id: p.id,
+          skuCode: p.sku,
+          name: p.productName || p.sku,
+          volumeOrWeight: 'Fullsize',
+          category: p.category || 'Mỹ phẩm & Làm đẹp',
+          priceVnd: p.price || 250000,
+          sampleStockCount: p.sampleStock || 50,
+          pdpUrl: p.pdpUrl || '#',
+          scientificMechanism: 'Cơ chế tác động chuẩn theo tài liệu thương hiệu',
+          keyActiveIngredients: [],
+          uniqueSellingPoints: [p.productName || 'Sản phẩm chủ lực'],
+          clinicalTrials: 'Đạt chuẩn kiểm định chất lượng',
+          usageInstructions: 'Sử dụng theo hướng dẫn của nhà sản xuất',
+          targetSkinOrUser: 'Người tiêu dùng có nhu cầu',
+          contraindications: 'Không dùng cho người mẫn cảm với thành phần'
+        })),
+        blacklistKeywords: [],
+        whitelistKeywords: [],
+        objectionFaqs: [],
+        crisisProtocols: [],
+        lastUpdated: new Date().toISOString(),
+        updatedBy: 'Hệ thống Lark Sync',
+        publicShareSlug: brandSlug,
+        documents: [],
+        isConfigured: b.profileStatus === 'CONFIGURED' || !!hasGuideline,
+        accountPic: b.accountPic || 'Chưa phân công',
+        growthPic: b.growthPic || 'Chưa phân công',
+        bookingPicLead: b.bookingPicLead || 'Chưa phân công',
+        monthlyBudget: b.monthlyBudget || b.planBudget || 0,
+        targetGmv: b.targetGmv || 0,
+        platforms: (b.platforms as any) || ['Shopee Mall', 'TikTok Shop'],
+        ratecardCeiling: [
+          { grade: 'KL1', maxBudget: 500000, description: 'Creator khởi đầu / FOC (< 500k)' },
+          { grade: 'KL2', maxBudget: 1500000, description: 'Micro Creator (500k - 1.5tr)' },
+          { grade: 'KL3', maxBudget: 3500000, description: 'Mid Creator (1.5tr - 3.5tr)' },
+          { grade: 'KL4', maxBudget: 7000000, description: 'Key Creator (3.5tr - 7tr)' },
+          { grade: 'KL5', maxBudget: 12000000, description: 'Macro Creator (7tr - 12tr)' },
+          { grade: 'KL6', maxBudget: 20000000, description: 'Top Creator (12tr - 20tr)' },
+          { grade: 'KL7', maxBudget: 35000000, description: 'Celeb / Star (> 20tr)' }
+        ]
+      });
+    }
+  });
+
+  return list;
+}
 
 export const BrandKnowledgeView: React.FC<BrandKnowledgeViewProps> = ({
   currentUser,
   selectedBrand = 'ALL',
   brands,
+  stores = [],
+  deals = [],
   onNotify,
-  onNavigateBackToBrands
+  onNavigateBackToBrands,
+  onNavigateToBookingWithStore
 }) => {
-  const [knowledgeBases, setKnowledgeBases] = useState<BrandKnowledgeBase[]>(() => {
-    const list: BrandKnowledgeBase[] = INITIAL_BRAND_KNOWLEDGE_BASES.map(brand => ({
-      ...brand,
-      documents: brand.documents || SAMPLE_BRAND_DOCUMENTS.filter(
-        d => d.brandId === brand.id || d.brandName.toLowerCase() === brand.brandName.toLowerCase()
-      ),
-      isConfigured: true,
-      ratecardCeiling: brand.ratecardCeiling || [
-        { grade: 'KL1', maxBudget: 500000, description: 'Creator khởi đầu (< 500k)' },
-        { grade: 'KL2', maxBudget: 1500000, description: 'Micro Creator (500k - 1.5tr)' },
-        { grade: 'KL3', maxBudget: 3500000, description: 'Mid Creator (1.5tr - 3.5tr)' },
-        { grade: 'KL4', maxBudget: 7000000, description: 'Key Creator (3.5tr - 7tr)' },
-        { grade: 'KL5', maxBudget: 12000000, description: 'Macro Creator (7tr - 12tr)' },
-        { grade: 'KL6', maxBudget: 20000000, description: 'Top Creator (12tr - 20tr)' },
-        { grade: 'KL7', maxBudget: 35000000, description: 'Celeb / Star (> 20tr)' }
-      ]
-    }));
-
-    // Merge in all brands from Master Data (UPBASE_BRANDS_MASTER + props)
-    const allMasterBrands = brands && brands.length > 0 ? brands : UPBASE_BRANDS_MASTER;
-    allMasterBrands.forEach(b => {
-      const existing = list.find(item => item.brandName.toLowerCase() === b.name.toLowerCase());
-      if (existing) {
-        existing.companyName = existing.companyName || b.companyName || b.name;
-        existing.accountPic = existing.accountPic || b.accountPic;
-        existing.growthPic = existing.growthPic || b.growthPic;
-        existing.bookingPicLead = existing.bookingPicLead || b.bookingPicLead;
-        existing.monthlyBudget = existing.monthlyBudget || b.monthlyBudget || b.planBudget || 0;
-        existing.targetGmv = existing.targetGmv || b.targetGmv || 0;
-        existing.platforms = existing.platforms || (b.platforms as any) || ['Shopee Mall', 'TikTok Shop'];
-      } else {
-        const hasGuideline = b.brandGuideline && b.brandGuideline.length > 10;
-        const brandSlug = (b.code || b.name).toLowerCase().replace(/[^a-z0-9]/g, '-');
-        list.push({
-          id: `kb-${brandSlug}`,
-          brandName: b.name,
-          companyName: b.companyName || b.name,
-          category: b.category || 'Mỹ phẩm & Làm đẹp',
-          originCountry: 'Việt Nam',
-          foundedYear: 2024,
-          slogan: hasGuideline ? b.brandGuideline.slice(0, 80) : 'Chưa thiết lập slogan',
-          brandStory: b.brandGuideline || 'Chưa thiết lập câu chuyện thương hiệu và định vị',
-          toneOfVoice: 'Chuyên nghiệp, tin cậy, gần gũi',
-          toneTag: 'BÁC_SĨ_CHUYÊN_GIA',
-          targetPersonaSummary: 'Khách hàng quan tâm đến chất lượng và nguồn gốc xuất xứ',
-          colors: [
-            { name: 'Chủ đạo', hex: '#4F46E5', role: 'PRIMARY' },
-            { name: 'Phụ trợ', hex: '#0284C7', role: 'SECONDARY' }
-          ],
-          logoAssetRules: 'Sử dụng logo chính thức',
-          logoDownloadUrls: [],
-          visualDoList: ['Sử dụng hình ảnh bao bì sắc nét', 'Đặt logo góc trên video', 'Hình ảnh sản phẩm rõ ràng'],
-          visualDontList: ['Không dùng từ ngữ phóng đại', 'Không vi phạm chính sách sàn', 'Không nhắc tên đối thủ'],
-          certifications: [],
-          skus: (b.heroProducts || []).map(p => ({
-            id: p.id,
-            skuCode: p.sku,
-            name: p.productName || p.sku,
-            volumeOrWeight: 'Fullsize',
-            category: p.category || 'Mỹ phẩm & Làm đẹp',
-            priceVnd: p.price || 250000,
-            sampleStockCount: p.sampleStock || 50,
-            pdpUrl: p.pdpUrl || '#',
-            scientificMechanism: 'Cơ chế tác động chuẩn theo tài liệu thương hiệu',
-            keyActiveIngredients: [],
-            uniqueSellingPoints: [p.productName || 'Sản phẩm chủ lực'],
-            clinicalTrials: 'Đạt chuẩn kiểm định chất lượng',
-            usageInstructions: 'Sử dụng theo hướng dẫn của nhà sản xuất',
-            targetSkinOrUser: 'Người tiêu dùng có nhu cầu',
-            contraindications: 'Không dùng cho người mẫn cảm với thành phần'
-          })),
-          blacklistKeywords: [],
-          whitelistKeywords: [],
-          objectionFaqs: [],
-          crisisProtocols: [],
-          lastUpdated: new Date().toISOString(),
-          updatedBy: 'Hệ thống Lark Sync',
-          publicShareSlug: brandSlug,
-          documents: [],
-          isConfigured: b.profileStatus === 'CONFIGURED' || !!hasGuideline,
-          accountPic: b.accountPic || 'Chưa phân công',
-          growthPic: b.growthPic || 'Chưa phân công',
-          bookingPicLead: b.bookingPicLead || 'Chưa phân công',
-          monthlyBudget: b.monthlyBudget || b.planBudget || 0,
-          targetGmv: b.targetGmv || 0,
-          platforms: (b.platforms as any) || ['Shopee Mall', 'TikTok Shop'],
-          ratecardCeiling: [
-            { grade: 'KL1', maxBudget: 500000, description: 'Creator khởi đầu (< 500k)' },
-            { grade: 'KL2', maxBudget: 1500000, description: 'Micro Creator (500k - 1.5tr)' },
-            { grade: 'KL3', maxBudget: 3500000, description: 'Mid Creator (1.5tr - 3.5tr)' },
-            { grade: 'KL4', maxBudget: 7000000, description: 'Key Creator (3.5tr - 7tr)' },
-            { grade: 'KL5', maxBudget: 12000000, description: 'Macro Creator (7tr - 12tr)' },
-            { grade: 'KL6', maxBudget: 20000000, description: 'Top Creator (12tr - 20tr)' },
-            { grade: 'KL7', maxBudget: 35000000, description: 'Celeb / Star (> 20tr)' }
-          ]
-        });
-      }
-    });
-
-    return list;
-  });
+  const initialBrandList = useMemo(() => buildInitialKnowledgeBases(brands), [brands]);
+  const [knowledgeBases, setKnowledgeBases] = useState<BrandKnowledgeBase[]>(() => initialBrandList);
 
   const isManagerOrBOD = !currentUser || ['ADMIN', 'MANAGER', 'LEADER'].includes(currentUser.role);
+  
   const [selectedBrandId, setSelectedBrandId] = useState<string>(() => {
     if (selectedBrand && selectedBrand !== 'ALL') {
-      const match = INITIAL_BRAND_KNOWLEDGE_BASES.find(b => b.brandName.toLowerCase().includes(selectedBrand.toLowerCase()));
+      const match = initialBrandList.find(b => 
+        b.brandName.toLowerCase() === selectedBrand.toLowerCase() ||
+        b.brandName.toLowerCase().includes(selectedBrand.toLowerCase()) ||
+        selectedBrand.toLowerCase().includes(b.brandName.toLowerCase())
+      );
       if (match) return match.id;
     }
-    return isManagerOrBOD ? 'ALL' : (INITIAL_BRAND_KNOWLEDGE_BASES[0]?.id || 'kb-senka');
+    return isManagerOrBOD ? 'ALL' : (initialBrandList[0]?.id || 'kb-senka');
   });
 
   // Đồng bộ khi đổi nhãn hàng trên TopHeader
@@ -210,18 +256,226 @@ export const BrandKnowledgeView: React.FC<BrandKnowledgeViewProps> = ({
       if (selectedBrand === 'ALL') {
         setSelectedBrandId('ALL');
       } else {
-        const match = knowledgeBases.find(b => b.brandName.toLowerCase().includes(selectedBrand.toLowerCase()));
+        const match = knowledgeBases.find(b => 
+          b.brandName.toLowerCase() === selectedBrand.toLowerCase() ||
+          b.brandName.toLowerCase().includes(selectedBrand.toLowerCase()) ||
+          selectedBrand.toLowerCase().includes(b.brandName.toLowerCase())
+        );
         if (match) {
           setSelectedBrandId(match.id);
         }
       }
     }
   }, [selectedBrand, knowledgeBases]);
-  const [activeKnowledgeTab, setActiveKnowledgeTab] = useState<KnowledgeTabKey>('OVERVIEW_PIC');
+
+  const [activeKnowledgeTab, setActiveKnowledgeTab] = useState<KnowledgeTabKey>('OPERATIONS_KPI');
+  const [selectedMonthCycle, setSelectedMonthCycle] = useState<string>('2026/10');
+  const [executionPipelineFilter, setExecutionPipelineFilter] = useState<string>('ALL');
+  const [executionSearch, setExecutionSearch] = useState<string>('');
+  const [profileSubTab, setProfileSubTab] = useState<'GENERAL' | 'VISUAL_RULES'>('GENERAL');
+  const [skusSubTab, setSkusSubTab] = useState<'SKUS' | 'RATECARD'>('SKUS');
+  const [complianceSubTab, setComplianceSubTab] = useState<'INSPECTOR' | 'LEGAL' | 'KEYWORDS' | 'OBJECTIONS'>('INSPECTOR');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string>('ALL');
   const [isBrandDropdownOpen, setIsBrandDropdownOpen] = useState(false);
   const [brandSelectorSearch, setBrandSelectorSearch] = useState('');
+
+  // Active Brand Knowledge Base
+  const currentBrand = knowledgeBases.find(b => b.id === selectedBrandId) || knowledgeBases[0];
+
+  // Danh sách gian hàng trực thuộc của Brand hiện tại (Theo quy tắc phân cấp Brand -> Gian hàng GEMINI.md)
+  const brandStores = useMemo(() => {
+    if (!stores || stores.length === 0 || !currentBrand) return [];
+    const brandNameClean = currentBrand.brandName.toLowerCase().trim();
+    return stores.filter((s: StorePortfolioItem) => {
+      const sBrandClean = (s.brandName || '').toLowerCase().trim();
+      const sStoreClean = (s.storeName || '').toLowerCase().trim();
+      return (
+        sBrandClean === brandNameClean ||
+        sBrandClean.includes(brandNameClean) ||
+        brandNameClean.includes(sBrandClean) ||
+        sStoreClean.includes(brandNameClean)
+      );
+    });
+  }, [stores, currentBrand]);
+
+  // Các deal booking đang chạy thuộc Brand hoặc các gian hàng của Brand
+  const brandDeals = useMemo(() => {
+    if (!deals || deals.length === 0 || !currentBrand) return [];
+    const brandNameClean = currentBrand.brandName.toLowerCase().trim();
+    const storeNames = new Set(brandStores.map((s: StorePortfolioItem) => s.storeName.toLowerCase().trim()));
+    return deals.filter((d: BookingDealItem) => {
+      const dBrand = (d.brandName || '').toLowerCase().trim();
+      const dStore = (d.storeName || '').toLowerCase().trim();
+      return (
+        dBrand === brandNameClean ||
+        dBrand.includes(brandNameClean) ||
+        brandNameClean.includes(dBrand) ||
+        storeNames.has(dStore)
+      );
+    });
+  }, [deals, currentBrand, brandStores]);
+
+  // Thống kê tài chính & kiểm soát hạn mức Net B2C cho Brand
+  const brandFinancialStats = useMemo(() => {
+    const totalOrderNetBudget = brandStores.reduce((sum: number, s: StorePortfolioItem) => sum + (s.monthlyBudget || 0), 0);
+    const totalTargetGmv = brandStores.reduce((sum: number, s: StorePortfolioItem) => sum + (s.monthlyTargetGmv || 0), 0);
+    
+    // Tính thực chi Net
+    const totalSpentNet = brandDeals.reduce((sum: number, d: BookingDealItem) => sum + (d.totalValue || 0), 0);
+    
+    // Tách bạch KOC có phí (Paid) và Suất gửi mẫu miễn phí (FOC - 0đ)
+    const paidDealsCount = brandDeals.filter((d: BookingDealItem) => (d.totalValue || 0) > 0).length;
+    const focDealsCount = brandDeals.filter((d: BookingDealItem) => (d.totalValue || 0) === 0).length;
+    const activeDealsCount = brandDeals.filter((d: BookingDealItem) => d.status !== 'COMPLETED' && d.status !== 'CANCELLED').length;
+
+    // Kiểm tra cảnh báo tài chính B2C
+    const overbudgetStores = brandStores.filter((s: StorePortfolioItem) => {
+      const storeDeals = brandDeals.filter((d: BookingDealItem) => (d.storeName || '').toLowerCase().trim() === s.storeName.toLowerCase().trim());
+      const storeSpent = storeDeals.reduce((sum: number, d: BookingDealItem) => sum + (d.totalValue || 0), 0);
+      return s.monthlyBudget > 0 && storeSpent > s.monthlyBudget;
+    });
+
+    const unbudgetedStores = brandStores.filter((s: StorePortfolioItem) => {
+      const storeDeals = brandDeals.filter((d: BookingDealItem) => (d.storeName || '').toLowerCase().trim() === s.storeName.toLowerCase().trim());
+      const storeSpent = storeDeals.reduce((sum: number, d: BookingDealItem) => sum + (d.totalValue || 0), 0);
+      return (s.monthlyBudget || 0) === 0 && storeSpent > 0;
+    });
+
+    const isBrandOverbudget = totalOrderNetBudget > 0 && totalSpentNet > totalOrderNetBudget;
+
+    return {
+      totalOrderNetBudget,
+      totalTargetGmv,
+      totalSpentNet,
+      remainingNetBudget: totalOrderNetBudget - totalSpentNet,
+      spentPercentage: totalOrderNetBudget > 0 ? Math.round((totalSpentNet / totalOrderNetBudget) * 100) : 0,
+      paidDealsCount,
+      focDealsCount,
+      activeDealsCount,
+      overbudgetStores,
+      unbudgetedStores,
+      isBrandOverbudget,
+    };
+  }, [brandStores, brandDeals]);
+
+  // 1. Thống kê Chỉ Số Vận Hành & Hiệu Suất BI Cấp Cao
+  const brandOperationalKpis = useMemo(() => {
+    const totalDeals = brandDeals.length;
+    const completedDeals = brandDeals.filter((d: BookingDealItem) => d.status === 'COMPLETED').length;
+    const activeDeals = brandDeals.filter((d: BookingDealItem) => d.status !== 'COMPLETED' && (d.status as string) !== 'CANCELLED').length;
+    
+    // Tách bạch theo định dạng
+    const paidDeals = brandDeals.filter((d: BookingDealItem) => (d.totalValue || 0) > 0);
+    const focDeals = brandDeals.filter((d: BookingDealItem) => (d.totalValue || 0) === 0);
+    const affiliateDeals = brandDeals.filter((d: BookingDealItem) => d.bookingFormat === 'Affiliate Thuần');
+    
+    // Doanh thu GMV thực tế phát sinh (Affiliate GMV + Ads GMV)
+    const totalSpentNet = brandDeals.reduce((sum: number, d: BookingDealItem) => sum + (d.totalValue || 0), 0);
+    const totalAffiliateGmv = brandDeals.reduce((sum: number, d: BookingDealItem) => sum + (d.affiliateGmv || d.gmv30 || 0), 0);
+    const totalAdsGmv = brandDeals.reduce((sum: number, d: BookingDealItem) => sum + (d.adsGmv || 0), 0);
+    const totalGmvActual = totalAffiliateGmv + totalAdsGmv;
+    
+    const roi = totalSpentNet > 0 ? Number((totalGmvActual / totalSpentNet).toFixed(2)) : 0;
+    const cir = totalGmvActual > 0 ? Number(((totalSpentNet / totalGmvActual) * 100).toFixed(1)) : 0;
+    
+    // SLA Vận hành B2C
+    const postedDeals = brandDeals.filter((d: BookingDealItem) => d.tiktokVideoUrl || d.videoUrl || d.postedDate || d.status === 'COMPLETED');
+    const onTimeDeals = postedDeals.filter((d: BookingDealItem) => d.isPostOnTime !== false && !d.daysDelayed);
+    const onTimeAirRate = postedDeals.length > 0 ? Math.round((onTimeDeals.length / postedDeals.length) * 100) : 100;
+    
+    const approvedScriptDeals = brandDeals.filter((d: BookingDealItem) => d.brandApprovalStatus === 'ĐÃ_DUYỆT' || d.status === 'SCRIPT_APPROVED' || d.status === 'COMPLETED');
+    const scriptApprovalRate = totalDeals > 0 ? Math.round((approvedScriptDeals.length / totalDeals) * 100) : 100;
+    
+    const focConvertedDeals = focDeals.filter((d: BookingDealItem) => d.tiktokVideoUrl || d.videoUrl || d.status === 'COMPLETED');
+    const focConversionRate = focDeals.length > 0 ? Math.round((focConvertedDeals.length / focDeals.length) * 100) : 85;
+    
+    const totalOrdersCount = brandDeals.reduce((sum: number, d: BookingDealItem) => sum + (d.ordersCount || 0), 0);
+    const avgCpo = totalOrdersCount > 0 ? Math.round(totalSpentNet / totalOrdersCount) : 0;
+    const totalViews = brandDeals.reduce((sum: number, d: BookingDealItem) => sum + (d.viewsCount || 0), 0);
+    
+    const delayedDeals = brandDeals.filter((d: BookingDealItem) => d.isSlaWarning || ((d.daysDelayed || 0) > 0));
+
+    return {
+      totalDeals,
+      completedDeals,
+      activeDeals,
+      paidCount: paidDeals.length,
+      focCount: focDeals.length,
+      affiliateCount: affiliateDeals.length,
+      totalSpentNet,
+      totalAffiliateGmv,
+      totalAdsGmv,
+      totalGmvActual,
+      roi,
+      cir,
+      onTimeAirRate,
+      scriptApprovalRate,
+      focConversionRate,
+      totalOrdersCount,
+      avgCpo,
+      totalViews,
+      delayedDealsCount: delayedDeals.length,
+      delayedDeals
+    };
+  }, [brandDeals]);
+
+  // 2. Lọc Deals theo chu kỳ tháng được chọn
+  const monthlyDeals = useMemo(() => {
+    if (selectedMonthCycle === 'ALL') return brandDeals;
+    return brandDeals.filter((d: BookingDealItem) => {
+      if (d.campaignCode) {
+        if (selectedMonthCycle === '2026/10' && (d.campaignCode.includes('202610') || d.campaignCode.includes('10'))) return true;
+        if (selectedMonthCycle === '2026/09' && (d.campaignCode.includes('202609') || d.campaignCode.includes('09'))) return true;
+        if (selectedMonthCycle === '2026/08' && (d.campaignCode.includes('202608') || d.campaignCode.includes('08'))) return true;
+      }
+      if (d.postedDate && d.postedDate.startsWith(selectedMonthCycle.replace('/', '-'))) return true;
+      if (d.deadlinePost && d.deadlinePost.startsWith(selectedMonthCycle.replace('/', '-'))) return true;
+      if (selectedMonthCycle === '2026/10' && d.status !== 'COMPLETED' && (d.status as string) !== 'CANCELLED') return true;
+      return false;
+    });
+  }, [brandDeals, selectedMonthCycle]);
+
+  // 3. Thống kê phân rã kế hoạch tháng (Plan Order Targets vs Actuals)
+  const monthlyPlanStats = useMemo(() => {
+    const monthDealsCount = monthlyDeals.length;
+    const monthSpentNet = monthlyDeals.reduce((sum: number, d: BookingDealItem) => sum + (d.totalValue || 0), 0);
+    const monthGmv = monthlyDeals.reduce((sum: number, d: BookingDealItem) => sum + (d.affiliateGmv || d.gmv30 || 0), 0);
+    const monthPaidCount = monthlyDeals.filter((d: BookingDealItem) => (d.totalValue || 0) > 0).length;
+    const monthFocCount = monthlyDeals.filter((d: BookingDealItem) => (d.totalValue || 0) === 0).length;
+    const monthAirVideos = monthlyDeals.filter((d: BookingDealItem) => d.tiktokVideoUrl || d.videoUrl || d.status === 'COMPLETED').length;
+
+    const baseOrderNet = currentBrand?.monthlyBudget || brandStores.reduce((sum: number, s: StorePortfolioItem) => sum + (s.monthlyBudget || 0), 0);
+    const baseTargetGmv = currentBrand?.targetGmv || brandStores.reduce((sum: number, s: StorePortfolioItem) => sum + (s.monthlyTargetGmv || 0), 0);
+    
+    // Tách bạch Gross & Net
+    const planBudgetNet = baseOrderNet;
+    const planBudgetGross = Math.round(planBudgetNet * 1.1); // Kế toán kiểm soát Net, Gross gồm thuế phí
+    const planTargetGmv = baseTargetGmv;
+    
+    // Định mức cam kết sản lượng B2C
+    const targetPaidVideos = Math.max(12, Math.round(planBudgetNet / 3000000));
+    const targetFocSamples = Math.max(15, Math.round(targetPaidVideos * 1.25));
+    const targetAffiliateVideos = Math.max(20, targetPaidVideos * 2);
+
+    return {
+      planBudgetNet,
+      planBudgetGross,
+      planTargetGmv,
+      monthSpentNet,
+      monthGmv,
+      remainingNet: planBudgetNet - monthSpentNet,
+      budgetProgressPct: planBudgetNet > 0 ? Math.round((monthSpentNet / planBudgetNet) * 100) : 0,
+      gmvProgressPct: planTargetGmv > 0 ? Math.round((monthGmv / planTargetGmv) * 100) : 0,
+      targetPaidVideos,
+      actualPaidVideos: monthPaidCount,
+      targetFocSamples,
+      actualFocSamples: monthFocCount,
+      targetAffiliateVideos,
+      actualAirVideos: monthAirVideos,
+      videoProgressPct: targetPaidVideos > 0 ? Math.round((monthAirVideos / targetPaidVideos) * 100) : 0
+    };
+  }, [monthlyDeals, currentBrand, brandStores]);
 
   const handleUpdateBrand = (updatedBrand: BrandKnowledgeBase) => {
     setKnowledgeBases(prev => prev.map(b => b.id === updatedBrand.id ? updatedBrand : b));
@@ -252,9 +506,6 @@ export const BrandKnowledgeView: React.FC<BrandKnowledgeViewProps> = ({
   const [selectedSkuId, setSelectedSkuId] = useState<string>('');
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
   const [aiAnalysisResult, setAiAnalysisResult] = useState<AiScriptAnalysisResult | null>(null);
-
-  // Active Brand Knowledge Base
-  const currentBrand = knowledgeBases.find(b => b.id === selectedBrandId) || knowledgeBases[0];
 
   const updateCurrentBrandField = <K extends keyof BrandKnowledgeBase>(field: K, value: BrandKnowledgeBase[K]) => {
     setKnowledgeBases(prev => prev.map(kb => {
@@ -886,154 +1137,761 @@ export const BrandKnowledgeView: React.FC<BrandKnowledgeViewProps> = ({
       </div>
 
       {/* KNOWLEDGE CATEGORY SUB-TABS */}
-      <div className="border-b border-slate-200">
-        <div className="flex items-center gap-2 overflow-x-auto pb-1">
+      {/* BRAND GOVERNANCE COMMAND CENTER TABS */}
+      <div className="border-b border-slate-200 bg-white px-2 rounded-t-lg">
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
           <button
-            onClick={() => setActiveKnowledgeTab('OVERVIEW_PIC')}
-            className={`px-4 py-2.5 text-xs font-semibold border-b-2 transition flex items-center gap-2 whitespace-nowrap ${
-              activeKnowledgeTab === 'OVERVIEW_PIC'
-                ? 'border-blue-600 text-blue-700 bg-blue-50/50'
+            onClick={() => setActiveKnowledgeTab('OPERATIONS_KPI')}
+            className={`px-3.5 py-2.5 text-xs font-semibold border-b-2 transition flex items-center gap-2 whitespace-nowrap ${
+              activeKnowledgeTab === 'OPERATIONS_KPI'
+                ? 'border-blue-600 text-blue-700 bg-blue-50/60'
+                : 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+            }`}
+          >
+            <BarChart3 className="w-4 h-4 text-blue-600" />
+            <span>Chỉ Số Vận Hành &amp; BI</span>
+            <span className="px-1.5 py-0.2 rounded-full text-2xs bg-blue-100 text-blue-800 font-semibold">
+              SLA {brandOperationalKpis.onTimeAirRate}%
+            </span>
+          </button>
+
+          <button
+            onClick={() => setActiveKnowledgeTab('MONTHLY_EXECUTION')}
+            className={`px-3.5 py-2.5 text-xs font-semibold border-b-2 transition flex items-center gap-2 whitespace-nowrap ${
+              activeKnowledgeTab === 'MONTHLY_EXECUTION'
+                ? 'border-blue-600 text-blue-700 bg-blue-50/60'
+                : 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+            }`}
+          >
+            <CalendarDays className="w-4 h-4 text-purple-600" />
+            <span>Kế Hoạch &amp; Thực Thi Tháng</span>
+            <span className="px-1.5 py-0.2 rounded-full text-2xs bg-purple-100 text-purple-800 font-semibold">
+              {monthlyDeals.length} Deals
+            </span>
+          </button>
+
+          <button
+            onClick={() => setActiveKnowledgeTab('STORES_CHANNELS')}
+            className={`px-3.5 py-2.5 text-xs font-semibold border-b-2 transition flex items-center gap-2 whitespace-nowrap ${
+              activeKnowledgeTab === 'STORES_CHANNELS'
+                ? 'border-blue-600 text-blue-700 bg-blue-50/60'
+                : 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+            }`}
+          >
+            <Store className="w-4 h-4 text-emerald-600" />
+            <span>Gian Hàng &amp; Phân Bổ Sàn</span>
+            <span className="px-1.5 py-0.2 rounded-full text-2xs bg-emerald-100 text-emerald-800 font-semibold">
+              {brandStores.length} gian
+            </span>
+          </button>
+
+          <button
+            onClick={() => setActiveKnowledgeTab('BRAND_PROFILE')}
+            className={`px-3.5 py-2.5 text-xs font-semibold border-b-2 transition flex items-center gap-2 whitespace-nowrap ${
+              activeKnowledgeTab === 'BRAND_PROFILE' || activeKnowledgeTab === 'OVERVIEW_PIC' || activeKnowledgeTab === 'VISUAL_IDENTITY'
+                ? 'border-blue-600 text-blue-700 bg-blue-50/60'
                 : 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50'
             }`}
           >
             <Building2 className="w-4 h-4 text-blue-600" />
-            <span>Hồ sơ &amp; Phân công PIC</span>
-            {currentBrand.isConfigured ? (
-              <span className="px-1.5 py-0.2 rounded-full text-2xs bg-emerald-100 text-emerald-800 font-semibold">Đã lập</span>
-            ) : (
-              <span className="px-1.5 py-0.2 rounded-full text-2xs bg-amber-100 text-amber-800 font-semibold">Cần điền</span>
-            )}
-          </button>
-
-          <button
-            onClick={() => setActiveKnowledgeTab('RATECARD_CEILING')}
-            className={`px-4 py-2.5 text-xs font-semibold border-b-2 transition flex items-center gap-2 whitespace-nowrap ${
-              activeKnowledgeTab === 'RATECARD_CEILING'
-                ? 'border-blue-600 text-blue-700 bg-blue-50/50'
-                : 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-            }`}
-          >
-            <Coins className="w-4 h-4 text-amber-600" />
-            <span>Định mức &amp; Trần thù lao</span>
-            <span className="px-1.5 py-0.2 rounded-full text-2xs bg-slate-200 text-slate-700 font-semibold">
-              {(currentBrand.ratecardCeiling || []).length || 7} bậc
+            <span>Hồ Sơ Thương Hiệu &amp; Định Vị</span>
+            <span className={`px-1.5 py-0.2 rounded-full text-2xs font-semibold ${
+              currentBrand.isConfigured ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+            }`}>
+              {currentBrand.isConfigured ? 'Chuẩn hóa' : 'Cần điền'}
             </span>
           </button>
 
           <button
-            onClick={() => setActiveKnowledgeTab('DOCUMENTS')}
-            className={`px-4 py-2.5 text-xs font-semibold border-b-2 transition flex items-center gap-2 whitespace-nowrap ${
-              activeKnowledgeTab === 'DOCUMENTS'
-                ? 'border-blue-600 text-blue-700 bg-blue-50/50'
-                : 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-            }`}
-          >
-            <FolderOpen className="w-4 h-4 text-blue-600" />
-            <span>Kho tài liệu &amp; Đọc tệp</span>
-            <span className="px-1.5 py-0.2 rounded-full text-2xs bg-blue-100 text-blue-800 font-semibold">
-              {(currentBrand.documents || []).length}
-            </span>
-          </button>
-
-          <button
-            onClick={() => setActiveKnowledgeTab('SKUS')}
-            className={`px-4 py-2.5 text-xs font-semibold border-b-2 transition flex items-center gap-2 whitespace-nowrap ${
-              activeKnowledgeTab === 'SKUS'
-                ? 'border-blue-600 text-blue-700 bg-blue-50/50'
+            onClick={() => setActiveKnowledgeTab('SKUS_RATECARD')}
+            className={`px-3.5 py-2.5 text-xs font-semibold border-b-2 transition flex items-center gap-2 whitespace-nowrap ${
+              activeKnowledgeTab === 'SKUS_RATECARD' || activeKnowledgeTab === 'SKUS' || activeKnowledgeTab === 'RATECARD_CEILING'
+                ? 'border-blue-600 text-blue-700 bg-blue-50/60'
                 : 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50'
             }`}
           >
             <Flame className="w-4 h-4 text-amber-500" />
-            <span>Bách khoa toàn thư sản phẩm</span>
+            <span>Định Mức Trần &amp; Hero SKUs</span>
             <span className="px-1.5 py-0.2 rounded-full text-2xs bg-slate-200 text-slate-700 font-semibold">
-              {currentBrand.skus.length}
+              {currentBrand.skus.length} SKU
             </span>
-          </button>
-
-          <button
-            onClick={() => setActiveKnowledgeTab('LEGAL')}
-            className={`px-4 py-2.5 text-xs font-semibold border-b-2 transition flex items-center gap-2 whitespace-nowrap ${
-              activeKnowledgeTab === 'LEGAL'
-                ? 'border-blue-600 text-blue-700 bg-blue-50/50'
-                : 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-            }`}
-          >
-            <ShieldCheck className="w-4 h-4 text-emerald-600" />
-            <span>Pháp lý & bằng chứng lâm sàng</span>
-            <span className="px-1.5 py-0.2 rounded-full text-2xs bg-slate-200 text-slate-700 font-semibold">
-              {currentBrand.certifications.length}
-            </span>
-          </button>
-
-          <button
-            onClick={() => setActiveKnowledgeTab('KEYWORDS')}
-            className={`px-4 py-2.5 text-xs font-semibold border-b-2 transition flex items-center gap-2 whitespace-nowrap ${
-              activeKnowledgeTab === 'KEYWORDS'
-                ? 'border-blue-600 text-blue-700 bg-blue-50/50'
-                : 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-            }`}
-          >
-            <ShieldAlert className="w-4 h-4 text-rose-600" />
-            <span>Từ điển Blacklist & Whitelist</span>
-            <span className="px-1.5 py-0.2 rounded-full text-2xs bg-slate-200 text-slate-700 font-semibold">
-              {currentBrand.blacklistKeywords.length + currentBrand.whitelistKeywords.length}
-            </span>
-          </button>
-
-          <button
-            onClick={() => setActiveKnowledgeTab('OBJECTIONS')}
-            className={`px-4 py-2.5 text-xs font-semibold border-b-2 transition flex items-center gap-2 whitespace-nowrap ${
-              activeKnowledgeTab === 'OBJECTIONS'
-                ? 'border-blue-600 text-blue-700 bg-blue-50/50'
-                : 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-            }`}
-          >
-            <HelpCircle className="w-4 h-4 text-indigo-600" />
-            <span>Xử lý phản biện & FAQ khủng hoảng</span>
-            <span className="px-1.5 py-0.2 rounded-full text-2xs bg-slate-200 text-slate-700 font-semibold">
-              {currentBrand.objectionFaqs.length}
-            </span>
-          </button>
-
-          <button
-            onClick={() => setActiveKnowledgeTab('VISUAL_IDENTITY')}
-            className={`px-4 py-2.5 text-xs font-semibold border-b-2 transition flex items-center gap-2 whitespace-nowrap ${
-              activeKnowledgeTab === 'VISUAL_IDENTITY'
-                ? 'border-blue-600 text-blue-700 bg-blue-50/50'
-                : 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-            }`}
-          >
-            <Award className="w-4 h-4 text-purple-600" />
-            <span>Quy Chuẩn Hình Ảnh Do&apos;s &amp; Don&apos;ts</span>
           </button>
 
           <button
             onClick={() => {
-              setActiveKnowledgeTab('AI_INSPECTOR');
+              setActiveKnowledgeTab('COMPLIANCE_LEGAL');
               if (!aiAnalysisResult) {
                 const activeSku = currentBrand.skus.find(s => s.id === selectedSkuId) || currentBrand.skus[0];
                 setAiAnalysisResult(analyzeScriptWithAi(inputScriptText, currentBrand, activeSku));
               }
             }}
-            className={`px-4 py-2.5 text-xs font-semibold border-b-2 transition flex items-center gap-2 whitespace-nowrap ${
-              activeKnowledgeTab === 'AI_INSPECTOR'
-                ? 'border-purple-600 text-purple-800 bg-purple-50/70 font-semibold'
+            className={`px-3.5 py-2.5 text-xs font-semibold border-b-2 transition flex items-center gap-2 whitespace-nowrap ${
+              activeKnowledgeTab === 'COMPLIANCE_LEGAL' || activeKnowledgeTab === 'SCRIPT_INSPECTOR' || activeKnowledgeTab === 'LEGAL' || activeKnowledgeTab === 'KEYWORDS' || activeKnowledgeTab === 'OBJECTIONS'
+                ? 'border-blue-600 text-blue-700 bg-blue-50/60'
                 : 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50'
             }`}
           >
-            <Sparkles className="w-4 h-4 text-purple-600" />
-            <span>Thẩm định kịch bản</span>
-            <span className="px-1.5 py-0.2 rounded-full text-2xs bg-purple-600 text-white font-semibold">
-              Tự động
+            <ShieldCheck className="w-4 h-4 text-indigo-600" />
+            <span>Pháp Lý &amp; Thẩm Định Quy Chuẩn</span>
+            <span className="px-1.5 py-0.2 rounded-full text-2xs bg-indigo-100 text-indigo-800 font-semibold">
+              Đối soát
+            </span>
+          </button>
+
+          <button
+            onClick={() => setActiveKnowledgeTab('DOCUMENTS')}
+            className={`px-3.5 py-2.5 text-xs font-semibold border-b-2 transition flex items-center gap-2 whitespace-nowrap ${
+              activeKnowledgeTab === 'DOCUMENTS'
+                ? 'border-blue-600 text-blue-700 bg-blue-50/60'
+                : 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+            }`}
+          >
+            <FolderOpen className="w-4 h-4 text-slate-600" />
+            <span>Kho Tài Liệu &amp; Hợp Đồng</span>
+            <span className="px-1.5 py-0.2 rounded-full text-2xs bg-slate-200 text-slate-700 font-semibold">
+              {(currentBrand.documents || []).length} tệp
             </span>
           </button>
         </div>
       </div>
 
       {/* ========================================================================= */}
-      {/* TAB 0A: HỒ SƠ DOANH NGHIỆP & PHÂN CÔNG PIC 3 BÊN (SLA B2C)                 */}
+      {/* PHÂN HỆ 1: CHỈ SỐ VẬN HÀNH & HIỆU SUẤT BI (EXECUTIVE OPERATIONAL DASHBOARD) */}
       {/* ========================================================================= */}
-      {activeKnowledgeTab === 'OVERVIEW_PIC' && (
+      {activeKnowledgeTab === 'OPERATIONS_KPI' && (
+        <div className="space-y-6 animate-in fade-in duration-150">
+          {/* Header tóm tắt vị thế thương hiệu & chu kỳ */}
+          <div className="card-enterprise p-4 bg-gradient-to-r from-blue-900 to-indigo-950 text-white rounded-lg shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="px-2 py-0.5 rounded bg-blue-500/20 text-blue-200 border border-blue-400/30 font-mono text-2xs uppercase">
+                  B2C Brand Governance
+                </span>
+                <span className="text-2xs text-blue-200 font-medium">Chu kỳ: Tháng 10/2026</span>
+                <span className="text-2xs text-blue-200">•</span>
+                <span className="text-2xs text-blue-200">{brandStores.length} gian hàng trực thuộc sàn</span>
+              </div>
+              <h2 className="text-lg font-bold text-white tracking-tight flex items-center gap-2">
+                <span>Trung Tâm Quản Trị Thương Hiệu: {currentBrand.brandName}</span>
+              </h2>
+              <p className="text-xs text-blue-100/80 italic">&ldquo;{currentBrand.slogan}&rdquo;</p>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0 flex-wrap">
+              <button
+                type="button"
+                onClick={() => setActiveKnowledgeTab('MONTHLY_EXECUTION')}
+                className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded text-xs font-semibold transition flex items-center gap-1.5 shadow-sm"
+              >
+                <CalendarDays className="w-3.5 h-3.5" />
+                <span>Xem Kế Hoạch &amp; Thực Thi</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveKnowledgeTab('STORES_CHANNELS')}
+                className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded text-xs font-semibold transition flex items-center gap-1.5"
+              >
+                <Store className="w-3.5 h-3.5" />
+                <span>Quản Lý Gian Hàng</span>
+              </button>
+            </div>
+          </div>
+
+          {/* DÒNG 1: 5 THẺ CHỈ SỐ TÀI CHÍNH & THƯƠNG MẠI */}
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3.5">
+            <div className="card-enterprise p-4 bg-white space-y-1 border-slate-200">
+              <div className="flex items-center justify-between text-slate-500">
+                <span className="text-2xs font-semibold uppercase">Hạn Mức Order Net</span>
+                <Coins className="w-4 h-4 text-emerald-600" />
+              </div>
+              <p className="text-lg font-bold text-emerald-700">
+                {formatVndShort(brandFinancialStats.totalOrderNetBudget)}
+              </p>
+              <p className="text-3xs text-slate-400">Trần giải ngân Kế toán phê duyệt</p>
+            </div>
+
+            <div className="card-enterprise p-4 bg-white space-y-1 border-slate-200">
+              <div className="flex items-center justify-between text-slate-500">
+                <span className="text-2xs font-semibold uppercase">Thực Chi Net Duyệt</span>
+                <FileCheck className="w-4 h-4 text-blue-600" />
+              </div>
+              <p className={`text-lg font-bold ${
+                brandFinancialStats.isBrandOverbudget ? 'text-rose-600' : 'text-slate-900'
+              }`}>
+                {formatVndShort(brandFinancialStats.totalSpentNet)}
+              </p>
+              <p className="text-3xs text-slate-500">
+                {brandFinancialStats.isBrandOverbudget
+                  ? `Vượt trần ${formatVndShort(brandFinancialStats.totalSpentNet - brandFinancialStats.totalOrderNetBudget)}`
+                  : `Dư ngân sách: ${formatVndShort(brandFinancialStats.remainingNetBudget)}`}
+              </p>
+            </div>
+
+            <div className="card-enterprise p-4 bg-white space-y-1 border-slate-200">
+              <div className="flex items-center justify-between text-slate-500">
+                <span className="text-2xs font-semibold uppercase">Tỷ Lệ Giải Ngân</span>
+                <Percent className="w-4 h-4 text-amber-600" />
+              </div>
+              <p className={`text-lg font-bold ${
+                brandFinancialStats.spentPercentage > 100
+                  ? 'text-rose-600'
+                  : brandFinancialStats.spentPercentage > 85
+                  ? 'text-amber-600'
+                  : 'text-emerald-600'
+              }`}>
+                {brandFinancialStats.spentPercentage}%
+              </p>
+              <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                <div
+                  className={`h-full ${
+                    brandFinancialStats.spentPercentage > 100
+                      ? 'bg-rose-500'
+                      : brandFinancialStats.spentPercentage > 85
+                      ? 'bg-amber-500'
+                      : 'bg-emerald-500'
+                  }`}
+                  style={{ width: `${Math.min(100, brandFinancialStats.spentPercentage)}%` }}
+                />
+              </div>
+            </div>
+
+            <div className="card-enterprise p-4 bg-white space-y-1 border-slate-200">
+              <div className="flex items-center justify-between text-slate-500">
+                <span className="text-2xs font-semibold uppercase">Doanh Thu KOC (GMV)</span>
+                <TrendingUp className="w-4 h-4 text-purple-600" />
+              </div>
+              <p className="text-lg font-bold text-purple-700">
+                {formatVndShort(brandOperationalKpis.totalGmvActual)}
+              </p>
+              <p className="text-3xs text-slate-500">
+                Mục tiêu: {formatVndShort(brandFinancialStats.totalTargetGmv)}
+              </p>
+            </div>
+
+            <div className="card-enterprise p-4 bg-white space-y-1 border-slate-200">
+              <div className="flex items-center justify-between text-slate-500">
+                <span className="text-2xs font-semibold uppercase">Hiệu Suất Đầu Tư</span>
+                <Activity className="w-4 h-4 text-indigo-600" />
+              </div>
+              <p className="text-lg font-bold text-indigo-700">
+                ROI: {brandOperationalKpis.roi}x
+              </p>
+              <p className="text-3xs text-slate-500">
+                CIR chi phí/doanh thu: {brandOperationalKpis.cir}%
+              </p>
+            </div>
+          </div>
+
+          {/* DÒNG 2: 4 THẺ CHỈ SỐ VẬN HÀNH & SLA THỰC THI B2C */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
+            <div className="card-enterprise p-4 bg-slate-50/70 border-slate-200 space-y-1">
+              <div className="flex items-center justify-between text-slate-600">
+                <span className="text-2xs font-semibold">Tỷ Lệ Đúng Hạn Lên Video (SLA)</span>
+                <Clock className="w-4 h-4 text-emerald-600" />
+              </div>
+              <p className="text-base font-bold text-emerald-700">
+                {brandOperationalKpis.onTimeAirRate}%
+              </p>
+              <p className="text-3xs text-slate-500">
+                {brandOperationalKpis.delayedDealsCount > 0 ? (
+                  <span className="text-rose-600 font-semibold">{brandOperationalKpis.delayedDealsCount} deal đang trễ hạn</span>
+                ) : (
+                  <span>100% video lên sóng đúng hạn cam kết</span>
+                )}
+              </p>
+            </div>
+
+            <div className="card-enterprise p-4 bg-slate-50/70 border-slate-200 space-y-1">
+              <div className="flex items-center justify-between text-slate-600">
+                <span className="text-2xs font-semibold">Tỷ Lệ Duyệt Kịch Bản Chuẩn</span>
+                <CheckCircle2 className="w-4 h-4 text-blue-600" />
+              </div>
+              <p className="text-base font-bold text-blue-700">
+                {brandOperationalKpis.scriptApprovalRate}%
+              </p>
+              <p className="text-3xs text-slate-500">Tuân thủ guideline &amp; quy chế BYT</p>
+            </div>
+
+            <div className="card-enterprise p-4 bg-slate-50/70 border-slate-200 space-y-1">
+              <div className="flex items-center justify-between text-slate-600">
+                <span className="text-2xs font-semibold">Tỷ Lệ Chuyển Đổi Mẫu FOC</span>
+                <ShoppingBag className="w-4 h-4 text-purple-600" />
+              </div>
+              <p className="text-base font-bold text-purple-700">
+                {brandOperationalKpis.focConversionRate}%
+              </p>
+              <p className="text-3xs text-slate-500">
+                {brandOperationalKpis.focCount} suất mẫu 0đ → video review
+              </p>
+            </div>
+
+            <div className="card-enterprise p-4 bg-slate-50/70 border-slate-200 space-y-1">
+              <div className="flex items-center justify-between text-slate-600">
+                <span className="text-2xs font-semibold">Đơn Hàng &amp; Chi Phí / Đơn (CPO)</span>
+                <Target className="w-4 h-4 text-amber-600" />
+              </div>
+              <p className="text-base font-bold text-slate-900">
+                {brandOperationalKpis.totalOrdersCount.toLocaleString('vi-VN')} đơn
+              </p>
+              <p className="text-3xs text-slate-500">
+                CPO trung bình: {formatVndShort(brandOperationalKpis.avgCpo)} / đơn
+              </p>
+            </div>
+          </div>
+
+          {/* DÒNG 3: CẢNH BÁO RỦI RO TÀI CHÍNH & VẬN HÀNH */}
+          {(brandFinancialStats.overbudgetStores.length > 0 || brandFinancialStats.unbudgetedStores.length > 0 || brandOperationalKpis.delayedDealsCount > 0) && (
+            <div className="card-enterprise p-4 bg-rose-50/70 border-rose-200 space-y-2">
+              <div className="flex items-center gap-2 text-rose-900 font-bold text-xs">
+                <AlertOctagon className="w-4 h-4 text-rose-600 shrink-0" />
+                <span>Báo Động Kiểm Soát Rủi Ro Tài Chính &amp; Vận Hành Thương Hiệu</span>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                {brandFinancialStats.overbudgetStores.length > 0 && (
+                  <div className="p-2.5 bg-white rounded border border-rose-200 space-y-1">
+                    <p className="font-semibold text-rose-700 flex items-center gap-1">
+                      <AlertCircle className="w-3.5 h-3.5 text-rose-600" />
+                      <span>Vượt Hạn Mức Order Net</span>
+                    </p>
+                    <p className="text-2xs text-slate-600">
+                      Gian hàng: {brandFinancialStats.overbudgetStores.map(s => s.storeName).join(', ')} có thực chi duyệt vượt hạn mức được giao.
+                    </p>
+                  </div>
+                )}
+
+                {brandFinancialStats.unbudgetedStores.length > 0 && (
+                  <div className="p-2.5 bg-white rounded border border-amber-200 space-y-1">
+                    <p className="font-semibold text-amber-700 flex items-center gap-1">
+                      <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+                      <span>Chi Tiêu Ngoài Hạn Mức (0đ)</span>
+                    </p>
+                    <p className="text-2xs text-slate-600">
+                      Gian hàng: {brandFinancialStats.unbudgetedStores.map(s => s.storeName).join(', ')} phát sinh chi phí nhưng hạn mức ban đầu ghi nhận 0đ.
+                    </p>
+                  </div>
+                )}
+
+                {brandOperationalKpis.delayedDealsCount > 0 && (
+                  <div className="p-2.5 bg-white rounded border border-amber-200 space-y-1">
+                    <p className="font-semibold text-amber-700 flex items-center gap-1">
+                      <Clock className="w-3.5 h-3.5 text-amber-600" />
+                      <span>Deal Trễ Hạn Lên Video</span>
+                    </p>
+                    <p className="text-2xs text-slate-600">
+                      Có {brandOperationalKpis.delayedDealsCount} deal quá 2 ngày sau khi nhận mẫu nhưng chưa air video. Cần đôn đốc Creator.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* DÒNG 4: CƠ CẤU SẢN LƯỢNG & PHÂN CẤP QUẢN TRỊ PHÒNG B2C */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Phân rã sản lượng KOC */}
+            <div className="card-enterprise p-4 bg-white space-y-3">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                <h4 className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                  <Flame className="w-4 h-4 text-amber-600" />
+                  <span>Cơ Cấu Sản Lượng &amp; Kênh Triển Khai</span>
+                </h4>
+                <span className="text-2xs text-slate-500 font-semibold">{brandDeals.length} Ca Booking</span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 text-center">
+                <div className="p-2.5 rounded bg-blue-50/70 border border-blue-100">
+                  <p className="text-2xs text-slate-500 font-medium">Video Có Phí (Paid)</p>
+                  <p className="text-base font-bold text-blue-700">{brandOperationalKpis.paidCount}</p>
+                  <p className="text-3xs text-slate-400">KL1 - KL7 có thù lao</p>
+                </div>
+                <div className="p-2.5 rounded bg-purple-50/70 border border-purple-100">
+                  <p className="text-2xs text-slate-500 font-medium">Mẫu Thử 0đ (FOC)</p>
+                  <p className="text-base font-bold text-purple-700">{brandOperationalKpis.focCount}</p>
+                  <p className="text-3xs text-slate-400">Chi phí booking 0đ</p>
+                </div>
+                <div className="p-2.5 rounded bg-emerald-50/70 border border-emerald-100">
+                  <p className="text-2xs text-slate-500 font-medium">Affiliate Thuần</p>
+                  <p className="text-base font-bold text-emerald-700">{brandOperationalKpis.affiliateCount}</p>
+                  <p className="text-3xs text-slate-400">Gắn giỏ ăn hoa hồng</p>
+                </div>
+              </div>
+              <div className="p-2.5 rounded bg-slate-50 border border-slate-100 text-xs flex items-center justify-between">
+                <span className="text-slate-600">Tổng lượt xem video (Views) tích lũy:</span>
+                <span className="font-bold text-slate-900">{brandOperationalKpis.totalViews.toLocaleString('vi-VN')} lượt</span>
+              </div>
+            </div>
+
+            {/* Cơ cấu phân cấp nhân sự B2C */}
+            <div className="card-enterprise p-4 bg-white space-y-3">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                <h4 className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4 text-purple-600" />
+                  <span>Phân Cấp Quản Trị &amp; Luồng Phê Duyệt B2C</span>
+                </h4>
+                <span className="text-2xs text-purple-700 bg-purple-50 px-2 py-0.5 rounded font-semibold">Phòng B2C</span>
+              </div>
+              <div className="space-y-2 text-xs">
+                <div className="flex items-center justify-between p-2 rounded bg-slate-50 border border-slate-100">
+                  <span className="text-slate-600">Trưởng phòng B2C:</span>
+                  <span className="font-bold text-slate-900">Đặng Thị Yến Nhi (Quản lý trần PnL)</span>
+                </div>
+                <div className="flex items-center justify-between p-2 rounded bg-slate-50 border border-slate-100">
+                  <span className="text-slate-600">Trưởng nhóm sơ duyệt:</span>
+                  <span className="font-semibold text-slate-800">
+                    {brandStores.some((s: StorePortfolioItem) => s.bookingLeader)
+                      ? brandStores.find((s: StorePortfolioItem) => s.bookingLeader)?.bookingLeader
+                      : 'Không có Leader (Duyệt trực tiếp Trưởng phòng)'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between p-2 rounded bg-slate-50 border border-slate-100">
+                  <span className="text-slate-600">Chuyên viên B2C thực thi:</span>
+                  <span className="font-medium text-slate-800 truncate max-w-[200px]" title={Array.from(new Set(brandStores.map((s: StorePortfolioItem) => s.b2cOwnerName || s.assignedStaff).filter(Boolean))).join(', ')}>
+                    {Array.from(new Set(brandStores.map((s: StorePortfolioItem) => s.b2cOwnerName || s.assignedStaff).filter(Boolean))).join(', ') || 'Chưa phân công'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* PHÂN HỆ 2: KẾ HOẠCH & THỰC THI CÁC THÁNG (MONTHLY PLANNING & EXECUTION)      */}
+      {/* ========================================================================= */}
+      {activeKnowledgeTab === 'MONTHLY_EXECUTION' && (
+        <div className="space-y-6 animate-in fade-in duration-150">
+          {/* Thanh chọn chu kỳ tháng */}
+          <div className="flex items-center justify-between gap-3 p-3 bg-white rounded-lg border border-slate-200 shadow-2xs flex-wrap">
+            <div className="flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-blue-600" />
+              <span className="text-xs font-bold text-slate-800">Chu Kỳ Kế Hoạch &amp; Thực Thi:</span>
+            </div>
+
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {[
+                { key: '2026/10', label: 'Tháng 10/2026 (Hiện tại)' },
+                { key: '2026/09', label: 'Tháng 09/2026' },
+                { key: '2026/08', label: 'Tháng 08/2026' },
+                { key: 'ALL', label: 'Toàn bộ các tháng' },
+              ].map(cycle => (
+                <button
+                  key={cycle.key}
+                  type="button"
+                  onClick={() => setSelectedMonthCycle(cycle.key)}
+                  className={`px-3 py-1.5 rounded-md text-xs font-semibold transition ${
+                    selectedMonthCycle === cycle.key
+                      ? 'bg-blue-600 text-white shadow-2xs'
+                      : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                  }`}
+                >
+                  {cycle.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Card: Phân rã Chỉ Tiêu Kế Hoạch Tháng (Plan Order Quotas) */}
+          <div className="card-enterprise p-5 bg-white space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+              <div>
+                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                  <Target className="w-4 h-4 text-blue-600" />
+                  <span>Chỉ Tiêu Kế Hoạch Phân Rã ({selectedMonthCycle === 'ALL' ? 'Toàn bộ' : selectedMonthCycle})</span>
+                </h3>
+                <p className="text-2xs text-slate-500 mt-0.5">
+                  Tách bạch hạn mức Net (kiểm soát giải ngân) và ngân sách Gross, phân định rõ Video Paid và Suất gửi mẫu FOC 0đ
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2 text-2xs">
+                <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200 font-semibold">
+                  Hạn mức Net: {formatVndShort(monthlyPlanStats.planBudgetNet)}
+                </span>
+                <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 font-semibold">
+                  Gross: {formatVndShort(monthlyPlanStats.planBudgetGross)}
+                </span>
+              </div>
+            </div>
+
+            {/* Bảng phân rã chỉ tiêu vs thực tế */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
+              <div className="p-3 bg-slate-50 rounded-lg border border-slate-100 space-y-1">
+                <span className="text-2xs text-slate-500 font-medium">Mục Tiêu GMV</span>
+                <p className="text-base font-bold text-purple-700">{formatVndShort(monthlyPlanStats.planTargetGmv)}</p>
+                <div className="flex items-center justify-between text-3xs text-slate-500 pt-1">
+                  <span>Đạt được: {formatVndShort(monthlyPlanStats.monthGmv)}</span>
+                  <span className="font-bold text-purple-700">{monthlyPlanStats.gmvProgressPct}%</span>
+                </div>
+              </div>
+
+              <div className="p-3 bg-slate-50 rounded-lg border border-slate-100 space-y-1">
+                <span className="text-2xs text-slate-500 font-medium">Tiến Độ Giải Ngân Net</span>
+                <p className="text-base font-bold text-emerald-700">{formatVndShort(monthlyPlanStats.monthSpentNet)}</p>
+                <div className="flex items-center justify-between text-3xs text-slate-500 pt-1">
+                  <span>Trần Net: {formatVndShort(monthlyPlanStats.planBudgetNet)}</span>
+                  <span className="font-bold text-emerald-700">{monthlyPlanStats.budgetProgressPct}%</span>
+                </div>
+              </div>
+
+              <div className="p-3 bg-slate-50 rounded-lg border border-slate-100 space-y-1">
+                <span className="text-2xs text-slate-500 font-medium">Video Có Phí (Paid)</span>
+                <p className="text-base font-bold text-blue-700">{monthlyPlanStats.actualPaidVideos} / {monthlyPlanStats.targetPaidVideos}</p>
+                <p className="text-3xs text-slate-500 pt-1">KL1 - KL7 có định mức thù lao</p>
+              </div>
+
+              <div className="p-3 bg-slate-50 rounded-lg border border-slate-100 space-y-1">
+                <span className="text-2xs text-slate-500 font-medium">Mẫu Thử Gửi Miễn Phí (FOC)</span>
+                <p className="text-base font-bold text-indigo-700">{monthlyPlanStats.actualFocSamples} / {monthlyPlanStats.targetFocSamples}</p>
+                <p className="text-3xs text-slate-500 pt-1">Chi phí booking 0đ (cấp mẫu)</p>
+              </div>
+            </div>
+
+            {/* Thanh tiến độ tổng quan */}
+            <div className="p-3 bg-blue-50/50 rounded-lg border border-blue-100 space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-semibold text-slate-800">Tiến Độ Sản Lượng Video Lên Sóng (Air Progress)</span>
+                <span className="font-bold text-blue-700">{monthlyPlanStats.actualAirVideos} video ({monthlyPlanStats.videoProgressPct}%)</span>
+              </div>
+              <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-blue-600 rounded-full transition-all duration-300"
+                  style={{ width: `${Math.min(100, monthlyPlanStats.videoProgressPct)}%` }}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Card: Bảng Theo Dõi Thực Thi Tác Nghiệp Chi Tiết (Monthly Live Execution Tracker) */}
+          <div className="card-enterprise overflow-hidden bg-white space-y-0">
+            <div className="p-4 border-b border-slate-200 bg-slate-50/60 flex flex-col md:flex-row md:items-center justify-between gap-3">
+              <div>
+                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                  <CalendarDays className="w-4 h-4 text-purple-600" />
+                  <span>Danh Sách Ca Booking / Deals Thực Thi ({monthlyDeals.length})</span>
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Theo dõi tiến độ từ gửi mẫu, thẩm định kịch bản, lên video đến nghiệm thu quyết toán
+                </p>
+              </div>
+
+              {/* Bộ lọc pipeline & Tìm kiếm */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="relative">
+                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    placeholder="Tìm mã BO, Creator, SKU..."
+                    value={executionSearch}
+                    onChange={(e) => setExecutionSearch(e.target.value)}
+                    className="pl-8 pr-3 py-1 text-xs bg-white border border-slate-200 rounded focus:outline-none focus:border-blue-500 w-44"
+                  />
+                </div>
+
+                <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-2xs">
+                  {[
+                    { key: 'ALL', label: 'Tất cả' },
+                    { key: 'SAMPLE', label: 'Gửi mẫu' },
+                    { key: 'SCRIPT', label: 'Kịch bản' },
+                    { key: 'AIR', label: 'Đã lên video' },
+                    { key: 'COMPLETED', label: 'Quyết toán' },
+                    { key: 'DELAYED', label: 'Trễ SLA' },
+                  ].map(f => (
+                    <button
+                      key={f.key}
+                      type="button"
+                      onClick={() => setExecutionPipelineFilter(f.key)}
+                      className={`px-2 py-1 rounded font-medium transition ${
+                        executionPipelineFilter === f.key
+                          ? 'bg-white text-slate-900 shadow-2xs font-semibold'
+                          : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                    >
+                      {f.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Bảng tác nghiệp chi tiết */}
+            {monthlyDeals.length === 0 ? (
+              <div className="p-8 text-center space-y-2">
+                <CalendarDays className="w-10 h-10 text-slate-300 mx-auto" />
+                <p className="text-sm font-semibold text-slate-700">Chưa có deal booking nào trong chu kỳ này</p>
+                <p className="text-xs text-slate-500">Các ca booking mới sẽ tự động hiển thị khi chuyên viên khởi tạo tại phân hệ Booking.</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="bg-slate-100/80 text-slate-700 font-semibold border-b border-slate-200">
+                      <th className="py-2.5 px-3">Mã BO &amp; Đợt</th>
+                      <th className="py-2.5 px-3">Gian Hàng &amp; Sàn</th>
+                      <th className="py-2.5 px-3">Sản Phẩm (SKU)</th>
+                      <th className="py-2.5 px-3">Creator / KOC</th>
+                      <th className="py-2.5 px-2 text-center">Định Dạng</th>
+                      <th className="py-2.5 px-3 text-right">Chi Phí Net</th>
+                      <th className="py-2.5 px-3 text-right">Doanh Số GMV</th>
+                      <th className="py-2.5 px-3 text-center">Tiến Độ Pipeline</th>
+                      <th className="py-2.5 px-3 text-center">SLA / Air</th>
+                      <th className="py-2.5 px-3 text-right">Thao Tác</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {monthlyDeals
+                      .filter((d: BookingDealItem) => {
+                        if (executionSearch) {
+                          const q = executionSearch.toLowerCase();
+                          const matchBo = (d.dealCode || '').toLowerCase().includes(q);
+                          const matchKoc = (d.kocStageName || '').toLowerCase().includes(q);
+                          const matchProd = (d.productName || '').toLowerCase().includes(q);
+                          if (!matchBo && !matchKoc && !matchProd) return false;
+                        }
+                        if (executionPipelineFilter === 'SAMPLE') {
+                          return d.sampleStatus === 'ĐANG_GIAO' || (d.pipelineText || '').includes('Gửi');
+                        }
+                        if (executionPipelineFilter === 'SCRIPT') {
+                          return d.status === 'SCRIPT_PENDING' || (d.pipelineText || '').includes('Kịch bản');
+                        }
+                        if (executionPipelineFilter === 'AIR') {
+                          return !!(d.tiktokVideoUrl || d.videoUrl || d.status === 'COMPLETED');
+                        }
+                        if (executionPipelineFilter === 'COMPLETED') {
+                          return d.status === 'COMPLETED';
+                        }
+                        if (executionPipelineFilter === 'DELAYED') {
+                          return d.isSlaWarning || ((d.daysDelayed || 0) > 0);
+                        }
+                        return true;
+                      })
+                      .map((deal: BookingDealItem) => {
+                        const isPaid = (deal.totalValue || 0) > 0;
+                        const isCompleted = deal.status === 'COMPLETED';
+                        const isDelayed = deal.isSlaWarning || ((deal.daysDelayed || 0) > 0);
+
+                        return (
+                          <tr key={deal.id} className="hover:bg-slate-50/70 transition">
+                            {/* Mã BO */}
+                            <td className="py-2.5 px-3">
+                              <span className="font-mono font-bold text-blue-700">{deal.dealCode}</span>
+                              <div className="text-3xs text-slate-400">{deal.bookingBatch || 'Đợt 1'}</div>
+                            </td>
+
+                            {/* Gian hàng & Sàn */}
+                            <td className="py-2.5 px-3">
+                              <span className="font-medium text-slate-800 truncate block max-w-[130px]">{deal.storeName || 'Chưa gán shop'}</span>
+                              <span className="text-3xs text-slate-500">{deal.campaignCode}</span>
+                            </td>
+
+                            {/* Sản phẩm */}
+                            <td className="py-2.5 px-3">
+                              <span className="text-slate-800 font-medium truncate block max-w-[140px]" title={deal.productName}>
+                                {deal.productName || 'Sản phẩm chủ lực'}
+                              </span>
+                            </td>
+
+                            {/* Creator */}
+                            <td className="py-2.5 px-3">
+                              <div className="font-semibold text-slate-900">{deal.kocStageName}</div>
+                              <div className="flex items-center gap-1 text-3xs text-slate-500">
+                                <span className="font-mono">{deal.salaryGrade || 'KL3'}</span>
+                                <span>•</span>
+                                <span>{deal.tepKenh || 'Beauty'}</span>
+                              </div>
+                            </td>
+
+                            {/* Định dạng */}
+                            <td className="py-2.5 px-2 text-center">
+                              {isPaid ? (
+                                <span className="px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 text-3xs font-semibold">
+                                  Paid Video
+                                </span>
+                              ) : deal.bookingFormat === 'Affiliate Thuần' ? (
+                                <span className="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 text-3xs font-semibold">
+                                  Affiliate
+                                </span>
+                              ) : (
+                                <span className="px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200 text-3xs font-semibold">
+                                  FOC 0đ
+                                </span>
+                              )}
+                            </td>
+
+                            {/* Chi phí Net */}
+                            <td className="py-2.5 px-3 text-right font-mono font-semibold text-slate-900">
+                              {(deal.totalValue || 0).toLocaleString('vi-VN')} đ
+                            </td>
+
+                            {/* Doanh số GMV */}
+                            <td className="py-2.5 px-3 text-right font-mono font-bold text-purple-700">
+                              {((deal.affiliateGmv || deal.gmv30 || 0)).toLocaleString('vi-VN')} đ
+                            </td>
+
+                            {/* Tiến độ pipeline */}
+                            <td className="py-2.5 px-3 text-center">
+                              <span className={`px-2 py-0.5 rounded text-3xs font-semibold ${
+                                isCompleted
+                                  ? 'bg-emerald-100 text-emerald-800'
+                                  : deal.status === 'SCRIPT_APPROVED'
+                                  ? 'bg-blue-100 text-blue-800'
+                                  : deal.status === 'SCRIPT_PENDING'
+                                  ? 'bg-amber-100 text-amber-800'
+                                  : 'bg-slate-100 text-slate-700'
+                              }`}>
+                                {deal.statusLabel || deal.pipelineText || 'Đang thực thi'}
+                              </span>
+                            </td>
+
+                            {/* SLA / Air */}
+                            <td className="py-2.5 px-3 text-center">
+                              {isDelayed ? (
+                                <span className="px-1.5 py-0.2 rounded bg-rose-50 text-rose-700 border border-rose-200 text-3xs font-semibold flex items-center justify-center gap-0.5">
+                                  <AlertCircle className="w-3 h-3 text-rose-500" />
+                                  <span>Trễ SLA</span>
+                                </span>
+                              ) : (
+                                <span className="text-3xs text-slate-500 font-mono">
+                                  {deal.postedDate || deal.deadlinePost || 'Đúng hạn'}
+                                </span>
+                              )}
+                            </td>
+
+                            {/* Thao tác */}
+                            <td className="py-2.5 px-3 text-right">
+                              {deal.tiktokVideoUrl ? (
+                                <a
+                                  href={deal.tiktokVideoUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="text-2xs text-blue-600 hover:text-blue-800 font-semibold inline-flex items-center gap-1"
+                                >
+                                  <span>Video</span>
+                                  <ExternalLink className="w-3 h-3" />
+                                </a>
+                              ) : onNavigateToBookingWithStore ? (
+                                <button
+                                  type="button"
+                                  onClick={() => onNavigateToBookingWithStore(deal.storeName || '')}
+                                  className="text-2xs text-slate-600 hover:text-blue-600 font-medium"
+                                >
+                                  Xem
+                                </button>
+                              ) : null}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* PHÂN HỆ 3: HỒ SƠ THƯƠNG HIỆU & ĐỊNH VỊ (BRAND PROFILE & GUIDELINES)         */}
+      {/* ========================================================================= */}
+      {(activeKnowledgeTab === 'BRAND_PROFILE' || activeKnowledgeTab === 'OVERVIEW_PIC') && (
         <div className="space-y-6 animate-in fade-in duration-150">
           {/* Card 1: Thông tin pháp nhân & Định danh */}
           <div className="card-enterprise p-5 bg-white space-y-4">
@@ -1370,10 +2228,430 @@ export const BrandKnowledgeView: React.FC<BrandKnowledgeViewProps> = ({
       )}
 
       {/* ========================================================================= */}
-      {/* TAB 0B: ĐỊNH MỨC & TRẦN THÙ LAO CREATOR                                   */}
+      {/* TAB: GIAN HÀNG & PHÂN BỔ SÀN (STORE PORTFOLIO & CHANNEL MAPPING)           */}
       {/* ========================================================================= */}
-      {activeKnowledgeTab === 'RATECARD_CEILING' && (
+      {activeKnowledgeTab === 'STORES_CHANNELS' && (
         <div className="space-y-6 animate-in fade-in duration-150">
+          {/* Card 1: Tổng quan chỉ số tài chính & Phân bổ gian hàng */}
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div className="card-enterprise p-4 bg-white flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                <Store className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-2xs text-slate-500 font-medium">Gian hàng B2C</p>
+                <p className="text-lg font-bold text-slate-900">{brandStores.length} gian</p>
+              </div>
+            </div>
+
+            <div className="card-enterprise p-4 bg-white flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                <Coins className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-2xs text-slate-500 font-medium">Hạn mức Order Net</p>
+                <p className="text-base font-bold text-emerald-700">
+                  {formatVndShort(brandFinancialStats.totalOrderNetBudget)}
+                </p>
+              </div>
+            </div>
+
+            <div className="card-enterprise p-4 bg-white flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
+                <TrendingUp className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-2xs text-slate-500 font-medium">Mục tiêu GMV</p>
+                <p className="text-base font-bold text-purple-700">
+                  {formatVndShort(brandFinancialStats.totalTargetGmv)}
+                </p>
+              </div>
+            </div>
+
+            <div className="card-enterprise p-4 bg-white flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                <FileCheck className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-2xs text-slate-500 font-medium">Thực chi Net duyệt</p>
+                <p className={`text-base font-bold ${
+                  brandFinancialStats.isBrandOverbudget ? 'text-rose-600' : 'text-slate-900'
+                }`}>
+                  {formatVndShort(brandFinancialStats.totalSpentNet)}
+                </p>
+              </div>
+            </div>
+
+            <div className="card-enterprise p-4 bg-white flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+                <Percent className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-2xs text-slate-500 font-medium">Tỷ lệ giải ngân Net</p>
+                <p className={`text-base font-bold ${
+                  brandFinancialStats.spentPercentage > 100
+                    ? 'text-rose-600'
+                    : brandFinancialStats.spentPercentage > 85
+                    ? 'text-amber-600'
+                    : 'text-emerald-600'
+                }`}>
+                  {brandFinancialStats.spentPercentage}%
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Card 2: Bóc tách chỉ tiêu & Cảnh báo tài chính B2C */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            {/* Phân rã sản lượng video: Paid vs FOC (Quy tắc nghiệp vụ B2C) */}
+            <div className="card-enterprise p-4 bg-white space-y-3">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                <h4 className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                  <ShoppingBag className="w-4 h-4 text-blue-600" />
+                  <span>Bóc Tách Sản Lượng Video B2C</span>
+                </h4>
+                <span className="text-2xs text-slate-400">Tháng hiện tại</span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                <div className="p-2.5 rounded-lg bg-blue-50 border border-blue-100">
+                  <p className="text-2xs text-slate-500 font-medium">KOC Có Phí (Paid)</p>
+                  <p className="text-base font-bold text-blue-700 mt-0.5">{brandFinancialStats.paidDealsCount}</p>
+                  <p className="text-3xs text-slate-400 mt-0.5">Có chi phí Net</p>
+                </div>
+                <div className="p-2.5 rounded-lg bg-emerald-50 border border-emerald-100">
+                  <p className="text-2xs text-slate-500 font-medium">Mẫu Miễn Phí (FOC)</p>
+                  <p className="text-base font-bold text-emerald-700 mt-0.5">{brandFinancialStats.focDealsCount}</p>
+                  <p className="text-3xs text-slate-400 mt-0.5">Chi phí 0đ</p>
+                </div>
+                <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200">
+                  <p className="text-2xs text-slate-500 font-medium">Đang Triển Khai</p>
+                  <p className="text-base font-bold text-slate-800 mt-0.5">{brandFinancialStats.activeDealsCount}</p>
+                  <p className="text-3xs text-slate-400 mt-0.5">Chưa hoàn tất</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Cơ cấu phê duyệt & Phân cấp phòng ban B2C */}
+            <div className="card-enterprise p-4 bg-white space-y-3">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                <h4 className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4 text-purple-600" />
+                  <span>Cơ Cấu Quản Trị &amp; Luồng Phê Duyệt</span>
+                </h4>
+                <span className="text-2xs text-purple-700 bg-purple-50 px-2 py-0.5 rounded font-semibold">Phòng B2C</span>
+              </div>
+              <div className="space-y-2 text-xs">
+                <div className="flex items-center justify-between p-2 rounded bg-slate-50 border border-slate-100">
+                  <span className="text-slate-600">Trưởng phòng B2C:</span>
+                  <span className="font-bold text-slate-900">Đặng Thị Yến Nhi (Quản lý trần PnL)</span>
+                </div>
+                <div className="flex items-center justify-between p-2 rounded bg-slate-50 border border-slate-100">
+                  <span className="text-slate-600">Trưởng nhóm sơ duyệt:</span>
+                  <span className="font-semibold text-slate-800">
+                    {brandStores.some((s: StorePortfolioItem) => s.bookingLeader)
+                      ? brandStores.find((s: StorePortfolioItem) => s.bookingLeader)?.bookingLeader
+                      : 'Không có Leader (Duyệt trực tiếp Trưởng phòng)'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between p-2 rounded bg-slate-50 border border-slate-100">
+                  <span className="text-slate-600">Chuyên viên B2C chính:</span>
+                  <span className="font-medium text-slate-800">
+                    {Array.from(new Set(brandStores.map((s: StorePortfolioItem) => s.b2cOwnerName || s.assignedStaff).filter(Boolean))).join(', ') || 'Chưa phân công'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Cảnh báo tài chính B2C */}
+            <div className="card-enterprise p-4 bg-white space-y-3">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                <h4 className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                  <BadgeAlert className="w-4 h-4 text-amber-600" />
+                  <span>Kiểm Soát Rủi Ro Tài Chính</span>
+                </h4>
+                <span className="text-2xs font-semibold text-slate-500">Đối soát Net</span>
+              </div>
+              {brandFinancialStats.overbudgetStores.length > 0 ? (
+                <div className="p-3 bg-rose-50 border border-rose-200 rounded-lg space-y-1.5 text-xs text-rose-800">
+                  <div className="flex items-center gap-1.5 font-bold text-rose-900">
+                    <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                    <span>Cảnh báo: Vượt hạn mức Order Net!</span>
+                  </div>
+                  <p className="text-2xs">
+                    Có {brandFinancialStats.overbudgetStores.length} gian hàng vượt ngân sách: {brandFinancialStats.overbudgetStores.map((s: StorePortfolioItem) => s.storeName).join(', ')}.
+                  </p>
+                </div>
+              ) : brandFinancialStats.unbudgetedStores.length > 0 ? (
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg space-y-1.5 text-xs text-amber-800">
+                  <div className="flex items-center gap-1.5 font-bold text-amber-900">
+                    <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                    <span>Chi tiêu ngoài hạn mức (0đ)!</span>
+                  </div>
+                  <p className="text-2xs">
+                    Gian hàng {brandFinancialStats.unbudgetedStores.map((s: StorePortfolioItem) => s.storeName).join(', ')} phát sinh chi phí nhưng hạn mức = 0đ.
+                  </p>
+                </div>
+              ) : (
+                <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg space-y-1 text-xs text-emerald-800">
+                  <div className="flex items-center gap-1.5 font-bold text-emerald-900">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>Ngân sách đảm bảo an toàn</span>
+                  </div>
+                  <p className="text-2xs">
+                    Toàn bộ các gian hàng của nhãn hàng đang vận hành trong hạn mức Order Net được giao.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Card 3: Bảng danh sách chi tiết các gian hàng thuộc nhãn hàng */}
+          <div className="card-enterprise overflow-hidden bg-white">
+            <div className="p-4 border-b border-slate-200 bg-slate-50/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                  <Building2 className="w-4 h-4 text-blue-600" />
+                  <span>Danh Mục Gian Hàng Trực Thuộc Sàn ({brandStores.length})</span>
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Phân bổ hạn mức Order Net, mục tiêu GMV và nhân sự thực thi theo từng kênh sàn
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2 text-xs">
+                <span className="text-slate-500">Mô hình:</span>
+                <span className="font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                  Brand → Đa Gian Hàng
+                </span>
+              </div>
+            </div>
+
+            {brandStores.length === 0 ? (
+              <div className="p-8 text-center space-y-3">
+                <Store className="w-10 h-10 text-slate-300 mx-auto" />
+                <p className="text-sm font-semibold text-slate-700">
+                  Thương hiệu chưa có gian hàng nào trong danh mục 69 gian hàng B2C tháng này
+                </p>
+                <p className="text-xs text-slate-500 max-w-md mx-auto">
+                  Các gian hàng có thể thuộc phân hệ Social Commerce hoặc Outright của phòng ban khác, hoặc cần được thêm vào danh mục quản lý B2C.
+                </p>
+                {onNavigateBackToBrands && (
+                  <button
+                    type="button"
+                    onClick={onNavigateBackToBrands}
+                    className="px-4 py-2 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg text-xs font-semibold transition border border-blue-200 inline-flex items-center gap-1.5"
+                  >
+                    <span>Mở Quản Lý Gian Hàng &amp; Dữ Liệu Gốc</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="bg-slate-100/80 text-slate-700 font-semibold border-b border-slate-200">
+                      <th className="py-3 px-4">Gian hàng &amp; Sàn</th>
+                      <th className="py-3 px-3">Phân công Nhân sự B2C</th>
+                      <th className="py-3 px-3 text-right">Hạn mức Net (VNĐ)</th>
+                      <th className="py-3 px-3 text-right">Mục tiêu GMV (VNĐ)</th>
+                      <th className="py-3 px-3 text-right">Thực chi Net (VNĐ)</th>
+                      <th className="py-3 px-3 text-center">Tiến độ chi</th>
+                      <th className="py-3 px-3 text-center">Sản lượng Video</th>
+                      <th className="py-3 px-4 text-center">Trạng thái</th>
+                      <th className="py-3 px-4 text-right">Thao tác</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {brandStores.map((store: StorePortfolioItem) => {
+                      const storeDeals = brandDeals.filter((d: BookingDealItem) => (d.storeName || '').toLowerCase().trim() === store.storeName.toLowerCase().trim());
+                      const storeSpentNet = storeDeals.reduce((sum: number, d: BookingDealItem) => sum + (d.totalValue || 0), 0);
+                      const storePaidCount = storeDeals.filter((d: BookingDealItem) => (d.totalValue || 0) > 0).length;
+                      const storeFocCount = storeDeals.filter((d: BookingDealItem) => (d.totalValue || 0) === 0).length;
+                      const spentPct = store.monthlyBudget > 0 ? Math.round((storeSpentNet / store.monthlyBudget) * 100) : (storeSpentNet > 0 ? 100 : 0);
+                      const isOver = store.monthlyBudget > 0 && storeSpentNet > store.monthlyBudget;
+                      const isUnbudgeted = store.monthlyBudget === 0 && storeSpentNet > 0;
+
+                      return (
+                        <tr key={store.id} className="hover:bg-slate-50/70 transition">
+                          {/* 1. Store & Platform */}
+                          <td className="py-3 px-4">
+                            <div className="font-semibold text-slate-900 flex items-center gap-1.5">
+                              <span>{store.storeName}</span>
+                              {store.storeUrl && (
+                                <a
+                                  href={store.storeUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="text-slate-400 hover:text-blue-600 transition"
+                                >
+                                  <ExternalLink className="w-3 h-3" />
+                                </a>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                              <span className={`px-2 py-0.2 rounded text-3xs font-semibold ${
+                                store.platform === 'TikTok Shop'
+                                  ? 'bg-black text-white'
+                                  : store.platform === 'Shopee Mall'
+                                  ? 'bg-amber-100 text-amber-800'
+                                  : 'bg-blue-100 text-blue-800'
+                              }`}>
+                                {store.platform}
+                              </span>
+                              <span className="text-3xs text-slate-400 font-medium">
+                                {store.serviceModel}
+                              </span>
+                            </div>
+                          </td>
+
+                          {/* 2. PIC Assignment */}
+                          <td className="py-3 px-3">
+                            <div className="space-y-0.5">
+                              <div className="flex items-center gap-1 text-slate-800 font-medium">
+                                <span className="text-2xs text-slate-400">PIC:</span>
+                                <span>{store.b2cOwnerName || store.assignedStaff || 'Chưa phân công'}</span>
+                              </div>
+                              <div className="text-3xs">
+                                {store.bookingLeader ? (
+                                  <span className="px-1.5 py-0.2 rounded bg-purple-50 text-purple-700 border border-purple-200 font-semibold">
+                                    Lead: {store.bookingLeader}
+                                  </span>
+                                ) : (
+                                  <span className="px-1.5 py-0.2 rounded bg-slate-100 text-slate-500 font-medium">
+                                    Duyệt trực tiếp Trưởng phòng
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+
+                          {/* 3. Budget Net */}
+                          <td className="py-3 px-3 text-right font-mono font-semibold text-slate-900">
+                            {store.monthlyBudget > 0 ? (
+                              <span>{(store.monthlyBudget).toLocaleString('vi-VN')} đ</span>
+                            ) : (
+                              <span className="text-slate-400 italic">0 đ</span>
+                            )}
+                          </td>
+
+                          {/* 4. Target GMV */}
+                          <td className="py-3 px-3 text-right font-mono text-purple-700 font-semibold">
+                            {store.monthlyTargetGmv > 0 ? (
+                              <span>{(store.monthlyTargetGmv).toLocaleString('vi-VN')} đ</span>
+                            ) : (
+                              <span className="text-slate-400 italic">Chưa giao</span>
+                            )}
+                          </td>
+
+                          {/* 5. Spent Net */}
+                          <td className="py-3 px-3 text-right font-mono font-bold">
+                            <span className={isOver ? 'text-rose-600' : 'text-slate-800'}>
+                              {storeSpentNet.toLocaleString('vi-VN')} đ
+                            </span>
+                          </td>
+
+                          {/* 6. Spent Progress */}
+                          <td className="py-3 px-3 text-center">
+                            <div className="w-20 mx-auto space-y-1">
+                              <span className={`text-2xs font-semibold ${
+                                spentPct > 100 ? 'text-rose-600' : spentPct > 80 ? 'text-amber-600' : 'text-emerald-600'
+                              }`}>
+                                {spentPct}%
+                              </span>
+                              <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden border border-slate-200">
+                                <div
+                                  className={`h-full rounded-full transition-all ${
+                                    spentPct > 100
+                                      ? 'bg-rose-500'
+                                      : spentPct > 80
+                                      ? 'bg-amber-500'
+                                      : 'bg-emerald-500'
+                                  }`}
+                                  style={{ width: `${Math.min(100, spentPct)}%` }}
+                                />
+                              </div>
+                            </div>
+                          </td>
+
+                          {/* 7. Video Breakdown */}
+                          <td className="py-3 px-3 text-center">
+                            <div className="flex items-center justify-center gap-1">
+                              <span className="px-1.5 py-0.5 rounded text-3xs font-semibold bg-blue-50 text-blue-700 border border-blue-200" title="Video KOC có phí (Paid)">
+                                {storePaidCount} Paid
+                              </span>
+                              <span className="px-1.5 py-0.5 rounded text-3xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200" title="Suất gửi mẫu miễn phí (FOC 0đ)">
+                                {storeFocCount} FOC
+                              </span>
+                            </div>
+                          </td>
+
+                          {/* 8. Status */}
+                          <td className="py-3 px-4 text-center">
+                            {isOver ? (
+                              <span className="px-2 py-0.5 rounded text-3xs font-bold bg-rose-100 text-rose-800 border border-rose-300">
+                                Vượt ngân sách
+                              </span>
+                            ) : isUnbudgeted ? (
+                              <span className="px-2 py-0.5 rounded text-3xs font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                                Chưa cấp HM
+                              </span>
+                            ) : (
+                              <span className="px-2 py-0.5 rounded text-3xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                An toàn
+                              </span>
+                            )}
+                          </td>
+
+                          {/* 9. Action */}
+                          <td className="py-3 px-4 text-right">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (onNavigateToBookingWithStore) {
+                                  onNavigateToBookingWithStore(store.storeName);
+                                } else if (onNotify) {
+                                  onNotify(`Xem chi tiết Booking gian hàng: ${store.storeName}`, 'info');
+                                }
+                              }}
+                              className="px-2.5 py-1 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 rounded text-xs font-semibold transition cursor-pointer"
+                            >
+                              Xem Booking
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* PHÂN HỆ 5: ĐỊNH MỨC TRẦN THÙ LAO (RATECARD CEILINGS)                       */}
+      {/* ========================================================================= */}
+      {(activeKnowledgeTab === 'RATECARD_CEILING' || (activeKnowledgeTab === 'SKUS_RATECARD' && skusSubTab === 'RATECARD')) && (
+        <div className="space-y-6 animate-in fade-in duration-150">
+          {/* Sub-tab toggle SKUs & Ratecard */}
+          <div className="flex items-center gap-2 p-1 bg-slate-100 rounded-lg border border-slate-200 w-fit">
+            <button
+              type="button"
+              onClick={() => setSkusSubTab('SKUS')}
+              className="px-3 py-1.5 rounded-md text-xs font-semibold text-slate-600 hover:text-slate-900 transition"
+            >
+              Bách Khoa Toàn Thư Hero SKUs ({currentBrand.skus.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setSkusSubTab('RATECARD')}
+              className="px-3 py-1.5 rounded-md text-xs font-semibold bg-white text-amber-700 shadow-2xs transition"
+            >
+              Định Mức Trần Thù Lao (KL1 - KL7)
+            </button>
+          </div>
           <div className="card-enterprise overflow-hidden bg-white">
             <div className="p-5 border-b border-slate-200 bg-slate-50/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
@@ -1529,10 +2807,27 @@ export const BrandKnowledgeView: React.FC<BrandKnowledgeViewProps> = ({
       )}
 
       {/* ========================================================================= */}
-      {/* TAB 1: BÁCH KHOA TOÀN THƯ HERO SKUS                                       */}
+      {/* PHÂN HỆ 5: BÁCH KHOA TOÀN THƯ HERO SKUS                                   */}
       {/* ========================================================================= */}
-      {activeKnowledgeTab === 'SKUS' && (
+      {(activeKnowledgeTab === 'SKUS' || (activeKnowledgeTab === 'SKUS_RATECARD' && skusSubTab === 'SKUS')) && (
         <div className="space-y-5">
+          {/* Sub-tab toggle SKUs & Ratecard */}
+          <div className="flex items-center gap-2 p-1 bg-slate-100 rounded-lg border border-slate-200 w-fit">
+            <button
+              type="button"
+              onClick={() => setSkusSubTab('SKUS')}
+              className="px-3 py-1.5 rounded-md text-xs font-semibold bg-white text-amber-700 shadow-2xs transition"
+            >
+              Bách Khoa Toàn Thư Hero SKUs ({currentBrand.skus.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setSkusSubTab('RATECARD')}
+              className="px-3 py-1.5 rounded-md text-xs font-semibold text-slate-600 hover:text-slate-900 transition"
+            >
+              Định Mức Trần Thù Lao (KL1 - KL7)
+            </button>
+          </div>
           <div className="grid grid-cols-1 gap-5">
             {filteredSkus.map((sku) => (
               <div key={sku.id} className="card-enterprise p-5 space-y-4 bg-white">
@@ -1668,10 +2963,41 @@ export const BrandKnowledgeView: React.FC<BrandKnowledgeViewProps> = ({
       )}
 
       {/* ========================================================================= */}
-      {/* TAB 2: PHÁP LÝ & BẰNG CHỨNG LÂM SÀNG                                      */}
+      {/* PHÂN HỆ 6: PHÁP LÝ & BẰNG CHỨNG LÂM SÀNG                                  */}
       {/* ========================================================================= */}
-      {activeKnowledgeTab === 'LEGAL' && (
-        <div className="space-y-4">
+      {(activeKnowledgeTab === 'LEGAL' || (activeKnowledgeTab === 'COMPLIANCE_LEGAL' && complianceSubTab === 'LEGAL')) && (
+        <div className="space-y-4 animate-in fade-in duration-150">
+          {/* Sub-tab toggle Compliance */}
+          <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-lg border border-slate-200 w-fit flex-wrap">
+            <button
+              type="button"
+              onClick={() => setComplianceSubTab('INSPECTOR')}
+              className="px-3 py-1.5 rounded-md text-xs font-semibold text-slate-600 hover:text-slate-900 transition"
+            >
+              Thẩm Định Kịch Bản Theo Quy Chuẩn
+            </button>
+            <button
+              type="button"
+              onClick={() => setComplianceSubTab('LEGAL')}
+              className="px-3 py-1.5 rounded-md text-xs font-semibold bg-white text-emerald-700 shadow-2xs transition"
+            >
+              Pháp Lý &amp; Bằng Chứng Lâm Sàng ({currentBrand.certifications.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setComplianceSubTab('KEYWORDS')}
+              className="px-3 py-1.5 rounded-md text-xs font-semibold text-slate-600 hover:text-slate-900 transition"
+            >
+              Từ Điển Blacklist &amp; Whitelist
+            </button>
+            <button
+              type="button"
+              onClick={() => setComplianceSubTab('OBJECTIONS')}
+              className="px-3 py-1.5 rounded-md text-xs font-semibold text-slate-600 hover:text-slate-900 transition"
+            >
+              Xử Lý Thắc Mắc &amp; Khủng Hoảng
+            </button>
+          </div>
           <div className="card-enterprise overflow-hidden">
             <div className="px-5 py-4 border-b border-slate-200 bg-slate-50">
               <h3 className="text-sm font-semibold text-slate-900">Hồ sơ pháp lý, giấy phép & bằng chứng lâm sàng</h3>
@@ -1746,10 +3072,41 @@ export const BrandKnowledgeView: React.FC<BrandKnowledgeViewProps> = ({
       )}
 
       {/* ========================================================================= */}
-      {/* TAB 3: TỪ ĐIỂN BLACKLIST & WHITELIST                                      */}
+      {/* PHÂN HỆ 6: TỪ ĐIỂN BLACKLIST & WHITELIST                                  */}
       {/* ========================================================================= */}
-      {activeKnowledgeTab === 'KEYWORDS' && (
-        <div className="space-y-6">
+      {(activeKnowledgeTab === 'KEYWORDS' || (activeKnowledgeTab === 'COMPLIANCE_LEGAL' && complianceSubTab === 'KEYWORDS')) && (
+        <div className="space-y-6 animate-in fade-in duration-150">
+          {/* Sub-tab toggle Compliance */}
+          <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-lg border border-slate-200 w-fit flex-wrap">
+            <button
+              type="button"
+              onClick={() => setComplianceSubTab('INSPECTOR')}
+              className="px-3 py-1.5 rounded-md text-xs font-semibold text-slate-600 hover:text-slate-900 transition"
+            >
+              Thẩm Định Kịch Bản Theo Quy Chuẩn
+            </button>
+            <button
+              type="button"
+              onClick={() => setComplianceSubTab('LEGAL')}
+              className="px-3 py-1.5 rounded-md text-xs font-semibold text-slate-600 hover:text-slate-900 transition"
+            >
+              Pháp Lý &amp; Bằng Chứng Lâm Sàng ({currentBrand.certifications.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setComplianceSubTab('KEYWORDS')}
+              className="px-3 py-1.5 rounded-md text-xs font-semibold bg-white text-rose-700 shadow-2xs transition"
+            >
+              Từ Điển Blacklist &amp; Whitelist
+            </button>
+            <button
+              type="button"
+              onClick={() => setComplianceSubTab('OBJECTIONS')}
+              className="px-3 py-1.5 rounded-md text-xs font-semibold text-slate-600 hover:text-slate-900 transition"
+            >
+              Xử Lý Thắc Mắc &amp; Khủng Hoảng
+            </button>
+          </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
             {/* Cột Trái: Blacklist (Từ Cấm) */}
             <div className="card-enterprise p-5 space-y-4 border-rose-200 bg-rose-50/15">
@@ -1843,10 +3200,41 @@ export const BrandKnowledgeView: React.FC<BrandKnowledgeViewProps> = ({
       )}
 
       {/* ========================================================================= */}
-      {/* TAB 4: XỬ LÝ PHẢN BIỆN & FAQ KHỦNG HOẢNG                                  */}
+      {/* PHÂN HỆ 6: XỬ LÝ PHẢN BIỆN & FAQ KHỦNG HOẢNG                              */}
       {/* ========================================================================= */}
-      {activeKnowledgeTab === 'OBJECTIONS' && (
-        <div className="space-y-5">
+      {(activeKnowledgeTab === 'OBJECTIONS' || (activeKnowledgeTab === 'COMPLIANCE_LEGAL' && complianceSubTab === 'OBJECTIONS')) && (
+        <div className="space-y-5 animate-in fade-in duration-150">
+          {/* Sub-tab toggle Compliance */}
+          <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-lg border border-slate-200 w-fit flex-wrap">
+            <button
+              type="button"
+              onClick={() => setComplianceSubTab('INSPECTOR')}
+              className="px-3 py-1.5 rounded-md text-xs font-semibold text-slate-600 hover:text-slate-900 transition"
+            >
+              Thẩm Định Kịch Bản Theo Quy Chuẩn
+            </button>
+            <button
+              type="button"
+              onClick={() => setComplianceSubTab('LEGAL')}
+              className="px-3 py-1.5 rounded-md text-xs font-semibold text-slate-600 hover:text-slate-900 transition"
+            >
+              Pháp Lý &amp; Bằng Chứng Lâm Sàng ({currentBrand.certifications.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setComplianceSubTab('KEYWORDS')}
+              className="px-3 py-1.5 rounded-md text-xs font-semibold text-slate-600 hover:text-slate-900 transition"
+            >
+              Từ Điển Blacklist &amp; Whitelist
+            </button>
+            <button
+              type="button"
+              onClick={() => setComplianceSubTab('OBJECTIONS')}
+              className="px-3 py-1.5 rounded-md text-xs font-semibold bg-white text-purple-700 shadow-2xs transition"
+            >
+              Xử Lý Thắc Mắc &amp; Khủng Hoảng
+            </button>
+          </div>
           <div className="grid grid-cols-1 gap-4">
             {filteredFaqs.map((faq) => (
               <div key={faq.id} className="card-enterprise p-5 space-y-3 bg-white">
@@ -1948,10 +3336,27 @@ export const BrandKnowledgeView: React.FC<BrandKnowledgeViewProps> = ({
       )}
 
       {/* ========================================================================= */}
-      {/* TAB 5: QUY CHUẨN HÌNH ẢNH DO'S & DON'TS                                   */}
+      {/* PHÂN HỆ 4: QUY CHUẨN HÌNH ẢNH DO'S & DON'TS                               */}
       {/* ========================================================================= */}
-      {activeKnowledgeTab === 'VISUAL_IDENTITY' && (
-        <div className="space-y-5">
+      {(activeKnowledgeTab === 'VISUAL_IDENTITY' || (activeKnowledgeTab === 'BRAND_PROFILE' && profileSubTab === 'VISUAL_RULES')) && (
+        <div className="space-y-5 animate-in fade-in duration-150">
+          {/* Sub-tab toggle Brand Profile */}
+          <div className="flex items-center gap-2 p-1 bg-slate-100 rounded-lg border border-slate-200 w-fit">
+            <button
+              type="button"
+              onClick={() => setProfileSubTab('GENERAL')}
+              className="px-3 py-1.5 rounded-md text-xs font-semibold text-slate-600 hover:text-slate-900 transition"
+            >
+              Thông Tin Pháp Nhân &amp; Định Vị
+            </button>
+            <button
+              type="button"
+              onClick={() => setProfileSubTab('VISUAL_RULES')}
+              className="px-3 py-1.5 rounded-md text-xs font-semibold bg-white text-purple-700 shadow-2xs transition"
+            >
+              Quy Chuẩn Hình Ảnh Do&apos;s &amp; Don&apos;ts
+            </button>
+          </div>
           <div className="card-enterprise p-4 bg-white space-y-2 text-xs">
             <h4 className="font-semibold text-slate-900 flex items-center gap-2">
               <Award className="w-4 h-4 text-purple-600" />
@@ -1995,10 +3400,41 @@ export const BrandKnowledgeView: React.FC<BrandKnowledgeViewProps> = ({
       )}
 
       {/* ========================================================================= */}
-      {/* TAB 6: AI THẨM ĐỊNH KỊCH BẢN (AI SCRIPT INSPECTOR)                         */}
+      {/* PHÂN HỆ 6: THẨM ĐỊNH KỊCH BẢN THEO QUY CHUẨN (SCRIPT INSPECTOR)           */}
       {/* ========================================================================= */}
-      {activeKnowledgeTab === 'AI_INSPECTOR' && (
+      {(activeKnowledgeTab === 'SCRIPT_INSPECTOR' || (activeKnowledgeTab === 'COMPLIANCE_LEGAL' && complianceSubTab === 'INSPECTOR')) && (
         <div className="space-y-6 animate-in fade-in duration-200">
+          {/* Sub-tab toggle Compliance */}
+          <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-lg border border-slate-200 w-fit flex-wrap">
+            <button
+              type="button"
+              onClick={() => setComplianceSubTab('INSPECTOR')}
+              className="px-3 py-1.5 rounded-md text-xs font-semibold bg-white text-indigo-700 shadow-2xs transition"
+            >
+              Thẩm Định Kịch Bản Theo Quy Chuẩn
+            </button>
+            <button
+              type="button"
+              onClick={() => setComplianceSubTab('LEGAL')}
+              className="px-3 py-1.5 rounded-md text-xs font-semibold text-slate-600 hover:text-slate-900 transition"
+            >
+              Pháp Lý &amp; Bằng Chứng Lâm Sàng ({currentBrand.certifications.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setComplianceSubTab('KEYWORDS')}
+              className="px-3 py-1.5 rounded-md text-xs font-semibold text-slate-600 hover:text-slate-900 transition"
+            >
+              Từ Điển Blacklist &amp; Whitelist
+            </button>
+            <button
+              type="button"
+              onClick={() => setComplianceSubTab('OBJECTIONS')}
+              className="px-3 py-1.5 rounded-md text-xs font-semibold text-slate-600 hover:text-slate-900 transition"
+            >
+              Xử Lý Thắc Mắc &amp; Khủng Hoảng
+            </button>
+          </div>
           {/* Header Banner & Demo Scenarios */}
           <div className="p-5 rounded-lg bg-purple-900 text-white shadow-md relative overflow-hidden">
             <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-4">

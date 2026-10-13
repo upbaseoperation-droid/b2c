@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
   try {
     const secret = process.env.WESIGN_SYNC_SECRET; const supplied = req.headers.get('authorization')?.replace(/^Bearer /, '');
     requireCondition(secret && supplied && Buffer.byteLength(secret) === Buffer.byteLength(supplied) && timingSafeEqual(Buffer.from(secret), Buffer.from(supplied)), 'Không có quyền đồng bộ.', 401);
-    const records = (await listContracts()).filter(r => r.signing.length && !['COMPLETED', 'CANCELLED', 'REJECTED'].includes(r.signing.at(-1)!.status));
+    const records = (await listContracts()).filter(r => r.signing.length && r.signing.at(-1)!.provider !== 'DEMO' && !['COMPLETED', 'CANCELLED', 'REJECTED'].includes(r.signing.at(-1)!.status));
     const results: Array<{ id: string; success: boolean }> = [];
     // Ưu tiên hồ sơ chưa được đồng bộ lâu nhất để không bỏ đói hồ sơ ngoài lô 50.
     records.sort((a, b) => (a.signing.at(-1)!.syncedAt || '').localeCompare(b.signing.at(-1)!.syncedAt || ''));

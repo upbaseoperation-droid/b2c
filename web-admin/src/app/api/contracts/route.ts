@@ -7,6 +7,7 @@ import { loadTemplate, templateCatalog, renderTemplate, archiveTemplate } from '
 import { checkContract, aiConfigured } from '@/lib/contracts/check';
 import { wesignConfigured, wesignDetail } from '@/lib/contracts/wesign';
 import type { ContractRecord, ReviewStep } from '@/lib/contracts/types';
+import { simulateSigning } from '@/lib/contracts/demo';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 function failure(error: unknown) { return NextResponse.json({ error: error instanceof ContractError ? error.message : 'Không thể xử lý hồ sơ. Kiểm tra cấu hình và thử lại.' }, { status: error instanceof ContractError ? error.status : 503, headers: { 'Cache-Control': 'no-store' } }); }
@@ -77,9 +78,12 @@ export async function POST(req: NextRequest) {
       const rendered = await renderTemplate(record.templateId, record.templateHash, record.values);
       next.signing.push({ ...detail, documentId: body.documentId.toLowerCase(), version: record.version, linkedBy: actor.id, linkedAt: new Date().toISOString(), evidenceConfirmedBy: actor.id, evidenceHash: createHash('sha256').update(rendered.paragraphs.join('\n')).digest('hex') });
       event(next, actor, 'LINK_WESIGN', `Đã đối chiếu thủ công với phiên bản v${record.version}; ${body.documentId}`);
+    } else if (typeof body.action === 'string' && ['DEMO_SIGN_START', 'DEMO_SIGN_NEXT', 'DEMO_SIGN_REJECT'].includes(body.action)) {
+      next = simulateSigning(record, actor, body.action);
     } else if (body.action === 'SYNC_WESIGN') {
       requireCondition(inScope(record.brand, actor), 'Không có quyền đồng bộ.', 403);
       const attempt = next.signing.at(-1); requireCondition(attempt, 'Chưa liên kết luồng ký.');
+      requireCondition(attempt.provider !== 'DEMO', 'Luồng giả lập không đồng bộ với MISA.');
       try { const detail = await wesignDetail(attempt.documentId); Object.assign(attempt, detail, { error: undefined }); event(next, actor, 'SYNC_WESIGN', String(detail.sourceStatus)); }
       catch (error) { attempt.error = error instanceof ContractError ? error.message : 'Không kết nối được weSign. Trạng thái đang hiển thị là lần đồng bộ trước.'; event(next, actor, 'SYNC_ERROR', attempt.error); }
     } else throw new ContractError('Thao tác không hợp lệ.');

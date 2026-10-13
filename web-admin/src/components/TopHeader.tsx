@@ -5,6 +5,7 @@ import { Menu, ChevronDown, Sparkles, ArrowRight, Building2 } from 'lucide-react
 import { UserProfile } from '../lib/types';
 import { USERS } from '../lib/mockData';
 import type { TabKey } from './Sidebar';
+import { PageActionsSlot } from './ui';
 
 // Cho phép chuyển đổi linh hoạt giữa các vai trò trên mọi môi trường (kể cả Production)
 const SHOW_ROLE_SWITCHER = true;
@@ -186,7 +187,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
           </button>
         )}
 
-
+        <PageActionsSlot />
       </div>
     </header>
   );

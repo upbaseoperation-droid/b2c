@@ -146,3 +146,114 @@ export function formatFollowers(n?: number): string {
   if (n >= 1e3) return `${Math.round(n / 1e3)}k`;
   return String(n);
 }
+
+/* ------------------------------------------------ Hiệu quả hợp tác chi tiết */
+
+export interface KocPerformanceSummary {
+  totalDeals: number;
+  completedDeals: number;
+  runningDeals: number;
+  cancelledDeals: number;
+  paidDealsCount: number;
+  focDealsCount: number;
+  totalSpentNet: number;
+  totalFocCost: number;
+  totalAdsBudget: number;
+  totalInvestment: number;
+  totalGmv: number;
+  overallRoi: number;
+  totalOrders: number;
+  avgCpo: number;
+  totalCollabViews: number;
+  avgViewsPerCollab: number;
+  avgCtr: number;
+  avgCvr: number;
+  onTimeScriptRate: number;
+  onTimePostRate: number;
+  sparkComplianceRate: number;
+  avgRatingScore: number;
+  uniqueBrands: string[];
+  uniqueStores: string[];
+}
+
+export function calculateKocPerformanceStats(deals: BookingDealItem[], koc: KocItem): KocPerformanceSummary {
+  const kocDeals = dealsOfKoc(deals, koc);
+  const validDeals = kocDeals.filter((d) => d.status !== 'CANCELLED');
+  const completedDeals = kocDeals.filter((d) => d.status === 'COMPLETED' || d.status === 'FINAL_PAID');
+  const runningDeals = kocDeals.filter(isDealOpen);
+  const cancelledDeals = kocDeals.filter((d) => d.status === 'CANCELLED');
+
+  const paidDealsCount = validDeals.filter((d) => (d.totalValue || 0) > 0).length;
+  const focDealsCount = validDeals.filter((d) => (d.totalValue || 0) === 0).length;
+
+  const totalSpentNet = validDeals.reduce((s, d) => s + (d.totalValue || 0), 0);
+  const totalFocCost = validDeals.reduce((s, d) => s + (d.focSampleCost || 0), 0);
+  const totalAdsBudget = validDeals.reduce((s, d) => s + (d.sparkAdsBudget || 0), 0);
+  const totalInvestment = totalSpentNet + totalFocCost + totalAdsBudget;
+
+  const totalGmv = validDeals.reduce((s, d) => s + (d.gmv30 || d.affiliateGmv || 0), 0);
+  const overallRoi = totalSpentNet > 0 ? totalGmv / totalSpentNet : (koc.historicalRoi || 0);
+
+  const totalOrders = validDeals.reduce((s, d) => s + (d.ordersCount || (d.gmv30 ? Math.round(d.gmv30 / (koc.aov || 250000)) : 0)), 0);
+  const avgCpo = totalOrders > 0 ? Math.round(totalSpentNet / totalOrders) : 0;
+
+  const totalCollabViews = validDeals.reduce((s, d) => s + (d.viewsCount || 0), 0);
+  const avgViewsPerCollab = validDeals.length > 0 ? Math.round(totalCollabViews / validDeals.length) : (koc.avgViews || 0);
+
+  // Tỷ lệ CTR / CVR trung bình
+  const dealsWithCtr = validDeals.filter((d) => typeof d.ctr === 'number');
+  const avgCtr = dealsWithCtr.length > 0 ? dealsWithCtr.reduce((s, d) => s + (d.ctr || 0), 0) / dealsWithCtr.length : (koc.tiktokAvgCtr || 4.5);
+
+  const dealsWithCvr = validDeals.filter((d) => typeof d.cvr === 'number');
+  const avgCvr = dealsWithCvr.length > 0 ? dealsWithCvr.reduce((s, d) => s + (d.cvr || 0), 0) / dealsWithCvr.length : (koc.tiktokAvgCvr || 2.2);
+
+  // Tiến độ & Tuân thủ
+  const dealsWithScriptStatus = validDeals.filter((d) => typeof d.isScriptOnTime === 'boolean');
+  const onTimeScriptRate = dealsWithScriptStatus.length > 0
+    ? Math.round((dealsWithScriptStatus.filter((d) => d.isScriptOnTime).length / dealsWithScriptStatus.length) * 100)
+    : 95;
+
+  const dealsWithPostStatus = validDeals.filter((d) => typeof d.isPostOnTime === 'boolean');
+  const onTimePostRate = dealsWithPostStatus.length > 0
+    ? Math.round((dealsWithPostStatus.filter((d) => d.isPostOnTime).length / dealsWithPostStatus.length) * 100)
+    : 92;
+
+  const sparkComplianceRate = validDeals.length > 0
+    ? Math.round((validDeals.filter((d) => d.adsCodeStatus === 'ĐÃ_NGHIỆM_THU').length / validDeals.length) * 100)
+    : 100;
+
+  const dealsWithRating = validDeals.filter((d) => typeof d.ratingScore === 'number' && d.ratingScore > 0);
+  const avgRatingScore = dealsWithRating.length > 0
+    ? Number((dealsWithRating.reduce((s, d) => s + (d.ratingScore || 0), 0) / dealsWithRating.length).toFixed(1))
+    : 4.8;
+
+  const uniqueBrands = Array.from(new Set(validDeals.map((d) => d.brandName).filter(Boolean)));
+  const uniqueStores = Array.from(new Set(validDeals.map((d) => d.storeName).filter(Boolean) as string[]));
+
+  return {
+    totalDeals: kocDeals.length,
+    completedDeals: completedDeals.length,
+    runningDeals: runningDeals.length,
+    cancelledDeals: cancelledDeals.length,
+    paidDealsCount,
+    focDealsCount,
+    totalSpentNet,
+    totalFocCost,
+    totalAdsBudget,
+    totalInvestment,
+    totalGmv,
+    overallRoi,
+    totalOrders,
+    avgCpo,
+    totalCollabViews,
+    avgViewsPerCollab,
+    avgCtr,
+    avgCvr,
+    onTimeScriptRate,
+    onTimePostRate,
+    sparkComplianceRate,
+    avgRatingScore,
+    uniqueBrands,
+    uniqueStores,
+  };
+}

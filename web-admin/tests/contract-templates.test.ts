@@ -1,7 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import JSZip from 'jszip';
-import { loadTemplate, renderTemplate, templateCatalog } from '../src/lib/contracts/templates';
+import { loadTemplate, renderTemplate, templateCatalog, archiveTemplate } from '../src/lib/contracts/templates';
+import { mkdtemp, writeFile, mkdir, unlink, rmdir } from 'node:fs/promises';
+import path from 'node:path';
+import os from 'node:os';
 test('Đọc đủ 8 mẫu gốc và phát hiện trường trong bảng/đoạn văn', async () => {
   const catalog = await templateCatalog(); assert.equal(catalog.length, 8);
   for (const item of catalog) { const { template } = await loadTemplate(item.id); assert.ok(template.fields.length > 5); assert.ok(template.paragraphs.length > 30); }
@@ -21,4 +24,27 @@ test('Điền mẫu giữ nguyên điều khoản, bảng, styles và nội dung
 test('Không xuất hồ sơ bằng phiên bản nguồn đã thay đổi', async () => {
   await assert.rejects(renderTemplate('IND-HD', 'wrong-hash', {}));
   await assert.rejects(loadTemplate('../../secret'));
+});
+test('Giữ bản mẫu của hồ sơ khi pháp chế thay đổi file hiện hành', async () => {
+  const original = await loadTemplate('IND-HD');
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'b2c-template-'));
+  const templateDirectory = path.join(directory, 'templates'); await mkdir(templateDirectory);
+  const file = path.join(templateDirectory, original.template.filename);
+  const previous = { data: process.env.CONTRACT_DATA_DIR, templates: process.env.CONTRACT_TEMPLATE_DIR };
+  try {
+    await writeFile(file, await original.zip.generateAsync({ type: 'nodebuffer' }));
+    process.env.CONTRACT_DATA_DIR = directory; process.env.CONTRACT_TEMPLATE_DIR = templateDirectory;
+    const initial = await loadTemplate('IND-HD'); await archiveTemplate(initial.template.id, initial.template.hash);
+    await writeFile(file, Buffer.from('File mẫu hiện hành đã thay đổi'));
+    const archived = await loadTemplate('IND-HD', initial.template.hash);
+    assert.equal(archived.template.hash, initial.template.hash);
+    assert.deepEqual(archived.template.fields, initial.template.fields);
+    const output = await renderTemplate('IND-HD', initial.template.hash, { 'token:[ID KOC]': 'KOC-ARCHIVED' });
+    assert.ok(output.paragraphs.some(p => p.includes('KOC-ARCHIVED')));
+    await unlink(path.join(directory, 'sources', `${initial.template.hash}.docx`)); await rmdir(path.join(directory, 'sources'));
+  } finally {
+    if (previous.data === undefined) delete process.env.CONTRACT_DATA_DIR; else process.env.CONTRACT_DATA_DIR = previous.data;
+    if (previous.templates === undefined) delete process.env.CONTRACT_TEMPLATE_DIR; else process.env.CONTRACT_TEMPLATE_DIR = previous.templates;
+    await unlink(file); await rmdir(templateDirectory); await rmdir(directory);
+  }
 });

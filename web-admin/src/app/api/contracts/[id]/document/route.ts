@@ -10,6 +10,7 @@ export async function GET(req: NextRequest, context: { params: Promise<{ id: str
     const actor = actorFromRequest(req); const record = await getContract((await context.params).id); requireCondition(canRead(record, actor), 'Không có quyền tải tài liệu.', 403);
     if (req.nextUrl.searchParams.get('signed') === '1') {
       const attempt = record.signing.at(-1); requireCondition(attempt?.status === 'COMPLETED', 'Luồng ký chưa được xác nhận hoàn tất.');
+      requireCondition(attempt.provider !== 'DEMO', 'Luồng giả lập không tạo tài liệu đã ký.');
       const response = await signedFile(attempt.documentId);
       return new NextResponse(response.body, { headers: { 'Content-Type': 'application/octet-stream', 'Content-Disposition': `attachment; filename="${record.id}-signed.zip"`, 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' } });
     }
