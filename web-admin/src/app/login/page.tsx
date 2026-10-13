@@ -5,7 +5,9 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { AlertTriangle, ArrowRight, Building, Users, Video, KeyRound, Check, Mail, Sparkles } from 'lucide-react';
 import { USERS } from '@/lib/mockData';
 import { INITIAL_THIRD_PARTY_ACCOUNTS } from '@/lib/thirdPartyAccessData';
-import { BrandLogo } from '@/components/ui';
+import { BrandLogo, Button, PageActionsSlot } from '@/components/ui';
+import { ContractManagementView } from '@/components/views/ContractManagementView';
+import { enableBrowserDemo } from '@/components/contracts/browserDemo';
 import { sanitizeReturnTo } from '@/lib/urlUtils';
 
 const ROLE_LABEL: Record<string, string> = {
@@ -63,8 +65,10 @@ function LoginFallback() {
 }
 
 function LoginContent() {
+  const [demoNotice, setDemoNotice] = useState('');
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [showContractDemo, setShowContractDemo] = useState(searchParams.get('demo') === 'contracts');
   const errorParam = searchParams.get('error');
   const messageParam = searchParams.get('message');
   const returnTo = sanitizeReturnTo(searchParams.get('returnTo'));
@@ -81,6 +85,7 @@ function LoginContent() {
 
   // Đã đăng nhập thì chuyển thẳng vào app (dùng strict=1 để tránh tự động cấp phiên khi vừa logout)
   useEffect(() => {
+    if (showContractDemo) return;
     async function checkAuth() {
       try {
         const res = await fetch('/api/auth/me?strict=1');
@@ -91,7 +96,7 @@ function LoginContent() {
       }
     }
     checkAuth();
-  }, [router, returnTo]);
+  }, [router, returnTo, showContractDemo]);
 
   const handleLarkLogin = () => {
     setIsLoading(true);
@@ -170,6 +175,11 @@ function LoginContent() {
       ? messageParam || 'Lark chưa xác thực được tài khoản của bạn. Thử đăng nhập lại hoặc dùng truy cập nhanh bên dưới.'
       : null;
 
+  if (showContractDemo) return <div className="min-h-screen bg-canvas text-ink">
+    <header className="flex flex-wrap items-center justify-between gap-3 border-b border-line bg-surface px-6 py-4"><div className="flex items-center gap-4"><BrandLogo height={26} /><h1 className="font-semibold">B2C · Quản lý hợp đồng</h1></div><div className="flex items-center gap-3"><PageActionsSlot /><Button onClick={() => setShowContractDemo(false)}>Về đăng nhập</Button></div></header>
+    <main className="mx-auto max-w-7xl p-6">{demoNotice && <p role="status" className="mb-4 rounded-lg bg-warning-soft p-3 text-[13px]">{demoNotice}</p>}<ContractManagementView demoMode onNotify={message => setDemoNotice(message)} /></main>
+  </div>;
+
   return (
     <div className="min-h-screen bg-canvas text-ink flex flex-col">
       <main className="flex-1 flex items-center justify-center px-4 py-12">
@@ -184,6 +194,7 @@ function LoginContent() {
           </div>
 
           {/* Portal Switcher Tabs */}
+          <Button onClick={() => { enableBrowserDemo(); setShowContractDemo(true); }}>Thử quản lý hợp đồng (giả lập)</Button>
           <div className="flex rounded-xl bg-sunken p-1 border border-line text-xs font-semibold">
             <button
               type="button"

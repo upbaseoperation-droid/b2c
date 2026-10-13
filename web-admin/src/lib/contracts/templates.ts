@@ -162,7 +162,7 @@ export async function archiveTemplate(id: string, hash: string) {
   // Dùng đúng bytes gốc, không giải nén/đóng gói lại để hash không đổi.
   void zip;
   const source = SOURCES.find(s => s[0] === id)!;
-  const buffer = await readFile(path.join(process.env.CONTRACT_TEMPLATE_DIR || path.resolve(process.cwd(), '..', 'Quản lý hợp đồng'), source[4]));
+  const buffer = await readFile(path.join(/*turbopackIgnore: true*/ process.env.CONTRACT_TEMPLATE_DIR || path.resolve(/*turbopackIgnore: true*/ process.cwd(), '..', 'Quản lý hợp đồng'), source[4]));
   requireCondition(createHash('sha256').update(buffer).digest('hex') === hash, 'Mẫu nguồn đã thay đổi trong lúc tạo hồ sơ.', 409);
   if (process.env.NODE_ENV !== 'production' && process.env.CONTRACT_STORAGE !== 'postgres') {
     await mkdir(archiveDirectory(), { recursive: true });
@@ -171,9 +171,9 @@ export async function archiveTemplate(id: string, hash: string) {
 }
 export async function loadTemplate(id: string, expectedHash?: string): Promise<{ template: LegalTemplate; zip: JSZip }> {
   const source = SOURCES.find(s => s[0] === id); requireCondition(source, 'Không tìm thấy mẫu pháp chế.', 404);
-  const directory = process.env.CONTRACT_TEMPLATE_DIR || path.resolve(process.cwd(), '..', 'Quản lý hợp đồng');
+  const directory = process.env.CONTRACT_TEMPLATE_DIR || path.resolve(/*turbopackIgnore: true*/ process.cwd(), '..', 'Quản lý hợp đồng');
   let buffer: Buffer;
-  try { buffer = await readFile(path.join(directory, source[4])); }
+  try { buffer = await readFile(path.join(/*turbopackIgnore: true*/ directory, source[4])); }
   catch (e) { if (!expectedHash) throw e; buffer = Buffer.alloc(0); }
   if (expectedHash && createHash('sha256').update(buffer).digest('hex') !== expectedHash) {
     requireCondition(/^[a-f0-9]{64}$/.test(expectedHash), 'Phiên bản nguồn không hợp lệ.', 409);

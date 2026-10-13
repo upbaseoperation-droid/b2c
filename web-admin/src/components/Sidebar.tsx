@@ -26,6 +26,7 @@ import {
   Sparkles,
   KeyRound,
   Film,
+  Store,
   type LucideIcon,
 } from 'lucide-react';
 import { UserProfile, TabKey } from '../lib/types';
@@ -69,6 +70,7 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           items: [
             { key: 'input-plan', label: 'Kế hoạch tháng', icon: Calendar },
             { key: 'brand-knowledge', label: 'Hồ sơ thương hiệu', icon: BookOpen },
+            { key: 'stores', label: 'Hồ sơ gian hàng', icon: Store },
             { key: 'manager', label: 'Điều phối & Quản lý', icon: Split },
           ],
         },
@@ -91,7 +93,7 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           title: '4. Báo cáo & Dữ liệu',
           items: [
             { key: 'dashboard-bi', label: 'Báo cáo hiệu suất & GMV', icon: LayoutDashboard },
-            { key: 'master-data', label: 'Dữ liệu gốc & Mindmap', icon: Database },
+            { key: 'master-data', label: 'Dữ liệu gốc', icon: Database },
             { key: 'partner-access', label: 'Phân quyền & Tài khoản', icon: KeyRound },
           ],
         },
@@ -110,6 +112,7 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           items: [
             { key: 'input-plan', label: 'Kế hoạch tháng', icon: Calendar },
             { key: 'brand-knowledge', label: 'Hồ sơ thương hiệu', icon: BookOpen },
+            { key: 'stores', label: 'Hồ sơ gian hàng', icon: Store },
             { key: 'manager', label: 'Điều phối nhóm', icon: Split },
           ],
         },
@@ -132,7 +135,7 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           title: '4. Báo cáo & Dữ liệu',
           items: [
             { key: 'dashboard-bi', label: 'Báo cáo hiệu suất', icon: LayoutDashboard },
-            { key: 'master-data', label: 'Dữ liệu gốc & Mindmap', icon: Database },
+            { key: 'master-data', label: 'Dữ liệu gốc', icon: Database },
           ],
         },
       ];
@@ -150,6 +153,7 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           items: [
             { key: 'input-plan', label: 'Kế hoạch tháng', icon: Calendar },
             { key: 'brand-knowledge', label: 'Hồ sơ thương hiệu', icon: BookOpen },
+            { key: 'stores', label: 'Hồ sơ gian hàng', icon: Store },
             { key: 'koc-listing', label: 'Listing & Air Video', icon: Film },
           ],
         },
@@ -248,7 +252,7 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
             { key: 'input-plan', label: 'Kế hoạch tháng', icon: Calendar },
             { key: 'brand-knowledge', label: 'Hồ sơ thương hiệu', icon: BookOpen },
             { key: 'dashboard-bi', label: 'Dashboard điều hành', icon: BarChart3 },
-            { key: 'stores', label: 'Danh mục gian hàng', icon: Building2 },
+            { key: 'stores', label: 'Hồ sơ gian hàng', icon: Store },
           ],
         },
         {

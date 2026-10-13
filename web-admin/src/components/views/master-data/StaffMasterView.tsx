@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import { Search, Users, MapPin, Briefcase, ChevronLeft, ChevronRight, UserCheck, Shield, Filter, RotateCcw, X } from 'lucide-react';
 import { StaffMasterMember } from '../../../lib/types';
+import { Stat, StatRow } from '../../ui';
 
 interface StaffMasterViewProps {
   initialStaff: StaffMasterMember[];
@@ -77,64 +78,12 @@ export const StaffMasterView: React.FC<StaffMasterViewProps> = ({
   return (
     <div className="space-y-4">
       {/* KPI Overview Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-2xs font-semibold uppercase tracking-wider text-slate-500">Tổng số nhân sự</span>
-            <Users className="w-4 h-4 text-slate-400" />
-          </div>
-          <div className="mt-1 flex items-baseline gap-2">
-            <span className="text-xl font-bold font-mono text-slate-900">{staffList.length}</span>
-            <span className="text-2xs text-slate-500">thành viên</span>
-          </div>
-          <div className="text-2xs text-slate-500 mt-1">
-            Đồng bộ từ Lark Base nhân sự Booking
-          </div>
-        </div>
-
-        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-2xs font-semibold uppercase tracking-wider text-slate-500">Khu vực Hà Nội (HN)</span>
-            <MapPin className="w-4 h-4 text-blue-600" />
-          </div>
-          <div className="mt-1 flex items-baseline gap-2">
-            <span className="text-xl font-bold font-mono text-blue-600">{hnCount}</span>
-            <span className="text-2xs text-slate-500">nhân sự</span>
-          </div>
-          <div className="text-2xs text-slate-500 mt-1">
-            Trụ sở chính & Vận hành Booking
-          </div>
-        </div>
-
-        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-2xs font-semibold uppercase tracking-wider text-slate-500">Khu vực TP.HCM</span>
-            <MapPin className="w-4 h-4 text-indigo-600" />
-          </div>
-          <div className="mt-1 flex items-baseline gap-2">
-            <span className="text-xl font-bold font-mono text-indigo-600">{hcmCount}</span>
-            <span className="text-2xs text-slate-500">nhân sự</span>
-          </div>
-          <div className="text-2xs text-slate-500 mt-1">
-            Chi nhánh phía Nam & Livestream Hub
-          </div>
-        </div>
-
-        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-2xs font-semibold uppercase tracking-wider text-slate-500">Cơ cấu nhân sự</span>
-            <Briefcase className="w-4 h-4 text-emerald-600" />
-          </div>
-          <div className="mt-1 flex items-baseline gap-2">
-            <span className="text-xl font-bold font-mono text-emerald-600">{officialCount}</span>
-            <span className="text-2xs text-slate-500">Chính thức</span>
-            <span className="text-2xs font-mono text-slate-400">/ {ctvCount} CTV</span>
-          </div>
-          <div className="text-2xs text-slate-500 mt-1">
-            Lực lượng chuyên viên & CTV linh hoạt
-          </div>
-        </div>
-      </div>
+      <StatRow>
+        <Stat label="Tổng nhân sự" value={staffList.length} note="Đồng bộ từ Lark Base" />
+        <Stat label="Hà Nội" value={hnCount} note="Trụ sở chính" />
+        <Stat label="TP.HCM" value={hcmCount} note="Chi nhánh phía Nam" />
+        <Stat label="Chính thức / CTV" value={`${officialCount} / ${ctvCount}`} note="Cơ cấu nhân sự" />
+      </StatRow>
 
       {/* Filter and Search Bar */}
       <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs space-y-3">

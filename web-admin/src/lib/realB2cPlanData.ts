@@ -2521,7 +2521,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
   {
     "id": "store-b2c-67-ziaja-shopee-e2e-s",
     "storeOperationId": "SO-B2C-067",
-    "brandName": "Intimate",
+    "brandName": "Ziaja Intimate",
     "storeName": "Ziaja_Shopee_E2E-S",
     "platform": "Shopee Mall",
     "serviceModel": "FULL_SERVICE",
@@ -2559,7 +2559,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
   {
     "id": "store-b2c-68-ziaja-tiktok-e2e-s",
     "storeOperationId": "SO-B2C-068",
-    "brandName": "Intimate",
+    "brandName": "Ziaja Intimate",
     "storeName": "Ziaja_TikTok_E2E-S",
     "platform": "TikTok Shop",
     "serviceModel": "FULL_SERVICE",
@@ -11649,7 +11649,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
   {
     "id": "PLAN-2026-10-ZIAJA-SHOPEE-E2E-S",
     "title": "Kế Hoạch B2C Tháng 10 - Ziaja_Shopee_E2E-S (21.6M)",
-    "brandName": "Intimate",
+    "brandName": "Ziaja Intimate",
     "storeId": "store-b2c-67-ziaja-shopee-e2e-s",
     "storeName": "Ziaja_Shopee_E2E-S",
     "month": "2026/10",
@@ -11735,7 +11735,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
   {
     "id": "PLAN-2026-10-ZIAJA-TIKTOK-E2E-S",
     "title": "Kế Hoạch B2C Tháng 10 - Ziaja_TikTok_E2E-S (93.6M)",
-    "brandName": "Intimate",
+    "brandName": "Ziaja Intimate",
     "storeId": "store-b2c-68-ziaja-tiktok-e2e-s",
     "storeName": "Ziaja_TikTok_E2E-S",
     "month": "2026/10",

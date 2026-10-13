@@ -472,9 +472,8 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
   };
 
   const LEADER_OPTIONS = [
-    'Nguyễn Tuấn Anh (Leader Team 1)',
-    'Đặng Mai Hà Linh (Leader Team 2)',
-    'Lê Hoàng Yến (Leader Đa Sàn)'
+    'Nguyễn Thị Ngọc Tâm (Trưởng nhóm Booking)',
+    'Không có leader (Duyệt thẳng Trưởng phòng)'
   ];
 
   // State Leader Sơ Duyệt Nội Bộ
@@ -483,7 +482,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
   const [leaderReviewNote, setLeaderReviewNote] = useState('');
 
   const handleLeaderApprovalAction = () => {
-    const actor = currentUser?.name || planState.bookingLeader || 'Nguyễn Tuấn Anh';
+    const actor = currentUser?.name || planState.bookingLeader || (planState.hasBookingLeader ? 'Nguyễn Thị Ngọc Tâm' : 'Đặng Thị Yến Nhi');
     const now = new Date().toISOString();
     if (leaderApprovalDecision === 'APPROVE') {
       const note = leaderReviewNote.trim() || 'Đã kiểm tra cơ cấu định mức thù lao KL1-KL7, tỷ trọng kênh và tính khả thi. Đồng ý sơ duyệt nội bộ để chuyển sang Growth thẩm định.';
@@ -2733,7 +2732,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                   <div className="flex items-center gap-2 flex-wrap">
                     <h3 className="text-base font-semibold">Phân bổ kế hoạch cho Team booking</h3>
                     <span className="text-2xs bg-amber-500/20 text-amber-300 border border-amber-400/30 px-2 py-0.5 rounded-full font-semibold">
-                      Trưởng nhóm: {planState.bookingLeader || 'Nguyễn Tuấn Anh (Leader Team 1)'}
+                      Trưởng nhóm: {planState.bookingLeader || (planState.hasBookingLeader ? 'Nguyễn Thị Ngọc Tâm (Trưởng nhóm Booking)' : 'Không có leader (Duyệt thẳng Trưởng phòng)')}
                     </span>
                     <span className="text-2xs bg-blue-500/20 text-blue-300 border border-blue-400/30 px-2 py-0.5 rounded-full font-semibold">
                       PIC chính: {planState.primaryPic || planState.pic}
@@ -3064,7 +3063,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-slate-500">Trưởng nhóm:</span>
-                  <strong className="text-amber-700">{planState.bookingLeader || 'Nguyễn Tuấn Anh'}</strong>
+                  <strong className="text-amber-700">{planState.bookingLeader || (planState.hasBookingLeader ? 'Nguyễn Thị Ngọc Tâm' : 'Không có leader')}</strong>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-slate-500">Chuyên viên lập plan:</span>

@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto';
 import type { ContractActor, ContractEvent, ContractRecord, ReviewStep, SigningAttempt } from './types';
 export class ContractError extends Error { constructor(message: string, public status = 400) { super(message); } }
 export function requireCondition(condition: unknown, message: string, status = 400): asserts condition { if (!condition) throw new ContractError(message, status); }
@@ -14,7 +13,7 @@ type Input = Pick<ContractRecord, 'title' | 'brand' | 'partner' | 'templateId' |
 export function createContract(input: Input, actor: ContractActor): ContractRecord {
   requireCondition(actor.roles.includes('CREATOR') && inScope(input.brand, actor), 'Không có quyền tạo hợp đồng cho nhãn hàng này.', 403);
   const at = new Date().toISOString();
-  const record: ContractRecord = { ...input, id: randomUUID(), ownerId: actor.id, ownerName: actor.name, version: 1, revision: 1, approval: 'DRAFT', steps: [], checks: [], signing: [], history: [], versions: [], createdAt: at, updatedAt: at };
+  const record: ContractRecord = { ...input, id: crypto.randomUUID(), ownerId: actor.id, ownerName: actor.name, version: 1, revision: 1, approval: 'DRAFT', steps: [], checks: [], signing: [], history: [], versions: [], createdAt: at, updatedAt: at };
   event(record, actor, 'CREATE'); return record;
 }
 export function editContract(record: ContractRecord, actor: ContractActor, input: Input) {

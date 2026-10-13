@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Search, Plus, X, Layers, TrendingUp, DollarSign, ShieldAlert, Filter, RotateCcw } from 'lucide-react';
 import { MasterCastTier } from '../../../lib/types';
+import { Stat, StatRow } from '../../ui';
 
 interface CastTiersMasterViewProps {
   initialTiers: MasterCastTier[];
@@ -145,62 +146,12 @@ export const CastTiersMasterView: React.FC<CastTiersMasterViewProps> = ({
   return (
     <div className="space-y-4">
       {/* KPI Overview Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-2xs font-semibold uppercase tracking-wider text-slate-500">Số bậc phân loại</span>
-            <Layers className="w-4 h-4 text-slate-400" />
-          </div>
-          <div className="mt-1 flex items-baseline gap-2">
-            <span className="text-xl font-bold font-mono text-slate-900">{tiers.length}</span>
-            <span className="text-2xs text-slate-500">bậc tiêu chuẩn</span>
-          </div>
-          <div className="text-2xs text-slate-500 mt-1">
-            Từ TAP Affiliate đến KL7 (&gt;30M)
-          </div>
-        </div>
-
-        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-2xs font-semibold uppercase tracking-wider text-slate-500">Massive Creator</span>
-            <TrendingUp className="w-4 h-4 text-emerald-600" />
-          </div>
-          <div className="mt-1 flex items-baseline gap-2">
-            <span className="text-xl font-bold font-mono text-emerald-600">0 - 1.5M</span>
-            <span className="text-2xs text-slate-500">VNĐ</span>
-          </div>
-          <div className="text-2xs text-slate-500 mt-1">
-            Quyền Ads & SDHA: Miễn phí
-          </div>
-        </div>
-
-        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-2xs font-semibold uppercase tracking-wider text-slate-500">Key & Top Creator</span>
-            <DollarSign className="w-4 h-4 text-purple-600" />
-          </div>
-          <div className="mt-1 flex items-baseline gap-2">
-            <span className="text-xl font-bold font-mono text-purple-600">5M - &gt;30M</span>
-            <span className="text-2xs text-slate-500">VNĐ</span>
-          </div>
-          <div className="text-2xs text-slate-500 mt-1">
-            Chạy Ads & SDHA: Thương lượng
-          </div>
-        </div>
-
-        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-2xs font-semibold uppercase tracking-wider text-slate-500">Chính sách bản quyền</span>
-            <ShieldAlert className="w-4 h-4 text-amber-500" />
-          </div>
-          <div className="mt-1 text-xs font-semibold text-slate-800">
-            KL1-KL3: Miễn phí
-          </div>
-          <div className="text-2xs text-slate-500 mt-1">
-            KL4 trở lên cần đàm phán riêng
-          </div>
-        </div>
-      </div>
+      <StatRow>
+        <Stat label="Bậc phân loại" value={tiers.length} note="Từ TAP Affiliate đến KL7" />
+        <Stat label="Massive Creator" value="0 - 1,5 tr" note="Quyền Ads & SDHA miễn phí" />
+        <Stat label="Key & Top Creator" value="5 tr - >30 tr" note="Chạy Ads & SDHA thương lượng" />
+        <Stat label="Chính sách bản quyền" value="KL1 - KL3" note="Miễn phí bản quyền hình ảnh" />
+      </StatRow>
 
       {/* Filter and Action Bar */}
       <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs space-y-3">

@@ -1754,6 +1754,22 @@ export interface StorePortfolioItem {
   budgetSelfChannel?: number; // Ngân sách Self Channel dự toán
   targetAffiliateContents?: number; // Chỉ tiêu số video Affiliate
   targetSelfChannelContents?: number; // Chỉ tiêu số video Self Channel
+  budgetGross?: number; // Ngân sách Gross tổng
+  budgetNet?: number; // Ngân sách Net tổng (sau thuế Kế toán kiểm soát)
+  budgetAffiliateGross?: number; // Ngân sách Affiliate Gross
+  budgetAffiliateNet?: number; // Ngân sách Affiliate Net
+  budgetSelfChannelGross?: number; // Ngân sách Kênh Brand Gross
+  budgetSelfChannelNet?: number; // Ngân sách Kênh Brand Net
+  budgetLive?: number; // Ngân sách Livestream
+  targetPaidVideos?: number; // Chỉ tiêu video trả phí
+  targetFocVideos?: number; // Chỉ tiêu suất gửi mẫu miễn phí (FOC 0đ)
+  targetLiveSessions?: number; // Chỉ tiêu số phiên livestream
+  actualSpentNet?: number; // Thực chi lũy kế File 3.2
+  actualAiredVideos?: number; // Số video đã air thực tế
+  financialRiskStatus?: 'NORMAL' | 'OVERBUDGET' | 'UNBUDGETED' | 'SLOW_BURN'; // Đánh giá rủi ro tài chính
+  financialRiskNotes?: string; // Ghi chú rủi ro tài chính
+  handoverEffectiveDate?: string; // Ngày hiệu lực chuyển giao PIC giữa kỳ
+  previousPic?: string; // PIC tiền nhiệm trước khi bàn giao
 
   // Upbase Master Data (5.1 Stores)
   storeOperationId?: string; // Mã vận hành chuẩn SOxxxx (SO0001, SO1000...)
@@ -2302,7 +2318,7 @@ export interface BookingTeamGroup {
   id: string;
   teamCode: string; // 'TEAM_1', 'TEAM_2', 'TEAM_MULTI'
   name: string; // 'Booking Team 1 (Beauty & Mom Baby)'
-  leaderName: string; // 'Nguyễn Tuấn Anh'
+  leaderName: string; // 'Nguyễn Thị Ngọc Tâm'
   leaderTitle: string; // 'Trưởng Nhóm Booking (Booking Lead)'
   leaderAvatar: string;
   leaderEmail: string;

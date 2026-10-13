@@ -267,7 +267,7 @@ export const UPBASE_FULL_KOC_MASTER: KocItem[] = [
     brandName: 'Royal Ausnz',
     brandApprovalStatus: 'ĐÃ_DUYỆT',
     statusKoc: 'SẴN_SÀNG',
-    bookingPic: 'Nguyễn Tuấn Anh',
+    bookingPic: 'Lê Phương Thảo',
     totalPastDeals: 4,
     historicalRoi: 4.9
   },
@@ -304,7 +304,7 @@ export const UPBASE_FULL_KOC_MASTER: KocItem[] = [
     brandName: 'Royal Ausnz',
     brandApprovalStatus: 'ĐÃ_DUYỆT',
     statusKoc: 'SẴN_SÀNG',
-    bookingPic: 'Nguyễn Tuấn Anh',
+    bookingPic: 'Lê Phương Thảo',
     totalPastDeals: 7,
     historicalRoi: 6.2
   },
@@ -491,7 +491,7 @@ export const UPBASE_FULL_KOC_MASTER: KocItem[] = [
     brandName: 'Royal Ausnz',
     brandApprovalStatus: 'ĐÃ_DUYỆT',
     statusKoc: 'SẴN_SÀNG',
-    bookingPic: 'Nguyễn Tuấn Anh',
+    bookingPic: 'Lê Phương Thảo',
     totalPastDeals: 5,
     historicalRoi: 5.1
   },
@@ -602,7 +602,7 @@ export const UPBASE_FULL_KOC_MASTER: KocItem[] = [
     brandName: 'Kutieskin',
     brandApprovalStatus: 'ĐÃ_DUYỆT',
     statusKoc: 'SẴN_SÀNG',
-    bookingPic: 'Nguyễn Tuấn Anh',
+    bookingPic: 'Lê Phương Thảo',
     totalPastDeals: 6,
     historicalRoi: 5.4
   },
@@ -787,7 +787,7 @@ export const UPBASE_FULL_KOC_MASTER: KocItem[] = [
     brandName: 'Royal Ausnz',
     brandApprovalStatus: 'ĐÃ_DUYỆT',
     statusKoc: 'SẴN_SÀNG',
-    bookingPic: 'Nguyễn Tuấn Anh',
+    bookingPic: 'Lê Phương Thảo',
     totalPastDeals: 5,
     historicalRoi: 4.9
   },
@@ -891,7 +891,7 @@ function generateExtendedKocs(startIdx: number, endIdx: number): KocItem[] {
     { niche: 'Bác Sĩ Nhi Khoa Hướng Dẫn Tăng Sức Đề Kháng', tep: 'Bác sỹ/chuyên gia' as const, cat: 'Mom and baby' as const, brand: 'Royal Ausnz' }
   ];
 
-  const pics = ['Khánh Vy', 'Nguyễn Tuấn Anh', 'Lê Thị Thùy Linh', 'Nguyễn Anh', 'Nguyễn Thu Trang'];
+  const pics = ['Khánh Vy', 'Lê Phương Thảo', 'Lê Thị Thùy Linh', 'Nguyễn Anh', 'Nguyễn Thu Trang'];
   const locations = ['Hà Nội', 'TP.HCM', 'Đà Nẵng', 'Hải Phòng', 'Cần Thơ', 'Bình Dương', 'Đồng Nai', 'Nghệ An'];
   const banks = ['Vietcombank', 'Techcombank', 'MB Bank', 'VPBank', 'BIDV', 'VietinBank', 'TPBank', 'ACB'];
 

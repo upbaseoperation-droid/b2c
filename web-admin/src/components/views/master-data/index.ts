@@ -4,3 +4,5 @@ export * from './VideoFormatsMasterView';
 export * from './StoresMasterView';
 export * from './StaffMasterView';
 export * from './StaffSearchSelect';
+export * from './StoreDetailModal';
+export * from './StoreHandoverModal';

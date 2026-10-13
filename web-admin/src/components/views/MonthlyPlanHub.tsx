@@ -1,67 +1,91 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { Stat, StatRow, ChannelBar, Progress, Avatar, ConfirmDialog } from '../ui';
+import {
+  Stat,
+  StatRow,
+  ChannelBar,
+  Progress,
+  Person,
+  ChannelTag,
+  ConfirmDialog,
+  Tabs,
+  Segmented,
+  Button,
+  FilterBar,
+  Chips,
+  Panel,
+  Modal,
+  Field,
+  Input,
+  Select,
+  Textarea,
+  Pagination,
+  Status
+} from '../ui';
 import { formatVndShort } from '../../lib/format';
 import {
-  Calendar,
-  Layers,
-  Calculator,
-  DollarSign,
-  Video,
-  TrendingUp,
   Plus,
-  Search,
-  Filter,
-  ArrowRight,
-  CheckCircle2,
-  Clock,
+  Dices,
+  ChevronDown,
+  ShieldCheck,
   AlertCircle,
   Copy,
-  ChevronRight,
-  ChevronDown,
-  BarChart3,
-  Users,
-  Building2,
-  Sparkles,
-  Dices,
-  Eye,
-  SlidersHorizontal,
-  Table as TableIcon,
-  LayoutGrid,
-  Send,
-  X,
-  Check,
-  RefreshCw,
-  MessageSquare,
-  ShieldCheck,
-  BadgeCheck,
-  AlertTriangle,
-  Store,
-  CheckSquare,
-  Square,
+  ArrowRight,
+  Bell,
   ToggleLeft,
   ToggleRight,
-  FileText,
-  FileCheck,
-  SendHorizonal,
-  Clock3,
-  Bell,
-  Zap,
-  HelpCircle,
-  ExternalLink
+  BarChart3,
+  MessageSquare,
+  Store as StoreIcon
 } from 'lucide-react';
-import { 
-  InputPlanBreakdownState, 
-  MonthlyPlanStatus, 
+import {
+  InputPlanBreakdownState,
+  MonthlyPlanStatus,
   PlanDiscussionMessage,
   UserProfile,
-  StorePortfolioItem 
+  StorePortfolioItem
 } from '../../lib/types';
+
+type StrategyPreset = 'BALANCED' | 'GMV_MAX' | 'BRAND_PUSH' | 'COST_SAVER' | 'MEGA_SALE';
 import { AVAILABLE_MONTHS } from '../../lib/monthlyPlanData';
 import { autoBalancePlanItems, INITIAL_INPUT_PLAN_ITEMS } from '../../lib/inputPlanDefaults';
 import { INITIAL_STORE_PORTFOLIOS } from '../../lib/mockData';
 import { PlanHistoryModal } from './PlanHistoryModal';
+
+const cx = (...parts: Array<string | false | null | undefined>) => parts.filter(Boolean).join(' ');
+
+let sampleCounter = 0;
+function getNextSampleBrand(): string {
+  const brands = ['Cocoon', 'Fresh_TikTok_E2E-C', 'Senka_TikTok_E2E-C', 'Lemonade', 'Cỏ Mềm'];
+  const brand = brands[sampleCounter % brands.length];
+  sampleCounter += 1;
+  return brand;
+}
+
+function generatePlanId(month: string): string {
+  const m = month === 'ALL' ? '2026/10' : month;
+  return `PLAN-${m.replace('/', '-')}-${Date.now().toString().slice(-4)}`;
+}
+
+function generateDiscussionId(): string {
+  return `DISC-${Date.now()}`;
+}
+
+function findPlanForStore(plans: InputPlanBreakdownState[], store: StorePortfolioItem, month: string): InputPlanBreakdownState | null {
+  return plans.find(p => {
+    const matchMonth = month === 'ALL' || p.month === month;
+    if (!matchMonth) return false;
+    if (p.storeId && p.storeId === store.id) return true;
+    if (p.storeName && p.storeName.trim().toLowerCase() === store.storeName.trim().toLowerCase()) return true;
+
+    const b1 = (p.brandName || '').toLowerCase();
+    const b2 = (store.brandName || '').toLowerCase();
+    const sName = (store.storeName || '').toLowerCase();
+    return (b1.length >= 2 && b2.length >= 2 && (b1.includes(b2) || b2.includes(b1))) ||
+           (b1.length >= 2 && sName.includes(b1.split('_')[0].trim()));
+  }) || null;
+}
 
 interface StoreGovernanceItem {
   store: StorePortfolioItem;
@@ -98,7 +122,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
   currentUser,
   onNotify
 }) => {
-  // Selected Month filter
+  // Bộ lọc tháng
   const [selectedMonth, setSelectedMonth] = useState<string>('2026/10');
   const [selectedBrand, setSelectedBrand] = useState<string>('ALL');
   const [selectedStatus, setSelectedStatus] = useState<string>('ALL');
@@ -106,16 +130,17 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [viewMode, setViewMode] = useState<'GRID' | 'TABLE'>('GRID');
 
-  // Hub View Mode: 'STORE_GOVERNANCE' (Quản trị trạng thái gửi duyệt plan theo tháng trên gian hàng active) vs 'PLAN_CATALOG' (Danh sách plan)
+  // Tab chuyển góc nhìn: Ma trận gian hàng vs Danh mục kế hoạch
   const [activeHubTab, setActiveHubTab] = useState<'STORE_GOVERNANCE' | 'PLAN_CATALOG'>('STORE_GOVERNANCE');
 
-  // Lọc cho Ma Trận Gian Hàng (mặc định lọc gian B2C làm plan)
+  // Lọc cho Ma trận gian hàng (mặc định lọc gian B2C làm kế hoạch)
   const [storeGovernanceFilter, setStoreGovernanceFilter] = useState<'ALL' | 'B2C_ONLY' | 'MISSING_PLAN' | 'PENDING_APPROVAL' | 'APPROVED' | 'EXEMPT'>('B2C_ONLY');
   const [storeSearchQuery, setStoreSearchQuery] = useState<string>('');
   const [governancePage, setGovernancePage] = useState<number>(1);
   const GOVERNANCE_PAGE_SIZE = 15;
   const [approvingQuickPlan, setApprovingQuickPlan] = useState<{ planId: string; storeName: string } | null>(null);
-  // Trạng thái thu gọn/mở rộng bảng chỉ số để tối ưu diện tích màn hình
+
+  // Thu gọn / mở rộng bảng chỉ số
   const [isGovernanceExpanded, setIsGovernanceExpanded] = useState<boolean>(false);
   const [isCatalogStatsExpanded, setIsCatalogStatsExpanded] = useState<boolean>(false);
 
@@ -124,32 +149,16 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
     return (storePortfolios && storePortfolios.length > 0) ? storePortfolios : INITIAL_STORE_PORTFOLIOS;
   }, [storePortfolios]);
 
-  // Các gian hàng Active
+  // Các gian hàng active
   const activeStores = useMemo<StorePortfolioItem[]>(() => {
     return effectiveStores.filter((s: StorePortfolioItem) => s.accountStatus === 'ACTIVE');
   }, [effectiveStores]);
 
-  // Helper matching store và plan
-  const findPlanForStore = (store: StorePortfolioItem, month: string): InputPlanBreakdownState | null => {
-    return plans.find(p => {
-      const matchMonth = month === 'ALL' || p.month === month;
-      if (!matchMonth) return false;
-      if (p.storeId && p.storeId === store.id) return true;
-      if (p.storeName && p.storeName.trim().toLowerCase() === store.storeName.trim().toLowerCase()) return true;
-      
-      const b1 = (p.brandName || '').toLowerCase();
-      const b2 = (store.brandName || '').toLowerCase();
-      const sName = (store.storeName || '').toLowerCase();
-      return (b1.length >= 2 && b2.length >= 2 && (b1.includes(b2) || b2.includes(b1))) ||
-             (b1.length >= 2 && sName.includes(b1.split('_')[0].trim()));
-    }) || null;
-  };
-
-  // Ma trận từng gian hàng và plan trong tháng
+  // Ma trận từng gian hàng và kế hoạch trong tháng
   const storeGovernanceList = useMemo<StoreGovernanceItem[]>(() => {
     return activeStores.map((store: StorePortfolioItem) => {
       const isB2c = store.isB2cManaged !== false && store.requiresB2cPlan !== false;
-      const plan = findPlanForStore(store, selectedMonth);
+      const plan = findPlanForStore(plans, store, selectedMonth);
       return {
         store,
         isB2c,
@@ -160,7 +169,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
     });
   }, [activeStores, selectedMonth, plans]);
 
-  // Bộ chỉ số KPI Quản Trị Gửi Duyệt Plan Theo Tháng
+  // Bộ chỉ số quản trị duyệt kế hoạch theo tháng
   const governanceStats = useMemo(() => {
     const totalActive = activeStores.length;
     const b2cList = storeGovernanceList.filter((item: StoreGovernanceItem) => item.isB2c);
@@ -200,14 +209,12 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
   // Lọc danh sách ma trận gian hàng
   const filteredStoreGovernance = useMemo<StoreGovernanceItem[]>(() => {
     return storeGovernanceList.filter((item: StoreGovernanceItem) => {
-      // Filter scope
       if (storeGovernanceFilter === 'B2C_ONLY' && !item.isB2c) return false;
       if (storeGovernanceFilter === 'EXEMPT' && item.isB2c) return false;
       if (storeGovernanceFilter === 'MISSING_PLAN' && (!item.isB2c || item.hasPlan)) return false;
       if (storeGovernanceFilter === 'PENDING_APPROVAL' && (!item.plan || item.plan.status !== 'PENDING_APPROVAL')) return false;
       if (storeGovernanceFilter === 'APPROVED' && (!item.plan || !['LEAD_APPROVED', 'BRAND_APPROVED', 'APPROVED', 'IN_EXECUTION', 'COMPLETED'].includes(item.plan.status || ''))) return false;
 
-      // Search query
       if (storeSearchQuery.trim()) {
         const q = storeSearchQuery.toLowerCase();
         const sName = (item.store.storeName || '').toLowerCase();
@@ -220,14 +227,13 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
     });
   }, [storeGovernanceList, storeGovernanceFilter, storeSearchQuery]);
 
-  // Phân trang danh sách gian hàng (tránh quá tải DOM)
-  const totalGovernancePages = Math.ceil(filteredStoreGovernance.length / GOVERNANCE_PAGE_SIZE) || 1;
+  // Phân trang
   const paginatedStoreGovernance = useMemo(() => {
     const start = (governancePage - 1) * GOVERNANCE_PAGE_SIZE;
     return filteredStoreGovernance.slice(start, start + GOVERNANCE_PAGE_SIZE);
   }, [filteredStoreGovernance, governancePage]);
 
-  // Xử lý Toggle "Marketing B2C Phụ Trách & Cần Làm Plan"
+  // Bật/tắt B2C phụ trách
   const handleToggleB2cManaged = (store: StorePortfolioItem, e: React.MouseEvent) => {
     e.stopPropagation();
     const currentVal = store.isB2cManaged !== false && store.requiresB2cPlan !== false;
@@ -242,45 +248,73 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
     }
     notify(
       nextVal
-        ? `Đã BẬT: Gian hàng "${store.storeName}" thuộc diện Marketing B2C phụ trách & CẦN LÀM PLAN!`
-        : `Đã TẮT: Gian hàng "${store.storeName}" chuyển sang diện MIỄN TRỪ Plan B2C (Brand tự vận hành/Ads nội sàn).`
+        ? `Đã chuyển gian hàng "${store.storeName}" sang diện Marketing B2C phụ trách & cần làm kế hoạch.`
+        : `Đã chuyển gian hàng "${store.storeName}" sang diện miễn trừ kế hoạch B2C.`
     );
   };
 
-  // Quản lý phê duyệt nhanh 1 click
-  const handleQuickApprovePlan = (planId: string, storeName: string, e: React.MouseEvent) => {
-    e.stopPropagation();
+  // Phê duyệt nhanh
+  const handleQuickApprovePlan = (planId: string, storeName: string) => {
     if (onUpdatePlanStatus) {
       onUpdatePlanStatus(
         planId,
         'LEAD_APPROVED',
-        `Quản lý / Trưởng phòng (${currentUser?.name || 'Lead'}) đã DUYỆT NHANH Kế hoạch gian hàng ${storeName} trên Dashboard Quản trị.`,
-        'Phê duyệt nhanh trên Dashboard Quản trị Gửi duyệt theo tháng.'
+        `Trưởng phòng (${currentUser?.name || 'Lead'}) đã duyệt nhanh kế hoạch gian hàng ${storeName}.`,
+        'Phê duyệt nhanh trên bảng quản trị kế hoạch tháng.'
       );
     }
-    notify(`Đã phê duyệt thành công Kế hoạch cho gian hàng "${storeName}"!`);
+    notify(`Đã phê duyệt kế hoạch cho gian hàng "${storeName}".`);
   };
 
-  // Tạo nhanh kế hoạch cho gian hàng
+  // Tạo kế hoạch cho gian hàng
   const handleCreatePlanForStore = (store: StorePortfolioItem, e: React.MouseEvent) => {
     e.stopPropagation();
     setNewPlanMonth(selectedMonth === 'ALL' ? '2026/10' : selectedMonth);
     setNewPlanBrand(store.brandName);
-    setNewPlanTitle(`Kế Hoạch B2C ${selectedMonth === 'ALL' ? '2026/10' : selectedMonth} - ${store.storeName}`);
+    setNewPlanTitle(`Kế hoạch B2C ${selectedMonth === 'ALL' ? '2026/10' : selectedMonth} - ${store.storeName}`);
     setNewPlanPic(store.b2cOwners?.[0] || store.b2cOwnerName || currentUser?.name || 'Khánh Vy');
     setNewPlanBudget(store.monthlyBudget || 120000000);
     setNewPlanGmv(store.monthlyTargetGmv || 800000000);
     setIsCreateModalOpen(true);
   };
 
-  // Nhắc nhở nộp plan
+  // Nhắc nhở nộp kế hoạch
   const handleRemindSubmission = (store: StorePortfolioItem, e: React.MouseEvent) => {
     e.stopPropagation();
     const pic = store.b2cOwners?.[0] || store.b2cOwnerName || 'Chuyên viên phụ trách B2C';
-    notify(`Đã gửi thông báo tự động đôn đốc gửi duyệt Plan tháng ${selectedMonth} tới ${pic} (Gian hàng: ${store.storeName}) qua Lark!`);
+    notify(`Đã gửi thông báo nhắc nộp kế hoạch tháng ${selectedMonth} tới ${pic} (gian hàng: ${store.storeName}).`);
   };
 
-  // Modal State for New Plan
+  // Tạo mẫu thử
+  const handleQuickSample = () => {
+    const b = getNextSampleBrand();
+    const m = selectedMonth === 'ALL' ? '2026/10' : selectedMonth;
+    const newPlan: InputPlanBreakdownState = {
+      id: generatePlanId(m),
+      title: `Kế hoạch thử nghiệm - ${b} (${m})`,
+      brandName: b,
+      month: m,
+      week: 'W42 [12.10 - 18.10]',
+      pic: currentUser?.name || 'Đặng Mai Hà Linh',
+      totalTargetBudget: 120000000,
+      totalTargetContents: 65,
+      targetGmv: 780000000,
+      cancellationRate: 0.08,
+      strategyPreset: 'BALANCED',
+      status: 'DRAFT',
+      statusLabel: 'Bản nháp',
+      spentBudget: 0,
+      deliveredContents: 0,
+      actualGmv: 0,
+      notes: 'Kế hoạch mẫu khởi tạo để kiểm tra số liệu.',
+      createdAt: new Date().toISOString(),
+      items: autoBalancePlanItems(INITIAL_INPUT_PLAN_ITEMS, 120000000, 65, 'BALANCED')
+    };
+    onCreatePlan(newPlan);
+    notify(`Đã tạo kế hoạch mẫu "${newPlan.title}".`);
+  };
+
+  // Modal lập kế hoạch mới
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [newPlanMonth, setNewPlanMonth] = useState('2026/10');
   const [newPlanWeek, setNewPlanWeek] = useState('W42 [12.10 - 18.10]');
@@ -290,14 +324,14 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
   const [newPlanBudget, setNewPlanBudget] = useState(150000000);
   const [newPlanQty, setNewPlanQty] = useState(75);
   const [newPlanGmv, setNewPlanGmv] = useState(900000000);
-  const [newPlanPreset, setNewPlanPreset] = useState<'BALANCED' | 'GMV_MAX' | 'BRAND_PUSH' | 'COST_SAVER' | 'MEGA_SALE'>('BALANCED');
+  const [newPlanPreset, setNewPlanPreset] = useState<StrategyPreset>('BALANCED');
   const [newPlanNotes, setNewPlanNotes] = useState('');
 
-  // Modal State for Clone Plan
+  // Modal nhân bản kế hoạch
   const [cloningPlan, setCloningPlan] = useState<InputPlanBreakdownState | null>(null);
   const [cloneTargetMonth, setCloneTargetMonth] = useState('2026/11');
 
-  // Modal State for History & Discussions
+  // Modal lịch sử & trao đổi
   const [historyPlanId, setHistoryPlanId] = useState<string | null>(null);
   const viewingHistoryPlan = plans.find(p => p.id === historyPlanId) || null;
 
@@ -305,7 +339,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
     if (onNotify) onNotify(msg);
   };
 
-  // Distinct Brands & PICs for filters
+  // Danh sách thương hiệu và PIC cho bộ lọc danh mục
   const brandList = useMemo(() => {
     const set = new Set<string>();
     plans.forEach(p => set.add(p.brandName));
@@ -318,18 +352,14 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
     return Array.from(set);
   }, [plans]);
 
-  // Filtered Plans
+  // Danh mục kế hoạch đã lọc
   const filteredPlans = useMemo(() => {
     return plans.filter(p => {
-      // Month
       if (selectedMonth !== 'ALL' && p.month !== selectedMonth) return false;
-      // Brand
       if (selectedBrand !== 'ALL' && p.brandName !== selectedBrand) return false;
-      // Status
       if (selectedStatus !== 'ALL' && p.status !== selectedStatus) return false;
-      // PIC
       if (selectedPic !== 'ALL' && p.pic !== selectedPic) return false;
-      // Search
+
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         const matchTitle = p.title.toLowerCase().includes(q);
@@ -342,10 +372,10 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
     });
   }, [plans, selectedMonth, selectedBrand, selectedStatus, selectedPic, searchQuery]);
 
-  // Monthly KPI Aggregates for current selected month
+  // Chỉ số tổng hợp của danh mục theo tháng
   const monthlyMetrics = useMemo(() => {
-    const targetPool = selectedMonth === 'ALL' 
-      ? plans 
+    const targetPool = selectedMonth === 'ALL'
+      ? plans
       : plans.filter(p => p.month === selectedMonth);
 
     const totalBudget = targetPool.reduce((acc, p) => acc + (p.totalTargetBudget || 0), 0);
@@ -389,8 +419,8 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
     );
 
     const createdPlan: InputPlanBreakdownState = {
-      id: `PLAN-${newPlanMonth.replace('/', '-')}-${Date.now().toString().slice(-4)}`,
-      title: newPlanTitle || `Kế Hoạch B2C ${newPlanMonth} - ${newPlanBrand} (${newPlanPreset})`,
+      id: generatePlanId(newPlanMonth),
+      title: newPlanTitle || `Kế hoạch B2C ${newPlanMonth} - ${newPlanBrand}`,
       brandName: newPlanBrand,
       month: newPlanMonth,
       week: newPlanWeek,
@@ -402,7 +432,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
       cancellationRate: 0.08,
       strategyPreset: newPlanPreset,
       status: 'DRAFT',
-      statusLabel: 'Bản Nháp (Đang Lập)',
+      statusLabel: 'Bản nháp',
       spentBudget: 0,
       deliveredContents: 0,
       actualGmv: 0,
@@ -412,166 +442,85 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
       items: balancedItems,
       discussions: [
         {
-          id: `DISC-${Date.now()}`,
+          id: generateDiscussionId(),
           authorName: newPlanPic,
           authorRole: 'BOOKING',
           authorTitle: 'Booking Specialist PIC',
-          content: `Khởi tạo kế hoạch tháng ${newPlanMonth} với ngân sách trần ${(newPlanBudget / 1000000).toLocaleString('vi-VN')} Tr đ, dự kiến ${newPlanQty} nội dung. Đang tiến hành phân rã 4 kênh.`,
+          content: `Khởi tạo kế hoạch tháng ${newPlanMonth} với ngân sách trần ${formatVndShort(newPlanBudget)}, dự kiến ${newPlanQty} nội dung.`,
           type: 'COMMENT',
           timestamp: new Date().toISOString(),
-          tags: ['Khởi Tạo', 'Ngân Sách']
+          tags: ['Khởi tạo', 'Ngân sách']
         }
       ]
     };
 
     onCreatePlan(createdPlan);
-    notify(`Đã khởi tạo Kế hoạch mới "${createdPlan.title}" cho chu kỳ ${newPlanMonth}!`);
+    notify(`Đã tạo kế hoạch mới "${createdPlan.title}".`);
     setIsCreateModalOpen(false);
-    // Optionally open the studio right away
     onSelectPlan(createdPlan);
   };
 
   const handleCloneSubmit = () => {
     if (!cloningPlan) return;
     onClonePlan(cloningPlan, cloneTargetMonth);
-    notify(`Đã nhân bản thành công Kế hoạch "${cloningPlan.title}" sang chu kỳ ${cloneTargetMonth}!`);
+    notify(`Đã nhân bản kế hoạch "${cloningPlan.title}" sang tháng ${cloneTargetMonth}.`);
     setCloningPlan(null);
   };
 
   const getStatusBadge = (status?: MonthlyPlanStatus) => {
     switch (status) {
       case 'PENDING_PRE_APPROVAL':
-        return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200">
-            <Clock className="w-3.5 h-3.5 text-amber-600" />
-            Chờ sơ duyệt
-          </span>
-        );
+        return <Status tone="warning">Chờ sơ duyệt</Status>;
       case 'PRE_APPROVED':
-        return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-teal-50 text-teal-800 border border-teal-200">
-            <BadgeCheck className="w-3.5 h-3.5 text-teal-600" />
-            Sơ Duyệt Đạt
-          </span>
-        );
+        return <Status tone="positive">Sơ duyệt đạt</Status>;
       case 'REVISION_REQUESTED':
-        return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-800 border border-rose-200">
-            <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
-            Cần hiệu chỉnh
-          </span>
-        );
+        return <Status tone="critical">Cần sửa</Status>;
       case 'PENDING_APPROVAL':
-        return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-800 border border-blue-200">
-            <Clock className="w-3.5 h-3.5 text-blue-600" />
-            Chờ duyệt Lead
-          </span>
-        );
+        return <Status tone="warning">Chờ duyệt Lead</Status>;
       case 'LEAD_APPROVED':
       case 'BRAND_APPROVED':
       case 'APPROVED':
-        return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-            Đã Phê Duyệt
-          </span>
-        );
+        return <Status tone="positive">Đã duyệt</Status>;
       case 'IN_EXECUTION':
-        return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-800 border border-indigo-200">
-            <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
-            Đang Thực Thi
-          </span>
-        );
+        return <Status tone="info">Đang chạy</Status>;
       case 'COMPLETED':
-        return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-200">
-            <Check className="w-3.5 h-3.5 text-purple-600" />
-            Đã nghiệm thu
-          </span>
-        );
+        return <Status tone="positive">Hoàn tất</Status>;
       case 'DRAFT':
       default:
-        return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
-            <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
-            Bản Nháp
-          </span>
-        );
+        return <Status tone="neutral">Nháp</Status>;
     }
   };
 
   return (
-    <div className="space-y-3 sm:space-y-3.5">
-      {/* 1. THANH ĐIỀU HƯỚNG & THAO TÁC HỢP NHẤT (UNIFIED TOP TOOLBAR) */}
-      <div className="bg-white rounded-xl p-2 sm:p-2.5 border border-slate-200 shadow-2xs flex flex-wrap items-center justify-between gap-2.5">
-        {/* Cụm 1: Góc nhìn Ma Trận Gian Hàng vs Danh Mục Plan */}
-        <div className="flex items-center gap-1 bg-slate-100/90 p-1 rounded-lg">
-          <button
-            onClick={() => setActiveHubTab('STORE_GOVERNANCE')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
-              activeHubTab === 'STORE_GOVERNANCE'
-                ? 'bg-white text-indigo-700 shadow-2xs'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <Store className="w-3.5 h-3.5" />
-            <span>Ma Trận Gian Hàng</span>
-            <span className={`px-1.5 py-0.2 rounded-full text-2xs ${
-              activeHubTab === 'STORE_GOVERNANCE' ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'bg-slate-200/70 text-slate-600'
-            }`}>
-              {governanceStats.totalActive}
-            </span>
-          </button>
-
-          <button
-            onClick={() => setActiveHubTab('PLAN_CATALOG')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
-              activeHubTab === 'PLAN_CATALOG'
-                ? 'bg-white text-indigo-700 shadow-2xs'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <Layers className="w-3.5 h-3.5" />
-            <span>Danh Mục Kế Hoạch</span>
-            <span className={`px-1.5 py-0.2 rounded-full text-2xs ${
-              activeHubTab === 'PLAN_CATALOG' ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'bg-slate-200/70 text-slate-600'
-            }`}>
-              {monthlyMetrics.planCount}
-            </span>
-          </button>
-        </div>
-
-        {/* Cụm 2: Bộ chọn chu kỳ tháng dạng pills tinh gọn */}
-        <div className="flex items-center gap-1 bg-slate-50 border border-slate-200/80 p-0.5 rounded-lg overflow-x-auto">
+    <div className="space-y-6">
+      {/* 1. THANH CÔNG CỤ TRÊN: BỘ CHỌN KỲ & THAO TÁC CHÍNH */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        {/* Bộ chọn tháng */}
+        <div className="flex items-center gap-1.5 overflow-x-auto p-0.5 rounded-lg bg-sunken">
           {AVAILABLE_MONTHS.map(m => {
             const isSelected = selectedMonth === m.value;
-            const countInMonth = m.value === 'ALL' 
-              ? plans.length 
+            const countInMonth = m.value === 'ALL'
+              ? plans.length
               : plans.filter(p => p.month === m.value).length;
+            const label = m.value === 'ALL' ? 'Tất cả' : m.value;
 
             return (
               <button
                 key={m.value}
+                type="button"
                 onClick={() => {
                   setSelectedMonth(m.value);
                   setGovernancePage(1);
                 }}
-                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all shrink-0 ${
+                className={cx(
+                  'h-7 px-3 rounded-[5px] text-[13px] whitespace-nowrap transition-colors flex items-center gap-1.5',
                   isSelected
-                    ? 'bg-indigo-600 text-white font-bold shadow-2xs'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-                }`}
-              >
-                <Calendar className={`w-3 h-3 ${isSelected ? 'text-amber-300' : 'text-slate-400'}`} />
-                <span>{m.label.replace(' (Hiện tại)', '').replace(' (Sắp tới)', '')}</span>
-                {isSelected && m.label.includes('(Hiện tại)') && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" title="Tháng hiện tại" />
+                    ? 'bg-surface text-ink font-medium shadow-[0_1px_2px_rgb(22_23_26/0.08)]'
+                    : 'text-ink-3 hover:text-ink'
                 )}
-                <span className={`px-1 rounded-full text-[10px] ${
-                  isSelected ? 'bg-white/20 text-white font-semibold' : 'bg-slate-200/60 text-slate-500'
-                }`}>
+              >
+                <span>{label}</span>
+                <span className={cx('text-2xs tabular-nums', isSelected ? 'text-ink' : 'text-ink-3')}>
                   {countInMonth}
                 </span>
               </button>
@@ -579,384 +528,181 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
           })}
         </div>
 
-        {/* Cụm 3: Thao tác tạo kế hoạch */}
-        <div className="flex items-center gap-1.5">
-          <button
+        {/* Nút thao tác */}
+        <div className="flex items-center gap-2">
+          <Button
+            variant="secondary"
+            size="md"
+            icon={Dices}
+            onClick={handleQuickSample}
+            title="Tạo nhanh kế hoạch mẫu để thử nghiệm"
+          >
+            Mẫu
+          </Button>
+          <Button
+            variant="primary"
+            size="md"
+            icon={Plus}
             onClick={() => setIsCreateModalOpen(true)}
-            className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-primary hover:bg-primary-hover text-white transition flex items-center gap-1.5 shadow-2xs"
           >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Tạo kế hoạch</span>
-          </button>
-          <button
-            onClick={() => {
-              const brands = ['Cocoon', 'Fresh_TikTok_E2E-C', 'Senka_TikTok_E2E-C', 'Lemonade', 'Cỏ Mềm'];
-              const b = brands[Math.floor(Math.random() * brands.length)];
-              const newPlan: InputPlanBreakdownState = {
-                id: `PLAN-${selectedMonth === 'ALL' ? '2026-10' : selectedMonth.replace('/', '-')}-${Date.now().toString().slice(-4)}`,
-                title: `Kế Hoạch Test Nhanh - ${b} (${selectedMonth === 'ALL' ? '2026/10' : selectedMonth})`,
-                brandName: b,
-                month: selectedMonth === 'ALL' ? '2026/10' : selectedMonth,
-                week: 'W42 [12.10 - 18.10]',
-                pic: currentUser?.name || 'Đặng Mai Hà Linh',
-                totalTargetBudget: 120000000,
-                totalTargetContents: 65,
-                targetGmv: 780000000,
-                cancellationRate: 0.08,
-                strategyPreset: 'BALANCED',
-                status: 'DRAFT',
-                statusLabel: 'Bản Nháp (Đang Lập)',
-                spentBudget: 0,
-                deliveredContents: 0,
-                actualGmv: 0,
-                notes: 'Kế hoạch sinh ngẫu nhiên để kiểm thử.',
-                createdAt: new Date().toISOString(),
-                items: autoBalancePlanItems(INITIAL_INPUT_PLAN_ITEMS, 120000000, 65, 'BALANCED')
-              };
-              onCreatePlan(newPlan);
-              notify(`Đã tạo nhanh kế hoạch mẫu "${newPlan.title}"!`);
-            }}
-            className="px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200 transition flex items-center gap-1"
-            title="Tạo nhanh kế hoạch mẫu ngẫu nhiên để thử"
-          >
-            <Dices className="w-3.5 h-3.5 text-slate-400" />
-            <span className="hidden sm:inline">Mẫu</span>
-          </button>
+            Tạo kế hoạch
+          </Button>
         </div>
       </div>
 
+      {/* 2. CHUYỂN TAB: MA TRẬN GIAN HÀNG vs DANH MỤC KẾ HOẠCH */}
+      <Tabs
+        items={[
+          { key: 'STORE_GOVERNANCE', label: 'Ma trận gian hàng', count: governanceStats.totalActive },
+          { key: 'PLAN_CATALOG', label: 'Danh mục kế hoạch', count: monthlyMetrics.planCount },
+        ]}
+        value={activeHubTab}
+        onChange={setActiveHubTab}
+      />
+
       {activeHubTab === 'STORE_GOVERNANCE' ? (
         /* ========================================================================= */
-        /* TAB 1: MA TRẬN QUẢN TRỊ GIAN HÀNG ACTIVE & TRẠNG THÁI GỬI DUYỆT PLAN     */
+        /* TAB 1: MA TRẬN QUẢN TRỊ GIAN HÀNG VÀ TRẠNG THÁI GỬI DUYỆT PLAN            */
         /* ========================================================================= */
-        <div className="space-y-3">
-          {/* BĂNG TIẾN ĐỘ & CHỈ SỐ ĐIỀU HÀNH GỬI DUYỆT (THU GỌN / MỞ RỘNG) */}
-          <div className="bg-white rounded-xl border border-slate-200 shadow-2xs overflow-hidden transition-all">
-            {/* Dòng tóm tắt gọn 1 dòng (Compact Summary Bar) */}
-            <div className="px-3 sm:px-4 py-2 sm:py-2.5 flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-2.5 min-w-0 flex-wrap">
-                <div className="w-6 h-6 rounded-md bg-indigo-50 border border-indigo-100 text-indigo-700 flex items-center justify-center shrink-0">
-                  <ShieldCheck className="w-3.5 h-3.5 text-indigo-600" />
+        <div className="space-y-6">
+          {/* TÓM TẮT TIẾN ĐỘ DUYỆT */}
+          <section className="bg-surface border border-line rounded-xl overflow-hidden">
+            <div className="px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0 flex-wrap">
+                <span className="text-[13px] font-medium text-ink">
+                  Tiến độ duyệt kế hoạch {selectedMonth === 'ALL' ? 'toàn kỳ' : selectedMonth}:
+                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[13px] font-semibold text-positive tabular-nums">
+                    {governanceStats.approvedPct}%
+                  </span>
+                  <span className="text-2xs text-ink-3 tabular-nums">
+                    ({governanceStats.countApproved}/{governanceStats.totalB2cManaged} gian B2C)
+                  </span>
                 </div>
-                <div className="flex items-center gap-2 flex-wrap text-xs">
-                  <span className="font-bold text-slate-900">
-                    Tiến độ duyệt plan {selectedMonth === 'ALL' ? 'toàn kỳ' : selectedMonth}:
-                  </span>
-                  <span className="font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
-                    {governanceStats.approvedPct}% ({governanceStats.countApproved}/{governanceStats.totalB2cManaged} shop B2C)
-                  </span>
-
-                  {/* Mini Segmented Bar */}
-                  <div className="w-24 sm:w-36 h-2 bg-slate-100 rounded-full overflow-hidden flex shadow-inner">
-                    {governanceStats.countApproved > 0 && (
-                      <div 
-                        style={{ width: `${(governanceStats.countApproved / Math.max(governanceStats.totalB2cManaged, 1)) * 100}%` }}
-                        className="bg-emerald-500 h-full"
-                        title={`Đã duyệt: ${governanceStats.countApproved} shop`}
-                      />
-                    )}
-                    {governanceStats.countPendingApproval > 0 && (
-                      <div 
-                        style={{ width: `${(governanceStats.countPendingApproval / Math.max(governanceStats.totalB2cManaged, 1)) * 100}%` }}
-                        className="bg-blue-500 h-full"
-                        title={`Chờ duyệt: ${governanceStats.countPendingApproval} shop`}
-                      />
-                    )}
-                    {governanceStats.countMissingPlan > 0 && (
-                      <div 
-                        style={{ width: `${(governanceStats.countMissingPlan / Math.max(governanceStats.totalB2cManaged, 1)) * 100}%` }}
-                        className="bg-amber-400 h-full"
-                        title={`Chưa có plan: ${governanceStats.countMissingPlan} shop`}
-                      />
-                    )}
-                  </div>
+                <div className="w-32 sm:w-44">
+                  <Progress
+                    value={governanceStats.countApproved}
+                    max={governanceStats.totalB2cManaged || 1}
+                    label="Tiến độ duyệt kế hoạch"
+                  />
                 </div>
               </div>
 
-              {/* Chip chỉ số nhanh */}
-              <div className="flex items-center gap-2 text-2xs flex-wrap">
-                <span className="px-2 py-0.5 rounded-md bg-slate-50 border border-slate-200 text-slate-700 font-medium">
-                  <strong>{governanceStats.totalActive}</strong> shop Active
-                </span>
-                <span className="px-2 py-0.5 rounded-md bg-indigo-50 border border-indigo-100 text-indigo-700 font-medium">
-                  <strong>{governanceStats.totalB2cManaged}</strong> B2C phụ trách
-                </span>
-                <span className="px-2 py-0.5 rounded-md bg-blue-50 border border-blue-100 text-blue-700 font-medium">
-                  <strong>{governanceStats.countWithPlan}</strong> đã có plan
-                </span>
+              {/* Tóm tắt nhanh */}
+              <div className="flex items-center gap-3 text-2xs text-ink-3 flex-wrap">
+                <span><strong className="text-ink font-medium">{governanceStats.totalActive}</strong> gian hàng active</span>
+                <span>•</span>
+                <span><strong className="text-ink font-medium">{governanceStats.totalB2cManaged}</strong> B2C phụ trách</span>
+                <span>•</span>
+                <span><strong className="text-ink font-medium">{governanceStats.countWithPlan}</strong> đã có kế hoạch</span>
                 {governanceStats.countMissingPlan > 0 && (
-                  <span className="px-2 py-0.5 rounded-md bg-amber-50 border border-amber-200 text-amber-800 font-bold">
-                    ⚠ <strong>{governanceStats.countMissingPlan}</strong> chưa có plan
-                  </span>
+                  <>
+                    <span>•</span>
+                    <span className="text-warning font-medium inline-flex items-center gap-1">
+                      <AlertCircle className="w-3 h-3" />
+                      {governanceStats.countMissingPlan} chưa có kế hoạch
+                    </span>
+                  </>
                 )}
-                <button
+                <Button
+                  size="sm"
+                  variant="ghost"
                   onClick={() => setIsGovernanceExpanded(prev => !prev)}
-                  className="flex items-center gap-1 px-2.5 py-1 text-2xs font-semibold text-indigo-600 hover:text-indigo-800 bg-indigo-50/70 hover:bg-indigo-100 border border-indigo-100 rounded-lg transition ml-1"
                 >
-                  <span>{isGovernanceExpanded ? 'Thu gọn' : 'Chi tiết chỉ số'}</span>
-                  <ChevronDown className={`w-3 h-3 transition-transform ${isGovernanceExpanded ? 'rotate-180' : ''}`} />
-                </button>
+                  {isGovernanceExpanded ? 'Thu gọn' : 'Chi tiết chỉ số'}
+                  <ChevronDown className={cx('w-3.5 h-3.5 ml-1 transition-transform', isGovernanceExpanded && 'rotate-180')} />
+                </Button>
               </div>
             </div>
 
-            {/* Chi tiết 6 KPI & Tiến trình (chỉ hiện khi bấm Chi tiết) */}
+            {/* Chi tiết chỉ số mở rộng */}
             {isGovernanceExpanded && (
-              <div className="p-3 sm:p-4 border-t border-slate-100 bg-slate-50/50 space-y-3 animate-in fade-in duration-150">
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-2.5">
-                  {/* KPI 1 */}
-                  <div className="bg-white p-2.5 rounded-xl border border-slate-200 flex flex-col justify-between">
-                    <div className="flex items-center justify-between text-slate-500 text-2xs font-medium">
-                      <span>Gian Hàng Active</span>
-                      <Store className="w-3.5 h-3.5 text-slate-400" />
-                    </div>
-                    <div className="mt-1">
-                      <span className="text-lg font-bold text-slate-900">{governanceStats.totalActive}</span>
-                      <span className="text-2xs text-slate-400 ml-1">shop</span>
-                    </div>
-                    <div className="text-[10px] text-slate-400 mt-0.5">Toàn hệ thống</div>
-                  </div>
-
-                  {/* KPI 2 */}
-                  <div className="bg-indigo-50/70 p-2.5 rounded-xl border border-indigo-100 flex flex-col justify-between">
-                    <div className="flex items-center justify-between text-indigo-700 text-2xs font-semibold">
-                      <span>B2C Cần Plan</span>
-                      <CheckSquare className="w-3.5 h-3.5 text-indigo-600" />
-                    </div>
-                    <div className="mt-1">
-                      <span className="text-lg font-bold text-indigo-900">{governanceStats.totalB2cManaged}</span>
-                      <span className="text-2xs text-indigo-500 ml-1">/ {governanceStats.totalActive}</span>
-                    </div>
-                    <div className="text-[10px] text-indigo-600/80 mt-0.5">{governanceStats.totalExempt} shop miễn trừ</div>
-                  </div>
-
-                  {/* KPI 3 */}
-                  <div className="bg-blue-50/70 p-2.5 rounded-xl border border-blue-100 flex flex-col justify-between">
-                    <div className="flex items-center justify-between text-blue-700 text-2xs font-semibold">
-                      <span>Đã Có Plan Tháng</span>
-                      <FileCheck className="w-3.5 h-3.5 text-blue-600" />
-                    </div>
-                    <div className="mt-1">
-                      <span className="text-lg font-bold text-blue-900">{governanceStats.countWithPlan}</span>
-                      <span className="text-2xs text-blue-500 ml-1">shop</span>
-                    </div>
-                    <div className="text-[10px] text-blue-600/80 mt-0.5">Tỷ lệ nộp {governanceStats.coveragePct}%</div>
-                  </div>
-
-                  {/* KPI 4 */}
-                  <div className={`p-2.5 rounded-xl border flex flex-col justify-between ${
-                    governanceStats.countMissingPlan > 0 ? 'bg-amber-50/80 border-amber-200' : 'bg-emerald-50/50 border-emerald-100'
-                  }`}>
-                    <div className={`flex items-center justify-between text-2xs font-semibold ${
-                      governanceStats.countMissingPlan > 0 ? 'text-amber-800' : 'text-emerald-700'
-                    }`}>
-                      <span>Chưa Có Plan</span>
-                      <AlertCircle className={`w-3.5 h-3.5 ${governanceStats.countMissingPlan > 0 ? 'text-amber-600' : 'text-emerald-600'}`} />
-                    </div>
-                    <div className="mt-1">
-                      <span className={`text-lg font-bold ${governanceStats.countMissingPlan > 0 ? 'text-amber-900' : 'text-emerald-900'}`}>
-                        {governanceStats.countMissingPlan}
-                      </span>
-                      <span className="text-2xs text-slate-400 ml-1">shop</span>
-                    </div>
-                    <div className={`text-[10px] font-semibold mt-0.5 ${governanceStats.countMissingPlan > 0 ? 'text-amber-700' : 'text-emerald-600'}`}>
-                      {governanceStats.countMissingPlan > 0 ? 'Cần đôn đốc gửi duyệt' : 'Đã phủ 100%'}
-                    </div>
-                  </div>
-
-                  {/* KPI 5 */}
-                  <div className="bg-purple-50/70 p-2.5 rounded-xl border border-purple-100 flex flex-col justify-between">
-                    <div className="flex items-center justify-between text-purple-700 text-2xs font-semibold">
-                      <span>Tỷ Lệ Phủ Plan</span>
-                      <TrendingUp className="w-3.5 h-3.5 text-purple-600" />
-                    </div>
-                    <div className="mt-1">
-                      <span className="text-lg font-bold text-purple-900">{governanceStats.coveragePct}%</span>
-                    </div>
-                    <div className="text-[10px] text-purple-600/80 mt-0.5">{governanceStats.countWithPlan}/{governanceStats.totalB2cManaged} shop cần plan</div>
-                  </div>
-
-                  {/* KPI 6 */}
-                  <div className="bg-emerald-50/70 p-2.5 rounded-xl border border-emerald-200 flex flex-col justify-between">
-                    <div className="flex items-center justify-between text-emerald-800 text-2xs font-semibold">
-                      <span>Tỷ Lệ Đã Duyệt</span>
-                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                    </div>
-                    <div className="mt-1">
-                      <span className="text-lg font-bold text-emerald-900">{governanceStats.approvedPct}%</span>
-                      <span className="text-2xs text-emerald-600 ml-1">({governanceStats.countApproved} shop)</span>
-                    </div>
-                    <div className="text-[10px] text-emerald-700 mt-0.5">Đủ điều kiện chi</div>
-                  </div>
-                </div>
-
-                {/* Segmented bar & Legend */}
-                <div className="space-y-1.5 pt-1 border-t border-slate-200/60">
-                  <div className="h-2 w-full bg-slate-200/70 rounded-full overflow-hidden flex shadow-inner">
-                    {governanceStats.countApproved > 0 && (
-                      <div 
-                        style={{ width: `${(governanceStats.countApproved / Math.max(governanceStats.totalB2cManaged, 1)) * 100}%` }}
-                        className="bg-emerald-500 h-full"
-                        title={`Đã duyệt: ${governanceStats.countApproved} gian hàng`}
-                      />
-                    )}
-                    {governanceStats.countPendingApproval > 0 && (
-                      <div 
-                        style={{ width: `${(governanceStats.countPendingApproval / Math.max(governanceStats.totalB2cManaged, 1)) * 100}%` }}
-                        className="bg-blue-500 h-full"
-                        title={`Chờ duyệt: ${governanceStats.countPendingApproval} gian hàng`}
-                      />
-                    )}
-                    {governanceStats.countPendingPreApproval > 0 && (
-                      <div 
-                        style={{ width: `${(governanceStats.countPendingPreApproval / Math.max(governanceStats.totalB2cManaged, 1)) * 100}%` }}
-                        className="bg-teal-400 h-full"
-                        title={`Thống nhất Growth: ${governanceStats.countPendingPreApproval} gian hàng`}
-                      />
-                    )}
-                    {governanceStats.countRevisionRequested > 0 && (
-                      <div 
-                        style={{ width: `${(governanceStats.countRevisionRequested / Math.max(governanceStats.totalB2cManaged, 1)) * 100}%` }}
-                        className="bg-rose-500 h-full"
-                        title={`Cần hiệu chỉnh: ${governanceStats.countRevisionRequested} gian hàng`}
-                      />
-                    )}
-                    {governanceStats.countDraft > 0 && (
-                      <div 
-                        style={{ width: `${(governanceStats.countDraft / Math.max(governanceStats.totalB2cManaged, 1)) * 100}%` }}
-                        className="bg-slate-300 h-full"
-                        title={`Bản nháp: ${governanceStats.countDraft} gian hàng`}
-                      />
-                    )}
-                    {governanceStats.countMissingPlan > 0 && (
-                      <div 
-                        style={{ width: `${(governanceStats.countMissingPlan / Math.max(governanceStats.totalB2cManaged, 1)) * 100}%` }}
-                        className="bg-amber-400 h-full"
-                        title={`Chưa có plan: ${governanceStats.countMissingPlan} gian hàng`}
-                      />
-                    )}
-                  </div>
-
-                  <div className="flex flex-wrap items-center gap-3 text-2xs text-slate-600">
-                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500" /> Đã duyệt ({governanceStats.countApproved})</span>
-                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-blue-500" /> Chờ duyệt Lead ({governanceStats.countPendingApproval})</span>
-                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-teal-400" /> Thống nhất Growth ({governanceStats.countPendingPreApproval})</span>
-                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-rose-500" /> Cần hiệu chỉnh ({governanceStats.countRevisionRequested})</span>
-                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-slate-300" /> Bản nháp ({governanceStats.countDraft})</span>
-                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-400" /> Chưa có plan ({governanceStats.countMissingPlan})</span>
-                  </div>
-                </div>
+              <div className="p-4 border-t border-line bg-canvas/40 space-y-3">
+                <StatRow>
+                  <Stat
+                    label="Gian hàng active"
+                    value={governanceStats.totalActive}
+                    note="Toàn bộ hệ thống gian hàng"
+                  />
+                  <Stat
+                    label="B2C cần kế hoạch"
+                    value={`${governanceStats.totalB2cManaged} / ${governanceStats.totalActive}`}
+                    note={`${governanceStats.totalExempt} gian hàng miễn trừ`}
+                  />
+                  <Stat
+                    label="Đã có kế hoạch"
+                    value={governanceStats.countWithPlan}
+                    note={`Tỷ lệ nộp ${governanceStats.coveragePct}%`}
+                  />
+                  <Stat
+                    label="Đã duyệt"
+                    value={`${governanceStats.countApproved} / ${governanceStats.totalB2cManaged}`}
+                    progress={{ value: governanceStats.countApproved, max: governanceStats.totalB2cManaged || 1 }}
+                    note={governanceStats.countMissingPlan > 0 ? `${governanceStats.countMissingPlan} gian hàng chưa nộp` : 'Đã duyệt toàn bộ'}
+                    tone={governanceStats.countMissingPlan > 0 ? 'warning' : 'positive'}
+                  />
+                </StatRow>
               </div>
             )}
-          </div>
-
-          {/* THANH BỘ LỌC VÀ TÌM KIẾM MA TRẬN GIAN HÀNG */}
-          <div className="bg-white rounded-xl p-2 sm:p-2.5 border border-slate-200 shadow-2xs flex flex-col md:flex-row items-center justify-between gap-2.5">
-            {/* Bộ lọc Scope */}
-            <div className="flex flex-wrap items-center gap-1.5">
-              <button
-                onClick={() => { setStoreGovernanceFilter('ALL'); setGovernancePage(1); }}
-                className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
-                  storeGovernanceFilter === 'ALL'
-                    ? 'bg-slate-900 text-white shadow-2xs'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                }`}
-              >
-                Tất cả ({governanceStats.totalActive})
-              </button>
-              <button
-                onClick={() => { setStoreGovernanceFilter('B2C_ONLY'); setGovernancePage(1); }}
-                className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
-                  storeGovernanceFilter === 'B2C_ONLY'
-                    ? 'bg-indigo-600 text-white shadow-2xs'
-                    : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-100'
-                }`}
-              >
-                B2C Cần Plan ({governanceStats.totalB2cManaged})
-              </button>
-              <button
-                onClick={() => { setStoreGovernanceFilter('MISSING_PLAN'); setGovernancePage(1); }}
-                className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all flex items-center gap-1 ${
-                  storeGovernanceFilter === 'MISSING_PLAN'
-                    ? 'bg-amber-600 text-white shadow-2xs'
-                    : 'bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-200'
-                }`}
-              >
-                <AlertCircle className="w-3 h-3" />
-                <span>Chưa Có Plan ({governanceStats.countMissingPlan})</span>
-              </button>
-              <button
-                onClick={() => { setStoreGovernanceFilter('PENDING_APPROVAL'); setGovernancePage(1); }}
-                className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all flex items-center gap-1 ${
-                  storeGovernanceFilter === 'PENDING_APPROVAL'
-                    ? 'bg-blue-600 text-white shadow-2xs'
-                    : 'bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200'
-                }`}
-              >
-                <Clock className="w-3 h-3" />
-                <span>Chờ Duyệt ({governanceStats.countPendingApproval})</span>
-              </button>
-              <button
-                onClick={() => { setStoreGovernanceFilter('APPROVED'); setGovernancePage(1); }}
-                className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all flex items-center gap-1 ${
-                  storeGovernanceFilter === 'APPROVED'
-                    ? 'bg-emerald-600 text-white shadow-2xs'
-                    : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200'
-                }`}
-              >
-                <CheckCircle2 className="w-3 h-3" />
-                <span>Đã Duyệt ({governanceStats.countApproved})</span>
-              </button>
-              <button
-                onClick={() => { setStoreGovernanceFilter('EXEMPT'); setGovernancePage(1); }}
-                className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
-                  storeGovernanceFilter === 'EXEMPT'
-                    ? 'bg-slate-600 text-white shadow-2xs'
-                    : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-                }`}
-              >
-                Miễn trừ ({governanceStats.totalExempt})
-              </button>
-            </div>
-
-            {/* Ô tìm kiếm */}
-            <div className="relative w-full md:w-64">
-              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Tìm gian hàng, brand, PIC..."
-                value={storeSearchQuery}
-                onChange={(e) => {
-                  setStoreSearchQuery(e.target.value);
-                  setGovernancePage(1);
-                }}
-                className="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:bg-white"
-              />
-            </div>
-          </div>
+          </section>
 
           {/* BẢNG MA TRẬN GIAN HÀNG */}
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <Panel flush>
+            {/* Bộ lọc bảng */}
+            <div className="p-4 border-b border-line">
+              <FilterBar
+                search={{
+                  value: storeSearchQuery,
+                  onChange: (v) => {
+                    setStoreSearchQuery(v);
+                    setGovernancePage(1);
+                  },
+                  placeholder: 'Tìm gian hàng, thương hiệu, nhân sự...',
+                }}
+                chips={
+                  <Chips
+                    items={[
+                      { key: 'ALL', label: 'Tất cả', count: governanceStats.totalActive },
+                      { key: 'B2C_ONLY', label: 'B2C cần kế hoạch', count: governanceStats.totalB2cManaged },
+                      { key: 'MISSING_PLAN', label: 'Chưa có kế hoạch', count: governanceStats.countMissingPlan },
+                      { key: 'PENDING_APPROVAL', label: 'Chờ duyệt', count: governanceStats.countPendingApproval },
+                      { key: 'APPROVED', label: 'Đã duyệt', count: governanceStats.countApproved },
+                      { key: 'EXEMPT', label: 'Miễn trừ', count: governanceStats.totalExempt },
+                    ]}
+                    value={storeGovernanceFilter}
+                    onChange={(k) => {
+                      setStoreGovernanceFilter(k);
+                      setGovernancePage(1);
+                    }}
+                  />
+                }
+                resultCount={filteredStoreGovernance.length}
+              />
+            </div>
+
+            {/* Nội dung bảng */}
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
-                  <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider text-2xs">
-                    <th className="py-3.5 px-4 text-center">B2C Phụ Trách & Cần Làm Plan</th>
-                    <th className="py-3.5 px-4">Gian Hàng & Kênh Bán</th>
-                    <th className="py-3.5 px-4">Thương Hiệu & Ngành</th>
-                    <th className="py-3.5 px-4">Nhân Sự Phụ Trách</th>
-                    <th className="py-3.5 px-4 text-center">Trao Đổi Với Growth</th>
-                    <th className="py-3.5 px-4 text-center">Trạng Thái Plan Tháng {selectedMonth}</th>
-                    <th className="py-3.5 px-4 text-right">Ngân Sách / GMV</th>
-                    <th className="py-3.5 px-4 text-center">Hành Động</th>
+                  <tr className="bg-surface border-b border-line text-ink-3 font-medium text-[12.5px]">
+                    <th className="py-2.5 px-4 text-center">B2C phụ trách &amp; cần làm kế hoạch</th>
+                    <th className="py-2.5 px-4">Gian hàng &amp; kênh bán</th>
+                    <th className="py-2.5 px-4">Thương hiệu &amp; ngành</th>
+                    <th className="py-2.5 px-4">Nhân sự phụ trách</th>
+                    <th className="py-2.5 px-4 text-center">Trao đổi với Growth</th>
+                    <th className="py-2.5 px-4 text-center">Trạng thái kế hoạch tháng {selectedMonth}</th>
+                    <th className="py-2.5 px-4 text-right">Ngân sách / GMV</th>
+                    <th className="py-2.5 px-4 text-center">Thao tác</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-line">
                   {filteredStoreGovernance.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="py-12 text-center text-slate-400">
-                        <Store className="w-8 h-8 mx-auto mb-2 text-slate-300" />
-                        <p className="font-semibold text-slate-600">Không tìm thấy gian hàng nào phù hợp bộ lọc</p>
-                        <p className="text-2xs text-slate-400 mt-0.5">Thử chọn bộ lọc khác hoặc nhập từ khóa tìm kiếm</p>
+                      <td colSpan={8} className="py-12 text-center text-ink-3">
+                        <StoreIcon className="w-8 h-8 mx-auto mb-2 text-line-strong" />
+                        <p className="font-medium text-ink">Không tìm thấy gian hàng phù hợp</p>
+                        <p className="text-2xs text-ink-3 mt-0.5">Thử chọn bộ lọc khác hoặc nhập từ khóa tìm kiếm</p>
                       </td>
                     </tr>
                   ) : (
@@ -966,257 +712,231 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                       const isB2c = item.isB2c;
 
                       return (
-                        <tr 
+                        <tr
                           key={store.id}
-                          className={`hover:bg-indigo-50/30 transition-colors ${
-                            !isB2c ? 'bg-slate-50/40 opacity-75' : ''
-                          }`}
+                          className={cx(
+                            'hover:bg-canvas transition-colors',
+                            !isB2c && 'bg-sunken/40'
+                          )}
                         >
-                          {/* 1. TÍCH CHỌN MARKETING B2C PHỤ TRÁCH & CẦN LÀM PLAN */}
-                          <td className="py-3.5 px-4 text-center">
+                          {/* 1. B2C PHỤ TRÁCH */}
+                          <td className="py-3 px-4 text-center">
                             <button
                               type="button"
                               onClick={(e) => handleToggleB2cManaged(store, e)}
-                              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+                              className={cx(
+                                'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-2xs font-medium transition-colors cursor-pointer border',
                                 isB2c
-                                  ? 'bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100 shadow-2xs'
-                                  : 'bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200'
-                              }`}
-                              title={isB2c ? "Click để chuyển sang MIỄN TRỪ không làm plan B2C" : "Click để đưa vào diện B2C PHỤ TRÁCH & CẦN LÀM PLAN"}
+                                  ? 'bg-positive-soft text-positive border-positive/30 hover:bg-positive-soft/80'
+                                  : 'bg-sunken text-ink-3 border-line hover:bg-sunken/80 hover:text-ink'
+                              )}
+                              title={isB2c ? 'Bấm để chuyển sang miễn trừ không làm kế hoạch B2C' : 'Bấm để đưa vào diện B2C phụ trách & cần làm kế hoạch'}
                             >
                               {isB2c ? (
                                 <>
-                                  <ToggleRight className="w-5 h-5 text-emerald-600 shrink-0" />
-                                  <span>B2C Cần Plan</span>
+                                  <ToggleRight className="w-4 h-4 text-positive shrink-0" />
+                                  <span>B2C cần kế hoạch</span>
                                 </>
                               ) : (
                                 <>
-                                  <ToggleLeft className="w-5 h-5 text-slate-400 shrink-0" />
-                                  <span className="text-slate-400">Miễn trừ Plan</span>
+                                  <ToggleLeft className="w-4 h-4 text-ink-3 shrink-0" />
+                                  <span>Miễn trừ kế hoạch</span>
                                 </>
                               )}
                             </button>
                           </td>
 
-                          {/* 2. GIAN HÀNG & KÊNH */}
-                          <td className="py-3.5 px-4">
-                            <div className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
-                              <span>{store.storeName}</span>
+                          {/* 2. GIAN HÀNG & KÊNH BÁN */}
+                          <td className="py-3 px-4">
+                            <div className="font-medium text-ink text-[13px]">
+                              {store.storeName}
                             </div>
                             <div className="flex items-center gap-1.5 mt-1">
-                              <span className={`px-2 py-0.5 rounded text-3xs font-semibold ${
-                                store.platform?.includes('TikTok')
-                                  ? 'bg-slate-900 text-white'
-                                  : store.platform?.includes('Shopee')
-                                  ? 'bg-amber-600 text-white'
-                                  : 'bg-blue-600 text-white'
-                              }`}>
-                                {store.platform || 'E-Commerce'}
-                              </span>
-                              <span className="text-2xs text-slate-400 font-mono">
+                              <ChannelTag channel={store.platform} />
+                              <span className="text-2xs text-ink-3 font-code">
                                 {store.serviceModel || 'Full Service'}
                               </span>
                             </div>
                           </td>
 
-                          {/* 3. BRAND & NGÀNH */}
-                          <td className="py-3.5 px-4">
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100">
-                              <Building2 className="w-3 h-3 text-indigo-500" />
+                          {/* 3. THƯƠNG HIỆU & NGÀNH */}
+                          <td className="py-3 px-4">
+                            <div className="font-medium text-ink text-[13px]">
                               {store.brandName}
-                            </span>
-                            <div className="text-2xs text-slate-400 mt-1 line-clamp-1">
+                            </div>
+                            <div className="text-2xs text-ink-3 mt-0.5">
                               {store.category || 'Mỹ phẩm & Chăm sóc'}
                             </div>
                           </td>
 
-                          {/* 4. NHÂN SỰ PHỤ TRÁCH & MÔ HÌNH DUYỆT */}
-                          <td className="py-3.5 px-4">
-                            <div className="text-xs">
-                              <span className="text-slate-400 font-medium">B2C PIC: </span>
-                              <strong className="text-slate-800">
-                                {store.b2cOwners?.join(', ') || store.b2cOwnerName || 'Chưa gán'}
-                              </strong>
-                            </div>
-                            <div className="text-2xs text-amber-700 mt-0.5">
-                              <span>Growth: </span>
-                              <span className="font-medium">{store.growthPic || 'Trần Thị Ánh'}</span>
-                            </div>
+                          {/* 4. NHÂN SỰ PHỤ TRÁCH */}
+                          <td className="py-3 px-4">
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-1.5 text-xs text-ink">
+                                <span className="text-ink-3">B2C:</span>
+                                <Person name={store.b2cOwners?.[0] || store.b2cOwnerName || 'Chưa phân công'} sub="PIC" />
+                              </div>
+                              <div className="flex items-center gap-1.5 text-xs text-ink">
+                                <span className="text-ink-3">Growth:</span>
+                                <Person name={store.growthPic || 'Chưa gán'} />
+                              </div>
+                              <div className="flex items-center gap-1.5 mt-1">
+                                {plan?.hasBookingLeader ?? store.hasBookingLeader ? (
+                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-2xs font-medium bg-sunken text-ink-2">
+                                    Trưởng nhóm: {plan?.bookingLeader?.split(' (')[0] || store.bookingLeader || 'Nguyễn Thị Ngọc Tâm'}
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-2xs font-medium bg-sunken text-ink-3">
+                                    Duyệt trực tiếp
+                                  </span>
+                                )}
+                                {(currentUser?.role === 'MANAGER' || currentUser?.role === 'ADMIN') && (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      const currentHas = Boolean(plan?.hasBookingLeader ?? store.hasBookingLeader);
+                                      const nextHas = !currentHas;
+                                      const newLeader = nextHas ? (plan?.bookingLeader || store.bookingLeader || 'Nguyễn Thị Ngọc Tâm') : undefined;
 
-                            {/* Mô hình duyệt tháng: Có Lead vs Duyệt trực tiếp */}
-                            <div className="mt-1 flex items-center gap-1.5 flex-wrap">
-                              {plan?.hasBookingLeader ?? store.hasBookingLeader ? (
-                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-3xs font-bold bg-amber-50 text-amber-800 border border-amber-200">
-                                  <span>Lead: {plan?.bookingLeader?.split(' (')[0] || store.bookingLeader || 'Nguyễn Thị Ngọc Tâm'}</span>
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-3xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">
-                                  <span>Duyệt trực tiếp</span>
-                                </span>
-                              )}
-
-                              {/* Quyền Trưởng phòng đổi nhanh */}
-                              {(currentUser?.role === 'MANAGER' || currentUser?.role === 'ADMIN') && (
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    const currentHas = Boolean(plan?.hasBookingLeader ?? store.hasBookingLeader);
-                                    const nextHas = !currentHas;
-                                    const newLeader = nextHas ? (plan?.bookingLeader || store.bookingLeader || 'Nguyễn Thị Ngọc Tâm') : undefined;
-
-                                    if (plan && onUpdatePlan) {
-                                      onUpdatePlan(plan.id, {
-                                        hasBookingLeader: nextHas,
-                                        bookingLeader: newLeader,
-                                        leaderApprovalStatus: nextHas ? 'CHƯA_DUYỆT' : 'KHÔNG_ÁP_DỤNG'
-                                      });
-                                    }
-                                    if (onUpdateStore) {
-                                      onUpdateStore({
-                                        ...store,
-                                        hasBookingLeader: nextHas,
-                                        bookingLeader: newLeader
-                                      });
-                                    }
-                                    if (onNotify) {
-                                      onNotify(nextHas
-                                        ? `Đã bật yêu cầu Leader sơ duyệt cho ${store.storeName} (${selectedMonth})`
-                                        : `Đã chuyển ${store.storeName} sang Duyệt trực tiếp (${selectedMonth})`);
-                                    }
-                                  }}
-                                  className="text-3xs text-indigo-600 hover:text-indigo-800 font-semibold underline cursor-pointer"
-                                  title="Trưởng phòng đổi mô hình duyệt cho tháng này"
-                                >
-                                  {plan?.hasBookingLeader ?? store.hasBookingLeader ? 'Bỏ Lead' : 'Gán Lead'}
-                                </button>
-                              )}
+                                      if (plan && onUpdatePlan) {
+                                        onUpdatePlan(plan.id, {
+                                          hasBookingLeader: nextHas,
+                                          bookingLeader: newLeader,
+                                          leaderApprovalStatus: nextHas ? 'CHƯA_DUYỆT' : 'KHÔNG_ÁP_DỤNG'
+                                        });
+                                      }
+                                      if (onUpdateStore) {
+                                        onUpdateStore({
+                                          ...store,
+                                          hasBookingLeader: nextHas,
+                                          bookingLeader: newLeader
+                                        });
+                                      }
+                                      if (onNotify) {
+                                        onNotify(nextHas
+                                          ? `Đã bật yêu cầu Trưởng nhóm sơ duyệt cho ${store.storeName} (${selectedMonth}).`
+                                          : `Đã chuyển ${store.storeName} sang duyệt trực tiếp (${selectedMonth}).`);
+                                      }
+                                    }}
+                                    className="text-2xs text-accent hover:underline font-medium cursor-pointer"
+                                    title="Đổi mô hình duyệt"
+                                  >
+                                    {plan?.hasBookingLeader ?? store.hasBookingLeader ? 'Bỏ trưởng nhóm' : 'Gán trưởng nhóm'}
+                                  </button>
+                                )}
+                              </div>
                             </div>
                           </td>
 
                           {/* 5. TRAO ĐỔI VỚI GROWTH */}
-                          <td className="py-3.5 px-4 text-center">
+                          <td className="py-3 px-4 text-center">
                             {plan ? (
                               plan.growthAlignmentStatus === 'ĐÃ_THỐNG_NHẤT' ? (
-                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-2xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
-                                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                                  <span>Đã Thống Nhất</span>
-                                </span>
+                                <Status tone="positive">Đã thống nhất</Status>
                               ) : plan.growthAlignmentStatus === 'ĐANG_TRAO_ĐỔI' ? (
-                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-2xs font-bold bg-amber-50 text-amber-800 border border-amber-200">
-                                  <Clock className="w-3.5 h-3.5 text-amber-600" />
-                                  <span>Đang Trao Đổi</span>
-                                </span>
+                                <Status tone="warning">Đang trao đổi</Status>
                               ) : (
-                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-2xs font-medium bg-slate-100 text-slate-600 border border-slate-200">
-                                  <span>Đã Khởi Tạo</span>
-                                </span>
+                                <Status tone="neutral">Đã khởi tạo</Status>
                               )
                             ) : (
-                              <span className="text-2xs text-slate-400 italic">
-                                Chưa lập plan
-                              </span>
+                              <span className="text-2xs text-ink-3">Chưa lập</span>
                             )}
                           </td>
 
-                          {/* 6. TRẠNG THÁI PLAN THÁNG */}
-                          <td className="py-3.5 px-4 text-center">
+                          {/* 6. TRẠNG THÁI KẾ HOẠCH */}
+                          <td className="py-3 px-4 text-center">
                             {!isB2c ? (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-2xs font-semibold bg-slate-100 text-slate-500 border border-slate-200">
-                                <span>Miễn trừ Plan B2C</span>
-                              </span>
+                              <Status tone="neutral">Miễn trừ</Status>
                             ) : plan ? (
                               <div className="space-y-1">
                                 {getStatusBadge(plan.status)}
                                 {plan.status === 'PENDING_APPROVAL' && (
-                                  <div className="text-3xs text-blue-600 font-semibold">
-                                    Đã nộp lên Quản lý
-                                  </div>
+                                  <div className="text-2xs text-accent font-medium">Đã gửi duyệt</div>
                                 )}
                               </div>
                             ) : (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-2xs font-bold bg-rose-50 text-rose-800 border border-rose-200">
-                                <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
-                                <span>Chưa Có Plan</span>
-                              </span>
+                              <Status tone="critical">Chưa có kế hoạch</Status>
                             )}
                           </td>
 
                           {/* 7. NGÂN SÁCH / GMV */}
-                          <td className="py-3.5 px-4 text-right">
+                          <td className="py-3 px-4 text-right tabular-nums">
                             {plan ? (
                               <div>
-                                <div className="font-bold text-slate-900">
+                                <div className="font-medium text-ink text-[13px]">
                                   {formatVndShort(plan.totalTargetBudget)}
                                 </div>
-                                <div className="text-2xs text-emerald-600 font-semibold">
+                                <div className="text-2xs text-positive">
                                   GMV: {formatVndShort(plan.targetGmv)}
                                 </div>
                               </div>
                             ) : (
                               <div>
-                                <div className="font-semibold text-slate-400">
+                                <div className="text-ink-3 text-[13px]">
                                   {formatVndShort(store.monthlyBudget || 0)}
                                 </div>
-                                <div className="text-2xs text-slate-400">
-                                  Target: {formatVndShort(store.monthlyTargetGmv || 0)}
+                                <div className="text-2xs text-ink-3">
+                                  Mục tiêu: {formatVndShort(store.monthlyTargetGmv || 0)}
                                 </div>
                               </div>
                             )}
                           </td>
 
-                          {/* 8. HÀNH ĐỘNG */}
-                          <td className="py-3.5 px-4 text-center" onClick={(e) => e.stopPropagation()}>
+                          {/* 8. THAO TÁC */}
+                          <td className="py-3 px-4 text-center" onClick={(e) => e.stopPropagation()}>
                             <div className="flex items-center justify-center gap-1.5">
                               {plan ? (
                                 <>
                                   {plan.status === 'PENDING_APPROVAL' && (
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        onSelectPlan(plan);
-                                      }}
-                                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition"
-                                      title="Mở kế hoạch để xem và ký duyệt"
+                                    <Button
+                                      size="sm"
+                                      variant="primary"
+                                      icon={ShieldCheck}
+                                      onClick={() => onSelectPlan(plan)}
+                                      title="Mở kế hoạch để xem và duyệt"
                                     >
-                                      <ShieldCheck className="w-3.5 h-3.5" />
-                                      <span>Xem &amp; duyệt</span>
-                                    </button>
+                                      Xem và duyệt
+                                    </Button>
                                   )}
-                                  <button
+                                  <Button
+                                    size="sm"
+                                    variant="secondary"
+                                    icon={ArrowRight}
                                     onClick={() => onSelectPlan(plan)}
-                                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs shadow-xs transition"
-                                    title="Mở bảng phân rã chi tiết của kế hoạch"
+                                    title="Mở bảng phân rã chi tiết"
                                   >
-                                    <span>Mở kế hoạch</span>
-                                    <ArrowRight className="w-3 h-3" />
-                                  </button>
+                                    Mở kế hoạch
+                                  </Button>
                                 </>
                               ) : isB2c ? (
                                 <>
-                                  <button
+                                  <Button
+                                    size="sm"
+                                    variant="secondary"
+                                    icon={Plus}
                                     onClick={(e) => handleCreatePlanForStore(store, e)}
-                                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-semibold text-xs transition"
                                     title="Tạo kế hoạch mới cho gian hàng này trong tháng"
                                   >
-                                    <Plus className="w-3 h-3" />
-                                    <span>Tạo Plan</span>
-                                  </button>
-                                  <button
+                                    Tạo kế hoạch
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    icon={Bell}
                                     onClick={(e) => handleRemindSubmission(store, e)}
-                                    className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 font-medium text-xs transition"
-                                    title="Gửi thông báo nhắc nhở nộp plan cho PIC"
+                                    title="Gửi thông báo nhắc nhở nộp kế hoạch cho PIC"
                                   >
-                                    <Bell className="w-3 h-3 text-amber-600" />
-                                    <span>Nhắc Nộp</span>
-                                  </button>
+                                    Nhắc nộp
+                                  </Button>
                                 </>
                               ) : (
                                 <button
+                                  type="button"
                                   onClick={(e) => handleToggleB2cManaged(store, e)}
-                                  className="text-2xs text-slate-400 hover:text-slate-700 hover:underline cursor-pointer"
+                                  className="text-2xs text-ink-3 hover:text-ink hover:underline cursor-pointer"
                                 >
-                                  Bật làm plan
+                                  Bật làm kế hoạch
                                 </button>
                               )}
                             </div>
@@ -1229,81 +949,57 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
               </table>
             </div>
 
-            {/* Pagination Controls */}
-            {totalGovernancePages > 1 && (
-              <div className="p-3 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-600">
-                <span>
-                  Hiển thị {(governancePage - 1) * GOVERNANCE_PAGE_SIZE + 1} - {Math.min(governancePage * GOVERNANCE_PAGE_SIZE, filteredStoreGovernance.length)} trên tổng số {filteredStoreGovernance.length} gian hàng
-                </span>
-                <div className="flex items-center gap-1.5">
-                  <button
-                    type="button"
-                    disabled={governancePage <= 1}
-                    onClick={() => setGovernancePage(p => Math.max(1, p - 1))}
-                    className="px-3 py-1 rounded bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed font-medium"
-                  >
-                    Trước
-                  </button>
-                  <span className="px-2 font-semibold text-slate-800">
-                    Trang {governancePage} / {totalGovernancePages}
-                  </span>
-                  <button
-                    type="button"
-                    disabled={governancePage >= totalGovernancePages}
-                    onClick={() => setGovernancePage(p => Math.min(totalGovernancePages, p + 1))}
-                    className="px-3 py-1 rounded bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed font-medium"
-                  >
-                    Sau
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
+            {/* Phân trang */}
+            <Pagination
+              page={governancePage}
+              pageSize={GOVERNANCE_PAGE_SIZE}
+              total={filteredStoreGovernance.length}
+              onPageChange={setGovernancePage}
+            />
+          </Panel>
         </div>
       ) : (
         /* ========================================================================= */
         /* TAB 2: DANH MỤC KẾ HOẠCH ĐÃ PHÂN RÃ (GRID / TABLE)                        */
         /* ========================================================================= */
-        <div className="space-y-3">
-          {/* Chỉ số tháng, kèm xu hướng qua các tháng (Dạng thu gọn / mở rộng) */}
+        <div className="space-y-6">
+          {/* CHỈ SỐ TÀI CHÍNH KẾ HOẠCH */}
           {(() => {
             const months = [...new Set(plans.map(p => p.month))].sort();
             const series = (pick: (p: InputPlanBreakdownState) => number) =>
               months.map(m => plans.filter(p => p.month === m).reduce((acc, p) => acc + (pick(p) || 0), 0));
             const pool = selectedMonth === 'ALL' ? plans : plans.filter(p => p.month === selectedMonth);
+
             return (
-              <div className="bg-white rounded-xl border border-slate-200 shadow-2xs overflow-hidden">
-                <div className="px-3 sm:px-4 py-2 sm:py-2.5 flex flex-wrap items-center justify-between gap-3">
+              <section className="bg-surface border border-line rounded-xl overflow-hidden">
+                <div className="px-4 py-3 flex flex-wrap items-center justify-between gap-3">
                   <div className="flex items-center gap-2">
-                    <BarChart3 className="w-4 h-4 text-indigo-600" />
-                    <span className="text-xs font-bold text-slate-900">
+                    <BarChart3 className="w-4 h-4 text-ink-3" />
+                    <span className="text-[13px] font-medium text-ink">
                       Chỉ số tài chính kế hoạch {selectedMonth === 'ALL' ? 'toàn kỳ' : selectedMonth}
                     </span>
-                    <span className="text-2xs text-slate-500 font-medium">({pool.length} kế hoạch)</span>
+                    <span className="text-2xs text-ink-3">({pool.length} kế hoạch)</span>
                   </div>
 
-                  <div className="flex items-center gap-2 text-2xs flex-wrap">
-                    <span className="px-2 py-0.5 rounded-md bg-slate-50 border border-slate-200 text-slate-700 font-medium">
-                      Ngân sách: <strong>{formatVndShort(monthlyMetrics.totalBudget)}</strong>
-                    </span>
-                    <span className="px-2 py-0.5 rounded-md bg-emerald-50 border border-emerald-100 text-emerald-700 font-medium">
-                      GMV: <strong>{formatVndShort(monthlyMetrics.totalGmv)}</strong>
-                    </span>
-                    <span className="px-2 py-0.5 rounded-md bg-purple-50 border border-purple-100 text-purple-700 font-medium">
-                      ROI: <strong>{String(monthlyMetrics.avgRoi).replace('.', ',')}x</strong>
-                    </span>
-                    <button
+                  <div className="flex items-center gap-3 text-2xs text-ink-3 flex-wrap">
+                    <span>Ngân sách: <strong className="text-ink font-medium">{formatVndShort(monthlyMetrics.totalBudget)}</strong></span>
+                    <span>•</span>
+                    <span>GMV: <strong className="text-positive font-medium">{formatVndShort(monthlyMetrics.totalGmv)}</strong></span>
+                    <span>•</span>
+                    <span>ROI: <strong className="text-ink font-medium">{String(monthlyMetrics.avgRoi).replace('.', ',')}x</strong></span>
+                    <Button
+                      size="sm"
+                      variant="ghost"
                       onClick={() => setIsCatalogStatsExpanded(prev => !prev)}
-                      className="flex items-center gap-1 px-2.5 py-1 text-2xs font-semibold text-indigo-600 hover:text-indigo-800 bg-indigo-50/70 hover:bg-indigo-100 border border-indigo-100 rounded-lg transition ml-1"
                     >
-                      <span>{isCatalogStatsExpanded ? 'Thu gọn' : 'Chi tiết chỉ số'}</span>
-                      <ChevronDown className={`w-3 h-3 transition-transform ${isCatalogStatsExpanded ? 'rotate-180' : ''}`} />
-                    </button>
+                      {isCatalogStatsExpanded ? 'Thu gọn' : 'Chi tiết chỉ số'}
+                      <ChevronDown className={cx('w-3.5 h-3.5 ml-1 transition-transform', isCatalogStatsExpanded && 'rotate-180')} />
+                    </Button>
                   </div>
                 </div>
 
                 {isCatalogStatsExpanded && (
-                  <div className="p-3 sm:p-4 border-t border-slate-100 bg-slate-50/50 space-y-3 animate-in fade-in duration-150">
+                  <div className="p-4 border-t border-line bg-canvas/40 space-y-4">
                     <StatRow>
                       <Stat
                         label="Ngân sách"
@@ -1335,9 +1031,10 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                         tone={monthlyMetrics.countRevision > 0 ? 'warning' : undefined}
                       />
                     </StatRow>
+
                     <div className="bg-surface border border-line rounded-xl px-4 py-3 grid gap-2">
                       <div className="flex items-baseline justify-between gap-3">
-                        <span className="text-xs font-semibold text-ink">Ngân sách theo kênh</span>
+                        <span className="text-xs font-medium text-ink">Ngân sách theo kênh</span>
                         <span className="text-2xs text-ink-3">{months.length > 1 ? `Xu hướng: ${months[0]} → ${months[months.length - 1]}` : ''}</span>
                       </div>
                       <ChannelBar
@@ -1347,638 +1044,503 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                     </div>
                   </div>
                 )}
-              </div>
+              </section>
             );
           })()}
 
-          {/* 4. THANH BỘ LỌC & TÌM KIẾM */}
-          <div className="bg-white rounded-xl p-2 sm:p-2.5 border border-slate-200 shadow-2xs flex flex-col md:flex-row items-center justify-between gap-2.5">
-            <div className="flex flex-1 flex-wrap items-center gap-2 w-full md:w-auto">
-              {/* Ô Tìm Kiếm */}
-              <div className="relative flex-1 min-w-[200px]">
-                <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input
-                  type="text"
-                  placeholder="Tìm theo tên kế hoạch, brand, PIC..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:bg-white"
-                />
-              </div>
-
-              {/* Lọc Nhãn Hàng */}
-              <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-lg text-xs font-medium text-slate-700">
-                <Building2 className="w-3 h-3 text-slate-400" />
-                <span className="text-slate-400">Brand:</span>
-                <select
-                  value={selectedBrand}
-                  onChange={(e) => setSelectedBrand(e.target.value)}
-                  className="bg-transparent font-semibold text-slate-900 focus:outline-none cursor-pointer text-xs"
-                >
-                  <option value="ALL">Tất cả ({brandList.length})</option>
-                  {brandList.map(b => (
-                    <option key={b} value={b}>{b}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Lọc Trạng Thái */}
-              <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-lg text-xs font-medium text-slate-700">
-                <Filter className="w-3 h-3 text-slate-400" />
-                <span className="text-slate-400">Trạng thái:</span>
-                <select
-                  value={selectedStatus}
-                  onChange={(e) => setSelectedStatus(e.target.value)}
-                  className="bg-transparent font-semibold text-slate-900 focus:outline-none cursor-pointer text-xs"
-                >
-                  <option value="ALL">Tất cả trạng thái</option>
-                  <option value="PENDING_PRE_APPROVAL">Chờ sơ duyệt</option>
-                  <option value="PRE_APPROVED">Sơ Duyệt Đạt</option>
-                  <option value="REVISION_REQUESTED">Cần hiệu chỉnh</option>
-                  <option value="PENDING_APPROVAL">Chờ duyệt Lead</option>
-                  <option value="IN_EXECUTION">Đang Thực Thi</option>
-                  <option value="LEAD_APPROVED">Đã Phê Duyệt</option>
-                  <option value="DRAFT">Bản Nháp</option>
-                  <option value="COMPLETED">Đã nghiệm thu</option>
-                </select>
-              </div>
-
-              {/* Lọc PIC */}
-              <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-lg text-xs font-medium text-slate-700">
-                <Users className="w-3 h-3 text-slate-400" />
-                <span className="text-slate-400">PIC:</span>
-                <select
-                  value={selectedPic}
-                  onChange={(e) => setSelectedPic(e.target.value)}
-                  className="bg-transparent font-semibold text-slate-900 focus:outline-none cursor-pointer text-xs"
-                >
-                  <option value="ALL">Tất cả PIC ({picList.length})</option>
-                  {picList.map(pic => (
-                    <option key={pic} value={pic}>{pic}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            {/* View mode toggle */}
-            <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg shrink-0">
-              <button
-                onClick={() => setViewMode('GRID')}
-                className={`px-2.5 py-1 rounded-md text-xs font-semibold flex items-center gap-1.5 transition-all ${
-                  viewMode === 'GRID'
-                    ? 'bg-white text-indigo-700 shadow-2xs'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-                title="Xem dạng thẻ card"
-              >
-                <LayoutGrid className="w-3.5 h-3.5" />
-                <span>Thẻ</span>
-              </button>
-              <button
-                onClick={() => setViewMode('TABLE')}
-                className={`px-2.5 py-1 rounded-md text-xs font-semibold flex items-center gap-1.5 transition-all ${
-                  viewMode === 'TABLE'
-                    ? 'bg-white text-indigo-700 shadow-2xs'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-                title="Xem dạng bảng tổng hợp"
-              >
-                <TableIcon className="w-3.5 h-3.5" />
-                <span>Bảng</span>
-              </button>
-            </div>
-          </div>
-
-      {/* 5. DANH SÁCH KẾ HOẠCH (GRID VIEW HOẶC TABLE VIEW) */}
-      {filteredPlans.length === 0 ? (
-        <div className="bg-white rounded-2xl p-12 text-center border border-slate-200 shadow-sm space-y-4">
-          <div className="w-16 h-16 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto">
-            <Calendar className="w-8 h-8" />
-          </div>
-          <div className="space-y-1">
-            <h3 className="text-lg font-semibold text-slate-900">Không tìm thấy kế hoạch nào</h3>
-            <p className="text-sm text-slate-500 max-w-md mx-auto">
-              Không có kế hoạch nào khớp với bộ lọc tháng "{selectedMonth}" hoặc từ khóa tìm kiếm. Vui lòng thử chọn tháng khác hoặc bấm lập kế hoạch mới.
-            </p>
-          </div>
-          <button
-            onClick={() => setIsCreateModalOpen(true)}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm shadow-md"
-          >
-            <Plus className="w-4 h-4" />
-            Lập kế hoạch cho tháng này
-          </button>
-        </div>
-      ) : viewMode === 'GRID' ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {filteredPlans.map(plan => {
-            const currentItemsCount = plan.items?.length || 0;
-            const currentTotalBudget = (plan.items || []).reduce((acc, it) => acc + (it.totalBudget || 0), 0);
-            const currentTotalQty = (plan.items || []).reduce((acc, it) => acc + (it.qty || 0), 0);
-            const budgetMatchPct = plan.totalTargetBudget > 0 
-              ? Math.min(Math.round((currentTotalBudget / plan.totalTargetBudget) * 100), 100) 
-              : 100;
-            const qtyMatchPct = plan.totalTargetContents > 0 
-              ? Math.min(Math.round((currentTotalQty / plan.totalTargetContents) * 100), 100) 
-              : 100;
-
-            const tiktokQty = (plan.items || []).filter(i => i.channel === 'TIKTOK').reduce((a, b) => a + b.qty, 0);
-            const multiQty = (plan.items || []).filter(i => ['SHOPEE', 'FACEBOOK', 'INSTAGRAM', 'THREADS'].includes(i.channel)).reduce((a, b) => a + b.qty, 0);
-            const liveQty = (plan.items || []).filter(i => i.channel === 'LIVESTREAM').reduce((a, b) => a + b.qty, 0);
-            const selfQty = (plan.items || []).filter(i => i.channel === 'SELF_CHANNEL').reduce((a, b) => a + b.qty, 0);
-
-            return (
-              <div
-                key={plan.id}
-                className="bg-white rounded-2xl border border-slate-200 hover:border-indigo-400 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between overflow-hidden group"
-              >
-                {/* Card Header */}
-                <div className="p-5 border-b border-slate-100 space-y-3">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100">
-                      <Building2 className="w-3.5 h-3.5 text-indigo-500" />
-                      {plan.brandName}
-                    </span>
-                    <div className="flex items-center gap-1.5">
-                      <span className="px-2 py-0.5 rounded text-xs font-semibold bg-slate-100 text-slate-600">
-                        {plan.month}
-                      </span>
-                      {getStatusBadge(plan.status)}
-                    </div>
-                  </div>
-
-                  <div>
-                    <h3 className="font-semibold text-base text-slate-900 group-hover:text-indigo-600 transition-colors line-clamp-2 leading-snug">
-                      {plan.title}
-                    </h3>
-                    <div className="flex items-center gap-2 mt-2 text-xs text-slate-500 flex-wrap">
-                      <div className="flex items-center gap-1.5">
-                        <Avatar name={plan.pic || 'PIC'} size={20} />
-                        <span>Booking: <strong className="text-slate-800 font-medium">{plan.pic}</strong></span>
-                      </div>
-                      <span>•</span>
-                      <div className="flex items-center gap-1">
-                        <span className="text-slate-400">Growth:</span>
-                        <strong className="text-amber-800">{plan.growthPic?.split(' ')[0] || 'Team'}</strong>
-                      </div>
-                      <span>•</span>
-                      <span className="text-slate-400">{plan.week}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Card Body: Các chỉ số KPI */}
-                <div className="p-5 space-y-4 bg-slate-50/50">
-                  {/* Ngân sách */}
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-slate-500">Ngân sách kế hoạch:</span>
-                      <span className="font-semibold text-slate-900">
-                        {formatVndShort(plan.totalTargetBudget)}
-                      </span>
-                    </div>
-                    <Progress value={currentTotalBudget} max={plan.totalTargetBudget || 1} target={0.95} label="Ngân sách đã phân rã" />
-                    {plan.budgetAffiliate && plan.budgetSelfChannel && (
-                      <div className="p-2 rounded-lg bg-indigo-50/70 border border-indigo-100 text-2xs space-y-0.5 mt-1">
-                        <div className="flex items-center justify-between text-indigo-900 font-semibold">
-                          <span>Phân bổ 2 kênh:</span>
-                          <span className="font-mono">{formatVndShort(plan.totalTargetBudget)}</span>
-                        </div>
-                        <div className="flex items-center justify-between text-slate-600">
-                          <span>Affiliate: <strong className="text-blue-700">{formatVndShort(plan.budgetAffiliate)}</strong></span>
-                          <span>Self: <strong className="text-indigo-700">{formatVndShort(plan.budgetSelfChannel)}</strong></span>
-                        </div>
-                      </div>
-                    )}
-                    <div className="flex items-center justify-between text-2xs text-slate-400">
-                      <span>Đã phân rã {formatVndShort(currentTotalBudget)}</span>
-                      <span className="font-semibold text-slate-600">{budgetMatchPct}%</span>
-                    </div>
-                  </div>
-
-                  {/* Số lượng nội dung & Doanh thu */}
-                  <div className="grid grid-cols-2 gap-3 pt-1">
-                    <div className="bg-white p-2.5 rounded-xl border border-slate-200 text-xs">
-                      <span className="text-slate-400 block text-2xs">Chỉ tiêu video</span>
-                      <span className="text-sm font-semibold text-slate-800">
-                        {currentTotalQty} / {plan.totalTargetContents}
-                      </span>
-                      <span className="block text-2xs text-slate-400 mt-0.5">Khớp {qtyMatchPct}%</span>
-                    </div>
-                    <div className="bg-white p-2.5 rounded-xl border border-slate-200 text-xs">
-                      <span className="text-slate-400 block text-2xs">Mục tiêu GMV</span>
-                      <span className="text-sm font-semibold text-emerald-600">
-                        {formatVndShort(plan.targetGmv)}
-                      </span>
-                      <span className="block text-2xs text-emerald-500 font-semibold mt-0.5">
-                        ROI: {(plan.targetGmv / (plan.totalTargetBudget || 1)).toFixed(1)}x
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Số nội dung theo kênh */}
-                  <div className="pt-1">
-                    <ChannelBar values={(plan.items || []).map(it => ({ channel: it.channel, value: it.qty || 0 }))} height={6} />
-                  </div>
-                </div>
-
-                {/* Card Footer: Action Buttons */}
-                <div className="p-4 bg-white border-t border-slate-100 flex items-center justify-between gap-2">
-                  <button
-                    onClick={() => {
-                      setCloningPlan(plan);
-                      setCloneTargetMonth(plan.month === '2026/10' ? '2026/11' : '2026/10');
-                    }}
-                    className="p-2 rounded-xl text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
-                    title="Nhân bản sang tháng sau"
-                  >
-                    <Copy className="w-4 h-4" />
-                  </button>
-
-                  <button
-                    onClick={() => setHistoryPlanId(plan.id)}
-                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-50 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 border border-slate-200 text-xs font-semibold transition-all"
-                    title="Xem lịch sử Trao đổi booking & Growth & luồng phê duyệt"
-                  >
-                    <MessageSquare className="w-3.5 h-3.5 text-indigo-500" />
-                    <span>Trao Đổi ({plan.discussions?.length || 0})</span>
-                  </button>
-
-                  <button
-                    onClick={() => onSelectPlan(plan)}
-                    className="flex-1 inline-flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 hover: text-white font-semibold text-xs shadow-md group-hover: transition-all transform active:scale-95"
-                  >
-                    <span>Vào phân rã</span>
-                    <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      ) : (
-        /* TABLE VIEW */
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 text-slate-600 border-b border-slate-200 font-semibold text-2xs">
-                <tr>
-                  <th className="py-3.5 px-4">Tháng / kế hoạch</th>
-                  <th className="py-3.5 px-4">Nhãn hàng</th>
-                  <th className="py-3.5 px-4">Brand PIC</th>
-                  <th className="py-3.5 px-4 text-right">Ngân sách trần</th>
-                  <th className="py-3.5 px-4 text-right">Đã phân rã</th>
-                  <th className="py-3.5 px-4 text-center">Chỉ tiêu video</th>
-                  <th className="py-3.5 px-4 text-right">GMV dự phóng</th>
-                  <th className="py-3.5 px-4 text-center">Trạng Thái</th>
-                  <th className="py-3.5 px-4 text-center">Thao Tác</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {filteredPlans.map(plan => {
-                  const currentTotalBudget = (plan.items || []).reduce((acc, it) => acc + (it.totalBudget || 0), 0);
-                  const currentTotalQty = (plan.items || []).reduce((acc, it) => acc + (it.qty || 0), 0);
-
-                  return (
-                    <tr 
-                      key={plan.id}
-                      className="hover:bg-indigo-50/40 transition-colors cursor-pointer group"
-                      onClick={() => onSelectPlan(plan)}
+          {/* BỘ LỌC VÀ CHUYỂN ĐỔI CHẾ ĐỘ XEM */}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-1 flex-wrap items-center gap-2 min-w-0">
+              <FilterBar
+                search={{
+                  value: searchQuery,
+                  onChange: setSearchQuery,
+                  placeholder: 'Tìm theo tên kế hoạch, thương hiệu, PIC...',
+                }}
+                filters={
+                  <>
+                    <Select
+                      value={selectedBrand}
+                      onChange={(e) => setSelectedBrand(e.target.value)}
+                      aria-label="Lọc theo thương hiệu"
                     >
-                      <td className="py-3.5 px-4">
-                        <div className="font-semibold text-slate-900 group-hover:text-indigo-600 text-sm">
+                      <option value="ALL">Tất cả thương hiệu ({brandList.length})</option>
+                      {brandList.map(b => (
+                        <option key={b} value={b}>{b}</option>
+                      ))}
+                    </Select>
+
+                    <Select
+                      value={selectedStatus}
+                      onChange={(e) => setSelectedStatus(e.target.value)}
+                      aria-label="Lọc theo trạng thái"
+                    >
+                      <option value="ALL">Tất cả trạng thái</option>
+                      <option value="PENDING_PRE_APPROVAL">Chờ sơ duyệt</option>
+                      <option value="PRE_APPROVED">Sơ duyệt đạt</option>
+                      <option value="REVISION_REQUESTED">Cần sửa</option>
+                      <option value="PENDING_APPROVAL">Chờ duyệt Lead</option>
+                      <option value="IN_EXECUTION">Đang chạy</option>
+                      <option value="LEAD_APPROVED">Đã duyệt</option>
+                      <option value="DRAFT">Bản nháp</option>
+                      <option value="COMPLETED">Hoàn tất</option>
+                    </Select>
+
+                    <Select
+                      value={selectedPic}
+                      onChange={(e) => setSelectedPic(e.target.value)}
+                      aria-label="Lọc theo PIC"
+                    >
+                      <option value="ALL">Tất cả PIC ({picList.length})</option>
+                      {picList.map(pic => (
+                        <option key={pic} value={pic}>{pic}</option>
+                      ))}
+                    </Select>
+                  </>
+                }
+              />
+            </div>
+
+            <Segmented
+              items={[
+                { key: 'GRID', label: 'Thẻ' },
+                { key: 'TABLE', label: 'Bảng' }
+              ]}
+              value={viewMode}
+              onChange={setViewMode}
+            />
+          </div>
+
+          {/* DANH SÁCH KẾ HOẠCH */}
+          {filteredPlans.length === 0 ? (
+            <div className="bg-surface rounded-xl p-12 text-center border border-line space-y-3">
+              <div className="w-12 h-12 rounded-xl bg-sunken text-ink-3 flex items-center justify-center mx-auto">
+                <StoreIcon className="w-6 h-6" />
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm font-semibold text-ink">Không tìm thấy kế hoạch phù hợp</p>
+                <p className="text-xs text-ink-3 max-w-md mx-auto">
+                  Không có kế hoạch nào khớp với bộ lọc tháng &quot;{selectedMonth}&quot; hoặc từ khóa tìm kiếm.
+                </p>
+              </div>
+              <div className="pt-2">
+                <Button variant="primary" icon={Plus} onClick={() => setIsCreateModalOpen(true)}>
+                  Lập kế hoạch tháng này
+                </Button>
+              </div>
+            </div>
+          ) : viewMode === 'GRID' ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredPlans.map(plan => {
+                const currentTotalBudget = (plan.items || []).reduce((acc, it) => acc + (it.totalBudget || 0), 0);
+                const currentTotalQty = (plan.items || []).reduce((acc, it) => acc + (it.qty || 0), 0);
+                const budgetMatchPct = plan.totalTargetBudget > 0
+                  ? Math.min(Math.round((currentTotalBudget / plan.totalTargetBudget) * 100), 100)
+                  : 100;
+                const qtyMatchPct = plan.totalTargetContents > 0
+                  ? Math.min(Math.round((currentTotalQty / plan.totalTargetContents) * 100), 100)
+                  : 100;
+
+                return (
+                  <div
+                    key={plan.id}
+                    className="bg-surface rounded-xl border border-line hover:border-line-strong transition-colors flex flex-col justify-between overflow-hidden"
+                  >
+                    {/* Header thẻ */}
+                    <div className="p-4 border-b border-line space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs font-semibold text-ink">
+                          {plan.brandName}
+                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="px-1.5 py-0.5 rounded text-2xs font-medium bg-sunken text-ink-3">
+                            {plan.month}
+                          </span>
+                          {getStatusBadge(plan.status)}
+                        </div>
+                      </div>
+
+                      <div>
+                        <h3 className="text-sm font-semibold text-ink line-clamp-1">
                           {plan.title}
+                        </h3>
+                        <div className="flex items-center gap-2 mt-1.5 text-2xs text-ink-3 flex-wrap">
+                          <div className="flex items-center gap-1">
+                            <span>PIC:</span>
+                            <Person name={plan.pic || 'PIC'} />
+                          </div>
+                          <span>•</span>
+                          <div className="flex items-center gap-1">
+                            <span>Growth:</span>
+                            <Person name={plan.growthPic?.split(' ')[0] || 'Team'} />
+                          </div>
+                          <span>•</span>
+                          <span>{plan.week}</span>
                         </div>
-                        <div className="text-2xs text-slate-400 mt-0.5">
-                          Mã: {plan.id} • {plan.week}
-                        </div>
-                      </td>
-                      <td className="py-3.5 px-4 font-semibold text-slate-800">
-                        {plan.brandName}
-                      </td>
-                      <td className="py-3.5 px-4">
-                        <div className="font-semibold text-slate-800">{plan.pic}</div>
-                        <div className="text-2xs text-amber-700 font-medium">Growth: {plan.growthPic?.split(' ')[0] || 'Team'}</div>
-                      </td>
-                      <td className="py-3.5 px-4 text-right font-semibold text-slate-900">
-                        {formatVndShort(plan.totalTargetBudget)}
-                      </td>
-                      <td className="py-3.5 px-4 text-right font-semibold text-indigo-600">
-                        {(currentTotalBudget / 1000000).toLocaleString('vi-VN')} Tr đ
-                      </td>
-                      <td className="py-3.5 px-4 text-center">
-                        <span className="font-semibold text-slate-800">{currentTotalQty}</span>
-                        <span className="text-slate-400"> / {plan.totalTargetContents}</span>
-                      </td>
-                      <td className="py-3.5 px-4 text-right font-semibold text-emerald-600">
-                        {(plan.targetGmv / 1000000000).toFixed(2)} Tỷ
-                      </td>
-                      <td className="py-3.5 px-4 text-center">
-                        {getStatusBadge(plan.status)}
-                      </td>
-                      <td className="py-3.5 px-4 text-center" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex items-center justify-center gap-1.5">
-                          <button
-                            onClick={() => setHistoryPlanId(plan.id)}
-                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 text-xs font-semibold transition-colors"
-                            title="Xem lịch sử Trao đổi booking & Growth & luồng phê duyệt"
-                          >
-                            <MessageSquare className="w-3.5 h-3.5 text-indigo-500" />
-                            <span>({plan.discussions?.length || 0})</span>
-                          </button>
-                          <button
-                            onClick={() => onSelectPlan(plan)}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs shadow-xs"
-                          >
-                            <span>Mở kế hoạch</span>
-                            <ArrowRight className="w-3 h-3" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-        </div>
-      )}
+                      </div>
+                    </div>
 
-      {/* 6. MODAL: LẬP KẾ HOẠCH THÁNG MỚI */}
-      {isCreateModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between pb-4 border-b border-slate-100">
-              <div className="flex items-center gap-2">
-                <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-semibold">
-                  <Calendar className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-lg text-slate-900">Lập kế hoạch B2C tháng mới</h3>
-                  <p className="text-xs text-slate-500">Thiết lập ngân sách trần và mục tiêu cho chu kỳ tháng</p>
-                </div>
-              </div>
-              <button 
-                onClick={() => setIsCreateModalOpen(false)}
-                className="p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100"
-              >
-                <X className="w-5 h-5" />
-              </button>
+                    {/* Thân thẻ: Chỉ số */}
+                    <div className="p-4 space-y-3 bg-canvas/30">
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-ink-3">Ngân sách kế hoạch:</span>
+                          <span className="font-semibold text-ink tabular-nums">
+                            {formatVndShort(plan.totalTargetBudget)}
+                          </span>
+                        </div>
+                        <Progress value={currentTotalBudget} max={plan.totalTargetBudget || 1} target={0.95} label="Ngân sách đã phân rã" />
+                        <div className="flex items-center justify-between text-2xs text-ink-3 tabular-nums">
+                          <span>Đã phân rã {formatVndShort(currentTotalBudget)}</span>
+                          <span className="font-medium text-ink">{budgetMatchPct}%</span>
+                        </div>
+                      </div>
+
+                      {/* Số lượng nội dung & GMV */}
+                      <div className="grid grid-cols-2 gap-2 pt-1">
+                        <div className="bg-surface p-2.5 rounded-lg border border-line text-xs">
+                          <span className="text-ink-3 block text-2xs">Chỉ tiêu video</span>
+                          <span className="text-[13px] font-semibold text-ink tabular-nums">
+                            {currentTotalQty} / {plan.totalTargetContents}
+                          </span>
+                          <span className="block text-2xs text-ink-3 mt-0.5 tabular-nums">Khớp {qtyMatchPct}%</span>
+                        </div>
+                        <div className="bg-surface p-2.5 rounded-lg border border-line text-xs">
+                          <span className="text-ink-3 block text-2xs">Mục tiêu GMV</span>
+                          <span className="text-[13px] font-semibold text-positive tabular-nums">
+                            {formatVndShort(plan.targetGmv)}
+                          </span>
+                          <span className="block text-2xs text-positive mt-0.5 tabular-nums">
+                            ROI: {(plan.targetGmv / (plan.totalTargetBudget || 1)).toFixed(1)}x
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Phân bổ kênh */}
+                      <div className="pt-1">
+                        <ChannelBar values={(plan.items || []).map(it => ({ channel: it.channel, value: it.qty || 0 }))} height={6} />
+                      </div>
+                    </div>
+
+                    {/* Chân thẻ: Thao tác */}
+                    <div className="p-3 bg-surface border-t border-line flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          icon={Copy}
+                          onClick={() => {
+                            setCloningPlan(plan);
+                            setCloneTargetMonth(plan.month === '2026/10' ? '2026/11' : '2026/10');
+                          }}
+                          title="Nhân bản sang tháng sau"
+                        />
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          icon={MessageSquare}
+                          onClick={() => setHistoryPlanId(plan.id)}
+                          title="Xem lịch sử trao đổi & duyệt"
+                        >
+                          Trao đổi ({plan.discussions?.length || 0})
+                        </Button>
+                      </div>
+
+                      <Button
+                        size="sm"
+                        variant="primary"
+                        icon={ArrowRight}
+                        onClick={() => onSelectPlan(plan)}
+                      >
+                        Vào phân rã
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
+          ) : (
+            /* DẠNG BẢNG */
+            <Panel flush>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="bg-surface text-ink-3 border-b border-line font-medium text-[12.5px]">
+                      <th className="py-2.5 px-4">Tháng / kế hoạch</th>
+                      <th className="py-2.5 px-4">Thương hiệu</th>
+                      <th className="py-2.5 px-4">Nhân sự</th>
+                      <th className="py-2.5 px-4 text-right">Ngân sách trần</th>
+                      <th className="py-2.5 px-4 text-right">Đã phân rã</th>
+                      <th className="py-2.5 px-4 text-center">Chỉ tiêu video</th>
+                      <th className="py-2.5 px-4 text-right">GMV mục tiêu</th>
+                      <th className="py-2.5 px-4 text-center">Trạng thái</th>
+                      <th className="py-2.5 px-4 text-center">Thao tác</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-line">
+                    {filteredPlans.map(plan => {
+                      const currentTotalBudget = (plan.items || []).reduce((acc, it) => acc + (it.totalBudget || 0), 0);
+                      const currentTotalQty = (plan.items || []).reduce((acc, it) => acc + (it.qty || 0), 0);
 
-            <form onSubmit={handleCreateSubmit} className="space-y-4 mt-4">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Chu kỳ tháng:
-                  </label>
-                  <select
-                    value={newPlanMonth}
-                    onChange={(e) => setNewPlanMonth(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  >
-                    <option value="2026/10">Tháng 10/2026 (Hiện tại)</option>
-                    <option value="2026/11">Tháng 11/2026 (Sắp tới)</option>
-                    <option value="2026/12">Tháng 12/2026</option>
-                    <option value="2027/01">Tháng 01/2027</option>
-                    <option value="2026/09">Tháng 09/2026</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Tuần áp dụng:
-                  </label>
-                  <input
-                    type="text"
-                    value={newPlanWeek}
-                    onChange={(e) => setNewPlanWeek(e.target.value)}
-                    placeholder="VD: W42 [12.10 - 18.10]"
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                </div>
+                      return (
+                        <tr
+                          key={plan.id}
+                          className="hover:bg-canvas transition-colors cursor-pointer"
+                          onClick={() => onSelectPlan(plan)}
+                        >
+                          <td className="py-3 px-4">
+                            <div className="font-medium text-ink text-[13px]">
+                              {plan.title}
+                            </div>
+                            <div className="text-2xs text-ink-3 mt-0.5 font-code">
+                              {plan.id} • {plan.week}
+                            </div>
+                          </td>
+                          <td className="py-3 px-4 font-medium text-ink">
+                            {plan.brandName}
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-ink-3">PIC:</span>
+                              <Person name={plan.pic} />
+                            </div>
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                              <span className="text-ink-3">Growth:</span>
+                              <Person name={plan.growthPic?.split(' ')[0] || 'Team'} />
+                            </div>
+                          </td>
+                          <td className="py-3 px-4 text-right font-medium text-ink tabular-nums">
+                            {formatVndShort(plan.totalTargetBudget)}
+                          </td>
+                          <td className="py-3 px-4 text-right text-ink tabular-nums">
+                            {formatVndShort(currentTotalBudget)}
+                          </td>
+                          <td className="py-3 px-4 text-center tabular-nums">
+                            <span className="font-medium text-ink">{currentTotalQty}</span>
+                            <span className="text-ink-3"> / {plan.totalTargetContents}</span>
+                          </td>
+                          <td className="py-3 px-4 text-right font-medium text-positive tabular-nums">
+                            {formatVndShort(plan.targetGmv)}
+                          </td>
+                          <td className="py-3 px-4 text-center">
+                            {getStatusBadge(plan.status)}
+                          </td>
+                          <td className="py-3 px-4 text-center" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex items-center justify-center gap-1.5">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                icon={MessageSquare}
+                                onClick={() => setHistoryPlanId(plan.id)}
+                                title="Xem lịch sử trao đổi"
+                              >
+                                ({plan.discussions?.length || 0})
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                icon={ArrowRight}
+                                onClick={() => onSelectPlan(plan)}
+                              >
+                                Mở kế hoạch
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
+            </Panel>
+          )}
+        </div>
+      )}
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Nhãn hàng:
-                  </label>
-                  <select
-                    value={newPlanBrand}
-                    onChange={(e) => setNewPlanBrand(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  >
-                    <option value="Cỏ Mềm">Cỏ Mềm</option>
-                    <option value="Cocoon">Cocoon</option>
-                    <option value="Fresh_TikTok_E2E-C">Fresh</option>
-                    <option value="Face Republic_TikTok_E2E-O">Face Republic</option>
-                    <option value="Senka_TikTok_E2E-C">Senka</option>
-                    <option value="Clio_TikTok_E2E-C">Clio Cosmetics</option>
-                    <option value="Lemonade">Lemonade</option>
-                    <option value="Sunplay">Sunplay</option>
-                    <option value="TM Clean_TikTok_E2E-C">TM Clean</option>
-                  </select>
-                </div>
+      {/* 3. MODAL: LẬP KẾ HOẠCH THÁNG MỚI */}
+      <Modal
+        open={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        title="Lập kế hoạch tháng mới"
+        description="Thiết lập ngân sách trần và mục tiêu cho chu kỳ tháng"
+        size="lg"
+        footer={
+          <div className="flex items-center justify-end gap-2 w-full">
+            <Button variant="ghost" onClick={() => setIsCreateModalOpen(false)}>
+              Hủy
+            </Button>
+            <Button variant="primary" onClick={handleCreateSubmit}>
+              Tạo và mở phân rã
+            </Button>
+          </div>
+        }
+      >
+        <form onSubmit={handleCreateSubmit} className="grid gap-4">
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Chu kỳ tháng:">
+              <Select
+                value={newPlanMonth}
+                onChange={(e) => setNewPlanMonth(e.target.value)}
+              >
+                <option value="2026/10">Tháng 10/2026 (Hiện tại)</option>
+                <option value="2026/11">Tháng 11/2026 (Sắp tới)</option>
+                <option value="2026/12">Tháng 12/2026</option>
+                <option value="2027/01">Tháng 01/2027</option>
+                <option value="2026/09">Tháng 09/2026</option>
+              </Select>
+            </Field>
 
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Brand PIC phụ trách:
-                  </label>
-                  <select
-                    value={newPlanPic}
-                    onChange={(e) => setNewPlanPic(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  >
-                    <option value="Đặng Mai Hà Linh">Đặng Mai Hà Linh</option>
-                    <option value="Phương Thảo">Phương Thảo</option>
-                    <option value="Khánh Vy">Khánh Vy (Senior Booking)</option>
-                    <option value="Nguyễn Thu Trang">Nguyễn Thu Trang</option>
-                    <option value="Trần Minh Đức">Trần Minh Đức</option>
-                    <option value="Vân Ngọc">Vân Ngọc (trưởng phòng)</option>
-                  </select>
-                </div>
-              </div>
+            <Field label="Tuần áp dụng:">
+              <Input
+                type="text"
+                value={newPlanWeek}
+                onChange={(e) => setNewPlanWeek(e.target.value)}
+                placeholder="VD: W42 [12.10 - 18.10]"
+              />
+            </Field>
+          </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Tiêu đề kế hoạch:
-                </label>
-                <input
-                  type="text"
-                  value={newPlanTitle}
-                  onChange={(e) => setNewPlanTitle(e.target.value)}
-                  placeholder={`VD: Chiến dịch ${newPlanMonth} - ${newPlanBrand} Bứt phá doanh số`}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Thương hiệu:">
+              <Select
+                value={newPlanBrand}
+                onChange={(e) => setNewPlanBrand(e.target.value)}
+              >
+                <option value="Cỏ Mềm">Cỏ Mềm</option>
+                <option value="Cocoon">Cocoon</option>
+                <option value="Fresh_TikTok_E2E-C">Fresh</option>
+                <option value="Face Republic_TikTok_E2E-O">Face Republic</option>
+                <option value="Senka_TikTok_E2E-C">Senka</option>
+                <option value="Clio_TikTok_E2E-C">Clio Cosmetics</option>
+                <option value="Lemonade">Lemonade</option>
+                <option value="Sunplay">Sunplay</option>
+                <option value="TM Clean_TikTok_E2E-C">TM Clean</option>
+              </Select>
+            </Field>
 
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Ngân sách (VNĐ):
-                  </label>
-                  <input
-                    type="number"
-                    step="5000000"
-                    value={newPlanBudget}
-                    onChange={(e) => setNewPlanBudget(Number(e.target.value))}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                  <span className="text-2xs text-slate-400 mt-0.5 block">
-                    {(newPlanBudget / 1000000).toLocaleString('vi-VN')} Tr đ
-                  </span>
-                </div>
+            <Field label="Chuyên viên B2C phụ trách:">
+              <Select
+                value={newPlanPic}
+                onChange={(e) => setNewPlanPic(e.target.value)}
+              >
+                <option value="Đặng Mai Hà Linh">Đặng Mai Hà Linh</option>
+                <option value="Phương Thảo">Phương Thảo</option>
+                <option value="Khánh Vy">Khánh Vy</option>
+                <option value="Nguyễn Thu Trang">Nguyễn Thu Trang</option>
+                <option value="Trần Minh Đức">Trần Minh Đức</option>
+                <option value="Đặng Thị Yến Nhi">Đặng Thị Yến Nhi (Trưởng phòng)</option>
+              </Select>
+            </Field>
+          </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Số lượng video:
-                  </label>
-                  <input
-                    type="number"
-                    value={newPlanQty}
-                    onChange={(e) => setNewPlanQty(Number(e.target.value))}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                  <span className="text-2xs text-slate-400 mt-0.5 block">Nội dung/ca</span>
-                </div>
+          <Field label="Tiêu đề kế hoạch:">
+            <Input
+              type="text"
+              value={newPlanTitle}
+              onChange={(e) => setNewPlanTitle(e.target.value)}
+              placeholder={`VD: Kế hoạch B2C ${newPlanMonth} - ${newPlanBrand}`}
+            />
+          </Field>
 
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Mục tiêu GMV:
-                  </label>
-                  <input
-                    type="number"
-                    step="10000000"
-                    value={newPlanGmv}
-                    onChange={(e) => setNewPlanGmv(Number(e.target.value))}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-emerald-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                  <span className="text-2xs text-emerald-600 font-semibold mt-0.5 block">
-                    ROI: {(newPlanGmv / (newPlanBudget || 1)).toFixed(1)}x
-                  </span>
-                </div>
-              </div>
+          <div className="grid grid-cols-3 gap-3">
+            <Field label="Ngân sách (VNĐ):" hint={formatVndShort(newPlanBudget)}>
+              <Input
+                type="number"
+                step="5000000"
+                value={newPlanBudget}
+                onChange={(e) => setNewPlanBudget(Number(e.target.value))}
+              />
+            </Field>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Cách chia ngân sách gợi ý:
-                </label>
-                <div className="grid grid-cols-3 gap-2 text-xs">
-                  {[
-                    { id: 'BALANCED', label: 'Cân bằng các nhóm kênh' },
-                    { id: 'GMV_MAX', label: 'Tối đa GMV' },
-                    { id: 'MEGA_SALE', label: 'Siêu Sale & Live' },
-                    { id: 'BRAND_PUSH', label: 'Phủ thương hiệu' },
-                    { id: 'COST_SAVER', label: 'Tiết kiệm chi phí' }
-                  ].map(p => (
-                    <button
-                      type="button"
-                      key={p.id}
-                      onClick={() => setNewPlanPreset(p.id as any)}
-                      className={`p-2 rounded-xl text-center border font-semibold transition-all ${
-                        newPlanPreset === p.id 
-                          ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
-                          : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
-                      }`}
-                    >
-                      {p.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
+            <Field label="Số lượng video:" hint="Nội dung">
+              <Input
+                type="number"
+                value={newPlanQty}
+                onChange={(e) => setNewPlanQty(Number(e.target.value))}
+              />
+            </Field>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Ghi chú định hướng:
-                </label>
-                <textarea
-                  rows={2}
-                  value={newPlanNotes}
-                  onChange={(e) => setNewPlanNotes(e.target.value)}
-                  placeholder="Ghi chú trọng tâm sản phẩm hoặc chiến lược..."
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
+            <Field label="Mục tiêu GMV:" hint={`ROI: ${(newPlanGmv / (newPlanBudget || 1)).toFixed(1)}x`}>
+              <Input
+                type="number"
+                step="10000000"
+                value={newPlanGmv}
+                onChange={(e) => setNewPlanGmv(Number(e.target.value))}
+              />
+            </Field>
+          </div>
 
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+          <Field label="Định hướng phân bổ ngân sách:">
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { id: 'BALANCED', label: 'Cân bằng các kênh' },
+                { id: 'GMV_MAX', label: 'Tối đa GMV' },
+                { id: 'MEGA_SALE', label: 'Siêu sale & Live' },
+                { id: 'BRAND_PUSH', label: 'Phủ thương hiệu' },
+                { id: 'COST_SAVER', label: 'Tiết kiệm chi phí' }
+              ].map(p => (
                 <button
                   type="button"
-                  onClick={() => setIsCreateModalOpen(false)}
-                  className="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-semibold text-sm hover:bg-slate-50"
+                  key={p.id}
+                  onClick={() => setNewPlanPreset(p.id as StrategyPreset)}
+                  className={cx(
+                    'h-8 px-2.5 rounded-md text-[13px] border transition-colors text-center font-medium',
+                    newPlanPreset === p.id
+                      ? 'bg-primary text-white border-primary'
+                      : 'bg-surface border-line text-ink-2 hover:bg-sunken'
+                  )}
                 >
-                  Hủy
+                  {p.label}
                 </button>
-                <button
-                  type="submit"
-                  className="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 hover: text-white font-semibold text-sm shadow-lg"
-                >
-                  Tạo & mở bảng phân rã
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+              ))}
+            </div>
+          </Field>
 
-      {/* 7. MODAL: NHÂN BẢN KẾ HOẠCH SANG THÁNG TIẾP THEO */}
+          <Field label="Ghi chú định hướng:">
+            <Textarea
+              rows={2}
+              value={newPlanNotes}
+              onChange={(e) => setNewPlanNotes(e.target.value)}
+              placeholder="Ghi chú trọng tâm sản phẩm hoặc chiến lược..."
+            />
+          </Field>
+        </form>
+      </Modal>
+
+      {/* 4. MODAL: NHÂN BẢN KẾ HOẠCH SANG THÁNG TIẾP THEO */}
       {cloningPlan && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <div className="flex items-center gap-2">
-                <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
-                  <Copy className="w-5 h-5" />
-                </div>
-                <h3 className="font-semibold text-base text-slate-900">Nhân bản kế hoạch</h3>
-              </div>
-              <button onClick={() => setCloningPlan(null)} className="text-slate-400 hover:text-slate-600">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <p className="text-sm text-slate-600">
-              Bạn đang nhân bản kế hoạch <strong>"{cloningPlan.title}"</strong> ({cloningPlan.brandName}). Toàn bộ danh mục kênh và định mức sẽ được kế thừa sang tháng mới.
-            </p>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Chọn Chu kỳ tháng đích:
-              </label>
-              <select
-                value={cloneTargetMonth}
-                onChange={(e) => setCloneTargetMonth(e.target.value)}
-                className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              >
-                <option value="2026/11">Tháng 11/2026 (Sắp tới)</option>
-                <option value="2026/12">Tháng 12/2026 (cuối năm)</option>
-                <option value="2027/01">Tháng 01/2027 (Tết nguyên đán)</option>
-                <option value="2026/10">Tháng 10/2026</option>
-              </select>
-            </div>
-
-            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-              <button
-                type="button"
-                onClick={() => setCloningPlan(null)}
-                className="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 font-semibold text-xs hover:bg-slate-50"
-              >
+        <Modal
+          open={!!cloningPlan}
+          onClose={() => setCloningPlan(null)}
+          title="Nhân bản kế hoạch"
+          description={`Nhân bản kế hoạch "${cloningPlan.title}" (${cloningPlan.brandName}) sang tháng mới.`}
+          size="md"
+          footer={
+            <div className="flex items-center justify-end gap-2 w-full">
+              <Button variant="ghost" onClick={() => setCloningPlan(null)}>
                 Hủy
-              </button>
-              <button
-                type="button"
-                onClick={handleCloneSubmit}
-                className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs shadow-md"
-              >
+              </Button>
+              <Button variant="primary" onClick={handleCloneSubmit}>
                 Xác nhận nhân bản
-              </button>
+              </Button>
             </div>
-          </div>
-        </div>
+          }
+        >
+          <Field label="Chọn chu kỳ tháng đích:">
+            <Select
+              value={cloneTargetMonth}
+              onChange={(e) => setCloneTargetMonth(e.target.value)}
+            >
+              <option value="2026/11">Tháng 11/2026 (Sắp tới)</option>
+              <option value="2026/12">Tháng 12/2026 (Cuối năm)</option>
+              <option value="2027/01">Tháng 01/2027 (Tết Nguyên Đán)</option>
+              <option value="2026/10">Tháng 10/2026</option>
+            </Select>
+          </Field>
+        </Modal>
       )}
 
-      {/* 8. MODAL XEM LỊCH SỬ TRAO ĐỔI & TIẾN TRÌNH DUYỆT */}
+      {/* 5. MODAL XEM LỊCH SỬ TRAO ĐỔI & TIẾN TRÌNH DUYỆT */}
       {viewingHistoryPlan && (
         <PlanHistoryModal
           plan={viewingHistoryPlan}
@@ -2004,15 +1566,15 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
         />
       )}
 
-      {/* Modal xác nhận Duyệt Nhanh Kế Hoạch */}
+      {/* 6. MODAL XÁC NHẬN DUYỆT NHANH */}
       <ConfirmDialog
         open={!!approvingQuickPlan}
         title="Xác nhận phê duyệt nhanh kế hoạch"
-        message={`Bạn có chắc chắn muốn phê duyệt nhanh kế hoạch của gian hàng "${approvingQuickPlan?.storeName}"? Thao tác này sẽ chuyển trạng thái kế hoạch sang ĐÃ PHÊ DUYỆT.`}
+        message={`Bạn có chắc chắn muốn phê duyệt nhanh kế hoạch của gian hàng "${approvingQuickPlan?.storeName}"?`}
         confirmLabel="Xác nhận duyệt nhanh"
         onConfirm={() => {
           if (approvingQuickPlan) {
-            handleQuickApprovePlan(approvingQuickPlan.planId, approvingQuickPlan.storeName, { stopPropagation: () => {} } as any);
+            handleQuickApprovePlan(approvingQuickPlan.planId, approvingQuickPlan.storeName);
             setApprovingQuickPlan(null);
           }
         }}

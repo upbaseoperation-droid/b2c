@@ -179,7 +179,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
     category: 'Mỹ phẩm & Chăm sóc da',
     planBudget: 150000000,
     targetGmv: 450000000,
-    bookingPicLead: 'Đặng Mai Hà Linh',
+    bookingPicLead: 'Đặng Thị Yến Nhi',
     accountPic: 'Phạm Thị Nhài',
     growthPic: 'Hoàng Long',
     brandGuideline: ''
@@ -231,7 +231,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
       category: master.category || 'Mỹ phẩm & Chăm sóc da',
       planBudget: master.planBudget || master.monthlyBudget || 150000000,
       targetGmv: master.targetGmv || 450000000,
-      bookingPicLead: master.bookingPicLead || staffList[0]?.name || 'Đặng Mai Hà Linh',
+      bookingPicLead: master.bookingPicLead || staffList[0]?.name || 'Đặng Thị Yến Nhi',
       accountPic: master.accountPic || 'Phạm Thị Nhài',
       growthPic: master.growthPic || 'Hoàng Long',
       brandGuideline: master.brandGuideline || ''
@@ -366,7 +366,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
       category: brand.category,
       planBudget: brand.planBudget,
       targetGmv: brand.targetGmv,
-      bookingPicLead: brand.bookingPicLead || staffList[0]?.name || 'Đặng Mai Hà Linh',
+      bookingPicLead: brand.bookingPicLead || staffList[0]?.name || 'Đặng Thị Yến Nhi',
       accountPic: brand.accountPic || 'Phạm Thị Nhài',
       growthPic: brand.growthPic || 'Hoàng Long',
       brandGuideline: brand.brandGuideline || ''
@@ -435,7 +435,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                 category: 'Mỹ phẩm & Chăm sóc da',
                 planBudget: 150000000,
                 targetGmv: 450000000,
-                bookingPicLead: staffList[0]?.name || 'Đặng Mai Hà Linh',
+                bookingPicLead: staffList[0]?.name || 'Đặng Thị Yến Nhi',
                 accountPic: 'Phạm Thị Nhài',
                 growthPic: 'Hoàng Long',
                 brandGuideline: ''
@@ -509,8 +509,8 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
 
                       {/* Brand PIC Dropdown */}
                       <td className="py-3.5 px-4">
-                        <div className="flex items-center gap-2"><Avatar name={brand.bookingPicLead || 'Đặng Mai Hà Linh' || '?'} size={22} /><select
-                          value={brand.bookingPicLead || 'Đặng Mai Hà Linh'}
+                        <div className="flex items-center gap-2"><Avatar name={brand.bookingPicLead || 'Đặng Thị Yến Nhi' || '?'} size={22} /><select
+                          value={brand.bookingPicLead || 'Đặng Thị Yến Nhi'}
                           onChange={(e) => {
                             const updated = { ...brand, bookingPicLead: e.target.value };
                             onUpdateBrand(updated);
@@ -972,8 +972,11 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {b2cPlanStores.map(store => {
-                      const currentLeader = store.bookingLeader || 'Nguyễn Tuấn Anh';
-                      const matchingTeam = BOOKING_TEAMS_STRUCTURE.find(t => t.leaderName.includes(currentLeader.split(' ')[0])) || BOOKING_TEAMS_STRUCTURE[0];
+                      const isAssignedLeader = Boolean(store.hasBookingLeader && store.bookingLeader);
+                      const currentLeader = isAssignedLeader ? (store.bookingLeader || 'Nguyễn Thị Ngọc Tâm') : 'NONE';
+                      const matchingTeam = isAssignedLeader
+                        ? (BOOKING_TEAMS_STRUCTURE.find(t => t.id === 'team-tam') || BOOKING_TEAMS_STRUCTURE[0])
+                        : (BOOKING_TEAMS_STRUCTURE.find(t => t.id === 'team-direct') || BOOKING_TEAMS_STRUCTURE[0]);
 
                       return (
                         <tr key={store.id} className="hover:bg-slate-50 transition">
@@ -989,26 +992,32 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                           {/* Leader Dropdown */}
                           <td className="py-3 px-3">
                             <select
-                              value={store.bookingLeader || 'Nguyễn Tuấn Anh'}
+                              value={currentLeader}
                               onChange={(e) => {
-                                const newLeader = e.target.value;
-                                const newTeam = BOOKING_TEAMS_STRUCTURE.find(t => t.leaderName === newLeader) || BOOKING_TEAMS_STRUCTURE[0];
-                                const defaultPic = newTeam.members[0]?.name || 'Khánh Vy';
+                                const val = e.target.value;
+                                const isNone = val === 'NONE';
+                                const newLeader = isNone ? undefined : 'Nguyễn Thị Ngọc Tâm';
+                                const newTeam = isNone
+                                  ? (BOOKING_TEAMS_STRUCTURE.find(t => t.id === 'team-direct') || BOOKING_TEAMS_STRUCTURE[0])
+                                  : (BOOKING_TEAMS_STRUCTURE.find(t => t.id === 'team-tam') || BOOKING_TEAMS_STRUCTURE[0]);
+                                const defaultPic = store.primaryPic || newTeam.members[0]?.name || 'Lê Phương Thảo';
                                 const updated: StorePortfolioItem = {
                                   ...store,
                                   bookingLeader: newLeader,
+                                  hasBookingLeader: !isNone,
                                   primaryPic: defaultPic,
                                   assignedStaff: defaultPic,
                                   b2cOwnerName: defaultPic
                                 };
                                 onUpdateStore(updated);
-                                notify(`Đã chuyển gian "${store.storeName}" cho Leader: ${newLeader}!`);
+                                notify(isNone
+                                  ? `Gian "${store.storeName}" chuyển sang: Không có leader (Duyệt thẳng Trưởng phòng)!`
+                                  : `Đã chuyển gian "${store.storeName}" cho Trưởng nhóm: Nguyễn Thị Ngọc Tâm!`);
                               }}
                               className="w-full text-xs font-semibold px-2 py-1.5 bg-indigo-50/50 border border-indigo-200 rounded-lg text-indigo-950 focus:outline-none focus:border-indigo-500"
                             >
-                              <option value="Nguyễn Tuấn Anh">Nguyễn Tuấn Anh (Leader Team 1)</option>
-                              <option value="Đặng Mai Hà Linh">Đặng Mai Hà Linh (Leader Team 2)</option>
-                              <option value="Lê Hoàng Yến">Lê Hoàng Yến (Leader Đa Sàn)</option>
+                              <option value="NONE">Không có leader (Duyệt thẳng Trưởng phòng)</option>
+                              <option value="Nguyễn Thị Ngọc Tâm">Nguyễn Thị Ngọc Tâm (Trưởng nhóm Booking)</option>
                             </select>
                           </td>
 

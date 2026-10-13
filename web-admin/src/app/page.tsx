@@ -12,7 +12,7 @@ import { CockpitView } from '../components/views/CockpitView';
 import { OverviewView } from '../components/views/OverviewView';
 import { StoresView } from '../components/views/StoresView';
 import { BrandView } from '../components/views/BrandView';
-import { BrandKnowledgeView } from '../components/views/BrandKnowledgeView';
+import { BrandProfilesView } from '../components/views/BrandProfilesView';
 import { ContentView } from '../components/views/ContentView';
 import { BookingView } from '../components/views/BookingView';
 import { KocMasterDataView } from '../components/views/KocMasterDataView';
@@ -26,6 +26,7 @@ import PerformanceP3View from '../components/views/PerformanceP3View';
 import dynamic from 'next/dynamic';
 import { PushProductsView } from '../components/views/PushProductsView';
 import { SelfChannelCtvHubView } from '../components/views/SelfChannelCtvHubView';
+import { StoreManagementView } from '../components/views/StoreManagementView';
 
 const MasterDataHubView = dynamic(
   () => import('../components/views/MasterDataHubView').then((mod) => mod.MasterDataHubView),
@@ -120,6 +121,7 @@ export default function App() {
   const [isLoadingAuth, setIsLoadingAuth] = useState<boolean>(true);
   const [activeTab, setActiveTab] = useState<TabKey>('dashboard-bi');
   const [selectedBrandContext, setSelectedBrandContext] = useState<string>('ALL');
+  const [selectedStoreContext, setSelectedStoreContext] = useState<string>('');
 
   // Đảm bảo activeTab luôn hợp lệ theo phân quyền của vai trò hiện tại
   useEffect(() => {
@@ -632,11 +634,11 @@ export default function App() {
     'input-plan': { title: 'Kế hoạch tháng', subtitle: 'Ngân sách, kênh và nhân sự booking theo từng tháng' },
     'koc-listing': { title: 'Quản Lý Đợt Listing KOC & Air Video', subtitle: 'Chu kỳ đợt ngày 10-20-30, quy trình duyệt song song Brand & KOC, tự động chuyển giao Air Video' },
     'self-channel-hub': { title: 'Hub làm việc với Cộng tác viên (CTV)', subtitle: 'Sản xuất video kênh thương hiệu theo Content Pillar và quản lý Cộng Tác Viên' },
-    'master-data': { title: 'Dữ liệu gốc (Master Data)', subtitle: 'Thương hiệu, gian hàng, sản phẩm, ngành hàng và định danh pháp lý KOC' },
+    'master-data': { title: 'Dữ liệu gốc', subtitle: 'Thương hiệu, gian hàng, sản phẩm, ngành hàng và danh bạ KOC' },
     'push-products': { title: 'Sản phẩm đẩy của nhãn', subtitle: 'Danh mục sản phẩm trọng tâm, tồn kho và mức hoa hồng push' },
-    stores: { title: 'Gian hàng & nhãn hàng', subtitle: 'Danh mục 957 gian hàng Shopee, TikTok Shop, Lazada' },
+    stores: { title: 'Hồ sơ gian hàng', subtitle: 'Quản trị chuyên sâu chỉ số vận hành, hạn mức ngân sách, bàn giao PIC và liên kết thương hiệu' },
     campaigns: { title: 'Làm việc với Brand', subtitle: 'Brief chiến dịch, Brand Guideline, Blacklist từ khóa và duyệt KOC của team Brand' },
-    'brand-knowledge': { title: 'Hồ sơ thương hiệu & Quy chuẩn nhãn hàng', subtitle: 'Thiết lập định vị thương hiệu, guidelines, trần thù lao KOC, Hero SKU và hồ sơ pháp lý' },
+    'brand-knowledge': { title: 'Hồ sơ thương hiệu', subtitle: 'Định vị, sản phẩm chủ lực, quy chuẩn nội dung, pháp lý và trần thù lao của từng nhãn' },
     content: { title: 'Quản lý Kịch bản & Nội dung Video', subtitle: 'Kho sản phẩm nội dung, hàng chờ duyệt kịch bản 24h, video nháp KOC và đối soát bài đăng live' },
     'content-angles': { title: 'Thiết Lập Góc Nội Dung (Content Angles)', subtitle: 'Kho kịch bản phân rã theo Trụ cột nội dung và từng sản phẩm của gian hàng' },
     'partner-access': { title: 'Quản Trị Phân Quyền & RBAC Tập Trung', subtitle: 'Ma trận phân quyền 7 vai trò, quản lý PIC nhân sự nội bộ và cấp quyền Gmail cho đối tác bên thứ 3' },
@@ -852,6 +854,12 @@ export default function App() {
                 }
                 setActiveTab('brand-knowledge');
               }}
+              onNavigateToStoreProfile={(storeName) => {
+                if (storeName) {
+                  setSelectedStoreContext(storeName);
+                }
+                setActiveTab('stores');
+              }}
             />
           </KeepAliveTab>
 
@@ -874,12 +882,12 @@ export default function App() {
           </KeepAliveTab>
 
           <KeepAliveTab tabKey="stores" currentTab={activeTab}>
-            <MasterDataHubView
-              initialSubTab="stores"
+            <StoreManagementView
               currentUser={currentUser}
-              brands={brands}
+              selectedStore={selectedStoreContext}
               stores={storePortfolios}
-              kocs={kocs}
+              brands={brands}
+              deals={deals}
               onNotify={showToast}
               onUpdateStore={handleUpdateStore}
               onNavigateToBrandProfile={(brandName) => {
@@ -887,6 +895,9 @@ export default function App() {
                   setSelectedBrandContext(brandName);
                 }
                 setActiveTab('brand-knowledge');
+              }}
+              onNavigateBackToMaster={() => {
+                setActiveTab('master-data');
               }}
             />
           </KeepAliveTab>
@@ -901,17 +912,13 @@ export default function App() {
           </KeepAliveTab>
 
           <KeepAliveTab tabKey="brand-knowledge" currentTab={activeTab}>
-            <BrandKnowledgeView
+            <BrandProfilesView
               currentUser={currentUser}
               selectedBrand={selectedBrandContext}
               brands={brands}
-              stores={storePortfolios}
               deals={deals}
               onNotify={showToast}
-              onNavigateBackToBrands={() => setActiveTab('master-data')}
-              onNavigateToBookingWithStore={(storeName) => {
-                setActiveTab('booking');
-              }}
+              onOpenBooking={() => setActiveTab('booking')}
             />
           </KeepAliveTab>
 

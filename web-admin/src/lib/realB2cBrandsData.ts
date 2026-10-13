@@ -1528,7 +1528,7 @@ export const REAL_B2C_42_BRANDS: BrandDetail[] = [
     "stores": [
       {
         "id": "store-b2c-67",
-        "brandId": "brand-b2c-intimate",
+        "brandId": "brand-b2c-ziaja-intimate",
         "platform": "SHOPEE_MALL",
         "storeName": "Ziaja_Shopee_E2E-S",
         "storeId": "SO-B2C-064",
@@ -1541,7 +1541,7 @@ export const REAL_B2C_42_BRANDS: BrandDetail[] = [
       },
       {
         "id": "store-b2c-68",
-        "brandId": "brand-b2c-intimate",
+        "brandId": "brand-b2c-ziaja-intimate",
         "platform": "TIKTOK_SHOP",
         "storeName": "Ziaja_TikTok_E2E-S",
         "storeId": "SO-B2C-065",
@@ -1556,7 +1556,7 @@ export const REAL_B2C_42_BRANDS: BrandDetail[] = [
     "heroProducts": [
       {
         "id": "hero-intimate-01",
-        "brandId": "brand-b2c-intimate",
+        "brandId": "brand-b2c-ziaja-intimate",
         "productName": "Combo Sản phẩm Chủ lực Intimate",
         "sku": "SKU-INTIMA-01",
         "price": 250000,

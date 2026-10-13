@@ -14,6 +14,7 @@ import { formatDate } from '../../lib/format';
 import { Button, Chips, DataTable, EmptyState, FilterBar, Modal, PageActions, Pagination, Panel, Person, Status } from '../ui';
 import type { Column } from '../ui';
 import { ApiError, contractApi, type ContractBootstrap } from '../contracts/api';
+import { browserDemoEnabled, downloadBrowserDemo, enableBrowserDemo } from '../contracts/browserDemo';
 import { ROLE_LABEL, contractStatus, isAcceptance } from '../contracts/contractUi';
 import { ContractDetail } from '../contracts/ContractDetail';
 import { ContractForm, type ContractFormInit, type ContractFormPayload } from '../contracts/ContractForm';
@@ -29,11 +30,13 @@ export function ContractManagementView({
   kocs = [],
   intent,
   onNotify,
+  demoMode = false,
 }: {
   deals?: BookingDealItem[];
   kocs?: KocItem[];
   intent?: ContractIntent | null;
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
+  demoMode?: boolean;
 }) {
   const [data, setData] = useState<ContractBootstrap | null>(null);
   const [loadError, setLoadError] = useState<ApiError | null>(null);
@@ -45,9 +48,10 @@ export function ContractManagementView({
   const [showTemplates, setShowTemplates] = useState(false);
 
   const refresh = useCallback(async () => {
+    if (demoMode) enableBrowserDemo();
     const result = await contractApi<ContractBootstrap>('/api/contracts');
     setData(result); setLoadError(null); return result;
-  }, []);
+  }, [demoMode]);
 
   useEffect(() => {
     (async () => {
@@ -172,7 +176,7 @@ export function ContractManagementView({
         <EmptyState
           title={loadError.status === 401 ? 'Cần đăng nhập Lark để xem hợp đồng' : loadError.status === 403 ? 'Tài khoản chưa được cấp quyền hợp đồng' : 'Chưa tải được hợp đồng'}
           description={loadError.message}
-          action={loadError.status === 401 ? <a href="/api/auth/lark/login?returnTo=/" className="text-[13px] text-accent hover:underline">Đăng nhập Lark</a> : <Button onClick={() => refresh().catch(() => undefined)}>Thử lại</Button>}
+          action={<div className="flex gap-2"><Button onClick={() => { enableBrowserDemo(); refresh().catch(() => undefined); }}>Mở bản giả lập</Button>{loadError.status === 401 ? <a href="/api/auth/lark/login?returnTo=/" className="text-[13px] text-accent hover:underline">Đăng nhập Lark</a> : <Button onClick={() => refresh().catch(() => undefined)}>Thử lại</Button>}</div>}
         />
       </Panel>
     );
@@ -182,7 +186,12 @@ export function ContractManagementView({
   const canCreate = data.actor.roles.includes('CREATOR');
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" onClickCapture={e => {
+      if (!browserDemoEnabled()) return;
+      const link = (e.target as HTMLElement).closest('a');
+      if (link?.getAttribute('href')?.startsWith('/api/contracts/')) { e.preventDefault(); downloadBrowserDemo(link.getAttribute('href')!).catch(error => onNotify?.(error.message, 'error')); }
+    }}>
+      {data.config.storage === 'BROWSER_DEMO' && <div role="status" className="rounded-xl bg-warning-soft px-4 py-3 text-[13px] text-ink">Bản giả lập online · Dữ liệu thử chỉ lưu trong trình duyệt này. Dùng mẫu rút gọn để thử quy trình; bộ mẫu pháp chế gốc và kết nối Lark/MISA/AI đang chờ cấu hình. Không nhập dữ liệu thật hoặc dùng tài liệu thử để ký.</div>}
       {screen.mode === 'list' && (
         <PageActions>
           <Button icon={FileText} onClick={() => setShowTemplates(true)}>Mẫu pháp chế</Button>

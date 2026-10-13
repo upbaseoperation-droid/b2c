@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Search, Plus, X, Video, Clapperboard, Sparkles } from 'lucide-react';
+import { Search, Plus, X } from 'lucide-react';
+import { Button, Modal, Stat, StatRow } from '../../ui';
 import { MasterVideoFormat } from '../../../lib/types';
 
 interface VideoFormatsMasterViewProps {
@@ -73,66 +74,42 @@ export const VideoFormatsMasterView: React.FC<VideoFormatsMasterViewProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* Top Banner & KPI */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-2xs font-semibold uppercase tracking-wider text-slate-500">Định dạng tiêu chuẩn</span>
-            <Clapperboard className="w-4 h-4 text-slate-400" />
-          </div>
-          <div className="mt-1 flex items-baseline gap-2">
-            <span className="text-xl font-bold font-mono text-slate-900">{formats.length}</span>
-            <span className="text-2xs text-slate-500">format sản xuất</span>
-          </div>
-          <div className="text-2xs text-slate-500 mt-1">
-            Voiceover, Nhạc text, Ảnh lướt, Video AI...
-          </div>
-        </div>
-
-        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-2xs font-semibold uppercase tracking-wider text-slate-500">Định dạng AI & Tự động</span>
-            <Sparkles className="w-4 h-4 text-purple-600" />
-          </div>
-          <div className="mt-1 flex items-baseline gap-2">
-            <span className="text-xl font-bold font-mono text-purple-600">Video AI & Remix</span>
-          </div>
-          <div className="text-2xs text-slate-500 mt-1">
-            Tối ưu chi phí sản xuất diện rộng
-          </div>
-        </div>
-
-        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-2xs font-semibold uppercase tracking-wider text-slate-500">Kênh triển khai</span>
-            <Video className="w-4 h-4 text-blue-600" />
-          </div>
-          <div className="mt-1 text-xs font-semibold text-slate-800">
-            TikTok, Reels, Shorts & Affiliate
-          </div>
-          <div className="text-2xs text-slate-500 mt-1">
-            Chuẩn hóa quy cách xuất video B2C
-          </div>
-        </div>
-      </div>
+      {/* Top Overview */}
+      <StatRow>
+        <Stat
+          label="Định dạng tiêu chuẩn"
+          value={formats.length}
+          note="Voiceover, Nhạc nền text, Ảnh lướt..."
+        />
+        <Stat
+          label="Mẫu dựng sẵn & Tự động"
+          value={`${formats.filter(f => f.name.toLowerCase().includes('voice') || f.name.toLowerCase().includes('text')).length} mẫu`}
+          note="Tối ưu thời gian sản xuất video hàng loạt"
+        />
+        <Stat
+          label="Kênh phát hành trọng điểm"
+          value="TikTok & Reels"
+          note="Quy chuẩn khung hình 9:16 cho B2C"
+        />
+      </StatRow>
 
       {/* Filter and Action Bar */}
-      <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="bg-surface p-3.5 rounded-xl border border-line shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="relative w-full sm:w-80">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-ink-3 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             placeholder="Tìm theo tên định dạng, phân loại..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-slate-400"
+            className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border border-line bg-surface focus:outline-none focus:ring-1 focus:ring-line-strong text-ink"
           />
         </div>
 
         <button
           type="button"
           onClick={handleOpenAdd}
-          className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg transition flex items-center gap-1.5 shrink-0"
+          className="px-3.5 py-1.5 bg-primary hover:bg-primary-hover text-white text-xs font-medium rounded-lg transition flex items-center gap-1.5 shrink-0"
         >
           <Plus className="w-3.5 h-3.5" />
           Thêm định dạng video
@@ -140,50 +117,50 @@ export const VideoFormatsMasterView: React.FC<VideoFormatsMasterViewProps> = ({
       </div>
 
       {/* Video Formats Table */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
+      <div className="bg-surface rounded-xl border border-line shadow-xs overflow-hidden">
         <table className="w-full text-left text-xs">
-          <thead className="bg-slate-50 text-slate-600 border-b border-slate-200 font-semibold text-2xs">
+          <thead className="bg-canvas text-ink-3 border-b border-line font-medium text-[12.5px]">
             <tr>
-              <th className="py-3 px-4 w-[120px]">Mã format</th>
-              <th className="py-3 px-4 w-[240px]">Tên định dạng video</th>
-              <th className="py-3 px-4 min-w-[200px]">Tùy chọn hiển thị (Option)</th>
-              <th className="py-3 px-4 w-[160px]">Cập nhật lần cuối</th>
-              <th className="py-3 px-4 text-right w-[80px]">Thao tác</th>
+              <th className="py-2.5 px-4 w-[120px]">Mã định dạng</th>
+              <th className="py-2.5 px-4 w-[240px]">Tên định dạng video</th>
+              <th className="py-2.5 px-4 min-w-[200px]">Tùy chọn hiển thị (Option)</th>
+              <th className="py-2.5 px-4 w-[160px]">Cập nhật lần cuối</th>
+              <th className="py-2.5 px-4 text-right w-[80px]">Thao tác</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y divide-line">
             {filteredFormats.length === 0 ? (
               <tr>
-                <td colSpan={5} className="py-12 text-center text-slate-400">
+                <td colSpan={5} className="py-12 text-center text-ink-3">
                   Không tìm thấy định dạng video phù hợp
                 </td>
               </tr>
             ) : (
               filteredFormats.map(f => (
-                <tr key={f.id} className="hover:bg-slate-50/70 transition-colors">
+                <tr key={f.id} className="hover:bg-canvas transition-colors">
                   <td className="py-3 px-4">
-                    <span className="font-mono font-semibold text-slate-600 text-xs px-1.5 py-0.5 rounded bg-slate-100 border border-slate-200">
+                    <span className="font-mono font-medium text-ink-2 text-xs px-1.5 py-0.5 rounded bg-sunken border border-line">
                       {f.id}
                     </span>
                   </td>
                   <td className="py-3 px-4">
-                    <span className="font-semibold text-slate-900 text-xs">
+                    <span className="font-medium text-ink text-xs">
                       {f.name}
                     </span>
                   </td>
-                  <td className="py-3 px-4 text-slate-700">
-                    <span className="px-2 py-0.5 rounded text-2xs font-medium bg-slate-50 text-slate-700 border border-slate-200">
+                  <td className="py-3 px-4 text-ink-2">
+                    <span className="px-2 py-0.5 rounded text-2xs font-medium bg-sunken text-ink-2 border border-line">
                       {f.option}
                     </span>
                   </td>
-                  <td className="py-3 px-4 text-slate-500 font-mono text-2xs">
+                  <td className="py-3 px-4 text-ink-3 font-mono text-2xs">
                     {f.lastUpdate || '2026-05-05'}
                   </td>
                   <td className="py-3 px-4 text-right">
                     <button
                       type="button"
                       onClick={() => handleOpenEdit(f)}
-                      className="text-slate-600 hover:text-slate-900 font-medium text-xs px-2 py-1 rounded hover:bg-slate-100 transition"
+                      className="text-ink-2 hover:text-ink font-medium text-xs px-2 py-1 rounded hover:bg-sunken transition"
                     >
                       Sửa
                     </button>
@@ -196,65 +173,43 @@ export const VideoFormatsMasterView: React.FC<VideoFormatsMasterViewProps> = ({
       </div>
 
       {/* Modal Add / Edit Format */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl border border-slate-200 max-w-sm w-full p-5 space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h3 className="font-semibold text-sm text-slate-900">
-                {editingFormat ? `Cập nhật định dạng [${editingFormat.name}]` : 'Thêm định dạng video'}
-              </h3>
-              <button
-                type="button"
-                onClick={() => setIsModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSave} className="space-y-3 text-xs">
-              <div>
-                <label className="block text-slate-600 font-medium mb-1">Tên định dạng *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="VD: Unbox Voice, Review Voice..."
-                  value={form.name}
-                  onChange={(e) => setForm(prev => ({ ...prev, name: e.target.value }))}
-                  className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-400"
-                />
-              </div>
-
-              <div>
-                <label className="block text-slate-600 font-medium mb-1">Tùy chọn hiển thị (Option Label)</label>
-                <input
-                  type="text"
-                  placeholder="VD: Unbox Voice (Để trống nếu giống tên)"
-                  value={form.option}
-                  onChange={(e) => setForm(prev => ({ ...prev, option: e.target.value }))}
-                  className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-400"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-3 py-1.5 border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 transition"
-                >
-                  Hủy
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-lg transition"
-                >
-                  Lưu định dạng
-                </button>
-              </div>
-            </form>
+      <Modal
+        open={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title={editingFormat ? `Cập nhật định dạng [${editingFormat.name}]` : 'Thêm định dạng video'}
+        size="sm"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setIsModalOpen(false)}>Hủy</Button>
+            <Button variant="primary" onClick={handleSave}>Lưu định dạng</Button>
+          </>
+        }
+      >
+        <form onSubmit={handleSave} className="space-y-3 text-xs">
+          <div>
+            <label className="block text-ink-2 font-medium mb-1">Tên định dạng *</label>
+            <input
+              type="text"
+              required
+              placeholder="VD: Unbox Voice, Review Voice..."
+              value={form.name}
+              onChange={(e) => setForm(prev => ({ ...prev, name: e.target.value }))}
+              className="w-full px-3 py-1.5 border border-line rounded-lg focus:outline-none focus:ring-1 focus:ring-line-strong text-ink bg-surface"
+            />
           </div>
-        </div>
-      )}
+
+          <div>
+            <label className="block text-ink-2 font-medium mb-1">Tùy chọn hiển thị (Option Label)</label>
+            <input
+              type="text"
+              placeholder="VD: Unbox Voice (Để trống nếu giống tên)"
+              value={form.option}
+              onChange={(e) => setForm(prev => ({ ...prev, option: e.target.value }))}
+              className="w-full px-3 py-1.5 border border-line rounded-lg focus:outline-none focus:ring-1 focus:ring-line-strong text-ink bg-surface"
+            />
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 };

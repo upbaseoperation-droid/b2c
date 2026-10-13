@@ -47,3 +47,4 @@ next-env.d.ts
 
 # Hồ sơ hợp đồng phát triển cục bộ (không commit dữ liệu thật)
 /.contract-data/
+/.brand-data/

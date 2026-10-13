@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { formatVndShort } from '../../lib/format';
+import { ChannelTag, channelOf, Stat, StatRow } from '../ui';
 import {
   GitFork,
   Building2,
@@ -667,85 +668,37 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
 
   // Helper for platform visual badge
   const renderPlatformBadge = (platform: 'TIKTOK_SHOP' | 'SHOPEE_MALL' | 'LAZADA') => {
-    switch (platform) {
-      case 'TIKTOK_SHOP':
-        return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-semibold bg-black text-cyan-300 border border-slate-700">
-            <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-            TikTok Shop
-          </span>
-        );
-      case 'SHOPEE_MALL':
-        return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/30">
-            <ShoppingBag className="w-2.5 h-2.5 text-amber-400" />
-            Shopee Mall
-          </span>
-        );
-      case 'LAZADA':
-        return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/30">
-            Lazada
-          </span>
-        );
-    }
+    return <ChannelTag channel={channelOf(platform)} />;
   };
 
   return (
     <div className="space-y-4">
-      {/* Top Header & Context Description */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-xs relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl pointer-events-none" />
-        
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 relative z-10">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="px-2.5 py-0.5 rounded-full text-2xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 flex items-center gap-1">
-                <GitFork className="w-3.5 h-3.5" />
-                MINDMAP MASTER DATA 4 CHIỀU
-              </span>
-              <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                Brand → Gian hàng → PIC chính → Store SKUs
-              </span>
-            </div>
-            <h2 className="text-lg sm:text-xl font-semibold text-slate-900 tracking-tight flex items-center gap-2">
-              Sơ đồ phân cấp & dữ liệu gốc Master Data
-            </h2>
-            <p className="text-xs text-slate-600 max-w-3xl mt-1 leading-relaxed">
-              Trực quan hóa cấu trúc thực tế: <strong>Brand</strong> là cấp cao nhất, rẽ nhánh sang các <strong>Gian hàng</strong> sàn. Mỗi gian hàng có đúng <strong>1 PIC chính</strong> chủ trì và tự phân bổ xuống các nhân sự thành viên, cùng danh mục <strong>Store Product ID</strong> tương ứng từng sàn.
-            </p>
-          </div>
+      {/* Top Overview */}
+      <StatRow>
+        <Stat
+          label="Thương hiệu Master"
+          value={`${brands.length} thương hiệu`}
+          note="Cấp cao nhất, ký hợp đồng & định mức"
+        />
+        <Stat
+          label="Gian hàng các sàn"
+          value={`${stores.length} gian hàng`}
+          note={`${filteredStores.length} gian hàng theo bộ lọc hiện tại`}
+        />
+        <Stat
+          label="Chuyên viên phụ trách (PIC)"
+          value={`${new Set(stores.map(s => s.primaryPic).filter(p => p && p !== 'Chưa phân công' && p !== 'Chưa gán')).size} nhân sự`}
+          note="Chủ trì vận hành và phân rã kế hoạch"
+        />
+        <Stat
+          label="Sản phẩm trên sàn"
+          value={`${stores.reduce((acc, s) => acc + (s.storeProducts?.length || 0), 0)} SKUs`}
+          note="Đã map SKU và ID sản phẩm từng sàn"
+        />
+      </StatRow>
 
-          {/* Quick Metrics Badges */}
-          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-            <div className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl flex items-center gap-2.5">
-              <Building2 className="w-4 h-4 text-blue-600" />
-              <div>
-                <div className="text-2xs text-slate-500 font-semibold">Thương hiệu</div>
-                <div className="text-sm font-semibold text-slate-900">{brands.length} Brands</div>
-              </div>
-            </div>
-            <div className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl flex items-center gap-2.5">
-              <Store className="w-4 h-4 text-purple-600" />
-              <div>
-                <div className="text-2xs text-slate-500 font-semibold">Gian hàng sàn</div>
-                <div className="text-sm font-semibold text-slate-900">{stores.length} Shops</div>
-              </div>
-            </div>
-            <div className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl flex items-center gap-2.5">
-              <Crown className="w-4 h-4 text-amber-500" />
-              <div>
-                <div className="text-2xs text-slate-500 font-semibold">PIC Chính Lead</div>
-                <div className="text-sm font-semibold text-amber-700">
-                  {new Set(stores.map(s => s.primaryPic).filter(p => p && p !== 'Chưa phân công' && p !== 'Chưa gán')).size} Lead PICs
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Toolbar & Filters */}
-        <div className="mt-4 pt-4 border-t border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
+      {/* Toolbar & Filters */}
+      <div className="bg-surface border border-line rounded-xl p-3.5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
           <div className="flex items-center gap-2 flex-wrap flex-1">
             {/* Toggle B2C Only vs All */}
             <div className="inline-flex p-0.5 bg-slate-200/70 rounded-lg text-xs font-medium">
@@ -896,7 +849,6 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
             </div>
           </div>
         </div>
-      </div>
 
       {/* Main Grid: Mindmap Canvas (Left/Center) + Node Inspector Drawer (Right) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">

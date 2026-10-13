@@ -302,6 +302,8 @@ Màn mẫu: hồ sơ KOC (`components/koc/KocProfile.tsx`).
 
 **Màn mẫu:** Booking (`BookingView.tsx`) đã chuyển hoàn toàn: 3 bảng dùng `DataTable`, bộ lọc dùng `FilterBar`/`Chips`/`Select`, 2 modal dùng `Modal`, `prompt()`/`alert()` thay bằng `ConfirmDialog`. File giảm từ 1.868 xuống 1.098 dòng. Dùng màn này làm mẫu khi chuyển các màn khác.
 
+**Hồ sơ thương hiệu** (`BrandProfilesView.tsx`, `components/brands/`, API `/api/brands/profiles`) đã chuyển: dữ liệu lưu trên hệ thống theo từng mục, quyền sửa theo mục do máy chủ kiểm tra, mục trống hiện trạng thái rỗng thay vì nội dung mẫu.
+
 **Hợp đồng** (`ContractManagementView.tsx`, `components/contracts/`) đã chuyển: danh sách có chip số đếm, hồ sơ hai cột (tiến trình duyệt → ký ở cột chính), form chia nhóm theo mục của mẫu, trạng thái theo bộ 8 nhãn.
 
 **Màn mẫu cho danh sách + hồ sơ:** Danh bạ KOC (`KocMasterDataView.tsx`, `components/koc/`). Danh sách dùng `FilterBar`/`Chips`/`DataTable`/`ActionMenu`/`Pagination`; hồ sơ hai cột dùng chung cho trang và modal (`KocProfileModal`); bỏ toàn bộ số liệu bịa khi thiếu dữ liệu.
