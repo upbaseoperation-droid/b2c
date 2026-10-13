@@ -48,6 +48,7 @@ test('API toàn luồng: quyền, lưu bền vững, xung đột, duyệt và ch
     assert.equal(record.version, 2); assert.equal(record.approval, 'DRAFT');
   } finally {
     if (oldDirectory === undefined) delete process.env.CONTRACT_DATA_DIR; else process.env.CONTRACT_DATA_DIR = oldDirectory;
+    for (const file of await readdir(path.join(directory, 'sources'))) await unlink(path.join(directory, 'sources', file)); await rmdir(path.join(directory, 'sources'));
     for (const file of await readdir(directory)) await unlink(path.join(directory, file)); await rmdir(directory);
   }
 });

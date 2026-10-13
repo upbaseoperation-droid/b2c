@@ -17,7 +17,7 @@ import { BrandKnowledgeView } from '../components/views/BrandKnowledgeView';
 import { ContentView } from '../components/views/ContentView';
 import { BookingView } from '../components/views/BookingView';
 import { KocMasterDataView } from '../components/views/KocMasterDataView';
-import { ContractView } from '../components/views/ContractView';
+import { ContractManagementView } from '../components/views/ContractManagementView';
 import { ManagerView } from '../components/views/ManagerView';
 import { LeaderboardView } from '../components/views/LeaderboardView';
 import { BrandHubView } from '../components/views/BrandHubView';
@@ -130,15 +130,16 @@ export default function App() {
   }, [currentUser, activeTab]);
 
   const handleUserChange = (newUser: UserProfile, isSilent: boolean = false) => {
+    if (!isSilent && ((process.env.NODE_ENV as string) === 'production' || currentUser?.loginProvider === 'LARK')) return;
     setCurrentUser(newUser);
 
     // Lưu vai trò được chọn vào localStorage để duy trì sau khi tải lại trang
-    if (typeof window !== 'undefined') {
+    if ((process.env.NODE_ENV as string) === 'development' && newUser.loginProvider !== 'LARK' && typeof window !== 'undefined') {
       localStorage.setItem('upbase_selected_user_id', newUser.id);
     }
 
     // Đồng bộ session cookie máy chủ qua API sandbox ngầm
-    fetch('/api/auth/lark/sandbox', {
+    if (!isSilent && (process.env.NODE_ENV as string) === 'development') fetch('/api/auth/lark/sandbox', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId: newUser.id }),
@@ -166,14 +167,14 @@ export default function App() {
   useEffect(() => {
     async function loadUser() {
       try {
-        const savedUserId = typeof window !== 'undefined' ? localStorage.getItem('upbase_selected_user_id') : null;
+        const savedUserId = (process.env.NODE_ENV as string) === 'development' && typeof window !== 'undefined' ? localStorage.getItem('upbase_selected_user_id') : null;
         const res = await fetch('/api/auth/me');
 
         if (res.ok) {
           const data = await res.json();
           if (data.authenticated && data.user) {
             // Nếu người dùng đã chọn vai trò trước đó trong localStorage, ưu tiên áp dụng vai trò đó
-            if (savedUserId && savedUserId !== data.user.id) {
+            if (data.user.loginProvider !== 'LARK' && savedUserId && savedUserId !== data.user.id) {
               const matched = USERS.find(u => u.id === savedUserId);
               if (matched) {
                 handleUserChange(matched, true);
@@ -188,10 +189,12 @@ export default function App() {
         }
 
         // Dự phòng: Mặc định cấp quyền Quản trị BOD hoặc vai trò đã lưu mà không chuyển sang /login
+        if ((process.env.NODE_ENV as string) === 'production') { window.location.assign('/login'); return; }
         const fallbackUser = (savedUserId && USERS.find(u => u.id === savedUserId)) || USERS[0];
         handleUserChange(fallbackUser, true);
         setIsLoadingAuth(false);
       } catch (err) {
+        if ((process.env.NODE_ENV as string) === 'production') { window.location.assign('/login'); return; }
         console.warn('Could not fetch user session, using fallback user:', err);
         const savedUserId = typeof window !== 'undefined' ? localStorage.getItem('upbase_selected_user_id') : null;
         const fallbackUser = (savedUserId && USERS.find(u => u.id === savedUserId)) || USERS[0];
@@ -649,8 +652,8 @@ export default function App() {
     'content-angles': { title: 'Thiết Lập Góc Nội Dung (Content Angles)', subtitle: 'Kho kịch bản phân rã theo Trụ cột nội dung và từng sản phẩm của gian hàng' },
     'partner-access': { title: 'Quản Trị Phân Quyền & RBAC Tập Trung', subtitle: 'Ma trận phân quyền 7 vai trò, quản lý PIC nhân sự nội bộ và cấp quyền Gmail cho đối tác bên thứ 3' },
     booking: { title: 'Kế hoạch & Vận hành Booking', subtitle: 'Phân rã kế hoạch theo Khung lương KL1-7, tuyển chọn KOC và quản lý deal hợp đồng' },
-    'koc-master': { title: 'Danh bạ KOC', subtitle: 'Hồ sơ KOC, giấy tờ pháp lý và mẫu hợp đồng' },
-    contracts: { title: 'Hợp đồng & thanh toán', subtitle: 'Theo dõi hợp đồng điện tử, tạm ứng và nghiệm thu thanh lý' },
+    'koc-master': { title: 'Danh bạ KOC', subtitle: 'Hồ sơ, giấy tờ và lịch sử booking của KOC' },
+    contracts: { title: 'Quản lý hợp đồng', subtitle: 'Tạo từ mẫu pháp chế, phê duyệt nội bộ và theo dõi trình ký weSign' },
     manager: { title: 'Điều phối & Quản lý', subtitle: 'Phân bổ nhãn hàng, gian hàng, nhân sự và cân bằng khối lượng việc' },
     'sample-tracker': { title: 'Hàng mẫu', subtitle: 'Vận đơn mẫu, hạn nộp kịch bản 5 ngày và mã Spark Ads' },
     'performance-p3': { title: 'Đánh giá 4P & thưởng P3', subtitle: 'Điểm khối lượng việc theo độ khó gian hàng, chất lượng và SLA' },
@@ -983,18 +986,16 @@ export default function App() {
               kocs={kocs}
               allDeals={deals}
               currentUser={currentUser}
+              selectedBrand={selectedBrandContext}
               onOpenQuickBookWithKoc={handleOpenQuickBookWithKoc}
               onKocCreated={handleKocCreated}
               onKocUpdated={handleKocUpdated}
+              onNotify={showToast}
             />
           </KeepAliveTab>
 
           <KeepAliveTab tabKey="contracts" currentTab={activeTab}>
-            <ContractView
-              deals={deals}
-              onSelectDeal={setSelectedDealForContract}
-              onApproveAdvance={handleApproveAdvance}
-            />
+            <ContractManagementView />
           </KeepAliveTab>
 
           <KeepAliveTab tabKey="sample-tracker" currentTab={activeTab}>

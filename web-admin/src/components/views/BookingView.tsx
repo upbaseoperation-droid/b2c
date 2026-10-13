@@ -1190,6 +1190,8 @@ export const BookingView: React.FC<BookingViewProps> = ({
         isOpen={!!inspectedKoc}
         onClose={() => setInspectedKoc(null)}
         koc={inspectedKoc}
+        deals={deals}
+        currentUser={currentUser}
         onOpenQuickBook={onOpenQuickBookWithKoc}
       />
 

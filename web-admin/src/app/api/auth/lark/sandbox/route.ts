@@ -5,7 +5,7 @@ import { encodeSessionToken, SESSION_COOKIE_NAME, sanitizeReturnTo } from '@/lib
 export const dynamic = 'force-dynamic';
 
 const isSandboxAllowed = () => {
-  return true; // Cho phép chuyển đổi vai trò và đăng nhập trực tiếp không cần Lark/Gmail trên mọi môi trường
+  return process.env.NODE_ENV !== 'production';
 };
 
 /**
@@ -14,6 +14,8 @@ const isSandboxAllowed = () => {
  * Yêu cầu gửi userId hợp lệ đã đăng ký trong hệ thống.
  */
 export async function POST(request: NextRequest) {
+  if (!isSandboxAllowed()) return NextResponse.json({ error: 'Đăng nhập thử nghiệm đã tắt.' }, { status: 403 });
+  if (request.headers.get('origin') !== request.nextUrl.origin) return NextResponse.json({ error: 'Nguồn yêu cầu không hợp lệ.' }, { status: 403 });
 
   try {
     const body = await request.json();
@@ -70,6 +72,7 @@ export async function POST(request: NextRequest) {
  * Cho phép đăng nhập nhanh trực tiếp qua URL mà không cần đăng nhập Lark/Gmail.
  */
 export async function GET(request: NextRequest) {
+  if (!isSandboxAllowed()) return NextResponse.json({ error: 'Đăng nhập thử nghiệm đã tắt.' }, { status: 403 });
   const { searchParams } = request.nextUrl;
   const userId = searchParams.get('userId') || USERS[0].id;
   const returnTo = sanitizeReturnTo(searchParams.get('returnTo') || '/');

@@ -14,9 +14,10 @@ async function api<T>(url: string, body?: unknown): Promise<T> {
   const result = await response.json(); if (!response.ok) throw new Error(result.error || 'Không xử lý được yêu cầu.'); return result;
 }
 // Giữ tương thích nơi gọi màn hình cũ; mọi dữ liệu/quyền được lấy từ máy chủ.
-export function ContractHubView() {
+export function ContractManagementView() {
   const [data, setData] = useState<Bootstrap | null>(null); const [error, setError] = useState(''); const [busy, setBusy] = useState(false);
   const [selected, setSelected] = useState<string | null>(null); const [creating, setCreating] = useState(false); const [editing, setEditing] = useState(false);
+  const [templateRecordId, setTemplateRecordId] = useState('');
   const [template, setTemplate] = useState<LegalTemplate | null>(null); const [templateId, setTemplateId] = useState(''); const [title, setTitle] = useState(''); const [brand, setBrand] = useState(''); const [partner, setPartner] = useState(''); const [parentId, setParentId] = useState(''); const [values, setValues] = useState<Record<string, string>>({});
   const [reviewers, setReviewers] = useState<Record<string, string>>({}); const [note, setNote] = useState(''); const [documentId, setDocumentId] = useState(''); const [confirmed, setConfirmed] = useState(false);
   const [preview, setPreview] = useState<string[] | null>(null); const [search, setSearch] = useState(''); const [filter, setFilter] = useState('ALL'); const [notice, setNotice] = useState('');
@@ -24,9 +25,9 @@ export function ContractHubView() {
   useEffect(() => { (async () => { if (process.env.NODE_ENV === 'development') await api('/api/auth/me'); await refresh(); })().catch(e => setError(e.message)); }, [refresh]);
   useEffect(() => {
     if (!templateId) return;
-    let cancelled = false; api<{ template: LegalTemplate }>(`/api/contracts/templates/${templateId}`).then(r => { if (!cancelled) setTemplate(r.template); }).catch(e => { if (!cancelled) setError(e.message); });
+    let cancelled = false; api<{ template: LegalTemplate }>(`/api/contracts/templates/${templateId}${templateRecordId ? `?record=${encodeURIComponent(templateRecordId)}` : ''}`).then(r => { if (!cancelled) setTemplate(r.template); }).catch(e => { if (!cancelled) setError(e.message); });
     return () => { cancelled = true; };
-  }, [templateId]);
+  }, [templateId, templateRecordId]);
   const record = data?.records.find(r => r.id === selected);
   const action = async (payload: Record<string, unknown>) => {
     setBusy(true); setError(''); setNotice('');
@@ -40,8 +41,8 @@ export function ContractHubView() {
   // Đồng bộ khi đang xem hồ sơ; máy chủ vẫn kiểm tra quyền và revision.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selected, record?.revision, data?.config.wesign, busy]);
-  const startCreate = () => { setCreating(true); setEditing(false); setSelected(null); setTemplateId(''); setTemplate(null); setTitle(''); setBrand(data?.actor.brands[0] || ''); setPartner(''); setParentId(''); setValues({}); setError(''); setPreview(null); };
-  const startEdit = () => { if (!record) return; setCreating(false); setEditing(true); setTemplateId(record.templateId); setTitle(record.title); setBrand(record.brand); setPartner(record.partner); setParentId(record.parentId || ''); setValues(record.values); setPreview(null); };
+  const startCreate = () => { setCreating(true); setEditing(false); setSelected(null); setTemplateId(''); setTemplateRecordId(''); setTemplate(null); setTitle(''); setBrand(data?.actor.brands[0] || ''); setPartner(''); setParentId(''); setValues({}); setError(''); setPreview(null); };
+  const startEdit = () => { if (!record) return; setCreating(false); setEditing(true); setTemplate(null); setTemplateRecordId(record.id); setTemplateId(record.templateId); setTitle(record.title); setBrand(record.brand); setPartner(record.partner); setParentId(record.parentId || ''); setValues(record.values); setPreview(null); };
   const fields = template ? [...new Map(template.fields.map(f => [f.key, f])).values()] : [];
   const editable = record && record.ownerId === data?.actor.id && record.approval !== 'IN_REVIEW' && !record.signing.some(s => !['CANCELLED', 'REJECTED'].includes(s.status));
   const currentCheck = record?.checks.filter(c => c.version === record.version).at(-1);
@@ -50,7 +51,7 @@ export function ContractHubView() {
   const visible = data?.records.filter(r => `${r.title} ${r.brand} ${r.partner}`.toLowerCase().includes(search.toLowerCase()) && (filter === 'ALL' || filter === 'MINE' && r.ownerId === data.actor.id || filter === 'REVIEW' && r.approval === 'IN_REVIEW' && r.steps.some(s => s.reviewerId === data.actor.id && s.status === 'PENDING') || filter === 'SIGN' && r.approval === 'APPROVED' && r.signing.at(-1)?.status !== 'COMPLETED')) || [];
   return <div className="space-y-5 p-4 md:p-6">
     <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-xl font-semibold text-slate-900">Hợp đồng</h2><p className="mt-1 text-sm text-slate-500">Mẫu pháp chế · Phê duyệt nội bộ · Tiến độ MISA AMIS weSign</p></div><div className="flex gap-2"><button className={buttonClass} disabled={busy} onClick={() => refresh().catch(e => setError(e.message))}><RefreshCw size={16} />Tải lại</button>{data?.actor.roles.includes('CREATOR') && <button className={primaryClass} onClick={startCreate}><Plus size={16} />Tạo hợp đồng</button>}</div></div>
-    {error && <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}{!data && <a className="ml-3 underline" href="/api/auth/lark/login?returnTo=/contracts">Đăng nhập Lark</a>}</div>}
+    {error && <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}{!data && <a className="ml-3 underline" href="/api/auth/lark/login?returnTo=/">Đăng nhập Lark</a>}</div>}
     {notice && <p role="status" className="text-sm text-emerald-700">{notice}</p>}
     {data && <><div className="flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600"><span>{data.actor.name} · {data.actor.roles.map(r => ROLE[r]).join(', ')}</span><span>AI: {data.config.ai ? 'Đã cấu hình' : 'Chưa cấu hình · chỉ kiểm tra trường điền'}</span><span>weSign: {data.config.wesign ? 'Đã cấu hình' : 'Chưa cấu hình kết nối'}</span>{data.config.storage === 'LOCAL_DEVELOPMENT' && <span className="font-medium text-amber-700">Kiểm thử cục bộ · không dùng dữ liệu thật</span>}</div>
     {!!data.demoActors.length && <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500"><span>Thử luồng bằng tài khoản giả lập:</span>{data.demoActors.map(a => <button key={a.id} className={buttonClass} disabled={busy} onClick={async () => { setBusy(true); try { await api('/api/contracts/demo', { id: a.id }); await refresh(); setSelected(null); setCreating(false); setEditing(false); setError(''); } catch (e) { setError((e as Error).message); } finally { setBusy(false); } }}>{a.name.replace(' (kiểm thử)', '')}</button>)}</div>}

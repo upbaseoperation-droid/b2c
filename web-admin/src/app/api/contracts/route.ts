@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto';
 import { actorFromRequest, configuredActors, checkOrigin, DEMO_ACTORS } from '@/lib/contracts/access';
 import { canRead, createContract, editContract, submitContract, decideContract, assertCanSign, event, requireCondition, ContractError, inScope } from '@/lib/contracts/domain';
 import { listContracts, getContract, saveContract, storageMode } from '@/lib/contracts/store';
-import { loadTemplate, templateCatalog, renderTemplate } from '@/lib/contracts/templates';
+import { loadTemplate, templateCatalog, renderTemplate, archiveTemplate } from '@/lib/contracts/templates';
 import { checkContract, aiConfigured } from '@/lib/contracts/check';
 import { wesignConfigured, wesignDetail } from '@/lib/contracts/wesign';
 import type { ContractRecord, ReviewStep } from '@/lib/contracts/types';
@@ -17,11 +17,12 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ actor, reviewers: actors.filter(a => a.roles.some(r => ['LEGAL', 'FINANCE', 'LEAD'].includes(r))), demoActors: process.env.NODE_ENV !== 'production' ? DEMO_ACTORS : [], templates: await templateCatalog(), records: (await listContracts()).filter(r => canRead(r, actor)), config: { storage: storageMode(), ai: aiConfigured(), wesign: wesignConfigured() } }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (error) { return failure(error); }
 }
-async function parseInput(body: Record<string, unknown>) {
+async function parseInput(body: Record<string, unknown>, existing?: ContractRecord) {
   const title = typeof body.title === 'string' ? body.title.trim() : ''; const brand = typeof body.brand === 'string' ? body.brand.trim() : ''; const partner = typeof body.partner === 'string' ? body.partner.trim() : '';
   requireCondition(title && title.length <= 180 && brand && brand.length <= 120 && partner && partner.length <= 180, 'Cần nhập tiêu đề, nhãn hàng và đối tác hợp lệ.');
   requireCondition(typeof body.templateId === 'string', 'Cần chọn mẫu pháp chế.');
-  const { template } = await loadTemplate(body.templateId);
+  if (existing) requireCondition(body.templateId === existing.templateId, 'Không thể đổi mẫu của hồ sơ đã tạo.');
+  const { template } = await loadTemplate(body.templateId, existing?.templateHash);
   requireCondition(typeof body.values === 'object' && body.values && !Array.isArray(body.values), 'Dữ liệu điền không hợp lệ.');
   const fields = new Set(template.fields.map(f => f.key)); const values: Record<string, string> = {};
   for (const [key, value] of Object.entries(body.values)) { requireCondition(fields.has(key) && typeof value === 'string' && value.length <= 4000 && !/[\x00-\x08\x0B\x0C\x0E-\x1F]/.test(value), 'Trường điền không hợp lệ.'); values[key] = value; }
@@ -36,15 +37,16 @@ export async function POST(req: NextRequest) {
     if (body.action === 'CREATE') {
       const input = await parseInput(body);
       if (input.parentId) { const parent = await getContract(input.parentId); requireCondition(canRead(parent, actor), 'Không có quyền truy cập hồ sơ gốc.', 403); }
-      const saved = await saveContract(createContract(input, actor)); return NextResponse.json({ record: saved });
+      const draft = createContract(input, actor); await archiveTemplate(input.templateId, input.templateHash);
+      const saved = await saveContract(draft); return NextResponse.json({ record: saved });
     }
     requireCondition(typeof body.id === 'string', 'Thiếu mã hồ sơ.');
     const record = await getContract(body.id); requireCondition(canRead(record, actor), 'Không có quyền truy cập hồ sơ.', 403);
     requireCondition(body.revision === record.revision, 'Hồ sơ đã thay đổi. Vui lòng tải lại.', 409);
     let next: ContractRecord = structuredClone(record);
-    if (body.action === 'EDIT') next = editContract(record, actor, await parseInput(body));
+    if (body.action === 'EDIT') next = editContract(record, actor, await parseInput(body, record));
     else if (body.action === 'SUBMIT') {
-      const { template } = await loadTemplate(record.templateId);
+      const { template } = await loadTemplate(record.templateId, record.templateHash);
       requireCondition(template.hash === record.templateHash, 'Mẫu nguồn đã thay đổi.', 409);
       requireCondition(template.fields.filter(f => f.required).every(f => record.values[f.key]?.trim()), 'Còn trường bắt buộc chưa điền.');
       requireCondition(Array.isArray(body.reviewers) && body.reviewers.every(id => typeof id === 'string'), 'Cần chọn người duyệt.');

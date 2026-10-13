@@ -418,6 +418,7 @@ export interface KocItem {
   gmvShareVideo?: number; // Tỉ trọng GMV từ video (%)
   gmvShareLive?: number; // Tỉ trọng GMV từ livestream (%)
   gmvShareProductCard?: number; // Tỉ trọng GMV từ thẻ sản phẩm (%)
+  metricsUpdatedAt?: string; // ISO — lần cập nhật chỉ số bán hàng / khán giả gần nhất
 
   // Nhân khẩu học Follower (Audience Demographics)
   femaleRatio?: number; // Tỉ trọng follower Nữ (%)

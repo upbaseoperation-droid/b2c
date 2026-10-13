@@ -18,6 +18,12 @@ model ContractWeSignBinding {
   contractId String
 }
 
+model ContractTemplateSnapshot {
+  hash       String @id
+  templateId String
+  file       Bytes
+}
+
 generator client {
   provider = "prisma-client-js"
 }

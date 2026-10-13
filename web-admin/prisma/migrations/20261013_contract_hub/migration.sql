@@ -9,3 +9,8 @@ CREATE TABLE "ContractWeSignBinding" (
   "documentId" TEXT PRIMARY KEY,
   "contractId" TEXT NOT NULL
 );
+CREATE TABLE "ContractTemplateSnapshot" (
+  "hash" TEXT PRIMARY KEY,
+  "templateId" TEXT NOT NULL,
+  "file" BYTEA NOT NULL
+);

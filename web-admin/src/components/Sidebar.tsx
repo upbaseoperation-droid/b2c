@@ -77,7 +77,7 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           items: [
             { key: 'booking', label: 'Quản lý Booking', icon: Users },
             { key: 'content', label: 'Kịch bản & Video', icon: FileText },
-            { key: 'koc-master', label: 'Danh bạ KOC Master', icon: Users },
+            { key: 'koc-master', label: 'Danh bạ KOC', icon: Users },
           ],
         },
         {
@@ -118,7 +118,7 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           items: [
             { key: 'booking', label: 'Quản lý Booking', icon: Users },
             { key: 'content', label: 'Kịch bản & Video', icon: FileText },
-            { key: 'koc-master', label: 'Danh bạ KOC Master', icon: Users },
+            { key: 'koc-master', label: 'Danh bạ KOC', icon: Users },
           ],
         },
         {
@@ -157,7 +157,7 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           title: '2. Vận hành Booking & KOC',
           items: [
             { key: 'booking', label: 'Quản lý Booking', icon: Users },
-            { key: 'koc-master', label: 'Danh bạ KOC Master', icon: Users },
+            { key: 'koc-master', label: 'Danh bạ KOC', icon: Users },
           ],
         },
         {
@@ -305,7 +305,7 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           items: [
             { key: 'booking', label: 'Quản lý Booking', icon: Users },
             { key: 'content', label: 'Kịch bản video', icon: FileText },
-            { key: 'koc-master', label: 'Danh bạ KOC Master', icon: Users },
+            { key: 'koc-master', label: 'Danh bạ KOC', icon: Users },
           ],
         },
         {

@@ -37,6 +37,9 @@ const eslintConfig = defineConfig([
       "src/components/TopHeader.tsx",
       "src/app/login/page.tsx",
       "src/components/views/BookingView.tsx",
+      "src/components/views/KocMasterDataView.tsx",
+      "src/components/koc/**/*.tsx",
+      "src/components/KocProfileModal.tsx",
     ],
     rules: {
       "no-restricted-syntax": [

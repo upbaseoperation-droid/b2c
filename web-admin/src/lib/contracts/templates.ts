@@ -1,9 +1,10 @@
-import { readFile } from 'node:fs/promises';
+import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import JSZip from 'jszip';
 import type { ContractField, LegalTemplate } from './types';
 import { requireCondition } from './domain';
+import prisma from '../prisma';
 const SOURCES = [
   ['IND-HD', 'Hợp đồng video · Cá nhân', 'Cá nhân', 'CONTRACT', '1.1.1. BM.HĐ.VID.IND.Ver052026 booking Video.docx'],
   ['IND-BBNT', 'Nghiệm thu video · Cá nhân', 'Cá nhân', 'ACCEPTANCE', '1.1.2. BM.BBNT.VID.IND.Ver052026 booking Video.docx'],
@@ -60,10 +61,37 @@ function extractFields(xml: string, part: string): ContractField[] {
   });
   return result;
 }
-export async function loadTemplate(id: string): Promise<{ template: LegalTemplate; zip: JSZip }> {
+const archiveDirectory = () => path.resolve(process.env.CONTRACT_DATA_DIR || path.join(process.cwd(), '.contract-data'), 'sources');
+export async function archiveTemplate(id: string, hash: string) {
+  const { zip, template } = await loadTemplate(id); requireCondition(template.hash === hash, 'Mẫu nguồn đã thay đổi trong lúc tạo hồ sơ.', 409);
+  // Dùng đúng bytes gốc, không giải nén/đóng gói lại để hash không đổi.
+  void zip;
+  const source = SOURCES.find(s => s[0] === id)!;
+  const buffer = await readFile(path.join(process.env.CONTRACT_TEMPLATE_DIR || path.resolve(process.cwd(), '..', 'Quản lý hợp đồng'), source[4]));
+  requireCondition(createHash('sha256').update(buffer).digest('hex') === hash, 'Mẫu nguồn đã thay đổi trong lúc tạo hồ sơ.', 409);
+  if (process.env.NODE_ENV !== 'production' && process.env.CONTRACT_STORAGE !== 'postgres') {
+    await mkdir(archiveDirectory(), { recursive: true });
+    await writeFile(path.join(archiveDirectory(), `${hash}.docx`), buffer, { flag: 'wx', mode: 0o600 }).catch(e => { if ((e as NodeJS.ErrnoException).code !== 'EEXIST') throw e; });
+  } else await prisma.$executeRaw`INSERT INTO "ContractTemplateSnapshot" (hash, "templateId", file) VALUES (${hash}, ${id}, ${buffer}) ON CONFLICT (hash) DO NOTHING`;
+}
+export async function loadTemplate(id: string, expectedHash?: string): Promise<{ template: LegalTemplate; zip: JSZip }> {
   const source = SOURCES.find(s => s[0] === id); requireCondition(source, 'Không tìm thấy mẫu pháp chế.', 404);
   const directory = process.env.CONTRACT_TEMPLATE_DIR || path.resolve(process.cwd(), '..', 'Quản lý hợp đồng');
-  const buffer = await readFile(path.join(directory, source[4])); const zip = await JSZip.loadAsync(buffer);
+  let buffer: Buffer;
+  try { buffer = await readFile(path.join(directory, source[4])); }
+  catch (e) { if (!expectedHash) throw e; buffer = Buffer.alloc(0); }
+  if (expectedHash && createHash('sha256').update(buffer).digest('hex') !== expectedHash) {
+    requireCondition(/^[a-f0-9]{64}$/.test(expectedHash), 'Phiên bản nguồn không hợp lệ.', 409);
+    if (process.env.NODE_ENV !== 'production' && process.env.CONTRACT_STORAGE !== 'postgres') {
+      try { buffer = await readFile(path.join(archiveDirectory(), `${expectedHash}.docx`)); }
+      catch { requireCondition(false, 'Không tìm thấy bản mẫu gốc đã lưu cho phiên bản này.', 409); }
+    } else {
+      const rows = await prisma.$queryRaw<Array<{ file: Buffer }>>`SELECT file FROM "ContractTemplateSnapshot" WHERE hash=${expectedHash} AND "templateId"=${id}`;
+      requireCondition(rows.length === 1, 'Không tìm thấy bản mẫu gốc đã lưu cho phiên bản này.', 409); buffer = rows[0].file;
+    }
+    requireCondition(createHash('sha256').update(buffer).digest('hex') === expectedHash, 'Bản mẫu lưu trữ không khớp phiên bản.', 409);
+  }
+  const zip = await JSZip.loadAsync(buffer);
   const fields: ContractField[] = []; const texts: string[] = [];
   for (const part of Object.keys(zip.files).filter(p => /^word\/(document|header\d+|footer\d+)\.xml$/.test(p)).sort()) {
     const xml = await zip.file(part)!.async('string'); fields.push(...extractFields(xml, part)); texts.push(...paragraphs(xml).map(p => paragraphText(p[0])));
@@ -72,7 +100,7 @@ export async function loadTemplate(id: string): Promise<{ template: LegalTemplat
 }
 export async function templateCatalog() { return Promise.all(SOURCES.map(async s => { const { template } = await loadTemplate(s[0]); return { ...template, paragraphs: [], fields: [] }; })); }
 export async function renderTemplate(id: string, expectedHash: string, values: Record<string, string>) {
-  const { template, zip } = await loadTemplate(id); requireCondition(template.hash === expectedHash, 'File nguồn đã thay đổi. Cần phục hồi phiên bản mẫu gốc trước khi xử lý hồ sơ.', 409);
+  const { template, zip } = await loadTemplate(id, expectedHash); requireCondition(template.hash === expectedHash, 'File nguồn không khớp phiên bản.', 409);
   const texts: string[] = [];
   for (const part of Object.keys(zip.files).filter(p => /^word\/(document|header\d+|footer\d+)\.xml$/.test(p)).sort()) {
     const xml = await zip.file(part)!.async('string'); let index = 0;

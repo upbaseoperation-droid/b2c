@@ -6,7 +6,7 @@
  */
 
 import React, { useEffect, useId, useRef, useState } from 'react';
-import { Search, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, MoreHorizontal, Search, X } from 'lucide-react';
 
 const cx = (...parts: Array<string | false | null | undefined>) => parts.filter(Boolean).join(' ');
 
@@ -411,3 +411,120 @@ export const Select = React.forwardRef<HTMLSelectElement, React.SelectHTMLAttrib
 export const Textarea = React.forwardRef<HTMLTextAreaElement, React.TextareaHTMLAttributes<HTMLTextAreaElement>>(function Textarea({ className, ...rest }, ref) {
   return <textarea ref={ref} className={cx(CONTROL, "px-3 py-2 leading-relaxed w-full", className)} {...rest} />;
 });
+
+/* -------------------------------------------------------------- ActionMenu */
+
+export interface ActionMenuItem {
+  label: string;
+  onSelect: () => void;
+  icon?: React.ComponentType<{ className?: string; strokeWidth?: number }>;
+  disabled?: boolean;
+}
+
+/**
+ * Nút “⋯” mở danh sách thao tác của một bản ghi. Dùng trong hàng bảng để giữ tối đa
+ * một nút hiện sẵn. Tự chặn lan sự kiện để không kích hoạt `onRowClick`.
+ */
+export function ActionMenu({ items, label = 'Thao tác khác' }: { items: ActionMenuItem[]; label?: string }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = (e: MouseEvent) => { if (!ref.current?.contains(e.target as Node)) setOpen(false); };
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
+    document.addEventListener('mousedown', onDoc);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDoc);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
+  return (
+    <div ref={ref} className="relative inline-block" onClick={(e) => e.stopPropagation()}>
+      <button
+        type="button"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label={label}
+        title={label}
+        onClick={() => setOpen((v) => !v)}
+        className="h-7 w-7 inline-flex items-center justify-center rounded-md text-ink-3 hover:text-ink hover:bg-sunken"
+      >
+        <MoreHorizontal className="w-4 h-4" strokeWidth={1.75} />
+      </button>
+      {open && (
+        <div role="menu" className="absolute right-0 top-8 z-30 min-w-[180px] py-1 bg-surface border border-line rounded-lg shadow-md text-left">
+          {items.map((it) => {
+            const Icon = it.icon;
+            return (
+              <button
+                key={it.label}
+                type="button"
+                role="menuitem"
+                disabled={it.disabled}
+                onClick={() => { setOpen(false); it.onSelect(); }}
+                className="w-full flex items-center gap-2 px-3 h-8 text-[13px] text-ink hover:bg-sunken disabled:opacity-50 disabled:pointer-events-none whitespace-nowrap"
+              >
+                {Icon && <Icon className="w-4 h-4 text-ink-3" strokeWidth={1.75} />}
+                {it.label}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------- Pagination */
+
+/** Chân bảng: vị trí đang xem, số dòng mỗi trang, trang trước/sau. Chỉ đặt ở cuối bảng. */
+export function Pagination({
+  page,
+  pageSize,
+  total,
+  onPageChange,
+  onPageSizeChange,
+  pageSizes = [20, 50, 100],
+}: {
+  page: number;
+  pageSize: number;
+  total: number;
+  onPageChange: (p: number) => void;
+  onPageSizeChange?: (n: number) => void;
+  pageSizes?: number[];
+}) {
+  const pages = Math.max(1, Math.ceil(total / pageSize));
+  if (total === 0) return null;
+  const from = (page - 1) * pageSize + 1;
+  const to = Math.min(page * pageSize, total);
+  const nav = 'h-7 w-7 inline-flex items-center justify-center rounded-md border border-line-strong text-ink-2 hover:bg-sunken disabled:opacity-40 disabled:pointer-events-none';
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-t border-line text-2xs text-ink-3">
+      <span className="tabular-nums">{from}–{to} trong {total}</span>
+      <div className="flex items-center gap-3">
+        {onPageSizeChange && (
+          <label className="inline-flex items-center gap-1.5">
+            Mỗi trang
+            <select
+              value={pageSize}
+              onChange={(e) => onPageSizeChange(Number(e.target.value))}
+              className="h-7 pl-2 pr-6 rounded-md border border-line-strong bg-surface text-[12.5px] text-ink"
+            >
+              {pageSizes.map((n) => <option key={n} value={n}>{n}</option>)}
+            </select>
+          </label>
+        )}
+        <div className="inline-flex items-center gap-1.5">
+          <button type="button" className={nav} disabled={page <= 1} onClick={() => onPageChange(page - 1)} aria-label="Trang trước">
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <span className="tabular-nums text-ink-2 min-w-[48px] text-center">{page} / {pages}</span>
+          <button type="button" className={nav} disabled={page >= pages} onClick={() => onPageChange(page + 1)} aria-label="Trang sau">
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

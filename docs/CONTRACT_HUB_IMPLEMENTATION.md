@@ -2,7 +2,7 @@
 
 ## Phạm vi
 
-Module tại tab Hợp đồng của B2C và đường dẫn `/contracts`. Dùng 8 mẫu Word trong thư mục `Quản lý hợp đồng`; đọc vị trí điền trong bảng/đoạn văn và giữ file nguồn. Không thay điều khoản bằng nội dung viết sẵn của prototype cũ.
+Tính năng nằm tại mục Hợp đồng trong app B2C, dùng chung điều hướng và đăng nhập của ứng dụng. Dùng 8 mẫu Word trong thư mục `Quản lý hợp đồng`; đọc vị trí điền trong bảng/đoạn văn và giữ file nguồn. Không thay điều khoản bằng nội dung viết sẵn của prototype cũ.
 
 Hai luồng độc lập: phê duyệt nội bộ (pháp chế + kế toán, Lead nếu được chọn) và trình ký MISA AMIS weSign. Chỉ phiên bản đủ duyệt được liên kết trình ký. Người tạo không tự duyệt. Thu hồi/sửa làm mất phê duyệt cũ và lưu phiên bản trước. Lượt ký đang hoạt động/đã hoàn tất khóa sửa nội dung.
 
@@ -10,7 +10,7 @@ MVP giữ thao tác trình ký trên weSign đang dùng tại công ty; B2C liê
 
 ## Chạy thử cục bộ
 
-1. Chạy ứng dụng trong `web-admin` bằng `npm run dev` và mở `/contracts`.
+1. Chạy ứng dụng trong `web-admin` bằng `npm run dev`, mở app B2C và chọn mục Hợp đồng trên thanh điều hướng.
 2. Chọn tài khoản kiểm thử Người tạo. Tạo hồ sơ với dữ liệu giả lập, chọn mẫu và điền trường.
 3. Lưu nháp; tải Word và đối chiếu với file nguồn. Dùng kiểm tra trường điền khi chưa cấu hình AI.
 4. Chọn hai reviewer kiểm thử Pháp chế và Kế toán, gửi duyệt.
@@ -55,7 +55,7 @@ Role quản trị của prototype không tự cấp quyền đọc hợp đồng
 
 ## Cơ sở dữ liệu
 
-Migration `20261013_contract_hub` tạo bảng hồ sơ và bảng giữ mã weSign duy nhất. Production không tự chuyển sang lưu file khi database lỗi. Chạy migration trên môi trường kiểm thử trước; đợt triển khai mã này không tự chạy migration trên database công ty.
+Migration `20261013_contract_hub` tạo bảng hồ sơ, bảng giữ mã weSign duy nhất và bản mẫu gốc bất biến theo hash. Production không tự chuyển sang lưu file khi database lỗi. Chạy migration trên môi trường kiểm thử trước; đợt triển khai mã này không tự chạy migration trên database công ty.
 
 Các cập nhật dùng revision để từ chối ghi đè thay đổi của người khác. File cục bộ có khóa và ghi thay thế nguyên tử; database có transaction và kiểm tra revision.
 
@@ -75,6 +75,6 @@ Nguồn: [OpenAPI MISA](https://amisapp.misa.vn/wesign/api/public/swagger/v1/swa
 
 - Mapping trường tự nhận diện phải được pháp chế đối chiếu từng mẫu, đặc biệt ô trống trong bảng và trường tùy chọn. Không tự suy ra ngưỡng tiền/thuế từ prototype.
 - Xuất Word là bản giữ bố cục gốc. Preview web chỉ để đọc nội dung; chưa có chuyển đổi PDF giữ bố cục trên máy chủ.
-- Mẫu đang có mã/hash nguồn; nếu file bị thay thế, hệ thống chặn xuất hồ sơ phiên bản cũ thay vì dùng nhầm nội dung. Trước phát hành mẫu mới cần lưu các phiên bản gốc bất biến và bổ sung quy trình phát hành mẫu.
+- Mẫu có mã/hash nguồn; mỗi hồ sơ tạo mới lưu bản nguồn bất biến. File mẫu hiện hành thay đổi không đổi bản nguồn của hồ sơ cũ. Pháp chế quản lý bộ file hiện hành trên máy chủ; chưa có giao diện upload/phát hành mẫu mới.
 - Chưa kết nối tài khoản thật Lark/weSign, chưa gọi AI trên tài liệu thật; cần cấu hình và UAT tích hợp.
 - Chưa triển khai dịch vụ trên hạ tầng vận hành và chưa lên lịch đồng bộ thực tế.

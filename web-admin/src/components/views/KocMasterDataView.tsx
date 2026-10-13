@@ -1,1113 +1,456 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
-import { formatVndShort } from '../../lib/format';
-import { 
-  Users, 
-  Sparkles, 
-  Search, 
-  Filter, 
-  CheckCircle2, 
-  AlertTriangle, 
-  UserPlus, 
-  ShieldCheck, 
-  Eye, 
-  ExternalLink, 
-  CreditCard, 
-  Building2, 
-  Copy, 
-  Check, 
-  FileText, 
-  Layers, 
-  Tag, 
-  DollarSign, 
-  TrendingUp, 
-  RefreshCw,
-  Camera,
-  IdCard,
-  FileCheck,
-  RotateCcw,
-  User,
-  ArrowLeft,
-  X
-} from 'lucide-react';
-import { 
-  KocItem, 
-  BookingDealItem,
-  SalaryGrade, 
-  CreatorSegment, 
-  KocCategory, 
-  TepKenh, 
-  OcrLegalExtractionResult,
-  UserProfile
-} from '../../lib/types';
+/**
+ * Danh bạ KOC: danh sách + hồ sơ chi tiết của từng KOC.
+ * Bấm một hàng để mở hồ sơ; hồ sơ thay chỗ danh sách, nút “Danh bạ KOC” quay lại và giữ nguyên bộ lọc.
+ */
+
+import React, { useMemo, useRef, useState } from 'react';
+import { FileScan, Plus, RefreshCw, SlidersHorizontal } from 'lucide-react';
+import type { BookingDealItem, KocItem, OcrLegalExtractionResult, UserProfile } from '../../lib/types';
 import { INITIAL_KOCS } from '../../lib/mockData';
+import { formatVndShort } from '../../lib/format';
 import { LegalOcrModal } from '../LegalOcrModal';
-import { KocProfileModal } from '../KocProfileModal';
 import { CreateKocModal } from '../CreateKocModal';
 import { KalodataSyncModal } from '../kalodata/KalodataSyncModal';
-import { KocDetailScreen } from './KocDetailScreen';
+import { KocProfile } from '../koc/KocProfile';
+import {
+  LEGAL_TYPE_LABEL,
+  findDuplicates,
+  formatFollowers,
+  hasLegalId,
+  legalTypeOf,
+  type LegalType,
+} from '../koc/kocUtils';
+import { ActionMenu, Avatar, Button, Chips, DataTable, EmptyState, FilterBar, Pagination, Panel, Person, Select, Status, Toolbar } from '../ui';
+import type { Column } from '../ui';
 
 interface KocMasterDataViewProps {
   kocs?: KocItem[];
   allDeals?: BookingDealItem[];
   currentUser?: UserProfile;
+  /** Nhãn hàng đang chọn ở thanh trên (‘ALL’ = tất cả). Danh bạ lọc theo nhãn này, không có bộ lọc nhãn riêng. */
+  selectedBrand?: string;
   onOpenQuickBookWithKoc: (koc: KocItem) => void;
   onKocUpdated?: (updatedKoc: KocItem) => void;
   onKocCreated?: (newKoc: KocItem) => void;
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
 }
 
+type LegalFilter = 'ALL' | LegalType;
+type IssueFilter = '' | 'MISSING' | 'DUPLICATE';
+
+const ALL = 'ALL';
+/** Loại hồ sơ chỉ xác định khi đã có giấy tờ. */
+const typeOf = (k: KocItem): LegalType | null => (hasLegalId(k) ? legalTypeOf(k) : null);
+const uniqSorted = (values: Array<string | undefined>) =>
+  [...new Set(values.filter((v): v is string => !!v && !!v.trim()).map((v) => v.trim()))].sort((a, b) =>
+    a.localeCompare(b, 'vi', { numeric: true }),
+  );
+
 export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
   kocs = INITIAL_KOCS,
   allDeals,
   currentUser,
+  selectedBrand = ALL,
   onOpenQuickBookWithKoc,
   onKocUpdated,
   onKocCreated,
   onNotify,
 }) => {
   const [localKocs, setLocalKocs] = useState<KocItem[]>(kocs);
-  const [successBanner, setSuccessBanner] = useState<string | null>(null);
-  
-  // Sync when prop updates
-  React.useEffect(() => {
-    if (kocs) setLocalKocs(kocs);
-  }, [kocs]);
+  // Đồng bộ khi danh sách từ ngoài đổi (điều chỉnh state ngay khi render, không dùng effect)
+  const [syncedKocs, setSyncedKocs] = useState(kocs);
+  if (kocs !== syncedKocs) {
+    setSyncedKocs(kocs);
+    setLocalKocs(kocs);
+  }
 
-  // Modal States
-  const [isOcrModalOpen, setIsOcrModalOpen] = useState(false);
-  const [ocrTargetKoc, setOcrTargetKoc] = useState<KocItem | null>(null);
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [inspectedKoc, setInspectedKoc] = useState<KocItem | null>(null);
-  const [isKalodataModalOpen, setIsKalodataModalOpen] = useState(false);
-  const [kalodataTargetKoc, setKalodataTargetKoc] = useState<KocItem | null>(null);
+  // Hồ sơ đang mở (null = đang ở danh sách)
+  const [openKocId, setOpenKocId] = useState<string | null>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
 
-  // Phân chia 2 màn hình: 'OVERVIEW' (Tổng quan danh bạ) & 'DETAIL' (Hồ sơ chi tiết KOC)
-  const [activeViewTab, setActiveViewTab] = useState<'OVERVIEW' | 'DETAIL'>('OVERVIEW');
-  const [selectedKocForDetail, setSelectedKocForDetail] = useState<KocItem | null>(null);
+  // Modal
+  const [ocrTarget, setOcrTarget] = useState<KocItem | null>(null);
+  const [metricsTarget, setMetricsTarget] = useState<KocItem | null>(null);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
 
-  // Search & Filter States
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterOcrStatus, setFilterOcrStatus] = useState<'ALL' | 'INDIVIDUAL' | 'BUSINESS_HOUSEHOLD' | 'BUSINESS_COMPANY' | 'UNVERIFIED' | 'DUPLICATES'>('ALL');
-  const [selectedTier, setSelectedTier] = useState<string>('ALL');
-  const [selectedKL, setSelectedKL] = useState<string>('ALL');
-  const [selectedSegment, setSelectedSegment] = useState<string>('ALL');
-  const [selectedKocCategory, setSelectedKocCategory] = useState<string>('ALL');
-  const [selectedTepKenh, setSelectedTepKenh] = useState<string>('ALL');
-  const [selectedBrand, setSelectedBrand] = useState<string>('ALL');
-  const [selectedPic, setSelectedPic] = useState<string>('ALL');
-  const [currentPage, setCurrentPage] = useState<number>(1);
-  const [pageSize, setPageSize] = useState<number>(20);
-  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  // Bộ lọc
+  const [search, setSearch] = useState('');
+  const [legal, setLegal] = useState<LegalFilter>(ALL);
+  const [issue, setIssue] = useState<IssueFilter>('');
+  const [salaryGrade, setSalaryGrade] = useState(ALL);
+  const [tepKenh, setTepKenh] = useState(ALL);
+  const [pic, setPic] = useState(ALL);
+  const [segment, setSegment] = useState(ALL);
+  const [category, setCategory] = useState(ALL);
+  const [showMoreFilters, setShowMoreFilters] = useState(false);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
 
-  // Cơ chế phân tích & cảnh báo trùng lặp KOC đa tầng (Kênh, Số điện thoại, Số CCCD, Mã số thuế)
-  const duplicateAnalysis = useMemo(() => {
-    const channelMap = new Map<string, string[]>();
-    const phoneMap = new Map<string, string[]>();
-    const cccdMap = new Map<string, string[]>();
-    const taxMap = new Map<string, string[]>();
-    const kocDuplicateReasons = new Map<string, string[]>();
+  const duplicates = useMemo(() => findDuplicates(localKocs), [localKocs]);
 
-    localKocs.forEach(k => {
-      // 1. Channel Handle
-      const normChannel = (k.channelId || '').trim().toLowerCase().replace('@', '');
-      if (normChannel.length > 2) {
-        const arr = channelMap.get(normChannel) || [];
-        arr.push(k.id);
-        channelMap.set(normChannel, arr);
+  // Phạm vi theo nhãn hàng ở thanh trên
+  const scoped = useMemo(
+    () => (selectedBrand && selectedBrand !== ALL ? localKocs.filter((k) => k.brandName === selectedBrand) : localKocs),
+    [localKocs, selectedBrand],
+  );
+
+  const options = useMemo(
+    () => ({
+      salaryGrade: uniqSorted(scoped.map((k) => k.salaryGrade)),
+      tepKenh: uniqSorted(scoped.map((k) => k.tepKenh || k.creatorCategory)),
+      pic: uniqSorted(scoped.map((k) => k.bookingPic)),
+      segment: uniqSorted(scoped.map((k) => k.segment)),
+      category: uniqSorted(scoped.map((k) => k.kocCategory)),
+    }),
+    [scoped],
+  );
+
+  // Lọc theo mọi thứ trừ chip, để số đếm trên chip đúng với bộ lọc đang chọn
+  const baseFiltered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const qDigits = q.replace(/\D/g, '');
+    return scoped.filter((k) => {
+      if (q) {
+        const hit =
+          k.stageName.toLowerCase().includes(q) ||
+          (k.realName || '').toLowerCase().includes(q) ||
+          k.channelId.toLowerCase().includes(q) ||
+          (qDigits.length >= 4 && [k.phone, k.cccd, k.taxCode].some((v) => (v || '').replace(/\D/g, '').includes(qDigits)));
+        if (!hit) return false;
       }
-
-      // 2. Phone
-      const normPhone = (k.phone || '').trim().replace(/\D/g, '');
-      if (normPhone.length >= 9) {
-        const arr = phoneMap.get(normPhone) || [];
-        arr.push(k.id);
-        phoneMap.set(normPhone, arr);
-      }
-
-      // 3. CCCD
-      const normCccd = (k.cccd || '').trim().replace(/\D/g, '');
-      if (normCccd.length >= 9 && normCccd !== '000000000') {
-        const arr = cccdMap.get(normCccd) || [];
-        arr.push(k.id);
-        cccdMap.set(normCccd, arr);
-      }
-
-      // 4. Tax Code
-      const normTax = (k.taxCode || '').trim();
-      if (normTax.length >= 7) {
-        const arr = taxMap.get(normTax) || [];
-        arr.push(k.id);
-        taxMap.set(normTax, arr);
-      }
-    });
-
-    localKocs.forEach(k => {
-      const reasons: string[] = [];
-      const normChannel = (k.channelId || '').trim().toLowerCase().replace('@', '');
-      if (normChannel.length > 2 && (channelMap.get(normChannel)?.length ?? 0) > 1) {
-        reasons.push(`Trùng kênh (@${normChannel})`);
-      }
-
-      const normPhone = (k.phone || '').trim().replace(/\D/g, '');
-      if (normPhone.length >= 9 && (phoneMap.get(normPhone)?.length ?? 0) > 1) {
-        reasons.push(`Trùng SĐT (${normPhone})`);
-      }
-
-      const normCccd = (k.cccd || '').trim().replace(/\D/g, '');
-      if (normCccd.length >= 9 && normCccd !== '000000000' && (cccdMap.get(normCccd)?.length ?? 0) > 1) {
-        reasons.push(`Trùng CCCD (${normCccd})`);
-      }
-
-      const normTax = (k.taxCode || '').trim();
-      if (normTax.length >= 7 && (taxMap.get(normTax)?.length ?? 0) > 1) {
-        reasons.push(`Trùng MST (${normTax})`);
-      }
-
-      if (reasons.length > 0) {
-        kocDuplicateReasons.set(k.id, reasons);
-      }
-    });
-
-    return {
-      kocDuplicateReasons,
-      totalDuplicates: kocDuplicateReasons.size
-    };
-  }, [localKocs]);
-
-  // Danh sách các Brand & PIC động từ dữ liệu KOC
-  const availableBrands = useMemo(() => {
-    const set = new Set<string>();
-    localKocs.forEach(k => {
-      if (k.brandName) set.add(k.brandName.trim());
-    });
-    return Array.from(set).sort();
-  }, [localKocs]);
-
-  const availablePics = useMemo(() => {
-    const set = new Set<string>();
-    localKocs.forEach(k => {
-      if (k.bookingPic) set.add(k.bookingPic.trim());
-    });
-    return Array.from(set).sort();
-  }, [localKocs]);
-
-  const handleCopy = (text: string, key: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedKey(key);
-    setTimeout(() => setCopiedKey(null), 2000);
-  };
-
-  // Filtered KOC List
-  const filteredKocs = useMemo(() => {
-    return localKocs.filter(koc => {
-      const matchSearch =
-        koc.stageName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (koc.realName && koc.realName.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        koc.channelId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (koc.cccd && koc.cccd.includes(searchTerm)) ||
-        koc.phone.includes(searchTerm);
-
-      if (!matchSearch) return false;
-
-      // Filter OCR Status & Legal Entity & Duplicates
-      if (filterOcrStatus === 'DUPLICATES' && !duplicateAnalysis.kocDuplicateReasons.has(koc.id)) return false;
-      const hasOcr = Boolean(koc.isOcrVerified || (koc.cccd && koc.cccd !== 'Chưa có' && koc.cccd.length >= 9) || koc.taxCode);
-      if (filterOcrStatus === 'UNVERIFIED' && hasOcr) return false;
-      if (filterOcrStatus === 'INDIVIDUAL' && (!hasOcr || koc.ocrDocumentType === 'BUSINESS_LICENSE' || koc.ocrDocumentType === 'BUSINESS_HOUSEHOLD')) return false;
-      if (filterOcrStatus === 'BUSINESS_HOUSEHOLD' && koc.ocrDocumentType !== 'BUSINESS_HOUSEHOLD') return false;
-      if (filterOcrStatus === 'BUSINESS_COMPANY' && koc.ocrDocumentType !== 'BUSINESS_LICENSE') return false;
-
-      // Filter Tier
-      if (selectedTier !== 'ALL' && koc.tier !== selectedTier) return false;
-
-      // Filter 4 Core Dimensions
-      if (selectedKL !== 'ALL' && koc.salaryGrade !== selectedKL) return false;
-      if (selectedSegment !== 'ALL' && koc.segment !== selectedSegment) return false;
-      if (selectedKocCategory !== 'ALL' && koc.kocCategory !== selectedKocCategory) return false;
-      if (selectedTepKenh !== 'ALL' && koc.tepKenh !== selectedTepKenh) return false;
-
-      // Filter Brand & PIC
-      if (selectedBrand !== 'ALL' && koc.brandName !== selectedBrand) return false;
-      if (selectedPic !== 'ALL' && koc.bookingPic !== selectedPic) return false;
-
+      if (salaryGrade !== ALL && k.salaryGrade !== salaryGrade) return false;
+      if (tepKenh !== ALL && (k.tepKenh || k.creatorCategory) !== tepKenh) return false;
+      if (pic !== ALL && k.bookingPic !== pic) return false;
+      if (segment !== ALL && k.segment !== segment) return false;
+      if (category !== ALL && k.kocCategory !== category) return false;
       return true;
     });
-  }, [localKocs, searchTerm, filterOcrStatus, duplicateAnalysis, selectedTier, selectedKL, selectedSegment, selectedKocCategory, selectedTepKenh, selectedBrand, selectedPic]);
+  }, [scoped, search, salaryGrade, tepKenh, pic, segment, category]);
 
-  const isKocFiltered = searchTerm.trim() !== '' || filterOcrStatus !== 'ALL' || selectedTier !== 'ALL' || selectedKL !== 'ALL' || selectedSegment !== 'ALL' || selectedKocCategory !== 'ALL' || selectedTepKenh !== 'ALL' || selectedBrand !== 'ALL' || selectedPic !== 'ALL';
+  const matchesIssue = (k: KocItem, f: IssueFilter) =>
+    f === '' || (f === 'MISSING' ? !hasLegalId(k) : duplicates.has(k.id));
 
-  const handleResetKocFilters = () => {
-    setSearchTerm('');
-    setFilterOcrStatus('ALL');
-    setSelectedTier('ALL');
-    setSelectedKL('ALL');
-    setSelectedSegment('ALL');
-    setSelectedKocCategory('ALL');
-    setSelectedTepKenh('ALL');
-    setSelectedBrand('ALL');
-    setSelectedPic('ALL');
-    setCurrentPage(1);
+  const filtered = useMemo(
+    () => baseFiltered.filter((k) => (legal === ALL || typeOf(k) === legal) && matchesIssue(k, issue)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [baseFiltered, legal, issue, duplicates],
+  );
+
+  const legalChips = (['ALL', 'INDIVIDUAL', 'HOUSEHOLD', 'COMPANY'] as const).map((key) => ({
+    key,
+    label: key === ALL ? 'Tất cả' : LEGAL_TYPE_LABEL[key],
+    count: baseFiltered.filter((k) => matchesIssue(k, issue) && (key === ALL || typeOf(k) === key)).length,
+  }));
+  const issueBase = baseFiltered.filter((k) => legal === ALL || typeOf(k) === legal);
+  const issueChips = [
+    { key: 'MISSING' as const, label: 'Thiếu giấy tờ', count: issueBase.filter((k) => !hasLegalId(k)).length },
+    { key: 'DUPLICATE' as const, label: 'Nghi trùng', count: issueBase.filter((k) => duplicates.has(k.id)).length },
+  ];
+
+  const moreFilterCount = Number(segment !== ALL) + Number(category !== ALL);
+  const isFiltered = !!search.trim() || legal !== ALL || issue !== '' || salaryGrade !== ALL || tepKenh !== ALL || pic !== ALL || moreFilterCount > 0;
+
+  const resetFilters = () => {
+    setSearch('');
+    setLegal(ALL);
+    setIssue('');
+    setSalaryGrade(ALL);
+    setTepKenh(ALL);
+    setPic(ALL);
+    setSegment(ALL);
+    setCategory(ALL);
   };
 
-  // Reset to page 1 whenever any filter changes
-  React.useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, filterOcrStatus, selectedTier, selectedKL, selectedSegment, selectedKocCategory, selectedTepKenh, selectedBrand, selectedPic, pageSize]);
+  // Đổi bộ lọc thì về trang 1
+  const filterKey = [search, legal, issue, salaryGrade, tepKenh, pic, segment, category, pageSize, selectedBrand].join('|');
+  const [pagedKey, setPagedKey] = useState(filterKey);
+  if (filterKey !== pagedKey) {
+    setPagedKey(filterKey);
+    setPage(1);
+  }
+  const rows = filtered.slice((page - 1) * pageSize, page * pageSize);
 
-  // Pagination slicing
-  const totalPages = Math.ceil(filteredKocs.length / pageSize) || 1;
-  const paginatedKocs = useMemo(() => {
-    const startIndex = (currentPage - 1) * pageSize;
-    return filteredKocs.slice(startIndex, startIndex + pageSize);
-  }, [filteredKocs, currentPage, pageSize]);
+  /* ------------------------------------------------------- Cập nhật hồ sơ */
 
-  // Handle OCR Apply: Either update existing KOC or create new KOC record
-  const handleApplyOcrResult = (ocrResult: OcrLegalExtractionResult) => {
-    const isCompany = ocrResult.documentType === 'BUSINESS_LICENSE' || ocrResult.documentType === 'BUSINESS_HOUSEHOLD';
-    const legalName = isCompany ? (ocrResult.fields.companyName || 'Công Ty MCN') : (ocrResult.fields.fullName || 'KOC Cá Nhân');
-    const legalId = isCompany ? (ocrResult.fields.taxCode || '') : (ocrResult.fields.idNumber || '');
-
-    if (ocrTargetKoc) {
-      // Cập nhật KOC hiện có
-      const updated: KocItem = {
-        ...ocrTargetKoc,
-        realName: ocrResult.fields.fullName || ocrTargetKoc.realName,
-        cccd: legalId || ocrTargetKoc.cccd,
-        shippingAddress: ocrResult.fields.permanentAddress || ocrResult.fields.headquartersAddress || ocrTargetKoc.shippingAddress,
-        isOcrVerified: true,
-        ocrDocumentType: ocrResult.documentType,
-        ocrVerifiedAt: new Date().toISOString(),
-        companyName: ocrResult.fields.companyName,
-        taxCode: ocrResult.fields.taxCode,
-        permanentAddress: ocrResult.fields.permanentAddress,
-        dob: ocrResult.fields.dob,
-        issueDate: ocrResult.fields.issueDate,
-        issuePlace: ocrResult.fields.issuePlace,
-        legalRepresentative: ocrResult.fields.legalRepresentative
-      };
-
-      setLocalKocs(prev => prev.map(k => k.id === updated.id ? updated : k));
-      if (onKocUpdated) onKocUpdated(updated);
-      const msg = `Đã cập nhật dữ liệu pháp lý từ ảnh giấy tờ cho KOC ${updated.stageName}!`;
-      if (onNotify) onNotify(msg, 'success');
-      setSuccessBanner(msg);
-      setTimeout(() => setSuccessBanner(null), 4000);
-    } else {
-      // Tạo KOC Mới từ OCR
-      const newKoc: KocItem = {
-        id: `koc-ocr-${Date.now()}`,
-        channelId: `@${(ocrResult.fields.fullName || 'koc').toLowerCase().replace(/\s+/g, '')}`,
-        stageName: ocrResult.fields.fullName || ocrResult.fields.companyName || 'KOC Mới',
-        realName: ocrResult.fields.fullName || '',
-        tier: 'TIER_3_MICRO',
-        tierLabel: 'Micro (KL4-5)',
-        salaryGrade: 'KL4',
-        segment: 'Mid Creator',
-        tepKenh: 'Review Nữ',
-        kocCategory: 'Personal care',
-        niche: 'Beauty / Chăm sóc cá nhân',
-        followers: 45000,
-        avgViews: 18000,
-        rateCardVideo: 4000000,
-        bookingFormat: 'Booking Video KOC',
-        phone: '0912345678',
-        zalo: '0912345678',
-        shippingAddress: ocrResult.fields.permanentAddress || ocrResult.fields.headquartersAddress || 'Hà Nội',
-        cccd: legalId,
-        bankName: 'Techcombank',
-        bankAccount: '190388889999',
-        reliabilityScore: 10.0,
-        isOcrVerified: true,
-        ocrDocumentType: ocrResult.documentType,
-        ocrVerifiedAt: new Date().toISOString(),
-        companyName: ocrResult.fields.companyName,
-        taxCode: ocrResult.fields.taxCode,
-        permanentAddress: ocrResult.fields.permanentAddress,
-        dob: ocrResult.fields.dob,
-        issueDate: ocrResult.fields.issueDate,
-        issuePlace: ocrResult.fields.issuePlace,
-        legalRepresentative: ocrResult.fields.legalRepresentative
-      };
-
-      setLocalKocs(prev => [newKoc, ...prev]);
-      if (onKocCreated) onKocCreated(newKoc);
-      const msg = `Đã tạo hồ sơ KOC mới từ ảnh giấy tờ: "${newKoc.stageName}" (CCCD/MST: ${legalId})!`;
-      if (onNotify) onNotify(msg, 'success');
-      setSuccessBanner(msg);
-      setTimeout(() => setSuccessBanner(null), 4000);
-    }
-
-    setOcrTargetKoc(null);
-    setIsOcrModalOpen(false);
+  const applyUpdate = (updated: KocItem, message: string) => {
+    setLocalKocs((prev) => prev.map((k) => (k.id === updated.id ? updated : k)));
+    onKocUpdated?.(updated);
+    onNotify?.(message, 'success');
   };
 
-  // Cập nhật số liệu bán hàng từ Kalodata vào Master Data
-  const handleApplyKalodataUpdates = (kocId: string, updates: Partial<KocItem>) => {
-    setLocalKocs(prev =>
-      prev.map(k => (k.id === kocId ? { ...k, ...updates } : k))
+  const handleApplyOcr = (r: OcrLegalExtractionResult) => {
+    if (!ocrTarget) return;
+    const f = r.fields;
+    applyUpdate(
+      {
+        ...ocrTarget,
+        realName: f.fullName || ocrTarget.realName,
+        cccd: f.idNumber || ocrTarget.cccd,
+        taxCode: f.taxCode || ocrTarget.taxCode,
+        companyName: f.companyName || ocrTarget.companyName,
+        permanentAddress: f.permanentAddress || f.headquartersAddress || ocrTarget.permanentAddress,
+        dob: f.dob || ocrTarget.dob,
+        issueDate: f.issueDate || ocrTarget.issueDate,
+        issuePlace: f.issuePlace || ocrTarget.issuePlace,
+        legalRepresentative: f.legalRepresentative || ocrTarget.legalRepresentative,
+        isOcrVerified: true,
+        ocrDocumentType: r.documentType,
+        ocrVerifiedAt: new Date().toISOString(),
+      },
+      `Đã cập nhật giấy tờ cho ${ocrTarget.stageName}`,
     );
-    if (onKocUpdated) {
-      const target = localKocs.find(k => k.id === kocId);
-      if (target) {
-        onKocUpdated({ ...target, ...updates });
-      }
-    }
-    const msg = 'Đã cập nhật chỉ số bán hàng từ Kalodata thành công.';
-    setSuccessBanner(msg);
-    if (onNotify) onNotify(msg, 'success');
-    setTimeout(() => setSuccessBanner(null), 4000);
+    setOcrTarget(null);
   };
 
-  // KPIs
-  const totalKocs = localKocs.length;
-  const verifiedCount = localKocs.filter(k => k.isOcrVerified || (k.cccd && k.cccd !== 'Chưa có' && k.cccd.length >= 9)).length;
-  const verifiedPercent = Math.round((verifiedCount / (totalKocs || 1)) * 100);
+  const handleApplyMetrics = (kocId: string, updates: Partial<KocItem>) => {
+    const target = localKocs.find((k) => k.id === kocId);
+    if (!target) return;
+    applyUpdate({ ...target, ...updates, metricsUpdatedAt: new Date().toISOString() }, `Đã cập nhật chỉ số của ${target.stageName}`);
+  };
+
+  /* ---------------------------------------------------------- Điều hướng */
+
+  const openProfile = (id: string) => {
+    setOpenKocId(id);
+    requestAnimationFrame(() => rootRef.current?.scrollIntoView({ block: 'start' }));
+  };
+
+  const rowActions = (k: KocItem) => [
+    { label: 'Tạo booking', icon: Plus, onSelect: () => onOpenQuickBookWithKoc(k) },
+    { label: 'Cập nhật chỉ số', icon: RefreshCw, onSelect: () => setMetricsTarget(k) },
+    { label: hasLegalId(k) ? 'Đọc lại giấy tờ' : 'Đọc ảnh giấy tờ', icon: FileScan, onSelect: () => setOcrTarget(k) },
+  ];
+
+  /* --------------------------------------------------------------- Bảng */
+
+  const columns: Column<KocItem>[] = [
+    {
+      key: 'koc',
+      header: 'KOC',
+      width: 220,
+      render: (k) => (
+        <div className="flex items-center gap-2.5 min-w-0">
+          <Avatar name={k.stageName} src={k.avatarUrl} size={32} />
+          <div className="min-w-0 leading-tight">
+            <span className="block truncate font-medium text-ink">{k.stageName}</span>
+            <span className="block truncate text-2xs text-ink-3">
+              @{k.channelId.replace(/^@/, '')}
+              {k.realName && k.realName !== k.stageName ? ` · ${k.realName}` : ''}
+            </span>
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'class',
+      header: 'Phân loại',
+      width: 110,
+      render: (k) => (
+        <div className="leading-tight">
+          <span className="block text-ink">{k.salaryGrade}</span>
+          <span className="block text-2xs text-ink-3">{k.segment}</span>
+        </div>
+      ),
+    },
+    {
+      key: 'tep',
+      header: 'Tệp kênh',
+      width: 140,
+      render: (k) => (
+        <div className="leading-tight min-w-0">
+          <span className="block truncate text-ink">{k.tepKenh || k.creatorCategory || '—'}</span>
+          <span className="block truncate text-2xs text-ink-3">{k.kocCategory}</span>
+        </div>
+      ),
+    },
+    {
+      key: 'owner',
+      header: 'Nhãn hàng · PIC',
+      width: 160,
+      render: (k) => (
+        <div className="grid gap-1 min-w-0">
+          <span className="truncate text-ink">{k.brandName || <span className="text-ink-3">Chưa gán</span>}</span>
+          {k.bookingPic ? <Person name={k.bookingPic} size={18} /> : <span className="text-2xs text-ink-3">Chưa có PIC</span>}
+        </div>
+      ),
+    },
+    {
+      key: 'docs',
+      header: 'Hồ sơ',
+      width: 120,
+      render: (k) => {
+        const dup = duplicates.get(k.id);
+        return (
+          <div className="grid gap-1 justify-items-start">
+            {!hasLegalId(k) ? (
+              <Status tone="warning">Thiếu giấy tờ</Status>
+            ) : dup ? (
+              <span title={`Trùng ${dup.map((d) => `${d.stageName} (${d.fields.join(', ')})`).join('; ')}`}>
+                <Status tone="warning">Nghi trùng</Status>
+              </span>
+            ) : (
+              <Status tone="positive">Đủ giấy tờ</Status>
+            )}
+            {typeOf(k) && <span className="text-2xs text-ink-3">{LEGAL_TYPE_LABEL[typeOf(k)!]}</span>}
+          </div>
+        );
+      },
+    },
+    { key: 'followers', header: 'Followers', align: 'right', width: 80, render: (k) => formatFollowers(k.followers) },
+    { key: 'rate', header: 'Giá/video', align: 'right', width: 80, render: (k) => (k.rateCardVideo ? formatVndShort(k.rateCardVideo) : '—') },
+    { key: 'actions', header: '', align: 'right', width: 48, render: (k) => <ActionMenu items={rowActions(k)} /> },
+  ];
+
+  /* ------------------------------------------------------------- Render */
+
+  const openKoc = openKocId ? localKocs.find((k) => k.id === openKocId) : undefined;
+  const navList = openKoc && filtered.some((k) => k.id === openKoc.id) ? filtered : localKocs;
+  const navIndex = openKoc ? navList.findIndex((k) => k.id === openKoc.id) : -1;
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-200">
-      {successBanner && (
-        <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs font-semibold flex items-center justify-between animate-in fade-in duration-150">
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-            <span>{successBanner}</span>
-          </div>
-          <button onClick={() => setSuccessBanner(null)} className="text-emerald-600 hover:text-emerald-800 font-bold text-sm">×</button>
-        </div>
-      )}
-      
-      {/* Modern, Compact Header Bar with Overview vs Detail Switcher */}
-      <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-          {/* Left: Title + Mode Switcher Tabs */}
-          <div className="flex items-center gap-3.5 flex-wrap">
-            <div>
-              <h2 className="text-base font-bold text-slate-900 tracking-tight flex items-center gap-2">
-                <span>Danh Bạ Master KOC</span>
-              </h2>
-              <div className="flex items-center gap-2 mt-0.5 text-2xs text-slate-500">
-                <span>Tổng <strong>{totalKocs}</strong> KOC</span>
-                <span>•</span>
-                <span className="text-emerald-700 font-medium">
-                  {verifiedCount} đã có CCCD/ĐKKD ({verifiedPercent}%)
-                </span>
-                {duplicateAnalysis.totalDuplicates > 0 && (
-                  <>
-                    <span>•</span>
-                    <span className="text-amber-700 font-medium flex items-center gap-1">
-                      <AlertTriangle className="w-3 h-3 text-amber-500" />
-                      {duplicateAnalysis.totalDuplicates} nghi trùng lặp
-                    </span>
-                  </>
-                )}
-              </div>
-            </div>
-
-            {/* Mode Switcher Buttons */}
-            <div className="flex items-center bg-slate-100 p-1 rounded-lg border border-slate-200 text-xs">
-              <button
-                type="button"
-                onClick={() => setActiveViewTab('OVERVIEW')}
-                className={`px-3 py-1 rounded-md font-semibold transition flex items-center gap-1.5 ${
-                  activeViewTab === 'OVERVIEW'
-                    ? 'bg-white text-slate-900 shadow-2xs'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                <Layers className="w-3.5 h-3.5 text-blue-600" />
-                <span>1. Tổng quan danh bạ</span>
-                <span className="text-2xs px-1.5 py-0.2 rounded-full bg-slate-200 text-slate-700 font-bold">
-                  {totalKocs}
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  if (!selectedKocForDetail && localKocs.length > 0) {
-                    setSelectedKocForDetail(localKocs[0]);
-                  }
-                  setActiveViewTab('DETAIL');
-                }}
-                className={`px-3 py-1 rounded-md font-semibold transition flex items-center gap-1.5 ${
-                  activeViewTab === 'DETAIL'
-                    ? 'bg-white text-slate-900 shadow-2xs'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                <User className="w-3.5 h-3.5 text-purple-600" />
-                <span>2. Hồ sơ chi tiết</span>
-                {selectedKocForDetail && (
-                  <span className="text-2xs px-1.5 py-0.2 rounded bg-purple-50 text-purple-700 font-medium max-w-[130px] truncate border border-purple-200">
-                    {selectedKocForDetail.stageName}
-                  </span>
-                )}
-              </button>
-            </div>
-          </div>
-
-          {/* Right: Quick Actions */}
-          <div className="flex items-center gap-2 shrink-0 flex-wrap">
-            <button
-              type="button"
-              onClick={() => {
-                setKalodataTargetKoc(null);
-                setIsKalodataModalOpen(true);
-              }}
-              className="px-2.5 py-1.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-300 rounded-lg shadow-2xs transition flex items-center gap-1.5"
-              title="Đồng bộ chỉ số bán hàng từ Kalodata"
-            >
-              <TrendingUp className="w-3.5 h-3.5 text-blue-600" />
-              <span className="hidden sm:inline">Đồng bộ Kalodata</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                setOcrTargetKoc(null);
-                setIsOcrModalOpen(true);
-              }}
-              className="px-2.5 py-1.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-2xs transition flex items-center gap-1.5"
-              title="Đọc ảnh CCCD hoặc Giấy phép kinh doanh để trích xuất tự động"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-cyan-200" />
-              <span>Đọc ảnh CCCD / ĐKKD</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setIsCreateModalOpen(true)}
-              className="px-2.5 py-1.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition flex items-center gap-1.5"
-            >
-              <UserPlus className="w-3.5 h-3.5 text-slate-600" />
-              <span className="hidden sm:inline">Thêm KOC</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* RENDER SCREEN 2: HỒ SƠ CHI TIẾT KOC */}
-      {activeViewTab === 'DETAIL' && (selectedKocForDetail || localKocs[0]) ? (
-        <KocDetailScreen
-          koc={selectedKocForDetail || localKocs[0]}
-          allKocs={filteredKocs.length > 0 ? filteredKocs : localKocs}
-          allDeals={allDeals}
+    <div ref={rootRef} className="space-y-6 scroll-mt-4">
+      {openKoc ? (
+        <KocProfile
+          key={openKoc.id}
+          koc={openKoc}
+          deals={allDeals}
           currentUser={currentUser}
-          duplicateReasons={
-            (selectedKocForDetail || localKocs[0])
-              ? duplicateAnalysis.kocDuplicateReasons.get((selectedKocForDetail || localKocs[0]).id)
-              : undefined
-          }
-          onBackToOverview={() => setActiveViewTab('OVERVIEW')}
-          onSelectKoc={(k) => setSelectedKocForDetail(k)}
-          onOpenQuickBook={(k) => onOpenQuickBookWithKoc && onOpenQuickBookWithKoc(k)}
-          onSyncKalodata={(k) => {
-            setKalodataTargetKoc(k);
-            setIsKalodataModalOpen(true);
+          duplicates={duplicates.get(openKoc.id)}
+          nav={{
+            onBack: () => setOpenKocId(null),
+            onPrev: navIndex > 0 ? () => openProfile(navList[navIndex - 1].id) : undefined,
+            onNext: navIndex >= 0 && navIndex < navList.length - 1 ? () => openProfile(navList[navIndex + 1].id) : undefined,
+            position: navIndex + 1,
+            total: navList.length,
           }}
-          onScanOcr={(k) => {
-            setOcrTargetKoc(k);
-            setIsOcrModalOpen(true);
-          }}
+          onOpenKoc={openProfile}
+          onCreateBooking={onOpenQuickBookWithKoc}
+          onUpdateMetrics={setMetricsTarget}
+          onScanDocs={setOcrTarget}
         />
       ) : (
-        /* RENDER SCREEN 1: TỔNG QUAN DANH BẠ */
         <>
+          <Toolbar
+            actions={
+              <Button variant="primary" icon={Plus} onClick={() => setIsCreateOpen(true)}>
+                Thêm KOC
+              </Button>
+            }
+          >
+            {selectedBrand !== ALL && <p className="text-[13px] text-ink-3">Đang xem KOC của {selectedBrand}</p>}
+          </Toolbar>
 
-      {/* Control Toolbar: Search & 4 Core Dimensions Filter */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-2xs space-y-3">
-        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
-          
-          {/* Search Box */}
-          <div className="relative flex-1 max-w-md">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              placeholder="Tìm theo tên kênh, tên thật, số CCCD / MST, SĐT..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-8 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-800 text-slate-900 placeholder:text-slate-400"
-            />
-            {searchTerm && (
-              <button
-                onClick={() => setSearchTerm('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
-
-          {/* Quick Status Pill Filters */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
-            <span className="text-slate-400 font-semibold text-2xs shrink-0 mr-1 flex items-center gap-1">
-              <Filter className="w-3 h-3" /> Pháp lý:
-            </span>
-            <button
-              onClick={() => setFilterOcrStatus('ALL')}
-              className={`px-3 py-1.5 rounded-lg font-semibold whitespace-nowrap transition ${
-                filterOcrStatus === 'ALL'
-                  ? 'bg-slate-900 text-white shadow-2xs'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-              }`}
-            >
-              Tất Cả ({totalKocs})
-            </button>
-            <button
-              onClick={() => setFilterOcrStatus('INDIVIDUAL')}
-              className={`px-3 py-1.5 rounded-lg font-semibold whitespace-nowrap transition flex items-center gap-1.5 ${
-                filterOcrStatus === 'INDIVIDUAL'
-                  ? 'bg-emerald-600 text-white shadow-2xs'
-                  : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200'
-              }`}
-            >
-              <CheckCircle2 className="w-3.5 h-3.5" />
-              Cá Nhân (CCCD)
-            </button>
-            <button
-              onClick={() => setFilterOcrStatus('BUSINESS_HOUSEHOLD')}
-              className={`px-3 py-1.5 rounded-lg font-semibold whitespace-nowrap transition flex items-center gap-1.5 ${
-                filterOcrStatus === 'BUSINESS_HOUSEHOLD'
-                  ? 'bg-amber-600 text-white shadow-2xs'
-                  : 'bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200'
-              }`}
-            >
-              <Building2 className="w-3.5 h-3.5" />
-              Hộ Kinh Doanh
-            </button>
-            <button
-              onClick={() => setFilterOcrStatus('BUSINESS_COMPANY')}
-              className={`px-3 py-1.5 rounded-lg font-semibold whitespace-nowrap transition flex items-center gap-1.5 ${
-                filterOcrStatus === 'BUSINESS_COMPANY'
-                  ? 'bg-purple-600 text-white shadow-2xs'
-                  : 'bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200'
-              }`}
-            >
-              <Building2 className="w-3.5 h-3.5" />
-              Công Ty / MCN
-            </button>
-            <button
-              onClick={() => setFilterOcrStatus('UNVERIFIED')}
-              className={`px-3 py-1.5 rounded-lg font-semibold whitespace-nowrap transition flex items-center gap-1.5 ${
-                filterOcrStatus === 'UNVERIFIED'
-                  ? 'bg-rose-600 text-white shadow-2xs'
-                  : 'bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200'
-              }`}
-            >
-              <AlertTriangle className="w-3.5 h-3.5" />
-              Chưa Có CCCD ({totalKocs - verifiedCount})
-            </button>
-            <button
-              onClick={() => setFilterOcrStatus(filterOcrStatus === 'DUPLICATES' ? 'ALL' : 'DUPLICATES')}
-              className={`px-3 py-1.5 rounded-lg font-semibold whitespace-nowrap transition flex items-center gap-1.5 ${
-                filterOcrStatus === 'DUPLICATES'
-                  ? 'bg-amber-600 text-white shadow-2xs'
-                  : 'bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-300'
-              }`}
-            >
-              <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
-              Nghi Trùng Lặp ({duplicateAnalysis.totalDuplicates})
-            </button>
-          </div>
-        </div>
-
-        {/* Multi-Dimensional Filter Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2 pt-2 border-t border-slate-100 text-xs">
-          <div>
-            <label className="text-3xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">
-              1. Cấp bậc (Tier):
-            </label>
-            <select
-              value={selectedTier}
-              onChange={(e) => setSelectedTier(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 font-medium focus:outline-none focus:border-slate-800"
-            >
-              <option value="ALL">Mọi cấp bậc Tier</option>
-              <option value="TIER_1_CELEB">Tier 1 - Celeb / Key Talent</option>
-              <option value="TIER_2_MACRO">Tier 2 - Macro Creator</option>
-              <option value="TIER_3_MICRO">Tier 3 - Micro Creator</option>
-              <option value="TIER_4_AFFILIATE">Tier 4 - Nano / Affiliate</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="text-3xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">
-              2. Khung Lương (KL):
-            </label>
-            <select
-              value={selectedKL}
-              onChange={(e) => setSelectedKL(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 font-medium focus:outline-none focus:border-slate-800"
-            >
-              <option value="ALL">Tất cả khung lương</option>
-              <option value="TAP UpAffiliate">TAP UpAffiliate (0đ)</option>
-              <option value="KL1">KL1 (&lt;1.5M)</option>
-              <option value="KL2">KL2 (1.5M - 3M)</option>
-              <option value="KL3">KL3 (3M - 5M)</option>
-              <option value="KL4">KL4 (5M - 8M)</option>
-              <option value="KL5">KL5 (8M - 15M)</option>
-              <option value="KL6">KL6 (15M - 25M)</option>
-              <option value="KL7">KL7 (&gt;25M Celeb)</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="text-3xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">
-              3. Segment:
-            </label>
-            <select
-              value={selectedSegment}
-              onChange={(e) => setSelectedSegment(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 font-medium focus:outline-none focus:border-slate-800"
-            >
-              <option value="ALL">Tất cả Segment</option>
-              <option value="Massive Creator">Massive Creator (&lt;3M)</option>
-              <option value="Mid Creator">Mid Creator (3M - 10M)</option>
-              <option value="Key Creator">Key Creator (10M - 30M)</option>
-              <option value="Top Creator">Top Creator (&gt;30M Celeb)</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="text-3xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">
-              4. Tệp kênh (25 tệp):
-            </label>
-            <select
-              value={selectedTepKenh}
-              onChange={(e) => setSelectedTepKenh(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 font-medium focus:outline-none focus:border-slate-800"
-            >
-              <option value="ALL">Tất cả tệp kênh</option>
-              <option value="Review Nữ">Review Nữ</option>
-              <option value="Mẹ bé (bầu)">Mẹ bé (bầu)</option>
-              <option value="Beauty">Beauty / Làm đẹp</option>
-              <option value="Bác sỹ/chuyên gia">Bác sỹ / chuyên gia</option>
-              <option value="Gia đình">Gia đình</option>
-              <option value="Cooking">Cooking / Nấu ăn</option>
-              <option value="Couple">Couple</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="text-3xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">
-              5. Nhãn Hàng:
-            </label>
-            <select
-              value={selectedBrand}
-              onChange={(e) => setSelectedBrand(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 font-medium focus:outline-none focus:border-slate-800"
-            >
-              <option value="ALL">Tất cả nhãn hàng</option>
-              {availableBrands.map((b) => (
-                <option key={b} value={b}>{b}</option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="text-3xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">
-              6. PIC Booking:
-            </label>
-            <select
-              value={selectedPic}
-              onChange={(e) => setSelectedPic(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 font-medium focus:outline-none focus:border-slate-800"
-            >
-              <option value="ALL">Tất cả PIC phụ trách</option>
-              {availablePics.map((p) => (
-                <option key={p} value={p}>{p}</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="flex items-end">
-            {isKocFiltered ? (
-              <button
-                type="button"
-                onClick={handleResetKocFilters}
-                className="w-full py-1.5 px-3 rounded-lg border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 text-xs font-semibold transition flex items-center justify-center gap-1.5"
-              >
-                <RotateCcw className="w-3.5 h-3.5" />
-                <span>Xóa bộ lọc</span>
-              </button>
-            ) : (
-              <div className="text-2xs text-slate-400 px-2 py-1.5 flex items-center gap-1">
-                <Filter className="w-3.5 h-3.5 text-slate-400" />
-                <span>Bộ lọc KOC</span>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Filter Summary & Pagination Size Selector */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-2 border-t border-slate-100 text-2xs text-slate-500">
-          <div className="flex items-center gap-2">
-            <span>
-              Tìm thấy <strong className="text-slate-900 font-bold">{filteredKocs.length}</strong> / {totalKocs} KOC trong danh bạ
-            </span>
-            {isKocFiltered && (
-              <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold text-3xs">
-                Đang lọc kết quả
-              </span>
-            )}
-            <span className="text-slate-300">|</span>
-            <span>
-              Trang <strong className="text-slate-800">{currentPage}</strong> / {totalPages}
-            </span>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <span className="text-slate-500 text-2xs">Hiển thị:</span>
-            <select
-              value={pageSize}
-              onChange={(e) => setPageSize(Number(e.target.value))}
-              className="bg-slate-50 border border-slate-200 rounded px-2 py-0.5 text-2xs font-semibold text-slate-700 focus:outline-none"
-            >
-              <option value={10}>10 KOC / trang</option>
-              <option value={20}>20 KOC / trang</option>
-              <option value={50}>50 KOC / trang</option>
-              <option value={100}>100 KOC / trang</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      {/* Main KOC Master Table */}
-      <div className="bg-white border border-slate-200 rounded-2xl shadow-2xs overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse text-xs">
-            <thead>
-              <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-500 font-semibold text-2xs">
-                <th className="py-3 px-4">KOC / tên kênh</th>
-                <th className="py-3 px-3">Phân Loại (KL &amp; Segment)</th>
-                <th className="py-3 px-3">Tệp Kênh &amp; Ngành</th>
-                <th className="py-3 px-3">Nhãn Hàng &amp; PIC</th>
-                <th className="py-3 px-4">Định danh pháp lý (CCCD / ĐKKD)</th>
-                <th className="py-3 px-3">Tài khoản chi trả</th>
-                <th className="py-3 px-3 text-right">Thao Tác</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 text-slate-800">
-              {paginatedKocs.map((koc) => {
-                const hasCccd = Boolean(koc.isOcrVerified || (koc.cccd && koc.cccd !== 'Chưa có' && koc.cccd.length >= 9));
-                const isCompanyOcr = koc.ocrDocumentType === 'BUSINESS_LICENSE' || koc.ocrDocumentType === 'BUSINESS_HOUSEHOLD';
-
-                return (
-                  <tr key={koc.id} className="hover:bg-slate-50/70 transition">
-                    
-                    {/* KOC Stage & Real Name */}
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-9 h-9 rounded-xl bg-blue-100 text-blue-700 font-semibold flex items-center justify-center text-xs shrink-0 border border-blue-200">
-                          {koc.stageName.slice(0, 2).toUpperCase()}
-                        </div>
-                        <div className="min-w-0">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setSelectedKocForDetail(koc);
-                              setActiveViewTab('DETAIL');
-                            }}
-                            className="font-semibold text-slate-900 block truncate leading-tight hover:text-blue-600 text-left cursor-pointer transition"
-                            title="Bấm để mở màn hình hồ sơ chi tiết KOC"
-                          >
-                            {koc.stageName}
-                          </button>
-                          <span className="text-2xs text-slate-500 block truncate leading-tight mt-0.5">
-                            {koc.realName ? `${koc.realName} • ` : ''}@{koc.channelId}
-                          </span>
-                          <span className="text-2xs text-slate-400 block mt-0.5">
-                            {(koc.followers / 1000).toFixed(0)}k followers • {formatVndShort(koc.rateCardVideo)}/clip
-                          </span>
-                          {duplicateAnalysis.kocDuplicateReasons.has(koc.id) && (
-                            <div className="mt-1">
-                              <span 
-                                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-3xs font-semibold bg-amber-50 text-amber-800 border border-amber-300"
-                                title={duplicateAnalysis.kocDuplicateReasons.get(koc.id)?.join(' · ')}
-                              >
-                                <AlertTriangle className="w-2.5 h-2.5 text-amber-600 shrink-0" />
-                                {duplicateAnalysis.kocDuplicateReasons.get(koc.id)?.join(' · ')}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </td>
-
-                    {/* Salary Grade & Segment */}
-                    <td className="py-3 px-3">
-                      <div className="space-y-1">
-                        <span className="inline-block px-2 py-0.5 rounded font-semibold text-2xs bg-blue-50 text-blue-700 border border-blue-200">
-                          {koc.salaryGrade}
-                        </span>
-                        <span className="block text-2xs text-slate-600 font-medium truncate">
-                          {koc.segment}
-                        </span>
-                      </div>
-                    </td>
-
-                    {/* Tep Kenh & Category */}
-                    <td className="py-3 px-3">
-                      <div className="space-y-0.5">
-                        <span className="font-semibold text-slate-800 block text-xs truncate">
-                          {koc.tepKenh || koc.creatorCategory}
-                        </span>
-                        <span className="text-2xs text-slate-500 block truncate">
-                          {koc.kocCategory}
-                        </span>
-                      </div>
-                    </td>
-
-                    {/* Brand & PIC Phụ Trách */}
-                    <td className="py-3 px-3">
-                      <div className="space-y-1">
-                        <span className="inline-block px-2 py-0.5 rounded font-semibold text-2xs bg-emerald-50 text-emerald-800 border border-emerald-200">
-                          {koc.brandName || 'Chung'}
-                        </span>
-                        <span className="block text-2xs text-slate-600 truncate">
-                          PIC: <strong className="text-slate-800">{koc.bookingPic || 'Chưa gán'}</strong>
-                        </span>
-                      </div>
-                    </td>
-
-                    {/* Legal Status & OCR Verified */}
-                    <td className="py-3 px-4">
-                      {hasCccd ? (
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-semibold border ${
-                              koc.ocrDocumentType === 'BUSINESS_LICENSE'
-                                ? 'bg-purple-50 text-purple-700 border-purple-200' 
-                                : koc.ocrDocumentType === 'BUSINESS_HOUSEHOLD'
-                                  ? 'bg-amber-50 text-amber-700 border-amber-200'
-                                  : 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                            }`}>
-                              <CheckCircle2 className="w-3 h-3" />
-                              {koc.ocrDocumentType === 'BUSINESS_LICENSE'
-                                ? 'Công ty (ĐKKD)'
-                                : koc.ocrDocumentType === 'BUSINESS_HOUSEHOLD'
-                                  ? 'Hộ kinh doanh'
-                                  : (koc.isOcrVerified ? 'Cá nhân (CCCD)' : 'Cá nhân')}
-                            </span>
-                            <span className="font-mono text-xs font-semibold text-slate-900">
-                              {koc.taxCode || koc.cccd}
-                            </span>
-                            <button
-                              onClick={() => handleCopy(koc.taxCode || koc.cccd, koc.id)}
-                              className="text-slate-400 hover:text-blue-600 p-0.5 rounded cursor-pointer"
-                              title="Sao chép số định danh / MST"
-                            >
-                              {copiedKey === koc.id ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
-                            </button>
-                          </div>
-                          {koc.companyName && (
-                            <span className="text-2xs font-semibold text-slate-800 block truncate max-w-xs" title={koc.companyName}>
-                              {koc.companyName}
-                            </span>
-                          )}
-                          <span className="text-2xs text-slate-500 block truncate max-w-xs" title={koc.permanentAddress || koc.shippingAddress}>
-                            {koc.permanentAddress || koc.shippingAddress || 'Hà Nội'}
-                          </span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-2">
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
-                            <AlertTriangle className="w-3 h-3" />
-                            Thiếu CCCD
-                          </span>
-                          <button
-                            onClick={() => {
-                              setOcrTargetKoc(koc);
-                              setIsOcrModalOpen(true);
-                            }}
-                            className="px-2 py-0.5 rounded text-2xs font-semibold bg-blue-600 hover:bg-blue-700 text-white transition flex items-center gap-1 shadow-2xs cursor-pointer"
-                            title="Đọc ảnh CCCD cho KOC này"
-                          >
-                            <Camera className="w-3 h-3" />
-                            Đọc CCCD
-                          </button>
-                        </div>
-                      )}
-                    </td>
-
-                    {/* Bank Account */}
-                    <td className="py-3 px-3">
-                      <div className="space-y-0.5">
-                        <span className="font-mono font-semibold text-xs text-slate-900 block">
-                          {koc.bankAccount || 'Chưa cập nhật'}
-                        </span>
-                        <span className="text-2xs text-slate-500 block">
-                          {koc.bankName || 'Ngân hàng'}
-                        </span>
-                      </div>
-                    </td>
-
-                    {/* Actions */}
-                    <td className="py-3 px-3 text-right">
-                      <div className="flex items-center justify-end gap-1.5">
-                        {/* Kalodata Sync Button */}
-                        <button
-                          onClick={() => {
-                            setKalodataTargetKoc(koc);
-                            setIsKalodataModalOpen(true);
-                          }}
-                          className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition cursor-pointer"
-                          title="Tra cứu & đồng bộ chỉ số bán hàng từ Kalodata"
-                        >
-                          <TrendingUp className="w-4 h-4 text-indigo-600" />
-                        </button>
-
-                        {/* Detail Screen Button */}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setSelectedKocForDetail(koc);
-                            setActiveViewTab('DETAIL');
-                          }}
-                          className="px-2.5 py-1 text-2xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition cursor-pointer flex items-center gap-1 shrink-0"
-                          title="Mở màn hình hồ sơ chi tiết KOC 360 độ"
-                        >
-                          <Eye className="w-3.5 h-3.5 text-blue-600" />
-                          <span>Chi tiết</span>
-                        </button>
-
-                        {/* OCR Update Button */}
-                        <button
-                          onClick={() => {
-                            setOcrTargetKoc(koc);
-                            setIsOcrModalOpen(true);
-                          }}
-                          className="p-1.5 text-slate-400 hover:text-cyan-600 hover:bg-cyan-50 rounded-lg transition cursor-pointer"
-                          title="Đọc ảnh CCCD / ĐKKD để cập nhật hồ sơ"
-                        >
-                          <Sparkles className="w-4 h-4 text-cyan-600" />
-                        </button>
-
-                        {/* Quick Book */}
-                        <button
-                          onClick={() => onOpenQuickBookWithKoc(koc)}
-                          className="px-2.5 py-1 bg-blue-50 hover:bg-blue-600 text-blue-700 hover:text-white rounded-lg text-xs font-semibold transition cursor-pointer"
-                        >
-                          Lên Deal
-                        </button>
-                      </div>
-                    </td>
-
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-
-        {filteredKocs.length === 0 ? (
-          <div className="p-12 text-center text-slate-400 space-y-2">
-            <Users className="w-8 h-8 mx-auto text-slate-300" />
-            <p className="text-xs font-medium">Không tìm thấy KOC nào khớp với điều kiện lọc.</p>
-          </div>
-        ) : (
-          /* Pagination Controls Footer */
-          <div className="px-4 py-3 bg-slate-50/70 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
-            <div className="text-slate-500 text-2xs">
-              Hiển thị <strong className="text-slate-800">{(currentPage - 1) * pageSize + 1} - {Math.min(currentPage * pageSize, filteredKocs.length)}</strong> trong tổng số <strong className="text-slate-800">{filteredKocs.length}</strong> KOC
-            </div>
-
-            <div className="flex items-center gap-1.5">
-              <button
-                type="button"
-                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
-                className="px-2.5 py-1 rounded-lg border border-slate-200 bg-white text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-100 font-medium text-xs transition"
-              >
-                Trang trước
-              </button>
-
-              <div className="flex items-center gap-1 px-1">
-                {Array.from({ length: Math.min(5, totalPages) }, (_, idx) => {
-                  let pageNum = idx + 1;
-                  if (totalPages > 5 && currentPage > 3) {
-                    pageNum = Math.min(currentPage - 2 + idx, totalPages - 4 + idx);
-                  }
-                  return (
-                    <button
-                      key={pageNum}
-                      type="button"
-                      onClick={() => setCurrentPage(pageNum)}
-                      className={`w-7 h-7 rounded-lg text-xs font-semibold transition ${
-                        currentPage === pageNum
-                          ? 'bg-slate-900 text-white shadow-xs'
-                          : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
-                      }`}
+          <Panel flush>
+            <div className="p-4 border-b border-line grid gap-2.5">
+              <FilterBar
+                search={{ value: search, onChange: setSearch, placeholder: 'Tên kênh, tên thật, SĐT, CCCD' }}
+                filters={
+                  <>
+                    <Select value={salaryGrade} onChange={(e) => setSalaryGrade(e.target.value)} aria-label="Khung lương" className="w-auto">
+                      <option value={ALL}>Khung lương</option>
+                      {options.salaryGrade.map((v) => <option key={v} value={v}>{v}</option>)}
+                    </Select>
+                    <Select value={tepKenh} onChange={(e) => setTepKenh(e.target.value)} aria-label="Tệp kênh" className="w-auto">
+                      <option value={ALL}>Tệp kênh</option>
+                      {options.tepKenh.map((v) => <option key={v} value={v}>{v}</option>)}
+                    </Select>
+                    <Select value={pic} onChange={(e) => setPic(e.target.value)} aria-label="PIC" className="w-auto">
+                      <option value={ALL}>PIC</option>
+                      {options.pic.map((v) => <option key={v} value={v}>{v}</option>)}
+                    </Select>
+                    <Button
+                      variant={showMoreFilters || moreFilterCount > 0 ? 'secondary' : 'ghost'}
+                      icon={SlidersHorizontal}
+                      aria-expanded={showMoreFilters}
+                      onClick={() => setShowMoreFilters((v) => !v)}
                     >
-                      {pageNum}
-                    </button>
-                  );
-                })}
+                      Lọc khác{moreFilterCount > 0 ? ` (${moreFilterCount})` : ''}
+                    </Button>
+                    {isFiltered && (
+                      <Button variant="ghost" onClick={resetFilters}>
+                        Xóa bộ lọc
+                      </Button>
+                    )}
+                  </>
+                }
+                resultCount={isFiltered ? filtered.length : undefined}
+              />
+              {showMoreFilters && (
+                <div className="flex flex-wrap items-center gap-2">
+                  <Select value={segment} onChange={(e) => setSegment(e.target.value)} aria-label="Segment" className="w-auto">
+                    <option value={ALL}>Segment</option>
+                    {options.segment.map((v) => <option key={v} value={v}>{v}</option>)}
+                  </Select>
+                  <Select value={category} onChange={(e) => setCategory(e.target.value)} aria-label="Ngành hàng" className="w-auto">
+                    <option value={ALL}>Ngành hàng</option>
+                    {options.category.map((v) => <option key={v} value={v}>{v}</option>)}
+                  </Select>
+                </div>
+              )}
+              <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
+                <Chips label="Loại hồ sơ" items={legalChips} value={legal} onChange={setLegal} />
+                <Chips<IssueFilter>
+                  label="Cần xử lý"
+                  items={issueChips}
+                  value={issue}
+                  onChange={(k) => setIssue((cur) => (cur === k ? '' : k))}
+                />
               </div>
-
-              <button
-                type="button"
-                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                disabled={currentPage === totalPages}
-                className="px-2.5 py-1 rounded-lg border border-slate-200 bg-white text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-100 font-medium text-xs transition"
-              >
-                Trang sau
-              </button>
             </div>
-          </div>
-        )}
-      </div>
+
+            <DataTable
+              columns={columns}
+              rows={rows}
+              rowKey={(k) => k.id}
+              onRowClick={(k) => openProfile(k.id)}
+              stickyLast
+              empty={
+                <EmptyState
+                  title={scoped.length === 0 ? 'Chưa có KOC nào' : 'Không có KOC khớp bộ lọc'}
+                  description={scoped.length === 0 ? 'Thêm KOC đầu tiên để bắt đầu lập booking.' : 'Bỏ bớt điều kiện lọc hoặc tìm bằng tên khác.'}
+                  action={
+                    scoped.length === 0 ? (
+                      <Button variant="primary" icon={Plus} onClick={() => setIsCreateOpen(true)}>Thêm KOC</Button>
+                    ) : (
+                      <Button onClick={resetFilters}>Xóa bộ lọc</Button>
+                    )
+                  }
+                />
+              }
+            />
+            <Pagination page={page} pageSize={pageSize} total={filtered.length} onPageChange={setPage} onPageSizeChange={setPageSize} />
+          </Panel>
         </>
       )}
 
-      {/* Embedded OCR Modal */}
       <LegalOcrModal
-        isOpen={isOcrModalOpen}
-        onClose={() => {
-          setIsOcrModalOpen(false);
-          setOcrTargetKoc(null);
-        }}
-        onApplyToContract={handleApplyOcrResult}
-        initialPreset={ocrTargetKoc ? 'CCCD_INDIVIDUAL' : 'CCCD_INDIVIDUAL'}
+        isOpen={!!ocrTarget}
+        onClose={() => setOcrTarget(null)}
+        onApplyToContract={handleApplyOcr}
+        initialPreset="CCCD_INDIVIDUAL"
       />
 
-      {/* KOC Profile Inspector Modal */}
-      <KocProfileModal
-        isOpen={!!inspectedKoc}
-        onClose={() => setInspectedKoc(null)}
-        koc={inspectedKoc}
-        duplicateReasons={inspectedKoc ? duplicateAnalysis.kocDuplicateReasons.get(inspectedKoc.id) : undefined}
-        onOpenQuickBook={(k) => {
-          setInspectedKoc(null);
-          onOpenQuickBookWithKoc(k);
-        }}
-      />
-
-      {/* Create KOC Modal */}
-      <CreateKocModal
-        isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
-        existingKocs={localKocs}
-        onKocCreated={(newK) => {
-          setLocalKocs(prev => [newK, ...prev]);
-          if (onKocCreated) onKocCreated(newK);
-          setIsCreateModalOpen(false);
-        }}
-      />
-
-      {/* Kalodata Commerce Sync Modal */}
       <KalodataSyncModal
-        isOpen={isKalodataModalOpen}
-        onClose={() => {
-          setIsKalodataModalOpen(false);
-          setKalodataTargetKoc(null);
-        }}
-        targetKoc={kalodataTargetKoc}
-        onApplyUpdates={handleApplyKalodataUpdates}
+        isOpen={!!metricsTarget}
+        onClose={() => setMetricsTarget(null)}
+        targetKoc={metricsTarget}
+        onApplyUpdates={handleApplyMetrics}
         onNotify={onNotify}
       />
 
+      <CreateKocModal
+        isOpen={isCreateOpen}
+        onClose={() => setIsCreateOpen(false)}
+        existingKocs={localKocs}
+        onKocCreated={(k) => {
+          setLocalKocs((prev) => [k, ...prev]);
+          onKocCreated?.(k);
+          onNotify?.(`Đã thêm ${k.stageName} vào danh bạ`, 'success');
+          setIsCreateOpen(false);
+        }}
+      />
     </div>
   );
 };

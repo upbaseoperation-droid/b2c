@@ -17,6 +17,7 @@ Thứ tự ưu tiên khi có mâu thuẫn: yêu cầu của người dùng → f
 2. **Một điểm nhấn mỗi vùng.** Một màu nhấn, một nút chính, một con số quan trọng. Màu chỉ dùng để báo trạng thái, không dùng để phân biệt phân hệ.
 3. **Khoảng trắng thay đường viền.** Nhóm nội dung bằng khoảng cách và tiêu đề. Chỉ đóng khung khi khối đó thao tác được độc lập (bảng, form). Không lồng khung trong khung.
 4. **Nói như đồng nghiệp.** Câu ngắn, viết hoa kiểu câu, đúng từ team dùng hằng ngày. Không quảng cáo, không cảm thán, không emoji.
+5. **Không bịa dữ liệu.** Không dùng `??` / `||` để điền số, tên, địa chỉ, SĐT, số giấy tờ hay bản ghi mẫu vào giao diện hoặc vào bản ghi khi lưu. Thiếu thì hiện “—” hoặc trạng thái rỗng nói thiếu gì. Dữ liệu mẫu chỉ nằm trong `lib/mockData.ts` và các file dataset.
 
 ---
 
@@ -155,6 +156,8 @@ Import từ `@/components/ui` (hoặc đường dẫn tương đối `../ui`).
 | `Toolbar` | Hàng ngay dưới tiêu đề trang | Trái: chọn kỳ, bộ lọc nhanh. Phải: thao tác, tối đa 1 nút `primary` |
 | `Panel` | Khung chứa bảng, form | Tiêu đề + mô tả một dòng + thao tác. `flush` cho bảng |
 | `FilterBar`, `SearchInput`, `Chips` | Lọc một bảng | Đặt ngay trên bảng, trong `Panel`. Ô tìm kiếm trái, ô chọn phải, chip trạng thái hàng dưới, số kết quả cuối hàng. Chip có số đếm |
+| `ActionMenu` | Thao tác phụ của một hàng | Nút “⋯” mở danh sách thao tác. Tự chặn lan sự kiện nên dùng được cùng `onRowClick` |
+| `Pagination` | Chân bảng có phân trang | Vị trí đang xem, số dòng mỗi trang, trang trước/sau. Chỉ đặt cuối bảng |
 | `DataTable` | Mọi bảng dữ liệu | Khai báo cột (`header`, `render`, `align`, `width`). Số căn phải. Có `empty` (dùng `EmptyState`). `stickyLast` khi cột cuối là thao tác. `onRowClick` khi cả hàng mở chi tiết |
 | `Modal` | Tác vụ ngắn: sửa một bản ghi, bàn giao | Đóng bằng Esc/X/bấm ngoài. Chân: “Hủy” (ghost) rồi nút chính. Tiêu đề là động từ + đối tượng (“Cập nhật job BO…”) |
 | `ConfirmDialog` | Thao tác không hoàn tác được, hoặc cần lý do | Thay cho `alert`, `confirm`, `prompt` (ESLint chặn ở màn đã chuyển). `tone="danger"` cho từ chối, xóa, hủy |
@@ -255,6 +258,33 @@ Dùng hàm trong `src/lib/format.ts`, không tự viết `toFixed(1)}M`.
 | Danh sách rỗng | `EmptyState`: thiếu gì + việc tiếp theo + nút |
 | Đang tải | Giữ khung bảng, hiện hàng giữ chỗ; không thay cả trang bằng vòng xoay |
 
+### Màn danh sách
+
+Áp dụng cho mọi màn liệt kê bản ghi (KOC, booking, hợp đồng, gian hàng…). Màn mẫu: Danh bạ KOC (`KocMasterDataView.tsx`).
+
+1. **Một màn, một tên.** Tên trên menu trái, thanh trên và nút quay lại giống hệt nhau. Không thêm tiêu đề lớn thứ hai trong trang.
+2. **Thanh trên tối đa 3 nút, nút `primary` là thao tác tạo mới.** Thao tác trên một bản ghi (đọc giấy tờ, cập nhật chỉ số) đặt trong hàng hoặc trong hồ sơ, không đặt ở đầu trang.
+3. **Bộ lọc:** ô tìm kiếm + tối đa 3 ô chọn luôn hiện; phần còn lại vào nút “Lọc khác” (có số bộ lọc đang bật). Không lặp bộ lọc toàn cục của thanh trên (nhãn hàng). Nhãn viết kiểu câu, không đánh số. “Xóa bộ lọc” là nút `ghost`, chỉ hiện khi đang lọc. Số kết quả chỉ hiện khi đang lọc.
+4. **Chip: mỗi nhóm một chiều.** Phân loại (loại hồ sơ) và việc cần xử lý (thiếu giấy tờ, nghi trùng) là hai nhóm `Chips` riêng, mỗi nhóm có nhãn. Chip dùng màu trung tính; số đếm trên chip tính theo các bộ lọc khác đang bật.
+5. **Bảng:** tối đa 8 cột, mỗi ô tối đa 2 dòng (dòng 2 là `text-2xs text-ink-3`). Mỗi con số một cột riêng, căn phải. Tổng độ rộng cột phải vừa khung ở màn 1440px, không cuộn ngang.
+6. **Màu trong ô chỉ đến từ `Status`.** Khung lương, segment, nhãn hàng, ngành là chữ thường, không tô nền.
+7. **Bấm cả hàng để mở hồ sơ.** Trong hàng tối đa 1 nút hiện sẵn, còn lại vào `ActionMenu`. Nút chỉ có icon phải có `aria-label` và `title`.
+8. **Dữ liệu nhạy cảm không vào danh sách.** CCCD, MST, số tài khoản, địa chỉ thường trú không có cột trong bảng (vẫn tìm được bằng ô tìm kiếm). SĐT chỉ hiện khi đó là thông tin làm việc chính của màn.
+9. **Không hiện một con số ở hai nơi.** Tổng số đã có trên chip “Tất cả” thì không lặp ở đầu trang. Phân trang chỉ ở cuối bảng (`Pagination`).
+
+### Màn hồ sơ một bản ghi
+
+Màn mẫu: hồ sơ KOC (`components/koc/KocProfile.tsx`).
+
+10. **Một bản ghi, một component hồ sơ.** Trang chi tiết và modal xem nhanh dùng chung component (`layout="page" | "modal"`), không sao chép.
+11. **Hồ sơ không phải tab của danh sách.** Mở bằng cách bấm hàng; hồ sơ thay chỗ danh sách, nút “← {tên màn}” quay lại và giữ nguyên bộ lọc. Có ‹ › để chuyển bản ghi kế tiếp trong danh sách đang lọc.
+12. **Đầu hồ sơ:** `Avatar` + tên + tối đa 2 `Status` (chỉ khi có vấn đề) → một dòng phân loại nối bằng “ · ” → một dòng chủ sở hữu (`Person`). Một nút `primary` bên phải. Không đóng khung, không xếp chồng nhiều tầng.
+13. **Cảnh báo về bản ghi** (nghi trùng, thiếu giấy tờ) nằm ngay dưới đầu hồ sơ: nói trùng với ai, theo trường nào, và cho mở bản ghi kia. Nêu tối đa 3 tên, còn lại “và N hồ sơ khác”.
+14. **Ưu tiên một trang cuộn hai cột thay vì tab.** Cột chính: thông tin để ra quyết định (chỉ số, lịch sử). Cột phụ 340px: thông tin tra cứu (liên hệ, pháp lý, ghi chú), chung một khung, các mục ngăn bằng đường kẻ. Chỉ thêm tab khi trang dài quá 3 màn hình; khi đó tối đa 3 tab, tên 1–2 từ, không đánh số, không tiếng Anh.
+15. **Thao tác đặt cạnh dữ liệu nó thay đổi.** “Cập nhật chỉ số” ở đầu khối chỉ số, “Đọc ảnh giấy tờ” trong mục pháp lý.
+16. **Mỗi khối chỉ số ghi thời điểm cập nhật** (“Cập nhật 13/10/2026”) hoặc “Chưa có ngày cập nhật”. Ô chỉ số không tô màu riêng; số qua `lib/format`.
+17. **Dữ liệu nhạy cảm trong hồ sơ mặc định che** (`•••• 2194`). Nút “Hiện số” chỉ có với người được phép (quản trị, trưởng phòng, trưởng nhóm, PIC của chính bản ghi); người khác thấy câu nói ai xem được. Nút sao chép chỉ có sau khi hiện số.
+
 ### Danh sách kiểm tra cho mỗi màn hình (dán vào mô tả PR)
 
 - [ ] Dùng `Toolbar` / `Tabs` / `Panel` / `DataTable` / `Modal` từ `ui`, không tự viết bảng hay modal
@@ -263,11 +293,15 @@ Dùng hàm trong `src/lib/format.ts`, không tự viết `toFixed(1)}M`.
 - [ ] Số tiền qua `lib/format`, người qua `Person`/`Avatar`, kênh qua `ChannelTag`
 - [ ] Có trạng thái rỗng; không còn `alert`/`prompt`/`confirm`
 - [ ] Câu chữ theo §6; không emoji
+- [ ] Không có giá trị mẫu điền bằng `??` / `||` (§1.5)
+- [ ] Màn danh sách / hồ sơ theo 17 quy tắc ở §7; CCCD, MST, STK được che
 - [ ] `npx eslint <file>` không còn cảnh báo design system → thêm file vào danh sách “đã chuyển” trong `eslint.config.mjs`
 
 ## 8. Trạng thái chuyển đổi
 
 **Màn mẫu:** Booking (`BookingView.tsx`) đã chuyển hoàn toàn: 3 bảng dùng `DataTable`, bộ lọc dùng `FilterBar`/`Chips`/`Select`, 2 modal dùng `Modal`, `prompt()`/`alert()` thay bằng `ConfirmDialog`. File giảm từ 1.868 xuống 1.098 dòng. Dùng màn này làm mẫu khi chuyển các màn khác.
+
+**Màn mẫu cho danh sách + hồ sơ:** Danh bạ KOC (`KocMasterDataView.tsx`, `components/koc/`). Danh sách dùng `FilterBar`/`Chips`/`DataTable`/`ActionMenu`/`Pagination`; hồ sơ hai cột dùng chung cho trang và modal (`KocProfileModal`); bỏ toàn bộ số liệu bịa khi thiếu dữ liệu.
 
 **Đã chuyển hẳn sang design system:** khung app (menu trái, thanh trên, toast), trang đăng nhập, Tổng quan (hàng chỉ số, giá trị deal theo kênh), Phân bổ & điều phối (thanh công cụ, bảng nhãn hàng có ảnh đại diện PIC), đầu trang Booking và kế hoạch cá nhân, Kế hoạch tháng (chỉ số có xu hướng, thẻ kế hoạch có thanh kênh). Ảnh đại diện và nhãn kênh đã áp dụng ở Hiệu suất nhân sự, Đánh giá 4P, Việc của tôi, Dữ liệu gốc, Gian hàng.
 

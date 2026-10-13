@@ -189,7 +189,7 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
       channelId: formattedChannel,
       channelLink: `https://www.tiktok.com/@${formattedChannel.replace('@', '')}`,
       stageName: stageName.trim(),
-      realName: realName.trim() || stageName.trim(),
+      realName: realName.trim(),
       tier: tier,
       tierLabel: tier === 'TIER_1_CELEB' ? 'Tier 1 (Celeb)' :
                  tier === 'TIER_2_MACRO' ? 'Tier 2 (Macro)' :
@@ -200,47 +200,39 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
       tepKenh: tepKenh,
       creatorCategory: tepKenh,
       kocCategory: kocCategory,
-      niche: niche.trim() || `${tepKenh} - ${kocCategory}`,
-      followers: Number(followers) || 10000,
-      avgViews: Number(avgViews) || 5000,
-      rateCardVideo: Number(rateCardVideo) || 500000,
+      niche: niche.trim(),
+      followers: Number(followers) || 0,
+      avgViews: Number(avgViews) || 0,
+      rateCardVideo: Number(rateCardVideo) || 0,
       bookingFormat: bookingFormat,
       
       // Shipping & Logistics
-      phone: phone.trim() || '0987654321',
-      zalo: zalo.trim() || phone.trim() || '0987654321',
-      email: email.trim() || `${formattedChannel.replace('@', '')}@booking.creator.vn`,
+      phone: phone.trim(),
+      zalo: zalo.trim() || phone.trim(),
+      email: email.trim() || undefined,
       location: location,
-      shippingAddress: shippingAddress.trim() || `${realName.trim() || stageName.trim()} — ${phone.trim() || '0987654321'} — ${location}`,
+      shippingAddress: shippingAddress.trim() || undefined,
       bookingPic: bookingPic,
       brandName: brandName,
-      contentNote: contentNote.trim() || `Tệp ${tepKenh}, ngành hàng ${kocCategory}, thế mạnh review thực tế và tạo video chuyển đổi cao.`,
+      contentNote: contentNote.trim() || undefined,
 
       // E-Commerce
-      gmvBestCase: Number(gmvBestCase) || Number(rateCardVideo) * 3,
-      aov: Number(aov) || 250000,
-      gpm: 28.5,
-      itemsSold: Math.round((Number(gmvBestCase) || 15000000) / (Number(aov) || 250000)),
-      gmvShareVideo: 70,
-      gmvShareLive: 20,
-      gmvShareProductCard: 10,
+      gmvBestCase: Number(gmvBestCase) || undefined,
+      aov: Number(aov) || undefined,
 
       // Demographics
       femaleRatio: femaleRatio,
       maleRatio: 100 - femaleRatio,
-      age18_24: ageGroup === '18-24' ? 65 : 25,
-      age25_34: ageGroup === '25-34' ? 60 : 30,
-      age35Plus: ageGroup === '35+' ? 50 : 10,
 
       // Legal & Banking
-      cccd: legalType === 'INDIVIDUAL' ? (cccd.trim() || '001203948576') : (taxCode.trim() || cccd.trim() || '0109876543'),
+      cccd: cccd.trim(),
       taxCode: legalType !== 'INDIVIDUAL' ? taxCode.trim() : (cccd.trim() || undefined),
       companyName: legalType !== 'INDIVIDUAL' ? companyName.trim() : undefined,
       legalRepresentative: legalType !== 'INDIVIDUAL' ? (legalRepresentative.trim() || realName.trim()) : undefined,
       ocrDocumentType: legalType === 'INDIVIDUAL' ? 'CCCD' : legalType === 'BUSINESS_HOUSEHOLD' ? 'BUSINESS_HOUSEHOLD' : 'BUSINESS_LICENSE',
       isOcrVerified: Boolean(cccd.trim() || taxCode.trim()),
       bankName: bankName,
-      bankAccount: bankAccount.trim() || '190384759201',
+      bankAccount: bankAccount.trim(),
       
       // Operation status
       brandApprovalStatus: 'ĐÃ_DUYỆT',

@@ -25,13 +25,19 @@ export async function middleware(request: NextRequest) {
 
   // 3. Nếu chưa có phiên: Tự động cấp phiên Quản trị BOD mặc định (không bắt buộc đăng nhập Lark/Gmail)
   if (!user) {
+    if (process.env.NODE_ENV === 'production') {
+      if (pathname.startsWith('/api/')) return NextResponse.json({ error: 'Vui lòng đăng nhập.' }, { status: 401 });
+      const login = new URL('/login', request.url);
+      login.searchParams.set('returnTo', sanitizeReturnTo(pathname + request.nextUrl.search));
+      return NextResponse.redirect(login);
+    }
     const defaultUser = USERS[0];
     const defaultToken = encodeSessionToken(defaultUser);
 
     const response = await updateSession(request);
     response.cookies.set(SESSION_COOKIE_NAME, defaultToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: (process.env.NODE_ENV as string) === 'production',
       sameSite: 'lax',
       path: '/',
       maxAge: 7 * 24 * 60 * 60,

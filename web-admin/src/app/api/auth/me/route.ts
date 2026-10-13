@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  if (isStrict) {
+  if (isStrict || process.env.NODE_ENV === 'production') {
     return NextResponse.json({
       authenticated: false,
       user: null,
@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
 
   response.cookies.set(SESSION_COOKIE_NAME, token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: (process.env.NODE_ENV as string) === 'production',
     sameSite: 'lax',
     path: '/',
     maxAge: 7 * 24 * 60 * 60 // 7 ngày
