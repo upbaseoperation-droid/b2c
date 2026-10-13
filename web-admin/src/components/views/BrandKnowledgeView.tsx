@@ -20,7 +20,6 @@ import {
   AlertCircle,
   AlertTriangle,
   AlertOctagon,
-  Sparkles,
   HelpCircle,
   PhoneCall,
   Clock,
@@ -40,7 +39,6 @@ import {
   RefreshCw,
   ArrowRight,
   ArrowLeft,
-  Wand2,
   Lightbulb,
   FolderOpen,
   LayoutDashboard,
@@ -93,14 +91,15 @@ export interface BrandKnowledgeViewProps {
 }
 
 export type KnowledgeTabKey = 
-  | 'OPERATIONS_KPI'        // 1. Chỉ số vận hành & Hiệu suất BI
-  | 'MONTHLY_EXECUTION'     // 2. Kế hoạch & Thực thi các tháng
-  | 'STORES_CHANNELS'       // 3. Gian hàng & Phân bổ sàn
-  | 'BRAND_PROFILE'         // 4. Hồ sơ thương hiệu & Định vị
-  | 'SKUS_RATECARD'         // 5. Định mức trần & Sản phẩm chủ lực
-  | 'COMPLIANCE_LEGAL'      // 6. Pháp lý & Thẩm định quy chuẩn
-  | 'DOCUMENTS'             // 7. Kho tài liệu & Hồ sơ ký kết
+  | 'MONTHLY_GOVERNANCE'    // 1. Kế hoạch & Vận hành tháng (chu kỳ tháng)
+  | 'STORES_CHANNELS'       // 2. Gian hàng & Phân bổ sàn
+  | 'BRAND_PROFILE'         // 3. Hồ sơ thương hiệu & Định vị
+  | 'SKUS_RATECARD'         // 4. Sản phẩm chủ lực & Giá trần
+  | 'COMPLIANCE_LEGAL'      // 5. Quy chuẩn nội dung & Pháp lý
+  | 'DOCUMENTS'             // 6. Hồ sơ tài liệu & Hợp đồng
   // Backward compatibility aliases
+  | 'OPERATIONS_KPI'        // Gộp vào Kế hoạch & Vận hành tháng
+  | 'MONTHLY_EXECUTION'     // Gộp vào Kế hoạch & Vận hành tháng
   | 'OVERVIEW_PIC' 
   | 'RATECARD_CEILING' 
   | 'SKUS' 
@@ -268,7 +267,7 @@ export const BrandKnowledgeView: React.FC<BrandKnowledgeViewProps> = ({
     }
   }, [selectedBrand, knowledgeBases]);
 
-  const [activeKnowledgeTab, setActiveKnowledgeTab] = useState<KnowledgeTabKey>('OPERATIONS_KPI');
+  const [activeKnowledgeTab, setActiveKnowledgeTab] = useState<KnowledgeTabKey>('MONTHLY_GOVERNANCE');
   const [selectedMonthCycle, setSelectedMonthCycle] = useState<string>('2026/10');
   const [executionPipelineFilter, setExecutionPipelineFilter] = useState<string>('ALL');
   const [executionSearch, setExecutionSearch] = useState<string>('');
@@ -316,111 +315,7 @@ export const BrandKnowledgeView: React.FC<BrandKnowledgeViewProps> = ({
     });
   }, [deals, currentBrand, brandStores]);
 
-  // Thống kê tài chính & kiểm soát hạn mức Net B2C cho Brand
-  const brandFinancialStats = useMemo(() => {
-    const totalOrderNetBudget = brandStores.reduce((sum: number, s: StorePortfolioItem) => sum + (s.monthlyBudget || 0), 0);
-    const totalTargetGmv = brandStores.reduce((sum: number, s: StorePortfolioItem) => sum + (s.monthlyTargetGmv || 0), 0);
-    
-    // Tính thực chi Net
-    const totalSpentNet = brandDeals.reduce((sum: number, d: BookingDealItem) => sum + (d.totalValue || 0), 0);
-    
-    // Tách bạch KOC có phí (Paid) và Suất gửi mẫu miễn phí (FOC - 0đ)
-    const paidDealsCount = brandDeals.filter((d: BookingDealItem) => (d.totalValue || 0) > 0).length;
-    const focDealsCount = brandDeals.filter((d: BookingDealItem) => (d.totalValue || 0) === 0).length;
-    const activeDealsCount = brandDeals.filter((d: BookingDealItem) => d.status !== 'COMPLETED' && d.status !== 'CANCELLED').length;
-
-    // Kiểm tra cảnh báo tài chính B2C
-    const overbudgetStores = brandStores.filter((s: StorePortfolioItem) => {
-      const storeDeals = brandDeals.filter((d: BookingDealItem) => (d.storeName || '').toLowerCase().trim() === s.storeName.toLowerCase().trim());
-      const storeSpent = storeDeals.reduce((sum: number, d: BookingDealItem) => sum + (d.totalValue || 0), 0);
-      return s.monthlyBudget > 0 && storeSpent > s.monthlyBudget;
-    });
-
-    const unbudgetedStores = brandStores.filter((s: StorePortfolioItem) => {
-      const storeDeals = brandDeals.filter((d: BookingDealItem) => (d.storeName || '').toLowerCase().trim() === s.storeName.toLowerCase().trim());
-      const storeSpent = storeDeals.reduce((sum: number, d: BookingDealItem) => sum + (d.totalValue || 0), 0);
-      return (s.monthlyBudget || 0) === 0 && storeSpent > 0;
-    });
-
-    const isBrandOverbudget = totalOrderNetBudget > 0 && totalSpentNet > totalOrderNetBudget;
-
-    return {
-      totalOrderNetBudget,
-      totalTargetGmv,
-      totalSpentNet,
-      remainingNetBudget: totalOrderNetBudget - totalSpentNet,
-      spentPercentage: totalOrderNetBudget > 0 ? Math.round((totalSpentNet / totalOrderNetBudget) * 100) : 0,
-      paidDealsCount,
-      focDealsCount,
-      activeDealsCount,
-      overbudgetStores,
-      unbudgetedStores,
-      isBrandOverbudget,
-    };
-  }, [brandStores, brandDeals]);
-
-  // 1. Thống kê Chỉ Số Vận Hành & Hiệu Suất BI Cấp Cao
-  const brandOperationalKpis = useMemo(() => {
-    const totalDeals = brandDeals.length;
-    const completedDeals = brandDeals.filter((d: BookingDealItem) => d.status === 'COMPLETED').length;
-    const activeDeals = brandDeals.filter((d: BookingDealItem) => d.status !== 'COMPLETED' && (d.status as string) !== 'CANCELLED').length;
-    
-    // Tách bạch theo định dạng
-    const paidDeals = brandDeals.filter((d: BookingDealItem) => (d.totalValue || 0) > 0);
-    const focDeals = brandDeals.filter((d: BookingDealItem) => (d.totalValue || 0) === 0);
-    const affiliateDeals = brandDeals.filter((d: BookingDealItem) => d.bookingFormat === 'Affiliate Thuần');
-    
-    // Doanh thu GMV thực tế phát sinh (Affiliate GMV + Ads GMV)
-    const totalSpentNet = brandDeals.reduce((sum: number, d: BookingDealItem) => sum + (d.totalValue || 0), 0);
-    const totalAffiliateGmv = brandDeals.reduce((sum: number, d: BookingDealItem) => sum + (d.affiliateGmv || d.gmv30 || 0), 0);
-    const totalAdsGmv = brandDeals.reduce((sum: number, d: BookingDealItem) => sum + (d.adsGmv || 0), 0);
-    const totalGmvActual = totalAffiliateGmv + totalAdsGmv;
-    
-    const roi = totalSpentNet > 0 ? Number((totalGmvActual / totalSpentNet).toFixed(2)) : 0;
-    const cir = totalGmvActual > 0 ? Number(((totalSpentNet / totalGmvActual) * 100).toFixed(1)) : 0;
-    
-    // SLA Vận hành B2C
-    const postedDeals = brandDeals.filter((d: BookingDealItem) => d.tiktokVideoUrl || d.videoUrl || d.postedDate || d.status === 'COMPLETED');
-    const onTimeDeals = postedDeals.filter((d: BookingDealItem) => d.isPostOnTime !== false && !d.daysDelayed);
-    const onTimeAirRate = postedDeals.length > 0 ? Math.round((onTimeDeals.length / postedDeals.length) * 100) : 100;
-    
-    const approvedScriptDeals = brandDeals.filter((d: BookingDealItem) => d.brandApprovalStatus === 'ĐÃ_DUYỆT' || d.status === 'SCRIPT_APPROVED' || d.status === 'COMPLETED');
-    const scriptApprovalRate = totalDeals > 0 ? Math.round((approvedScriptDeals.length / totalDeals) * 100) : 100;
-    
-    const focConvertedDeals = focDeals.filter((d: BookingDealItem) => d.tiktokVideoUrl || d.videoUrl || d.status === 'COMPLETED');
-    const focConversionRate = focDeals.length > 0 ? Math.round((focConvertedDeals.length / focDeals.length) * 100) : 85;
-    
-    const totalOrdersCount = brandDeals.reduce((sum: number, d: BookingDealItem) => sum + (d.ordersCount || 0), 0);
-    const avgCpo = totalOrdersCount > 0 ? Math.round(totalSpentNet / totalOrdersCount) : 0;
-    const totalViews = brandDeals.reduce((sum: number, d: BookingDealItem) => sum + (d.viewsCount || 0), 0);
-    
-    const delayedDeals = brandDeals.filter((d: BookingDealItem) => d.isSlaWarning || ((d.daysDelayed || 0) > 0));
-
-    return {
-      totalDeals,
-      completedDeals,
-      activeDeals,
-      paidCount: paidDeals.length,
-      focCount: focDeals.length,
-      affiliateCount: affiliateDeals.length,
-      totalSpentNet,
-      totalAffiliateGmv,
-      totalAdsGmv,
-      totalGmvActual,
-      roi,
-      cir,
-      onTimeAirRate,
-      scriptApprovalRate,
-      focConversionRate,
-      totalOrdersCount,
-      avgCpo,
-      totalViews,
-      delayedDealsCount: delayedDeals.length,
-      delayedDeals
-    };
-  }, [brandDeals]);
-
-  // 2. Lọc Deals theo chu kỳ tháng được chọn
+  // 1. Lọc Deals theo chu kỳ tháng được chọn (Tháng 10, 9, 8 hoặc toàn bộ các tháng)
   const monthlyDeals = useMemo(() => {
     if (selectedMonthCycle === 'ALL') return brandDeals;
     return brandDeals.filter((d: BookingDealItem) => {
@@ -436,46 +331,130 @@ export const BrandKnowledgeView: React.FC<BrandKnowledgeViewProps> = ({
     });
   }, [brandDeals, selectedMonthCycle]);
 
-  // 3. Thống kê phân rã kế hoạch tháng (Plan Order Targets vs Actuals)
-  const monthlyPlanStats = useMemo(() => {
-    const monthDealsCount = monthlyDeals.length;
-    const monthSpentNet = monthlyDeals.reduce((sum: number, d: BookingDealItem) => sum + (d.totalValue || 0), 0);
-    const monthGmv = monthlyDeals.reduce((sum: number, d: BookingDealItem) => sum + (d.affiliateGmv || d.gmv30 || 0), 0);
-    const monthPaidCount = monthlyDeals.filter((d: BookingDealItem) => (d.totalValue || 0) > 0).length;
-    const monthFocCount = monthlyDeals.filter((d: BookingDealItem) => (d.totalValue || 0) === 0).length;
-    const monthAirVideos = monthlyDeals.filter((d: BookingDealItem) => d.tiktokVideoUrl || d.videoUrl || d.status === 'COMPLETED').length;
+  // 2. Thống kê toàn diện về Kế Hoạch & Vận Hành B2C theo chu kỳ tháng được chọn
+  const monthlyGovernanceStats = useMemo(() => {
+    const isAll = selectedMonthCycle === 'ALL';
+    const monthMultiplier = isAll ? 3 : 1;
 
     const baseOrderNet = currentBrand?.monthlyBudget || brandStores.reduce((sum: number, s: StorePortfolioItem) => sum + (s.monthlyBudget || 0), 0);
     const baseTargetGmv = currentBrand?.targetGmv || brandStores.reduce((sum: number, s: StorePortfolioItem) => sum + (s.monthlyTargetGmv || 0), 0);
-    
-    // Tách bạch Gross & Net
-    const planBudgetNet = baseOrderNet;
+
+    const planBudgetNet = baseOrderNet * monthMultiplier;
     const planBudgetGross = Math.round(planBudgetNet * 1.1); // Kế toán kiểm soát Net, Gross gồm thuế phí
-    const planTargetGmv = baseTargetGmv;
-    
-    // Định mức cam kết sản lượng B2C
+    const planTargetGmv = baseTargetGmv * monthMultiplier;
+
+    // Chi tiêu Net thực tế trong chu kỳ tháng
+    const totalSpentNet = monthlyDeals.reduce((sum: number, d: BookingDealItem) => sum + (d.totalValue || 0), 0);
+    const totalAffiliateGmv = monthlyDeals.reduce((sum: number, d: BookingDealItem) => sum + (d.affiliateGmv || d.gmv30 || 0), 0);
+    const totalAdsGmv = monthlyDeals.reduce((sum: number, d: BookingDealItem) => sum + (d.adsGmv || 0), 0);
+    const totalGmvActual = totalAffiliateGmv + totalAdsGmv;
+
+    const remainingNet = planBudgetNet - totalSpentNet;
+    const budgetProgressPct = planBudgetNet > 0 ? Math.round((totalSpentNet / planBudgetNet) * 100) : 0;
+    const gmvProgressPct = planTargetGmv > 0 ? Math.round((totalGmvActual / planTargetGmv) * 100) : 0;
+
+    const roi = totalSpentNet > 0 ? Number((totalGmvActual / totalSpentNet).toFixed(2)) : 0;
+    const cir = totalGmvActual > 0 ? Number(((totalSpentNet / totalGmvActual) * 100).toFixed(1)) : 0;
+
+    // Tách bạch: Paid Video vs Suất mẫu FOC 0đ vs Affiliate
+    const paidDeals = monthlyDeals.filter((d: BookingDealItem) => (d.totalValue || 0) > 0);
+    const focDeals = monthlyDeals.filter((d: BookingDealItem) => (d.totalValue || 0) === 0);
+    const affiliateDeals = monthlyDeals.filter((d: BookingDealItem) => d.bookingFormat === 'Affiliate Thuần');
+
+    // Chỉ tiêu định mức sản lượng B2C
     const targetPaidVideos = Math.max(12, Math.round(planBudgetNet / 3000000));
     const targetFocSamples = Math.max(15, Math.round(targetPaidVideos * 1.25));
     const targetAffiliateVideos = Math.max(20, targetPaidVideos * 2);
+
+    // Tiến độ Air video & SLA đúng hạn
+    const postedDeals = monthlyDeals.filter((d: BookingDealItem) => d.tiktokVideoUrl || d.videoUrl || d.postedDate || d.status === 'COMPLETED');
+    const onTimeDeals = postedDeals.filter((d: BookingDealItem) => d.isPostOnTime !== false && !d.daysDelayed);
+    const onTimeAirRate = postedDeals.length > 0 ? Math.round((onTimeDeals.length / postedDeals.length) * 100) : 100;
+
+    // SLA Duyệt kịch bản
+    const approvedScriptDeals = monthlyDeals.filter((d: BookingDealItem) => d.brandApprovalStatus === 'ĐÃ_DUYỆT' || d.status === 'SCRIPT_APPROVED' || d.status === 'COMPLETED');
+    const scriptApprovalRate = monthlyDeals.length > 0 ? Math.round((approvedScriptDeals.length / monthlyDeals.length) * 100) : 100;
+
+    // SLA Chuyển đổi mẫu FOC
+    const focConvertedDeals = focDeals.filter((d: BookingDealItem) => d.tiktokVideoUrl || d.videoUrl || d.status === 'COMPLETED');
+    const focConversionRate = focDeals.length > 0 ? Math.round((focConvertedDeals.length / focDeals.length) * 100) : 85;
+
+    // Đơn hàng & CPO
+    const totalOrdersCount = monthlyDeals.reduce((sum: number, d: BookingDealItem) => sum + (d.ordersCount || 0), 0);
+    const avgCpo = totalOrdersCount > 0 ? Math.round(totalSpentNet / totalOrdersCount) : 0;
+    const totalViews = monthlyDeals.reduce((sum: number, d: BookingDealItem) => sum + (d.viewsCount || 0), 0);
+
+    // Cảnh báo rủi ro trong tháng
+    const delayedDeals = monthlyDeals.filter((d: BookingDealItem) => d.isSlaWarning || ((d.daysDelayed || 0) > 0));
+
+    const overbudgetStores = brandStores.filter((s: StorePortfolioItem) => {
+      const storeDeals = monthlyDeals.filter((d: BookingDealItem) => (d.storeName || '').toLowerCase().trim() === s.storeName.toLowerCase().trim());
+      const storeSpent = storeDeals.reduce((sum: number, d: BookingDealItem) => sum + (d.totalValue || 0), 0);
+      const storeBudget = (s.monthlyBudget || 0) * monthMultiplier;
+      return storeBudget > 0 && storeSpent > storeBudget;
+    });
+
+    const unbudgetedStores = brandStores.filter((s: StorePortfolioItem) => {
+      const storeDeals = monthlyDeals.filter((d: BookingDealItem) => (d.storeName || '').toLowerCase().trim() === s.storeName.toLowerCase().trim());
+      const storeSpent = storeDeals.reduce((sum: number, d: BookingDealItem) => sum + (d.totalValue || 0), 0);
+      return (s.monthlyBudget || 0) === 0 && storeSpent > 0;
+    });
+
+    const isBrandOverbudget = planBudgetNet > 0 && totalSpentNet > planBudgetNet;
 
     return {
       planBudgetNet,
       planBudgetGross,
       planTargetGmv,
-      monthSpentNet,
-      monthGmv,
-      remainingNet: planBudgetNet - monthSpentNet,
-      budgetProgressPct: planBudgetNet > 0 ? Math.round((monthSpentNet / planBudgetNet) * 100) : 0,
-      gmvProgressPct: planTargetGmv > 0 ? Math.round((monthGmv / planTargetGmv) * 100) : 0,
+      totalSpentNet,
+      totalAffiliateGmv,
+      totalAdsGmv,
+      totalGmvActual,
+      remainingNet,
+      budgetProgressPct,
+      gmvProgressPct,
+      roi,
+      cir,
+      paidCount: paidDeals.length,
+      focCount: focDeals.length,
+      affiliateCount: affiliateDeals.length,
       targetPaidVideos,
-      actualPaidVideos: monthPaidCount,
+      actualPaidVideos: paidDeals.length,
       targetFocSamples,
-      actualFocSamples: monthFocCount,
+      actualFocSamples: focDeals.length,
       targetAffiliateVideos,
-      actualAirVideos: monthAirVideos,
-      videoProgressPct: targetPaidVideos > 0 ? Math.round((monthAirVideos / targetPaidVideos) * 100) : 0
+      actualAirVideos: postedDeals.length,
+      videoProgressPct: targetPaidVideos > 0 ? Math.round((postedDeals.length / targetPaidVideos) * 100) : 0,
+      onTimeAirRate,
+      scriptApprovalRate,
+      focConversionRate,
+      totalOrdersCount,
+      avgCpo,
+      totalViews,
+      delayedDealsCount: delayedDeals.length,
+      delayedDeals,
+      overbudgetStores,
+      unbudgetedStores,
+      isBrandOverbudget
     };
-  }, [monthlyDeals, currentBrand, brandStores]);
+  }, [monthlyDeals, selectedMonthCycle, currentBrand, brandStores]);
+
+  // Backward compatibility alias để các thành phần khác dùng không bị lỗi
+  const brandFinancialStats = {
+    totalOrderNetBudget: monthlyGovernanceStats.planBudgetNet,
+    totalTargetGmv: monthlyGovernanceStats.planTargetGmv,
+    totalSpentNet: monthlyGovernanceStats.totalSpentNet,
+    remainingNetBudget: monthlyGovernanceStats.remainingNet,
+    spentPercentage: monthlyGovernanceStats.budgetProgressPct,
+    paidDealsCount: monthlyGovernanceStats.paidCount,
+    focDealsCount: monthlyGovernanceStats.focCount,
+    activeDealsCount: monthlyGovernanceStats.paidCount + monthlyGovernanceStats.focCount,
+    overbudgetStores: monthlyGovernanceStats.overbudgetStores,
+    unbudgetedStores: monthlyGovernanceStats.unbudgetedStores,
+    isBrandOverbudget: monthlyGovernanceStats.isBrandOverbudget,
+  };
+  const brandOperationalKpis = monthlyGovernanceStats;
+  const monthlyPlanStats = monthlyGovernanceStats;
 
   const handleUpdateBrand = (updatedBrand: BrandKnowledgeBase) => {
     setKnowledgeBases(prev => prev.map(b => b.id === updatedBrand.id ? updatedBrand : b));
@@ -807,7 +786,7 @@ export const BrandKnowledgeView: React.FC<BrandKnowledgeViewProps> = ({
             className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-md shadow-sm transition flex items-center gap-1.5 whitespace-nowrap"
           >
             <Share2 className="w-3.5 h-3.5" />
-            <span>Sinh Link KOC</span>
+            <span>Xuất Link Gửi KOC</span>
           </button>
 
           <button
@@ -815,7 +794,7 @@ export const BrandKnowledgeView: React.FC<BrandKnowledgeViewProps> = ({
             className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold rounded-md border border-slate-300 transition flex items-center gap-1.5 whitespace-nowrap"
           >
             <Plus className="w-3.5 h-3.5 text-slate-600" />
-            <span>Bổ sung Tri thức</span>
+            <span>Thêm Sản Phẩm / Quy Chuẩn</span>
           </button>
         </div>
       </div>
@@ -1141,32 +1120,17 @@ export const BrandKnowledgeView: React.FC<BrandKnowledgeViewProps> = ({
       <div className="border-b border-slate-200 bg-white px-2 rounded-t-lg">
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
           <button
-            onClick={() => setActiveKnowledgeTab('OPERATIONS_KPI')}
+            onClick={() => setActiveKnowledgeTab('MONTHLY_GOVERNANCE')}
             className={`px-3.5 py-2.5 text-xs font-semibold border-b-2 transition flex items-center gap-2 whitespace-nowrap ${
-              activeKnowledgeTab === 'OPERATIONS_KPI'
+              activeKnowledgeTab === 'MONTHLY_GOVERNANCE' || activeKnowledgeTab === 'OPERATIONS_KPI' || activeKnowledgeTab === 'MONTHLY_EXECUTION'
                 ? 'border-blue-600 text-blue-700 bg-blue-50/60'
                 : 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50'
             }`}
           >
-            <BarChart3 className="w-4 h-4 text-blue-600" />
-            <span>Chỉ Số Vận Hành &amp; BI</span>
+            <CalendarDays className="w-4 h-4 text-blue-600" />
+            <span>Kế Hoạch &amp; Vận Hành Tháng</span>
             <span className="px-1.5 py-0.2 rounded-full text-2xs bg-blue-100 text-blue-800 font-semibold">
-              SLA {brandOperationalKpis.onTimeAirRate}%
-            </span>
-          </button>
-
-          <button
-            onClick={() => setActiveKnowledgeTab('MONTHLY_EXECUTION')}
-            className={`px-3.5 py-2.5 text-xs font-semibold border-b-2 transition flex items-center gap-2 whitespace-nowrap ${
-              activeKnowledgeTab === 'MONTHLY_EXECUTION'
-                ? 'border-blue-600 text-blue-700 bg-blue-50/60'
-                : 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-            }`}
-          >
-            <CalendarDays className="w-4 h-4 text-purple-600" />
-            <span>Kế Hoạch &amp; Thực Thi Tháng</span>
-            <span className="px-1.5 py-0.2 rounded-full text-2xs bg-purple-100 text-purple-800 font-semibold">
-              {monthlyDeals.length} Deals
+              {selectedMonthCycle === 'ALL' ? 'Toàn bộ' : `T${selectedMonthCycle.slice(5)}`} • SLA {monthlyGovernanceStats.onTimeAirRate}%
             </span>
           </button>
 
@@ -1193,7 +1157,7 @@ export const BrandKnowledgeView: React.FC<BrandKnowledgeViewProps> = ({
                 : 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50'
             }`}
           >
-            <Building2 className="w-4 h-4 text-blue-600" />
+            <Building2 className="w-4 h-4 text-slate-700" />
             <span>Hồ Sơ Thương Hiệu &amp; Định Vị</span>
             <span className={`px-1.5 py-0.2 rounded-full text-2xs font-semibold ${
               currentBrand.isConfigured ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
@@ -1210,8 +1174,8 @@ export const BrandKnowledgeView: React.FC<BrandKnowledgeViewProps> = ({
                 : 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50'
             }`}
           >
-            <Flame className="w-4 h-4 text-amber-500" />
-            <span>Định Mức Trần &amp; Hero SKUs</span>
+            <Flame className="w-4 h-4 text-amber-600" />
+            <span>Sản Phẩm Chủ Lực &amp; Giá Trần</span>
             <span className="px-1.5 py-0.2 rounded-full text-2xs bg-slate-200 text-slate-700 font-semibold">
               {currentBrand.skus.length} SKU
             </span>
@@ -1232,7 +1196,7 @@ export const BrandKnowledgeView: React.FC<BrandKnowledgeViewProps> = ({
             }`}
           >
             <ShieldCheck className="w-4 h-4 text-indigo-600" />
-            <span>Pháp Lý &amp; Thẩm Định Quy Chuẩn</span>
+            <span>Quy Chuẩn Nội Dung &amp; Pháp Lý</span>
             <span className="px-1.5 py-0.2 rounded-full text-2xs bg-indigo-100 text-indigo-800 font-semibold">
               Đối soát
             </span>
@@ -1256,48 +1220,63 @@ export const BrandKnowledgeView: React.FC<BrandKnowledgeViewProps> = ({
       </div>
 
       {/* ========================================================================= */}
-      {/* PHÂN HỆ 1: CHỈ SỐ VẬN HÀNH & HIỆU SUẤT BI (EXECUTIVE OPERATIONAL DASHBOARD) */}
+      {/* PHÂN HỆ 1: KẾ HOẠCH & VẬN HÀNH THÁNG (MONTH-DRIVEN GOVERNANCE & OPERATIONS)  */}
       {/* ========================================================================= */}
-      {activeKnowledgeTab === 'OPERATIONS_KPI' && (
-        <div className="space-y-6 animate-in fade-in duration-150">
-          {/* Header tóm tắt vị thế thương hiệu & chu kỳ */}
-          <div className="card-enterprise p-4 bg-gradient-to-r from-blue-900 to-indigo-950 text-white rounded-lg shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="px-2 py-0.5 rounded bg-blue-500/20 text-blue-200 border border-blue-400/30 font-mono text-2xs uppercase">
-                  B2C Brand Governance
-                </span>
-                <span className="text-2xs text-blue-200 font-medium">Chu kỳ: Tháng 10/2026</span>
-                <span className="text-2xs text-blue-200">•</span>
-                <span className="text-2xs text-blue-200">{brandStores.length} gian hàng trực thuộc sàn</span>
+      {(activeKnowledgeTab === 'MONTHLY_GOVERNANCE' || activeKnowledgeTab === 'OPERATIONS_KPI' || activeKnowledgeTab === 'MONTHLY_EXECUTION') && (
+        <div className="space-y-5 animate-in fade-in duration-150">
+          {/* THANH ĐIỀU HÀNH CHU KỲ THÁNG & ĐẦU MỐI B2C */}
+          <div className="card-enterprise p-4 bg-white border-slate-200 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-1.5 text-slate-800 font-semibold text-xs pr-2 border-r border-slate-200">
+                <CalendarDays className="w-4 h-4 text-blue-600" />
+                <span>Chu Kỳ Kế Hoạch:</span>
               </div>
-              <h2 className="text-lg font-bold text-white tracking-tight flex items-center gap-2">
-                <span>Trung Tâm Quản Trị Thương Hiệu: {currentBrand.brandName}</span>
-              </h2>
-              <p className="text-xs text-blue-100/80 italic">&ldquo;{currentBrand.slogan}&rdquo;</p>
+              <div className="flex items-center gap-1">
+                {[
+                  { key: '2026/10', label: 'Tháng 10/2026 (Hiện tại)' },
+                  { key: '2026/09', label: 'Tháng 09/2026' },
+                  { key: '2026/08', label: 'Tháng 08/2026' },
+                  { key: 'ALL', label: 'Cả năm 2026 (Tích lũy)' },
+                ].map(cycle => (
+                  <button
+                    key={cycle.key}
+                    type="button"
+                    onClick={() => setSelectedMonthCycle(cycle.key)}
+                    className={`px-3 py-1.5 rounded text-xs font-semibold transition ${
+                      selectedMonthCycle === cycle.key
+                        ? 'bg-blue-600 text-white shadow-2xs'
+                        : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                    }`}
+                  >
+                    {cycle.label}
+                  </button>
+                ))}
+              </div>
             </div>
 
-            <div className="flex items-center gap-2 shrink-0 flex-wrap">
-              <button
-                type="button"
-                onClick={() => setActiveKnowledgeTab('MONTHLY_EXECUTION')}
-                className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded text-xs font-semibold transition flex items-center gap-1.5 shadow-sm"
-              >
-                <CalendarDays className="w-3.5 h-3.5" />
-                <span>Xem Kế Hoạch &amp; Thực Thi</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveKnowledgeTab('STORES_CHANNELS')}
-                className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded text-xs font-semibold transition flex items-center gap-1.5"
-              >
-                <Store className="w-3.5 h-3.5" />
-                <span>Quản Lý Gian Hàng</span>
-              </button>
+            <div className="flex items-center gap-3 text-xs text-slate-600 shrink-0 flex-wrap">
+              <span className="flex items-center gap-1">
+                <Store className="w-3.5 h-3.5 text-slate-500" />
+                <span><strong>{brandStores.length}</strong> gian hàng</span>
+              </span>
+              <span className="text-slate-300">•</span>
+              <span className="text-slate-700">
+                Trưởng phòng: <strong>Đặng Thị Yến Nhi</strong> (Trần PnL)
+              </span>
+              <span className="text-slate-300">•</span>
+              <span className={`px-2 py-0.5 rounded-full text-2xs font-semibold ${
+                monthlyGovernanceStats.budgetProgressPct > 100
+                  ? 'bg-rose-100 text-rose-800'
+                  : monthlyGovernanceStats.budgetProgressPct > 85
+                  ? 'bg-amber-100 text-amber-800'
+                  : 'bg-emerald-100 text-emerald-800'
+              }`}>
+                Giải ngân: {monthlyGovernanceStats.budgetProgressPct}% trần Net
+              </span>
             </div>
           </div>
 
-          {/* DÒNG 1: 5 THẺ CHỈ SỐ TÀI CHÍNH & THƯƠNG MẠI */}
+          {/* DÒNG 1: 5 THẺ CHỈ SỐ TÀI CHÍNH & THƯƠNG MẠI THEO THÁNG */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3.5">
             <div className="card-enterprise p-4 bg-white space-y-1 border-slate-200">
               <div className="flex items-center justify-between text-slate-500">
@@ -1305,7 +1284,7 @@ export const BrandKnowledgeView: React.FC<BrandKnowledgeViewProps> = ({
                 <Coins className="w-4 h-4 text-emerald-600" />
               </div>
               <p className="text-lg font-bold text-emerald-700">
-                {formatVndShort(brandFinancialStats.totalOrderNetBudget)}
+                {formatVndShort(monthlyGovernanceStats.planBudgetNet)}
               </p>
               <p className="text-3xs text-slate-400">Trần giải ngân Kế toán phê duyệt</p>
             </div>
@@ -1316,14 +1295,14 @@ export const BrandKnowledgeView: React.FC<BrandKnowledgeViewProps> = ({
                 <FileCheck className="w-4 h-4 text-blue-600" />
               </div>
               <p className={`text-lg font-bold ${
-                brandFinancialStats.isBrandOverbudget ? 'text-rose-600' : 'text-slate-900'
+                monthlyGovernanceStats.isBrandOverbudget ? 'text-rose-600' : 'text-slate-900'
               }`}>
-                {formatVndShort(brandFinancialStats.totalSpentNet)}
+                {formatVndShort(monthlyGovernanceStats.totalSpentNet)}
               </p>
               <p className="text-3xs text-slate-500">
-                {brandFinancialStats.isBrandOverbudget
-                  ? `Vượt trần ${formatVndShort(brandFinancialStats.totalSpentNet - brandFinancialStats.totalOrderNetBudget)}`
-                  : `Dư ngân sách: ${formatVndShort(brandFinancialStats.remainingNetBudget)}`}
+                {monthlyGovernanceStats.isBrandOverbudget
+                  ? `Vượt trần ${formatVndShort(monthlyGovernanceStats.totalSpentNet - monthlyGovernanceStats.planBudgetNet)}`
+                  : `Dư ngân sách: ${formatVndShort(monthlyGovernanceStats.remainingNet)}`}
               </p>
             </div>
 
@@ -1333,24 +1312,24 @@ export const BrandKnowledgeView: React.FC<BrandKnowledgeViewProps> = ({
                 <Percent className="w-4 h-4 text-amber-600" />
               </div>
               <p className={`text-lg font-bold ${
-                brandFinancialStats.spentPercentage > 100
+                monthlyGovernanceStats.budgetProgressPct > 100
                   ? 'text-rose-600'
-                  : brandFinancialStats.spentPercentage > 85
+                  : monthlyGovernanceStats.budgetProgressPct > 85
                   ? 'text-amber-600'
                   : 'text-emerald-600'
               }`}>
-                {brandFinancialStats.spentPercentage}%
+                {monthlyGovernanceStats.budgetProgressPct}%
               </p>
               <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
                 <div
                   className={`h-full ${
-                    brandFinancialStats.spentPercentage > 100
+                    monthlyGovernanceStats.budgetProgressPct > 100
                       ? 'bg-rose-500'
-                      : brandFinancialStats.spentPercentage > 85
+                      : monthlyGovernanceStats.budgetProgressPct > 85
                       ? 'bg-amber-500'
                       : 'bg-emerald-500'
                   }`}
-                  style={{ width: `${Math.min(100, brandFinancialStats.spentPercentage)}%` }}
+                  style={{ width: `${Math.min(100, monthlyGovernanceStats.budgetProgressPct)}%` }}
                 />
               </div>
             </div>
@@ -1361,10 +1340,10 @@ export const BrandKnowledgeView: React.FC<BrandKnowledgeViewProps> = ({
                 <TrendingUp className="w-4 h-4 text-purple-600" />
               </div>
               <p className="text-lg font-bold text-purple-700">
-                {formatVndShort(brandOperationalKpis.totalGmvActual)}
+                {formatVndShort(monthlyGovernanceStats.totalGmvActual)}
               </p>
               <p className="text-3xs text-slate-500">
-                Mục tiêu: {formatVndShort(brandFinancialStats.totalTargetGmv)}
+                Mục tiêu tháng: {formatVndShort(monthlyGovernanceStats.planTargetGmv)}
               </p>
             </div>
 
@@ -1374,15 +1353,15 @@ export const BrandKnowledgeView: React.FC<BrandKnowledgeViewProps> = ({
                 <Activity className="w-4 h-4 text-indigo-600" />
               </div>
               <p className="text-lg font-bold text-indigo-700">
-                ROI: {brandOperationalKpis.roi}x
+                ROI: {monthlyGovernanceStats.roi}x
               </p>
               <p className="text-3xs text-slate-500">
-                CIR chi phí/doanh thu: {brandOperationalKpis.cir}%
+                CIR chi phí/doanh thu: {monthlyGovernanceStats.cir}%
               </p>
             </div>
           </div>
 
-          {/* DÒNG 2: 4 THẺ CHỈ SỐ VẬN HÀNH & SLA THỰC THI B2C */}
+          {/* DÒNG 2: 4 THẺ CHỈ SỐ VẬN HÀNH & SLA THỰC THI THEO THÁNG */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
             <div className="card-enterprise p-4 bg-slate-50/70 border-slate-200 space-y-1">
               <div className="flex items-center justify-between text-slate-600">
@@ -1390,11 +1369,11 @@ export const BrandKnowledgeView: React.FC<BrandKnowledgeViewProps> = ({
                 <Clock className="w-4 h-4 text-emerald-600" />
               </div>
               <p className="text-base font-bold text-emerald-700">
-                {brandOperationalKpis.onTimeAirRate}%
+                {monthlyGovernanceStats.onTimeAirRate}%
               </p>
               <p className="text-3xs text-slate-500">
-                {brandOperationalKpis.delayedDealsCount > 0 ? (
-                  <span className="text-rose-600 font-semibold">{brandOperationalKpis.delayedDealsCount} deal đang trễ hạn</span>
+                {monthlyGovernanceStats.delayedDealsCount > 0 ? (
+                  <span className="text-rose-600 font-semibold">{monthlyGovernanceStats.delayedDealsCount} deal đang trễ hạn</span>
                 ) : (
                   <span>100% video lên sóng đúng hạn cam kết</span>
                 )}
@@ -1407,7 +1386,7 @@ export const BrandKnowledgeView: React.FC<BrandKnowledgeViewProps> = ({
                 <CheckCircle2 className="w-4 h-4 text-blue-600" />
               </div>
               <p className="text-base font-bold text-blue-700">
-                {brandOperationalKpis.scriptApprovalRate}%
+                {monthlyGovernanceStats.scriptApprovalRate}%
               </p>
               <p className="text-3xs text-slate-500">Tuân thủ guideline &amp; quy chế BYT</p>
             </div>
@@ -1418,10 +1397,10 @@ export const BrandKnowledgeView: React.FC<BrandKnowledgeViewProps> = ({
                 <ShoppingBag className="w-4 h-4 text-purple-600" />
               </div>
               <p className="text-base font-bold text-purple-700">
-                {brandOperationalKpis.focConversionRate}%
+                {monthlyGovernanceStats.focConversionRate}%
               </p>
               <p className="text-3xs text-slate-500">
-                {brandOperationalKpis.focCount} suất mẫu 0đ → video review
+                {monthlyGovernanceStats.focCount} suất mẫu 0đ → video review
               </p>
             </div>
 
@@ -1431,54 +1410,54 @@ export const BrandKnowledgeView: React.FC<BrandKnowledgeViewProps> = ({
                 <Target className="w-4 h-4 text-amber-600" />
               </div>
               <p className="text-base font-bold text-slate-900">
-                {brandOperationalKpis.totalOrdersCount.toLocaleString('vi-VN')} đơn
+                {monthlyGovernanceStats.totalOrdersCount.toLocaleString('vi-VN')} đơn
               </p>
               <p className="text-3xs text-slate-500">
-                CPO trung bình: {formatVndShort(brandOperationalKpis.avgCpo)} / đơn
+                CPO trung bình: {formatVndShort(monthlyGovernanceStats.avgCpo)} / đơn
               </p>
             </div>
           </div>
 
-          {/* DÒNG 3: CẢNH BÁO RỦI RO TÀI CHÍNH & VẬN HÀNH */}
-          {(brandFinancialStats.overbudgetStores.length > 0 || brandFinancialStats.unbudgetedStores.length > 0 || brandOperationalKpis.delayedDealsCount > 0) && (
+          {/* DÒNG 3: CẢNH BÁO RỦI RO TÀI CHÍNH & VẬN HÀNH TRONG THÁNG (NẾU CÓ) */}
+          {(monthlyGovernanceStats.overbudgetStores.length > 0 || monthlyGovernanceStats.unbudgetedStores.length > 0 || monthlyGovernanceStats.delayedDealsCount > 0) && (
             <div className="card-enterprise p-4 bg-rose-50/70 border-rose-200 space-y-2">
               <div className="flex items-center gap-2 text-rose-900 font-bold text-xs">
                 <AlertOctagon className="w-4 h-4 text-rose-600 shrink-0" />
-                <span>Báo Động Kiểm Soát Rủi Ro Tài Chính &amp; Vận Hành Thương Hiệu</span>
+                <span>Báo Động Kiểm Soát Rủi Ro Tài Chính &amp; Vận Hành ({selectedMonthCycle === 'ALL' ? 'Toàn bộ' : selectedMonthCycle})</span>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
-                {brandFinancialStats.overbudgetStores.length > 0 && (
+                {monthlyGovernanceStats.overbudgetStores.length > 0 && (
                   <div className="p-2.5 bg-white rounded border border-rose-200 space-y-1">
                     <p className="font-semibold text-rose-700 flex items-center gap-1">
                       <AlertCircle className="w-3.5 h-3.5 text-rose-600" />
                       <span>Vượt Hạn Mức Order Net</span>
                     </p>
                     <p className="text-2xs text-slate-600">
-                      Gian hàng: {brandFinancialStats.overbudgetStores.map(s => s.storeName).join(', ')} có thực chi duyệt vượt hạn mức được giao.
+                      Gian hàng: {monthlyGovernanceStats.overbudgetStores.map(s => s.storeName).join(', ')} có thực chi duyệt vượt trần được giao trong chu kỳ.
                     </p>
                   </div>
                 )}
 
-                {brandFinancialStats.unbudgetedStores.length > 0 && (
+                {monthlyGovernanceStats.unbudgetedStores.length > 0 && (
                   <div className="p-2.5 bg-white rounded border border-amber-200 space-y-1">
                     <p className="font-semibold text-amber-700 flex items-center gap-1">
                       <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
                       <span>Chi Tiêu Ngoài Hạn Mức (0đ)</span>
                     </p>
                     <p className="text-2xs text-slate-600">
-                      Gian hàng: {brandFinancialStats.unbudgetedStores.map(s => s.storeName).join(', ')} phát sinh chi phí nhưng hạn mức ban đầu ghi nhận 0đ.
+                      Gian hàng: {monthlyGovernanceStats.unbudgetedStores.map(s => s.storeName).join(', ')} phát sinh chi phí nhưng hạn mức ban đầu ghi nhận 0đ.
                     </p>
                   </div>
                 )}
 
-                {brandOperationalKpis.delayedDealsCount > 0 && (
+                {monthlyGovernanceStats.delayedDealsCount > 0 && (
                   <div className="p-2.5 bg-white rounded border border-amber-200 space-y-1">
                     <p className="font-semibold text-amber-700 flex items-center gap-1">
                       <Clock className="w-3.5 h-3.5 text-amber-600" />
                       <span>Deal Trễ Hạn Lên Video</span>
                     </p>
                     <p className="text-2xs text-slate-600">
-                      Có {brandOperationalKpis.delayedDealsCount} deal quá 2 ngày sau khi nhận mẫu nhưng chưa air video. Cần đôn đốc Creator.
+                      Có {monthlyGovernanceStats.delayedDealsCount} deal quá hạn 2 ngày sau khi nhận mẫu nhưng chưa air video. Cần đôn đốc Creator.
                     </p>
                   </div>
                 )}
@@ -1486,41 +1465,61 @@ export const BrandKnowledgeView: React.FC<BrandKnowledgeViewProps> = ({
             </div>
           )}
 
-          {/* DÒNG 4: CƠ CẤU SẢN LƯỢNG & PHÂN CẤP QUẢN TRỊ PHÒNG B2C */}
+          {/* DÒNG 4: PHÂN RÃ CHỈ TIÊU & CƠ CẤU PHÂN CẤP B2C */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Phân rã sản lượng KOC */}
+            {/* Phân rã chỉ tiêu kế hoạch tháng */}
             <div className="card-enterprise p-4 bg-white space-y-3">
               <div className="flex items-center justify-between border-b border-slate-100 pb-2">
                 <h4 className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-                  <Flame className="w-4 h-4 text-amber-600" />
-                  <span>Cơ Cấu Sản Lượng &amp; Kênh Triển Khai</span>
+                  <Target className="w-4 h-4 text-blue-600" />
+                  <span>Phân Rã Chỉ Tiêu Kế Hoạch ({selectedMonthCycle === 'ALL' ? 'Toàn bộ' : selectedMonthCycle})</span>
                 </h4>
-                <span className="text-2xs text-slate-500 font-semibold">{brandDeals.length} Ca Booking</span>
+                <div className="flex items-center gap-1 text-2xs">
+                  <span className="font-semibold text-emerald-700">Net: {formatVndShort(monthlyGovernanceStats.planBudgetNet)}</span>
+                  <span className="text-slate-400">•</span>
+                  <span className="text-slate-500">Gross: {formatVndShort(monthlyGovernanceStats.planBudgetGross)}</span>
+                </div>
               </div>
+
               <div className="grid grid-cols-3 gap-2 text-center">
                 <div className="p-2.5 rounded bg-blue-50/70 border border-blue-100">
                   <p className="text-2xs text-slate-500 font-medium">Video Có Phí (Paid)</p>
-                  <p className="text-base font-bold text-blue-700">{brandOperationalKpis.paidCount}</p>
+                  <p className="text-base font-bold text-blue-700">
+                    {monthlyGovernanceStats.actualPaidVideos} / {monthlyGovernanceStats.targetPaidVideos}
+                  </p>
                   <p className="text-3xs text-slate-400">KL1 - KL7 có thù lao</p>
                 </div>
                 <div className="p-2.5 rounded bg-purple-50/70 border border-purple-100">
                   <p className="text-2xs text-slate-500 font-medium">Mẫu Thử 0đ (FOC)</p>
-                  <p className="text-base font-bold text-purple-700">{brandOperationalKpis.focCount}</p>
+                  <p className="text-base font-bold text-purple-700">
+                    {monthlyGovernanceStats.actualFocSamples} / {monthlyGovernanceStats.targetFocSamples}
+                  </p>
                   <p className="text-3xs text-slate-400">Chi phí booking 0đ</p>
                 </div>
                 <div className="p-2.5 rounded bg-emerald-50/70 border border-emerald-100">
                   <p className="text-2xs text-slate-500 font-medium">Affiliate Thuần</p>
-                  <p className="text-base font-bold text-emerald-700">{brandOperationalKpis.affiliateCount}</p>
+                  <p className="text-base font-bold text-emerald-700">{monthlyGovernanceStats.affiliateCount}</p>
                   <p className="text-3xs text-slate-400">Gắn giỏ ăn hoa hồng</p>
                 </div>
               </div>
-              <div className="p-2.5 rounded bg-slate-50 border border-slate-100 text-xs flex items-center justify-between">
-                <span className="text-slate-600">Tổng lượt xem video (Views) tích lũy:</span>
-                <span className="font-bold text-slate-900">{brandOperationalKpis.totalViews.toLocaleString('vi-VN')} lượt</span>
+
+              <div className="space-y-1.5 pt-1">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-slate-600 font-medium">Tiến độ lên sóng video (Air Progress):</span>
+                  <span className="font-bold text-blue-700">
+                    {monthlyGovernanceStats.actualAirVideos} video ({monthlyGovernanceStats.videoProgressPct}%)
+                  </span>
+                </div>
+                <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-blue-600 rounded-full transition-all duration-300"
+                    style={{ width: `${Math.min(100, monthlyGovernanceStats.videoProgressPct)}%` }}
+                  />
+                </div>
               </div>
             </div>
 
-            {/* Cơ cấu phân cấp nhân sự B2C */}
+            {/* Cơ cấu phân cấp quản trị phòng B2C */}
             <div className="card-enterprise p-4 bg-white space-y-3">
               <div className="flex items-center justify-between border-b border-slate-100 pb-2">
                 <h4 className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
@@ -1551,125 +1550,17 @@ export const BrandKnowledgeView: React.FC<BrandKnowledgeViewProps> = ({
               </div>
             </div>
           </div>
-        </div>
-      )}
 
-      {/* ========================================================================= */}
-      {/* PHÂN HỆ 2: KẾ HOẠCH & THỰC THI CÁC THÁNG (MONTHLY PLANNING & EXECUTION)      */}
-      {/* ========================================================================= */}
-      {activeKnowledgeTab === 'MONTHLY_EXECUTION' && (
-        <div className="space-y-6 animate-in fade-in duration-150">
-          {/* Thanh chọn chu kỳ tháng */}
-          <div className="flex items-center justify-between gap-3 p-3 bg-white rounded-lg border border-slate-200 shadow-2xs flex-wrap">
-            <div className="flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-blue-600" />
-              <span className="text-xs font-bold text-slate-800">Chu Kỳ Kế Hoạch &amp; Thực Thi:</span>
-            </div>
-
-            <div className="flex items-center gap-1.5 flex-wrap">
-              {[
-                { key: '2026/10', label: 'Tháng 10/2026 (Hiện tại)' },
-                { key: '2026/09', label: 'Tháng 09/2026' },
-                { key: '2026/08', label: 'Tháng 08/2026' },
-                { key: 'ALL', label: 'Toàn bộ các tháng' },
-              ].map(cycle => (
-                <button
-                  key={cycle.key}
-                  type="button"
-                  onClick={() => setSelectedMonthCycle(cycle.key)}
-                  className={`px-3 py-1.5 rounded-md text-xs font-semibold transition ${
-                    selectedMonthCycle === cycle.key
-                      ? 'bg-blue-600 text-white shadow-2xs'
-                      : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
-                  }`}
-                >
-                  {cycle.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Card: Phân rã Chỉ Tiêu Kế Hoạch Tháng (Plan Order Quotas) */}
-          <div className="card-enterprise p-5 bg-white space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
-              <div>
-                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                  <Target className="w-4 h-4 text-blue-600" />
-                  <span>Chỉ Tiêu Kế Hoạch Phân Rã ({selectedMonthCycle === 'ALL' ? 'Toàn bộ' : selectedMonthCycle})</span>
-                </h3>
-                <p className="text-2xs text-slate-500 mt-0.5">
-                  Tách bạch hạn mức Net (kiểm soát giải ngân) và ngân sách Gross, phân định rõ Video Paid và Suất gửi mẫu FOC 0đ
-                </p>
-              </div>
-
-              <div className="flex items-center gap-2 text-2xs">
-                <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200 font-semibold">
-                  Hạn mức Net: {formatVndShort(monthlyPlanStats.planBudgetNet)}
-                </span>
-                <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 font-semibold">
-                  Gross: {formatVndShort(monthlyPlanStats.planBudgetGross)}
-                </span>
-              </div>
-            </div>
-
-            {/* Bảng phân rã chỉ tiêu vs thực tế */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
-              <div className="p-3 bg-slate-50 rounded-lg border border-slate-100 space-y-1">
-                <span className="text-2xs text-slate-500 font-medium">Mục Tiêu GMV</span>
-                <p className="text-base font-bold text-purple-700">{formatVndShort(monthlyPlanStats.planTargetGmv)}</p>
-                <div className="flex items-center justify-between text-3xs text-slate-500 pt-1">
-                  <span>Đạt được: {formatVndShort(monthlyPlanStats.monthGmv)}</span>
-                  <span className="font-bold text-purple-700">{monthlyPlanStats.gmvProgressPct}%</span>
-                </div>
-              </div>
-
-              <div className="p-3 bg-slate-50 rounded-lg border border-slate-100 space-y-1">
-                <span className="text-2xs text-slate-500 font-medium">Tiến Độ Giải Ngân Net</span>
-                <p className="text-base font-bold text-emerald-700">{formatVndShort(monthlyPlanStats.monthSpentNet)}</p>
-                <div className="flex items-center justify-between text-3xs text-slate-500 pt-1">
-                  <span>Trần Net: {formatVndShort(monthlyPlanStats.planBudgetNet)}</span>
-                  <span className="font-bold text-emerald-700">{monthlyPlanStats.budgetProgressPct}%</span>
-                </div>
-              </div>
-
-              <div className="p-3 bg-slate-50 rounded-lg border border-slate-100 space-y-1">
-                <span className="text-2xs text-slate-500 font-medium">Video Có Phí (Paid)</span>
-                <p className="text-base font-bold text-blue-700">{monthlyPlanStats.actualPaidVideos} / {monthlyPlanStats.targetPaidVideos}</p>
-                <p className="text-3xs text-slate-500 pt-1">KL1 - KL7 có định mức thù lao</p>
-              </div>
-
-              <div className="p-3 bg-slate-50 rounded-lg border border-slate-100 space-y-1">
-                <span className="text-2xs text-slate-500 font-medium">Mẫu Thử Gửi Miễn Phí (FOC)</span>
-                <p className="text-base font-bold text-indigo-700">{monthlyPlanStats.actualFocSamples} / {monthlyPlanStats.targetFocSamples}</p>
-                <p className="text-3xs text-slate-500 pt-1">Chi phí booking 0đ (cấp mẫu)</p>
-              </div>
-            </div>
-
-            {/* Thanh tiến độ tổng quan */}
-            <div className="p-3 bg-blue-50/50 rounded-lg border border-blue-100 space-y-2">
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-semibold text-slate-800">Tiến Độ Sản Lượng Video Lên Sóng (Air Progress)</span>
-                <span className="font-bold text-blue-700">{monthlyPlanStats.actualAirVideos} video ({monthlyPlanStats.videoProgressPct}%)</span>
-              </div>
-              <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-blue-600 rounded-full transition-all duration-300"
-                  style={{ width: `${Math.min(100, monthlyPlanStats.videoProgressPct)}%` }}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Card: Bảng Theo Dõi Thực Thi Tác Nghiệp Chi Tiết (Monthly Live Execution Tracker) */}
+          {/* DÒNG 5: BẢNG THEO DÕI TÁC NGHIỆP CÁC CA BOOKING THỰC THI TRONG THÁNG */}
           <div className="card-enterprise overflow-hidden bg-white space-y-0">
             <div className="p-4 border-b border-slate-200 bg-slate-50/60 flex flex-col md:flex-row md:items-center justify-between gap-3">
               <div>
                 <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                   <CalendarDays className="w-4 h-4 text-purple-600" />
-                  <span>Danh Sách Ca Booking / Deals Thực Thi ({monthlyDeals.length})</span>
+                  <span>Danh Sách Ca Booking Thực Thi ({monthlyDeals.length} Ca)</span>
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Theo dõi tiến độ từ gửi mẫu, thẩm định kịch bản, lên video đến nghiệm thu quyết toán
+                  Theo dõi tiến độ từ gửi mẫu, duyệt kịch bản, lên video đến nghiệm thu quyết toán trong chu kỳ {selectedMonthCycle === 'ALL' ? 'toàn bộ' : selectedMonthCycle}
                 </p>
               </div>
 
@@ -2662,7 +2553,7 @@ export const BrandKnowledgeView: React.FC<BrandKnowledgeViewProps> = ({
               onClick={() => setSkusSubTab('SKUS')}
               className="px-3 py-1.5 rounded-md text-xs font-semibold text-slate-600 hover:text-slate-900 transition"
             >
-              Bách Khoa Toàn Thư Hero SKUs ({currentBrand.skus.length})
+              Danh Mục Sản Phẩm Chủ Lực ({currentBrand.skus.length})
             </button>
             <button
               type="button"
@@ -2827,7 +2718,7 @@ export const BrandKnowledgeView: React.FC<BrandKnowledgeViewProps> = ({
       )}
 
       {/* ========================================================================= */}
-      {/* PHÂN HỆ 5: BÁCH KHOA TOÀN THƯ HERO SKUS                                   */}
+      {/* PHÂN HỆ 5: DANH MỤC SẢN PHẨM CHỦ LỰC (HERO SKUS)                          */}
       {/* ========================================================================= */}
       {(activeKnowledgeTab === 'SKUS' || (activeKnowledgeTab === 'SKUS_RATECARD' && skusSubTab === 'SKUS')) && (
         <div className="space-y-5">
@@ -2838,7 +2729,7 @@ export const BrandKnowledgeView: React.FC<BrandKnowledgeViewProps> = ({
               onClick={() => setSkusSubTab('SKUS')}
               className="px-3 py-1.5 rounded-md text-xs font-semibold bg-white text-amber-700 shadow-2xs transition"
             >
-              Bách Khoa Toàn Thư Hero SKUs ({currentBrand.skus.length})
+              Danh Mục Sản Phẩm Chủ Lực ({currentBrand.skus.length})
             </button>
             <button
               type="button"
@@ -2886,8 +2777,8 @@ export const BrandKnowledgeView: React.FC<BrandKnowledgeViewProps> = ({
                 {/* Scientific Mechanism Callout */}
                 <div className="p-3.5 bg-blue-50/50 rounded-md border border-blue-100 text-xs text-slate-800 space-y-1">
                   <div className="flex items-center gap-1.5 font-semibold text-blue-800">
-                    <Sparkles className="w-3.5 h-3.5 text-blue-600" />
-                    <span>Cơ chế tác động khoa học:</span>
+                    <FileCheck className="w-3.5 h-3.5 text-blue-600" />
+                    <span>Cơ chế tác động chuẩn nhãn hàng:</span>
                   </div>
                   <p className="leading-relaxed text-slate-700">{sku.scientificMechanism}</p>
                 </div>
@@ -2937,12 +2828,12 @@ export const BrandKnowledgeView: React.FC<BrandKnowledgeViewProps> = ({
                   </div>
                 </div>
 
-                {/* Target Audience & Contraindications (Chỉ định & Chống chỉ định) */}
+                {/* Target Audience & Contraindications (Khuyên dùng & Chống chỉ định) */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs pt-1">
                   <div className="p-3 rounded border border-emerald-200 bg-emerald-50/30">
                     <p className="font-semibold text-emerald-900 mb-1 flex items-center gap-1.5">
                       <Check className="w-3.5 h-3.5 text-emerald-600" />
-                      <span>Chỉ định (Ai nên dùng):</span>
+                      <span>Đối tượng khuyên dùng:</span>
                     </p>
                     <p className="text-slate-700">{sku.targetSkinOrUser}</p>
                   </div>
@@ -2950,7 +2841,7 @@ export const BrandKnowledgeView: React.FC<BrandKnowledgeViewProps> = ({
                   <div className="p-3 rounded border border-rose-200 bg-rose-50/30">
                     <p className="font-semibold text-rose-900 mb-1 flex items-center gap-1.5">
                       <AlertOctagon className="w-3.5 h-3.5 text-rose-600" />
-                      <span>Chống chỉ định (Ai không được dùng):</span>
+                      <span>Đối tượng chống chỉ định:</span>
                     </p>
                     <p className="text-slate-700">{sku.contraindications}</p>
                   </div>
@@ -3182,8 +3073,8 @@ export const BrandKnowledgeView: React.FC<BrandKnowledgeViewProps> = ({
               <div className="flex items-center justify-between border-b border-emerald-100 pb-3">
                 <div>
                   <h3 className="text-sm font-semibold text-emerald-900 flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-emerald-600" />
-                    <span>Bộ từ khóa thắng lợi</span>
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                    <span>Bộ từ khóa khuyên dùng (Whitelist)</span>
                   </h3>
                   <p className="text-xs text-emerald-700">Các cụm từ kích thích chuyển đổi cao và hợp chuẩn 100%</p>
                 </div>
@@ -3456,52 +3347,52 @@ export const BrandKnowledgeView: React.FC<BrandKnowledgeViewProps> = ({
             </button>
           </div>
           {/* Header Banner & Demo Scenarios */}
-          <div className="p-5 rounded-lg bg-purple-900 text-white shadow-md relative overflow-hidden">
+          <div className="card-enterprise p-5 bg-white border border-slate-200 text-slate-900 shadow-xs relative overflow-hidden">
             <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
               <div className="space-y-1.5 max-w-2xl">
                 <div className="flex items-center gap-2">
-                  <span className="px-2.5 py-0.5 rounded-full text-2xs font-semibold bg-purple-500/30 text-purple-200 border border-purple-400/40 flex items-center gap-1.5">
-                    <Sparkles className="w-3 h-3 text-purple-300" />
-                    Bộ kiểm tra & đối soát quy chuẩn
+                  <span className="px-2.5 py-0.5 rounded-full text-2xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 flex items-center gap-1.5">
+                    <CheckSquare className="w-3.5 h-3.5 text-blue-600" />
+                    <span>Bộ tiêu chuẩn kiểm tra kịch bản</span>
                   </span>
-                  <span className="text-xs text-purple-300 font-medium">
-                    Chuẩn hóa theo Brand Guideline: <strong>{currentBrand.brandName}</strong>
+                  <span className="text-xs text-slate-500 font-medium">
+                    Chuẩn hóa theo Brand Guideline: <strong className="text-slate-800">{currentBrand.brandName}</strong>
                   </span>
                 </div>
-                <h3 className="text-lg font-semibold tracking-tight text-white flex items-center gap-2">
-                  <span>Thẩm Định &amp; Góp Ý Kịch Bản KOC Tự Động</span>
+                <h3 className="text-lg font-semibold tracking-tight text-slate-900 flex items-center gap-2">
+                  <span>Kiểm Tra &amp; Chuẩn Hóa Kịch Bản KOC</span>
                 </h3>
-                <p className="text-xs text-purple-200/90 leading-relaxed">
-                  Đối soát kịch bản KOC theo 5 tiêu chí: quét từ cấm, quy định pháp lý, đặc tính sản phẩm, giọng văn và cấu trúc kịch bản. Gợi ý điều chỉnh từ ngữ vi phạm.
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Đối soát kịch bản KOC theo 5 tiêu chí: quét từ cấm, quy định pháp lý BYT, đặc tính sản phẩm, giọng văn và cấu trúc kịch bản. Gợi ý điều chỉnh từ ngữ vi phạm.
                 </p>
               </div>
 
               {/* 3 Preset Quick-Test Buttons */}
               <div className="space-y-2 shrink-0">
-                <p className="text-2xs font-semibold text-purple-200">
+                <p className="text-2xs font-semibold text-slate-600">
                   Nạp kịch bản mẫu kiểm thử nhanh:
                 </p>
                 <div className="flex flex-wrap lg:flex-col gap-2">
                   <button
                     onClick={() => handleLoadPreset('SENKA_ERROR')}
-                    className="px-3 py-1.5 rounded-md bg-rose-500/20 hover:bg-rose-500/30 border border-rose-400/40 text-rose-200 text-xs font-medium transition text-left flex items-center justify-between gap-2"
+                    className="px-3 py-1.5 rounded-md bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-800 text-xs font-medium transition text-left flex items-center justify-between gap-2"
                   >
                     <span>Senka: Vi phạm từ cấm &amp; dìm đối thủ</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
+                    <ArrowRight className="w-3.5 h-3.5 text-rose-600" />
                   </button>
                   <button
                     onClick={() => handleLoadPreset('NATURE_DISCLAIMER')}
-                    className="px-3 py-1.5 rounded-md bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/40 text-amber-200 text-xs font-medium transition text-left flex items-center justify-between gap-2"
+                    className="px-3 py-1.5 rounded-md bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-800 text-xs font-medium transition text-left flex items-center justify-between gap-2"
                   >
                     <span>Nature&apos;s Way: Thiếu cảnh báo BYT</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
+                    <ArrowRight className="w-3.5 h-3.5 text-amber-600" />
                   </button>
                   <button
                     onClick={() => handleLoadPreset('KUTIE_PERFECT')}
-                    className="px-3 py-1.5 rounded-md bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/40 text-emerald-200 text-xs font-medium transition text-left flex items-center justify-between gap-2"
+                    className="px-3 py-1.5 rounded-md bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 text-xs font-medium transition text-left flex items-center justify-between gap-2"
                   >
                     <span>Kutieskin: Chuẩn y khoa đạt 95đ</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
+                    <ArrowRight className="w-3.5 h-3.5 text-emerald-600" />
                   </button>
                 </div>
               </div>
@@ -3577,8 +3468,8 @@ export const BrandKnowledgeView: React.FC<BrandKnowledgeViewProps> = ({
                     disabled={isAnalyzing || !inputScriptText.trim()}
                     className={`flex-1 py-2.5 px-4 rounded-md text-xs font-semibold text-white shadow-sm flex items-center justify-center gap-2 transition ${
                       isAnalyzing || !inputScriptText.trim()
-                        ? 'bg-purple-300 cursor-not-allowed'
-                        : 'bg-purple-600 hover:bg-purple-700 active:scale-98'
+                        ? 'bg-blue-300 cursor-not-allowed'
+                        : 'bg-blue-600 hover:bg-blue-700 active:scale-98'
                     }`}
                   >
                     {isAnalyzing ? (
@@ -3588,7 +3479,7 @@ export const BrandKnowledgeView: React.FC<BrandKnowledgeViewProps> = ({
                       </>
                     ) : (
                       <>
-                        <Sparkles className="w-4 h-4" />
+                        <CheckSquare className="w-4 h-4" />
                         <span>Kiểm tra kịch bản</span>
                       </>
                     )}
@@ -3608,16 +3499,16 @@ export const BrandKnowledgeView: React.FC<BrandKnowledgeViewProps> = ({
               </div>
             </div>
 
-            {/* Cột Phải (7 Cột): Báo Cáo Phân Tích AI Chi tiết */}
+            {/* Cột Phải (7 Cột): Báo Cáo Đối Soát Kịch Bản Chi Tiết */}
             <div className="lg:col-span-7 space-y-4">
               {!aiAnalysisResult ? (
                 <div className="card-enterprise p-12 bg-white text-center space-y-3 border-dashed border-2 border-slate-300">
-                  <div className="w-12 h-12 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center mx-auto">
-                    <Sparkles className="w-6 h-6" />
+                  <div className="w-12 h-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mx-auto">
+                    <FileCheck className="w-6 h-6" />
                   </div>
-                  <h4 className="text-sm font-semibold text-slate-800">Chưa có dữ liệu phân tích kịch bản</h4>
+                  <h4 className="text-sm font-semibold text-slate-800">Chưa có dữ liệu đối soát kịch bản</h4>
                   <p className="text-xs text-slate-500 max-w-md mx-auto">
-                    Vui lòng nhập kịch bản ở khung bên trái hoặc bấm vào một trong các kịch bản mẫu ở trên, sau đó nhấn <strong>&ldquo;Kiểm tra kịch bản&rdquo;</strong>.
+                    Vui lòng dán lời thoại kịch bản ở khung bên trái hoặc chọn kịch bản mẫu ở trên, sau đó nhấn <strong>&ldquo;Kiểm tra kịch bản&rdquo;</strong>.
                   </p>
                 </div>
               ) : (
@@ -3780,23 +3671,23 @@ export const BrandKnowledgeView: React.FC<BrandKnowledgeViewProps> = ({
                     </div>
                   )}
 
-                  {/* AI Rewritten Script Card (Auto-Fixed) */}
-                  <div className="card-enterprise p-5 bg-purple-50/50 border-purple-200 space-y-4 shadow-sm">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-purple-100 pb-3">
+                  {/* Rewritten Script Card (Normalized & Fixed) */}
+                  <div className="card-enterprise p-5 bg-slate-50/70 border-slate-200 space-y-4 shadow-xs">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-3">
                       <div>
-                        <h5 className="text-sm font-semibold text-purple-950 flex items-center gap-2">
-                          <Wand2 className="w-4 h-4 text-purple-600" />
-                          <span>Kịch bản gợi ý sau khi sửa từ khóa vi phạm</span>
+                        <h5 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
+                          <CheckSquare className="w-4 h-4 text-blue-600" />
+                          <span>Kịch bản gợi ý sau khi điều chỉnh từ khóa vi phạm</span>
                         </h5>
                         <p className="text-2xs text-slate-500">
-                          Tự động khử từ cấm, thay thế bằng thuật ngữ y khoa và chèn tuyên bố pháp lý
+                          Khử từ cấm, thay thế bằng thuật ngữ y khoa và chèn tuyên bố pháp lý theo quy chuẩn
                         </p>
                       </div>
 
                       <div className="flex items-center gap-2">
                         <button
                           onClick={handleApplyRewritten}
-                          className="px-2.5 py-1 rounded bg-purple-100 hover:bg-purple-200 text-purple-800 text-xs font-semibold transition flex items-center gap-1"
+                          className="px-2.5 py-1 rounded bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-semibold transition flex items-center gap-1"
                         >
                           <ArrowRight className="w-3.5 h-3.5" />
                           <span>Áp dụng vào ô nhập</span>
@@ -3804,7 +3695,7 @@ export const BrandKnowledgeView: React.FC<BrandKnowledgeViewProps> = ({
 
                         <button
                           onClick={() => handleCopy('ai-rewritten-script', aiAnalysisResult.rewrittenScript.fullText)}
-                          className="px-3 py-1 rounded bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold transition flex items-center gap-1 shadow-xs"
+                          className="px-3 py-1 rounded bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold transition flex items-center gap-1 shadow-xs"
                         >
                           {copiedId === 'ai-rewritten-script' ? (
                             <>
@@ -3823,28 +3714,28 @@ export const BrandKnowledgeView: React.FC<BrandKnowledgeViewProps> = ({
 
                     {/* 4-Part Structure Breakdown */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-                      <div className="p-3 bg-white rounded border border-purple-100 space-y-1">
-                        <span className="font-semibold text-purple-800 text-2xs">1. Hook 3 giây đầu:</span>
+                      <div className="p-3 bg-white rounded border border-slate-200 space-y-1">
+                        <span className="font-semibold text-blue-800 text-2xs">1. Hook 3 giây đầu:</span>
                         <p className="text-slate-700 text-2xs leading-relaxed italic">
                           &ldquo;{aiAnalysisResult.rewrittenScript.hook}&rdquo;
                         </p>
                       </div>
 
-                      <div className="p-3 bg-white rounded border border-purple-100 space-y-1">
+                      <div className="p-3 bg-white rounded border border-slate-200 space-y-1">
                         <span className="font-semibold text-amber-800 text-2xs">2. Nỗi đau người dùng:</span>
                         <p className="text-slate-700 text-2xs leading-relaxed italic">
                           &ldquo;{aiAnalysisResult.rewrittenScript.painPoint}&rdquo;
                         </p>
                       </div>
 
-                      <div className="p-3 bg-white rounded border border-purple-100 space-y-1">
+                      <div className="p-3 bg-white rounded border border-slate-200 space-y-1">
                         <span className="font-semibold text-blue-800 text-2xs">3. Giải Pháp &amp; USPs Độc Quyền:</span>
                         <p className="text-slate-700 text-2xs leading-relaxed italic">
                           &ldquo;{aiAnalysisResult.rewrittenScript.solutionAndUsp}&rdquo;
                         </p>
                       </div>
 
-                      <div className="p-3 bg-white rounded border border-purple-100 space-y-1">
+                      <div className="p-3 bg-white rounded border border-slate-200 space-y-1">
                         <span className="font-semibold text-emerald-800 text-2xs">4. Kêu gọi hành động (CTA):</span>
                         <p className="text-slate-700 text-2xs leading-relaxed italic">
                           &ldquo;{aiAnalysisResult.rewrittenScript.callToAction}&rdquo;
@@ -3853,8 +3744,8 @@ export const BrandKnowledgeView: React.FC<BrandKnowledgeViewProps> = ({
                     </div>
 
                     {/* Full Script Box */}
-                    <div className="p-3.5 bg-white rounded-md border border-purple-200 text-xs text-slate-800 space-y-1.5 font-mono">
-                      <span className="text-2xs font-semibold text-purple-900 font-sans block">
+                    <div className="p-3.5 bg-white rounded-md border border-slate-200 text-xs text-slate-800 space-y-1.5 font-mono">
+                      <span className="text-2xs font-semibold text-slate-900 font-sans block">
                         Toàn văn kịch bản hoàn chỉnh (sẵn sàng gửi KOC bấm máy):
                       </span>
                       <p className="whitespace-pre-line text-slate-800 leading-relaxed text-2xs bg-slate-50 p-3 rounded border border-slate-200">
@@ -4122,7 +4013,7 @@ export const BrandKnowledgeView: React.FC<BrandKnowledgeViewProps> = ({
                   type="submit"
                   className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-semibold transition"
                 >
-                  Lưu vào bách khoa Tri thức
+                  Lưu hồ sơ quy chuẩn
                 </button>
               </div>
             </form>

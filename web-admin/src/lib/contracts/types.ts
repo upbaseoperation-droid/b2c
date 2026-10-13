@@ -1,6 +1,14 @@
 export type ContractRole = 'CREATOR' | 'LEGAL' | 'FINANCE' | 'LEAD' | 'SIGN_COORDINATOR' | 'AUDITOR';
 export interface ContractActor { id: string; name: string; roles: ContractRole[]; brands: string[]; allBrands?: boolean }
-export interface ContractField { key: string; label: string; context: string; required: boolean; part: string; paragraph: number; start?: number; end?: number }
+export type FieldGroup = 'NUMBER' | 'PARTY' | 'DATE' | 'SCOPE' | 'MONEY' | 'OTHER';
+export type FieldKind = 'text' | 'long' | 'money' | 'number' | 'date';
+/** Dữ liệu có sẵn trong hệ thống dùng để điền sẵn ô (hồ sơ KOC, booking, ngày lập). */
+export type FieldSource = 'partyName' | 'ownerName' | 'representative' | 'cccd' | 'taxCode' | 'address' | 'phone' | 'email' | 'kocId' | 'docDate' | 'signDay' | 'signMonth' | 'signYearDigit' | 'product' | 'unitPrice' | 'quantity' | 'lineTotal' | 'netTotal';
+export interface ContractField {
+  key: string; label: string; context: string; required: boolean; part: string; paragraph: number; start?: number; end?: number;
+  /** Nhãn hiển thị trên form; `label` giữ nguyên chữ trong mẫu. */
+  title?: string; group?: FieldGroup; kind?: FieldKind; source?: FieldSource;
+}
 export interface LegalTemplate { id: string; name: string; filename: string; subject: string; kind: 'CONTRACT' | 'ACCEPTANCE'; version: string; hash: string; fields: ContractField[]; paragraphs: string[] }
 export interface ReviewStep { role: 'LEGAL' | 'FINANCE' | 'LEAD'; reviewerId: string; reviewerName: string; status: 'PENDING' | 'APPROVED' | 'CHANGES' | 'REJECTED'; note: string; decidedAt?: string; version: number }
 export interface ContractFinding { severity: 'ERROR' | 'WARNING' | 'INFO'; message: string; evidence: string; fieldKey?: string }
@@ -15,4 +23,6 @@ export interface ContractRecord {
   createdAt: string; updatedAt: string; approval: 'DRAFT' | 'IN_REVIEW' | 'CHANGES' | 'REJECTED' | 'APPROVED';
   steps: ReviewStep[]; checks: AiCheck[]; signing: SigningAttempt[]; history: ContractEvent[]; versions: ContractRevision[];
   parentId?: string;
+  /** Booking và KOC mà hồ sơ này phục vụ. */
+  dealId?: string; dealCode?: string; kocId?: string;
 }

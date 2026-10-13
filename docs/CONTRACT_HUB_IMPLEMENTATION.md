@@ -74,8 +74,6 @@ Các cập nhật dùng revision để từ chối ghi đè thay đổi của ng
 
 Nguồn: [OpenAPI MISA](https://amisapp.misa.vn/wesign/api/public/swagger/v1/swagger.json), đọc ngày 13/10/2026.
 
-## Giới hạn cần review trước dùng thật
-
 ## Kết quả kiểm thử ngày 13/10/2026
 
 - Build production thành công; TypeScript và lint phạm vi hợp đồng đạt. Build còn cảnh báo tracing đường dẫn file động và quy ước middleware cũ; cần tối ưu đóng gói trước triển khai hạ tầng.
@@ -92,3 +90,12 @@ Tự đánh giá theo skill agent-self-evaluation: chính xác 4/5 (đã xác mi
 - Mẫu có mã/hash nguồn; mỗi hồ sơ tạo mới lưu bản nguồn bất biến. File mẫu hiện hành thay đổi không đổi bản nguồn của hồ sơ cũ. Pháp chế quản lý bộ file hiện hành trên máy chủ; chưa có giao diện upload/phát hành mẫu mới.
 - Chưa kết nối tài khoản thật Lark/weSign, chưa gọi AI trên tài liệu thật; cần cấu hình và UAT tích hợp.
 - Chưa triển khai dịch vụ trên hạ tầng vận hành và chưa lên lịch đồng bộ thực tế.
+
+## Cập nhật 13/10/2026 — gắn booking, tự điền, giao diện
+
+- Menu đổi tên thành **Hợp đồng** (không gồm chi tiền). Modal hợp đồng cũ (`ContractModal`, `ContractView`) đã gỡ: modal đó tự soạn điều khoản, điền sẵn CCCD/STK mẫu và có duyệt chi riêng ngoài luồng pháp chế – kế toán.
+- Nút “HĐ” ở Booking, deal ở Tổng quan và Việc của tôi mở hồ sơ hợp đồng của booking đó; chưa có thì mở form tạo. Hồ sơ lưu `dealId`, `dealCode`, `kocId`.
+- Form tự chọn mẫu theo loại hồ sơ pháp lý của KOC (Cá nhân / Hộ kinh doanh / Công ty) và điền sẵn ô có dữ liệu thật: Bên B, CCCD/MST, SĐT, email, mã KOC, ngày lập, ngày ký, sản phẩm, đơn giá, tổng giá trị. Không có dữ liệu thì để trống.
+- Trích ô từ mẫu Word: nhận ô có chữ giữ chỗ (“Tên Công ty”, “MST công ty”, “Số… cấp ngày … tại…”) – trước đây bỏ sót nên mẫu công ty/hộ kinh doanh không điền được tên, MST, địa chỉ; ô trong bảng có nhãn “dòng · cột”; mỗi ô có nhãn dễ đọc, nhóm, kiểu (tiền/số/ngày) và nguồn dữ liệu. Khóa ô không đổi nên hồ sơ cũ vẫn đúng ô.
+- Đồng bộ weSign chỉ ghi hồ sơ khi trạng thái, người ký hoặc lỗi thay đổi (trước đây mỗi lần đọc lại đều ghi lịch sử và tăng revision).
+- Kiểm tra nội dung chỉ liệt kê ô bắt buộc còn trống; ô không bắt buộc gộp một dòng.

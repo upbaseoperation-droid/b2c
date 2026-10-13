@@ -6,7 +6,6 @@ import { Sidebar, TabKey } from '../components/Sidebar';
 import { TopHeader } from '../components/TopHeader';
 import { QuickBookModal } from '../components/QuickBookModal';
 import { ImportExcelModal } from '../components/ImportExcelModal';
-import { ContractModal } from '../components/ContractModal';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 
 import { CockpitView } from '../components/views/CockpitView';
@@ -17,7 +16,7 @@ import { BrandKnowledgeView } from '../components/views/BrandKnowledgeView';
 import { ContentView } from '../components/views/ContentView';
 import { BookingView } from '../components/views/BookingView';
 import { KocMasterDataView } from '../components/views/KocMasterDataView';
-import { ContractManagementView } from '../components/views/ContractManagementView';
+import { ContractManagementView, type ContractIntent } from '../components/views/ContractManagementView';
 import { ManagerView } from '../components/views/ManagerView';
 import { LeaderboardView } from '../components/views/LeaderboardView';
 import { BrandHubView } from '../components/views/BrandHubView';
@@ -284,7 +283,12 @@ export default function App() {
   // Modals
   const [isQuickBookOpen, setIsQuickBookOpen] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
-  const [selectedDealForContract, setSelectedDealForContract] = useState<BookingDealItem | null>(null);
+  // Mở hồ sơ hợp đồng của một deal (từ Booking, Tổng quan, Việc của tôi).
+  const [contractIntent, setContractIntent] = useState<ContractIntent | null>(null);
+  const openContractForDeal = (deal: BookingDealItem) => {
+    setContractIntent({ dealId: deal.id, nonce: Date.now() });
+    setActiveTab('contracts');
+  };
   const [preselectedKoc, setPreselectedKoc] = useState<KocItem | null>(null);
   const [preselectedBrand, setPreselectedBrand] = useState<string | null>(null);
 
@@ -556,24 +560,6 @@ export default function App() {
     showToast(`Đã giao gian hàng ${updatedStore.storeName} cho ${updatedStore.b2cOwnerName || updatedStore.assignedStaff}`);
   };
 
-  const handleApproveAdvance = (dealId: string) => {
-    setDeals(prev => prev.map(d => d.id === dealId ? {
-      ...d,
-      status: 'ADVANCE_PAID',
-      statusLabel: 'Đã Chi Cọc (Được Gửi Mẫu)'
-    } : d));
-    showToast('Đã duyệt tạm ứng. Có thể gửi hàng mẫu.');
-  };
-
-  const handleApproveFinal = (dealId: string) => {
-    setDeals(prev => prev.map(d => d.id === dealId ? {
-      ...d,
-      status: 'FINAL_PAID',
-      statusLabel: 'Đã Tất Toán (Hoàn Tất HĐ)'
-    } : d));
-    showToast('Đã thanh toán đợt 2. Hợp đồng hoàn tất.');
-  };
-
   const handleImportSuccess = (result: { updatedDeals: number; totalGmvAdded: number }) => {
     showToast(`Đã cập nhật ${result.updatedDeals} deal, GMV +${result.totalGmvAdded.toLocaleString('vi-VN')} đ`);
   };
@@ -623,7 +609,7 @@ export default function App() {
     if (task.dealCode) {
       const matched = deals.find(d => d.dealCode === task.dealCode);
       if (matched) {
-        setSelectedDealForContract(matched);
+        openContractForDeal(matched);
         return;
       }
     }
@@ -656,7 +642,7 @@ export default function App() {
     'partner-access': { title: 'Quản Trị Phân Quyền & RBAC Tập Trung', subtitle: 'Ma trận phân quyền 7 vai trò, quản lý PIC nhân sự nội bộ và cấp quyền Gmail cho đối tác bên thứ 3' },
     booking: { title: 'Kế hoạch & Vận hành Booking', subtitle: 'Phân rã kế hoạch theo Khung lương KL1-7, tuyển chọn KOC và quản lý deal hợp đồng' },
     'koc-master': { title: 'Danh bạ KOC', subtitle: 'Hồ sơ, giấy tờ và lịch sử booking của KOC' },
-    contracts: { title: 'Quản lý hợp đồng', subtitle: 'Tạo từ mẫu pháp chế, phê duyệt nội bộ và theo dõi trình ký weSign' },
+    contracts: { title: 'Hợp đồng', subtitle: 'Tạo từ mẫu pháp chế, duyệt nội bộ và theo dõi ký điện tử' },
     manager: { title: 'Điều phối & Quản lý', subtitle: 'Phân bổ nhãn hàng, gian hàng, nhân sự và cân bằng khối lượng việc' },
     'sample-tracker': { title: 'Hàng mẫu', subtitle: 'Vận đơn mẫu, hạn nộp kịch bản 5 ngày và mã Spark Ads' },
     'performance-p3': { title: 'Đánh giá 4P & thưởng P3', subtitle: 'Điểm khối lượng việc theo độ khó gian hàng, chất lượng và SLA' },
@@ -792,7 +778,7 @@ export default function App() {
                 setPreselectedKoc(null);
                 setIsQuickBookOpen(true);
               }}
-              onSelectDeal={setSelectedDealForContract}
+              onSelectDeal={openContractForDeal}
               deals={deals}
               onTaskActionClick={handleTaskActionClick}
               onNavigateToInputPlan={() => setActiveTab('input-plan')}
@@ -806,7 +792,7 @@ export default function App() {
                 setPreselectedKoc(null);
                 setIsQuickBookOpen(true);
               }}
-              onSelectDeal={setSelectedDealForContract}
+              onSelectDeal={openContractForDeal}
             />
           </KeepAliveTab>
 
@@ -974,7 +960,7 @@ export default function App() {
                 setIsQuickBookOpen(true);
               }}
               onOpenImport={() => setIsImportOpen(true)}
-              onSelectDealForContract={setSelectedDealForContract}
+              onSelectDealForContract={openContractForDeal}
               onUpdateDeal={handleUpdateDeal}
               onKocCreated={handleKocCreated}
               planItems={detailedPlans}
@@ -1003,7 +989,7 @@ export default function App() {
           </KeepAliveTab>
 
           <KeepAliveTab tabKey="contracts" currentTab={activeTab}>
-            <ContractManagementView />
+            <ContractManagementView deals={deals} kocs={kocs} intent={contractIntent} onNotify={showToast} />
           </KeepAliveTab>
 
           <KeepAliveTab tabKey="sample-tracker" currentTab={activeTab}>
@@ -1149,15 +1135,6 @@ export default function App() {
         onImportSuccess={handleImportSuccess}
       />
 
-      {/* Contract Preview Modal */}
-      <ContractModal
-        isOpen={!!selectedDealForContract}
-        onClose={() => setSelectedDealForContract(null)}
-        deal={selectedDealForContract}
-        onApproveAdvance={handleApproveAdvance}
-        onApproveFinal={handleApproveFinal}
-        onSaveDeal={handleUpdateDeal}
-      />
     </div>
   );
 }

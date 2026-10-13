@@ -48,3 +48,21 @@ test('Giữ bản mẫu của hồ sơ khi pháp chế thay đổi file hiện h
     await unlink(file); await rmdir(templateDirectory); await rmdir(directory);
   }
 });
+test('Mẫu công ty / hộ kinh doanh: ô chữ giữ chỗ (tên, MST, địa chỉ) được nhận ra và điền thay đúng chỗ', async () => {
+  for (const id of ['COM-HD', 'HKD-HD']) {
+    const { template } = await loadTemplate(id);
+    const name = template.fields.find(f => f.source === 'partyName'); const tax = template.fields.find(f => f.source === 'taxCode');
+    assert.ok(name && tax, `${id} thiếu ô tên hoặc MST`);
+    const output = await renderTemplate(template.id, template.hash, { [name.key]: 'CÔNG TY KIỂM THỬ', [tax.key]: '0101234567' });
+    assert.ok(output.paragraphs.includes('CÔNG TY KIỂM THỬ'));
+    assert.ok(output.paragraphs.includes('0101234567'));
+    assert.ok(!output.paragraphs.some(p => /^(Tên Công ty|Tên Hộ kinh doanh|MST công ty|MST hộ kinh doanh)$/.test(p.trim())), 'còn chữ giữ chỗ sau khi điền');
+  }
+});
+test('Ô bảng có nhãn theo dòng · cột, không còn nhãn trùng nhau', async () => {
+  const { template } = await loadTemplate('IND-HD');
+  const fields = [...new Map(template.fields.map(f => [f.key, f])).values()];
+  assert.ok(fields.some(f => f.title === 'Sản xuất và đăng tải Video review · Đơn giá' && f.source === 'unitPrice'));
+  const titles = fields.map(f => f.title); assert.equal(new Set(titles).size, titles.length);
+  assert.ok(!fields.some(f => /Sau đây gọi tắt/.test(f.label)), 'dòng “Sau đây gọi tắt là Bên B” không phải ô điền');
+});

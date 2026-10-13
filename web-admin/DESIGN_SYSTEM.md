@@ -302,6 +302,8 @@ Màn mẫu: hồ sơ KOC (`components/koc/KocProfile.tsx`).
 
 **Màn mẫu:** Booking (`BookingView.tsx`) đã chuyển hoàn toàn: 3 bảng dùng `DataTable`, bộ lọc dùng `FilterBar`/`Chips`/`Select`, 2 modal dùng `Modal`, `prompt()`/`alert()` thay bằng `ConfirmDialog`. File giảm từ 1.868 xuống 1.098 dòng. Dùng màn này làm mẫu khi chuyển các màn khác.
 
+**Hợp đồng** (`ContractManagementView.tsx`, `components/contracts/`) đã chuyển: danh sách có chip số đếm, hồ sơ hai cột (tiến trình duyệt → ký ở cột chính), form chia nhóm theo mục của mẫu, trạng thái theo bộ 8 nhãn.
+
 **Màn mẫu cho danh sách + hồ sơ:** Danh bạ KOC (`KocMasterDataView.tsx`, `components/koc/`). Danh sách dùng `FilterBar`/`Chips`/`DataTable`/`ActionMenu`/`Pagination`; hồ sơ hai cột dùng chung cho trang và modal (`KocProfileModal`); bỏ toàn bộ số liệu bịa khi thiếu dữ liệu.
 
 **Đã chuyển hẳn sang design system:** khung app (menu trái, thanh trên, toast), trang đăng nhập, Tổng quan (hàng chỉ số, giá trị deal theo kênh), Phân bổ & điều phối (thanh công cụ, bảng nhãn hàng có ảnh đại diện PIC), đầu trang Booking và kế hoạch cá nhân, Kế hoạch tháng (chỉ số có xu hướng, thẻ kế hoạch có thanh kênh). Ảnh đại diện và nhãn kênh đã áp dụng ở Hiệu suất nhân sự, Đánh giá 4P, Việc của tôi, Dữ liệu gốc, Gian hàng.

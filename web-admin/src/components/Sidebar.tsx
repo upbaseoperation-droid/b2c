@@ -81,9 +81,9 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           ],
         },
         {
-          title: '3. Hợp đồng & Cổng chi',
+          title: '3. Hợp đồng & Hàng mẫu',
           items: [
-            { key: 'contracts', label: 'Hợp đồng & Cổng chi', icon: FileCheck },
+            { key: 'contracts', label: 'Hợp đồng', icon: FileCheck },
             { key: 'sample-tracker', label: 'Hàng mẫu & Spark Ads', icon: Package },
           ],
         },
@@ -122,9 +122,9 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           ],
         },
         {
-          title: '3. Hợp đồng & Cổng chi',
+          title: '3. Hợp đồng & Hàng mẫu',
           items: [
-            { key: 'contracts', label: 'Hợp đồng & Cổng chi', icon: FileCheck },
+            { key: 'contracts', label: 'Hợp đồng', icon: FileCheck },
             { key: 'sample-tracker', label: 'Hàng mẫu & Spark Ads', icon: Package },
           ],
         },
@@ -161,9 +161,9 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           ],
         },
         {
-          title: '3. Hợp đồng & Cổng chi',
+          title: '3. Hợp đồng & Hàng mẫu',
           items: [
-            { key: 'contracts', label: 'Hợp đồng & Cổng chi', icon: FileCheck },
+            { key: 'contracts', label: 'Hợp đồng', icon: FileCheck },
             { key: 'sample-tracker', label: 'Hàng mẫu', icon: Package },
           ],
         },

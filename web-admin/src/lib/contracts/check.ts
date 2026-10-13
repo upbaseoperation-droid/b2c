@@ -4,7 +4,11 @@ import { ContractError } from './domain';
 export function aiConfigured() { return process.env.CONTRACT_AI_ENABLED === 'true' && !!process.env.GEMINI_API_KEY && !!process.env.CONTRACT_AI_MODEL; }
 export async function checkContract(record: ContractRecord): Promise<AiCheck> {
   const { template, paragraphs } = await renderTemplate(record.templateId, record.templateHash, record.values);
-  const findings: ContractFinding[] = [...new Map(template.fields.map(f => [f.key, f])).values()].filter(f => !record.values[f.key]?.trim()).map(f => ({ severity: f.required ? 'ERROR' : 'WARNING', message: `Chưa điền: ${f.label}`, evidence: f.context, fieldKey: f.key }));
+  const empty = [...new Map(template.fields.map(f => [f.key, f])).values()].filter(f => !record.values[f.key]?.trim());
+  // Ô bắt buộc còn trống: mỗi ô một lỗi. Ô không bắt buộc: gộp một dòng để không lấn các vấn đề thật.
+  const findings: ContractFinding[] = empty.filter(f => f.required).map(f => ({ severity: 'ERROR', message: `Chưa điền: ${f.title || f.label}`, evidence: f.context, fieldKey: f.key }));
+  const optional = empty.filter(f => !f.required);
+  if (optional.length) findings.push({ severity: 'INFO', message: `Còn ${optional.length} ô không bắt buộc để trống: ${optional.slice(0, 6).map(f => f.title || f.label).join('; ')}${optional.length > 6 ? '…' : ''}. Kiểm tra lại các hạng mục không dùng.`, evidence: '' });
   if (!aiConfigured()) return { version: record.version, at: new Date().toISOString(), provider: 'RULES', findings };
   const model = process.env.CONTRACT_AI_MODEL!;
   if (!/^[a-zA-Z0-9.-]+$/.test(model)) throw new ContractError('Tên model AI không hợp lệ.', 503);

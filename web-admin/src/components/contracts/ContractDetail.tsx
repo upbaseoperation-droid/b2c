@@ -1,0 +1,412 @@
+'use client';
+
+/**
+ * Hồ sơ một hợp đồng. Cột chính: tiến trình duyệt → ký, kiểm tra nội dung, nội dung đã điền.
+ * Cột phụ: thông tin hồ sơ, phiên bản, lịch sử. Nút chính đổi theo việc người xem cần làm tiếp.
+ */
+
+import React, { useState } from 'react';
+import { ArrowLeft, Download, FileCheck2, FilePlus2, Pencil, RefreshCw, RotateCcw, ScanSearch } from 'lucide-react';
+import type { ContractRecord, ContractRole } from '../../lib/contracts/types';
+import { ActionMenu, Button, ConfirmDialog, EmptyState, Field, Input, Modal, Person, SectionHeader, Select, Status } from '../ui';
+import type { ActionMenuItem } from '../ui';
+import { contractApi, type ContractBootstrap } from './api';
+import { HISTORY_LABEL, ROLE_LABEL, contractStatus, dateTime, isAcceptance, signerStatus, stepStatus } from './contractUi';
+
+type Action = (payload: Record<string, unknown>, done?: string) => Promise<ContractRecord | undefined>;
+
+export function ContractDetail({
+  record,
+  data,
+  busy,
+  onBack,
+  onAction,
+  onEdit,
+  onOpen,
+  onCreateAcceptance,
+}: {
+  record: ContractRecord;
+  data: ContractBootstrap;
+  busy: boolean;
+  onBack: () => void;
+  onAction: Action;
+  onEdit: () => void;
+  onOpen: (id: string) => void;
+  onCreateAcceptance: () => void;
+}) {
+  const me = data.actor;
+  const status = contractStatus(record);
+  const template = data.templates.find(t => t.id === record.templateId);
+  const signing = record.signing.at(-1);
+  const activeSigning = record.signing.some(s => !['CANCELLED', 'REJECTED'].includes(s.status));
+  const isOwner = record.ownerId === me.id;
+  const editable = isOwner && record.approval !== 'IN_REVIEW' && !activeSigning;
+  const canSubmit = editable && ['DRAFT', 'CHANGES', 'REJECTED'].includes(record.approval);
+  const myStep = record.approval === 'IN_REVIEW' ? record.steps.find(s => s.reviewerId === me.id && s.status === 'PENDING') : undefined;
+  const coordinator = me.roles.includes('SIGN_COORDINATOR');
+  const canStartSigning = coordinator && record.approval === 'APPROVED' && !activeSigning;
+  const demo = data.demoActors.length > 0;
+  const canWithdraw = isOwner && ['IN_REVIEW', 'APPROVED'].includes(record.approval) && !signing;
+  const canCheck = record.approval !== 'APPROVED' && !record.signing.length && (isOwner || record.steps.some(s => s.reviewerId === me.id));
+  const hasAcceptance = data.records.some(r => r.parentId === record.id);
+  const parent = record.parentId ? data.records.find(r => r.id === record.parentId) : undefined;
+
+  const [dialog, setDialog] = useState<null | 'submit' | 'approve' | 'changes' | 'reject' | 'withdraw' | 'link'>(null);
+  const [preview, setPreview] = useState<string[] | null>(null);
+  const [previewError, setPreviewError] = useState('');
+
+  const loadPreview = () =>
+    contractApi<{ paragraphs: string[] }>(`/api/contracts/${record.id}/document?preview=1`)
+      .then(r => { setPreview(r.paragraphs); setPreviewError(''); })
+      .catch(e => setPreviewError((e as Error).message));
+
+  // Nút chính: việc tiếp theo của người đang xem.
+  const primary = canSubmit ? (
+    <Button variant="primary" icon={FileCheck2} disabled={busy} onClick={() => setDialog('submit')}>Gửi duyệt</Button>
+  ) : myStep ? (
+    <Button variant="primary" disabled={busy} onClick={() => setDialog('approve')}>Duyệt</Button>
+  ) : canStartSigning && data.config.wesign ? (
+    <Button variant="primary" disabled={busy} onClick={() => setDialog('link')}>Liên kết luồng ký</Button>
+  ) : canStartSigning && demo ? (
+    <Button variant="primary" disabled={busy} onClick={() => onAction({ action: 'DEMO_SIGN_START' }, 'Đã bắt đầu lượt ký thử')}>Bắt đầu ký thử</Button>
+  ) : signing?.status === 'COMPLETED' && !isAcceptance(record.templateId) && !hasAcceptance && me.roles.includes('CREATOR') ? (
+    <Button variant="primary" icon={FilePlus2} onClick={onCreateAcceptance}>Tạo biên bản nghiệm thu</Button>
+  ) : null;
+
+  const menu: ActionMenuItem[] = [
+    ...(myStep ? [{ label: 'Từ chối', onSelect: () => setDialog('reject') }] : []),
+    ...(canCheck ? [{ label: 'Kiểm tra nội dung', icon: ScanSearch, onSelect: () => onAction({ action: 'CHECK' }, 'Đã kiểm tra nội dung') }] : []),
+    ...(canWithdraw ? [{ label: 'Thu hồi để sửa', icon: RotateCcw, onSelect: () => setDialog('withdraw') }] : []),
+  ];
+
+  const current = record.checks.filter(c => c.version === record.version).at(-1);
+
+  return (
+    <div className="space-y-6">
+      <Button variant="ghost" size="sm" icon={ArrowLeft} onClick={onBack} className="-ml-2.5">Hợp đồng</Button>
+
+      <header className="flex flex-wrap items-start justify-between gap-4">
+        <div className="min-w-0 grid gap-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="text-lg font-semibold text-ink">{record.title}</h2>
+            <Status tone={status.tone}>{status.label}</Status>
+            {status.note && <span className="text-[13px] text-ink-3">{status.note}</span>}
+          </div>
+          <p className="text-[13px] text-ink-2">
+            {[record.partner, record.brand, template?.name, `Phiên bản ${record.version}`].filter(Boolean).join(' · ')}
+            {record.dealCode && <span className="text-ink-3"> · Booking <span className="font-code">{record.dealCode}</span></span>}
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {editable && <Button icon={Pencil} onClick={onEdit}>Sửa</Button>}
+          {myStep && <Button disabled={busy} onClick={() => setDialog('changes')}>Yêu cầu sửa</Button>}
+          <a href={`/api/contracts/${record.id}/document`} className="inline-flex items-center gap-1.5 h-[34px] px-3.5 rounded-md border border-line-strong bg-surface text-[13.5px] font-medium text-ink hover:bg-sunken">
+            <Download className="w-4 h-4 text-ink-3" strokeWidth={1.75} />Tải Word
+          </a>
+          {primary}
+          {menu.length > 0 && <ActionMenu items={menu} />}
+        </div>
+      </header>
+
+      <div className="grid gap-6 items-start lg:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="grid gap-6 min-w-0">
+          {/* Tiến trình */}
+          <section className="grid gap-3">
+            <SectionHeader title="Tiến trình" description="Pháp chế và kế toán duyệt độc lập; chỉ bản đủ duyệt mới được trình ký." />
+            <ol className="bg-surface border border-line rounded-xl divide-y divide-line">
+              <Step title="Soạn hồ sơ" who={record.ownerName} status={record.approval === 'DRAFT' && !record.steps.length ? { label: 'Nháp', tone: 'neutral' } : { label: 'Hoàn tất', tone: 'positive' }} meta={`Phiên bản ${record.version}`} />
+              {record.steps.length === 0 ? (
+                <li className="px-4 py-3 text-[13px] text-ink-3">Chưa gửi duyệt.{isOwner && canSubmit ? ' Bấm “Gửi duyệt” và chọn người duyệt.' : ''}</li>
+              ) : (
+                record.steps.map((s, i) => (
+                  <Step key={`${s.reviewerId}-${i}`} title={ROLE_LABEL[s.role]} who={s.reviewerName} status={stepStatus(s)} meta={s.decidedAt ? dateTime(s.decidedAt) : undefined} note={s.note} />
+                ))
+              )}
+              <li className="px-4 py-3 grid gap-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[13px] font-medium text-ink">Ký điện tử</span>
+                    {signing ? <Status tone={contractStatus(record).tone}>{signing.status === 'COMPLETED' ? 'Hoàn tất' : contractStatus(record).label}</Status> : <Status>Chưa trình ký</Status>}
+                    {signing?.provider === 'DEMO' && <span className="text-2xs text-warning">Ký thử, không có giá trị pháp lý</span>}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {signing && signing.provider !== 'DEMO' && data.config.wesign && (
+                      <Button size="sm" icon={RefreshCw} disabled={busy} onClick={() => onAction({ action: 'SYNC_WESIGN' }, 'Đã cập nhật tiến độ ký')}>Cập nhật</Button>
+                    )}
+                    {signing?.provider === 'DEMO' && coordinator && ['WAITING', 'PARTIAL'].includes(signing.status) && (
+                      <>
+                        <Button size="sm" disabled={busy} onClick={() => onAction({ action: 'DEMO_SIGN_NEXT' })}>Ký thử người tiếp theo</Button>
+                        <Button size="sm" variant="ghost" disabled={busy} onClick={() => onAction({ action: 'DEMO_SIGN_REJECT' })}>Từ chối thử</Button>
+                      </>
+                    )}
+                    {signing?.status === 'COMPLETED' && signing.provider !== 'DEMO' && (
+                      <a href={`/api/contracts/${record.id}/document?signed=1`} className="text-[13px] text-accent hover:underline">Tải bản đã ký</a>
+                    )}
+                  </div>
+                </div>
+                {!signing && record.approval !== 'APPROVED' && <p className="text-[13px] text-ink-3">Trình ký sau khi phiên bản hiện tại được duyệt đủ.</p>}
+                {!signing && record.approval === 'APPROVED' && !data.config.wesign && !demo && (
+                  <p className="text-[13px] text-ink-3">Chưa kết nối weSign. Cần quản trị viên cấu hình tài khoản tích hợp.</p>
+                )}
+                {signing && (
+                  <ul className="grid gap-2">
+                    {signing.people.map((p, i) => {
+                      const s = signerStatus(p.action, p.status);
+                      return (
+                        <li key={i} className="flex items-center justify-between gap-3">
+                          <Person name={p.name} sub={p.email} size={24} />
+                          <Status tone={s.tone}>{s.label}</Status>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+                {signing && <p className="text-2xs text-ink-3">Cập nhật {dateTime(signing.syncedAt)} · bản duyệt phiên bản {signing.version}</p>}
+                {signing?.error && <p role="alert" className="text-[13px] text-critical">{signing.error}</p>}
+              </li>
+            </ol>
+          </section>
+
+          {/* Kiểm tra nội dung */}
+          <section className="grid gap-3">
+            <SectionHeader
+              title="Kiểm tra nội dung"
+              description={data.config.ai ? 'Gợi ý để người duyệt xem xét; không tự sửa hay duyệt hồ sơ.' : 'Kiểm tra các ô bắt buộc đã điền.'}
+              actions={canCheck && <Button size="sm" icon={ScanSearch} disabled={busy} onClick={() => onAction({ action: 'CHECK' }, 'Đã kiểm tra nội dung')}>Kiểm tra</Button>}
+            />
+            <div className="bg-surface border border-line rounded-xl px-4 py-3">
+              {!current ? (
+                <p className="text-[13px] text-ink-3">
+                  Chưa kiểm tra phiên bản {record.version}.{record.checks.length > 0 && ' Kết quả của phiên bản trước không còn áp dụng.'}
+                </p>
+              ) : current.findings.length === 0 ? (
+                <p className="text-[13px] text-positive">Không thấy vấn đề trong phạm vi đã kiểm tra · {dateTime(current.at)}</p>
+              ) : (
+                <ul className="grid gap-3">
+                  {current.findings.map((f, i) => (
+                    <li key={i} className={`pl-3 border-l-2 ${f.severity === 'ERROR' ? 'border-critical' : f.severity === 'WARNING' ? 'border-warning' : 'border-line-strong'}`}>
+                      <p className="text-[13px] text-ink">{f.message}</p>
+                      {f.evidence && <p className="text-2xs text-ink-3 mt-0.5 line-clamp-2">{f.evidence}</p>}
+                    </li>
+                  ))}
+                  <li className="text-2xs text-ink-3">{current.provider === 'AI' ? 'Gợi ý' : 'Kiểm tra ô bắt buộc'} · {dateTime(current.at)}</li>
+                </ul>
+              )}
+            </div>
+          </section>
+
+          {/* Nội dung */}
+          <section className="grid gap-3">
+            <SectionHeader
+              title="Nội dung đã điền"
+              description="Bố cục chính thức nằm trong file Word."
+              actions={!preview && <Button size="sm" onClick={loadPreview}>Xem nội dung</Button>}
+            />
+            {previewError && <p role="alert" className="text-[13px] text-critical">{previewError}</p>}
+            {preview && (
+              <div className="bg-surface border border-line rounded-xl px-5 py-4 max-h-[560px] overflow-auto grid gap-2 text-[13px] leading-relaxed text-ink-2">
+                {preview.map((p, i) => p && <p key={i}>{p}</p>)}
+              </div>
+            )}
+          </section>
+        </div>
+
+        <aside className="bg-surface border border-line rounded-xl divide-y divide-line min-w-0">
+          <AsideSection title="Thông tin">
+            <dl className="grid gap-3">
+              <Info label="Người phụ trách"><Person name={record.ownerName} size={20} /></Info>
+              <Info label="Mẫu">{template?.name || record.templateId}</Info>
+              <Info label="Đối tác">{record.partner}</Info>
+              <Info label="Nhãn hàng">{record.brand}</Info>
+              {record.dealCode && <Info label="Booking"><span className="font-code">{record.dealCode}</span></Info>}
+              {parent && (
+                <Info label="Hợp đồng gốc">
+                  <button type="button" className="text-accent hover:underline text-left" onClick={() => onOpen(parent.id)}>{parent.title}</button>
+                </Info>
+              )}
+              {signing && <Info label="Mã luồng ký"><span className="font-code text-2xs break-all">{signing.documentId}</span></Info>}
+              <Info label="Tạo lúc">{dateTime(record.createdAt)}</Info>
+            </dl>
+          </AsideSection>
+          <AsideSection title="Phiên bản">
+            <ul className="grid gap-1.5 text-[13px]">
+              <li className="flex items-center justify-between">
+                <span className="text-ink">Phiên bản {record.version} <span className="text-ink-3">· hiện tại</span></span>
+                <a className="text-accent hover:underline" href={`/api/contracts/${record.id}/document`}>Tải</a>
+              </li>
+              {[...record.versions].reverse().map(v => (
+                <li key={v.version} className="flex items-center justify-between">
+                  <span className="text-ink-2">Phiên bản {v.version} <span className="text-ink-3">· {dateTime(v.at)}</span></span>
+                  <a className="text-accent hover:underline" href={`/api/contracts/${record.id}/document?version=${v.version}`}>Tải</a>
+                </li>
+              ))}
+            </ul>
+          </AsideSection>
+          <History record={record} />
+        </aside>
+      </div>
+
+      <SubmitDialog open={dialog === 'submit'} record={record} data={data} busy={busy} onClose={() => setDialog(null)} onSubmit={ids => onAction({ action: 'SUBMIT', reviewers: ids }, 'Đã gửi duyệt').then(r => r && setDialog(null))} />
+      <LinkDialog open={dialog === 'link'} version={record.version} busy={busy} onClose={() => setDialog(null)} onSubmit={documentId => onAction({ action: 'LINK_WESIGN', documentId, confirmed: true }, 'Đã liên kết luồng ký').then(r => r && setDialog(null))} />
+      <ConfirmDialog
+        open={dialog === 'approve'}
+        title="Duyệt hồ sơ"
+        description={`Duyệt phiên bản ${record.version} với vai trò ${myStep ? ROLE_LABEL[myStep.role as ContractRole].toLowerCase() : ''}.`}
+        confirmLabel="Duyệt"
+        reason={{ label: 'Nhận xét (không bắt buộc)' }}
+        onConfirm={note => onAction({ action: 'DECIDE', decision: 'APPROVED', note: note || '' }, 'Đã duyệt hồ sơ')}
+        onOpenChange={o => !o && setDialog(null)}
+      />
+      <ConfirmDialog
+        open={dialog === 'changes'}
+        title="Yêu cầu sửa"
+        description="Người tạo sửa và gửi lại. Phê duyệt hiện tại bị hủy."
+        confirmLabel="Gửi yêu cầu"
+        reason={{ label: 'Cần sửa gì', required: true }}
+        onConfirm={note => onAction({ action: 'DECIDE', decision: 'CHANGES', note: note || '' }, 'Đã gửi yêu cầu sửa')}
+        onOpenChange={o => !o && setDialog(null)}
+      />
+      <ConfirmDialog
+        open={dialog === 'reject'}
+        title="Từ chối hồ sơ"
+        tone="danger"
+        confirmLabel="Từ chối"
+        reason={{ label: 'Lý do từ chối', required: true }}
+        onConfirm={note => onAction({ action: 'DECIDE', decision: 'REJECTED', note: note || '' }, 'Đã từ chối hồ sơ')}
+        onOpenChange={o => !o && setDialog(null)}
+      />
+      <ConfirmDialog
+        open={dialog === 'withdraw'}
+        title="Thu hồi để sửa"
+        description="Hồ sơ về nháp, các bước duyệt đã có bị hủy."
+        confirmLabel="Thu hồi"
+        reason={{ label: 'Lý do thu hồi', required: true }}
+        onConfirm={note => onAction({ action: 'WITHDRAW', note: note || '' }, 'Đã thu hồi hồ sơ')}
+        onOpenChange={o => !o && setDialog(null)}
+      />
+    </div>
+  );
+}
+
+function Step({ title, who, status, meta, note }: { title: string; who: string; status: { label: string; tone: 'neutral' | 'info' | 'positive' | 'warning' | 'critical'; note?: string }; meta?: string; note?: string }) {
+  return (
+    <li className="px-4 py-3 grid gap-1.5">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-3 min-w-0">
+          <span className="text-[13px] font-medium text-ink w-24 shrink-0">{title}</span>
+          <Person name={who} size={20} />
+        </div>
+        <div className="flex items-center gap-2">
+          {meta && <span className="text-2xs text-ink-3">{meta}</span>}
+          <Status tone={status.tone}>{status.note || status.label}</Status>
+        </div>
+      </div>
+      {note && <p className="text-[13px] text-ink-2 whitespace-pre-wrap pl-[108px]">{note}</p>}
+    </li>
+  );
+}
+
+function AsideSection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section className="px-4 py-4">
+      <h3 className="text-sm font-semibold text-ink mb-3">{title}</h3>
+      {children}
+    </section>
+  );
+}
+
+function Info({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="grid gap-0.5">
+      <dt className="text-2xs text-ink-3">{label}</dt>
+      <dd className="text-[13px] text-ink break-words">{children}</dd>
+    </div>
+  );
+}
+
+function History({ record }: { record: ContractRecord }) {
+  const [all, setAll] = useState(false);
+  const items = [...record.history].reverse();
+  const shown = all ? items : items.slice(0, 6);
+  return (
+    <AsideSection title="Lịch sử">
+      {items.length === 0 ? (
+        <EmptyState title="Chưa có thao tác" />
+      ) : (
+        <ol className="grid gap-3">
+          {shown.map((h, i) => (
+            <li key={i} className="grid gap-0.5">
+              <span className="text-[13px] text-ink">{HISTORY_LABEL[h.action] || h.action} <span className="text-ink-3">· phiên bản {h.version}</span></span>
+              <span className="text-2xs text-ink-3">{h.actorName} · {dateTime(h.at)}</span>
+              {h.note && !/^-?\d+$/.test(h.note) && <span className="text-2xs text-ink-2 line-clamp-3">{h.note}</span>}
+            </li>
+          ))}
+          {items.length > 6 && (
+            <li>
+              <button type="button" className="text-[13px] text-accent hover:underline" onClick={() => setAll(v => !v)}>
+                {all ? 'Thu gọn' : `Xem thêm ${items.length - 6} thao tác`}
+              </button>
+            </li>
+          )}
+        </ol>
+      )}
+    </AsideSection>
+  );
+}
+
+function SubmitDialog({ open, record, data, busy, onClose, onSubmit }: { open: boolean; record: ContractRecord; data: ContractBootstrap; busy: boolean; onClose: () => void; onSubmit: (ids: string[]) => void }) {
+  const [picked, setPicked] = useState<Record<string, string>>({});
+  const options = (role: ContractRole) => data.reviewers.filter(a => a.id !== record.ownerId && a.roles.includes(role) && (a.allBrands || a.brands.includes(record.brand)));
+  const ready = !!picked.LEGAL && !!picked.FINANCE && picked.LEGAL !== picked.FINANCE;
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      title="Gửi duyệt hồ sơ"
+      description={`Phiên bản ${record.version}. Pháp chế và kế toán phải là hai người khác nhau.`}
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose}>Hủy</Button>
+          <Button variant="primary" disabled={busy || !ready} onClick={() => onSubmit(Object.values(picked).filter(Boolean))}>Gửi duyệt</Button>
+        </>
+      }
+    >
+      {(['LEGAL', 'FINANCE', 'LEAD'] as const).map(role => (
+        <Field key={role} label={`${ROLE_LABEL[role]}${role === 'LEAD' ? ' (không bắt buộc)' : ''}`} htmlFor={`rv-${role}`}>
+          <Select id={`rv-${role}`} value={picked[role] || ''} onChange={e => setPicked(p => ({ ...p, [role]: e.target.value }))}>
+            <option value="">{role === 'LEAD' ? 'Không cần' : 'Chọn người duyệt'}</option>
+            {options(role).map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+          </Select>
+        </Field>
+      ))}
+      {picked.LEGAL && picked.LEGAL === picked.FINANCE && <p className="text-2xs text-critical">Chọn hai người khác nhau cho pháp chế và kế toán.</p>}
+    </Modal>
+  );
+}
+
+function LinkDialog({ open, version, busy, onClose, onSubmit }: { open: boolean; version: number; busy: boolean; onClose: () => void; onSubmit: (id: string) => void }) {
+  const [id, setId] = useState('');
+  const [confirmed, setConfirmed] = useState(false);
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      title="Liên kết luồng ký weSign"
+      description="Tạo và gửi luồng ký trên weSign như thường lệ, rồi dán mã tài liệu vào đây để theo dõi tiến độ."
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose}>Hủy</Button>
+          <Button variant="primary" disabled={busy || !confirmed || !id.trim()} onClick={() => onSubmit(id.trim())}>Liên kết</Button>
+        </>
+      }
+    >
+      <Field label="Mã tài liệu trên weSign" htmlFor="ws-id" hint="Dạng UUID, lấy trong trang chi tiết tài liệu của weSign.">
+        <Input id="ws-id" value={id} onChange={e => setId(e.target.value)} placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" className="font-code" />
+      </Field>
+      <label className="flex items-start gap-2 text-[13px] text-ink-2">
+        <input type="checkbox" className="mt-0.5" checked={confirmed} onChange={e => setConfirmed(e.target.checked)} />
+        Tôi đã đối chiếu tài liệu và người ký trên weSign với đúng bản duyệt phiên bản {version}.
+      </label>
+    </Modal>
+  );
+}

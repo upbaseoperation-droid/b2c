@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createHash } from 'node:crypto';
 import { actorFromRequest, configuredActors, checkOrigin, DEMO_ACTORS } from '@/lib/contracts/access';
-import { canRead, createContract, editContract, submitContract, decideContract, assertCanSign, event, requireCondition, ContractError, inScope } from '@/lib/contracts/domain';
+import { canRead, createContract, editContract, submitContract, decideContract, assertCanSign, event, requireCondition, ContractError, inScope, signingChanged } from '@/lib/contracts/domain';
 import { listContracts, getContract, saveContract, storageMode } from '@/lib/contracts/store';
 import { loadTemplate, templateCatalog, renderTemplate, archiveTemplate } from '@/lib/contracts/templates';
 import { checkContract, aiConfigured } from '@/lib/contracts/check';
@@ -27,7 +27,8 @@ async function parseInput(body: Record<string, unknown>, existing?: ContractReco
   requireCondition(typeof body.values === 'object' && body.values && !Array.isArray(body.values), 'Dữ liệu điền không hợp lệ.');
   const fields = new Set(template.fields.map(f => f.key)); const values: Record<string, string> = {};
   for (const [key, value] of Object.entries(body.values)) { requireCondition(fields.has(key) && typeof value === 'string' && value.length <= 4000 && !/[\x00-\x08\x0B\x0C\x0E-\x1F]/.test(value), 'Trường điền không hợp lệ.'); values[key] = value; }
-  return { title, brand, partner, templateId: template.id, templateHash: template.hash, values, parentId: typeof body.parentId === 'string' && body.parentId ? body.parentId : undefined };
+  const ref = (v: unknown) => { if (v === undefined || v === null || v === '') return undefined; requireCondition(typeof v === 'string' && /^[\w.@-]{1,80}$/.test(v), 'Mã booking hoặc KOC không hợp lệ.'); return v; };
+  return { title, brand, partner, templateId: template.id, templateHash: template.hash, values, parentId: typeof body.parentId === 'string' && body.parentId ? body.parentId : undefined, dealId: ref(body.dealId), dealCode: ref(body.dealCode), kocId: ref(body.kocId) };
 }
 export async function POST(req: NextRequest) {
   try {
@@ -84,8 +85,17 @@ export async function POST(req: NextRequest) {
       requireCondition(inScope(record.brand, actor), 'Không có quyền đồng bộ.', 403);
       const attempt = next.signing.at(-1); requireCondition(attempt, 'Chưa liên kết luồng ký.');
       requireCondition(attempt.provider !== 'DEMO', 'Luồng giả lập không đồng bộ với MISA.');
-      try { const detail = await wesignDetail(attempt.documentId); Object.assign(attempt, detail, { error: undefined }); event(next, actor, 'SYNC_WESIGN', String(detail.sourceStatus)); }
-      catch (error) { attempt.error = error instanceof ContractError ? error.message : 'Không kết nối được weSign. Trạng thái đang hiển thị là lần đồng bộ trước.'; event(next, actor, 'SYNC_ERROR', attempt.error); }
+      try {
+        const detail = await wesignDetail(attempt.documentId);
+        // Không đổi gì thì không ghi: tránh lịch sử phình và lỗi “người khác đã cập nhật” khi nhiều người cùng xem.
+        if (!signingChanged(attempt, detail)) return NextResponse.json({ record: { ...record, signing: [...record.signing.slice(0, -1), { ...attempt, syncedAt: detail.syncedAt }] } });
+        Object.assign(attempt, detail, { error: undefined }); event(next, actor, 'SYNC_WESIGN', String(detail.sourceStatus));
+      }
+      catch (error) {
+        const message = error instanceof ContractError ? error.message : 'Không kết nối được weSign. Trạng thái đang hiển thị là lần đồng bộ trước.';
+        if (attempt.error === message) return NextResponse.json({ record });
+        attempt.error = message; event(next, actor, 'SYNC_ERROR', attempt.error);
+      }
     } else throw new ContractError('Thao tác không hợp lệ.');
     return NextResponse.json({ record: await saveContract(next, record.revision) });
   } catch (error) { return failure(error); }

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { timingSafeEqual } from 'node:crypto';
 import { listContracts, saveContract } from '@/lib/contracts/store';
 import { wesignDetail } from '@/lib/contracts/wesign';
-import { ContractError, event, requireCondition } from '@/lib/contracts/domain';
+import { ContractError, event, requireCondition, signingChanged } from '@/lib/contracts/domain';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 // Điểm nhận callback/job chỉ kích hoạt đọc lại trạng thái từ MISA, không tin trạng thái trong body.
@@ -17,7 +17,9 @@ export async function POST(req: NextRequest) {
     for (const record of records.slice(0, 50)) {
       const next = structuredClone(record); const attempt = next.signing.at(-1)!;
       try {
-        const detail = await wesignDetail(attempt.documentId); Object.assign(attempt, detail, { error: undefined });
+        const detail = await wesignDetail(attempt.documentId);
+        if (!signingChanged(attempt, detail)) { results.push({ id: record.id, success: true }); continue; }
+        Object.assign(attempt, detail, { error: undefined });
         event(next, { id: 'wesign-sync', name: 'Đồng bộ MISA weSign', roles: [], brands: [] }, 'SYNC_WESIGN', String(detail.sourceStatus));
         await saveContract(next, record.revision); results.push({ id: record.id, success: true });
       } catch (e) {

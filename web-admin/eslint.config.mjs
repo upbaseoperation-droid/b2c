@@ -40,6 +40,8 @@ const eslintConfig = defineConfig([
       "src/components/views/KocMasterDataView.tsx",
       "src/components/koc/**/*.tsx",
       "src/components/KocProfileModal.tsx",
+      "src/components/views/ContractManagementView.tsx",
+      "src/components/contracts/**/*.tsx",
     ],
     rules: {
       "no-restricted-syntax": [

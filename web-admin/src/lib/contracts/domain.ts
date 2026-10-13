@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import type { ContractActor, ContractEvent, ContractRecord, ReviewStep } from './types';
+import type { ContractActor, ContractEvent, ContractRecord, ReviewStep, SigningAttempt } from './types';
 export class ContractError extends Error { constructor(message: string, public status = 400) { super(message); } }
 export function requireCondition(condition: unknown, message: string, status = 400): asserts condition { if (!condition) throw new ContractError(message, status); }
 export const inScope = (brand: string, actor: ContractActor) => actor.allBrands || actor.brands.includes(brand);
@@ -10,7 +10,7 @@ export function event(record: ContractRecord, actor: ContractActor, action: stri
   const entry: ContractEvent = { at: new Date().toISOString(), actorId: actor.id, actorName: actor.name, action, note, version: record.version };
   record.history.push(entry); record.updatedAt = entry.at;
 }
-type Input = Pick<ContractRecord, 'title' | 'brand' | 'partner' | 'templateId' | 'templateHash' | 'values'> & { parentId?: string };
+type Input = Pick<ContractRecord, 'title' | 'brand' | 'partner' | 'templateId' | 'templateHash' | 'values'> & { parentId?: string; dealId?: string; dealCode?: string; kocId?: string };
 export function createContract(input: Input, actor: ContractActor): ContractRecord {
   requireCondition(actor.roles.includes('CREATOR') && inScope(input.brand, actor), 'Không có quyền tạo hợp đồng cho nhãn hàng này.', 403);
   const at = new Date().toISOString();
@@ -54,4 +54,9 @@ export function decideContract(record: ContractRecord, actor: ContractActor, dec
 export function assertCanSign(record: ContractRecord, actor: ContractActor) {
   requireCondition(actor.roles.includes('SIGN_COORDINATOR') && inScope(record.brand, actor), 'Không có quyền trình ký.', 403);
   requireCondition(record.approval === 'APPROVED' && record.steps.length >= 2 && ['LEGAL', 'FINANCE'].every(role => record.steps.some(s => s.role === role && s.status === 'APPROVED' && s.version === record.version)) && record.steps.every(s => s.status === 'APPROVED' && s.version === record.version), 'Chỉ phiên bản đã đủ phê duyệt mới được bắt đầu luồng trình ký.');
+}
+/** Kết quả đọc lại từ weSign có khác lần trước không (trạng thái, người ký, lỗi). */
+export function signingChanged(previous: SigningAttempt, detail: Pick<SigningAttempt, 'status' | 'sourceStatus' | 'people'>) {
+  return previous.status !== detail.status || previous.sourceStatus !== detail.sourceStatus || !!previous.error
+    || JSON.stringify(previous.people.map(p => [p.email, p.action])) !== JSON.stringify(detail.people.map(p => [p.email, p.action]));
 }

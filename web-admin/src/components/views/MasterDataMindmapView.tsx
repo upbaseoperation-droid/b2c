@@ -267,7 +267,17 @@ export const STATIC_DETAILED_DEMO_STORES: MindmapStoreNode[] = [
     }
 ];
 
-// Helper: Convert all 131+ StorePortfolioItems into rich MindmapStoreNodes
+// Helper: Normalize brand names to handle known aliases and case mismatches
+export function normalizeBrandKey(name?: string): string {
+  if (!name) return '';
+  const clean = name.trim().toLowerCase();
+  if (clean === 'intimate' || clean === 'ziaja' || clean === 'ziaja intimate') {
+    return 'ziaja intimate';
+  }
+  return clean;
+}
+
+// Helper: Convert all 69 StorePortfolioItems into rich MindmapStoreNodes
 export function buildMindmapStoresAndBrands(
   rawPortfolios: StorePortfolioItem[] = INITIAL_STORE_PORTFOLIOS,
   baseBrands: BrandDetail[] = INITIAL_BRANDS
@@ -275,22 +285,23 @@ export function buildMindmapStoresAndBrands(
   // 1. Build Brands Map
   const brandMap = new Map<string, BrandDetail>();
   baseBrands.forEach(b => {
-    brandMap.set(b.name.trim().toLowerCase(), b);
+    brandMap.set(normalizeBrandKey(b.name), b);
   });
 
   const brandColors = ['#3b82f6', '#8b5cf6', '#ec4899', '#10b981', '#f59e0b', '#06b6d4', '#6366f1', '#14b8a6', '#f43f5e', '#84cc16'];
 
+  // Check for any portfolio stores with unmapped brands
   rawPortfolios.forEach((s, idx) => {
     const bName = (s.brandName || 'Thương hiệu').trim();
-    const key = bName.toLowerCase();
+    const key = normalizeBrandKey(bName);
 
     if (!brandMap.has(key)) {
-      const brandId = `brand-${bName.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
+      const brandId = `brand-b2c-${bName.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
       const color = brandColors[brandMap.size % brandColors.length];
 
-      const sameStores = rawPortfolios.filter(st => (st.brandName || '').trim().toLowerCase() === key);
-      const totalGmv = sameStores.reduce((acc, curr) => acc + (curr.monthlyTargetGmv || 350000000), 0);
-      const totalBudget = sameStores.reduce((acc, curr) => acc + (curr.monthlyBudget || 100000000), 0);
+      const sameStores = rawPortfolios.filter(st => normalizeBrandKey(st.brandName) === key);
+      const totalGmv = sameStores.reduce((acc, curr) => acc + (curr.monthlyTargetGmv || 0), 0);
+      const totalBudget = sameStores.reduce((acc, curr) => acc + (curr.monthlyBudget || 0), 0);
 
       const newBrand: BrandDetail = {
         id: brandId,
@@ -321,6 +332,20 @@ export function buildMindmapStoresAndBrands(
 
   const finalBrands = Array.from(brandMap.values());
 
+  // Aggregate financial metrics from actual stores for accurate brand totals
+  finalBrands.forEach(b => {
+    const key = normalizeBrandKey(b.name);
+    const linkedStores = rawPortfolios.filter(st => normalizeBrandKey(st.brandName) === key);
+    const storeSumBudget = linkedStores.reduce((sum, st) => sum + (st.monthlyBudget || 0), 0);
+    const storeSumGmv = linkedStores.reduce((sum, st) => sum + (st.monthlyTargetGmv || 0), 0);
+    if (!b.planBudget && storeSumBudget > 0) {
+      b.planBudget = storeSumBudget;
+    }
+    if (!b.targetGmv && storeSumGmv > 0) {
+      b.targetGmv = storeSumGmv;
+    }
+  });
+
   // 2. Build Store Nodes
   const existingMap = new Map<string, MindmapStoreNode>();
   STATIC_DETAILED_DEMO_STORES.forEach(node => {
@@ -329,25 +354,6 @@ export function buildMindmapStoresAndBrands(
   });
 
   const finalStores: MindmapStoreNode[] = rawPortfolios.map((s, idx) => {
-    const existing = existingMap.get(s.storeName.toLowerCase()) || existingMap.get((s.id || '').toLowerCase());
-    if (existing) {
-      return {
-        ...existing,
-        id: s.id || existing.id,
-        isB2cManaged: s.isB2cManaged ?? existing.isB2cManaged,
-        requiresB2cPlan: s.requiresB2cPlan ?? existing.requiresB2cPlan,
-        primaryPic: s.accountOwnerName || existing.primaryPic,
-        memberPics: [
-          ...(s.growthPic && s.growthPic !== 'Chưa gán' ? [`Growth: ${s.growthPic}`] : []),
-          ...(s.contentPic && s.contentPic !== 'Chưa gán' ? [`Content: ${s.contentPic}`] : []),
-          ...(s.mediaPic && s.mediaPic !== 'Chưa gán' ? [`Media: ${s.mediaPic}`] : []),
-          ...(s.csListingPic && s.csListingPic !== 'Chưa gán' ? [`CS/Listing: ${s.csListingPic}`] : []),
-          ...((s.b2cOwners || []).filter(bo => bo && bo !== 'Chưa gán' && bo !== s.accountOwnerName).map(bo => `Booking: ${bo}`))
-        ].filter((val, i, arr) => arr.indexOf(val) === i && val !== `Growth: ${s.accountOwnerName}`),
-        assignmentNotes: s.assignmentNotes || existing.assignmentNotes
-      };
-    }
-
     // Platform normalization
     let platform: 'TIKTOK_SHOP' | 'SHOPEE_MALL' | 'LAZADA' = 'TIKTOK_SHOP';
     const platStr = (s.platform || '').toLowerCase();
@@ -359,60 +365,85 @@ export function buildMindmapStoresAndBrands(
       platform = 'TIKTOK_SHOP';
     }
 
-    const brandName = (s.brandName || 'Thương hiệu').trim();
-    const brandId = `brand-${brandName.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
+    const normKey = normalizeBrandKey(s.brandName);
+    const brandObj = brandMap.get(normKey);
+    const brandId = brandObj ? brandObj.id : `brand-b2c-${(s.brandName || '').toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
+    const brandName = brandObj ? brandObj.name : (s.brandName || 'Thương hiệu').trim();
 
-    const primaryPic = (s.accountOwnerName && s.accountOwnerName !== 'Chưa gán')
-      ? s.accountOwnerName
-      : ((s.b2cOwners && s.b2cOwners[0] && s.b2cOwners[0] !== 'Chưa gán')
+    // Primary PIC: B2C Specialist PIC is primary responsibility (GEMINI.md standard), NOT sales account owner
+    const primaryPic = (s.primaryPic && s.primaryPic !== 'Chưa phân công' && s.primaryPic !== 'Chưa gán')
+      ? s.primaryPic
+      : (s.b2cOwnerName && s.b2cOwnerName !== 'Chưa phân công' && s.b2cOwnerName !== 'Chưa gán')
+        ? s.b2cOwnerName
+        : (s.b2cOwners && s.b2cOwners[0] && s.b2cOwners[0] !== 'Chưa phân công' && s.b2cOwners[0] !== 'Chưa gán')
           ? s.b2cOwners[0]
-          : (s.b2cOwnerName && s.b2cOwnerName !== 'Chưa gán' ? s.b2cOwnerName : 'Chưa gán'));
+          : (s.assignedStaff && s.assignedStaff !== 'Chưa phân công' && s.assignedStaff !== 'Chưa gán')
+            ? s.assignedStaff
+            : 'Chưa phân công';
 
+    // Build Squad/Member PIC list
     const memberPics: string[] = [];
-    if (s.growthPic && s.growthPic !== 'Chưa gán' && s.growthPic !== primaryPic) {
-      memberPics.push(`Growth: ${s.growthPic}`);
-    }
-    if (s.contentPic && s.contentPic !== 'Chưa gán' && s.contentPic !== primaryPic) {
-      memberPics.push(`Content: ${s.contentPic}`);
-    }
-    if (s.mediaPic && s.mediaPic !== 'Chưa gán' && s.mediaPic !== primaryPic) {
-      memberPics.push(`Media: ${s.mediaPic}`);
-    }
-    if (s.csListingPic && s.csListingPic !== 'Chưa gán' && s.csListingPic !== primaryPic) {
-      memberPics.push(`CS/Listing: ${s.csListingPic}`);
+    if (s.assignedMembers && Array.isArray(s.assignedMembers)) {
+      s.assignedMembers.forEach(m => {
+        if (m && m !== 'Chưa phân công' && m !== 'Chưa gán' && m !== primaryPic && !memberPics.includes(m)) {
+          memberPics.push(m);
+        }
+      });
     }
     if (s.b2cOwners && Array.isArray(s.b2cOwners)) {
       s.b2cOwners.forEach(bo => {
-        if (bo && bo !== 'Chưa gán' && bo !== primaryPic && !memberPics.some(m => m.includes(bo))) {
-          memberPics.push(`Booking: ${bo}`);
+        if (bo && bo !== 'Chưa phân công' && bo !== 'Chưa gán' && bo !== primaryPic && !memberPics.includes(bo)) {
+          memberPics.push(bo);
         }
       });
+    }
+    if (s.growthPic && s.growthPic !== 'Chưa gán' && s.growthPic !== primaryPic && !memberPics.includes(`Growth: ${s.growthPic}`)) {
+      memberPics.push(`Growth: ${s.growthPic}`);
+    }
+    if (s.accountOwnerName && s.accountOwnerName !== 'Chưa gán' && s.accountOwnerName !== primaryPic && !memberPics.includes(`Account: ${s.accountOwnerName}`)) {
+      memberPics.push(`Account: ${s.accountOwnerName}`);
     }
 
     const cleanBrandSlug = brandName.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5) || 'SKU';
     const storeShortId = (s.id || `st-${idx}`).replace(/[^a-zA-Z0-9]/g, '').slice(-4);
-    const storeProducts: StoreProductSkuMap[] = [
-      {
-        masterProductId: `prod-${s.id || idx}-1`,
-        masterSku: `${cleanBrandSlug}-HERO-01`,
-        productName: `Combo Chăm Sóc & Làm Đẹp ${brandName} Best Seller`,
-        platformProductId: `${platform === 'TIKTOK_SHOP' ? 'TTS' : platform === 'SHOPEE_MALL' ? 'SP' : 'LZD'}-${storeShortId}-01`,
-        platformUrl: s.storeUrl || '#',
-        storePrice: 289000,
-        commissionRate: 15,
-        isHeroSku: true
-      },
-      {
-        masterProductId: `prod-${s.id || idx}-2`,
-        masterSku: `${cleanBrandSlug}-CORE-02`,
-        productName: `Sản Phẩm Phổ Thông ${brandName} Phân Phối Chính Hãng`,
-        platformProductId: `${platform === 'TIKTOK_SHOP' ? 'TTS' : platform === 'SHOPEE_MALL' ? 'SP' : 'LZD'}-${storeShortId}-02`,
-        platformUrl: s.storeUrl || '#',
-        storePrice: 199000,
-        commissionRate: 12,
-        isHeroSku: false
-      }
-    ];
+
+    // Hero Products Mapping from Brand Master Data
+    let storeProducts: StoreProductSkuMap[] = [];
+    if (brandObj && brandObj.heroProducts && brandObj.heroProducts.length > 0) {
+      storeProducts = brandObj.heroProducts.map((hp, pIdx) => ({
+        masterProductId: hp.id || `prod-${s.id}-${pIdx}`,
+        masterSku: hp.sku || `${cleanBrandSlug}-SKU-${pIdx + 1}`,
+        productName: hp.productName,
+        platformProductId: `${platform === 'TIKTOK_SHOP' ? 'TTS' : platform === 'SHOPEE_MALL' ? 'SP' : 'LZD'}-${storeShortId}-${String(pIdx + 1).padStart(2, '0')}`,
+        platformUrl: hp.pdpUrl || s.storeUrl || '#',
+        storePrice: hp.price || 250000,
+        commissionRate: hp.commissionRate || 15,
+        isHeroSku: pIdx === 0
+      }));
+    } else {
+      storeProducts = [
+        {
+          masterProductId: `prod-${s.id || idx}-1`,
+          masterSku: `${cleanBrandSlug}-HERO-01`,
+          productName: `Combo Chăm Sóc & Làm Đẹp ${brandName} Best Seller`,
+          platformProductId: `${platform === 'TIKTOK_SHOP' ? 'TTS' : platform === 'SHOPEE_MALL' ? 'SP' : 'LZD'}-${storeShortId}-01`,
+          platformUrl: s.storeUrl || '#',
+          storePrice: 289000,
+          commissionRate: 15,
+          isHeroSku: true
+        },
+        {
+          masterProductId: `prod-${s.id || idx}-2`,
+          masterSku: `${cleanBrandSlug}-CORE-02`,
+          productName: `Sản Phẩm Phổ Thông ${brandName} Phân Phối Chính Hãng`,
+          platformProductId: `${platform === 'TIKTOK_SHOP' ? 'TTS' : platform === 'SHOPEE_MALL' ? 'SP' : 'LZD'}-${storeShortId}-02`,
+          platformUrl: s.storeUrl || '#',
+          storePrice: 199000,
+          commissionRate: 12,
+          isHeroSku: false
+        }
+      ];
+    }
 
     return {
       id: s.id || `store-mindmap-${idx}`,
@@ -420,17 +451,17 @@ export function buildMindmapStoresAndBrands(
       brandName,
       storeName: s.storeName,
       platform,
-      storeId: s.storeOperation || s.storeName,
+      storeId: s.storeOperation || s.storeOperationId || s.storeName,
       storeUrl: s.storeUrl || '#',
       status: (s.accountStatus === 'ACTIVE' || s.operationStatus === 'Live') ? 'ACTIVE' : 'PAUSED',
-      monthlyTargetGmv: s.monthlyTargetGmv || 400000000,
-      monthlyBudget: s.monthlyBudget || 120000000,
+      monthlyTargetGmv: s.monthlyTargetGmv || 0,
+      monthlyBudget: s.monthlyBudget || 0,
       primaryPic,
       memberPics,
-      assignmentNotes: s.assignmentNotes || `PIC Chính: ${primaryPic} | Squad hỗ trợ: ${memberPics.join(', ') || 'Chưa gán'}`,
+      assignmentNotes: s.assignmentNotes || `PIC Chính: ${primaryPic} | Đội ngũ hỗ trợ: ${memberPics.join(', ') || 'Chưa gán'}`,
       storeProducts,
-      isB2cManaged: s.isB2cManaged,
-      requiresB2cPlan: s.requiresB2cPlan
+      isB2cManaged: s.isB2cManaged ?? true,
+      requiresB2cPlan: s.requiresB2cPlan ?? true
     };
   });
 
@@ -476,16 +507,15 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
   // Set of expanded node IDs: 'root', 'brand-xxx', 'store-xxx', 'store-xxx-staff', 'store-xxx-products', etc.
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(() => {
     const initialSet = new Set(['root']);
-    if (initialData.brands[0]) initialSet.add(initialData.brands[0].id);
-    if (initialData.stores[0]) {
-      initialSet.add(initialData.stores[0].id);
-      initialSet.add(`${initialData.stores[0].id}-staff`);
-      initialSet.add(`${initialData.stores[0].id}-products`);
+    if (initialData.brands[0]) {
+      initialSet.add(initialData.brands[0].id);
+      const firstBrandStores = initialData.stores.filter(s => s.brandId === initialData.brands[0].id);
+      firstBrandStores.forEach(s => {
+        initialSet.add(s.id);
+        initialSet.add(`${s.id}-staff`);
+        initialSet.add(`${s.id}-products`);
+      });
     }
-    initialSet.add('brand-kutieskin');
-    initialSet.add('store-kuti-tts');
-    initialSet.add('store-kuti-tts-staff');
-    initialSet.add('store-kuti-tts-products');
     return initialSet;
   });
 
@@ -572,17 +602,24 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
       }
       return true;
     });
-  }, [stores, filterPlatform, filterBrandId, filterPic, searchQuery]);
+  }, [stores, filterB2cOnly, filterPlatform, filterBrandId, filterPic, searchQuery]);
 
   // Unique PIC options
   const allPicOptions = useMemo(() => {
     const set = new Set<string>();
     stores.forEach(s => {
-      set.add(s.primaryPic);
-      s.memberPics.forEach(p => set.add(p));
+      if (s.primaryPic && s.primaryPic !== 'Chưa phân công' && s.primaryPic !== 'Chưa gán') {
+        set.add(s.primaryPic);
+      }
+      s.memberPics.forEach(p => {
+        const clean = p.replace(/^(Growth|Content|Media|CS\/Listing|Booking|Account):\s*/, '').trim();
+        if (clean && clean !== 'Chưa phân công' && clean !== 'Chưa gán') {
+          set.add(clean);
+        }
+      });
     });
     STAFF_MASTER_DIRECTORY.forEach(staff => set.add(staff.name));
-    return Array.from(set);
+    return Array.from(set).sort();
   }, [stores]);
 
   // Handle Save PIC Assignment
@@ -700,7 +737,7 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
               <div>
                 <div className="text-2xs text-slate-500 font-semibold">PIC Chính Lead</div>
                 <div className="text-sm font-semibold text-amber-700">
-                  {new Set(stores.map(s => s.primaryPic)).size} Lead PICs
+                  {new Set(stores.map(s => s.primaryPic).filter(p => p && p !== 'Chưa phân công' && p !== 'Chưa gán')).size} Lead PICs
                 </div>
               </div>
             </div>
@@ -977,8 +1014,8 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
                                 <span className="font-semibold text-slate-700 truncate block">{brand.accountPic || 'Chưa gán'}</span>
                               </div>
                               <div>
-                                <span className="text-slate-500 block">Target GMV:</span>
-                                <span className="font-semibold text-emerald-700">{formatVndShort(brand.targetGmv)}</span>
+                                <span className="text-slate-500 block">Ngân sách Plan:</span>
+                                <span className="font-semibold text-blue-700">{formatVndShort(brand.planBudget || 0)}</span>
                               </div>
                             </div>
 
@@ -988,7 +1025,7 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
                               </span>
                               <span className="text-blue-600 font-semibold flex items-center gap-0.5">
                                 {isBrandExpanded ? (
-                                  <><span>Đóng gian hàng</span> <ChevronDown className="w-3 h-3" /></>
+                                  <><span>Thu gian hàng</span> <ChevronDown className="w-3 h-3" /></>
                                 ) : (
                                   <><span>Xổ gian hàng ({brandStores.length})</span> <ChevronRight className="w-3 h-3" /></>
                                 )}
@@ -1470,23 +1507,55 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
 
                   <div className="grid grid-cols-2 gap-2 text-xs">
                     <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
-                      <div className="text-2xs text-slate-500 font-semibold">Tổng Target GMV</div>
-                      <div className="text-sm font-semibold text-emerald-700 mt-1">
-                        {formatVndShort(selectedNode.data.targetGmv)}
+                      <div className="text-2xs text-slate-500 font-semibold">Ngân sách Brand</div>
+                      <div className="text-sm font-semibold text-blue-700 mt-1">
+                        {formatVndShort(selectedNode.data.planBudget || 0)}
                       </div>
                     </div>
                     <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
-                      <div className="text-2xs text-slate-500 font-semibold">Ngân sách Brand</div>
-                      <div className="text-sm font-semibold text-slate-900 mt-1">
-                        {formatVndShort(selectedNode.data.planBudget)}
+                      <div className="text-2xs text-slate-500 font-semibold">Tổng Target GMV</div>
+                      <div className="text-sm font-semibold text-emerald-700 mt-1">
+                        {formatVndShort(selectedNode.data.targetGmv || 0)}
                       </div>
                     </div>
                   </div>
 
                   <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1.5 text-2xs">
-                    <div className="text-slate-600">Account PIC: <strong className="text-slate-800">{selectedNode.data.accountPic}</strong></div>
-                    <div className="text-slate-600">Growth PIC: <strong className="text-slate-800">{selectedNode.data.growthPic}</strong></div>
-                    <div className="text-slate-600">Booking Lead: <strong className="text-slate-800">{selectedNode.data.bookingPicLead}</strong></div>
+                    <div className="text-slate-600">Account PIC: <strong className="text-slate-800">{selectedNode.data.accountPic || 'Chưa gán'}</strong></div>
+                    <div className="text-slate-600">Growth PIC: <strong className="text-slate-800">{selectedNode.data.growthPic || 'Chưa gán'}</strong></div>
+                    <div className="text-slate-600">Booking Lead: <strong className="text-slate-800">{selectedNode.data.bookingPicLead || 'Đặng Thị Yến Nhi'}</strong></div>
+                  </div>
+
+                  {/* Danh sách gian hàng sàn trực thuộc Brand */}
+                  <div>
+                    <div className="flex items-center justify-between text-xs font-semibold text-slate-900 mb-2">
+                      <span className="flex items-center gap-1.5">
+                        <Store className="w-3.5 h-3.5 text-purple-600" />
+                        Gian hàng sàn trực thuộc ({stores.filter(s => s.brandId === selectedNode.data.id).length})
+                      </span>
+                    </div>
+
+                    <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                      {stores.filter(s => s.brandId === selectedNode.data.id).map(st => (
+                        <div
+                          key={st.id}
+                          onClick={() => setSelectedNode({ type: 'STORE', data: st })}
+                          className="p-2.5 bg-slate-50 hover:bg-purple-50/50 rounded-xl border border-slate-200 transition cursor-pointer"
+                        >
+                          <div className="flex items-center justify-between text-2xs mb-1">
+                            {renderPlatformBadge(st.platform)}
+                            <span className="font-semibold text-slate-900">{formatVndShort(st.monthlyBudget)}</span>
+                          </div>
+                          <div className="font-semibold text-xs text-slate-900 truncate">
+                            {st.storeName}
+                          </div>
+                          <div className="text-2xs text-slate-500 mt-1 flex items-center justify-between">
+                            <span>1 PIC Chính: <strong className="text-amber-800">{st.primaryPic}</strong></span>
+                            <span className="text-blue-600 flex items-center gap-0.5 font-medium">Chi tiết <ChevronRight className="w-2.5 h-2.5" /></span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               ) : (

@@ -41,3 +41,9 @@ test('Không cho sửa tài liệu đang có lượt ký hoạt động', () => 
   const record = pending(); record.signing.push({ documentId: 'flow', version: 1, status: 'WAITING', sourceStatus: 1, people: [], syncedAt: '', linkedBy: signer.id, linkedAt: '', evidenceConfirmedBy: signer.id, evidenceHash: 'hash' });
   assert.throws(() => editContract(record, owner, input));
 });
+test('Đồng bộ weSign không đổi gì thì không coi là thay đổi', async () => {
+  const { signingChanged } = await import('../src/lib/contracts/domain');
+  const base = { documentId: 'x', version: 1, linkedBy: 'a', linkedAt: '', syncedAt: '', status: 'WAITING', sourceStatus: 1, evidenceConfirmedBy: 'a', evidenceHash: '', people: [{ name: 'A', email: 'a@x.vn', action: 1, status: 'Chờ ký' }] };
+  assert.equal(signingChanged(base, { status: 'WAITING', sourceStatus: 1, people: [{ name: 'A', email: 'a@x.vn', action: 1, status: 'Chờ ký' }] }), false);
+  assert.equal(signingChanged(base, { status: 'PARTIAL', sourceStatus: 2, people: [{ name: 'A', email: 'a@x.vn', action: 2, status: 'Đã ký' }] }), true);
+});

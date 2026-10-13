@@ -1,88 +1,289 @@
 'use client';
-import { useCallback, useEffect, useState } from 'react';
-import { FileText, Plus, RefreshCw, Download, ArrowLeft, ShieldCheck, Send, Clock, Search, CheckCircle2, Sparkles } from 'lucide-react';
-import type { ContractActor, ContractRecord, LegalTemplate } from '@/lib/contracts/types';
-interface Bootstrap { actor: ContractActor; reviewers: ContractActor[]; demoActors: ContractActor[]; templates: LegalTemplate[]; records: ContractRecord[]; config: { ai: boolean; wesign: boolean; storage: string } }
-const STATUS: Record<string, string> = { DRAFT: 'Bản nháp', IN_REVIEW: 'Đang duyệt', CHANGES: 'Cần bổ sung', REJECTED: 'Từ chối', APPROVED: 'Đã phê duyệt', PENDING: 'Chờ xử lý', WAITING: 'Chờ ký', PARTIAL: 'Ký một phần', COMPLETED: 'Hoàn tất ký', CANCELLED: 'Đã hủy', UNKNOWN: 'Chưa đối chiếu mã trạng thái' };
-const ROLE: Record<string, string> = { CREATOR: 'Người tạo', LEGAL: 'Pháp chế', FINANCE: 'Kế toán', LEAD: 'Lead', SIGN_COORDINATOR: 'Điều phối ký', AUDITOR: 'Người xem' };
-const inputClass = 'w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400';
-const buttonClass = 'inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50';
-const primaryClass = `${buttonClass} !bg-blue-600 !text-white !border-blue-600 hover:!bg-blue-700`;
-const date = (value?: string) => value ? new Date(value).toLocaleString('vi-VN') : '—';
-async function api<T>(url: string, body?: unknown): Promise<T> {
-  const response = await fetch(url, { cache: 'no-store', ...(body ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : {}) });
-  const result = await response.json(); if (!response.ok) throw new Error(result.error || 'Không xử lý được yêu cầu.'); return result;
-}
-// Giữ tương thích nơi gọi màn hình cũ; mọi dữ liệu/quyền được lấy từ máy chủ.
-export function ContractManagementView() {
-  const [data, setData] = useState<Bootstrap | null>(null); const [error, setError] = useState(''); const [busy, setBusy] = useState(false);
-  const [selected, setSelected] = useState<string | null>(null); const [creating, setCreating] = useState(false); const [editing, setEditing] = useState(false);
-  const [templateRecordId, setTemplateRecordId] = useState('');
-  const [template, setTemplate] = useState<LegalTemplate | null>(null); const [templateId, setTemplateId] = useState(''); const [title, setTitle] = useState(''); const [brand, setBrand] = useState(''); const [partner, setPartner] = useState(''); const [parentId, setParentId] = useState(''); const [values, setValues] = useState<Record<string, string>>({});
-  const [reviewers, setReviewers] = useState<Record<string, string>>({}); const [note, setNote] = useState(''); const [documentId, setDocumentId] = useState(''); const [confirmed, setConfirmed] = useState(false);
-  const [preview, setPreview] = useState<string[] | null>(null); const [search, setSearch] = useState(''); const [filter, setFilter] = useState('ALL'); const [notice, setNotice] = useState('');
-  const refresh = useCallback(async () => { const result = await api<Bootstrap>('/api/contracts'); setData(result); return result; }, []);
-  useEffect(() => { (async () => { if (process.env.NODE_ENV === 'development') await api('/api/auth/me'); await refresh(); })().catch(e => setError(e.message)); }, [refresh]);
+
+/**
+ * Hợp đồng: danh sách hồ sơ → hồ sơ chi tiết → form tạo/sửa theo mẫu pháp chế.
+ * Dữ liệu và quyền lấy từ máy chủ (/api/contracts); giao diện không tự cấp quyền.
+ * Từ màn Booking, nút “HĐ” mở hồ sơ của booking đó, chưa có thì mở form tạo đã điền sẵn.
+ */
+
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Download, FileText, Plus } from 'lucide-react';
+import type { BookingDealItem, KocItem } from '../../lib/types';
+import type { ContractRecord } from '../../lib/contracts/types';
+import { formatDate } from '../../lib/format';
+import { Button, Chips, DataTable, EmptyState, FilterBar, Modal, PageActions, Pagination, Panel, Person, Status } from '../ui';
+import type { Column } from '../ui';
+import { ApiError, contractApi, type ContractBootstrap } from '../contracts/api';
+import { ROLE_LABEL, contractStatus, isAcceptance } from '../contracts/contractUi';
+import { ContractDetail } from '../contracts/ContractDetail';
+import { ContractForm, type ContractFormInit, type ContractFormPayload } from '../contracts/ContractForm';
+
+/** Yêu cầu mở hồ sơ của một booking (từ màn Booking). `nonce` đổi mỗi lần bấm. */
+export interface ContractIntent { dealId: string; nonce: number }
+
+type Screen = { mode: 'list' } | { mode: 'detail'; id: string } | { mode: 'form'; editId?: string; init?: ContractFormInit };
+type Filter = 'ALL' | 'MINE' | 'REVIEW' | 'SIGN' | 'DONE';
+
+export function ContractManagementView({
+  deals = [],
+  kocs = [],
+  intent,
+  onNotify,
+}: {
+  deals?: BookingDealItem[];
+  kocs?: KocItem[];
+  intent?: ContractIntent | null;
+  onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
+}) {
+  const [data, setData] = useState<ContractBootstrap | null>(null);
+  const [loadError, setLoadError] = useState<ApiError | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [screen, setScreen] = useState<Screen>({ mode: 'list' });
+  const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState<Filter>('ALL');
+  const [page, setPage] = useState(1);
+  const [showTemplates, setShowTemplates] = useState(false);
+
+  const refresh = useCallback(async () => {
+    const result = await contractApi<ContractBootstrap>('/api/contracts');
+    setData(result); setLoadError(null); return result;
+  }, []);
+
   useEffect(() => {
-    if (!templateId) return;
-    let cancelled = false; api<{ template: LegalTemplate }>(`/api/contracts/templates/${templateId}${templateRecordId ? `?record=${encodeURIComponent(templateRecordId)}` : ''}`).then(r => { if (!cancelled) setTemplate(r.template); }).catch(e => { if (!cancelled) setError(e.message); });
-    return () => { cancelled = true; };
-  }, [templateId, templateRecordId]);
-  const record = data?.records.find(r => r.id === selected);
-  const action = async (payload: Record<string, unknown>) => {
-    setBusy(true); setError(''); setNotice('');
-    try { const result = await api<{ record: ContractRecord }>('/api/contracts', { id: record?.id, revision: record?.revision, ...payload }); await refresh(); setSelected(result.record.id); setCreating(false); setEditing(false); setPreview(null); setNotice('Đã cập nhật hồ sơ.'); return result.record; }
-    catch (e) { setError((e as Error).message); return undefined; } finally { setBusy(false); }
+    (async () => {
+      if (process.env.NODE_ENV === 'development') await contractApi('/api/auth/me').catch(() => undefined);
+      await refresh();
+    })().catch(e => setLoadError(e instanceof ApiError ? e : new ApiError((e as Error).message, 503)));
+  }, [refresh]);
+
+  // Mở theo booking khi được gọi từ màn Booking.
+  const [handledIntent, setHandledIntent] = useState<number | null>(null);
+  if (intent && data && handledIntent !== intent.nonce) {
+    setHandledIntent(intent.nonce);
+    const existing = data.records.filter(r => r.dealId === intent.dealId && !isAcceptance(r.templateId)).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0];
+    setScreen(existing ? { mode: 'detail', id: existing.id } : { mode: 'form', init: { dealId: intent.dealId, kind: 'CONTRACT' } });
+  }
+
+  const record = screen.mode === 'detail' || (screen.mode === 'form' && screen.editId)
+    ? data?.records.find(r => r.id === (screen.mode === 'detail' ? screen.id : screen.editId))
+    : undefined;
+
+  /** Gửi một thao tác lên máy chủ. Thành công: tải lại, mở hồ sơ, báo bằng toast. */
+  const act = async (payload: Record<string, unknown>, done = 'Đã cập nhật hồ sơ') => {
+    setBusy(true);
+    try {
+      const result = await contractApi<{ record: ContractRecord }>('/api/contracts', { id: record?.id, revision: record?.revision, ...payload });
+      await refresh();
+      setScreen({ mode: 'detail', id: result.record.id });
+      onNotify?.(done, 'success');
+      return result.record;
+    } catch (e) {
+      onNotify?.((e as Error).message, 'error');
+      return undefined;
+    } finally {
+      setBusy(false);
+    }
   };
+
+  // Đang xem hồ sơ có luồng ký thật: đọc lại tiến độ mỗi 2 phút (máy chủ chỉ ghi khi có thay đổi).
   useEffect(() => {
-    if (!data?.config.wesign || !record?.signing.length || record.signing.at(-1)?.provider === 'DEMO') return;
-    const timer = setInterval(() => { if (document.visibilityState === 'visible' && !busy) action({ action: 'SYNC_WESIGN' }); }, 120000);
+    const s = record?.signing.at(-1);
+    if (screen.mode !== 'detail' || !data?.config.wesign || !s || s.provider === 'DEMO' || ['COMPLETED', 'CANCELLED', 'REJECTED'].includes(s.status)) return;
+    const timer = setInterval(() => {
+      if (document.visibilityState !== 'visible' || busy) return;
+      contractApi('/api/contracts', { id: record!.id, revision: record!.revision, action: 'SYNC_WESIGN' }).then(() => refresh()).catch(() => undefined);
+    }, 120000);
     return () => clearInterval(timer);
-  // Đồng bộ khi đang xem hồ sơ; máy chủ vẫn kiểm tra quyền và revision.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selected, record?.revision, data?.config.wesign, busy]);
-  const startCreate = () => { setCreating(true); setEditing(false); setSelected(null); setTemplateId(''); setTemplateRecordId(''); setTemplate(null); setTitle(''); setBrand(data?.actor.brands[0] || ''); setPartner(''); setParentId(''); setValues({}); setError(''); setPreview(null); };
-  const startEdit = () => { if (!record) return; setCreating(false); setEditing(true); setTemplate(null); setTemplateRecordId(record.id); setTemplateId(record.templateId); setTitle(record.title); setBrand(record.brand); setPartner(record.partner); setParentId(record.parentId || ''); setValues(record.values); setPreview(null); };
-  const fields = template ? [...new Map(template.fields.map(f => [f.key, f])).values()] : [];
-  const editable = record && record.ownerId === data?.actor.id && record.approval !== 'IN_REVIEW' && !record.signing.some(s => !['CANCELLED', 'REJECTED'].includes(s.status));
-  const currentCheck = record?.checks.filter(c => c.version === record.version).at(-1);
-  const signing = record?.signing.at(-1);
-  const pendingStep = record?.approval === 'IN_REVIEW' && record.steps.find(s => s.reviewerId === data?.actor.id && s.status === 'PENDING');
-  const visible = data?.records.filter(r => `${r.title} ${r.brand} ${r.partner}`.toLowerCase().includes(search.toLowerCase()) && (filter === 'ALL' || filter === 'MINE' && r.ownerId === data.actor.id || filter === 'REVIEW' && r.approval === 'IN_REVIEW' && r.steps.some(s => s.reviewerId === data.actor.id && s.status === 'PENDING') || filter === 'SIGN' && r.approval === 'APPROVED' && r.signing.at(-1)?.status !== 'COMPLETED')) || [];
-  return <div className="space-y-5 p-4 md:p-6">
-    <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-xl font-semibold text-slate-900">Hợp đồng</h2><p className="mt-1 text-sm text-slate-500">Mẫu pháp chế · Phê duyệt nội bộ · Tiến độ MISA AMIS weSign</p></div><div className="flex gap-2"><button className={buttonClass} disabled={busy} onClick={() => refresh().catch(e => setError(e.message))}><RefreshCw size={16} />Tải lại</button>{data?.actor.roles.includes('CREATOR') && <button className={primaryClass} onClick={startCreate}><Plus size={16} />Tạo hợp đồng</button>}</div></div>
-    {error && <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}{!data && <a className="ml-3 underline" href="/api/auth/lark/login?returnTo=/">Đăng nhập Lark</a>}</div>}
-    {notice && <p role="status" className="text-sm text-emerald-700">{notice}</p>}
-    {data && <><div className="flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600"><span>{data.actor.name} · {data.actor.roles.map(r => ROLE[r]).join(', ')}</span><span>AI: {data.config.ai ? 'Đã cấu hình' : 'Chưa cấu hình · chỉ kiểm tra trường điền'}</span><span>weSign: {data.config.wesign ? 'Đã cấu hình' : 'Chưa cấu hình kết nối'}</span>{data.config.storage === 'LOCAL_DEVELOPMENT' && <span className="font-medium text-amber-700">Kiểm thử cục bộ · không dùng dữ liệu thật</span>}</div>
-    {!!data.demoActors.length && <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500"><span>Thử luồng bằng tài khoản giả lập:</span>{data.demoActors.map(a => <button key={a.id} className={buttonClass} disabled={busy} onClick={async () => { setBusy(true); try { await api('/api/contracts/demo', { id: a.id }); await refresh(); setSelected(null); setCreating(false); setEditing(false); setError(''); } catch (e) { setError((e as Error).message); } finally { setBusy(false); } }}>{a.name.replace(' (kiểm thử)', '')}</button>)}</div>}
-    {(creating || editing) ? <section className="rounded-xl border border-slate-200 bg-white p-5"><div className="mb-5 flex items-center gap-3"><button className={buttonClass} onClick={() => { setCreating(false); setEditing(false); }}><ArrowLeft size={16} />Quay lại</button><h3 className="font-semibold">{editing ? 'Sửa và tạo phiên bản mới' : 'Tạo theo mẫu pháp chế'}</h3></div>
-      <form onSubmit={e => { e.preventDefault(); action({ action: editing ? 'EDIT' : 'CREATE', title, brand, partner, templateId, parentId, values }); }} className="space-y-5">
-        <div className="grid gap-4 md:grid-cols-2"><label className="text-sm">Mẫu pháp chế *<select required disabled={editing} className={inputClass} value={templateId} onChange={e => { setTemplate(null); setTemplateId(e.target.value); setValues({}); }}><option value="">Chọn mẫu</option>{data.templates.map(t => <option key={t.id} value={t.id}>{t.name} · {t.version}</option>)}</select></label><label className="text-sm">Tên hồ sơ *<input required maxLength={180} className={inputClass} value={title} onChange={e => setTitle(e.target.value)} /></label><label className="text-sm">Nhãn hàng *<input required maxLength={120} className={inputClass} list="contract-brands" value={brand} onChange={e => setBrand(e.target.value)} /><datalist id="contract-brands">{data.actor.brands.map(b => <option key={b} value={b} />)}</datalist></label><label className="text-sm">Đối tác *<input required maxLength={180} className={inputClass} value={partner} onChange={e => setPartner(e.target.value)} /></label><label className="text-sm">Hồ sơ gốc (nếu là nghiệm thu)<select className={inputClass} value={parentId} onChange={e => setParentId(e.target.value)}><option value="">Không liên kết</option>{data.records.filter(r => r.id !== record?.id).map(r => <option key={r.id} value={r.id}>{r.title}</option>)}</select></label></div>
-        {template && <><div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-blue-50 p-3 text-sm text-blue-900"><span>{template.filename} · {fields.length} trường</span><a className="underline" href={`/api/contracts/templates/${template.id}?download=1`}>Tải mẫu gốc</a></div><p className="text-xs text-slate-500">Điền vào các vị trí trống trong file gốc. Điều khoản và bố cục Word được giữ nguyên. Có thể lưu nháp khi chưa điền hết; trường * phải đủ trước khi gửi duyệt.</p><div className="grid gap-4 md:grid-cols-2">{fields.map(f => <label key={f.key} className="text-sm"><span className="mb-1 block font-medium text-slate-700">{f.label}{f.required ? ' *' : ''}</span><textarea rows={2} maxLength={4000} className={inputClass} value={values[f.key] || ''} onChange={e => setValues(v => ({ ...v, [f.key]: e.target.value }))} /><span className="mt-1 block text-xs text-slate-400">{f.context.slice(0, 150)}</span></label>)}</div><details className="rounded-lg border border-slate-200 p-3"><summary className="cursor-pointer text-sm font-medium">Đọc nội dung mẫu pháp chế</summary><div className="mt-3 space-y-2 text-sm text-slate-600">{template.paragraphs.map((p, i) => p && <p key={i}>{p}</p>)}</div></details></>}
-        <button className={primaryClass} disabled={busy || !template}>Lưu {editing ? 'phiên bản mới' : 'bản nháp'}</button>
-      </form>
-    </section> : record ? <><div className="flex flex-wrap items-center justify-between gap-2"><button className={buttonClass} onClick={() => { setSelected(null); setPreview(null); setNote(''); }}><ArrowLeft size={16} />Danh sách</button><div className="flex flex-wrap gap-2">{editable && <button className={buttonClass} onClick={startEdit}>Sửa hồ sơ</button>}<a className={buttonClass} href={`/api/contracts/${record.id}/document`}><Download size={16} />Word v{record.version}</a><button className={buttonClass} onClick={() => api<{ paragraphs: string[] }>(`/api/contracts/${record.id}/document?preview=1`).then(r => setPreview(r.paragraphs)).catch(e => setError(e.message))}>Xem nội dung</button></div></div>
-      <section className="rounded-xl border border-slate-200 bg-white p-5"><h3 className="text-lg font-semibold">{record.title}</h3><p className="mt-1 text-sm text-slate-500">{record.brand} · {record.partner} · Phụ trách: {record.ownerName} · v{record.version}</p>{record.parentId && <p className="mt-2 text-xs text-slate-500">Hồ sơ gốc: {data.records.find(r => r.id === record.parentId)?.title || record.parentId}</p>}</section>
-      <div className="grid gap-5 lg:grid-cols-2"><section className="space-y-4 rounded-xl border border-slate-200 bg-white p-5"><h3 className="flex items-center gap-2 font-semibold"><ShieldCheck size={18} />1. Gửi và phê duyệt</h3><span className="inline-block rounded-full bg-blue-50 px-3 py-1 text-sm text-blue-700">{STATUS[record.approval]}</span>
-        {record.steps.map((s, i) => <div key={`${s.reviewerId}-${i}`} className="rounded-lg border border-slate-200 p-3"><div className="flex justify-between gap-2 text-sm"><span>{ROLE[s.role]} · {s.reviewerName}</span><span>{STATUS[s.status]}</span></div>{s.note && <p className="mt-2 whitespace-pre-wrap text-sm text-slate-600">{s.note}</p>}<p className="mt-1 text-xs text-slate-400">v{s.version} · {date(s.decidedAt)}</p></div>)}
-        {editable && ['DRAFT', 'CHANGES', 'REJECTED'].includes(record.approval) && <><p className="text-xs text-slate-500">Chọn người duyệt độc lập. Pháp chế và kế toán bắt buộc; Lead tùy luồng đã thống nhất.</p>{['LEGAL', 'FINANCE', 'LEAD'].map(role => <label key={role} className="block text-sm">{ROLE[role]}{role !== 'LEAD' && ' *'}<select className={inputClass} value={reviewers[role] || ''} onChange={e => setReviewers(r => ({ ...r, [role]: e.target.value }))}><option value="">Chọn người duyệt</option>{data.reviewers.filter(a => a.id !== record.ownerId && a.roles.includes(role as 'LEGAL') && (a.allBrands || a.brands.includes(record.brand))).map(a => <option key={a.id} value={a.id}>{a.name}</option>)}</select></label>)}<button className={primaryClass} disabled={busy || !reviewers.LEGAL || !reviewers.FINANCE} onClick={() => action({ action: 'SUBMIT', reviewers: Object.values(reviewers).filter(Boolean) })}><Send size={16} />Gửi duyệt</button></>}
-        {pendingStep && <><label className="block text-sm">Nhận xét / lý do<textarea className={inputClass} value={note} onChange={e => setNote(e.target.value)} maxLength={4000} /></label><div className="flex flex-wrap gap-2"><button className={primaryClass} disabled={busy} onClick={() => action({ action: 'DECIDE', decision: 'APPROVED', note })}>Phê duyệt</button><button className={buttonClass} disabled={busy || !note.trim()} onClick={() => action({ action: 'DECIDE', decision: 'CHANGES', note })}>Yêu cầu bổ sung</button><button className={buttonClass} disabled={busy || !note.trim()} onClick={() => action({ action: 'DECIDE', decision: 'REJECTED', note })}>Từ chối</button></div></>}
-        {record.ownerId === data.actor.id && ['IN_REVIEW', 'APPROVED'].includes(record.approval) && !signing && <><label className="block text-sm">Lý do thu hồi<textarea className={inputClass} value={note} onChange={e => setNote(e.target.value)} maxLength={4000} /></label><button className={buttonClass} disabled={busy || !note.trim()} onClick={() => action({ action: 'WITHDRAW', note })}>Thu hồi để sửa</button></>}
-      </section><section className="space-y-4 rounded-xl border border-slate-200 bg-white p-5"><h3 className="flex items-center gap-2 font-semibold"><Clock size={18} />2. Trình ký MISA AMIS weSign</h3>{record.approval !== 'APPROVED' && <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-800">Chỉ bắt đầu trình ký sau khi phiên bản này đủ phê duyệt nội bộ.</p>}
-        {!data.config.wesign && <p className="text-sm text-slate-500">Chưa kết nối weSign. Cần quản trị viên cấu hình quyền API của công ty.</p>}
-        {signing?.provider === 'DEMO' && <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-800">Tiến độ giả lập để thử quy trình. Không gửi đến MISA và không tạo chữ ký pháp lý.</p>}
-        {data.demoActors.length > 0 && record.approval === 'APPROVED' && data.actor.roles.includes('SIGN_COORDINATOR') && <div className="flex flex-wrap gap-2">
-          {(!signing || ['REJECTED', 'CANCELLED'].includes(signing.status)) && <button className={primaryClass} disabled={busy} onClick={() => action({ action: 'DEMO_SIGN_START' })}>Bắt đầu ký giả lập</button>}
-          {signing?.provider === 'DEMO' && ['WAITING', 'PARTIAL'].includes(signing.status) && <><button className={primaryClass} disabled={busy} onClick={() => action({ action: 'DEMO_SIGN_NEXT' })}>Giả lập người tiếp theo ký</button><button className={buttonClass} disabled={busy} onClick={() => action({ action: 'DEMO_SIGN_REJECT' })}>Giả lập từ chối ký</button></>}
-        </div>}
-        {signing ? <><div className="text-sm"><span className="font-medium">{STATUS[signing.status] || signing.status}</span><p className="mt-1 break-all text-xs text-slate-400">{signing.provider === 'DEMO' ? 'Mã lượt giả lập' : 'Mã weSign'}: {signing.documentId} · mã trạng thái nguồn: {signing.sourceStatus}</p><p className="text-xs text-slate-500">Cập nhật: {date(signing.syncedAt)} · Bản duyệt v{signing.version}</p></div>{signing.error && <p role="alert" className="text-sm text-red-600">{signing.error}</p>}{signing.people.map((p, i) => <div key={i} className="rounded-lg border border-slate-200 p-3 text-sm"><p className="font-medium">{p.name}</p><p className="text-xs text-slate-500">{p.email}</p><p className="mt-1 text-blue-700">{p.status}</p></div>)}<button className={buttonClass} disabled={busy || !data.config.wesign || signing.provider === 'DEMO'} onClick={() => action({ action: 'SYNC_WESIGN' })}><RefreshCw size={16} />Đồng bộ tiến độ</button>{signing.status === 'COMPLETED' && signing.provider !== 'DEMO' && <a className={buttonClass} href={`/api/contracts/${record.id}/document?signed=1`}><Download size={16} />Tải hồ sơ đã ký</a>}</> : <p className="text-sm text-slate-500">Chưa liên kết luồng ký.</p>}
-        {record.approval === 'APPROVED' && data.actor.roles.includes('SIGN_COORDINATOR') && (!signing || ['CANCELLED', 'REJECTED'].includes(signing.status)) && <><label className="block text-sm">Mã tài liệu/luồng ký weSign<input className={inputClass} value={documentId} onChange={e => setDocumentId(e.target.value)} placeholder="UUID từ MISA weSign" /></label><label className="flex items-start gap-2 text-xs text-slate-600"><input type="checkbox" checked={confirmed} onChange={e => setConfirmed(e.target.checked)} />Tôi đã đối chiếu tài liệu và người ký trên weSign với đúng bản được duyệt v{record.version}. weSign không cung cấp nội dung file trong API chi tiết để tự so khớp.</label><button className={primaryClass} disabled={busy || !data.config.wesign || !confirmed || !documentId.trim()} onClick={() => action({ action: 'LINK_WESIGN', documentId, confirmed })}>Liên kết và theo dõi ký</button></>}
-      </section></div>
-      <section className="space-y-3 rounded-xl border border-slate-200 bg-white p-5"><div className="flex flex-wrap items-center justify-between gap-2"><h3 className="flex items-center gap-2 font-semibold"><Sparkles size={18} />Kiểm tra sau khi điền</h3>{record.approval !== 'APPROVED' && !record.signing.length && (record.ownerId === data.actor.id || record.steps.some(s => s.reviewerId === data.actor.id)) && <button className={buttonClass} disabled={busy} onClick={() => action({ action: 'CHECK' })}>{data.config.ai ? 'AI kiểm tra hợp đồng' : 'Kiểm tra trường điền'}</button>}</div><p className="text-xs text-slate-500">AI hỗ trợ người review, không tự sửa hoặc phê duyệt. Kết quả chỉ áp dụng cho phiên bản đã kiểm tra.</p>{currentCheck ? <><p className="text-xs text-slate-400">{currentCheck.provider === 'AI' ? 'AI + quy tắc' : 'Quy tắc · chưa chạy AI'} · v{currentCheck.version} · {date(currentCheck.at)}</p>{!currentCheck.findings.length && <p className="text-sm text-emerald-700">Chưa phát hiện vấn đề trong phạm vi đã kiểm tra.</p>}{currentCheck.findings.map((f, i) => <div key={i} className={`rounded-lg p-3 text-sm ${f.severity === 'ERROR' ? 'bg-red-50 text-red-800' : 'bg-amber-50 text-amber-900'}`}><p>{f.message}</p><blockquote className="mt-1 text-xs opacity-80">{f.evidence}</blockquote></div>)}</> : <p className="text-sm text-slate-500">Chưa kiểm tra phiên bản hiện tại.{record.checks.length > 0 && ' Kết quả phiên bản trước đã hết hiệu lực.'}</p>}</section>
-      {preview && <section className="rounded-xl border border-slate-200 bg-white p-5"><div className="flex justify-between"><h3 className="font-semibold">Nội dung đã điền · v{record.version}</h3><button className={buttonClass} onClick={() => setPreview(null)}>Đóng</button></div><p className="my-3 text-xs text-slate-500">Xem nội dung để review. Bố cục chính thức được giữ trong file Word tải xuống.</p><div className="max-h-[600px] space-y-2 overflow-auto text-sm leading-relaxed">{preview.map((p, i) => p && <p key={i}>{p}</p>)}</div></section>}
-      <section className="rounded-xl border border-slate-200 bg-white p-5"><h3 className="mb-3 font-semibold">Lịch sử hồ sơ</h3><div className="mb-3 flex flex-wrap gap-2">{record.versions.map(v => <a key={v.version} className={buttonClass} href={`/api/contracts/${record.id}/document?version=${v.version}`}>Word v{v.version}</a>)}</div>{[...record.history].reverse().map((h, i) => <div key={i} className="border-b border-slate-100 py-3 text-sm"><p>{h.actorName} · {({ CREATE: 'Tạo hồ sơ', EDIT: 'Tạo phiên bản mới', SUBMIT: 'Gửi duyệt', APPROVED: 'Phê duyệt', CHANGES: 'Yêu cầu bổ sung', REJECTED: 'Từ chối', WITHDRAW: 'Thu hồi', RULE_CHECK: 'Kiểm tra trường điền', AI_CHECK: 'AI kiểm tra', DEMO_SIGN_START: 'Bắt đầu ký giả lập', DEMO_SIGN_NEXT: 'Giả lập người ký', DEMO_SIGN_REJECT: 'Giả lập từ chối ký', LINK_WESIGN: 'Liên kết weSign', SYNC_WESIGN: 'Đồng bộ weSign', SYNC_ERROR: 'Lỗi đồng bộ' } as Record<string, string>)[h.action] || h.action} · v{h.version}</p>{h.note && <p className="mt-1 text-slate-500">{h.note}</p>}<p className="text-xs text-slate-400">{date(h.at)}</p></div>)}</section>
-    </> : <><div className="grid grid-cols-2 gap-3 lg:grid-cols-4">{[['Hồ sơ của tôi', data.records.filter(r => r.ownerId === data.actor.id).length], ['Chờ tôi duyệt', data.records.filter(r => r.approval === 'IN_REVIEW' && r.steps.some(s => s.reviewerId === data.actor.id && s.status === 'PENDING')).length], ['Đủ phê duyệt', data.records.filter(r => r.approval === 'APPROVED').length], ['Hoàn tất ký', data.records.filter(r => r.signing.at(-1)?.status === 'COMPLETED').length]].map(([label, count]) => <div key={label} className="rounded-xl border border-slate-200 bg-white p-4"><p className="text-xs text-slate-500">{label}</p><p className="mt-2 text-2xl font-semibold text-slate-900">{count}</p></div>)}</div><div className="rounded-xl border border-slate-200 bg-white"><div className="flex flex-wrap gap-3 border-b border-slate-100 p-4"><label className="flex flex-1 items-center gap-2"><Search size={16} className="text-slate-400" /><input aria-label="Tìm hợp đồng" placeholder="Tìm tên hồ sơ, đối tác, nhãn hàng" className={inputClass} value={search} onChange={e => setSearch(e.target.value)} /></label><select aria-label="Lọc hồ sơ" className={`${inputClass} !w-auto`} value={filter} onChange={e => setFilter(e.target.value)}><option value="ALL">Tất cả trong phạm vi</option><option value="MINE">Hồ sơ của tôi</option><option value="REVIEW">Chờ tôi duyệt</option><option value="SIGN">Chờ hoàn tất ký</option></select></div><div className="overflow-x-auto"><table className="w-full text-left text-sm"><thead className="bg-slate-50 text-xs text-slate-500"><tr>{['Hồ sơ / đối tác', 'Nhãn hàng', 'Phê duyệt', 'Trình ký weSign', 'Cập nhật'].map(h => <th key={h} className="px-4 py-3 font-medium">{h}</th>)}</tr></thead><tbody>{visible.map(r => <tr key={r.id} className="border-t border-slate-100 hover:bg-slate-50"><td className="px-4 py-4"><button className="font-medium text-blue-700 hover:underline" onClick={() => { setSelected(r.id); setNote(''); setReviewers({}); setError(''); }}>{r.title}</button><p className="mt-1 text-xs text-slate-500">{r.partner} · v{r.version}</p></td><td className="px-4 py-3">{r.brand}</td><td className="px-4 py-3">{STATUS[r.approval]}</td><td className="px-4 py-3">{r.signing.length ? STATUS[r.signing.at(-1)!.status] : 'Chưa trình ký'}</td><td className="px-4 py-3 text-xs text-slate-500">{date(r.updatedAt)}</td></tr>)}</tbody></table>{!visible.length && <div className="p-12 text-center text-slate-400"><FileText className="mx-auto mb-3" /><p className="text-sm">Chưa có hồ sơ trong phạm vi này.</p></div>}</div></div><details className="rounded-xl border border-slate-200 bg-white p-4"><summary className="cursor-pointer text-sm font-semibold">Bộ mẫu pháp chế · {data.templates.length} mẫu Word</summary><div className="mt-3 grid gap-3 md:grid-cols-2">{data.templates.map(t => <a key={t.id} href={`/api/contracts/templates/${t.id}?download=1`} className="flex items-center gap-3 rounded-lg border border-slate-200 p-3 text-sm text-slate-700"><CheckCircle2 size={18} className="text-emerald-600" /><span>{t.name}<small className="block text-slate-400">{t.version}</small></span><Download size={15} className="ml-auto" /></a>)}</div></details></>}
-    </>}
-    {!data && !error && <p className="p-8 text-center text-sm text-slate-500">Đang tải bộ mẫu pháp chế và hồ sơ…</p>}
-  </div>;
+  }, [screen.mode, record, data?.config.wesign, busy, refresh]);
+
+  const me = data?.actor;
+  const waitingMe = (r: ContractRecord) => r.approval === 'IN_REVIEW' && r.steps.some(s => s.reviewerId === me?.id && s.status === 'PENDING');
+  const awaitingSign = (r: ContractRecord) => r.approval === 'APPROVED' && r.signing.at(-1)?.status !== 'COMPLETED';
+  const done = (r: ContractRecord) => r.signing.at(-1)?.status === 'COMPLETED';
+  const matches: Record<Filter, (r: ContractRecord) => boolean> = {
+    ALL: () => true,
+    MINE: r => r.ownerId === me?.id,
+    REVIEW: waitingMe,
+    SIGN: awaitingSign,
+    DONE: done,
+  };
+
+  const searched = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return (data?.records || []).filter(r => !q || `${r.title} ${r.brand} ${r.partner} ${r.dealCode || ''}`.toLowerCase().includes(q));
+  }, [data, search]);
+  const rows = searched.filter(matches[filter]);
+  const pageSize = 20;
+  const [pagedKey, setPagedKey] = useState('');
+  if (`${search}|${filter}` !== pagedKey) { setPagedKey(`${search}|${filter}`); setPage(1); }
+
+  const chips = (['ALL', 'MINE', 'REVIEW', 'SIGN', 'DONE'] as Filter[]).map(key => ({
+    key,
+    label: { ALL: 'Tất cả', MINE: 'Của tôi', REVIEW: 'Chờ tôi duyệt', SIGN: 'Chờ ký', DONE: 'Đã ký' }[key],
+    count: searched.filter(matches[key]).length,
+  }));
+
+  const columns: Column<ContractRecord>[] = [
+    {
+      key: 'title',
+      header: 'Hồ sơ',
+      width: 260,
+      render: r => (
+        <div className="min-w-0 max-w-[340px] leading-tight">
+          <span className="block truncate font-medium text-ink">{r.title}</span>
+          <span className="block truncate text-2xs text-ink-3">{data?.templates.find(t => t.id === r.templateId)?.name || r.templateId} · phiên bản {r.version}</span>
+        </div>
+      ),
+    },
+    {
+      key: 'partner',
+      header: 'Đối tác · booking',
+      width: 200,
+      render: r => (
+        <div className="min-w-0 max-w-[260px] leading-tight">
+          <span className="block truncate text-ink">{r.partner}</span>
+          <span className="block truncate text-2xs text-ink-3">{r.brand}{r.dealCode ? <> · <span className="font-code">{r.dealCode}</span></> : ''}</span>
+        </div>
+      ),
+    },
+    {
+      key: 'status',
+      header: 'Trạng thái',
+      width: 170,
+      render: r => {
+        const s = contractStatus(r);
+        return (
+          <div className="grid gap-1 justify-items-start">
+            <Status tone={s.tone}>{s.label}</Status>
+            {s.note && <span className="text-2xs text-ink-3">{s.note}</span>}
+          </div>
+        );
+      },
+    },
+    { key: 'owner', header: 'Người phụ trách', width: 160, render: r => <Person name={r.ownerName} size={20} /> },
+    { key: 'updated', header: 'Cập nhật', width: 100, align: 'right', render: r => <span className="text-ink-2 tabular-nums">{formatDate(r.updatedAt)}</span> },
+  ];
+
+  /* ------------------------------------------------------------ Render */
+
+  if (loadError && !data) {
+    return (
+      <Panel>
+        <EmptyState
+          title={loadError.status === 401 ? 'Cần đăng nhập Lark để xem hợp đồng' : loadError.status === 403 ? 'Tài khoản chưa được cấp quyền hợp đồng' : 'Chưa tải được hợp đồng'}
+          description={loadError.message}
+          action={loadError.status === 401 ? <a href="/api/auth/lark/login?returnTo=/" className="text-[13px] text-accent hover:underline">Đăng nhập Lark</a> : <Button onClick={() => refresh().catch(() => undefined)}>Thử lại</Button>}
+        />
+      </Panel>
+    );
+  }
+  if (!data) return <p className="text-[13px] text-ink-3 px-1">Đang tải hồ sơ hợp đồng…</p>;
+
+  const canCreate = data.actor.roles.includes('CREATOR');
+
+  return (
+    <div className="space-y-6">
+      {screen.mode === 'list' && (
+        <PageActions>
+          <Button icon={FileText} onClick={() => setShowTemplates(true)}>Mẫu pháp chế</Button>
+          {canCreate && <Button variant="primary" icon={Plus} onClick={() => setScreen({ mode: 'form' })}>Tạo hợp đồng</Button>}
+        </PageActions>
+      )}
+
+      {screen.mode === 'form' ? (
+        <ContractForm
+          key={screen.editId || `new-${screen.init?.dealId || ''}-${screen.init?.kind || ''}-${screen.init?.parentId || ''}`}
+          data={data}
+          deals={deals}
+          kocs={kocs}
+          record={screen.editId ? record : undefined}
+          init={screen.init}
+          busy={busy}
+          onCancel={() => setScreen(screen.editId ? { mode: 'detail', id: screen.editId } : { mode: 'list' })}
+          onSave={(p: ContractFormPayload) => act({ action: screen.editId ? 'EDIT' : 'CREATE', ...p }, screen.editId ? 'Đã lưu phiên bản mới' : 'Đã lưu nháp hợp đồng')}
+        />
+      ) : screen.mode === 'detail' && record ? (
+        <ContractDetail
+          key={record.id}
+          record={record}
+          data={data}
+          busy={busy}
+          onBack={() => setScreen({ mode: 'list' })}
+          onAction={act}
+          onEdit={() => setScreen({ mode: 'form', editId: record.id })}
+          onOpen={id => setScreen({ mode: 'detail', id })}
+          onCreateAcceptance={() => setScreen({ mode: 'form', init: { dealId: record.dealId, kind: 'ACCEPTANCE', parentId: record.id } })}
+        />
+      ) : (
+        <Panel flush>
+          <div className="p-4 border-b border-line">
+            <FilterBar
+              search={{ value: search, onChange: setSearch, placeholder: 'Tên hồ sơ, đối tác, nhãn hàng, mã booking' }}
+              chips={<Chips items={chips} value={filter} onChange={setFilter} />}
+              resultCount={search.trim() ? rows.length : undefined}
+            />
+          </div>
+          <DataTable
+            columns={columns}
+            rows={rows.slice((page - 1) * pageSize, page * pageSize)}
+            rowKey={r => r.id}
+            onRowClick={r => setScreen({ mode: 'detail', id: r.id })}
+            empty={
+              data.records.length === 0 ? (
+                <EmptyState
+                  title="Chưa có hợp đồng nào"
+                  description="Tạo hợp đồng từ mẫu pháp chế, hoặc bấm “HĐ” ở một booking để tạo hợp đồng đã điền sẵn."
+                  action={canCreate && <Button variant="primary" icon={Plus} onClick={() => setScreen({ mode: 'form' })}>Tạo hợp đồng</Button>}
+                />
+              ) : (
+                <EmptyState title="Không có hồ sơ khớp" description="Đổi bộ lọc hoặc tìm bằng tên khác." />
+              )
+            }
+          />
+          <Pagination page={page} pageSize={pageSize} total={rows.length} onPageChange={setPage} />
+        </Panel>
+      )}
+
+      {data.demoActors.length > 0 && (
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3 rounded-xl bg-warning-soft text-[13px] text-ink-2">
+          <span className="font-medium text-ink">Môi trường thử</span>
+          <span>Đang dùng: {data.actor.name} ({data.actor.roles.map(r => ROLE_LABEL[r].toLowerCase()).join(', ')})</span>
+          <span className="text-ink-3">Đổi vai trò:</span>
+          {data.demoActors.map(a => (
+            <Button
+              key={a.id}
+              size="sm"
+              variant={a.id === data.actor.id ? 'secondary' : 'ghost'}
+              disabled={busy || a.id === data.actor.id}
+              onClick={async () => {
+                setBusy(true);
+                try { await contractApi('/api/contracts/demo', { id: a.id }); await refresh(); } catch (e) { onNotify?.((e as Error).message, 'error'); } finally { setBusy(false); }
+              }}
+            >
+              {a.name.replace(' (kiểm thử)', '')}
+            </Button>
+          ))}
+          <span className="text-ink-3">
+            Dữ liệu chỉ lưu trên máy này.{!data.config.wesign && ' Ký điện tử dùng chế độ ký thử.'}
+          </span>
+        </div>
+      )}
+
+      <Modal open={showTemplates} onClose={() => setShowTemplates(false)} title="Mẫu pháp chế" description="Bản gốc do pháp chế ban hành. Hồ sơ tạo từ mẫu giữ nguyên điều khoản." size="lg">
+        <ul className="divide-y divide-line border border-line rounded-lg">
+          {data.templates.map(t => (
+            <li key={t.id} className="flex items-center justify-between gap-3 px-3 py-2.5">
+              <div className="min-w-0">
+                <span className="block text-[13px] text-ink">{t.name}</span>
+                <span className="block text-2xs text-ink-3">{t.version}</span>
+              </div>
+              <a href={`/api/contracts/templates/${t.id}?download=1`} className="inline-flex items-center gap-1.5 text-[13px] text-accent hover:underline">
+                <Download className="w-4 h-4" strokeWidth={1.75} />Tải
+              </a>
+            </li>
+          ))}
+        </ul>
+      </Modal>
+    </div>
+  );
 }
