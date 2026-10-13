@@ -2,23 +2,23 @@
 
 /**
  * Hồ sơ thương hiệu: danh sách nhãn (từ Dữ liệu gốc) → hồ sơ từng nhãn.
- * Hồ sơ lưu trên máy chủ (/api/brands/profiles); quyền sửa theo từng mục do máy chủ kiểm tra.
+ * Hồ sơ lưu trên máy chủ (/api/brands/profiles); kho tệp lưu trữ trên Cloudflare R2 (/api/brands/files).
  * Chọn một nhãn ở bộ chọn “Nhãn” trên thanh trên sẽ mở thẳng hồ sơ nhãn đó.
  */
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Loader2 } from 'lucide-react';
-import type { BookingDealItem, BrandDetail, UserProfile } from '../../lib/types';
+import { HardDrive, Loader2 } from 'lucide-react';
+import type { BookingDealItem, BrandDetail, StorePortfolioItem, UserProfile } from '../../lib/types';
 import type { BrandProfile, BrandSection } from '../../lib/brands/types';
 import { brandKey } from '../../lib/brands/types';
-import { UPBASE_BRANDS_MASTER } from '../../lib/importedMasterData';
-import { formatDate } from '../../lib/format';
-import { Button, Chips, DataTable, EmptyState, FilterBar, Pagination, Panel, Person, Status } from '../ui';
+import { UPBASE_BRANDS_MASTER, UPBASE_STORES_MASTER } from '../../lib/importedMasterData';
+import { formatDate, formatVndShort } from '../../lib/format';
+import { Button, ChannelTag, Chips, DataTable, EmptyState, FilterBar, Pagination, Panel, Person, Stat, StatRow, Status, channelOf } from '../ui';
 import type { Column } from '../ui';
 import { BrandProfileDetail } from '../brands/BrandProfileDetail';
-import { buildRows, permissionsOf, real, type BrandAccess, type BrandRow } from '../brands/brandUi';
+import { buildRows, isExpired, permissionsOf, real, type BrandAccess, type BrandRow } from '../brands/brandUi';
 
-type Filter = 'ALL' | 'MINE' | 'EMPTY' | 'NO_LEGAL';
+type Filter = 'ALL' | 'MINE' | 'KEY_BUDGET' | 'COMPLETE' | 'EXPIRED_LEGAL';
 
 class LoadError extends Error { constructor(message: string, public status: number) { super(message); } }
 
@@ -38,16 +38,20 @@ export function BrandProfilesView({
   currentUser,
   selectedBrand = 'ALL',
   brands,
+  stores,
   deals = [],
   onNotify,
   onOpenBooking,
+  onNavigateToStoreProfile,
 }: {
   currentUser?: UserProfile | null;
   selectedBrand?: string;
   brands?: BrandDetail[];
+  stores?: StorePortfolioItem[];
   deals?: BookingDealItem[];
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
   onOpenBooking?: () => void;
+  onNavigateToStoreProfile?: (storeName: string) => void;
 }) {
   const [profiles, setProfiles] = useState<BrandProfile[] | null>(() => brandProfilesClientCache?.profiles || null);
   const [access, setAccess] = useState<BrandAccess | undefined>(() => brandProfilesClientCache?.access);
@@ -95,19 +99,75 @@ export function BrandProfilesView({
     setOpenKey(selectedBrand !== 'ALL' ? brandKey(selectedBrand) : null);
   }
 
+  const allStores = stores?.length ? stores : UPBASE_STORES_MASTER;
   const rows = useMemo(() => buildRows(brands?.length ? brands : UPBASE_BRANDS_MASTER, profiles || []), [brands, profiles]);
+
+  // Map gian hàng theo brandKey để tính toán số gian, hạn mức và thực chi
+  const storeStatsByBrand = useMemo(() => {
+    const map = new Map<string, { count: number; platforms: string[]; budgetNet: number; spentNet: number }>();
+    for (const s of allStores) {
+      const bName = s.brandName || s.storeName?.split('_')[0] || '';
+      if (!bName) continue;
+      const k = brandKey(bName);
+      const cur = map.get(k) || { count: 0, platforms: [], budgetNet: 0, spentNet: 0 };
+      cur.count += 1;
+      if (s.platform && !cur.platforms.includes(s.platform)) cur.platforms.push(s.platform);
+      cur.budgetNet += s.budgetNet ?? s.monthlyBudget ?? 0;
+      cur.spentNet += s.actualSpentNet ?? 0;
+      map.set(k, cur);
+    }
+    return map;
+  }, [allStores]);
+
   const me = access?.name.trim().toLowerCase();
   const matches: Record<Filter, (r: BrandRow) => boolean> = useMemo(() => ({
     ALL: () => true,
-    MINE: r => !!me && real(r.master?.accountPic).toLowerCase() === me,
-    EMPTY: r => !r.saved,
-    NO_LEGAL: r => r.profile.legal.length === 0,
-  }), [me]);
+    MINE: r => {
+      if (!me) return false;
+      return real(r.master?.accountPic).toLowerCase() === me || real(r.master?.brandPicName).toLowerCase() === me;
+    },
+    KEY_BUDGET: r => {
+      const st = storeStatsByBrand.get(r.key);
+      return (st?.budgetNet || r.master?.planBudget || r.master?.monthlyBudget || 0) >= 50_000_000;
+    },
+    COMPLETE: r => r.done === r.total,
+    EXPIRED_LEGAL: r => r.profile.legal.length === 0 || r.profile.legal.some(l => Boolean(l.validUntil && isExpired(l.validUntil))),
+  }), [me, storeStatsByBrand]);
 
-  const searched = useMemo(() => rows.filter(r => !search.trim() || `${r.name} ${real(r.master?.category)} ${real(r.master?.accountPic)}`.toLowerCase().includes(search.trim().toLowerCase())), [rows, search]);
+  const searched = useMemo(() => rows.filter(r => {
+    if (!search.trim()) return true;
+    const q = search.trim().toLowerCase();
+    return `${r.name} ${real(r.master?.code)} ${real(r.master?.category)} ${real(r.master?.accountPic)} ${real(r.master?.brandPicName)}`.toLowerCase().includes(q);
+  }), [rows, search]);
+
   const visible = useMemo(() => searched.filter(matches[filter]), [searched, matches, filter]);
   const [pagedKey, setPagedKey] = useState('');
   if (`${search}|${filter}` !== pagedKey) { setPagedKey(`${search}|${filter}`); setPage(1); }
+
+  // Chỉ số KPI tổng hợp toàn bộ thương hiệu B2C
+  const kpiSummary = useMemo(() => {
+    let totalStores = 0;
+    let totalBudgetNet = 0;
+    let totalSpentNet = 0;
+    let completeCount = 0;
+    let totalDocs = 0;
+    let totalLegal = 0;
+    let uploadedFiles = 0;
+
+    for (const r of rows) {
+      const st = storeStatsByBrand.get(r.key);
+      totalStores += st?.count || r.master?.storeCount || 0;
+      totalBudgetNet += st?.budgetNet || r.master?.planBudget || r.master?.monthlyBudget || 0;
+      totalSpentNet += st?.spentNet || r.master?.spentBudget || 0;
+      if (r.done === r.total) completeCount += 1;
+      totalDocs += r.profile.documents.length;
+      totalLegal += r.profile.legal.length;
+      uploadedFiles += r.profile.documents.filter(d => d.storage === 'R2' || d.storage === 'LOCAL').length
+        + r.profile.legal.filter(l => l.storage === 'R2' || l.storage === 'LOCAL').length;
+    }
+
+    return { totalStores, totalBudgetNet, totalSpentNet, completeCount, totalDocs, totalLegal, uploadedFiles };
+  }, [rows, storeStatsByBrand]);
 
   const save = async (row: BrandRow, section: BrandSection, data: unknown, summary?: string) => {
     setBusy(true);
@@ -148,6 +208,7 @@ export function BrandProfilesView({
         row={open}
         can={permissionsOf(access, real(open.master?.accountPic))}
         deals={deals}
+        stores={allStores}
         busy={busy}
         onBack={() => setOpenKey(null)}
         nav={{
@@ -158,80 +219,220 @@ export function BrandProfilesView({
         }}
         onSave={(section, data, summary) => save(open, section, data, summary)}
         onOpenBooking={onOpenBooking}
+        onNavigateToStoreProfile={onNavigateToStoreProfile}
+        onNotify={onNotify}
       />
     );
   }
 
   const isSyncing = !profiles;
 
-  const chips = (['ALL', 'MINE', 'EMPTY', 'NO_LEGAL'] as Filter[]).map(key => ({
-    key, label: { ALL: 'Tất cả', MINE: 'Tôi phụ trách', EMPTY: 'Chưa có hồ sơ', NO_LEGAL: 'Thiếu pháp lý' }[key], count: searched.filter(matches[key]).length,
+  const chips = (['ALL', 'MINE', 'KEY_BUDGET', 'COMPLETE', 'EXPIRED_LEGAL'] as Filter[]).map(key => ({
+    key,
+    label: {
+      ALL: 'Tất cả nhãn',
+      MINE: 'Tôi phụ trách',
+      KEY_BUDGET: 'Ngân sách ≥ 50tr',
+      COMPLETE: 'Đủ 7/7 mục',
+      EXPIRED_LEGAL: 'Cần rà soát pháp lý',
+    }[key],
+    count: searched.filter(matches[key]).length,
   }));
 
   const columns: Column<BrandRow>[] = [
     {
-      key: 'name', header: 'Nhãn hàng', width: 220,
-      render: r => (
-        <div className="min-w-0 max-w-[280px] leading-tight">
-          <span className="block truncate font-medium text-ink">{r.name}</span>
-          <span className="block truncate text-2xs text-ink-3">{real(r.master?.category) || '—'}</span>
-        </div>
-      ),
+      key: 'name',
+      header: 'Thương hiệu & Sàn',
+      width: 250,
+      render: r => {
+        const st = storeStatsByBrand.get(r.key);
+        const platforms = st?.platforms.length ? st.platforms : (r.master?.platforms || []);
+        return (
+          <div className="min-w-0 max-w-[270px] leading-tight">
+            <div className="flex items-center gap-1.5">
+              <span className="truncate font-semibold text-ink">{r.name}</span>
+              {real(r.master?.code) && (
+                <span className="text-2xs font-mono text-ink-3 bg-surface-2 px-1 py-0.5 rounded border border-line shrink-0">
+                  {real(r.master?.code)}
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+              <span className="truncate text-2xs text-ink-3 max-w-[140px]">{real(r.master?.category) || '—'}</span>
+              {platforms.map(p => <ChannelTag key={p} channel={channelOf(p)} />)}
+            </div>
+          </div>
+        );
+      },
     },
-    { key: 'pic', header: 'Account PIC', width: 160, render: r => (real(r.master?.accountPic) ? <Person name={real(r.master?.accountPic)} size={20} /> : <span className="text-ink-3">—</span>) },
     {
-      key: 'status', header: 'Hồ sơ', width: 150,
+      key: 'stores',
+      header: 'Gian hàng',
+      width: 90,
+      align: 'right',
+      render: r => {
+        const count = storeStatsByBrand.get(r.key)?.count || r.master?.storeCount || 0;
+        return <span className="font-mono font-medium text-ink">{count} gian</span>;
+      },
+    },
+    {
+      key: 'pic',
+      header: 'Account & Booking PIC',
+      width: 190,
+      render: r => {
+        const acc = real(r.master?.accountPic);
+        const book = real(r.master?.brandPicName);
+        return (
+          <div className="grid gap-0.5 leading-tight">
+            {acc ? <Person name={acc} size={18} /> : <span className="text-ink-3 text-xs">—</span>}
+            {book && book !== acc && (
+              <span className="text-2xs text-ink-3 truncate">Booking: {book}</span>
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      key: 'budget',
+      header: 'Hạn mức Order Net',
+      width: 145,
+      align: 'right',
+      render: r => {
+        const st = storeStatsByBrand.get(r.key);
+        const budget = st?.budgetNet || r.master?.planBudget || r.master?.monthlyBudget || 0;
+        const spent = st?.spentNet || r.master?.spentBudget || 0;
+        return (
+          <div className="leading-tight tabular-nums">
+            <span className="block font-mono font-medium text-ink">{budget > 0 ? formatVndShort(budget) : '0 đ'}</span>
+            {spent > 0 && (
+              <span className={`block text-2xs font-mono ${budget > 0 && spent > budget ? 'text-danger font-medium' : 'text-ink-3'}`}>
+                Chi: {formatVndShort(spent)}
+              </span>
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      key: 'status',
+      header: 'Độ đầy đủ hồ sơ',
+      width: 145,
       render: r => (
         <div className="grid gap-1 justify-items-start">
           {isSyncing ? (
             <span className="text-2xs text-ink-3 italic">Đang đồng bộ…</span>
-          ) : !r.saved ? (
-            <Status tone="neutral">Nháp</Status>
           ) : r.done === r.total ? (
-            <Status tone="positive">Hoàn tất</Status>
+            <Status tone="positive">Đủ {r.done}/{r.total} mục</Status>
+          ) : r.done >= 5 ? (
+            <Status tone="info">{r.done}/{r.total} mục</Status>
           ) : (
-            <Status tone="info">Đang chạy</Status>
+            <Status tone="warning">{r.done}/{r.total} mục</Status>
           )}
-          <span className="text-2xs text-ink-3 tabular-nums">{r.done}/{r.total} mục</span>
         </div>
       ),
     },
-    { key: 'products', header: 'Sản phẩm', width: 80, align: 'right', render: r => isSyncing ? <span className="text-ink-3">—</span> : (r.profile.products.length || <span className="text-ink-3">—</span>) },
-    { key: 'banned', header: 'Từ cấm', width: 80, align: 'right', render: r => isSyncing ? <span className="text-ink-3">—</span> : (r.profile.contentRules?.banned.length || <span className="text-ink-3">—</span>) },
-    { key: 'legal', header: 'Pháp lý', width: 80, align: 'right', render: r => isSyncing ? <span className="text-ink-3">—</span> : (r.profile.legal.length || <span className="text-ink-3">—</span>) },
     {
-      key: 'updated', header: 'Cập nhật', width: 140, align: 'right',
+      key: 'assets',
+      header: 'SKU · Từ cấm',
+      width: 115,
+      align: 'right',
+      render: r => isSyncing ? <span className="text-ink-3">—</span> : (
+        <div className="leading-tight tabular-nums text-xs">
+          <span className="text-ink font-medium">{r.profile.products.length}</span>
+          <span className="text-ink-3"> SKU · </span>
+          <span className="text-danger font-medium">{r.profile.contentRules?.banned.length || 0}</span>
+          <span className="text-ink-3"> cấm</span>
+        </div>
+      ),
+    },
+    {
+      key: 'files',
+      header: 'Kho tệp & Pháp lý',
+      width: 135,
+      align: 'right',
+      render: r => {
+        if (isSyncing) return <span className="text-ink-3">—</span>;
+        const r2Count = r.profile.documents.filter(d => d.storage === 'R2' || d.storage === 'LOCAL').length
+          + r.profile.legal.filter(l => l.storage === 'R2' || l.storage === 'LOCAL').length;
+        return (
+          <div className="leading-tight tabular-nums text-xs">
+            <span className="inline-flex items-center gap-1 text-ink font-medium">
+              <HardDrive className="w-3 h-3 text-accent" />
+              {r.profile.documents.length} tệp · {r.profile.legal.length} giấy
+            </span>
+            {r2Count > 0 && (
+              <span className="block text-2xs text-accent font-medium">{r2Count} tệp đã tải lên</span>
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      key: 'updated',
+      header: 'Cập nhật',
+      width: 130,
+      align: 'right',
       render: r => (r.saved && r.profile.updatedAt ? (
-        <div className="leading-tight"><span className="block tabular-nums text-ink-2">{formatDate(r.profile.updatedAt)}</span><span className="block text-2xs text-ink-3 truncate max-w-[160px] ml-auto">{r.profile.updatedBy}</span></div>
+        <div className="leading-tight">
+          <span className="block tabular-nums text-ink-2 text-xs">{formatDate(r.profile.updatedAt)}</span>
+          <span className="block text-2xs text-ink-3 truncate max-w-[130px] ml-auto">{r.profile.updatedBy}</span>
+        </div>
       ) : <span className="text-ink-3">—</span>),
     },
   ];
 
   return (
-    <Panel flush>
-      <div className="p-4 border-b border-line flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex-1">
-          <FilterBar
-            search={{ value: search, onChange: setSearch, placeholder: 'Tên nhãn, ngành hàng, Account PIC' }}
-            chips={<Chips items={chips} value={filter} onChange={setFilter} />}
-            resultCount={search.trim() ? visible.length : undefined}
-          />
-        </div>
-        {isSyncing && (
-          <div className="flex items-center gap-1.5 text-xs text-ink-3 shrink-0 self-end sm:self-auto py-1">
-            <Loader2 className="w-3.5 h-3.5 animate-spin text-ink-3" />
-            <span>Đang đồng bộ hồ sơ…</span>
+    <div className="space-y-4">
+      <StatRow>
+        <Stat
+          label="Thương hiệu & Gian hàng B2C"
+          value={`${rows.length} nhãn · ${kpiSummary.totalStores} gian`}
+          note="Phạm vi B2C phụ trách = 1 (TikTok, Shopee, Lazada)"
+        />
+        <Stat
+          label="Tổng hạn mức Order Net tháng"
+          value={formatVndShort(kpiSummary.totalBudgetNet)}
+          note={`Thực tế đã duyệt chi: ${formatVndShort(kpiSummary.totalSpentNet)}`}
+          tone={kpiSummary.totalSpentNet > kpiSummary.totalBudgetNet ? 'critical' : 'positive'}
+        />
+        <Stat
+          label="Độ phủ hồ sơ thương hiệu"
+          value={`${kpiSummary.completeCount}/${rows.length} nhãn`}
+          note="Đủ 7/7 hạng mục (USP, SKU, Từ cấm, Ratecard, Pháp lý, FAQ)"
+          tone="positive"
+        />
+        <Stat
+          label="Kho tệp R2 & Giấy tờ pháp lý"
+          value={`${kpiSummary.totalDocs} tài liệu · ${kpiSummary.totalLegal} giấy phép`}
+          note={kpiSummary.uploadedFiles > 0 ? `${kpiSummary.uploadedFiles} tệp lưu trực tiếp trên Cloudflare R2` : 'Sẵn sàng tải tệp PDF, PPTX, Ảnh, DOCX lên Cloudflare R2'}
+        />
+      </StatRow>
+
+      <Panel flush>
+        <div className="p-4 border-b border-line flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex-1">
+            <FilterBar
+              search={{ value: search, onChange: setSearch, placeholder: 'Tìm tên nhãn, mã brand, ngành hàng, Account/Booking PIC…' }}
+              chips={<Chips items={chips} value={filter} onChange={setFilter} />}
+              resultCount={search.trim() ? visible.length : undefined}
+            />
           </div>
-        )}
-      </div>
-      <DataTable
-        columns={columns}
-        rows={visible.slice((page - 1) * 20, page * 20)}
-        rowKey={r => r.key}
-        onRowClick={r => setOpenKey(r.key)}
-        empty={<EmptyState title="Không có nhãn hàng khớp" description="Đổi bộ lọc hoặc tìm bằng tên khác." />}
-      />
-      <Pagination page={page} pageSize={20} total={visible.length} onPageChange={setPage} />
-    </Panel>
+          {isSyncing && (
+            <div className="flex items-center gap-1.5 text-xs text-ink-3 shrink-0 self-end sm:self-auto py-1">
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-ink-3" />
+              <span>Đang đồng bộ hồ sơ…</span>
+            </div>
+          )}
+        </div>
+        <DataTable
+          columns={columns}
+          rows={visible.slice((page - 1) * 20, page * 20)}
+          rowKey={r => r.key}
+          onRowClick={r => setOpenKey(r.key)}
+          empty={<EmptyState title="Không có nhãn hàng khớp" description="Đổi bộ lọc hoặc tìm bằng tên khác." />}
+        />
+        <Pagination page={page} pageSize={20} total={visible.length} onPageChange={setPage} />
+      </Panel>
+    </div>
   );
 }

@@ -95,7 +95,8 @@ export function validateAndSanitizeFile(originalName: string, byteLength: number
   const baseName = path.basename(trimmed, path.extname(trimmed))
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
-    .replace(/đ/gi, 'd')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D')
     .replace(/[^a-zA-Z0-9._-]+/g, '-')
     .replace(/^-+|-+$/g, '')
     .slice(0, 80) || 'tai-lieu';

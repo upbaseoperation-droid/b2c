@@ -140,7 +140,7 @@ export const CtvManagementView: React.FC<CtvManagementViewProps> = ({
     email: '',
     role: 'ALL_IN_ONE' as ContributorRole,
     niche: 'Mẹ & Bé, Chăm sóc da',
-    contentPic: 'Lê Phương Thảo',
+    contentPic: 'Quỳnh Như',
     channelLink: '',
     unitRateAllInOne: 1500000,
     monthlyCapacityVideos: 12,

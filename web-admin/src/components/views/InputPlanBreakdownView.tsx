@@ -62,7 +62,8 @@ import {
   PlanDiscussionMessage,
   PlanDiscussionRole,
   MonthlyPlanStatus,
-  StorePortfolioItem
+  StorePortfolioItem,
+  PlanVersionSnapshot
 } from '../../lib/types';
 import { 
   BENCHMARK_COSTS, 
@@ -75,9 +76,15 @@ import {
 } from '../../lib/inputPlanDefaults';
 import { exportInputPlanStudioToExcel } from '../../lib/excelExport';
 import { MonthlyPlanHub } from './MonthlyPlanHub';
-import { INITIAL_MONTHLY_PLANS } from '../../lib/monthlyPlanData';
+import {
+  INITIAL_MONTHLY_PLANS,
+  getPlanVersionSnapshots,
+  suggestNextVersionCode,
+  enrichPlanWithVersions,
+} from '../../lib/monthlyPlanData';
 import { useMonthlyPlanSync } from '../../lib/useMonthlyPlanSync';
 import { PlanApprovalStepper, deriveSignOff } from './PlanApprovalStepper';
+import { PlanHistoryModal } from './PlanHistoryModal';
 import { PlanChatDrawer, PlanChatButton } from './PlanChatDrawer';
 import { usePlanChat } from '../../lib/usePlanChat';
 import { PlanSyncBadge } from './PlanSyncBadge';
@@ -418,9 +425,62 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
   const [showApproveConfirm, setShowApproveConfirm] = useState(false);
   const [showRejectConfirm, setShowRejectConfirm] = useState(false);
   const [isApprovalDetailOpen, setIsApprovalDetailOpen] = useState(false);
+  const [isVersionHistoryModalOpen, setIsVersionHistoryModalOpen] = useState(false);
 
   const notify = (msg: string) => {
     if (onNotify) onNotify(msg);
+  };
+
+  // Chuyển đổi phiên bản kế hoạch ngay trong tháng (v1.0 <-> v1.1 <-> v1.2...)
+  const handleSwitchVersionInStudio = (snap: PlanVersionSnapshot) => {
+    if (snap.versionCode === (planState.currentVersionCode || 'v1.0')) return;
+    const allSnapshots = getPlanVersionSnapshots(planState);
+    const updatedSnapshots = allSnapshots.map(s =>
+      s.versionCode === (planState.currentVersionCode || 'v1.0')
+        ? {
+            ...s,
+            totalTargetBudget: planState.totalTargetBudget,
+            budgetAdsTotal: planState.budgetAdsTotal || 0,
+            totalTargetContents: planState.totalTargetContents,
+            targetGmv: planState.targetGmv,
+            items: JSON.parse(JSON.stringify(planState.items || [])),
+          }
+        : s
+    );
+
+    const budgetRatio =
+      planState.totalTargetBudget > 0 ? snap.totalTargetBudget / planState.totalTargetBudget : 1;
+    const restoredItems =
+      snap.items && snap.items.length > 0
+        ? JSON.parse(JSON.stringify(snap.items))
+        : (planState.items || []).map(item => {
+            const nextQty = Math.max(0, Math.round(item.qty * budgetRatio));
+            const nextBudget = Math.round(item.totalBudget * budgetRatio);
+            return {
+              ...item,
+              qty: nextQty,
+              totalBudget: nextBudget,
+              targetGmv: Math.round(nextBudget * (item.expectedRoiMultiplier || 1)),
+            };
+          });
+
+    const nextPlanState: InputPlanBreakdownState = {
+      ...planState,
+      currentVersionCode: snap.versionCode,
+      totalTargetBudget: snap.totalTargetBudget,
+      budgetAdsTotal: snap.budgetAdsTotal ?? planState.budgetAdsTotal,
+      budgetAffiliate: snap.budgetAffiliate ?? planState.budgetAffiliate,
+      budgetSelfChannel: snap.budgetSelfChannel ?? planState.budgetSelfChannel,
+      totalTargetContents: snap.totalTargetContents,
+      targetGmv: snap.targetGmv,
+      notes: snap.changeReason || planState.notes,
+      items: restoredItems,
+      versionSnapshots: updatedSnapshots,
+    };
+
+    setPlanState(nextPlanState);
+    setMonthlyPlans(prev => prev.map(p => (p.id === nextPlanState.id ? nextPlanState : p)));
+    notify(`Đã chuyển sang xem & làm việc trên phiên bản ${snap.versionCode} (${planState.month}).`);
   };
 
   // ĐỒNG BỘ DATABASE: danh sách hiệu lực = danh sách tháng + bản đang mở trong Studio
@@ -432,8 +492,11 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
     effectivePlans,
     onNotify,
     onLoaded: (plans) => {
-      setMonthlyPlans(plans);
-      setPlanState(prev => plans.find(p => p.id === prev.id) || plans[0] || prev);
+      const enriched = plans.map((p, idx) =>
+        p.versionSnapshots && p.versionSnapshots.length > 1 ? p : enrichPlanWithVersions(p, idx)
+      );
+      setMonthlyPlans(enriched);
+      setPlanState(prev => enriched.find(p => p.id === prev.id) || enriched[0] || prev);
     },
     onReplacePlan: (plan) => {
       setMonthlyPlans(prev => prev.map(p => (p.id === plan.id ? plan : p)));
@@ -1306,6 +1369,13 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
     { key: 'media', label: 'Media nhận Ads', done: headerSignOff.media.confirmed, warn: false },
     { key: 'lead', label: 'Trưởng phòng duyệt', done: headerSignOff.leadB2c.confirmed || isPlanLocked, warn: false }
   ];
+  const studioVersionSnapshots = getPlanVersionSnapshots(planState);
+  const activeVersionCode = planState.currentVersionCode || 'v1.0';
+  const baselineSnapshot = studioVersionSnapshots[0];
+  const activeSnapshot = studioVersionSnapshots.find(s => s.versionCode === activeVersionCode) || studioVersionSnapshots[studioVersionSnapshots.length - 1];
+  const deltaBudgetVsBaseline = baselineSnapshot ? (planState.totalTargetBudget || 0) - (baselineSnapshot.totalTargetBudget || 0) : 0;
+  const deltaQtyVsBaseline = baselineSnapshot ? (planState.totalTargetContents || 0) - (baselineSnapshot.totalTargetContents || 0) : 0;
+
   const openApprovalDetail = () => {
     setIsApprovalDetailOpen(true);
     setTimeout(() => document.getElementById('plan-approval-detail')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
@@ -1351,7 +1421,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                 >
                   {monthlyPlans.map(p => (
                     <option key={p.id} value={p.id}>
-                      [{p.month}] {p.brandName}
+                      [{p.month}] {p.brandName} ({p.currentVersionCode || 'v1.0'})
                     </option>
                   ))}
                 </select>
@@ -1360,11 +1430,19 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                 <h2 className="text-base font-semibold text-slate-900 truncate" title={planState.title}>
                   {planState.title}
                 </h2>
-                <span className={`shrink-0 text-2xs px-2 py-0.5 rounded-full font-semibold border ${
-                  isPlanLocked ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'
-                }`}>
-                  {planState.currentVersionCode || 'v1.0'} • {isPlanLocked ? 'Đã chốt' : 'Bản nháp'}
-                </span>
+                <button
+                  type="button"
+                  onClick={() => setIsVersionHistoryModalOpen(true)}
+                  className={`shrink-0 inline-flex items-center gap-1 text-2xs px-2.5 py-0.5 rounded-full font-semibold border transition cursor-pointer ${
+                    isPlanLocked
+                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+                      : 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
+                  }`}
+                  title="Bấm để mở quản lý & so sánh các phiên bản trong tháng"
+                >
+                  <Layers className="w-3 h-3" />
+                  <span>{activeVersionCode} • {studioVersionSnapshots.length} phiên bản • {isPlanLocked ? 'Đã chốt' : 'Bản nháp'}</span>
+                </button>
               </div>
             </div>
           </div>
@@ -1394,6 +1472,16 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
               Lưu
             </button>
 
+            <button
+              type="button"
+              onClick={() => setIsVersionHistoryModalOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 font-semibold text-xs transition cursor-pointer"
+              title="Quản lý, so sánh và tạo phiên bản kế hoạch mới trong tháng"
+            >
+              <Layers className="w-3.5 h-3.5" />
+              Phiên bản ({studioVersionSnapshots.length})
+            </button>
+
             <PlanChatButton unreadCount={planChat.unreadCount} onClick={() => setIsChatOpen(true)} />
 
             {/* Menu hành động phụ */}
@@ -1412,6 +1500,11 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                   <div className="fixed inset-0 z-30" onClick={() => setIsActionMenuOpen(false)} />
                   <div role="menu" className="absolute right-0 mt-1.5 w-64 z-40 bg-white border border-slate-200 rounded-xl shadow-lg py-1 text-xs">
                     {[
+                      {
+                        label: 'Quản lý & Tạo phiên bản tháng',
+                        icon: <Layers className="w-3.5 h-3.5" />,
+                        onClick: () => setIsVersionHistoryModalOpen(true),
+                      },
                       {
                         label: 'Phân bổ cho team',
                         icon: <Users className="w-3.5 h-3.5" />,
@@ -1560,6 +1653,86 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
               )}
             </div>
           )}
+        </div>
+
+        {/* Hàng 2.5: THANH QUẢN LÝ & CHUYỂN ĐỔI CÁC PHIÊN BẢN KẾ HOẠCH TRONG THÁNG */}
+        <div className="flex flex-wrap items-center justify-between gap-2.5 px-5 py-2.5 border-t border-slate-100 bg-blue-50/35 text-xs">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="inline-flex items-center gap-1 text-2xs font-semibold text-slate-600">
+              <Layers className="w-3.5 h-3.5 text-blue-600" />
+              Phiên bản kế hoạch tháng {planState.month}:
+            </span>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {studioVersionSnapshots.map((snap, idx) => {
+                const isCurrent = snap.versionCode === activeVersionCode;
+                const snapDelta = idx > 0 && baselineSnapshot
+                  ? (snap.totalTargetBudget || 0) - (baselineSnapshot.totalTargetBudget || 0)
+                  : 0;
+                return (
+                  <button
+                    key={snap.versionCode}
+                    type="button"
+                    onClick={() => handleSwitchVersionInStudio(snap)}
+                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold border transition cursor-pointer ${
+                      isCurrent
+                        ? 'bg-blue-600 text-white border-blue-600 shadow-2xs'
+                        : 'bg-white text-slate-700 border-slate-200 hover:border-blue-300 hover:text-blue-700'
+                    }`}
+                    title={`${snap.versionCode} (${snap.versionName}): ${snap.changeReason || ''} (${formatVndShort(snap.totalTargetBudget)} • ${snap.totalTargetContents} video)`}
+                  >
+                    <span>{snap.versionCode}</span>
+                    <span className={`text-2xs font-normal ${isCurrent ? 'text-blue-100' : 'text-slate-500'}`}>
+                      {idx === 0 ? 'Bản gốc' : `Đợt ${idx + 1}`}
+                    </span>
+                    <span className={`text-2xs font-mono ${isCurrent ? 'text-white' : 'text-slate-700'}`}>
+                      {formatVndShort(snap.totalTargetBudget)}
+                    </span>
+                    {snapDelta !== 0 && (
+                      <span
+                        className={`text-2xs px-1 py-0.2 rounded font-semibold ${
+                          isCurrent
+                            ? 'bg-blue-500 text-white'
+                            : snapDelta > 0
+                            ? 'bg-emerald-50 text-emerald-700'
+                            : 'bg-amber-50 text-amber-700'
+                        }`}
+                      >
+                        {snapDelta > 0 ? `+${formatVndShort(snapDelta)}` : formatVndShort(snapDelta)}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+            {(activeSnapshot?.changeReason || activeSnapshot?.versionName) && (
+              <span className="text-2xs text-slate-500 truncate max-w-md" title={activeSnapshot.changeReason || activeSnapshot.versionName}>
+                • {activeSnapshot.changeReason || activeSnapshot.versionName}
+              </span>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2 ml-auto">
+            {studioVersionSnapshots.length > 1 && (deltaBudgetVsBaseline !== 0 || deltaQtyVsBaseline !== 0) && (
+              <span className="text-2xs font-semibold px-2 py-1 rounded-md bg-white border border-slate-200 text-slate-700 tabular-nums">
+                So với v1.0:{' '}
+                <strong className={deltaBudgetVsBaseline >= 0 ? 'text-emerald-700' : 'text-amber-700'}>
+                  {deltaBudgetVsBaseline >= 0 ? `+${formatVndShort(deltaBudgetVsBaseline)}` : formatVndShort(deltaBudgetVsBaseline)}
+                </strong>
+                {' • '}
+                <strong className={deltaQtyVsBaseline >= 0 ? 'text-blue-700' : 'text-amber-700'}>
+                  {deltaQtyVsBaseline >= 0 ? `+${deltaQtyVsBaseline}` : deltaQtyVsBaseline} video
+                </strong>
+              </span>
+            )}
+            <button
+              type="button"
+              onClick={() => setIsVersionHistoryModalOpen(true)}
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white hover:bg-blue-50 text-blue-700 border border-blue-200 font-semibold text-xs transition cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Tạo bản mới / So sánh ({studioVersionSnapshots.length})
+            </button>
+          </div>
         </div>
 
         {/* Hàng 3: Tiến độ duyệt gọn 1 dòng */}
@@ -3629,6 +3802,31 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
           notify(`Đã gửi yêu cầu chỉnh sửa cho nhân viên!`);
         }}
         onCancel={() => setShowRejectConfirm(false)}
+      />
+
+      {/* Modal quản lý & so sánh các phiên bản kế hoạch trong tháng */}
+      <PlanHistoryModal
+        plan={planState}
+        isOpen={isVersionHistoryModalOpen}
+        initialTab="VERSION_HISTORY"
+        currentUser={currentUser}
+        onClose={() => setIsVersionHistoryModalOpen(false)}
+        onSendMessage={(planId, msg) => {
+          handleSendMessageToPlan(planId, msg);
+        }}
+        onStatusChange={(planId, newStatus, log, note) => {
+          handleStatusChangeForPlan(planId, newStatus, log, note);
+        }}
+        onUpdatePlan={(updated) => {
+          setPlanState(prev => ({ ...prev, ...updated }));
+          setMonthlyPlans(prev => prev.map(p => (p.id === planState.id ? { ...p, ...updated } : p)));
+        }}
+        onOpenPlanInStudio={(updatedPlan) => {
+          setPlanState(updatedPlan);
+          setMonthlyPlans(prev => prev.map(p => (p.id === updatedPlan.id ? updatedPlan : p)));
+          setIsVersionHistoryModalOpen(false);
+        }}
+        onNotify={notify}
       />
 
       {/* Khung trao đổi 4 bên (trượt từ bên phải, không chiếm chỗ bảng phân rã) */}

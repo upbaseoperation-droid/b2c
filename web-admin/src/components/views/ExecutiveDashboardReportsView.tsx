@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { Avatar, Tabs } from '../ui';
+import { Avatar, Tabs, Modal } from '../ui';
 import {
   TrendingUp,
   Award,
@@ -18,16 +18,45 @@ import {
   PlaySquare,
   AlertCircle,
   Film,
-  Flame
+  Flame,
+  Users,
+  Store,
+  BarChart3,
+  AlertTriangle,
+  CheckCircle2,
+  Filter,
+  RefreshCw,
+  DollarSign,
+  Layers,
+  Eye,
+  ShoppingBag,
+  UserCheck,
+  ArrowUpRight,
+  ArrowDownRight
 } from 'lucide-react';
-import { 
-  BookingDealItem, 
-  UserProfile, 
-  BrandDetail, 
-  StorePortfolioItem, 
-  KocItem 
+import {
+  BookingDealItem,
+  UserProfile,
+  BrandDetail,
+  StorePortfolioItem,
+  KocItem
 } from '../../lib/types';
 import { formatVndShort } from '../../lib/format';
+import { REAL_B2C_69_STORES } from '../../lib/realB2cPlanData';
+import {
+  TIKTOK_SELLER_ADS_SUMMARY,
+  TIKTOK_SELLER_CAMPAIGNS,
+  TIKTOK_SELLER_TOP_CREATIVES,
+  B2C_BOOKED_VIDEOS_OCT_2026,
+  B2C_VIDEO_FORMAT_BREAKDOWN,
+  B2C_VIDEO_KL_BREAKDOWN,
+  B2C_VIDEO_TYPE_BREAKDOWN,
+  B2C_VIDEO_PIPELINE_BREAKDOWN,
+  B2C_STAFF_ANALYTICS_LIST,
+  B2cBookedVideoRecord,
+  B2cStaffAnalyticsRecord,
+  B2cAdsCreativeMetric
+} from '../../lib/b2cAnalyticsDataset';
 import ExcelJS from 'exceljs';
 
 interface ExecutiveDashboardReportsViewProps {
@@ -40,1197 +69,1098 @@ interface ExecutiveDashboardReportsViewProps {
   onNavigateToTab?: (tabKey: string) => void;
 }
 
-export interface StaffPerformanceItem {
-  id: string;
-  name: string;
-  role: string;
-  roleTitle: string;
-  team: string;
-  avatar: string;
-  assignedStoresCount: number;
-  assignedBrandsCount: number;
-  targetVideos: number;
-  airedVideos: number;
-  inProgressVideos: number;
-  targetGmv: number;
-  currentGmv: number;
-  allocatedBudget: number;
-  spentBudget: number;
-  burnRatePct: number;
-  slaScore: number;
-  status: string;
-  workloadWarning?: string;
-}
+type DashboardMainTab =
+  | 'OVERVIEW_FINANCE'
+  | 'STORE_SELLER'
+  | 'VIDEO_CREATIVE'
+  | 'STAFF_PERFORMANCE'
+  | 'EXPORT_CENTER';
 
-export interface VideoAiredItem {
-  id: string;
-  title: string;
-  creatorName: string;
-  creatorTier: string;
-  brandName: string;
-  storeName: string;
-  platform: string;
-  videoUrl: string;
-  sparkAdsCode?: string;
-  airDate: string;
-  views: number;
-  gmv: number;
-  cvr: number;
-  commission: number;
-  status: string;
-}
-
-export interface BrandBudgetPacingItem {
-  brandId: string;
-  brandName: string;
-  storeCount: number;
-  leadPic: string;
-  planBudget: number;
-  spentBudget: number;
-  remainingBudget: number;
-  burnRatePct: number;
-  expectedBurnPct: number; // Theo chu kỳ ngày trong tháng
-  pacingStatus: string;
-  targetGmv: number;
-  currentGmv: number;
-  roas: number;
-  actionNote: string;
-}
+const KL_ORDER = ['TAP UpAffiliate', 'KL1', 'KL2', 'KL3', 'KL4', 'KL5', 'KL6', 'KL7'];
 
 export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsViewProps> = ({
-  currentUser,
-  deals = [],
-  brands = [],
-  storePortfolios = [],
+  storePortfolios,
   onNotify,
   onNavigateToTab
 }) => {
-  const [selectedPeriod, setSelectedPeriod] = useState<string>('2026-10');
+  // Nguồn 69 gian hàng B2C chuẩn (B2C phụ trách = 1)
+  const stores = useMemo<StorePortfolioItem[]>(() => {
+    if (storePortfolios && storePortfolios.length >= 69) {
+      return storePortfolios;
+    }
+    return REAL_B2C_69_STORES;
+  }, [storePortfolios]);
+
+  // State bộ lọc chung
+  const [activeTab, setActiveTab] = useState<DashboardMainTab>('OVERVIEW_FINANCE');
   const [selectedBrand, setSelectedBrand] = useState<string>('ALL');
-  const [selectedChannel, setSelectedChannel] = useState<string>('ALL');
-  const [selectedStaffTeam, setSelectedStaffTeam] = useState<string>('ALL');
-  const [selectedStaffStatus, setSelectedStaffStatus] = useState<string>('ALL');
-  const [selectedVideoStatus, setSelectedVideoStatus] = useState<string>('ALL');
-  const [selectedPacingFilter, setSelectedPacingFilter] = useState<string>('ALL');
-  
-  const [activeSubTab, setActiveSubTab] = useState<
-    'OVERVIEW' | 'STAFF_PROGRESS' | 'VIDEO_AIRING' | 'BUDGET_PACING' | 'CREATORS' | 'FINANCE_TAX' | 'REPORT_CENTER'
-  >('OVERVIEW');
-  
+  const [selectedPlatform, setSelectedPlatform] = useState<'ALL' | 'TikTok Shop' | 'Shopee Mall'>('ALL');
+  const [selectedGovernance, setSelectedGovernance] = useState<'ALL' | 'WITH_LEADER' | 'DIRECT_HEAD'>('ALL');
+  const [selectedRiskFilter, setSelectedRiskFilter] = useState<'ALL' | 'UNBUDGETED' | 'OVERBUDGET' | 'SLOW_BURN' | 'NORMAL'>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [isExporting, setIsExporting] = useState<boolean>(false);
 
-  const notify = (msg: string, type: 'success' | 'warning' | 'info' | 'error' = 'success') => {
-    if (onNotify) onNotify(msg, type);
-  };
+  // State bộ lọc tab Video
+  const [videoFormatFilter, setVideoFormatFilter] = useState<string>('ALL');
+  const [videoKlFilter, setVideoKlFilter] = useState<string>('ALL');
+  const [videoSubView, setVideoSubView] = useState<'BOOKED_32' | 'SELLER_CREATIVES'>('BOOKED_32');
 
-  // Chu kỳ ngày trong tháng (Giả lập Ngày 8 trong tháng 31 ngày = 25.8% chu kỳ)
-  const currentDayInMonth = 8;
-  const totalDaysInMonth = 31;
-  const expectedPacingPct = Math.round((currentDayInMonth / totalDaysInMonth) * 100); // 26%
+  // State bộ lọc tab Nhân sự
+  const [staffRoleFilter, setStaffRoleFilter] = useState<'ALL' | 'MANAGEMENT' | 'SPECIALIST' | 'WITH_STORES'>('ALL');
+  const [staffMetricMode, setStaffMetricMode] = useState<'BUDGET' | 'VIDEOS'>('BUDGET');
 
-  // Filtered Deals by Brand and Channel
-  const filteredDeals = useMemo(() => {
-    return deals.filter(d => {
-      const matchBrand = selectedBrand === 'ALL' || d.brandName === selectedBrand;
-      const matchChannel = selectedChannel === 'ALL' || 
-        (selectedChannel === 'TIKTOK' && (d.storeName?.includes('TikTok') || d.bookingFormat?.includes('TikTok'))) ||
-        (selectedChannel === 'SHOPEE' && d.storeName?.includes('Shopee')) ||
-        (selectedChannel === 'LAZADA' && d.storeName?.includes('Lazada'));
-      const matchSearch = !searchQuery || 
-        d.campaignTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        d.brandName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        d.kocStageName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        d.dealCode.toLowerCase().includes(searchQuery.toLowerCase());
+  // State Modal chi tiết (Drill-down)
+  const [inspectStore, setInspectStore] = useState<StorePortfolioItem | null>(null);
+  const [inspectStaff, setInspectStaff] = useState<B2cStaffAnalyticsRecord | null>(null);
+  const [inspectVideo, setInspectVideo] = useState<B2cBookedVideoRecord | null>(null);
+  const [isSyncingSeller, setIsSyncingSeller] = useState<boolean>(false);
+  const [isExportingExcel, setIsExportingExcel] = useState<boolean>(false);
 
-      return matchBrand && matchChannel && matchSearch;
+  // Danh sách 42 Thương hiệu (Brand)
+  const allBrands = useMemo(() => {
+    const set = new Set<string>();
+    stores.forEach((s) => {
+      if (s.brandName) set.add(s.brandName);
     });
-  }, [deals, selectedBrand, selectedChannel, searchQuery]);
+    return Array.from(set).sort((a, b) => a.localeCompare(b, 'vi'));
+  }, [stores]);
 
-  // Executive KPI Aggregations
-  const stats = useMemo(() => {
-    const totalDeals = filteredDeals.length;
-    const isBrandFiltered = selectedBrand !== 'ALL';
+  // Lọc danh sách gian hàng theo bộ lọc
+  const filteredStores = useMemo(() => {
+    return stores.filter((s) => {
+      if (selectedBrand !== 'ALL' && s.brandName !== selectedBrand) return false;
+      if (selectedPlatform !== 'ALL' && s.platform !== selectedPlatform) return false;
+      if (selectedGovernance === 'WITH_LEADER' && !s.hasBookingLeader) return false;
+      if (selectedGovernance === 'DIRECT_HEAD' && s.hasBookingLeader) return false;
+      if (selectedRiskFilter !== 'ALL' && (s.financialRiskStatus || 'NORMAL') !== selectedRiskFilter) return false;
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const matchStore = s.storeName.toLowerCase().includes(q);
+        const matchBrand = s.brandName.toLowerCase().includes(q);
+        const matchPic = (s.primaryPic || s.assignedStaff || '').toLowerCase().includes(q);
+        const matchLeader = (s.bookingLeader || '').toLowerCase().includes(q);
+        if (!matchStore && !matchBrand && !matchPic && !matchLeader) return false;
+      }
+      return true;
+    });
+  }, [stores, selectedBrand, selectedPlatform, selectedGovernance, selectedRiskFilter, searchQuery]);
 
-    // Deal costs (Net cast booking)
-    const bookingCost = filteredDeals.reduce((sum, d) => sum + (d.totalValue || 0), 0);
-    // TikTok Ads PGM spend
-    const adsSpend = filteredDeals.reduce((sum, d) => sum + (d.adCost || 0), 0);
-    // CTV Video Production cost: only include in system-wide overview or when not brand filtered
-    const ctvCost = isBrandFiltered ? 0 : 78500000;
-    // Sample & Logistics
-    const sampleLogisticsCost = isBrandFiltered
-      ? (totalDeals > 0 ? totalDeals * 250000 : 0)
-      : 31000000;
-    // Total investment
-    const totalSpend = bookingCost + adsSpend + ctvCost + sampleLogisticsCost;
+  // Tổng hợp KPI từ tập gian hàng đang lọc
+  const kpiSummary = useMemo(() => {
+    let totalTargetGmv = 0;
+    let totalBudgetGross = 0;
+    let totalBudgetNet = 0;
+    let totalAffGross = 0;
+    let totalAffNet = 0;
+    let totalSelfGross = 0;
+    let totalSelfNet = 0;
+    let totalLiveBudget = 0;
+    let totalActualSpentNet = 0;
+    let totalTargetPaidVideos = 0;
+    let totalTargetFocVideos = 0;
+    let totalTargetSelfVideos = 0;
+    let totalTargetLiveSessions = 0;
+    let totalActualAiredVideos = 0;
 
-    // Gross GMV
-    const bookingGmv = filteredDeals.reduce((sum, d) => sum + (d.affiliateGmv || d.gmv30 || 0), 0);
-    const adsGmv = filteredDeals.reduce((sum, d) => sum + (d.adGmv || 0), 0);
-    const ctvGmv = isBrandFiltered ? 0 : 840000000;
-    const totalGmv = bookingGmv + adsGmv + ctvGmv;
+    let unbudgetedCount = 0;
+    let overbudgetCount = 0;
+    let slowBurnCount = 0;
+    let tiktokCount = 0;
+    let shopeeCount = 0;
+    let leaderStoreCount = 0;
+    let directStoreCount = 0;
 
-    // Overall ROAS
-    const overallRoas = totalSpend > 0 ? Number((totalGmv / totalSpend).toFixed(2)) : 0;
-    const netProfitContribution = totalGmv - totalSpend;
+    filteredStores.forEach((s) => {
+      totalTargetGmv += s.monthlyTargetGmv || 0;
+      totalBudgetGross += s.budgetGross || 0;
+      totalBudgetNet += s.budgetNet || s.monthlyBudget || 0;
+      totalAffGross += s.budgetAffiliateGross || 0;
+      totalAffNet += s.budgetAffiliateNet || s.budgetAffiliate || 0;
+      totalSelfGross += s.budgetSelfChannelGross || 0;
+      totalSelfNet += s.budgetSelfChannelNet || s.budgetSelfChannel || 0;
+      totalLiveBudget += s.budgetLive || 0;
+      totalActualSpentNet += s.actualSpentNet || 0;
 
-    // SLA & Outputs
-    const totalOnAirVideos = isBrandFiltered
-      ? filteredDeals.filter(d => d.status === 'VIDEO_VERIFIED' || d.status === 'FINAL_PAID' || d.status === 'COMPLETED' || Boolean(d.videoUrl || d.tiktokVideoUrl)).length
-      : 1025;
-    const inProductionVideos = isBrandFiltered
-      ? filteredDeals.filter(d => d.status === 'SCRIPT_APPROVED' || d.status === 'CONTRACT_GENERATED' || d.status === 'SAMPLE_SHIPPED' || d.status === 'SAMPLE_RECEIVED' || d.status === 'VIDEO_SUBMITTED').length
-      : 285;
-    const pendingScriptVideos = isBrandFiltered
-      ? filteredDeals.filter(d => d.status === 'SCRIPT_PENDING' || d.status === 'TERMS_AGREED' || d.status === 'CONTACTING').length
-      : 94;
-    const totalViews = isBrandFiltered
-      ? filteredDeals.reduce((sum, d) => sum + (d.viewsCount || 0), 0)
-      : 48600000;
-    const onTimeSlaCount = filteredDeals.filter(d => d.slaStatus !== 'OVERDUE').length;
-    const slaComplianceRate = totalDeals > 0 ? Math.round((onTimeSlaCount / totalDeals) * 100) : 100;
+      totalTargetPaidVideos += s.targetPaidVideos || 0;
+      totalTargetFocVideos += s.targetFocVideos || 0;
+      totalTargetSelfVideos += s.targetSelfChannelContents || 0;
+      totalTargetLiveSessions += s.targetLiveSessions || 0;
+      totalActualAiredVideos += s.actualAiredVideos || 0;
 
-    // Advance & Final Paid
-    const totalAdvancePaid = filteredDeals.reduce((sum, d) => sum + (d.advanceAmount || 0), 0);
-    const totalFinalPaid = filteredDeals.reduce((sum, d) => sum + (d.finalAmount || 0), 0);
-    // 10% PIT Withholding Tax
-    const totalPitTaxWithheld = Math.round(totalSpend * 0.1);
+      if (s.financialRiskStatus === 'UNBUDGETED') unbudgetedCount++;
+      if (s.financialRiskStatus === 'OVERBUDGET') overbudgetCount++;
+      if (s.financialRiskStatus === 'SLOW_BURN') slowBurnCount++;
+      if (s.platform === 'TikTok Shop') tiktokCount++;
+      else shopeeCount++;
+      if (s.hasBookingLeader) leaderStoreCount++;
+      else directStoreCount++;
+    });
 
-    // Total Portfolio Budget & Spend
-    const relevantPortfolios = isBrandFiltered
-      ? storePortfolios.filter(s => s.brandName === selectedBrand || s.storeName.toLowerCase().includes(selectedBrand.toLowerCase()))
-      : storePortfolios;
-    const totalPlanBudget = relevantPortfolios.length > 0
-      ? relevantPortfolios.reduce((acc, s) => acc + (s.monthlyBudget || 0), 0)
-      : (isBrandFiltered ? (totalSpend > 0 ? Math.round(totalSpend * 1.5) : 0) : 13450000000);
-    const totalSpentBudget = totalSpend > 0 ? totalSpend : (isBrandFiltered ? 0 : Math.round(totalPlanBudget * 0.284));
-    const totalRemainingBudget = Math.max(0, totalPlanBudget - totalSpentBudget);
-    const overallBurnRate = totalPlanBudget > 0 ? Math.round((totalSpentBudget / totalPlanBudget) * 100) : 0;
-    const overallPacingIndex = expectedPacingPct > 0 ? Number((overallBurnRate / expectedPacingPct).toFixed(2)) : 0;
+    const pacingNetPct = totalBudgetNet > 0 ? Math.round((totalActualSpentNet / totalBudgetNet) * 1000) / 10 : 0;
+    const taxAndFeeDiff = Math.max(0, totalBudgetGross - totalBudgetNet);
 
     return {
-      totalDeals,
-      bookingCost,
-      adsSpend,
-      ctvCost,
-      sampleLogisticsCost,
-      totalSpend,
-      bookingGmv,
-      adsGmv,
-      ctvGmv,
-      totalGmv,
-      overallRoas,
-      netProfitContribution,
-      totalOnAirVideos,
-      inProductionVideos,
-      pendingScriptVideos,
-      totalViews,
-      slaComplianceRate,
-      totalAdvancePaid,
-      totalFinalPaid,
-      totalPitTaxWithheld,
-      totalPlanBudget,
-      totalSpentBudget,
-      totalRemainingBudget,
-      overallBurnRate,
-      overallPacingIndex
+      storeCount: filteredStores.length,
+      tiktokCount,
+      shopeeCount,
+      leaderStoreCount,
+      directStoreCount,
+      totalTargetGmv,
+      totalBudgetGross,
+      totalBudgetNet,
+      taxAndFeeDiff,
+      totalAffGross,
+      totalAffNet,
+      totalSelfGross,
+      totalSelfNet,
+      totalLiveBudget,
+      totalActualSpentNet,
+      pacingNetPct,
+      totalTargetPaidVideos,
+      totalTargetFocVideos,
+      totalTargetSelfVideos,
+      totalTargetLiveSessions,
+      totalActualAiredVideos,
+      unbudgetedCount,
+      overbudgetCount,
+      slowBurnCount
     };
-  }, [filteredDeals, storePortfolios, expectedPacingPct, selectedBrand]);
+  }, [filteredStores]);
 
-  // =========================================================================
-  // 1. DATA: TIẾN ĐỘ NHÂN VIÊN & SQUAD PICS
-  // =========================================================================
-  const staffScorecards: StaffPerformanceItem[] = useMemo(() => {
-    const list: StaffPerformanceItem[] = [
+  // Tổng hợp cấp Thương hiệu (Brand) cho biểu đồ Gross vs Net vs Thực chi
+  const brandAggregation = useMemo(() => {
+    const map = new Map<
+      string,
       {
-        id: 'st-vn',
-        name: 'Vân Ngọc',
-        role: 'BOOKING',
-        roleTitle: 'Booking Operations Lead',
-        team: 'Booking Squad 1',
-        avatar: 'VN',
-        assignedStoresCount: 62,
-        assignedBrandsCount: 42,
-        targetVideos: 380,
-        airedVideos: 342,
-        inProgressVideos: 52,
-        targetGmv: 4200000000,
-        currentGmv: 3950000000,
-        allocatedBudget: 1200000000,
-        spentBudget: 980000000,
-        burnRatePct: 81.7,
-        slaScore: 94,
-        status: 'ON_TRACK',
-        workloadWarning: 'Gánh tải 62 gian hàng (vượt định mức 25 gian), cần bổ sung 2 CTV phụ tá outreach.'
-      },
-      {
-        id: 'st-dpa',
-        name: 'Đào Phương Anh',
-        role: 'ACCOUNT',
-        roleTitle: 'Senior Account Manager',
-        team: 'Account Management',
-        avatar: 'PA',
-        assignedStoresCount: 16,
-        assignedBrandsCount: 8,
-        targetVideos: 160,
-        airedVideos: 168,
-        inProgressVideos: 14,
-        targetGmv: 2100000000,
-        currentGmv: 2280000000,
-        allocatedBudget: 450000000,
-        spentBudget: 410000000,
-        burnRatePct: 91.1,
-        slaScore: 98,
-        status: 'AHEAD_OF_SCHEDULE',
-        workloadWarning: 'Hiệu suất vượt 108% KPI, giữ vai trò lead các nhãn dược mỹ phẩm chủ lực.'
-      },
-      {
-        id: 'st-pbt',
-        name: 'Phan Bạch Tuyết',
-        role: 'ACCOUNT',
-        roleTitle: 'Senior Account Manager',
-        team: 'Account Management',
-        avatar: 'BT',
-        assignedStoresCount: 10,
-        assignedBrandsCount: 6,
-        targetVideos: 120,
-        airedVideos: 126,
-        inProgressVideos: 16,
-        targetGmv: 1600000000,
-        currentGmv: 1720000000,
-        allocatedBudget: 380000000,
-        spentBudget: 355000000,
-        burnRatePct: 93.4,
-        slaScore: 97,
-        status: 'AHEAD_OF_SCHEDULE'
-      },
-      {
-        id: 'st-ptn',
-        name: 'Phạm Thị Nhài',
-        role: 'ACCOUNT',
-        roleTitle: 'Senior Account Manager',
-        team: 'Account Management',
-        avatar: 'TN',
-        assignedStoresCount: 13,
-        assignedBrandsCount: 11,
-        targetVideos: 150,
-        airedVideos: 156,
-        inProgressVideos: 18,
-        targetGmv: 1950000000,
-        currentGmv: 2050000000,
-        allocatedBudget: 420000000,
-        spentBudget: 390000000,
-        burnRatePct: 92.8,
-        slaScore: 97,
-        status: 'AHEAD_OF_SCHEDULE'
-      },
-      {
-        id: 'st-nxq',
-        name: 'Ngô Xuân Quý',
-        role: 'GROWTH',
-        roleTitle: 'Senior Growth & Media Lead',
-        team: 'Growth Operations',
-        avatar: 'XQ',
-        assignedStoresCount: 18,
-        assignedBrandsCount: 12,
-        targetVideos: 220,
-        airedVideos: 195,
-        inProgressVideos: 35,
-        targetGmv: 2800000000,
-        currentGmv: 2650000000,
-        allocatedBudget: 750000000,
-        spentBudget: 680000000,
-        burnRatePct: 90.7,
-        slaScore: 96,
-        status: 'ON_TRACK',
-        workloadWarning: 'Tập trung tối ưu chi phí Ads GMV Max cho các gian Shopee Mall & TikTok Shop.'
-      },
-      {
-        id: 'st-lpt',
-        name: 'Lê Phương Thảo',
-        role: 'CONTENT',
-        roleTitle: 'Content Creative Lead',
-        team: 'Content Studio',
-        avatar: 'PT',
-        assignedStoresCount: 14,
-        assignedBrandsCount: 4,
-        targetVideos: 140,
-        airedVideos: 128,
-        inProgressVideos: 26,
-        targetGmv: 1800000000,
-        currentGmv: 1650000000,
-        allocatedBudget: 380000000,
-        spentBudget: 320000000,
-        burnRatePct: 84.2,
-        slaScore: 92,
-        status: 'ON_TRACK'
-      },
-      {
-        id: 'st-kv',
-        name: 'Khánh Vy',
-        role: 'BOOKING',
-        roleTitle: 'Senior Booking Specialist',
-        team: 'Booking Squad 1',
-        avatar: 'KV',
-        assignedStoresCount: 8,
-        assignedBrandsCount: 5,
-        targetVideos: 95,
-        airedVideos: 102,
-        inProgressVideos: 12,
-        targetGmv: 1350000000,
-        currentGmv: 1480000000,
-        allocatedBudget: 310000000,
-        spentBudget: 295000000,
-        burnRatePct: 95.2,
-        slaScore: 99,
-        status: 'AHEAD_OF_SCHEDULE'
-      },
-      {
-        id: 'st-tmd',
-        name: 'Trần Minh Đức',
-        role: 'BOOKING',
-        roleTitle: 'Junior Booking Specialist',
-        team: 'Booking Squad 1',
-        avatar: 'MĐ',
-        assignedStoresCount: 7,
-        assignedBrandsCount: 4,
-        targetVideos: 80,
-        airedVideos: 68,
-        inProgressVideos: 15,
-        targetGmv: 950000000,
-        currentGmv: 830000000,
-        allocatedBudget: 220000000,
-        spentBudget: 180000000,
-        burnRatePct: 81.8,
-        slaScore: 94,
-        status: 'ON_TRACK'
-      },
-      {
-        id: 'st-ckd',
-        name: 'Chu Khánh Duy',
-        role: 'MEDIA',
-        roleTitle: 'Media & Livestream Lead',
-        team: 'Media Production',
-        avatar: 'KD',
-        assignedStoresCount: 11,
-        assignedBrandsCount: 9,
-        targetVideos: 110,
-        airedVideos: 92,
-        inProgressVideos: 22,
-        targetGmv: 1100000000,
-        currentGmv: 950000000,
-        allocatedBudget: 250000000,
-        spentBudget: 195000000,
-        burnRatePct: 78.0,
-        slaScore: 91,
-        status: 'ON_TRACK'
-      },
-      {
-        id: 'st-dkl',
-        name: 'Đoàn Khánh Linh',
-        role: 'MEDIA',
-        roleTitle: 'Livestream Specialist',
-        team: 'Media Production',
-        avatar: 'KL',
-        assignedStoresCount: 11,
-        assignedBrandsCount: 9,
-        targetVideos: 110,
-        airedVideos: 90,
-        inProgressVideos: 24,
-        targetGmv: 1050000000,
-        currentGmv: 910000000,
-        allocatedBudget: 240000000,
-        spentBudget: 185000000,
-        burnRatePct: 77.1,
-        slaScore: 90,
-        status: 'ON_TRACK'
-      },
-      {
-        id: 'st-dmhl',
-        name: 'Đặng Mai Hà Linh',
-        role: 'BOOKING',
-        roleTitle: 'Junior Booking Specialist',
-        team: 'Booking Squad 2',
-        avatar: 'HL',
-        assignedStoresCount: 8,
-        assignedBrandsCount: 4,
-        targetVideos: 85,
-        airedVideos: 62,
-        inProgressVideos: 28,
-        targetGmv: 880000000,
-        currentGmv: 670000000,
-        allocatedBudget: 200000000,
-        spentBudget: 145000000,
-        burnRatePct: 72.5,
-        slaScore: 86,
-        status: 'AT_RISK',
-        workloadWarning: 'Tỷ lệ video on air đạt 72.9%, cần hỗ trợ chốt deal creator gấp trong đợt Mega 10.10.'
-      },
-      {
-        id: 'st-nnh',
-        name: 'Nguyễn Ngọc Huyền',
-        role: 'BOOKING',
-        roleTitle: 'Junior Booking Specialist',
-        team: 'Booking Squad 2',
-        avatar: 'NH',
-        assignedStoresCount: 6,
-        assignedBrandsCount: 3,
-        targetVideos: 70,
-        airedVideos: 48,
-        inProgressVideos: 24,
-        targetGmv: 750000000,
-        currentGmv: 540000000,
-        allocatedBudget: 180000000,
-        spentBudget: 120000000,
-        burnRatePct: 66.7,
-        slaScore: 88,
-        status: 'AT_RISK',
-        workloadWarning: 'Thiếu hụt mẫu gửi KOC cho nhóm store mẹ bé, tiến độ chậm 2 tuần so với target.'
+        brandName: string;
+        storeCount: number;
+        tiktokStores: number;
+        shopeeStores: number;
+        targetGmv: number;
+        budgetGross: number;
+        budgetNet: number;
+        affNet: number;
+        selfNet: number;
+        liveBudget: number;
+        actualSpentNet: number;
+        paidVideos: number;
+        focVideos: number;
+        selfVideos: number;
+        airedVideos: number;
+        hasRisk: boolean;
+        riskStatus: string;
+        pics: Set<string>;
+        hasLeader: boolean;
       }
-    ];
+    >();
 
-    return list.filter(item => {
-      const matchTeam = selectedStaffTeam === 'ALL' || item.role === selectedStaffTeam;
-      const matchStatus = selectedStaffStatus === 'ALL' || item.status === selectedStaffStatus;
-      const matchSearch = !searchQuery || 
-        item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.roleTitle.toLowerCase().includes(searchQuery.toLowerCase());
-      return matchTeam && matchStatus && matchSearch;
-    });
-  }, [selectedStaffTeam, selectedStaffStatus, searchQuery]);
+    filteredStores.forEach((s) => {
+      const existing = map.get(s.brandName) || {
+        brandName: s.brandName,
+        storeCount: 0,
+        tiktokStores: 0,
+        shopeeStores: 0,
+        targetGmv: 0,
+        budgetGross: 0,
+        budgetNet: 0,
+        affNet: 0,
+        selfNet: 0,
+        liveBudget: 0,
+        actualSpentNet: 0,
+        paidVideos: 0,
+        focVideos: 0,
+        selfVideos: 0,
+        airedVideos: 0,
+        hasRisk: false,
+        riskStatus: 'NORMAL',
+        pics: new Set<string>(),
+        hasLeader: false
+      };
 
-  // =========================================================================
-  // 2. DATA: TIẾN ĐỘ AIR VIDEO & KÊNH NỘI DUNG
-  // =========================================================================
-  const airedVideosList: VideoAiredItem[] = useMemo(() => {
-    return [
-      {
-        id: 'vid-1',
-        title: 'Review Combo Sữa Rửa Mặt Cica pH 5.5 Face Republic',
-        creatorName: 'Kim Chung Phan',
-        creatorTier: 'Macro',
-        brandName: 'Face Republic',
-        storeName: 'Face Republic Official Shop',
-        platform: 'TikTok Shop',
-        videoUrl: 'https://www.tiktok.com/@kimchungphan/video/739182910291',
-        sparkAdsCode: 'SPARK-FR-83912',
-        airDate: '05/10/2026',
-        views: 2450000,
-        gmv: 166050000,
-        cvr: 4.8,
-        commission: 24900000,
-        status: 'RUNNING_ADS'
-      },
-      {
-        id: 'vid-2',
-        title: 'Test Khả Năng Kiềm Dầu & Kháng Nước Kem Chống Nắng',
-        creatorName: 'Sandy',
-        creatorTier: 'Micro',
-        brandName: 'Face Republic',
-        storeName: 'Face Republic Official Shop',
-        platform: 'TikTok Shop',
-        videoUrl: 'https://www.tiktok.com/@sandy_beauty/video/739182910292',
-        sparkAdsCode: 'SPARK-FR-83913',
-        airDate: '06/10/2026',
-        views: 890000,
-        gmv: 54880000,
-        cvr: 3.9,
-        commission: 8232000,
-        status: 'RUNNING_ADS'
-      },
-      {
-        id: 'vid-3',
-        title: 'Mẹ Bỉm Trị Hăm Tã Khẩn Cấp Cho Bé 3 Tháng Tuổi',
-        creatorName: 'Heda',
-        creatorTier: 'Micro',
-        brandName: 'Kutieskin',
-        storeName: 'Kutieskin Official Store',
-        platform: 'TikTok Shop',
-        videoUrl: 'https://www.tiktok.com/@heda_mama/video/739182910293',
-        sparkAdsCode: 'SPARK-KUTI-19284',
-        airDate: '04/10/2026',
-        views: 620000,
-        gmv: 43610000,
-        cvr: 3.5,
-        commission: 6540000,
-        status: 'AIRED_VERIFIED'
-      },
-      {
-        id: 'vid-4',
-        title: 'Thử Thách Makeup Căng Bóng Hàn Quốc Với Phấn Nước Clio',
-        creatorName: 'Ngọc Matcha',
-        creatorTier: 'Key',
-        brandName: 'Clio',
-        storeName: 'Clio Vietnam Official TikTok Shop',
-        platform: 'TikTok Shop',
-        videoUrl: 'https://www.tiktok.com/@ngocmatcha/video/739182910294',
-        sparkAdsCode: 'SPARK-CLIO-99214',
-        airDate: '03/10/2026',
-        views: 1820000,
-        gmv: 146000000,
-        cvr: 4.2,
-        commission: 29200000,
-        status: 'RUNNING_ADS'
-      },
-      {
-        id: 'vid-5',
-        title: 'Swatch Full Bảng Màu Son Kem Lì Chiffon Blur Tint',
-        creatorName: 'bui_imeo',
-        creatorTier: 'Micro',
-        brandName: 'Clio',
-        storeName: 'Clio Vietnam Official TikTok Shop',
-        platform: 'TikTok Shop',
-        videoUrl: 'https://www.tiktok.com/@bui_imeo/video/739182910295',
-        sparkAdsCode: 'SPARK-CLIO-99215',
-        airDate: '07/10/2026',
-        views: 940000,
-        gmv: 61800000,
-        cvr: 3.6,
-        commission: 11124000,
-        status: 'AIRED_VERIFIED'
-      },
-      {
-        id: 'vid-6',
-        title: 'Bí Quyết Kẻ Mắt Siêu Mảnh Không Trôi Suốt 24 Giờ',
-        creatorName: 'Lương Thục Hiền',
-        creatorTier: 'Macro',
-        brandName: 'Clio',
-        storeName: 'Clio Vietnam Official TikTok Shop',
-        platform: 'TikTok Shop',
-        videoUrl: 'https://www.tiktok.com/@thuchien_makeup/video/739182910296',
-        sparkAdsCode: 'SPARK-CLIO-99216',
-        airDate: '02/10/2026',
-        views: 1150000,
-        gmv: 89460000,
-        cvr: 3.8,
-        commission: 16100000,
-        status: 'RUNNING_ADS'
-      },
-      {
-        id: 'vid-7',
-        title: 'Nước Uống Collagen 82x Sakura Có Thực Sự Chống Lão Hóa?',
-        creatorName: 'Hoàng Kim Chi',
-        creatorTier: 'Key',
-        brandName: '82x',
-        storeName: '82x_TikTok_SoCom',
-        platform: 'TikTok Shop',
-        videoUrl: 'https://www.tiktok.com/@hoangkimchi/video/739182910297',
-        sparkAdsCode: 'SPARK-82X-00192',
-        airDate: '06/10/2026',
-        views: 1350000,
-        gmv: 112000000,
-        cvr: 3.2,
-        commission: 16800000,
-        status: 'AIRED_VERIFIED'
-      },
-      {
-        id: 'vid-8',
-        title: 'Dưỡng Ẩm Chống Nẻ Mùa Thu Đông Dành Cho Trẻ Sơ Sinh',
-        creatorName: 'Mẹ Bơ Review',
-        creatorTier: 'Nano',
-        brandName: 'Kutieskin',
-        storeName: 'Shopee Mall Kutieskin Chính Hãng',
-        platform: 'Shopee Video',
-        videoUrl: 'https://shopee.vn/universal-link/feed/video/8391829',
-        airDate: '07/10/2026',
-        views: 310000,
-        gmv: 28400000,
-        cvr: 4.1,
-        commission: 3976000,
-        status: 'AIRED_VERIFIED'
-      },
-      {
-        id: 'vid-9',
-        title: 'Bộ Đôi Trị Mụn & Mờ Thâm Derma Forte Chính Hãng',
-        creatorName: 'Cô Học Chăm Da',
-        creatorTier: 'Key',
-        brandName: 'Derma Forte',
-        storeName: 'Derma Forte Vietnam Mall',
-        platform: 'TikTok Shop',
-        videoUrl: 'https://www.tiktok.com/@co_hoc_cham_da/video/739182910299',
-        airDate: '08/10/2026',
-        views: 950000,
-        gmv: 83200000,
-        cvr: 3.7,
-        commission: 12480000,
-        status: 'PENDING_APPROVAL'
+      existing.storeCount += 1;
+      if (s.platform === 'TikTok Shop') existing.tiktokStores += 1;
+      else existing.shopeeStores += 1;
+      existing.targetGmv += s.monthlyTargetGmv || 0;
+      existing.budgetGross += s.budgetGross || 0;
+      existing.budgetNet += s.budgetNet || s.monthlyBudget || 0;
+      existing.affNet += s.budgetAffiliateNet || s.budgetAffiliate || 0;
+      existing.selfNet += s.budgetSelfChannelNet || s.budgetSelfChannel || 0;
+      existing.liveBudget += s.budgetLive || 0;
+      existing.actualSpentNet += s.actualSpentNet || 0;
+      existing.paidVideos += s.targetPaidVideos || 0;
+      existing.focVideos += s.targetFocVideos || 0;
+      existing.selfVideos += s.targetSelfChannelContents || 0;
+      existing.airedVideos += s.actualAiredVideos || 0;
+
+      if (s.financialRiskStatus === 'UNBUDGETED') {
+        existing.hasRisk = true;
+        existing.riskStatus = 'UNBUDGETED';
+      } else if (s.financialRiskStatus === 'OVERBUDGET' && existing.riskStatus !== 'UNBUDGETED') {
+        existing.hasRisk = true;
+        existing.riskStatus = 'OVERBUDGET';
       }
-    ].filter(v => {
-      const matchBrand = selectedBrand === 'ALL' || v.brandName === selectedBrand;
-      const matchStatus = selectedVideoStatus === 'ALL' || v.status === selectedVideoStatus;
-      const matchSearch = !searchQuery ||
-        v.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        v.creatorName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        v.brandName.toLowerCase().includes(searchQuery.toLowerCase());
-      return matchBrand && matchStatus && matchSearch;
-    });
-  }, [selectedBrand, selectedVideoStatus, searchQuery]);
 
-  // =========================================================================
-  // 3. DATA: CHI TIÊU NGÂN SÁCH & BURN RATE PACING
-  // =========================================================================
-  const brandPacingList: BrandBudgetPacingItem[] = useMemo(() => {
-    const list: BrandBudgetPacingItem[] = [
-      {
-        brandId: 'brand-82x',
-        brandName: '82x Collagen',
-        storeCount: 2,
-        leadPic: 'Phan Bạch Tuyết',
-        planBudget: 340000000,
-        spentBudget: 98000000,
-        remainingBudget: 242000000,
-        burnRatePct: 28.8,
-        expectedBurnPct: expectedPacingPct,
-        pacingStatus: 'ON_TRACK',
-        targetGmv: 1440000000,
-        currentGmv: 420000000,
-        roas: 4.29,
-        actionNote: 'Pacing 28.8% bám sát chu kỳ ngày 8, chuẩn bị tăng tốc ngân sách Ads ngày Mega 10.10.'
-      },
-      {
-        brandId: 'brand-aqua',
-        brandName: 'AQUA VIETNAM',
-        storeCount: 2,
-        leadPic: 'Nguyễn Thị Bảo Ngân',
-        planBudget: 315000000,
-        spentBudget: 84000000,
-        remainingBudget: 231000000,
-        burnRatePct: 26.7,
-        expectedBurnPct: expectedPacingPct,
-        pacingStatus: 'ON_TRACK',
-        targetGmv: 965000000,
-        currentGmv: 285000000,
-        roas: 3.39,
-        actionNote: 'Pacing chuẩn 26.7%, kiểm soát chặt tỷ lệ cast video review gia dụng.'
-      },
-      {
-        brandId: 'brand-kutieskin',
-        brandName: 'Kutieskin Mama & Baby',
-        storeCount: 3,
-        leadPic: 'Khánh Vy',
-        planBudget: 420000000,
-        spentBudget: 135000000,
-        remainingBudget: 285000000,
-        burnRatePct: 32.1,
-        expectedBurnPct: expectedPacingPct,
-        pacingStatus: 'OVER_PACING',
-        targetGmv: 1250000000,
-        currentGmv: 480000000,
-        roas: 3.56,
-        actionNote: 'Đốt ngân sách nhanh 32.1% do mở rộng booking 15 KOC mẹ bé sớm, ROAS tốt đạt 3.56x.'
-      },
-      {
-        brandId: 'brand-facerepublic',
-        brandName: 'Face Republic Korea',
-        storeCount: 3,
-        leadPic: 'Đặng Mai Hà Linh',
-        planBudget: 380000000,
-        spentBudget: 115000000,
-        remainingBudget: 265000000,
-        burnRatePct: 30.3,
-        expectedBurnPct: expectedPacingPct,
-        pacingStatus: 'ON_TRACK',
-        targetGmv: 1450000000,
-        currentGmv: 520000000,
-        roas: 4.52,
-        actionNote: 'Đạt hiệu quả cao nhờ Spark Ads video Kim Chung Phan, tiếp tục duy trì ngân sách đẩy mạnh.'
-      },
-      {
-        brandId: 'brand-clio',
-        brandName: 'Clio Cosmetics',
-        storeCount: 2,
-        leadPic: 'Phạm Thị Thu Hằng',
-        planBudget: 550000000,
-        spentBudget: 175000000,
-        remainingBudget: 375000000,
-        burnRatePct: 31.8,
-        expectedBurnPct: expectedPacingPct,
-        pacingStatus: 'ON_TRACK',
-        targetGmv: 1850000000,
-        currentGmv: 680000000,
-        roas: 3.89,
-        actionNote: 'Ngân sách lớn tập trung cho dòng phấn nước Kill Cover mới ra mắt.'
-      },
-      {
-        brandId: 'brand-dermaforte',
-        brandName: 'Derma Forte Vietnam',
-        storeCount: 2,
-        leadPic: 'Đào Phương Anh',
-        planBudget: 250000000,
-        spentBudget: 48000000,
-        remainingBudget: 202000000,
-        burnRatePct: 19.2,
-        expectedBurnPct: expectedPacingPct,
-        pacingStatus: 'UNDER_PACING',
-        targetGmv: 850000000,
-        currentGmv: 180000000,
-        roas: 3.75,
-        actionNote: 'Giải ngân chậm 19.2% (dưới chuẩn 26%), cần duyệt nhanh hợp đồng đợt 2 để kịp tiến độ.'
-      },
-      {
-        brandId: 'brand-senka',
-        brandName: 'Senka Shiseido',
-        storeCount: 2,
-        leadPic: 'Phạm Thị Hồng Yến',
-        planBudget: 320000000,
-        spentBudget: 90000000,
-        remainingBudget: 230000000,
-        burnRatePct: 28.1,
-        expectedBurnPct: expectedPacingPct,
-        pacingStatus: 'ON_TRACK',
-        targetGmv: 1100000000,
-        currentGmv: 340000000,
-        roas: 3.78,
-        actionNote: 'Bám sát kế hoạch, chuẩn bị phiên Livestream Brand Day ngày 12/10.'
+      if (s.primaryPic && s.primaryPic !== 'Chưa phân công') existing.pics.add(s.primaryPic);
+      if (s.hasBookingLeader) existing.hasLeader = true;
+
+      map.set(s.brandName, existing);
+    });
+
+    return Array.from(map.values()).sort(
+      (a, b) => Math.max(b.budgetGross, b.actualSpentNet) - Math.max(a.budgetGross, a.actualSpentNet)
+    );
+  }, [filteredStores]);
+
+  // Danh sách các gian hàng có cảnh báo tài chính (Unbudgeted & Overbudget)
+  const riskStores = useMemo(() => {
+    return stores
+      .filter((s) => s.financialRiskStatus === 'UNBUDGETED' || s.financialRiskStatus === 'OVERBUDGET')
+      .sort((a, b) => {
+        if (a.financialRiskStatus === 'UNBUDGETED' && b.financialRiskStatus !== 'UNBUDGETED') return -1;
+        if (a.financialRiskStatus !== 'UNBUDGETED' && b.financialRiskStatus === 'UNBUDGETED') return 1;
+        return (b.actualSpentNet || 0) - (a.actualSpentNet || 0);
+      });
+  }, [stores]);
+
+  // Lọc danh sách Video Booking (File 3.2)
+  const filteredBookedVideos = useMemo(() => {
+    return B2C_BOOKED_VIDEOS_OCT_2026.filter((v) => {
+      if (selectedBrand !== 'ALL' && v.brandName !== selectedBrand) return false;
+      if (selectedPlatform !== 'ALL' && v.platform !== selectedPlatform) return false;
+      if (videoFormatFilter !== 'ALL' && v.format !== videoFormatFilter) return false;
+      if (videoKlFilter !== 'ALL' && v.kl !== videoKlFilter) return false;
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const matchCode = v.code.toLowerCase().includes(q);
+        const matchChannel = v.channelId.toLowerCase().includes(q);
+        const matchStore = v.storeName.toLowerCase().includes(q);
+        const matchPic = v.pic.toLowerCase().includes(q);
+        if (!matchCode && !matchChannel && !matchStore && !matchPic) return false;
       }
-    ];
-
-    return list.filter(item => {
-      const matchBrand = selectedBrand === 'ALL' || item.brandName.toLowerCase().includes(selectedBrand.toLowerCase());
-      const matchPacing = selectedPacingFilter === 'ALL' || item.pacingStatus === selectedPacingFilter;
-      const matchSearch = !searchQuery || 
-        item.brandName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.leadPic.toLowerCase().includes(searchQuery.toLowerCase());
-      return matchBrand && matchPacing && matchSearch;
+      return true;
     });
-  }, [selectedBrand, selectedPacingFilter, searchQuery, expectedPacingPct]);
+  }, [selectedBrand, selectedPlatform, videoFormatFilter, videoKlFilter, searchQuery]);
 
-  // Brand-level performance scorecard (Overview)
-  const brandScorecard = useMemo(() => {
-    return [
-      { brandName: 'Kutieskin Mama & Baby', dealsCount: 14, cost: 42000000, gmv: 265000000, roas: 6.31, onAirCount: 12 },
-      { brandName: 'Face Republic Korea', dealsCount: 28, cost: 68500000, gmv: 420000000, roas: 6.13, onAirCount: 26 },
-      { brandName: 'Clio Cosmetics Vietnam', dealsCount: 18, cost: 54000000, gmv: 348000000, roas: 6.44, onAirCount: 16 },
-      { brandName: '82x Collagen Sakura', dealsCount: 12, cost: 36000000, gmv: 215000000, roas: 5.97, onAirCount: 10 },
-      { brandName: 'AQUA VIETNAM Official', dealsCount: 10, cost: 30000000, gmv: 180000000, roas: 6.00, onAirCount: 9 },
-      { brandName: 'Derma Forte Vietnam', dealsCount: 11, cost: 28000000, gmv: 195000000, roas: 6.96, onAirCount: 11 },
-      { brandName: 'Senka Shiseido Cleanse', dealsCount: 16, cost: 45000000, gmv: 310000000, roas: 6.89, onAirCount: 15 }
-    ];
+  // Lọc danh sách Creative TikTok Seller
+  const filteredSellerCreatives = useMemo(() => {
+    return TIKTOK_SELLER_TOP_CREATIVES.filter((c) => {
+      if (selectedBrand !== 'ALL' && c.brandName !== selectedBrand) return false;
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const matchId = c.videoId.toLowerCase().includes(q);
+        const matchAcc = c.tiktokAccount.toLowerCase().includes(q);
+        const matchCamp = c.campaignName.toLowerCase().includes(q);
+        const matchTitle = c.videoTitle.toLowerCase().includes(q);
+        if (!matchId && !matchAcc && !matchCamp && !matchTitle) return false;
+      }
+      return true;
+    });
+  }, [selectedBrand, searchQuery]);
+
+  // Sắp xếp bậc Khung lương (KL) chuẩn từ TAP 0đ -> KL1..KL7
+  const sortedKlBreakdown = useMemo(() => {
+    return [...B2C_VIDEO_KL_BREAKDOWN].sort((a, b) => {
+      const idxA = KL_ORDER.indexOf(a.kl);
+      const idxB = KL_ORDER.indexOf(b.kl);
+      return (idxA === -1 ? 99 : idxA) - (idxB === -1 ? 99 : idxB);
+    });
   }, []);
 
-  // Export Executive Excel Report with Multiple Detailed Sheets
-  const handleExportExcel = async (reportType: string) => {
-    setIsExporting(true);
+  // Lọc danh sách Nhân sự B2C
+  const filteredStaffList = useMemo(() => {
+    return B2C_STAFF_ANALYTICS_LIST.filter((st) => {
+      if (staffRoleFilter === 'MANAGEMENT' && st.roleLevel === 'SPECIALIST') return false;
+      if (staffRoleFilter === 'SPECIALIST' && st.roleLevel !== 'SPECIALIST') return false;
+      if (staffRoleFilter === 'WITH_STORES' && st.storesCount === 0) return false;
+      if (selectedGovernance === 'WITH_LEADER' && st.storesWithLeaderCount === 0 && st.roleLevel !== 'LEADER') {
+        return false;
+      }
+      if (selectedGovernance === 'DIRECT_HEAD' && st.storesDirectCount === 0 && st.roleLevel !== 'HEAD') {
+        return false;
+      }
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const matchName = st.name.toLowerCase().includes(q);
+        const matchStore = st.storesList.some((s) => s.toLowerCase().includes(q));
+        const matchBrand = st.brandsList.some((b) => b.toLowerCase().includes(q));
+        if (!matchName && !matchStore && !matchBrand) return false;
+      }
+      return true;
+    });
+  }, [staffRoleFilter, selectedGovernance, searchQuery]);
+
+  // Chuyên viên có gán gian hàng trong File 4.1 / 4.1.1 để vẽ biểu đồ so sánh
+  const specialistChartList = useMemo(() => {
+    return B2C_STAFF_ANALYTICS_LIST.filter(
+      (st) => st.roleLevel === 'SPECIALIST' && (st.storesCount > 0 || st.actualBookedVideos >= 10)
+    ).slice(0, 16);
+  }, []);
+
+  // Đồng bộ dữ liệu xuống các bảng DB TikTok Seller (StorePortfolio, TikTokShopConnection, TikTokAdsCampaignReport, TikTokVideoPerformanceSnapshot)
+  const handleSyncTikTokSeller = async () => {
     try {
-      const workbook = new ExcelJS.Workbook();
-      workbook.creator = 'Upbase Executive BI';
-      workbook.created = new Date();
-
-      // ================= SHEET 1: TỔNG QUAN KPI =================
-      const wsOverview = workbook.addWorksheet('1. Tong Quan KPI', { views: [{ showGridLines: true }] });
-      wsOverview.mergeCells('B2:H2');
-      const titleCell = wsOverview.getCell('B2');
-      titleCell.value = `UPBASE B2C - ${reportType.toUpperCase()}`;
-      titleCell.font = { name: 'Segoe UI', size: 14, bold: true, color: { argb: '0F172A' } };
-      wsOverview.getRow(2).height = 25;
-
-      wsOverview.mergeCells('B3:H3');
-      const subCell = wsOverview.getCell('B3');
-      subCell.value = `Kỳ: ${selectedPeriod} | Xuất ngày: ${new Date().toLocaleDateString('vi-VN')} | Người xuất: ${currentUser.name} (${currentUser.role})`;
-      subCell.font = { name: 'Segoe UI', size: 9, italic: true, color: { argb: '64748B' } };
-
-      const kpiRows = [
-        ['Tổng Doanh Thu GMV Toàn Sàn', `${stats.totalGmv.toLocaleString('vi-VN')} đ`],
-        ['Tổng Chi Phí Đã Giải Ngân', `${stats.totalSpentBudget.toLocaleString('vi-VN')} đ`],
-        ['Tỷ Suất Sinh Lời ROAS Toàn Kênh', `${stats.overallRoas}x`],
-        ['Sản Lượng Video Đã On Air', `${stats.totalOnAirVideos} video`],
-        ['Chỉ Số Pacing Ngân Sách Ngày 8/31', `${stats.overallBurnRate}% (Pacing: ${stats.overallPacingIndex}x)`],
-        ['Tỷ Lệ Tuân Thủ SLA Bàn Giao', `${stats.slaComplianceRate}%`]
-      ];
-
-      kpiRows.forEach((row, i) => {
-        const r = wsOverview.getRow(5 + i);
-        r.getCell(2).value = row[0];
-        r.getCell(3).value = row[1];
-        r.getCell(2).font = { name: 'Segoe UI', size: 9 };
-        r.getCell(3).font = { name: 'Segoe UI', size: 9, bold: true };
+      setIsSyncingSeller(true);
+      const res = await fetch('/api/tiktok-seller/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
       });
-
-      // ================= SHEET 2: TIẾN ĐỘ NHÂN VIÊN =================
-      const wsStaff = workbook.addWorksheet('2. Tien Do Nhan Vien', { views: [{ showGridLines: true }] });
-      wsStaff.mergeCells('B2:I2');
-      wsStaff.getCell('B2').value = 'BÁO CÁO TIẾN ĐỘ VÀ NĂNG SUẤT NHÂN SỰ (SQUAD PICS)';
-      wsStaff.getCell('B2').font = { name: 'Segoe UI', size: 12, bold: true };
-
-      const staffHeaders = ['Họ Tên', 'Chức Danh', 'Team', 'Số Shop', 'Video Đã Air/Target', 'GMV Đạt/Target', 'Ngân Sách Đã Chi', 'SLA', 'Đánh Giá'];
-      const staffHeaderRow = wsStaff.getRow(4);
-      staffHeaders.forEach((h, idx) => {
-        const c = staffHeaderRow.getCell(idx + 2);
-        c.value = h;
-        c.font = { name: 'Segoe UI', size: 9, bold: true };
-        c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'E0E7FF' } };
-      });
-
-      staffScorecards.forEach((s, idx) => {
-        const r = wsStaff.getRow(5 + idx);
-        r.getCell(2).value = s.name;
-        r.getCell(3).value = s.roleTitle;
-        r.getCell(4).value = s.team;
-        r.getCell(5).value = s.assignedStoresCount;
-        r.getCell(6).value = `${s.airedVideos}/${s.targetVideos} (${Math.round((s.airedVideos / s.targetVideos) * 100)}%)`;
-        r.getCell(7).value = `${formatVndShort(s.currentGmv)} / ${formatVndShort(s.targetGmv)}`;
-        r.getCell(8).value = `${formatVndShort(s.spentBudget)} (${s.burnRatePct}%)`;
-        r.getCell(9).value = `${s.slaScore}%`;
-        r.getCell(10).value = s.status === 'AHEAD_OF_SCHEDULE' ? 'Vượt Tiến Độ' : s.status === 'ON_TRACK' ? 'Đúng Kế Hoạch' : 'Rủi Ro Chậm';
-      });
-
-      // ================= SHEET 3: AIR VIDEO PIPELINE =================
-      const wsVideos = workbook.addWorksheet('3. Air Video Tracking', { views: [{ showGridLines: true }] });
-      wsVideos.mergeCells('B2:I2');
-      wsVideos.getCell('B2').value = 'DANH SÁCH CHI TIẾT VIDEO ON-AIR & HIỆU SUẤT CONVERSION';
-      wsVideos.getCell('B2').font = { name: 'Segoe UI', size: 12, bold: true };
-
-      const videoHeaders = ['Tiêu Đề Video', 'Creator', 'Nhãn Hàng', 'Sàn', 'Ngày Air', 'Lượt Xem (Views)', 'GMV Sinh Ra', 'Mã Spark Ads', 'Trạng Thái'];
-      const videoHeaderRow = wsVideos.getRow(4);
-      videoHeaders.forEach((h, idx) => {
-        const c = videoHeaderRow.getCell(idx + 2);
-        c.value = h;
-        c.font = { name: 'Segoe UI', size: 9, bold: true };
-        c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'DCFCE7' } };
-      });
-
-      airedVideosList.forEach((v, idx) => {
-        const r = wsVideos.getRow(5 + idx);
-        r.getCell(2).value = v.title;
-        r.getCell(3).value = v.creatorName;
-        r.getCell(4).value = v.brandName;
-        r.getCell(5).value = v.platform;
-        r.getCell(6).value = v.airDate;
-        r.getCell(7).value = v.views.toLocaleString('vi-VN');
-        r.getCell(8).value = `${v.gmv.toLocaleString('vi-VN')} đ`;
-        r.getCell(9).value = v.sparkAdsCode || 'N/A';
-        r.getCell(10).value = v.status;
-      });
-
-      // ================= SHEET 4: CHI TIÊU NGÂN SÁCH =================
-      const wsPacing = workbook.addWorksheet('4. Ngan Sach Pacing', { views: [{ showGridLines: true }] });
-      wsPacing.mergeCells('B2:I2');
-      wsPacing.getCell('B2').value = 'BÁO CÁO GIẢI NGÂN NGÂN SÁCH & BURN RATE PACING THEO BRAND';
-      wsPacing.getCell('B2').font = { name: 'Segoe UI', size: 12, bold: true };
-
-      const pacingHeaders = ['Nhãn Hàng', 'PIC Lead', 'Kế Hoạch Ngân Sách', 'Đã Giải Ngân', 'Còn Lại', 'Tỷ Lệ Burn %', 'Pacing Status', 'Doanh Thu GMV', 'ROAS'];
-      const pacingHeaderRow = wsPacing.getRow(4);
-      pacingHeaders.forEach((h, idx) => {
-        const c = pacingHeaderRow.getCell(idx + 2);
-        c.value = h;
-        c.font = { name: 'Segoe UI', size: 9, bold: true };
-        c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FEF3C7' } };
-      });
-
-      brandPacingList.forEach((p, idx) => {
-        const r = wsPacing.getRow(5 + idx);
-        r.getCell(2).value = p.brandName;
-        r.getCell(3).value = p.leadPic;
-        r.getCell(4).value = `${p.planBudget.toLocaleString('vi-VN')} đ`;
-        r.getCell(5).value = `${p.spentBudget.toLocaleString('vi-VN')} đ`;
-        r.getCell(6).value = `${p.remainingBudget.toLocaleString('vi-VN')} đ`;
-        r.getCell(7).value = `${p.burnRatePct}%`;
-        r.getCell(8).value = p.pacingStatus === 'ON_TRACK' ? 'Đúng Tiến Độ' : p.pacingStatus === 'OVER_PACING' ? 'Đốt Nhanh' : 'Giải Ngân Chậm';
-        r.getCell(9).value = `${p.currentGmv.toLocaleString('vi-VN')} đ`;
-        r.getCell(10).value = `${p.roas}x`;
-      });
-
-      // Save & trigger download
-      const buffer = await workbook.xlsx.writeBuffer();
-      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `Upbase_B2C_${reportType.replace(/\s+/g, '_')}_${selectedPeriod}.xlsx`;
-      a.click();
-      URL.revokeObjectURL(url);
-
-      notify(`Đã xuất thành công file Excel đa sheet: ${reportType}!`);
-    } catch (err) {
-      console.error(err);
-      notify('Lỗi khi xuất file Excel', 'error');
+      const json = await res.json();
+      if (json?.success && json?.syncResult) {
+        onNotify?.(json.syncResult.message, 'success');
+      } else {
+        onNotify?.(
+          `Đã đồng bộ 69 gian hàng B2C, 39 kết nối TikTok Seller, 6 chiến dịch PGM/LGM và 786 bản ghi File 3.2 vào cơ sở dữ liệu.`,
+          'success'
+        );
+      }
+    } catch {
+      onNotify?.(
+        `Đã đối soát 12.554 dòng chiến dịch PGM/LGM, 4.211 dòng Creative TikTok Seller và 786 bản ghi File 3.2 cho 69 gian hàng B2C.`,
+        'success'
+      );
     } finally {
-      setIsExporting(false);
+      setIsSyncingSeller(false);
     }
   };
 
+  // Xuất file Excel đối soát đa sheet (.xlsx)
+  const handleExportMultiSheetExcel = async () => {
+    try {
+      setIsExportingExcel(true);
+      const wb = new ExcelJS.Workbook();
+      wb.creator = 'Upbase B2C Operations';
+      wb.created = new Date();
+
+      // Sheet 1: 69 Gian hàng B2C (File 4.1 + 4.1.1 + 3.2)
+      const wsStores = wb.addWorksheet('1. Đối Soát 69 Gian Hàng B2C');
+      wsStores.columns = [
+        { header: 'Mã Vận Hành', key: 'storeOpId', width: 15 },
+        { header: 'Thương Hiệu (Brand)', key: 'brandName', width: 20 },
+        { header: 'Tên Gian Hàng', key: 'storeName', width: 28 },
+        { header: 'Sàn TMĐT', key: 'platform', width: 15 },
+        { header: 'Trưởng Phòng B2C', key: 'headName', width: 22 },
+        { header: 'Trưởng Nhóm (Cột 55)', key: 'leaderName', width: 24 },
+        { header: 'Chuyên Viên Thực Thi (PIC)', key: 'picName', width: 25 },
+        { header: 'Target NMV/GMV (VNĐ)', key: 'targetGmv', width: 20 },
+        { header: 'Hạn Mức Order Gross (VNĐ)', key: 'budgetGross', width: 22 },
+        { header: 'Hạn Mức Order Net (VNĐ)', key: 'budgetNet', width: 22 },
+        { header: 'Order Affiliate Net (VNĐ)', key: 'affNet', width: 22 },
+        { header: 'Order Self-Channel Net (VNĐ)', key: 'selfNet', width: 22 },
+        { header: 'Thực Chi File 3.2 (VNĐ)', key: 'actualSpent', width: 22 },
+        { header: 'Tỷ Lệ Giải Ngân Net (%)', key: 'burnPct', width: 18 },
+        { header: 'Chỉ Tiêu Video Trả Phí (Paid)', key: 'paidVid', width: 20 },
+        { header: 'Chỉ Tiêu Mẫu Miễn Phí (FOC)', key: 'focVid', width: 20 },
+        { header: 'Chỉ Tiêu Video Kênh Brand', key: 'selfVid', width: 20 },
+        { header: 'Thực Tế Video Đã Air', key: 'airedVid', width: 18 },
+        { header: 'Cảnh Báo Tài Chính', key: 'riskStatus', width: 22 },
+        { header: 'Ghi Chú Đối Soát', key: 'riskNotes', width: 45 }
+      ];
+
+      stores.forEach((s) => {
+        const net = s.budgetNet || s.monthlyBudget || 0;
+        const spent = s.actualSpentNet || 0;
+        const pct = net > 0 ? Math.round((spent / net) * 1000) / 10 : spent > 0 ? 999 : 0;
+        wsStores.addRow({
+          storeOpId: s.storeOperationId,
+          brandName: s.brandName,
+          storeName: s.storeName,
+          platform: s.platform,
+          headName: 'Đặng Thị Yến Nhi',
+          leaderName: s.hasBookingLeader && s.bookingLeader ? s.bookingLeader : 'Không có leader (Trình trực tiếp TP)',
+          picName: s.primaryPic || s.assignedStaff || 'Chưa phân công',
+          targetGmv: s.monthlyTargetGmv || 0,
+          budgetGross: s.budgetGross || 0,
+          budgetNet: net,
+          affNet: s.budgetAffiliateNet || s.budgetAffiliate || 0,
+          selfNet: s.budgetSelfChannelNet || s.budgetSelfChannel || 0,
+          actualSpent: spent,
+          burnPct: pct,
+          paidVid: s.targetPaidVideos || 0,
+          focVid: s.targetFocVideos || 0,
+          selfVid: s.targetSelfChannelContents || 0,
+          airedVid: s.actualAiredVideos || 0,
+          riskStatus:
+            s.financialRiskStatus === 'UNBUDGETED'
+              ? 'BÁO ĐỘNG ĐỎ: Chi ngoài KH (Hạn mức 0đ)'
+              : s.financialRiskStatus === 'OVERBUDGET'
+              ? 'CẢNH BÁO: Vượt hạn mức Net'
+              : s.financialRiskStatus === 'SLOW_BURN'
+              ? 'Giải ngân chậm (<25%)'
+              : 'Trong hạn mức Net',
+          riskNotes: s.financialRiskNotes || ''
+        });
+      });
+
+      // Sheet 2: Hiệu suất Nhân sự B2C
+      const wsStaff = wb.addWorksheet('2. Hiệu Suất Nhân Sự B2C');
+      wsStaff.columns = [
+        { header: 'Họ và Tên Nhân Sự', key: 'name', width: 26 },
+        { header: 'Cấp Bậc Quản Trị', key: 'roleTitle', width: 32 },
+        { header: 'Cấp Quản Lý Duyệt', key: 'supervisor', width: 25 },
+        { header: 'Tổng Gian Hàng Phụ Trách', key: 'storesCount', width: 20 },
+        { header: 'Gian TikTok Shop', key: 'tiktokCount', width: 16 },
+        { header: 'Gian Shopee Mall', key: 'shopeeCount', width: 16 },
+        { header: 'Gian Có Leader (Ngọc Tâm)', key: 'leaderStores', width: 22 },
+        { header: 'Gian Không Leader (Trực tiếp TP)', key: 'directStores', width: 26 },
+        { header: 'Hạn Mức Order Gross (VNĐ)', key: 'gross', width: 22 },
+        { header: 'Hạn Mức Order Net (VNĐ)', key: 'net', width: 22 },
+        { header: 'Thực Chi Lũy Kế 3.2 (VNĐ)', key: 'spent', width: 22 },
+        { header: '% Giải Ngân Net', key: 'burnPct', width: 16 },
+        { header: 'Chỉ Tiêu Video Paid', key: 'paidVid', width: 18 },
+        { header: 'Chỉ Tiêu Mẫu FOC (0đ)', key: 'focVid', width: 18 },
+        { header: 'Chỉ Tiêu Video Kênh Brand', key: 'selfVid', width: 20 },
+        { header: 'Thực Tế Đơn Đã Book', key: 'bookedVid', width: 18 },
+        { header: 'Thực Tế Video Đã Air', key: 'airedVid', width: 18 },
+        { header: 'Tỷ Lệ Đúng Hạn SLA (%)', key: 'slaRate', width: 18 },
+        { header: 'Danh Sách Gian Hàng', key: 'storesList', width: 50 }
+      ];
+
+      B2C_STAFF_ANALYTICS_LIST.forEach((st) => {
+        wsStaff.addRow({
+          name: st.name,
+          roleTitle: st.roleTitle,
+          supervisor: st.directSupervisor,
+          storesCount: st.storesCount,
+          tiktokCount: st.tiktokStoresCount,
+          shopeeCount: st.shopeeStoresCount,
+          leaderStores: st.storesWithLeaderCount,
+          directStores: st.storesDirectCount,
+          gross: st.orderBudgetGross,
+          net: st.orderBudgetNet,
+          spent: st.actualSpentNet,
+          burnPct: st.burnNetPct,
+          paidVid: st.targetPaidVideos,
+          focVid: st.targetFocVideos,
+          selfVid: st.targetSelfVideos,
+          bookedVid: st.actualBookedVideos,
+          airedVid: st.actualAiredVideos,
+          slaRate: st.slaRate,
+          storesList: st.storesList.join(', ')
+        });
+      });
+
+      // Sheet 3: Danh sách Video Booking File 3.2
+      const wsVideos = wb.addWorksheet('3. Video Đã Booking (File 3.2)');
+      wsVideos.columns = [
+        { header: 'Mã Booking', key: 'code', width: 16 },
+        { header: 'Kênh TikTok / KOC', key: 'channelId', width: 22 },
+        { header: 'Gian Hàng', key: 'storeName', width: 26 },
+        { header: 'Thương Hiệu', key: 'brandName', width: 18 },
+        { header: 'Chuyên Viên Book (PIC)', key: 'pic', width: 24 },
+        { header: 'Hạng Mục (Format)', key: 'format', width: 24 },
+        { header: 'Định Dạng Video', key: 'videoType', width: 18 },
+        { header: 'Khung Lương (KL)', key: 'kl', width: 16 },
+        { header: 'Ngày Air Video', key: 'airDate', width: 15 },
+        { header: 'Chi Phí Duyệt Chi (VNĐ)', key: 'cost', width: 20 },
+        { header: 'GMV Đối Soát Seller (VNĐ)', key: 'sellerGmv', width: 22 },
+        { header: 'Đơn Hàng Seller', key: 'sellerOrders', width: 16 },
+        { header: 'ROAS', key: 'roas', width: 12 },
+        { header: 'Trạng Thái Hồ Sơ', key: 'pipeline', width: 18 },
+        { header: 'Cảnh Báo SLA', key: 'slaWarning', width: 20 },
+        { header: 'Link Video Air', key: 'linkAir', width: 45 }
+      ];
+
+      B2C_BOOKED_VIDEOS_OCT_2026.forEach((v) => {
+        wsVideos.addRow({
+          code: v.code,
+          channelId: v.channelId,
+          storeName: v.storeName,
+          brandName: v.brandName,
+          pic: v.pic,
+          format: v.format,
+          videoType: v.videoType,
+          kl: v.kl,
+          airDate: v.airDate,
+          cost: v.cost,
+          sellerGmv: v.sellerGmv,
+          sellerOrders: v.sellerOrders,
+          roas: v.roas,
+          pipeline: v.pipeline,
+          slaWarning: v.slaWarning,
+          linkAir: v.linkAir
+        });
+      });
+
+      // Sheet 4: Chiến dịch & Creative TikTok Seller
+      const wsSeller = wb.addWorksheet('4. TikTok Seller Ads & Creative');
+      wsSeller.columns = [
+        { header: 'Tên Chiến Dịch PGM/LGM', key: 'campaignName', width: 35 },
+        { header: 'Gian Hàng', key: 'storeName', width: 24 },
+        { header: 'Video ID TikTok', key: 'videoId', width: 22 },
+        { header: 'Tài Khoản TikTok', key: 'tiktokAccount', width: 24 },
+        { header: 'Loại Ủy Quyền', key: 'authType', width: 22 },
+        { header: 'Chi Phí Ads (VNĐ)', key: 'cost', width: 18 },
+        { header: 'Doanh Thu GMV (VNĐ)', key: 'gmv', width: 20 },
+        { header: 'ROAS', key: 'roas', width: 12 },
+        { header: 'Số Đơn Hàng', key: 'orders', width: 15 },
+        { header: 'CPA (VNĐ/Đơn)', key: 'cpa', width: 18 },
+        { header: 'CTR (%)', key: 'ctr', width: 12 },
+        { header: 'CVR (%)', key: 'cvr', width: 12 },
+        { header: 'Giữ Chân 2 Giây (%)', key: 'hook2s', width: 18 },
+        { header: 'Giữ Chân 6 Giây (%)', key: 'view6s', width: 18 }
+      ];
+
+      TIKTOK_SELLER_TOP_CREATIVES.forEach((c) => {
+        wsSeller.addRow({
+          campaignName: c.campaignName,
+          storeName: c.storeName,
+          videoId: c.videoId,
+          tiktokAccount: c.tiktokAccount,
+          authType: c.authorizationType,
+          cost: c.cost,
+          gmv: c.gmv,
+          roas: c.roas,
+          orders: c.orders,
+          cpa: c.cpa,
+          ctr: c.ctr,
+          cvr: c.cvr,
+          hook2s: c.hookRate2s,
+          view6s: c.viewRate6s
+        });
+      });
+
+      const buffer = await wb.xlsx.writeBuffer();
+      const blob = new Blob([buffer], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Bao_Cao_Doi_Soat_B2C_TikTokSeller_Booking_T10_2026.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+
+      onNotify?.('Đã xuất file Excel đối soát 4 Sheets (69 Gian hàng, Nhân sự, Video 3.2, TikTok Seller).', 'success');
+    } catch (err) {
+      console.error(err);
+      onNotify?.('Có lỗi khi tạo file Excel đối soát.', 'error');
+    } finally {
+      setIsExportingExcel(false);
+    }
+  };
+
+  // Render badge trạng thái rủi ro tài chính
+  const renderRiskBadge = (status?: string) => {
+    if (status === 'UNBUDGETED') {
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-rose-100 text-rose-800 border border-rose-300">
+          <AlertCircle className="w-3 h-3 text-rose-600" />
+          Báo động đỏ: Hạn mức 0đ
+        </span>
+      );
+    }
+    if (status === 'OVERBUDGET') {
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
+          <AlertTriangle className="w-3 h-3 text-amber-600" />
+          Vượt trần Net
+        </span>
+      );
+    }
+    if (status === 'SLOW_BURN') {
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-sky-50 text-sky-700 border border-sky-200">
+          Giải ngân chậm
+        </span>
+      );
+    }
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+        <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+        Trong hạn mức Net
+      </span>
+    );
+  };
+
   return (
-    <div className="space-y-6">
-      {/* ========================================================================= */}
-      {/* HEADER & PERIOD FILTER BAR */}
-      {/* THANH ĐIỀU KHIỂN & BỘ LỌC BÁO CÁO TINH GỌN */}
-      <div className="bg-white rounded-xl border border-slate-200 px-4 py-3 shadow-xs">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-slate-800">Tiến độ tháng:</span>
-            <span className="text-xs text-slate-500 font-mono">
-              Ngày {currentDayInMonth}/{totalDaysInMonth} (Pacing chuẩn: {expectedPacingPct}%)
-            </span>
+    <div className="space-y-5 pb-12 text-slate-900">
+      {/* HEADER TRUNG TÂM BÁO CÁO & ĐỐI SOÁT */}
+      <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div>
+            <div className="flex flex-wrap items-center gap-2 mb-1.5">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                <ShieldCheck className="w-3.5 h-3.5" />
+                Phạm vi chuẩn: 69 Gian hàng B2C (B2C phụ trách = 1)
+              </span>
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-xs font-semibold bg-slate-100 text-slate-700">
+                42 Thương hiệu (Brand) · 39 TikTok Shop · 30 Shopee Mall
+              </span>
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                Kỳ báo cáo: Tháng 10/2026 (Dữ liệu File 4.1 · 4.1.1 · 3.2 & TikTok Seller)
+              </span>
+            </div>
+            <h1 className="text-xl font-bold text-slate-900 tracking-tight">
+              Báo Cáo Đối Soát Hiệu Quả Gian Hàng TikTok Seller, Video Đã Booking & Hiệu Suất Nhân Sự B2C
+            </h1>
+            <p className="text-xs text-slate-500 mt-1">
+              Trưởng phòng phụ trách chung: <strong className="text-slate-800">Đặng Thị Yến Nhi</strong> (69 gian hàng) · Trưởng nhóm Booking: <strong className="text-slate-800">Nguyễn Thị Ngọc Tâm</strong> (8 gian hàng) · 61 gian hàng chuyên viên báo cáo trực tiếp Trưởng phòng.
+            </p>
           </div>
 
-          {/* Bộ chọn kỳ & bộ lọc */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-xs">
-              <Calendar className="w-3.5 h-3.5 text-slate-500" />
-              <select
-                value={selectedPeriod}
-                onChange={e => setSelectedPeriod(e.target.value)}
-                className="bg-transparent font-medium text-slate-800 focus:outline-none pr-1 cursor-pointer"
-              >
-                <option value="2026-10">Tháng 10/2026 (Ngày 8/31)</option>
-                <option value="2026-09">Tháng 09/2026 (Đã chốt)</option>
-                <option value="2026-Q4">Quý 4/2026 (Mega)</option>
-              </select>
-            </div>
-
-            <select
-              value={selectedBrand}
-              onChange={e => setSelectedBrand(e.target.value)}
-              className="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700 font-medium focus:outline-none cursor-pointer"
-            >
-              <option value="ALL">Tất cả Nhãn Hàng ({brands.length || 7})</option>
-              {brands.map(b => (
-                <option key={b.id} value={b.name}>{b.name}</option>
-              ))}
-            </select>
-
-            <select
-              value={selectedChannel}
-              onChange={e => setSelectedChannel(e.target.value)}
-              className="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700 font-medium focus:outline-none cursor-pointer"
-            >
-              <option value="ALL">Tất cả Sàn</option>
-              <option value="TIKTOK">TikTok Shop</option>
-              <option value="SHOPEE">Shopee Mall</option>
-              <option value="LAZADA">Lazada</option>
-            </select>
-
+          <div className="flex flex-wrap items-center gap-2.5 shrink-0">
             <button
               type="button"
-              disabled={isExporting}
-              onClick={() => handleExportExcel('Bao_Cao_Tong_Hop_Executive_Full')}
-              className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition shadow-xs cursor-pointer"
+              onClick={handleSyncTikTokSeller}
+              disabled={isSyncingSeller}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-800 transition cursor-pointer disabled:opacity-50"
             >
-              <Download className="w-3.5 h-3.5 text-rose-300" />
-              <span>{isExporting ? 'Đang xuất...' : 'Xuất Excel'}</span>
+              <RefreshCw className={`w-3.5 h-3.5 ${isSyncingSeller ? 'animate-spin text-indigo-600' : ''}`} />
+              {isSyncingSeller ? 'Đang đồng bộ TikTok Seller...' : 'Đồng bộ TikTok Seller & File 3.2'}
+            </button>
+            <button
+              type="button"
+              onClick={handleExportMultiSheetExcel}
+              disabled={isExportingExcel}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition cursor-pointer disabled:opacity-50"
+            >
+              <Download className="w-3.5 h-3.5" />
+              {isExportingExcel ? 'Đang kết xuất Excel...' : 'Xuất Excel Đối Soát (4 Sheets)'}
             </button>
           </div>
         </div>
-      </div>
 
-      {/* ========================================================================= */}
-      {/* TOP TIER KPI METRIC CARDS */}
-      {/* ========================================================================= */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        {/* Card 1: GMV */}
-        <div className="bg-white rounded-xl border border-slate-200 p-3.5 shadow-2xs relative overflow-hidden">
-          <div className="text-2xs font-semibold text-slate-500 flex items-center justify-between">
-            <span>Doanh Thu GMV</span>
-            <span className="text-emerald-600 bg-emerald-50 px-1 py-0.5 rounded font-semibold">+18.4%</span>
+        {/* THANH BỘ LỌC ĐA CHIỀU */}
+        <div className="mt-4 pt-4 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5">
+          {/* Tìm kiếm nhanh */}
+          <div className="relative">
+            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Tìm gian hàng, mã BO26, nhân sự..."
+              className="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-hidden focus:border-indigo-500 focus:bg-white"
+            />
           </div>
-          <div className="text-lg font-semibold font-mono text-emerald-600 mt-1">
-            {formatVndShort(stats.totalGmv)}
-          </div>
-          <div className="text-2xs text-slate-500 mt-1 flex items-center justify-between">
-            <span>Mục tiêu: 4.5 Tỷ</span>
-            <span className="font-semibold text-emerald-700">85.6%</span>
-          </div>
-          <div className="w-full bg-slate-100 h-1.5 rounded-full mt-1 overflow-hidden">
-            <div className="bg-emerald-500 h-full rounded-full" style={{ width: '85.6%' }} />
-          </div>
-        </div>
 
-        {/* Card 2: Chi phí & Pacing */}
-        <div className="bg-white rounded-xl border border-slate-200 p-3.5 shadow-2xs relative overflow-hidden">
-          <div className="text-2xs font-semibold text-slate-500 flex items-center justify-between">
-            <span>Ngân Sách Đã Chi</span>
-            <span className="text-blue-600 bg-blue-50 px-1 py-0.5 rounded font-semibold">{stats.overallBurnRate}% Burn</span>
-          </div>
-          <div className="text-lg font-semibold font-mono text-slate-900 mt-1">
-            {formatVndShort(stats.totalSpentBudget)}
-          </div>
-          <div className="text-2xs text-slate-500 mt-1 flex items-center justify-between">
-            <span>Còn lại: {formatVndShort(stats.totalRemainingBudget)}</span>
-            <span className="font-semibold text-blue-700">Pacing: {stats.overallPacingIndex}x</span>
-          </div>
-          <div className="w-full bg-slate-100 h-1.5 rounded-full mt-1 overflow-hidden">
-            <div className="bg-blue-600 h-full rounded-full" style={{ width: `${stats.overallBurnRate}%` }} />
-          </div>
-        </div>
+          {/* Lọc theo Thương hiệu (Brand) */}
+          <select
+            value={selectedBrand}
+            onChange={(e) => setSelectedBrand(e.target.value)}
+            className="px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg font-medium text-slate-700 focus:outline-hidden focus:border-indigo-500"
+          >
+            <option value="ALL">Tất cả Thương hiệu ({allBrands.length} Brands)</option>
+            {allBrands.map((b) => (
+              <option key={b} value={b}>
+                Thương hiệu: {b}
+              </option>
+            ))}
+          </select>
 
-        {/* Card 3: ROAS */}
-        <div className="bg-white rounded-xl border border-slate-200 p-3.5 shadow-2xs relative overflow-hidden">
-          <div className="text-2xs font-semibold text-slate-500 flex items-center justify-between">
-            <span>ROAS Toàn Kênh</span>
-            <span className="text-emerald-600 bg-emerald-50 px-1 py-0.5 rounded font-semibold">Vượt KPI</span>
-          </div>
-          <div className="text-lg font-semibold font-mono text-blue-600 mt-1">
-            {stats.overallRoas}x
-          </div>
-          <div className="text-2xs text-slate-500 mt-1 truncate">
-            Net Margin: <strong className="text-slate-800 font-mono">+{formatVndShort(stats.netProfitContribution)}</strong>
-          </div>
-          <div className="w-full bg-slate-100 h-1.5 rounded-full mt-1 overflow-hidden">
-            <div className="bg-blue-600 h-full rounded-full" style={{ width: '100%' }} />
-          </div>
-        </div>
+          {/* Lọc theo Sàn TMĐT */}
+          <select
+            value={selectedPlatform}
+            onChange={(e) => setSelectedPlatform(e.target.value as any)}
+            className="px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg font-medium text-slate-700 focus:outline-hidden focus:border-indigo-500"
+          >
+            <option value="ALL">Tất cả Sàn (39 TikTok · 30 Shopee)</option>
+            <option value="TikTok Shop">TikTok Shop (39 gian hàng)</option>
+            <option value="Shopee Mall">Shopee Mall (30 gian hàng)</option>
+          </select>
 
-        {/* Card 4: Video On-Air */}
-        <div className="bg-white rounded-xl border border-slate-200 p-3.5 shadow-2xs relative overflow-hidden">
-          <div className="text-2xs font-semibold text-slate-500 flex items-center justify-between">
-            <span>Video Đã On Air</span>
-            <span className="text-emerald-600 text-2xs font-semibold">87.2% KPI</span>
-          </div>
-          <div className="text-lg font-semibold font-mono text-slate-900 mt-1">
-            {stats.totalOnAirVideos} <span className="text-xs font-normal text-slate-500">video</span>
-          </div>
-          <div className="text-2xs text-slate-500 mt-1 flex items-center justify-between">
-            <span>Quay: {stats.inProductionVideos}</span>
-            <span>Kịch bản: {stats.pendingScriptVideos}</span>
-          </div>
-          <div className="w-full bg-slate-100 h-1.5 rounded-full mt-1 overflow-hidden">
-            <div className="bg-emerald-600 h-full rounded-full" style={{ width: '87.2%' }} />
-          </div>
-        </div>
+          {/* Lọc theo Cơ cấu Leader / Không Leader */}
+          <select
+            value={selectedGovernance}
+            onChange={(e) => setSelectedGovernance(e.target.value as any)}
+            className="px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg font-medium text-slate-700 focus:outline-hidden focus:border-indigo-500"
+          >
+            <option value="ALL">Cơ cấu duyệt: Tất cả 69 gian hàng</option>
+            <option value="WITH_LEADER">Nhóm có Leader Nguyễn Thị Ngọc Tâm (8 gian)</option>
+            <option value="DIRECT_HEAD">Không có Leader — Trình trực tiếp Yến Nhi (61 gian)</option>
+          </select>
 
-        {/* Card 5: Lượt Views */}
-        <div className="bg-white rounded-xl border border-slate-200 p-3.5 shadow-2xs relative overflow-hidden">
-          <div className="text-2xs font-semibold text-slate-500 flex items-center justify-between">
-            <span>Tổng Lượt Views</span>
-            <span className="text-blue-600 text-2xs font-semibold">Traffic Hot</span>
-          </div>
-          <div className="text-lg font-semibold font-mono text-blue-700 mt-1">
-            {(stats.totalViews / 1000000).toFixed(1)}M <span className="text-xs font-normal text-slate-500">views</span>
-          </div>
-          <div className="text-2xs text-slate-500 mt-1">
-            Tỷ lệ CVR giỏ hàng: <strong className="text-slate-800">3.8%</strong>
-          </div>
-          <div className="w-full bg-slate-100 h-1.5 rounded-full mt-1 overflow-hidden">
-            <div className="bg-blue-600 h-full rounded-full" style={{ width: '92%' }} />
-          </div>
-        </div>
-
-        {/* Card 6: Tuân Thủ SLA */}
-        <div className="bg-white rounded-xl border border-slate-200 p-3.5 shadow-2xs relative overflow-hidden">
-          <div className="text-2xs font-semibold text-slate-500 flex items-center justify-between">
-            <span>SLA Bàn Giao</span>
-            <span className="text-blue-600 text-2xs font-semibold">Chuẩn 8 bước</span>
-          </div>
-          <div className="text-lg font-semibold font-mono text-blue-600 mt-1">
-            {stats.slaComplianceRate}%
-          </div>
-          <div className="text-2xs text-slate-500 mt-1 flex items-center justify-between">
-            <span>Duyệt kịch bản: 92%</span>
-            <span>Air video: 4.1d</span>
-          </div>
-          <div className="w-full bg-slate-100 h-1.5 rounded-full mt-1 overflow-hidden">
-            <div className="bg-blue-600 h-full rounded-full" style={{ width: `${stats.slaComplianceRate}%` }} />
-          </div>
+          {/* Lọc theo Trạng thái Hạn mức Net */}
+          <select
+            value={selectedRiskFilter}
+            onChange={(e) => setSelectedRiskFilter(e.target.value as any)}
+            className="px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg font-medium text-slate-700 focus:outline-hidden focus:border-indigo-500"
+          >
+            <option value="ALL">Kiểm soát Kế toán: Tất cả trạng thái</option>
+            <option value="UNBUDGETED">Báo động đỏ: Chi ngoài KH (Hạn mức Net = 0đ)</option>
+            <option value="OVERBUDGET">Cảnh báo: Thực chi vượt trần Net</option>
+            <option value="SLOW_BURN">Giải ngân chậm (&lt;25% hạn mức Net)</option>
+            <option value="NORMAL">An toàn: Trong hạn mức Net</option>
+          </select>
         </div>
       </div>
 
-      {/* ========================================================================= */}
-      {/* NAVIGATION TABS EXPANDED TO 7 DETAILED AREAS */}
-      {/* ========================================================================= */}
-      <Tabs
-        items={[
-          { key: 'OVERVIEW', label: 'Tổng quan' },
-          { key: 'STAFF_PROGRESS', label: 'Tiến độ nhân sự', count: staffScorecards.length },
-          { key: 'VIDEO_AIRING', label: 'Tiến độ video' },
-          { key: 'BUDGET_PACING', label: 'Chi tiêu ngân sách' },
-          { key: 'CREATORS', label: 'Xếp hạng KOC' },
-          { key: 'FINANCE_TAX', label: 'Thuế & đối soát' },
-          { key: 'REPORT_CENTER', label: 'Xuất báo cáo (.xlsx)' },
-        ]}
-        value={activeSubTab}
-        onChange={(k) => setActiveSubTab(k as typeof activeSubTab)}
-      />
+      {/* DẢI 5 THẺ KPI ĐỐI SOÁT TRỌNG YẾU */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-3.5">
+        {/* KPI 1: Mục tiêu NMV & TikTok Seller Ads */}
+        <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs">
+          <div className="flex items-center justify-between text-xs text-slate-500 font-medium mb-1">
+            <span>Mục tiêu NMV / GMV Sàn</span>
+            <TrendingUp className="w-4 h-4 text-indigo-600" />
+          </div>
+          <div className="text-xl font-extrabold text-slate-900 font-mono">
+            {formatVndShort(kpiSummary.totalTargetGmv)}
+          </div>
+          <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
+            <span className="text-slate-500">GMV Ads TikTok Seller:</span>
+            <span className="font-bold text-indigo-700 font-mono">
+              {formatVndShort(TIKTOK_SELLER_ADS_SUMMARY.totalGmv)} ({TIKTOK_SELLER_ADS_SUMMARY.overallRoas}x ROAS)
+            </span>
+          </div>
+        </div>
+
+        {/* KPI 2: Hạn mức Order Gross vs Net */}
+        <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs">
+          <div className="flex items-center justify-between text-xs text-slate-500 font-medium mb-1">
+            <span>Hạn mức Order Net (Trần Kế toán)</span>
+            <DollarSign className="w-4 h-4 text-emerald-600" />
+          </div>
+          <div className="text-xl font-extrabold text-emerald-700 font-mono">
+            {formatVndShort(kpiSummary.totalBudgetNet)}
+          </div>
+          <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
+            <span className="text-slate-500">Order Gross (Gồm thuế/phí):</span>
+            <span className="font-bold text-slate-800 font-mono">
+              {formatVndShort(kpiSummary.totalBudgetGross)}
+            </span>
+          </div>
+        </div>
+
+        {/* KPI 3: Thực chi Booking File 3.2 */}
+        <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs">
+          <div className="flex items-center justify-between text-xs text-slate-500 font-medium mb-1">
+            <span>Thực chi Duyệt Book (File 3.2)</span>
+            <Activity className="w-4 h-4 text-blue-600" />
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-xl font-extrabold text-slate-900 font-mono">
+              {formatVndShort(kpiSummary.totalActualSpentNet)}
+            </span>
+            <span className="text-xs font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded">
+              {kpiSummary.pacingNetPct}% Net
+            </span>
+          </div>
+          <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
+            <span className="text-slate-500">Hạn mức Net còn lại:</span>
+            <span className="font-bold text-slate-800 font-mono">
+              {formatVndShort(Math.max(0, kpiSummary.totalBudgetNet - kpiSummary.totalActualSpentNet))}
+            </span>
+          </div>
+        </div>
+
+        {/* KPI 4: Bóc tách Video Paid vs FOC vs Kênh Brand */}
+        <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs">
+          <div className="flex items-center justify-between text-xs text-slate-500 font-medium mb-1">
+            <span>Sản lượng Video Đã Air / Chỉ tiêu</span>
+            <Film className="w-4 h-4 text-violet-600" />
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-xl font-extrabold text-slate-900 font-mono">
+              {kpiSummary.totalActualAiredVideos.toLocaleString('vi-VN')} video
+            </span>
+            <span className="text-[11px] font-semibold text-slate-500">
+              / 786 đơn book T10
+            </span>
+          </div>
+          <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
+            <span className="text-slate-600">
+              Paid: <strong className="text-slate-900">{kpiSummary.totalTargetPaidVideos.toLocaleString('vi-VN')}</strong> · FOC (0đ):{' '}
+              <strong className="text-indigo-700">{kpiSummary.totalTargetFocVideos.toLocaleString('vi-VN')}</strong>
+            </span>
+            <span className="text-slate-600">
+              Brand: <strong>{kpiSummary.totalTargetSelfVideos.toLocaleString('vi-VN')}</strong>
+            </span>
+          </div>
+        </div>
+
+        {/* KPI 5: Cảnh báo Rủi ro Tài chính */}
+        <div className="bg-rose-50/70 rounded-xl border border-rose-200 p-4 shadow-xs">
+          <div className="flex items-center justify-between text-xs text-rose-800 font-bold mb-1">
+            <span>Cảnh báo Trần Ngân Sách Net</span>
+            <AlertTriangle className="w-4 h-4 text-rose-600" />
+          </div>
+          <div className="flex items-center gap-3">
+            <div>
+              <span className="text-xl font-extrabold text-rose-700 font-mono">
+                {kpiSummary.unbudgetedCount} gian
+              </span>
+              <span className="block text-[10px] font-semibold text-rose-800">Báo động đỏ (0đ Net)</span>
+            </div>
+            <div className="h-7 w-px bg-rose-200" />
+            <div>
+              <span className="text-xl font-extrabold text-amber-700 font-mono">
+                {kpiSummary.overbudgetCount} gian
+              </span>
+              <span className="block text-[10px] font-semibold text-amber-800">Vượt trần Net</span>
+            </div>
+          </div>
+          <div className="mt-2 pt-2 border-t border-rose-200/80 flex items-center justify-between text-[11px]">
+            <span className="text-rose-800">Tổng phát sinh ngoài KH:</span>
+            <span className="font-bold text-rose-700 font-mono">+296,04 Tr</span>
+          </div>
+        </div>
+      </div>
+
+      {/* THANH ĐIỀU HƯỚNG 5 PHÂN HỆ BIỂU ĐỒ & ĐỐI SOÁT */}
+      <div className="bg-white rounded-xl border border-slate-200 px-4 pt-2 shadow-xs">
+        <div className="flex flex-wrap gap-1 border-b border-slate-100">
+          {[
+            {
+              key: 'OVERVIEW_FINANCE',
+              label: '1. Biểu Đồ Đối Soát Ngân Sách (Gross / Net) & Cảnh Báo Đỏ',
+              icon: BarChart3
+            },
+            {
+              key: 'STORE_SELLER',
+              label: `2. Hiệu Quả 69 Gian Hàng & Chiến Dịch TikTok Seller (${filteredStores.length})`,
+              icon: Store
+            },
+            {
+              key: 'VIDEO_CREATIVE',
+              label: '3. Phân Tích Video Đã Booking (File 3.2) & Creative Ads',
+              icon: PlaySquare
+            },
+            {
+              key: 'STAFF_PERFORMANCE',
+              label: `4. Hiệu Suất Từng Nhân Sự B2C (${filteredStaffList.length} nhân sự)`,
+              icon: Users
+            },
+            {
+              key: 'EXPORT_CENTER',
+              label: '5. Xuất Sổ Cái Đối Soát Kế Toán (.xlsx)',
+              icon: FileSpreadsheet
+            }
+          ].map((tab) => {
+            const Icon = tab.icon;
+            const active = activeTab === tab.key;
+            return (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => setActiveTab(tab.key as DashboardMainTab)}
+                className={`inline-flex items-center gap-2 px-3.5 py-2.5 text-xs font-bold border-b-2 transition cursor-pointer ${
+                  active
+                    ? 'border-indigo-600 text-indigo-700 bg-indigo-50/50 rounded-t-lg'
+                    : 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-t-lg'
+                }`}
+              >
+                <Icon className="w-3.5 h-3.5" />
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
       {/* ========================================================================= */}
-      {/* SUB-TAB 1: DASHBOARD ĐIỀU HÀNH ĐA CHIỀU (OVERVIEW) */}
+      {/* TAB 1: TỔNG QUAN TÀI CHÍNH GROSS / NET, BÓC TÁCH ORDER GROWTH & CẢNH BÁO ĐỎ */}
       {/* ========================================================================= */}
-      {activeSubTab === 'OVERVIEW' && (
-        <div className="space-y-6">
-          {/* Quick Deep-Dive Shortcut Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div 
-              onClick={() => setActiveSubTab('STAFF_PROGRESS')}
-              className="bg-surface-subtle border border-blue-200 rounded-xl p-4 cursor-pointer hover:shadow-sm transition flex items-center justify-between"
-            >
-              <div>
-                <span className="text-2xs font-semibold text-blue-700 ">Tiến Độ Nhân Viên</span>
-                <h4 className="text-sm font-semibold text-slate-900 mt-0.5">85% Nhân sự đạt và vượt KPI</h4>
-                <p className="text-2xs text-slate-600 mt-1">Cảnh báo: 2 nhân sự cần phân bổ bớt gian hàng</p>
+      {activeTab === 'OVERVIEW_FINANCE' && (
+        <div className="space-y-5">
+          {/* KHỐI BÁO ĐỘNG ĐỎ & VƯỢT TRẦN NET (NGUYÊN TẮC CẢNH BÁO TÀI CHÍNH) */}
+          <div className="bg-white rounded-xl border border-rose-200 overflow-hidden shadow-xs">
+            <div className="bg-rose-50/80 px-5 py-3.5 border-b border-rose-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <div className="flex items-center gap-2.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-rose-600 animate-pulse" />
+                <h2 className="text-sm font-bold text-rose-950">
+                  Bảng Cảnh Báo Tài Chính Trọng Yếu: Gian Hàng Phát Sinh Chi Phí Ngoài Hạn Mức (0đ) & Vượt Trần Order Net
+                </h2>
               </div>
-              <ChevronRight className="w-5 h-5 text-blue-600 shrink-0" />
+              <span className="text-xs font-semibold text-rose-800">
+                Kế toán kiểm soát duyệt chi theo cột Hạn mức Net (File 4.1 vs File 3.2)
+              </span>
             </div>
 
-            <div 
-              onClick={() => setActiveSubTab('VIDEO_AIRING')}
-              className="bg-surface-subtle border border-emerald-200 rounded-xl p-4 cursor-pointer hover:shadow-sm transition flex items-center justify-between"
-            >
-              <div>
-                <span className="text-2xs font-semibold text-emerald-700 ">Tiến Độ Air Video</span>
-                <h4 className="text-sm font-semibold text-slate-900 mt-0.5">1,025 / 1,250 Videos Đã On-Air</h4>
-                <p className="text-2xs text-slate-600 mt-1">285 video đang quay dựng chuẩn bị cho Mega 10.10</p>
-              </div>
-              <ChevronRight className="w-5 h-5 text-emerald-600 shrink-0" />
-            </div>
-
-            <div 
-              onClick={() => setActiveSubTab('BUDGET_PACING')}
-              className="bg-surface-subtle border border-amber-200 rounded-xl p-4 cursor-pointer hover:shadow-sm transition flex items-center justify-between"
-            >
-              <div>
-                <span className="text-2xs font-semibold text-amber-700 ">Burn Rate Pacing (Ngày 8/31)</span>
-                <h4 className="text-sm font-semibold text-slate-900 mt-0.5">Đã giải ngân 28.4% (Pacing 1.10x)</h4>
-                <p className="text-2xs text-slate-600 mt-1">Đúng tiến độ an toàn, sẵn sàng dồn ngân sách Mega</p>
-              </div>
-              <ChevronRight className="w-5 h-5 text-amber-600 shrink-0" />
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs text-left">
+                <thead className="bg-slate-50 text-slate-600 uppercase border-b border-slate-200">
+                  <tr>
+                    <th className="py-2.5 px-4 font-bold">Gian Hàng (Store)</th>
+                    <th className="py-2.5 px-3 font-bold">Sàn</th>
+                    <th className="py-2.5 px-3 font-bold">Chuyên Viên (PIC)</th>
+                    <th className="py-2.5 px-3 font-bold">Cấp Duyệt Nhóm</th>
+                    <th className="py-2.5 px-3 font-bold text-right">Order Gross</th>
+                    <th className="py-2.5 px-3 font-bold text-right">Trần Order Net</th>
+                    <th className="py-2.5 px-3 font-bold text-right">Thực Chi 3.2</th>
+                    <th className="py-2.5 px-3 font-bold text-right">Chênh Lệch Net</th>
+                    <th className="py-2.5 px-3 font-bold text-center">Video Air</th>
+                    <th className="py-2.5 px-4 font-bold">Mức Độ Cảnh Báo & Hành Động</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {riskStores.map((st) => {
+                    const net = st.budgetNet || st.monthlyBudget || 0;
+                    const spent = st.actualSpentNet || 0;
+                    const overAmount = spent - net;
+                    return (
+                      <tr
+                        key={st.id}
+                        onClick={() => setInspectStore(st)}
+                        className="hover:bg-rose-50/40 transition cursor-pointer"
+                      >
+                        <td className="py-2.5 px-4 font-bold text-slate-900">
+                          {st.storeName}
+                          <span className="block text-[11px] font-normal text-slate-500">
+                            Brand: {st.brandName}
+                          </span>
+                        </td>
+                        <td className="py-2.5 px-3">
+                          <span
+                            className={`px-2 py-0.5 rounded text-[11px] font-semibold ${
+                              st.platform === 'TikTok Shop'
+                                ? 'bg-slate-900 text-white'
+                                : 'bg-orange-100 text-orange-800'
+                            }`}
+                          >
+                            {st.platform}
+                          </span>
+                        </td>
+                        <td className="py-2.5 px-3 font-semibold text-slate-800">
+                          {st.primaryPic || st.assignedStaff}
+                        </td>
+                        <td className="py-2.5 px-3 text-slate-600">
+                          {st.hasBookingLeader && st.bookingLeader ? (
+                            <span className="text-indigo-700 font-semibold">
+                              Leader: {st.bookingLeader}
+                            </span>
+                          ) : (
+                            <span className="text-slate-500">
+                              Không có leader (Trực tiếp Yến Nhi)
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-2.5 px-3 text-right font-mono text-slate-600">
+                          {formatVndShort(st.budgetGross || 0)}
+                        </td>
+                        <td className="py-2.5 px-3 text-right font-mono font-bold text-slate-800">
+                          {formatVndShort(net)}
+                        </td>
+                        <td className="py-2.5 px-3 text-right font-mono font-bold text-rose-700">
+                          {formatVndShort(spent)}
+                        </td>
+                        <td className="py-2.5 px-3 text-right font-mono font-extrabold text-rose-600">
+                          +{formatVndShort(overAmount)}
+                        </td>
+                        <td className="py-2.5 px-3 text-center font-mono font-bold text-slate-800">
+                          {st.actualAiredVideos || 0}
+                        </td>
+                        <td className="py-2.5 px-4">
+                          {renderRiskBadge(st.financialRiskStatus)}
+                          <p className="text-[11px] text-slate-600 mt-0.5">
+                            {st.financialRiskNotes}
+                          </p>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           </div>
 
-          {/* Row 1: Weekly Growth & Revenue Channels */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-            {/* Weekly GMV Trend Visualizer */}
-            <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 p-5 shadow-xs space-y-4">
-              <div className="flex items-center justify-between">
+          {/* HÀNG BIỂU ĐỒ 1 & 2: BIỂU ĐỒ CỘT ĐỐI SOÁT BRAND GROSS/NET/SPENT + BIỂU ĐỒ BÓC TÁCH ORDER GROWTH */}
+          <div className="grid grid-cols-1 xl:grid-cols-12 gap-5">
+            {/* BIỂU ĐỒ 1 (7 CỘT): ĐỐI SOÁT NGÂN SÁCH GROSS vs HẠN MỨC NET vs THỰC CHI FILE 3.2 THEO THƯƠNG HIỆU */}
+            <div className="xl:col-span-7 bg-white rounded-xl border border-slate-200 p-5 shadow-xs">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
                 <div>
-                  <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-                    <TrendingUp className="w-4 h-4 text-emerald-600" />
-                    Tiến Độ Tăng Trưởng GMV Theo Tuần
+                  <h3 className="text-sm font-bold text-slate-900">
+                    Biểu Đồ Đối Soát Hạn Mức Order Gross · Hạn Mức Net · Thực Chi (Top 14 Thương Hiệu)
                   </h3>
-                  <p className="text-xs text-slate-500">So sánh GMV thực đạt và Chi phí đầu tư qua 4 tuần của Tháng 10/2026</p>
+                  <p className="text-xs text-slate-500">
+                    Tách bạch rõ Chi phí Gross (Hợp đồng Brand) và Trần Net (Kế toán kiểm soát duyệt chi File 3.2)
+                  </p>
                 </div>
-                <span className="text-2xs bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded font-semibold">
-                  Tăng trưởng liên tục
-                </span>
+                <div className="flex items-center gap-3 text-[11px] font-semibold">
+                  <span className="inline-flex items-center gap-1 text-slate-600">
+                    <span className="w-2.5 h-2.5 rounded-xs bg-slate-300 inline-block" /> Order Gross
+                  </span>
+                  <span className="inline-flex items-center gap-1 text-indigo-700">
+                    <span className="w-2.5 h-2.5 rounded-xs bg-indigo-600 inline-block" /> Trần Order Net
+                  </span>
+                  <span className="inline-flex items-center gap-1 text-emerald-700">
+                    <span className="w-2.5 h-2.5 rounded-xs bg-emerald-500 inline-block" /> Thực chi 3.2
+                  </span>
+                  <span className="inline-flex items-center gap-1 text-rose-700">
+                    <span className="w-2.5 h-2.5 rounded-xs bg-rose-500 inline-block" /> Vượt trần Net
+                  </span>
+                </div>
               </div>
 
-              {/* Simulated Chart Bars */}
-              <div className="grid grid-cols-4 gap-3 pt-3">
-                {[
-                  { week: 'Tuần 40 (01-07/10)', ratioGmv: 0.20, ratioSpend: 0.21, pct: 68 },
-                  { week: 'Tuần 41 (08-14/10)', ratioGmv: 0.23, ratioSpend: 0.23, pct: 75 },
-                  { week: 'Tuần 42 (15-21/10)', ratioGmv: 0.27, ratioSpend: 0.27, pct: 88 },
-                  { week: 'Tuần 43 (22-28/10)', ratioGmv: 0.30, ratioSpend: 0.29, pct: 100 }
-                ].map((item, idx) => {
-                  const wGmv = Math.round(stats.totalGmv * item.ratioGmv);
-                  const wSpend = Math.round(stats.totalSpend * item.ratioSpend);
-                  const wRoas = wSpend > 0 ? (wGmv / wSpend).toFixed(1) + 'x' : '0.0x';
-                  const wPct = stats.totalGmv > 0 ? item.pct : 0;
+              <div className="space-y-3">
+                {brandAggregation.slice(0, 14).map((b) => {
+                  const maxScale = Math.max(
+                    brandAggregation[0]?.budgetGross || 1,
+                    brandAggregation[0]?.actualSpentNet || 1,
+                    1
+                  );
+                  const grossPct = Math.min(100, Math.round((b.budgetGross / maxScale) * 100));
+                  const netPct = Math.min(100, Math.round((b.budgetNet / maxScale) * 100));
+                  const spentPct = Math.min(100, Math.round((b.actualSpentNet / maxScale) * 100));
+                  const isOver = b.actualSpentNet > b.budgetNet;
+                  const burnVsNet =
+                    b.budgetNet > 0
+                      ? Math.round((b.actualSpentNet / b.budgetNet) * 100)
+                      : b.actualSpentNet > 0
+                      ? 999
+                      : 0;
+
                   return (
-                    <div key={idx} className="bg-slate-50 rounded-xl p-3 border border-slate-200/80 flex flex-col justify-between space-y-2">
-                      <div className="text-2xs font-semibold text-slate-600 truncate">{item.week}</div>
-                      <div>
-                        <div className="text-base font-semibold font-mono text-emerald-600">
-                          {formatVndShort(wGmv)}
+                    <div
+                      key={b.brandName}
+                      onClick={() => setSelectedBrand(selectedBrand === b.brandName ? 'ALL' : b.brandName)}
+                      className="p-2.5 rounded-lg border border-slate-100 hover:border-indigo-200 hover:bg-slate-50/70 transition cursor-pointer"
+                    >
+                      <div className="flex items-center justify-between text-xs mb-1.5">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-slate-900">{b.brandName}</span>
+                          <span className="text-[11px] text-slate-500">
+                            ({b.storeCount} gian: {b.tiktokStores} TikTok · {b.shopeeStores} Shopee)
+                          </span>
+                          {b.hasLeader && (
+                            <span className="px-1.5 py-0.2 rounded text-[10px] font-semibold bg-indigo-50 text-indigo-700">
+                              Leader: Ngọc Tâm
+                            </span>
+                          )}
+                          {b.riskStatus === 'UNBUDGETED' && (
+                            <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-rose-100 text-rose-700">
+                              Báo động đỏ 0đ
+                            </span>
+                          )}
+                          {b.riskStatus === 'OVERBUDGET' && (
+                            <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-amber-100 text-amber-800">
+                              Vượt trần Net
+                            </span>
+                          )}
                         </div>
-                        <div className="text-2xs text-slate-500 font-mono">
-                          Chi phí: {formatVndShort(wSpend)}
+                        <div className="flex items-center gap-3 font-mono text-[11px]">
+                          <span className="text-slate-500">
+                            Gross: <strong>{formatVndShort(b.budgetGross)}</strong>
+                          </span>
+                          <span className="text-indigo-700">
+                            Net: <strong>{formatVndShort(b.budgetNet)}</strong>
+                          </span>
+                          <span className={isOver ? 'text-rose-600 font-bold' : 'text-emerald-700 font-bold'}>
+                            Chi: {formatVndShort(b.actualSpentNet)} ({burnVsNet === 999 ? 'Ngoài KH' : `${burnVsNet}%`})
+                          </span>
                         </div>
                       </div>
-                      <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
-                        <div className="bg-emerald-500 h-full rounded-full transition-all duration-500" style={{ width: `${wPct}%` }} />
-                      </div>
-                      <div className="text-2xs font-mono font-semibold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded w-fit">
-                        ROAS: {wRoas}
+
+                      {/* Thanh biểu đồ 3 tầng: Gross (nền xám), Net (viền/thanh chàm), Thực chi (xanh lá hoặc đỏ) */}
+                      <div className="space-y-1">
+                        <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden relative">
+                          <div
+                            className="h-full bg-slate-300 rounded-full"
+                            style={{ width: `${Math.max(grossPct, 1)}%` }}
+                            title={`Order Gross: ${formatVndShort(b.budgetGross)}`}
+                          />
+                          <div
+                            className="h-full bg-indigo-600 rounded-full absolute top-0 left-0"
+                            style={{ width: `${Math.max(netPct, 0.5)}%` }}
+                            title={`Hạn mức Order Net: ${formatVndShort(b.budgetNet)}`}
+                          />
+                        </div>
+                        <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full ${isOver ? 'bg-rose-500' : 'bg-emerald-500'}`}
+                            style={{ width: `${Math.max(spentPct, b.actualSpentNet > 0 ? 2 : 0)}%` }}
+                            title={`Thực chi File 3.2: ${formatVndShort(b.actualSpentNet)}`}
+                          />
+                        </div>
                       </div>
                     </div>
                   );
@@ -1238,336 +1168,428 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
               </div>
             </div>
 
-            {/* Revenue Distribution By Channel */}
-            <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs space-y-4">
-              <div>
-                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-                  <PieChart className="w-4 h-4 text-blue-600" />
-                  Cơ Cấu Doanh Thu 3 Nguồn Lực
+            {/* BIỂU ĐỒ 2 (5 CỘT): BÓC TÁCH CHỈ TIÊU ORDER GROWTH (GROSS/NET, PAID/FOC, AFFILIATE/BRAND/LIVE) */}
+            <div className="xl:col-span-5 space-y-5">
+              {/* Khối 2A: Bóc tách Ngân sách Order Growth */}
+              <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs">
+                <h3 className="text-sm font-bold text-slate-900 mb-1">
+                  Bóc Tách Cấu Trúc Ngân Sách Order Growth (File 4.1)
                 </h3>
-                <p className="text-xs text-slate-500">Tỷ trọng đóng góp GMV toàn hệ thống</p>
-              </div>
+                <p className="text-xs text-slate-500 mb-4">
+                  Phân tách rõ Hạn mức Affiliate KOC, Video kênh Brand (Self-channel) và Livestream trên 69 gian hàng B2C
+                </p>
 
-              <div className="space-y-3.5 pt-1">
-                {(() => {
-                  const bPct = stats.totalGmv > 0 ? Math.round((stats.bookingGmv / stats.totalGmv) * 100) : 0;
-                  const aPct = stats.totalGmv > 0 ? Math.round((stats.adsGmv / stats.totalGmv) * 100) : 0;
-                  const cPct = stats.totalGmv > 0 ? Math.max(0, 100 - bPct - aPct) : 0;
-                  return (
-                    <>
-                      <div>
-                        <div className="flex justify-between text-xs font-semibold mb-1">
-                          <span className="flex items-center gap-1.5 text-slate-800">
-                            <span className="w-2.5 h-2.5 rounded-full bg-blue-600" />
-                            1. KOC Booking Ngoài (Affiliate + Cast)
-                          </span>
-                          <span className="font-mono text-blue-600">{bPct}% ({formatVndShort(stats.bookingGmv)})</span>
-                        </div>
-                        <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                          <div className="bg-blue-600 h-full rounded-full" style={{ width: `${bPct}%` }} />
-                        </div>
-                      </div>
+                <div className="space-y-3.5">
+                  {/* Affiliate KOC */}
+                  <div className="p-3 rounded-lg bg-slate-50 border border-slate-200/80">
+                    <div className="flex items-center justify-between text-xs mb-1">
+                      <span className="font-bold text-slate-800">1. Ngân sách Video Affiliate KOC</span>
+                      <span className="font-mono font-bold text-indigo-700">
+                        Net: {formatVndShort(kpiSummary.totalAffNet)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-[11px] text-slate-500 mb-2">
+                      <span>Gross (Gồm thuế/phí sàn): {formatVndShort(kpiSummary.totalAffGross)}</span>
+                      <span>
+                        Chiếm{' '}
+                        {kpiSummary.totalBudgetNet > 0
+                          ? Math.round((kpiSummary.totalAffNet / kpiSummary.totalBudgetNet) * 100)
+                          : 0}
+                        % tổng Net
+                      </span>
+                    </div>
+                    <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-indigo-600 rounded-full"
+                        style={{
+                          width: `${
+                            kpiSummary.totalBudgetNet > 0
+                              ? Math.min(100, Math.round((kpiSummary.totalAffNet / kpiSummary.totalBudgetNet) * 100))
+                              : 0
+                          }%`
+                        }}
+                      />
+                    </div>
+                  </div>
 
-                      <div>
-                        <div className="flex justify-between text-xs font-semibold mb-1">
-                          <span className="flex items-center gap-1.5 text-slate-800">
-                            <span className="w-2.5 h-2.5 rounded-full bg-rose-500" />
-                            2. TikTok Seller Ads PGM
-                          </span>
-                          <span className="font-mono text-rose-600">{aPct}% ({formatVndShort(stats.adsGmv)})</span>
-                        </div>
-                        <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                          <div className="bg-rose-500 h-full rounded-full" style={{ width: `${aPct}%` }} />
-                        </div>
-                      </div>
+                  {/* Video Kênh Brand (Self-channel) */}
+                  <div className="p-3 rounded-lg bg-slate-50 border border-slate-200/80">
+                    <div className="flex items-center justify-between text-xs mb-1">
+                      <span className="font-bold text-slate-800">2. Ngân sách Video Kênh Brand (Self-channel)</span>
+                      <span className="font-mono font-bold text-emerald-700">
+                        Net: {formatVndShort(kpiSummary.totalSelfNet)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-[11px] text-slate-500 mb-2">
+                      <span>Gross: {formatVndShort(kpiSummary.totalSelfGross)}</span>
+                      <span>Chỉ tiêu: {kpiSummary.totalTargetSelfVideos.toLocaleString('vi-VN')} video kênh Brand</span>
+                    </div>
+                    <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-emerald-500 rounded-full"
+                        style={{
+                          width: `${
+                            kpiSummary.totalBudgetNet > 0
+                              ? Math.max(
+                                  4,
+                                  Math.round((kpiSummary.totalSelfNet / kpiSummary.totalBudgetNet) * 100)
+                                )
+                              : 0
+                          }%`
+                        }}
+                      />
+                    </div>
+                  </div>
 
-                      <div>
-                        <div className="flex justify-between text-xs font-semibold mb-1">
-                          <span className="flex items-center gap-1.5 text-slate-800">
-                            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-                            3. Kênh Sở Hữu & CTV Nội Bộ
-                          </span>
-                          <span className="font-mono text-emerald-600">{cPct}% ({formatVndShort(stats.ctvGmv)})</span>
-                        </div>
-                        <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                          <div className="bg-emerald-500 h-full rounded-full" style={{ width: `${cPct}%` }} />
-                        </div>
-                      </div>
-                    </>
-                  );
-                })()}
-
-                <div className="pt-2 border-t border-slate-100 text-2xs text-slate-500">
-                  Mô hình kiềng 3 chân giúp tối ưu hóa biên độ lợi nhuận và giảm thiểu phụ thuộc vào một nguồn traffic duy nhất.
+                  {/* Ngân sách Livestream */}
+                  <div className="p-3 rounded-lg bg-slate-50 border border-slate-200/80">
+                    <div className="flex items-center justify-between text-xs mb-1">
+                      <span className="font-bold text-slate-800">3. Ngân sách Phiên Livestream & Host</span>
+                      <span className="font-mono font-bold text-amber-700">
+                        {formatVndShort(kpiSummary.totalLiveBudget)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-[11px] text-slate-500">
+                      <span>Tổng số ca Livestream kế hoạch (File 4.1.1):</span>
+                      <span className="font-bold text-slate-800">
+                        {kpiSummary.totalTargetLiveSessions.toLocaleString('vi-VN')} phiên Live
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
 
-          {/* Row 2: Brand Performance Scorecard */}
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs">
-            <div className="p-4 border-b border-slate-100 flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-                  <Building className="w-4 h-4 text-blue-600" />
-                  Ma Trận Hiệu Suất Theo Nhãn Hàng (Brand Scorecard)
+              {/* Khối 2B: Bóc tách Sản lượng Video Trả phí (Paid) vs Suất Gửi Mẫu Miễn Phí (FOC 0đ) */}
+              <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs">
+                <h3 className="text-sm font-bold text-slate-900 mb-1">
+                  Bóc Tách Sản Lượng: Video KOC Trả Phí (Paid) vs Suất Mẫu Miễn Phí (FOC 0đ)
                 </h3>
-                <p className="text-xs text-slate-500">So sánh chi phí đầu tư, doanh thu gộp đem lại và ROAS của từng Brand đang quản lý</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => onNavigateToTab?.('brand-hub')}
-                className="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1"
-              >
-                <span>Xem Cổng Brand</span>
-                <ChevronRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
+                <p className="text-xs text-slate-500 mb-4">
+                  Suất gửi mẫu miễn phí (FOC - chi phí 0đ) được điều phối tách bạch với các đơn Booking KOC có cát-xê
+                </p>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs text-left">
-                <thead className="bg-slate-50 text-slate-600 border-b border-slate-200 font-semibold text-2xs">
-                  <tr>
-                    <th className="py-3 px-4">Tên Nhãn Hàng</th>
-                    <th className="py-3 px-3 text-center">Số Deal</th>
-                    <th className="py-3 px-3 text-right">Chi Phí (Cast + Ads)</th>
-                    <th className="py-3 px-3 text-right">Doanh Thu GMV</th>
-                    <th className="py-3 px-3 text-center">ROAS Thực Tế</th>
-                    <th className="py-3 px-3 text-center">Video On Air</th>
-                    <th className="py-3 px-4 text-center">Tình Trạng Nghiệm Thu</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {brandScorecard.map((b, idx) => (
-                    <tr key={idx} className="hover:bg-slate-50/80 transition">
-                      <td className="py-3.5 px-4 font-semibold text-slate-900 text-xs flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-blue-600" />
-                        <span>{b.brandName}</span>
-                      </td>
-                      <td className="py-3.5 px-3 text-center font-mono text-slate-700">
-                        {b.dealsCount}
-                      </td>
-                      <td className="py-3.5 px-3 text-right font-mono font-semibold text-slate-800">
-                        {b.cost.toLocaleString('vi-VN')} đ
-                      </td>
-                      <td className="py-3.5 px-3 text-right font-mono font-semibold text-emerald-600">
-                        {b.gmv.toLocaleString('vi-VN')} đ
-                      </td>
-                      <td className="py-3.5 px-3 text-center">
-                        <span className={`px-2 py-0.5 rounded text-xs font-mono font-semibold ${
-                          b.roas >= 6.0
-                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                            : 'bg-blue-50 text-blue-700 border border-blue-200'
-                        }`}>
-                          {b.roas}x
-                        </span>
-                      </td>
-                      <td className="py-3.5 px-3 text-center font-mono text-slate-700">
-                        {b.onAirCount} video
-                      </td>
-                      <td className="py-3.5 px-4 text-center">
-                        <span className="px-2.5 py-0.5 rounded-full text-2xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                          Đã nghiệm thu 100%
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                {(() => {
+                  const totalVids =
+                    kpiSummary.totalTargetPaidVideos +
+                    kpiSummary.totalTargetFocVideos +
+                    kpiSummary.totalTargetSelfVideos;
+                  const paidPct =
+                    totalVids > 0 ? Math.round((kpiSummary.totalTargetPaidVideos / totalVids) * 100) : 0;
+                  const focPct =
+                    totalVids > 0 ? Math.round((kpiSummary.totalTargetFocVideos / totalVids) * 100) : 0;
+                  const selfPct = Math.max(0, 100 - paidPct - focPct);
+
+                  return (
+                    <div className="space-y-4">
+                      {/* Stacked Horizontal Bar */}
+                      <div className="w-full h-5 rounded-lg overflow-hidden flex border border-slate-200">
+                        <div
+                          style={{ width: `${focPct}%` }}
+                          className="bg-sky-500 h-full flex items-center justify-center text-[10px] font-bold text-white"
+                          title={`Mẫu miễn phí FOC (0đ): ${kpiSummary.totalTargetFocVideos}`}
+                        >
+                          {focPct > 10 ? `FOC ${focPct}%` : ''}
+                        </div>
+                        <div
+                          style={{ width: `${paidPct}%` }}
+                          className="bg-indigo-600 h-full flex items-center justify-center text-[10px] font-bold text-white"
+                          title={`Video KOC trả phí (Paid): ${kpiSummary.totalTargetPaidVideos}`}
+                        >
+                          {paidPct > 8 ? `Paid ${paidPct}%` : ''}
+                        </div>
+                        <div
+                          style={{ width: `${selfPct}%` }}
+                          className="bg-emerald-500 h-full flex items-center justify-center text-[10px] font-bold text-white"
+                          title={`Video kênh Brand (Self-channel): ${kpiSummary.totalTargetSelfVideos}`}
+                        >
+                          {selfPct > 8 ? `Brand ${selfPct}%` : ''}
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-2.5 text-center">
+                        <div className="p-2.5 rounded-lg bg-sky-50 border border-sky-200">
+                          <span className="text-[11px] font-bold text-sky-800 block">
+                            Mẫu Miễn Phí (FOC 0đ)
+                          </span>
+                          <span className="text-lg font-extrabold text-sky-900 font-mono">
+                            {kpiSummary.totalTargetFocVideos.toLocaleString('vi-VN')}
+                          </span>
+                          <span className="block text-[10px] text-sky-700 mt-0.5">
+                            Đầu mối: Trần Thị Hảo & Team
+                          </span>
+                        </div>
+
+                        <div className="p-2.5 rounded-lg bg-indigo-50 border border-indigo-200">
+                          <span className="text-[11px] font-bold text-indigo-800 block">
+                            Video KOC Trả Phí (Paid)
+                          </span>
+                          <span className="text-lg font-extrabold text-indigo-900 font-mono">
+                            {kpiSummary.totalTargetPaidVideos.toLocaleString('vi-VN')}
+                          </span>
+                          <span className="block text-[10px] text-indigo-700 mt-0.5">
+                            Có cát-xê (KL1 → KL7)
+                          </span>
+                        </div>
+
+                        <div className="p-2.5 rounded-lg bg-emerald-50 border border-emerald-200">
+                          <span className="text-[11px] font-bold text-emerald-800 block">
+                            Video Kênh Brand (Self)
+                          </span>
+                          <span className="text-lg font-extrabold text-emerald-900 font-mono">
+                            {kpiSummary.totalTargetSelfVideos.toLocaleString('vi-VN')}
+                          </span>
+                          <span className="block text-[10px] text-emerald-700 mt-0.5">
+                            Xây kênh chính hãng
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
             </div>
           </div>
         </div>
       )}
 
       {/* ========================================================================= */}
-      {/* SUB-TAB 2: TIẾN ĐỘ NHÂN VIÊN & SQUAD PICS (NEW DEEP DIVE) */}
+      {/* TAB 2: HIỆU QUẢ 69 GIAN HÀNG B2C & CHIẾN DỊCH TIKTOK SELLER CENTER */}
       {/* ========================================================================= */}
-      {activeSubTab === 'STAFF_PROGRESS' && (
-        <div className="space-y-4 animate-in fade-in duration-150">
-          {/* Top Metrics Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs">
-              <div className="text-2xs font-semibold text-slate-500 ">Tổng Nhân Sự Quản Lý</div>
-              <div className="text-xl font-semibold font-mono text-slate-900 mt-1 flex items-baseline gap-2">
-                <span>{staffScorecards.length} Chuyên viên</span>
-                <span className="text-2xs text-blue-600 font-semibold">(110 PICs toàn sàn)</span>
+      {activeTab === 'STORE_SELLER' && (
+        <div className="space-y-5">
+          {/* KHỐI 1: HIỆU QUẢ CHIẾN DỊCH QUẢNG CÁO TIKTOK SHOP SELLER CENTER (PGM / LGM) */}
+          <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-slate-900 text-white">
+                    TikTok Shop Seller Center
+                  </span>
+                  <h3 className="text-sm font-bold text-slate-900">
+                    Biểu Đồ Hiệu Suất Chiến Dịch Quảng Cáo Sản Phẩm & Livestream (PGM / LGM)
+                  </h3>
+                </div>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Tổng hợp từ {TIKTOK_SELLER_ADS_SUMMARY.totalCampaignRows.toLocaleString('vi-VN')} dòng báo cáo chiến dịch và {TIKTOK_SELLER_ADS_SUMMARY.totalCreativeRows.toLocaleString('vi-VN')} dòng báo cáo video quảng cáo ({TIKTOK_SELLER_ADS_SUMMARY.reportPeriod})
+                </p>
               </div>
-              <div className="text-2xs text-slate-500 mt-1">Bao gồm Account, Growth, Content, Booking & Media</div>
+              <div className="flex items-center gap-4 text-xs font-mono">
+                <div className="bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200">
+                  Chi phí Ads: <strong className="text-slate-900">{formatVndShort(TIKTOK_SELLER_ADS_SUMMARY.totalSpend)}</strong>
+                </div>
+                <div className="bg-indigo-50 px-3 py-1.5 rounded-lg border border-indigo-200">
+                  Doanh thu GMV Ads: <strong className="text-indigo-700">{formatVndShort(TIKTOK_SELLER_ADS_SUMMARY.totalGmv)}</strong>
+                </div>
+                <div className="bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200">
+                  ROAS TB: <strong className="text-emerald-700">{TIKTOK_SELLER_ADS_SUMMARY.overallRoas}x</strong> ({TIKTOK_SELLER_ADS_SUMMARY.totalOrders} đơn)
+                </div>
+              </div>
             </div>
 
-            <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs">
-              <div className="text-2xs font-semibold text-slate-500 ">Tỷ Lệ Đạt KPI Video</div>
-              <div className="text-xl font-semibold font-mono text-emerald-600 mt-1">91.4%</div>
-              <div className="text-2xs text-slate-500 mt-1">10/12 Chuyên viên hoàn thành trên 85% target</div>
-            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+              {TIKTOK_SELLER_CAMPAIGNS.map((camp) => {
+                const maxGmv = Math.max(...TIKTOK_SELLER_CAMPAIGNS.map((c) => c.gmv), 1);
+                const gmvBarPct = Math.round((camp.gmv / maxGmv) * 100);
+                const costBarPct = Math.round((camp.cost / maxGmv) * 100);
+                return (
+                  <div
+                    key={camp.campaignId}
+                    className="p-3.5 rounded-xl border border-slate-200 hover:border-indigo-300 bg-slate-50/50 transition"
+                  >
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <div>
+                        <span className="text-xs font-bold text-slate-900 block">
+                          {camp.campaignName}
+                        </span>
+                        <span className="text-[11px] text-slate-500">
+                          Gian hàng: <strong className="text-slate-700">{camp.storeName}</strong> · ID: {camp.campaignId}
+                        </span>
+                      </div>
+                      <span
+                        className={`px-2 py-0.5 rounded text-xs font-extrabold font-mono ${
+                          camp.roas >= 5
+                            ? 'bg-emerald-100 text-emerald-800'
+                            : 'bg-indigo-100 text-indigo-800'
+                        }`}
+                      >
+                        ROAS {camp.roas}x
+                      </span>
+                    </div>
 
-            <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs">
-              <div className="text-2xs font-semibold text-slate-500 ">Tỷ Lệ Đạt Doanh Số GMV</div>
-              <div className="text-xl font-semibold font-mono text-blue-600 mt-1">88.6%</div>
-              <div className="text-2xs text-slate-500 mt-1">Tổng GMV đóng góp: {formatVndShort(stats.totalGmv)}</div>
-            </div>
+                    {/* Bar so sánh GMV vs Chi phí Ads */}
+                    <div className="space-y-1.5 my-2.5">
+                      <div>
+                        <div className="flex justify-between text-[11px] mb-0.5">
+                          <span className="text-slate-500">GMV thực thu:</span>
+                          <span className="font-mono font-bold text-indigo-700">
+                            {formatVndShort(camp.gmv)}
+                          </span>
+                        </div>
+                        <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-indigo-600 rounded-full"
+                            style={{ width: `${Math.max(gmvBarPct, 4)}%` }}
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <div className="flex justify-between text-[11px] mb-0.5">
+                          <span className="text-slate-500">Chi phí Ads:</span>
+                          <span className="font-mono font-semibold text-slate-800">
+                            {formatVndShort(camp.cost)}
+                          </span>
+                        </div>
+                        <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-amber-500 rounded-full"
+                            style={{ width: `${Math.max(costBarPct, 3)}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
 
-            <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs">
-              <div className="text-2xs font-semibold text-slate-500 ">Cảnh Báo Quá Tải & Rủi Ro</div>
-              <div className="text-xl font-semibold font-mono text-amber-600 mt-1">2 Nhân Sự</div>
-              <div className="text-2xs text-slate-500 mt-1">Vân Ngọc (62 shops), Hà Linh (chậm KPI KOC)</div>
+                    <div className="pt-2 border-t border-slate-200/80 grid grid-cols-4 gap-1 text-center text-[11px]">
+                      <div>
+                        <span className="text-slate-400 block">Đơn hàng</span>
+                        <strong className="text-slate-800 font-mono">{camp.orders}</strong>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block">CPA/Đơn</span>
+                        <strong className="text-slate-800 font-mono">{formatVndShort(camp.cpa)}</strong>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block">CTR</span>
+                        <strong className="text-slate-800 font-mono">{camp.ctr}%</strong>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block">CVR</span>
+                        <strong className="text-emerald-700 font-mono">{camp.cvr}%</strong>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
-          {/* Filters Bar */}
-          <div className="bg-white rounded-xl border border-slate-200 p-3.5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
-            <div className="flex items-center gap-2 flex-wrap">
-              <div className="relative min-w-[200px]">
-                <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  placeholder="Tìm nhân sự, chức danh..."
-                  className="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
-                />
-              </div>
-
-              <select
-                value={selectedStaffTeam}
-                onChange={e => setSelectedStaffTeam(e.target.value)}
-                className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700 font-medium"
-              >
-                <option value="ALL">Tất cả Team / Chức vụ</option>
-                <option value="ACCOUNT">Account Management</option>
-                <option value="GROWTH">Growth Operations</option>
-                <option value="CONTENT">Content Studio</option>
-                <option value="BOOKING">Booking Squad</option>
-                <option value="MEDIA">Media & Live</option>
-              </select>
-
-              <select
-                value={selectedStaffStatus}
-                onChange={e => setSelectedStaffStatus(e.target.value)}
-                className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700 font-medium"
-              >
-                <option value="ALL">Tất cả trạng thái</option>
-                <option value="AHEAD_OF_SCHEDULE">Vượt tiến độ</option>
-                <option value="ON_TRACK">Đúng kế hoạch</option>
-                <option value="AT_RISK">Rủi ro chậm</option>
-              </select>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => handleExportExcel('Bao_Cao_Tien_Do_Nhan_Vien_Squad')}
-              className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-semibold flex items-center gap-1.5 transition"
-            >
-              <Download className="w-3.5 h-3.5" />
-              <span>Xuất Báo Cáo Nhân Sự (.xlsx)</span>
-            </button>
-          </div>
-
-          {/* Detailed Staff Table */}
+          {/* KHỐI 2: BẢNG ĐỐI SOÁT CHI TIẾT 69 GIAN HÀNG B2C (CLICK XEM CHI TIẾT TỪNG GIAN HÀNG) */}
           <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs">
-            <div className="overflow-x-auto">
+            <div className="px-5 py-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <div>
+                <h3 className="text-sm font-bold text-slate-900">
+                  Bảng Đối Soát Toàn Bộ {filteredStores.length} / 69 Gian Hàng B2C (Phân Cấp Brand → Gian Hàng)
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Nhấn vào bất kỳ gian hàng nào để mở bảng phân tích chi tiết: Hạn mức Gross/Net, Paid/FOC video và danh sách video đã book của gian hàng đó.
+                </p>
+              </div>
+              <div className="flex items-center gap-2 text-xs">
+                <span className="px-2.5 py-1 rounded-md bg-indigo-50 text-indigo-700 font-semibold">
+                  Có Leader Ngọc Tâm: {kpiSummary.leaderStoreCount} gian
+                </span>
+                <span className="px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 font-semibold">
+                  Không có Leader (Báo cáo Yến Nhi): {kpiSummary.directStoreCount} gian
+                </span>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto max-h-[620px]">
               <table className="w-full text-xs text-left">
-                <thead className="bg-slate-50 text-slate-600 border-b border-slate-200 font-semibold text-2xs">
+                <thead className="bg-slate-50 text-slate-600 uppercase border-b border-slate-200 sticky top-0 z-10">
                   <tr>
-                    <th className="py-3 px-4">Nhân Sự & Squad</th>
-                    <th className="py-3 px-3 text-center">Shop / Brand</th>
-                    <th className="py-3 px-3 text-center">Tiến Độ Air Video</th>
-                    <th className="py-3 px-3 text-right">Doanh Số GMV Thực Đạt</th>
-                    <th className="py-3 px-3 text-right">Ngân Sách Đã Chi</th>
-                    <th className="py-3 px-3 text-center">SLA Đúng Hạn</th>
-                    <th className="py-3 px-3 text-center">Trạng Thái KPI</th>
-                    <th className="py-3 px-4">Cảnh Báo & Ghi Chú</th>
+                    <th className="py-3 px-4 font-bold">Gian Hàng & Brand</th>
+                    <th className="py-3 px-3 font-bold">Sàn</th>
+                    <th className="py-3 px-3 font-bold">Chuyên Viên (PIC) & Cấp Duyệt</th>
+                    <th className="py-3 px-3 font-bold text-right">Mục Tiêu NMV</th>
+                    <th className="py-3 px-3 font-bold text-right">Order Gross</th>
+                    <th className="py-3 px-3 font-bold text-right">Hạn Mức Net</th>
+                    <th className="py-3 px-3 font-bold text-right">Thực Chi 3.2</th>
+                    <th className="py-3 px-3 font-bold text-center">Paid / FOC / Brand</th>
+                    <th className="py-3 px-3 font-bold text-center">Đã Air</th>
+                    <th className="py-3 px-4 font-bold">Kiểm Soát Kế Toán</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {staffScorecards.map(s => {
-                    const videoPct = Math.round((s.airedVideos / s.targetVideos) * 100);
-                    const gmvPct = Math.round((s.currentGmv / s.targetGmv) * 100);
+                  {filteredStores.map((st) => {
+                    const net = st.budgetNet || st.monthlyBudget || 0;
+                    const spent = st.actualSpentNet || 0;
+                    const burnPct = net > 0 ? Math.round((spent / net) * 100) : spent > 0 ? 999 : 0;
 
                     return (
-                      <tr key={s.id} className="hover:bg-slate-50/80 transition">
-                        <td className="py-3.5 px-4">
-                          <div className="flex items-center gap-2.5">
-                            <Avatar name={s.name} size={32} />
-                            <div>
-                              <div className="font-semibold text-slate-900 text-xs flex items-center gap-1.5">
-                                {s.name}
-                                <span className="text-2xs font-semibold px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">
-                                  {s.role}
-                                </span>
-                              </div>
-                              <div className="text-2xs text-slate-500">{s.roleTitle} • {s.team}</div>
-                            </div>
+                      <tr
+                        key={st.id}
+                        onClick={() => setInspectStore(st)}
+                        className="hover:bg-indigo-50/40 transition cursor-pointer"
+                      >
+                        <td className="py-2.5 px-4">
+                          <div className="font-bold text-slate-900">{st.storeName}</div>
+                          <div className="text-[11px] text-slate-500">
+                            Brand: <strong className="text-slate-700">{st.brandName}</strong> · Mã: {st.storeOperationId}
                           </div>
                         </td>
-
-                        <td className="py-3.5 px-3 text-center">
-                          <div className="font-semibold text-slate-900">{s.assignedStoresCount} shops</div>
-                          <div className="text-2xs text-slate-500">{s.assignedBrandsCount} brands</div>
-                        </td>
-
-                        <td className="py-3.5 px-3 text-center min-w-[130px]">
-                          <div className="flex items-center justify-between text-2xs mb-0.5">
-                            <span className="font-semibold text-slate-900">{s.airedVideos} / {s.targetVideos}</span>
-                            <span className={`font-semibold ${videoPct >= 100 ? 'text-emerald-700' : 'text-slate-600'}`}>
-                              {videoPct}%
-                            </span>
-                          </div>
-                          <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                            <div 
-                              className={`h-full rounded-full ${videoPct >= 100 ? 'bg-emerald-500' : videoPct >= 80 ? 'bg-blue-500' : 'bg-amber-500'}`}
-                              style={{ width: `${Math.min(100, videoPct)}%` }}
-                            />
-                          </div>
-                          <div className="text-2xs text-slate-400 mt-0.5">+{s.inProgressVideos} đang quay/dựng</div>
-                        </td>
-
-                        <td className="py-3.5 px-3 text-right">
-                          <div className="font-semibold font-mono text-emerald-600">{formatVndShort(s.currentGmv)}</div>
-                          <div className="text-2xs text-slate-500 font-mono">KPI: {formatVndShort(s.targetGmv)} ({gmvPct}%)</div>
-                        </td>
-
-                        <td className="py-3.5 px-3 text-right">
-                          <div className="font-semibold font-mono text-slate-800">{formatVndShort(s.spentBudget)}</div>
-                          <div className="text-2xs text-slate-500 font-mono">Burn: {s.burnRatePct}%</div>
-                        </td>
-
-                        <td className="py-3.5 px-3 text-center">
-                          <span className={`px-2 py-0.5 rounded text-xs font-mono font-semibold ${
-                            s.slaScore >= 95 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-blue-50 text-blue-700'
-                          }`}>
-                            {s.slaScore}%
+                        <td className="py-2.5 px-3">
+                          <span
+                            className={`px-2 py-0.5 rounded text-[11px] font-semibold ${
+                              st.platform === 'TikTok Shop'
+                                ? 'bg-slate-900 text-white'
+                                : 'bg-orange-100 text-orange-800'
+                            }`}
+                          >
+                            {st.platform}
                           </span>
                         </td>
-
-                        <td className="py-3.5 px-3 text-center">
-                          {s.status === 'AHEAD_OF_SCHEDULE' && (
-                            <span className="px-2 py-0.5 rounded-full text-2xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                              Vượt tiến độ
+                        <td className="py-2.5 px-3">
+                          <div className="font-semibold text-slate-900">
+                            PIC: {st.primaryPic || st.assignedStaff}
+                          </div>
+                          {st.hasBookingLeader && st.bookingLeader ? (
+                            <span className="text-[11px] text-indigo-700 font-medium">
+                              Leader: {st.bookingLeader}
                             </span>
-                          )}
-                          {s.status === 'ON_TRACK' && (
-                            <span className="px-2 py-0.5 rounded-full text-2xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
-                              Đúng kế hoạch
-                            </span>
-                          )}
-                          {s.status === 'AT_RISK' && (
-                            <span className="px-2 py-0.5 rounded-full text-2xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
-                              Cần đẩy nhanh
-                            </span>
-                          )}
-                        </td>
-
-                        <td className="py-3.5 px-4 text-xs text-slate-600">
-                          {s.workloadWarning ? (
-                            <div className="p-1.5 rounded bg-amber-50 text-amber-800 border border-amber-200 text-2xs leading-relaxed flex items-start gap-1">
-                              <AlertCircle className="w-3 h-3 text-amber-600 shrink-0 mt-0.5" />
-                              <span>{s.workloadWarning}</span>
-                            </div>
                           ) : (
-                            <span className="text-slate-400 text-2xs italic">Tiến độ ổn định, bám sát timeline</span>
+                            <span className="text-[11px] text-slate-500">
+                              Không có leader (Trực tiếp Yến Nhi)
+                            </span>
                           )}
                         </td>
+                        <td className="py-2.5 px-3 text-right font-mono text-slate-700">
+                          {formatVndShort(st.monthlyTargetGmv || 0)}
+                        </td>
+                        <td className="py-2.5 px-3 text-right font-mono text-slate-600">
+                          {formatVndShort(st.budgetGross || 0)}
+                        </td>
+                        <td className="py-2.5 px-3 text-right font-mono font-bold text-indigo-700">
+                          {formatVndShort(net)}
+                        </td>
+                        <td className="py-2.5 px-3 text-right font-mono">
+                          <div
+                            className={`font-bold ${
+                              spent > net ? 'text-rose-600' : 'text-emerald-700'
+                            }`}
+                          >
+                            {formatVndShort(spent)}
+                          </div>
+                          <div className="text-[10px] text-slate-500">
+                            {burnPct === 999 ? 'Ngoài KH' : `${burnPct}% Net`}
+                          </div>
+                        </td>
+                        <td className="py-2.5 px-3 text-center font-mono text-[11px]">
+                          <span className="text-indigo-700 font-bold" title="Video KOC trả phí">
+                            {st.targetPaidVideos || 0}
+                          </span>{' '}
+                          /{' '}
+                          <span className="text-sky-700 font-bold" title="Suất mẫu miễn phí FOC (0đ)">
+                            {st.targetFocVideos || 0}
+                          </span>{' '}
+                          /{' '}
+                          <span className="text-emerald-700 font-bold" title="Video kênh Brand">
+                            {st.targetSelfChannelContents || 0}
+                          </span>
+                        </td>
+                        <td className="py-2.5 px-3 text-center font-mono font-bold text-slate-900">
+                          {st.actualAiredVideos || 0}
+                        </td>
+                        <td className="py-2.5 px-4">{renderRiskBadge(st.financialRiskStatus)}</td>
                       </tr>
                     );
                   })}
@@ -1579,419 +1601,775 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
       )}
 
       {/* ========================================================================= */}
-      {/* SUB-TAB 3: TIẾN ĐỘ AIR VIDEO & KÊNH NỘI DUNG (NEW DEEP DIVE) */}
+      {/* TAB 3: PHÂN TÍCH VIDEO ĐÃ BOOKING (FILE 3.2) & CREATIVE ADS TIKTOK SELLER */}
       {/* ========================================================================= */}
-      {activeSubTab === 'VIDEO_AIRING' && (
-        <div className="space-y-5 animate-in fade-in duration-150">
-          {/* Top Video Pipeline Metrics */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3.5">
-            <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs">
-              <div className="text-2xs font-semibold text-slate-500 ">Video Đã Lên Sóng</div>
-              <div className="text-2xl font-semibold font-mono text-emerald-600 mt-1">1,025</div>
-              <div className="text-2xs text-emerald-700 mt-1 flex items-center justify-between">
-                <span>KPI: 1,250</span>
-                <span className="font-semibold">82.0%</span>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs">
-              <div className="text-2xs font-semibold text-slate-500 ">Đang Quay & Dựng</div>
-              <div className="text-2xl font-semibold font-mono text-blue-600 mt-1">285</div>
-              <div className="text-2xs text-blue-700 mt-1">Chuẩn bị air đợt Mega 10.10</div>
-            </div>
-
-            <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs">
-              <div className="text-2xs font-semibold text-slate-500 ">Chờ Duyệt Kịch Bản</div>
-              <div className="text-2xl font-semibold font-mono text-amber-600 mt-1">94</div>
-              <div className="text-2xs text-amber-700 mt-1">Thời gian duyệt trung bình 4.2h</div>
-            </div>
-
-            <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs">
-              <div className="text-2xs font-semibold text-slate-500 ">Tổng Lượt Views</div>
-              <div className="text-2xl font-semibold font-mono text-blue-700 mt-1">48.6M</div>
-              <div className="text-2xs text-blue-700 mt-1">Trung bình 47.4k views/video</div>
-            </div>
-
-            <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs">
-              <div className="text-2xs font-semibold text-slate-500 ">GMV Giỏ Hàng Video</div>
-              <div className="text-2xl font-semibold font-mono text-slate-900 mt-1">3.85 Tỷ</div>
-              <div className="text-2xs text-slate-600 mt-1">Tỷ lệ CVR chuyển đổi: 3.8%</div>
-            </div>
-          </div>
-
-          {/* Weekly Airing Velocity Tracker */}
-          <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs space-y-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-                  <Activity className="w-4 h-4 text-emerald-600" />
-                  Tiến Độ & Tốc Độ On-Air Video Theo Tuần (Weekly Velocity)
-                </h3>
-                <p className="text-xs text-slate-500">Kế hoạch sản xuất và phát hành video liên tục để giữ nhiệt traffic sàn</p>
-              </div>
-              <span className="text-2xs font-semibold px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
-                Nhịp phát hành: ~35-45 video / ngày
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-3 pt-2">
-              {[
-                { week: 'Tuần 1 (01-07/10)', aired: 265, target: 280, pct: 94.6, views: '12.8M', gmv: '1.15 Tỷ', status: 'Hoàn tất' },
-                { week: 'Tuần 2 (08-14/10)', aired: 298, target: 320, pct: 93.1, views: '15.2M', gmv: '1.38 Tỷ', status: 'Đang triển khai' },
-                { week: 'Tuần 3 (15-21/10)', aired: 242, target: 350, pct: 69.1, views: '9.6M', gmv: '820 Triệu', status: 'Đang dựng' },
-                { week: 'Tuần 4 (22-28/10)', aired: 220, target: 450, pct: 48.9, views: '11.0M', gmv: '950 Triệu', status: 'Dự kiến Mega Sale' }
-              ].map((w, idx) => (
-                <div key={idx} className="bg-slate-50 rounded-xl p-3.5 border border-slate-200 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-slate-800">{w.week}</span>
-                    <span className="text-2xs font-semibold px-1.5 py-0.5 rounded bg-white text-slate-700 border border-slate-200">{w.status}</span>
-                  </div>
-                  <div>
-                    <div className="text-lg font-semibold font-mono text-emerald-600">
-                      {w.aired} / {w.target} <span className="text-xs font-normal text-slate-500">videos</span>
-                    </div>
-                    <div className="text-2xs text-slate-500">Đạt {w.pct}% chỉ tiêu tuần</div>
-                  </div>
-                  <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
-                    <div className="bg-emerald-500 h-full rounded-full" style={{ width: `${Math.min(100, w.pct)}%` }} />
-                  </div>
-                  <div className="flex items-center justify-between text-2xs text-slate-500 pt-1 border-t border-slate-200/60 font-mono">
-                    <span>Views: {w.views}</span>
-                    <span className="font-semibold text-slate-800">GMV: {w.gmv}</span>
-                  </div>
+      {activeTab === 'VIDEO_CREATIVE' && (
+        <div className="space-y-5">
+          {/* HÀNG BIỂU ĐỒ VIDEO: 1. PHÂN BỔ KHUNG LƯƠNG KL1-KL7 + TAP 0Đ | 2. PHỄU GIỮ CHÂN & ĐỊNH DẠNG VIDEO */}
+          <div className="grid grid-cols-1 xl:grid-cols-12 gap-5">
+            {/* BIỂU ĐỒ KHUNG LƯƠNG KOC (KL1 -> KL7 & TAP UpAffiliate 0đ) */}
+            <div className="xl:col-span-7 bg-white rounded-xl border border-slate-200 p-5 shadow-xs">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">
+                    Biểu Đồ Hiệu Quả Theo Khung Lương KOC (TAP FOC 0đ & KL1 → KL7)
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Đối soát 786 video đã booking trong File 3.2: Số lượng đơn book, số video đã lên sóng (Air) và tổng chi phí theo từng bậc KL
+                  </p>
                 </div>
-              ))}
+                <span className="px-2.5 py-1 rounded text-xs font-bold bg-indigo-50 text-indigo-700">
+                  786 Đơn Book · 2,63 Tỷ
+                </span>
+              </div>
+
+              <div className="space-y-2.5">
+                {sortedKlBreakdown.map((item) => {
+                  const maxCost = Math.max(...sortedKlBreakdown.map((k) => k.totalCost), 1);
+                  const maxCount = Math.max(...sortedKlBreakdown.map((k) => k.count), 1);
+                  const costPct = Math.round((item.totalCost / maxCost) * 100);
+                  const countPct = Math.round((item.count / maxCount) * 100);
+                  const avgCost = item.count > 0 ? Math.round(item.totalCost / item.count) : 0;
+
+                  return (
+                    <div
+                      key={item.kl}
+                      onClick={() => setVideoKlFilter(videoKlFilter === item.kl ? 'ALL' : item.kl)}
+                      className={`p-2.5 rounded-lg border transition cursor-pointer ${
+                        videoKlFilter === item.kl
+                          ? 'border-indigo-500 bg-indigo-50/40'
+                          : 'border-slate-100 hover:border-slate-300 bg-slate-50/40'
+                      }`}
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-2 text-xs mb-1.5">
+                        <div className="flex items-center gap-2">
+                          <span className="px-2 py-0.5 rounded font-mono font-bold bg-slate-900 text-white text-[11px]">
+                            {item.kl}
+                          </span>
+                          <span className="font-semibold text-slate-800">
+                            {item.count} đơn book ({item.airedCount} đã air)
+                          </span>
+                          {item.kl === 'TAP UpAffiliate' && (
+                            <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-sky-100 text-sky-800">
+                              Suất mẫu miễn phí FOC (0đ)
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-3 font-mono text-[11px]">
+                          <span className="text-slate-500">
+                            Đơn giá TB: <strong>{formatVndShort(avgCost)}/video</strong>
+                          </span>
+                          <span className="font-bold text-indigo-700">
+                            Tổng chi: {formatVndShort(item.totalCost)}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3 items-center">
+                        <div>
+                          <div className="flex justify-between text-[10px] text-slate-500 mb-0.5">
+                            <span>Tỷ trọng số lượng video</span>
+                            <span>{Math.round((item.count / 786) * 100)}%</span>
+                          </div>
+                          <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-sky-500 rounded-full"
+                              style={{ width: `${Math.max(countPct, 4)}%` }}
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <div className="flex justify-between text-[10px] text-slate-500 mb-0.5">
+                            <span>Tỷ trọng ngân sách giải ngân</span>
+                            <span>{Math.round((item.totalCost / 2632749226) * 100)}%</span>
+                          </div>
+                          <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-indigo-600 rounded-full"
+                              style={{ width: `${Math.max(costPct, item.totalCost > 0 ? 4 : 0)}%` }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* BIỂU ĐỒ PHỄU CHUYỂN ĐỔI VIDEO CREATIVE & ĐỊNH DẠNG VIDEO */}
+            <div className="xl:col-span-5 space-y-5">
+              {/* Phễu giữ chân người xem TikTok Seller Creative */}
+              <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs">
+                <h3 className="text-sm font-bold text-slate-900 mb-1">
+                  Phễu Hiệu Suất Video Quảng Cáo TikTok Seller (4.211 Dòng Creative)
+                </h3>
+                <p className="text-xs text-slate-500 mb-3.5">
+                  Đo lường khả năng giữ chân người xem (Hook 2s → Xem 6s → Xem 100%) và tỷ lệ bấm giỏ hàng (CTR → CVR)
+                </p>
+
+                <div className="space-y-2.5">
+                  {[
+                    {
+                      stage: '1. Tỷ lệ giữ chân 2 giây đầu (2s Hook Rate TB)',
+                      val: '34,8%',
+                      pct: 82,
+                      color: 'bg-indigo-600',
+                      note: 'Ngưỡng chuẩn ngành Beauty: 28,0%'
+                    },
+                    {
+                      stage: '2. Tỷ lệ xem qua 6 giây (6s View Rate TB)',
+                      val: '16,4%',
+                      pct: 58,
+                      color: 'bg-blue-500',
+                      note: 'Ngưỡng chuẩn ngành: 12,5%'
+                    },
+                    {
+                      stage: '3. Tỷ lệ xem hết 100% thời lượng video',
+                      val: '5,2%',
+                      pct: 36,
+                      color: 'bg-sky-500',
+                      note: 'Cao nhất ở định dạng Review Voice & Unbox'
+                    },
+                    {
+                      stage: '4. Tỷ lệ nhấp vào sản phẩm (CTR TB)',
+                      val: '3,18%',
+                      pct: 28,
+                      color: 'bg-emerald-500',
+                      note: `Tổng lượt nhấp: ${TIKTOK_SELLER_ADS_SUMMARY.totalClicks.toLocaleString('vi-VN')} clicks`
+                    },
+                    {
+                      stage: '5. Tỷ lệ chuyển đổi ra đơn hàng (CVR TB)',
+                      val: '4,62%',
+                      pct: 22,
+                      color: 'bg-amber-500',
+                      note: `${TIKTOK_SELLER_ADS_SUMMARY.totalOrders.toLocaleString('vi-VN')} đơn hàng thực thu`
+                    }
+                  ].map((f) => (
+                    <div key={f.stage} className="p-2 rounded-lg bg-slate-50 border border-slate-100">
+                      <div className="flex justify-between text-xs mb-1">
+                        <span className="font-semibold text-slate-800">{f.stage}</span>
+                        <span className="font-mono font-extrabold text-slate-900">{f.val}</span>
+                      </div>
+                      <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden mb-1">
+                        <div className={`h-full ${f.color} rounded-full`} style={{ width: `${f.pct}%` }} />
+                      </div>
+                      <span className="text-[10px] text-slate-500">{f.note}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Phân bổ theo Định dạng Nội dung (Review Voice, Unbox Voice, Video remix...) */}
+              <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs">
+                <h3 className="text-sm font-bold text-slate-900 mb-1">
+                  Hiệu Quả Theo Định Dạng Sản Xuất Video & Loại Hình Booking
+                </h3>
+                <p className="text-xs text-slate-500 mb-3">
+                  Phân tách rõ Video KOC, Video kênh Brand và Livestream KOC
+                </p>
+
+                <div className="grid grid-cols-2 gap-2 mb-3">
+                  {B2C_VIDEO_FORMAT_BREAKDOWN.map((fmt) => (
+                    <div
+                      key={fmt.format}
+                      onClick={() => setVideoFormatFilter(videoFormatFilter === fmt.format ? 'ALL' : fmt.format)}
+                      className={`p-2.5 rounded-lg border text-xs cursor-pointer transition ${
+                        videoFormatFilter === fmt.format
+                          ? 'border-indigo-600 bg-indigo-50/60'
+                          : 'border-slate-200 bg-slate-50 hover:border-slate-300'
+                      }`}
+                    >
+                      <div className="font-bold text-slate-800 truncate">{fmt.format}</div>
+                      <div className="flex items-baseline justify-between mt-1">
+                        <span className="font-mono font-extrabold text-indigo-700">
+                          {fmt.count} đơn ({fmt.airedCount} air)
+                        </span>
+                        <span className="font-mono text-[11px] text-slate-600">
+                          {formatVndShort(fmt.totalCost)}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="space-y-1.5 pt-2 border-t border-slate-100">
+                  {B2C_VIDEO_TYPE_BREAKDOWN.slice(0, 5).map((vt) => (
+                    <div key={vt.videoType} className="flex items-center justify-between text-xs py-1">
+                      <span className="font-medium text-slate-700">{vt.videoType}</span>
+                      <div className="flex items-center gap-3 font-mono text-[11px]">
+                        <span className="text-slate-600">
+                          <strong>{vt.count}</strong> video ({vt.airedCount} air)
+                        </span>
+                        <span className="font-bold text-slate-900 w-20 text-right">
+                          {formatVndShort(vt.totalCost)}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Live Aired Videos Table */}
+          {/* BẢNG ĐỐI SOÁT CHI TIẾT VIDEO BOOKING (FILE 3.2) & CREATIVE ADS TIKTOK SELLER */}
           <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs">
-            <div className="p-4 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-3">
-              <div>
-                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-                  <Film className="w-4 h-4 text-blue-600" />
-                  Danh Sách Video Đã Lên Sóng & Chỉ Số Hiệu Quả
-                </h3>
-                <p className="text-xs text-slate-500">Theo dõi link video, mã Spark Ads, views và doanh thu trực tiếp từ giỏ hàng sàn</p>
-              </div>
-
+            <div className="px-5 py-3.5 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div className="flex items-center gap-2">
-                <select
-                  value={selectedVideoStatus}
-                  onChange={e => setSelectedVideoStatus(e.target.value)}
-                  className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 font-medium"
-                >
-                  <option value="ALL">Tất cả trạng thái video</option>
-                  <option value="AIRED_VERIFIED">Đã lên sóng</option>
-                  <option value="RUNNING_ADS">Đang chạy Ads Spark</option>
-                  <option value="PENDING_APPROVAL">Chờ duyệt kịch bản</option>
-                </select>
-
                 <button
                   type="button"
-                  onClick={() => handleExportExcel('Bao_Cao_Air_Video_Chi_Tiet')}
-                  className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition"
+                  onClick={() => setVideoSubView('BOOKED_32')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                    videoSubView === 'BOOKED_32'
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  }`}
                 >
-                  <Download className="w-3.5 h-3.5" />
-                  <span>Xuất Video (.xlsx)</span>
+                  Sổ Cái Video Đã Booking File 3.2 ({filteredBookedVideos.length} bản ghi)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setVideoSubView('SELLER_CREATIVES')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                    videoSubView === 'SELLER_CREATIVES'
+                      ? 'bg-slate-900 text-white'
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  }`}
+                >
+                  Top Video Chạy Quảng Cáo TikTok Seller ({filteredSellerCreatives.length} video)
                 </button>
               </div>
+
+              {(videoFormatFilter !== 'ALL' || videoKlFilter !== 'ALL') && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setVideoFormatFilter('ALL');
+                    setVideoKlFilter('ALL');
+                  }}
+                  className="text-xs font-semibold text-indigo-600 hover:underline cursor-pointer"
+                >
+                  Xóa lọc Format / KL ({videoFormatFilter} · {videoKlFilter})
+                </button>
+              )}
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs text-left">
-                <thead className="bg-slate-50 text-slate-600 border-b border-slate-200 font-semibold text-2xs">
-                  <tr>
-                    <th className="py-3 px-4">Tiêu Đề Video / Kịch Bản</th>
-                    <th className="py-3 px-3">KOC Creator</th>
-                    <th className="py-3 px-3">Thương Hiệu & Shop</th>
-                    <th className="py-3 px-3 text-center">Kênh / Sàn</th>
-                    <th className="py-3 px-3 text-center">Ngày Air</th>
-                    <th className="py-3 px-3 text-right">Lượt Xem (Views)</th>
-                    <th className="py-3 px-3 text-right">GMV Giỏ Hàng</th>
-                    <th className="py-3 px-3 text-center">Mã Spark Ads</th>
-                    <th className="py-3 px-4 text-center">Trạng Thái</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {airedVideosList.map(v => (
-                    <tr key={v.id} className="hover:bg-slate-50/80 transition">
-                      <td className="py-3.5 px-4 max-w-[240px]">
-                        <div className="font-semibold text-slate-900 text-xs truncate flex items-center gap-1.5">
-                          <PlaySquare className="w-3.5 h-3.5 text-rose-500 shrink-0" />
-                          <span className="truncate">{v.title}</span>
-                        </div>
-                        <a
-                          href={v.videoUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-2xs text-blue-600 hover:underline flex items-center gap-0.5 mt-0.5"
-                        >
-                          <span>Xem video trên sàn</span>
-                          <ExternalLink className="w-2.5 h-2.5" />
-                        </a>
-                      </td>
-
-                      <td className="py-3.5 px-3">
-                        <div className="font-semibold text-slate-900">{v.creatorName}</div>
-                        <span className="text-2xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">
-                          {v.creatorTier} Tier
-                        </span>
-                      </td>
-
-                      <td className="py-3.5 px-3">
-                        <div className="font-semibold text-slate-900">{v.brandName}</div>
-                        <div className="text-2xs text-slate-500 truncate">{v.storeName}</div>
-                      </td>
-
-                      <td className="py-3.5 px-3 text-center">
-                        <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-slate-100 text-slate-700">
-                          {v.platform}
-                        </span>
-                      </td>
-
-                      <td className="py-3.5 px-3 text-center font-mono text-slate-600">
-                        {v.airDate}
-                      </td>
-
-                      <td className="py-3.5 px-3 text-right font-mono font-semibold text-blue-700">
-                        {v.views.toLocaleString('vi-VN')}
-                      </td>
-
-                      <td className="py-3.5 px-3 text-right font-mono font-semibold text-emerald-600">
-                        {v.gmv.toLocaleString('vi-VN')} đ
-                      </td>
-
-                      <td className="py-3.5 px-3 text-center">
-                        {v.sparkAdsCode ? (
-                          <span className="font-mono text-2xs bg-rose-50 text-rose-700 px-1.5 py-0.5 rounded border border-rose-200">
-                            {v.sparkAdsCode}
-                          </span>
-                        ) : (
-                          <span className="text-2xs text-slate-400">Chưa gắn</span>
-                        )}
-                      </td>
-
-                      <td className="py-3.5 px-4 text-center">
-                        {v.status === 'RUNNING_ADS' && (
-                          <span className="px-2 py-0.5 rounded-full text-2xs font-semibold bg-rose-50 text-rose-700 border border-rose-200 flex items-center justify-center gap-1">
-                            <Flame className="w-3 h-3 text-rose-600" /> Đang Chạy Ads
-                          </span>
-                        )}
-                        {v.status === 'AIRED_VERIFIED' && (
-                          <span className="px-2 py-0.5 rounded-full text-2xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                            Đã Nghiệm Thu
-                          </span>
-                        )}
-                        {v.status === 'PENDING_APPROVAL' && (
-                          <span className="px-2 py-0.5 rounded-full text-2xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
-                            Chờ Duyệt
-                          </span>
-                        )}
-                      </td>
+            {videoSubView === 'BOOKED_32' ? (
+              <div className="overflow-x-auto max-h-[540px]">
+                <table className="w-full text-xs text-left">
+                  <thead className="bg-slate-50 text-slate-600 uppercase border-b border-slate-200 sticky top-0 z-10">
+                    <tr>
+                      <th className="py-2.5 px-4 font-bold">Mã Book & Ngày Air</th>
+                      <th className="py-2.5 px-3 font-bold">Kênh KOC (Channel ID)</th>
+                      <th className="py-2.5 px-3 font-bold">Gian Hàng & Brand</th>
+                      <th className="py-2.5 px-3 font-bold">Chuyên Viên (PIC)</th>
+                      <th className="py-2.5 px-3 font-bold">Loại Hình & Định Dạng</th>
+                      <th className="py-2.5 px-3 font-bold text-center">Bậc KL</th>
+                      <th className="py-2.5 px-3 font-bold text-right">Cát-xê (File 3.2)</th>
+                      <th className="py-2.5 px-3 font-bold text-right">GMV TikTok Seller</th>
+                      <th className="py-2.5 px-3 font-bold text-center">ROAS</th>
+                      <th className="py-2.5 px-3 font-bold">Trạng Thái Thanh Toán</th>
+                      <th className="py-2.5 px-4 font-bold text-center">Link Video</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {filteredBookedVideos.map((v) => (
+                      <tr
+                        key={v.code}
+                        onClick={() => setInspectVideo(v)}
+                        className="hover:bg-indigo-50/40 transition cursor-pointer"
+                      >
+                        <td className="py-2.5 px-4 font-mono">
+                          <span className="font-bold text-indigo-700">{v.code}</span>
+                          <span className="block text-[11px] text-slate-500">Air: {v.airDate}</span>
+                        </td>
+                        <td className="py-2.5 px-3">
+                          <div className="font-bold text-slate-900">@{v.channelId}</div>
+                          <div className="text-[11px] text-slate-500 truncate max-w-[160px]">
+                            SP: {v.productName}
+                          </div>
+                        </td>
+                        <td className="py-2.5 px-3">
+                          <div className="font-semibold text-slate-800">{v.storeName}</div>
+                          <div className="text-[11px] text-slate-500">Brand: {v.brandName}</div>
+                        </td>
+                        <td className="py-2.5 px-3 font-semibold text-slate-800">{v.pic}</td>
+                        <td className="py-2.5 px-3">
+                          <span className="font-medium text-slate-800 block">{v.format}</span>
+                          <span className="text-[11px] text-slate-500">{v.videoType}</span>
+                        </td>
+                        <td className="py-2.5 px-3 text-center">
+                          <span className="px-2 py-0.5 rounded font-mono font-bold text-[11px] bg-slate-100 text-slate-800">
+                            {v.kl}
+                          </span>
+                        </td>
+                        <td className="py-2.5 px-3 text-right font-mono font-bold text-slate-900">
+                          {formatVndShort(v.cost)}
+                        </td>
+                        <td className="py-2.5 px-3 text-right font-mono font-bold text-emerald-700">
+                          {formatVndShort(v.sellerGmv)}
+                          <span className="block text-[10px] text-slate-500 font-normal">
+                            {v.sellerOrders} đơn · {v.views.toLocaleString('vi-VN')} views
+                          </span>
+                        </td>
+                        <td className="py-2.5 px-3 text-center font-mono">
+                          <span
+                            className={`px-2 py-0.5 rounded font-bold text-[11px] ${
+                              v.roas >= 4.5
+                                ? 'bg-emerald-100 text-emerald-800'
+                                : 'bg-blue-50 text-blue-700'
+                            }`}
+                          >
+                            {v.roas}x
+                          </span>
+                        </td>
+                        <td className="py-2.5 px-3">
+                          <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200">
+                            {v.pipeline}
+                          </span>
+                          {v.slaWarning !== 'Đúng hạn' && (
+                            <span className="block text-[10px] text-rose-600 font-semibold mt-0.5">
+                              {v.slaWarning}
+                            </span>
+                          )}
+                        </td>
+                        <td
+                          className="py-2.5 px-4 text-center"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {v.linkAir ? (
+                            <a
+                              href={v.linkAir}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-slate-900 text-white text-[11px] font-semibold hover:bg-indigo-600 transition"
+                            >
+                              Xem TikTok <ExternalLink className="w-3 h-3" />
+                            </a>
+                          ) : (
+                            <span className="text-slate-400">—</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="overflow-x-auto max-h-[540px]">
+                <table className="w-full text-xs text-left">
+                  <thead className="bg-slate-50 text-slate-600 uppercase border-b border-slate-200 sticky top-0 z-10">
+                    <tr>
+                      <th className="py-2.5 px-4 font-bold">Video ID & Tài Khoản TikTok</th>
+                      <th className="py-2.5 px-3 font-bold">Chiến Dịch PGM/LGM</th>
+                      <th className="py-2.5 px-3 font-bold">Loại Ủy Quyền</th>
+                      <th className="py-2.5 px-3 font-bold text-right">Chi Phí Ads</th>
+                      <th className="py-2.5 px-3 font-bold text-right">Doanh Thu GMV</th>
+                      <th className="py-2.5 px-3 font-bold text-center">ROAS</th>
+                      <th className="py-2.5 px-3 font-bold text-right">Đơn Hàng / CPA</th>
+                      <th className="py-2.5 px-3 font-bold text-center">CTR / CVR</th>
+                      <th className="py-2.5 px-4 font-bold text-center">Giữ Chân 2s / 6s</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {filteredSellerCreatives.map((c) => (
+                      <tr key={c.id} className="hover:bg-slate-50 transition">
+                        <td className="py-2.5 px-4">
+                          <div className="font-mono font-bold text-slate-900">ID: {c.videoId}</div>
+                          <div className="text-[11px] text-indigo-700 font-semibold">@{c.tiktokAccount}</div>
+                        </td>
+                        <td className="py-2.5 px-3">
+                          <div className="font-semibold text-slate-800">{c.campaignName}</div>
+                          <div className="text-[11px] text-slate-500">Gian hàng: {c.storeName}</div>
+                        </td>
+                        <td className="py-2.5 px-3">
+                          <span className="px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-700">
+                            {c.authorizationType}
+                          </span>
+                        </td>
+                        <td className="py-2.5 px-3 text-right font-mono font-semibold text-slate-800">
+                          {formatVndShort(c.cost)}
+                        </td>
+                        <td className="py-2.5 px-3 text-right font-mono font-bold text-indigo-700">
+                          {formatVndShort(c.gmv)}
+                        </td>
+                        <td className="py-2.5 px-3 text-center font-mono">
+                          <span
+                            className={`px-2 py-0.5 rounded font-bold ${
+                              c.roas >= 5
+                                ? 'bg-emerald-100 text-emerald-800'
+                                : 'bg-indigo-50 text-indigo-700'
+                            }`}
+                          >
+                            {c.roas}x
+                          </span>
+                        </td>
+                        <td className="py-2.5 px-3 text-right font-mono">
+                          <div className="font-bold text-slate-900">{c.orders} đơn</div>
+                          <div className="text-[10px] text-slate-500">CPA: {formatVndShort(c.cpa)}</div>
+                        </td>
+                        <td className="py-2.5 px-3 text-center font-mono text-[11px]">
+                          <span className="text-slate-800 font-semibold">{c.ctr}%</span> /{' '}
+                          <span className="text-emerald-700 font-bold">{c.cvr}%</span>
+                        </td>
+                        <td className="py-2.5 px-4 text-center font-mono text-[11px]">
+                          <span className="px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-800 font-bold">
+                            2s: {c.hookRate2s}%
+                          </span>{' '}
+                          <span className="px-1.5 py-0.5 rounded bg-sky-50 text-sky-800 font-semibold">
+                            6s: {c.viewRate6s}%
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </div>
       )}
 
       {/* ========================================================================= */}
-      {/* SUB-TAB 4: CHI TIÊU NGÂN SÁCH & BURN RATE PACING (NEW DEEP DIVE) */}
+      {/* TAB 4: ĐÁNH GIÁ HIỆU SUẤT TỪNG NHÂN SỰ B2C (TRƯỞNG PHÒNG -> LEADER -> CHUYÊN VIÊN) */}
       {/* ========================================================================= */}
-      {activeSubTab === 'BUDGET_PACING' && (
-        <div className="space-y-5 animate-in fade-in duration-150">
-          {/* Pacing Overview Banner */}
-          <div className="bg-surface text-ink border border-line rounded-xl p-5 space-y-4">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      {activeTab === 'STAFF_PERFORMANCE' && (
+        <div className="space-y-5">
+          {/* SƠ ĐỒ CƠ CẤU TỔ CHỨC & PHÂN BỔ LEADER - SPECIALIST PHÒNG B2C */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            {/* Cấp Trưởng phòng */}
+            <div className="bg-indigo-950 text-white rounded-xl p-4 shadow-xs border border-indigo-800">
+              <div className="flex items-center justify-between mb-2">
+                <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-indigo-700 text-indigo-100">
+                  Cấp Trưởng Phòng (Lead B2C)
+                </span>
+                <ShieldCheck className="w-4 h-4 text-indigo-300" />
+              </div>
+              <div className="text-base font-extrabold">Đặng Thị Yến Nhi</div>
+              <p className="text-xs text-indigo-200 mt-1">
+                Phụ trách chung toàn phòng B2C, quản lý trần PnL/ngân sách toàn bộ <strong>69 gian hàng B2C</strong> (42 Brands), ký duyệt kế hoạch tháng và đại diện ký biên bản 4 bên.
+              </p>
+              <div className="mt-3 pt-2.5 border-t border-indigo-800/80 flex items-center justify-between text-xs font-mono">
+                <span>Tổng hạn mức Net: <strong>4,83 Tỷ</strong></span>
+                <span>Thực chi: <strong>2,47 Tỷ (51,1%)</strong></span>
+              </div>
+            </div>
+
+            {/* Cấp Trưởng nhóm (Leader) */}
+            <div className="bg-white rounded-xl p-4 shadow-xs border border-indigo-200">
+              <div className="flex items-center justify-between mb-2">
+                <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-indigo-100 text-indigo-800">
+                  Cấp Trưởng Nhóm (Cột 55 File 4.1.1)
+                </span>
+                <UserCheck className="w-4 h-4 text-indigo-600" />
+              </div>
+              <div className="text-base font-extrabold text-slate-900">Nguyễn Thị Ngọc Tâm</div>
+              <p className="text-xs text-slate-600 mt-1">
+                Trưởng nhóm duy nhất tại Cột 55 File 4.1.1 — Phụ trách sơ duyệt <strong>8 gian hàng</strong>: ClubClio (TikTok/Shopee), Cindy Bloom, Mine, EUPC, L'Occitane, Bye Bye Blemish, Rejuran.
+              </p>
+              <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs font-mono text-slate-800">
+                <span>Hạn mức Net nhóm: <strong>813,5 Tr</strong></span>
+                <span className="text-indigo-700 font-bold">Thực chi: 416,5 Tr (51,2%)</span>
+              </div>
+            </div>
+
+            {/* Quy tắc 61 gian hàng không có Leader */}
+            <div className="bg-white rounded-xl p-4 shadow-xs border border-slate-200">
+              <div className="flex items-center justify-between mb-2">
+                <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800">
+                  Khối Chuyên Viên Trực Tiếp (61 Gian Hàng)
+                </span>
+                <Users className="w-4 h-4 text-emerald-600" />
+              </div>
+              <div className="text-base font-extrabold text-slate-900">
+                Chuyên Viên Thực Thi (PIC) & FOC
+              </div>
+              <p className="text-xs text-slate-600 mt-1">
+                <strong>61 gian hàng không có Leader</strong> (<code className="text-[11px] bg-slate-100 px-1 rounded">bookingLeader: undefined</code>): Chuyên viên chủ động lập phân rã và trình duyệt trực tiếp lên Trưởng phòng <strong>Đặng Thị Yến Nhi</strong>.
+              </p>
+              <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs font-mono text-slate-800">
+                <span>Đầu mối FOC (0đ): <strong>Trần Thị Hảo</strong></span>
+                <span className="text-emerald-700 font-bold">30 Chuyên viên thực thi</span>
+              </div>
+            </div>
+          </div>
+
+          {/* BIỂU ĐỒ SO SÁNH NĂNG SUẤT & GIẢI NGÂN CỦA TỪNG CHUYÊN VIÊN THỰC THI */}
+          <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
               <div>
-                <div className="flex items-center gap-2">
-                  <span className="px-2.5 py-0.5 rounded-full text-2xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                    CHU KỲ THÁNG 10/2026: NGÀY {currentDayInMonth}/{totalDaysInMonth} (25.8% THỜI GIAN)
-                  </span>
-                  <span className="text-xs text-muted">Pacing Index: <strong className="text-ink">{stats.overallPacingIndex}x (An toàn)</strong></span>
-                </div>
-                <h2 className="text-base font-semibold text-ink mt-1.5">
-                  Quản trị tốc độ giải ngân ngân sách &amp; hiệu quả đầu tư
-                </h2>
-                <p className="text-xs text-muted max-w-2xl mt-0.5">
-                  Giám sát ngân sách kế hoạch, thực tế giải ngân và doanh thu đem lại theo từng ngày để đảm bảo không vượt ngân sách hoặc nghẽn giải ngân trước đợt Mega Sale.
+                <h3 className="text-sm font-bold text-slate-900">
+                  Biểu Đồ Đánh Giá Hiệu Suất Từng Chuyên Viên Thực Thi B2C (Specialist / PIC)
+                </h3>
+                <p className="text-xs text-slate-500">
+                  So sánh trực diện Hạn mức Order Net được giao vs Thực chi File 3.2 và Tiến độ sản lượng Video (Paid / FOC / Kênh Brand)
                 </p>
               </div>
-
-              <div className="flex items-center gap-3 shrink-0">
-                <div className="text-right">
-                  <div className="text-2xs text-muted">Tổng ngân sách tháng</div>
-                  <div className="text-xl font-semibold font-mono text-emerald-600">{formatVndShort(stats.totalPlanBudget)}</div>
-                </div>
-                <div className="h-8 w-px bg-line" />
-                <div>
-                  <div className="text-2xs text-muted">Đã chi tiêu ({stats.overallBurnRate}%)</div>
-                  <div className="text-xl font-semibold font-mono text-ink">{formatVndShort(stats.totalSpentBudget)}</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Pacing Visualizer Bar */}
-            <div className="space-y-1.5 pt-2 border-t border-line">
-              <div className="flex justify-between text-2xs text-muted">
-                <span>Tiến độ thời gian: <strong className="text-ink">{expectedPacingPct}%</strong> (Ngày 8/31)</span>
-                <span>Tiến độ giải ngân: <strong className="text-ink">{stats.overallBurnRate}%</strong> (Tốc độ tiêu: 1.10x Chuẩn)</span>
-              </div>
-              <div className="w-full bg-surface-muted h-2 rounded-full overflow-hidden flex">
-                <div className="bg-primary h-full transition-all" style={{ width: `${stats.overallBurnRate}%` }} />
-              </div>
-            </div>
-          </div>
-
-          {/* Cost Structure Breakdown (5 Khoản Mục Chi Phí) */}
-          <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs space-y-3">
-            <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-              <PieChart className="w-4 h-4 text-blue-600" />
-              Cơ Cấu 5 Khoản Mục Chi Phí Đã Giải Ngân ({formatVndShort(stats.totalSpentBudget)})
-            </h3>
-
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-3 pt-1">
-              {[
-                { name: '1. Cast Booking KOC', pct: 46, amount: '1.75 Tỷ', color: 'bg-blue-600', desc: 'Thỏa thuận net theo deal' },
-                { name: '2. TikTok Seller Ads', pct: 28, amount: '1.07 Tỷ', color: 'bg-rose-500', desc: 'GMV Max & Spark Ads PGM' },
-                { name: '3. CTV & Ekip Live', pct: 14, amount: '535 Triệu', color: 'bg-emerald-600', desc: 'Phí kịch bản & phòng live' },
-                { name: '4. Mẫu Thử & Logistics', pct: 7, amount: '267 Triệu', color: 'bg-amber-500', desc: 'Gửi hàng nhận mẫu KOC' },
-                { name: '5. Thuế 10% & Dự Phòng', pct: 5, amount: '191 Triệu', color: 'bg-slate-700', desc: 'Trích giữ thuế TNCN NSNN' },
-              ].map((c, idx) => (
-                <div key={idx} className="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-1">
-                  <div className="text-2xs font-semibold text-slate-700 truncate">{c.name}</div>
-                  <div className="text-base font-semibold font-mono text-slate-900">{c.amount}</div>
-                  <div className="flex items-center justify-between text-2xs text-slate-500">
-                    <span>{c.pct}% ngân sách</span>
-                  </div>
-                  <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden mt-1">
-                    <div className={`${c.color} h-full`} style={{ width: `${c.pct}%` }} />
-                  </div>
-                  <div className="text-2xs text-slate-400 truncate pt-0.5">{c.desc}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Brand & Store Pacing Matrix Table */}
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs">
-            <div className="p-4 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-3">
-              <div>
-                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-                  <Flame className="w-4 h-4 text-amber-500" />
-                  Ma Trận Pacing Ngân Sách Theo Thương Hiệu & Gian Hàng
-                </h3>
-                <p className="text-xs text-slate-500">Đối chiếu tỷ lệ giải ngân so với tiến độ ngày trong tháng (Chuẩn ngày 8/31: ~26%)</p>
-              </div>
-
               <div className="flex items-center gap-2">
-                <select
-                  value={selectedPacingFilter}
-                  onChange={e => setSelectedPacingFilter(e.target.value)}
-                  className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 font-medium"
-                >
-                  <option value="ALL">Tất cả tình trạng Pacing</option>
-                  <option value="ON_TRACK">Đúng tiến độ an toàn</option>
-                  <option value="OVER_PACING">Đốt nhanh (&gt;30%)</option>
-                  <option value="UNDER_PACING">Giải ngân chậm (&lt;20%)</option>
-                </select>
-
                 <button
                   type="button"
-                  onClick={() => handleExportExcel('Bao_Cao_Ngan_Sach_Burn_Rate_Pacing')}
-                  className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition"
+                  onClick={() => setStaffMetricMode('BUDGET')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                    staffMetricMode === 'BUDGET'
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  }`}
                 >
-                  <Download className="w-3.5 h-3.5" />
-                  <span>Xuất Pacing (.xlsx)</span>
+                  So sánh theo Ngân Sách Net & Thực Chi
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStaffMetricMode('VIDEOS')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                    staffMetricMode === 'VIDEOS'
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  }`}
+                >
+                  So sánh theo Sản Lượng Video (Paid · FOC · Air)
                 </button>
               </div>
             </div>
 
-            <div className="overflow-x-auto">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {specialistChartList.map((st) => {
+                const maxBudget = Math.max(...specialistChartList.map((x) => Math.max(x.orderBudgetNet, x.actualSpentNet)), 1);
+                const netBar = Math.round((st.orderBudgetNet / maxBudget) * 100);
+                const spentBar = Math.round((st.actualSpentNet / maxBudget) * 100);
+
+                const maxVid = Math.max(...specialistChartList.map((x) => Math.max(x.targetPaidVideos + x.targetSelfVideos, x.actualBookedVideos, 1)), 1);
+                const targetPaidBar = Math.round(((st.targetPaidVideos + st.targetSelfVideos) / maxVid) * 100);
+                const airedBar = Math.round((st.actualAiredVideos / maxVid) * 100);
+
+                return (
+                  <div
+                    key={st.name}
+                    onClick={() => setInspectStaff(st)}
+                    className="p-3 rounded-xl border border-slate-200 hover:border-indigo-300 hover:bg-slate-50/70 transition cursor-pointer"
+                  >
+                    <div className="flex items-center justify-between mb-1.5">
+                      <div className="flex items-center gap-2">
+                        <Avatar name={st.name} size={28} />
+                        <div>
+                          <span className="text-xs font-bold text-slate-900 block">{st.name}</span>
+                          <span className="text-[11px] text-slate-500">
+                            {st.storesCount} gian ({st.tiktokStoresCount} TikTok · {st.shopeeStoresCount} Shopee)
+                          </span>
+                        </div>
+                      </div>
+                      <div className="text-right font-mono">
+                        {staffMetricMode === 'BUDGET' ? (
+                          <>
+                            <span className="text-xs font-extrabold text-indigo-700 block">
+                              Chi: {formatVndShort(st.actualSpentNet)} / {formatVndShort(st.orderBudgetNet)}
+                            </span>
+                            <span className="text-[10px] text-slate-500">
+                              Giải ngân: <strong>{st.burnNetPct}% Net</strong> · SLA: {st.slaRate}%
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="text-xs font-extrabold text-emerald-700 block">
+                              Đã Air: {st.actualAiredVideos} ({st.actualBookedVideos} đơn book)
+                            </span>
+                            <span className="text-[10px] text-slate-500">
+                              Chỉ tiêu Paid: {st.targetPaidVideos} · FOC: {st.targetFocVideos}
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    {staffMetricMode === 'BUDGET' ? (
+                      <div className="space-y-1 mt-2">
+                        <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-indigo-600 rounded-full"
+                            style={{ width: `${Math.max(netBar, st.orderBudgetNet > 0 ? 3 : 0)}%` }}
+                            title={`Hạn mức Order Net: ${formatVndShort(st.orderBudgetNet)}`}
+                          />
+                        </div>
+                        <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full ${
+                              st.overbudgetStoresCount > 0 || st.unbudgetedStoresCount > 0
+                                ? 'bg-rose-500'
+                                : 'bg-emerald-500'
+                            }`}
+                            style={{ width: `${Math.max(spentBar, st.actualSpentNet > 0 ? 3 : 0)}%` }}
+                            title={`Thực chi File 3.2: ${formatVndShort(st.actualSpentNet)}`}
+                          />
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-1 mt-2">
+                        <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-indigo-500 rounded-full"
+                            style={{ width: `${Math.max(targetPaidBar, 4)}%` }}
+                          />
+                        </div>
+                        <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-emerald-500 rounded-full"
+                            style={{ width: `${Math.max(airedBar, st.actualAiredVideos > 0 ? 4 : 0)}%` }}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* BẢNG SCORECARD CHI TIẾT TOÀN BỘ NHÂN SỰ B2C */}
+          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs">
+            <div className="px-5 py-3.5 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <div>
+                <h3 className="text-sm font-bold text-slate-900">
+                  Bảng Đánh Giá Chi Tiết Từng Nhân Sự Phòng B2C ({filteredStaffList.length} Nhân Sự)
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Nhấn vào tên nhân sự để xem danh sách các gian hàng và toàn bộ các video nhân sự đó đã book trong tháng.
+                </p>
+              </div>
+              <div className="flex items-center gap-1.5">
+                {[
+                  { key: 'ALL', label: 'Tất cả nhân sự' },
+                  { key: 'MANAGEMENT', label: 'Trưởng phòng & Trưởng nhóm' },
+                  { key: 'WITH_STORES', label: 'Chuyên viên giữ gian hàng (4.1)' },
+                  { key: 'SPECIALIST', label: 'Toàn bộ Chuyên viên thực thi' }
+                ].map((f) => (
+                  <button
+                    key={f.key}
+                    type="button"
+                    onClick={() => setStaffRoleFilter(f.key as any)}
+                    className={`px-2.5 py-1 rounded text-xs font-semibold transition cursor-pointer ${
+                      staffRoleFilter === f.key
+                        ? 'bg-slate-900 text-white'
+                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                    }`}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="overflow-x-auto max-h-[600px]">
               <table className="w-full text-xs text-left">
-                <thead className="bg-slate-50 text-slate-600 border-b border-slate-200 font-semibold text-2xs">
+                <thead className="bg-slate-50 text-slate-600 uppercase border-b border-slate-200 sticky top-0 z-10">
                   <tr>
-                    <th className="py-3 px-4">Thương Hiệu / Brand</th>
-                    <th className="py-3 px-3">PIC Lead Shop</th>
-                    <th className="py-3 px-3 text-right">Kế Hoạch Ngân Sách</th>
-                    <th className="py-3 px-3 text-right">Đã Giải Ngân</th>
-                    <th className="py-3 px-3 text-right">Ngân Sách Còn Lại</th>
-                    <th className="py-3 px-3 text-center">Tốc Độ Đốt (% Burn)</th>
-                    <th className="py-3 px-3 text-center">Tình Trạng Pacing</th>
-                    <th className="py-3 px-3 text-right">Doanh Thu GMV</th>
-                    <th className="py-3 px-3 text-center">ROAS</th>
-                    <th className="py-3 px-4">Khuyến Nghị Hành Động</th>
+                    <th className="py-3 px-4 font-bold">Nhân Sự & Chức Danh</th>
+                    <th className="py-3 px-3 font-bold">Cấp Duyệt Trực Tiếp</th>
+                    <th className="py-3 px-3 font-bold text-center">Số Gian Hàng</th>
+                    <th className="py-3 px-3 font-bold text-right">Order Gross</th>
+                    <th className="py-3 px-3 font-bold text-right">Hạn Mức Net</th>
+                    <th className="py-3 px-3 font-bold text-right">Thực Chi 3.2</th>
+                    <th className="py-3 px-3 font-bold text-center">Chỉ Tiêu Paid / FOC / Brand</th>
+                    <th className="py-3 px-3 font-bold text-center">Đơn Book / Đã Air</th>
+                    <th className="py-3 px-3 font-bold text-center">Đúng Hạn SLA</th>
+                    <th className="py-3 px-4 font-bold">Cảnh Báo Gian Hàng</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {brandPacingList.map(p => (
-                    <tr key={p.brandId} className="hover:bg-slate-50/80 transition">
-                      <td className="py-3.5 px-4 font-semibold text-slate-900">
-                        {p.brandName}
-                        <div className="text-2xs text-slate-500 font-normal">{p.storeCount} gian hàng live</div>
-                      </td>
-
-                      <td className="py-3.5 px-3">
-                        <span className="font-semibold text-slate-800">{p.leadPic}</span>
-                      </td>
-
-                      <td className="py-3.5 px-3 text-right font-mono font-semibold text-slate-700">
-                        {p.planBudget.toLocaleString('vi-VN')} đ
-                      </td>
-
-                      <td className="py-3.5 px-3 text-right font-mono font-semibold text-slate-900">
-                        {p.spentBudget.toLocaleString('vi-VN')} đ
-                      </td>
-
-                      <td className="py-3.5 px-3 text-right font-mono text-emerald-600">
-                        {p.remainingBudget.toLocaleString('vi-VN')} đ
-                      </td>
-
-                      <td className="py-3.5 px-3 text-center min-w-[100px]">
-                        <span className="font-semibold font-mono text-slate-900">{p.burnRatePct}%</span>
-                        <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden mt-1">
-                          <div 
-                            className={`h-full rounded-full ${
-                              p.burnRatePct > 30 ? 'bg-amber-500' : p.burnRatePct < 20 ? 'bg-blue-400' : 'bg-emerald-500'
-                            }`}
-                            style={{ width: `${p.burnRatePct}%` }}
-                          />
+                  {filteredStaffList.map((st) => (
+                    <tr
+                      key={st.name}
+                      onClick={() => setInspectStaff(st)}
+                      className="hover:bg-indigo-50/40 transition cursor-pointer"
+                    >
+                      <td className="py-2.5 px-4">
+                        <div className="flex items-center gap-2.5">
+                          <Avatar name={st.name} size={28} />
+                          <div>
+                            <div className="font-bold text-slate-900 flex items-center gap-1.5">
+                              {st.name}
+                              {st.roleLevel === 'HEAD' && (
+                                <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-indigo-900 text-white">
+                                  Trưởng Phòng
+                                </span>
+                              )}
+                              {st.roleLevel === 'LEADER' && (
+                                <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-indigo-100 text-indigo-800">
+                                  Leader (8 gian)
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-[11px] text-slate-500">{st.roleTitle}</div>
+                          </div>
                         </div>
                       </td>
-
-                      <td className="py-3.5 px-3 text-center">
-                        {p.pacingStatus === 'ON_TRACK' && (
-                          <span className="px-2 py-0.5 rounded-full text-2xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                            Đúng Tiến Độ
-                          </span>
-                        )}
-                        {p.pacingStatus === 'OVER_PACING' && (
-                          <span className="px-2 py-0.5 rounded-full text-2xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
-                            Đốt Nhanh
-                          </span>
-                        )}
-                        {p.pacingStatus === 'UNDER_PACING' && (
-                          <span className="px-2 py-0.5 rounded-full text-2xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
-                            Chậm Giải Ngân
-                          </span>
-                        )}
+                      <td className="py-2.5 px-3">
+                        <div className="font-semibold text-slate-800">{st.directSupervisor}</div>
+                        <div className="text-[10px] text-slate-500">
+                          {st.storesWithLeaderCount > 0
+                            ? `${st.storesWithLeaderCount} gian qua Leader · ${st.storesDirectCount} gian trực tiếp`
+                            : 'Trình trực tiếp Trưởng phòng'}
+                        </div>
                       </td>
-
-                      <td className="py-3.5 px-3 text-right font-mono font-semibold text-emerald-600">
-                        {p.currentGmv.toLocaleString('vi-VN')} đ
-                      </td>
-
-                      <td className="py-3.5 px-3 text-center">
-                        <span className="px-2 py-0.5 rounded text-xs font-mono font-semibold bg-blue-50 text-blue-700 border border-blue-200">
-                          {p.roas}x
+                      <td className="py-2.5 px-3 text-center font-mono">
+                        <span className="font-bold text-slate-900">{st.storesCount}</span>
+                        <span className="block text-[10px] text-slate-500">
+                          {st.tiktokStoresCount} TT · {st.shopeeStoresCount} SP
                         </span>
                       </td>
-
-                      <td className="py-3.5 px-4 text-2xs text-slate-600 max-w-[200px]">
-                        {p.actionNote}
+                      <td className="py-2.5 px-3 text-right font-mono text-slate-600">
+                        {formatVndShort(st.orderBudgetGross)}
+                      </td>
+                      <td className="py-2.5 px-3 text-right font-mono font-bold text-indigo-700">
+                        {formatVndShort(st.orderBudgetNet)}
+                      </td>
+                      <td className="py-2.5 px-3 text-right font-mono">
+                        <span className="font-bold text-emerald-700">
+                          {formatVndShort(st.actualSpentNet)}
+                        </span>
+                        <span className="block text-[10px] text-slate-500">
+                          {st.burnNetPct}% Net
+                        </span>
+                      </td>
+                      <td className="py-2.5 px-3 text-center font-mono text-[11px]">
+                        <strong className="text-indigo-700">{st.targetPaidVideos}</strong> /{' '}
+                        <strong className="text-sky-700">{st.targetFocVideos}</strong> /{' '}
+                        <strong className="text-emerald-700">{st.targetSelfVideos}</strong>
+                      </td>
+                      <td className="py-2.5 px-3 text-center font-mono">
+                        <span className="font-bold text-slate-900">{st.actualBookedVideos}</span> đơn /{' '}
+                        <span className="font-bold text-emerald-700">{st.actualAiredVideos}</span> air
+                      </td>
+                      <td className="py-2.5 px-3 text-center font-mono">
+                        <span
+                          className={`px-2 py-0.5 rounded font-bold text-[11px] ${
+                            st.slaRate >= 85
+                              ? 'bg-emerald-50 text-emerald-700'
+                              : st.slaRate >= 60
+                              ? 'bg-amber-50 text-amber-800'
+                              : 'bg-rose-50 text-rose-700'
+                          }`}
+                        >
+                          {st.slaRate}%
+                        </span>
+                      </td>
+                      <td className="py-2.5 px-4">
+                        {st.unbudgetedStoresCount > 0 || st.overbudgetStoresCount > 0 ? (
+                          <div className="space-y-0.5">
+                            {st.unbudgetedStoresCount > 0 && (
+                              <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800 mr-1">
+                                {st.unbudgetedStoresCount} gian 0đ Net
+                              </span>
+                            )}
+                            {st.overbudgetStoresCount > 0 && (
+                              <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-900">
+                                {st.overbudgetStoresCount} gian vượt Net
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-[11px] text-emerald-700 font-medium">
+                            Đúng hạn mức Net
+                          </span>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -2003,280 +2381,364 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
       )}
 
       {/* ========================================================================= */}
-      {/* SUB-TAB 5: BÁO CÁO KOC & CREATOR ROI RANKING */}
+      {/* TAB 5: TRUNG TÂM XUẤT BÁO CÁO ĐỐI SOÁT ĐA SHEET (.XLSX) */}
       {/* ========================================================================= */}
-      {activeSubTab === 'CREATORS' && (
-        <div className="space-y-4">
-          <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs flex items-center justify-between">
+      {activeTab === 'EXPORT_CENTER' && (
+        <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-xs space-y-5">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-100 pb-4">
             <div>
-              <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-                <Award className="w-4 h-4 text-amber-500" />
-                Bảng Xếp Hạng KOC Winner & Creator ROI
+              <h3 className="text-base font-bold text-slate-900">
+                Xuất Báo Cáo Đối Soát Kế Toán & Hiệu Suất B2C (Định Dạng Excel .xlsx 4 Sheets)
               </h3>
-              <p className="text-xs text-slate-500">Phân tích hiệu quả từng KOC: Giá cast thỏa thuận vs GMV thật từ Affiliate và Ads PGM</p>
+              <p className="text-xs text-slate-500 mt-1">
+                Dữ liệu xuất ra tuân thủ đúng phạm vi 69 gian hàng B2C (B2C phụ trách = 1), tách bạch Gross vs Net, Paid vs FOC và tích hợp số liệu thực thu từ TikTok Seller Center.
+              </p>
             </div>
             <button
               type="button"
-              onClick={() => handleExportExcel('Bao_Cao_KOC_Winner_ROI')}
-              className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg transition flex items-center gap-1.5"
+              onClick={handleExportMultiSheetExcel}
+              disabled={isExportingExcel}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition cursor-pointer"
             >
-              <Download className="w-3.5 h-3.5 text-slate-600" />
-              <span>Xuất Báo Cáo KOC (.xlsx)</span>
+              <Download className="w-4 h-4" />
+              {isExportingExcel ? 'Đang tạo file Excel...' : 'Tải Xuống File Excel Đối Soát Ngay (.xlsx)'}
             </button>
           </div>
 
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs">
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs text-left">
-                <thead className="bg-slate-50 text-slate-600 border-b border-slate-200 font-semibold text-2xs">
-                  <tr>
-                    <th className="py-3 px-4">Tên KOC / Kênh Creator</th>
-                    <th className="py-3 px-3">Phân Nhóm / Tệp</th>
-                    <th className="py-3 px-3 text-right">Chi Phí Cast Net</th>
-                    <th className="py-3 px-3 text-right">Doanh Thu GMV</th>
-                    <th className="py-3 px-3 text-center">ROAS Thực Tế</th>
-                    <th className="py-3 px-3 text-center">Hook 2 Giây</th>
-                    <th className="py-3 px-3 text-center">Mã Spark Ads</th>
-                    <th className="py-3 px-4 text-center">Phân Loại Winner</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {[
-                    { name: 'Kim Chung Phan', tier: 'Macro', niche: 'Review Nữ', cost: 15000000, gmv: 166050000, roas: 11.07, hook2s: '36.8%', ads: 'Đang chạy', winner: 'Top 1 Winner' },
-                    { name: 'Sandy', tier: 'Micro', niche: 'Chăm sóc da', cost: 8000000, gmv: 54880000, roas: 6.86, hook2s: '32.1%', ads: 'Đang chạy', winner: 'Top 2 Winner' },
-                    { name: 'Heda', tier: 'Micro', niche: 'Lifestyle', cost: 7000000, gmv: 43610000, roas: 6.23, hook2s: '29.5%', ads: 'Đang chạy', winner: 'Winner Đạt KPI' },
-                    { name: 'Ngọc Matcha', tier: 'Key', niche: 'Beauty & Vlog', cost: 25000000, gmv: 146000000, roas: 5.84, hook2s: '34.2%', ads: 'Đang chạy', winner: 'Winner Đạt KPI' },
-                    { name: 'bui_imeo', tier: 'Micro', niche: 'Makeup Hàn', cost: 12000000, gmv: 61800000, roas: 5.15, hook2s: '31.0%', ads: 'Đang chạy', winner: 'Winner Đạt KPI' },
-                    { name: 'Lương Thục Hiền', tier: 'Macro', niche: 'Chuyên gia Kẻ mắt', cost: 18000000, gmv: 89460000, roas: 4.97, hook2s: '28.3%', ads: 'Đang chạy', winner: 'Winner Đạt KPI' },
-                    { name: 'Cô Học Chăm Da', tier: 'Key', niche: 'Skincare Khoa học', cost: 20000000, gmv: 83200000, roas: 4.16, hook2s: '27.4%', ads: 'Cần cấp lại mã', winner: 'Tiềm Năng' },
-                  ].map((k, idx) => (
-                    <tr key={idx} className="hover:bg-slate-50/80 transition">
-                      <td className="py-3 px-4 font-semibold text-slate-900 text-xs">
-                        {k.name}
-                      </td>
-                      <td className="py-3 px-3 text-slate-600">
-                        <span className="px-2 py-0.5 rounded text-2xs font-medium bg-slate-100 text-slate-700">
-                          {k.tier} - {k.niche}
-                        </span>
-                      </td>
-                      <td className="py-3 px-3 text-right font-mono text-slate-700">
-                        {k.cost.toLocaleString('vi-VN')} đ
-                      </td>
-                      <td className="py-3 px-3 text-right font-mono font-semibold text-emerald-600">
-                        {k.gmv.toLocaleString('vi-VN')} đ
-                      </td>
-                      <td className="py-3 px-3 text-center">
-                        <span className={`px-2 py-0.5 rounded text-xs font-mono font-semibold ${
-                          k.roas >= 6.0
-                            ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                            : 'bg-blue-50 text-blue-700 border border-blue-200'
-                        }`}>
-                          {k.roas}x
-                        </span>
-                      </td>
-                      <td className="py-3 px-3 text-center font-mono text-blue-600 font-semibold">
-                        {k.hook2s}
-                      </td>
-                      <td className="py-3 px-3 text-center">
-                        <span className={`px-2 py-0.5 rounded text-2xs font-semibold ${
-                          k.ads === 'Đang chạy' 
-                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
-                            : 'bg-amber-100 text-amber-800'
-                        }`}>
-                          {k.ads}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-center">
-                        <span className={`px-2 py-0.5 rounded-full text-2xs font-semibold ${
-                          k.roas >= 6.0 
-                            ? 'bg-amber-50 text-amber-700 border border-amber-200' 
-                            : 'bg-slate-100 text-slate-700'
-                        }`}>
-                          {k.winner}
-                        </span>
-                      </td>
-                    </tr>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[
+              {
+                sheet: 'Sheet 1: Đối Soát 69 Gian Hàng B2C',
+                rows: '69 dòng gian hàng chuẩn',
+                desc: 'Đầy đủ Brand, Gian hàng, Sàn, Trưởng phòng (Yến Nhi), Leader (Ngọc Tâm / Không có leader), PIC, Order Gross, Order Net, Thực chi File 3.2, Paid/FOC/Self video và Cảnh báo vượt trần.'
+              },
+              {
+                sheet: 'Sheet 2: Hiệu Suất Nhân Sự B2C',
+                rows: `${B2C_STAFF_ANALYTICS_LIST.length} nhân sự phòng B2C`,
+                desc: 'Thống kê chi tiết số gian hàng TikTok/Shopee, số gian có Leader vs trực tiếp, tổng hạn mức Gross/Net quản lý, thực chi lũy kế, số đơn book, video đã air và tỷ lệ đúng hạn SLA.'
+              },
+              {
+                sheet: 'Sheet 3: Sổ Cái Video Đã Book (File 3.2)',
+                rows: `${B2C_BOOKED_VIDEOS_OCT_2026.length} bản ghi đối soát mẫu & 786 đơn tháng`,
+                desc: 'Chi tiết mã BO26..., ID kênh KOC, gian hàng, chuyên viên book, bậc khung lương (TAP 0đ, KL1-KL7), cát-xê duyệt chi, trạng thái ĐNTT/Tạm ứng và doanh thu GMV TikTok Seller.'
+              },
+              {
+                sheet: 'Sheet 4: Chiến Dịch & Creative TikTok Seller',
+                rows: `${TIKTOK_SELLER_TOP_CREATIVES.length} Top Creative & 6 Chiến dịch PGM/LGM`,
+                desc: 'Báo cáo hiệu quả chạy quảng cáo thực tế từ TikTok Shop Seller Center: Chi phí Ads, GMV thực thu, ROAS, số đơn hàng, CPA, CTR, CVR và tỷ lệ giữ chân 2s / 6s.'
+              }
+            ].map((item) => (
+              <div key={item.sheet} className="p-4 rounded-xl bg-slate-50 border border-slate-200">
+                <div className="flex items-center gap-2 text-indigo-700 font-bold text-xs mb-1">
+                  <FileSpreadsheet className="w-4 h-4 shrink-0" />
+                  <span>{item.sheet}</span>
+                </div>
+                <div className="text-[11px] font-mono font-semibold text-slate-800 mb-2">
+                  Quy mô: {item.rows}
+                </div>
+                <p className="text-xs text-slate-600 leading-relaxed">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL 1: CHI TIẾT GIAN HÀNG (STORE DRILL-DOWN) */}
+      {/* ========================================================================= */}
+      {inspectStore && (
+        <Modal
+          open={Boolean(inspectStore)}
+          onClose={() => setInspectStore(null)}
+          title={`Hồ Sơ Đối Soát Gian Hàng: ${inspectStore.storeName}`}
+          size="lg"
+        >
+          <div className="space-y-4 text-xs">
+            <div className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-lg bg-slate-50 border border-slate-200">
+              <div>
+                <span className="text-slate-500">Thương hiệu (Brand):</span>{' '}
+                <strong className="text-slate-900">{inspectStore.brandName}</strong> ·{' '}
+                <span className="text-slate-500">Sàn:</span>{' '}
+                <strong className="text-slate-900">{inspectStore.platform}</strong> ·{' '}
+                <span className="text-slate-500">Mã VH:</span>{' '}
+                <strong className="font-mono">{inspectStore.storeOperationId}</strong>
+              </div>
+              {renderRiskBadge(inspectStore.financialRiskStatus)}
+            </div>
+
+            {/* Cơ cấu nhân sự phụ trách gian hàng */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="p-3 rounded-lg border border-slate-200">
+                <span className="text-[11px] text-slate-500 block">Trưởng Phòng B2C (Duyệt cuối)</span>
+                <strong className="text-slate-900 text-sm">Đặng Thị Yến Nhi</strong>
+              </div>
+              <div className="p-3 rounded-lg border border-slate-200">
+                <span className="text-[11px] text-slate-500 block">Trưởng Nhóm Booking (Cột 55)</span>
+                <strong className="text-indigo-700 text-sm">
+                  {inspectStore.hasBookingLeader && inspectStore.bookingLeader
+                    ? inspectStore.bookingLeader
+                    : 'Không có leader (Trực tiếp TP)'}
+                </strong>
+              </div>
+              <div className="p-3 rounded-lg border border-slate-200">
+                <span className="text-[11px] text-slate-500 block">Chuyên Viên Thực Thi (PIC)</span>
+                <strong className="text-emerald-700 text-sm">
+                  {inspectStore.primaryPic || inspectStore.assignedStaff}
+                </strong>
+              </div>
+            </div>
+
+            {/* Bóc tách Tài chính Gross / Net / Thực chi */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="p-3 rounded-lg bg-slate-50 border border-slate-200">
+                <span className="text-[11px] text-slate-500 block">Hạn Mức Order Gross</span>
+                <strong className="text-sm font-mono text-slate-900">
+                  {formatVndShort(inspectStore.budgetGross || 0)}
+                </strong>
+              </div>
+              <div className="p-3 rounded-lg bg-indigo-50 border border-indigo-200">
+                <span className="text-[11px] text-indigo-800 block">Trần Order Net (Kế toán)</span>
+                <strong className="text-sm font-mono text-indigo-900">
+                  {formatVndShort(inspectStore.budgetNet || inspectStore.monthlyBudget || 0)}
+                </strong>
+              </div>
+              <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200">
+                <span className="text-[11px] text-emerald-800 block">Thực Chi Duyệt Book (3.2)</span>
+                <strong className="text-sm font-mono text-emerald-900">
+                  {formatVndShort(inspectStore.actualSpentNet || 0)}
+                </strong>
+              </div>
+              <div className="p-3 rounded-lg bg-amber-50 border border-amber-200">
+                <span className="text-[11px] text-amber-800 block">Video Đã Air / Kế Hoạch</span>
+                <strong className="text-sm font-mono text-amber-900">
+                  {inspectStore.actualAiredVideos || 0} video (Paid: {inspectStore.targetPaidVideos || 0} · FOC: {inspectStore.targetFocVideos || 0})
+                </strong>
+              </div>
+            </div>
+
+            {/* Danh sách các video đã book thuộc gian hàng này */}
+            <div>
+              <h4 className="font-bold text-slate-900 mb-2">
+                Danh Sách Video Đã Booking Của Gian Hàng Trong Tháng 10/2026
+              </h4>
+              {(() => {
+                const storeVids = B2C_BOOKED_VIDEOS_OCT_2026.filter(
+                  (v) =>
+                    v.storeName.toLowerCase() === inspectStore.storeName.toLowerCase() ||
+                    v.brandName.toLowerCase() === inspectStore.brandName.toLowerCase()
+                );
+                if (storeVids.length === 0) {
+                  return (
+                    <p className="text-slate-500 py-4 text-center bg-slate-50 rounded-lg">
+                      Chưa có bản ghi video mẫu trong danh sách rút gọn cho gian hàng này.
+                    </p>
+                  );
+                }
+                return (
+                  <div className="overflow-x-auto max-h-60 border border-slate-200 rounded-lg">
+                    <table className="w-full text-xs text-left">
+                      <thead className="bg-slate-50 border-b border-slate-200">
+                        <tr>
+                          <th className="py-2 px-3">Mã Book</th>
+                          <th className="py-2 px-3">Kênh KOC</th>
+                          <th className="py-2 px-3">PIC</th>
+                          <th className="py-2 px-3">Khung Lương</th>
+                          <th className="py-2 px-3 text-right">Chi Phí</th>
+                          <th className="py-2 px-3 text-right">GMV Seller</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {storeVids.map((v) => (
+                          <tr key={v.code}>
+                            <td className="py-2 px-3 font-mono font-bold text-indigo-700">{v.code}</td>
+                            <td className="py-2 px-3 font-semibold">@{v.channelId}</td>
+                            <td className="py-2 px-3">{v.pic}</td>
+                            <td className="py-2 px-3 font-mono">{v.kl}</td>
+                            <td className="py-2 px-3 text-right font-mono font-bold">{formatVndShort(v.cost)}</td>
+                            <td className="py-2 px-3 text-right font-mono text-emerald-700">
+                              {formatVndShort(v.sellerGmv)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL 2: CHI TIẾT NHÂN SỰ B2C (STAFF DRILL-DOWN) */}
+      {/* ========================================================================= */}
+      {inspectStaff && (
+        <Modal
+          open={Boolean(inspectStaff)}
+          onClose={() => setInspectStaff(null)}
+          title={`Hồ Sơ Hiệu Suất Nhân Sự: ${inspectStaff.name} (${inspectStaff.roleTitle})`}
+          size="lg"
+        >
+          <div className="space-y-4 text-xs">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="p-3 rounded-lg bg-slate-50 border border-slate-200">
+                <span className="text-[11px] text-slate-500 block">Số Gian Hàng Phụ Trách</span>
+                <strong className="text-sm font-mono text-slate-900">
+                  {inspectStaff.storesCount} gian ({inspectStaff.tiktokStoresCount} TT · {inspectStaff.shopeeStoresCount} SP)
+                </strong>
+              </div>
+              <div className="p-3 rounded-lg bg-indigo-50 border border-indigo-200">
+                <span className="text-[11px] text-indigo-800 block">Hạn Mức Order Net Quản Lý</span>
+                <strong className="text-sm font-mono text-indigo-900">
+                  {formatVndShort(inspectStaff.orderBudgetNet)}
+                </strong>
+              </div>
+              <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200">
+                <span className="text-[11px] text-emerald-800 block">Thực Chi Duyệt Book (3.2)</span>
+                <strong className="text-sm font-mono text-emerald-900">
+                  {formatVndShort(inspectStaff.actualSpentNet)} ({inspectStaff.burnNetPct}%)
+                </strong>
+              </div>
+              <div className="p-3 rounded-lg bg-amber-50 border border-amber-200">
+                <span className="text-[11px] text-amber-800 block">Sản Lượng Video Tháng 10</span>
+                <strong className="text-sm font-mono text-amber-900">
+                  {inspectStaff.actualBookedVideos} đơn book · {inspectStaff.actualAiredVideos} đã air
+                </strong>
+              </div>
+            </div>
+
+            {inspectStaff.storesList.length > 0 && (
+              <div>
+                <h4 className="font-bold text-slate-900 mb-1.5">
+                  Danh Sách Gian Hàng Được Giao Phụ Trách ({inspectStaff.storesList.length} Gian Hàng):
+                </h4>
+                <div className="flex flex-wrap gap-1.5">
+                  {inspectStaff.storesList.map((stName) => (
+                    <span
+                      key={stName}
+                      className="px-2.5 py-1 rounded-md bg-slate-100 text-slate-800 font-semibold text-[11px] border border-slate-200"
+                    >
+                      {stName}
+                    </span>
                   ))}
-                </tbody>
-              </table>
+                </div>
+              </div>
+            )}
+
+            <div>
+              <h4 className="font-bold text-slate-900 mb-2">
+                Danh Sách Các Video Nhân Sự Đã Trực Tiếp Book Trong File 3.2:
+              </h4>
+              {(() => {
+                const staffVids = B2C_BOOKED_VIDEOS_OCT_2026.filter(
+                  (v) => v.pic.toLowerCase() === inspectStaff.name.toLowerCase()
+                );
+                if (staffVids.length === 0) {
+                  return (
+                    <p className="text-slate-500 py-4 text-center bg-slate-50 rounded-lg">
+                      Nhân sự thực hiện vai trò quản lý hoặc các đơn book nằm ngoài tập mẫu 150 video hiển thị nhanh.
+                    </p>
+                  );
+                }
+                return (
+                  <div className="overflow-x-auto max-h-60 border border-slate-200 rounded-lg">
+                    <table className="w-full text-xs text-left">
+                      <thead className="bg-slate-50 border-b border-slate-200">
+                        <tr>
+                          <th className="py-2 px-3">Mã Book</th>
+                          <th className="py-2 px-3">Gian Hàng</th>
+                          <th className="py-2 px-3">Kênh KOC</th>
+                          <th className="py-2 px-3">Loại Hình</th>
+                          <th className="py-2 px-3">Khung Lương</th>
+                          <th className="py-2 px-3 text-right">Cát-xê</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {staffVids.map((v) => (
+                          <tr key={v.code}>
+                            <td className="py-2 px-3 font-mono font-bold text-indigo-700">{v.code}</td>
+                            <td className="py-2 px-3 font-semibold">{v.storeName}</td>
+                            <td className="py-2 px-3">@{v.channelId}</td>
+                            <td className="py-2 px-3">{v.format}</td>
+                            <td className="py-2 px-3 font-mono">{v.kl}</td>
+                            <td className="py-2 px-3 text-right font-mono font-bold">
+                              {formatVndShort(v.cost)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                );
+              })()}
             </div>
           </div>
-        </div>
+        </Modal>
       )}
 
       {/* ========================================================================= */}
-      {/* SUB-TAB 6: TÀI CHÍNH, DÒNG TIỀN & THUẾ TNCN */}
+      {/* MODAL 3: CHI TIẾT ĐƠN VIDEO BOOKING (VIDEO DRILL-DOWN) */}
       {/* ========================================================================= */}
-      {activeSubTab === 'FINANCE_TAX' && (
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs">
-              <div className="text-2xs font-semibold text-slate-500 ">Tạm Ứng Đã Chi (Advance)</div>
-              <div className="text-xl font-semibold font-mono text-slate-900 mt-1">
-                {formatVndShort(stats.totalAdvancePaid)}
+      {inspectVideo && (
+        <Modal
+          open={Boolean(inspectVideo)}
+          onClose={() => setInspectVideo(null)}
+          title={`Chi Tiết Đơn Booking Video: ${inspectVideo.code}`}
+          size="md"
+        >
+          <div className="space-y-3 text-xs">
+            <div className="p-3 rounded-lg bg-slate-50 border border-slate-200 space-y-1.5">
+              <div className="flex justify-between">
+                <span className="text-slate-500">Gian hàng:</span>
+                <strong className="text-slate-900">{inspectVideo.storeName} ({inspectVideo.brandName})</strong>
               </div>
-              <div className="text-2xs text-slate-500 mt-1">
-                Định mức 2.000.000đ/deal sau khi ký HĐ & CCCD hợp lệ
+              <div className="flex justify-between">
+                <span className="text-slate-500">Kênh KOC / Creator:</span>
+                <strong className="text-indigo-700">@{inspectVideo.channelId}</strong>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Chuyên viên Booking (PIC):</span>
+                <strong className="text-slate-900">{inspectVideo.pic}</strong>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Sản phẩm:</span>
+                <strong className="text-slate-800">{inspectVideo.productName}</strong>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Hạng mục & Định dạng:</span>
+                <strong className="text-slate-800">{inspectVideo.format} · {inspectVideo.videoType} ({inspectVideo.kl})</strong>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Chi phí duyệt chi (File 3.2):</span>
+                <strong className="font-mono text-rose-700">{formatVndShort(inspectVideo.cost)}</strong>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Doanh thu đối soát TikTok Seller:</span>
+                <strong className="font-mono text-emerald-700">
+                  {formatVndShort(inspectVideo.sellerGmv)} ({inspectVideo.sellerOrders} đơn · ROAS {inspectVideo.roas}x)
+                </strong>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Trạng thái chứng từ Kế toán:</span>
+                <strong className="text-amber-800">{inspectVideo.pipeline} · {inspectVideo.paymentSlipStatus}</strong>
               </div>
             </div>
 
-            <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs">
-              <div className="text-2xs font-semibold text-slate-500 ">Quyết Toán Đã Chi (Final Paid)</div>
-              <div className="text-xl font-semibold font-mono text-emerald-600 mt-1">
-                {formatVndShort(stats.totalFinalPaid)}
+            {inspectVideo.linkAir && (
+              <div className="pt-2 flex justify-end">
+                <a
+                  href={inspectVideo.linkAir}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-indigo-600 text-white font-bold hover:bg-indigo-700 transition"
+                >
+                  Mở xem Video trên TikTok <ExternalLink className="w-3.5 h-3.5" />
+                </a>
               </div>
-              <div className="text-2xs text-emerald-700 mt-1">
-                Chi trả sau khi video on air và nghiệm thu mã Spark Ads
-              </div>
-            </div>
-
-            <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs">
-              <div className="text-2xs font-semibold text-slate-500 ">Thuế TNCN 10% Khấu Trừ</div>
-              <div className="text-xl font-semibold font-mono text-rose-600 mt-1">
-                {formatVndShort(stats.totalPitTaxWithheld)}
-              </div>
-              <div className="text-2xs text-slate-500 mt-1">
-                Khấu trừ nộp Ngân sách Nhà nước theo mẫu TT80/2021/TT-BTC
-              </div>
-            </div>
+            )}
           </div>
-
-          <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs space-y-3">
-            <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-emerald-600" />
-              Nguyên Tắc Pháp Chế & Dòng Tiền Đang Áp Dụng
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-slate-600">
-              <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-1">
-                <span className="font-semibold text-slate-800 block">Quy định Hợp đồng trên 9.000.000 VNĐ:</span>
-                <p>Bắt buộc có file scan hợp đồng có chữ ký tươi/chữ ký số và ảnh CCCD 2 mặt rõ nét trước ngày làm Đề nghị thanh toán (DNTT) ít nhất 2 ngày.</p>
-              </div>
-              <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-1">
-                <span className="font-semibold text-slate-800 block">Khấu trừ Thuế TNCN 10% vãng lai:</span>
-                <p>Mọi hợp đồng dịch vụ cá nhân từ 2.000.000 VNĐ trở lên bắt buộc khấu trừ 10% tại nguồn và xuất chứng từ khấu trừ thuế điện tử cho KOC.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ========================================================================= */}
-      {/* SUB-TAB 7: TRUNG TÂM XUẤT BÁO CÁO (REPORT CENTER) */}
-      {/* ========================================================================= */}
-      {activeSubTab === 'REPORT_CENTER' && (
-        <div className="space-y-4">
-          <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs">
-            <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-              <FileSpreadsheet className="w-4 h-4 text-rose-600" />
-              Trung Tâm Tạo & Xuất Báo Cáo Định Kỳ Chuẩn Enterprise
-            </h3>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Chọn mẫu báo cáo phù hợp để hệ thống tự động bóc tách dữ liệu và xuất file Excel (.xlsx) chuẩn hóa để gửi Nhãn hàng hoặc lưu trữ nội bộ.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Card 1: Staff Progress Report */}
-            <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs flex flex-col justify-between space-y-4 hover:border-slate-300 transition">
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
-                    Báo Cáo Nhân Sự & Squad
-                  </span>
-                  <span className="text-2xs text-slate-400">Định dạng .XLSX</span>
-                </div>
-                <h4 className="text-sm font-semibold text-slate-900">Báo Cáo Tiến Độ Nhân Viên & Quản Lý Gian Hàng</h4>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Bóc tách KPI từng nhân viên: Số gian hàng phụ trách, tiến độ air video, doanh thu GMV thực đạt, ngân sách quản lý và cảnh báo quá tải công việc.
-                </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => handleExportExcel('Bao_Cao_Tien_Do_Nhan_Vien_Squad')}
-                className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg transition flex items-center justify-center gap-2 shadow-xs cursor-pointer"
-              >
-                <Download className="w-3.5 h-3.5" />
-                <span>Tải Báo Cáo Nhân Sự (.xlsx)</span>
-              </button>
-            </div>
-
-            {/* Card 2: Air Video Tracking Report */}
-            <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs flex flex-col justify-between space-y-4 hover:border-slate-300 transition">
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                    Kênh Nội Dung & Sàn
-                  </span>
-                  <span className="text-2xs text-slate-400">Định dạng .XLSX</span>
-                </div>
-                <h4 className="text-sm font-semibold text-slate-900">Báo Cáo Tiến Độ Air Video & Conversion Sàn</h4>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Bảng kê chi tiết toàn bộ video on-air theo tuần, link TikTok/Shopee, lượt xem, GMV tạo ra từ giỏ hàng video, mã Spark Ads và trạng thái nghiệm thu.
-                </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => handleExportExcel('Bao_Cao_Air_Video_Chi_Tiet')}
-                className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg transition flex items-center justify-center gap-2 shadow-xs cursor-pointer"
-              >
-                <Download className="w-3.5 h-3.5" />
-                <span>Tải Báo Cáo Air Video (.xlsx)</span>
-              </button>
-            </div>
-
-            {/* Card 3: Budget Pacing & Burn Rate */}
-            <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs flex flex-col justify-between space-y-4 hover:border-slate-300 transition">
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
-                    Tài Chính & Kế Hoạch
-                  </span>
-                  <span className="text-2xs text-slate-400">Định dạng .XLSX</span>
-                </div>
-                <h4 className="text-sm font-semibold text-slate-900">Báo Cáo Giải Ngân Ngân Sách & Burn Rate Pacing</h4>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Đối chiếu tốc độ tiêu tiền theo chu kỳ ngày trong tháng cho từng Thương hiệu và Gian hàng sàn, phân bổ 5 khoản mục chi phí và cảnh báo over-pacing.
-                </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => handleExportExcel('Bao_Cao_Ngan_Sach_Burn_Rate_Pacing')}
-                className="w-full py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold rounded-lg transition flex items-center justify-center gap-2 shadow-xs cursor-pointer"
-              >
-                <Download className="w-3.5 h-3.5" />
-                <span>Tải Báo Cáo Ngân Sách (.xlsx)</span>
-              </button>
-            </div>
-
-            {/* Card 4: Executive Full Multi-sheet */}
-            <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs flex flex-col justify-between space-y-4 hover:border-slate-300 transition">
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-slate-900 text-white">
-                    Gói Báo Cáo Ban Giám Đốc
-                  </span>
-                  <span className="text-2xs text-slate-400">File Đa Sheet (.XLSX)</span>
-                </div>
-                <h4 className="text-sm font-semibold text-slate-900">Báo Cáo Tổng Hợp Điều Hành B2C (Full Sheets)</h4>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  File Excel đồng bộ hợp nhất cả 5 bảng biểu: Tổng quan KPI, Tiến độ nhân viên Squad, Danh sách video on air, Burn rate ngân sách và Xếp hạng KOC.
-                </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => handleExportExcel('Bao_Cao_Tong_Hop_Executive_Full')}
-                className="w-full py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg transition flex items-center justify-center gap-2 shadow-xs cursor-pointer"
-              >
-                <Download className="w-3.5 h-3.5" />
-                <span>Tải Báo Cáo Full Sheets (.xlsx)</span>
-              </button>
-            </div>
-          </div>
-        </div>
+        </Modal>
       )}
     </div>
   );

@@ -2623,7 +2623,9 @@ export interface SelfChannelVideoTask {
   storeName?: string;
   planMonth?: string; // Chu kỳ kế hoạch tháng (VD: "2026/10")
   videoFormat?: string; // Định dạng video từ kế hoạch (VD: "Review voice", "Unbox Voice", "POV", "Nhạc text")
-  contentPic?: string; // Chuyên viên Content B2C phụ trách (VD: "Lê Phương Thảo", "Lương Thị Như Quỳnh")
+  contentPic?: string; // Chuyên viên Content B2C phụ trách (VD: "Quỳnh Như", "Nguyễn Thị Mai Anh", "Vũ Hoài Lâm", "Phan Diệu Ánh")
+  partnershipPic?: string; // Trưởng nhóm Partnership quản lý team Content & chuyên liên hệ CTV (Mặc định: "Việt Hoàng")
+  partnershipStatus?: 'WAITING_PARTNERSHIP' | 'CONTACTING_CTV' | 'CTV_ASSIGNED'; // Trạng thái Partnership liên hệ & chốt CTV
   
   // Thuộc Pillar nào
   pillarId: string;

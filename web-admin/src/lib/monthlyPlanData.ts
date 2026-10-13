@@ -1,4 +1,4 @@
-import { InputPlanBreakdownState, InputPlanRowItem, SalaryGrade } from './types';
+import { InputPlanBreakdownState, InputPlanRowItem, SalaryGrade, PlanVersionSnapshot, MultiPartySignOff } from './types';
 import { 
   INITIAL_INPUT_PLAN_ITEMS, 
   autoBalancePlanItems, 
@@ -25,8 +25,99 @@ export function createPlanItemsForScenario(
   }));
 }
 
+/** Gợi ý mã phiên bản tiếp theo trong cùng 1 tháng (v1.0 -> v1.1 -> v1.2...) */
+export function suggestNextVersionCode(currentCode?: string, snapshotsCount: number = 1): string {
+  const base = currentCode || `v1.${Math.max(0, snapshotsCount - 1)}`;
+  const match = base.match(/v?(\d+)\.(\d+)/i);
+  if (match) {
+    const major = Number(match[1]);
+    const minor = Number(match[2]) + 1;
+    return `v${major}.${minor}`;
+  }
+  return `v1.${snapshotsCount}`;
+}
+
+/** Lấy danh sách toàn bộ các phiên bản của kế hoạch trong tháng (đảm bảo luôn có ít nhất v1.0 gốc và phiên bản hiện hành) */
+export function getPlanVersionSnapshots(plan: InputPlanBreakdownState): PlanVersionSnapshot[] {
+  const defaultSignOff: MultiPartySignOff = plan.multiPartySignOff || {
+    growth: {
+      confirmed: true,
+      confirmedBy: plan.growthPic || 'Trần Thị Ánh',
+      note: 'Giao hạn mức ngân sách & chỉ tiêu tháng'
+    },
+    booking: {
+      confirmed: plan.status !== 'DRAFT',
+      confirmedBy: plan.pic || 'Chuyên viên B2C',
+      note: 'Phân rã 4 đầu việc B2C (KOC trả phí, FOC, Kênh tự xây, Đa sàn)'
+    },
+    media: {
+      confirmed: ['PRE_APPROVED', 'PENDING_APPROVAL', 'LEAD_APPROVED', 'APPROVED', 'IN_EXECUTION', 'COMPLETED'].includes(plan.status || ''),
+      confirmedBy: plan.mediaPic || 'Phan Thành Đạt',
+      targetRoas: 4.8,
+      acceptedAdsBudget: plan.budgetAdsTotal || 0,
+      note: 'Nhận gói tổng ngân sách Ads'
+    },
+    leadB2c: {
+      confirmed: ['LEAD_APPROVED', 'APPROVED', 'IN_EXECUTION', 'COMPLETED'].includes(plan.status || ''),
+      confirmedBy: plan.approvedBy || 'Đặng Thị Yến Nhi (Trưởng Phòng)',
+      note: 'Phê duyệt phiên bản kế hoạch tháng'
+    }
+  };
+
+  if (plan.versionSnapshots && plan.versionSnapshots.length > 0) {
+    const curCode = plan.currentVersionCode || plan.versionSnapshots[plan.versionSnapshots.length - 1].versionCode;
+    const hasCurrentInSnapshots = plan.versionSnapshots.some(s => s.versionCode === curCode);
+    if (hasCurrentInSnapshots) {
+      return plan.versionSnapshots;
+    }
+    // Nếu đang ở bản nháp mới (chưa khóa vào danh sách chốt), nối thêm bản hiện hành vào cuối để dễ chuyển đổi
+    return [
+      ...plan.versionSnapshots,
+      {
+        id: `SNAP-${plan.id}-${curCode}`,
+        versionCode: curCode,
+        versionName: plan.isVersionLocked ? `${curCode} - Bản chốt hiện hành` : `${curCode} - Bản đang điều chỉnh (Nháp)`,
+        status: plan.isVersionLocked ? 'LOCKED' : 'SUPERSEDED',
+        createdAt: plan.updatedAt || plan.createdAt || new Date().toISOString(),
+        createdBy: plan.growthPic || plan.pic || 'Growth / B2C',
+        creatorRole: 'GROWTH',
+        changeReason: plan.notes || 'Phiên bản đang làm việc trong tháng',
+        totalTargetBudget: plan.totalTargetBudget,
+        totalTargetContents: plan.totalTargetContents,
+        targetGmv: plan.targetGmv,
+        budgetAdsTotal: plan.budgetAdsTotal || 0,
+        budgetAffiliate: plan.budgetAffiliate || 0,
+        budgetSelfChannel: plan.budgetSelfChannel || 0,
+        items: plan.items || [],
+        signOffRecord: defaultSignOff
+      }
+    ];
+  }
+
+  return [
+    {
+      id: `SNAP-${plan.id}-V1`,
+      versionCode: plan.currentVersionCode || 'v1.0',
+      versionName: 'v1.0 - Bản chốt đầu tháng (Gốc)',
+      status: 'LOCKED',
+      createdAt: plan.createdAt || '2026-10-01T09:00:00Z',
+      createdBy: plan.growthPic || 'Growth PIC',
+      creatorRole: 'GROWTH',
+      changeReason: 'Phiên bản kế hoạch gốc chốt đầu kỳ tháng',
+      totalTargetBudget: plan.totalTargetBudget,
+      totalTargetContents: plan.totalTargetContents,
+      targetGmv: plan.targetGmv,
+      budgetAdsTotal: plan.budgetAdsTotal || 0,
+      budgetAffiliate: plan.budgetAffiliate || 0,
+      budgetSelfChannel: plan.budgetSelfChannel || 0,
+      items: plan.items || [],
+      signOffRecord: defaultSignOff
+    }
+  ];
+}
+
 // DANH MỤC MASTER KẾ HOẠCH THEO THÁNG (MONTHLY PLAN REPOSITORY)
-export const INITIAL_MONTHLY_PLANS: InputPlanBreakdownState[] = [
+const RAW_MONTHLY_PLANS: InputPlanBreakdownState[] = [
   // =========================================================================
   // DỮ LIỆU THẬT 69 GIAN HÀNG THÁNG 10/2026 (TỪ FILE 4.1 VÀ 4.1.1)
   // =========================================================================
@@ -771,6 +862,224 @@ export const INITIAL_MONTHLY_PLANS: InputPlanBreakdownState[] = [
   }
 ];
 
+function buildScaledItems(items: InputPlanRowItem[], ratio: number): InputPlanRowItem[] {
+  return (items || []).map(it => {
+    const scaledQty = Math.max(0, Math.round((it.qty || 0) * ratio));
+    const newTotal = scaledQty * (it.unitCost || 0);
+    return {
+      ...it,
+      qty: scaledQty,
+      totalBudget: newTotal,
+      targetGmv: Math.round(newTotal * (it.expectedRoiMultiplier || 5))
+    };
+  });
+}
+
+export function enrichPlanWithVersions(plan: InputPlanBreakdownState, idx: number = 0): InputPlanBreakdownState {
+  if (plan.versionSnapshots && plan.versionSnapshots.length > 0) {
+    return plan;
+  }
+
+  const baseSignOff: MultiPartySignOff = plan.multiPartySignOff || {
+    growth: {
+      confirmed: true,
+      confirmedBy: plan.growthPic || 'Trần Thị Ánh',
+      confirmedAt: '2026-10-01T09:00:00Z',
+      note: 'Giao hạn mức ngân sách & chỉ tiêu đầu tháng'
+    },
+    booking: {
+      confirmed: true,
+      confirmedBy: plan.pic || 'Chuyên viên B2C',
+      confirmedAt: '2026-10-01T14:00:00Z',
+      note: 'Hoàn tất phân rã 4 đầu việc B2C'
+    },
+    media: {
+      confirmed: true,
+      confirmedBy: plan.mediaPic || 'Phan Thành Đạt',
+      confirmedAt: '2026-10-01T16:00:00Z',
+      targetRoas: 4.8,
+      acceptedAdsBudget: plan.budgetAdsTotal || 0,
+      note: 'Nhận gói tổng ngân sách Ads'
+    },
+    leadB2c: {
+      confirmed: true,
+      confirmedBy: plan.approvedBy || 'Đặng Thị Yến Nhi (Trưởng Phòng)',
+      confirmedAt: '2026-10-02T09:00:00Z',
+      note: 'Phê duyệt & đóng băng phiên bản'
+    }
+  };
+
+  const budget = plan.totalTargetBudget || 0;
+  const contents = plan.totalTargetContents || 0;
+  const gmv = plan.targetGmv || 0;
+  const ads = plan.budgetAdsTotal || 0;
+
+  // Các gian hàng trọng điểm có ngân sách >= 60M hoặc các gian hàng tiêu biểu có từ 2 - 3 phiên bản trong tháng
+  const hasThreeVersions =
+    budget >= 150000000 ||
+    ['KUTIESKIN', 'CLUBCLIO', 'LOCCITANE', 'SENKA', 'COMEM'].some(k => plan.id.toUpperCase().includes(k));
+  const hasTwoVersions =
+    !hasThreeVersions &&
+    (budget >= 40000000 || idx % 3 === 0 || ['FRESH', 'COCOON', 'REJURAN', 'FACEREPUBLIC', 'SUNPLAY'].some(k => plan.id.toUpperCase().includes(k)));
+
+  if (hasThreeVersions && budget > 0) {
+    const v1Budget = Math.round((budget * 0.78) / 1000000) * 1000000;
+    const v1Contents = Math.max(10, Math.round(contents * 0.8));
+    const v1Gmv = Math.round((gmv * 0.78) / 1000000) * 1000000;
+    const v1Ads = Math.round((ads * 0.75) / 1000000) * 1000000;
+
+    const v2Budget = Math.round((budget * 0.9) / 1000000) * 1000000;
+    const v2Contents = Math.max(12, Math.round(contents * 0.9));
+    const v2Gmv = Math.round((gmv * 0.9) / 1000000) * 1000000;
+    const v2Ads = Math.round((ads * 0.88) / 1000000) * 1000000;
+
+    const snapshots: PlanVersionSnapshot[] = [
+      {
+        id: `SNAP-${plan.id}-V10`,
+        versionCode: 'v1.0',
+        versionName: 'Bản chốt đầu tháng (Baseline)',
+        status: 'SUPERSEDED',
+        createdAt: '2026-10-01T09:00:00Z',
+        createdBy: plan.growthPic || 'Growth PIC',
+        creatorRole: 'GROWTH',
+        changeReason: 'Chốt hạn mức ngân sách và chỉ tiêu gốc đầu kỳ tháng',
+        totalTargetBudget: v1Budget,
+        totalTargetContents: v1Contents,
+        targetGmv: v1Gmv,
+        budgetAdsTotal: v1Ads,
+        budgetAffiliate: Math.round((plan.budgetAffiliate || v1Budget * 0.75) * 0.78),
+        budgetSelfChannel: Math.round((plan.budgetSelfChannel || v1Budget * 0.25) * 0.78),
+        items: buildScaledItems(plan.items, 0.8),
+        signOffRecord: baseSignOff
+      },
+      {
+        id: `SNAP-${plan.id}-V11`,
+        versionCode: 'v1.1',
+        versionName: 'Điều chỉnh Đợt 2 (Mega Sale 10.10)',
+        status: 'SUPERSEDED',
+        createdAt: '2026-10-06T14:30:00Z',
+        createdBy: plan.growthPic || 'Growth PIC',
+        creatorRole: 'GROWTH',
+        changeReason: 'Bổ sung ngân sách KOC trả phí & tăng suất gửi mẫu FOC đón nhịp Mega Sale 10.10',
+        totalTargetBudget: v2Budget,
+        totalTargetContents: v2Contents,
+        targetGmv: v2Gmv,
+        budgetAdsTotal: v2Ads,
+        budgetAffiliate: Math.round((plan.budgetAffiliate || v2Budget * 0.75) * 0.9),
+        budgetSelfChannel: Math.round((plan.budgetSelfChannel || v2Budget * 0.25) * 0.9),
+        items: buildScaledItems(plan.items, 0.9),
+        signOffRecord: baseSignOff
+      },
+      {
+        id: `SNAP-${plan.id}-V12`,
+        versionCode: 'v1.2',
+        versionName: 'Điều chỉnh Đợt 3 (Top-up Payday)',
+        status: 'LOCKED',
+        createdAt: '2026-10-12T10:15:00Z',
+        createdBy: plan.growthPic || 'Growth PIC',
+        creatorRole: 'GROWTH',
+        changeReason: 'Growth cấp thêm ngân sách Top-up giữa tháng đẩy Hero SKU dịp Payday 15.10 & 25.10',
+        totalTargetBudget: budget,
+        totalTargetContents: contents,
+        targetGmv: gmv,
+        budgetAdsTotal: ads,
+        budgetAffiliate: plan.budgetAffiliate || Math.round(budget * 0.75),
+        budgetSelfChannel: plan.budgetSelfChannel || Math.round(budget * 0.25),
+        items: plan.items || [],
+        signOffRecord: baseSignOff
+      }
+    ];
+
+    return {
+      ...plan,
+      currentVersionCode: 'v1.2',
+      isVersionLocked: ['LEAD_APPROVED', 'BRAND_APPROVED', 'APPROVED', 'IN_EXECUTION', 'COMPLETED'].includes(plan.status || ''),
+      versionSnapshots: snapshots
+    };
+  }
+
+  if (hasTwoVersions && budget > 0) {
+    const v1Budget = Math.round((budget * 0.85) / 1000000) * 1000000;
+    const v1Contents = Math.max(5, Math.round(contents * 0.85));
+    const v1Gmv = Math.round((gmv * 0.85) / 1000000) * 1000000;
+    const v1Ads = Math.round((ads * 0.85) / 1000000) * 1000000;
+
+    const snapshots: PlanVersionSnapshot[] = [
+      {
+        id: `SNAP-${plan.id}-V10`,
+        versionCode: 'v1.0',
+        versionName: 'Bản chốt đầu tháng (Baseline)',
+        status: 'SUPERSEDED',
+        createdAt: '2026-10-01T09:00:00Z',
+        createdBy: plan.growthPic || 'Growth PIC',
+        creatorRole: 'GROWTH',
+        changeReason: 'Phiên bản kế hoạch gốc chốt đầu tháng',
+        totalTargetBudget: v1Budget,
+        totalTargetContents: v1Contents,
+        targetGmv: v1Gmv,
+        budgetAdsTotal: v1Ads,
+        budgetAffiliate: Math.round((plan.budgetAffiliate || v1Budget * 0.8) * 0.85),
+        budgetSelfChannel: Math.round((plan.budgetSelfChannel || v1Budget * 0.2) * 0.85),
+        items: buildScaledItems(plan.items, 0.85),
+        signOffRecord: baseSignOff
+      },
+      {
+        id: `SNAP-${plan.id}-V11`,
+        versionCode: 'v1.1',
+        versionName: 'Điều chỉnh Đợt 2 (Giữa kỳ)',
+        status: ['LEAD_APPROVED', 'BRAND_APPROVED', 'APPROVED', 'IN_EXECUTION', 'COMPLETED'].includes(plan.status || '') ? 'LOCKED' : 'SUPERSEDED',
+        createdAt: '2026-10-08T11:00:00Z',
+        createdBy: plan.growthPic || 'Growth PIC',
+        creatorRole: 'GROWTH',
+        changeReason: 'Cập nhật lại tỷ trọng KOC trả phí, FOC 0đ và kênh tự xây theo hiệu quả thực tế Tuần 1',
+        totalTargetBudget: budget,
+        totalTargetContents: contents,
+        targetGmv: gmv,
+        budgetAdsTotal: ads,
+        budgetAffiliate: plan.budgetAffiliate || Math.round(budget * 0.8),
+        budgetSelfChannel: plan.budgetSelfChannel || Math.round(budget * 0.2),
+        items: plan.items || [],
+        signOffRecord: baseSignOff
+      }
+    ];
+
+    return {
+      ...plan,
+      currentVersionCode: 'v1.1',
+      isVersionLocked: ['LEAD_APPROVED', 'BRAND_APPROVED', 'APPROVED', 'IN_EXECUTION', 'COMPLETED'].includes(plan.status || ''),
+      versionSnapshots: snapshots
+    };
+  }
+
+  return {
+    ...plan,
+    currentVersionCode: plan.currentVersionCode || 'v1.0',
+    isVersionLocked: plan.isVersionLocked ?? ['LEAD_APPROVED', 'BRAND_APPROVED', 'APPROVED', 'IN_EXECUTION', 'COMPLETED'].includes(plan.status || ''),
+    versionSnapshots: [
+      {
+        id: `SNAP-${plan.id}-V10`,
+        versionCode: 'v1.0',
+        versionName: 'Bản chốt đầu tháng (Baseline)',
+        status: 'LOCKED',
+        createdAt: plan.createdAt || '2026-10-01T09:00:00Z',
+        createdBy: plan.growthPic || 'Growth PIC',
+        creatorRole: 'GROWTH',
+        changeReason: 'Phiên bản kế hoạch gốc chốt đầu kỳ tháng',
+        totalTargetBudget: budget,
+        totalTargetContents: contents,
+        targetGmv: gmv,
+        budgetAdsTotal: ads,
+        budgetAffiliate: plan.budgetAffiliate || budget,
+        budgetSelfChannel: plan.budgetSelfChannel || 0,
+        items: plan.items || [],
+        signOffRecord: baseSignOff
+      }
+    ]
+  };
+}
+
+export const INITIAL_MONTHLY_PLANS: InputPlanBreakdownState[] = RAW_MONTHLY_PLANS.map(enrichPlanWithVersions);
+
 // Danh sách các chu kỳ tháng hỗ trợ
 export const AVAILABLE_MONTHS = [
   { value: 'ALL', label: 'Tất Cả Các Tháng', badge: '11 Plans' },
@@ -779,3 +1088,4 @@ export const AVAILABLE_MONTHS = [
   { value: '2026/09', label: 'Tháng 09/2026', badge: '3 Plans' },
   { value: '2026/08', label: 'Tháng 08/2026', badge: '2 Plans' }
 ];
+

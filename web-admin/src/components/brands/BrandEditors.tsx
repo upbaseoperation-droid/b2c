@@ -5,11 +5,12 @@
  * Danh sách (sản phẩm, câu hỏi khó, pháp lý, tài liệu) dùng chung `ItemDialog` theo mô tả trường.
  */
 
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
+import { FileText, Loader2, Trash2, Upload } from 'lucide-react';
 import type { BrandContentRules, BrandEntity, BrandPositioning, BrandRatecardRow, ToneTag } from '../../lib/brands/types';
 import { formatNumber } from '../../lib/format';
 import { Button, Field, Input, Modal, Select, Textarea } from '../ui';
-import { TONE_LABEL } from './brandUi';
+import { formatFileSize, TONE_LABEL, uploadBrandFileClient, type UploadedBrandFileResult } from './brandUi';
 
 const GRADES = ['KL1', 'KL2', 'KL3', 'KL4', 'KL5', 'KL6', 'KL7'];
 const moneyInput = (raw: string) => { const d = raw.replace(/\D/g, ''); return d ? formatNumber(Number(d)) : ''; };
@@ -124,7 +125,7 @@ export function ContentRulesDialog({ open, value, busy, onClose, onSave }: { ope
 export interface ItemField {
   key: string;
   label: string;
-  kind?: 'text' | 'long' | 'lines' | 'money' | 'url' | 'select';
+  kind?: 'text' | 'long' | 'lines' | 'money' | 'url' | 'select' | 'file';
   required?: boolean;
   hint?: string;
   options?: Array<{ value: string; label: string }>;
@@ -139,24 +140,184 @@ const toForm = (fields: ItemField[], item?: Item) =>
     return [f.key, Array.isArray(v) ? v.join('\n') : f.kind === 'money' && typeof v === 'number' ? formatNumber(v) : typeof v === 'string' ? v : ''];
   })) as Record<string, string>;
 
-const fromForm = (fields: ItemField[], form: Record<string, string>, base?: Item): Item => ({
-  ...(base || {}),
-  ...Object.fromEntries(fields.map(f => [f.key, f.kind === 'lines' ? form[f.key].split('\n').map(s => s.trim()).filter(Boolean) : f.kind === 'money' ? toNumber(form[f.key]) : form[f.key].trim()])),
-});
+const fromForm = (fields: ItemField[], form: Record<string, string>, base?: Item, uploaded?: UploadedBrandFileResult | null): Item => {
+  const result: Item = {
+    ...(base || {}),
+    ...Object.fromEntries(fields.map(f => [f.key, f.kind === 'lines' ? form[f.key].split('\n').map(s => s.trim()).filter(Boolean) : f.kind === 'money' ? toNumber(form[f.key]) : form[f.key].trim()])),
+  };
+  if (uploaded) {
+    result.url = uploaded.url;
+    result.fileKey = uploaded.fileKey;
+    result.fileName = uploaded.fileName;
+    result.fileSize = uploaded.fileSize;
+    result.mimeType = uploaded.mimeType;
+    result.storage = uploaded.storage;
+  } else if (uploaded === null) {
+    delete result.fileKey;
+    delete result.fileName;
+    delete result.fileSize;
+    delete result.mimeType;
+    result.storage = 'LINK';
+  }
+  return result;
+};
+
+const FILE_ACCEPT = '.pdf,.doc,.docx,.xls,.xlsx,.csv,.ppt,.pptx,.png,.jpg,.jpeg,.webp,.gif,.svg,.zip,.txt';
 
 /** Thêm hoặc sửa một mục của danh sách. `item` rỗng là thêm mới. */
-export function ItemDialog({ open, title, fields, item, busy, onClose, onSave }: { open: boolean; title: string; fields: ItemField[]; item?: Item; busy: boolean; onClose: () => void; onSave: (item: Item) => void }) {
+export function ItemDialog({
+  open,
+  title,
+  fields,
+  item,
+  busy,
+  uploadContext,
+  onClose,
+  onSave,
+}: {
+  open: boolean;
+  title: string;
+  fields: ItemField[];
+  item?: Item;
+  busy: boolean;
+  uploadContext?: { brandName: string; section: 'DOCUMENTS' | 'LEGAL' };
+  onClose: () => void;
+  onSave: (item: Item) => void;
+}) {
   const [form, setForm] = useState(() => toForm(fields, item));
+  const [uploadedFile, setUploadedFile] = useState<UploadedBrandFileResult | undefined | null>(() => {
+    if (item && typeof item.fileKey === 'string' && item.fileKey) {
+      return {
+        fileKey: item.fileKey,
+        fileName: typeof item.fileName === 'string' ? item.fileName : item.fileKey.split('/').pop() || 'Tệp đính kèm',
+        fileSize: typeof item.fileSize === 'number' ? item.fileSize : 0,
+        mimeType: typeof item.mimeType === 'string' ? item.mimeType : '',
+        storage: item.storage === 'LOCAL' ? 'LOCAL' : 'R2',
+        url: typeof item.url === 'string' ? item.url : `/api/brands/files?key=${encodeURIComponent(item.fileKey)}`,
+      };
+    }
+    return undefined;
+  });
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleSelectFile = async (file: File | undefined, fieldKey: string) => {
+    if (!file || !uploadContext) return;
+    setUploading(true);
+    setUploadError(null);
+    try {
+      const stored = await uploadBrandFileClient({
+        file,
+        brandName: uploadContext.brandName,
+        section: uploadContext.section,
+      });
+      setUploadedFile(stored);
+      setForm(p => {
+        const next = { ...p, [fieldKey]: stored.url };
+        if ('title' in next && !next.title?.trim()) {
+          next.title = file.name.replace(/\.[^.]+$/, '');
+        }
+        return next;
+      });
+    } catch (e) {
+      setUploadError((e as Error).message || 'Không tải được tệp lên.');
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
   const missing = fields.filter(f => f.required && !form[f.key]?.trim());
   return (
-    <Modal open={open} onClose={onClose} title={title} size="lg" footer={<Footer busy={busy || missing.length > 0} onClose={onClose} onSave={() => onSave(fromForm(fields, form, item))} />}>
+    <Modal open={open} onClose={onClose} title={title} size="lg" footer={<Footer busy={busy || uploading || missing.length > 0} onClose={onClose} onSave={() => onSave(fromForm(fields, form, item, uploadedFile))} />}>
       <div className="grid gap-4 md:grid-cols-2">
         {fields.map(f => {
           const id = `it-${f.key}`;
           const set = (x: string) => setForm(p => ({ ...p, [f.key]: f.kind === 'money' ? moneyInput(x) : x }));
           return (
-            <Field key={f.key} label={`${f.label}${f.required ? ' *' : ''}`} htmlFor={id} hint={f.hint ?? (f.kind === 'lines' ? 'Mỗi dòng một ý.' : undefined)} className={f.wide || f.kind === 'long' || f.kind === 'lines' ? 'md:col-span-2' : undefined}>
-              {f.kind === 'long' || f.kind === 'lines' ? (
+            <Field key={f.key} label={`${f.label}${f.required ? ' *' : ''}`} htmlFor={id} hint={f.hint ?? (f.kind === 'lines' ? 'Mỗi dòng một ý.' : undefined)} className={f.wide || f.kind === 'long' || f.kind === 'lines' || f.kind === 'file' ? 'md:col-span-2' : undefined}>
+              {f.kind === 'file' ? (
+                <div className="grid gap-2.5">
+                  {uploadContext && (
+                    <div
+                      onDragOver={e => { e.preventDefault(); e.stopPropagation(); }}
+                      onDrop={e => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const dropped = e.dataTransfer.files?.[0];
+                        if (dropped) void handleSelectFile(dropped, f.key);
+                      }}
+                      className="rounded-lg border border-dashed border-line-strong bg-canvas/60 px-3.5 py-3 flex flex-wrap items-center justify-between gap-3"
+                    >
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept={FILE_ACCEPT}
+                        className="hidden"
+                        onChange={e => void handleSelectFile(e.target.files?.[0], f.key)}
+                      />
+                      {uploadedFile ? (
+                        <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                          <FileText className="w-4 h-4 text-accent shrink-0" />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-[13px] font-medium text-ink truncate">{uploadedFile.fileName}</p>
+                            <p className="text-2xs text-ink-3">
+                              {[
+                                formatFileSize(uploadedFile.fileSize),
+                                uploadedFile.storage === 'R2' ? 'Đã lưu trên Cloudflare R2' : 'Đã lưu trên kho nội bộ',
+                              ].filter(Boolean).join(' · ')}
+                            </p>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="min-w-0">
+                          <p className="text-[13px] font-medium text-ink">Tải tệp lên hệ thống lưu trữ (Cloudflare R2)</p>
+                          <p className="text-2xs text-ink-3">Kéo thả hoặc chọn tệp PDF, Word, Excel, PowerPoint, ảnh, ZIP (tối đa 25 MB)</p>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          icon={uploading ? Loader2 : Upload}
+                          disabled={uploading || busy}
+                          onClick={() => fileInputRef.current?.click()}
+                        >
+                          {uploading ? 'Đang tải…' : uploadedFile ? 'Đổi tệp' : 'Chọn tệp'}
+                        </Button>
+                        {uploadedFile && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            icon={Trash2}
+                            disabled={uploading || busy}
+                            onClick={() => {
+                              setUploadedFile(null);
+                              set('');
+                            }}
+                          >
+                            Gỡ tệp
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  {uploadError && <p className="text-2xs text-critical">{uploadError}</p>}
+                  {!uploadedFile && (
+                    <Input
+                      id={id}
+                      value={form[f.key]}
+                      onChange={e => {
+                        setUploadedFile(null);
+                        set(e.target.value);
+                      }}
+                      type="url"
+                      placeholder="Hoặc dán link tài liệu (Lark, Google Drive: https://…)"
+                    />
+                  )}
+                </div>
+              ) : f.kind === 'long' || f.kind === 'lines' ? (
                 <Textarea id={id} rows={f.kind === 'lines' ? 3 : 3} value={form[f.key]} onChange={e => set(e.target.value)} />
               ) : f.kind === 'select' ? (
                 <Select id={id} value={form[f.key]} onChange={e => set(e.target.value)}>
@@ -180,3 +341,4 @@ export function ItemDialog({ open, title, fields, item, busy, onClose, onSave }:
     </Modal>
   );
 }
+

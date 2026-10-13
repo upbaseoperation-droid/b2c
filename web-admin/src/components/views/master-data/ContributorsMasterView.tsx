@@ -62,7 +62,7 @@ export const ContributorsMasterView: React.FC<ContributorsMasterViewProps> = ({
   const [quickPhone, setQuickPhone] = useState('');
   const [quickRole, setQuickRole] = useState<ContributorRole>('ALL_IN_ONE');
   const [quickNiche, setQuickNiche] = useState('Mẹ & Bé, Chăm sóc da');
-  const [quickPic, setQuickPic] = useState('Lê Phương Thảo');
+  const [quickPic, setQuickPic] = useState('Quỳnh Như');
 
   // Modal Sửa thông tin cơ bản
   const [editingCtv, setEditingCtv] = useState<Contributor | null>(null);

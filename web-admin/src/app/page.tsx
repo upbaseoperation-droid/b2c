@@ -66,7 +66,7 @@ import {
   INITIAL_STORE_PORTFOLIOS,
   INITIAL_KOC_LISTINGS
 } from '../lib/mockData';
-import { INITIAL_CONTRIBUTORS } from '../lib/selfChannelData';
+import { INITIAL_CONTRIBUTORS, INITIAL_SELF_CHANNEL_TASKS } from '../lib/selfChannelData';
 import { 
   UserProfile, 
   BookingDealItem, 
@@ -74,6 +74,7 @@ import {
   SlaTask, 
   KocItem, 
   Contributor,
+  SelfChannelVideoTask,
   CampaignItem, 
   StaffDetailedPlanItem, 
   MonthlyStaffAllocation,
@@ -251,6 +252,7 @@ export default function App() {
 
   const [kocs, setKocs] = useState<KocItem[]>(INITIAL_KOCS);
   const [contributors, setContributors] = useState<Contributor[]>(INITIAL_CONTRIBUTORS);
+  const [selfChannelTasks, setSelfChannelTasks] = useState<SelfChannelVideoTask[]>(INITIAL_SELF_CHANNEL_TASKS);
   const [deals, setDeals] = useState<BookingDealItem[]>(INITIAL_DEALS);
   const [tasks, setTasks] = useState<SlaTask[]>(INITIAL_TASKS);
   const [brands, setBrands] = useState<BrandDetail[]>(INITIAL_BRANDS);
@@ -920,6 +922,16 @@ export default function App() {
             <SelfChannelCtvHubView
               currentUser={currentUser}
               brands={brands}
+              contributors={contributors}
+              tasks={selfChannelTasks}
+              onTasksChange={setSelfChannelTasks}
+              onContributorCreated={handleContributorCreated}
+              onContributorUpdated={handleContributorUpdated}
+              onOpenCtvProfile={(ctvId) => {
+                setSelectedCtvContext(ctvId || null);
+                setActiveTab('ctv-master');
+              }}
+              onOpenInputPlan={() => setActiveTab('input-plan')}
               onNotify={showToast}
               onOpenPushProducts={() => setActiveTab('push-products')}
               onNavigateToBrand={['ADMIN', 'MANAGER'].includes(currentUser.role) ? () => setActiveTab('campaigns') : undefined}
@@ -929,6 +941,7 @@ export default function App() {
           <KeepAliveTab tabKey="ctv-master" currentTab={activeTab}>
             <CtvManagementView
               contributors={contributors}
+              tasks={selfChannelTasks}
               currentUser={currentUser}
               selectedCtvId={selectedCtvContext}
               onContributorCreated={handleContributorCreated}
@@ -974,9 +987,16 @@ export default function App() {
               currentUser={currentUser}
               selectedBrand={selectedBrandContext}
               brands={brands}
+              stores={storePortfolios}
               deals={deals}
               onNotify={showToast}
               onOpenBooking={() => setActiveTab('booking')}
+              onNavigateToStoreProfile={(storeName) => {
+                if (storeName) {
+                  setSelectedStoreContext(storeName);
+                }
+                setActiveTab('stores');
+              }}
             />
           </KeepAliveTab>
 

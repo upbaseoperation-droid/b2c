@@ -21,6 +21,8 @@ export function formatVndShort(n: number): string {
   return formatVnd(v);
 }
 
+export const formatMoney = formatVndShort;
+
 /** 76,5% */
 export const formatPercent = (ratio: number, digits = 1) => `${nf(digits).format((ratio || 0) * 100)}%`;
 

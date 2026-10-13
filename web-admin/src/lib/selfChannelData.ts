@@ -302,6 +302,77 @@ export const MULTI_BRAND_ALLOCATIONS: BrandChannelAllocation[] = [
 
 
 // ==========================================
+// 2.5 CƠ CẤU TỔ CHỨC SELF-CHANNEL: PARTNERSHIP LEADER & ĐỘI NGŨ CONTENT
+// - Partnership Leader (Việt Hoàng): Quản lý các chuyên viên Content bên dưới, chuyên đi liên hệ CTV, thương lượng đơn giá, thu thập CCCD/MST, ký hợp đồng CTV, phân bổ CTV vào đề bài của Content và lập DNTT.
+// - Chuyên viên Content (dưới quyền Việt Hoàng): Nhận chỉ tiêu video kênh từ kế hoạch tháng, lên đề bài & góc kịch bản, gửi yêu cầu CTV cho Partnership, duyệt kịch bản chi tiết (SLA 24h), duyệt QA nội bộ video nháp, tải file sạch lên Drive gian hàng và theo dõi đăng kênh.
+// ==========================================
+export interface SelfChannelContentMemberInfo {
+  id: string;
+  name: string;
+  roleTitle: string;
+  avatar: string;
+  assignedBrands: string[];
+  specialty: string;
+  monthlyVideoQuota: number;
+}
+
+export const SELF_CHANNEL_PARTNERSHIP_LEADER = {
+  id: 'user-viet-hoang',
+  name: 'Việt Hoàng',
+  roleTitle: 'Trưởng Nhóm Partnership & Self-Channel (Leader quản lý Content & Liên hệ CTV)',
+  email: 'viethoang.partnership@upbase.vn',
+  phone: '0938 776 554',
+  avatar: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=100&q=80',
+  managerName: 'Đặng Thị Yến Nhi (Lead B2C)',
+  responsibilities: [
+    'Quản lý trực tiếp đội ngũ Chuyên viên Content Self-Channel bên dưới',
+    'Tìm kiếm, liên hệ CTV/VJ mới và đàm phán bảng giá (Rate Card)',
+    'Thu thập CCCD/MST, kiểm tra pháp lý & ký Hợp đồng dịch vụ CTV',
+    'Tiếp nhận yêu cầu từ Content, điều phối CTV phù hợp và theo dõi gửi hàng mẫu (SLA 48h)',
+    'Tổng hợp biên bản nghiệm thu cuối tháng & lập phiếu Đề nghị thanh toán (DNTT)'
+  ]
+};
+
+export const SELF_CHANNEL_CONTENT_MEMBERS: SelfChannelContentMemberInfo[] = [
+  {
+    id: 'user-content-1',
+    name: 'Quỳnh Như',
+    roleTitle: 'Chuyên Viên Content Self-Channel',
+    avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=100&q=80',
+    assignedBrands: ['Kutieskin Mama & Baby', 'Royal Ausnz Sữa Hoàng Gia'],
+    specialty: 'Mẹ & Bé, Dược mỹ phẩm gia đình, Storytelling cảm xúc',
+    monthlyVideoQuota: 45
+  },
+  {
+    id: 'user-content-2',
+    name: 'Nguyễn Thị Mai Anh',
+    roleTitle: 'Chuyên Viên Content Self-Channel',
+    avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=100&q=80',
+    assignedBrands: ['Senka Skincare Nhật Bản', 'pHCare Chăm Sóc Vệ Sinh Nữ'],
+    specialty: 'Skincare Nhật Bản, Thực nghiệm khoa học (test bọt, quỳ tím)',
+    monthlyVideoQuota: 45
+  },
+  {
+    id: 'user-content-3',
+    name: 'Vũ Hoài Lâm',
+    roleTitle: 'Chuyên Viên Content Self-Channel',
+    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=100&q=80',
+    assignedBrands: ['Mega Uri Hỗ Trợ Đề Kháng & Sức Khỏe', 'Kutieskin Mama & Baby'],
+    specialty: 'Bắt trend TikTok, Nhạc text, Video to Live chuyển đổi cao',
+    monthlyVideoQuota: 40
+  },
+  {
+    id: 'user-content-4',
+    name: 'Phan Diệu Ánh',
+    roleTitle: 'Chuyên Viên Content Self-Channel',
+    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80',
+    assignedBrands: ['pHCare Chăm Sóc Vệ Sinh Nữ', 'Senka Skincare Nhật Bản'],
+    specialty: 'Tư vấn Y Dược, Chuyên gia Da liễu & Chăm sóc cá nhân',
+    monthlyVideoQuota: 35
+  }
+];
+
+// ==========================================
 // 3. DANH SÁCH CỘNG TÁC VIÊN LÀM VIDEO (CTV ROSTER)
 // ==========================================
 export const INITIAL_CONTRIBUTORS: Contributor[] = [
@@ -318,7 +389,7 @@ export const INITIAL_CONTRIBUTORS: Contributor[] = [
     nicheSpecialty: ['Mẹ & Bé', 'Nuôi con khoa học', 'Chăm da gia đình'],
     role: 'ALL_IN_ONE',
     status: 'ACTIVE',
-    contentPic: 'Lê Phương Thảo',
+    contentPic: 'Quỳnh Như',
     partnershipPic: 'Việt Hoàng',
     cccd: '001195012345',
     dob: '1995-08-14',
@@ -369,7 +440,7 @@ export const INITIAL_CONTRIBUTORS: Contributor[] = [
     nicheSpecialty: ['Video Dựng Nhanh', 'Visual Effects', 'Review Mỹ phẩm'],
     role: 'VIDEO_EDITOR',
     status: 'ACTIVE',
-    contentPic: 'Lương Thị Như Quỳnh',
+    contentPic: 'Vũ Hoài Lâm',
     partnershipPic: 'Việt Hoàng',
     cccd: '079097008812',
     dob: '1997-11-22',
@@ -420,7 +491,7 @@ export const INITIAL_CONTRIBUTORS: Contributor[] = [
     nicheSpecialty: ['Tư vấn Y Dược', 'Thành phần mỹ phẩm', 'Chăm sóc mẹ bầu & sơ sinh'],
     role: 'CREATIVE_ACTOR',
     status: 'ACTIVE',
-    contentPic: 'Lê Phương Thảo',
+    contentPic: 'Quỳnh Như',
     partnershipPic: 'Việt Hoàng',
     cccd: '036194004519',
     dob: '1994-04-05',
@@ -471,7 +542,7 @@ export const INITIAL_CONTRIBUTORS: Contributor[] = [
     nicheSpecialty: ['Bố bỉm sữa', 'Tình huống hài hước', 'Đời sống gia đình'],
     role: 'ALL_IN_ONE',
     status: 'ACTIVE',
-    contentPic: 'Phạm Thị Thu Hằng',
+    contentPic: 'Quỳnh Như',
     partnershipPic: 'Việt Hoàng',
     cccd: '001093007721',
     dob: '1993-12-10',
@@ -521,7 +592,7 @@ export const INITIAL_CONTRIBUTORS: Contributor[] = [
     nicheSpecialty: ['Biên kịch Hook', 'Review đời thường', 'Skincare'],
     role: 'SCRIPTWRITER',
     status: 'ACTIVE',
-    contentPic: 'Lương Thị Như Quỳnh',
+    contentPic: 'Nguyễn Thị Mai Anh',
     partnershipPic: 'Việt Hoàng',
     cccd: '',
     taxCode: '',
@@ -609,7 +680,7 @@ export const INITIAL_CONTRIBUTORS: Contributor[] = [
 // 4. DANH SÁCH TASK SẢN XUẤT VIDEO SELF CHANNEL (VIDEO PIPELINE)
 // ==========================================
 export const INITIAL_SELF_CHANNEL_TASKS: SelfChannelVideoTask[] = [
-  // 1. OPEN_TASK (Mở task chờ phân bổ VJ từ Kế hoạch tháng)
+  // 1. OPEN_TASK (Content lên đề bài -> Chờ Partnership Leader Việt Hoàng liên hệ & phân bổ CTV)
   {
     id: 'task-sc-01',
     taskCode: 'SC-KUTI-202610-01',
@@ -620,7 +691,9 @@ export const INITIAL_SELF_CHANNEL_TASKS: SelfChannelVideoTask[] = [
     storeName: 'Kutieskin Official Store (TikTok)',
     planMonth: '2026/10',
     videoFormat: 'Review voice',
-    contentPic: 'Lê Phương Thảo',
+    contentPic: 'Quỳnh Như',
+    partnershipPic: 'Việt Hoàng',
+    partnershipStatus: 'WAITING_PARTNERSHIP',
     pillarId: 'pillar-edu',
     pillarName: 'Giáo Dục / Lời Khuyên Chuyên Gia',
     pillarCode: 'EDUCATIONAL',
@@ -636,7 +709,36 @@ export const INITIAL_SELF_CHANNEL_TASKS: SelfChannelVideoTask[] = [
     createdAt: '2026-10-06T08:00:00Z'
   },
 
-  // 1B. BRAND_ORIENTATION_PENDING (Đã chọn VJ & Góc kịch bản -> Chờ Brand duyệt định hướng 48h)
+  // 1A. OPEN_TASK 2 (Content Nguyễn Thị Mai Anh gửi yêu cầu -> Partnership Leader Việt Hoàng đang liên hệ CTV)
+  {
+    id: 'task-sc-13',
+    taskCode: 'SC-SEN-202610-13',
+    title: 'So sánh độ ẩm da mặt bằng máy đo độ ẩm trước và sau khi rửa Senka Perfect Whip',
+    brandId: 'brand-senka',
+    brandName: 'Senka Skincare Nhật Bản',
+    storeId: 'store-senka-tts',
+    storeName: 'Senka Official Store (TikTok)',
+    planMonth: '2026/10',
+    videoFormat: 'Unbox Voice',
+    contentPic: 'Nguyễn Thị Mai Anh',
+    partnershipPic: 'Việt Hoàng',
+    partnershipStatus: 'CONTACTING_CTV',
+    pillarId: 'pil-sen-01',
+    pillarName: 'Test Tạo Bọt Tơ Tằm Trắng Khổng Lồ',
+    pillarCode: 'PRODUCT_SHOWCASE',
+    linkedSku: 'SEN-WHIP-120G',
+    productName: 'Sữa Rửa Mặt Tạo Bọt Senka Perfect Whip 120g',
+    remuneration: 1400000,
+    deadline: '2026-10-24',
+    brandApprovalMode: 'UPBASE_DELEGATED',
+    brandOrientationStatus: 'DELEGATED',
+    sampleShippingStatus: 'PENDING_SHIP',
+    status: 'OPEN_TASK',
+    feedbackLogs: [],
+    createdAt: '2026-10-11T09:00:00Z'
+  },
+
+  // 1B. BRAND_ORIENTATION_PENDING (Partnership đã chốt CTV & Content lên góc kịch bản -> Chờ Brand duyệt định hướng 48h)
   {
     id: 'task-sc-11',
     taskCode: 'SC-KUTI-202610-11',
@@ -647,7 +749,9 @@ export const INITIAL_SELF_CHANNEL_TASKS: SelfChannelVideoTask[] = [
     storeName: 'Kutieskin Official Store (TikTok)',
     planMonth: '2026/10',
     videoFormat: 'POV',
-    contentPic: 'Lê Phương Thảo',
+    contentPic: 'Quỳnh Như',
+    partnershipPic: 'Việt Hoàng',
+    partnershipStatus: 'CTV_ASSIGNED',
     pillarId: 'pillar-showcase',
     pillarName: 'Demo Trải Nghiệm & Hướng Dẫn Sử Dụng',
     pillarCode: 'PRODUCT_SHOWCASE',
@@ -684,7 +788,9 @@ export const INITIAL_SELF_CHANNEL_TASKS: SelfChannelVideoTask[] = [
     storeName: 'Kutieskin Official Store (TikTok)',
     planMonth: '2026/10',
     videoFormat: 'Unbox Voice',
-    contentPic: 'Lê Phương Thảo',
+    contentPic: 'Quỳnh Như',
+    partnershipPic: 'Việt Hoàng',
+    partnershipStatus: 'CTV_ASSIGNED',
     pillarId: 'pillar-showcase',
     pillarName: 'Demo Trải Nghiệm & Hướng Dẫn Sử Dụng',
     pillarCode: 'PRODUCT_SHOWCASE',
@@ -720,7 +826,9 @@ export const INITIAL_SELF_CHANNEL_TASKS: SelfChannelVideoTask[] = [
     storeName: 'Kutieskin Official Store (TikTok)',
     planMonth: '2026/10',
     videoFormat: 'POV',
-    contentPic: 'Lê Phương Thảo',
+    contentPic: 'Vũ Hoài Lâm',
+    partnershipPic: 'Việt Hoàng',
+    partnershipStatus: 'CTV_ASSIGNED',
     pillarId: 'pillar-story',
     pillarName: 'Tình Huống / Drama Gia Đình Nuôi Con',
     pillarCode: 'STORYTELLING',
@@ -747,7 +855,7 @@ export const INITIAL_SELF_CHANNEL_TASKS: SelfChannelVideoTask[] = [
       {
         id: 'fb-01',
         version: 1,
-        reviewedBy: 'Lê Phương Thảo (Content B2C)',
+        reviewedBy: 'Vũ Hoài Lâm (Content Self-Channel)',
         reviewedAt: '2026-10-04T16:00:00Z',
         type: 'SCRIPT',
         verdict: 'APPROVED',
@@ -768,7 +876,9 @@ export const INITIAL_SELF_CHANNEL_TASKS: SelfChannelVideoTask[] = [
     storeName: 'Kutieskin Official Store (TikTok)',
     planMonth: '2026/10',
     videoFormat: 'Review voice',
-    contentPic: 'Lê Phương Thảo',
+    contentPic: 'Quỳnh Như',
+    partnershipPic: 'Việt Hoàng',
+    partnershipStatus: 'CTV_ASSIGNED',
     pillarId: 'pillar-edu',
     pillarName: 'Giáo Dục / Lời Khuyên Chuyên Gia',
     pillarCode: 'EDUCATIONAL',
@@ -813,7 +923,9 @@ export const INITIAL_SELF_CHANNEL_TASKS: SelfChannelVideoTask[] = [
     storeName: 'Senka Official Store (TikTok)',
     planMonth: '2026/10',
     videoFormat: 'Review voice',
-    contentPic: 'Lương Thị Như Quỳnh',
+    contentPic: 'Nguyễn Thị Mai Anh',
+    partnershipPic: 'Việt Hoàng',
+    partnershipStatus: 'CTV_ASSIGNED',
     pillarId: 'pil-sen-02',
     pillarName: 'Bí Quyết Làm Sạch Sâu Cho Da Dầu Mụn',
     pillarCode: 'EDUCATIONAL',
@@ -842,14 +954,14 @@ export const INITIAL_SELF_CHANNEL_TASKS: SelfChannelVideoTask[] = [
       captionSuggested: 'Soi cận cảnh lỗ chân lông sạch thoáng sau lớp bọt tơ tằm Senka Acne Care ✨ #senka #perfectwhip',
       durationSeconds: 44,
       submittedAt: '2026-10-11T16:00:00Z',
-      internalQaApprovedBy: 'Lương Thị Như Quỳnh (Content B2C)',
+      internalQaApprovedBy: 'Nguyễn Thị Mai Anh (Content Self-Channel)',
       internalQaApprovedAt: '2026-10-12T09:30:00Z'
     },
     feedbackLogs: [
       {
         id: 'fb-12',
         version: 1,
-        reviewedBy: 'Lương Thị Như Quỳnh (Content B2C)',
+        reviewedBy: 'Nguyễn Thị Mai Anh (Content Self-Channel)',
         reviewedAt: '2026-10-12T09:30:00Z',
         type: 'VIDEO',
         verdict: 'APPROVED',
@@ -876,7 +988,9 @@ export const INITIAL_SELF_CHANNEL_TASKS: SelfChannelVideoTask[] = [
     storeName: 'Kutieskin Official Store (TikTok)',
     planMonth: '2026/10',
     videoFormat: 'Nhạc text',
-    contentPic: 'Lương Thị Như Quỳnh',
+    contentPic: 'Vũ Hoài Lâm',
+    partnershipPic: 'Việt Hoàng',
+    partnershipStatus: 'CTV_ASSIGNED',
     pillarId: 'pillar-trend',
     pillarName: 'Bắt Trend TikTok & Âm Thanh Hot',
     pillarCode: 'TREND_JACKING',
@@ -901,16 +1015,16 @@ export const INITIAL_SELF_CHANNEL_TASKS: SelfChannelVideoTask[] = [
       captionSuggested: 'Tắm mát rượi bé cười tít mắt, da sạch thơm tự nhiên 🌿 #kutieskin #nuoctamthaoduoc',
       durationSeconds: 28,
       submittedAt: '2026-10-06T15:00:00Z',
-      internalQaApprovedBy: 'Lương Thị Như Quỳnh',
+      internalQaApprovedBy: 'Vũ Hoài Lâm',
       internalQaApprovedAt: '2026-10-06T16:30:00Z',
-      brandAcceptedBy: 'Đặng Thị Yến Nhi (Lead B2C)',
+      brandAcceptedBy: 'Việt Hoàng (Partnership Leader)',
       brandAcceptedAt: '2026-10-06T17:30:00Z'
     },
     feedbackLogs: [
       {
         id: 'fb-02',
         version: 1,
-        reviewedBy: 'Lương Thị Như Quỳnh (Content B2C)',
+        reviewedBy: 'Vũ Hoài Lâm (Content Self-Channel)',
         reviewedAt: '2026-10-05T18:00:00Z',
         type: 'VIDEO',
         verdict: 'REVISE',
@@ -919,7 +1033,7 @@ export const INITIAL_SELF_CHANNEL_TASKS: SelfChannelVideoTask[] = [
       {
         id: 'fb-03',
         version: 2,
-        reviewedBy: 'Đặng Thị Yến Nhi (Lead B2C)',
+        reviewedBy: 'Việt Hoàng (Partnership Leader)',
         reviewedAt: '2026-10-06T17:30:00Z',
         type: 'BRAND_ACCEPTANCE',
         verdict: 'APPROVED',
@@ -933,7 +1047,7 @@ export const INITIAL_SELF_CHANNEL_TASKS: SelfChannelVideoTask[] = [
       }
     ],
     acceptedAt: '2026-10-06T17:30:00Z',
-    acceptedBy: 'Đặng Thị Yến Nhi (Lead B2C)',
+    acceptedBy: 'Việt Hoàng (Partnership Leader)',
     dnttStatus: 'NOT_CREATED',
     createdAt: '2026-09-30T08:00:00Z'
   },
@@ -949,7 +1063,9 @@ export const INITIAL_SELF_CHANNEL_TASKS: SelfChannelVideoTask[] = [
     storeName: 'Kutieskin Official Store (TikTok)',
     planMonth: '2026/10',
     videoFormat: 'Review voice',
-    contentPic: 'Lê Phương Thảo',
+    contentPic: 'Quỳnh Như',
+    partnershipPic: 'Việt Hoàng',
+    partnershipStatus: 'CTV_ASSIGNED',
     pillarId: 'pillar-showcase',
     pillarName: 'Demo Trải Nghiệm & Hướng Dẫn Sử Dụng',
     pillarCode: 'PRODUCT_SHOWCASE',
@@ -979,7 +1095,7 @@ export const INITIAL_SELF_CHANNEL_TASKS: SelfChannelVideoTask[] = [
       {
         id: 'fb-04',
         version: 1,
-        reviewedBy: 'Lê Phương Thảo (Content B2C)',
+        reviewedBy: 'Quỳnh Như (Content Self-Channel)',
         reviewedAt: '2026-10-04T09:00:00Z',
         type: 'VIDEO',
         verdict: 'APPROVED',
@@ -987,7 +1103,7 @@ export const INITIAL_SELF_CHANNEL_TASKS: SelfChannelVideoTask[] = [
       }
     ],
     acceptedAt: '2026-10-04T09:00:00Z',
-    acceptedBy: 'Đặng Thị Yến Nhi (Lead B2C)',
+    acceptedBy: 'Việt Hoàng (Partnership Leader)',
     dnttCode: 'DNTT-CTV-202610-001',
     dnttStatus: 'DISBURSED',
     pitTaxDeducted: 0,
@@ -1008,7 +1124,9 @@ export const INITIAL_SELF_CHANNEL_TASKS: SelfChannelVideoTask[] = [
     storeName: 'pHCare Official Store (TikTok)',
     planMonth: '2026/10',
     videoFormat: 'Review voice',
-    contentPic: 'Lương Thị Như Quỳnh',
+    contentPic: 'Phan Diệu Ánh',
+    partnershipPic: 'Việt Hoàng',
+    partnershipStatus: 'CTV_ASSIGNED',
     pillarId: 'pil-ph-02',
     pillarName: 'Demo Độ pH & Trải Nghiệm Mùi Hương',
     pillarCode: 'PRODUCT_SHOWCASE',
@@ -1044,7 +1162,9 @@ export const INITIAL_SELF_CHANNEL_TASKS: SelfChannelVideoTask[] = [
     storeName: 'Royal Ausnz Official Store (TikTok)',
     planMonth: '2026/10',
     videoFormat: 'Unbox Voice',
-    contentPic: 'Lê Phương Thảo',
+    contentPic: 'Quỳnh Như',
+    partnershipPic: 'Việt Hoàng',
+    partnershipStatus: 'CTV_ASSIGNED',
     pillarId: 'pil-ro-02',
     pillarName: 'Quy Trình Trộn Ướt 20 Phút 12 Giờ',
     pillarCode: 'PRODUCT_SHOWCASE',
@@ -1082,7 +1202,9 @@ export const INITIAL_SELF_CHANNEL_TASKS: SelfChannelVideoTask[] = [
     storeName: 'Mega Uri Official Store (TikTok)',
     planMonth: '2026/10',
     videoFormat: 'Review voice',
-    contentPic: 'Lương Thị Như Quỳnh',
+    contentPic: 'Vũ Hoài Lâm',
+    partnershipPic: 'Việt Hoàng',
+    partnershipStatus: 'CTV_ASSIGNED',
     pillarId: 'pil-mu-01',
     pillarName: 'Bác Sĩ Chia Sẻ Đề Kháng Hô Hấp',
     pillarCode: 'EDUCATIONAL',
@@ -1107,16 +1229,16 @@ export const INITIAL_SELF_CHANNEL_TASKS: SelfChannelVideoTask[] = [
       captionSuggested: 'Bí kíp phòng ho sổ mũi từ thảo dược tự nhiên cho con #megauri #dekhang',
       durationSeconds: 52,
       submittedAt: '2026-10-06T15:00:00Z',
-      internalQaApprovedBy: 'Lương Thị Như Quỳnh',
+      internalQaApprovedBy: 'Vũ Hoài Lâm',
       internalQaApprovedAt: '2026-10-07T08:30:00Z',
-      brandAcceptedBy: 'Đặng Thị Yến Nhi (Lead B2C)',
+      brandAcceptedBy: 'Việt Hoàng (Partnership Leader)',
       brandAcceptedAt: '2026-10-07T10:00:00Z'
     },
     feedbackLogs: [
       {
         id: 'fb-09',
         version: 1,
-        reviewedBy: 'Lương Thị Như Quỳnh (Content B2C)',
+        reviewedBy: 'Vũ Hoài Lâm (Content Self-Channel)',
         reviewedAt: '2026-10-07T10:00:00Z',
         type: 'VIDEO',
         verdict: 'APPROVED',
@@ -1124,7 +1246,7 @@ export const INITIAL_SELF_CHANNEL_TASKS: SelfChannelVideoTask[] = [
       }
     ],
     acceptedAt: '2026-10-07T10:00:00Z',
-    acceptedBy: 'Đặng Thị Yến Nhi (Lead B2C)',
+    acceptedBy: 'Việt Hoàng (Partnership Leader)',
     dnttStatus: 'NOT_CREATED',
     createdAt: '2026-10-01T08:00:00Z'
   },
@@ -1140,7 +1262,9 @@ export const INITIAL_SELF_CHANNEL_TASKS: SelfChannelVideoTask[] = [
     storeName: 'Senka Official Store (TikTok)',
     planMonth: '2026/10',
     videoFormat: 'POV',
-    contentPic: 'Lương Thị Như Quỳnh',
+    contentPic: 'Nguyễn Thị Mai Anh',
+    partnershipPic: 'Việt Hoàng',
+    partnershipStatus: 'CTV_ASSIGNED',
     pillarId: 'pil-sen-01',
     pillarName: 'Test Tạo Bọt Tơ Tằm Trắng Khổng Lồ',
     pillarCode: 'PRODUCT_SHOWCASE',
@@ -1165,7 +1289,7 @@ export const INITIAL_SELF_CHANNEL_TASKS: SelfChannelVideoTask[] = [
       {
         id: 'fb-10',
         version: 1,
-        reviewedBy: 'Lương Thị Như Quỳnh (Content B2C)',
+        reviewedBy: 'Nguyễn Thị Mai Anh (Content Self-Channel)',
         reviewedAt: '2026-10-08T08:30:00Z',
         type: 'SCRIPT',
         verdict: 'APPROVED',

@@ -32,6 +32,7 @@ import {
   UserProfile
 } from '../../lib/types';
 import { formatVndShort } from '../../lib/format';
+import { getPlanVersionSnapshots } from '../../lib/monthlyPlanData';
 
 interface PlanApprovalStepperProps {
   plan: InputPlanBreakdownState;
@@ -222,17 +223,42 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
       return;
     }
 
+    const now = new Date().toISOString();
     const author = currentUser?.name || plan.growthPic || 'Trần Thị Ánh';
+    const existingSnapshots = getPlanVersionSnapshots(plan).map(s => ({
+      ...s,
+      status: s.versionCode === 'v1.0' ? ('LOCKED' as const) : ('SUPERSEDED' as const)
+    }));
+
     const updatedSignOff: MultiPartySignOff = {
       growth: {
         confirmed: true,
         confirmedBy: author,
-        confirmedAt: new Date().toISOString(),
+        confirmedAt: now,
         note: `Khởi tạo phiên bản mới ${newVersionCode}: ${newChangeReason}`
       },
       booking: { confirmed: false, note: 'Chờ Booking cập nhật lại cơ cấu theo số mới' },
       media: { confirmed: false, note: 'Chờ Media cập nhật lại gói Ads mới' },
       leadB2c: { confirmed: false }
+    };
+
+    const newSnap: PlanVersionSnapshot = {
+      id: `SNAP-${plan.id}-${newVersionCode.replace(/[^a-zA-Z0-9]/g, '')}-${Date.now().toString().slice(-3)}`,
+      versionCode: newVersionCode,
+      versionName: newVersionTitle || `${newVersionCode} - Điều chỉnh giữa kỳ`,
+      status: 'LOCKED',
+      createdAt: now,
+      createdBy: author,
+      creatorRole: 'GROWTH',
+      changeReason: newChangeReason,
+      totalTargetBudget: newBudget,
+      totalTargetContents: plan.totalTargetContents,
+      targetGmv: newGmv,
+      budgetAdsTotal: newAdsBudget,
+      budgetAffiliate: plan.budgetAffiliate || Math.round(newBudget * 0.75),
+      budgetSelfChannel: plan.budgetSelfChannel || Math.round(newBudget * 0.25),
+      items: plan.items || [],
+      signOffRecord: updatedSignOff
     };
 
     if (onUpdatePlan) {
@@ -243,6 +269,7 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
         budgetAdsTotal: newAdsBudget,
         targetGmv: newGmv,
         multiPartySignOff: updatedSignOff,
+        versionSnapshots: [...existingSnapshots, newSnap],
         status: 'DRAFT',
         notes: `Phiên bản ${newVersionCode} do Growth (${author}) khởi tạo: ${newChangeReason}`
       });

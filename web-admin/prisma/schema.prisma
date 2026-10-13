@@ -202,34 +202,60 @@ model User {
 // ==========================================
 
 model StorePortfolio {
-  id                   String          @id @default(uuid())
-  brandName            String
-  storeName            String          @unique
-  platform             String          // TikTok Shop, Shopee Mall, Lazada
-  storeUrl             String?
-  serviceModel         ServiceModel    @default(FULL_SERVICE)
-  difficultyTier       String          @default("Tiêu chuẩn") // Cơ bản (1.0), Tiêu chuẩn (1.2), Vừa (1.4), Khó (1.6)
-  difficultyMultiplier Float           @default(1.2)
-  accountStatus        AccountStatus   @default(ACTIVE)
-  category             String          // Dược mỹ phẩm, Mẹ & Bé, Skincare...
-  monthlyTargetGmv     Decimal         @default(0) @db.Decimal(12, 2)
-  monthlyBudget        Decimal         @default(0) @db.Decimal(12, 2)
-  
-  // Phân định 2 chủ tài khoản rõ ràng:
-  accountOwnerName     String          // Account/Growth Owner (Chịu trách nhiệm doanh số & quan hệ khách hàng)
-  b2cOwnerName         String          // B2C Ops Owner (Chịu trách nhiệm vận hành nội dung & booking)
-  
-  createdAt            DateTime               @default(now())
-  updatedAt            DateTime               @updatedAt
+  id                        String                           @id @default(uuid())
+  storeOperationId          String?                          @unique // Mã vận hành: SO-B2C-001..069
+  brandName                 String
+  storeName                 String                           @unique
+  platform                  String                           // TikTok Shop, Shopee Mall, Lazada
+  storeUrl                  String?
+  serviceModel              ServiceModel                     @default(FULL_SERVICE)
+  difficultyTier            String                           @default("Tiêu chuẩn") // Cơ bản (1.0), Tiêu chuẩn (1.2), Vừa (1.4), Khó (1.6)
+  difficultyMultiplier      Float                            @default(1.2)
+  accountStatus             AccountStatus                    @default(ACTIVE)
+  category                  String                           // Dược mỹ phẩm, Mẹ & Bé, Skincare...
+  monthlyTargetGmv          Decimal                          @default(0) @db.Decimal(14, 2)
+  monthlyBudget             Decimal                          @default(0) @db.Decimal(14, 2)
 
-  candidates           KocCandidate[]
-  bookingDeals         BookingDeal[]
-  growthDemands        GrowthDemand[]
-  staffAssignments     StoreStaffAssignment[]
+  // Bóc tách chỉ tiêu Order Growth (File 4.1 & 4.1.1) & Đối soát thực chi (File 3.2)
+  isB2cManaged              Boolean                          @default(true)
+  hasBookingLeader          Boolean                          @default(false)
+  bookingLeader             String?                          // Cột 55 File 4.1.1 (Nguyễn Thị Ngọc Tâm) hoặc null (Trực tiếp Trưởng Phòng)
+  budgetGross               Decimal                          @default(0) @db.Decimal(14, 2)
+  budgetNet                 Decimal                          @default(0) @db.Decimal(14, 2)
+  budgetAffiliateGross      Decimal                          @default(0) @db.Decimal(14, 2)
+  budgetAffiliateNet        Decimal                          @default(0) @db.Decimal(14, 2)
+  budgetSelfChannelGross    Decimal                          @default(0) @db.Decimal(14, 2)
+  budgetSelfChannelNet      Decimal                          @default(0) @db.Decimal(14, 2)
+  budgetLive                Decimal                          @default(0) @db.Decimal(14, 2)
+  targetPaidVideos          Int                              @default(0)
+  targetFocVideos           Int                              @default(0)
+  targetSelfChannelContents Int                              @default(0)
+  targetLiveSessions        Int                              @default(0)
+  actualSpentNet            Decimal                          @default(0) @db.Decimal(14, 2)
+  actualAiredVideos         Int                              @default(0)
+  financialRiskStatus       String                           @default("NORMAL") // NORMAL, OVERBUDGET, UNBUDGETED, SLOW_BURN
+  financialRiskNotes        String?
+
+  // Phân định 2 chủ tài khoản rõ ràng:
+  accountOwnerName          String                           // Account/Growth Owner (Chịu trách nhiệm doanh số & quan hệ khách hàng)
+  b2cOwnerName              String                           // B2C Ops Owner (Chịu trách nhiệm vận hành nội dung & booking)
+
+  createdAt                 DateTime                         @default(now())
+  updatedAt                 DateTime                         @updatedAt
+
+  candidates                KocCandidate[]
+  bookingDeals              BookingDeal[]
+  growthDemands             GrowthDemand[]
+  staffAssignments          StoreStaffAssignment[]
+  tiktokConnection          TikTokShopConnection?
+  tiktokDailyMetrics        TikTokSellerDailyMetric[]
+  tiktokAdsCampaigns        TikTokAdsCampaignReport[]
+  tiktokVideoSnapshots      TikTokVideoPerformanceSnapshot[]
 
   @@index([accountStatus])
   @@index([serviceModel])
   @@index([brandName])
+  @@index([financialRiskStatus])
 }
 
 // ==========================================
@@ -816,3 +842,133 @@ model MonthlyPlanDiscussion {
   @@unique([planId, clientId])
   @@index([planId, postedAt])
 }
+
+// =========================================================================
+// 10. HỨNG DỮ LIỆU ĐỒNG BỘ TỪ TIKTOK SELLER CENTER & ĐỐI SOÁT VIDEO BOOKING B2C
+// =========================================================================
+
+// 10.1. Cấu hình kết nối Gian hàng TikTok Shop Seller Center & TikTok Ads
+model TikTokShopConnection {
+  id               String          @id @default(uuid())
+  storePortfolioId String?         @unique
+  storePortfolio   StorePortfolio? @relation(fields: [storePortfolioId], references: [id], onDelete: SetNull)
+  shopId           String          @unique // ID định danh Shop trên TikTok Seller Center
+  shopCipher       String?         // Cipher dùng gọi TikTok Partner API
+  sellerName       String          // Tên hiển thị trên TikTok Seller
+  storeName        String          @unique // Tên chuẩn trong 69 gian hàng B2C (VD: Fresh_TikTok_E2E-C)
+  brandName        String
+  advertiserIds    String[]        // Danh sách ID tài khoản quảng cáo TikTok Ads gắn với gian hàng
+  syncStatus       String          @default("ACTIVE") // ACTIVE, TOKEN_EXPIRED, DISCONNECTED
+  lastSyncedAt     DateTime?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  @@index([brandName])
+  @@index([syncStatus])
+}
+
+// 10.2. Bảng hứng doanh số & chỉ số vận hành Gian hàng theo ngày từ TikTok Seller Center
+model TikTokSellerDailyMetric {
+  id               String          @id @default(uuid())
+  storePortfolioId String?
+  storePortfolio   StorePortfolio? @relation(fields: [storePortfolioId], references: [id], onDelete: SetNull)
+  storeName        String
+  brandName        String
+  reportDate       DateTime        @db.Date
+  gmv              Decimal         @default(0) @db.Decimal(14, 2)
+  nmv              Decimal         @default(0) @db.Decimal(14, 2)
+  refundAmount     Decimal         @default(0) @db.Decimal(14, 2)
+  ordersCount      Int             @default(0)
+  buyersCount      Int             @default(0)
+  affiliateGmv     Decimal         @default(0) @db.Decimal(14, 2)
+  selfChannelGmv   Decimal         @default(0) @db.Decimal(14, 2)
+  liveGmv          Decimal         @default(0) @db.Decimal(14, 2)
+  adsSpend         Decimal         @default(0) @db.Decimal(14, 2)
+  adsGmv           Decimal         @default(0) @db.Decimal(14, 2)
+  roas             Float           @default(0)
+  syncedAt         DateTime        @default(now())
+
+  @@unique([storeName, reportDate])
+  @@index([brandName, reportDate])
+  @@index([storePortfolioId])
+}
+
+// 10.3. Bảng hứng báo cáo Chiến dịch Quảng cáo Sản phẩm & Livestream (PGM / LGM) từ TikTok Seller
+model TikTokAdsCampaignReport {
+  id                String          @id @default(uuid())
+  campaignId        String
+  campaignName      String
+  storePortfolioId  String?
+  storePortfolio    StorePortfolio? @relation(fields: [storePortfolioId], references: [id], onDelete: SetNull)
+  storeName         String
+  brandName         String
+  reportPeriod      String          // VD: "2026-10-01 ~ 2026-10-08"
+  sourceFileName    String?
+  cost              Decimal         @default(0) @db.Decimal(14, 2)
+  gmv               Decimal         @default(0) @db.Decimal(14, 2)
+  orders            Int             @default(0)
+  roas              Float           @default(0)
+  cpa               Decimal         @default(0) @db.Decimal(14, 2)
+  impressions       Int             @default(0)
+  clicks            Int             @default(0)
+  ctr               Float           @default(0)
+  cvr               Float           @default(0)
+  hookRate2s        Float           @default(0)
+  completionRate100 Float           @default(0)
+  videoCount        Int             @default(0)
+  syncedAt          DateTime        @default(now())
+
+  @@unique([campaignId, reportPeriod])
+  @@index([storeName])
+  @@index([brandName])
+}
+
+// 10.4. Bảng hứng hiệu suất từng Video (Creative TikTok Seller & Đối soát đơn Booking File 3.2)
+model TikTokVideoPerformanceSnapshot {
+  id                String          @id @default(uuid())
+  videoId           String          // ID Video TikTok hoặc Mã định danh bài đăng
+  bookingCode       String?         // Mã đơn book File 3.2 (VD: BO26_0909_SU23)
+  bookingDealId     String?         // Liên kết tới bảng BookingDeal nếu có
+  storePortfolioId  String?
+  storePortfolio    StorePortfolio? @relation(fields: [storePortfolioId], references: [id], onDelete: SetNull)
+  storeName         String
+  brandName         String
+  campaignName      String?
+  productId         String?
+  productName       String?
+  videoTitle        String?
+  tiktokAccount     String          // ID kênh KOC / Tài khoản TikTok đăng bài
+  pic               String?         // Chuyên viên thực thi (PIC) phụ trách đơn book
+  format            String?         // Booking Video KOC / Booking Video kênh Brand / Booking Livestream KOC
+  videoType         String?         // Review Voice, Unbox Voice, Video remix, Nhạc text...
+  salaryGradeKl     String?         // TAP UpAffiliate (0đ), KL1 -> KL7
+  authorizationType String?         // TikTok Shop OfficialAccount, TikTok account (Marketing)...
+  airDate           String?
+  bookingCostNet    Decimal         @default(0) @db.Decimal(14, 2) // Cát-xê duyệt chi trong File 3.2
+  adsSpend          Decimal         @default(0) @db.Decimal(14, 2) // Chi phí chạy Ads trên TikTok Seller
+  sellerGmv         Decimal         @default(0) @db.Decimal(14, 2) // Doanh thu GMV thực thu từ TikTok Seller
+  sellerOrders      Int             @default(0)                    // Số đơn hàng thực thu
+  cpa               Decimal         @default(0) @db.Decimal(14, 2)
+  roas              Float           @default(0)
+  viewsCount        Int             @default(0)
+  impressions       Int             @default(0)
+  clicks            Int             @default(0)
+  ctr               Float           @default(0)
+  cvr               Float           @default(0)
+  hookRate2s        Float           @default(0)
+  viewRate6s        Float           @default(0)
+  completionRate100 Float           @default(0)
+  pipelineStatus    String?         // Làm ĐNTT, Gửi hàng, Tạm ứng, Done...
+  slaWarning        String?
+  linkAir           String?
+  reportPeriod      String          @default("2026-10")
+  syncedAt          DateTime        @default(now())
+
+  @@unique([videoId, reportPeriod])
+  @@index([bookingCode])
+  @@index([storeName])
+  @@index([brandName])
+  @@index([pic])
+  @@index([salaryGradeKl])
+}
+

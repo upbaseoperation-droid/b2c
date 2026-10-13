@@ -49,3 +49,102 @@ test('Lưu ghi lịch sử và từ chối ghi đè khi revision cũ', async () 
   assert.equal(stored.faqs.length, 1);
   assert.equal(stored.positioning!.slogan, 'Sạch sâu');
 });
+
+test('Tải lên, đọc, xóa tệp thương hiệu và ký xác thực Cloudflare R2 (AWS Signature V4)', async () => {
+  process.env.BRAND_DATA_DIR = await mkdtemp(path.join(os.tmpdir(), 'brand-files-'));
+  const {
+    validateAndSanitizeFile,
+    buildBrandFileKey,
+    assertValidBrandFileKey,
+    signR2Request,
+    uploadBrandFile,
+    readBrandFile,
+    deleteBrandFile,
+  } = await import('../src/lib/brands/r2');
+
+  // Kiểm tra lọc định dạng tệp và làm sạch tên
+  const valid = validateAndSanitizeFile('Bộ Quy Chuẩn Thương Hiệu Đợt 1.pdf', 1024);
+  assert.equal(valid.safeName, 'Bo-Quy-Chuan-Thuong-Hieu-Dot-1.pdf');
+  assert.equal(valid.contentType, 'application/pdf');
+  assert.throws(() => validateAndSanitizeFile('malware.exe', 512));
+
+  // Kiểm tra tạo và xác thực khóa tệp
+  const key = buildBrandFileKey('Club Clio', valid.safeName, new Date('2026-10-14T00:00:00Z'));
+  assert.match(key, /^brands\/club-clio\/2026-10\/[0-9a-f]{8}-Bo-Quy-Chuan-Thuong-Hieu-Dot-1\.pdf$/);
+  assert.equal(assertValidBrandFileKey(key), key);
+  assert.throws(() => assertValidBrandFileKey('brands/club-clio/../../etc/passwd'));
+
+  // Kiểm tra ký yêu cầu Cloudflare R2 theo chuẩn AWS Signature V4
+  const signed = signR2Request({
+    method: 'PUT',
+    config: {
+      accountId: 'acc123',
+      accessKeyId: 'AKIAIOSFODNN7EXAMPLE',
+      secretAccessKey: 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY',
+      bucket: 'upbase-b2c-brands',
+      endpoint: 'https://acc123.r2.cloudflarestorage.com',
+    },
+    key,
+    body: Buffer.from('hello r2'),
+    contentType: 'application/pdf',
+    now: new Date('2026-10-14T01:40:00Z'),
+  });
+  assert.ok(signed.url.startsWith('https://acc123.r2.cloudflarestorage.com/upbase-b2c-brands/brands/club-clio/2026-10/'));
+  assert.match(signed.headers.Authorization, /^AWS4-HMAC-SHA256 Credential=AKIAIOSFODNN7EXAMPLE\/20261014\/auto\/s3\/aws4_request/);
+
+  // Kiểm tra lưu trữ, đọc và xóa tệp và lưu vào mục DOCUMENTS / LEGAL của hồ sơ thương hiệu
+  const payload = Buffer.from('%PDF-1.4 brand guideline content');
+  const uploaded = await uploadBrandFile({
+    brandName: 'Senka',
+    originalName: 'Guideline Senka 2026.pdf',
+    mimeType: 'application/pdf',
+    buffer: payload,
+  });
+  assert.equal(uploaded.storage, 'LOCAL');
+  assert.ok(uploaded.url.startsWith('/api/brands/files?key='));
+
+  const readBack = await readBrandFile(uploaded.fileKey);
+  assert.deepEqual(readBack.buffer, payload);
+  assert.equal(readBack.contentType, 'application/pdf');
+
+  const p = emptyProfile('Senka');
+  const docs = parseSection('DOCUMENTS', {
+    documents: [{
+      title: 'Guideline Senka 2026',
+      category: 'GUIDELINE',
+      url: uploaded.url,
+      note: 'Bản chính thức Q4',
+      fileKey: uploaded.fileKey,
+      fileName: uploaded.fileName,
+      fileSize: uploaded.fileSize,
+      mimeType: uploaded.mimeType,
+      storage: uploaded.storage,
+    }],
+  }, 'Phương Thảo', p).documents!;
+  assert.equal(docs.length, 1);
+  assert.equal(docs[0].fileKey, uploaded.fileKey);
+  assert.equal(docs[0].fileSize, payload.byteLength);
+  assert.equal(docs[0].url, uploaded.url);
+
+  await deleteBrandFile(uploaded.fileKey);
+  await assert.rejects(readBrandFile(uploaded.fileKey));
+});
+
+test('Khởi tạo đầy đủ hồ sơ cho toàn bộ 42 thương hiệu B2C thực tế', async () => {
+  const { getFallbackProfiles } = await import('../src/lib/brands/store');
+  const { buildRows } = await import('../src/components/brands/brandUi');
+  const { REAL_B2C_42_BRANDS } = await import('../src/lib/realB2cBrandsData');
+  const profiles = getFallbackProfiles();
+  assert.ok(profiles.length >= 42, `Cần ít nhất 42 hồ sơ thương hiệu B2C, thực tế: ${profiles.length}`);
+  const rows = buildRows(REAL_B2C_42_BRANDS, profiles).filter(r => REAL_B2C_42_BRANDS.some(b => b.name === r.name));
+  assert.equal(rows.length, 42);
+  for (const row of rows) {
+    assert.equal(row.done, 7, `Thương hiệu ${row.name} chưa đủ 7/7 mục (${row.done}/${row.total})`);
+    assert.ok(row.profile.products.length > 0, `Thương hiệu ${row.name} thiếu SKU chủ lực`);
+    assert.ok((row.profile.contentRules?.banned.length || 0) > 0, `Thương hiệu ${row.name} thiếu từ cấm`);
+    assert.ok(row.profile.ratecard.some(r => (r.maxBudget || 0) > 0), `Thương hiệu ${row.name} thiếu khung thù lao`);
+    assert.ok(row.profile.documents.length > 0, `Thương hiệu ${row.name} thiếu tài liệu`);
+  }
+});
+
+

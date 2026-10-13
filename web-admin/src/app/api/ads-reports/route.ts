@@ -8,6 +8,7 @@ import {
 } from '@/lib/adsReportService';
 import { INITIAL_KOCS, INITIAL_DEALS } from '@/lib/mockData';
 import { getAuthenticatedUser } from '@/lib/larkAuth';
+import { persistParsedAdsReportToDb } from '@/lib/server/tiktokSellerStore';
 
 export const dynamic = 'force-dynamic';
 
@@ -79,7 +80,7 @@ export async function POST(req: NextRequest) {
     // Trường hợp 1: Phân tích báo cáo đã lưu sẵn trên ổ đĩa
     if (contentType.includes('application/json')) {
       const body = await req.json();
-      const { fileName, kocs, deals } = body;
+      const { fileName, kocs, deals, storeName, brandName } = body;
 
       if (!fileName) {
         return NextResponse.json({ success: false, error: 'Thiếu tham số fileName' }, { status: 400 });
@@ -101,10 +102,17 @@ export async function POST(req: NextRequest) {
       const dealsList = deals && deals.length > 0 ? deals : INITIAL_DEALS;
 
       const result = await parseAdsExcelFile(filePath, path.basename(fileName), kocsMaster, dealsList);
+      const dbPersistence = await persistParsedAdsReportToDb(
+        result,
+        path.basename(fileName),
+        storeName || 'Fresh_TikTok_E2E-C',
+        brandName || 'Fresh'
+      );
 
       return NextResponse.json({
         success: true,
-        data: result
+        data: result,
+        dbPersistence
       });
     }
 
@@ -112,6 +120,8 @@ export async function POST(req: NextRequest) {
     if (contentType.includes('multipart/form-data')) {
       const formData = await req.formData();
       const file = formData.get('file') as File | null;
+      const storeName = (formData.get('storeName') as string) || 'Fresh_TikTok_E2E-C';
+      const brandName = (formData.get('brandName') as string) || 'Fresh';
 
       if (!file) {
         return NextResponse.json({ success: false, error: 'Không tìm thấy file upload' }, { status: 400 });
@@ -142,13 +152,15 @@ export async function POST(req: NextRequest) {
       const buffer = Buffer.from(await file.arrayBuffer());
       fs.writeFileSync(safeSavePath, buffer);
 
-      // Phân tích nội dung file
+      // Phân tích nội dung file và ghi xuống bảng DB TikTok Seller
       const result = await parseAdsExcelFile(buffer, cleanBaseName, INITIAL_KOCS, INITIAL_DEALS);
+      const dbPersistence = await persistParsedAdsReportToDb(result, cleanBaseName, storeName, brandName);
 
       return NextResponse.json({
         success: true,
-        message: `Đã lưu và phân tích thành công báo cáo ${cleanBaseName}!`,
-        data: result
+        message: `Đã lưu và đồng bộ vào DB báo cáo ${cleanBaseName} (${dbPersistence.savedCampaigns} chiến dịch, ${dbPersistence.savedVideos} video)!`,
+        data: result,
+        dbPersistence
       });
     }
 

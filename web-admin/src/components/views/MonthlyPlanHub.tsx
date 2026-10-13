@@ -37,6 +37,7 @@ import {
   ToggleRight,
   BarChart3,
   MessageSquare,
+  Layers,
   Store as StoreIcon
 } from 'lucide-react';
 import {
@@ -48,7 +49,7 @@ import {
 } from '../../lib/types';
 
 type StrategyPreset = 'BALANCED' | 'GMV_MAX' | 'BRAND_PUSH' | 'COST_SAVER' | 'MEGA_SALE';
-import { AVAILABLE_MONTHS } from '../../lib/monthlyPlanData';
+import { AVAILABLE_MONTHS, getPlanVersionSnapshots } from '../../lib/monthlyPlanData';
 import { autoBalancePlanItems, INITIAL_INPUT_PLAN_ITEMS } from '../../lib/inputPlanDefaults';
 import { INITIAL_STORE_PORTFOLIOS } from '../../lib/mockData';
 import { PlanHistoryModal } from './PlanHistoryModal';
@@ -200,7 +201,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
   const [activeHubTab, setActiveHubTab] = useState<'STORE_GOVERNANCE' | 'PLAN_CATALOG'>('STORE_GOVERNANCE');
 
   // Lọc cho Ma trận gian hàng (mặc định lọc gian B2C làm kế hoạch)
-  const [storeGovernanceFilter, setStoreGovernanceFilter] = useState<'ALL' | 'B2C_ONLY' | 'MISSING_PLAN' | 'PENDING_APPROVAL' | 'APPROVED' | 'EXEMPT'>('B2C_ONLY');
+  const [storeGovernanceFilter, setStoreGovernanceFilter] = useState<'ALL' | 'B2C_ONLY' | 'MULTI_VERSION' | 'MISSING_PLAN' | 'PENDING_APPROVAL' | 'APPROVED' | 'EXEMPT'>('B2C_ONLY');
   const [storeSearchQuery, setStoreSearchQuery] = useState<string>('');
   const [governancePage, setGovernancePage] = useState<number>(1);
   const GOVERNANCE_PAGE_SIZE = 15;
@@ -253,6 +254,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
     const pendingPreApproval = b2cList.filter((item: StoreGovernanceItem) => item.plan && (item.plan.status === 'PENDING_PRE_APPROVAL' || item.plan.status === 'PRE_APPROVED'));
     const revisionRequested = b2cList.filter((item: StoreGovernanceItem) => item.plan && item.plan.status === 'REVISION_REQUESTED');
     const draft = b2cList.filter((item: StoreGovernanceItem) => item.plan && (item.plan.status === 'DRAFT' || !item.plan.status));
+    const multiVersion = b2cList.filter((item: StoreGovernanceItem) => item.plan && getPlanVersionSnapshots(item.plan).length > 1);
 
     const coveragePct = totalB2cManaged > 0 ? Math.round((withPlan.length / totalB2cManaged) * 100) : 0;
     const approvedPct = totalB2cManaged > 0 ? Math.round((approved.length / totalB2cManaged) * 100) : 0;
@@ -279,6 +281,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
       countPendingPreApproval: pendingPreApproval.length,
       countRevisionRequested: revisionRequested.length,
       countDraft: draft.length,
+      countMultiVersion: multiVersion.length,
       coveragePct,
       approvedPct,
       totalBudget,
@@ -298,6 +301,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
     return storeGovernanceList.filter((item: StoreGovernanceItem) => {
       if (storeGovernanceFilter === 'B2C_ONLY' && !item.isB2c) return false;
       if (storeGovernanceFilter === 'EXEMPT' && item.isB2c) return false;
+      if (storeGovernanceFilter === 'MULTI_VERSION' && (!item.plan || getPlanVersionSnapshots(item.plan).length <= 1)) return false;
       if (storeGovernanceFilter === 'MISSING_PLAN' && (!item.isB2c || item.hasPlan)) return false;
       if (storeGovernanceFilter === 'PENDING_APPROVAL' && (!item.plan || item.plan.status !== 'PENDING_APPROVAL')) return false;
       if (storeGovernanceFilter === 'APPROVED' && (!item.plan || !['LEAD_APPROVED', 'BRAND_APPROVED', 'APPROVED', 'IN_EXECUTION', 'COMPLETED'].includes(item.plan.status || ''))) return false;
@@ -389,9 +393,15 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
   const [cloningPlan, setCloningPlan] = useState<InputPlanBreakdownState | null>(null);
   const [cloneTargetMonth, setCloneTargetMonth] = useState('2026/11');
 
-  // Modal lịch sử & trao đổi
+  // Modal lịch sử phiên bản & trao đổi
   const [historyPlanId, setHistoryPlanId] = useState<string | null>(null);
+  const [historyModalTab, setHistoryModalTab] = useState<'VERSION_HISTORY' | 'APPROVAL_FLOW' | 'DISCUSSION'>('VERSION_HISTORY');
   const viewingHistoryPlan = plans.find(p => p.id === historyPlanId) || null;
+
+  const openVersionModal = (planId: string, tab: 'VERSION_HISTORY' | 'APPROVAL_FLOW' | 'DISCUSSION' = 'VERSION_HISTORY') => {
+    setHistoryModalTab(tab);
+    setHistoryPlanId(planId);
+  };
 
   const notify = (msg: string) => {
     if (onNotify) onNotify(msg);
@@ -734,6 +744,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                     items={[
                       { key: 'ALL', label: 'Tất cả', count: governanceStats.totalActive },
                       { key: 'B2C_ONLY', label: 'B2C phụ trách', count: governanceStats.totalB2cManaged },
+                      { key: 'MULTI_VERSION', label: 'Nhiều phiên bản', count: governanceStats.countMultiVersion },
                       { key: 'MISSING_PLAN', label: 'Chưa lập plan', count: governanceStats.countMissingPlan },
                       { key: 'PENDING_APPROVAL', label: 'Chờ duyệt', count: governanceStats.countPendingApproval },
                       { key: 'APPROVED', label: 'Đã duyệt', count: governanceStats.countApproved },
@@ -755,7 +766,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
               <table className="w-full table-fixed text-left text-xs border-collapse">
                 <thead>
                   <tr className="bg-sunken/70 border-b border-line text-ink-2 font-semibold text-2xs">
-                    <th className="py-2.5 px-2.5 w-[20%]">Gian hàng &amp; Thương hiệu</th>
+                    <th className="py-2.5 px-2.5 w-[20%]">Gian hàng &amp; Phiên bản</th>
                     <th className="py-2.5 px-2 w-[16%]">Nhân sự (B2C / Growth)</th>
                     <th className="py-2.5 px-2 text-right w-[12%] bg-sunken">Tổng đề bài B2C</th>
                     <th className="py-2.5 px-2 text-right w-[11%]">1. Affiliate (Trả phí)</th>
@@ -780,6 +791,13 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                       const plan = item.plan;
                       const isB2c = item.isB2c;
                       const bd = item.breakdown;
+                      const versionSnapshots = plan ? getPlanVersionSnapshots(plan) : [];
+                      const versionCount = versionSnapshots.length;
+                      const activeVersionCode = plan?.currentVersionCode || 'v1.0';
+                      const baselineSnapshot = versionSnapshots[0];
+                      const budgetDelta = plan && baselineSnapshot && versionCount > 1
+                        ? (plan.totalTargetBudget || bd.totalBudget) - (baselineSnapshot.totalTargetBudget || 0)
+                        : 0;
 
                       return (
                         <tr
@@ -793,7 +811,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                             if (plan) onSelectPlan(plan);
                           }}
                         >
-                          {/* 1. GIAN HÀNG & THƯƠNG HIỆU + NÚT B2C */}
+                          {/* 1. GIAN HÀNG & THƯƠNG HIỆU + NÚT B2C + PHIÊN BẢN TRONG THÁNG */}
                           <td className="py-2 px-2.5 align-middle">
                             <div className="flex items-center gap-1.5 min-w-0">
                               <button
@@ -816,13 +834,45 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                                 {store.storeName}
                               </span>
                             </div>
-                            <div className="flex items-center gap-1.5 mt-0.5 text-2xs text-ink-3 min-w-0">
+                            <div className="flex items-center gap-1.5 mt-0.5 text-2xs text-ink-3 min-w-0 flex-wrap">
                               <ChannelTag channel={store.platform} className="text-2xs px-1 py-0" />
                               <span>•</span>
                               <span className="font-medium text-ink-2 truncate" title={store.brandName}>
                                 {store.brandName}
                               </span>
                             </div>
+                            {plan && (
+                              <div className="flex items-center gap-1 mt-1 flex-wrap" onClick={(e) => e.stopPropagation()}>
+                                <button
+                                  type="button"
+                                  onClick={() => openVersionModal(plan.id, 'VERSION_HISTORY')}
+                                  className={cx(
+                                    'inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-2xs font-semibold border transition-colors cursor-pointer',
+                                    versionCount > 1
+                                      ? 'bg-accent-soft text-accent border-accent/30 hover:bg-accent-soft/80'
+                                      : 'bg-sunken text-ink-2 border-line hover:bg-sunken/80'
+                                  )}
+                                  title="Quản lý & so sánh các phiên bản kế hoạch trong tháng"
+                                >
+                                  <Layers className="w-2.5 h-2.5" />
+                                  <span>{activeVersionCode}</span>
+                                  <span>• {versionCount} bản</span>
+                                </button>
+                                {budgetDelta !== 0 && (
+                                  <span
+                                    className={cx(
+                                      'text-2xs font-semibold px-1 py-0.5 rounded tabular-nums',
+                                      budgetDelta > 0
+                                        ? 'bg-emerald-50 text-emerald-700'
+                                        : 'bg-amber-50 text-amber-700'
+                                    )}
+                                    title="Chênh lệch ngân sách so với bản gốc v1.0 đầu tháng"
+                                  >
+                                    {budgetDelta > 0 ? `+${formatVndShort(budgetDelta)}` : formatVndShort(budgetDelta)} vs v1.0
+                                  </span>
+                                )}
+                              </div>
+                            )}
                           </td>
 
                           {/* 2. NHÂN SỰ (B2C / GROWTH / DUYỆT) */}
@@ -974,28 +1024,39 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                               )}
 
                               {plan ? (
-                                plan.status === 'PENDING_APPROVAL' ? (
-                                  <Button
-                                    size="sm"
-                                    variant="primary"
-                                    icon={ShieldCheck}
-                                    onClick={() => onSelectPlan(plan)}
-                                    title="Mở kế hoạch để xem và duyệt"
-                                    className="h-6 px-2 text-2xs font-medium w-full justify-center"
+                                <div className="flex items-center gap-1 w-full">
+                                  <button
+                                    type="button"
+                                    onClick={() => openVersionModal(plan.id, 'VERSION_HISTORY')}
+                                    title={`Xem & quản lý ${versionCount} phiên bản kế hoạch trong tháng`}
+                                    className="h-6 px-1.5 rounded border border-line bg-surface hover:bg-sunken text-ink-2 text-2xs font-semibold inline-flex items-center gap-0.5 shrink-0 cursor-pointer"
                                   >
-                                    Duyệt plan
-                                  </Button>
-                                ) : (
-                                  <Button
-                                    size="sm"
-                                    variant="secondary"
-                                    onClick={() => onSelectPlan(plan)}
-                                    title="Mở bảng phân rã chi tiết theo khung lương, định dạng, tuần"
-                                    className="h-6 px-2 text-2xs font-medium w-full justify-center"
-                                  >
-                                    Phân rã
-                                  </Button>
-                                )
+                                    <Layers className="w-3 h-3 text-accent" />
+                                    <span>{versionCount}</span>
+                                  </button>
+                                  {plan.status === 'PENDING_APPROVAL' ? (
+                                    <Button
+                                      size="sm"
+                                      variant="primary"
+                                      icon={ShieldCheck}
+                                      onClick={() => onSelectPlan(plan)}
+                                      title="Mở kế hoạch để xem và duyệt"
+                                      className="h-6 px-2 text-2xs font-medium flex-1 justify-center"
+                                    >
+                                      Duyệt
+                                    </Button>
+                                  ) : (
+                                    <Button
+                                      size="sm"
+                                      variant="secondary"
+                                      onClick={() => onSelectPlan(plan)}
+                                      title="Mở bảng phân rã chi tiết theo khung lương, định dạng, tuần"
+                                      className="h-6 px-2 text-2xs font-medium flex-1 justify-center"
+                                    >
+                                      Phân rã
+                                    </Button>
+                                  )}
+                                </div>
                               ) : isB2c ? (
                                 <Button
                                   size="sm"
@@ -1117,6 +1178,13 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredPlans.map(plan => {
                 const bd = getB2cPlanBreakdown(plan);
+                const versionSnapshots = getPlanVersionSnapshots(plan);
+                const versionCount = versionSnapshots.length;
+                const activeVersionCode = plan.currentVersionCode || 'v1.0';
+                const baselineSnapshot = versionSnapshots[0];
+                const budgetDelta = baselineSnapshot && versionCount > 1
+                  ? (plan.totalTargetBudget || bd.totalBudget) - (baselineSnapshot.totalTargetBudget || 0)
+                  : 0;
 
                 return (
                   <div
@@ -1129,10 +1197,24 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                         <span className="text-xs font-semibold text-ink">
                           {plan.brandName}
                         </span>
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1.5 flex-wrap justify-end">
                           <span className="px-1.5 py-0.5 rounded text-2xs font-medium bg-sunken text-ink-3">
                             {plan.month}
                           </span>
+                          <button
+                            type="button"
+                            onClick={() => openVersionModal(plan.id, 'VERSION_HISTORY')}
+                            className={cx(
+                              'inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-2xs font-semibold border transition-colors cursor-pointer',
+                              versionCount > 1
+                                ? 'bg-accent-soft text-accent border-accent/30 hover:bg-accent-soft/80'
+                                : 'bg-sunken text-ink-2 border-line hover:bg-sunken/80'
+                            )}
+                            title="Quản lý các phiên bản kế hoạch trong tháng"
+                          >
+                            <Layers className="w-2.5 h-2.5" />
+                            <span>{activeVersionCode} ({versionCount})</span>
+                          </button>
                           {getStatusBadge(plan.status)}
                         </div>
                       </div>
@@ -1145,6 +1227,19 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                           <span>B2C: <strong className="text-ink font-medium">{plan.pic}</strong></span>
                           <span>•</span>
                           <span>Growth: <strong className="text-ink-2 font-medium">{plan.growthPic?.split(' (')[0] || 'Team'}</strong></span>
+                          {budgetDelta !== 0 && (
+                            <>
+                              <span>•</span>
+                              <span
+                                className={cx(
+                                  'font-semibold px-1 py-0.2 rounded tabular-nums',
+                                  budgetDelta > 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
+                                )}
+                              >
+                                {budgetDelta > 0 ? `+${formatVndShort(budgetDelta)}` : formatVndShort(budgetDelta)} vs v1.0
+                              </span>
+                            </>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -1198,11 +1293,20 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                         <Button
                           size="sm"
                           variant="secondary"
+                          icon={Layers}
+                          onClick={() => openVersionModal(plan.id, 'VERSION_HISTORY')}
+                          title="Quản lý các phiên bản kế hoạch trong tháng"
+                        >
+                          Phiên bản ({versionCount})
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
                           icon={MessageSquare}
-                          onClick={() => setHistoryPlanId(plan.id)}
+                          onClick={() => openVersionModal(plan.id, 'DISCUSSION')}
                           title="Xem lịch sử trao đổi & duyệt"
                         >
-                          Trao đổi ({plan.discussions?.length || 0})
+                          {plan.discussions?.length || 0}
                         </Button>
                       </div>
 
@@ -1226,7 +1330,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                 <table className="w-full table-fixed text-left text-xs border-collapse">
                   <thead>
                     <tr className="bg-sunken/70 text-ink-2 border-b border-line font-semibold text-2xs">
-                      <th className="py-2.5 px-2.5 w-[21%]">Kế hoạch &amp; Thương hiệu</th>
+                      <th className="py-2.5 px-2.5 w-[21%]">Kế hoạch &amp; Phiên bản</th>
                       <th className="py-2.5 px-2 w-[15%]">Nhân sự</th>
                       <th className="py-2.5 px-2 text-right w-[12%] bg-sunken">Tổng đề bài B2C</th>
                       <th className="py-2.5 px-2 text-right w-[11%]">1. Affiliate (Trả phí)</th>
@@ -1239,6 +1343,13 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                   <tbody className="divide-y divide-line">
                     {filteredPlans.map(plan => {
                       const bd = getB2cPlanBreakdown(plan);
+                      const versionSnapshots = getPlanVersionSnapshots(plan);
+                      const versionCount = versionSnapshots.length;
+                      const activeVersionCode = plan.currentVersionCode || 'v1.0';
+                      const baselineSnapshot = versionSnapshots[0];
+                      const budgetDelta = baselineSnapshot && versionCount > 1
+                        ? (plan.totalTargetBudget || bd.totalBudget) - (baselineSnapshot.totalTargetBudget || 0)
+                        : 0;
 
                       return (
                         <tr
@@ -1252,6 +1363,32 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                             </div>
                             <div className="text-2xs text-ink-3 mt-0.5 truncate">
                               <span className="font-medium text-ink-2">{plan.brandName}</span> • {plan.month}
+                            </div>
+                            <div className="flex items-center gap-1 mt-1 flex-wrap" onClick={(e) => e.stopPropagation()}>
+                              <button
+                                type="button"
+                                onClick={() => openVersionModal(plan.id, 'VERSION_HISTORY')}
+                                className={cx(
+                                  'inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-2xs font-semibold border transition-colors cursor-pointer',
+                                  versionCount > 1
+                                    ? 'bg-accent-soft text-accent border-accent/30 hover:bg-accent-soft/80'
+                                    : 'bg-sunken text-ink-2 border-line hover:bg-sunken/80'
+                                )}
+                                title="Quản lý & so sánh các phiên bản kế hoạch trong tháng"
+                              >
+                                <Layers className="w-2.5 h-2.5" />
+                                <span>{activeVersionCode} • {versionCount} bản</span>
+                              </button>
+                              {budgetDelta !== 0 && (
+                                <span
+                                  className={cx(
+                                    'text-2xs font-semibold px-1 py-0.5 rounded tabular-nums',
+                                    budgetDelta > 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
+                                  )}
+                                >
+                                  {budgetDelta > 0 ? `+${formatVndShort(budgetDelta)}` : formatVndShort(budgetDelta)}
+                                </span>
+                              )}
                             </div>
                           </td>
                           <td className="py-2 px-2 align-middle">
@@ -1320,21 +1457,20 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                             <div className="flex flex-col items-center gap-1">
                               {getStatusBadge(plan.status)}
                               <div className="flex items-center justify-center gap-1 w-full">
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  icon={MessageSquare}
-                                  onClick={() => setHistoryPlanId(plan.id)}
-                                  title="Xem lịch sử trao đổi"
-                                  className="h-6 px-1.5 text-2xs"
+                                <button
+                                  type="button"
+                                  onClick={() => openVersionModal(plan.id, 'VERSION_HISTORY')}
+                                  title={`Quản lý ${versionCount} phiên bản kế hoạch trong tháng`}
+                                  className="h-6 px-1.5 rounded border border-line bg-surface hover:bg-sunken text-ink-2 text-2xs font-semibold inline-flex items-center gap-0.5 shrink-0 cursor-pointer"
                                 >
-                                  {plan.discussions?.length || 0}
-                                </Button>
+                                  <Layers className="w-3 h-3 text-accent" />
+                                  <span>{versionCount}</span>
+                                </button>
                                 <Button
                                   size="sm"
                                   variant="secondary"
                                   onClick={() => onSelectPlan(plan)}
-                                  className="h-6 px-2 text-2xs font-medium"
+                                  className="h-6 px-2 text-2xs font-medium flex-1 justify-center"
                                 >
                                   Phân rã
                                 </Button>
@@ -1535,11 +1671,12 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
         </Modal>
       )}
 
-      {/* 5. MODAL XEM LỊCH SỬ TRAO ĐỔI & TIẾN TRÌNH DUYỆT */}
+      {/* 5. MODAL QUẢN LÝ PHIÊN BẢN TRONG THÁNG, TIẾN TRÌNH DUYỆT & TRAO ĐỔI */}
       {viewingHistoryPlan && (
         <PlanHistoryModal
           plan={viewingHistoryPlan}
           isOpen={!!viewingHistoryPlan}
+          initialTab={historyModalTab}
           currentUser={currentUser}
           onClose={() => setHistoryPlanId(null)}
           onSendMessage={(planId, msg) => {
@@ -1556,6 +1693,10 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
             if (onUpdatePlan) {
               onUpdatePlan(viewingHistoryPlan.id, updated);
             }
+          }}
+          onOpenPlanInStudio={(targetPlan) => {
+            setHistoryPlanId(null);
+            onSelectPlan(targetPlan);
           }}
           onNotify={notify}
         />

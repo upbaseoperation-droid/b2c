@@ -86,3 +86,54 @@ export function isExpired(value: string, today = new Date()) {
   const d = value.includes('/') ? new Date(+m[3], +m[2] - 1, +m[1]) : new Date(+m[1], +m[2] - 1, +m[3]);
   return d.getTime() < new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
 }
+
+export function legalState(expiryDate?: string): { label: string; tone: 'positive' | 'warning' | 'danger' | 'neutral' } {
+  if (!expiryDate || !expiryDate.trim()) return { label: 'Vô thời hạn', tone: 'neutral' };
+  if (isExpired(expiryDate)) return { label: 'Đã hết hạn', tone: 'danger' };
+  return { label: 'Còn hiệu lực', tone: 'positive' };
+}
+
+export function formatFileSize(bytes?: number): string {
+  if (!bytes || bytes <= 0) return '';
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(bytes < 10 * 1024 ? 1 : 0)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+export function fileExtLabel(fileNameOrUrl?: string): string {
+  if (!fileNameOrUrl) return '';
+  const clean = fileNameOrUrl.split('?')[0].split('#')[0];
+  const m = clean.match(/\.([a-zA-Z0-9]{2,5})$/);
+  return m ? m[1].toUpperCase() : '';
+}
+
+export interface UploadedBrandFileResult {
+  fileKey: string;
+  fileName: string;
+  fileSize: number;
+  mimeType: string;
+  storage: 'R2' | 'LOCAL';
+  url: string;
+}
+
+export async function uploadBrandFileClient(params: {
+  file: File;
+  brandName: string;
+  section: 'DOCUMENTS' | 'LEGAL';
+}): Promise<UploadedBrandFileResult> {
+  const formData = new FormData();
+  formData.append('file', params.file);
+  formData.append('brandName', params.brandName);
+  formData.append('section', params.section);
+
+  const res = await fetch('/api/brands/files', {
+    method: 'POST',
+    body: formData,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.file) {
+    throw new Error(data.error || 'Không tải được tệp lên hệ thống.');
+  }
+  return data.file as UploadedBrandFileResult;
+}
+

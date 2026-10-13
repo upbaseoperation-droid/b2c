@@ -3,6 +3,7 @@ import { getAuthenticatedUser } from '@/lib/larkAuth';
 import { UPBASE_BRANDS_MASTER } from '@/lib/importedMasterData';
 import { BrandError, applySection, parseSection, permissionsFor, requireBrand, requireReader } from '@/lib/brands/domain';
 import { brandStorageMode, listProfiles, saveProfile } from '@/lib/brands/store';
+import { brandFileStorageMode } from '@/lib/brands/r2';
 import { brandKey, emptyProfile, type BrandSection } from '@/lib/brands/types';
 
 export const runtime = 'nodejs';
@@ -33,7 +34,12 @@ export async function GET(req: NextRequest) {
     };
     const base = permissionsFor(effectiveUser);
     return NextResponse.json(
-      { profiles: await listProfiles(), access: { name: effectiveUser.name, lead: base.RATECARD, legal: base.LEGAL }, storage: brandStorageMode() },
+      {
+        profiles: await listProfiles(),
+        access: { name: effectiveUser.name, lead: base.RATECARD, legal: base.LEGAL },
+        storage: brandStorageMode(),
+        fileStorage: brandFileStorageMode(),
+      },
       { headers: noStore },
     );
   } catch (e) {
