@@ -25,8 +25,9 @@ import {
   CloudDownload,
   Edit3
 } from 'lucide-react';
-import { UserProfile, BrandDetail, StorePortfolioItem, KocItem, MasterContentPillar } from '../../lib/types';
+import { UserProfile, BrandDetail, StorePortfolioItem, KocItem, MasterContentPillar, Contributor } from '../../lib/types';
 import { INITIAL_BRANDS, INITIAL_STORE_PORTFOLIOS, INITIAL_KOCS, INITIAL_PUSH_PRODUCTS } from '../../lib/mockData';
+import { INITIAL_CONTRIBUTORS } from '../../lib/selfChannelData';
 import { 
   UPBASE_MASTER_PILLARS, 
   UPBASE_CAST_TIERS, 
@@ -40,7 +41,8 @@ import {
   KocNichesMasterView, 
   VideoFormatsMasterView, 
   StoresMasterView, 
-  StaffMasterView 
+  StaffMasterView,
+  ContributorsMasterView
 } from './master-data';
 import { MasterDataMindmapView } from './MasterDataMindmapView';
 import {
@@ -61,6 +63,7 @@ export type MasterDataSubTab =
   | 'koc-niches' 
   | 'video-formats' 
   | 'kocs' 
+  | 'ctvs'
   | 'staff'
   | 'sla-kpi'
   | 'assignment-history'
@@ -89,13 +92,18 @@ interface MasterDataHubViewProps {
   brands?: BrandDetail[];
   stores?: StorePortfolioItem[];
   kocs?: KocItem[];
+  contributors?: Contributor[];
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
   onOpenQuickBookWithKoc?: (koc: KocItem) => void;
   onKocCreated?: (koc: KocItem) => void;
   onKocUpdated?: (koc: KocItem) => void;
+  onContributorCreated?: (ctv: Contributor) => void;
+  onContributorUpdated?: (ctv: Contributor) => void;
+  onContributorDeleted?: (ctvId: string) => void;
   onUpdateStore?: (store: StorePortfolioItem) => void;
   onNavigateToBrandProfile?: (brandName: string) => void;
   onNavigateToStoreProfile?: (storeName: string) => void;
+  onNavigateToCtvProfile?: (ctvId?: string) => void;
 }
 
 export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
@@ -104,13 +112,18 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
   brands = INITIAL_BRANDS,
   stores,
   kocs = INITIAL_KOCS,
+  contributors = INITIAL_CONTRIBUTORS,
   onNotify,
   onOpenQuickBookWithKoc,
   onKocCreated,
   onKocUpdated,
+  onContributorCreated,
+  onContributorUpdated,
+  onContributorDeleted,
   onUpdateStore,
   onNavigateToBrandProfile,
-  onNavigateToStoreProfile
+  onNavigateToStoreProfile,
+  onNavigateToCtvProfile
 }) => {
   const [activeSubTab, setActiveSubTab] = useState<MasterDataSubTab>(initialSubTab);
 
@@ -767,6 +780,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
           { key: 'koc-niches', label: 'Tệp kênh', count: UPBASE_KOC_NICHES.length },
           { key: 'video-formats', label: 'Định dạng video', count: UPBASE_VIDEO_FORMATS.length },
           { key: 'kocs', label: 'Danh bạ KOC', count: kocs.length },
+          { key: 'ctvs', label: 'Cộng tác viên / VJ', count: contributors.length },
           { key: 'staff', label: 'Nhân sự Booking', count: UPBASE_STAFF_MASTER.length },
           { key: 'sla-kpi', label: 'Chuẩn SLA & KPI', count: UPBASE_MASTER_SLA_CONFIG.length + UPBASE_MASTER_KPI_DEFINITIONS.length },
           { key: 'assignment-history', label: 'Lịch sử PIC', count: INITIAL_STORE_ASSIGNMENT_HISTORY.length },
@@ -1651,6 +1665,18 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
           onOpenQuickBookWithKoc={onOpenQuickBookWithKoc || (() => {})}
           onKocCreated={onKocCreated}
           onKocUpdated={onKocUpdated}
+        />
+      )}
+
+      {/* SUB-TAB: DỮ LIỆU GỐC CỘNG TÁC VIÊN / VJ */}
+      {activeSubTab === 'ctvs' && (
+        <ContributorsMasterView
+          contributors={contributors}
+          onContributorCreated={onContributorCreated}
+          onContributorUpdated={onContributorUpdated}
+          onContributorDeleted={onContributorDeleted}
+          onNavigateToCtvProfile={onNavigateToCtvProfile}
+          onNotify={onNotify}
         />
       )}
 

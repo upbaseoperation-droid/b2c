@@ -633,7 +633,7 @@ export const ContributorsMasterView: React.FC<ContributorsMasterViewProps> = ({
       {/* XÁC NHẬN XÓA */}
       <ConfirmDialog
         open={Boolean(deletingCtv)}
-        onClose={() => setDeletingCtv(null)}
+        onCancel={() => setDeletingCtv(null)}
         onConfirm={handleConfirmDelete}
         title="Xóa CTV khỏi Dữ liệu gốc"
         description={

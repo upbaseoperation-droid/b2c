@@ -349,8 +349,7 @@ export const CtvManagementView: React.FC<CtvManagementViewProps> = ({
             <LegalOcrModal
               isOpen={true}
               onClose={() => setOcrTarget(null)}
-              kocName={ocrTarget.name}
-              onApplyResult={handleApplyOcr}
+              onApplyToContract={handleApplyOcr}
             />
           )}
 
@@ -557,9 +556,13 @@ export const CtvManagementView: React.FC<CtvManagementViewProps> = ({
                     </option>
                   ))}
                 </Select>
+                {isFiltered && (
+                  <Button variant="secondary" size="sm" onClick={resetFilters}>
+                    Đặt lại
+                  </Button>
+                )}
               </>
             }
-            onReset={isFiltered ? resetFilters : undefined}
             resultCount={isFiltered ? filtered.length : undefined}
           />
         </div>
@@ -597,8 +600,7 @@ export const CtvManagementView: React.FC<CtvManagementViewProps> = ({
         <LegalOcrModal
           isOpen={true}
           onClose={() => setOcrTarget(null)}
-          kocName={ocrTarget.name}
-          onApplyResult={handleApplyOcr}
+          onApplyToContract={handleApplyOcr}
         />
       )}
 
@@ -625,7 +627,7 @@ export const CtvManagementView: React.FC<CtvManagementViewProps> = ({
       >
         <form id="create-ctv-full-form" onSubmit={handleCreateCtv} className="grid gap-3.5">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <Field label="Họ và tên CTV / VJ" required>
+            <Field label="Họ và tên CTV / VJ">
               <Input
                 required
                 value={createForm.name}
@@ -633,7 +635,7 @@ export const CtvManagementView: React.FC<CtvManagementViewProps> = ({
                 placeholder="VD: Nguyễn Hoàng Yến"
               />
             </Field>
-            <Field label="Số điện thoại" required>
+            <Field label="Số điện thoại">
               <Input
                 required
                 value={createForm.phone}
@@ -1386,7 +1388,7 @@ function CtvProfileDetail({
                 />
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-line">
-                  <Field label="Họ tên hiển thị" required>
+                  <Field label="Họ tên hiển thị">
                     <Input
                       required
                       value={editForm.name}
@@ -1415,7 +1417,7 @@ function CtvProfileDetail({
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <Field label="Số điện thoại" required>
+                  <Field label="Số điện thoại">
                     <Input
                       required
                       value={editForm.phone}
