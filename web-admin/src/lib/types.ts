@@ -1,12 +1,20 @@
+export type SystemDepartmentScope =
+  | 'MARKETING_B2C'
+  | 'GROWTH'
+  | 'MEDIA'
+  | 'OTHER_BLOCKED';
+
 export type UserRole = 
   | 'ADMIN' 
+  | 'MANAGER'        // Trưởng phòng Marketing B2C
+  | 'GROWTH_MANAGER' // Trưởng phòng Growth
+  | 'MEDIA_MANAGER'  // Trưởng phòng Media
+  | 'LEADER'         // Trưởng nhóm B2C
   | 'BRAND_MEMBER' 
   | 'CONTENT_MEMBER' 
   | 'BOOKING_MEMBER' 
   | 'GROWTH_MEMBER'
   | 'MEDIA_MEMBER'
-  | 'MANAGER'
-  | 'LEADER'
   | 'MEMBER'
   | 'BRAND_PARTNER' // Đại diện đối tác Brand đăng nhập Gmail
   | 'KOC_PARTNER'   // Creator / KOC đăng nhập Gmail
@@ -29,6 +37,7 @@ export type TabKey =
   | 'partner-access'
   | 'booking'
   | 'koc-master'
+  | 'ctv-master'
   | 'contracts'
   | 'manager'
   | 'sample-tracker'
@@ -45,6 +54,13 @@ export interface UserProfile {
   role: UserRole;
   roleTitle: string;
   avatar: string;
+  staffCode?: string;
+  departmentScope?: SystemDepartmentScope;
+  departmentName?: string;
+  teamName?: string;
+  canLogin?: boolean;
+  managerId?: string;
+  managerName?: string;
   larkOpenId?: string;
   larkTenantKey?: string;
   larkAvatarUrl?: string;
@@ -55,6 +71,18 @@ export interface UserProfile {
   allowedStoreNames?: string[]; // Danh sách gian hàng được xem (đối với Brand)
   assignedBrands?: string[]; // Danh sách các nhãn hàng nhân viên được phân công phụ trách (dành cho Specialist/Leader làm việc với 2-3 brand)
   permissions?: string[];
+}
+
+export interface DepartmentAccessRule {
+  id: string;
+  departmentOrTeamName: string;
+  mappedScope: SystemDepartmentScope;
+  defaultRole: UserRole;
+  defaultManagerName: string;
+  autoAllowLogin: boolean;
+  staffCount: number;
+  allowedCount: number;
+  description: string;
 }
 
 // =========================================================================
@@ -102,12 +130,21 @@ export interface PermissionMatrixItem {
 
 export interface InternalStaffRbacMember {
   id: string;
+  staffCode?: string;
   name: string;
   email: string;
   avatar: string;
   role: UserRole;
   roleTitle: string;
   department: string;
+  team?: string;
+  location?: string;
+  employmentType?: string;
+  departmentScope?: SystemDepartmentScope;
+  canLogin?: boolean;
+  accessSource?: 'ADMIN_EXPLICIT' | 'DEPT_RULE' | 'BLOCKED_DEPT' | 'REVOKED';
+  managerId?: string;
+  managerName?: string;
   position: string;
   picBrands: string[];
   permissions: {
@@ -129,7 +166,7 @@ export interface RbacAuditLogItem {
   actorName: string;
   actorEmail: string;
   actorRole: string;
-  actionType: 'LOGIN' | 'ROLE_CHANGE' | 'PERMISSION_TOGGLE' | 'IMPERSONATE' | 'INVITE_PARTNER' | 'SUSPEND_USER';
+  actionType: 'LOGIN' | 'LOGIN_BLOCKED' | 'ROLE_CHANGE' | 'PERMISSION_TOGGLE' | 'IMPERSONATE' | 'INVITE_PARTNER' | 'SUSPEND_USER' | 'ACCESS_GRANT' | 'ACCESS_REVOKE' | 'DEPT_RULE_UPDATE';
   targetUserOrEntity: string;
   description: string;
   ipAddress: string;
@@ -2477,26 +2514,62 @@ export type ContributorStatus = 'ACTIVE' | 'ON_HOLD' | 'PROBATION' | 'TERMINATED
 
 export interface Contributor {
   id: string;
+  code?: string; // Mã CTV chuẩn Master Data (VD: CTV-B2C-001)
   name: string;
+  realName?: string; // Họ tên pháp lý trên CCCD
   avatar?: string;
   phone: string;
   email?: string;
   channelLink?: string; // TikTok / Portfolio link
+  driveFolderUrl?: string; // Link Drive tổng gian hàng / Drive nộp video của VJ
   nicheSpecialty: string[]; // Tệp thế mạnh (VD: Mẹ & Bé, Chăm da, Diễn hài...)
   role: ContributorRole;
   status: ContributorStatus;
-  
+  contentPic?: string; // Nhân sự Content phụ trách trực tiếp
+  partnershipPic?: string; // Nhân sự Partnership phụ trách hợp đồng (VD: Việt Hoàng)
+
+  // Pháp lý & Hợp đồng Partnership
+  cccd?: string;
+  dob?: string;
+  issueDate?: string;
+  issuePlace?: string;
+  permanentAddress?: string;
+  taxCode?: string;
+  isOcrVerified?: boolean;
+  ocrVerifiedAt?: string;
+  contractCode?: string; // Mã hợp đồng khung CTV/VJ
+  contractStatus?: 'ACTIVE' | 'EXPIRED' | 'PENDING_SIGN' | 'NONE';
+  contractExpiryDate?: string;
+
   // Tài chính & Thanh toán
   bankName: string;
   bankAccount: string;
   bankAccountName: string;
-  taxCode?: string;
-  
+
+  // Định mức đơn giá (Rate Card) & Công suất
+  unitRateAllInOne?: number; // Giá quay dựng trọn gói / video
+  unitRateShootingOnly?: number; // Giá chỉ quay thô / diễn xuất
+  unitRateEditOnly?: number; // Giá dựng hậu kỳ lẻ
+  unitRateScriptOnly?: number; // Giá viết kịch bản lẻ
+  monthlyCapacityVideos?: number; // Công suất nhận việc tối đa (video/tháng)
+
+  // Hậu cần gửi hàng mẫu (SLA 48h) & Đặc điểm bối cảnh VJ
+  shippingRecipientName?: string;
+  shippingPhone?: string;
+  shippingAddress?: string;
+  shippingNotes?: string;
+  studioBackdrops?: string[]; // Bối cảnh sẵn có (VD: Phòng ngủ mẹ & bé, Quầy thuốc, Phòng tắm sáng...)
+  personalTraits?: string; // Đặc điểm cá nhân (VD: Da hỗn hợp thiên dầu, có bé 14 tháng tuổi...)
+  onHandProducts?: string[]; // Sản phẩm Brand đang cầm sẵn tại nhà (nhận job gấp < 5 ngày)
+
   // Hiệu suất & Lũy kế
   ratingScore: number; // 1-5 sao
+  firstPassRate?: number; // Tỷ lệ duyệt ngay lần 1 (%)
+  onTimeRate?: number; // Tỷ lệ đúng hạn SLA (%)
   assignedTaskCount: number;
   completedTaskCount: number;
   totalPaidAmount: number; // Tổng thù lao đã thanh toán (VNĐ)
+  pendingPaymentAmount?: number; // Thù lao đã nghiệm thu chờ chi (VNĐ)
   joinedDate: string;
   notes?: string;
 }

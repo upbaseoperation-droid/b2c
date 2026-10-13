@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  if (isStrict || process.env.NODE_ENV === 'production') {
+  if (isStrict) {
     return NextResponse.json({
       authenticated: false,
       user: null,

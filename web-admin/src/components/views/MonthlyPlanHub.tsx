@@ -21,12 +21,12 @@ import {
   Select,
   Textarea,
   Pagination,
+  PageActions,
   Status
 } from '../ui';
 import { formatVndShort } from '../../lib/format';
 import {
   Plus,
-  Dices,
   ChevronDown,
   ShieldCheck,
   AlertCircle,
@@ -55,14 +55,6 @@ import { PlanHistoryModal } from './PlanHistoryModal';
 
 const cx = (...parts: Array<string | false | null | undefined>) => parts.filter(Boolean).join(' ');
 
-let sampleCounter = 0;
-function getNextSampleBrand(): string {
-  const brands = ['Cocoon', 'Fresh_TikTok_E2E-C', 'Senka_TikTok_E2E-C', 'Lemonade', 'Cỏ Mềm'];
-  const brand = brands[sampleCounter % brands.length];
-  sampleCounter += 1;
-  return brand;
-}
-
 function generatePlanId(month: string): string {
   const m = month === 'ALL' ? '2026/10' : month;
   return `PLAN-${m.replace('/', '-')}-${Date.now().toString().slice(-4)}`;
@@ -87,12 +79,86 @@ function findPlanForStore(plans: InputPlanBreakdownState[], store: StorePortfoli
   }) || null;
 }
 
+interface B2cWorkloadBreakdown {
+  totalBudget: number;
+  allocatedBudget: number;
+  totalVideos: number;
+  affPaidQty: number;
+  affPaidBudget: number;
+  focQty: number;
+  selfQty: number;
+  selfBudget: number;
+  otherQty: number;
+  otherBudget: number;
+}
+
+function getB2cPlanBreakdown(plan: InputPlanBreakdownState | null, store?: StorePortfolioItem): B2cWorkloadBreakdown {
+  const items = plan?.items || [];
+  const isShopeeStore = (store?.platform || plan?.storeName || '').toLowerCase().includes('shopee');
+
+  // 1. Video Affiliate trả phí (KOC trả phí KL1 -> KL7)
+  const affPaidItems = items.filter(
+    it => it.channel === 'TIKTOK' && !it.tierCode.includes('TAP') && it.id !== 'row-tt-tap' && (it.totalBudget > 0 || (plan?.budgetAffiliate || 0) > 0)
+  );
+  // 2. FOC (Gửi mẫu miễn phí 0đ / TAP)
+  const focItems = items.filter(
+    it => it.tierCode.includes('TAP') || it.id === 'row-tt-tap' || (it.channel === 'TIKTOK' && it.totalBudget === 0 && (plan?.budgetAffiliate || 0) === 0)
+  );
+  // 3. Self-channel (Kênh Brand tự xây)
+  const selfItems = items.filter(it => it.channel === 'SELF_CHANNEL');
+  // 4. Các kênh khác (Shopee, Facebook, Instagram, Threads...)
+  const otherItems = items.filter(it => ['SHOPEE', 'FACEBOOK', 'INSTAGRAM', 'THREADS'].includes(it.channel));
+
+  const affPaidItemsQty = affPaidItems.reduce((s, i) => s + (i.qty || 0), 0);
+  const affPaidItemsBudget = affPaidItems.reduce((s, i) => s + (i.totalBudget || 0), 0);
+  const focItemsQty = focItems.reduce((s, i) => s + (i.qty || 0), 0);
+  const selfItemsQty = selfItems.reduce((s, i) => s + (i.qty || 0), 0);
+  const selfItemsBudget = selfItems.reduce((s, i) => s + (i.totalBudget || 0), 0);
+  const otherItemsQty = otherItems.reduce((s, i) => s + (i.qty || 0), 0);
+  const otherItemsBudget = otherItems.reduce((s, i) => s + (i.totalBudget || 0), 0);
+
+  const affPaidBudget = !isShopeeStore
+    ? (plan?.budgetAffiliate || affPaidItemsBudget || store?.budgetAffiliate || 0)
+    : affPaidItemsBudget;
+  const affPaidQty = affPaidItemsQty || (!isShopeeStore && affPaidBudget > 0 ? (plan?.targetAffiliateContents || store?.targetAffiliateContents || 0) : 0);
+
+  const inferredFoc = (!isShopeeStore && affPaidBudget === 0 && focItemsQty === 0)
+    ? (plan?.targetAffiliateContents || store?.targetFocVideos || 0)
+    : 0;
+  const focQty = focItemsQty + inferredFoc;
+
+  const selfBudget = plan?.budgetSelfChannel || selfItemsBudget || store?.budgetSelfChannel || 0;
+  const selfQty = selfItemsQty || plan?.targetSelfChannelContents || store?.targetSelfChannelContents || 0;
+
+  const otherBudget = otherItemsBudget || (isShopeeStore ? (plan?.budgetAffiliate || plan?.totalTargetBudget || store?.monthlyBudget || 0) : 0);
+  const otherQty = otherItemsQty || (isShopeeStore ? (plan?.targetAffiliateContents || plan?.totalTargetContents || 0) : 0);
+
+  const totalBudget = plan?.totalTargetBudget ?? store?.monthlyBudget ?? (affPaidBudget + selfBudget + otherBudget);
+  const allocatedBudget = (affPaidItemsBudget || affPaidBudget) + (selfItemsBudget || selfBudget) + (otherItemsBudget || otherBudget);
+  const sumVideos = affPaidQty + focQty + selfQty + otherQty;
+  const totalVideos = sumVideos > 0 ? sumVideos : (plan?.totalTargetContents || 0);
+
+  return {
+    totalBudget,
+    allocatedBudget,
+    totalVideos,
+    affPaidQty,
+    affPaidBudget,
+    focQty,
+    selfQty,
+    selfBudget,
+    otherQty,
+    otherBudget,
+  };
+}
+
 interface StoreGovernanceItem {
   store: StorePortfolioItem;
   isB2c: boolean;
   plan: InputPlanBreakdownState | null;
   hasPlan: boolean;
   status: MonthlyPlanStatus | 'MISSING';
+  breakdown: B2cWorkloadBreakdown;
 }
 
 interface MonthlyPlanHubProps {
@@ -128,7 +194,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
   const [selectedStatus, setSelectedStatus] = useState<string>('ALL');
   const [selectedPic, setSelectedPic] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [viewMode, setViewMode] = useState<'GRID' | 'TABLE'>('GRID');
+  const [viewMode, setViewMode] = useState<'GRID' | 'TABLE'>('TABLE');
 
   // Tab chuyển góc nhìn: Ma trận gian hàng vs Danh mục kế hoạch
   const [activeHubTab, setActiveHubTab] = useState<'STORE_GOVERNANCE' | 'PLAN_CATALOG'>('STORE_GOVERNANCE');
@@ -165,11 +231,12 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
         plan,
         hasPlan: !!plan,
         status: (plan?.status || 'MISSING') as MonthlyPlanStatus | 'MISSING',
+        breakdown: getB2cPlanBreakdown(plan, store),
       };
     });
   }, [activeStores, selectedMonth, plans]);
 
-  // Bộ chỉ số quản trị duyệt kế hoạch theo tháng
+  // Bộ chỉ số quản trị duyệt kế hoạch & tổng hợp 4 đầu việc B2C theo tháng
   const governanceStats = useMemo(() => {
     const totalActive = activeStores.length;
     const b2cList = storeGovernanceList.filter((item: StoreGovernanceItem) => item.isB2c);
@@ -190,6 +257,17 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
     const coveragePct = totalB2cManaged > 0 ? Math.round((withPlan.length / totalB2cManaged) * 100) : 0;
     const approvedPct = totalB2cManaged > 0 ? Math.round((approved.length / totalB2cManaged) * 100) : 0;
 
+    // Tổng hợp thông số 4 đầu việc B2C
+    const totalBudget = b2cList.reduce((s, it) => s + it.breakdown.totalBudget, 0);
+    const totalVideos = b2cList.reduce((s, it) => s + it.breakdown.totalVideos, 0);
+    const affPaidQty = b2cList.reduce((s, it) => s + it.breakdown.affPaidQty, 0);
+    const affPaidBudget = b2cList.reduce((s, it) => s + it.breakdown.affPaidBudget, 0);
+    const focQty = b2cList.reduce((s, it) => s + it.breakdown.focQty, 0);
+    const selfQty = b2cList.reduce((s, it) => s + it.breakdown.selfQty, 0);
+    const selfBudget = b2cList.reduce((s, it) => s + it.breakdown.selfBudget, 0);
+    const otherQty = b2cList.reduce((s, it) => s + it.breakdown.otherQty, 0);
+    const otherBudget = b2cList.reduce((s, it) => s + it.breakdown.otherBudget, 0);
+
     return {
       totalActive,
       totalB2cManaged,
@@ -202,7 +280,16 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
       countRevisionRequested: revisionRequested.length,
       countDraft: draft.length,
       coveragePct,
-      approvedPct
+      approvedPct,
+      totalBudget,
+      totalVideos,
+      affPaidQty,
+      affPaidBudget,
+      focQty,
+      selfQty,
+      selfBudget,
+      otherQty,
+      otherBudget,
     };
   }, [activeStores, storeGovernanceList]);
 
@@ -283,35 +370,6 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
     e.stopPropagation();
     const pic = store.b2cOwners?.[0] || store.b2cOwnerName || 'Chuyên viên phụ trách B2C';
     notify(`Đã gửi thông báo nhắc nộp kế hoạch tháng ${selectedMonth} tới ${pic} (gian hàng: ${store.storeName}).`);
-  };
-
-  // Tạo mẫu thử
-  const handleQuickSample = () => {
-    const b = getNextSampleBrand();
-    const m = selectedMonth === 'ALL' ? '2026/10' : selectedMonth;
-    const newPlan: InputPlanBreakdownState = {
-      id: generatePlanId(m),
-      title: `Kế hoạch thử nghiệm - ${b} (${m})`,
-      brandName: b,
-      month: m,
-      week: 'W42 [12.10 - 18.10]',
-      pic: currentUser?.name || 'Đặng Mai Hà Linh',
-      totalTargetBudget: 120000000,
-      totalTargetContents: 65,
-      targetGmv: 780000000,
-      cancellationRate: 0.08,
-      strategyPreset: 'BALANCED',
-      status: 'DRAFT',
-      statusLabel: 'Bản nháp',
-      spentBudget: 0,
-      deliveredContents: 0,
-      actualGmv: 0,
-      notes: 'Kế hoạch mẫu khởi tạo để kiểm tra số liệu.',
-      createdAt: new Date().toISOString(),
-      items: autoBalancePlanItems(INITIAL_INPUT_PLAN_ITEMS, 120000000, 65, 'BALANCED')
-    };
-    onCreatePlan(newPlan);
-    notify(`Đã tạo kế hoạch mẫu "${newPlan.title}".`);
   };
 
   // Modal lập kế hoạch mới
@@ -493,7 +551,18 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* 1. THANH CÔNG CỤ TRÊN: BỘ CHỌN KỲ & THAO TÁC CHÍNH */}
+      <PageActions>
+        <Button
+          variant="primary"
+          size="md"
+          icon={Plus}
+          onClick={() => setIsCreateModalOpen(true)}
+        >
+          Tạo kế hoạch
+        </Button>
+      </PageActions>
+
+      {/* 1. THANH CÔNG CỤ TRÊN: BỘ CHỌN KỲ */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         {/* Bộ chọn tháng */}
         <div className="flex items-center gap-1.5 overflow-x-auto p-0.5 rounded-lg bg-sunken">
@@ -527,27 +596,6 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
             );
           })}
         </div>
-
-        {/* Nút thao tác */}
-        <div className="flex items-center gap-2">
-          <Button
-            variant="secondary"
-            size="md"
-            icon={Dices}
-            onClick={handleQuickSample}
-            title="Tạo nhanh kế hoạch mẫu để thử nghiệm"
-          >
-            Mẫu
-          </Button>
-          <Button
-            variant="primary"
-            size="md"
-            icon={Plus}
-            onClick={() => setIsCreateModalOpen(true)}
-          >
-            Tạo kế hoạch
-          </Button>
-        </div>
       </div>
 
       {/* 2. CHUYỂN TAB: MA TRẬN GIAN HÀNG vs DANH MỤC KẾ HOẠCH */}
@@ -565,22 +613,22 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
         /* TAB 1: MA TRẬN QUẢN TRỊ GIAN HÀNG VÀ TRẠNG THÁI GỬI DUYỆT PLAN            */
         /* ========================================================================= */
         <div className="space-y-6">
-          {/* TÓM TẮT TIẾN ĐỘ DUYỆT */}
+          {/* TỔNG HỢP ĐỀ BÀI B2C & 4 ĐẦU VIỆC THỰC THI */}
           <section className="bg-surface border border-line rounded-xl overflow-hidden">
-            <div className="px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+            <div className="px-4 py-3 flex flex-wrap items-center justify-between gap-3 border-b border-line bg-sunken/30">
               <div className="flex items-center gap-3 min-w-0 flex-wrap">
-                <span className="text-[13px] font-medium text-ink">
-                  Tiến độ duyệt kế hoạch {selectedMonth === 'ALL' ? 'toàn kỳ' : selectedMonth}:
+                <span className="text-[13px] font-semibold text-ink">
+                  Đề bài Growth bàn giao &amp; Phân rã B2C ({selectedMonth === 'ALL' ? 'Toàn kỳ' : selectedMonth}):
                 </span>
                 <div className="flex items-center gap-2">
                   <span className="text-[13px] font-semibold text-positive tabular-nums">
-                    {governanceStats.approvedPct}%
+                    {governanceStats.approvedPct}% đã duyệt
                   </span>
                   <span className="text-2xs text-ink-3 tabular-nums">
                     ({governanceStats.countApproved}/{governanceStats.totalB2cManaged} gian B2C)
                   </span>
                 </div>
-                <div className="w-32 sm:w-44">
+                <div className="w-28 sm:w-36">
                   <Progress
                     value={governanceStats.countApproved}
                     max={governanceStats.totalB2cManaged || 1}
@@ -589,68 +637,89 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                 </div>
               </div>
 
-              {/* Tóm tắt nhanh */}
-              <div className="flex items-center gap-3 text-2xs text-ink-3 flex-wrap">
-                <span><strong className="text-ink font-medium">{governanceStats.totalActive}</strong> gian hàng active</span>
+              <div className="flex items-center gap-2.5 text-2xs text-ink-3 flex-wrap">
+                <span><strong className="text-ink font-medium">{governanceStats.totalB2cManaged}</strong> gian B2C</span>
                 <span>•</span>
-                <span><strong className="text-ink font-medium">{governanceStats.totalB2cManaged}</strong> B2C phụ trách</span>
-                <span>•</span>
-                <span><strong className="text-ink font-medium">{governanceStats.countWithPlan}</strong> đã có kế hoạch</span>
+                <span><strong className="text-ink font-medium">{governanceStats.countWithPlan}</strong> đã có plan</span>
                 {governanceStats.countMissingPlan > 0 && (
                   <>
                     <span>•</span>
                     <span className="text-warning font-medium inline-flex items-center gap-1">
                       <AlertCircle className="w-3 h-3" />
-                      {governanceStats.countMissingPlan} chưa có kế hoạch
+                      {governanceStats.countMissingPlan} chưa lập
                     </span>
                   </>
                 )}
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => setIsGovernanceExpanded(prev => !prev)}
-                >
-                  {isGovernanceExpanded ? 'Thu gọn' : 'Chi tiết chỉ số'}
-                  <ChevronDown className={cx('w-3.5 h-3.5 ml-1 transition-transform', isGovernanceExpanded && 'rotate-180')} />
-                </Button>
+                <span>•</span>
+                <span className="text-ink-3">Livestream do Growth phụ trách</span>
               </div>
             </div>
 
-            {/* Chi tiết chỉ số mở rộng */}
-            {isGovernanceExpanded && (
-              <div className="p-4 border-t border-line bg-canvas/40 space-y-3">
-                <StatRow>
-                  <Stat
-                    label="Gian hàng active"
-                    value={governanceStats.totalActive}
-                    note="Toàn bộ hệ thống gian hàng"
-                  />
-                  <Stat
-                    label="B2C cần kế hoạch"
-                    value={`${governanceStats.totalB2cManaged} / ${governanceStats.totalActive}`}
-                    note={`${governanceStats.totalExempt} gian hàng miễn trừ`}
-                  />
-                  <Stat
-                    label="Đã có kế hoạch"
-                    value={governanceStats.countWithPlan}
-                    note={`Tỷ lệ nộp ${governanceStats.coveragePct}%`}
-                  />
-                  <Stat
-                    label="Đã duyệt"
-                    value={`${governanceStats.countApproved} / ${governanceStats.totalB2cManaged}`}
-                    progress={{ value: governanceStats.countApproved, max: governanceStats.totalB2cManaged || 1 }}
-                    note={governanceStats.countMissingPlan > 0 ? `${governanceStats.countMissingPlan} gian hàng chưa nộp` : 'Đã duyệt toàn bộ'}
-                    tone={governanceStats.countMissingPlan > 0 ? 'warning' : 'positive'}
-                  />
-                </StatRow>
+            {/* 5 Ô THÔNG SỐ TỔNG & 4 ĐẦU VIỆC B2C */}
+            <div className="grid grid-cols-2 sm:grid-cols-5 divide-y sm:divide-y-0 sm:divide-x divide-line bg-surface">
+              <div className="p-3">
+                <div className="text-2xs text-ink-3 font-medium">Tổng đề bài B2C</div>
+                <div className="mt-1 flex items-baseline justify-between gap-2">
+                  <span className="text-sm font-semibold text-ink tabular-nums">{formatVndShort(governanceStats.totalBudget)}</span>
+                  <span className="text-xs font-semibold text-accent tabular-nums">{governanceStats.totalVideos.toLocaleString('vi-VN')} video</span>
+                </div>
+                <div className="text-2xs text-ink-3 mt-0.5">Trần ngân sách Net &amp; tổng video</div>
               </div>
-            )}
+
+              <div className="p-3">
+                <div className="text-2xs text-ink-3 font-medium flex items-center justify-between">
+                  <span>1. Video Affiliate (Trả phí)</span>
+                  <span className="px-1.5 py-0.2 rounded bg-accent/10 text-accent text-2xs font-semibold">KL1 → KL7</span>
+                </div>
+                <div className="mt-1 flex items-baseline justify-between gap-2">
+                  <span className="text-sm font-semibold text-ink tabular-nums">{ governanceStats.affPaidQty.toLocaleString('vi-VN') } video</span>
+                  <span className="text-xs font-semibold text-ink-2 tabular-nums">{formatVndShort(governanceStats.affPaidBudget)}</span>
+                </div>
+                <div className="text-2xs text-ink-3 mt-0.5">KOC TikTok có chi phí cast</div>
+              </div>
+
+              <div className="p-3">
+                <div className="text-2xs text-ink-3 font-medium flex items-center justify-between">
+                  <span>2. FOC (Gửi mẫu 0đ)</span>
+                  <span className="px-1.5 py-0.2 rounded bg-positive-soft text-positive text-2xs font-semibold">0đ Cast</span>
+                </div>
+                <div className="mt-1 flex items-baseline justify-between gap-2">
+                  <span className="text-sm font-semibold text-positive tabular-nums">{governanceStats.focQty.toLocaleString('vi-VN')} video</span>
+                  <span className="text-xs font-medium text-ink-3 tabular-nums">0 đ</span>
+                </div>
+                <div className="text-2xs text-ink-3 mt-0.5">Suất gửi sản phẩm mẫu miễn phí</div>
+              </div>
+
+              <div className="p-3">
+                <div className="text-2xs text-ink-3 font-medium flex items-center justify-between">
+                  <span>3. Self-channel (Kênh Brand)</span>
+                  <span className="px-1.5 py-0.2 rounded bg-sunken text-ink-2 text-2xs font-medium">In-house</span>
+                </div>
+                <div className="mt-1 flex items-baseline justify-between gap-2">
+                  <span className="text-sm font-semibold text-ink tabular-nums">{governanceStats.selfQty.toLocaleString('vi-VN')} video</span>
+                  <span className="text-xs font-semibold text-ink-2 tabular-nums">{formatVndShort(governanceStats.selfBudget)}</span>
+                </div>
+                <div className="text-2xs text-ink-3 mt-0.5">Review, Nhạc text, Remix, POV...</div>
+              </div>
+
+              <div className="p-3">
+                <div className="text-2xs text-ink-3 font-medium flex items-center justify-between">
+                  <span>4. Kênh khác (Đa sàn)</span>
+                  <span className="px-1.5 py-0.2 rounded bg-sunken text-ink-2 text-2xs font-medium">FB/SP/IG</span>
+                </div>
+                <div className="mt-1 flex items-baseline justify-between gap-2">
+                  <span className="text-sm font-semibold text-ink tabular-nums">{governanceStats.otherQty.toLocaleString('vi-VN')} video</span>
+                  <span className="text-xs font-semibold text-ink-2 tabular-nums">{formatVndShort(governanceStats.otherBudget)}</span>
+                </div>
+                <div className="text-2xs text-ink-3 mt-0.5">Shopee, Facebook, Insta, Threads</div>
+              </div>
+            </div>
           </section>
 
-          {/* BẢNG MA TRẬN GIAN HÀNG */}
+          {/* BẢNG MA TRẬN GIAN HÀNG & PHÂN RÃ 4 ĐẦU VIỆC */}
           <Panel flush>
             {/* Bộ lọc bảng */}
-            <div className="p-4 border-b border-line">
+            <div className="p-3.5 border-b border-line">
               <FilterBar
                 search={{
                   value: storeSearchQuery,
@@ -658,14 +727,14 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                     setStoreSearchQuery(v);
                     setGovernancePage(1);
                   },
-                  placeholder: 'Tìm gian hàng, thương hiệu, nhân sự...',
+                  placeholder: 'Tìm gian hàng, thương hiệu, PIC B2C, Growth...',
                 }}
                 chips={
                   <Chips
                     items={[
                       { key: 'ALL', label: 'Tất cả', count: governanceStats.totalActive },
-                      { key: 'B2C_ONLY', label: 'B2C cần kế hoạch', count: governanceStats.totalB2cManaged },
-                      { key: 'MISSING_PLAN', label: 'Chưa có kế hoạch', count: governanceStats.countMissingPlan },
+                      { key: 'B2C_ONLY', label: 'B2C phụ trách', count: governanceStats.totalB2cManaged },
+                      { key: 'MISSING_PLAN', label: 'Chưa lập plan', count: governanceStats.countMissingPlan },
                       { key: 'PENDING_APPROVAL', label: 'Chờ duyệt', count: governanceStats.countPendingApproval },
                       { key: 'APPROVED', label: 'Đã duyệt', count: governanceStats.countApproved },
                       { key: 'EXEMPT', label: 'Miễn trừ', count: governanceStats.totalExempt },
@@ -681,19 +750,19 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
               />
             </div>
 
-            {/* Nội dung bảng */}
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
+            {/* Nội dung bảng gọn gàng, không cuộn ngang */}
+            <div className="w-full">
+              <table className="w-full table-fixed text-left text-xs border-collapse">
                 <thead>
-                  <tr className="bg-surface border-b border-line text-ink-3 font-medium text-[12.5px]">
-                    <th className="py-2.5 px-4 text-center">B2C phụ trách &amp; cần làm kế hoạch</th>
-                    <th className="py-2.5 px-4">Gian hàng &amp; kênh bán</th>
-                    <th className="py-2.5 px-4">Thương hiệu &amp; ngành</th>
-                    <th className="py-2.5 px-4">Nhân sự phụ trách</th>
-                    <th className="py-2.5 px-4 text-center">Trao đổi với Growth</th>
-                    <th className="py-2.5 px-4 text-center">Trạng thái kế hoạch tháng {selectedMonth}</th>
-                    <th className="py-2.5 px-4 text-right">Ngân sách / GMV</th>
-                    <th className="py-2.5 px-4 text-center">Thao tác</th>
+                  <tr className="bg-sunken/70 border-b border-line text-ink-2 font-semibold text-2xs">
+                    <th className="py-2.5 px-2.5 w-[20%]">Gian hàng &amp; Thương hiệu</th>
+                    <th className="py-2.5 px-2 w-[16%]">Nhân sự (B2C / Growth)</th>
+                    <th className="py-2.5 px-2 text-right w-[12%] bg-sunken">Tổng đề bài B2C</th>
+                    <th className="py-2.5 px-2 text-right w-[11%]">1. Affiliate (Trả phí)</th>
+                    <th className="py-2.5 px-2 text-center w-[9%]">2. FOC (0đ)</th>
+                    <th className="py-2.5 px-2 text-right w-[10%]">3. Self-channel</th>
+                    <th className="py-2.5 px-2 text-right w-[10%]">4. Kênh khác</th>
+                    <th className="py-2.5 px-2.5 text-center w-[12%]">Trạng thái &amp; Duyệt</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-line">
@@ -710,84 +779,76 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                       const store = item.store;
                       const plan = item.plan;
                       const isB2c = item.isB2c;
+                      const bd = item.breakdown;
 
                       return (
                         <tr
                           key={store.id}
                           className={cx(
                             'hover:bg-canvas transition-colors',
-                            !isB2c && 'bg-sunken/40'
+                            plan && 'cursor-pointer',
+                            !isB2c && 'bg-sunken/30 text-ink-3'
                           )}
+                          onClick={() => {
+                            if (plan) onSelectPlan(plan);
+                          }}
                         >
-                          {/* 1. B2C PHỤ TRÁCH */}
-                          <td className="py-3 px-4 text-center">
-                            <button
-                              type="button"
-                              onClick={(e) => handleToggleB2cManaged(store, e)}
-                              className={cx(
-                                'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-2xs font-medium transition-colors cursor-pointer border',
-                                isB2c
-                                  ? 'bg-positive-soft text-positive border-positive/30 hover:bg-positive-soft/80'
-                                  : 'bg-sunken text-ink-3 border-line hover:bg-sunken/80 hover:text-ink'
-                              )}
-                              title={isB2c ? 'Bấm để chuyển sang miễn trừ không làm kế hoạch B2C' : 'Bấm để đưa vào diện B2C phụ trách & cần làm kế hoạch'}
-                            >
-                              {isB2c ? (
-                                <>
-                                  <ToggleRight className="w-4 h-4 text-positive shrink-0" />
-                                  <span>B2C cần kế hoạch</span>
-                                </>
-                              ) : (
-                                <>
-                                  <ToggleLeft className="w-4 h-4 text-ink-3 shrink-0" />
-                                  <span>Miễn trừ kế hoạch</span>
-                                </>
-                              )}
-                            </button>
-                          </td>
-
-                          {/* 2. GIAN HÀNG & KÊNH BÁN */}
-                          <td className="py-3 px-4">
-                            <div className="font-medium text-ink text-[13px]">
-                              {store.storeName}
+                          {/* 1. GIAN HÀNG & THƯƠNG HIỆU + NÚT B2C */}
+                          <td className="py-2 px-2.5 align-middle">
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleToggleB2cManaged(store, e);
+                                }}
+                                className={cx(
+                                  'inline-flex items-center justify-center px-1.5 py-0.2 rounded text-2xs font-semibold transition-colors cursor-pointer border shrink-0',
+                                  isB2c
+                                    ? 'bg-positive-soft text-positive border-positive/30 hover:bg-positive-soft/80'
+                                    : 'bg-sunken text-ink-3 border-line hover:bg-sunken/80 hover:text-ink'
+                                )}
+                                title={isB2c ? 'Gian hàng B2C phụ trách. Bấm để chuyển sang miễn trừ.' : 'Đang miễn trừ. Bấm để bật B2C phụ trách.'}
+                              >
+                                {isB2c ? 'B2C' : 'Miễn'}
+                              </button>
+                              <span className="font-semibold text-ink text-[12px] truncate" title={store.storeName}>
+                                {store.storeName}
+                              </span>
                             </div>
-                            <div className="flex items-center gap-1.5 mt-1">
-                              <ChannelTag channel={store.platform} />
-                              <span className="text-2xs text-ink-3 font-code">
-                                {store.serviceModel || 'Full Service'}
+                            <div className="flex items-center gap-1.5 mt-0.5 text-2xs text-ink-3 min-w-0">
+                              <ChannelTag channel={store.platform} className="text-2xs px-1 py-0" />
+                              <span>•</span>
+                              <span className="font-medium text-ink-2 truncate" title={store.brandName}>
+                                {store.brandName}
                               </span>
                             </div>
                           </td>
 
-                          {/* 3. THƯƠNG HIỆU & NGÀNH */}
-                          <td className="py-3 px-4">
-                            <div className="font-medium text-ink text-[13px]">
-                              {store.brandName}
-                            </div>
-                            <div className="text-2xs text-ink-3 mt-0.5">
-                              {store.category || 'Mỹ phẩm & Chăm sóc'}
-                            </div>
-                          </td>
-
-                          {/* 4. NHÂN SỰ PHỤ TRÁCH */}
-                          <td className="py-3 px-4">
-                            <div className="space-y-1">
-                              <div className="flex items-center gap-1.5 text-xs text-ink">
-                                <span className="text-ink-3">B2C:</span>
-                                <Person name={store.b2cOwners?.[0] || store.b2cOwnerName || 'Chưa phân công'} sub="PIC" />
+                          {/* 2. NHÂN SỰ (B2C / GROWTH / DUYỆT) */}
+                          <td className="py-2 px-2 align-middle">
+                            <div className="space-y-0.5 text-2xs leading-tight">
+                              <div className="flex items-center gap-1 min-w-0">
+                                <span className="text-ink-3 w-10 shrink-0">B2C:</span>
+                                <span className="font-medium text-ink truncate" title={store.b2cOwners?.[0] || store.b2cOwnerName || 'Chưa phân công'}>
+                                  {store.b2cOwners?.[0] || store.b2cOwnerName || 'Chưa gán'}
+                                </span>
                               </div>
-                              <div className="flex items-center gap-1.5 text-xs text-ink">
-                                <span className="text-ink-3">Growth:</span>
-                                <Person name={store.growthPic || 'Chưa gán'} />
+                              <div className="flex items-center gap-1 min-w-0">
+                                <span className="text-ink-3 w-10 shrink-0">Growth:</span>
+                                <span className="text-ink-2 truncate" title={store.growthPic || 'Chưa gán'}>
+                                  {store.growthPic || 'Chưa gán'}
+                                </span>
                               </div>
-                              <div className="flex items-center gap-1.5 mt-1">
+                              <div className="flex items-center gap-1 min-w-0" onClick={(e) => e.stopPropagation()}>
+                                <span className="text-ink-3 w-10 shrink-0">Duyệt:</span>
                                 {plan?.hasBookingLeader ?? store.hasBookingLeader ? (
-                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-2xs font-medium bg-sunken text-ink-2">
-                                    Trưởng nhóm: {plan?.bookingLeader?.split(' (')[0] || store.bookingLeader || 'Nguyễn Thị Ngọc Tâm'}
+                                  <span className="text-ink-2 font-medium truncate" title="Trưởng nhóm: Nguyễn Thị Ngọc Tâm">
+                                    Ngọc Tâm
                                   </span>
                                 ) : (
-                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-2xs font-medium bg-sunken text-ink-3">
-                                    Duyệt trực tiếp
+                                  <span className="text-ink-3 truncate" title="Duyệt trực tiếp Trưởng phòng Đặng Thị Yến Nhi">
+                                    Trực tiếp
                                   </span>
                                 )}
                                 {(currentUser?.role === 'MANAGER' || currentUser?.role === 'ADMIN') && (
@@ -819,126 +880,134 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                                           : `Đã chuyển ${store.storeName} sang duyệt trực tiếp (${selectedMonth}).`);
                                       }
                                     }}
-                                    className="text-2xs text-accent hover:underline font-medium cursor-pointer"
-                                    title="Đổi mô hình duyệt"
+                                    className="text-2xs text-accent hover:underline font-medium cursor-pointer shrink-0 ml-0.5"
+                                    title="Đổi luồng duyệt"
                                   >
-                                    {plan?.hasBookingLeader ?? store.hasBookingLeader ? 'Bỏ trưởng nhóm' : 'Gán trưởng nhóm'}
+                                    ({plan?.hasBookingLeader ?? store.hasBookingLeader ? 'Đổi' : 'Gán'})
                                   </button>
                                 )}
                               </div>
                             </div>
                           </td>
 
-                          {/* 5. TRAO ĐỔI VỚI GROWTH */}
-                          <td className="py-3 px-4 text-center">
-                            {plan ? (
-                              plan.growthAlignmentStatus === 'ĐÃ_THỐNG_NHẤT' ? (
-                                <Status tone="positive">Đã thống nhất</Status>
-                              ) : plan.growthAlignmentStatus === 'ĐANG_TRAO_ĐỔI' ? (
-                                <Status tone="warning">Đang trao đổi</Status>
-                              ) : (
-                                <Status tone="neutral">Đã khởi tạo</Status>
-                              )
-                            ) : (
-                              <span className="text-2xs text-ink-3">Chưa lập</span>
-                            )}
+                          {/* 3. TỔNG ĐỀ BÀI B2C */}
+                          <td className="py-2 px-2 text-right tabular-nums align-middle bg-sunken/25">
+                            <div className="font-semibold text-ink text-[12px]">
+                              {formatVndShort(bd.totalBudget)}
+                            </div>
+                            <div className="text-2xs font-medium text-accent">
+                              {bd.totalVideos} video
+                            </div>
                           </td>
 
-                          {/* 6. TRẠNG THÁI KẾ HOẠCH */}
-                          <td className="py-3 px-4 text-center">
-                            {!isB2c ? (
-                              <Status tone="neutral">Miễn trừ</Status>
-                            ) : plan ? (
-                              <div className="space-y-1">
-                                {getStatusBadge(plan.status)}
-                                {plan.status === 'PENDING_APPROVAL' && (
-                                  <div className="text-2xs text-accent font-medium">Đã gửi duyệt</div>
-                                )}
-                              </div>
-                            ) : (
-                              <Status tone="critical">Chưa có kế hoạch</Status>
-                            )}
-                          </td>
-
-                          {/* 7. NGÂN SÁCH / GMV */}
-                          <td className="py-3 px-4 text-right tabular-nums">
-                            {plan ? (
+                          {/* 4. ĐẦU VIỆC 1: VIDEO AFFILIATE TRẢ PHÍ */}
+                          <td className="py-2 px-2 text-right tabular-nums align-middle">
+                            {bd.affPaidQty > 0 || bd.affPaidBudget > 0 ? (
                               <div>
-                                <div className="font-medium text-ink text-[13px]">
-                                  {formatVndShort(plan.totalTargetBudget)}
-                                </div>
-                                <div className="text-2xs text-positive">
-                                  GMV: {formatVndShort(plan.targetGmv)}
-                                </div>
-                              </div>
-                            ) : (
-                              <div>
-                                <div className="text-ink-3 text-[13px]">
-                                  {formatVndShort(store.monthlyBudget || 0)}
+                                <div className="font-semibold text-ink text-[12px]">
+                                  {bd.affPaidQty} video
                                 </div>
                                 <div className="text-2xs text-ink-3">
-                                  Mục tiêu: {formatVndShort(store.monthlyTargetGmv || 0)}
+                                  {formatVndShort(bd.affPaidBudget)}
                                 </div>
                               </div>
+                            ) : (
+                              <span className="text-ink-3 text-2xs">—</span>
                             )}
                           </td>
 
-                          {/* 8. THAO TÁC */}
-                          <td className="py-3 px-4 text-center" onClick={(e) => e.stopPropagation()}>
-                            <div className="flex items-center justify-center gap-1.5">
-                              {plan ? (
-                                <>
-                                  {plan.status === 'PENDING_APPROVAL' && (
-                                    <Button
-                                      size="sm"
-                                      variant="primary"
-                                      icon={ShieldCheck}
-                                      onClick={() => onSelectPlan(plan)}
-                                      title="Mở kế hoạch để xem và duyệt"
-                                    >
-                                      Xem và duyệt
-                                    </Button>
-                                  )}
-                                  <Button
-                                    size="sm"
-                                    variant="secondary"
-                                    icon={ArrowRight}
-                                    onClick={() => onSelectPlan(plan)}
-                                    title="Mở bảng phân rã chi tiết"
-                                  >
-                                    Mở kế hoạch
-                                  </Button>
-                                </>
-                              ) : isB2c ? (
-                                <>
-                                  <Button
-                                    size="sm"
-                                    variant="secondary"
-                                    icon={Plus}
-                                    onClick={(e) => handleCreatePlanForStore(store, e)}
-                                    title="Tạo kế hoạch mới cho gian hàng này trong tháng"
-                                  >
-                                    Tạo kế hoạch
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    icon={Bell}
-                                    onClick={(e) => handleRemindSubmission(store, e)}
-                                    title="Gửi thông báo nhắc nhở nộp kế hoạch cho PIC"
-                                  >
-                                    Nhắc nộp
-                                  </Button>
-                                </>
+                          {/* 5. ĐẦU VIỆC 2: FOC (0Đ) */}
+                          <td className="py-2 px-2 text-center tabular-nums align-middle">
+                            {bd.focQty > 0 ? (
+                              <div>
+                                <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-positive-soft text-positive font-semibold text-2xs">
+                                  {bd.focQty} video
+                                </span>
+                                <div className="text-2xs text-ink-3 mt-0.5">0 đ</div>
+                              </div>
+                            ) : (
+                              <span className="text-ink-3 text-2xs">—</span>
+                            )}
+                          </td>
+
+                          {/* 6. ĐẦU VIỆC 3: SELF-CHANNEL */}
+                          <td className="py-2 px-2 text-right tabular-nums align-middle">
+                            {bd.selfQty > 0 || bd.selfBudget > 0 ? (
+                              <div>
+                                <div className="font-semibold text-ink text-[12px]">
+                                  {bd.selfQty} video
+                                </div>
+                                <div className="text-2xs text-ink-3">
+                                  {formatVndShort(bd.selfBudget)}
+                                </div>
+                              </div>
+                            ) : (
+                              <span className="text-ink-3 text-2xs">—</span>
+                            )}
+                          </td>
+
+                          {/* 7. ĐẦU VIỆC 4: KÊNH KHÁC (SHOPEE/FB/IG/THREADS) */}
+                          <td className="py-2 px-2 text-right tabular-nums align-middle">
+                            {bd.otherQty > 0 || bd.otherBudget > 0 ? (
+                              <div>
+                                <div className="font-semibold text-ink text-[12px]">
+                                  {bd.otherQty} video
+                                </div>
+                                <div className="text-2xs text-ink-3">
+                                  {formatVndShort(bd.otherBudget)}
+                                </div>
+                              </div>
+                            ) : (
+                              <span className="text-ink-3 text-2xs">—</span>
+                            )}
+                          </td>
+
+                          {/* 8. TRẠNG THÁI & THAO TÁC */}
+                          <td className="py-2 px-2.5 text-center align-middle" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex flex-col items-center gap-1">
+                              {!isB2c ? (
+                                <Status tone="neutral">Miễn trừ</Status>
+                              ) : plan ? (
+                                getStatusBadge(plan.status)
                               ) : (
-                                <button
-                                  type="button"
-                                  onClick={(e) => handleToggleB2cManaged(store, e)}
-                                  className="text-2xs text-ink-3 hover:text-ink hover:underline cursor-pointer"
-                                >
-                                  Bật làm kế hoạch
-                                </button>
+                                <Status tone="critical">Chưa nộp</Status>
                               )}
+
+                              {plan ? (
+                                plan.status === 'PENDING_APPROVAL' ? (
+                                  <Button
+                                    size="sm"
+                                    variant="primary"
+                                    icon={ShieldCheck}
+                                    onClick={() => onSelectPlan(plan)}
+                                    title="Mở kế hoạch để xem và duyệt"
+                                    className="h-6 px-2 text-2xs font-medium w-full justify-center"
+                                  >
+                                    Duyệt plan
+                                  </Button>
+                                ) : (
+                                  <Button
+                                    size="sm"
+                                    variant="secondary"
+                                    onClick={() => onSelectPlan(plan)}
+                                    title="Mở bảng phân rã chi tiết theo khung lương, định dạng, tuần"
+                                    className="h-6 px-2 text-2xs font-medium w-full justify-center"
+                                  >
+                                    Phân rã
+                                  </Button>
+                                )
+                              ) : isB2c ? (
+                                <Button
+                                  size="sm"
+                                  variant="secondary"
+                                  icon={Plus}
+                                  onClick={(e) => handleCreatePlanForStore(store, e)}
+                                  title="Tạo kế hoạch mới cho gian hàng này"
+                                  className="h-6 px-2 text-2xs font-medium w-full justify-center"
+                                >
+                                  Lập plan
+                                </Button>
+                              ) : null}
                             </div>
                           </td>
                         </tr>
@@ -960,96 +1029,11 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
         </div>
       ) : (
         /* ========================================================================= */
-        /* TAB 2: DANH MỤC KẾ HOẠCH ĐÃ PHÂN RÃ (GRID / TABLE)                        */
+        /* TAB 2: DANH MỤC KẾ HOẠCH ĐÃ PHÂN RÃ (TABLE / GRID)                        */
         /* ========================================================================= */
-        <div className="space-y-6">
-          {/* CHỈ SỐ TÀI CHÍNH KẾ HOẠCH */}
-          {(() => {
-            const months = [...new Set(plans.map(p => p.month))].sort();
-            const series = (pick: (p: InputPlanBreakdownState) => number) =>
-              months.map(m => plans.filter(p => p.month === m).reduce((acc, p) => acc + (pick(p) || 0), 0));
-            const pool = selectedMonth === 'ALL' ? plans : plans.filter(p => p.month === selectedMonth);
-
-            return (
-              <section className="bg-surface border border-line rounded-xl overflow-hidden">
-                <div className="px-4 py-3 flex flex-wrap items-center justify-between gap-3">
-                  <div className="flex items-center gap-2">
-                    <BarChart3 className="w-4 h-4 text-ink-3" />
-                    <span className="text-[13px] font-medium text-ink">
-                      Chỉ số tài chính kế hoạch {selectedMonth === 'ALL' ? 'toàn kỳ' : selectedMonth}
-                    </span>
-                    <span className="text-2xs text-ink-3">({pool.length} kế hoạch)</span>
-                  </div>
-
-                  <div className="flex items-center gap-3 text-2xs text-ink-3 flex-wrap">
-                    <span>Ngân sách: <strong className="text-ink font-medium">{formatVndShort(monthlyMetrics.totalBudget)}</strong></span>
-                    <span>•</span>
-                    <span>GMV: <strong className="text-positive font-medium">{formatVndShort(monthlyMetrics.totalGmv)}</strong></span>
-                    <span>•</span>
-                    <span>ROI: <strong className="text-ink font-medium">{String(monthlyMetrics.avgRoi).replace('.', ',')}x</strong></span>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => setIsCatalogStatsExpanded(prev => !prev)}
-                    >
-                      {isCatalogStatsExpanded ? 'Thu gọn' : 'Chi tiết chỉ số'}
-                      <ChevronDown className={cx('w-3.5 h-3.5 ml-1 transition-transform', isCatalogStatsExpanded && 'rotate-180')} />
-                    </Button>
-                  </div>
-                </div>
-
-                {isCatalogStatsExpanded && (
-                  <div className="p-4 border-t border-line bg-canvas/40 space-y-4">
-                    <StatRow>
-                      <Stat
-                        label="Ngân sách"
-                        value={formatVndShort(monthlyMetrics.totalBudget)}
-                        trend={series(p => p.totalTargetBudget)}
-                        note={`Trung bình ${formatVndShort(monthlyMetrics.planCount > 0 ? monthlyMetrics.totalBudget / monthlyMetrics.planCount : 0)} / kế hoạch`}
-                      />
-                      <Stat
-                        label="GMV mục tiêu"
-                        value={formatVndShort(monthlyMetrics.totalGmv)}
-                        trend={series(p => p.targetGmv)}
-                        note={`Gấp ${String(monthlyMetrics.avgRoi).replace('.', ',')} lần ngân sách`}
-                      />
-                      <Stat
-                        label="Chỉ tiêu nội dung"
-                        value={monthlyMetrics.totalContents.toLocaleString('vi-VN')}
-                        trend={series(p => p.totalTargetContents)}
-                        note="Video, livestream và kênh tự xây"
-                      />
-                      <Stat
-                        label="Kế hoạch"
-                        value={monthlyMetrics.planCount}
-                        note={[
-                          monthlyMetrics.countExecuting && `${monthlyMetrics.countExecuting} đang chạy`,
-                          monthlyMetrics.countApproved && `${monthlyMetrics.countApproved} đã duyệt`,
-                          (monthlyMetrics.countPreApproval + monthlyMetrics.countPending) && `${monthlyMetrics.countPreApproval + monthlyMetrics.countPending} chờ duyệt`,
-                          monthlyMetrics.countRevision && `${monthlyMetrics.countRevision} cần sửa`,
-                        ].filter(Boolean).join(' · ')}
-                        tone={monthlyMetrics.countRevision > 0 ? 'warning' : undefined}
-                      />
-                    </StatRow>
-
-                    <div className="bg-surface border border-line rounded-xl px-4 py-3 grid gap-2">
-                      <div className="flex items-baseline justify-between gap-3">
-                        <span className="text-xs font-medium text-ink">Ngân sách theo kênh</span>
-                        <span className="text-2xs text-ink-3">{months.length > 1 ? `Xu hướng: ${months[0]} → ${months[months.length - 1]}` : ''}</span>
-                      </div>
-                      <ChannelBar
-                        format={formatVndShort}
-                        values={pool.flatMap(p => (p.items || []).map(it => ({ channel: it.channel, value: it.totalBudget || 0 })))}
-                      />
-                    </div>
-                  </div>
-                )}
-              </section>
-            );
-          })()}
-
+        <div className="space-y-4">
           {/* BỘ LỌC VÀ CHUYỂN ĐỔI CHẾ ĐỘ XEM */}
-          <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-3 bg-surface p-3.5 rounded-xl border border-line">
             <div className="flex flex-1 flex-wrap items-center gap-2 min-w-0">
               <FilterBar
                 search={{
@@ -1103,8 +1087,8 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
 
             <Segmented
               items={[
-                { key: 'GRID', label: 'Thẻ' },
-                { key: 'TABLE', label: 'Bảng' }
+                { key: 'TABLE', label: 'Bảng' },
+                { key: 'GRID', label: 'Thẻ' }
               ]}
               value={viewMode}
               onChange={setViewMode}
@@ -1132,14 +1116,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
           ) : viewMode === 'GRID' ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredPlans.map(plan => {
-                const currentTotalBudget = (plan.items || []).reduce((acc, it) => acc + (it.totalBudget || 0), 0);
-                const currentTotalQty = (plan.items || []).reduce((acc, it) => acc + (it.qty || 0), 0);
-                const budgetMatchPct = plan.totalTargetBudget > 0
-                  ? Math.min(Math.round((currentTotalBudget / plan.totalTargetBudget) * 100), 100)
-                  : 100;
-                const qtyMatchPct = plan.totalTargetContents > 0
-                  ? Math.min(Math.round((currentTotalQty / plan.totalTargetContents) * 100), 100)
-                  : 100;
+                const bd = getB2cPlanBreakdown(plan);
 
                 return (
                   <div
@@ -1165,60 +1142,43 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                           {plan.title}
                         </h3>
                         <div className="flex items-center gap-2 mt-1.5 text-2xs text-ink-3 flex-wrap">
-                          <div className="flex items-center gap-1">
-                            <span>PIC:</span>
-                            <Person name={plan.pic || 'PIC'} />
-                          </div>
+                          <span>B2C: <strong className="text-ink font-medium">{plan.pic}</strong></span>
                           <span>•</span>
-                          <div className="flex items-center gap-1">
-                            <span>Growth:</span>
-                            <Person name={plan.growthPic?.split(' ')[0] || 'Team'} />
-                          </div>
-                          <span>•</span>
-                          <span>{plan.week}</span>
+                          <span>Growth: <strong className="text-ink-2 font-medium">{plan.growthPic?.split(' (')[0] || 'Team'}</strong></span>
                         </div>
                       </div>
                     </div>
 
-                    {/* Thân thẻ: Chỉ số */}
-                    <div className="p-4 space-y-3 bg-canvas/30">
-                      <div className="space-y-1">
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="text-ink-3">Ngân sách kế hoạch:</span>
-                          <span className="font-semibold text-ink tabular-nums">
-                            {formatVndShort(plan.totalTargetBudget)}
-                          </span>
-                        </div>
-                        <Progress value={currentTotalBudget} max={plan.totalTargetBudget || 1} target={0.95} label="Ngân sách đã phân rã" />
-                        <div className="flex items-center justify-between text-2xs text-ink-3 tabular-nums">
-                          <span>Đã phân rã {formatVndShort(currentTotalBudget)}</span>
-                          <span className="font-medium text-ink">{budgetMatchPct}%</span>
-                        </div>
+                    {/* Thân thẻ: 4 đầu việc B2C */}
+                    <div className="p-4 space-y-3 bg-canvas/30 text-xs">
+                      <div className="flex items-center justify-between pb-2 border-b border-line">
+                        <span className="text-ink-3">Tổng đề bài B2C:</span>
+                        <span className="font-semibold text-ink tabular-nums">
+                          {formatVndShort(bd.totalBudget)} · <span className="text-accent">{bd.totalVideos} video</span>
+                        </span>
                       </div>
 
-                      {/* Số lượng nội dung & GMV */}
-                      <div className="grid grid-cols-2 gap-2 pt-1">
-                        <div className="bg-surface p-2.5 rounded-lg border border-line text-xs">
-                          <span className="text-ink-3 block text-2xs">Chỉ tiêu video</span>
-                          <span className="text-[13px] font-semibold text-ink tabular-nums">
-                            {currentTotalQty} / {plan.totalTargetContents}
-                          </span>
-                          <span className="block text-2xs text-ink-3 mt-0.5 tabular-nums">Khớp {qtyMatchPct}%</span>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="bg-surface p-2 rounded-lg border border-line">
+                          <span className="text-ink-3 block text-2xs">1. Affiliate (Trả phí)</span>
+                          <span className="font-semibold text-ink tabular-nums">{bd.affPaidQty} video</span>
+                          <span className="block text-2xs text-ink-3 tabular-nums">{formatVndShort(bd.affPaidBudget)}</span>
                         </div>
-                        <div className="bg-surface p-2.5 rounded-lg border border-line text-xs">
-                          <span className="text-ink-3 block text-2xs">Mục tiêu GMV</span>
-                          <span className="text-[13px] font-semibold text-positive tabular-nums">
-                            {formatVndShort(plan.targetGmv)}
-                          </span>
-                          <span className="block text-2xs text-positive mt-0.5 tabular-nums">
-                            ROI: {(plan.targetGmv / (plan.totalTargetBudget || 1)).toFixed(1)}x
-                          </span>
+                        <div className="bg-surface p-2 rounded-lg border border-line">
+                          <span className="text-ink-3 block text-2xs">2. FOC (Mẫu 0đ)</span>
+                          <span className="font-semibold text-positive tabular-nums">{bd.focQty} video</span>
+                          <span className="block text-2xs text-ink-3 tabular-nums">0 đ</span>
                         </div>
-                      </div>
-
-                      {/* Phân bổ kênh */}
-                      <div className="pt-1">
-                        <ChannelBar values={(plan.items || []).map(it => ({ channel: it.channel, value: it.qty || 0 }))} height={6} />
+                        <div className="bg-surface p-2 rounded-lg border border-line">
+                          <span className="text-ink-3 block text-2xs">3. Self-channel</span>
+                          <span className="font-semibold text-ink tabular-nums">{bd.selfQty} video</span>
+                          <span className="block text-2xs text-ink-3 tabular-nums">{formatVndShort(bd.selfBudget)}</span>
+                        </div>
+                        <div className="bg-surface p-2 rounded-lg border border-line">
+                          <span className="text-ink-3 block text-2xs">4. Kênh khác</span>
+                          <span className="font-semibold text-ink tabular-nums">{bd.otherQty} video</span>
+                          <span className="block text-2xs text-ink-3 tabular-nums">{formatVndShort(bd.otherBudget)}</span>
+                        </div>
                       </div>
                     </div>
 
@@ -1260,27 +1220,25 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
               })}
             </div>
           ) : (
-            /* DẠNG BẢNG */
+            /* DẠNG BẢNG GỌN GÀNG KHÔNG CUỘN NGANG */
             <Panel flush>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs border-collapse">
+              <div className="w-full">
+                <table className="w-full table-fixed text-left text-xs border-collapse">
                   <thead>
-                    <tr className="bg-surface text-ink-3 border-b border-line font-medium text-[12.5px]">
-                      <th className="py-2.5 px-4">Tháng / kế hoạch</th>
-                      <th className="py-2.5 px-4">Thương hiệu</th>
-                      <th className="py-2.5 px-4">Nhân sự</th>
-                      <th className="py-2.5 px-4 text-right">Ngân sách trần</th>
-                      <th className="py-2.5 px-4 text-right">Đã phân rã</th>
-                      <th className="py-2.5 px-4 text-center">Chỉ tiêu video</th>
-                      <th className="py-2.5 px-4 text-right">GMV mục tiêu</th>
-                      <th className="py-2.5 px-4 text-center">Trạng thái</th>
-                      <th className="py-2.5 px-4 text-center">Thao tác</th>
+                    <tr className="bg-sunken/70 text-ink-2 border-b border-line font-semibold text-2xs">
+                      <th className="py-2.5 px-2.5 w-[21%]">Kế hoạch &amp; Thương hiệu</th>
+                      <th className="py-2.5 px-2 w-[15%]">Nhân sự</th>
+                      <th className="py-2.5 px-2 text-right w-[12%] bg-sunken">Tổng đề bài B2C</th>
+                      <th className="py-2.5 px-2 text-right w-[11%]">1. Affiliate (Trả phí)</th>
+                      <th className="py-2.5 px-2 text-center w-[9%]">2. FOC (0đ)</th>
+                      <th className="py-2.5 px-2 text-right w-[10%]">3. Self-channel</th>
+                      <th className="py-2.5 px-2 text-right w-[10%]">4. Kênh khác</th>
+                      <th className="py-2.5 px-2.5 text-center w-[12%]">Trạng thái &amp; Mở</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-line">
                     {filteredPlans.map(plan => {
-                      const currentTotalBudget = (plan.items || []).reduce((acc, it) => acc + (it.totalBudget || 0), 0);
-                      const currentTotalQty = (plan.items || []).reduce((acc, it) => acc + (it.qty || 0), 0);
+                      const bd = getB2cPlanBreakdown(plan);
 
                       return (
                         <tr
@@ -1288,62 +1246,99 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                           className="hover:bg-canvas transition-colors cursor-pointer"
                           onClick={() => onSelectPlan(plan)}
                         >
-                          <td className="py-3 px-4">
-                            <div className="font-medium text-ink text-[13px]">
+                          <td className="py-2 px-2.5 align-middle">
+                            <div className="font-semibold text-ink text-[12px] truncate" title={plan.title}>
                               {plan.title}
                             </div>
-                            <div className="text-2xs text-ink-3 mt-0.5 font-code">
-                              {plan.id} • {plan.week}
+                            <div className="text-2xs text-ink-3 mt-0.5 truncate">
+                              <span className="font-medium text-ink-2">{plan.brandName}</span> • {plan.month}
                             </div>
                           </td>
-                          <td className="py-3 px-4 font-medium text-ink">
-                            {plan.brandName}
-                          </td>
-                          <td className="py-3 px-4">
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-ink-3">PIC:</span>
-                              <Person name={plan.pic} />
+                          <td className="py-2 px-2 align-middle">
+                            <div className="space-y-0.5 text-2xs leading-tight">
+                              <div className="flex items-center gap-1 min-w-0">
+                                <span className="text-ink-3 w-10 shrink-0">B2C:</span>
+                                <span className="font-medium text-ink truncate">{plan.pic}</span>
+                              </div>
+                              <div className="flex items-center gap-1 min-w-0">
+                                <span className="text-ink-3 w-10 shrink-0">Growth:</span>
+                                <span className="text-ink-2 truncate">{plan.growthPic?.split(' (')[0] || 'Team'}</span>
+                              </div>
                             </div>
-                            <div className="flex items-center gap-1.5 mt-0.5">
-                              <span className="text-ink-3">Growth:</span>
-                              <Person name={plan.growthPic?.split(' ')[0] || 'Team'} />
+                          </td>
+                          <td className="py-2 px-2 text-right tabular-nums align-middle bg-sunken/25">
+                            <div className="font-semibold text-ink text-[12px]">
+                              {formatVndShort(bd.totalBudget)}
+                            </div>
+                            <div className="text-2xs font-medium text-accent">
+                              {bd.totalVideos} video
                             </div>
                           </td>
-                          <td className="py-3 px-4 text-right font-medium text-ink tabular-nums">
-                            {formatVndShort(plan.totalTargetBudget)}
+                          <td className="py-2 px-2 text-right tabular-nums align-middle">
+                            {bd.affPaidQty > 0 || bd.affPaidBudget > 0 ? (
+                              <div>
+                                <div className="font-semibold text-ink text-[12px]">{bd.affPaidQty} video</div>
+                                <div className="text-2xs text-ink-3">{formatVndShort(bd.affPaidBudget)}</div>
+                              </div>
+                            ) : (
+                              <span className="text-ink-3 text-2xs">—</span>
+                            )}
                           </td>
-                          <td className="py-3 px-4 text-right text-ink tabular-nums">
-                            {formatVndShort(currentTotalBudget)}
+                          <td className="py-2 px-2 text-center tabular-nums align-middle">
+                            {bd.focQty > 0 ? (
+                              <div>
+                                <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-positive-soft text-positive font-semibold text-2xs">
+                                  {bd.focQty} video
+                                </span>
+                                <div className="text-2xs text-ink-3 mt-0.5">0 đ</div>
+                              </div>
+                            ) : (
+                              <span className="text-ink-3 text-2xs">—</span>
+                            )}
                           </td>
-                          <td className="py-3 px-4 text-center tabular-nums">
-                            <span className="font-medium text-ink">{currentTotalQty}</span>
-                            <span className="text-ink-3"> / {plan.totalTargetContents}</span>
+                          <td className="py-2 px-2 text-right tabular-nums align-middle">
+                            {bd.selfQty > 0 || bd.selfBudget > 0 ? (
+                              <div>
+                                <div className="font-semibold text-ink text-[12px]">{bd.selfQty} video</div>
+                                <div className="text-2xs text-ink-3">{formatVndShort(bd.selfBudget)}</div>
+                              </div>
+                            ) : (
+                              <span className="text-ink-3 text-2xs">—</span>
+                            )}
                           </td>
-                          <td className="py-3 px-4 text-right font-medium text-positive tabular-nums">
-                            {formatVndShort(plan.targetGmv)}
+                          <td className="py-2 px-2 text-right tabular-nums align-middle">
+                            {bd.otherQty > 0 || bd.otherBudget > 0 ? (
+                              <div>
+                                <div className="font-semibold text-ink text-[12px]">{bd.otherQty} video</div>
+                                <div className="text-2xs text-ink-3">{formatVndShort(bd.otherBudget)}</div>
+                              </div>
+                            ) : (
+                              <span className="text-ink-3 text-2xs">—</span>
+                            )}
                           </td>
-                          <td className="py-3 px-4 text-center">
-                            {getStatusBadge(plan.status)}
-                          </td>
-                          <td className="py-3 px-4 text-center" onClick={(e) => e.stopPropagation()}>
-                            <div className="flex items-center justify-center gap-1.5">
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                icon={MessageSquare}
-                                onClick={() => setHistoryPlanId(plan.id)}
-                                title="Xem lịch sử trao đổi"
-                              >
-                                ({plan.discussions?.length || 0})
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="secondary"
-                                icon={ArrowRight}
-                                onClick={() => onSelectPlan(plan)}
-                              >
-                                Mở kế hoạch
-                              </Button>
+                          <td className="py-2 px-2.5 text-center align-middle" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex flex-col items-center gap-1">
+                              {getStatusBadge(plan.status)}
+                              <div className="flex items-center justify-center gap-1 w-full">
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  icon={MessageSquare}
+                                  onClick={() => setHistoryPlanId(plan.id)}
+                                  title="Xem lịch sử trao đổi"
+                                  className="h-6 px-1.5 text-2xs"
+                                >
+                                  {plan.discussions?.length || 0}
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="secondary"
+                                  onClick={() => onSelectPlan(plan)}
+                                  className="h-6 px-2 text-2xs font-medium"
+                                >
+                                  Phân rã
+                                </Button>
+                              </div>
                             </div>
                           </td>
                         </tr>

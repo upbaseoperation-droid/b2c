@@ -4,6 +4,8 @@
 import crypto from 'crypto';
 import { UserProfile, UserRole } from './types';
 import { USERS } from './mockData';
+import { UPBASE_STAFF_MASTER } from './importedMasterData';
+import { classifyMasterStaffMember, INITIAL_DEPARTMENT_ACCESS_RULES } from './rbacData';
 
 export const SESSION_COOKIE_NAME = 'b2c_ops_session';
 
@@ -136,7 +138,9 @@ export async function exchangeLarkCodeForUser(code: string): Promise<LarkUserRaw
 }
 
 /**
- * Phân giải Lark User thành UserProfile chuẩn của B2C Ops Hub
+ * Phân giải Lark User thành UserProfile chuẩn của B2C Ops Hub.
+ * Kiểm tra cổng phân quyền phòng ban: chỉ nhân sự thuộc 3 khối Marketing B2C, Growth, Media
+ * (hoặc được Admin cấp quyền) mới được đăng nhập.
  */
 export function resolveUserProfile(larkUser: LarkUserRaw): UserProfile {
   const email = (larkUser.enterprise_email || larkUser.email || '').toLowerCase().trim();
@@ -149,6 +153,11 @@ export function resolveUserProfile(larkUser: LarkUserRaw): UserProfile {
   );
 
   if (existingUser) {
+    if (existingUser.canLogin === false) {
+      throw new Error(
+        `Tài khoản ${existingUser.name} đã bị Admin thu hồi quyền đăng nhập hệ thống B2C.`
+      );
+    }
     return {
       ...existingUser,
       name: larkUser.name || existingUser.name,
@@ -158,31 +167,42 @@ export function resolveUserProfile(larkUser: LarkUserRaw): UserProfile {
     };
   }
 
-  // 2. Xác định vai trò tự động nếu chưa có trong danh sách
-  let role: UserRole = 'BOOKING_MEMBER';
-  let roleTitle = 'Chuyên viên Vận hành B2C';
+  // 2. Đối soát với danh bạ 1.011 nhân sự UPBASE_STAFF_MASTER
+  const masterMember = UPBASE_STAFF_MASTER.find(
+    m =>
+      (email && m.email.toLowerCase() === email) ||
+      m.name.toLowerCase() === name.toLowerCase()
+  );
 
-  if (email.includes('lead') || email.includes('manager') || name.toLowerCase().includes('trưởng phòng') || name.toLowerCase().includes('lead')) {
-    role = 'MANAGER';
-    roleTitle = 'Lead Điều phối Vận hành (Lark SSO)';
-  } else if (email.includes('brand') || name.toLowerCase().includes('brand')) {
-    role = 'BRAND_MEMBER';
-    roleTitle = 'Brand Campaign Specialist (Lark SSO)';
-  } else if (email.includes('content') || name.toLowerCase().includes('content')) {
-    role = 'CONTENT_MEMBER';
-    roleTitle = 'Content & Script Specialist (Lark SSO)';
+  if (masterMember) {
+    const classified = classifyMasterStaffMember(masterMember, INITIAL_DEPARTMENT_ACCESS_RULES, {});
+    if (!classified.canLogin) {
+      throw new Error(
+        `Từ chối truy cập (403): Nhân sự ${masterMember.name} (${masterMember.staffCode}) thuộc phòng "${masterMember.department || masterMember.team || 'Khác'}" không nằm trong 3 khối được phép truy cập (Marketing B2C, Growth, Media). Vui lòng liên hệ Admin nếu cần cấp quyền ngoại lệ.`
+      );
+    }
+
+    return {
+      id: `staff-${masterMember.id}`,
+      name: masterMember.name,
+      email: masterMember.email,
+      role: classified.role,
+      roleTitle: `${masterMember.position || masterMember.roleTitle} (${masterMember.department || 'UpBase'})`,
+      avatar: masterMember.avatar || getInitials(masterMember.name),
+      departmentScope: classified.departmentScope,
+      departmentName: masterMember.department,
+      teamName: masterMember.team,
+      managerName: classified.managerName,
+      canLogin: true,
+      larkOpenId: larkUser.open_id,
+      larkAvatarUrl: larkUser.avatar_url
+    };
   }
 
-  return {
-    id: `lark_${larkUser.open_id}`,
-    name,
-    email: email || `${larkUser.open_id}@upbase.vn`,
-    role,
-    roleTitle,
-    avatar: getInitials(name),
-    larkOpenId: larkUser.open_id,
-    larkAvatarUrl: larkUser.avatar_url
-  };
+  // 3. Nếu email không nằm trong danh sách 3 khối được cấp quyền, chặn mặc định
+  throw new Error(
+    `Tài khoản Lark "${name}" (${email || larkUser.open_id}) chưa được Admin phân vào khối Marketing B2C, Growth hoặc Media.`
+  );
 }
 
 

@@ -117,6 +117,7 @@ export function BrandProfilesView({
 
   const open = openKey ? rows.find(r => r.key === openKey) : undefined;
   if (open) {
+    const idx = visible.findIndex(r => r.key === open.key);
     return (
       <BrandProfileDetail
         key={open.key}
@@ -125,6 +126,12 @@ export function BrandProfilesView({
         deals={deals}
         busy={busy}
         onBack={() => setOpenKey(null)}
+        nav={{
+          onPrev: idx > 0 ? () => setOpenKey(visible[idx - 1].key) : undefined,
+          onNext: idx >= 0 && idx < visible.length - 1 ? () => setOpenKey(visible[idx + 1].key) : undefined,
+          position: idx >= 0 ? idx + 1 : undefined,
+          total: visible.length,
+        }}
         onSave={(section, data, summary) => save(open, section, data, summary)}
         onOpenBooking={onOpenBooking}
       />
@@ -150,7 +157,7 @@ export function BrandProfilesView({
       key: 'status', header: 'Hồ sơ', width: 150,
       render: r => (
         <div className="grid gap-1 justify-items-start">
-          {!r.saved ? <Status>Chưa có hồ sơ</Status> : r.done === r.total ? <Status tone="positive">Đủ hồ sơ</Status> : <Status tone="warning">Đang bổ sung</Status>}
+          {!r.saved ? <Status tone="neutral">Nháp</Status> : r.done === r.total ? <Status tone="positive">Hoàn tất</Status> : <Status tone="info">Đang chạy</Status>}
           <span className="text-2xs text-ink-3 tabular-nums">{r.done}/{r.total} mục</span>
         </div>
       ),

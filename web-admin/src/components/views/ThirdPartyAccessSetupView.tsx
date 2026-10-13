@@ -1,34 +1,22 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { ConfirmDialog } from '../ui';
+import { ConfirmDialog, Avatar } from '../ui';
 import {
-  ShieldCheck,
   KeyRound,
   Users,
   Building,
   Video,
   Plus,
   Search,
-  Filter,
-  CheckCircle2,
-  AlertCircle,
   Eye,
   Edit3,
   Trash2,
   Lock,
   Unlock,
-  ExternalLink,
   Mail,
-  UserCheck,
-  Sparkles,
-  Info,
-  Clock,
-  ArrowRight,
   X,
-  Store,
-  Check,
-  ShieldAlert
+  Store
 } from 'lucide-react';
 import { ThirdPartyAccessAccount, UserProfile, BrandDetail, KocItem } from '../../lib/types';
 import { INITIAL_THIRD_PARTY_ACCOUNTS, convertPartnerAccountToUserProfile } from '../../lib/thirdPartyAccessData';
@@ -227,82 +215,71 @@ export const ThirdPartyAccessSetupView: React.FC<ThirdPartyAccessSetupViewProps>
   return (
     <div className="space-y-6 animate-in fade-in duration-150">
       {/* ========================================================================= */}
-      {/* 1. HEADER & HERO OVERVIEW                                                 */}
+      {/* 1. HEADER & METRICS */}
       {/* ========================================================================= */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-br from-emerald-50 via-purple-50 to-transparent -mr-16 -mt-16 rounded-full blur-3xl opacity-70 pointer-events-none" />
-
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="space-y-1.5 max-w-2xl">
-            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold">
-              <KeyRound className="w-3.5 h-3.5" />
-              <span>Phân Quyền & Cấp Tài Khoản Bên Thứ 3 (Gmail SSO)</span>
-            </div>
-            <h1 className="text-xl font-bold text-slate-900 tracking-tight">
-              Quản Trị Phân Quyền & Cấp Quyền Đăng Nhập Gmail Đối Tác
-            </h1>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              Cung cấp cổng đăng nhập độc lập bằng Gmail cho <strong>Brand (Nhãn hàng)</strong>, <strong>KOC / KOL</strong> và <strong>Cộng tác viên (CTV)</strong>. Hệ thống tự động phân luồng: đối tác đăng nhập Gmail sẽ vào thẳng Hub của mình và <strong>chỉ xem được dữ liệu được phân quyền</strong>, bảo mật 100% dữ liệu nội bộ UpBase.
-            </p>
-          </div>
+      <div className="bg-surface border border-line rounded-xl p-5 space-y-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <p className="text-xs text-muted leading-relaxed max-w-2xl">
+            Cung cấp cổng đăng nhập độc lập bằng Gmail cho <strong>Nhãn hàng</strong>, <strong>KOC / KOL</strong> và <strong>Cộng tác viên</strong>. Hệ thống tự động phân luồng: đối tác đăng nhập Gmail sẽ vào thẳng cổng của mình và <strong>chỉ xem được dữ liệu được phân quyền</strong>.
+          </p>
 
           <div className="flex items-center gap-2.5">
             <button
               onClick={handleOpenCreateModal}
-              className="px-4 py-2.5 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition flex items-center gap-2 cursor-pointer"
+              className="px-4 py-2 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white transition flex items-center gap-2 cursor-pointer"
             >
               <Plus className="w-4 h-4" />
-              <span>+ Cấp Quyền Gmail Mới</span>
+              <span>Cấp quyền Gmail mới</span>
             </button>
           </div>
         </div>
 
         {/* Metric Cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6 pt-5 border-t border-slate-100">
-          <div className="p-3 bg-slate-50/80 rounded-xl border border-slate-200/60">
-            <div className="text-2xs text-slate-500 font-medium">Tổng tài khoản Gmail cấp</div>
-            <div className="text-lg font-bold text-slate-900 mt-0.5 flex items-baseline gap-1.5">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4 border-t border-line">
+          <div className="p-3 bg-surface-subtle rounded-xl border border-line">
+            <div className="text-2xs text-muted font-medium">Tổng tài khoản Gmail cấp</div>
+            <div className="text-lg font-semibold text-ink mt-0.5 flex items-baseline gap-1.5 tabular-nums">
               <span>{accounts.length}</span>
-              <span className="text-2xs font-semibold text-emerald-600">({activeCount} Hoạt động)</span>
+              <span className="text-2xs font-semibold text-emerald-600">({activeCount} hoạt động)</span>
             </div>
           </div>
 
-          <div className="p-3 bg-purple-50/50 rounded-xl border border-purple-200/60">
-            <div className="text-2xs text-purple-700 font-medium flex items-center gap-1">
-              <Building className="w-3 h-3" />
-              <span>Đối tác Brand (Nhãn hàng)</span>
+          <div className="p-3 bg-surface-subtle rounded-xl border border-line">
+            <div className="text-2xs text-ink-secondary font-medium flex items-center gap-1">
+              <Building className="w-3 h-3 text-brand" />
+              <span>Đối tác Nhãn hàng</span>
             </div>
-            <div className="text-lg font-bold text-purple-800 mt-0.5">
-              {brandCount} <span className="text-2xs font-normal text-purple-600">tài khoản</span>
+            <div className="text-lg font-semibold text-ink mt-0.5 tabular-nums">
+              {brandCount} <span className="text-2xs font-normal text-muted">tài khoản</span>
             </div>
           </div>
 
-          <div className="p-3 bg-blue-50/50 rounded-xl border border-blue-200/60">
-            <div className="text-2xs text-blue-700 font-medium flex items-center gap-1">
-              <Users className="w-3 h-3" />
+          <div className="p-3 bg-surface-subtle rounded-xl border border-line">
+            <div className="text-2xs text-ink-secondary font-medium flex items-center gap-1">
+              <Users className="w-3 h-3 text-blue-600" />
               <span>Đối tác KOC / KOL</span>
             </div>
-            <div className="text-lg font-bold text-blue-800 mt-0.5">
-              {kocCount} <span className="text-2xs font-normal text-blue-600">tài khoản</span>
+            <div className="text-lg font-semibold text-ink mt-0.5 tabular-nums">
+              {kocCount} <span className="text-2xs font-normal text-muted">tài khoản</span>
             </div>
           </div>
 
-          <div className="p-3 bg-emerald-50/50 rounded-xl border border-emerald-200/60">
-            <div className="text-2xs text-emerald-700 font-medium flex items-center gap-1">
-              <Video className="w-3 h-3" />
-              <span>Cộng tác viên (CTV)</span>
+          <div className="p-3 bg-surface-subtle rounded-xl border border-line">
+            <div className="text-2xs text-ink-secondary font-medium flex items-center gap-1">
+              <Video className="w-3 h-3 text-emerald-600" />
+              <span>Cộng tác viên</span>
             </div>
-            <div className="text-lg font-bold text-emerald-800 mt-0.5">
-              {ctvCount} <span className="text-2xs font-normal text-emerald-600">tài khoản</span>
+            <div className="text-lg font-semibold text-ink mt-0.5 tabular-nums">
+              {ctvCount} <span className="text-2xs font-normal text-muted">tài khoản</span>
             </div>
           </div>
         </div>
       </div>
 
       {/* ========================================================================= */}
-      {/* 2. FILTER & SEARCH TOOLBAR                                                */}
+      {/* 2. FILTER & SEARCH TOOLBAR */}
       {/* ========================================================================= */}
-      <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+      <div className="bg-surface border border-line rounded-xl p-4 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
         {/* Search */}
         <div className="relative flex-1 min-w-[260px]">
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -324,9 +301,9 @@ export const ThirdPartyAccessSetupView: React.FC<ThirdPartyAccessSetupViewProps>
             className="text-xs h-9 px-3 rounded-lg border border-slate-200 bg-white text-slate-700 font-medium focus:outline-none focus:border-emerald-500"
           >
             <option value="ALL">Tất cả loại đối tác ({accounts.length})</option>
-            <option value="BRAND">Đối tác Brand ({brandCount})</option>
+            <option value="BRAND">Đối tác Nhãn hàng ({brandCount})</option>
             <option value="KOC">KOC / KOL ({kocCount})</option>
-            <option value="CTV">Cộng tác viên CTV ({ctvCount})</option>
+            <option value="CTV">Cộng tác viên ({ctvCount})</option>
           </select>
 
           {/* Status */}
@@ -343,21 +320,21 @@ export const ThirdPartyAccessSetupView: React.FC<ThirdPartyAccessSetupViewProps>
       </div>
 
       {/* ========================================================================= */}
-      {/* 3. PARTNERS ACCOUNTS TABLE                                                */}
+      {/* 3. PARTNERS ACCOUNTS TABLE */}
       {/* ========================================================================= */}
       <div className="card-enterprise overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs border-collapse min-w-[1100px]">
-            <thead className="bg-slate-50 text-slate-700 border-b border-slate-200 text-2xs font-semibold uppercase tracking-wider">
+            <thead className="bg-slate-50 text-slate-700 border-b border-slate-200 text-2xs font-semibold">
               <tr>
-                <th className="p-3.5 pl-6 w-[260px]">Tài Khoản Gmail & Đối Tác</th>
-                <th className="p-3.5 w-[130px]">Phân Loại</th>
-                <th className="p-3.5 w-[220px]">Phạm Vi Dữ Liệu (Brand / KOC)</th>
-                <th className="p-3.5 min-w-[260px]">Quyền Hạn Được Cấp</th>
-                <th className="p-3.5 w-[140px]">Đăng Nhập Gần Nhất</th>
-                <th className="p-3.5 w-[110px] text-center">Trạng Thái</th>
+                <th className="p-3.5 pl-6 w-[260px]">Tài khoản Gmail & Đối tác</th>
+                <th className="p-3.5 w-[130px]">Phân loại</th>
+                <th className="p-3.5 w-[220px]">Phạm vi dữ liệu</th>
+                <th className="p-3.5 min-w-[260px]">Quyền hạn được cấp</th>
+                <th className="p-3.5 w-[140px]">Đăng nhập gần nhất</th>
+                <th className="p-3.5 w-[110px] text-center">Trạng thái</th>
                 <th className="p-3.5 pr-6 text-right w-[170px] sticky right-0 bg-slate-50 border-l border-slate-200">
-                  Thao Tác
+                  Thao tác
                 </th>
               </tr>
             </thead>
@@ -373,22 +350,9 @@ export const ThirdPartyAccessSetupView: React.FC<ThirdPartyAccessSetupViewProps>
                     {/* Gmail & User Info */}
                     <td className="p-3.5 pl-6">
                       <div className="flex items-center gap-3">
-                        {acc.avatarUrl ? (
-                          <img
-                            src={acc.avatarUrl}
-                            alt={acc.displayName}
-                            className="w-9 h-9 rounded-full object-cover border border-slate-200 shrink-0"
-                          />
-                        ) : (
-                          <div className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${
-                            isBrand ? 'bg-purple-100 text-purple-700' :
-                            isKoc ? 'bg-blue-100 text-blue-700' : 'bg-emerald-100 text-emerald-700'
-                          }`}>
-                            {acc.displayName.slice(0, 2).toUpperCase()}
-                          </div>
-                        )}
+                        <Avatar name={acc.displayName} size={36} />
                         <div className="min-w-0">
-                          <div className="font-bold text-slate-900 text-xs flex items-center gap-1.5 truncate">
+                          <div className="font-semibold text-slate-900 text-xs flex items-center gap-1.5 truncate">
                             <span>{acc.displayName}</span>
                           </div>
                           <div className="text-2xs text-slate-600 font-mono flex items-center gap-1 truncate mt-0.5">
@@ -401,8 +365,8 @@ export const ThirdPartyAccessSetupView: React.FC<ThirdPartyAccessSetupViewProps>
 
                     {/* Partner Type Badge */}
                     <td className="p-3.5">
-                      <span className={`px-2.5 py-1 rounded-full text-2xs font-bold border inline-flex items-center gap-1 ${
-                        isBrand ? 'bg-purple-50 text-purple-700 border-purple-200' :
+                      <span className={`px-2.5 py-1 rounded-full text-2xs font-semibold border inline-flex items-center gap-1 ${
+                        isBrand ? 'bg-blue-50 text-blue-700 border-blue-200' :
                         isKoc ? 'bg-blue-50 text-blue-700 border-blue-200' :
                         'bg-emerald-50 text-emerald-700 border-emerald-200'
                       }`}>
@@ -419,7 +383,7 @@ export const ThirdPartyAccessSetupView: React.FC<ThirdPartyAccessSetupViewProps>
                         {acc.linkedEntityName}
                       </div>
                       {isBrand && acc.linkedStoreNames && acc.linkedStoreNames.length > 0 && (
-                        <div className="text-3xs text-slate-500 mt-1 space-y-0.5">
+                        <div className="text-2xs text-slate-500 mt-1 space-y-0.5">
                           {acc.linkedStoreNames.map((st, sIdx) => (
                             <div key={sIdx} className="flex items-center gap-1 truncate text-slate-600">
                               <Store className="w-2.5 h-2.5 text-slate-400 shrink-0" />
@@ -429,7 +393,7 @@ export const ThirdPartyAccessSetupView: React.FC<ThirdPartyAccessSetupViewProps>
                         </div>
                       )}
                       {isKoc && (
-                        <div className="text-3xs text-blue-600 font-mono mt-0.5">
+                        <div className="text-2xs text-blue-600 font-mono mt-0.5">
                           Liên kết danh bạ KOC #{acc.linkedEntityId}
                         </div>
                       )}
@@ -439,32 +403,32 @@ export const ThirdPartyAccessSetupView: React.FC<ThirdPartyAccessSetupViewProps>
                     <td className="p-3.5">
                       <div className="flex flex-wrap gap-1 max-w-[280px]">
                         {acc.permissions.canApproveDeals && (
-                          <span className="px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 text-3xs font-semibold border border-purple-200">
+                          <span className="px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 text-2xs font-semibold border border-blue-200">
                             Duyệt KOC
                           </span>
                         )}
                         {acc.permissions.canReviewScripts && (
-                          <span className="px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 text-3xs font-semibold border border-blue-200">
+                          <span className="px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 text-2xs font-semibold border border-blue-200">
                             Duyệt Kịch Bản
                           </span>
                         )}
                         {acc.permissions.canViewGmvAndRoas && (
-                          <span className="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 text-3xs font-semibold border border-emerald-200">
+                          <span className="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 text-2xs font-semibold border border-emerald-200">
                             Xem GMV & ROI
                           </span>
                         )}
                         {acc.permissions.canSubmitVideos && (
-                          <span className="px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 text-3xs font-semibold border border-indigo-200">
+                          <span className="px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 text-2xs font-semibold border border-blue-200">
                             Nộp Link Video
                           </span>
                         )}
                         {acc.permissions.canProvideSparkAds && (
-                          <span className="px-1.5 py-0.5 rounded bg-amber-50 text-amber-800 text-3xs font-semibold border border-amber-200">
+                          <span className="px-1.5 py-0.5 rounded bg-amber-50 text-amber-800 text-2xs font-semibold border border-amber-200">
                             Cung Cấp Mã Ads
                           </span>
                         )}
                         {acc.permissions.canClaimSamples && (
-                          <span className="px-1.5 py-0.5 rounded bg-teal-50 text-teal-700 text-3xs font-semibold border border-teal-200">
+                          <span className="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 text-2xs font-semibold border border-emerald-200">
                             Nhận Mẫu
                           </span>
                         )}
@@ -474,14 +438,14 @@ export const ThirdPartyAccessSetupView: React.FC<ThirdPartyAccessSetupViewProps>
                     {/* Last Login & Count */}
                     <td className="p-3.5 text-2xs text-slate-500">
                       <div className="font-medium text-slate-800">{acc.lastLoginAt || 'Chưa đăng nhập'}</div>
-                      <div className="text-3xs text-slate-400 mt-0.5">
+                      <div className="text-2xs text-slate-400 mt-0.5">
                         {acc.loginCount} lần truy cập Gmail
                       </div>
                     </td>
 
                     {/* Status */}
                     <td className="p-3.5 text-center">
-                      <span className={`px-2.5 py-0.5 rounded-full text-2xs font-bold border inline-block ${
+                      <span className={`px-2.5 py-0.5 rounded-full text-2xs font-semibold border inline-block ${
                         acc.status === 'ACTIVE'
                           ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                           : 'bg-rose-50 text-rose-700 border-rose-200'
@@ -495,7 +459,7 @@ export const ThirdPartyAccessSetupView: React.FC<ThirdPartyAccessSetupViewProps>
                       <div className="flex items-center justify-end gap-1.5">
                         <button
                           onClick={() => handleImpersonate(acc)}
-                          className="px-2.5 py-1 rounded-lg text-2xs font-bold bg-slate-900 text-white hover:bg-slate-800 transition flex items-center gap-1 shadow-xs cursor-pointer"
+                          className="px-2.5 py-1 rounded-lg text-2xs font-semibold bg-slate-900 text-white hover:bg-slate-800 transition flex items-center gap-1 shadow-xs cursor-pointer"
                           title="Đăng nhập thử với tư cách đối tác này để kiểm tra view"
                         >
                           <Eye className="w-3 h-3 text-emerald-400" />
@@ -538,7 +502,7 @@ export const ThirdPartyAccessSetupView: React.FC<ThirdPartyAccessSetupViewProps>
       </div>
 
       {/* ========================================================================= */}
-      {/* 4. MODAL: CREATE / EDIT THIRD-PARTY GMAIL ACCESS                          */}
+      {/* 4. MODAL: CREATE / EDIT THIRD-PARTY GMAIL ACCESS */}
       {/* ========================================================================= */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
@@ -547,7 +511,7 @@ export const ThirdPartyAccessSetupView: React.FC<ThirdPartyAccessSetupViewProps>
             <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/80">
               <div className="flex items-center gap-2">
                 <KeyRound className="w-5 h-5 text-emerald-600" />
-                <h2 className="text-base font-bold text-slate-900">
+                <h2 className="text-base font-semibold text-slate-900">
                   {editingAccount ? 'Chỉnh Sửa Phân Quyền Gmail Đối Tác' : 'Cấp Quyền Truy Cập Gmail Cho Bên Thứ 3'}
                 </h2>
               </div>
@@ -576,7 +540,7 @@ export const ThirdPartyAccessSetupView: React.FC<ThirdPartyAccessSetupViewProps>
                     className="w-full text-xs px-3 py-2 rounded-lg border border-slate-200 bg-white font-medium focus:outline-none focus:border-emerald-500"
                     required
                   />
-                  <span className="text-3xs text-slate-400 block">
+                  <span className="text-2xs text-slate-400 block">
                     Đối tác sẽ dùng email Gmail này để đăng nhập trực tiếp vào hệ thống.
                   </span>
                 </div>
@@ -611,13 +575,13 @@ export const ThirdPartyAccessSetupView: React.FC<ThirdPartyAccessSetupViewProps>
                     }}
                     className={`p-3 rounded-xl border text-left flex flex-col gap-1 transition ${
                       formPartnerType === 'BRAND'
-                        ? 'border-purple-500 bg-purple-50/70 text-purple-900 shadow-xs'
+                        ? 'border-blue-500 bg-blue-50/70 text-blue-900 shadow-xs'
                         : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700'
                     }`}
                   >
-                    <Building className="w-4 h-4 text-purple-600" />
-                    <span className="font-bold text-xs">1. Đối Tác Brand</span>
-                    <span className="text-3xs text-slate-500">Xem Cổng Brand Hub, duyệt KOC & video</span>
+                    <Building className="w-4 h-4 text-blue-600" />
+                    <span className="font-semibold text-xs">1. Đối Tác Brand</span>
+                    <span className="text-2xs text-slate-500">Xem Cổng Brand Hub, duyệt KOC & video</span>
                   </button>
 
                   <button
@@ -645,8 +609,8 @@ export const ThirdPartyAccessSetupView: React.FC<ThirdPartyAccessSetupViewProps>
                     }`}
                   >
                     <Users className="w-4 h-4 text-blue-600" />
-                    <span className="font-bold text-xs">2. Creator / KOC</span>
-                    <span className="text-3xs text-slate-500">Xem Hub KOC, nhận mẫu & nộp link</span>
+                    <span className="font-semibold text-xs">2. Creator / KOC</span>
+                    <span className="text-2xs text-slate-500">Xem Hub KOC, nhận mẫu & nộp link</span>
                   </button>
 
                   <button
@@ -671,17 +635,17 @@ export const ThirdPartyAccessSetupView: React.FC<ThirdPartyAccessSetupViewProps>
                     }`}
                   >
                     <Video className="w-4 h-4 text-emerald-600" />
-                    <span className="font-bold text-xs">3. Cộng Tác Viên (CTV)</span>
-                    <span className="text-3xs text-slate-500">Xem Hub CTV kênh nội bộ</span>
+                    <span className="font-semibold text-xs">3. Cộng Tác Viên (CTV)</span>
+                    <span className="text-2xs text-slate-500">Xem Hub CTV kênh nội bộ</span>
                   </button>
                 </div>
               </div>
 
               {/* Row 3: Entity Association */}
               {formPartnerType === 'BRAND' && (
-                <div className="space-y-3 p-3.5 bg-purple-50/50 rounded-xl border border-purple-200/70">
+                <div className="space-y-3 p-3.5 bg-blue-50/50 rounded-xl border border-blue-200/70">
                   <div className="space-y-1.5">
-                    <label className="font-bold text-purple-900">Chọn Nhãn hàng (Brand) liên kết *</label>
+                    <label className="font-semibold text-blue-900">Chọn Nhãn hàng (Brand) liên kết *</label>
                     <select
                       value={formLinkedEntityId}
                       onChange={(e) => {
@@ -692,7 +656,7 @@ export const ThirdPartyAccessSetupView: React.FC<ThirdPartyAccessSetupViewProps>
                           setFormSelectedStores(sel.stores ? sel.stores.map(s => s.storeName) : []);
                         }
                       }}
-                      className="w-full text-xs h-9 px-3 rounded-lg border border-purple-200 bg-white font-semibold focus:outline-none focus:border-purple-500"
+                      className="w-full text-xs h-9 px-3 rounded-lg border border-blue-200 bg-white font-semibold focus:outline-none focus:border-blue-500"
                     >
                       {brands.map(b => (
                         <option key={b.id} value={b.id}>{b.name} ({b.category || 'Mỹ phẩm / Mẹ bé'})</option>
@@ -718,7 +682,7 @@ export const ThirdPartyAccessSetupView: React.FC<ThirdPartyAccessSetupViewProps>
                             <label
                               key={idx}
                               className={`px-2.5 py-1 rounded-lg border text-2xs font-medium flex items-center gap-1.5 cursor-pointer transition ${
-                                isChecked ? 'bg-purple-100 text-purple-900 border-purple-300' : 'bg-white text-slate-600 border-slate-200'
+                                isChecked ? 'bg-blue-100 text-blue-900 border-blue-300' : 'bg-white text-slate-600 border-slate-200'
                               }`}
                             >
                               <input
@@ -731,7 +695,7 @@ export const ThirdPartyAccessSetupView: React.FC<ThirdPartyAccessSetupViewProps>
                                     setFormSelectedStores(prev => prev.filter(s => s !== stName));
                                   }
                                 }}
-                                className="rounded text-purple-600 focus:ring-0"
+                                className="rounded text-blue-600 focus:ring-0"
                               />
                               <span>{stName}</span>
                             </label>
@@ -745,7 +709,7 @@ export const ThirdPartyAccessSetupView: React.FC<ThirdPartyAccessSetupViewProps>
 
               {formPartnerType === 'KOC' && (
                 <div className="space-y-1.5 p-3.5 bg-blue-50/50 rounded-xl border border-blue-200/70">
-                  <label className="font-bold text-blue-900">Chọn Hồ sơ KOC liên kết *</label>
+                  <label className="font-semibold text-blue-900">Chọn Hồ sơ KOC liên kết *</label>
                   <select
                     value={formLinkedEntityId}
                     onChange={(e) => {
@@ -768,7 +732,7 @@ export const ThirdPartyAccessSetupView: React.FC<ThirdPartyAccessSetupViewProps>
 
               {formPartnerType === 'CTV' && (
                 <div className="space-y-1.5 p-3.5 bg-emerald-50/50 rounded-xl border border-emerald-200/70">
-                  <label className="font-bold text-emerald-900">Chọn Cộng Tác Viên (CTV) *</label>
+                  <label className="font-semibold text-emerald-900">Chọn Cộng Tác Viên (CTV) *</label>
                   <select
                     value={formLinkedEntityId}
                     onChange={(e) => {
@@ -798,7 +762,7 @@ export const ThirdPartyAccessSetupView: React.FC<ThirdPartyAccessSetupViewProps>
                     />
                     <div>
                       <span className="font-semibold text-slate-900 block">Duyệt & Từ chối KOC</span>
-                      <span className="text-3xs text-slate-500">Cho phép Brand phê duyệt danh sách KOC dự kiến</span>
+                      <span className="text-2xs text-slate-500">Cho phép Brand phê duyệt danh sách KOC dự kiến</span>
                     </div>
                   </label>
 
@@ -811,7 +775,7 @@ export const ThirdPartyAccessSetupView: React.FC<ThirdPartyAccessSetupViewProps>
                     />
                     <div>
                       <span className="font-semibold text-slate-900 block">Thẩm định Kịch bản Video</span>
-                      <span className="text-3xs text-slate-500">Phản hồi & duyệt kịch bản trước khi quay</span>
+                      <span className="text-2xs text-slate-500">Phản hồi & duyệt kịch bản trước khi quay</span>
                     </div>
                   </label>
 
@@ -824,7 +788,7 @@ export const ThirdPartyAccessSetupView: React.FC<ThirdPartyAccessSetupViewProps>
                     />
                     <div>
                       <span className="font-semibold text-slate-900 block">Xem Doanh Thu GMV & ROI</span>
-                      <span className="text-3xs text-slate-500">Hiển thị số liệu GMV 30 ngày và tỷ lệ ROI</span>
+                      <span className="text-2xs text-slate-500">Hiển thị số liệu GMV 30 ngày và tỷ lệ ROI</span>
                     </div>
                   </label>
 
@@ -837,7 +801,7 @@ export const ThirdPartyAccessSetupView: React.FC<ThirdPartyAccessSetupViewProps>
                     />
                     <div>
                       <span className="font-semibold text-slate-900 block">Nộp Link Video & Bài Đăng</span>
-                      <span className="text-3xs text-slate-500">Dành cho KOC/CTV nộp sản phẩm nghiệm thu</span>
+                      <span className="text-2xs text-slate-500">Dành cho KOC/CTV nộp sản phẩm nghiệm thu</span>
                     </div>
                   </label>
 
@@ -850,7 +814,7 @@ export const ThirdPartyAccessSetupView: React.FC<ThirdPartyAccessSetupViewProps>
                     />
                     <div>
                       <span className="font-semibold text-slate-900 block">Cung Cấp Mã Spark Ads</span>
-                      <span className="text-3xs text-slate-500">Dành cho KOC cung cấp mã ủy quyền quảng cáo</span>
+                      <span className="text-2xs text-slate-500">Dành cho KOC cung cấp mã ủy quyền quảng cáo</span>
                     </div>
                   </label>
 
@@ -863,7 +827,7 @@ export const ThirdPartyAccessSetupView: React.FC<ThirdPartyAccessSetupViewProps>
                     />
                     <div>
                       <span className="font-semibold text-slate-900 block">Xác Nhận Nhận Hàng Mẫu</span>
-                      <span className="text-3xs text-slate-500">Theo dõi vận đơn và xác nhận đã nhận hàng</span>
+                      <span className="text-2xs text-slate-500">Theo dõi vận đơn và xác nhận đã nhận hàng</span>
                     </div>
                   </label>
                 </div>

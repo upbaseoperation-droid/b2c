@@ -1,42 +1,32 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { 
   Search, 
   Plus, 
   X, 
   ExternalLink, 
   Store, 
-  ShoppingBag, 
   ChevronLeft, 
   ChevronRight, 
-  Users, 
-  Filter, 
   RotateCcw, 
-  Shield, 
   Trash2, 
   Archive, 
   AlertTriangle,
   CheckCircle2,
-  DollarSign,
-  TrendingUp,
   UserCheck,
   ShieldAlert,
   ShieldCheck,
   Eye,
   Edit3,
-  Building2,
-  Link2,
-  Tag,
-  Activity,
-  BarChart3
+  Building2
 } from 'lucide-react';
 import { ChannelTag } from '../../ui';
 import { StorePortfolioItem, BrandDetail, BookingDealItem } from '../../../lib/types';
 import { StaffSearchSelect } from './StaffSearchSelect';
 import { StoreDetailModal } from './StoreDetailModal';
 import { StoreHandoverModal } from './StoreHandoverModal';
-import { formatVndShort, formatVnd } from '../../../lib/format';
+import { formatVndShort } from '../../../lib/format';
 import { INITIAL_DEALS } from '../../../lib/mockData';
 
 interface StoresMasterViewProps {
@@ -63,10 +53,11 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
   onNavigateToStoreManagement
 }) => {
   const [stores, setStores] = useState<StorePortfolioItem[]>(initialStores);
-
-  React.useEffect(() => {
+  const [prevInitialStores, setPrevInitialStores] = useState<StorePortfolioItem[]>(initialStores);
+  if (initialStores !== prevInitialStores) {
+    setPrevInitialStores(initialStores);
     setStores(initialStores);
-  }, [initialStores]);
+  }
 
   // Filters State
   const [search, setSearch] = useState('');
@@ -151,22 +142,13 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
   });
   const [deletingStore, setDeletingStore] = useState<StorePortfolioItem | null>(null);
 
-  // Extract unique packages
-  const packages = useMemo(() => {
-    const set = new Set<string>();
-    stores.forEach(s => {
-      if (s.servicePackage) set.add(s.servicePackage);
-    });
-    return Array.from(set).sort();
-  }, [stores]);
-
   // Compute spend for each store from deals
   const storeSpendMap = useMemo(() => {
     const map = new Map<string, number>();
     deals.forEach(d => {
       const sName = (d.storeName || '').toLowerCase().trim();
       const bName = (d.brandName || '').toLowerCase().trim();
-      const cost = d.totalValue || (d as any).agreedCost || 0;
+      const cost = d.totalValue || 0;
       if (sName) {
         map.set(sName, (map.get(sName) || 0) + cost);
       } else if (bName) {
@@ -176,12 +158,12 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
     return map;
   }, [deals]);
 
-  const getStoreActualSpent = (s: StorePortfolioItem): number => {
+  const getStoreActualSpent = useCallback((s: StorePortfolioItem): number => {
     if (s.actualSpentNet !== undefined) return s.actualSpentNet;
     const byName = storeSpendMap.get(s.storeName.toLowerCase().trim());
     if (byName !== undefined) return byName;
     return 0;
-  };
+  }, [storeSpendMap]);
 
   // Filtered stores with multi-dimensions
   const filteredStores = useMemo(() => {
@@ -238,7 +220,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
       }
       return true;
     });
-  }, [stores, selectedBrand, selectedPlatform, selectedPackage, selectedStatus, selectedOwner, selectedB2cPlan, selectedTeamStructure, selectedBudgetStatus, search, storeSpendMap]);
+  }, [stores, selectedBrand, selectedPlatform, selectedPackage, selectedStatus, selectedOwner, selectedB2cPlan, selectedTeamStructure, selectedBudgetStatus, search, getStoreActualSpent]);
 
   const isFiltered = search.trim() !== '' || 
     selectedBrand !== 'ALL' || 
@@ -317,15 +299,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
       const spent = getStoreActualSpent(s);
       return bNet > 0 && spent > bNet;
     });
-  }, [stores, storeSpendMap]);
-
-  const unbudgetedSpendStores = useMemo(() => {
-    return stores.filter(s => {
-      const bNet = s.budgetNet ?? s.monthlyBudget ?? 0;
-      const spent = getStoreActualSpent(s);
-      return bNet === 0 && spent > 0;
-    });
-  }, [stores, storeSpendMap]);
+  }, [stores, getStoreActualSpent]);
 
   // Open Handover Modal
   const handleOpenHandover = (s: StorePortfolioItem) => {
@@ -588,7 +562,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
           <select
             value={selectedBudgetStatus}
             onChange={(e) => {
-              setSelectedBudgetStatus(e.target.value as any);
+              setSelectedBudgetStatus(e.target.value as 'ALL' | 'HAS_BUDGET' | 'ZERO_BUDGET' | 'OVERBUDGET');
               setPage(1);
             }}
             className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-800 focus:outline-none focus:border-slate-800"
@@ -602,7 +576,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
           <select
             value={selectedTeamStructure}
             onChange={(e) => {
-              setSelectedTeamStructure(e.target.value as any);
+              setSelectedTeamStructure(e.target.value as 'ALL' | 'WITH_LEADER' | 'DIRECT_TO_LEAD');
               setPage(1);
             }}
             className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-800 focus:outline-none focus:border-slate-800"
@@ -734,12 +708,12 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                             <span>{s.brandName}</span>
                           </button>
                         </div>
-                        <div className="text-3xs text-slate-400 mt-0.5">{s.category || 'Tiêu dùng'}</div>
+                        <div className="text-2xs text-slate-400 mt-0.5">{s.category || 'Tiêu dùng'}</div>
                       </td>
 
                       {/* Hạn mức Order Net */}
                       <td className="py-3 px-4 text-right">
-                        <div className="font-mono font-bold text-xs text-slate-900">
+                        <div className="font-mono font-semibold text-xs text-slate-900">
                           {formatVndShort(bNet)}
                         </div>
                         {bNet > 0 ? (
@@ -752,21 +726,21 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                                 style={{ width: `${Math.min(100, burnPct)}%` }}
                               />
                             </div>
-                            <div className="text-3xs text-slate-500 mt-0.5 font-mono">
+                            <div className="text-2xs text-slate-500 mt-0.5 font-mono">
                               Đã duyệt: {formatVndShort(spent)} ({burnPct.toFixed(0)}%)
                             </div>
                           </div>
                         ) : (
-                          <span className="text-3xs font-mono text-purple-600">FOC (0đ)</span>
+                          <span className="text-2xs font-mono text-blue-600">FOC (0đ)</span>
                         )}
                       </td>
 
                       {/* Chỉ tiêu Video */}
                       <td className="py-3 px-3 text-center">
-                        <div className="font-mono font-bold text-xs text-purple-900">
+                        <div className="font-mono font-semibold text-xs text-blue-900">
                           {(s.targetAffiliateContents || 0) + (s.targetSelfChannelContents || 0)}
                         </div>
-                        <div className="text-3xs text-slate-400 font-mono">
+                        <div className="text-2xs text-slate-400 font-mono">
                           {s.targetAffiliateContents || 0} Aff • {s.targetSelfChannelContents || 0} Self
                         </div>
                       </td>
@@ -774,26 +748,26 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                       {/* Đội ngũ Phụ trách */}
                       <td className="py-3 px-4 text-2xs space-y-1">
                         <div className="flex items-center gap-1.5 text-slate-800">
-                          <span className="text-purple-600 font-semibold">PIC:</span>
+                          <span className="text-blue-600 font-semibold">PIC:</span>
                           <span className="font-semibold">{s.b2cOwnerName || s.primaryPic || 'Chưa gán'}</span>
                         </div>
                         
                         {hasLeaderTeam ? (
                           <div className="flex items-center gap-1">
-                            <span className="px-1.5 py-0.2 rounded text-3xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                            <span className="px-1.5 py-0.5 rounded text-2xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
                               Leader: {s.bookingLeader}
                             </span>
                           </div>
                         ) : (
                           <div className="flex items-center gap-1">
-                            <span className="px-1.5 py-0.2 rounded text-3xs font-medium bg-slate-100 text-slate-600 border border-slate-200">
+                            <span className="px-1.5 py-0.5 rounded text-2xs font-medium bg-slate-100 text-slate-600 border border-slate-200">
                               Trực tiếp Lead B2C
                             </span>
                           </div>
                         )}
 
                         {s.growthPic && (
-                          <div className="text-3xs text-slate-500">
+                          <div className="text-2xs text-slate-500">
                             Growth: {s.growthPic}
                           </div>
                         )}
@@ -802,21 +776,21 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                       {/* Cảnh báo Tài chính */}
                       <td className="py-3 px-3 text-center">
                         {isStoreOverbudget ? (
-                          <span className="px-2 py-0.5 rounded-full text-3xs font-bold bg-rose-50 text-rose-700 border border-rose-200 inline-flex items-center gap-1">
+                          <span className="px-2 py-0.5 rounded-full text-2xs font-semibold bg-rose-50 text-rose-700 border border-rose-200 inline-flex items-center gap-1">
                             <ShieldAlert className="w-3 h-3 text-rose-600" />
                             Bội chi
                           </span>
                         ) : isStoreUnbudgeted ? (
-                          <span className="px-2 py-0.5 rounded-full text-3xs font-bold bg-amber-50 text-amber-700 border border-amber-200 inline-flex items-center gap-1">
+                          <span className="px-2 py-0.5 rounded-full text-2xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 inline-flex items-center gap-1">
                             <AlertTriangle className="w-3 h-3 text-amber-600" />
                             Chi ngoài KH
                           </span>
                         ) : bNet === 0 ? (
-                          <span className="px-2 py-0.5 rounded-full text-3xs font-medium bg-purple-50 text-purple-700 border border-purple-200">
+                          <span className="px-2 py-0.5 rounded-full text-2xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
                             Chỉ gửi mẫu
                           </span>
                         ) : (
-                          <span className="px-2 py-0.5 rounded-full text-3xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 inline-flex items-center gap-1">
+                          <span className="px-2 py-0.5 rounded-full text-2xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 inline-flex items-center gap-1">
                             <ShieldCheck className="w-3 h-3 text-emerald-600" />
                             An toàn
                           </span>
@@ -830,9 +804,9 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                             type="button"
                             onClick={() => handleToggleB2cManaged(s)}
                             title="Bật/tắt Marketing B2C phụ trách"
-                            className={`w-20 px-1.5 py-0.5 rounded-full text-3xs font-semibold border transition cursor-pointer ${
+                            className={`w-20 px-1.5 py-0.5 rounded-full text-2xs font-semibold border transition cursor-pointer ${
                               s.isB2cManaged !== false
-                                ? 'bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100'
+                                ? 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
                                 : 'bg-slate-50 text-slate-400 border-slate-200 hover:bg-slate-100'
                             }`}
                           >
@@ -842,7 +816,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                             type="button"
                             onClick={() => handleToggleRequiresPlan(s)}
                             title="Bật/tắt yêu cầu lập Plan tháng"
-                            className={`w-20 px-1.5 py-0.5 rounded-full text-3xs font-semibold border transition cursor-pointer ${
+                            className={`w-20 px-1.5 py-0.5 rounded-full text-2xs font-semibold border transition cursor-pointer ${
                               s.requiresB2cPlan !== false
                                 ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
                                 : 'bg-slate-50 text-slate-400 border-slate-200 hover:bg-slate-100'
@@ -856,11 +830,11 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                       {/* Trạng thái */}
                       <td className="py-3 px-3 text-center">
                         {s.operationStatus === 'Live' || s.accountStatus === 'ACTIVE' ? (
-                          <span className="px-2 py-0.5 rounded text-3xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
                             Live
                           </span>
                         ) : (
-                          <span className="px-2 py-0.5 rounded text-3xs font-semibold bg-slate-100 text-slate-500 border border-slate-200">
+                          <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-slate-100 text-slate-500 border border-slate-200">
                             Off
                           </span>
                         )}
@@ -897,7 +871,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                           <button
                             type="button"
                             onClick={() => handleOpenHandover(s)}
-                            className="p-1.5 rounded-lg text-slate-600 hover:text-purple-700 hover:bg-purple-50 transition cursor-pointer"
+                            className="p-1.5 rounded-lg text-slate-600 hover:text-blue-700 hover:bg-blue-50 transition cursor-pointer"
                             title="Lập Lệnh bàn giao giữa kỳ"
                           >
                             <UserCheck className="w-3.5 h-3.5" />
@@ -991,11 +965,11 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
           <div className="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-lg w-full p-5 space-y-4 my-auto">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-slate-100 text-slate-800 flex items-center justify-center font-bold">
+                <div className="w-9 h-9 rounded-xl bg-slate-100 text-slate-800 flex items-center justify-center font-semibold">
                   <Store className="w-5 h-5 text-slate-700" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-sm text-slate-900">
+                  <h3 className="font-semibold text-sm text-slate-900">
                     Thêm Gian Hàng Mới (Dữ Liệu Gốc)
                   </h3>
                   <p className="text-2xs text-slate-500">
@@ -1026,7 +1000,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                   className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-800 text-xs bg-slate-50/50"
                   autoFocus
                 />
-                <p className="text-3xs text-slate-400 mt-1">
+                <p className="text-2xs text-slate-400 mt-1">
                   Định danh chính xác gian hàng trên sàn để liên kết đối soát hợp đồng và booking.
                 </p>
               </div>
@@ -1044,7 +1018,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                     <option key={b} value={b}>{b}</option>
                   ))}
                 </select>
-                <p className="text-3xs text-slate-400 mt-1">
+                <p className="text-2xs text-slate-400 mt-1">
                   Gian hàng sẽ được gắn vào nhãn hàng để quản lý hạn mức ngân sách và quy chuẩn nội dung.
                 </p>
               </div>
@@ -1075,13 +1049,13 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
               </div>
 
               {/* Informative notice */}
-              <div className="p-3 bg-purple-50/60 rounded-xl border border-purple-200/70 text-2xs text-purple-900 space-y-1">
-                <div className="font-semibold flex items-center gap-1.5 text-purple-950">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-purple-700 shrink-0" />
+              <div className="p-3 bg-blue-50/60 rounded-xl border border-blue-200/70 text-2xs text-blue-900 space-y-1">
+                <div className="font-semibold flex items-center gap-1.5 text-blue-950">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-blue-700 shrink-0" />
                   <span>Quy trình quản trị B2C Upbase:</span>
                 </div>
-                <p className="text-purple-800 text-3xs leading-relaxed">
-                  Tại Master Data, chỉ cần khai báo Tên gian hàng và thuộc Brand nào. Sau khi lưu, bấm nút <strong>"Hồ sơ"</strong> để sang màn hình Quản lý gian hàng riêng biệt, cấu hình hạn mức Net (File 4.1), cơ cấu 2 tầng (Trưởng phòng / Leader / Specialist) và chỉ tiêu Order.
+                <p className="text-blue-800 text-2xs leading-relaxed">
+                  Tại Master Data, chỉ cần khai báo Tên gian hàng và thuộc Brand nào. Sau khi lưu, bấm nút <strong>&quot;Hồ sơ&quot;</strong> để sang màn hình Quản lý gian hàng riêng biệt, cấu hình hạn mức Net (File 4.1), cơ cấu 2 tầng (Trưởng phòng / Leader / Specialist) và chỉ tiêu Order.
                 </p>
               </div>
 
@@ -1114,7 +1088,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
           <div className="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-2xl w-full p-5 space-y-4 my-auto max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div>
-                <h3 className="font-bold text-sm text-slate-900">
+                <h3 className="font-semibold text-sm text-slate-900">
                   Cập nhật Gian hàng [{editingStore.storeName}]
                 </h3>
                 <p className="text-2xs text-slate-500">
@@ -1180,7 +1154,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                   <label className="block text-slate-700 font-medium mb-1">Nền tảng sàn</label>
                   <select
                     value={form.platform}
-                    onChange={(e) => setForm(prev => ({ ...prev, platform: e.target.value as any }))}
+                    onChange={(e) => setForm(prev => ({ ...prev, platform: e.target.value as StorePortfolioItem['platform'] }))}
                     className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg bg-white focus:outline-none focus:border-slate-800"
                   >
                     <option value="TikTok Shop">TikTok Shop</option>
@@ -1193,7 +1167,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                   <label className="block text-slate-700 font-medium mb-1">Trạng thái vận hành</label>
                   <select
                     value={form.operationStatus}
-                    onChange={(e) => setForm(prev => ({ ...prev, operationStatus: e.target.value as any }))}
+                    onChange={(e) => setForm(prev => ({ ...prev, operationStatus: e.target.value as NonNullable<StorePortfolioItem['operationStatus']> }))}
                     className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg bg-white focus:outline-none focus:border-slate-800 font-medium"
                   >
                     <option value="Live">Live (Đang chạy)</option>
@@ -1259,7 +1233,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                       type="checkbox"
                       checked={form.requiresSparkAds}
                       onChange={(e) => setForm(prev => ({ ...prev, requiresSparkAds: e.target.checked }))}
-                      className="rounded border-slate-300 text-purple-600 focus:ring-purple-500"
+                      className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                     />
                     <span className="text-2xs text-slate-700 font-medium">Bắt buộc ủy quyền mã Ads</span>
                   </label>
@@ -1273,7 +1247,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                 </span>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                   <div>
-                    <label className="block text-slate-600 text-3xs font-semibold uppercase mb-1">
+                    <label className="block text-slate-600 text-2xs font-semibold mb-1">
                       Hạn mức Net Kế toán duyệt (VNĐ)
                     </label>
                     <input
@@ -1287,7 +1261,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                   </div>
 
                   <div>
-                    <label className="block text-slate-600 text-3xs font-semibold uppercase mb-1">
+                    <label className="block text-slate-600 text-2xs font-semibold mb-1">
                       Mục tiêu Doanh số NMV (VNĐ)
                     </label>
                     <input
@@ -1301,7 +1275,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                   </div>
 
                   <div>
-                    <label className="block text-slate-600 text-3xs font-semibold uppercase mb-1">
+                    <label className="block text-slate-600 text-2xs font-semibold mb-1">
                       Target Video Affiliate
                     </label>
                     <input
@@ -1314,7 +1288,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                   </div>
 
                   <div>
-                    <label className="block text-slate-600 text-3xs font-semibold uppercase mb-1">
+                    <label className="block text-slate-600 text-2xs font-semibold mb-1">
                       Target Video Kênh Brand
                     </label>
                     <input
@@ -1332,14 +1306,14 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
               <div className="pt-2 border-t border-slate-100 space-y-2.5">
                 <div className="text-xs font-semibold text-slate-900 flex items-center justify-between">
                   <span>Cơ cấu Nhân sự Phụ trách (2 Tầng)</span>
-                  <span className="text-3xs text-slate-400 font-normal">Trưởng phòng: Đặng Thị Yến Nhi</span>
+                  <span className="text-2xs text-slate-400 font-normal">Trưởng phòng: Đặng Thị Yến Nhi</span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <StaffSearchSelect
                     label="Chuyên viên Booking chính (Specialist PIC) *"
                     sublabel="(Trực tiếp chạy deal và chịu trách nhiệm nghiệm thu)"
-                    badgeColorClass="text-purple-600"
+                    badgeColorClass="text-blue-600"
                     placeholder="Chọn chuyên viên B2C..."
                     value={form.b2cOwnerName}
                     departmentHint="BOOKING"
@@ -1365,7 +1339,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                       <option value="">Không có leader (Chuyên viên làm việc trực tiếp Trưởng phòng)</option>
                       <option value="Nguyễn Thị Ngọc Tâm">Nguyễn Thị Ngọc Tâm (Trưởng nhóm 8 gian)</option>
                     </select>
-                    <p className="text-3xs text-slate-400 mt-0.5">
+                    <p className="text-2xs text-slate-400 mt-0.5">
                       Theo quy chuẩn B2C: Chỉ có 8 gian hàng có Trưởng nhóm sơ duyệt, các gian còn lại làm việc trực tiếp Trưởng phòng.
                     </p>
                   </div>
@@ -1400,11 +1374,11 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                       type="checkbox"
                       checked={form.isB2cManaged}
                       onChange={(e) => setForm(prev => ({ ...prev, isB2cManaged: e.target.checked }))}
-                      className="mt-0.5 rounded border-slate-300 text-purple-600 focus:ring-purple-500"
+                      className="mt-0.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                     />
                     <div>
                       <span className="font-semibold text-slate-800">Marketing B2C phụ trách</span>
-                      <p className="text-slate-500 text-3xs">Tính vào danh mục đối soát của phòng B2C</p>
+                      <p className="text-slate-500 text-2xs">Tính vào danh mục đối soát của phòng B2C</p>
                     </div>
                   </label>
 
@@ -1417,7 +1391,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                     />
                     <div>
                       <span className="font-semibold text-slate-800">Yêu cầu lập Kế hoạch tháng</span>
-                      <p className="text-slate-500 text-3xs">Phải có bản phân rã Input plan hàng tuần</p>
+                      <p className="text-slate-500 text-2xs">Phải có bản phân rã Input plan hàng tuần</p>
                     </div>
                   </label>
                 </div>
@@ -1453,7 +1427,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                 <Trash2 className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="font-bold text-base text-slate-900">Xác nhận xử lý gian hàng</h3>
+                <h3 className="font-semibold text-base text-slate-900">Xác nhận xử lý gian hàng</h3>
                 <p className="text-2xs text-slate-500 mt-0.5">
                   Mã gian hàng: <span className="font-mono font-semibold text-slate-800">{deletingStore.storeOperationId || deletingStore.id}</span>
                 </p>
@@ -1476,12 +1450,12 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
               <button
                 type="button"
                 onClick={() => handleOffboardStore(deletingStore)}
-                className="w-full py-2.5 px-3 rounded-xl border border-purple-200 bg-purple-50 hover:bg-purple-100 text-purple-800 font-semibold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer"
+                className="w-full py-2.5 px-3 rounded-xl border border-blue-200 bg-blue-50 hover:bg-blue-100 text-blue-800 font-semibold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer"
               >
-                <Archive className="w-3.5 h-3.5 text-purple-700" />
+                <Archive className="w-3.5 h-3.5 text-blue-700" />
                 <span>Chuyển sang &quot;Off / Dừng hợp tác&quot; (Khuyên dùng)</span>
               </button>
-              <p className="text-3xs text-slate-400">
+              <p className="text-2xs text-slate-400">
                 Lưu trữ gian hàng giữ toàn bộ dữ liệu báo cáo GMV và lịch sử booking của nhãn hàng.
               </p>
             </div>

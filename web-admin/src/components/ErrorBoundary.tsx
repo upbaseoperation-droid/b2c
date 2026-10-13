@@ -47,7 +47,7 @@ export class ErrorBoundary extends Component<Props, State> {
           </div>
 
           <div className="space-y-1.5">
-            <h2 className="text-base font-bold text-ink">
+            <h2 className="text-base font-semibold text-ink">
               {this.props.fallbackTitle || 'Không thể hiển thị màn hình này'}
             </h2>
             <p className="text-xs text-ink-2 max-w-md mx-auto leading-relaxed">
@@ -65,21 +65,17 @@ export class ErrorBoundary extends Component<Props, State> {
           <div className="flex items-center justify-center gap-3 pt-2">
             <button
               onClick={this.handleReset}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-md bg-slate-900 text-white hover:bg-slate-800 transition-colors"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-md bg-primary text-white hover:bg-primary-hover transition-colors"
             >
               <RotateCcw className="w-3.5 h-3.5" />
               Thử tải lại
             </button>
             <button
-              onClick={() => {
-                if (typeof window !== 'undefined') {
-                  window.location.href = '/';
-                }
-              }}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium rounded-md bg-white text-slate-700 border border-line hover:bg-sunken transition-colors"
+              onClick={this.handleReset}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium rounded-md bg-surface text-ink-2 border border-line hover:bg-sunken transition-colors"
             >
               <Home className="w-3.5 h-3.5" />
-              Về trang chủ
+              Làm mới màn hình
             </button>
           </div>
         </div>

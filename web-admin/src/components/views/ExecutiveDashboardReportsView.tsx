@@ -1,46 +1,24 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
+import { Avatar, Tabs } from '../ui';
 import {
-  LayoutDashboard,
   TrendingUp,
-  DollarSign,
-  ShoppingBag,
-  Video,
   Award,
-  Users,
-  Layers,
   Calendar,
   FileSpreadsheet,
   Download,
-  Filter,
-  CheckCircle2,
-  AlertTriangle,
-  Clock,
-  ArrowUpRight,
-  ArrowDownRight,
   ShieldCheck,
   Building,
-  Sparkles,
   PieChart,
-  BarChart3,
   Search,
   ExternalLink,
   ChevronRight,
-  Printer,
-  FileText,
   Activity,
-  Zap,
   PlaySquare,
   AlertCircle,
-  Eye,
   Film,
-  Flame,
-  UserCheck,
-  SlidersHorizontal,
-  ChevronDown,
-  Percent,
-  CheckCircle
+  Flame
 } from 'lucide-react';
 import { 
   BookingDealItem, 
@@ -50,7 +28,6 @@ import {
   KocItem 
 } from '../../lib/types';
 import { formatVndShort } from '../../lib/format';
-import { STAFF_MASTER_DIRECTORY } from '../../lib/mockData';
 import ExcelJS from 'exceljs';
 
 interface ExecutiveDashboardReportsViewProps {
@@ -60,7 +37,7 @@ interface ExecutiveDashboardReportsViewProps {
   kocs?: KocItem[];
   storePortfolios?: StorePortfolioItem[];
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
-  onNavigateToTab?: (tabKey: any) => void;
+  onNavigateToTab?: (tabKey: string) => void;
 }
 
 export interface StaffPerformanceItem {
@@ -124,7 +101,6 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
   currentUser,
   deals = [],
   brands = [],
-  kocs = [],
   storePortfolios = [],
   onNotify,
   onNavigateToTab
@@ -977,7 +953,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
   return (
     <div className="space-y-6">
       {/* ========================================================================= */}
-      {/* HEADER & PERIOD FILTER BAR                                                */}
+      {/* HEADER & PERIOD FILTER BAR */}
       {/* THANH ĐIỀU KHIỂN & BỘ LỌC BÁO CÁO TINH GỌN */}
       <div className="bg-white rounded-xl border border-slate-200 px-4 py-3 shadow-xs">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
@@ -1039,19 +1015,19 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
       </div>
 
       {/* ========================================================================= */}
-      {/* TOP TIER KPI METRIC CARDS                                                 */}
+      {/* TOP TIER KPI METRIC CARDS */}
       {/* ========================================================================= */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         {/* Card 1: GMV */}
         <div className="bg-white rounded-xl border border-slate-200 p-3.5 shadow-2xs relative overflow-hidden">
-          <div className="text-3xs font-semibold text-slate-500 uppercase tracking-wider flex items-center justify-between">
+          <div className="text-2xs font-semibold text-slate-500 flex items-center justify-between">
             <span>Doanh Thu GMV</span>
-            <span className="text-emerald-600 bg-emerald-50 px-1 py-0.2 rounded font-bold">+18.4%</span>
+            <span className="text-emerald-600 bg-emerald-50 px-1 py-0.5 rounded font-semibold">+18.4%</span>
           </div>
-          <div className="text-lg font-extrabold font-mono text-emerald-600 mt-1">
+          <div className="text-lg font-semibold font-mono text-emerald-600 mt-1">
             {formatVndShort(stats.totalGmv)}
           </div>
-          <div className="text-3xs text-slate-500 mt-1 flex items-center justify-between">
+          <div className="text-2xs text-slate-500 mt-1 flex items-center justify-between">
             <span>Mục tiêu: 4.5 Tỷ</span>
             <span className="font-semibold text-emerald-700">85.6%</span>
           </div>
@@ -1062,49 +1038,49 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
 
         {/* Card 2: Chi phí & Pacing */}
         <div className="bg-white rounded-xl border border-slate-200 p-3.5 shadow-2xs relative overflow-hidden">
-          <div className="text-3xs font-semibold text-slate-500 uppercase tracking-wider flex items-center justify-between">
+          <div className="text-2xs font-semibold text-slate-500 flex items-center justify-between">
             <span>Ngân Sách Đã Chi</span>
-            <span className="text-indigo-600 bg-indigo-50 px-1 py-0.2 rounded font-bold">{stats.overallBurnRate}% Burn</span>
+            <span className="text-blue-600 bg-blue-50 px-1 py-0.5 rounded font-semibold">{stats.overallBurnRate}% Burn</span>
           </div>
-          <div className="text-lg font-extrabold font-mono text-slate-900 mt-1">
+          <div className="text-lg font-semibold font-mono text-slate-900 mt-1">
             {formatVndShort(stats.totalSpentBudget)}
           </div>
-          <div className="text-3xs text-slate-500 mt-1 flex items-center justify-between">
+          <div className="text-2xs text-slate-500 mt-1 flex items-center justify-between">
             <span>Còn lại: {formatVndShort(stats.totalRemainingBudget)}</span>
-            <span className="font-semibold text-indigo-700">Pacing: {stats.overallPacingIndex}x</span>
+            <span className="font-semibold text-blue-700">Pacing: {stats.overallPacingIndex}x</span>
           </div>
           <div className="w-full bg-slate-100 h-1.5 rounded-full mt-1 overflow-hidden">
-            <div className="bg-indigo-600 h-full rounded-full" style={{ width: `${stats.overallBurnRate}%` }} />
+            <div className="bg-blue-600 h-full rounded-full" style={{ width: `${stats.overallBurnRate}%` }} />
           </div>
         </div>
 
         {/* Card 3: ROAS */}
         <div className="bg-white rounded-xl border border-slate-200 p-3.5 shadow-2xs relative overflow-hidden">
-          <div className="text-3xs font-semibold text-slate-500 uppercase tracking-wider flex items-center justify-between">
+          <div className="text-2xs font-semibold text-slate-500 flex items-center justify-between">
             <span>ROAS Toàn Kênh</span>
-            <span className="text-emerald-600 bg-emerald-50 px-1 py-0.2 rounded font-bold">Vượt KPI</span>
+            <span className="text-emerald-600 bg-emerald-50 px-1 py-0.5 rounded font-semibold">Vượt KPI</span>
           </div>
-          <div className="text-lg font-extrabold font-mono text-indigo-600 mt-1">
+          <div className="text-lg font-semibold font-mono text-blue-600 mt-1">
             {stats.overallRoas}x
           </div>
-          <div className="text-3xs text-slate-500 mt-1 truncate">
+          <div className="text-2xs text-slate-500 mt-1 truncate">
             Net Margin: <strong className="text-slate-800 font-mono">+{formatVndShort(stats.netProfitContribution)}</strong>
           </div>
           <div className="w-full bg-slate-100 h-1.5 rounded-full mt-1 overflow-hidden">
-            <div className="bg-indigo-600 h-full rounded-full" style={{ width: '100%' }} />
+            <div className="bg-blue-600 h-full rounded-full" style={{ width: '100%' }} />
           </div>
         </div>
 
         {/* Card 4: Video On-Air */}
         <div className="bg-white rounded-xl border border-slate-200 p-3.5 shadow-2xs relative overflow-hidden">
-          <div className="text-3xs font-semibold text-slate-500 uppercase tracking-wider flex items-center justify-between">
+          <div className="text-2xs font-semibold text-slate-500 flex items-center justify-between">
             <span>Video Đã On Air</span>
-            <span className="text-emerald-600 text-3xs font-semibold">87.2% KPI</span>
+            <span className="text-emerald-600 text-2xs font-semibold">87.2% KPI</span>
           </div>
-          <div className="text-lg font-extrabold font-mono text-slate-900 mt-1">
+          <div className="text-lg font-semibold font-mono text-slate-900 mt-1">
             {stats.totalOnAirVideos} <span className="text-xs font-normal text-slate-500">video</span>
           </div>
-          <div className="text-3xs text-slate-500 mt-1 flex items-center justify-between">
+          <div className="text-2xs text-slate-500 mt-1 flex items-center justify-between">
             <span>Quay: {stats.inProductionVideos}</span>
             <span>Kịch bản: {stats.pendingScriptVideos}</span>
           </div>
@@ -1115,31 +1091,31 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
 
         {/* Card 5: Lượt Views */}
         <div className="bg-white rounded-xl border border-slate-200 p-3.5 shadow-2xs relative overflow-hidden">
-          <div className="text-3xs font-semibold text-slate-500 uppercase tracking-wider flex items-center justify-between">
+          <div className="text-2xs font-semibold text-slate-500 flex items-center justify-between">
             <span>Tổng Lượt Views</span>
-            <span className="text-purple-600 text-3xs font-semibold">Traffic Hot</span>
+            <span className="text-blue-600 text-2xs font-semibold">Traffic Hot</span>
           </div>
-          <div className="text-lg font-extrabold font-mono text-purple-700 mt-1">
+          <div className="text-lg font-semibold font-mono text-blue-700 mt-1">
             {(stats.totalViews / 1000000).toFixed(1)}M <span className="text-xs font-normal text-slate-500">views</span>
           </div>
-          <div className="text-3xs text-slate-500 mt-1">
+          <div className="text-2xs text-slate-500 mt-1">
             Tỷ lệ CVR giỏ hàng: <strong className="text-slate-800">3.8%</strong>
           </div>
           <div className="w-full bg-slate-100 h-1.5 rounded-full mt-1 overflow-hidden">
-            <div className="bg-purple-600 h-full rounded-full" style={{ width: '92%' }} />
+            <div className="bg-blue-600 h-full rounded-full" style={{ width: '92%' }} />
           </div>
         </div>
 
         {/* Card 6: Tuân Thủ SLA */}
         <div className="bg-white rounded-xl border border-slate-200 p-3.5 shadow-2xs relative overflow-hidden">
-          <div className="text-3xs font-semibold text-slate-500 uppercase tracking-wider flex items-center justify-between">
+          <div className="text-2xs font-semibold text-slate-500 flex items-center justify-between">
             <span>SLA Bàn Giao</span>
-            <span className="text-blue-600 text-3xs font-semibold">Chuẩn 8 bước</span>
+            <span className="text-blue-600 text-2xs font-semibold">Chuẩn 8 bước</span>
           </div>
-          <div className="text-lg font-extrabold font-mono text-blue-600 mt-1">
+          <div className="text-lg font-semibold font-mono text-blue-600 mt-1">
             {stats.slaComplianceRate}%
           </div>
-          <div className="text-3xs text-slate-500 mt-1 flex items-center justify-between">
+          <div className="text-2xs text-slate-500 mt-1 flex items-center justify-between">
             <span>Duyệt kịch bản: 92%</span>
             <span>Air video: 4.1d</span>
           </div>
@@ -1150,105 +1126,24 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
       </div>
 
       {/* ========================================================================= */}
-      {/* NAVIGATION TABS EXPANDED TO 7 DETAILED AREAS                              */}
+      {/* NAVIGATION TABS EXPANDED TO 7 DETAILED AREAS */}
       {/* ========================================================================= */}
-      <div className="border-b border-slate-200 flex items-center justify-between gap-4">
-        <div className="flex items-center gap-1 -mb-px overflow-x-auto">
-          <button
-            type="button"
-            onClick={() => setActiveSubTab('OVERVIEW')}
-            className={`py-3 px-3.5 text-xs font-semibold border-b-2 flex items-center gap-1.5 transition cursor-pointer shrink-0 ${
-              activeSubTab === 'OVERVIEW'
-                ? 'border-indigo-600 text-indigo-700 bg-indigo-50/30'
-                : 'border-transparent text-slate-500 hover:text-slate-700'
-            }`}
-          >
-            <BarChart3 className="w-4 h-4 text-indigo-600" />
-            <span>1. Dashboard Tổng Quan</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveSubTab('STAFF_PROGRESS')}
-            className={`py-3 px-3.5 text-xs font-semibold border-b-2 flex items-center gap-1.5 transition cursor-pointer shrink-0 ${
-              activeSubTab === 'STAFF_PROGRESS'
-                ? 'border-blue-600 text-blue-700 bg-blue-50/30'
-                : 'border-transparent text-slate-500 hover:text-slate-700'
-            }`}
-          >
-            <Users className="w-4 h-4 text-blue-600" />
-            <span>2. Tiến Độ Nhân Viên & Squad ({staffScorecards.length})</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveSubTab('VIDEO_AIRING')}
-            className={`py-3 px-3.5 text-xs font-semibold border-b-2 flex items-center gap-1.5 transition cursor-pointer shrink-0 ${
-              activeSubTab === 'VIDEO_AIRING'
-                ? 'border-emerald-600 text-emerald-700 bg-emerald-50/30'
-                : 'border-transparent text-slate-500 hover:text-slate-700'
-            }`}
-          >
-            <Film className="w-4 h-4 text-emerald-600" />
-            <span>3. Tiến Độ Air Video & Pipeline</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveSubTab('BUDGET_PACING')}
-            className={`py-3 px-3.5 text-xs font-semibold border-b-2 flex items-center gap-1.5 transition cursor-pointer shrink-0 ${
-              activeSubTab === 'BUDGET_PACING'
-                ? 'border-amber-600 text-amber-700 bg-amber-50/30'
-                : 'border-transparent text-slate-500 hover:text-slate-700'
-            }`}
-          >
-            <Flame className="w-4 h-4 text-amber-600" />
-            <span>4. Chi Tiêu Ngân Sách & Burn Rate</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveSubTab('CREATORS')}
-            className={`py-3 px-3.5 text-xs font-semibold border-b-2 flex items-center gap-1.5 transition cursor-pointer shrink-0 ${
-              activeSubTab === 'CREATORS'
-                ? 'border-slate-900 text-slate-900 bg-slate-50'
-                : 'border-transparent text-slate-500 hover:text-slate-700'
-            }`}
-          >
-            <Award className="w-4 h-4 text-amber-500" />
-            <span>5. Xếp Hạng KOC ROI</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveSubTab('FINANCE_TAX')}
-            className={`py-3 px-3.5 text-xs font-semibold border-b-2 flex items-center gap-1.5 transition cursor-pointer shrink-0 ${
-              activeSubTab === 'FINANCE_TAX'
-                ? 'border-slate-900 text-slate-900 bg-slate-50'
-                : 'border-transparent text-slate-500 hover:text-slate-700'
-            }`}
-          >
-            <DollarSign className="w-4 h-4 text-emerald-600" />
-            <span>6. Thuế & Đối Soát</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveSubTab('REPORT_CENTER')}
-            className={`py-3 px-3.5 text-xs font-semibold border-b-2 flex items-center gap-1.5 transition cursor-pointer shrink-0 ${
-              activeSubTab === 'REPORT_CENTER'
-                ? 'border-slate-900 text-slate-900 bg-slate-50'
-                : 'border-transparent text-slate-500 hover:text-slate-700'
-            }`}
-          >
-            <FileSpreadsheet className="w-4 h-4 text-rose-500" />
-            <span>7. Xuất Báo Cáo (.xlsx)</span>
-          </button>
-        </div>
-      </div>
+      <Tabs
+        items={[
+          { key: 'OVERVIEW', label: 'Tổng quan' },
+          { key: 'STAFF_PROGRESS', label: 'Tiến độ nhân sự', count: staffScorecards.length },
+          { key: 'VIDEO_AIRING', label: 'Tiến độ video' },
+          { key: 'BUDGET_PACING', label: 'Chi tiêu ngân sách' },
+          { key: 'CREATORS', label: 'Xếp hạng KOC' },
+          { key: 'FINANCE_TAX', label: 'Thuế & đối soát' },
+          { key: 'REPORT_CENTER', label: 'Xuất báo cáo (.xlsx)' },
+        ]}
+        value={activeSubTab}
+        onChange={(k) => setActiveSubTab(k as typeof activeSubTab)}
+      />
 
       {/* ========================================================================= */}
-      {/* SUB-TAB 1: DASHBOARD ĐIỀU HÀNH ĐA CHIỀU (OVERVIEW)                        */}
+      {/* SUB-TAB 1: DASHBOARD ĐIỀU HÀNH ĐA CHIỀU (OVERVIEW) */}
       {/* ========================================================================= */}
       {activeSubTab === 'OVERVIEW' && (
         <div className="space-y-6">
@@ -1256,11 +1151,11 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div 
               onClick={() => setActiveSubTab('STAFF_PROGRESS')}
-              className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4 cursor-pointer hover:shadow-sm transition flex items-center justify-between"
+              className="bg-surface-subtle border border-blue-200 rounded-xl p-4 cursor-pointer hover:shadow-sm transition flex items-center justify-between"
             >
               <div>
-                <span className="text-2xs font-bold text-blue-700 uppercase tracking-wide">Tiến Độ Nhân Viên</span>
-                <h4 className="text-sm font-bold text-slate-900 mt-0.5">85% Nhân sự đạt và vượt KPI</h4>
+                <span className="text-2xs font-semibold text-blue-700 ">Tiến Độ Nhân Viên</span>
+                <h4 className="text-sm font-semibold text-slate-900 mt-0.5">85% Nhân sự đạt và vượt KPI</h4>
                 <p className="text-2xs text-slate-600 mt-1">Cảnh báo: 2 nhân sự cần phân bổ bớt gian hàng</p>
               </div>
               <ChevronRight className="w-5 h-5 text-blue-600 shrink-0" />
@@ -1268,11 +1163,11 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
 
             <div 
               onClick={() => setActiveSubTab('VIDEO_AIRING')}
-              className="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200 rounded-xl p-4 cursor-pointer hover:shadow-sm transition flex items-center justify-between"
+              className="bg-surface-subtle border border-emerald-200 rounded-xl p-4 cursor-pointer hover:shadow-sm transition flex items-center justify-between"
             >
               <div>
-                <span className="text-2xs font-bold text-emerald-700 uppercase tracking-wide">Tiến Độ Air Video</span>
-                <h4 className="text-sm font-bold text-slate-900 mt-0.5">1,025 / 1,250 Videos Đã On-Air</h4>
+                <span className="text-2xs font-semibold text-emerald-700 ">Tiến Độ Air Video</span>
+                <h4 className="text-sm font-semibold text-slate-900 mt-0.5">1,025 / 1,250 Videos Đã On-Air</h4>
                 <p className="text-2xs text-slate-600 mt-1">285 video đang quay dựng chuẩn bị cho Mega 10.10</p>
               </div>
               <ChevronRight className="w-5 h-5 text-emerald-600 shrink-0" />
@@ -1280,11 +1175,11 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
 
             <div 
               onClick={() => setActiveSubTab('BUDGET_PACING')}
-              className="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4 cursor-pointer hover:shadow-sm transition flex items-center justify-between"
+              className="bg-surface-subtle border border-amber-200 rounded-xl p-4 cursor-pointer hover:shadow-sm transition flex items-center justify-between"
             >
               <div>
-                <span className="text-2xs font-bold text-amber-700 uppercase tracking-wide">Burn Rate Pacing (Ngày 8/31)</span>
-                <h4 className="text-sm font-bold text-slate-900 mt-0.5">Đã giải ngân 28.4% (Pacing 1.10x)</h4>
+                <span className="text-2xs font-semibold text-amber-700 ">Burn Rate Pacing (Ngày 8/31)</span>
+                <h4 className="text-sm font-semibold text-slate-900 mt-0.5">Đã giải ngân 28.4% (Pacing 1.10x)</h4>
                 <p className="text-2xs text-slate-600 mt-1">Đúng tiến độ an toàn, sẵn sàng dồn ngân sách Mega</p>
               </div>
               <ChevronRight className="w-5 h-5 text-amber-600 shrink-0" />
@@ -1297,7 +1192,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
             <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 p-5 shadow-xs space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                  <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
                     <TrendingUp className="w-4 h-4 text-emerald-600" />
                     Tiến Độ Tăng Trưởng GMV Theo Tuần
                   </h3>
@@ -1324,17 +1219,17 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                     <div key={idx} className="bg-slate-50 rounded-xl p-3 border border-slate-200/80 flex flex-col justify-between space-y-2">
                       <div className="text-2xs font-semibold text-slate-600 truncate">{item.week}</div>
                       <div>
-                        <div className="text-base font-extrabold font-mono text-emerald-600">
+                        <div className="text-base font-semibold font-mono text-emerald-600">
                           {formatVndShort(wGmv)}
                         </div>
-                        <div className="text-3xs text-slate-500 font-mono">
+                        <div className="text-2xs text-slate-500 font-mono">
                           Chi phí: {formatVndShort(wSpend)}
                         </div>
                       </div>
                       <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
                         <div className="bg-emerald-500 h-full rounded-full transition-all duration-500" style={{ width: `${wPct}%` }} />
                       </div>
-                      <div className="text-3xs font-mono font-bold text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded w-fit">
+                      <div className="text-2xs font-mono font-semibold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded w-fit">
                         ROAS: {wRoas}
                       </div>
                     </div>
@@ -1346,8 +1241,8 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
             {/* Revenue Distribution By Channel */}
             <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs space-y-4">
               <div>
-                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                  <PieChart className="w-4 h-4 text-indigo-600" />
+                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
+                  <PieChart className="w-4 h-4 text-blue-600" />
                   Cơ Cấu Doanh Thu 3 Nguồn Lực
                 </h3>
                 <p className="text-xs text-slate-500">Tỷ trọng đóng góp GMV toàn hệ thống</p>
@@ -1363,13 +1258,13 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                       <div>
                         <div className="flex justify-between text-xs font-semibold mb-1">
                           <span className="flex items-center gap-1.5 text-slate-800">
-                            <span className="w-2.5 h-2.5 rounded-full bg-indigo-600" />
+                            <span className="w-2.5 h-2.5 rounded-full bg-blue-600" />
                             1. KOC Booking Ngoài (Affiliate + Cast)
                           </span>
-                          <span className="font-mono text-indigo-600">{bPct}% ({formatVndShort(stats.bookingGmv)})</span>
+                          <span className="font-mono text-blue-600">{bPct}% ({formatVndShort(stats.bookingGmv)})</span>
                         </div>
                         <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                          <div className="bg-indigo-600 h-full rounded-full" style={{ width: `${bPct}%` }} />
+                          <div className="bg-blue-600 h-full rounded-full" style={{ width: `${bPct}%` }} />
                         </div>
                       </div>
 
@@ -1413,7 +1308,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
           <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs">
             <div className="p-4 border-b border-slate-100 flex items-center justify-between">
               <div>
-                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
                   <Building className="w-4 h-4 text-blue-600" />
                   Ma Trận Hiệu Suất Theo Nhãn Hàng (Brand Scorecard)
                 </h3>
@@ -1431,7 +1326,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
 
             <div className="overflow-x-auto">
               <table className="w-full text-xs text-left">
-                <thead className="bg-slate-50 text-slate-600 border-b border-slate-200 uppercase font-semibold text-3xs">
+                <thead className="bg-slate-50 text-slate-600 border-b border-slate-200 font-semibold text-2xs">
                   <tr>
                     <th className="py-3 px-4">Tên Nhãn Hàng</th>
                     <th className="py-3 px-3 text-center">Số Deal</th>
@@ -1445,7 +1340,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                 <tbody className="divide-y divide-slate-100">
                   {brandScorecard.map((b, idx) => (
                     <tr key={idx} className="hover:bg-slate-50/80 transition">
-                      <td className="py-3.5 px-4 font-bold text-slate-900 text-xs flex items-center gap-2">
+                      <td className="py-3.5 px-4 font-semibold text-slate-900 text-xs flex items-center gap-2">
                         <span className="w-2 h-2 rounded-full bg-blue-600" />
                         <span>{b.brandName}</span>
                       </td>
@@ -1455,11 +1350,11 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                       <td className="py-3.5 px-3 text-right font-mono font-semibold text-slate-800">
                         {b.cost.toLocaleString('vi-VN')} đ
                       </td>
-                      <td className="py-3.5 px-3 text-right font-mono font-bold text-emerald-600">
+                      <td className="py-3.5 px-3 text-right font-mono font-semibold text-emerald-600">
                         {b.gmv.toLocaleString('vi-VN')} đ
                       </td>
                       <td className="py-3.5 px-3 text-center">
-                        <span className={`px-2 py-0.5 rounded text-xs font-mono font-bold ${
+                        <span className={`px-2 py-0.5 rounded text-xs font-mono font-semibold ${
                           b.roas >= 6.0
                             ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                             : 'bg-blue-50 text-blue-700 border border-blue-200'
@@ -1471,7 +1366,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                         {b.onAirCount} video
                       </td>
                       <td className="py-3.5 px-4 text-center">
-                        <span className="px-2.5 py-0.5 rounded-full text-3xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        <span className="px-2.5 py-0.5 rounded-full text-2xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
                           Đã nghiệm thu 100%
                         </span>
                       </td>
@@ -1485,37 +1380,37 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
       )}
 
       {/* ========================================================================= */}
-      {/* SUB-TAB 2: TIẾN ĐỘ NHÂN VIÊN & SQUAD PICS (NEW DEEP DIVE)                  */}
+      {/* SUB-TAB 2: TIẾN ĐỘ NHÂN VIÊN & SQUAD PICS (NEW DEEP DIVE) */}
       {/* ========================================================================= */}
       {activeSubTab === 'STAFF_PROGRESS' && (
         <div className="space-y-4 animate-in fade-in duration-150">
           {/* Top Metrics Cards */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs">
-              <div className="text-2xs font-semibold text-slate-500 uppercase">Tổng Nhân Sự Quản Lý</div>
-              <div className="text-xl font-bold font-mono text-slate-900 mt-1 flex items-baseline gap-2">
+              <div className="text-2xs font-semibold text-slate-500 ">Tổng Nhân Sự Quản Lý</div>
+              <div className="text-xl font-semibold font-mono text-slate-900 mt-1 flex items-baseline gap-2">
                 <span>{staffScorecards.length} Chuyên viên</span>
                 <span className="text-2xs text-blue-600 font-semibold">(110 PICs toàn sàn)</span>
               </div>
-              <div className="text-3xs text-slate-500 mt-1">Bao gồm Account, Growth, Content, Booking & Media</div>
+              <div className="text-2xs text-slate-500 mt-1">Bao gồm Account, Growth, Content, Booking & Media</div>
             </div>
 
             <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs">
-              <div className="text-2xs font-semibold text-slate-500 uppercase">Tỷ Lệ Đạt KPI Video</div>
-              <div className="text-xl font-bold font-mono text-emerald-600 mt-1">91.4%</div>
-              <div className="text-3xs text-slate-500 mt-1">10/12 Chuyên viên hoàn thành trên 85% target</div>
+              <div className="text-2xs font-semibold text-slate-500 ">Tỷ Lệ Đạt KPI Video</div>
+              <div className="text-xl font-semibold font-mono text-emerald-600 mt-1">91.4%</div>
+              <div className="text-2xs text-slate-500 mt-1">10/12 Chuyên viên hoàn thành trên 85% target</div>
             </div>
 
             <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs">
-              <div className="text-2xs font-semibold text-slate-500 uppercase">Tỷ Lệ Đạt Doanh Số GMV</div>
-              <div className="text-xl font-bold font-mono text-indigo-600 mt-1">88.6%</div>
-              <div className="text-3xs text-slate-500 mt-1">Tổng GMV đóng góp: {formatVndShort(stats.totalGmv)}</div>
+              <div className="text-2xs font-semibold text-slate-500 ">Tỷ Lệ Đạt Doanh Số GMV</div>
+              <div className="text-xl font-semibold font-mono text-blue-600 mt-1">88.6%</div>
+              <div className="text-2xs text-slate-500 mt-1">Tổng GMV đóng góp: {formatVndShort(stats.totalGmv)}</div>
             </div>
 
             <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs">
-              <div className="text-2xs font-semibold text-slate-500 uppercase">Cảnh Báo Quá Tải & Rủi Ro</div>
-              <div className="text-xl font-bold font-mono text-amber-600 mt-1">2 Nhân Sự</div>
-              <div className="text-3xs text-slate-500 mt-1">Vân Ngọc (62 shops), Hà Linh (chậm KPI KOC)</div>
+              <div className="text-2xs font-semibold text-slate-500 ">Cảnh Báo Quá Tải & Rủi Ro</div>
+              <div className="text-xl font-semibold font-mono text-amber-600 mt-1">2 Nhân Sự</div>
+              <div className="text-2xs text-slate-500 mt-1">Vân Ngọc (62 shops), Hà Linh (chậm KPI KOC)</div>
             </div>
           </div>
 
@@ -1572,7 +1467,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
           <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs">
             <div className="overflow-x-auto">
               <table className="w-full text-xs text-left">
-                <thead className="bg-slate-50 text-slate-600 border-b border-slate-200 uppercase font-semibold text-3xs">
+                <thead className="bg-slate-50 text-slate-600 border-b border-slate-200 font-semibold text-2xs">
                   <tr>
                     <th className="py-3 px-4">Nhân Sự & Squad</th>
                     <th className="py-3 px-3 text-center">Shop / Brand</th>
@@ -1593,13 +1488,11 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                       <tr key={s.id} className="hover:bg-slate-50/80 transition">
                         <td className="py-3.5 px-4">
                           <div className="flex items-center gap-2.5">
-                            <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 font-bold flex items-center justify-center text-xs shrink-0">
-                              {s.avatar}
-                            </div>
+                            <Avatar name={s.name} size={32} />
                             <div>
-                              <div className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
+                              <div className="font-semibold text-slate-900 text-xs flex items-center gap-1.5">
                                 {s.name}
-                                <span className="text-3xs font-semibold px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 border border-slate-200">
+                                <span className="text-2xs font-semibold px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">
                                   {s.role}
                                 </span>
                               </div>
@@ -1609,13 +1502,13 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                         </td>
 
                         <td className="py-3.5 px-3 text-center">
-                          <div className="font-bold text-slate-900">{s.assignedStoresCount} shops</div>
-                          <div className="text-3xs text-slate-500">{s.assignedBrandsCount} brands</div>
+                          <div className="font-semibold text-slate-900">{s.assignedStoresCount} shops</div>
+                          <div className="text-2xs text-slate-500">{s.assignedBrandsCount} brands</div>
                         </td>
 
                         <td className="py-3.5 px-3 text-center min-w-[130px]">
                           <div className="flex items-center justify-between text-2xs mb-0.5">
-                            <span className="font-bold text-slate-900">{s.airedVideos} / {s.targetVideos}</span>
+                            <span className="font-semibold text-slate-900">{s.airedVideos} / {s.targetVideos}</span>
                             <span className={`font-semibold ${videoPct >= 100 ? 'text-emerald-700' : 'text-slate-600'}`}>
                               {videoPct}%
                             </span>
@@ -1626,21 +1519,21 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                               style={{ width: `${Math.min(100, videoPct)}%` }}
                             />
                           </div>
-                          <div className="text-3xs text-slate-400 mt-0.5">+{s.inProgressVideos} đang quay/dựng</div>
+                          <div className="text-2xs text-slate-400 mt-0.5">+{s.inProgressVideos} đang quay/dựng</div>
                         </td>
 
                         <td className="py-3.5 px-3 text-right">
-                          <div className="font-bold font-mono text-emerald-600">{formatVndShort(s.currentGmv)}</div>
-                          <div className="text-3xs text-slate-500 font-mono">KPI: {formatVndShort(s.targetGmv)} ({gmvPct}%)</div>
+                          <div className="font-semibold font-mono text-emerald-600">{formatVndShort(s.currentGmv)}</div>
+                          <div className="text-2xs text-slate-500 font-mono">KPI: {formatVndShort(s.targetGmv)} ({gmvPct}%)</div>
                         </td>
 
                         <td className="py-3.5 px-3 text-right">
-                          <div className="font-bold font-mono text-slate-800">{formatVndShort(s.spentBudget)}</div>
-                          <div className="text-3xs text-slate-500 font-mono">Burn: {s.burnRatePct}%</div>
+                          <div className="font-semibold font-mono text-slate-800">{formatVndShort(s.spentBudget)}</div>
+                          <div className="text-2xs text-slate-500 font-mono">Burn: {s.burnRatePct}%</div>
                         </td>
 
                         <td className="py-3.5 px-3 text-center">
-                          <span className={`px-2 py-0.5 rounded text-xs font-mono font-bold ${
+                          <span className={`px-2 py-0.5 rounded text-xs font-mono font-semibold ${
                             s.slaScore >= 95 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-blue-50 text-blue-700'
                           }`}>
                             {s.slaScore}%
@@ -1649,17 +1542,17 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
 
                         <td className="py-3.5 px-3 text-center">
                           {s.status === 'AHEAD_OF_SCHEDULE' && (
-                            <span className="px-2 py-0.5 rounded-full text-3xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            <span className="px-2 py-0.5 rounded-full text-2xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
                               Vượt tiến độ
                             </span>
                           )}
                           {s.status === 'ON_TRACK' && (
-                            <span className="px-2 py-0.5 rounded-full text-3xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                            <span className="px-2 py-0.5 rounded-full text-2xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
                               Đúng kế hoạch
                             </span>
                           )}
                           {s.status === 'AT_RISK' && (
-                            <span className="px-2 py-0.5 rounded-full text-3xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                            <span className="px-2 py-0.5 rounded-full text-2xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
                               Cần đẩy nhanh
                             </span>
                           )}
@@ -1667,12 +1560,12 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
 
                         <td className="py-3.5 px-4 text-xs text-slate-600">
                           {s.workloadWarning ? (
-                            <div className="p-1.5 rounded bg-amber-50 text-amber-800 border border-amber-200 text-3xs leading-relaxed flex items-start gap-1">
+                            <div className="p-1.5 rounded bg-amber-50 text-amber-800 border border-amber-200 text-2xs leading-relaxed flex items-start gap-1">
                               <AlertCircle className="w-3 h-3 text-amber-600 shrink-0 mt-0.5" />
                               <span>{s.workloadWarning}</span>
                             </div>
                           ) : (
-                            <span className="text-slate-400 text-3xs italic">Tiến độ ổn định, bám sát timeline</span>
+                            <span className="text-slate-400 text-2xs italic">Tiến độ ổn định, bám sát timeline</span>
                           )}
                         </td>
                       </tr>
@@ -1686,43 +1579,43 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
       )}
 
       {/* ========================================================================= */}
-      {/* SUB-TAB 3: TIẾN ĐỘ AIR VIDEO & KÊNH NỘI DUNG (NEW DEEP DIVE)               */}
+      {/* SUB-TAB 3: TIẾN ĐỘ AIR VIDEO & KÊNH NỘI DUNG (NEW DEEP DIVE) */}
       {/* ========================================================================= */}
       {activeSubTab === 'VIDEO_AIRING' && (
         <div className="space-y-5 animate-in fade-in duration-150">
           {/* Top Video Pipeline Metrics */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3.5">
             <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs">
-              <div className="text-2xs font-semibold text-slate-500 uppercase">Video Đã Lên Sóng</div>
-              <div className="text-2xl font-extrabold font-mono text-emerald-600 mt-1">1,025</div>
-              <div className="text-3xs text-emerald-700 mt-1 flex items-center justify-between">
+              <div className="text-2xs font-semibold text-slate-500 ">Video Đã Lên Sóng</div>
+              <div className="text-2xl font-semibold font-mono text-emerald-600 mt-1">1,025</div>
+              <div className="text-2xs text-emerald-700 mt-1 flex items-center justify-between">
                 <span>KPI: 1,250</span>
-                <span className="font-bold">82.0%</span>
+                <span className="font-semibold">82.0%</span>
               </div>
             </div>
 
             <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs">
-              <div className="text-2xs font-semibold text-slate-500 uppercase">Đang Quay & Dựng</div>
-              <div className="text-2xl font-extrabold font-mono text-blue-600 mt-1">285</div>
-              <div className="text-3xs text-blue-700 mt-1">Chuẩn bị air đợt Mega 10.10</div>
+              <div className="text-2xs font-semibold text-slate-500 ">Đang Quay & Dựng</div>
+              <div className="text-2xl font-semibold font-mono text-blue-600 mt-1">285</div>
+              <div className="text-2xs text-blue-700 mt-1">Chuẩn bị air đợt Mega 10.10</div>
             </div>
 
             <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs">
-              <div className="text-2xs font-semibold text-slate-500 uppercase">Chờ Duyệt Kịch Bản</div>
-              <div className="text-2xl font-extrabold font-mono text-amber-600 mt-1">94</div>
-              <div className="text-3xs text-amber-700 mt-1">Thời gian duyệt trung bình 4.2h</div>
+              <div className="text-2xs font-semibold text-slate-500 ">Chờ Duyệt Kịch Bản</div>
+              <div className="text-2xl font-semibold font-mono text-amber-600 mt-1">94</div>
+              <div className="text-2xs text-amber-700 mt-1">Thời gian duyệt trung bình 4.2h</div>
             </div>
 
             <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs">
-              <div className="text-2xs font-semibold text-slate-500 uppercase">Tổng Lượt Views</div>
-              <div className="text-2xl font-extrabold font-mono text-purple-700 mt-1">48.6M</div>
-              <div className="text-3xs text-purple-700 mt-1">Trung bình 47.4k views/video</div>
+              <div className="text-2xs font-semibold text-slate-500 ">Tổng Lượt Views</div>
+              <div className="text-2xl font-semibold font-mono text-blue-700 mt-1">48.6M</div>
+              <div className="text-2xs text-blue-700 mt-1">Trung bình 47.4k views/video</div>
             </div>
 
             <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs">
-              <div className="text-2xs font-semibold text-slate-500 uppercase">GMV Giỏ Hàng Video</div>
-              <div className="text-2xl font-extrabold font-mono text-slate-900 mt-1">3.85 Tỷ</div>
-              <div className="text-3xs text-slate-600 mt-1">Tỷ lệ CVR chuyển đổi: 3.8%</div>
+              <div className="text-2xs font-semibold text-slate-500 ">GMV Giỏ Hàng Video</div>
+              <div className="text-2xl font-semibold font-mono text-slate-900 mt-1">3.85 Tỷ</div>
+              <div className="text-2xs text-slate-600 mt-1">Tỷ lệ CVR chuyển đổi: 3.8%</div>
             </div>
           </div>
 
@@ -1730,7 +1623,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
           <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs space-y-3">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
                   <Activity className="w-4 h-4 text-emerald-600" />
                   Tiến Độ & Tốc Độ On-Air Video Theo Tuần (Weekly Velocity)
                 </h3>
@@ -1750,19 +1643,19 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
               ].map((w, idx) => (
                 <div key={idx} className="bg-slate-50 rounded-xl p-3.5 border border-slate-200 space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-800">{w.week}</span>
-                    <span className="text-3xs font-semibold px-1.5 py-0.2 rounded bg-white text-slate-700 border border-slate-200">{w.status}</span>
+                    <span className="text-xs font-semibold text-slate-800">{w.week}</span>
+                    <span className="text-2xs font-semibold px-1.5 py-0.5 rounded bg-white text-slate-700 border border-slate-200">{w.status}</span>
                   </div>
                   <div>
-                    <div className="text-lg font-bold font-mono text-emerald-600">
+                    <div className="text-lg font-semibold font-mono text-emerald-600">
                       {w.aired} / {w.target} <span className="text-xs font-normal text-slate-500">videos</span>
                     </div>
-                    <div className="text-3xs text-slate-500">Đạt {w.pct}% chỉ tiêu tuần</div>
+                    <div className="text-2xs text-slate-500">Đạt {w.pct}% chỉ tiêu tuần</div>
                   </div>
                   <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
                     <div className="bg-emerald-500 h-full rounded-full" style={{ width: `${Math.min(100, w.pct)}%` }} />
                   </div>
-                  <div className="flex items-center justify-between text-3xs text-slate-500 pt-1 border-t border-slate-200/60 font-mono">
+                  <div className="flex items-center justify-between text-2xs text-slate-500 pt-1 border-t border-slate-200/60 font-mono">
                     <span>Views: {w.views}</span>
                     <span className="font-semibold text-slate-800">GMV: {w.gmv}</span>
                   </div>
@@ -1775,8 +1668,8 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
           <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs">
             <div className="p-4 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-3">
               <div>
-                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                  <Film className="w-4 h-4 text-purple-600" />
+                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
+                  <Film className="w-4 h-4 text-blue-600" />
                   Danh Sách Video Đã Lên Sóng & Chỉ Số Hiệu Quả
                 </h3>
                 <p className="text-xs text-slate-500">Theo dõi link video, mã Spark Ads, views và doanh thu trực tiếp từ giỏ hàng sàn</p>
@@ -1807,7 +1700,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
 
             <div className="overflow-x-auto">
               <table className="w-full text-xs text-left">
-                <thead className="bg-slate-50 text-slate-600 border-b border-slate-200 uppercase font-semibold text-3xs">
+                <thead className="bg-slate-50 text-slate-600 border-b border-slate-200 font-semibold text-2xs">
                   <tr>
                     <th className="py-3 px-4">Tiêu Đề Video / Kịch Bản</th>
                     <th className="py-3 px-3">KOC Creator</th>
@@ -1824,7 +1717,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                   {airedVideosList.map(v => (
                     <tr key={v.id} className="hover:bg-slate-50/80 transition">
                       <td className="py-3.5 px-4 max-w-[240px]">
-                        <div className="font-bold text-slate-900 text-xs truncate flex items-center gap-1.5">
+                        <div className="font-semibold text-slate-900 text-xs truncate flex items-center gap-1.5">
                           <PlaySquare className="w-3.5 h-3.5 text-rose-500 shrink-0" />
                           <span className="truncate">{v.title}</span>
                         </div>
@@ -1832,7 +1725,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                           href={v.videoUrl}
                           target="_blank"
                           rel="noreferrer"
-                          className="text-3xs text-blue-600 hover:underline flex items-center gap-0.5 mt-0.5"
+                          className="text-2xs text-blue-600 hover:underline flex items-center gap-0.5 mt-0.5"
                         >
                           <span>Xem video trên sàn</span>
                           <ExternalLink className="w-2.5 h-2.5" />
@@ -1840,19 +1733,19 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                       </td>
 
                       <td className="py-3.5 px-3">
-                        <div className="font-bold text-slate-900">{v.creatorName}</div>
-                        <span className="text-3xs px-1.5 py-0.2 rounded bg-slate-100 text-slate-600">
+                        <div className="font-semibold text-slate-900">{v.creatorName}</div>
+                        <span className="text-2xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">
                           {v.creatorTier} Tier
                         </span>
                       </td>
 
                       <td className="py-3.5 px-3">
                         <div className="font-semibold text-slate-900">{v.brandName}</div>
-                        <div className="text-3xs text-slate-500 truncate">{v.storeName}</div>
+                        <div className="text-2xs text-slate-500 truncate">{v.storeName}</div>
                       </td>
 
                       <td className="py-3.5 px-3 text-center">
-                        <span className="px-2 py-0.5 rounded text-3xs font-semibold bg-slate-100 text-slate-700">
+                        <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-slate-100 text-slate-700">
                           {v.platform}
                         </span>
                       </td>
@@ -1861,37 +1754,37 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                         {v.airDate}
                       </td>
 
-                      <td className="py-3.5 px-3 text-right font-mono font-bold text-purple-700">
+                      <td className="py-3.5 px-3 text-right font-mono font-semibold text-blue-700">
                         {v.views.toLocaleString('vi-VN')}
                       </td>
 
-                      <td className="py-3.5 px-3 text-right font-mono font-bold text-emerald-600">
+                      <td className="py-3.5 px-3 text-right font-mono font-semibold text-emerald-600">
                         {v.gmv.toLocaleString('vi-VN')} đ
                       </td>
 
                       <td className="py-3.5 px-3 text-center">
                         {v.sparkAdsCode ? (
-                          <span className="font-mono text-3xs bg-rose-50 text-rose-700 px-1.5 py-0.5 rounded border border-rose-200">
+                          <span className="font-mono text-2xs bg-rose-50 text-rose-700 px-1.5 py-0.5 rounded border border-rose-200">
                             {v.sparkAdsCode}
                           </span>
                         ) : (
-                          <span className="text-3xs text-slate-400">Chưa gắn</span>
+                          <span className="text-2xs text-slate-400">Chưa gắn</span>
                         )}
                       </td>
 
                       <td className="py-3.5 px-4 text-center">
                         {v.status === 'RUNNING_ADS' && (
-                          <span className="px-2 py-0.5 rounded-full text-3xs font-bold bg-rose-50 text-rose-700 border border-rose-200 flex items-center justify-center gap-1">
+                          <span className="px-2 py-0.5 rounded-full text-2xs font-semibold bg-rose-50 text-rose-700 border border-rose-200 flex items-center justify-center gap-1">
                             <Flame className="w-3 h-3 text-rose-600" /> Đang Chạy Ads
                           </span>
                         )}
                         {v.status === 'AIRED_VERIFIED' && (
-                          <span className="px-2 py-0.5 rounded-full text-3xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          <span className="px-2 py-0.5 rounded-full text-2xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
                             Đã Nghiệm Thu
                           </span>
                         )}
                         {v.status === 'PENDING_APPROVAL' && (
-                          <span className="px-2 py-0.5 rounded-full text-3xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                          <span className="px-2 py-0.5 rounded-full text-2xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
                             Chờ Duyệt
                           </span>
                         )}
@@ -1906,63 +1799,63 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
       )}
 
       {/* ========================================================================= */}
-      {/* SUB-TAB 4: CHI TIÊU NGÂN SÁCH & BURN RATE PACING (NEW DEEP DIVE)           */}
+      {/* SUB-TAB 4: CHI TIÊU NGÂN SÁCH & BURN RATE PACING (NEW DEEP DIVE) */}
       {/* ========================================================================= */}
       {activeSubTab === 'BUDGET_PACING' && (
         <div className="space-y-5 animate-in fade-in duration-150">
           {/* Pacing Overview Banner */}
-          <div className="bg-gradient-to-r from-slate-900 to-indigo-950 text-white rounded-2xl p-5 shadow-sm space-y-4">
+          <div className="bg-surface text-ink border border-line rounded-xl p-5 space-y-4">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="px-2.5 py-0.5 rounded-full text-3xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                  <span className="px-2.5 py-0.5 rounded-full text-2xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
                     CHU KỲ THÁNG 10/2026: NGÀY {currentDayInMonth}/{totalDaysInMonth} (25.8% THỜI GIAN)
                   </span>
-                  <span className="text-xs text-slate-300">Pacing Index: <strong>{stats.overallPacingIndex}x (An toàn)</strong></span>
+                  <span className="text-xs text-muted">Pacing Index: <strong className="text-ink">{stats.overallPacingIndex}x (An toàn)</strong></span>
                 </div>
-                <h2 className="text-lg font-bold mt-1.5">
-                  Quản Trị Tốc Độ Đốt Ngân Sách (Burn Rate Pacing) & Hiệu Quả Đầu Tư
+                <h2 className="text-base font-semibold text-ink mt-1.5">
+                  Quản trị tốc độ giải ngân ngân sách &amp; hiệu quả đầu tư
                 </h2>
-                <p className="text-xs text-slate-300 max-w-2xl mt-0.5">
-                  Giám sát chặt chẽ ngân sách kế hoạch, thực tế giải ngân và doanh thu đem lại theo từng ngày để đảm bảo không bị vượt ngân sách hoặc bị nghẽn giải ngân trước đợt Mega Sale.
+                <p className="text-xs text-muted max-w-2xl mt-0.5">
+                  Giám sát ngân sách kế hoạch, thực tế giải ngân và doanh thu đem lại theo từng ngày để đảm bảo không vượt ngân sách hoặc nghẽn giải ngân trước đợt Mega Sale.
                 </p>
               </div>
 
               <div className="flex items-center gap-3 shrink-0">
                 <div className="text-right">
-                  <div className="text-3xs text-slate-400">Tổng Ngân Sách Tháng</div>
-                  <div className="text-xl font-bold font-mono text-emerald-400">{formatVndShort(stats.totalPlanBudget)}</div>
+                  <div className="text-2xs text-muted">Tổng ngân sách tháng</div>
+                  <div className="text-xl font-semibold font-mono text-emerald-600">{formatVndShort(stats.totalPlanBudget)}</div>
                 </div>
-                <div className="h-8 w-px bg-slate-700" />
+                <div className="h-8 w-px bg-line" />
                 <div>
-                  <div className="text-3xs text-slate-400">Đã Chi Tiêu ({stats.overallBurnRate}%)</div>
-                  <div className="text-xl font-bold font-mono text-white">{formatVndShort(stats.totalSpentBudget)}</div>
+                  <div className="text-2xs text-muted">Đã chi tiêu ({stats.overallBurnRate}%)</div>
+                  <div className="text-xl font-semibold font-mono text-ink">{formatVndShort(stats.totalSpentBudget)}</div>
                 </div>
               </div>
             </div>
 
             {/* Pacing Visualizer Bar */}
-            <div className="space-y-1.5 pt-2 border-t border-slate-800">
-              <div className="flex justify-between text-2xs text-slate-300">
-                <span>Tiến độ thời gian: <strong>{expectedPacingPct}%</strong> (Ngày 8/31)</span>
-                <span>Tiến độ đốt ngân sách: <strong>{stats.overallBurnRate}%</strong> (Tốc độ tiêu: 1.10x Chuẩn)</span>
+            <div className="space-y-1.5 pt-2 border-t border-line">
+              <div className="flex justify-between text-2xs text-muted">
+                <span>Tiến độ thời gian: <strong className="text-ink">{expectedPacingPct}%</strong> (Ngày 8/31)</span>
+                <span>Tiến độ giải ngân: <strong className="text-ink">{stats.overallBurnRate}%</strong> (Tốc độ tiêu: 1.10x Chuẩn)</span>
               </div>
-              <div className="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden flex">
-                <div className="bg-indigo-500 h-full transition-all" style={{ width: `${stats.overallBurnRate}%` }} />
+              <div className="w-full bg-surface-muted h-2 rounded-full overflow-hidden flex">
+                <div className="bg-primary h-full transition-all" style={{ width: `${stats.overallBurnRate}%` }} />
               </div>
             </div>
           </div>
 
           {/* Cost Structure Breakdown (5 Khoản Mục Chi Phí) */}
           <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs space-y-3">
-            <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-              <PieChart className="w-4 h-4 text-indigo-600" />
+            <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
+              <PieChart className="w-4 h-4 text-blue-600" />
               Cơ Cấu 5 Khoản Mục Chi Phí Đã Giải Ngân ({formatVndShort(stats.totalSpentBudget)})
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-5 gap-3 pt-1">
               {[
-                { name: '1. Cast Booking KOC', pct: 46, amount: '1.75 Tỷ', color: 'bg-indigo-600', desc: 'Thỏa thuận net theo deal' },
+                { name: '1. Cast Booking KOC', pct: 46, amount: '1.75 Tỷ', color: 'bg-blue-600', desc: 'Thỏa thuận net theo deal' },
                 { name: '2. TikTok Seller Ads', pct: 28, amount: '1.07 Tỷ', color: 'bg-rose-500', desc: 'GMV Max & Spark Ads PGM' },
                 { name: '3. CTV & Ekip Live', pct: 14, amount: '535 Triệu', color: 'bg-emerald-600', desc: 'Phí kịch bản & phòng live' },
                 { name: '4. Mẫu Thử & Logistics', pct: 7, amount: '267 Triệu', color: 'bg-amber-500', desc: 'Gửi hàng nhận mẫu KOC' },
@@ -1970,14 +1863,14 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
               ].map((c, idx) => (
                 <div key={idx} className="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-1">
                   <div className="text-2xs font-semibold text-slate-700 truncate">{c.name}</div>
-                  <div className="text-base font-extrabold font-mono text-slate-900">{c.amount}</div>
-                  <div className="flex items-center justify-between text-3xs text-slate-500">
+                  <div className="text-base font-semibold font-mono text-slate-900">{c.amount}</div>
+                  <div className="flex items-center justify-between text-2xs text-slate-500">
                     <span>{c.pct}% ngân sách</span>
                   </div>
                   <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden mt-1">
                     <div className={`${c.color} h-full`} style={{ width: `${c.pct}%` }} />
                   </div>
-                  <div className="text-3xs text-slate-400 truncate pt-0.5">{c.desc}</div>
+                  <div className="text-2xs text-slate-400 truncate pt-0.5">{c.desc}</div>
                 </div>
               ))}
             </div>
@@ -1987,7 +1880,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
           <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs">
             <div className="p-4 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-3">
               <div>
-                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
                   <Flame className="w-4 h-4 text-amber-500" />
                   Ma Trận Pacing Ngân Sách Theo Thương Hiệu & Gian Hàng
                 </h3>
@@ -2019,7 +1912,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
 
             <div className="overflow-x-auto">
               <table className="w-full text-xs text-left">
-                <thead className="bg-slate-50 text-slate-600 border-b border-slate-200 uppercase font-semibold text-3xs">
+                <thead className="bg-slate-50 text-slate-600 border-b border-slate-200 font-semibold text-2xs">
                   <tr>
                     <th className="py-3 px-4">Thương Hiệu / Brand</th>
                     <th className="py-3 px-3">PIC Lead Shop</th>
@@ -2036,9 +1929,9 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                 <tbody className="divide-y divide-slate-100">
                   {brandPacingList.map(p => (
                     <tr key={p.brandId} className="hover:bg-slate-50/80 transition">
-                      <td className="py-3.5 px-4 font-bold text-slate-900">
+                      <td className="py-3.5 px-4 font-semibold text-slate-900">
                         {p.brandName}
-                        <div className="text-3xs text-slate-500 font-normal">{p.storeCount} gian hàng live</div>
+                        <div className="text-2xs text-slate-500 font-normal">{p.storeCount} gian hàng live</div>
                       </td>
 
                       <td className="py-3.5 px-3">
@@ -2049,7 +1942,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                         {p.planBudget.toLocaleString('vi-VN')} đ
                       </td>
 
-                      <td className="py-3.5 px-3 text-right font-mono font-bold text-slate-900">
+                      <td className="py-3.5 px-3 text-right font-mono font-semibold text-slate-900">
                         {p.spentBudget.toLocaleString('vi-VN')} đ
                       </td>
 
@@ -2058,7 +1951,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                       </td>
 
                       <td className="py-3.5 px-3 text-center min-w-[100px]">
-                        <span className="font-bold font-mono text-slate-900">{p.burnRatePct}%</span>
+                        <span className="font-semibold font-mono text-slate-900">{p.burnRatePct}%</span>
                         <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden mt-1">
                           <div 
                             className={`h-full rounded-full ${
@@ -2071,33 +1964,33 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
 
                       <td className="py-3.5 px-3 text-center">
                         {p.pacingStatus === 'ON_TRACK' && (
-                          <span className="px-2 py-0.5 rounded-full text-3xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          <span className="px-2 py-0.5 rounded-full text-2xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
                             Đúng Tiến Độ
                           </span>
                         )}
                         {p.pacingStatus === 'OVER_PACING' && (
-                          <span className="px-2 py-0.5 rounded-full text-3xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                          <span className="px-2 py-0.5 rounded-full text-2xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
                             Đốt Nhanh
                           </span>
                         )}
                         {p.pacingStatus === 'UNDER_PACING' && (
-                          <span className="px-2 py-0.5 rounded-full text-3xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                          <span className="px-2 py-0.5 rounded-full text-2xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
                             Chậm Giải Ngân
                           </span>
                         )}
                       </td>
 
-                      <td className="py-3.5 px-3 text-right font-mono font-bold text-emerald-600">
+                      <td className="py-3.5 px-3 text-right font-mono font-semibold text-emerald-600">
                         {p.currentGmv.toLocaleString('vi-VN')} đ
                       </td>
 
                       <td className="py-3.5 px-3 text-center">
-                        <span className="px-2 py-0.5 rounded text-xs font-mono font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                        <span className="px-2 py-0.5 rounded text-xs font-mono font-semibold bg-blue-50 text-blue-700 border border-blue-200">
                           {p.roas}x
                         </span>
                       </td>
 
-                      <td className="py-3.5 px-4 text-3xs text-slate-600 max-w-[200px]">
+                      <td className="py-3.5 px-4 text-2xs text-slate-600 max-w-[200px]">
                         {p.actionNote}
                       </td>
                     </tr>
@@ -2110,13 +2003,13 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
       )}
 
       {/* ========================================================================= */}
-      {/* SUB-TAB 5: BÁO CÁO KOC & CREATOR ROI RANKING                              */}
+      {/* SUB-TAB 5: BÁO CÁO KOC & CREATOR ROI RANKING */}
       {/* ========================================================================= */}
       {activeSubTab === 'CREATORS' && (
         <div className="space-y-4">
           <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs flex items-center justify-between">
             <div>
-              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+              <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
                 <Award className="w-4 h-4 text-amber-500" />
                 Bảng Xếp Hạng KOC Winner & Creator ROI
               </h3>
@@ -2135,7 +2028,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
           <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs">
             <div className="overflow-x-auto">
               <table className="w-full text-xs text-left">
-                <thead className="bg-slate-50 text-slate-600 border-b border-slate-200 uppercase font-semibold text-3xs">
+                <thead className="bg-slate-50 text-slate-600 border-b border-slate-200 font-semibold text-2xs">
                   <tr>
                     <th className="py-3 px-4">Tên KOC / Kênh Creator</th>
                     <th className="py-3 px-3">Phân Nhóm / Tệp</th>
@@ -2158,22 +2051,22 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                     { name: 'Cô Học Chăm Da', tier: 'Key', niche: 'Skincare Khoa học', cost: 20000000, gmv: 83200000, roas: 4.16, hook2s: '27.4%', ads: 'Cần cấp lại mã', winner: 'Tiềm Năng' },
                   ].map((k, idx) => (
                     <tr key={idx} className="hover:bg-slate-50/80 transition">
-                      <td className="py-3 px-4 font-bold text-slate-900 text-xs">
+                      <td className="py-3 px-4 font-semibold text-slate-900 text-xs">
                         {k.name}
                       </td>
                       <td className="py-3 px-3 text-slate-600">
-                        <span className="px-2 py-0.5 rounded text-3xs font-medium bg-slate-100 text-slate-700">
+                        <span className="px-2 py-0.5 rounded text-2xs font-medium bg-slate-100 text-slate-700">
                           {k.tier} - {k.niche}
                         </span>
                       </td>
                       <td className="py-3 px-3 text-right font-mono text-slate-700">
                         {k.cost.toLocaleString('vi-VN')} đ
                       </td>
-                      <td className="py-3 px-3 text-right font-mono font-bold text-emerald-600">
+                      <td className="py-3 px-3 text-right font-mono font-semibold text-emerald-600">
                         {k.gmv.toLocaleString('vi-VN')} đ
                       </td>
                       <td className="py-3 px-3 text-center">
-                        <span className={`px-2 py-0.5 rounded text-xs font-mono font-bold ${
+                        <span className={`px-2 py-0.5 rounded text-xs font-mono font-semibold ${
                           k.roas >= 6.0
                             ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
                             : 'bg-blue-50 text-blue-700 border border-blue-200'
@@ -2181,11 +2074,11 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                           {k.roas}x
                         </span>
                       </td>
-                      <td className="py-3 px-3 text-center font-mono text-indigo-600 font-semibold">
+                      <td className="py-3 px-3 text-center font-mono text-blue-600 font-semibold">
                         {k.hook2s}
                       </td>
                       <td className="py-3 px-3 text-center">
-                        <span className={`px-2 py-0.5 rounded text-3xs font-semibold ${
+                        <span className={`px-2 py-0.5 rounded text-2xs font-semibold ${
                           k.ads === 'Đang chạy' 
                             ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
                             : 'bg-amber-100 text-amber-800'
@@ -2194,7 +2087,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                         </span>
                       </td>
                       <td className="py-3 px-4 text-center">
-                        <span className={`px-2 py-0.5 rounded-full text-3xs font-bold ${
+                        <span className={`px-2 py-0.5 rounded-full text-2xs font-semibold ${
                           k.roas >= 6.0 
                             ? 'bg-amber-50 text-amber-700 border border-amber-200' 
                             : 'bg-slate-100 text-slate-700'
@@ -2212,54 +2105,54 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
       )}
 
       {/* ========================================================================= */}
-      {/* SUB-TAB 6: TÀI CHÍNH, DÒNG TIỀN & THUẾ TNCN                               */}
+      {/* SUB-TAB 6: TÀI CHÍNH, DÒNG TIỀN & THUẾ TNCN */}
       {/* ========================================================================= */}
       {activeSubTab === 'FINANCE_TAX' && (
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs">
-              <div className="text-2xs font-semibold text-slate-500 uppercase tracking-wider">Tạm Ứng Đã Chi (Advance)</div>
-              <div className="text-xl font-extrabold font-mono text-slate-900 mt-1">
+              <div className="text-2xs font-semibold text-slate-500 ">Tạm Ứng Đã Chi (Advance)</div>
+              <div className="text-xl font-semibold font-mono text-slate-900 mt-1">
                 {formatVndShort(stats.totalAdvancePaid)}
               </div>
-              <div className="text-3xs text-slate-500 mt-1">
+              <div className="text-2xs text-slate-500 mt-1">
                 Định mức 2.000.000đ/deal sau khi ký HĐ & CCCD hợp lệ
               </div>
             </div>
 
             <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs">
-              <div className="text-2xs font-semibold text-slate-500 uppercase tracking-wider">Quyết Toán Đã Chi (Final Paid)</div>
-              <div className="text-xl font-extrabold font-mono text-emerald-600 mt-1">
+              <div className="text-2xs font-semibold text-slate-500 ">Quyết Toán Đã Chi (Final Paid)</div>
+              <div className="text-xl font-semibold font-mono text-emerald-600 mt-1">
                 {formatVndShort(stats.totalFinalPaid)}
               </div>
-              <div className="text-3xs text-emerald-700 mt-1">
+              <div className="text-2xs text-emerald-700 mt-1">
                 Chi trả sau khi video on air và nghiệm thu mã Spark Ads
               </div>
             </div>
 
             <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs">
-              <div className="text-2xs font-semibold text-slate-500 uppercase tracking-wider">Thuế TNCN 10% Khấu Trừ</div>
-              <div className="text-xl font-extrabold font-mono text-rose-600 mt-1">
+              <div className="text-2xs font-semibold text-slate-500 ">Thuế TNCN 10% Khấu Trừ</div>
+              <div className="text-xl font-semibold font-mono text-rose-600 mt-1">
                 {formatVndShort(stats.totalPitTaxWithheld)}
               </div>
-              <div className="text-3xs text-slate-500 mt-1">
+              <div className="text-2xs text-slate-500 mt-1">
                 Khấu trừ nộp Ngân sách Nhà nước theo mẫu TT80/2021/TT-BTC
               </div>
             </div>
           </div>
 
           <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs space-y-3">
-            <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+            <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-emerald-600" />
               Nguyên Tắc Pháp Chế & Dòng Tiền Đang Áp Dụng
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-slate-600">
               <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-1">
-                <span className="font-bold text-slate-800 block">Quy định Hợp đồng trên 9.000.000 VNĐ:</span>
+                <span className="font-semibold text-slate-800 block">Quy định Hợp đồng trên 9.000.000 VNĐ:</span>
                 <p>Bắt buộc có file scan hợp đồng có chữ ký tươi/chữ ký số và ảnh CCCD 2 mặt rõ nét trước ngày làm Đề nghị thanh toán (DNTT) ít nhất 2 ngày.</p>
               </div>
               <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-1">
-                <span className="font-bold text-slate-800 block">Khấu trừ Thuế TNCN 10% vãng lai:</span>
+                <span className="font-semibold text-slate-800 block">Khấu trừ Thuế TNCN 10% vãng lai:</span>
                 <p>Mọi hợp đồng dịch vụ cá nhân từ 2.000.000 VNĐ trở lên bắt buộc khấu trừ 10% tại nguồn và xuất chứng từ khấu trừ thuế điện tử cho KOC.</p>
               </div>
             </div>
@@ -2268,12 +2161,12 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
       )}
 
       {/* ========================================================================= */}
-      {/* SUB-TAB 7: TRUNG TÂM XUẤT BÁO CÁO (REPORT CENTER)                         */}
+      {/* SUB-TAB 7: TRUNG TÂM XUẤT BÁO CÁO (REPORT CENTER) */}
       {/* ========================================================================= */}
       {activeSubTab === 'REPORT_CENTER' && (
         <div className="space-y-4">
           <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs">
-            <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+            <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
               <FileSpreadsheet className="w-4 h-4 text-rose-600" />
               Trung Tâm Tạo & Xuất Báo Cáo Định Kỳ Chuẩn Enterprise
             </h3>
@@ -2287,12 +2180,12 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
             <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs flex flex-col justify-between space-y-4 hover:border-slate-300 transition">
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="px-2 py-0.5 rounded text-2xs font-bold uppercase bg-blue-50 text-blue-700 border border-blue-200">
+                  <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
                     Báo Cáo Nhân Sự & Squad
                   </span>
                   <span className="text-2xs text-slate-400">Định dạng .XLSX</span>
                 </div>
-                <h4 className="text-sm font-bold text-slate-900">Báo Cáo Tiến Độ Nhân Viên & Quản Lý Gian Hàng</h4>
+                <h4 className="text-sm font-semibold text-slate-900">Báo Cáo Tiến Độ Nhân Viên & Quản Lý Gian Hàng</h4>
                 <p className="text-xs text-slate-600 leading-relaxed">
                   Bóc tách KPI từng nhân viên: Số gian hàng phụ trách, tiến độ air video, doanh thu GMV thực đạt, ngân sách quản lý và cảnh báo quá tải công việc.
                 </p>
@@ -2312,12 +2205,12 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
             <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs flex flex-col justify-between space-y-4 hover:border-slate-300 transition">
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="px-2 py-0.5 rounded text-2xs font-bold uppercase bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
                     Kênh Nội Dung & Sàn
                   </span>
                   <span className="text-2xs text-slate-400">Định dạng .XLSX</span>
                 </div>
-                <h4 className="text-sm font-bold text-slate-900">Báo Cáo Tiến Độ Air Video & Conversion Sàn</h4>
+                <h4 className="text-sm font-semibold text-slate-900">Báo Cáo Tiến Độ Air Video & Conversion Sàn</h4>
                 <p className="text-xs text-slate-600 leading-relaxed">
                   Bảng kê chi tiết toàn bộ video on-air theo tuần, link TikTok/Shopee, lượt xem, GMV tạo ra từ giỏ hàng video, mã Spark Ads và trạng thái nghiệm thu.
                 </p>
@@ -2337,12 +2230,12 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
             <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs flex flex-col justify-between space-y-4 hover:border-slate-300 transition">
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="px-2 py-0.5 rounded text-2xs font-bold uppercase bg-amber-50 text-amber-700 border border-amber-200">
+                  <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
                     Tài Chính & Kế Hoạch
                   </span>
                   <span className="text-2xs text-slate-400">Định dạng .XLSX</span>
                 </div>
-                <h4 className="text-sm font-bold text-slate-900">Báo Cáo Giải Ngân Ngân Sách & Burn Rate Pacing</h4>
+                <h4 className="text-sm font-semibold text-slate-900">Báo Cáo Giải Ngân Ngân Sách & Burn Rate Pacing</h4>
                 <p className="text-xs text-slate-600 leading-relaxed">
                   Đối chiếu tốc độ tiêu tiền theo chu kỳ ngày trong tháng cho từng Thương hiệu và Gian hàng sàn, phân bổ 5 khoản mục chi phí và cảnh báo over-pacing.
                 </p>
@@ -2362,12 +2255,12 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
             <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs flex flex-col justify-between space-y-4 hover:border-slate-300 transition">
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="px-2 py-0.5 rounded text-2xs font-bold uppercase bg-slate-900 text-white">
+                  <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-slate-900 text-white">
                     Gói Báo Cáo Ban Giám Đốc
                   </span>
                   <span className="text-2xs text-slate-400">File Đa Sheet (.XLSX)</span>
                 </div>
-                <h4 className="text-sm font-bold text-slate-900">Báo Cáo Tổng Hợp Điều Hành B2C (Full Sheets)</h4>
+                <h4 className="text-sm font-semibold text-slate-900">Báo Cáo Tổng Hợp Điều Hành B2C (Full Sheets)</h4>
                 <p className="text-xs text-slate-600 leading-relaxed">
                   File Excel đồng bộ hợp nhất cả 5 bảng biểu: Tổng quan KPI, Tiến độ nhân viên Squad, Danh sách video on air, Burn rate ngân sách và Xếp hạng KOC.
                 </p>

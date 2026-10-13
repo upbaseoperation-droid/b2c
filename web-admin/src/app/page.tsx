@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { CheckCircle2, AlertCircle, XCircle, Info, X, ShieldAlert } from 'lucide-react';
 import { Sidebar, TabKey } from '../components/Sidebar';
 import { TopHeader } from '../components/TopHeader';
@@ -10,7 +11,6 @@ import { ErrorBoundary } from '../components/ErrorBoundary';
 
 import { CockpitView } from '../components/views/CockpitView';
 import { OverviewView } from '../components/views/OverviewView';
-import { StoresView } from '../components/views/StoresView';
 import { BrandView } from '../components/views/BrandView';
 import { BrandProfilesView } from '../components/views/BrandProfilesView';
 import { ContentView } from '../components/views/ContentView';
@@ -32,8 +32,8 @@ const MasterDataHubView = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="bg-white rounded-xl border border-slate-200 p-12 text-center text-slate-500 text-xs">
-        Đang tải Trung tâm Dữ liệu Gốc (Master Data Hub)...
+      <div className="bg-surface rounded-xl border border-line p-12 text-center text-ink-3 text-xs">
+        Đang tải dữ liệu gốc…
       </div>
     ),
   }
@@ -43,8 +43,8 @@ const KocListingBatchHubView = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="bg-white rounded-xl border border-slate-200 p-12 text-center text-slate-500 text-xs">
-        Đang tải Phân Hệ Listing KOC & Air Video...
+      <div className="bg-surface rounded-xl border border-line p-12 text-center text-ink-3 text-xs">
+        Đang tải Listing & Air Video…
       </div>
     ),
   }
@@ -52,9 +52,9 @@ const KocListingBatchHubView = dynamic(
 import { KocKolHubView } from '../components/views/KocKolHubView';
 import { ContentAngleSetupView } from '../components/views/ContentAngleSetupView';
 import { CentralizedRbacHubView } from '../components/views/CentralizedRbacHubView';
-import { isThirdPartyPartner, getPartnerLandingTab } from '../lib/thirdPartyAccessData';
+import { isThirdPartyPartner } from '../lib/thirdPartyAccessData';
 import { isTabAllowedForRole, getAllowedTabsForRole, getDefaultLandingTabForRole } from '../lib/rbacData';
-import { PageActiveContext } from '../components/ui';
+import { Button, PageActiveContext } from '../components/ui';
 
 function ViewLoading() {
   return (
@@ -88,6 +88,7 @@ import {
 import { 
   UserProfile, 
   BookingDealItem, 
+  DealStatus,
   SlaTask, 
   KocItem, 
   CampaignItem, 
@@ -97,7 +98,11 @@ import {
   ContentPillarType,
   BrandDetail,
   StorePortfolioItem,
-  KocListingItem
+  KocListingItem,
+  GrowthDemandItem,
+  GrowthDemandBreakdownTier,
+  SalaryGrade,
+  KocCategory
 } from '../lib/types';
 
 function KeepAliveTab({
@@ -110,11 +115,9 @@ function KeepAliveTab({
   children: React.ReactNode;
 }) {
   const [hasMounted, setHasMounted] = useState(tabKey === currentTab);
-  useEffect(() => {
-    if (tabKey === currentTab && !hasMounted) {
-      setHasMounted(true);
-    }
-  }, [tabKey, currentTab, hasMounted]);
+  if (tabKey === currentTab && !hasMounted) {
+    setHasMounted(true);
+  }
 
   if (!hasMounted) return null;
   return (
@@ -132,37 +135,46 @@ function KeepAliveTab({
 }
 
 export default function App() {
+  const router = useRouter();
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [isLoadingAuth, setIsLoadingAuth] = useState<boolean>(true);
   const [activeTab, setActiveTab] = useState<TabKey>('dashboard-bi');
   const [selectedBrandContext, setSelectedBrandContext] = useState<string>('ALL');
   const [selectedStoreContext, setSelectedStoreContext] = useState<string>('');
 
+  // Notifications Toast (Enhanced with Type & Dismiss)
+  const [toastData, setToastData] = useState<{ message: string; type: 'success' | 'warning' | 'info' | 'error' } | null>(null);
+
+  const showToast = useCallback((msg: string, type: 'success' | 'warning' | 'info' | 'error' = 'success') => {
+    setToastData({ message: msg, type });
+    setTimeout(() => {
+      setToastData(null);
+    }, 4500);
+  }, []);
+
   // Đảm bảo activeTab luôn hợp lệ theo phân quyền của vai trò hiện tại
-  useEffect(() => {
-    if (!currentUser) return;
+  if (currentUser) {
     const allowed = getAllowedTabsForRole(currentUser.role);
     if (!allowed.includes(activeTab)) {
       const defaultTab = getDefaultLandingTabForRole(currentUser.role);
       setActiveTab(defaultTab);
     }
-  }, [currentUser, activeTab]);
+  }
 
-  const handleUserChange = (newUser: UserProfile, isSilent: boolean = false) => {
-    if (!isSilent && ((process.env.NODE_ENV as string) === 'production' || currentUser?.loginProvider === 'LARK')) return;
+  const handleUserChange = useCallback((newUser: UserProfile, isSilent: boolean = false) => {
     setCurrentUser(newUser);
 
-    // Lưu vai trò được chọn vào localStorage để duy trì sau khi tải lại trang
-    if ((process.env.NODE_ENV as string) === 'development' && newUser.loginProvider !== 'LARK' && typeof window !== 'undefined') {
+    if (typeof window !== 'undefined') {
       localStorage.setItem('upbase_selected_user_id', newUser.id);
     }
 
-    // Đồng bộ session cookie máy chủ qua API sandbox ngầm
-    if (!isSilent && (process.env.NODE_ENV as string) === 'development') fetch('/api/auth/lark/sandbox', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: newUser.id }),
-    }).catch(err => console.warn('Sync server session failed:', err));
+    if (!isSilent && USERS.some(u => u.id === newUser.id)) {
+      fetch('/api/auth/lark/sandbox', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: newUser.id }),
+      }).catch(err => console.warn('Sync server session failed:', err));
+    }
 
     if (newUser.role === 'BRAND_PARTNER') {
       const userBrand = newUser.assignedBrands?.[0] || newUser.linkedEntityName || 'Kutieskin';
@@ -170,65 +182,70 @@ export default function App() {
     } else {
       setSelectedBrandContext('ALL');
     }
-    const allowed = getAllowedTabsForRole(newUser.role);
-    if (!allowed.includes(activeTab)) {
-      const defaultTab = getDefaultLandingTabForRole(newUser.role);
-      setActiveTab(defaultTab);
-      if (!isSilent) {
-        showToast(`Chuyển vai trò: ${newUser.name} (${newUser.roleTitle})`, 'info');
+
+    const defaultTab = getDefaultLandingTabForRole(newUser.role);
+    setActiveTab(prevTab => {
+      const allowed = getAllowedTabsForRole(newUser.role);
+      const isPartnerRole = ['BRAND_PARTNER', 'KOC_PARTNER', 'CTV_PARTNER'].includes(newUser.role);
+      if (!allowed.includes(prevTab) || isPartnerRole || !isSilent) {
+        return defaultTab;
       }
-    } else if (!isSilent) {
+      return prevTab;
+    });
+
+    if (!isSilent) {
       showToast(`Đang xem với vai trò: ${newUser.name} (${newUser.roleTitle})`, 'info');
     }
-  };
+  }, [showToast]);
 
-  // Tải session hoặc vai trò đã chọn, tự động cấp quyền không cần bắt buộc đăng nhập Lark/Gmail
+  // Tải phiên đăng nhập từ cookie hoặc vai trò đã chọn ở trang /login
   useEffect(() => {
     async function loadUser() {
       try {
-        const savedUserId = (process.env.NODE_ENV as string) === 'development' && typeof window !== 'undefined' ? localStorage.getItem('upbase_selected_user_id') : null;
+        const savedUserId = typeof window !== 'undefined' ? localStorage.getItem('upbase_selected_user_id') : null;
         const res = await fetch('/api/auth/me');
 
         if (res.ok) {
           const data = await res.json();
           if (data.authenticated && data.user) {
-            // Nếu người dùng đã chọn vai trò trước đó trong localStorage, ưu tiên áp dụng vai trò đó
-            if (data.user.loginProvider !== 'LARK' && savedUserId && savedUserId !== data.user.id) {
+            let resolvedUser: UserProfile = data.user;
+            if (data.isAutoLogin && savedUserId && savedUserId !== data.user.id) {
               const matched = USERS.find(u => u.id === savedUserId);
               if (matched) {
-                handleUserChange(matched, true);
-                setIsLoadingAuth(false);
-                return;
+                resolvedUser = matched;
               }
             }
-            handleUserChange(data.user, true);
+            handleUserChange(resolvedUser, true);
+            setActiveTab(getDefaultLandingTabForRole(resolvedUser.role));
             setIsLoadingAuth(false);
             return;
           }
         }
 
-        // Dự phòng: Mặc định cấp quyền Quản trị BOD hoặc vai trò đã lưu mà không chuyển sang /login
-        if ((process.env.NODE_ENV as string) === 'production') { window.location.assign('/login'); return; }
         const fallbackUser = (savedUserId && USERS.find(u => u.id === savedUserId)) || USERS[0];
         handleUserChange(fallbackUser, true);
+        setActiveTab(getDefaultLandingTabForRole(fallbackUser.role));
         setIsLoadingAuth(false);
       } catch (err) {
-        if ((process.env.NODE_ENV as string) === 'production') { window.location.assign('/login'); return; }
         console.warn('Could not fetch user session, using fallback user:', err);
         const savedUserId = typeof window !== 'undefined' ? localStorage.getItem('upbase_selected_user_id') : null;
         const fallbackUser = (savedUserId && USERS.find(u => u.id === savedUserId)) || USERS[0];
         handleUserChange(fallbackUser, true);
+        setActiveTab(getDefaultLandingTabForRole(fallbackUser.role));
         setIsLoadingAuth(false);
       }
     }
     loadUser();
-  }, []);
+  }, [handleUserChange]);
 
   const handleLogout = async () => {
     try {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('upbase_selected_user_id');
+      }
       await fetch('/api/auth/logout', { method: 'POST' });
     } finally {
-      window.location.href = '/login';
+      router.push('/login');
     }
   };
 
@@ -311,16 +328,6 @@ export default function App() {
 
   // Mobile Drawer State
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
-
-  // Notifications Toast (Enhanced with Type & Dismiss)
-  const [toastData, setToastData] = useState<{ message: string; type: 'success' | 'warning' | 'info' | 'error' } | null>(null);
-
-  const showToast = (msg: string, type: 'success' | 'warning' | 'info' | 'error' = 'success') => {
-    setToastData({ message: msg, type });
-    setTimeout(() => {
-      setToastData(null);
-    }, 4500);
-  };
 
   // Plan Handlers
   const handleAddPlanItem = (newItem: StaffDetailedPlanItem) => {
@@ -489,8 +496,8 @@ export default function App() {
     showToast(`Đã tạo ${approvedItems.length} deal từ kế hoạch của ${staffName}`);
   };
 
-  const handleGenerateDealsFromGrowthDemand = (demand: any) => {
-    const newDealsGenerated: BookingDealItem[] = (demand.breakdown || []).flatMap((tierItem: any, tIdx: number) => {
+  const handleGenerateDealsFromGrowthDemand = (demand: GrowthDemandItem) => {
+    const newDealsGenerated: BookingDealItem[] = (demand.breakdown || []).flatMap((tierItem: GrowthDemandBreakdownTier, tIdx: number) => {
       return Array.from({ length: Math.min(tierItem.targetCount, 4) }).map((_, i) => ({
         id: `deal-gen-${Date.now()}-${tIdx}-${i}`,
         dealCode: `BO26_${Date.now().toString().slice(-4)}${tIdx}${i}`,
@@ -505,12 +512,12 @@ export default function App() {
         totalValue: tierItem.estimatedAvgCost,
         advanceAmount: Math.round(tierItem.estimatedAvgCost * 0.2),
         finalAmount: Math.round(tierItem.estimatedAvgCost * 0.8),
-        salaryGrade: tierItem.salaryGradeLabel?.split(' ')[0] || 'KL4',
+        salaryGrade: (tierItem.salaryGradeLabel?.split(' ')[0] as SalaryGrade) || 'KL4',
         segment: tierItem.tier === 'TIER_1_CELEB' ? 'Top Creator' : tierItem.tier === 'TIER_2_MACRO' ? 'Key Creator' : tierItem.tier === 'TIER_3_MICRO' ? 'Mid Creator' : 'Massive Creator',
         tepKenh: 'Beauty',
-        kocCategory: demand.brandCategory?.split('/')[0]?.trim() || 'Personal care',
+        kocCategory: (demand.brandCategory?.split('/')[0]?.trim() as KocCategory) || 'Personal care',
         contentPillar: 'Review trực tiếp',
-        status: 'BRAND_PENDING' as any,
+        status: 'DRAFT' as DealStatus,
         statusLabel: 'Chờ Tuyển KOC & Trình Brand',
         pipelineText: 'Sàng lọc',
         brandApprovalStatus: 'CHỜ_DUYỆT',
@@ -642,50 +649,49 @@ export default function App() {
     }
   };
 
-  // Tiêu đề trang: khớp tên trên menu, mô tả chỉ khi thêm thông tin
+  // Tiêu đề trang: khớp 100% tên trên menu trái (DESIGN_SYSTEM.md §7 Quy tắc 1)
   const titles: Record<TabKey, { title: string; subtitle: string }> = {
     cockpit: { title: 'Việc của tôi', subtitle: '' },
-    overview: { title: 'Tổng quan vận hành', subtitle: 'Toàn cảnh GMV, doanh số, tiến độ deal và hiệu suất' },
+    overview: { title: 'Tổng quan', subtitle: 'GMV, doanh số, tiến độ deal và hiệu suất theo sàn' },
     'input-plan': { title: 'Kế hoạch tháng', subtitle: 'Ngân sách, kênh và nhân sự booking theo từng tháng' },
-    'koc-listing': { title: 'Quản Lý Đợt Listing KOC & Air Video', subtitle: 'Chu kỳ đợt ngày 10-20-30, quy trình duyệt song song Brand & KOC, tự động chuyển giao Air Video' },
-    'self-channel-hub': { title: 'Hub làm việc với Cộng tác viên (CTV)', subtitle: 'Sản xuất video kênh thương hiệu theo Content Pillar và quản lý Cộng Tác Viên' },
-    'master-data': { title: 'Dữ liệu gốc', subtitle: 'Thương hiệu, gian hàng, sản phẩm, ngành hàng và danh bạ KOC' },
-    'push-products': { title: 'Sản phẩm đẩy của nhãn', subtitle: 'Danh mục sản phẩm trọng tâm, tồn kho và mức hoa hồng push' },
-    stores: { title: 'Hồ sơ gian hàng', subtitle: 'Quản trị chuyên sâu chỉ số vận hành, hạn mức ngân sách, bàn giao PIC và liên kết thương hiệu' },
-    campaigns: { title: 'Làm việc với Brand', subtitle: 'Brief chiến dịch, Brand Guideline, Blacklist từ khóa và duyệt KOC của team Brand' },
+    'koc-listing': { title: 'Đề xuất KOC', subtitle: 'Chu kỳ đợt ngày 10-20-30, duyệt song song nhãn hàng và KOC, theo dõi lên sóng' },
+    'self-channel-hub': { title: 'Cổng cộng tác viên', subtitle: 'Sản xuất video kênh tự xây theo trụ cột nội dung và nghiệm thu clip' },
+    'ctv-master': { title: 'Danh bạ CTV', subtitle: 'Hồ sơ, định mức đơn giá và đối soát sản lượng cộng tác viên' },
+    'master-data': { title: 'Dữ liệu gốc', subtitle: 'Thương hiệu, gian hàng, sản phẩm, ngành hàng và khung lương' },
+    'push-products': { title: 'Sản phẩm đẩy', subtitle: 'Danh mục sản phẩm trọng tâm, tồn kho và mức hoa hồng' },
+    stores: { title: 'Hồ sơ gian hàng', subtitle: 'Chỉ số vận hành, hạn mức ngân sách, bàn giao PIC và liên kết thương hiệu' },
+    campaigns: { title: 'Duyệt với nhãn hàng', subtitle: 'Brief chiến dịch, quy chuẩn nhãn hàng, từ khóa cấm và duyệt KOC' },
     'brand-knowledge': { title: 'Hồ sơ thương hiệu', subtitle: 'Định vị, sản phẩm chủ lực, quy chuẩn nội dung, pháp lý và trần thù lao của từng nhãn' },
-    content: { title: 'Quản lý Kịch bản & Nội dung Video', subtitle: 'Kho sản phẩm nội dung, hàng chờ duyệt kịch bản 24h, video nháp KOC và đối soát bài đăng live' },
-    'content-angles': { title: 'Thiết Lập Góc Nội Dung (Content Angles)', subtitle: 'Kho kịch bản phân rã theo Trụ cột nội dung và từng sản phẩm của gian hàng' },
-    'partner-access': { title: 'Quản Trị Phân Quyền & RBAC Tập Trung', subtitle: 'Ma trận phân quyền 7 vai trò, quản lý PIC nhân sự nội bộ và cấp quyền Gmail cho đối tác bên thứ 3' },
-    booking: { title: 'Kế hoạch & Vận hành Booking', subtitle: 'Phân rã kế hoạch theo Khung lương KL1-7, tuyển chọn KOC và quản lý deal hợp đồng' },
+    content: { title: 'Kịch bản & video', subtitle: 'Kho sản phẩm nội dung, hàng chờ duyệt kịch bản 24h, video nháp và đối soát bài đăng' },
+    'content-angles': { title: 'Góc tiếp cận', subtitle: 'Kho kịch bản phân rã theo trụ cột nội dung và từng sản phẩm của gian hàng' },
+    'partner-access': { title: 'Phân quyền', subtitle: 'Ma trận phân quyền theo vai trò, nhân sự nội bộ và tài khoản đối tác' },
+    booking: { title: 'Booking', subtitle: 'Phân rã kế hoạch theo khung lương KL1–7, tuyển chọn KOC và quản lý deal' },
     'koc-master': { title: 'Danh bạ KOC', subtitle: 'Hồ sơ, giấy tờ và lịch sử booking của KOC' },
-    contracts: { title: 'Hợp đồng', subtitle: 'Tạo từ mẫu pháp chế, duyệt nội bộ và theo dõi ký điện tử' },
-    manager: { title: 'Điều phối & Quản lý', subtitle: 'Phân bổ nhãn hàng, gian hàng, nhân sự và cân bằng khối lượng việc' },
+    contracts: { title: 'Hợp đồng & thanh toán', subtitle: 'Tạo từ mẫu pháp chế, duyệt nội bộ và theo dõi ký điện tử' },
+    manager: { title: 'Phân bổ & điều phối', subtitle: 'Phân bổ nhãn hàng, gian hàng, nhân sự và cân bằng khối lượng việc' },
     'sample-tracker': { title: 'Hàng mẫu', subtitle: 'Vận đơn mẫu, hạn nộp kịch bản 5 ngày và mã Spark Ads' },
-    'performance-p3': { title: 'Đánh giá 4P & thưởng P3', subtitle: 'Điểm khối lượng việc theo độ khó gian hàng, chất lượng và SLA' },
-    leaderboard: { title: 'Hiệu suất nhân sự', subtitle: 'Bảng xếp hạng KPI và SLA toàn đội ngũ vận hành' },
-    'brand-hub': { title: 'Cổng đối tác Brand', subtitle: 'Duyệt kế hoạch → Duyệt KOC → Duyệt kịch bản → Nghiệm thu video' },
-    'koc-hub': { title: 'Hub đối tác KOC / KOL', subtitle: 'Xem lời mời booking, xác nhận nhận hàng mẫu, nộp link video review & mã Spark Ads' },
-    'ads-report': { title: 'Báo cáo Ads TikTok & Mapping Tuần', subtitle: 'Tự động đọc file báo cáo xuất từ TikTok Shop Seller, đối soát mã Spark Ads và đồng bộ ROAS thực tế' },
-    'dashboard-bi': { title: 'Dashboard Điều Hành & Báo Cáo Tổng Hợp', subtitle: 'Bức tranh đa chiều về GMV toàn sàn, PnL vận hành, ROAS chiến dịch và đối soát tài chính 3 bên' },
+    'performance-p3': { title: 'Đánh giá 4P', subtitle: 'Điểm khối lượng việc theo độ khó gian hàng, chất lượng và SLA' },
+    leaderboard: { title: 'Bảng xếp hạng', subtitle: 'Bảng xếp hạng KPI và SLA đội ngũ vận hành' },
+    'brand-hub': { title: 'Cổng nhãn hàng', subtitle: 'Duyệt kế hoạch → Duyệt KOC → Duyệt kịch bản → Nghiệm thu video' },
+    'koc-hub': { title: 'Cổng KOC', subtitle: 'Lời mời booking, xác nhận nhận hàng mẫu, nộp link video và mã Spark Ads' },
+    'ads-report': { title: 'Báo cáo Ads tuần', subtitle: 'Đọc file báo cáo từ TikTok Shop Seller, đối soát mã Spark Ads và ROAS thực tế' },
+    'dashboard-bi': { title: 'Báo cáo hiệu suất', subtitle: 'GMV toàn sàn, ngân sách vận hành, ROAS chiến dịch và đối soát tài chính' },
   };
 
   if (isLoadingAuth || !currentUser) {
     return (
       <div className="min-h-screen bg-canvas flex flex-col items-center justify-center space-y-3">
-        <div className="w-8 h-8 border-2 border-slate-300 border-t-slate-800 rounded-full animate-spin"></div>
-        <p className="text-xs text-slate-500 font-medium">Đang xác minh phiên làm việc UpBase...</p>
+        <div className="w-8 h-8 border-2 border-line-strong border-t-ink rounded-full animate-spin"></div>
+        <p className="text-xs text-ink-3 font-medium">Đang xác minh phiên làm việc…</p>
       </div>
     );
   }
 
   return (
     <div className="flex min-h-screen bg-canvas text-ink">
-      {/* Toast Notification (Enterprise Multi-Type) */}
-      {/* Toast Notification (Enterprise Multi-Type with Clean Lucide SVGs) */}
       {toastData && (
         <div 
-          className={`fixed bottom-6 right-6 z-50 max-w-sm pl-4 pr-2 py-2.5 rounded-md text-sm shadow-xl animate-in slide-in-from-bottom-3 duration-200 flex items-center gap-3 bg-slate-900 text-white`}
+          className="fixed bottom-6 right-6 z-50 max-w-sm pl-4 pr-2 py-2.5 rounded-md text-sm shadow-xl animate-in slide-in-from-bottom-3 duration-200 flex items-center gap-3 bg-ink text-white"
           role="status"
           aria-live="polite"
         >
@@ -696,7 +702,7 @@ export default function App() {
           <span>{toastData.message}</span>
           <button 
             onClick={() => setToastData(null)}
-            className="p-1 rounded-md hover:bg-white/20 transition text-slate-400 hover:text-white ml-2"
+            className="p-1 rounded-md hover:bg-white/20 transition text-white/70 hover:text-white ml-2"
             aria-label="Đóng thông báo"
           >
             <X className="w-3.5 h-3.5" />
@@ -735,15 +741,15 @@ export default function App() {
         />
 
         {isThirdPartyPartner(currentUser) && (
-          <div className="bg-gradient-to-r from-purple-800 via-indigo-800 to-slate-900 text-white px-4 sm:px-6 py-2.5 flex items-center justify-between text-xs shadow-md border-b border-purple-500/30">
-            <div className="flex items-center gap-2.5">
-              <span className="px-2.5 py-0.5 rounded-full bg-emerald-500 text-slate-950 font-bold text-2xs uppercase tracking-wider">
-                ĐỐI TÁC: {currentUser.roleTitle}
+          <div className="bg-accent-soft text-ink px-4 sm:px-6 py-2 flex flex-wrap items-center justify-between gap-2 text-xs border-b border-line">
+            <div className="flex items-center gap-2">
+              <span className="px-2 py-0.5 rounded bg-surface text-accent font-medium text-2xs border border-line">
+                Đối tác: {currentUser.roleTitle}
               </span>
-              <span className="text-slate-200">
-                Đang xem với tư cách: <strong className="text-white font-semibold">{currentUser.name}</strong> ({currentUser.email})
+              <span className="text-ink-2">
+                Đang xem với tư cách: <strong className="text-ink font-semibold">{currentUser.name}</strong> ({currentUser.email})
                 {currentUser.linkedEntityName && (
-                  <span className="text-emerald-300 font-medium"> — Giới hạn theo: {currentUser.linkedEntityName}</span>
+                  <span className="text-accent font-medium"> · Phạm vi: {currentUser.linkedEntityName}</span>
                 )}
               </span>
             </div>
@@ -751,37 +757,37 @@ export default function App() {
               onClick={() => {
                 handleUserChange(USERS[0]);
                 setActiveTab('partner-access');
-                showToast('Đã quay lại tài khoản Quản trị UpBase', 'info');
+                showToast('Đã quay lại tài khoản quản trị', 'info');
               }}
-              className="px-3 py-1 rounded-lg bg-white/10 hover:bg-white text-white hover:text-slate-900 border border-white/30 font-bold transition text-2xs cursor-pointer shadow-xs"
+              className="h-7 px-2.5 rounded-md bg-surface hover:bg-sunken text-ink border border-line-strong font-medium transition text-2xs"
             >
-              Thoát Chế Độ Đối Tác ✕
+              Thoát chế độ đối tác
             </button>
           </div>
         )}
 
         <main id="workspace" className="px-4 sm:px-6 lg:px-8 py-5 sm:py-6 w-full max-w-[1600px] mx-auto space-y-5">
           {!isTabAllowedForRole(currentUser.role, activeTab) ? (
-            <div className="p-8 sm:p-12 rounded-2xl bg-surface border border-rose-200 shadow-sm text-center max-w-lg mx-auto my-12 space-y-4 animate-in fade-in">
-              <div className="w-14 h-14 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mx-auto border border-rose-100 shadow-2xs">
+            <div className="p-8 sm:p-12 rounded-2xl bg-surface border border-line text-center max-w-lg mx-auto my-12 space-y-4 animate-in fade-in">
+              <div className="w-14 h-14 rounded-2xl bg-critical-soft text-critical flex items-center justify-center mx-auto border border-line">
                 <ShieldAlert className="w-7 h-7" />
               </div>
               <div className="space-y-1.5">
-                <h2 className="text-lg font-bold text-ink">Không Có Quyền Truy Cập Màn Hình Này</h2>
+                <h2 className="text-lg font-semibold text-ink">Không có quyền truy cập màn hình này</h2>
                 <p className="text-xs text-ink-2 leading-relaxed">
-                  Tài khoản hiện tại <strong className="text-ink">{currentUser.name}</strong> ({currentUser.roleTitle}) không có thẩm quyền truy cập màn hình <strong className="text-rose-600">{titles[activeTab]?.title || activeTab}</strong>.
+                  Tài khoản hiện tại <strong className="text-ink font-semibold">{currentUser.name}</strong> ({currentUser.roleTitle}) không có thẩm quyền truy cập màn hình <strong className="text-critical font-semibold">{titles[activeTab]?.title || activeTab}</strong>.
                 </p>
                 <div className="p-2.5 rounded-lg bg-sunken border border-line text-2xs text-ink-3">
-                  Quy định bảo mật theo <strong>Ma Trận Phân Quyền RBAC UpBase</strong>
+                  Quy định bảo mật theo <strong className="font-medium">Ma trận phân quyền Upbase</strong>
                 </div>
               </div>
               <div className="pt-2">
-                <button
+                <Button
+                  variant="primary"
                   onClick={() => setActiveTab(getDefaultLandingTabForRole(currentUser.role))}
-                  className="px-4 py-2 bg-primary hover:bg-primary-hover text-white text-xs font-semibold rounded-xl transition shadow-xs cursor-pointer"
                 >
                   Quay về màn hình chính ({titles[getDefaultLandingTabForRole(currentUser.role)]?.title || 'Trang chủ'})
-                </button>
+                </Button>
               </div>
             </div>
           ) : (
@@ -821,7 +827,7 @@ export default function App() {
               kocs={kocs}
               storePortfolios={storePortfolios}
               onNotify={showToast}
-              onNavigateToTab={setActiveTab}
+              onNavigateToTab={(tabKey) => setActiveTab(tabKey as TabKey)}
             />
           </KeepAliveTab>
 
@@ -1074,15 +1080,7 @@ export default function App() {
           </KeepAliveTab>
 
           <KeepAliveTab tabKey="leaderboard" currentTab={activeTab}>
-            <ExecutiveDashboardReportsView
-              currentUser={currentUser}
-              deals={deals}
-              brands={brands}
-              kocs={kocs}
-              storePortfolios={storePortfolios}
-              onNotify={showToast}
-              onNavigateToTab={setActiveTab}
-            />
+            <LeaderboardView />
           </KeepAliveTab>
 
           <KeepAliveTab tabKey="brand-hub" currentTab={activeTab}>
@@ -1101,7 +1099,7 @@ export default function App() {
                     : d
                 ));
               }}
-              onBrandRejectDeal={(kocOrDeal, reason) => {
+              onBrandRejectDeal={(kocOrDeal) => {
                 setDeals(prev => prev.map(d => 
                   (d.kocStageName.toLowerCase().includes(kocOrDeal.toLowerCase()) || d.dealCode === kocOrDeal)
                     ? { ...d, brandApprovalStatus: 'TỪ_CHỐI' }

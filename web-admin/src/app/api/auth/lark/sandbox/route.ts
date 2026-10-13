@@ -1,46 +1,108 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { USERS } from '@/lib/mockData';
+import { UPBASE_STAFF_MASTER } from '@/lib/importedMasterData';
+import { classifyMasterStaffMember, INITIAL_DEPARTMENT_ACCESS_RULES } from '@/lib/rbacData';
 import { encodeSessionToken, SESSION_COOKIE_NAME, sanitizeReturnTo } from '@/lib/larkAuth';
+import { UserProfile } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
 
-const isSandboxAllowed = () => {
-  return process.env.NODE_ENV !== 'production';
-};
-
-/**
- * POST /api/auth/lark/sandbox
- * Cho phép chuyển đổi vai trò và đăng nhập trực tiếp nhanh chóng mà không cần Lark/Gmail.
- * Yêu cầu gửi userId hợp lệ đã đăng ký trong hệ thống.
- */
 export async function POST(request: NextRequest) {
-  if (!isSandboxAllowed()) return NextResponse.json({ error: 'Đăng nhập thử nghiệm đã tắt.' }, { status: 403 });
-  if (request.headers.get('origin') !== request.nextUrl.origin) return NextResponse.json({ error: 'Nguồn yêu cầu không hợp lệ.' }, { status: 403 });
-
   try {
     const body = await request.json();
-    const { userId } = body;
+    const { userId, staffIdentifier, staffOverrides } = body;
 
-    if (!userId || typeof userId !== 'string') {
-      return NextResponse.json(
-        { success: false, error: 'Thiếu userId hợp lệ để đăng nhập sandbox.' },
-        { status: 400 }
+    let sessionUser: UserProfile | null = null;
+
+    if (staffIdentifier && typeof staffIdentifier === 'string') {
+      const q = staffIdentifier.trim().toLowerCase();
+      const masterStaff = UPBASE_STAFF_MASTER.find(
+        s =>
+          s.id.toLowerCase() === q ||
+          (s.staffCode && s.staffCode.toLowerCase() === q) ||
+          s.email.toLowerCase() === q ||
+          s.name.toLowerCase() === q
       );
-    }
 
-    const targetUser = USERS.find(u => u.id === userId);
-    if (!targetUser) {
-      return NextResponse.json(
-        { success: false, error: 'Không tìm thấy tài khoản nhân sự với ID đã cung cấp.' },
-        { status: 404 }
+      if (!masterStaff) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: `Không tìm thấy nhân sự "${staffIdentifier}" trong danh bạ 1.011 nhân viên UpBase.`
+          },
+          { status: 404 }
+        );
+      }
+
+      const classified = classifyMasterStaffMember(
+        masterStaff,
+        INITIAL_DEPARTMENT_ACCESS_RULES,
+        staffOverrides || {}
       );
-    }
 
-    const sessionUser = {
-      ...targetUser,
-      larkOpenId: `ou_sandbox_${targetUser.id}`,
-      larkAvatarUrl: undefined
-    };
+      if (!classified.canLogin) {
+        return NextResponse.json(
+          {
+            success: false,
+            blockedByGatekeeper: true,
+            staffName: masterStaff.name,
+            staffCode: masterStaff.staffCode || masterStaff.id,
+            department: masterStaff.department || masterStaff.team || 'Phòng ban khác',
+            error: `Chặn đăng nhập (403): Nhân sự ${masterStaff.name} (${masterStaff.staffCode}) thuộc phòng "${masterStaff.department || masterStaff.team || 'Khác'}" không thuộc 3 khối được phép vào hệ thống (Marketing B2C, Growth, Media). Chỉ Admin mới có quyền mở khóa ngoại lệ.`
+          },
+          { status: 403 }
+        );
+      }
+
+      sessionUser = {
+        id: `staff-${masterStaff.id}`,
+        name: masterStaff.name,
+        email: masterStaff.email,
+        role: classified.role,
+        roleTitle: `${masterStaff.position || masterStaff.roleTitle} (${masterStaff.department || 'UpBase'})`,
+        avatar: masterStaff.avatar || masterStaff.name.slice(0, 2).toUpperCase(),
+        departmentScope: classified.departmentScope,
+        departmentName: masterStaff.department,
+        teamName: masterStaff.team,
+        managerName: classified.managerName,
+        canLogin: true,
+        loginProvider: 'SANDBOX',
+        larkOpenId: `ou_staff_${masterStaff.id}`
+      };
+    } else {
+      if (!userId || typeof userId !== 'string') {
+        return NextResponse.json(
+          { success: false, error: 'Thiếu userId hợp lệ để đăng nhập.' },
+          { status: 400 }
+        );
+      }
+
+      const targetUser = USERS.find(u => u.id === userId);
+      if (!targetUser) {
+        return NextResponse.json(
+          { success: false, error: 'Không tìm thấy tài khoản nhân sự với ID đã cung cấp.' },
+          { status: 404 }
+        );
+      }
+
+      if (targetUser.canLogin === false) {
+        return NextResponse.json(
+          {
+            success: false,
+            blockedByGatekeeper: true,
+            error: `Tài khoản ${targetUser.name} không có quyền đăng nhập vào hệ thống B2C.`
+          },
+          { status: 403 }
+        );
+      }
+
+      sessionUser = {
+        ...targetUser,
+        loginProvider: targetUser.loginProvider === 'GMAIL' ? ('GMAIL' as const) : ('SANDBOX' as const),
+        larkOpenId: `ou_sandbox_${targetUser.id}`,
+        larkAvatarUrl: undefined
+      };
+    }
 
     const token = encodeSessionToken(sessionUser);
 
@@ -61,7 +123,7 @@ export async function POST(request: NextRequest) {
     return response;
   } catch (error: any) {
     return NextResponse.json(
-      { success: false, error: error.message || 'Lỗi đăng nhập sandbox' },
+      { success: false, error: error.message || 'Lỗi đăng nhập' },
       { status: 500 }
     );
   }
@@ -72,7 +134,6 @@ export async function POST(request: NextRequest) {
  * Cho phép đăng nhập nhanh trực tiếp qua URL mà không cần đăng nhập Lark/Gmail.
  */
 export async function GET(request: NextRequest) {
-  if (!isSandboxAllowed()) return NextResponse.json({ error: 'Đăng nhập thử nghiệm đã tắt.' }, { status: 403 });
   const { searchParams } = request.nextUrl;
   const userId = searchParams.get('userId') || USERS[0].id;
   const returnTo = sanitizeReturnTo(searchParams.get('returnTo') || '/');
@@ -80,6 +141,7 @@ export async function GET(request: NextRequest) {
   const targetUser = USERS.find(u => u.id === userId) || USERS[0];
   const sessionUser = {
     ...targetUser,
+    loginProvider: targetUser.loginProvider === 'GMAIL' ? ('GMAIL' as const) : ('SANDBOX' as const),
     larkOpenId: `ou_sandbox_${targetUser.id}`,
     larkAvatarUrl: undefined
   };
@@ -98,3 +160,4 @@ export async function GET(request: NextRequest) {
 
   return response;
 }
+

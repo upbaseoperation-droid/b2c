@@ -3,9 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import {
   Flame,
-  Sparkles,
   Lock,
-  Unlock,
   MessageSquare,
   Send,
   History,
@@ -18,32 +16,21 @@ import {
   Store,
   Users,
   Search,
-  Filter,
   Plus,
-  RefreshCw,
   FileText,
   ExternalLink,
   ShieldCheck,
   Layers,
-  Award,
   Check,
   X,
   ChevronRight,
   Calendar,
-  ArrowRight,
   Clock,
-  DollarSign,
-  Percent,
   Boxes,
-  HelpCircle,
-  ThumbsUp,
   FileEdit,
   SlidersHorizontal,
-  ChevronDown,
   Copy,
   ShoppingBag,
-  Share2,
-  PlayCircle,
   CheckCheck
 } from 'lucide-react';
 import {
@@ -51,14 +38,14 @@ import {
   BrandDetail,
   PushProductItem,
   PushProductStatus,
-  PushProductFeasibility,
   PushProductRole,
   PushProductComment,
   PushProductChangeRequest,
-  PushProductAuditLog,
   ChangeRequestType
 } from '../../lib/types';
 import { INITIAL_PUSH_PRODUCTS } from '../../lib/mockData';
+import { formatDate, formatVnd } from '../../lib/format';
+import { Button, ChannelTag, PageActions } from '../ui';
 
 interface PushProductsViewProps {
   currentUser: UserProfile;
@@ -152,15 +139,15 @@ export const PushProductsView: React.FC<PushProductsViewProps> = ({
     type: ChangeRequestType;
     field: string;
     fieldLabel: string;
-    oldValue: any;
-    newValue: any;
+    oldValue: string | number;
+    newValue: string | number;
     startDateVal?: string;
     endDateVal?: string;
     reason: string;
   }>({
     type: 'CHANGE_PRICE',
     field: 'promotionalPrice',
-    fieldLabel: 'Giá Deal Chiến Dịch',
+    fieldLabel: 'Giá deal chiến dịch',
     oldValue: 0,
     newValue: 0,
     startDateVal: '',
@@ -174,7 +161,7 @@ export const PushProductsView: React.FC<PushProductsViewProps> = ({
     'Kho tổng đang tồn nhiều, đề xuất chạy deal mua 1 tặng 1 trong ngày Mega',
     'KOC phản hồi mẫu dùng rất thích, xin tăng hạn mức mẫu thêm 50 suất',
     'Đã đồng thuận mọi điều kiện, tiến hành chốt duyệt khóa SKU cho chu kỳ!',
-    'Đề xuất gia hạn chu kỳ thêm 5 ngày để đón trọn đợt Sale Lương Về (Payday)',
+    'Đề xuất gia hạn chu kỳ thêm 5 ngày để đón trọn đợt sale lương về',
     'Giá deal hiện tại chưa cạnh tranh so với đối thủ cùng phân khúc'
   ];
 
@@ -201,21 +188,6 @@ export const PushProductsView: React.FC<PushProductsViewProps> = ({
     return { totalDays, daysRemaining, status };
   };
 
-  // Helper: Format Date String to DD/MM/YYYY
-  const formatDateDisplay = (dateStr: string) => {
-    if (!dateStr) return '';
-    const parts = dateStr.split('-');
-    if (parts.length === 3) {
-      return `${parts[2]}/${parts[1]}/${parts[0]}`;
-    }
-    return dateStr;
-  };
-
-  // Helper: Format VND
-  const formatVnd = (num: number) => {
-    return (num || 0).toLocaleString('vi-VN') + ' đ';
-  };
-
   // Action: Open B2C Brief Input Modal
   const handleOpenEditBriefModal = (product: PushProductItem, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
@@ -239,7 +211,7 @@ export const PushProductsView: React.FC<PushProductsViewProps> = ({
     if (!briefFormProduct) return;
 
     if (!briefForm.usp.trim()) {
-      notify('Vui lòng nhập Điểm bán hàng độc nhất (USP) cho KOC!', 'warning');
+      notify('Vui lòng nhập điểm bán hàng độc nhất cho KOC!', 'warning');
       return;
     }
 
@@ -266,10 +238,10 @@ export const PushProductsView: React.FC<PushProductsViewProps> = ({
         {
           id: `log-${Date.now()}`,
           timestamp: new Date().toLocaleString('vi-VN', { hour12: false }),
-          action: 'B2C Cập Nhật Brief KOC',
+          action: 'B2C cập nhật brief KOC',
           actorName: activeAuthorName,
           actorRole: 'B2C',
-          description: `B2C đã cập nhật thông tin Brief KOC (USP: "${briefForm.usp.slice(0, 40)}...")`
+          description: `B2C đã cập nhật thông tin brief KOC (USP: "${briefForm.usp.slice(0, 40)}...")`
         }
       ]
     };
@@ -279,14 +251,14 @@ export const PushProductsView: React.FC<PushProductsViewProps> = ({
       setSelectedProduct(updated);
     }
     setIsEditBriefModalOpen(false);
-    notify(`Đã lưu thông tin Brief KOC cho SKU [${updated.sku}] thành công! B2C có thể sao chép gửi Creator ngay.`);
+    notify(`Đã lưu thông tin brief KOC cho SKU [${updated.sku}] thành công! B2C có thể sao chép gửi Creator ngay.`);
   };
 
   // Helper: Copy KOC Brief to Clipboard
   const handleCopyKocBrief = (prod: PushProductItem, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     if (!prod.usp || !prod.usp.trim()) {
-      notify('Sản phẩm này chưa có nội dung Brief KOC do B2C thiết lập. B2C vui lòng bổ sung trước!', 'warning');
+      notify('Sản phẩm này chưa có nội dung brief KOC do B2C thiết lập. B2C vui lòng bổ sung trước!', 'warning');
       handleOpenEditBriefModal(prod);
       return;
     }
@@ -294,7 +266,7 @@ export const PushProductsView: React.FC<PushProductsViewProps> = ({
 Thương hiệu: ${prod.brandName}
 Gian hàng: ${prod.storeName} (${prod.platform === 'TIKTOK_SHOP' ? 'TikTok Shop' : 'Shopee Mall'})
 Sản phẩm: ${prod.productName} (Mã SKU: ${prod.sku})
-Chu kỳ hiệu lực: ${formatDateDisplay(prod.startDate)} → ${formatDateDisplay(prod.endDate)}
+Chu kỳ hiệu lực: ${formatDate(prod.startDate)} → ${formatDate(prod.endDate)}
 
 CHÍNH SÁCH THƯƠNG MẠI & QUYỀN LỢI:
 - Giá niêm yết: ${formatVnd(prod.originalPrice)} | Giá deal chiến dịch: ${formatVnd(prod.promotionalPrice)} (-${prod.discountPercent}%)
@@ -303,10 +275,10 @@ CHÍNH SÁCH THƯƠNG MẠI & QUYỀN LỢI:
 
 NỘI DUNG & THÔNG ĐIỆP TRUYỀN THÔNG:
 - USP nổi bật: ${prod.usp}
-- Thông điệp chính (Key Message): ${prod.keyMessage || prod.usp}
-- Góc quay gợi ý (Viral Angle): ${prod.viralAngle}
+- Thông điệp chính: ${prod.keyMessage || prod.usp}
+- Góc quay gợi ý: ${prod.viralAngle}
 - Tệp Creator phù hợp: ${prod.targetKocNiche.join(', ')}
-${prod.doAndDonts ? `- Quy tắc Do & Don'ts: ${prod.doAndDonts}` : ''}
+${prod.doAndDonts ? `- Lưu ý nội dung: ${prod.doAndDonts}` : ''}
 
 LINK SẢN PHẨM GẮN GIỎ: ${prod.pdpUrl || prod.pdpUrlTikTok || prod.pdpUrlShopee || 'Đang cập nhật'}
 LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
@@ -581,10 +553,10 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
         {
           id: `log-${Date.now()}`,
           timestamp: new Date().toLocaleString('vi-VN', { hour12: false }),
-          action: 'Chốt Duyệt & Khóa SP Thúc Đẩy (LOCKED)',
+          action: 'Chốt duyệt & khóa sản phẩm thúc đẩy',
           actorName: activeAuthorName,
           actorRole: activeRole,
-          description: `Hai bên Growth & B2C đã đạt đồng thuận. Khóa duyệt SKU ${product.sku} cho chu kỳ ${formatDateDisplay(product.startDate)} → ${formatDateDisplay(product.endDate)}.`
+          description: `Hai bên Growth & B2C đã đạt đồng thuận. Khóa duyệt SKU ${product.sku} cho chu kỳ ${formatDate(product.startDate)} → ${formatDate(product.endDate)}.`
         }
       ]
     };
@@ -593,11 +565,11 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
     if (selectedProduct?.id === updated.id) {
       setSelectedProduct(updated);
     }
-    notify(`Đã CHỐT DUYỆT thành công sản phẩm thúc đẩy [${product.productName}]! Dữ liệu đã sẵn sàng để B2C brief KOC.`);
+    notify(`Đã chốt duyệt thành công sản phẩm thúc đẩy [${product.productName}]! Dữ liệu đã sẵn sàng để B2C brief KOC.`);
   };
 
   // Action: Open Create Change Request
-  const handleOpenChangeRequestModal = (fieldKey: string, fieldLabel: string, currValue: any) => {
+  const handleOpenChangeRequestModal = (fieldKey: string, fieldLabel: string, currValue: string | number) => {
     let reqType: ChangeRequestType = 'CHANGE_PRICE';
     if (fieldKey === 'affiliateRate') reqType = 'CHANGE_COMMISSION';
     else if (fieldKey === 'monthlySampleQuota') reqType = 'CHANGE_SAMPLE_QUOTA';
@@ -655,7 +627,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
         {
           id: `log-${Date.now()}`,
           timestamp: new Date().toLocaleString('vi-VN', { hour12: false }),
-          action: 'Tạo Yêu Cầu Thay Đổi (Change Request)',
+          action: 'Tạo yêu cầu thay đổi',
           actorName: activeAuthorName,
           actorRole: activeRole,
           description: `Yêu cầu đổi [${changeRequestForm.fieldLabel}]: từ ${changeRequestForm.oldValue} sang ${finalNewValue}. Lý do: ${changeRequestForm.reason.trim()}`
@@ -667,7 +639,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
     setSelectedProduct(updated);
     setIsChangeRequestModalOpen(false);
     setActiveDrawerTab('CHANGE_REVIEW');
-    notify(`Đã gửi Yêu Cầu Thay Đổi [${changeRequestForm.fieldLabel}]. Chờ phía đối ứng xem xét phê duyệt!`, 'info');
+    notify(`Đã gửi yêu cầu thay đổi [${changeRequestForm.fieldLabel}]. Chờ phía đối ứng xem xét phê duyệt!`, 'info');
   };
 
   // Action: Approve Change Request
@@ -676,7 +648,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
     const cr = selectedProduct.changeRequests.find(c => c.id === crId);
     if (!cr) return;
 
-    let updatedFields: any = { [cr.field]: cr.newValue };
+    let updatedFields: Partial<PushProductItem> = { [cr.field]: cr.newValue } as Partial<PushProductItem>;
     if (cr.type === 'CHANGE_CYCLE_DATES') {
       if (typeof cr.newValue === 'string' && cr.newValue.includes('→')) {
         const [s, e] = cr.newValue.split('→').map(t => t.trim());
@@ -716,17 +688,17 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
         {
           id: `log-${Date.now()}`,
           timestamp: new Date().toLocaleString('vi-VN', { hour12: false }),
-          action: 'Phê Duyệt Yêu Cầu Thay Đổi',
+          action: 'Phê duyệt yêu cầu thay đổi',
           actorName: activeAuthorName,
           actorRole: activeRole,
-          description: `Đã phê duyệt đổi [${cr.fieldLabel}] thành ${cr.newValue}. Cập nhật trực tiếp vào Master Data.`
+          description: `Đã phê duyệt đổi [${cr.fieldLabel}] thành ${cr.newValue}. Cập nhật trực tiếp vào dữ liệu gốc.`
         }
       ]
     };
 
     setProducts(prev => prev.map(p => p.id === updated.id ? updated : p));
     setSelectedProduct(updated);
-    notify(`Đã phê duyệt thay đổi [${cr.fieldLabel}]! Dữ liệu Master Data đã được cập nhật đồng bộ.`);
+    notify(`Đã phê duyệt thay đổi [${cr.fieldLabel}]! Dữ liệu sản phẩm đã được cập nhật đồng bộ.`);
   };
 
   // Action: Reject Change Request
@@ -751,31 +723,31 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
       auditLogs: [
         ...selectedProduct.auditLogs,
         {
-          id: `log-${Date.now()}`,
+          id: `log-${selectedProduct.auditLogs.length + 1}`,
           timestamp: new Date().toLocaleString('vi-VN', { hour12: false }),
-          action: 'Từ Chối Yêu Cầu Thay Đổi',
+          action: 'Từ chối yêu cầu thay đổi',
           actorName: activeAuthorName,
           actorRole: activeRole,
-          description: `Từ chối yêu cầu thay đổi. lý do: ${reasonText}`
+          description: `Từ chối yêu cầu thay đổi. Lý do: ${reasonText}`
         }
       ]
     };
 
     setProducts(prev => prev.map(p => p.id === updated.id ? updated : p));
     setSelectedProduct(updated);
-    notify('Đã từ chối yêu cầu thay đổi. Giữ nguyên giá trị Master Data hiện tại.', 'warning');
+    notify('Đã từ chối yêu cầu thay đổi. Giữ nguyên giá trị hiện tại.', 'warning');
   };
 
   // Action: Submit Propose New Push Product
   const handleCreateNewProduct = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newProductForm.productName.trim() || !newProductForm.sku.trim()) {
-      notify('Vui lòng điền Tên sản phẩm và Mã SKU!', 'warning');
+      notify('Vui lòng điền tên sản phẩm và mã SKU!', 'warning');
       return;
     }
 
     const brand = brands.find(b => b.id === newProductForm.brandId);
-    const brandName = brand?.name || 'Thương Hiệu Mới';
+    const brandName = brand?.name || 'Thương hiệu mới';
     
     // Find store details
     const selectedStore = brand?.stores?.find(s => s.id === newProductForm.storeId) || brand?.stores?.[0];
@@ -805,7 +777,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
       storeUrl,
       imageUrl: 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=400&q=80',
       cycleMonth: cycleMonthValue,
-      campaignName: 'Chiến Dịch Thúc Đẩy Định Kỳ',
+      campaignName: 'Chiến dịch thúc đẩy định kỳ',
       startDate: newProductForm.startDate || '2026-10-01',
       endDate: newProductForm.endDate || '2026-10-31',
       cycleType: newProductForm.cycleType || 'MONTHLY',
@@ -835,7 +807,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
           id: `comm-${Date.now()}`,
           authorName: activeAuthorName,
           authorRole: activeRole,
-          content: `Growth khởi tạo đề xuất SP Thúc Đẩy mới cho gian hàng ${storeName}. Đề nghị B2C đánh giá tệp KOC và phản biện điều kiện mẫu/giá!`,
+          content: `Growth khởi tạo đề xuất sản phẩm thúc đẩy mới cho gian hàng ${storeName}. Đề nghị B2C đánh giá tệp KOC và phản biện điều kiện mẫu/giá!`,
           type: 'COMMENT',
           createdAt: new Date().toISOString()
         }
@@ -845,7 +817,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
         {
           id: `log-${Date.now()}`,
           timestamp: new Date().toLocaleString('vi-VN', { hour12: false }),
-          action: 'Đề Xuất Sản Phẩm Thúc Đẩy Mới',
+          action: 'Đề xuất sản phẩm thúc đẩy mới',
           actorName: activeAuthorName,
           actorRole: activeRole,
           description: `Khởi tạo SKU [${newProductForm.sku}] cho gian hàng ${storeName} thuộc ${brandName}.`
@@ -857,7 +829,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
     setIsCreateModalOpen(false);
     setSelectedProduct(newProd);
     setActiveDrawerTab('SPECS');
-    notify(`Đã khởi tạo đề xuất Sản Phẩm Thúc Đẩy [${newProd.productName}] cho ${storeName}!`);
+    notify(`Đã khởi tạo đề xuất sản phẩm thúc đẩy [${newProd.productName}] cho ${storeName}!`);
   };
 
   // Render Status Badge
@@ -872,9 +844,9 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
         );
       case 'IN_DISCUSSION':
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
-            <MessageSquare className="w-3.5 h-3.5 text-indigo-600" />
-            Đang Trao đổi
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-accent-soft text-accent border border-line">
+            <MessageSquare className="w-3.5 h-3.5 text-accent" />
+            Đang trao đổi
           </span>
         );
       case 'CHANGE_REQUESTED':
@@ -901,39 +873,14 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
     }
   };
 
-  // Render Platform Badge (TikTok Shop vs Shopee)
-  const renderPlatformBadge = (platform: 'TIKTOK_SHOP' | 'SHOPEE_MALL' | 'LAZADA', storeName?: string) => {
-    if (platform === 'TIKTOK_SHOP') {
-      return (
-        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-2xs font-semibold bg-slate-900 text-white border border-slate-700 shadow-2xs">
-          <span className="w-2 h-2 rounded-full bg-cyan-400" />
-          TikTok Shop
-        </span>
-      );
-    }
-    if (platform === 'SHOPEE_MALL') {
-      return (
-        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-2xs font-semibold bg-orange-600 text-white border border-orange-500 shadow-2xs">
-          <ShoppingBag className="w-3 h-3 text-white" />
-          Shopee Mall
-        </span>
-      );
-    }
-    return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-semibold bg-blue-600 text-white">
-        Lazada
-      </span>
-    );
-  };
-
   // Render Cycle Countdown Badge
   const renderCycleBadge = (prod: PushProductItem) => {
     const { daysRemaining, status } = getCycleStats(prod.startDate, prod.endDate);
     return (
       <div className="flex items-center flex-wrap gap-1.5 text-2xs">
         <span className="inline-flex items-center gap-1 font-mono text-slate-700 bg-white px-2 py-0.5 rounded border border-slate-200 shadow-2xs font-semibold">
-          <Calendar className="w-3 h-3 text-indigo-500" />
-          {formatDateDisplay(prod.startDate)} → {formatDateDisplay(prod.endDate)}
+          <Calendar className="w-3 h-3 text-accent" />
+          {formatDate(prod.startDate)} → {formatDate(prod.endDate)}
         </span>
         {status === 'ACTIVE' && (
           <span className="px-1.5 py-0.5 rounded text-2xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
@@ -956,72 +903,53 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
 
   return (
     <div className="space-y-6">
-      {/* Clean Top Bar: Role Switcher & Create Action */}
-      <div className="bg-white px-5 py-3.5 rounded-xl border border-slate-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-slate-100 text-slate-700 border border-slate-200">
-            <Package className="w-4 h-4" />
-          </div>
-          <div>
-            <h1 className="text-base font-semibold text-slate-900 flex items-center gap-2">
-              Sản phẩm thúc đẩy
-            </h1>
-            <p className="text-xs text-slate-500">
-              Thiết lập điều kiện chiến dịch, tồn kho, mẫu và brief KOC giữa Growth & B2C
-            </p>
-          </div>
-        </div>
-
-        {/* Persona Switcher & Create Button */}
-        <div className="flex items-center gap-2.5">
-          <div className="flex items-center bg-slate-100 p-1 rounded-lg border border-slate-200 text-xs">
-            <span className="text-2xs text-slate-500 px-2 flex items-center gap-1">
-              Góc nhìn:
-            </span>
-            <button
-              type="button"
-              onClick={() => {
-                setActiveRole('GROWTH');
-                setActiveAuthorName('Hoàng Long (Growth Lead)');
-                notify('Chuyển sang góc nhìn: Growth Team', 'info');
-              }}
-              className={`px-2.5 py-1 rounded text-xs transition-all flex items-center gap-1.5 ${
-                activeRole === 'GROWTH'
-                  ? 'bg-white text-slate-900 shadow-2xs font-semibold'
-                  : 'text-slate-600 hover:text-slate-900 font-medium'
-              }`}
-            >
-              <TrendingUp className="w-3.5 h-3.5 text-slate-600" />
-              Growth
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setActiveRole('B2C');
-                setActiveAuthorName('Khánh Vy (Booking Lead)');
-                notify('Chuyển sang góc nhìn: B2C Team', 'info');
-              }}
-              className={`px-2.5 py-1 rounded text-xs transition-all flex items-center gap-1.5 ${
-                activeRole === 'B2C'
-                  ? 'bg-white text-slate-900 shadow-2xs font-semibold'
-                  : 'text-slate-600 hover:text-slate-900 font-medium'
-              }`}
-            >
-              <Users className="w-3.5 h-3.5 text-slate-600" />
-              B2C Booking
-            </button>
-          </div>
-
+      <PageActions>
+        <div className="flex items-center bg-slate-100 p-1 rounded-lg border border-slate-200 text-xs">
+          <span className="text-2xs text-slate-500 px-2 flex items-center gap-1">
+            Góc nhìn:
+          </span>
           <button
             type="button"
-            onClick={() => setIsCreateModalOpen(true)}
-            className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5 whitespace-nowrap"
+            onClick={() => {
+              setActiveRole('GROWTH');
+              setActiveAuthorName('Hoàng Long (Growth Lead)');
+              notify('Chuyển sang góc nhìn: Growth Team', 'info');
+            }}
+            className={`px-2.5 py-1 rounded text-xs transition-all flex items-center gap-1.5 ${
+              activeRole === 'GROWTH'
+                ? 'bg-white text-slate-900 shadow-2xs font-semibold'
+                : 'text-slate-600 hover:text-slate-900 font-medium'
+            }`}
           >
-            <Plus className="w-3.5 h-3.5" />
-            Đề xuất sản phẩm thúc đẩy
+            <TrendingUp className="w-3.5 h-3.5 text-slate-600" />
+            Growth
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setActiveRole('B2C');
+              setActiveAuthorName('Khánh Vy (Booking Lead)');
+              notify('Chuyển sang góc nhìn: B2C Team', 'info');
+            }}
+            className={`px-2.5 py-1 rounded text-xs transition-all flex items-center gap-1.5 ${
+              activeRole === 'B2C'
+                ? 'bg-white text-slate-900 shadow-2xs font-semibold'
+                : 'text-slate-600 hover:text-slate-900 font-medium'
+            }`}
+          >
+            <Users className="w-3.5 h-3.5 text-slate-600" />
+            B2C Booking
           </button>
         </div>
-      </div>
+
+        <Button
+          variant="primary"
+          icon={Plus}
+          onClick={() => setIsCreateModalOpen(true)}
+        >
+          Đề xuất sản phẩm thúc đẩy
+        </Button>
+      </PageActions>
 
       {/* TIME HORIZON TABS: Đang mở bán vs Kế hoạch vs Lịch sử */}
       <div className="bg-white p-2 rounded-xl border border-slate-200 shadow-xs flex flex-wrap items-center justify-between gap-3">
@@ -1031,13 +959,13 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
             onClick={() => setTimeHorizon('AVAILABLE')}
             className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5 ${
               timeHorizon === 'AVAILABLE'
-                ? 'bg-slate-900 text-white shadow-xs'
+                ? 'bg-primary text-white shadow-xs'
                 : 'text-slate-600 hover:bg-slate-100'
             }`}
           >
             <CheckCircle2 className="w-3.5 h-3.5" />
             Đang mở bán
-            <span className={`px-1.5 py-0.2 rounded text-2xs font-mono ${
+            <span className={`px-1.5 py-0.5 rounded text-2xs font-mono ${
               timeHorizon === 'AVAILABLE' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700'
             }`}>
               {horizonCounts.available}
@@ -1049,13 +977,13 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
             onClick={() => setTimeHorizon('FUTURE')}
             className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5 ${
               timeHorizon === 'FUTURE'
-                ? 'bg-slate-900 text-white shadow-xs'
+                ? 'bg-primary text-white shadow-xs'
                 : 'text-slate-600 hover:bg-slate-100'
             }`}
           >
             <Calendar className="w-3.5 h-3.5" />
             Kế hoạch sắp tới
-            <span className={`px-1.5 py-0.2 rounded text-2xs font-mono ${
+            <span className={`px-1.5 py-0.5 rounded text-2xs font-mono ${
               timeHorizon === 'FUTURE' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700'
             }`}>
               {horizonCounts.future}
@@ -1067,13 +995,13 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
             onClick={() => setTimeHorizon('HISTORY')}
             className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5 ${
               timeHorizon === 'HISTORY'
-                ? 'bg-slate-900 text-white shadow-xs'
+                ? 'bg-primary text-white shadow-xs'
                 : 'text-slate-600 hover:bg-slate-100'
             }`}
           >
             <History className="w-3.5 h-3.5" />
             Lịch sử
-            <span className={`px-1.5 py-0.2 rounded text-2xs font-mono ${
+            <span className={`px-1.5 py-0.5 rounded text-2xs font-mono ${
               timeHorizon === 'HISTORY' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700'
             }`}>
               {horizonCounts.history}
@@ -1100,7 +1028,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
               type="button"
               onClick={() => setSelectedPlatform('ALL')}
               className={`px-2.5 py-1 rounded text-2xs font-medium transition-colors ${
-                selectedPlatform === 'ALL' ? 'bg-white text-indigo-600 shadow-2xs font-semibold' : 'text-slate-600 hover:text-slate-900'
+                selectedPlatform === 'ALL' ? 'bg-white text-accent shadow-2xs font-semibold' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               Mọi sàn
@@ -1109,7 +1037,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
               type="button"
               onClick={() => setSelectedPlatform('SHOPEE_MALL')}
               className={`px-2.5 py-1 rounded text-2xs font-medium transition-colors flex items-center gap-1 ${
-                selectedPlatform === 'SHOPEE_MALL' ? 'bg-orange-600 text-white shadow-2xs font-semibold' : 'text-slate-600 hover:text-slate-900'
+                selectedPlatform === 'SHOPEE_MALL' ? 'bg-primary text-white shadow-2xs font-semibold' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               <ShoppingBag className="w-3 h-3" /> Shopee
@@ -1118,10 +1046,10 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
               type="button"
               onClick={() => setSelectedPlatform('TIKTOK_SHOP')}
               className={`px-2.5 py-1 rounded text-2xs font-medium transition-colors flex items-center gap-1 ${
-                selectedPlatform === 'TIKTOK_SHOP' ? 'bg-slate-900 text-white shadow-2xs font-semibold' : 'text-slate-600 hover:text-slate-900'
+                selectedPlatform === 'TIKTOK_SHOP' ? 'bg-primary text-white shadow-2xs font-semibold' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" /> TikTok
+              TikTok
             </button>
           </div>
         </div>
@@ -1235,16 +1163,6 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                 Dạng bảng
               </button>
             </div>
-
-            {/* Propose Product Button */}
-            <button
-              type="button"
-              onClick={() => setIsCreateModalOpen(true)}
-              className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5 whitespace-nowrap"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              Thêm sản phẩm
-            </button>
           </div>
         </div>
 
@@ -1317,7 +1235,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                 setCustomEndDate('');
                 setSearchQuery('');
               }}
-              className="text-slate-500 hover:text-indigo-600 font-medium underline ml-auto text-xs"
+              className="text-slate-500 hover:text-accent font-medium underline ml-auto text-xs"
             >
               Xóa bộ lọc
             </button>
@@ -1334,12 +1252,12 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
               <Package className="w-12 h-12 text-slate-300 mx-auto" />
               <div className="text-base font-semibold text-slate-700">Không tìm thấy sản phẩm thúc đẩy phù hợp</div>
               <p className="text-xs text-slate-500 max-w-md mx-auto">
-                Vui lòng kiểm tra lại bộ lọc thời gian ({timeHorizon === 'AVAILABLE' ? 'Đang Available' : timeHorizon === 'FUTURE' ? 'Kế Hoạch Tương Lai' : 'Lịch Sử'}) hoặc nhấn nút bên dưới để khởi tạo sản phẩm mới.
+                Vui lòng kiểm tra lại bộ lọc thời gian ({timeHorizon === 'AVAILABLE' ? 'Đang mở bán' : timeHorizon === 'FUTURE' ? 'Kế hoạch sắp tới' : 'Lịch sử'}) hoặc nhấn nút bên dưới để khởi tạo sản phẩm mới.
               </p>
               <button
                 type="button"
                 onClick={() => setIsCreateModalOpen(true)}
-                className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-xs font-semibold inline-flex items-center gap-1.5"
+                className="px-4 py-2 bg-primary hover:bg-primary-hover text-white rounded-lg text-xs font-semibold inline-flex items-center gap-1.5"
               >
                 <Plus className="w-4 h-4" /> Khởi tạo sản phẩm thúc đẩy mới
               </button>
@@ -1350,14 +1268,14 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                 {/* Brand Header Banner */}
                 <div className="bg-slate-50 p-5 border-b border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div className="flex items-center gap-3.5">
-                    <div className="w-11 h-11 rounded-xl bg-indigo-600 text-white font-semibold flex items-center justify-center text-lg shadow-sm">
+                    <div className="w-11 h-11 rounded-xl bg-primary text-white font-semibold flex items-center justify-center text-lg shadow-sm">
                       {bGroup.brandName.slice(0, 2).toUpperCase()}
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
                         <h2 className="text-lg font-semibold text-slate-900">{bGroup.brandName}</h2>
-                        <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-indigo-100 text-indigo-700">
-                          {bGroup.storeGroups.length} Gian Hàng
+                        <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-accent-soft text-accent">
+                          {bGroup.storeGroups.length} gian hàng
                         </span>
                         <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
                           {bGroup.totalProductsCount} sản phẩm
@@ -1393,7 +1311,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                       {/* Store Sub-Header */}
                       <div className="px-5 py-3.5 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div className="flex items-center gap-2.5">
-                          {renderPlatformBadge(sGroup.platform, sGroup.storeName)}
+                          <ChannelTag channel={sGroup.platform} />
                           <span className="font-semibold text-slate-800 text-sm">
                             {sGroup.storeName}
                           </span>
@@ -1403,7 +1321,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                               href={sGroup.storeUrl}
                               target="_blank"
                               rel="noreferrer"
-                              className="text-indigo-600 hover:text-indigo-800 text-xs flex items-center gap-1 font-medium ml-1"
+                              className="text-accent hover:underline text-xs flex items-center gap-1 font-medium ml-1"
                             >
                               <ExternalLink className="w-3 h-3" /> Ghé gian hàng
                             </a>
@@ -1417,7 +1335,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                           <button
                             type="button"
                             onClick={() => handleOpenCreateForStore(bGroup.brandId, sGroup.storeId)}
-                            className="text-indigo-600 hover:text-indigo-800 font-semibold text-xs flex items-center gap-1 ml-2"
+                            className="text-accent hover:underline font-semibold text-xs flex items-center gap-1 ml-2"
                           >
                             <Plus className="w-3 h-3" /> Thêm SKU
                           </button>
@@ -1433,19 +1351,19 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                               setSelectedProduct(prod);
                               setActiveDrawerTab('SPECS');
                             }}
-                            className="bg-white rounded-xl border border-slate-200 hover:border-indigo-300 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between overflow-hidden group"
+                            className="bg-white rounded-xl border border-slate-200 hover:border-line-strong hover:shadow-md transition-all cursor-pointer flex flex-col justify-between overflow-hidden group"
                           >
                             {/* Card Top: Badges & Cycle */}
                             <div className="p-4 space-y-3">
                               <div className="flex items-center justify-between gap-2">
-                                <span className="font-mono text-xs font-semibold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200">
+                                <span className="font-mono text-xs font-semibold text-accent bg-accent-soft px-2 py-0.5 rounded border border-line">
                                   {prod.sku}
                                 </span>
                                 {renderStatusBadge(prod.status)}
                               </div>
 
                               <div>
-                                <h3 className="text-sm font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors line-clamp-2">
+                                <h3 className="text-sm font-semibold text-slate-900 group-hover:text-accent transition-colors line-clamp-2">
                                   {prod.productName}
                                 </h3>
                                 <div className="mt-1">
@@ -1464,14 +1382,14 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                                     <span className="font-semibold text-rose-600 font-mono text-sm">
                                       {formatVnd(prod.promotionalPrice)}
                                     </span>
-                                    <span className="px-1 py-0.2 rounded bg-rose-100 text-rose-700 text-2xs font-semibold">
+                                    <span className="px-1 py-0.5 rounded bg-rose-100 text-rose-700 text-2xs font-semibold">
                                       -{prod.discountPercent}%
                                     </span>
                                   </div>
                                 </div>
 
                                 <div className="flex items-center justify-between">
-                                  <span className="text-slate-500">Hoa Hồng Affiliate:</span>
+                                  <span className="text-slate-500">Hoa hồng Affiliate:</span>
                                   <span className="font-semibold text-emerald-700 font-mono bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
                                     {prod.affiliateRate}%
                                   </span>
@@ -1496,8 +1414,8 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                               <div className="space-y-1 text-xs">
                                 <div className="text-2xs font-semibold text-slate-700 flex items-center justify-between">
                                   <span className="flex items-center gap-1">
-                                    <Sparkles className="w-3 h-3 text-amber-500" />
-                                    Brief KOC (B2C Input):
+                                    <FileText className="w-3 h-3 text-amber-500" />
+                                    Brief KOC:
                                   </span>
                                   {(!prod.usp || prod.b2cBriefStatus === 'PENDING_BRIEF') && (
                                     <span className="text-2xs font-medium text-amber-700 bg-amber-100/90 px-1.5 py-0.5 rounded">
@@ -1507,7 +1425,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                                 </div>
                                 {prod.usp ? (
                                   <p className="text-slate-600 text-2xs line-clamp-2 italic bg-amber-50/40 p-2 rounded border border-amber-100">
-                                    "{prod.keyMessage || prod.usp}"
+                                    &ldquo;{prod.keyMessage || prod.usp}&rdquo;
                                   </p>
                                 ) : (
                                   <div className="p-2 rounded border border-dashed border-amber-300 bg-amber-50/40 text-amber-800 text-2xs flex items-center justify-between">
@@ -1515,7 +1433,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                                     <button
                                       type="button"
                                       onClick={(e) => handleOpenEditBriefModal(prod, e)}
-                                      className="font-semibold text-indigo-600 hover:text-indigo-800 hover:underline"
+                                      className="font-semibold text-accent hover:underline"
                                     >
                                       + Nhập brief
                                     </button>
@@ -1549,7 +1467,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                                   title="Sản phẩm chưa có brief KOC do B2C thiết lập. Bấm để B2C bổ sung ngay"
                                 >
                                   <FileEdit className="w-3.5 h-3.5 text-amber-600" />
-                                  Bổ sung Brief KOC
+                                  Bổ sung brief KOC
                                 </button>
                               ) : (
                                 <div className="flex items-center gap-1">
@@ -1559,7 +1477,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                                     className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 ${
                                       copiedId === prod.id
                                         ? 'bg-emerald-600 text-white shadow-2xs'
-                                        : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100 hover:text-indigo-600'
+                                        : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100 hover:text-accent'
                                     }`}
                                     title="Sao chép toàn bộ thông tin chuẩn hóa để gửi nhanh cho KOC qua Zalo/Lark"
                                   >
@@ -1571,14 +1489,14 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                                     ) : (
                                       <>
                                         <Copy className="w-3.5 h-3.5" />
-                                        Chép Brief KOC
+                                        Chép brief KOC
                                       </>
                                     )}
                                   </button>
                                   <button
                                     type="button"
                                     onClick={(e) => handleOpenEditBriefModal(prod, e)}
-                                    className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-slate-100"
+                                    className="p-1.5 rounded-lg text-slate-400 hover:text-accent hover:bg-slate-100"
                                     title="Sửa brief KOC"
                                   >
                                     <FileEdit className="w-3.5 h-3.5" />
@@ -1594,14 +1512,14 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                                       e.stopPropagation();
                                       onOpenBookingWithProduct(prod);
                                     }}
-                                    className="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 transition-colors flex items-center gap-1"
+                                    className="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-accent-soft text-accent border border-line hover:opacity-90 transition-colors flex items-center gap-1"
                                     title="Mở tab phân bổ KOC booking cho SKU này"
                                   >
                                     <Users className="w-3.5 h-3.5" />
                                     Book KOC
                                   </button>
                                 )}
-                                <span className="text-slate-400 group-hover:text-indigo-600 text-xs font-medium flex items-center gap-0.5">
+                                <span className="text-slate-400 group-hover:text-accent text-xs font-medium flex items-center gap-0.5">
                                   Chi tiết <ChevronRight className="w-3.5 h-3.5" />
                                 </span>
                               </div>
@@ -1624,14 +1542,14 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
               <thead className="bg-slate-50 text-slate-600 border-b border-slate-200 font-semibold text-2xs">
                 <tr>
                   <th className="py-3.5 px-4">Mã SKU & tên sản phẩm</th>
-                  <th className="py-3.5 px-4">Brand & Gian Hàng</th>
+                  <th className="py-3.5 px-4">Thương hiệu & gian hàng</th>
                   <th className="py-3.5 px-4">Chu kỳ hiệu lực</th>
                   <th className="py-3.5 px-4 text-right">Giá deal / niêm yết</th>
-                  <th className="py-3.5 px-4 text-center">Hoa Hồng</th>
-                  <th className="py-3.5 px-4 text-right">Tồn Kho</th>
-                  <th className="py-3.5 px-4 text-center">Mẫu đã cấp / Quota</th>
-                  <th className="py-3.5 px-4 text-center">Trạng Thái</th>
-                  <th className="py-3.5 px-4 text-center">Thao Tác</th>
+                  <th className="py-3.5 px-4 text-center">Hoa hồng</th>
+                  <th className="py-3.5 px-4 text-right">Tồn kho</th>
+                  <th className="py-3.5 px-4 text-center">Mẫu đã cấp / hạn mức</th>
+                  <th className="py-3.5 px-4 text-center">Trạng thái</th>
+                  <th className="py-3.5 px-4 text-center">Thao tác</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200">
@@ -1645,7 +1563,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                     className="hover:bg-slate-50/80 cursor-pointer transition-colors"
                   >
                     <td className="py-3 px-4">
-                      <div className="font-mono font-semibold text-indigo-700">{prod.sku}</div>
+                      <div className="font-mono font-semibold text-accent">{prod.sku}</div>
                       <div className="font-semibold text-slate-900 line-clamp-1">{prod.productName}</div>
                       <div className="text-2xs text-slate-500 line-clamp-1 italic mt-0.5">
                         USP: {prod.usp}
@@ -1654,7 +1572,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                     <td className="py-3 px-4">
                       <div className="font-semibold text-slate-900">{prod.brandName}</div>
                       <div className="mt-1 flex items-center gap-1.5">
-                        {renderPlatformBadge(prod.platform)}
+                        <ChannelTag channel={prod.platform} />
                         <span className="text-2xs text-slate-600 line-clamp-1">{prod.storeName}</span>
                       </div>
                     </td>
@@ -1688,10 +1606,10 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                           type="button"
                           onClick={(e) => handleOpenEditBriefModal(prod, e)}
                           className="px-2 py-1 rounded bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 text-2xs font-semibold inline-flex items-center gap-1"
-                          title="B2C bổ sung Brief KOC"
+                          title="B2C bổ sung brief KOC"
                         >
                           <FileEdit className="w-3 h-3 text-amber-600" />
-                          Nhập Brief
+                          Nhập brief
                         </button>
                       ) : (
                         <div className="inline-flex items-center gap-1">
@@ -1699,15 +1617,15 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                             type="button"
                             onClick={(e) => handleCopyKocBrief(prod, e)}
                             className="px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 text-2xs font-semibold inline-flex items-center gap-1"
-                            title="Sao chép Brief KOC"
+                            title="Sao chép brief KOC"
                           >
                             <Copy className="w-3 h-3" />
-                            Chép Brief
+                            Chép brief
                           </button>
                           <button
                             type="button"
                             onClick={(e) => handleOpenEditBriefModal(prod, e)}
-                            className="p-1 rounded text-slate-400 hover:text-indigo-600 hover:bg-slate-100"
+                            className="p-1 rounded text-slate-400 hover:text-accent hover:bg-slate-100"
                             title="Chỉnh sửa brief KOC"
                           >
                             <FileEdit className="w-3 h-3" />
@@ -1731,11 +1649,11 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
             <div className="p-5 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
-                  <span className="font-mono text-xs font-semibold text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded">
+                  <span className="font-mono text-xs font-semibold text-accent bg-accent-soft px-2 py-0.5 rounded">
                     {selectedProduct.sku}
                   </span>
                   {renderStatusBadge(selectedProduct.status)}
-                  {renderPlatformBadge(selectedProduct.platform)}
+                  <ChannelTag channel={selectedProduct.platform} />
                 </div>
                 <h2 className="text-lg font-semibold text-slate-900">{selectedProduct.productName}</h2>
                 <div className="text-xs text-slate-500 flex items-center gap-2">
@@ -1754,23 +1672,23 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
             </div>
 
             {/* Quick Actions Strip */}
-            <div className="px-5 py-3 bg-indigo-50/50 border-b border-indigo-100 flex items-center justify-between gap-3">
+            <div className="px-5 py-3 bg-accent-soft border-b border-line flex items-center justify-between gap-3">
               <div className="flex items-center gap-2 text-xs">
                 <button
                   type="button"
                   onClick={() => handleCopyKocBrief(selectedProduct)}
-                  className="px-3 py-1.5 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 font-semibold flex items-center gap-1.5 shadow-xs transition-colors"
+                  className="px-3 py-1.5 rounded-lg bg-primary text-white hover:bg-primary-hover font-semibold flex items-center gap-1.5 shadow-xs transition-colors"
                 >
                   <Copy className="w-3.5 h-3.5" />
-                  Sao Chép Brief KOC / Creator
+                  Sao chép brief KOC
                 </button>
                 <button
                   type="button"
                   onClick={() => handleOpenEditBriefModal(selectedProduct)}
-                  className="px-2.5 py-1.5 rounded-lg bg-white border border-indigo-200 text-indigo-700 hover:bg-indigo-50 font-semibold flex items-center gap-1.5 text-xs transition-colors"
+                  className="px-2.5 py-1.5 rounded-lg bg-white border border-line text-accent hover:bg-hover font-semibold flex items-center gap-1.5 text-xs transition-colors"
                 >
-                  <FileEdit className="w-3.5 h-3.5 text-indigo-600" />
-                  {(!selectedProduct.usp || selectedProduct.b2cBriefStatus === 'PENDING_BRIEF') ? 'Bổ sung Brief KOC (B2C)' : 'Sửa Brief KOC'}
+                  <FileEdit className="w-3.5 h-3.5 text-accent" />
+                  {(!selectedProduct.usp || selectedProduct.b2cBriefStatus === 'PENDING_BRIEF') ? 'Bổ sung brief KOC' : 'Sửa brief KOC'}
                 </button>
                 {selectedProduct.pdpUrl && (
                   <a
@@ -1779,7 +1697,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                     rel="noreferrer"
                     className="px-2.5 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 font-medium flex items-center gap-1 text-xs"
                   >
-                    <ExternalLink className="w-3.5 h-3.5 text-slate-500" /> Link Gian Hàng
+                    <ExternalLink className="w-3.5 h-3.5 text-slate-500" /> Link gian hàng
                   </a>
                 )}
                 {selectedProduct.briefUrl && (
@@ -1789,7 +1707,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                     rel="noreferrer"
                     className="px-2.5 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 font-medium flex items-center gap-1 text-xs"
                   >
-                    <FileText className="w-3.5 h-3.5 text-slate-500" /> Doc Brief Chi Tiết
+                    <FileText className="w-3.5 h-3.5 text-slate-500" /> Tài liệu brief chi tiết
                   </a>
                 )}
               </div>
@@ -1812,12 +1730,12 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                 onClick={() => setActiveDrawerTab('SPECS')}
                 className={`py-3 px-4 border-b-2 transition-colors flex items-center gap-2 ${
                   activeDrawerTab === 'SPECS'
-                    ? 'border-indigo-600 text-indigo-600'
+                    ? 'border-accent text-accent'
                     : 'border-transparent text-slate-500 hover:text-slate-800'
                 }`}
               >
                 <Tag className="w-4 h-4" />
-                Thông số Master Data & brief KOC
+                Thông số sản phẩm & brief KOC
               </button>
 
               <button
@@ -1825,12 +1743,12 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                 onClick={() => setActiveDrawerTab('DISCUSSIONS')}
                 className={`py-3 px-4 border-b-2 transition-colors flex items-center gap-2 ${
                   activeDrawerTab === 'DISCUSSIONS'
-                    ? 'border-indigo-600 text-indigo-600'
+                    ? 'border-accent text-accent'
                     : 'border-transparent text-slate-500 hover:text-slate-800'
                 }`}
               >
                 <MessageSquare className="w-4 h-4" />
-                Thảo Luận & Phản Biện ({selectedProduct.comments.length})
+                Thảo luận & phản biện ({selectedProduct.comments.length})
               </button>
 
               <button
@@ -1838,12 +1756,12 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                 onClick={() => setActiveDrawerTab('CHANGE_REVIEW')}
                 className={`py-3 px-4 border-b-2 transition-colors flex items-center gap-2 ${
                   activeDrawerTab === 'CHANGE_REVIEW'
-                    ? 'border-indigo-600 text-indigo-600'
+                    ? 'border-accent text-accent'
                     : 'border-transparent text-slate-500 hover:text-slate-800'
                 }`}
               >
                 <History className="w-4 h-4" />
-                Review Thay Đổi & Audit Log ({selectedProduct.changeRequests.length})
+                Yêu cầu thay đổi & lịch sử ({selectedProduct.changeRequests.length})
               </button>
             </div>
 
@@ -1852,36 +1770,36 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
               {activeDrawerTab === 'SPECS' && (
                 <div className="space-y-6">
                   {/* Cycle Management Card */}
-                  <div className="bg-indigo-50/60 p-4 rounded-xl border border-indigo-200 space-y-3">
+                  <div className="bg-accent-soft p-4 rounded-xl border border-line space-y-3">
                     <div className="flex items-center justify-between">
                       <div className="font-semibold text-slate-900 text-xs flex items-center gap-1.5">
-                        <Calendar className="w-4 h-4 text-indigo-600" />
-                        Quản trị Chu kỳ & thời lượng thúc đẩy
+                        <Calendar className="w-4 h-4 text-accent" />
+                        Quản trị chu kỳ & thời lượng thúc đẩy
                       </div>
                       <button
                         type="button"
-                        onClick={() => handleOpenChangeRequestModal('cycleDates', 'Chu Kỳ Thúc Đẩy (Ngày Bắt Đầu & Kết Thúc)', `${selectedProduct.startDate} → ${selectedProduct.endDate}`)}
-                        className="text-xs text-indigo-700 hover:text-indigo-900 font-semibold underline flex items-center gap-1"
+                        onClick={() => handleOpenChangeRequestModal('cycleDates', 'Chu kỳ thúc đẩy (ngày bắt đầu & kết thúc)', `${selectedProduct.startDate} → ${selectedProduct.endDate}`)}
+                        className="text-xs text-accent hover:underline font-semibold flex items-center gap-1"
                       >
-                        <FileEdit className="w-3.5 h-3.5" /> Đổi ngày / gia hạn Chu kỳ
+                        <FileEdit className="w-3.5 h-3.5" /> Đổi ngày / gia hạn chu kỳ
                       </button>
                     </div>
 
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-white p-3 rounded-lg border border-indigo-100 text-xs">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-white p-3 rounded-lg border border-line text-xs">
                       <div>
                         <span className="text-slate-400 block text-2xs">Ngày bắt đầu:</span>
-                        <span className="font-mono font-semibold text-slate-800">{formatDateDisplay(selectedProduct.startDate)}</span>
+                        <span className="font-mono font-semibold text-slate-800">{formatDate(selectedProduct.startDate)}</span>
                       </div>
                       <div>
                         <span className="text-slate-400 block text-2xs">Ngày kết thúc:</span>
-                        <span className="font-mono font-semibold text-slate-800">{formatDateDisplay(selectedProduct.endDate)}</span>
+                        <span className="font-mono font-semibold text-slate-800">{formatDate(selectedProduct.endDate)}</span>
                       </div>
                       <div>
                         <span className="text-slate-400 block text-2xs">Thời lượng:</span>
-                        <span className="font-mono font-semibold text-indigo-700">{getCycleStats(selectedProduct.startDate, selectedProduct.endDate).totalDays} ngày</span>
+                        <span className="font-mono font-semibold text-accent">{getCycleStats(selectedProduct.startDate, selectedProduct.endDate).totalDays} ngày</span>
                       </div>
                       <div>
-                        <span className="text-slate-400 block text-2xs">Trạng thái Chu kỳ:</span>
+                        <span className="text-slate-400 block text-2xs">Trạng thái chu kỳ:</span>
                         <span className="font-semibold text-emerald-700">{getCycleStats(selectedProduct.startDate, selectedProduct.endDate).daysRemaining >= 0 ? `Còn ${getCycleStats(selectedProduct.startDate, selectedProduct.endDate).daysRemaining} ngày` : 'Đã kết thúc'}</span>
                       </div>
                     </div>
@@ -1890,7 +1808,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                   {/* Commercials Grid */}
                   <div className="space-y-3">
                     <div className="flex items-center justify-between text-xs font-semibold text-slate-800">
-                      <span>Điều kiện thương mại (Growth thiết lập với sàn)</span>
+                      <span>Điều kiện thương mại</span>
                     </div>
 
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
@@ -1904,7 +1822,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                           <span className="text-rose-700 block text-2xs font-medium">Giá deal thúc đẩy</span>
                           <button
                             type="button"
-                            onClick={() => handleOpenChangeRequestModal('promotionalPrice', 'Giá Deal Chiến Dịch', selectedProduct.promotionalPrice)}
+                            onClick={() => handleOpenChangeRequestModal('promotionalPrice', 'Giá deal chiến dịch', selectedProduct.promotionalPrice)}
                             className="text-rose-600 hover:text-rose-800"
                             title="Đề xuất đổi giá deal"
                           >
@@ -1917,10 +1835,10 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
 
                       <div className="p-3 bg-emerald-50/60 rounded-xl border border-emerald-200">
                         <div className="flex items-center justify-between">
-                          <span className="text-emerald-700 block text-2xs font-medium">Hoa Hồng KOC</span>
+                          <span className="text-emerald-700 block text-2xs font-medium">Hoa hồng KOC</span>
                           <button
                             type="button"
-                            onClick={() => handleOpenChangeRequestModal('affiliateRate', 'Hoa Hồng Affiliate KOC (%)', selectedProduct.affiliateRate)}
+                            onClick={() => handleOpenChangeRequestModal('affiliateRate', 'Hoa hồng Affiliate KOC (%)', selectedProduct.affiliateRate)}
                             className="text-emerald-600 hover:text-emerald-800"
                             title="Đề xuất đổi % hoa hồng"
                           >
@@ -1933,10 +1851,10 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
 
                       <div className="p-3 bg-amber-50/60 rounded-xl border border-amber-200">
                         <div className="flex items-center justify-between">
-                          <span className="text-amber-800 block text-2xs font-medium">Mẫu cấp / Quota</span>
+                          <span className="text-amber-800 block text-2xs font-medium">Mẫu cấp / hạn mức</span>
                           <button
                             type="button"
-                            onClick={() => handleOpenChangeRequestModal('monthlySampleQuota', 'Hạn Mức Mẫu Cấp / Tháng', selectedProduct.monthlySampleQuota)}
+                            onClick={() => handleOpenChangeRequestModal('monthlySampleQuota', 'Hạn mức mẫu cấp / tháng', selectedProduct.monthlySampleQuota)}
                             className="text-amber-700 hover:text-amber-900"
                             title="Đề xuất đổi hạn mức mẫu"
                           >
@@ -1956,8 +1874,8 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                         <span className="font-mono font-semibold text-slate-900 text-sm">{selectedProduct.availableStock.toLocaleString()} SP</span>
                         <button
                           type="button"
-                          onClick={() => handleOpenChangeRequestModal('availableStock', 'Tồn Kho Cam Kết Chiến Dịch', selectedProduct.availableStock)}
-                          className="text-indigo-600 hover:text-indigo-800 p-1"
+                          onClick={() => handleOpenChangeRequestModal('availableStock', 'Tồn kho cam kết chiến dịch', selectedProduct.availableStock)}
+                          className="text-accent hover:opacity-80 p-1"
                         >
                           <FileEdit className="w-3.5 h-3.5" />
                         </button>
@@ -1969,9 +1887,9 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                   <div className="space-y-3 pt-3 border-t border-slate-200">
                     <div className="flex items-center justify-between text-xs">
                       <div>
-                        <span className="flex items-center gap-1.5 text-indigo-700 font-semibold">
-                          <Sparkles className="w-4 h-4 text-indigo-600" />
-                          Thông tin Brief KOC / Creator (B2C Input)
+                        <span className="flex items-center gap-1.5 text-accent font-semibold">
+                          <FileText className="w-4 h-4 text-accent" />
+                          Thông tin brief KOC
                         </span>
                         {selectedProduct.briefUpdatedBy && (
                           <span className="text-2xs text-slate-500 block mt-0.5">
@@ -1983,10 +1901,10 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                         <button
                           type="button"
                           onClick={() => handleOpenEditBriefModal(selectedProduct)}
-                          className="px-2.5 py-1 rounded bg-indigo-50 text-indigo-700 hover:bg-indigo-100 font-semibold text-2xs flex items-center gap-1 border border-indigo-200"
+                          className="px-2.5 py-1 rounded bg-accent-soft text-accent hover:opacity-90 font-semibold text-2xs flex items-center gap-1 border border-line"
                         >
                           <FileEdit className="w-3 h-3" />
-                          {(!selectedProduct.usp || selectedProduct.b2cBriefStatus === 'PENDING_BRIEF') ? 'Bổ sung Brief' : 'Chỉnh sửa'}
+                          {(!selectedProduct.usp || selectedProduct.b2cBriefStatus === 'PENDING_BRIEF') ? 'Bổ sung brief' : 'Chỉnh sửa'}
                         </button>
                         {selectedProduct.usp && (
                           <button
@@ -2004,10 +1922,10 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                       <div className="p-4 bg-amber-50/70 rounded-xl border border-amber-200 text-amber-900 space-y-2">
                         <div className="flex items-center gap-2 text-xs font-semibold">
                           <AlertCircle className="w-4 h-4 text-amber-600" />
-                          Chờ B2C tiếp nhận & bổ sung thông tin Brief KOC
+                          Chờ B2C tiếp nhận & bổ sung thông tin brief KOC
                         </div>
                         <p className="text-2xs text-amber-800 leading-relaxed">
-                          Sản phẩm thúc đẩy này được Growth khởi tạo với các thông tin thương mại (giá, tồn kho, hoa hồng, mẫu). Đội ngũ B2C nghiên cứu góc nhìn người tiêu dùng để bổ sung USP, Key Message, Content Hook, tài liệu hướng dẫn và chính sách mẫu trước khi gửi Creator.
+                          Sản phẩm thúc đẩy này được Growth khởi tạo với các thông tin thương mại (giá, tồn kho, hoa hồng, mẫu). Đội ngũ B2C nghiên cứu góc nhìn người tiêu dùng để bổ sung điểm bán hàng độc nhất, thông điệp chính, góc quay video, tài liệu hướng dẫn và chính sách mẫu trước khi gửi Creator.
                         </p>
                         <button
                           type="button"
@@ -2015,7 +1933,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                           className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-amber-600 hover:bg-amber-700 text-white inline-flex items-center gap-1.5 shadow-2xs transition-colors"
                         >
                           <FileEdit className="w-3.5 h-3.5" />
-                          Bổ Sung Brief KOC Ngay (B2C)
+                          Bổ sung brief KOC ngay
                         </button>
                       </div>
                     ) : (
@@ -2023,23 +1941,23 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                         {/* USP */}
                         <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
                           <span className="font-semibold text-slate-700 flex items-center gap-1">
-                            Điểm bán hàng độc nhất (USP):
+                            Điểm bán hàng độc nhất:
                           </span>
                           <p className="text-slate-800 font-medium">{selectedProduct.usp}</p>
                         </div>
 
                         {/* Key Message */}
-                        <div className="p-3 bg-indigo-50/40 rounded-xl border border-indigo-100 space-y-1">
-                          <span className="font-semibold text-indigo-800 flex items-center gap-1">
-                            Thông điệp truyền thông chính (Key Message KOC cần nhấn mạnh):
+                        <div className="p-3 bg-accent-soft rounded-xl border border-line space-y-1">
+                          <span className="font-semibold text-ink flex items-center gap-1">
+                            Thông điệp truyền thông chính:
                           </span>
-                          <p className="text-slate-800 font-medium italic">"{selectedProduct.keyMessage || selectedProduct.usp}"</p>
+                          <p className="text-slate-800 font-medium italic">&ldquo;{selectedProduct.keyMessage || selectedProduct.usp}&rdquo;</p>
                         </div>
 
                         {/* Viral Angle */}
                         <div className="p-3 bg-rose-50/40 rounded-xl border border-rose-100 space-y-1">
                           <span className="font-semibold text-rose-800 flex items-center gap-1">
-                            Content Hook & góc Quay video gợi ý:
+                            Góc quay video gợi ý:
                           </span>
                           <p className="text-slate-800 font-medium">{selectedProduct.viralAngle}</p>
                         </div>
@@ -2048,7 +1966,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                         {selectedProduct.doAndDonts && (
                           <div className="p-3 bg-amber-50/50 rounded-xl border border-amber-200 space-y-1">
                             <span className="font-semibold text-amber-900 flex items-center gap-1">
-                              Quy tắc nên & không được làm khi Review:
+                              Lưu ý nên & không nên làm khi review:
                             </span>
                             <p className="text-slate-800 whitespace-pre-line">{selectedProduct.doAndDonts}</p>
                           </div>
@@ -2071,7 +1989,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                           </span>
                           <div className="flex flex-wrap gap-1.5">
                             {selectedProduct.targetKocNiche.map((tag, idx) => (
-                              <span key={idx} className="px-2 py-0.5 rounded text-2xs font-medium bg-white text-indigo-700 border border-slate-200">
+                              <span key={idx} className="px-2 py-0.5 rounded text-2xs font-medium bg-white text-accent border border-slate-200">
                                 #{tag}
                               </span>
                             ))}
@@ -2108,7 +2026,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                   <div className="space-y-3 pt-2">
                     {selectedProduct.comments.length === 0 ? (
                       <div className="text-center py-8 text-slate-400 text-xs">
-                        Chưa có trao đổi nào. hãy là người đầu tiên đưa ra phản hồi hoặc đề xuất!
+                        Chưa có trao đổi nào. Hãy là người đầu tiên đưa ra phản hồi hoặc đề xuất!
                       </div>
                     ) : (
                       selectedProduct.comments.map(c => (
@@ -2116,7 +2034,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                           key={c.id}
                           className={`p-3.5 rounded-xl border text-xs space-y-1.5 ${
                             c.authorRole === 'GROWTH'
-                              ? 'bg-indigo-50/50 border-indigo-100 ml-4'
+                              ? 'bg-accent-soft border-line ml-4'
                               : c.authorRole === 'B2C'
                               ? 'bg-rose-50/50 border-rose-100 mr-4'
                               : 'bg-slate-50 border-slate-200'
@@ -2124,7 +2042,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                         >
                           <div className="flex items-center justify-between text-2xs">
                             <span className="font-semibold flex items-center gap-1.5 text-slate-800">
-                              <span className={`w-2 h-2 rounded-full ${c.authorRole === 'GROWTH' ? 'bg-indigo-600' : 'bg-rose-600'}`} />
+                              <span className={`w-2 h-2 rounded-full ${c.authorRole === 'GROWTH' ? 'bg-accent' : 'bg-rose-600'}`} />
                               {c.authorName} ({c.authorRole})
                             </span>
                             <span className="text-slate-400 font-mono">
@@ -2143,7 +2061,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                       <span className="text-slate-500 font-medium">Gửi phản hồi dưới tên: <strong>{activeAuthorName}</strong></span>
                       <select
                         value={commentType}
-                        onChange={(e: any) => setCommentType(e.target.value)}
+                        onChange={(e) => setCommentType(e.target.value as PushProductComment['type'])}
                         className="text-xs bg-slate-100 px-2 py-1 rounded border border-slate-200 text-slate-700"
                       >
                         <option value="COMMENT">Trao đổi thông thường</option>
@@ -2159,11 +2077,11 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                         placeholder="Nhập nội dung trao đổi, phản biện hoặc thương lượng điều kiện..."
                         value={commentText}
                         onChange={(e) => setCommentText(e.target.value)}
-                        className="flex-1 px-3 py-2 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                        className="flex-1 px-3 py-2 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent"
                       />
                       <button
                         type="submit"
-                        className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors"
+                        className="px-4 py-2 bg-primary hover:bg-primary-hover text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors"
                       >
                         <Send className="w-3.5 h-3.5" /> Gửi
                       </button>
@@ -2182,7 +2100,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
 
                     {selectedProduct.changeRequests.length === 0 ? (
                       <div className="text-center py-8 bg-slate-50 rounded-xl border border-slate-200 text-slate-400 text-xs">
-                        Chưa có yêu cầu thay đổi nào cho SKU này. Khi có biến động giá, kho hoặc chu kỳ, hãy tạo Change Request.
+                        Chưa có yêu cầu thay đổi nào cho SKU này. Khi có biến động giá, kho hoặc chu kỳ, hãy tạo yêu cầu thay đổi.
                       </div>
                     ) : (
                       selectedProduct.changeRequests.map(cr => (
@@ -2190,7 +2108,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                           <div className="flex items-center justify-between text-xs">
                             <span className="font-semibold text-slate-800 flex items-center gap-1.5">
                               <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
-                              Yêu Cầu Đổi: {cr.fieldLabel}
+                              Yêu cầu đổi: {cr.fieldLabel}
                             </span>
                             <span className={`px-2 py-0.5 rounded text-2xs font-semibold ${
                               cr.status === 'APPROVED'
@@ -2199,7 +2117,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                                 ? 'bg-red-100 text-red-800'
                                 : 'bg-amber-100 text-amber-800'
                             }`}>
-                              {cr.status === 'APPROVED' ? 'Đã Phê Duyệt' : cr.status === 'REJECTED' ? 'Từ Chối' : 'Chờ Phê Duyệt'}
+                              {cr.status === 'APPROVED' ? 'Đã phê duyệt' : cr.status === 'REJECTED' ? 'Từ chối' : 'Chờ phê duyệt'}
                             </span>
                           </div>
 
@@ -2234,14 +2152,14 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                                 onClick={() => handleRejectChangeRequest(cr.id)}
                                 className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700"
                               >
-                                Từ Chối
+                                Từ chối
                               </button>
                               <button
                                 type="button"
                                 onClick={() => handleApproveChangeRequest(cr.id)}
                                 className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1 shadow-2xs"
                               >
-                                <Check className="w-3.5 h-3.5" /> Phê duyệt & cập nhật Master Data
+                                <Check className="w-3.5 h-3.5" /> Phê duyệt & cập nhật dữ liệu
                               </button>
                             </div>
                           )}
@@ -2254,7 +2172,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                   <div className="space-y-3 pt-3 border-t border-slate-200">
                     <span className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
                       <History className="w-3.5 h-3.5 text-slate-500" />
-                      Nhật ký Audit Trail (lịch sử thay đổi & quyết định)
+                      Lịch sử thay đổi & quyết định
                     </span>
 
                     <div className="space-y-2 text-xs">
@@ -2290,7 +2208,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                   Khởi tạo sản phẩm thúc đẩy mới
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Thiết lập Master Data sản phẩm thúc đẩy theo Gian hàng cụ thể để B2C review và brief KOC
+                  Thiết lập sản phẩm thúc đẩy theo gian hàng cụ thể để B2C xem xét và brief KOC
                 </p>
               </div>
               <button
@@ -2322,7 +2240,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                         platform: defaultStore?.platform || 'SHOPEE_MALL'
                       }));
                     }}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 font-medium"
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-accent/20 font-medium"
                   >
                     <option value="brand-kutieskin">Kutieskin Mama & Baby</option>
                     <option value="brand-bye-bye-blemish">Bye Bye Blemish</option>
@@ -2346,7 +2264,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                         platform: st?.platform || 'SHOPEE_MALL'
                       }));
                     }}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 font-medium"
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-accent/20 font-medium"
                   >
                     {brands.find(b => b.id === newProductForm.brandId)?.stores?.map(s => (
                       <option key={s.id} value={s.id}>
@@ -2372,7 +2290,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                     placeholder="VD: Kem bôi dịu da Kutieskin 30g"
                     value={newProductForm.productName}
                     onChange={(e) => setNewProductForm(prev => ({ ...prev, productName: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-accent/20"
                   />
                 </div>
 
@@ -2384,19 +2302,19 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                     placeholder="KUTIE-SOOTH-30G"
                     value={newProductForm.sku}
                     onChange={(e) => setNewProductForm(prev => ({ ...prev, sku: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 font-mono"
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-accent/20 font-mono"
                   />
                 </div>
               </div>
 
               {/* Row 3: Chu kỳ ngày bắt đầu & kết thúc */}
-              <div className="p-3 bg-indigo-50/50 rounded-xl border border-indigo-200 space-y-2">
+              <div className="p-3 bg-accent-soft rounded-xl border border-line space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="font-semibold text-slate-800 flex items-center gap-1.5 text-xs">
-                    <Calendar className="w-3.5 h-3.5 text-indigo-600" />
+                    <Calendar className="w-3.5 h-3.5 text-accent" />
                     Chu kỳ áp dụng thúc đẩy (ngày bắt đầu & kết thúc) *
                   </span>
-                  <span className="text-2xs font-mono text-indigo-700 font-semibold bg-white px-2 py-0.5 rounded border border-indigo-200">
+                  <span className="text-2xs font-mono text-accent font-semibold bg-white px-2 py-0.5 rounded border border-line">
                     Thời lượng: {getCycleStats(newProductForm.startDate, newProductForm.endDate).totalDays} ngày
                   </span>
                 </div>
@@ -2488,7 +2406,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                 </div>
 
                 <div className="space-y-1">
-                  <label className="font-semibold text-slate-700 block">Hoa Hồng Affiliate (%)</label>
+                  <label className="font-semibold text-slate-700 block">Hoa hồng Affiliate (%)</label>
                   <input
                     type="number"
                     value={newProductForm.affiliateRate}
@@ -2510,7 +2428,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
 
               {/* Row 5: Available Stock */}
               <div className="space-y-1">
-                <label className="font-semibold text-slate-700 block">Tồn kho Cam kết giữ cho chiến dịch</label>
+                <label className="font-semibold text-slate-700 block">Tồn kho cam kết giữ cho chiến dịch</label>
                 <input
                   type="number"
                   value={newProductForm.availableStock}
@@ -2522,11 +2440,11 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
               {/* Note on KOC Brief - To be inputted by B2C later */}
               <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-1.5">
                 <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-800">
-                  <FileText className="w-3.5 h-3.5 text-indigo-600" />
-                  Thông tin Brief KOC / Creator (B2C đảm nhiệm sau khi tiếp nhận)
+                  <FileText className="w-3.5 h-3.5 text-accent" />
+                  Thông tin brief KOC (B2C đảm nhiệm sau khi tiếp nhận)
                 </div>
                 <p className="text-2xs text-slate-500 leading-relaxed">
-                  Các thông tin như Điểm bán hàng độc nhất (USP), Thông điệp truyền thông (Key Message), Góc quay gợi ý, Do & Don'ts và Link tài liệu brief chi tiết sẽ do đội ngũ B2C nghiên cứu và cập nhật sau khi tiếp nhận sản phẩm.
+                  Các thông tin như điểm bán hàng độc nhất, thông điệp truyền thông, góc quay gợi ý, lưu ý nội dung và link tài liệu brief chi tiết sẽ do đội ngũ B2C nghiên cứu và cập nhật sau khi tiếp nhận sản phẩm.
                 </p>
               </div>
 
@@ -2541,9 +2459,9 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition-colors flex items-center gap-1.5"
+                  className="px-5 py-2 rounded-lg text-xs font-semibold bg-primary hover:bg-primary-hover text-white shadow-sm transition-colors flex items-center gap-1.5"
                 >
-                  <Plus className="w-4 h-4" /> Khởi tạo & chuyển sang B2C bổ sung Brief
+                  <Plus className="w-4 h-4" /> Khởi tạo & chuyển sang B2C bổ sung brief
                 </button>
               </div>
             </form>
@@ -2558,8 +2476,8 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
             <div className="px-6 py-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
               <div>
                 <h3 className="text-base font-semibold text-slate-900 flex items-center gap-2">
-                  <FileText className="w-4 h-4 text-indigo-600" />
-                  Cập Nhật Thông Tin Brief KOC / Creator (B2C Input)
+                  <FileText className="w-4 h-4 text-accent" />
+                  Cập nhật thông tin brief KOC
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">
                   Sản phẩm: <strong>{briefFormProduct.productName}</strong> ({briefFormProduct.sku}) • Gian hàng: <strong>{briefFormProduct.storeName}</strong>
@@ -2575,17 +2493,17 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
             </div>
 
             <form onSubmit={handleSaveB2cBrief} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto text-xs">
-              <div className="p-3 bg-indigo-50/50 rounded-xl border border-indigo-200 text-xs text-indigo-900 space-y-1">
+              <div className="p-3 bg-accent-soft rounded-xl border border-line text-xs text-ink space-y-1">
                 <span className="font-semibold block">Thông tin dành riêng cho B2C Booking & Content:</span>
-                <p className="text-2xs text-indigo-700 leading-relaxed">
-                  Đội ngũ B2C nghiên cứu góc nhìn người tiêu dùng, đúc kết USP nổi bật, thông điệp truyền thông và tài liệu hướng dẫn để gửi Creator. Dữ liệu này sẽ tự động tích hợp vào tính năng sao chép 1-click gửi KOC.
+                <p className="text-2xs text-ink-2 leading-relaxed">
+                  Đội ngũ B2C nghiên cứu góc nhìn người tiêu dùng, đúc kết USP nổi bật, thông điệp truyền thông và tài liệu hướng dẫn để gửi Creator. Dữ liệu này sẽ tự động tích hợp vào tính năng sao chép nhanh gửi KOC.
                 </p>
               </div>
 
               {/* USP */}
               <div className="space-y-1">
                 <label className="font-semibold text-slate-700 block">
-                  Điểm Bán Hàng Độc Nhất (USP - Unique Selling Point) *
+                  Điểm bán hàng độc nhất *
                 </label>
                 <textarea
                   required
@@ -2593,49 +2511,49 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                   placeholder="VD: 100% thảo dược Nano Bạc & Yến mạch Pháp, dịu ngứa chàm sữa sau 3 ngày..."
                   value={briefForm.usp}
                   onChange={(e) => setBriefForm(prev => ({ ...prev, usp: e.target.value }))}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                  className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-accent/20"
                 />
               </div>
 
               {/* Key Message */}
               <div className="space-y-1">
                 <label className="font-semibold text-slate-700 block">
-                  Thông Điệp Truyền Thông Chính (Key Message KOC Nhấn Mạnh)
+                  Thông điệp truyền thông chính
                 </label>
                 <input
                   type="text"
                   placeholder="VD: Dịu êm da bé tức thì - Mẹ an tâm trọn giấc nồng"
                   value={briefForm.keyMessage}
                   onChange={(e) => setBriefForm(prev => ({ ...prev, keyMessage: e.target.value }))}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                  className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-accent/20"
                 />
               </div>
 
               {/* Viral Angle */}
               <div className="space-y-1">
                 <label className="font-semibold text-slate-700 block">
-                  Content Hook & Góc Quay Video Gợi Ý (Viral Angle)
+                  Góc quay video gợi ý
                 </label>
                 <textarea
                   rows={2}
                   placeholder="VD: Mẹ bỉm chia sẻ khoảnh khắc cứu nguy làn da bé nửa đêm, cận cảnh chất kem mỏng nhẹ thẩm thấu nhanh..."
                   value={briefForm.viralAngle}
                   onChange={(e) => setBriefForm(prev => ({ ...prev, viralAngle: e.target.value }))}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                  className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-accent/20"
                 />
               </div>
 
               {/* Target KOC Niches */}
               <div className="space-y-1">
                 <label className="font-semibold text-slate-700 block">
-                  Tệp KOC / Creator Phù Hợp (Phân cách bằng dấu phẩy)
+                  Tệp KOC phù hợp (phân cách bằng dấu phẩy)
                 </label>
                 <input
                   type="text"
                   placeholder="Mẹ Bỉm Sữa, Reviewer Da Liễu, Sinh Viên"
                   value={briefForm.targetKocNiche}
                   onChange={(e) => setBriefForm(prev => ({ ...prev, targetKocNiche: e.target.value }))}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                  className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-accent/20"
                 />
               </div>
 
@@ -2643,7 +2561,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <label className="font-semibold text-slate-700 block">
-                    Link Sản Phẩm Trên Gian Hàng (PDP URL Gắn Giỏ)
+                    Link sản phẩm trên gian hàng
                   </label>
                   <input
                     type="url"
@@ -2656,7 +2574,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
 
                 <div className="space-y-1">
                   <label className="font-semibold text-slate-700 block">
-                    Link Doc Brief Chi Tiết (Google Drive / Lark Docs)
+                    Link tài liệu brief chi tiết
                   </label>
                   <input
                     type="url"
@@ -2671,28 +2589,28 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
               {/* Do & Don'ts */}
               <div className="space-y-1">
                 <label className="font-semibold text-slate-700 block">
-                  Quy Tắc NÊN & KHÔNG ĐƯỢC LÀM khi Review (Do & Don'ts)
+                  Lưu ý nên và không nên làm khi review
                 </label>
                 <textarea
                   rows={2}
                   placeholder="NÊN: quay cận cảnh sản phẩm, dùng thử trên da... KHÔNG: so sánh dìm hàng nhãn khác, cam kết chữa khỏi 100%..."
                   value={briefForm.doAndDonts}
                   onChange={(e) => setBriefForm(prev => ({ ...prev, doAndDonts: e.target.value }))}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                  className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-accent/20"
                 />
               </div>
 
               {/* Sample Conditions */}
               <div className="space-y-1">
                 <label className="font-semibold text-slate-700 block">
-                  Chính Sách & Điều Kiện Cấp Mẫu Cho KOC
+                  Chính sách & điều kiện cấp mẫu cho KOC
                 </label>
                 <input
                   type="text"
                   placeholder="VD: Cấp 01 tuýp 30g fullsize cho KOC cam kết lên video trong 7 ngày..."
                   value={briefForm.sampleNotes}
                   onChange={(e) => setBriefForm(prev => ({ ...prev, sampleNotes: e.target.value }))}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                  className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-accent/20"
                 />
               </div>
 
@@ -2703,13 +2621,13 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                   onClick={() => setIsEditBriefModalOpen(false)}
                   className="px-4 py-2 rounded-lg text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors"
                 >
-                  Hủy Bỏ
+                  Hủy bỏ
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition-colors flex items-center gap-1.5"
+                  className="px-5 py-2 rounded-lg text-xs font-semibold bg-primary hover:bg-primary-hover text-white shadow-sm transition-colors flex items-center gap-1.5"
                 >
-                  <Check className="w-4 h-4" /> Lưu & Hoàn Tất Brief KOC
+                  <Check className="w-4 h-4" /> Lưu & hoàn tất brief KOC
                 </button>
               </div>
             </form>
@@ -2724,11 +2642,11 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
             <div className="px-6 py-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
               <div>
                 <h3 className="text-base font-semibold text-slate-900 flex items-center gap-2">
-                  <FileEdit className="w-4 h-4 text-indigo-600" />
-                  Yêu Cầu Thay Đổi: {changeRequestForm.fieldLabel}
+                  <FileEdit className="w-4 h-4 text-accent" />
+                  Yêu cầu thay đổi: {changeRequestForm.fieldLabel}
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Đề xuất sẽ được gửi sang phía đối ứng để phê duyệt và ghi nhận vào Audit Log
+                  Đề xuất sẽ được gửi sang phía đối ứng để phê duyệt và ghi nhận vào lịch sử
                 </p>
               </div>
               <button
@@ -2742,14 +2660,14 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
 
             <form onSubmit={handleSubmitChangeRequest} className="p-6 space-y-4 text-xs">
               <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-                <span className="text-slate-400 block text-2xs">Giá trị hiện tại (cũ):</span>
+                <span className="text-slate-400 block text-2xs">Giá trị hiện tại:</span>
                 <span className="font-mono font-semibold text-slate-800 text-sm">{String(changeRequestForm.oldValue)}</span>
               </div>
 
               {changeRequestForm.type === 'CHANGE_CYCLE_DATES' ? (
-                <div className="space-y-3 p-3 bg-indigo-50/50 rounded-xl border border-indigo-200">
+                <div className="space-y-3 p-3 bg-accent-soft rounded-xl border border-line">
                   <span className="font-semibold text-slate-800 block text-xs">
-                    Chọn khoảng ngày Chu kỳ mới:
+                    Chọn khoảng ngày chu kỳ mới:
                   </span>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
@@ -2782,20 +2700,20 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                     required
                     value={changeRequestForm.newValue}
                     onChange={(e) => setChangeRequestForm(prev => ({ ...prev, newValue: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-200 font-mono font-semibold text-indigo-700 text-sm"
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 font-mono font-semibold text-accent text-sm"
                   />
                 </div>
               )}
 
               <div className="space-y-1">
-                <label className="font-semibold text-slate-700 block">Lý Do đề xuất thay đổi *</label>
+                <label className="font-semibold text-slate-700 block">Lý do đề xuất thay đổi *</label>
                 <textarea
                   required
                   rows={3}
-                  placeholder="Nêu rõ lý do (ví dụ: Kho tổng nhập thêm hàng, KOC xin tăng hạn mức mẫu để live, gia hạn chu kỳ đón đợt Payday lương về...)"
+                  placeholder="Nêu rõ lý do (ví dụ: Kho tổng nhập thêm hàng, KOC xin tăng hạn mức mẫu để live, gia hạn chu kỳ đón đợt sale lương về...)"
                   value={changeRequestForm.reason}
                   onChange={(e) => setChangeRequestForm(prev => ({ ...prev, reason: e.target.value }))}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                  className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-accent/20"
                 />
               </div>
 
@@ -2809,7 +2727,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm flex items-center gap-1.5"
+                  className="px-5 py-2 rounded-lg text-xs font-semibold bg-primary hover:bg-primary-hover text-white shadow-sm flex items-center gap-1.5"
                 >
                   <Send className="w-3.5 h-3.5" /> Gửi yêu cầu thay đổi
                 </button>

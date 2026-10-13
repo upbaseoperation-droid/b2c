@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Search, Plus, X, RotateCcw } from 'lucide-react';
 import { MasterCastTier } from '../../../lib/types';
+import { formatVnd } from '../../../lib/format';
 
 interface CastTiersMasterViewProps {
   initialTiers: MasterCastTier[];
@@ -30,10 +31,6 @@ export const CastTiersMasterView: React.FC<CastTiersMasterViewProps> = ({
     adsCost: 'Không mất',
     usageImageCost: 'Không mất'
   });
-
-  const formatVnd = (num: number) => {
-    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(num);
-  };
 
   const filteredTiers = tiers.filter(t => {
     if (selectedGroup !== 'ALL' && t.creatorGroup !== selectedGroup) return false;
@@ -130,15 +127,15 @@ export const CastTiersMasterView: React.FC<CastTiersMasterViewProps> = ({
   const getGroupBadgeClass = (group: string) => {
     switch (group) {
       case 'Massive Creator':
-        return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+        return 'bg-positive-soft text-positive border-line';
       case 'Mid Creator':
-        return 'bg-blue-50 text-blue-700 border-blue-200';
+        return 'bg-accent-soft text-accent border-line';
       case 'Key Creator':
-        return 'bg-amber-50 text-amber-700 border-amber-200';
+        return 'bg-warning-soft text-warning border-line';
       case 'Top Creator':
-        return 'bg-purple-50 text-purple-700 border-purple-200';
+        return 'bg-accent-soft text-accent border-line';
       default:
-        return 'bg-slate-100 text-slate-700 border-slate-200';
+        return 'bg-sunken text-ink-2 border-line';
     }
   };
 
@@ -227,7 +224,7 @@ export const CastTiersMasterView: React.FC<CastTiersMasterViewProps> = ({
               filteredTiers.map(t => (
                 <tr key={t.id} className="hover:bg-slate-50/70 transition-colors">
                   <td className="py-3 px-4">
-                    <span className="font-mono font-bold text-slate-900 text-xs px-2 py-0.5 rounded bg-slate-100 border border-slate-200">
+                    <span className="font-mono font-semibold text-slate-900 text-xs px-2 py-0.5 rounded bg-slate-100 border border-slate-200">
                       {t.tierCode}
                     </span>
                   </td>
@@ -246,7 +243,7 @@ export const CastTiersMasterView: React.FC<CastTiersMasterViewProps> = ({
                       `${formatVnd(t.minCast)} - ${t.maxCast > 30000000 ? '>30M' : formatVnd(t.maxCast)}`
                     )}
                   </td>
-                  <td className="py-3 px-4 text-right font-mono font-bold text-slate-900">
+                  <td className="py-3 px-4 text-right font-mono font-semibold text-slate-900">
                     {t.baseAverage === 0 ? '0 đ' : formatVnd(t.baseAverage)}
                   </td>
                   <td className="py-3 px-4 text-center">

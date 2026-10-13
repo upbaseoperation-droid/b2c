@@ -2,38 +2,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { 
-  Search, 
   Zap, 
-  ShieldCheck, 
-  Eye, 
-  Star, 
-  Filter, 
-  TrendingUp, 
-  Flame, 
-  Video, 
-  CheckCircle2, 
-  DollarSign, 
   ExternalLink,
-  Layers,
-  Award,
-  Clock,
-  Package,
-  AlertTriangle,
-  Sparkles,
   Edit3,
   Check,
-  X,
   Share2,
-  HelpCircle,
-  TrendingDown,
-  UserCheck,
   UserPlus,
-  MapPin,
-  ShoppingBag,
-  Users,
-  Truck,
-  Target,
-  Crown,
   Calculator,
   Plus,
   Upload
@@ -41,11 +15,6 @@ import {
 import { 
   KocItem, 
   BookingDealItem, 
-  SalaryGrade, 
-  CreatorNiche, 
-  CreatorSegment, 
-  KocCategory, 
-  TepKenh, 
   KocCandidateItem,
   StaffDetailedPlanItem,
   MonthlyStaffAllocation,
@@ -53,7 +22,6 @@ import {
 } from '../../lib/types';
 import { 
   INITIAL_KOCS, 
-  BOOKING_STAFF_PROGRESS_26, 
   INITIAL_KOC_CANDIDATES,
   INITIAL_DETAILED_STAFF_PLANS,
   INITIAL_STAFF_ALLOCATIONS_26
@@ -61,7 +29,7 @@ import {
 import { KocProfileModal } from '../KocProfileModal';
 import { CreateKocModal } from '../CreateKocModal';
 import { MyPlanWorkspace } from '../MyPlanWorkspace';
-import { Avatar, Button, Chips, ConfirmDialog, DataTable, EmptyState, Field, FilterBar, Input, Modal, Panel, Person, Segmented, Select, Stat, StatRow, Status, Tabs, Textarea } from '../ui';
+import { Avatar, Button, Chips, ConfirmDialog, DataTable, EmptyState, Field, FilterBar, Input, Modal, PageActions, Panel, Person, Segmented, Select, Stat, StatRow, Status, Tabs, Textarea } from '../ui';
 import type { StatusTone } from '../ui';
 import { formatNumber, formatPercent, formatVnd, formatVndShort } from '../../lib/format';
 
@@ -74,8 +42,8 @@ interface BookingViewProps {
   onUpdateDeal?: (updatedDeal: BookingDealItem) => void;
   onKocCreated?: (newKoc: KocItem) => void;
   planItems?: StaffDetailedPlanItem[];
-  onAddPlanItem?: (newItem: any) => void;
-  onUpdatePlanItem?: (item: any) => void;
+  onAddPlanItem?: (newItem: StaffDetailedPlanItem) => void;
+  onUpdatePlanItem?: (item: StaffDetailedPlanItem) => void;
   onDeletePlanItem?: (itemId: string) => void;
   onSubmitPlanToLead?: (staffName: string) => void;
   onConvertPlanItemToDeal?: (item: StaffDetailedPlanItem) => void;
@@ -114,21 +82,20 @@ export const BookingView: React.FC<BookingViewProps> = ({
 
   // Plan Items State
   const [localPlanItems, setLocalPlanItems] = useState<StaffDetailedPlanItem[]>(externalPlanItems || INITIAL_DETAILED_STAFF_PLANS);
-
-  React.useEffect(() => {
-    if (externalPlanItems) {
-      setLocalPlanItems(externalPlanItems);
-    }
-  }, [externalPlanItems]);
-
+  const [prevExternalPlanItems, setPrevExternalPlanItems] = useState(externalPlanItems);
+  if (externalPlanItems && externalPlanItems !== prevExternalPlanItems) {
+    setPrevExternalPlanItems(externalPlanItems);
+    setLocalPlanItems(externalPlanItems);
+  }
 
   // Local KOC list state (allows dynamic creation)
   const [localKocs, setLocalKocs] = useState<KocItem[]>(kocs || INITIAL_KOCS);
   const [isCreateKocOpen, setIsCreateKocOpen] = useState(false);
-
-  React.useEffect(() => {
-    if (kocs) setLocalKocs(kocs);
-  }, [kocs]);
+  const [prevKocs, setPrevKocs] = useState(kocs);
+  if (kocs && kocs !== prevKocs) {
+    setPrevKocs(kocs);
+    setLocalKocs(kocs);
+  }
 
   const handleCreateKocSuccess = (newKoc: KocItem) => {
     setLocalKocs(prev => [newKoc, ...prev]);
@@ -141,8 +108,10 @@ export const BookingView: React.FC<BookingViewProps> = ({
   const [selectedStaffName, setSelectedStaffName] = useState<string>(
     currentUser?.role === 'BOOKING_MEMBER' ? currentUser.name : (currentUserName || 'Khánh Vy')
   );
-
-  React.useEffect(() => {
+  const userKey = `${currentUser?.role ?? ''}:${currentUser?.name ?? ''}:${currentUserName ?? ''}`;
+  const [prevUserKey, setPrevUserKey] = useState(userKey);
+  if (userKey !== prevUserKey) {
+    setPrevUserKey(userKey);
     if (currentUser) {
       if (currentUser.role === 'BOOKING_MEMBER') {
         setSelectedStaffName(currentUser.name);
@@ -152,7 +121,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
     } else if (currentUserName) {
       setSelectedStaffName(currentUserName);
     }
-  }, [currentUser, currentUserName]);
+  }
 
   // Search & 4 Phân loại cốt lõi KOC Directory (Sheet 3.1 & 3.2 & 5.4 & 5.6)
   const [searchTerm, setSearchTerm] = useState('');
@@ -160,19 +129,19 @@ export const BookingView: React.FC<BookingViewProps> = ({
   const [selectedSegment, setSelectedSegment] = useState<string>('ALL'); // 2. Segment
   const [selectedKocCategory, setSelectedKocCategory] = useState<string>('ALL'); // 3. KOC Category
   const [selectedTepKenh, setSelectedTepKenh] = useState<string>('ALL'); // 4. Tệp kênh
-  const [selectedCreatorNiche, setSelectedCreatorNiche] = useState<string>('ALL');
   const [inspectedKoc, setInspectedKoc] = useState<KocItem | null>(null);
 
   // Filters for Booking Deals
   const [dealsFilter, setDealsFilter] = useState<'ALL' | 'BRAND_PENDING' | 'BRAND_APPROVED' | 'BRAND_REJECTED' | 'WINNER_TOP20' | 'HAS_GMV' | 'BREAK_EVEN' | 'OVERDUE_SLA' | 'ADS_CODE_PENDING'>('ALL');
   const [dealsSearch, setDealsSearch] = useState('');
   const [selectedBrandFilter, setSelectedBrandFilter] = useState<string>(selectedBrand || 'ALL');
-
-  React.useEffect(() => {
+  const [prevSelectedBrand, setPrevSelectedBrand] = useState(selectedBrand);
+  if (selectedBrand !== prevSelectedBrand) {
+    setPrevSelectedBrand(selectedBrand);
     if (selectedBrand) {
       setSelectedBrandFilter(selectedBrand);
     }
-  }, [selectedBrand]);
+  }
 
   // Modal Editing Deal State
   const [editingDeal, setEditingDeal] = useState<BookingDealItem | null>(null);
@@ -269,7 +238,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
     { key: 'KL5', label: 'KL5 (5-10M)' },
     { key: 'KL6', label: 'KL6 (10-30M)' },
     { key: 'KL7', label: 'KL7 (>30M)' },
-    { key: 'TAP đối tác ngoài', label: 'TAP Ngoài (MCN)' },
+    { key: 'TAP đối tác ngoài', label: 'TAP ngoài / MCN' },
   ];
 
   // 2. Phân nhóm Creator (Segment) - Sheet 3.2 Col 81 & 5.6
@@ -313,7 +282,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
     { key: 'Bác sỹ/chuyên gia', label: 'Bác sỹ/chuyên gia' },
     { key: 'Gym', label: 'Gym' },
     { key: 'Eat Clean', label: 'Eat Clean' },
-    { key: 'Thời trang (review)', label: 'Thời trang (review)' },
+    { key: 'Thời trang (review)', label: 'Thời trang' },
     { key: 'Thời trang (có kiến thức)', label: 'Thời trang (kiến thức)' },
     { key: 'Lifestyle', label: 'Lifestyle' },
     { key: 'Nhà cửa đời sống', label: 'Nhà cửa đời sống' },
@@ -326,18 +295,6 @@ export const BookingView: React.FC<BookingViewProps> = ({
     { key: 'LGBT', label: 'LGBT' },
     { key: 'KOL', label: 'KOL' },
     { key: 'Nữ xinh', label: 'Nữ xinh' },
-  ];
-
-  // Creator Niches List backward compatibility
-  const creatorNiches = [
-    { key: 'ALL', label: 'Tất cả tệp Creator' },
-    { key: 'Review Nữ', label: 'Review Nữ' },
-    { key: 'Review Nam', label: 'Review Nam' },
-    { key: 'Mẹ bé', label: 'Mẹ bé' },
-    { key: 'Gia đình', label: 'Gia đình' },
-    { key: 'Beauty', label: 'Beauty' },
-    { key: 'Bác sĩ/chuyên gia', label: 'Bác sĩ / chuyên gia' },
-    { key: 'Unboxing', label: 'Unboxing' },
   ];
 
   // Brands / Gian hàng (from Image 8)
@@ -357,8 +314,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
     const matchKL = selectedKL === 'ALL' || koc.salaryGrade === selectedKL;
     const matchSegment = selectedSegment === 'ALL' || koc.segment === selectedSegment;
     const matchKocCat = selectedKocCategory === 'ALL' || koc.kocCategory === selectedKocCategory;
-    const effectiveTep = selectedTepKenh !== 'ALL' ? selectedTepKenh : selectedCreatorNiche;
-    const matchTep = effectiveTep === 'ALL' || koc.tepKenh === effectiveTep || koc.creatorCategory === effectiveTep;
+    const matchTep = selectedTepKenh === 'ALL' || koc.tepKenh === selectedTepKenh || koc.creatorCategory === selectedTepKenh;
     const matchSearch =
       koc.stageName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       koc.channelId.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -496,6 +452,12 @@ export const BookingView: React.FC<BookingViewProps> = ({
 
   return (
     <div className="space-y-6">
+      {onOpenQuickBook && (
+        <PageActions>
+          <Button variant="primary" icon={Plus} onClick={onOpenQuickBook}>Tạo booking</Button>
+        </PageActions>
+      )}
+
       {/* Tiến độ cá nhân */}
       <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-[13px] text-ink-2">
         {currentUser?.role === 'MANAGER' ? (
@@ -545,9 +507,6 @@ export const BookingView: React.FC<BookingViewProps> = ({
         <div className="flex items-center gap-2 lg:pb-2 flex-wrap">
           {onOpenImport && (
             <Button variant="secondary" icon={Upload} onClick={onOpenImport}>Nhập Excel</Button>
-          )}
-          {onOpenQuickBook && (
-            <Button variant="primary" icon={Plus} onClick={onOpenQuickBook}>Tạo booking deal mới</Button>
           )}
           {onOpenInputPlan && (
             <Button icon={Calculator} onClick={onOpenInputPlan}>Phân rã kế hoạch</Button>
@@ -772,12 +731,11 @@ export const BookingView: React.FC<BookingViewProps> = ({
                         <div className="font-medium text-ink mt-1">{d.brandName || 'Upbase'}</div>
                         <div className="text-2xs text-ink-2 truncate max-w-[220px]">{d.productName || 'Sản phẩm booking'}{d.bookingBatch ? ` · ${d.bookingBatch}` : ''}</div>
                         {d.contentAngleName ? (
-                          <div className="text-2xs font-semibold text-purple-700 flex items-center gap-1 mt-0.5 truncate max-w-[220px]" title={d.contentHook ? `Hook: "${d.contentHook}"` : d.contentAngleName}>
-                            <Sparkles className="w-3 h-3 text-purple-600 shrink-0" />
+                          <div className="text-2xs font-medium text-accent flex items-center gap-1 mt-0.5 truncate max-w-[220px]" title={d.contentHook ? `Hook: "${d.contentHook}"` : d.contentAngleName}>
                             <span className="truncate">{d.contentAngleName}</span>
                           </div>
                         ) : d.contentPillar ? (
-                          <div className="text-3xs text-ink-3 mt-0.5">{d.contentPillar}</div>
+                          <div className="text-2xs text-ink-3 mt-0.5">{d.contentPillar}</div>
                         ) : null}
                         <div className="text-2xs text-ink-3 truncate max-w-[220px]">{d.campaignTitle}</div>
                       </div>
@@ -1149,7 +1107,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
       <ConfirmDialog
         open={!!approvingDeal}
         title="Xác nhận phê duyệt deal booking?"
-        message={approvingDeal ? `Duyệt deal ${approvingDeal.dealCode} cho KOC "${approvingDeal.kocStageName}" (Giá trị: ${approvingDeal.totalValue?.toLocaleString('vi-VN')} đ)? Sau khi duyệt, deal sẽ chuyển sang trạng thái sẵn sàng xuất hợp đồng và giải ngân cọc.` : undefined}
+        message={approvingDeal ? `Duyệt deal ${approvingDeal.dealCode} cho KOC "${approvingDeal.kocStageName}" (Giá trị: ${formatVnd(approvingDeal.totalValue)})? Sau khi duyệt, deal sẽ chuyển sang trạng thái sẵn sàng xuất hợp đồng và giải ngân cọc.` : undefined}
         confirmLabel="Xác nhận duyệt deal"
         onCancel={() => setApprovingDeal(null)}
         onConfirm={() => {

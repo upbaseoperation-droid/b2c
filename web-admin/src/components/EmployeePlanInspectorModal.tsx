@@ -170,7 +170,7 @@ export const EmployeePlanInspectorModal: React.FC<EmployeePlanInspectorModalProp
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="text-sm font-semibold text-slate-900 tracking-tight">
-                  KẾ HOẠCH TRIỂN KHAI CHI TIẾT — {staffAllocation.staffName.toUpperCase()}
+                  Kế hoạch triển khai chi tiết — {staffAllocation.staffName}
                 </h3>
                 <span className="text-2xs px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 font-mono">
                   {staffAllocation.month}
@@ -280,7 +280,7 @@ export const EmployeePlanInspectorModal: React.FC<EmployeePlanInspectorModalProp
           {/* Card 4: Đối Soát Cơ Cấu 4 Tier KOC */}
           <div className="p-3.5 rounded-md bg-white border border-slate-200 shadow-2xs">
             <span className="text-xs text-slate-500 block font-medium mb-1.5 flex items-center gap-1">
-              <Layers className="w-3.5 h-3.5 text-purple-600" />
+              <Layers className="w-3.5 h-3.5 text-blue-600" />
               So Khớp 4 Tier
             </span>
             <div className="grid grid-cols-4 gap-1.5 text-center font-mono">
@@ -297,7 +297,7 @@ export const EmployeePlanInspectorModal: React.FC<EmployeePlanInspectorModalProp
                 <span className="text-xs font-semibold text-slate-900">{planTierCounts.TIER_3_MICRO}/{targetTierCounts.TIER_3_MICRO}</span>
               </div>
               <div className="p-1 rounded bg-slate-50 border border-slate-200">
-                <span className="text-2xs text-purple-600 block font-semibold">T4 Nano</span>
+                <span className="text-2xs text-slate-600 block font-semibold">T4 Nano</span>
                 <span className="text-xs font-semibold text-slate-900">{planTierCounts.TIER_4_AFFILIATE}/{targetTierCounts.TIER_4_AFFILIATE}</span>
               </div>
             </div>
@@ -364,7 +364,7 @@ export const EmployeePlanInspectorModal: React.FC<EmployeePlanInspectorModalProp
               <button
                 onClick={() => setSelectedTierFilter('TIER_4_AFFILIATE')}
                 className={`px-2 py-0.5 rounded text-2xs font-semibold transition ${
-                  selectedTierFilter === 'TIER_4_AFFILIATE' ? 'bg-purple-600 text-white' : 'text-purple-700 hover:bg-purple-50'
+                  selectedTierFilter === 'TIER_4_AFFILIATE' ? 'bg-slate-700 text-white' : 'text-slate-700 hover:bg-slate-200'
                 }`}
               >
                 T4 Nano
@@ -464,7 +464,7 @@ export const EmployeePlanInspectorModal: React.FC<EmployeePlanInspectorModalProp
                           item.tier === 'TIER_1_CELEB' ? 'bg-rose-500/20 text-rose-300 border-rose-500/30' :
                           item.tier === 'TIER_2_MACRO' ? 'bg-blue-500/20 text-blue-300 border-blue-500/30' :
                           item.tier === 'TIER_3_MICRO' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' :
-                          'bg-purple-500/20 text-purple-300 border-purple-500/30'
+                          'bg-slate-500/20 text-slate-300 border-slate-500/30'
                         }`}>
                           {item.salaryGrade} ({item.tier.replace('TIER_', '')})
                         </span>
@@ -481,7 +481,7 @@ export const EmployeePlanInspectorModal: React.FC<EmployeePlanInspectorModalProp
                       </td>
 
                       {/* Budget */}
-                      <td className="p-3 text-right font-mono font-semibold text-cyan-300">
+                      <td className="p-3 text-right font-mono font-semibold text-blue-600">
                         {item.budgetEstimated === 0 ? 'FOC (0đ)' : `${item.budgetEstimated.toLocaleString('vi-VN')} đ`}
                       </td>
 
@@ -494,7 +494,7 @@ export const EmployeePlanInspectorModal: React.FC<EmployeePlanInspectorModalProp
                       <td className="p-3 text-center">
                         <span className={`text-2xs font-semibold px-2 py-0.5 rounded border inline-block ${
                           item.status === 'APPROVED' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' :
-                          item.status === 'CONVERTED' ? 'bg-purple-500/20 text-purple-300 border-purple-500/30' :
+                          item.status === 'CONVERTED' ? 'bg-blue-500/20 text-blue-300 border-blue-500/30' :
                           item.status === 'SUBMITTED' ? 'bg-blue-500/20 text-blue-300 border-blue-500/30' :
                           item.status === 'REVISION_REQUESTED' ? 'bg-rose-500/20 text-rose-300 border-rose-500/30' :
                           'bg-slate-700 text-slate-300 border-slate-600'
@@ -505,7 +505,7 @@ export const EmployeePlanInspectorModal: React.FC<EmployeePlanInspectorModalProp
                            item.status === 'REVISION_REQUESTED' ? 'Cần Sửa' : 'Bản Nháp'}
                         </span>
                         {item.dealCode && (
-                          <span className="block text-2xs text-purple-400 font-mono mt-0.5">{item.dealCode}</span>
+                          <span className="block text-2xs text-blue-400 font-mono mt-0.5">{item.dealCode}</span>
                         )}
                       </td>
 
@@ -596,11 +596,11 @@ export const EmployeePlanInspectorModal: React.FC<EmployeePlanInspectorModalProp
                 <button
                   type="button"
                   onClick={() => setIsAiReviewOpen(true)}
-                  className="px-2.5 py-1 rounded bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 font-semibold text-xs transition flex items-center gap-1.5 shadow-2xs"
-                  title="Nhận xét tiến độ bằng AI API và tự động gợi ý lời phê chuẩn mực"
+                  className="px-2.5 py-1 rounded bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 font-semibold text-xs transition flex items-center gap-1.5 shadow-2xs"
+                  title="Nhận xét tiến độ và gợi ý lời phê chuẩn mực"
                 >
-                  <Sparkles className="w-3.5 h-3.5 text-purple-600" />
-                  <span>AI Đánh Giá &amp; Gợi Ý Lời Phê</span>
+                  <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+                  <span>Gợi ý nhận xét</span>
                 </button>
               )}
             </div>
@@ -653,7 +653,7 @@ export const EmployeePlanInspectorModal: React.FC<EmployeePlanInspectorModalProp
                   title="Khởi tạo danh sách Deal Booking từ các slot đã duyệt để bắt đầu liên hệ và gửi mẫu"
                 >
                   <Zap className="w-3.5 h-3.5 text-amber-300" />
-                  1-Click Tạo {approvedCount} Deals Tác Nghiệp
+                  Tạo {approvedCount} Deals tác nghiệp
                 </button>
               )}
             </div>

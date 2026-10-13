@@ -1,8 +1,13 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { Search, Users, MapPin, Briefcase, ChevronLeft, ChevronRight, UserCheck, Shield, Filter, RotateCcw, X } from 'lucide-react';
-import { StaffMasterMember } from '../../../lib/types';
+import { Search, ChevronLeft, ChevronRight, Shield, RotateCcw, X, CheckCircle2, Lock } from 'lucide-react';
+import { StaffMasterMember, SystemDepartmentScope } from '../../../lib/types';
+import {
+  classifyMasterStaffMember,
+  getSavedDeptAccessRules,
+  getSavedStaffAccessOverrides
+} from '../../../lib/rbacData';
 
 interface StaffMasterViewProps {
   initialStaff: StaffMasterMember[];
@@ -11,16 +16,47 @@ interface StaffMasterViewProps {
 
 const PAGE_SIZE = 25;
 
+const SCOPE_BADGE: Record<SystemDepartmentScope, { label: string; className: string }> = {
+  MARKETING_B2C: {
+    label: 'Khối Marketing B2C',
+    className: 'bg-blue-50 text-blue-700 border-blue-200'
+  },
+  GROWTH: {
+    label: 'Khối Growth',
+    className: 'bg-amber-50 text-amber-800 border-amber-200'
+  },
+  MEDIA: {
+    label: 'Khối Media',
+    className: 'bg-purple-50 text-purple-800 border-purple-200'
+  },
+  OTHER_BLOCKED: {
+    label: 'Phòng ban khác',
+    className: 'bg-slate-100 text-slate-500 border-slate-200'
+  }
+};
+
 export const StaffMasterView: React.FC<StaffMasterViewProps> = ({
   initialStaff,
-  onNotify
 }) => {
-  const [staffList, setStaffList] = useState<StaffMasterMember[]>(initialStaff);
+  const [staffList] = useState<StaffMasterMember[]>(initialStaff);
   const [search, setSearch] = useState('');
   const [selectedLocation, setSelectedLocation] = useState('ALL');
-  const [selectedType, setSelectedType] = useState('ALL');
+  const [selectedScope, setSelectedScope] = useState('ALL');
   const [selectedDept, setSelectedDept] = useState('ALL');
   const [page, setPage] = useState(1);
+
+  const enrichedStaff = useMemo(() => {
+    const rules = getSavedDeptAccessRules();
+    const overrides = getSavedStaffAccessOverrides();
+    return staffList.map(s => {
+      const info = classifyMasterStaffMember(s, rules, overrides);
+      return {
+        ...s,
+        ...info,
+        classifiedScope: info.departmentScope,
+      };
+    });
+  }, [staffList]);
 
   // Extract unique departments
   const departments = useMemo(() => {
@@ -33,9 +69,16 @@ export const StaffMasterView: React.FC<StaffMasterViewProps> = ({
 
   // Filtered staff
   const filteredStaff = useMemo(() => {
-    return staffList.filter(s => {
+    return enrichedStaff.filter(s => {
       if (selectedLocation !== 'ALL' && s.location !== selectedLocation) return false;
-      if (selectedType !== 'ALL' && s.employmentType !== selectedType) return false;
+      if (selectedScope === 'ALLOWED_LOGIN' && !s.canLogin) return false;
+      if (selectedScope === 'BLOCKED_LOGIN' && s.canLogin) return false;
+      if (
+        ['MARKETING_B2C', 'GROWTH', 'MEDIA', 'OTHER_BLOCKED'].includes(selectedScope) &&
+        s.classifiedScope !== selectedScope
+      ) {
+        return false;
+      }
       if (selectedDept !== 'ALL' && s.department !== selectedDept) return false;
       if (search.trim()) {
         const q = search.toLowerCase();
@@ -50,14 +93,14 @@ export const StaffMasterView: React.FC<StaffMasterViewProps> = ({
       }
       return true;
     });
-  }, [staffList, selectedLocation, selectedType, selectedDept, search]);
+  }, [enrichedStaff, selectedLocation, selectedScope, selectedDept, search]);
 
-  const isStaffFiltered = search.trim() !== '' || selectedLocation !== 'ALL' || selectedType !== 'ALL' || selectedDept !== 'ALL';
+  const isStaffFiltered = search.trim() !== '' || selectedLocation !== 'ALL' || selectedScope !== 'ALL' || selectedDept !== 'ALL';
 
   const handleResetStaffFilters = () => {
     setSearch('');
     setSelectedLocation('ALL');
-    setSelectedType('ALL');
+    setSelectedScope('ALL');
     setSelectedDept('ALL');
     setPage(1);
   };
@@ -69,10 +112,13 @@ export const StaffMasterView: React.FC<StaffMasterViewProps> = ({
   }, [filteredStaff, page]);
 
   // KPI stats
-  const hnCount = staffList.filter(s => s.location === 'HN').length;
-  const hcmCount = staffList.filter(s => s.location === 'HCM').length;
-  const officialCount = staffList.filter(s => s.employmentType === 'Chính thức').length;
-  const ctvCount = staffList.filter(s => s.employmentType && s.employmentType.includes('Cộng tác viên')).length;
+  const hnCount = enrichedStaff.filter(s => s.location === 'HN').length;
+  const hcmCount = enrichedStaff.filter(s => s.location === 'HCM').length;
+  const allowedCount = enrichedStaff.filter(s => s.canLogin).length;
+  const blockedCount = enrichedStaff.filter(s => !s.canLogin).length;
+  const mktCount = enrichedStaff.filter(s => s.classifiedScope === 'MARKETING_B2C').length;
+  const growthCount = enrichedStaff.filter(s => s.classifiedScope === 'GROWTH').length;
+  const mediaCount = enrichedStaff.filter(s => s.classifiedScope === 'MEDIA').length;
 
   return (
     <div className="space-y-3">
@@ -105,6 +151,23 @@ export const StaffMasterView: React.FC<StaffMasterViewProps> = ({
           </div>
 
           <select
+            value={selectedScope}
+            onChange={(e) => {
+              setSelectedScope(e.target.value);
+              setPage(1);
+            }}
+            className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-800 font-medium focus:outline-none focus:border-slate-800"
+          >
+            <option value="ALL">Mọi khối & quyền đăng nhập ({enrichedStaff.length})</option>
+            <option value="ALLOWED_LOGIN">Được phép đăng nhập ({allowedCount})</option>
+            <option value="BLOCKED_LOGIN">Đang chặn đăng nhập ({blockedCount})</option>
+            <option value="MARKETING_B2C">Khối Marketing B2C ({mktCount})</option>
+            <option value="GROWTH">Khối Growth ({growthCount})</option>
+            <option value="MEDIA">Khối Media ({mediaCount})</option>
+            <option value="OTHER_BLOCKED">Phòng ban khác ({blockedCount})</option>
+          </select>
+
+          <select
             value={selectedLocation}
             onChange={(e) => {
               setSelectedLocation(e.target.value);
@@ -113,22 +176,8 @@ export const StaffMasterView: React.FC<StaffMasterViewProps> = ({
             className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-800 focus:outline-none focus:border-slate-800"
           >
             <option value="ALL">Mọi khu vực ({staffList.length})</option>
-            <option value="HN">Hà Nội (HN) ({hnCount})</option>
-            <option value="HCM">TP. Hồ Chí Minh (HCM) ({hcmCount})</option>
-          </select>
-
-          <select
-            value={selectedType}
-            onChange={(e) => {
-              setSelectedType(e.target.value);
-              setPage(1);
-            }}
-            className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-800 focus:outline-none focus:border-slate-800"
-          >
-            <option value="ALL">Mọi loại hình</option>
-            <option value="Chính thức">Chính thức ({officialCount})</option>
-            <option value="Cộng tác viên">Cộng tác viên ({ctvCount})</option>
-            <option value="Thực tập sinh">Thực tập sinh</option>
+            <option value="HN">Hà Nội ({hnCount})</option>
+            <option value="HCM">TP. Hồ Chí Minh ({hcmCount})</option>
           </select>
 
           <select
@@ -159,7 +208,7 @@ export const StaffMasterView: React.FC<StaffMasterViewProps> = ({
 
         <div className="text-xs text-slate-500 flex items-center gap-1.5 shrink-0">
           <Shield className="w-3.5 h-3.5 text-emerald-600" />
-          <span>SSO Upbase Lark</span>
+          <span>{allowedCount} nhân sự được phép Login / {enrichedStaff.length} tổng số</span>
         </div>
       </div>
 
@@ -168,14 +217,14 @@ export const StaffMasterView: React.FC<StaffMasterViewProps> = ({
         <table className="w-full text-left text-xs">
           <thead className="bg-slate-50 text-slate-600 border-b border-slate-200 font-semibold text-2xs">
             <tr>
-              <th className="py-3 px-4 w-[110px]">Mã NV</th>
-              <th className="py-3 px-4 min-w-[200px]">Họ và tên nhân sự</th>
-              <th className="py-3 px-4 w-[220px]">Email công ty</th>
-              <th className="py-3 px-4 text-center w-[90px]">Khu vực</th>
-              <th className="py-3 px-4 text-center w-[120px]">Loại hình</th>
-              <th className="py-3 px-4 w-[160px]">Phòng ban</th>
-              <th className="py-3 px-4 min-w-[160px]">Vị trí chức danh</th>
-              <th className="py-3 px-4 w-[130px]">Team</th>
+              <th className="py-3 px-4 w-[100px]">Mã NV</th>
+              <th className="py-3 px-4 min-w-[190px]">Họ và tên nhân sự</th>
+              <th className="py-3 px-4 w-[210px]">Email công ty</th>
+              <th className="py-3 px-4 w-[150px]">Phòng ban / Team</th>
+              <th className="py-3 px-4 min-w-[150px]">Vị trí chức danh</th>
+              <th className="py-3 px-4 w-[150px]">Khối hệ thống</th>
+              <th className="py-3 px-4 w-[150px]">Quản lý trực tiếp</th>
+              <th className="py-3 px-4 text-center w-[125px]">Cổng đăng nhập</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -186,55 +235,59 @@ export const StaffMasterView: React.FC<StaffMasterViewProps> = ({
                 </td>
               </tr>
             ) : (
-              currentStaff.map(s => (
-                <tr key={s.id} className="hover:bg-slate-50/70 transition-colors">
-                  <td className="py-3 px-4">
-                    <span className="font-mono font-bold text-slate-900 text-xs px-1.5 py-0.5 rounded bg-slate-100 border border-slate-200">
-                      {s.staffCode || s.id}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4">
-                    <div className="font-semibold text-slate-900 text-xs">
-                      {s.name}
-                    </div>
-                    {s.gender && (
-                      <div className="text-2xs text-slate-400">{s.gender}</div>
-                    )}
-                  </td>
-                  <td className="py-3 px-4 font-mono text-slate-600 text-2xs">
-                    {s.email}
-                  </td>
-                  <td className="py-3 px-4 text-center">
-                    <span className={`px-2 py-0.5 rounded text-2xs font-semibold ${
-                      s.location === 'HN'
-                        ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                        : 'bg-indigo-50 text-indigo-700 border border-indigo-200'
-                    }`}>
-                      {s.location || 'HN'}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4 text-center">
-                    <span className={`px-2 py-0.5 rounded text-2xs font-medium ${
-                      s.employmentType === 'Chính thức'
-                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                        : s.employmentType && s.employmentType.includes('Cộng tác')
-                        ? 'bg-amber-50 text-amber-700 border border-amber-200'
-                        : 'bg-slate-100 text-slate-600'
-                    }`}>
-                      {s.employmentType || 'Chính thức'}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4 text-slate-700">
-                    {s.department || 'Booking'}
-                  </td>
-                  <td className="py-3 px-4 text-slate-800 font-medium">
-                    {s.position || s.roleTitle || 'Chuyên viên B2C'}
-                  </td>
-                  <td className="py-3 px-4 text-slate-600 text-2xs">
-                    {s.team || '—'}
-                  </td>
-                </tr>
-              ))
+              currentStaff.map(s => {
+                const badge = SCOPE_BADGE[s.classifiedScope];
+                return (
+                  <tr key={s.id} className="hover:bg-slate-50/70 transition-colors">
+                    <td className="py-3 px-4">
+                      <span className="font-mono font-semibold text-slate-900 text-xs px-1.5 py-0.5 rounded bg-slate-100 border border-slate-200">
+                        {s.staffCode || s.id}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4">
+                      <div className="font-semibold text-slate-900 text-xs">
+                        {s.name}
+                      </div>
+                      <div className="text-2xs text-slate-400">
+                        {s.location || 'HN'} · {s.employmentType || 'Chính thức'}
+                      </div>
+                    </td>
+                    <td className="py-3 px-4 font-mono text-slate-600 text-2xs">
+                      {s.email}
+                    </td>
+                    <td className="py-3 px-4 text-slate-700">
+                      <div className="font-medium">{s.department || 'Chưa phân phòng'}</div>
+                      {s.team && s.team !== s.department && (
+                        <div className="text-2xs text-slate-400">{s.team}</div>
+                      )}
+                    </td>
+                    <td className="py-3 px-4 text-slate-800 font-medium">
+                      {s.position || s.roleTitle || 'Nhân viên'}
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className={`inline-flex px-2 py-0.5 rounded text-2xs font-semibold border ${badge.className}`}>
+                        {badge.label}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-2xs text-slate-700 font-medium">
+                      {s.canLogin ? s.managerName : '—'}
+                    </td>
+                    <td className="py-3 px-4 text-center">
+                      {s.canLogin ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                          <span>Được vào</span>
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-semibold bg-slate-100 text-slate-500 border border-slate-200">
+                          <Lock className="w-3 h-3 text-slate-400" />
+                          <span>Chặn Login</span>
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>
@@ -271,3 +324,4 @@ export const StaffMasterView: React.FC<StaffMasterViewProps> = ({
     </div>
   );
 };
+

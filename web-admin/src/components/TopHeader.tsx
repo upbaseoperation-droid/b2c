@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Menu, ChevronDown, Sparkles, ArrowRight, Building2 } from 'lucide-react';
+import { Menu, ChevronDown, ArrowRight, Building2 } from 'lucide-react';
 import { UserProfile } from '../lib/types';
 import type { TabKey } from './Sidebar';
 import { PageActionsSlot } from './ui';
@@ -46,7 +46,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   );
 
   return (
-    <header className="app-header sticky top-0 z-20 min-h-20 bg-surface/95 backdrop-blur border-b border-line px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap items-center justify-between gap-3 shrink-0">
+    <header className="app-header sticky top-0 z-20 min-h-14 bg-surface/95 backdrop-blur border-b border-line px-4 sm:px-6 lg:px-8 py-2.5 flex flex-wrap items-center justify-between gap-3 shrink-0">
       <div className="flex items-center gap-3 min-w-0 flex-1">
         {onToggleMobileSidebar && (
           <button
@@ -65,28 +65,25 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
       </div>
 
       <div className="flex flex-wrap items-center gap-2 min-w-0 max-w-full">
-        {/* ========================================================================= */}
-        {/* BỘ CHỌN NHÃN HÀNG (BRAND CONTEXT SWITCHER) DÀNH CHO NHÂN VIÊN 2-3 BRAND   */}
-        {/* ========================================================================= */}
         {currentUser.role === 'BRAND_PARTNER' ? (
-          <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold">
-            <Building2 className="w-3.5 h-3.5 text-emerald-600" />
+          <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-positive-soft text-positive text-xs font-medium">
+            <Building2 className="w-3.5 h-3.5 text-positive" />
             <span>{currentUser.assignedBrands?.[0] || currentUser.linkedEntityName || 'Kutieskin'}</span>
           </div>
         ) : !['KOC_PARTNER', 'CTV_PARTNER'].includes(currentUser.role) && onBrandChange && (!activeTab || BRAND_FILTERABLE_TABS.has(activeTab)) && (
-          <label className="relative hidden sm:flex items-center h-[34px] pl-2.5 pr-7 rounded-md border border-line-strong text-[12px] text-ink hover:border-slate-400 bg-surface transition-colors cursor-pointer" title="Lọc dữ liệu theo nhãn hàng bạn đang phụ trách">
-            <Building2 className="w-3.5 h-3.5 text-blue-600 mr-1.5 shrink-0" />
+          <label className="relative hidden sm:flex items-center h-[34px] pl-2.5 pr-7 rounded-md border border-line-strong text-2xs text-ink hover:border-ink-3 bg-surface transition-colors cursor-pointer" title="Lọc dữ liệu theo nhãn hàng bạn đang phụ trách">
+            <Building2 className="w-3.5 h-3.5 text-accent mr-1.5 shrink-0" />
             <span className="text-ink-3 mr-1 text-2xs hidden md:inline">Nhãn:</span>
             <select
               aria-label="Lọc theo nhãn hàng"
               value={selectedBrand}
               onChange={(e) => onBrandChange(e.target.value)}
-              className="appearance-none bg-transparent font-semibold text-slate-800 focus:outline-none cursor-pointer pr-1"
+              className="appearance-none bg-transparent font-medium text-ink focus:outline-none cursor-pointer pr-1"
             >
               <option value="ALL">
-                {['ADMIN', 'MANAGER'].includes(currentUser.role)
+                {['ADMIN', 'MANAGER', 'GROWTH_MANAGER', 'MEDIA_MANAGER'].includes(currentUser.role)
                   ? 'Tất cả nhãn hàng'
-                  : `Tất cả brand phụ trách (${userAssignedBrands.filter(b => b !== 'Tất cả nhãn hàng').length})`}
+                  : `Tất cả nhãn phụ trách (${userAssignedBrands.filter(b => b !== 'Tất cả nhãn hàng').length})`}
               </option>
               {userAssignedBrands
                 .filter(b => b !== 'Tất cả nhãn hàng')
@@ -100,17 +97,13 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
           </label>
         )}
 
-
-
-        {/* Nút thao tác nhanh chuyển sang Content Angle khi ở tab Kịch bản */}
         {activeTab === 'content' && onNavigateTab && (
           <button
             onClick={() => onNavigateTab('content-angles')}
-            className="btn-md bg-accent-soft hover:bg-sunken text-accent border border-line transition-colors flex items-center gap-1.5"
+            className="h-[34px] px-3 rounded-md bg-accent-soft hover:bg-sunken text-accent border border-line text-[13px] font-medium transition-colors flex items-center gap-1.5"
           >
-            <Sparkles className="w-3.5 h-3.5 text-accent" />
-            <span className="hidden sm:inline font-semibold">Góc tiếp cận theo SP</span>
-            <ArrowRight className="w-3 h-3 text-accent" />
+            <span className="hidden sm:inline">Góc nội dung</span>
+            <ArrowRight className="w-3.5 h-3.5 text-accent" />
           </button>
         )}
 
@@ -119,3 +112,4 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
     </header>
   );
 };
+

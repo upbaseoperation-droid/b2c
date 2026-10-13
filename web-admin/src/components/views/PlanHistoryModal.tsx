@@ -61,9 +61,9 @@ export const PlanHistoryModal: React.FC<PlanHistoryModalProps> = ({
   // Đồng bộ vai trò theo tài khoản đăng nhập thực tế
   React.useEffect(() => {
     if (!currentUser) return;
-    if (currentUser.role === 'GROWTH_MEMBER') {
+    if (currentUser.role === 'GROWTH_MEMBER' || currentUser.role === 'GROWTH_MANAGER') {
       setCurrentRole('GROWTH');
-    } else if (currentUser.role === 'MEDIA_MEMBER') {
+    } else if (currentUser.role === 'MEDIA_MEMBER' || currentUser.role === 'MEDIA_MANAGER') {
       setCurrentRole('MEDIA');
     } else if (['ADMIN', 'MANAGER'].includes(currentUser.role)) {
       setCurrentRole('LEAD');
@@ -80,7 +80,7 @@ export const PlanHistoryModal: React.FC<PlanHistoryModalProps> = ({
         {
           id: `SNAP-${plan.id}-V1`,
           versionCode: plan.currentVersionCode || 'v1.0',
-          versionName: 'Bản chốt đầu tháng (Baseline)',
+          versionName: 'Bản chốt đầu tháng',
           status: 'LOCKED',
           createdAt: plan.createdAt || new Date().toISOString(),
           createdBy: plan.growthPic || 'Growth Lead',
@@ -111,7 +111,7 @@ export const PlanHistoryModal: React.FC<PlanHistoryModalProps> = ({
         <div className="bg-white p-5 border-b border-slate-200 flex items-start justify-between gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="px-2.5 py-0.5 rounded-full text-2xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
+              <span className="px-2.5 py-0.5 rounded-full text-2xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
                 {plan.month} • {plan.week}
               </span>
               <span className="font-semibold text-xs text-slate-700">
@@ -121,7 +121,7 @@ export const PlanHistoryModal: React.FC<PlanHistoryModalProps> = ({
               <span className="text-xs text-slate-400">• Booking: <strong className="text-slate-800">{plan.pic}</strong></span>
               <span className="text-xs text-slate-400">• Media: <strong className="text-blue-800">{plan.mediaPic || 'Phan Thành Đạt'}</strong></span>
             </div>
-            <h3 className="font-bold text-base text-slate-900 line-clamp-1">
+            <h3 className="font-semibold text-base text-slate-900 line-clamp-1">
               {plan.title}
             </h3>
           </div>
@@ -142,8 +142,8 @@ export const PlanHistoryModal: React.FC<PlanHistoryModalProps> = ({
               <span>Ngân sách: <strong className="text-slate-900">{formatVndShort(plan.totalTargetBudget)}</strong></span>
             </div>
             <div className="flex items-center gap-1.5 text-slate-600">
-              <span className="text-blue-600 font-bold">Ads:</span>
-              <span>Gói Ads tổng: <strong className="text-indigo-700">{formatVndShort(plan.budgetAdsTotal || 0)}</strong></span>
+              <span className="text-blue-600 font-semibold">Ads:</span>
+              <span>Gói Ads tổng: <strong className="text-blue-700">{formatVndShort(plan.budgetAdsTotal || 0)}</strong></span>
             </div>
             <div className="flex items-center gap-1.5 text-slate-600">
               <TrendingUp className="w-3.5 h-3.5 text-emerald-600" />
@@ -161,7 +161,7 @@ export const PlanHistoryModal: React.FC<PlanHistoryModalProps> = ({
               onClick={() => setActiveTab('APPROVAL_FLOW')}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
                 activeTab === 'APPROVAL_FLOW'
-                  ? 'bg-white text-indigo-700 shadow-2xs font-bold'
+                  ? 'bg-white text-blue-700 shadow-2xs'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
@@ -172,18 +172,18 @@ export const PlanHistoryModal: React.FC<PlanHistoryModalProps> = ({
               onClick={() => setActiveTab('VERSION_HISTORY')}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
                 activeTab === 'VERSION_HISTORY'
-                  ? 'bg-white text-purple-700 shadow-2xs font-bold'
+                  ? 'bg-white text-blue-700 shadow-2xs'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <Layers className="w-3.5 h-3.5 text-purple-600" />
+              <Layers className="w-3.5 h-3.5 text-blue-600" />
               <span>Các Phiên Bản Chốt ({snapshots.length})</span>
             </button>
             <button
               onClick={() => setActiveTab('DISCUSSION')}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
                 activeTab === 'DISCUSSION'
-                  ? 'bg-white text-indigo-700 shadow-2xs font-bold'
+                  ? 'bg-white text-blue-700 shadow-2xs'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
@@ -212,17 +212,17 @@ export const PlanHistoryModal: React.FC<PlanHistoryModalProps> = ({
               <div className="bg-white p-4 rounded-2xl border border-slate-200 space-y-3">
                 <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                   <div className="flex items-center gap-2">
-                    <Layers className="w-5 h-5 text-purple-600" />
+                    <Layers className="w-5 h-5 text-blue-600" />
                     <div>
-                      <h4 className="font-bold text-sm text-slate-900">
-                        Danh Sách Các Phiên Bản Kế Hoạch Đã Chốt (Version Snapshots)
+                      <h4 className="font-semibold text-sm text-slate-900">
+                        Danh sách các phiên bản kế hoạch đã chốt
                       </h4>
                       <p className="text-2xs text-slate-500">
-                        Mỗi phiên bản chốt là một bản chụp bất biến (Immutable), làm căn cứ pháp lý đối soát nghiệm thu và P&L
+                        Mỗi phiên bản chốt là một bản chụp bất biến, làm căn cứ pháp lý đối soát nghiệm thu và P&L
                       </p>
                     </div>
                   </div>
-                  <span className="text-2xs font-bold px-2.5 py-1 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
+                  <span className="text-2xs font-semibold px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
                     {snapshots.length} Phiên bản ghi nhận
                   </span>
                 </div>
@@ -237,19 +237,19 @@ export const PlanHistoryModal: React.FC<PlanHistoryModalProps> = ({
                         onClick={() => setSelectedSnapshotId(snap.id)}
                         className={`p-3.5 rounded-xl border cursor-pointer transition-all ${
                           isSelected
-                            ? 'bg-purple-50/80 border-purple-400 ring-2 ring-purple-500/20 shadow-xs'
+                            ? 'bg-blue-50/80 border-blue-400 ring-2 ring-blue-500/20 shadow-xs'
                             : 'bg-white hover:bg-slate-50 border-slate-200'
                         }`}
                       >
                         <div className="flex items-center justify-between">
-                          <span className="font-bold text-xs text-purple-700 bg-purple-100/70 px-2 py-0.5 rounded-md">
+                          <span className="font-semibold text-xs text-blue-700 bg-blue-100/70 px-2 py-0.5 rounded-md">
                             {snap.versionCode}
                           </span>
                           <span className="text-2xs text-slate-400">
                             {new Date(snap.createdAt).toLocaleDateString('vi-VN')}
                           </span>
                         </div>
-                        <div className="font-bold text-xs text-slate-800 mt-2 line-clamp-1">
+                        <div className="font-semibold text-xs text-slate-800 mt-2 line-clamp-1">
                           {snap.versionName}
                         </div>
                         <div className="text-2xs text-slate-500 mt-1 line-clamp-2">
@@ -261,7 +261,7 @@ export const PlanHistoryModal: React.FC<PlanHistoryModalProps> = ({
                         </div>
                         <div className="flex items-center justify-between text-2xs">
                           <span className="text-slate-500">Gói Ads tổng:</span>
-                          <strong className="text-indigo-700">{formatVndShort(snap.budgetAdsTotal)}</strong>
+                          <strong className="text-blue-700">{formatVndShort(snap.budgetAdsTotal)}</strong>
                         </div>
                       </div>
                     );
@@ -274,8 +274,8 @@ export const PlanHistoryModal: React.FC<PlanHistoryModalProps> = ({
                 <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                   <div className="flex items-center gap-2">
                     <Lock className="w-4 h-4 text-emerald-600" />
-                    <h5 className="font-bold text-xs text-slate-900 uppercase tracking-wider">
-                      Chi Tiết Bản Chụp: {activeSnapshot.versionCode} — {activeSnapshot.versionName}
+                    <h5 className="font-semibold text-xs text-slate-900">
+                      Chi tiết bản chụp: {activeSnapshot.versionCode} — {activeSnapshot.versionName}
                     </h5>
                   </div>
                   <span className="text-2xs text-slate-400 font-medium">
@@ -286,30 +286,30 @@ export const PlanHistoryModal: React.FC<PlanHistoryModalProps> = ({
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
                   <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
                     <span className="text-2xs text-slate-500 block mb-0.5">Tổng ngân sách:</span>
-                    <strong className="text-sm font-bold text-slate-900">{formatVndShort(activeSnapshot.totalTargetBudget)}</strong>
+                    <strong className="text-sm font-semibold text-slate-900">{formatVndShort(activeSnapshot.totalTargetBudget)}</strong>
                   </div>
-                  <div className="bg-indigo-50/50 p-3 rounded-xl border border-indigo-200">
-                    <span className="text-2xs text-indigo-600 block mb-0.5">Gói Ads tổng (Media):</span>
-                    <strong className="text-sm font-bold text-indigo-800">{formatVndShort(activeSnapshot.budgetAdsTotal)}</strong>
+                  <div className="bg-blue-50/50 p-3 rounded-xl border border-blue-200">
+                    <span className="text-2xs text-blue-600 block mb-0.5">Gói Ads tổng (Media):</span>
+                    <strong className="text-sm font-semibold text-blue-800">{formatVndShort(activeSnapshot.budgetAdsTotal)}</strong>
                   </div>
                   <div className="bg-emerald-50/50 p-3 rounded-xl border border-emerald-200">
                     <span className="text-2xs text-emerald-600 block mb-0.5">Mục tiêu NMV:</span>
-                    <strong className="text-sm font-bold text-emerald-800">{formatVndShort(activeSnapshot.targetGmv)}</strong>
+                    <strong className="text-sm font-semibold text-emerald-800">{formatVndShort(activeSnapshot.targetGmv)}</strong>
                   </div>
                   <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
                     <span className="text-2xs text-slate-500 block mb-0.5">Tổng số nội dung:</span>
-                    <strong className="text-sm font-bold text-slate-900">{activeSnapshot.totalTargetContents} video</strong>
+                    <strong className="text-sm font-semibold text-slate-900">{activeSnapshot.totalTargetContents} video</strong>
                   </div>
                 </div>
 
                 {/* BẰNG CHỨNG KÝ DUYỆT ĐIỆN TỬ */}
                 <div className="space-y-2">
-                  <div className="text-2xs font-bold text-slate-500 uppercase tracking-wider">
-                    Bằng Chứng Ký Duyệt Đồng Thuận Tại Thời Điểm Chốt:
+                  <div className="text-2xs font-semibold text-slate-500">
+                    Bằng chứng ký duyệt đồng thuận tại thời điểm chốt:
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 text-xs">
                     <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
-                      <div className="font-bold text-slate-800 flex items-center gap-1">
+                      <div className="font-semibold text-slate-800 flex items-center gap-1">
                         <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                         Growth: {activeSnapshot.signOffRecord?.growth?.confirmedBy || 'Trần Thị Ánh'}
                       </div>
@@ -318,7 +318,7 @@ export const PlanHistoryModal: React.FC<PlanHistoryModalProps> = ({
                       </p>
                     </div>
                     <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
-                      <div className="font-bold text-slate-800 flex items-center gap-1">
+                      <div className="font-semibold text-slate-800 flex items-center gap-1">
                         <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                         Marketing B2C: {activeSnapshot.signOffRecord?.booking?.confirmedBy || plan.pic}
                       </div>
@@ -327,7 +327,7 @@ export const PlanHistoryModal: React.FC<PlanHistoryModalProps> = ({
                       </p>
                     </div>
                     <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
-                      <div className="font-bold text-slate-800 flex items-center gap-1">
+                      <div className="font-semibold text-slate-800 flex items-center gap-1">
                         <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                         Media: {activeSnapshot.signOffRecord?.media?.confirmedBy || 'Phan Thành Đạt'}
                       </div>
@@ -336,7 +336,7 @@ export const PlanHistoryModal: React.FC<PlanHistoryModalProps> = ({
                       </p>
                     </div>
                     <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
-                      <div className="font-bold text-slate-800 flex items-center gap-1">
+                      <div className="font-semibold text-slate-800 flex items-center gap-1">
                         <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                         Trưởng phòng: {activeSnapshot.signOffRecord?.leadB2c?.confirmedBy || 'Vân Ngọc'}
                       </div>

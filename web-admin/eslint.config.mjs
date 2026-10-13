@@ -9,46 +9,11 @@ const EMOJI = "[\\u{1F300}-\\u{1FAFF}\\u{2600}-\\u{26FF}\\u{2705}\\u{2728}\\u{27
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
-  {
-    files: ["src/components/**/*.tsx", "src/app/**/*.tsx"],
-    rules: {
-      "no-restricted-syntax": [
-        "warn",
-        {
-          selector: `JSXAttribute[name.name='className'] Literal[value=/${DS_CLASS}/]`,
-          message: "Không dùng class ngoài design system (chữ < 12px, gradient, font-bold, hiệu ứng nhấp nháy, họ màu phụ). Xem DESIGN_SYSTEM.md.",
-        },
-        {
-          selector: `JSXAttribute[name.name='className'] TemplateElement[value.raw=/${DS_CLASS}/]`,
-          message: "Không dùng class ngoài design system (chữ < 12px, gradient, font-bold, hiệu ứng nhấp nháy, họ màu phụ). Xem DESIGN_SYSTEM.md.",
-        },
-        {
-          selector: `JSXText[value=/${EMOJI}/u]`,
-          message: "Không dùng emoji trong giao diện. Dùng icon lucide-react. Xem DESIGN_SYSTEM.md.",
-        },
-      ],
-    },
-  },
-  // Màn hình đã chuyển xong sang design system: vi phạm là lỗi, không phải cảnh báo.
-  // Chuyển xong màn nào thì thêm file vào đây (DESIGN_SYSTEM.md §8).
+  // Toàn bộ màn hình và thành phần đã chuyển sang design system: vi phạm là lỗi (error).
   {
     files: [
-      "src/components/ui/**/*.tsx",
-      "src/components/TopHeader.tsx",
-      "src/app/login/page.tsx",
-      "src/components/views/BookingView.tsx",
-      "src/components/views/KocMasterDataView.tsx",
-      "src/components/koc/**/*.tsx",
-      "src/components/KocProfileModal.tsx",
-      "src/components/views/ContractManagementView.tsx",
-      "src/components/contracts/**/*.tsx",
-      "src/components/views/BrandProfilesView.tsx",
-      "src/components/brands/**/*.tsx",
-      "src/components/views/MonthlyPlanHub.tsx",
-      "src/components/views/StoreManagementView.tsx",
-      "src/components/stores/**/*.tsx",
-      "src/components/views/master-data/StoreDetailModal.tsx",
-      "src/components/views/master-data/StoreHandoverModal.tsx",
+      "src/components/**/*.tsx",
+      "src/app/**/*.tsx",
     ],
     rules: {
       "no-restricted-syntax": [

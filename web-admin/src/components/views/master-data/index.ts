@@ -6,3 +6,4 @@ export * from './StaffMasterView';
 export * from './StaffSearchSelect';
 export * from './StoreDetailModal';
 export * from './StoreHandoverModal';
+export * from './ContributorsMasterView';

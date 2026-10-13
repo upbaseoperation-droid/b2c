@@ -2,18 +2,16 @@
 
 import React, { useState } from 'react';
 import { formatVndShort } from '../../lib/format';
+import { Tabs, PageActions, Button } from '../ui';
 import {
   Target,
   ArrowRight,
   CheckCircle2,
-  Sparkles,
   Send,
   DollarSign,
   TrendingUp,
   Users,
-  Shield,
   ShieldAlert,
-  ShieldCheck,
   AlertTriangle,
   AlertOctagon,
   FileText,
@@ -24,21 +22,11 @@ import {
   Check,
   Clock,
   ExternalLink,
-  ChevronRight,
-  ThumbsUp,
-  ThumbsDown,
   Building,
-  Layers,
-  HelpCircle,
-  BarChart3,
   Flame,
-  Award,
-  BookOpen,
   Filter,
   X,
-  RefreshCw,
   Video,
-  Info,
   FolderOpen
 } from 'lucide-react';
 import {
@@ -48,8 +36,6 @@ import {
   BrandRetainerHealth,
   BlacklistKeyword,
   BlacklistSeverity,
-  HeroSkuItem,
-  SalaryGrade,
   AiScriptAnalysisResult
 } from '../../lib/types';
 import {
@@ -80,14 +66,14 @@ export const BrandView: React.FC<BrandViewProps> = ({
   // Navigation Tab State
   const [activeTab, setActiveTab] = useState<BrandViewTab>('BRIEF_STUDIO');
 
-  // Tab 1: Brief Studio State
+  // Tab 1: Brief State
   const [campaigns, setCampaigns] = useState<CampaignItem[]>(INITIAL_CAMPAIGNS);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState<'ALL' | 'ACTIVE' | 'UPCOMING' | 'DRAFT'>('ALL');
   const [searchCampaign, setSearchCampaign] = useState('');
   const [handoffSuccessModal, setHandoffSuccessModal] = useState<CampaignItem | null>(null);
 
-  // Tab 2: Brand Guideline & Asset Hub State
+  // Tab 2: Brand Guideline & Asset State
   const [guidelines, setGuidelines] = useState<BrandGuidelineAsset[]>(INITIAL_BRAND_GUIDELINES);
   const [selectedBrandName, setSelectedBrandName] = useState<string>(
     INITIAL_BRAND_GUIDELINES[0]?.brandName || 'Senka'
@@ -104,14 +90,14 @@ export const BrandView: React.FC<BrandViewProps> = ({
   const [newKeywordRationale, setNewKeywordRationale] = useState('');
   const [newKeywordAlt, setNewKeywordAlt] = useState('');
 
-  // Tab 3: Brand Approval Gatekeeper State
+  // Tab 3: Brand Approval State
   const [approvalQueue, setApprovalQueue] = useState<BrandApprovalQueueItem[]>(INITIAL_BRAND_APPROVAL_QUEUE);
   const [approvalSubTab, setApprovalSubTab] = useState<'ROUND_1_KOC' | 'ROUND_2_SCRIPT'>('ROUND_1_KOC');
   const [rejectModalItem, setRejectModalItem] = useState<BrandApprovalQueueItem | null>(null);
   const [rejectReasonSelection, setRejectReasonSelection] = useState<string>('Lệch định vị phong cách thương hiệu');
   const [rejectCustomNote, setRejectCustomNote] = useState('');
 
-  // AI Script Modal in Approval Gate
+  // Script Check Modal in Approval Gate
   const [aiScanModalData, setAiScanModalData] = useState<{
     item: BrandApprovalQueueItem;
     result: AiScriptAnalysisResult;
@@ -132,7 +118,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
   const currentGuideline = guidelines.find(g => g.brandName === selectedBrandName) || guidelines[0];
 
   // ----------------------------------------------------
-  // HANDLERS FOR BRIEF STUDIO
+  // HANDLERS FOR BRIEF
   // ----------------------------------------------------
   const handleCreateCampaign = (newCamp: CampaignItem) => {
     setCampaigns(prev => [newCamp, ...prev]);
@@ -145,7 +131,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
       briefStatus: 'HANDED_OFF_TO_CONTENT',
       handoffAt: new Date().toISOString(),
       handoffSlaHours: 24,
-      contentPic: c.contentPic || 'Quỳnh Như (Content Lead)'
+      contentPic: c.contentPic || 'Quỳnh Như'
     } : c));
     const targetCamp = campaigns.find(c => c.id === campId);
     if (targetCamp) {
@@ -188,7 +174,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
       severity: newKeywordSeverity,
       rationale: newKeywordRationale || 'Quy chuẩn bảo vệ thương hiệu nội bộ Upbase.',
       alternativeSuggestion: newKeywordAlt.trim() || undefined,
-      addedBy: 'Brand Manager',
+      addedBy: 'Phụ trách thương hiệu',
       addedAt: new Date().toLocaleDateString('vi-VN')
     };
 
@@ -278,88 +264,40 @@ export const BrandView: React.FC<BrandViewProps> = ({
 
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
+      <PageActions>
+        <Button variant="primary" icon={Plus} onClick={() => setIsCreateModalOpen(true)}>
+          Soạn brief mới
+        </Button>
+      </PageActions>
+
       {/* TOP WORKSPACE NAVIGATION TABS */}
-      <div className="border-b border-slate-200 pb-3">
-        <div className="flex items-center gap-2 overflow-x-auto pb-1">
-          <button
-            onClick={() => setActiveTab('BRIEF_STUDIO')}
-            className={`px-4 py-2 text-xs font-semibold rounded-md transition flex items-center gap-2 whitespace-nowrap ${
-              activeTab === 'BRIEF_STUDIO'
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-            }`}
-          >
-            <Target className="w-3.5 h-3.5" />
-            <span>Studio soạn thảo & Handoff brief</span>
-            <span className={`text-2xs px-1.5 py-0.2 rounded-full font-semibold ${
-              activeTab === 'BRIEF_STUDIO' ? 'bg-blue-700 text-white' : 'bg-slate-100 text-slate-600'
-            }`}>
-              {campaigns.length}
-            </span>
-          </button>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Tabs<BrandViewTab>
+          value={activeTab}
+          onChange={setActiveTab}
+          items={[
+            { key: 'BRIEF_STUDIO', label: 'Soạn & bàn giao brief', count: campaigns.length },
+            { key: 'GUIDELINE_HUB', label: 'Quy chuẩn & từ khóa cấm', count: guidelines.length },
+            { key: 'APPROVAL_GATE', label: 'Thẩm định KOC & kịch bản', count: pendingApprovals.length || undefined },
+            { key: 'RETAINER_HEALTH', label: 'Hợp đồng & hiệu quả nhãn hàng' },
+          ]}
+        />
 
+        {onNavigateToCtvHub && (
           <button
-            onClick={() => setActiveTab('GUIDELINE_HUB')}
-            className={`px-4 py-2 text-xs font-semibold rounded-md transition flex items-center gap-2 whitespace-nowrap ${
-              activeTab === 'GUIDELINE_HUB'
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-            }`}
+            onClick={onNavigateToCtvHub}
+            className="px-3.5 py-2 text-xs font-semibold rounded-md transition flex items-center gap-1.5 whitespace-nowrap bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 shrink-0"
+            title="Mở danh sách cộng tác viên sản xuất video kênh tự xây"
           >
-            <ShieldCheck className="w-3.5 h-3.5" />
-            <span>Brand Guideline & Blacklist Hub</span>
-            <span className={`text-2xs px-1.5 py-0.2 rounded-full font-semibold ${
-              activeTab === 'GUIDELINE_HUB' ? 'bg-blue-700 text-white' : 'bg-slate-100 text-slate-600'
-            }`}>
-              {guidelines.length} Nhãn
-            </span>
+            <Video className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Cộng tác viên kênh tự xây</span>
+            <ArrowRight className="w-3.5 h-3.5 text-emerald-600" />
           </button>
-
-          <button
-            onClick={() => setActiveTab('APPROVAL_GATE')}
-            className={`px-4 py-2 text-xs font-semibold rounded-md transition flex items-center gap-2 whitespace-nowrap ${
-              activeTab === 'APPROVAL_GATE'
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-            }`}
-          >
-            <Award className="w-3.5 h-3.5" />
-            <span>Cổng thẩm định KOC & kịch bản</span>
-            {pendingApprovals.length > 0 && (
-              <span className="text-2xs px-1.5 py-0.2 rounded-full font-semibold bg-amber-500 text-white">
-                {pendingApprovals.length} chờ
-              </span>
-            )}
-          </button>
-
-          <button
-            onClick={() => setActiveTab('RETAINER_HEALTH')}
-            className={`px-4 py-2 text-xs font-semibold rounded-md transition flex items-center gap-2 whitespace-nowrap ${
-              activeTab === 'RETAINER_HEALTH'
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-            }`}
-          >
-            <BarChart3 className="w-3.5 h-3.5" />
-            <span>Sức khỏe hợp đồng & Retainer P&L</span>
-          </button>
-
-          {onNavigateToCtvHub && (
-            <button
-              onClick={onNavigateToCtvHub}
-              className="ml-auto px-3.5 py-2 text-xs font-semibold rounded-md transition flex items-center gap-1.5 whitespace-nowrap bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 shrink-0"
-              title="Mở Hub làm việc với Cộng tác viên sản xuất video Self-Channel"
-            >
-              <Video className="w-3.5 h-3.5 text-emerald-600" />
-              <span>Hub Cộng tác viên (CTV)</span>
-              <ArrowRight className="w-3.5 h-3.5 text-emerald-600" />
-            </button>
-          )}
-        </div>
+        )}
       </div>
 
       {/* ========================================================================= */}
-      {/* TAB 1: STUDIO SOẠN THẢO & BÀN GIAO BRIEF                                  */}
+      {/* TAB 1: SOẠN THẢO & BÀN GIAO BRIEF                                         */}
       {/* ========================================================================= */}
       {activeTab === 'BRIEF_STUDIO' && (
         <div className="space-y-6">
@@ -386,12 +324,12 @@ export const BrandView: React.FC<BrandViewProps> = ({
             </div>
 
             <div className="card-enterprise p-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-md bg-purple-50 text-purple-600 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-md bg-accent-soft text-accent flex items-center justify-center">
                 <TrendingUp className="w-5 h-5" />
               </div>
               <div>
                 <p className="text-2xs text-slate-500 font-medium">GMV đã ghi nhận</p>
-                <p className="text-lg font-semibold text-purple-700">{formatVndShort(totalCampaignGmv)}</p>
+                <p className="text-lg font-semibold text-accent">{formatVndShort(totalCampaignGmv)}</p>
               </div>
             </div>
 
@@ -400,8 +338,8 @@ export const BrandView: React.FC<BrandViewProps> = ({
                 <Clock className="w-5 h-5" />
               </div>
               <div>
-                <p className="text-2xs text-slate-500 font-medium">SLA Bàn Giao Content</p>
-                <p className="text-lg font-semibold text-slate-900">24h Cam Kết</p>
+                <p className="text-2xs text-slate-500 font-medium">SLA bàn giao nội dung</p>
+                <p className="text-lg font-semibold text-slate-900">24h cam kết</p>
               </div>
             </div>
           </div>
@@ -412,15 +350,15 @@ export const BrandView: React.FC<BrandViewProps> = ({
               <span className="text-slate-400 text-xs flex items-center gap-1">
                 <Filter className="w-3.5 h-3.5" /> Lọc:
               </span>
-              {[
+              {([
                 { key: 'ALL', label: 'Tất cả' },
-                { key: 'ACTIVE', label: 'Đang Thực Thi' },
+                { key: 'ACTIVE', label: 'Đang chạy' },
                 { key: 'UPCOMING', label: 'Kế hoạch sắp chạy' },
                 { key: 'DRAFT', label: 'Brief chờ bàn giao' },
-              ].map(tab => (
+              ] as const).map(tab => (
                 <button
                   key={tab.key}
-                  onClick={() => setSelectedFilter(tab.key as any)}
+                  onClick={() => setSelectedFilter(tab.key)}
                   className={`px-3 py-1 rounded-md font-medium transition ${
                     selectedFilter === tab.key
                       ? 'bg-blue-600 text-white font-semibold'
@@ -437,21 +375,12 @@ export const BrandView: React.FC<BrandViewProps> = ({
                 <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
-                  placeholder="Tìm mã code, chiến dịch, brand..."
+                  placeholder="Tìm mã chiến dịch, thương hiệu..."
                   value={searchCampaign}
                   onChange={(e) => setSearchCampaign(e.target.value)}
                   className="w-full bg-slate-50 border border-slate-200 rounded-md pl-8 pr-3 py-1.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white"
                 />
               </div>
-
-              <button
-                type="button"
-                onClick={() => setIsCreateModalOpen(true)}
-                className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-md shadow-xs transition flex items-center gap-1.5 shrink-0"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>Soạn thảo brief mới</span>
-              </button>
             </div>
           </div>
 
@@ -477,7 +406,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
                           ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                           : 'bg-amber-50 text-amber-700 border border-amber-200'
                       }`}>
-                        {c.status === 'ACTIVE' ? 'Đang Thực Thi' : 'Kế Hoạch'}
+                        {c.status === 'ACTIVE' ? 'Đang chạy' : 'Kế hoạch'}
                       </span>
                     </div>
 
@@ -491,22 +420,22 @@ export const BrandView: React.FC<BrandViewProps> = ({
                     {/* Big Idea & Strategy Box */}
                     <div className="card-inner-box p-3 space-y-2 text-xs">
                       <div>
-                        <span className="text-slate-500 font-semibold">Big Idea:</span>{' '}
+                        <span className="text-slate-500 font-semibold">Ý tưởng chủ đạo:</span>{' '}
                         <span className="text-slate-800 font-medium italic">&ldquo;{c.bigIdea}&rdquo;</span>
                       </div>
                       {c.keyMessage && (
                         <div>
-                          <span className="text-slate-500 font-semibold">Key Message:</span>{' '}
+                          <span className="text-slate-500 font-semibold">Thông điệp chính:</span>{' '}
                           <span className="text-slate-800 font-medium">{c.keyMessage}</span>
                         </div>
                       )}
                       <div>
-                        <span className="text-slate-500 font-semibold">Target Persona:</span>{' '}
+                        <span className="text-slate-500 font-semibold">Khách hàng mục tiêu:</span>{' '}
                         <span className="text-slate-700">{c.targetAudience}</span>
                       </div>
                       {c.heroSkus && c.heroSkus.length > 0 && (
                         <div className="flex items-center gap-1.5 flex-wrap pt-1">
-                          <span className="text-slate-500 font-semibold">Hero SKUs:</span>
+                          <span className="text-slate-500 font-semibold">Sản phẩm chủ lực:</span>
                           {c.heroSkus.map((sku, idx) => (
                             <span key={idx} className="px-2 py-0.5 bg-white border border-slate-200 rounded text-2xs text-slate-700 font-medium">
                               {sku}
@@ -520,7 +449,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
                     <div className="space-y-2 pt-1 text-xs">
                       {c.targetCir && (
                         <div className="flex items-center justify-between text-2xs pb-1 border-b border-slate-100">
-                          <span className="text-slate-500">Mục tiêu CIR (Chi phí / Doanh thu):</span>
+                          <span className="text-slate-500">Mục tiêu CIR (chi phí / doanh thu):</span>
                           <span className="font-semibold text-blue-700">{c.targetCir}%</span>
                         </div>
                       )}
@@ -528,7 +457,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
                       <div>
                         <div className="flex justify-between text-2xs mb-1">
                           <span className="text-slate-500">
-                            Ngân sách: <strong className="text-slate-800">{c.spentBudget.toLocaleString('vi-VN')} đ</strong> / {c.budget.toLocaleString('vi-VN')} đ
+                            Ngân sách: <strong className="text-slate-800">{formatVndShort(c.spentBudget)}</strong> / {formatVndShort(c.budget)}
                           </span>
                           <span className="font-semibold text-blue-600">{budgetPercent}%</span>
                         </div>
@@ -540,7 +469,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
                       <div>
                         <div className="flex justify-between text-2xs mb-1">
                           <span className="text-slate-500">
-                            GMV Đạt: <strong className="text-emerald-700">{c.currentGmv.toLocaleString('vi-VN')} đ</strong> / {c.targetGmv.toLocaleString('vi-VN')} đ
+                            GMV đạt: <strong className="text-emerald-700">{formatVndShort(c.currentGmv)}</strong> / {formatVndShort(c.targetGmv)}
                           </span>
                           <span className="font-semibold text-emerald-600">{gmvPercent}%</span>
                         </div>
@@ -551,14 +480,14 @@ export const BrandView: React.FC<BrandViewProps> = ({
                     </div>
                   </div>
 
-                  {/* Handoff Status & SLA Action */}
+                  {/* Status & SLA Action */}
                   <div className="flex items-center justify-between pt-3 border-t border-slate-200 mt-2">
                     <div className="text-xs flex items-center gap-1.5">
                       {c.briefStatus === 'HANDED_OFF_TO_CONTENT' || c.briefStatus === 'IN_PRODUCTION' ? (
                         <>
                           <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                           <span className="text-slate-700 font-medium">
-                            Đã giao Content ({c.contentPic || 'Quỳnh Như'})
+                            Đã bàn giao nội dung ({c.contentPic || 'Quỳnh Như'})
                           </span>
                           <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 text-2xs font-semibold flex items-center gap-1">
                             <Clock className="w-3 h-3" /> Còn 18h SLA
@@ -575,14 +504,14 @@ export const BrandView: React.FC<BrandViewProps> = ({
                     {c.briefStatus === 'DRAFT' ? (
                       <button
                         onClick={() => handleHandoff(c.id)}
-                        className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded shadow-sm flex items-center gap-1.5 transition"
+                        className="px-3 py-1.5 bg-primary hover:bg-primary-hover text-white text-xs font-semibold rounded shadow-sm flex items-center gap-1.5 transition"
                       >
                         <Send className="w-3.5 h-3.5" />
-                        <span>Bàn Giao Content</span>
+                        <span>Bàn giao nội dung</span>
                       </button>
                     ) : (
                       <span className="px-2.5 py-1 bg-slate-100 text-slate-600 rounded text-2xs font-semibold flex items-center gap-1">
-                        <span>Đang Thực Thi</span>
+                        <span>Đang chạy</span>
                       </span>
                     )}
                   </div>
@@ -594,7 +523,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
       )}
 
       {/* ========================================================================= */}
-      {/* TAB 2: BRAND GUIDELINE & ASSET HUB                                        */}
+      {/* TAB 2: QUY CHUẨN THƯƠNG HIỆU & TỪ KHÓA CẤM                               */}
       {/* ========================================================================= */}
       {activeTab === 'GUIDELINE_HUB' && (
         <div className="space-y-6">
@@ -614,7 +543,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
                 }`}
               >
                 <span>{g.brandName}</span>
-                <span className={`text-2xs px-1.5 py-0.2 rounded-full ${
+                <span className={`text-2xs px-1.5 py-0.5 rounded-full ${
                   selectedBrandName === g.brandName ? 'bg-blue-700 text-white' : 'bg-slate-100 text-slate-500'
                 }`}>
                   {g.blacklistKeywords.length} cấm
@@ -632,15 +561,15 @@ export const BrandView: React.FC<BrandViewProps> = ({
                   <span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded text-xs font-semibold">
                     {currentGuideline.category}
                   </span>
-                  <span className="px-2 py-0.5 bg-purple-100 text-purple-800 rounded text-xs font-semibold">
+                  <span className="px-2 py-0.5 bg-accent-soft text-accent rounded text-xs font-semibold">
                     {currentGuideline.toneTag.replace(/_/g, ' ')}
                   </span>
                 </div>
                 <p className="text-xs text-slate-600 mt-1 max-w-3xl">
-                  <strong>Giọng văn & Phong cách:</strong> {currentGuideline.toneOfVoice}
+                  <strong>Giọng văn &amp; phong cách:</strong> {currentGuideline.toneOfVoice}
                 </p>
                 <p className="text-xs text-slate-600 mt-1">
-                  <strong>Quy tắc Logo & Bộ nhận diện:</strong> {currentGuideline.logoRules}
+                  <strong>Quy tắc logo &amp; bộ nhận diện:</strong> {currentGuideline.logoRules}
                 </p>
               </div>
 
@@ -651,7 +580,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
                     className="px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded border border-slate-300 shadow-2xs flex items-center gap-1.5 transition"
                   >
                     <FolderOpen className="w-3.5 h-3.5 text-blue-600" />
-                    <span>Kho tài liệu &amp; Đọc tệp</span>
+                    <span>Kho tài liệu &amp; đọc tệp</span>
                   </button>
                 )}
                 <button
@@ -659,7 +588,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
                   className="px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold rounded shadow-sm flex items-center gap-1.5 transition"
                 >
                   <Plus className="w-3.5 h-3.5" />
-                  <span>Thêm từ khóa Blacklist</span>
+                  <span>Thêm từ khóa cấm</span>
                 </button>
               </div>
             </div>
@@ -671,10 +600,10 @@ export const BrandView: React.FC<BrandViewProps> = ({
               <div>
                 <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
                   <ShieldAlert className="w-4 h-4 text-rose-600" />
-                  <span>Bộ lọc từ khóa cấm & nhạy cảm</span>
+                  <span>Bộ lọc từ khóa cấm &amp; nhạy cảm</span>
                 </h3>
                 <p className="text-xs text-slate-500">
-                  Hệ thống tự động quét kịch bản KOC theo danh mục này trước khi gửi duyệt
+                  Hệ thống đối chiếu kịch bản KOC theo danh mục này trước khi gửi duyệt
                 </p>
               </div>
 
@@ -693,8 +622,8 @@ export const BrandView: React.FC<BrandViewProps> = ({
                       }`}
                     >
                       {sev === 'ALL' ? 'Tất cả' :
-                       sev === 'CRITICAL_BANNED' ? 'Nghiêm Cấm' :
-                       sev === 'COMPETITOR_WARNING' ? 'Đối Thủ' : 'Chính Sách'}
+                       sev === 'CRITICAL_BANNED' ? 'Nghiêm cấm' :
+                       sev === 'COMPETITOR_WARNING' ? 'Đối thủ' : 'Chính sách'}
                     </button>
                   ))}
                 </div>
@@ -718,10 +647,10 @@ export const BrandView: React.FC<BrandViewProps> = ({
                 <thead>
                   <tr className="bg-slate-100 border-b border-slate-200 text-slate-700 font-semibold">
                     <th className="py-2.5 px-4">Từ khóa bị chặn</th>
-                    <th className="py-2.5 px-3">Mức độ & phân loại</th>
-                    <th className="py-2.5 px-4">Lý Do cấm (pháp lý / định vị)</th>
+                    <th className="py-2.5 px-3">Mức độ &amp; phân loại</th>
+                    <th className="py-2.5 px-4">Lý do cấm (pháp lý / định vị)</th>
                     <th className="py-2.5 px-4">Đề xuất thay thế an toàn</th>
-                    <th className="py-2.5 px-3 text-right">Thao Tác</th>
+                    <th className="py-2.5 px-3 text-right">Thao tác</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200">
@@ -742,7 +671,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
                         <td className="py-3 px-3">
                           {kw.severity === 'CRITICAL_BANNED' && (
                             <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-red-100 text-red-800 border border-red-200 flex items-center gap-1 w-fit">
-                              <AlertOctagon className="w-3 h-3 text-red-700" /> Cấm Tuyệt Đối
+                              <AlertOctagon className="w-3 h-3 text-red-700" /> Cấm tuyệt đối
                             </span>
                           )}
                           {kw.severity === 'COMPETITOR_WARNING' && (
@@ -751,8 +680,8 @@ export const BrandView: React.FC<BrandViewProps> = ({
                             </span>
                           )}
                           {kw.severity === 'SENSITIVE_POLICY' && (
-                            <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-purple-100 text-purple-800 border border-purple-200 flex items-center gap-1 w-fit">
-                              <ShieldAlert className="w-3 h-3 text-purple-700" /> Nhạy cảm nền tảng
+                            <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-accent-soft text-accent border border-line flex items-center gap-1 w-fit">
+                              <ShieldAlert className="w-3 h-3 text-accent" /> Nhạy cảm nền tảng
                             </span>
                           )}
                         </td>
@@ -803,7 +732,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
             <div className="card-enterprise p-5 border-emerald-200 bg-emerald-50/20">
               <h4 className="text-xs font-semibold text-emerald-800 flex items-center gap-2 mb-3">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                <span>Quy Chuẩn Hình Ảnh Khuyến Khích (Visual Do&apos;s)</span>
+                <span>Quy chuẩn hình ảnh khuyến khích</span>
               </h4>
               <ul className="space-y-2 text-xs text-slate-700">
                 {currentGuideline.visualDoList.map((item, idx) => (
@@ -818,7 +747,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
             <div className="card-enterprise p-5 border-rose-200 bg-rose-50/20">
               <h4 className="text-xs font-semibold text-rose-800 flex items-center gap-2 mb-3">
                 <AlertTriangle className="w-4 h-4 text-rose-600" />
-                <span>Điều Cấm Kỵ Trong Video / Hình Ảnh (Visual Don&apos;ts)</span>
+                <span>Điều cấm kỵ trong video / hình ảnh</span>
               </h4>
               <ul className="space-y-2 text-xs text-slate-700">
                 {currentGuideline.visualDontList.map((item, idx) => (
@@ -836,7 +765,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
             <div>
               <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
                 <Flame className="w-4 h-4 text-amber-500" />
-                <span>Kho Tri thức sản phẩm chủ lực</span>
+                <span>Kho tri thức sản phẩm chủ lực</span>
               </h3>
               <p className="text-xs text-slate-500">
                 Tài liệu bằng chứng lâm sàng và tồn kho hàng mẫu dành cho KOC nhận booking
@@ -888,7 +817,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
                       rel="noreferrer"
                       className="text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1 hover:underline"
                     >
-                      <span>Xem Gian Hàng</span>
+                      <span>Xem gian hàng</span>
                       <ExternalLink className="w-3 h-3" />
                     </a>
                   </div>
@@ -900,7 +829,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
       )}
 
       {/* ========================================================================= */}
-      {/* TAB 3: CỔNG THẨM ĐỊNH KOC & KỊCH BẢN CUỐI (GATEKEEPER)                     */}
+      {/* TAB 3: THẨM ĐỊNH KOC & KỊCH BẢN CUỐI                                      */}
       {/* ========================================================================= */}
       {activeTab === 'APPROVAL_GATE' && (
         <div className="space-y-6">
@@ -918,7 +847,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
                 <Users className="w-3.5 h-3.5" />
                 <span>Vòng 1: Phê duyệt danh sách KOC</span>
                 {pendingKocCount > 0 && (
-                  <span className="text-2xs px-1.5 py-0.2 rounded-full font-semibold bg-amber-500 text-white">
+                  <span className="text-2xs px-1.5 py-0.5 rounded-full font-semibold bg-amber-500 text-white">
                     {pendingKocCount}
                   </span>
                 )}
@@ -933,9 +862,9 @@ export const BrandView: React.FC<BrandViewProps> = ({
                 }`}
               >
                 <FileText className="w-3.5 h-3.5" />
-                <span>Vòng 2: Phê duyệt kịch bản & góc máy</span>
+                <span>Vòng 2: Phê duyệt kịch bản &amp; góc máy</span>
                 {pendingScriptCount > 0 && (
-                  <span className="text-2xs px-1.5 py-0.2 rounded-full font-semibold bg-amber-500 text-white">
+                  <span className="text-2xs px-1.5 py-0.5 rounded-full font-semibold bg-amber-500 text-white">
                     {pendingScriptCount}
                   </span>
                 )}
@@ -943,7 +872,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
             </div>
 
             <div className="text-xs text-slate-500">
-              SLA phản hồi Brand: <strong className="text-blue-700">24h - 48h</strong>
+              SLA phản hồi nhãn hàng: <strong className="text-blue-700">24h – 48h</strong>
             </div>
           </div>
 
@@ -954,14 +883,14 @@ export const BrandView: React.FC<BrandViewProps> = ({
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
                     <tr className="bg-slate-100 border-b border-slate-200 text-slate-700 font-semibold">
-                      <th className="py-2.5 px-4">KOC & Kênh</th>
-                      <th className="py-2.5 px-3">Nhãn hàng & mã deal</th>
-                      <th className="py-2.5 px-3">Khung Lương</th>
-                      <th className="py-2.5 px-3">Giá Net Booking</th>
+                      <th className="py-2.5 px-4">KOC &amp; kênh</th>
+                      <th className="py-2.5 px-3">Nhãn hàng &amp; mã deal</th>
+                      <th className="py-2.5 px-3">Khung lương</th>
+                      <th className="py-2.5 px-3">Giá net booking</th>
                       <th className="py-2.5 px-3">Tệp kênh</th>
                       <th className="py-2.5 px-3">SLA còn lại</th>
-                      <th className="py-2.5 px-3">Trạng Thái</th>
-                      <th className="py-2.5 px-4 text-right">Quyết định Brand</th>
+                      <th className="py-2.5 px-3">Trạng thái</th>
+                      <th className="py-2.5 px-4 text-right">Quyết định</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200">
@@ -971,6 +900,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
                         <tr key={item.id} className="hover:bg-slate-50 transition">
                           <td className="py-3 px-4">
                             <div className="flex items-center gap-2.5">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
                               <img
                                 src={item.avatarUrl}
                                 alt={item.kocName}
@@ -995,7 +925,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
                             <p className="font-mono text-2xs text-slate-500">{item.dealCode}</p>
                           </td>
                           <td className="py-3 px-3">
-                            <span className="font-mono px-2 py-0.5 rounded font-semibold text-xs bg-purple-50 text-purple-700 border border-purple-200">
+                            <span className="font-mono px-2 py-0.5 rounded font-semibold text-xs bg-accent-soft text-accent border border-line">
                               {item.salaryGrade}
                             </span>
                           </td>
@@ -1013,17 +943,17 @@ export const BrandView: React.FC<BrandViewProps> = ({
                           <td className="py-3 px-3">
                             {item.status === 'PENDING' && (
                               <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-amber-50 text-amber-800 border border-amber-200">
-                                Chờ Brand Duyệt
+                                Chờ duyệt
                               </span>
                             )}
                             {item.status === 'APPROVED' && (
                               <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1 w-fit">
-                                <CheckCircle2 className="w-3 h-3" /> Đã Phê Duyệt
+                                <CheckCircle2 className="w-3 h-3" /> Đã duyệt
                               </span>
                             )}
                             {item.status === 'REJECTED' && (
                               <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-rose-50 text-rose-800 border border-rose-200">
-                                Đã Từ Chối
+                                Đã từ chối
                               </span>
                             )}
                           </td>
@@ -1042,7 +972,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
                                   className="px-2.5 py-1 bg-white hover:bg-rose-50 text-rose-600 border border-rose-300 rounded font-semibold text-xs transition flex items-center gap-1"
                                 >
                                   <X className="w-3 h-3" />
-                                  <span>Từ Chối</span>
+                                  <span>Từ chối</span>
                                 </button>
                               </div>
                             ) : (
@@ -1066,6 +996,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
                   <div key={item.id} className="card-enterprise p-5 space-y-4 bg-white">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
                       <div className="flex items-center gap-3">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={item.avatarUrl}
                           alt={item.kocName}
@@ -1080,7 +1011,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
                             <span className="text-xs text-slate-500 font-medium">Nhãn: {item.brandName}</span>
                           </div>
                           <p className="text-xs text-slate-500 mt-0.5">
-                            Mã Deal: <span className="font-mono text-slate-700 font-semibold">{item.dealCode}</span> | Người nộp:{' '}
+                            Mã deal: <span className="font-mono text-slate-700 font-semibold">{item.dealCode}</span> | Người nộp:{' '}
                             <span className="font-medium text-slate-700">{item.submittedBy}</span> lúc {item.submittedAt}
                           </p>
                         </div>
@@ -1088,17 +1019,17 @@ export const BrandView: React.FC<BrandViewProps> = ({
 
                       <div className="flex items-center gap-2">
                         <span className="flex items-center gap-1 text-xs font-semibold text-amber-700 bg-amber-50 px-2.5 py-1 rounded border border-amber-200">
-                          <Clock className="w-3.5 h-3.5" /> SLA Còn {item.remainingSlaHours}h
+                          <Clock className="w-3.5 h-3.5" /> SLA còn {item.remainingSlaHours}h
                         </span>
                         {item.status === 'PENDING' ? (
                           <div className="flex items-center gap-1.5">
                             {item.scriptContent && (
                               <button
                                 onClick={() => handleAiInspectScript(item)}
-                                className="px-2.5 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 rounded font-semibold text-xs transition flex items-center gap-1.5"
-                                title="Kiểm tra kịch bản theo Brand Guideline"
+                                className="px-2.5 py-1.5 bg-accent-soft hover:bg-sunken text-accent border border-line rounded font-semibold text-xs transition flex items-center gap-1.5"
+                                title="Kiểm tra kịch bản theo quy chuẩn thương hiệu"
                               >
-                                <Sparkles className="w-3.5 h-3.5 text-purple-600" />
+                                <FileText className="w-3.5 h-3.5 text-accent" />
                                 <span>Kiểm tra kịch bản</span>
                               </button>
                             )}
@@ -1114,16 +1045,16 @@ export const BrandView: React.FC<BrandViewProps> = ({
                               className="px-3 py-1.5 bg-white hover:bg-rose-50 text-rose-600 border border-rose-300 rounded font-semibold text-xs transition flex items-center gap-1.5"
                             >
                               <X className="w-3.5 h-3.5" />
-                              <span>Yêu cầu sửa / từ chối</span>
+                              <span>Cần sửa / từ chối</span>
                             </button>
                           </div>
                         ) : item.status === 'APPROVED' ? (
                           <span className="px-3 py-1 rounded text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Kịch bản đã duyệt cho Quay Demo
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Đã duyệt kịch bản
                           </span>
                         ) : (
                           <span className="px-3 py-1 rounded text-xs font-semibold bg-rose-50 text-rose-800 border border-rose-200">
-                            Đã từ chối / yêu cầu chỉnh sửa
+                            Cần sửa / đã từ chối
                           </span>
                         )}
                       </div>
@@ -1141,7 +1072,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
                           {/* Part 1: Hook */}
                           <div className="p-3 rounded border border-blue-200 bg-blue-50/40 space-y-1">
                             <div className="flex items-center gap-1.5 text-blue-800 font-semibold">
-                              <span>1. Hook (3 giây đầu)</span>
+                              <span>Mở đầu (3 giây đầu)</span>
                             </div>
                             <p className="text-slate-800 leading-relaxed font-medium">
                               &ldquo;{item.scriptContent.hook}&rdquo;
@@ -1151,7 +1082,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
                           {/* Part 2: Pain Point */}
                           <div className="p-3 rounded border border-amber-200 bg-amber-50/40 space-y-1">
                             <div className="flex items-center gap-1.5 text-amber-800 font-semibold">
-                              <span>2. Nỗi đau khách hàng</span>
+                              <span>Nỗi đau khách hàng</span>
                             </div>
                             <p className="text-slate-700 leading-relaxed">
                               {item.scriptContent.pain}
@@ -1161,7 +1092,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
                           {/* Part 3: Solution & USP */}
                           <div className="p-3 rounded border border-emerald-200 bg-emerald-50/40 space-y-1">
                             <div className="flex items-center gap-1.5 text-emerald-800 font-semibold">
-                              <span>3. Giải pháp & USPs</span>
+                              <span>Giải pháp &amp; lợi điểm</span>
                             </div>
                             <p className="text-slate-700 leading-relaxed font-medium">
                               {item.scriptContent.usp}
@@ -1169,9 +1100,9 @@ export const BrandView: React.FC<BrandViewProps> = ({
                           </div>
 
                           {/* Part 4: CTA */}
-                          <div className="p-3 rounded border border-purple-200 bg-purple-50/40 space-y-1">
-                            <div className="flex items-center gap-1.5 text-purple-800 font-semibold">
-                              <span>4. CTA giỏ hàng</span>
+                          <div className="p-3 rounded border border-line bg-accent-soft space-y-1">
+                            <div className="flex items-center gap-1.5 text-accent font-semibold">
+                              <span>Kêu gọi hành động</span>
                             </div>
                             <p className="text-slate-800 leading-relaxed font-semibold">
                               {item.scriptContent.cta}
@@ -1183,7 +1114,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
 
                     {item.rejectReason && (
                       <div className="p-3 bg-rose-50 border border-rose-200 rounded text-xs text-rose-800">
-                        <strong>Lý do từ chối từ Brand:</strong> {item.rejectReason}
+                        <strong>Lý do từ chối:</strong> {item.rejectReason}
                       </div>
                     )}
                   </div>
@@ -1194,7 +1125,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
       )}
 
       {/* ========================================================================= */}
-      {/* TAB 4: SỨC KHỎE HỢP ĐỒNG & HIỆU QUẢ NHÃN HÀNG (RETAINER P&L)               */}
+      {/* TAB 4: HỢP ĐỒNG & HIỆU QUẢ NHÃN HÀNG                                      */}
       {/* ========================================================================= */}
       {activeTab === 'RETAINER_HEALTH' && (
         <div className="space-y-6">
@@ -1202,24 +1133,24 @@ export const BrandView: React.FC<BrandViewProps> = ({
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="card-enterprise p-4">
               <p className="text-2xs text-slate-500 font-medium">Tổng ngân sách gói Retainer</p>
-              <p className="text-xl font-semibold text-slate-900 mt-1">1,320M đ</p>
-              <p className="text-2xs text-emerald-600 mt-1 font-semibold">Giải ngân 81.4%</p>
+              <p className="text-xl font-semibold text-slate-900 mt-1">{formatVndShort(1320000000)}</p>
+              <p className="text-2xs text-emerald-600 mt-1 font-semibold">Giải ngân 81,4%</p>
             </div>
 
             <div className="card-enterprise p-4">
               <p className="text-2xs text-slate-500 font-medium">Tổng GMV toàn nhãn</p>
-              <p className="text-xl font-semibold text-purple-700 mt-1">8,980M đ</p>
-              <p className="text-2xs text-purple-600 mt-1 font-semibold">Đạt 92.6% chỉ tiêu</p>
+              <p className="text-xl font-semibold text-accent mt-1">{formatVndShort(8980000000)}</p>
+              <p className="text-2xs text-accent mt-1 font-semibold">Đạt 92,6% chỉ tiêu</p>
             </div>
 
             <div className="card-enterprise p-4">
-              <p className="text-2xs text-slate-500 font-medium">ROI danh mục Trung bình</p>
+              <p className="text-2xs text-slate-500 font-medium">ROI danh mục trung bình</p>
               <p className="text-xl font-semibold text-emerald-700 mt-1">6.81x</p>
               <p className="text-2xs text-slate-500 mt-1">Mục tiêu toàn sàn &gt; 5.0x</p>
             </div>
 
             <div className="card-enterprise p-4">
-              <p className="text-2xs text-slate-500 font-medium">Tỷ lệ KOC bị Brand từ chối</p>
+              <p className="text-2xs text-slate-500 font-medium">Tỷ lệ KOC bị từ chối</p>
               <p className="text-xl font-semibold text-amber-700 mt-1">10.3%</p>
               <p className="text-2xs text-slate-500 mt-1">Chuẩn an toàn &lt; 15%</p>
             </div>
@@ -1229,22 +1160,22 @@ export const BrandView: React.FC<BrandViewProps> = ({
           <div className="card-enterprise overflow-hidden">
             <div className="px-5 py-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
               <div>
-                <h3 className="text-sm font-semibold text-slate-900">Bảng quản trị sức khỏe hợp đồng Brand</h3>
-                <p className="text-xs text-slate-500">Đánh giá tiến độ ngân sách, doanh số GMV thực tế và rủi ro từ chối KOC</p>
+                <h3 className="text-sm font-semibold text-slate-900">Bảng theo dõi hợp đồng thương hiệu</h3>
+                <p className="text-xs text-slate-500">Đánh giá tiến độ ngân sách, doanh số GMV thực tế và tỷ lệ từ chối KOC</p>
               </div>
             </div>
 
             <table className="w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="bg-slate-100 border-b border-slate-200 text-slate-700 font-semibold">
-                  <th className="py-2.5 px-4">Brand / nhãn hàng</th>
+                  <th className="py-2.5 px-4">Thương hiệu</th>
                   <th className="py-2.5 px-3">Phụ trách</th>
                   <th className="py-2.5 px-4">Tiến độ ngân sách</th>
                   <th className="py-2.5 px-4">Tiến độ GMV</th>
                   <th className="py-2.5 px-3">ROI</th>
                   <th className="py-2.5 px-3">Tỷ lệ từ chối KOC</th>
-                  <th className="py-2.5 px-3">Trạng thái sức khỏe</th>
-                  <th className="py-2.5 px-4">Đánh giá & nhận định</th>
+                  <th className="py-2.5 px-3">Trạng thái</th>
+                  <th className="py-2.5 px-4">Đánh giá &amp; nhận định</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200">
@@ -1302,7 +1233,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
                       <td className="py-3 px-3">
                         {item.healthStatus === 'HEALTHY' && (
                           <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
-                            Khỏe mạnh
+                            Ổn định
                           </span>
                         )}
                         {item.healthStatus === 'WARNING' && (
@@ -1312,7 +1243,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
                         )}
                         {item.healthStatus === 'CRITICAL' && (
                           <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-rose-50 text-rose-800 border border-rose-200">
-                            Rủi Ro Cao
+                            Rủi ro cao
                           </span>
                         )}
                       </td>
@@ -1347,7 +1278,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
               <div className="flex items-center gap-2">
                 <ShieldAlert className="w-4 h-4 text-rose-600" />
                 <h3 className="text-sm font-semibold text-slate-900">
-                  Thêm Từ Khóa Bị Chặn ({selectedBrandName})
+                  Thêm từ khóa bị chặn ({selectedBrandName})
                 </h3>
               </div>
               <button
@@ -1365,7 +1296,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
                 </label>
                 <input
                   type="text"
-                  placeholder="VD: Trị dứt điểm mụn / 100% không kích ứng..."
+                  placeholder="VD: Trị dứt điểm mụn..."
                   value={newKeywordText}
                   onChange={(e) => setNewKeywordText(e.target.value)}
                   className="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-blue-500 focus:bg-white"
@@ -1395,11 +1326,11 @@ export const BrandView: React.FC<BrandViewProps> = ({
                   </label>
                   <select
                     value={newKeywordCategory}
-                    onChange={(e) => setNewKeywordCategory(e.target.value as any)}
+                    onChange={(e) => setNewKeywordCategory(e.target.value as 'LEGAL_MEDICAL' | 'COMPETITOR' | 'SENSITIVE_POLICY')}
                     className="w-full bg-slate-50 border border-slate-200 rounded px-2.5 py-2 text-xs text-slate-900 focus:outline-none focus:border-blue-500"
                   >
-                    <option value="LEGAL_MEDICAL">Y tế & luật quảng cáo</option>
-                    <option value="COMPETITOR">Tên đối thủ cạnh Tranh</option>
+                    <option value="LEGAL_MEDICAL">Y tế &amp; luật quảng cáo</option>
+                    <option value="COMPETITOR">Tên đối thủ cạnh tranh</option>
                     <option value="SENSITIVE_POLICY">Chính sách TikTok Shop</option>
                   </select>
                 </div>
@@ -1407,11 +1338,11 @@ export const BrandView: React.FC<BrandViewProps> = ({
 
               <div>
                 <label className="block font-semibold text-slate-700 mb-1">
-                  Lý Do cấm *
+                  Lý do cấm *
                 </label>
                 <textarea
                   rows={2}
-                  placeholder="VD: Vi phạm quy định bộ Y tế cấm cam kết dứt điểm trong mỹ phẩm..."
+                  placeholder="VD: Vi phạm quy định Bộ Y tế cấm cam kết dứt điểm trong mỹ phẩm..."
                   value={newKeywordRationale}
                   onChange={(e) => setNewKeywordRationale(e.target.value)}
                   className="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-blue-500 focus:bg-white"
@@ -1442,9 +1373,9 @@ export const BrandView: React.FC<BrandViewProps> = ({
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-semibold transition"
+                  className="px-4 py-2 bg-primary hover:bg-primary-hover text-white rounded font-semibold transition"
                 >
-                  Lưu từ khóa vào Blacklist
+                  Lưu từ khóa
                 </button>
               </div>
             </form>
@@ -1462,7 +1393,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
               <div className="flex items-center gap-2">
                 <X className="w-4 h-4 text-rose-600" />
                 <h3 className="text-sm font-semibold text-slate-900">
-                  Từ Chối {rejectModalItem.submissionRound === 'ROUND_1_KOC' ? 'KOC Đề Xuất' : 'Kịch Bản KOC'}
+                  Từ chối {rejectModalItem.submissionRound === 'ROUND_1_KOC' ? 'KOC đề xuất' : 'kịch bản KOC'}
                 </h3>
               </div>
               <button
@@ -1476,12 +1407,12 @@ export const BrandView: React.FC<BrandViewProps> = ({
             <div className="p-5 space-y-3.5 text-xs">
               <div className="p-3 bg-slate-50 rounded border border-slate-200">
                 <p><strong>KOC:</strong> {rejectModalItem.kocName} ({rejectModalItem.kocChannel})</p>
-                <p><strong>Brand:</strong> {rejectModalItem.brandName} | <strong>Deal:</strong> {rejectModalItem.dealCode}</p>
+                <p><strong>Thương hiệu:</strong> {rejectModalItem.brandName} | <strong>Deal:</strong> {rejectModalItem.dealCode}</p>
               </div>
 
               <div>
                 <label className="block font-semibold text-slate-700 mb-1">
-                  Chọn lý Do chuẩn hóa *
+                  Chọn lý do chuẩn hóa *
                 </label>
                 <select
                   value={rejectReasonSelection}
@@ -1499,11 +1430,11 @@ export const BrandView: React.FC<BrandViewProps> = ({
 
               <div>
                 <label className="block font-semibold text-slate-700 mb-1">
-                  Ghi chú chi tiết cho booking / Content Team
+                  Ghi chú chi tiết cho nhóm booking / nội dung
                 </label>
                 <textarea
                   rows={2}
-                  placeholder="Ghi rõ góp ý cụ thể để team đổi KOC khác hoặc sửa lại kịch bản..."
+                  placeholder="Ghi rõ góp ý cụ thể để đổi KOC khác hoặc sửa lại kịch bản..."
                   value={rejectCustomNote}
                   onChange={(e) => setRejectCustomNote(e.target.value)}
                   className="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-rose-500 focus:bg-white"
@@ -1541,28 +1472,28 @@ export const BrandView: React.FC<BrandViewProps> = ({
               <CheckCircle2 className="w-7 h-7" />
             </div>
             <div>
-              <h3 className="text-sm font-semibold text-slate-900">Bàn giao brief thành công!</h3>
+              <h3 className="text-sm font-semibold text-slate-900">Đã bàn giao brief</h3>
               <p className="text-xs text-slate-600 mt-1">
-                Chiến dịch <strong>{handoffSuccessModal.title}</strong> đã được chuyển giao sang Content Studio.
+                Chiến dịch <strong>{handoffSuccessModal.title}</strong> đã được bàn giao sang nhóm nội dung.
               </p>
             </div>
             <div className="p-3 bg-slate-50 rounded border border-slate-200 text-xs text-left space-y-1">
-              <p><strong>SLA Phản hồi:</strong> 24 giờ</p>
-              <p><strong>Content PIC:</strong> Quỳnh Như (Content Lead)</p>
-              <p><strong>Bước kế tiếp:</strong> Lập 4 góc máy &amp; tuyển chọn danh sách KOC</p>
+              <p><strong>SLA phản hồi:</strong> 24 giờ</p>
+              <p><strong>Phụ trách nội dung:</strong> Quỳnh Như</p>
+              <p><strong>Bước kế tiếp:</strong> Lập góc tiếp cận &amp; chọn danh sách KOC</p>
             </div>
             <button
               onClick={() => setHandoffSuccessModal(null)}
-              className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded transition"
+              className="w-full py-2 bg-primary hover:bg-primary-hover text-white font-semibold text-xs rounded transition"
             >
-              Đã hiểu & đóng
+              Đóng
             </button>
           </div>
         </div>
       )}
 
       {/* ========================================================================= */}
-      {/* MODAL: AI THẨM ĐỊNH KỊCH BẢN (SCRIPT INSPECTOR POPUP)                    */}
+      {/* MODAL: KIỂM TRA KỊCH BẢN                                                  */}
       {/* ========================================================================= */}
       {aiScanModalData && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 overflow-y-auto animate-in fade-in duration-150">
@@ -1570,13 +1501,13 @@ export const BrandView: React.FC<BrandViewProps> = ({
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50">
               <div className="flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-purple-600" />
+                <FileText className="w-5 h-5 text-accent" />
                 <div>
                   <h3 className="text-sm font-semibold text-slate-900">
-                    Thẩm Định Kịch Bản — KOC {aiScanModalData.item.kocName}
+                    Kiểm tra kịch bản — KOC {aiScanModalData.item.kocName}
                   </h3>
                   <p className="text-xs text-slate-500">
-                    Đối soát theo chuẩn mực nhãn hàng: <strong>{aiScanModalData.item.brandName}</strong> (Mã deal: {aiScanModalData.item.dealCode})
+                    Đối soát theo quy chuẩn nhãn hàng: <strong>{aiScanModalData.item.brandName}</strong> (Mã deal: {aiScanModalData.item.dealCode})
                   </p>
                 </div>
               </div>
@@ -1600,16 +1531,16 @@ export const BrandView: React.FC<BrandViewProps> = ({
                   : 'border-l-rose-500 bg-rose-50/50 border border-rose-200'
               }`}>
                 <div className="space-y-1">
-                  <span className={`px-2 py-0.5 rounded text-2xs font-semibold  ${
+                  <span className={`px-2 py-0.5 rounded text-2xs font-semibold ${
                     aiScanModalData.result.complianceStatus === 'PASS'
                       ? 'bg-emerald-100 text-emerald-800'
                       : aiScanModalData.result.complianceStatus === 'WARNING'
                       ? 'bg-amber-100 text-amber-800'
                       : 'bg-rose-100 text-rose-800'
                   }`}>
-                    {aiScanModalData.result.complianceStatus === 'PASS' && 'ĐẠT CHUẨN XUẤT SẮC'}
-                    {aiScanModalData.result.complianceStatus === 'WARNING' && 'CẢNH BÁO — CẦN SỬA ĐỔI'}
-                    {aiScanModalData.result.complianceStatus === 'FAIL' && 'KHÔNG ĐẠT — TỪ CHỐI DUYỆT'}
+                    {aiScanModalData.result.complianceStatus === 'PASS' && 'Đạt chuẩn'}
+                    {aiScanModalData.result.complianceStatus === 'WARNING' && 'Cảnh báo — Cần sửa đổi'}
+                    {aiScanModalData.result.complianceStatus === 'FAIL' && 'Không đạt — Từ chối duyệt'}
                   </span>
                   <p className="text-slate-700 font-medium leading-relaxed">
                     {aiScanModalData.result.summaryVerdict}
@@ -1649,14 +1580,14 @@ export const BrandView: React.FC<BrandViewProps> = ({
                 <div className="space-y-2">
                   <h5 className="font-semibold text-rose-900 text-2xs flex items-center gap-1.5">
                     <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
-                    <span>Lỗi &amp; Rủi Ro Phát Hiện ({aiScanModalData.result.issues.length}):</span>
+                    <span>Lỗi &amp; rủi ro phát hiện ({aiScanModalData.result.issues.length}):</span>
                   </h5>
                   <div className="space-y-2">
                     {aiScanModalData.result.issues.map((issue) => (
                       <div key={issue.id} className="p-3 bg-rose-50/60 rounded border border-rose-200 space-y-1">
                         <div className="flex items-center justify-between font-semibold text-rose-900">
                           <span>{issue.title}</span>
-                          <span className="text-2xs px-1.5 py-0.2 rounded bg-rose-200 text-rose-800">
+                          <span className="text-2xs px-1.5 py-0.5 rounded bg-rose-200 text-rose-800">
                             {issue.severity}
                           </span>
                         </div>
@@ -1672,12 +1603,12 @@ export const BrandView: React.FC<BrandViewProps> = ({
                 </div>
               )}
 
-              {/* AI Rewritten Script */}
-              <div className="p-3 bg-purple-50/50 rounded-md border border-purple-200 space-y-1.5 font-mono text-2xs">
-                <span className="font-semibold text-purple-900 font-sans block">
-                  Lời thoại gợi ý đã điều chỉnh từ khóa vi phạm:
+              {/* Suggested Rewritten Script */}
+              <div className="p-3 bg-accent-soft rounded-md border border-line space-y-1.5 font-mono text-2xs">
+                <span className="font-semibold text-ink font-sans block">
+                  Gợi ý kịch bản sửa:
                 </span>
-                <p className="whitespace-pre-line text-slate-800 bg-white p-2.5 rounded border border-purple-100">
+                <p className="whitespace-pre-line text-slate-800 bg-white p-2.5 rounded border border-line">
                   {aiScanModalData.result.rewrittenScript.fullText}
                 </p>
               </div>
@@ -1706,7 +1637,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
                     }}
                     className="px-3.5 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded font-semibold text-xs transition flex items-center gap-1.5"
                   >
-                    <span>Chèn nhận xét vào Form từ chối</span>
+                    <span>Chèn nhận xét vào phiếu từ chối</span>
                   </button>
                 )}
 
@@ -1719,7 +1650,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
                   className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded font-semibold text-xs transition flex items-center gap-1.5 shadow-sm"
                 >
                   <CheckCircle2 className="w-3.5 h-3.5" />
-                  <span>Duyệt kịch bản ngay</span>
+                  <span>Duyệt kịch bản</span>
                 </button>
               </div>
             </div>

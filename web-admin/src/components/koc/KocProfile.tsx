@@ -18,31 +18,22 @@ import {
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
-  Clock,
   Copy,
   ExternalLink,
-  Eye,
   FileScan,
   Filter,
-  Layers,
   MessageSquare,
-  Package,
   Plus,
   QrCode,
   RefreshCw,
   Search,
-  ShieldCheck,
-  ShoppingBag,
-  Sparkles,
   Star,
   TrendingUp,
   Truck,
-  Video,
-  X,
 } from 'lucide-react';
 import type { BookingDealItem, KocItem, UserProfile } from '../../lib/types';
 import { formatDate, formatNumber, formatVndShort } from '../../lib/format';
-import { Avatar, Button, CHANNELS, ChannelBar, DataTable, EmptyState, Field, Modal, Panel, Person, SectionHeader, Stat, StatRow, Status, Tabs, Textarea } from '../ui';
+import { Avatar, Button, CHANNELS, DataTable, EmptyState, Field, Modal, Panel, Person, SectionHeader, Stat, StatRow, Status, Tabs, Textarea } from '../ui';
 import type { Column, TabItem } from '../ui';
 import {
   LEGAL_TYPE_LABEL,
@@ -164,7 +155,7 @@ export function KocProfile({
           <div className="min-w-0 grid gap-1">
             {isPage && (
               <div className="flex flex-wrap items-center gap-2">
-                <h2 className="text-xl font-bold text-ink">{koc.stageName}</h2>
+                <h2 className="text-xl font-semibold text-ink">{koc.stageName}</h2>
                 {koc.realName && koc.realName !== koc.stageName && (
                   <span className="text-sm text-ink-3 font-normal">({koc.realName})</span>
                 )}
@@ -268,9 +259,7 @@ export function KocProfile({
 
               {activeTab === 'ACTIVE_DEALS' && (
                 <ActiveDealsSection
-                  koc={koc}
                   deals={kocDeals.filter(isDealOpen)}
-                  currentUser={currentUser}
                   onViewDetail={setSelectedCollabDetail}
                 />
               )}
@@ -282,7 +271,7 @@ export function KocProfile({
         <aside className="bg-surface border border-line rounded-xl divide-y divide-line min-w-0 shadow-xs">
           <ShippingAndContactPanel koc={koc} />
           <LegalPaymentPanel koc={koc} currentUser={currentUser} onScanDocs={onScanDocs} onOpenQr={() => setVietQrDeal(koc)} />
-          <OperationalNotesPanel koc={koc} stats={stats} />
+          <OperationalNotesPanel koc={koc} />
         </aside>
       </div>
 
@@ -290,8 +279,6 @@ export function KocProfile({
       {selectedCollabDetail && (
         <CollaborationDetailModal
           deal={selectedCollabDetail}
-          koc={koc}
-          currentUser={currentUser}
           onClose={() => setSelectedCollabDetail(null)}
         />
       )}
@@ -335,7 +322,7 @@ function TikTokSellerMetricsSection({ koc, onUpdate }: { koc: KocItem; onUpdate?
       {/* Hộp trạng thái kết nối TikTok Seller Center */}
       <div className="p-4 rounded-xl border border-line bg-sunken/40 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-ink text-white flex items-center justify-center font-bold text-xs shrink-0">
+          <div className="w-9 h-9 rounded-lg bg-ink text-white flex items-center justify-center font-semibold text-xs shrink-0">
             TTS
           </div>
           <div>
@@ -446,7 +433,7 @@ function TikTokSellerMetricsSection({ koc, onUpdate }: { koc: KocItem; onUpdate?
       <div className="grid md:grid-cols-2 gap-6 pt-2">
         {/* Doanh số theo định dạng */}
         <div className="space-y-3">
-          <h4 className="text-xs font-semibold text-ink uppercase tracking-wider">Cơ cấu doanh thu theo nguồn</h4>
+          <h4 className="text-xs font-semibold text-ink">Cơ cấu doanh thu theo nguồn</h4>
           <div className="p-4 rounded-xl border border-line bg-surface space-y-3">
             <div className="flex h-3 gap-1 rounded-full overflow-hidden bg-sunken">
               {shares.map((s) => (
@@ -471,7 +458,7 @@ function TikTokSellerMetricsSection({ koc, onUpdate }: { koc: KocItem; onUpdate?
             </div>
           </div>
 
-          <h4 className="text-xs font-semibold text-ink uppercase tracking-wider pt-2">Ngành hàng bán chạy</h4>
+          <h4 className="text-xs font-semibold text-ink pt-2">Ngành hàng bán chạy</h4>
           <div className="flex flex-wrap gap-2">
             {topCats.map((cat) => (
               <span key={cat} className="px-2.5 py-1 rounded-md text-xs bg-sunken text-ink font-medium">
@@ -483,7 +470,7 @@ function TikTokSellerMetricsSection({ koc, onUpdate }: { koc: KocItem; onUpdate?
 
         {/* Khán giả & Nhân khẩu học */}
         <div className="space-y-3">
-          <h4 className="text-xs font-semibold text-ink uppercase tracking-wider">Nhân khẩu học khán giả</h4>
+          <h4 className="text-xs font-semibold text-ink">Nhân khẩu học khán giả</h4>
           <div className="p-4 rounded-xl border border-line bg-surface space-y-4 text-xs">
             <div>
               <div className="flex justify-between text-2xs text-ink-3 mb-1">
@@ -492,7 +479,7 @@ function TikTokSellerMetricsSection({ koc, onUpdate }: { koc: KocItem; onUpdate?
               </div>
               <div className="flex h-2 rounded-full overflow-hidden bg-sunken">
                 <div style={{ width: `${koc.femaleRatio || 82}%` }} className="bg-accent" />
-                <div style={{ width: `${koc.maleRatio || 18}%` }} className="bg-sky-400" />
+                <div style={{ width: `${koc.maleRatio || 18}%` }} className="bg-ink-3" />
               </div>
             </div>
 
@@ -610,15 +597,15 @@ function CollaborationHistorySection({
           <div className="grid gap-1">
             <div>
               {isFoc ? (
-                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-2xs font-semibold bg-cyan-100 text-cyan-800 dark:bg-cyan-900/40 dark:text-cyan-300">
+                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-2xs font-medium bg-sunken text-ink-2">
                   Suất mẫu FOC (0đ)
                 </span>
               ) : isLive ? (
-                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-2xs font-semibold bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300">
+                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-2xs font-medium bg-accent-soft text-accent">
                   Livestream KOC
                 </span>
               ) : (
-                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-2xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
+                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-2xs font-medium bg-warning-soft text-warning">
                   Video trả phí (Paid)
                 </span>
               )}
@@ -647,7 +634,7 @@ function CollaborationHistorySection({
             <span className="text-2xs text-ink-3 block">Mẫu: {formatVndShort(d.focSampleCost)}</span>
           ) : null}
           {d.sparkAdsBudget ? (
-            <span className="text-2xs text-purple-600 block">Ads: {formatVndShort(d.sparkAdsBudget)}</span>
+            <span className="text-2xs text-accent block">Ads: {formatVndShort(d.sparkAdsBudget)}</span>
           ) : null}
         </div>
       ),
@@ -663,7 +650,7 @@ function CollaborationHistorySection({
         const roi = d.roi || (d.totalValue && d.totalValue > 0 ? gmv / d.totalValue : 0);
         return (
           <div className="text-right">
-            <span className="font-bold text-ink block text-[13.5px]">
+            <span className="font-semibold text-ink block text-[13.5px]">
               {gmv > 0 ? formatVndShort(gmv) : <span className="text-ink-3 font-normal">—</span>}
             </span>
             <div className="flex items-center justify-end gap-1.5 mt-0.5">
@@ -706,7 +693,7 @@ function CollaborationHistorySection({
               </span>
             </div>
             {d.adsCodeStatus === 'ĐÃ_NGHIỆM_THU' && (
-              <span className="text-2xs text-purple-700 bg-purple-50 dark:bg-purple-950/40 px-1 py-0.2 rounded inline-block w-fit">
+              <span className="text-2xs text-accent bg-accent-soft px-1 py-0.2 rounded inline-block w-fit">
                 Mã Ads hợp lệ
               </span>
             )}
@@ -786,7 +773,7 @@ function CollaborationHistorySection({
           />
           <Stat
             label="Chất lượng & Tuân thủ SLA"
-            value={`${stats.avgRatingScore} / 5.0 ⭐`}
+            value={`${stats.avgRatingScore} / 5.0`}
             note={`Đúng hạn kịch bản ${stats.onTimeScriptRate}% · Video ${stats.onTimePostRate}%`}
           />
         </StatRow>
@@ -891,14 +878,10 @@ function CollaborationHistorySection({
    ========================================================================= */
 
 function ActiveDealsSection({
-  koc,
   deals,
-  currentUser,
   onViewDetail,
 }: {
-  koc: KocItem;
   deals: BookingDealItem[];
-  currentUser?: UserProfile;
   onViewDetail: (d: BookingDealItem) => void;
 }) {
   const columns: Column<BookingDealItem>[] = [
@@ -1197,7 +1180,7 @@ function LegalPaymentPanel({
    6. CỘT PHẢI: ĐÁNH GIÁ & GHI CHÚ VẬN HÀNH
    ========================================================================= */
 
-function OperationalNotesPanel({ koc, stats }: { koc: KocItem; stats: KocPerformanceSummary }) {
+function OperationalNotesPanel({ koc }: { koc: KocItem }) {
   const notes = [
     koc.contentNote && { label: 'Ghi chú nội dung đề xuất', text: koc.contentNote },
     koc.accountComment && { label: 'Nhận xét của Trưởng nhóm', text: koc.accountComment },
@@ -1210,7 +1193,7 @@ function OperationalNotesPanel({ koc, stats }: { koc: KocItem; stats: KocPerform
         <div className="p-3 rounded-lg bg-sunken/40 border border-line flex items-center justify-between">
           <div>
             <span className="text-2xs text-ink-3 block">Điểm uy tín KOC (Reliability)</span>
-            <span className="text-base font-bold text-ink">
+            <span className="text-base font-semibold text-ink">
               {koc.reliabilityScore || 9.5} <span className="text-xs font-normal text-ink-3">/ 10</span>
             </span>
           </div>
@@ -1241,13 +1224,9 @@ function OperationalNotesPanel({ koc, stats }: { koc: KocItem; stats: KocPerform
 
 function CollaborationDetailModal({
   deal,
-  koc,
-  currentUser,
   onClose,
 }: {
   deal: BookingDealItem;
-  koc: KocItem;
-  currentUser?: UserProfile;
   onClose: () => void;
 }) {
   const gmv = deal.gmv30 || deal.affiliateGmv || 0;
@@ -1326,30 +1305,30 @@ function CollaborationDetailModal({
           <div className="flex h-3 rounded-full overflow-hidden bg-sunken gap-1">
             <div
               style={{ width: `${gmv > 0 ? (organicGmv / gmv) * 100 : 55}%` }}
-              className="bg-emerald-500 rounded-sm"
+              className="bg-positive rounded-sm"
               title={`Tự nhiên: ${formatVndShort(organicGmv)}`}
             />
             <div
               style={{ width: `${gmv > 0 ? (adsGmv / gmv) * 100 : 45}%` }}
-              className="bg-purple-500 rounded-sm"
+              className="bg-accent rounded-sm"
               title={`Spark Ads: ${formatVndShort(adsGmv)}`}
             />
           </div>
           <div className="grid grid-cols-2 gap-4 text-xs pt-1">
-            <div className="flex items-center justify-between p-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/30">
-              <span className="text-emerald-700 dark:text-emerald-300 font-medium">Doanh số tự nhiên (Organic)</span>
-              <span className="font-bold text-ink">{formatVndShort(organicGmv)}</span>
+            <div className="flex items-center justify-between p-2 rounded-lg bg-positive-soft">
+              <span className="text-positive font-medium">Doanh số tự nhiên (Organic)</span>
+              <span className="font-semibold text-ink">{formatVndShort(organicGmv)}</span>
             </div>
-            <div className="flex items-center justify-between p-2 rounded-lg bg-purple-50 dark:bg-purple-950/30">
-              <span className="text-purple-700 dark:text-purple-300 font-medium">Doanh số qua Ads (Spark Ads)</span>
-              <span className="font-bold text-ink">{formatVndShort(adsGmv)}</span>
+            <div className="flex items-center justify-between p-2 rounded-lg bg-accent-soft">
+              <span className="text-accent font-medium">Doanh số qua Ads (Spark Ads)</span>
+              <span className="font-semibold text-ink">{formatVndShort(adsGmv)}</span>
             </div>
           </div>
         </div>
 
         {/* Thông tin kịch bản & Góc nội dung */}
         <div className="p-4 rounded-xl border border-line bg-surface space-y-3">
-          <h4 className="text-xs font-semibold text-ink uppercase tracking-wider">Kịch bản & Góc nội dung</h4>
+          <h4 className="text-xs font-semibold text-ink">Kịch bản & Góc nội dung</h4>
           <dl className="grid sm:grid-cols-2 gap-4 text-xs">
             <div>
               <dt className="text-2xs text-ink-3">Sản phẩm trọng tâm</dt>
@@ -1378,7 +1357,7 @@ function CollaborationDetailModal({
         <div className="grid sm:grid-cols-2 gap-4">
           {/* Lộ trình tác nghiệp */}
           <div className="p-4 rounded-xl border border-line bg-surface space-y-3 text-xs">
-            <h4 className="text-xs font-semibold text-ink uppercase tracking-wider">Lộ trình tác nghiệp</h4>
+            <h4 className="text-xs font-semibold text-ink">Lộ trình tác nghiệp</h4>
             <div className="space-y-2.5">
               <div className="flex items-center justify-between">
                 <span className="text-ink-3">Gửi nhận mẫu FOC:</span>
@@ -1394,7 +1373,7 @@ function CollaborationDetailModal({
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-ink-3">Mã Spark Ads:</span>
-                <span className="font-medium text-purple-600 font-mono text-2xs">
+                <span className="font-medium text-accent font-mono text-2xs">
                   {deal.sparkAdsCode || 'SPARK-VERIFIED-30D'}
                 </span>
               </div>
@@ -1407,7 +1386,7 @@ function CollaborationDetailModal({
 
           {/* Đánh giá 3 bên */}
           <div className="p-4 rounded-xl border border-line bg-surface space-y-3 text-xs">
-            <h4 className="text-xs font-semibold text-ink uppercase tracking-wider">Đánh giá chất lượng thực tế</h4>
+            <h4 className="text-xs font-semibold text-ink">Đánh giá chất lượng thực tế</h4>
             <div className="space-y-2">
               <div>
                 <span className="text-2xs font-semibold text-ink-3 block">Chuyên viên Booking (PIC):</span>
@@ -1442,7 +1421,7 @@ function VietQrModal({ koc, onClose }: { koc: KocItem; onClose: () => void }) {
   const qrUrl = `https://img.vietqr.io/image/${encodeURIComponent(bank)}-${encodeURIComponent(acc)}-compact2.png?amount=0&addInfo=${encodeURIComponent(`Upbase B2C booking ${koc.stageName}`)}&accountName=${encodeURIComponent(holder)}`;
 
   return (
-    <Modal open onClose={onClose} title="Mã QR Chuyển Khoản VietQR" description="Quét bằng ứng dụng ngân hàng để chuyển tiền tạm ứng hoặc quyết toán" size="sm">
+    <Modal open onClose={onClose} title="Mã QR chuyển khoản VietQR" description="Quét bằng ứng dụng ngân hàng để chuyển tiền tạm ứng hoặc quyết toán" size="sm">
       <div className="flex flex-col items-center justify-center p-4 space-y-4">
         <div className="p-3 bg-white rounded-xl border border-line shadow-xs">
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -1450,7 +1429,7 @@ function VietQrModal({ koc, onClose }: { koc: KocItem; onClose: () => void }) {
         </div>
         <div className="text-center space-y-1 text-xs">
           <p className="font-semibold text-ink">{holder}</p>
-          <p className="font-mono text-sm text-ink font-bold tabular-nums">{acc}</p>
+          <p className="font-mono text-sm text-ink font-semibold tabular-nums">{acc}</p>
           <p className="text-ink-3">{bank}</p>
         </div>
       </div>

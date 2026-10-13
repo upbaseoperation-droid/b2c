@@ -94,13 +94,13 @@ export const PlanDiscussionHub: React.FC<PlanDiscussionHubProps> = ({
     let authorTitle = 'Booking Specialist';
 
     if (activeAuthorRole === 'GROWTH') {
-      authorName = (currentUser?.role === 'GROWTH_MEMBER' ? currentUser.name : null) || plan.growthPic || 'Trần Thị Ánh';
-      authorTitle = 'Growth PIC / Chiến lược & PnL';
+      authorName = (['GROWTH_MEMBER', 'GROWTH_MANAGER'].includes(currentUser?.role || '') ? currentUser?.name : null) || plan.growthPic || 'Trần Thị Đỗ Quyên';
+      authorTitle = currentUser?.role === 'GROWTH_MANAGER' ? 'Trưởng phòng Growth' : 'Growth PIC / Chiến lược & PnL';
     } else if (activeAuthorRole === 'MEDIA') {
-      authorName = (currentUser?.role === 'MEDIA_MEMBER' ? currentUser.name : null) || plan.mediaPic || 'Phan Thành Đạt';
-      authorTitle = 'Media PIC / Quảng cáo & Ads';
+      authorName = (['MEDIA_MEMBER', 'MEDIA_MANAGER'].includes(currentUser?.role || '') ? currentUser?.name : null) || plan.mediaPic || 'Nguyễn Đức Quảng';
+      authorTitle = currentUser?.role === 'MEDIA_MANAGER' ? 'Trưởng phòng Media' : 'Media PIC / Quảng cáo & Ads';
     } else if (activeAuthorRole === 'LEAD') {
-      authorName = (['ADMIN', 'MANAGER'].includes(currentUser?.role || '') ? currentUser?.name : null) || plan.approvedBy || 'Vân Ngọc';
+      authorName = (['ADMIN', 'MANAGER'].includes(currentUser?.role || '') ? currentUser?.name : null) || plan.approvedBy || 'Đặng Thị Yến Nhi';
       authorTitle = 'Trưởng Phòng B2C';
     } else if (activeAuthorRole === 'BOOKING') {
       authorName = (currentUser?.role === 'BOOKING_MEMBER' ? currentUser.name : null) || plan.pic || 'Khánh Vy';
@@ -146,13 +146,13 @@ export const PlanDiscussionHub: React.FC<PlanDiscussionHubProps> = ({
         );
       case 'BOOKING':
         return (
-          <span className="px-2 py-0.5 rounded-md text-2xs font-semibold bg-indigo-50 text-indigo-800 border border-indigo-200">
+          <span className="px-2 py-0.5 rounded-md text-2xs font-semibold bg-blue-50 text-blue-800 border border-blue-200">
             Booking B2C
           </span>
         );
       case 'LEAD':
         return (
-          <span className="px-2 py-0.5 rounded-md text-2xs font-semibold bg-purple-50 text-purple-800 border border-purple-200">
+          <span className="px-2 py-0.5 rounded-md text-2xs font-semibold bg-slate-100 text-slate-800 border border-slate-200">
             Trưởng Phòng B2C
           </span>
         );
@@ -177,8 +177,8 @@ export const PlanDiscussionHub: React.FC<PlanDiscussionHubProps> = ({
         );
       case 'PRE_APPROVAL_PASS':
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-semibold bg-teal-50 text-teal-700 border border-teal-200">
-            <BadgeCheck className="w-3 h-3 text-teal-600" />
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+            <BadgeCheck className="w-3 h-3 text-emerald-600" />
             Sơ Duyệt Đạt
           </span>
         );
@@ -214,15 +214,15 @@ export const PlanDiscussionHub: React.FC<PlanDiscussionHubProps> = ({
       {/* HEADER: SỔ BIÊN BẢN & LỊCH SỬ TRAO ĐỔI 4 BÊN */}
       <div className="p-4 sm:p-5 border-b border-slate-100 bg-slate-50/70 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center shrink-0">
+          <div className="w-9 h-9 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center shrink-0">
             <MessageSquare className="w-4 h-4" />
           </div>
           <div>
             <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="font-bold text-sm text-slate-900">
+              <h3 className="font-semibold text-sm text-slate-900">
                 Sổ Biên Bản & Lịch Sử Trao Đổi 4 Bên
               </h3>
-              <span className="px-2 py-0.5 rounded-full text-2xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
+              <span className="px-2 py-0.5 rounded-full text-2xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
                 {discussions.length} Trao Đổi
               </span>
             </div>
@@ -246,29 +246,29 @@ export const PlanDiscussionHub: React.FC<PlanDiscussionHubProps> = ({
           <span className="text-slate-300">•</span>
           <div className="flex items-center gap-1">
             <span className="text-slate-400 font-medium">Booking:</span>
-            <strong className="text-indigo-800 font-semibold">{plan.pic || 'Khánh Vy'}</strong>
+            <strong className="text-blue-800 font-semibold">{plan.pic || 'Khánh Vy'}</strong>
           </div>
           <span className="text-slate-300">•</span>
           <div className="flex items-center gap-1">
             <span className="text-slate-400 font-medium">Trưởng phòng:</span>
-            <strong className="text-purple-800 font-semibold">{plan.approvedBy || 'Vân Ngọc'}</strong>
+            <strong className="text-slate-800 font-semibold">{plan.approvedBy || 'Vân Ngọc'}</strong>
           </div>
         </div>
       </div>
 
       {/* GÓC NHÌN RÀ SOÁT CỦA TRƯỞNG PHÒNG */}
       {isManagerOrLead && (
-        <div className="mx-4 sm:mx-5 mt-4 p-3.5 bg-gradient-to-r from-purple-50 via-indigo-50 to-purple-50 rounded-xl border border-purple-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+        <div className="mx-4 sm:mx-5 mt-4 p-3.5 bg-blue-50/50 rounded-xl border border-blue-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-purple-600 text-white flex items-center justify-center shrink-0">
+            <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center shrink-0">
               <ShieldCheck className="w-4 h-4" />
             </div>
             <div>
-              <div className="font-bold text-xs text-purple-950 flex items-center gap-2">
+              <div className="font-semibold text-xs text-blue-950 flex items-center gap-2">
                 <span>Góc nhìn Trưởng phòng B2C: Rà soát & Đối soát biên bản 3 bên</span>
-                <span className="text-2xs bg-purple-200 text-purple-800 px-2 py-0.5 rounded-full font-semibold">Chế độ quản lý</span>
+                <span className="text-2xs bg-blue-200 text-blue-800 px-2 py-0.5 rounded-full font-semibold">Chế độ quản lý</span>
               </div>
-              <p className="text-2xs text-purple-700 mt-0.5">
+              <p className="text-2xs text-blue-700 mt-0.5">
                 Rà soát sự thống nhất giữa ngân sách PnL từ Growth ({formatVndShort(plan.totalTargetBudget)}), hạn mức Ads từ Media ({formatVndShort(plan.budgetAdsTotal || 0)}), và cơ cấu KOC từ Booking.
               </p>
             </div>
@@ -287,7 +287,7 @@ export const PlanDiscussionHub: React.FC<PlanDiscussionHubProps> = ({
               });
               if (onNotify) onNotify('Đã ghi nhận Trưởng phòng hoàn thành rà soát lịch sử trao đổi!');
             }}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-bold transition-all shadow-xs shrink-0 self-start sm:self-auto cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold transition-all shadow-xs shrink-0 self-start sm:self-auto cursor-pointer"
           >
             <CheckCircle2 className="w-3.5 h-3.5" />
             <span>Ghi nhận: Đã Rà Soát Lịch Sử Trao Đổi</span>
@@ -327,7 +327,7 @@ export const PlanDiscussionHub: React.FC<PlanDiscussionHubProps> = ({
           <button
             onClick={() => setFilterType('BOOKING')}
             className={`px-2.5 py-1 rounded-lg font-medium transition-all ${
-              filterType === 'BOOKING' ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:bg-slate-100'
+              filterType === 'BOOKING' ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-100'
             }`}
           >
             Booking B2C ({discussions.filter(m => m.authorRole === 'BOOKING').length})
@@ -335,7 +335,7 @@ export const PlanDiscussionHub: React.FC<PlanDiscussionHubProps> = ({
           <button
             onClick={() => setFilterType('LEAD')}
             className={`px-2.5 py-1 rounded-lg font-medium transition-all ${
-              filterType === 'LEAD' ? 'bg-purple-600 text-white' : 'text-slate-600 hover:bg-slate-100'
+              filterType === 'LEAD' ? 'bg-slate-800 text-white' : 'text-slate-600 hover:bg-slate-100'
             }`}
           >
             Trưởng phòng ({discussions.filter(m => m.authorRole === 'LEAD').length})
@@ -351,7 +351,7 @@ export const PlanDiscussionHub: React.FC<PlanDiscussionHubProps> = ({
           <button
             onClick={() => setFilterType('APPROVAL')}
             className={`px-2.5 py-1 rounded-lg font-medium transition-all ${
-              filterType === 'APPROVAL' ? 'bg-teal-600 text-white' : 'text-slate-600 hover:bg-slate-100'
+              filterType === 'APPROVAL' ? 'bg-emerald-600 text-white' : 'text-slate-600 hover:bg-slate-100'
             }`}
           >
             Mốc Phê Duyệt ({discussions.filter(m => ['PRE_APPROVAL_PASS', 'FINAL_APPROVAL_PASS'].includes(m.type)).length})
@@ -392,7 +392,7 @@ export const PlanDiscussionHub: React.FC<PlanDiscussionHubProps> = ({
                   msg.type === 'REVISION_REQUEST'
                     ? 'bg-rose-50/50 border-rose-200'
                     : msg.type === 'PRE_APPROVAL_PASS'
-                    ? 'bg-teal-50/50 border-teal-200'
+                    ? 'bg-emerald-50/50 border-emerald-200'
                     : msg.type === 'FINAL_APPROVAL_PASS'
                     ? 'bg-emerald-50/50 border-emerald-200'
                     : isGrowth
@@ -400,9 +400,9 @@ export const PlanDiscussionHub: React.FC<PlanDiscussionHubProps> = ({
                     : isMedia
                     ? 'bg-white border-blue-200/80 shadow-2xs'
                     : isBooking
-                    ? 'bg-white border-indigo-200/80 shadow-2xs'
+                    ? 'bg-white border-blue-200/80 shadow-2xs'
                     : isLead
-                    ? 'bg-white border-purple-200/80 shadow-2xs'
+                    ? 'bg-white border-slate-200 shadow-2xs'
                     : 'bg-white border-slate-200 shadow-2xs'
                 }`}
               >
@@ -417,9 +417,9 @@ export const PlanDiscussionHub: React.FC<PlanDiscussionHubProps> = ({
                           : isMedia
                           ? 'bg-blue-100 text-blue-800'
                           : isBooking
-                          ? 'bg-indigo-100 text-indigo-800'
+                          ? 'bg-blue-100 text-blue-800'
                           : isLead
-                          ? 'bg-purple-100 text-purple-800'
+                          ? 'bg-slate-200 text-slate-800'
                           : 'bg-slate-200 text-slate-700'
                       }`}
                     >
@@ -532,7 +532,7 @@ export const PlanDiscussionHub: React.FC<PlanDiscussionHubProps> = ({
                   onClick={() => setActiveAuthorRole('BOOKING')}
                   className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
                     activeAuthorRole === 'BOOKING'
-                      ? 'bg-white text-indigo-700 shadow-2xs'
+                      ? 'bg-white text-blue-700 shadow-2xs'
                       : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
@@ -543,7 +543,7 @@ export const PlanDiscussionHub: React.FC<PlanDiscussionHubProps> = ({
                   onClick={() => setActiveAuthorRole('LEAD')}
                   className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
                     activeAuthorRole === 'LEAD'
-                      ? 'bg-white text-purple-700 shadow-2xs'
+                      ? 'bg-white text-slate-800 shadow-2xs'
                       : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
@@ -572,7 +572,7 @@ export const PlanDiscussionHub: React.FC<PlanDiscussionHubProps> = ({
               value={commentText}
               onChange={(e) => setCommentText(e.target.value)}
               placeholder={`Nhập ý kiến trao đổi và ghi nhận biên bản đối soát cho kế hoạch ${plan.brandName}...`}
-              className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-indigo-500 resize-none shadow-2xs"
+              className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 resize-none shadow-2xs"
             />
           </div>
 
@@ -583,7 +583,7 @@ export const PlanDiscussionHub: React.FC<PlanDiscussionHubProps> = ({
             <button
               type="submit"
               disabled={!commentText.trim()}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 disabled:hover:bg-indigo-600 text-white font-semibold text-xs shadow-xs transition-all active:scale-95"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:hover:bg-blue-600 text-white font-semibold text-xs shadow-xs transition-all active:scale-95"
             >
               <Send className="w-3.5 h-3.5" />
               <span>Gửi Trao đổi</span>

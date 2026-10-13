@@ -4,7 +4,6 @@ import React, { useState, useMemo } from 'react';
 import { formatVndShort } from '../../lib/format';
 import { ChannelTag, channelOf } from '../ui';
 import {
-  GitFork,
   Building2,
   Store,
   Users,
@@ -13,31 +12,15 @@ import {
   ChevronDown,
   Crown,
   Search,
-  Maximize2,
-  Minimize2,
-  RotateCcw,
-  Plus,
-  SlidersHorizontal,
   ExternalLink,
   ShieldCheck,
   CheckCircle2,
-  Tag,
-  DollarSign,
-  TrendingUp,
-  Layers,
   Sparkles,
   Edit3,
   X,
-  UserCheck,
-  UserPlus,
-  Info,
-  BadgeAlert,
-  ArrowRight,
-  Filter,
-  Eye,
-  ShoppingBag
+  Info
 } from 'lucide-react';
-import { UserProfile, BrandDetail, EcomStore, HeroProduct, StaffMasterMember, StorePortfolioItem } from '../../lib/types';
+import { UserProfile, BrandDetail, StorePortfolioItem } from '../../lib/types';
 import { INITIAL_BRANDS, STAFF_MASTER_DIRECTORY, INITIAL_STORE_PORTFOLIOS } from '../../lib/mockData';
 
 // Extended type for Store with explicit Store-specific Product IDs and PIC hierarchy
@@ -477,8 +460,14 @@ export interface MasterDataMindmapViewProps {
   brands?: BrandDetail[];
 }
 
+type SelectedMindmapNode =
+  | { type: 'ROOT'; data: { brandsCount: number; storesCount: number } }
+  | { type: 'BRAND'; data: BrandDetail }
+  | { type: 'STORE'; data: MindmapStoreNode }
+  | { type: 'STAFF'; data: Record<string, unknown> }
+  | { type: 'PRODUCT'; data: StoreProductSkuMap & { storeName: string; platform: MindmapStoreNode['platform'] } };
+
 export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
-  currentUser,
   onOpenQuickBookWithBrand,
   onNotify,
   storePortfolios,
@@ -497,12 +486,12 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
 
   // Initialize Store nodes with 1 Primary PIC + Sub-PICs + Store-specific Product IDs
   const [stores, setStores] = useState<MindmapStoreNode[]>(initialData.stores);
-
-  // Synchronize when initialData changes
-  React.useEffect(() => {
+  const [prevInitialData, setPrevInitialData] = useState(initialData);
+  if (initialData !== prevInitialData) {
+    setPrevInitialData(initialData);
     setBrands(initialData.brands);
     setStores(initialData.stores);
-  }, [initialData]);
+  }
 
   // UI Interactive States for Mindmap
   // Set of expanded node IDs: 'root', 'brand-xxx', 'store-xxx', 'store-xxx-staff', 'store-xxx-products', etc.
@@ -531,13 +520,9 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
   const [zoomLevel, setZoomLevel] = useState<number>(100);
 
   // Inspector / Detail Drawer State
-  const [selectedNode, setSelectedNode] = useState<{
-    type: 'ROOT' | 'BRAND' | 'STORE' | 'STAFF' | 'PRODUCT';
-    data: any;
-  } | null>(() => ({
-    type: 'STORE',
-    data: initialData.stores[0] || null
-  }));
+  const [selectedNode, setSelectedNode] = useState<SelectedMindmapNode | null>(() => (
+    initialData.stores[0] ? { type: 'STORE', data: initialData.stores[0] } : null
+  ));
 
   // Edit / Assignment Modal State inside Inspector
   const [isEditingStorePic, setIsEditingStorePic] = useState(false);
@@ -726,7 +711,7 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
             {/* Filter Platform */}
             <select
               value={filterPlatform}
-              onChange={e => setFilterPlatform(e.target.value as any)}
+              onChange={e => setFilterPlatform(e.target.value as 'ALL' | 'TIKTOK_SHOP' | 'SHOPEE_MALL' | 'LAZADA')}
               className="bg-slate-50 border border-slate-200 text-slate-700 rounded-lg px-2.5 py-1.5 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-xs"
             >
               <option value="ALL">Tất cả sàn</option>
@@ -873,7 +858,7 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
                   
                   <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-2xs">
                     <span className="text-slate-500 flex items-center gap-1">
-                      <Store className="w-3 h-3 text-purple-600" /> {stores.length} Shops
+                      <Store className="w-3 h-3 text-blue-600" /> {stores.length} Shops
                     </span>
                     <button className="text-blue-600 hover:text-blue-700 font-semibold flex items-center gap-0.5">
                       {expandedNodes.has('root') ? (
@@ -972,8 +957,6 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
                               ) : (
                                 brandStores.map(store => {
                                   const isStoreExpanded = expandedNodes.has(store.id);
-                                  const isStaffExpanded = expandedNodes.has(`${store.id}-staff`);
-                                  const isProductsExpanded = expandedNodes.has(`${store.id}-products`);
 
                                   return (
                                     <div key={store.id} className="relative">
@@ -988,7 +971,7 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
                                           }}
                                           className={`w-72 p-3.5 rounded-xl cursor-pointer transition-all border shadow-xs ${
                                             isStoreExpanded
-                                              ? 'bg-white border-purple-500 shadow-md ring-2 ring-purple-500/10'
+                                              ? 'bg-white border-blue-500 shadow-md ring-2 ring-blue-500/10'
                                               : 'bg-white border-slate-200 hover:border-slate-300'
                                           }`}
                                         >
@@ -1001,7 +984,7 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
 
                                           <div className="mt-2">
                                             <h5 className="text-xs font-semibold text-slate-900 truncate flex items-center gap-1.5">
-                                              <Store className="w-3.5 h-3.5 text-purple-600 shrink-0" />
+                                              <Store className="w-3.5 h-3.5 text-blue-600 shrink-0" />
                                               <span className="truncate">{store.storeName}</span>
                                             </h5>
                                           </div>
@@ -1038,7 +1021,7 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
                                             <span className="text-slate-500">
                                               {store.memberPics.length} PIC phụ • {store.storeProducts.length} SKUs
                                             </span>
-                                            <span className="text-purple-600 font-semibold flex items-center gap-0.5">
+                                            <span className="text-blue-600 font-semibold flex items-center gap-0.5">
                                               {isStoreExpanded ? (
                                                 <><span>Thu nhánh</span> <ChevronDown className="w-3 h-3" /></>
                                               ) : (
@@ -1050,11 +1033,11 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
 
                                         {/* LEVEL 3: 2 SUB-BRANCHES (NHÂN SỰ & SẢN PHẨM) */}
                                         {isStoreExpanded && (
-                                          <div className="space-y-4 relative border-l-2 border-purple-300 pl-8">
+                                          <div className="space-y-4 relative border-l-2 border-blue-300 pl-8">
                                             {/* Sub-branch 1: NHÂN SỰ & PIC (Staff Allocation) */}
                                             {showStaffBranches && (
                                               <div className="relative">
-                                                <div className="absolute -left-8 top-5 w-8 h-0.5 bg-purple-300" />
+                                                <div className="absolute -left-8 top-5 w-8 h-0.5 bg-blue-300" />
                                                 
                                                 <div className="w-64 bg-white border border-amber-200 rounded-xl p-3 shadow-xs">
                                                   <div className="flex items-center justify-between pb-2 border-b border-amber-100">
@@ -1133,7 +1116,7 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
                                             {/* Sub-branch 2: SẢN PHẨM & STORE SKUs */}
                                             {showProductBranches && (
                                               <div className="relative">
-                                                <div className="absolute -left-8 top-5 w-8 h-0.5 bg-purple-300" />
+                                                <div className="absolute -left-8 top-5 w-8 h-0.5 bg-blue-300" />
 
                                                 <div className="w-72 bg-white border border-blue-200 rounded-xl p-3 shadow-xs">
                                                   <div className="flex items-center justify-between pb-2 border-b border-blue-100">
@@ -1154,7 +1137,7 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
                                                         className="p-2 bg-slate-50 hover:bg-blue-50/50 rounded-lg border border-slate-200 transition cursor-pointer"
                                                       >
                                                         <div className="flex items-center justify-between">
-                                                          <span className="text-2xs font-semibold px-1.5 py-0.2 rounded bg-purple-50 text-purple-700 border border-purple-200">
+                                                          <span className="text-2xs font-semibold px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">
                                                             {prod.isHeroSku ? 'HERO SKU' : 'CORE SKU'}
                                                           </span>
                                                           <span className="text-2xs font-mono text-emerald-700 font-semibold">
@@ -1296,7 +1279,7 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
                       <div>
                         <div className="text-2xs text-slate-500">1 PIC chính phụ trách:</div>
                         <div className="text-xs font-semibold text-slate-900 flex items-center gap-1.5 mt-0.5">
-                          <span className="px-1.5 py-0.2 rounded text-2xs font-semibold bg-amber-100 text-amber-800 border border-amber-200">PIC CHÍNH</span>
+                          <span className="px-1.5 py-0.5 rounded text-2xs font-semibold bg-amber-100 text-amber-800 border border-amber-200">PIC CHÍNH</span>
                           <span>{selectedNode.data.primaryPic}</span>
                         </div>
                       </div>
@@ -1423,7 +1406,7 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
               ) : selectedNode.type === 'BRAND' ? (
                 <div className="space-y-4">
                   <div>
-                    <span className="text-2xs font-semibold px-2 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200">
+                    <span className="text-2xs font-semibold px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">
                       BRAND TỔNG
                     </span>
                     <h3 className="text-sm font-semibold text-slate-900 mt-2">
@@ -1459,7 +1442,7 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
                   <div>
                     <div className="flex items-center justify-between text-xs font-semibold text-slate-900 mb-2">
                       <span className="flex items-center gap-1.5">
-                        <Store className="w-3.5 h-3.5 text-purple-600" />
+                        <Store className="w-3.5 h-3.5 text-blue-600" />
                         Gian hàng sàn trực thuộc ({stores.filter(s => s.brandId === selectedNode.data.id).length})
                       </span>
                     </div>
@@ -1469,7 +1452,7 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
                         <div
                           key={st.id}
                           onClick={() => setSelectedNode({ type: 'STORE', data: st })}
-                          className="p-2.5 bg-slate-50 hover:bg-purple-50/50 rounded-xl border border-slate-200 transition cursor-pointer"
+                          className="p-2.5 bg-slate-50 hover:bg-blue-50/50 rounded-xl border border-slate-200 transition cursor-pointer"
                         >
                           <div className="flex items-center justify-between text-2xs mb-1">
                             {renderPlatformBadge(st.platform)}

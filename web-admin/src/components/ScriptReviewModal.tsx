@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, CheckCircle, RotateCcw, Clock, ShieldAlert, Sparkles, Video, FileText, CheckSquare, MessageSquare } from 'lucide-react';
+import { X, CheckCircle, RotateCcw, Clock, FileText, CheckSquare, MessageSquare } from 'lucide-react';
 import { ScriptReviewItem } from '../lib/types';
 
 interface ScriptReviewModalProps {
@@ -50,7 +50,7 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
 
   const handleSendRevision = () => {
     if (!feedbackNotes.trim()) {
-      setErrorMsg('Vui lòng nhập ghi chú phản hồi để KOC biết cần chỉnh sửa điểm nào!');
+      setErrorMsg('Vui lòng nhập ghi chú phản hồi để KOC biết cần chỉnh sửa điểm nào.');
       return;
     }
     setErrorMsg(null);
@@ -73,15 +73,15 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
         {/* Header - Enterprise Light */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50/80">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-purple-50 border border-purple-200 text-purple-600 flex items-center justify-center shadow-2xs">
-              <FileText className="w-5 h-5 text-purple-600" />
+            <div className="w-9 h-9 rounded-lg bg-accent-soft border border-line text-accent flex items-center justify-center shadow-2xs">
+              <FileText className="w-5 h-5 text-accent" />
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <h3 id="script-review-title" className="text-sm font-semibold text-slate-900">
-                  Thẩm định kịch bản KOC (SLA: 24h)
+                  Thẩm định kịch bản KOC
                 </h3>
-                <span className="px-2 py-0.5 rounded text-2xs font-semibold font-mono bg-purple-100 text-purple-700 border border-purple-200">
+                <span className="px-2 py-0.5 rounded text-2xs font-semibold font-mono bg-accent-soft text-accent border border-line">
                   {script.dealCode}
                 </span>
               </div>
@@ -104,7 +104,7 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
           {/* Metadata Bar */}
           <div className="flex flex-wrap items-center justify-between gap-2 p-3 bg-slate-50 rounded-lg border border-slate-200 text-xs text-slate-700">
             <span>
-              Phân loại: <strong className="text-purple-700">{script.pillar}</strong>
+              Phân loại: <strong className="text-accent">{script.pillar}</strong>
             </span>
             <span>
               Thời lượng dự kiến: <strong className="text-slate-900">{script.videoDuration}</strong>
@@ -118,13 +118,13 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
           {/* 4 Structural Script Sections */}
           <div className="space-y-3">
             <h4 className="text-xs font-semibold text-slate-800">
-              Nội dung kịch bản chi tiết (cấu trúc 4 phần chuẩn TikTok Shop)
+              Nội dung kịch bản chi tiết
             </h4>
 
             {/* Section 1: Hook */}
             <div className="p-3.5 bg-blue-50/50 rounded-lg border border-blue-200/80 space-y-1">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-blue-700">1. Đoạn mở đầu (0 — 3 giây: Hook)</span>
+                <span className="text-xs font-semibold text-blue-700">Đoạn mở đầu (0–3 giây đầu)</span>
                 <span className="text-2xs text-slate-500 font-medium">Giữ chân người xem lướt qua</span>
               </div>
               <p className="text-xs text-slate-800 leading-relaxed italic">
@@ -135,7 +135,7 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
             {/* Section 2: Pain Point */}
             <div className="p-3.5 bg-amber-50/50 rounded-lg border border-amber-200/80 space-y-1">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-amber-700">2. Nỗi đau khách hàng (3 — 15 giây: Pain point)</span>
+                <span className="text-xs font-semibold text-amber-700">Nỗi đau khách hàng (3–15 giây)</span>
                 <span className="text-2xs text-slate-500 font-medium">Kích hoạt cảm xúc đồng cảm</span>
               </div>
               <p className="text-xs text-slate-800 leading-relaxed">
@@ -146,8 +146,8 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
             {/* Section 3: Solution & USP */}
             <div className="p-3.5 bg-emerald-50/50 rounded-lg border border-emerald-200/80 space-y-1">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-emerald-700">3. GIẢI PHÁP &amp; USP SẢN PHẨM (15 — 45 GIÂY)</span>
-                <span className="text-2xs text-slate-500 font-medium">Lợi điểm độc nhất &amp; Thành phần</span>
+                <span className="text-xs font-semibold text-emerald-700">Giải pháp &amp; lợi điểm sản phẩm (15–45 giây)</span>
+                <span className="text-2xs text-slate-500 font-medium">Lợi điểm nổi bật &amp; thành phần</span>
               </div>
               <p className="text-xs text-slate-800 leading-relaxed">
                 {script.solutionAndUsp}
@@ -155,10 +155,10 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
             </div>
 
             {/* Section 4: CTA */}
-            <div className="p-3.5 bg-purple-50/50 rounded-lg border border-purple-200/80 space-y-1">
+            <div className="p-3.5 bg-accent-soft rounded-lg border border-line space-y-1">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-purple-700">4. Kêu gọi hành động (45 — 60 giây: CTA)</span>
-                <span className="text-2xs text-slate-500 font-medium">Gắn giỏ hàng &amp; Voucher chớp nhoáng</span>
+                <span className="text-xs font-semibold text-accent">Kêu gọi hành động (45–60 giây)</span>
+                <span className="text-2xs text-slate-500 font-medium">Gắn giỏ hàng &amp; ưu đãi</span>
               </div>
               <p className="text-xs text-slate-800 leading-relaxed">
                 {script.callToAction}
@@ -170,7 +170,7 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
           <div className="p-4 bg-slate-50 rounded-lg border border-slate-200 space-y-2.5">
             <h4 className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
               <CheckSquare className="w-4 h-4 text-emerald-600" />
-              Checklist Kiểm Duyệt Tiêu Chuẩn Nền Tảng &amp; Thương Hiệu
+              Danh mục kiểm duyệt tiêu chuẩn nền tảng &amp; thương hiệu
             </h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
               <label className="flex items-center gap-2 text-slate-700 cursor-pointer">
@@ -180,7 +180,7 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
                   onChange={(e) => setCheckUsp(e.target.checked)}
                   className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                 />
-                <span>Đúng thông điệp USP &amp; Brand Guidelines</span>
+                <span>Đúng thông điệp sản phẩm &amp; quy chuẩn thương hiệu</span>
               </label>
               <label className="flex items-center gap-2 text-slate-700 cursor-pointer">
                 <input
@@ -207,7 +207,7 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
                   onChange={(e) => setCheckDuration(e.target.checked)}
                   className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                 />
-                <span>Thời lượng quay thực tế đạt chuẩn (60 - 90s)</span>
+                <span>Thời lượng quay thực tế đạt chuẩn (60–90s)</span>
               </label>
             </div>
           </div>
@@ -229,7 +229,7 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
               </div>
               <textarea
                 rows={3}
-                placeholder="VD: Đoạn hook 3s đầu cần đẩy năng lượng cao hơn; bổ sung nhấn mạnh vào chứng nhận màng lọc Tinosorb châu âu..."
+                placeholder="VD: Đoạn mở đầu 3s cần đẩy năng lượng cao hơn; bổ sung nhấn mạnh vào chứng nhận màng lọc Tinosorb châu Âu..."
                 value={feedbackNotes}
                 onChange={(e) => setFeedbackNotes(e.target.value)}
                 className="w-full bg-white border border-slate-300 rounded-lg p-3 text-xs text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 focus:outline-none"
@@ -241,7 +241,7 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
                 onClick={handleSendRevision}
                 className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-semibold text-xs rounded-lg transition shadow-xs"
               >
-                Gửi yêu cầu chỉnh sửa cho booking phản hồi KOC
+                Gửi yêu cầu chỉnh sửa
               </button>
             </div>
           )}
@@ -250,7 +250,7 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
         {/* Footer Actions - Enterprise Light */}
         <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
           <span className="text-xs text-slate-600">
-            Trạng thái hiện tại: <strong className="text-slate-900">{script.status === 'PENDING' ? 'Chờ Phê Duyệt' : script.status === 'APPROVED' ? 'Đã Phê Duyệt' : 'Yêu Cầu Sửa'}</strong>
+            Trạng thái hiện tại: <strong className="text-slate-900">{script.status === 'PENDING' ? 'Chờ duyệt' : script.status === 'APPROVED' ? 'Đã duyệt' : 'Cần sửa'}</strong>
           </span>
 
           <div className="flex items-center gap-2">
@@ -270,7 +270,7 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
                 className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-lg shadow-xs transition flex items-center gap-1.5"
               >
                 <CheckCircle className="w-4 h-4" />
-                <span>Duyệt Kịch Bản (Pass SLA) &amp; Kích Hoạt Ký HĐ</span>
+                <span>Duyệt kịch bản &amp; kích hoạt ký hợp đồng</span>
               </button>
             )}
 

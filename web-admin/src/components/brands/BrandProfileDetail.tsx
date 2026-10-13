@@ -7,12 +7,12 @@
  */
 
 import React, { useState } from 'react';
-import { ArrowLeft, ExternalLink, Pencil, Plus } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight, ExternalLink, Pencil, Plus } from 'lucide-react';
 import type { BookingDealItem } from '../../lib/types';
 import type { BrandPermissions, BrandProfile, BrandSection } from '../../lib/brands/types';
 import { SECTION_LABEL } from '../../lib/brands/types';
 import { formatVnd, formatVndShort } from '../../lib/format';
-import { ActionMenu, Button, ConfirmDialog, EmptyState, Person, SectionHeader, Status } from '../ui';
+import { ActionMenu, Avatar, Button, ConfirmDialog, EmptyState, Person, SectionHeader, Status } from '../ui';
 import { ContentRulesDialog, EntityDialog, ItemDialog, PositioningDialog, RatecardDialog, type ItemField } from './BrandEditors';
 import { DOC_CATEGORY_LABEL, TONE_LABEL, dateTime, isExpired, real, type BrandRow } from './brandUi';
 
@@ -65,6 +65,7 @@ export function BrandProfileDetail({
   deals,
   busy,
   onBack,
+  nav,
   onSave,
   onOpenBooking,
 }: {
@@ -73,6 +74,7 @@ export function BrandProfileDetail({
   deals: BookingDealItem[];
   busy: boolean;
   onBack: () => void;
+  nav?: { onPrev?: () => void; onNext?: () => void; position?: number; total?: number };
   onSave: Save;
   onOpenBooking?: () => void;
 }) {
@@ -80,6 +82,7 @@ export function BrandProfileDetail({
   const [dialog, setDialog] = useState<null | 'POSITIONING' | 'ENTITY' | 'RATECARD' | 'CONTENT_RULES'>(null);
   const [item, setItem] = useState<null | { list: ListKey; index: number }>(null);
   const [removing, setRemoving] = useState<null | { list: ListKey; index: number }>(null);
+  const [showTaxCode, setShowTaxCode] = useState(false);
 
   const saveDialog = async (section: BrandSection, data: unknown) => { if (await onSave(section, data)) setDialog(null); };
   const saveList = async (list: ListKey, next: unknown[], summary: string) => {
@@ -90,7 +93,7 @@ export function BrandProfileDetail({
 
   const openDeals = deals.filter(d => d.brandName.trim().toLowerCase() === row.name.trim().toLowerCase() && !['COMPLETED', 'CANCELLED', 'FINAL_PAID'].includes(d.status));
   const openValue = openDeals.reduce((s, d) => s + (d.totalValue || 0), 0);
-  const status = !row.saved ? { label: 'Chưa có hồ sơ', tone: 'neutral' as const } : row.done === row.total ? { label: 'Đủ hồ sơ', tone: 'positive' as const } : { label: 'Đang bổ sung', tone: 'warning' as const };
+  const status = !row.saved ? { label: 'Nháp', tone: 'neutral' as const } : row.done === row.total ? { label: 'Hoàn tất', tone: 'positive' as const } : { label: 'Đang chạy', tone: 'info' as const };
   const editBtn = (section: BrandSection, onClick: () => void, label = 'Sửa') => can[section] && <Button size="sm" icon={Pencil} onClick={onClick}>{label}</Button>;
   const addBtn = (list: ListKey) => can[LIST_META[list].section] && <Button size="sm" icon={Plus} onClick={() => setItem({ list, index: -1 })}>Thêm {LIST_META[list].noun}</Button>;
   const itemMenu = (list: ListKey, index: number) =>
@@ -100,16 +103,55 @@ export function BrandProfileDetail({
 
   return (
     <div className="space-y-6">
-      <Button variant="ghost" size="sm" icon={ArrowLeft} onClick={onBack} className="-ml-2.5">Hồ sơ thương hiệu</Button>
+      <div className="flex items-center justify-between gap-3">
+        <Button variant="ghost" size="sm" icon={ArrowLeft} onClick={onBack} className="-ml-2.5">Hồ sơ thương hiệu</Button>
+        {(nav?.onPrev || nav?.onNext) && (
+          <div className="flex items-center gap-1.5 text-2xs text-ink-3">
+            {nav?.position && nav?.total ? (
+              <span className="tabular-nums mr-1">{nav.position} / {nav.total}</span>
+            ) : null}
+            <button
+              type="button"
+              disabled={!nav?.onPrev}
+              onClick={nav?.onPrev}
+              aria-label="Nhãn hàng trước"
+              title="Nhãn hàng trước"
+              className="h-7 w-7 inline-flex items-center justify-center rounded-md border border-line-strong text-ink-2 hover:bg-sunken disabled:opacity-40 disabled:pointer-events-none"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              disabled={!nav?.onNext}
+              onClick={nav?.onNext}
+              aria-label="Nhãn hàng sau"
+              title="Nhãn hàng sau"
+              className="h-7 w-7 inline-flex items-center justify-center rounded-md border border-line-strong text-ink-2 hover:bg-sunken disabled:opacity-40 disabled:pointer-events-none"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+      </div>
 
       <header className="flex flex-wrap items-start justify-between gap-4">
-        <div className="min-w-0 grid gap-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <h2 className="text-lg font-semibold text-ink">{row.name}</h2>
-            <Status tone={status.tone}>{status.label}</Status>
-            <span className="text-[13px] text-ink-3 tabular-nums">{row.done}/{row.total} mục</span>
+        <div className="flex items-start gap-3 min-w-0">
+          <Avatar name={row.name} size={40} />
+          <div className="min-w-0 grid gap-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="text-lg font-semibold text-ink">{row.name}</h2>
+              <Status tone={status.tone}>{status.label}</Status>
+              <span className="text-[13px] text-ink-3 tabular-nums">{row.done}/{row.total} mục</span>
+            </div>
+            <p className="text-[13px] text-ink-2">{[real(m?.category), p.entity?.companyName || real(m?.companyName), m?.platforms?.join(', ')].filter(Boolean).join(' · ')}</p>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-ink-2">
+              {real(m?.accountPic) ? (
+                <Person name={real(m?.accountPic)} sub="Account PIC" size={20} />
+              ) : (
+                <span className="text-ink-3">Chưa có Account PIC</span>
+              )}
+            </div>
           </div>
-          <p className="text-[13px] text-ink-2">{[real(m?.category), p.entity?.companyName || real(m?.companyName), m?.platforms?.join(', ')].filter(Boolean).join(' · ')}</p>
         </div>
         {row.saved && <p className="text-2xs text-ink-3">Cập nhật {dateTime(p.updatedAt)} · {p.updatedBy}</p>}
       </header>
@@ -256,7 +298,24 @@ export function BrandProfileDetail({
           <Aside title={SECTION_LABEL.ENTITY} action={editBtn('ENTITY', () => setDialog('ENTITY'))}>
             <dl className="grid gap-3">
               <Info label="Tên công ty">{p.entity?.companyName || real(m?.companyName)}</Info>
-              <Info label="Mã số thuế">{p.entity?.taxCode && <span className="font-code">{p.entity.taxCode}</span>}</Info>
+              <Info label="Mã số thuế">
+                {p.entity?.taxCode && (
+                  <span className="inline-flex items-center gap-2">
+                    <span className="font-code tabular-nums">
+                      {showTaxCode ? p.entity.taxCode : `•••• ${p.entity.taxCode.slice(-4)}`}
+                    </span>
+                    {can.ENTITY && (
+                      <button
+                        type="button"
+                        onClick={() => setShowTaxCode(v => !v)}
+                        className="text-2xs text-accent hover:underline"
+                      >
+                        {showTaxCode ? 'Ẩn số' : 'Hiện số'}
+                      </button>
+                    )}
+                  </span>
+                )}
+              </Info>
               <Info label="Người liên hệ phía nhãn">{p.entity?.contactPerson || real(m?.contactPerson)}</Info>
               <Info label="Xuất xứ">{p.entity?.originCountry}</Info>
             </dl>

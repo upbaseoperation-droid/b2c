@@ -1,37 +1,26 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
-import { 
-  X, 
+import React, { useState, useEffect } from 'react';
+import {
+  X,
   AlertTriangle,
-  UserPlus, 
-  ShieldCheck, 
-  DollarSign, 
-  Smartphone, 
-  CreditCard, 
-  Check, 
-  Sparkles, 
-  HelpCircle, 
-  Hash, 
-  Award, 
-  Truck, 
-  MapPin, 
-  Mail, 
-  Users, 
-  ShoppingBag, 
-  Building2, 
-  FileText 
+  UserPlus,
+  DollarSign,
+  CreditCard,
+  Check,
+  Truck,
+  Users,
+  FileText,
 } from 'lucide-react';
-import { 
-  KocItem, 
-  SalaryGrade, 
-  CreatorNiche, 
-  CreatorSegment, 
-  KocCategory, 
-  TepKenh, 
+import {
+  KocItem,
+  SalaryGrade,
+  CreatorSegment,
+  KocCategory,
+  TepKenh,
   KocTier,
   getSalaryGradeFromRate,
-  getSegmentFromSalaryGrade
+  getSegmentFromSalaryGrade,
 } from '../lib/types';
 
 interface CreateKocModalProps {
@@ -41,11 +30,15 @@ interface CreateKocModalProps {
   existingKocs?: KocItem[];
 }
 
+function createKocId(): string {
+  return `koc-${Date.now()}`;
+}
+
 export const CreateKocModal: React.FC<CreateKocModalProps> = ({
   isOpen,
   onClose,
   onKocCreated,
-  existingKocs = []
+  existingKocs = [],
 }) => {
   // ESC key listener
   useEffect(() => {
@@ -59,13 +52,14 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
     }
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
+
   const [stageName, setStageName] = useState('');
   const [channelId, setChannelId] = useState('');
   const [realName, setRealName] = useState('');
   const [bookingFormat, setBookingFormat] = useState<'Booking Video KOC' | 'Booking Livestream KOC' | 'Affiliate Thuần'>('Booking Video KOC');
   const [formError, setFormError] = useState<string | null>(null);
-  
-  // 2. Rate Card & 4 Phân Loại Cốt Lõi (Sheet 3.1 & 3.2 & 5.4 & 5.6)
+
+  // Rate Card & 4 Phân Loại Cốt Lõi
   const [rateCardVideo, setRateCardVideo] = useState<number>(3000000);
   const [salaryGrade, setSalaryGrade] = useState<SalaryGrade>('KL4');
   const [segment, setSegment] = useState<CreatorSegment>('Mid Creator');
@@ -73,28 +67,23 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
   const [kocCategory, setKocCategory] = useState<KocCategory>('Personal care');
   const [tier, setTier] = useState<KocTier>('TIER_3_MICRO');
 
-  // 3. E-Commerce & Performance
+  // E-Commerce & Performance
   const [followers, setFollowers] = useState<number>(50000);
-  const [avgViews, setAvgViews] = useState<number>(20000);
   const [gmvBestCase, setGmvBestCase] = useState<number>(15000000);
-  const [aov, setAov] = useState<number>(250000);
 
-  // 4. Follower Demographics
-  const [niche, setNiche] = useState('');
+  // Follower Demographics
   const [femaleRatio, setFemaleRatio] = useState<number>(85);
   const [ageGroup, setAgeGroup] = useState<'18-24' | '25-34' | '35+'>('18-24');
 
-  // 5. Contact & Shipping Logistics for Sample
+  // Contact & Shipping Logistics for Sample
   const [phone, setPhone] = useState('');
   const [zalo, setZalo] = useState('');
-  const [email, setEmail] = useState('');
   const [location, setLocation] = useState('Hà Nội');
   const [shippingAddress, setShippingAddress] = useState('');
   const [bookingPic, setBookingPic] = useState('Khánh Vy');
   const [brandName, setBrandName] = useState('Kutieskin Mama');
-  const [contentNote, setContentNote] = useState('');
 
-  // 6. Legal & Banking
+  // Legal & Banking
   const [legalType, setLegalType] = useState<'INDIVIDUAL' | 'BUSINESS_HOUSEHOLD' | 'BUSINESS_COMPANY'>('INDIVIDUAL');
   const [companyName, setCompanyName] = useState('');
   const [taxCode, setTaxCode] = useState('');
@@ -102,6 +91,52 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
   const [cccd, setCccd] = useState('');
   const [bankName, setBankName] = useState('Techcombank');
   const [bankAccount, setBankAccount] = useState('');
+
+  // Kiểm tra trùng lặp KOC thời gian thực
+  const duplicateMatch = (() => {
+    if (!existingKocs || existingKocs.length === 0) return null;
+    const cleanHandle = channelId.trim().toLowerCase().replace('@', '');
+    const cleanPhone = phone.trim().replace(/\D/g, '');
+    const cleanCccd = cccd.trim();
+    const cleanTax = taxCode.trim();
+
+    for (const k of existingKocs) {
+      const kHandle = (k.channelId || '').toLowerCase().replace('@', '');
+      const kPhone = (k.phone || '').replace(/\D/g, '');
+      const kCccd = k.cccd ? k.cccd.trim() : '';
+      const kTax = k.taxCode ? k.taxCode.trim() : '';
+
+      if (cleanHandle && cleanHandle.length >= 3 && kHandle === cleanHandle) {
+        return {
+          type: 'TRÙNG_KÊNH' as const,
+          reason: `Trùng ID kênh TikTok (@${kHandle})`,
+          koc: k,
+        };
+      }
+      if (cleanPhone && cleanPhone.length >= 9 && kPhone === cleanPhone) {
+        return {
+          type: 'TRÙNG_SĐT' as const,
+          reason: `Trùng số điện thoại / Zalo (${k.phone})`,
+          koc: k,
+        };
+      }
+      if (cleanCccd && cleanCccd.length >= 9 && kCccd === cleanCccd) {
+        return {
+          type: 'TRÙNG_CCCD' as const,
+          reason: `Trùng số CCCD / Định danh (${k.cccd})`,
+          koc: k,
+        };
+      }
+      if (cleanTax && cleanTax.length >= 9 && (kTax === cleanTax || kCccd === cleanTax)) {
+        return {
+          type: 'TRÙNG_MST' as const,
+          reason: `Trùng Mã số thuế (${kTax || kCccd})`,
+          koc: k,
+        };
+      }
+    }
+    return null;
+  })();
 
   if (!isOpen) return null;
 
@@ -128,52 +163,6 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
     setSegment(getSegmentFromSalaryGrade(kl));
   };
 
-  // Kiểm tra trùng lặp KOC thời gian thực
-  const duplicateMatch = useMemo(() => {
-    if (!existingKocs || existingKocs.length === 0) return null;
-    const cleanHandle = channelId.trim().toLowerCase().replace('@', '');
-    const cleanPhone = phone.trim().replace(/\D/g, '');
-    const cleanCccd = cccd.trim();
-    const cleanTax = taxCode.trim();
-
-    for (const k of existingKocs) {
-      const kHandle = (k.channelId || '').toLowerCase().replace('@', '');
-      const kPhone = (k.phone || '').replace(/\D/g, '');
-      const kCccd = k.cccd ? k.cccd.trim() : '';
-      const kTax = k.taxCode ? k.taxCode.trim() : '';
-
-      if (cleanHandle && cleanHandle.length >= 3 && kHandle === cleanHandle) {
-        return {
-          type: 'TRÙNG_KÊNH' as const,
-          reason: `Trùng ID kênh TikTok (@${kHandle})`,
-          koc: k
-        };
-      }
-      if (cleanPhone && cleanPhone.length >= 9 && kPhone === cleanPhone) {
-        return {
-          type: 'TRÙNG_SĐT' as const,
-          reason: `Trùng số điện thoại / Zalo (${k.phone})`,
-          koc: k
-        };
-      }
-      if (cleanCccd && cleanCccd.length >= 9 && kCccd === cleanCccd) {
-        return {
-          type: 'TRÙNG_CCCD' as const,
-          reason: `Trùng số CCCD / Định danh (${k.cccd})`,
-          koc: k
-        };
-      }
-      if (cleanTax && cleanTax.length >= 9 && (kTax === cleanTax || kCccd === cleanTax)) {
-        return {
-          type: 'TRÙNG_MST' as const,
-          reason: `Trùng Mã số thuế (${kTax || kCccd})`,
-          koc: k
-        };
-      }
-    }
-    return null;
-  }, [channelId, phone, cccd, taxCode, existingKocs]);
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!stageName.trim() || !channelId.trim()) {
@@ -185,40 +174,43 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
     const formattedChannel = channelId.startsWith('@') ? channelId : `@${channelId}`;
 
     const newKoc: KocItem = {
-      id: `koc-${Date.now()}`,
+      id: createKocId(),
       channelId: formattedChannel,
       channelLink: `https://www.tiktok.com/@${formattedChannel.replace('@', '')}`,
       stageName: stageName.trim(),
       realName: realName.trim(),
       tier: tier,
-      tierLabel: tier === 'TIER_1_CELEB' ? 'Tier 1 (Celeb)' :
-                 tier === 'TIER_2_MACRO' ? 'Tier 2 (Macro)' :
-                 tier === 'TIER_3_MICRO' ? 'Tier 3 (Micro)' : 'Tier 4 (Affiliate)',
+      tierLabel:
+        tier === 'TIER_1_CELEB'
+          ? 'Tier 1 (Celeb)'
+          : tier === 'TIER_2_MACRO'
+            ? 'Tier 2 (Macro)'
+            : tier === 'TIER_3_MICRO'
+              ? 'Tier 3 (Micro)'
+              : 'Tier 4 (Affiliate)',
       // 4 Phân loại cốt lõi
       salaryGrade: salaryGrade,
       segment: segment,
       tepKenh: tepKenh,
       creatorCategory: tepKenh,
       kocCategory: kocCategory,
-      niche: niche.trim(),
+      niche: '',
       followers: Number(followers) || 0,
-      avgViews: Number(avgViews) || 0,
+      avgViews: 20000,
       rateCardVideo: Number(rateCardVideo) || 0,
       bookingFormat: bookingFormat,
-      
+
       // Shipping & Logistics
       phone: phone.trim(),
       zalo: zalo.trim() || phone.trim(),
-      email: email.trim() || undefined,
       location: location,
       shippingAddress: shippingAddress.trim() || undefined,
       bookingPic: bookingPic,
       brandName: brandName,
-      contentNote: contentNote.trim() || undefined,
 
       // E-Commerce
       gmvBestCase: Number(gmvBestCase) || undefined,
-      aov: Number(aov) || undefined,
+      aov: 250000,
 
       // Demographics
       femaleRatio: femaleRatio,
@@ -226,14 +218,20 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
 
       // Legal & Banking
       cccd: cccd.trim(),
-      taxCode: legalType !== 'INDIVIDUAL' ? taxCode.trim() : (cccd.trim() || undefined),
+      taxCode: legalType !== 'INDIVIDUAL' ? taxCode.trim() : cccd.trim() || undefined,
       companyName: legalType !== 'INDIVIDUAL' ? companyName.trim() : undefined,
-      legalRepresentative: legalType !== 'INDIVIDUAL' ? (legalRepresentative.trim() || realName.trim()) : undefined,
-      ocrDocumentType: legalType === 'INDIVIDUAL' ? 'CCCD' : legalType === 'BUSINESS_HOUSEHOLD' ? 'BUSINESS_HOUSEHOLD' : 'BUSINESS_LICENSE',
+      legalRepresentative:
+        legalType !== 'INDIVIDUAL' ? legalRepresentative.trim() || realName.trim() : undefined,
+      ocrDocumentType:
+        legalType === 'INDIVIDUAL'
+          ? 'CCCD'
+          : legalType === 'BUSINESS_HOUSEHOLD'
+            ? 'BUSINESS_HOUSEHOLD'
+            : 'BUSINESS_LICENSE',
       isOcrVerified: Boolean(cccd.trim() || taxCode.trim()),
       bankName: bankName,
       bankAccount: bankAccount.trim(),
-      
+
       // Operation status
       brandApprovalStatus: 'ĐÃ_DUYỆT',
       statusKoc: 'SẴN_SÀNG',
@@ -242,7 +240,7 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
       totalPastCost: 0,
       totalPastGmv: 0,
       historicalRoi: 0,
-      isWinnerTop20: false
+      isWinnerTop20: false,
     };
 
     onKocCreated(newKoc);
@@ -250,37 +248,37 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
   };
 
   return (
-    <div 
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150"
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/50 backdrop-blur-xs animate-in fade-in duration-150"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div 
+      <div
         role="dialog"
         aria-modal="true"
         aria-label="Tạo hồ sơ KOC chuẩn 65 trường nghiệp vụ"
-        className="bg-white border border-slate-200 rounded-xl max-w-3xl w-full p-6 shadow-2xl space-y-5 max-h-[92vh] overflow-y-auto text-slate-800"
+        className="bg-surface border border-line rounded-xl max-w-3xl w-full p-6 shadow-2xl space-y-5 max-h-[92vh] overflow-y-auto text-ink"
       >
         {/* Header */}
-        <div className="flex items-center justify-between pb-3 border-b border-slate-200">
+        <div className="flex items-center justify-between pb-3 border-b border-line">
           <div>
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 w-fit mb-1">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-success-soft text-success border border-success-line w-fit mb-1">
               <UserPlus className="w-3.5 h-3.5" />
               Thêm KOC mới vào danh mục Upbase
             </span>
-            <h3 className="text-lg font-semibold text-slate-900">
+            <h3 className="text-lg font-semibold text-ink">
               Tạo hồ sơ KOC chuẩn 65 trường nghiệp vụ
             </h3>
-            <p className="text-xs text-slate-500">
-              Đầy đủ thông tin kênh, phân khung lương (KL1 - KL7), hậu cần nhận mẫu gửi hàng, nhân khẩu học & tài khoản ngân hàng
+            <p className="text-xs text-muted">
+              Đầy đủ thông tin kênh, phân khung lương (KL1 - KL7), hậu cần nhận mẫu gửi hàng, nhân khẩu học &amp; tài khoản ngân hàng
             </p>
           </div>
           <button
             type="button"
             onClick={onClose}
             aria-label="Đóng modal"
-            className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition"
+            className="w-8 h-8 rounded-lg bg-sunken hover:bg-hover text-muted hover:text-ink flex items-center justify-center transition"
           >
             <X className="w-4 h-4" />
           </button>
@@ -288,41 +286,41 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
 
         <form onSubmit={handleSubmit} className="space-y-4 text-xs">
           {formError && (
-            <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs font-semibold flex items-center justify-between">
+            <div className="p-3 bg-danger-soft border border-danger-line text-danger rounded-xl text-xs font-semibold flex items-center justify-between">
               <span>{formError}</span>
-              <button type="button" onClick={() => setFormError(null)} className="text-rose-500 font-bold hover:text-rose-800">×</button>
+              <button type="button" onClick={() => setFormError(null)} className="text-danger font-semibold hover:opacity-80">×</button>
             </div>
           )}
           {duplicateMatch && (
-            <div className="p-3 bg-amber-50 border-2 border-amber-400 rounded-xl text-xs space-y-1.5 animate-in fade-in">
-              <div className="flex items-center gap-2 text-amber-900 font-bold">
-                <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
-                <span>CẢNH BÁO TRÙNG KOC: {duplicateMatch.reason}</span>
+            <div className="p-3 bg-warn-soft border border-warn-line rounded-xl text-xs space-y-1.5 animate-in fade-in">
+              <div className="flex items-center gap-2 text-warn font-semibold">
+                <AlertTriangle className="w-4 h-4 text-warn shrink-0" />
+                <span>Cảnh báo trùng hồ sơ KOC: {duplicateMatch.reason}</span>
               </div>
-              <p className="text-amber-900 text-2xs leading-relaxed">
+              <p className="text-ink-2 text-2xs leading-relaxed">
                 KOC <strong>{duplicateMatch.koc.stageName}</strong> (@{duplicateMatch.koc.channelId}) đã tồn tại trong danh bạ hệ thống!
                 <br />
-                • Nhân sự phụ trách: <strong className="text-slate-900">{duplicateMatch.koc.bookingPic || 'Chưa gán'}</strong>
+                • Nhân sự phụ trách: <strong className="text-ink">{duplicateMatch.koc.bookingPic || 'Chưa gán'}</strong>
                 {' '}• Nhãn hàng: <strong>{duplicateMatch.koc.brandName || 'Chung'}</strong>
-                {' '}• Trạng thái: <span className="font-semibold text-slate-800">{duplicateMatch.koc.statusKoc || 'Sẵn sàng'}</span>
+                {' '}• Trạng thái: <span className="font-semibold text-ink">{duplicateMatch.koc.statusKoc || 'Sẵn sàng'}</span>
               </p>
-              <div className="text-2xs text-amber-800 font-medium">
-                ⚠️ Vui lòng liên hệ với nhân sự phụ trách để tránh 2 người cùng liên hệ một KOC gây xung đột giá cast và mất uy tín.
+              <div className="text-2xs text-warn font-medium">
+                Vui lòng liên hệ với nhân sự phụ trách để tránh 2 người cùng liên hệ một KOC gây xung đột giá cast và mất uy tín.
               </div>
             </div>
           )}
 
           {/* Section 1: Channel & Stage Name & Booking Format */}
-          <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
-            <span className="text-slate-800 font-semibold flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-blue-600" />
-              1. Thông tin nhận diện kênh & định dạng booking:
+          <div className="p-3.5 bg-sunken rounded-xl border border-line space-y-3">
+            <span className="text-ink font-semibold flex items-center gap-1.5">
+              <FileText className="w-3.5 h-3.5 text-primary" />
+              Thông tin nhận diện kênh &amp; định dạng booking
             </span>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <label className="text-slate-700 font-semibold block mb-1">
-                  Tên kênh / KOC <span className="text-rose-500">*</span>:
+                <label className="text-ink-2 font-semibold block mb-1">
+                  Tên kênh / KOC <span className="text-danger">*</span>:
                 </label>
                 <input
                   type="text"
@@ -330,13 +328,13 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
                   placeholder="VD: Hải yến Beauty, Chanh Review..."
                   value={stageName}
                   onChange={(e) => setStageName(e.target.value)}
-                  className="w-full bg-white border border-slate-300 rounded-lg px-3.5 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium"
+                  className="w-full bg-surface border border-line-strong rounded-lg px-3.5 py-2 text-xs text-ink placeholder-muted focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary font-medium"
                 />
               </div>
 
               <div>
-                <label className="text-slate-700 font-semibold block mb-1">
-                  TikTok Handle / Kênh ID <span className="text-rose-500">*</span>:
+                <label className="text-ink-2 font-semibold block mb-1">
+                  TikTok Handle / Kênh ID <span className="text-danger">*</span>:
                 </label>
                 <input
                   type="text"
@@ -344,16 +342,16 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
                   placeholder="VD: @haiyen.beauty"
                   value={channelId}
                   onChange={(e) => setChannelId(e.target.value)}
-                  className="w-full bg-white border border-slate-300 rounded-lg px-3.5 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-mono"
+                  className="w-full bg-surface border border-line-strong rounded-lg px-3.5 py-2 text-xs text-ink placeholder-muted focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary font-mono"
                 />
               </div>
 
               <div>
-                <label className="text-slate-700 font-semibold block mb-1">Định dạng booking:</label>
+                <label className="text-ink-2 font-semibold block mb-1">Định dạng booking:</label>
                 <select
                   value={bookingFormat}
-                  onChange={(e) => setBookingFormat(e.target.value as any)}
-                  className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-800 font-semibold focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  onChange={(e) => setBookingFormat(e.target.value as 'Booking Video KOC' | 'Booking Livestream KOC' | 'Affiliate Thuần')}
+                  className="w-full bg-surface border border-line-strong rounded-lg px-3 py-2 text-xs text-ink font-semibold focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                 >
                   <option value="Booking Video KOC">Booking Video KOC</option>
                   <option value="Booking Livestream KOC">Booking Livestream KOC</option>
@@ -364,35 +362,35 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
           </div>
 
           {/* Section 2: Rate Card & Auto Salary Grade Calculation */}
-          <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
+          <div className="p-3.5 bg-sunken rounded-xl border border-line space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-slate-800 font-semibold flex items-center gap-1.5">
-                <DollarSign className="w-3.5 h-3.5 text-emerald-600" />
-                2. Báo giá video & tự động gán khung lương (KL):
+              <span className="text-ink font-semibold flex items-center gap-1.5">
+                <DollarSign className="w-3.5 h-3.5 text-success" />
+                Báo giá video &amp; tự động gán khung lương (KL)
               </span>
-              <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-purple-50 text-purple-700 border border-purple-200">
+              <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-info-soft text-info border border-info-line">
                 {salaryGrade} • {tier}
               </span>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
               <div>
-                <label className="text-slate-600 font-medium block mb-1">Báo giá video net (VNĐ):</label>
+                <label className="text-ink-2 font-medium block mb-1">Báo giá video net (VNĐ):</label>
                 <input
                   type="number"
                   step={100000}
                   value={rateCardVideo}
                   onChange={(e) => handleRateCardChange(Number(e.target.value))}
-                  className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-blue-700 font-mono font-semibold focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  className="w-full bg-surface border border-line-strong rounded-lg px-3 py-2 text-xs text-primary font-mono tabular-nums font-semibold focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                 />
               </div>
 
               <div>
-                <label className="text-slate-600 font-medium block mb-1">1. Khung Lương (KL):</label>
+                <label className="text-ink-2 font-medium block mb-1">Khung lương (KL):</label>
                 <select
                   value={salaryGrade}
                   onChange={(e) => handleSalaryGradeChange(e.target.value as SalaryGrade)}
-                  className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-2 text-xs text-slate-800 font-semibold focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  className="w-full bg-surface border border-line-strong rounded-lg px-2.5 py-2 text-xs text-ink font-semibold focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                 >
                   <option value="TAP UpAffiliate">TAP UpAffiliate (0đ)</option>
                   <option value="KL1">KL1 (&lt; 500k)</option>
@@ -407,11 +405,11 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
               </div>
 
               <div>
-                <label className="text-slate-600 font-medium block mb-1">2. Segment Creator:</label>
+                <label className="text-ink-2 font-medium block mb-1">Phân nhóm Creator:</label>
                 <select
                   value={segment}
                   onChange={(e) => setSegment(e.target.value as CreatorSegment)}
-                  className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-2 text-xs text-slate-800 font-semibold focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  className="w-full bg-surface border border-line-strong rounded-lg px-2.5 py-2 text-xs text-ink font-semibold focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                 >
                   <option value="Massive Creator">Massive Creator (TAP, KL1-3)</option>
                   <option value="Mid Creator">Mid Creator (KL4-5)</option>
@@ -421,32 +419,32 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
               </div>
 
               <div>
-                <label className="text-slate-600 font-medium block mb-1">Kỷ lục GMV:</label>
+                <label className="text-ink-2 font-medium block mb-1">Kỷ lục GMV:</label>
                 <input
                   type="number"
                   step={1000000}
                   value={gmvBestCase}
                   onChange={(e) => setGmvBestCase(Number(e.target.value))}
-                  className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-emerald-700 font-mono font-semibold focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  className="w-full bg-surface border border-line-strong rounded-lg px-3 py-2 text-xs text-success font-mono tabular-nums font-semibold focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                 />
               </div>
             </div>
           </div>
 
           {/* Section 3: Creator Niche & Follower Demographics */}
-          <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
-            <span className="text-slate-800 font-semibold flex items-center gap-1.5">
-              <Users className="w-3.5 h-3.5 text-pink-600" />
-              3. Tệp kênh (25 tệp) & KOC Category (9 ngành) & khán giả:
+          <div className="p-3.5 bg-sunken rounded-xl border border-line space-y-3">
+            <span className="text-ink font-semibold flex items-center gap-1.5">
+              <Users className="w-3.5 h-3.5 text-primary" />
+              Tệp kênh (25 tệp), ngành hàng (9 ngành) &amp; khán giả
             </span>
 
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
               <div>
-                <label className="text-slate-600 font-medium block mb-1">3. Tệp kênh (25 tệp):</label>
+                <label className="text-ink-2 font-medium block mb-1">Tệp kênh (25 tệp):</label>
                 <select
                   value={tepKenh}
                   onChange={(e) => setTepKenh(e.target.value as TepKenh)}
-                  className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-2 text-xs text-slate-800 font-semibold focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  className="w-full bg-surface border border-line-strong rounded-lg px-2.5 py-2 text-xs text-ink font-semibold focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                 >
                   <option value="Review Nữ">Review Nữ</option>
                   <option value="Review Nam">Review Nam</option>
@@ -480,52 +478,52 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
               </div>
 
               <div>
-                <label className="text-slate-600 font-medium block mb-1">4. KOC Category (Ngành):</label>
+                <label className="text-ink-2 font-medium block mb-1">Ngành hàng (Category):</label>
                 <select
                   value={kocCategory}
                   onChange={(e) => setKocCategory(e.target.value as KocCategory)}
-                  className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-2 text-xs text-slate-800 font-semibold focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  className="w-full bg-surface border border-line-strong rounded-lg px-2.5 py-2 text-xs text-ink font-semibold focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                 >
                   <option value="Personal care">Personal care (Mỹ phẩm/Skincare)</option>
-                  <option value="Mom and baby">Mom and baby (mẹ & bé)</option>
+                  <option value="Mom and baby">Mom and baby (mẹ &amp; bé)</option>
                   <option value="Reviewer">Reviewer (Đánh giá chuyên sâu)</option>
                   <option value="Lifestyle">Lifestyle (Đời sống)</option>
                   <option value="Fashion">Fashion (Thời trang)</option>
-                  <option value="ELHA">ELHA (Điện & Gia dụng)</option>
-                  <option value="F&B">F&B (thực phẩm & ẩm thực)</option>
+                  <option value="ELHA">ELHA (Điện &amp; Gia dụng)</option>
+                  <option value="F&B">F&amp;B (thực phẩm &amp; ẩm thực)</option>
                   <option value="Social / Comedian">Social / Comedian (Giải trí)</option>
                   <option value="Travel/Hospitality">Travel/Hospitality (Du lịch)</option>
                 </select>
               </div>
 
               <div>
-                <label className="text-slate-600 font-medium block mb-1">Followers Kênh:</label>
+                <label className="text-ink-2 font-medium block mb-1">Followers kênh:</label>
                 <input
                   type="number"
                   value={followers}
                   onChange={(e) => setFollowers(Number(e.target.value))}
-                  className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-800 font-mono focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  className="w-full bg-surface border border-line-strong rounded-lg px-3 py-2 text-xs text-ink font-mono tabular-nums focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                 />
               </div>
 
               <div>
-                <label className="text-slate-600 font-medium block mb-1">Tỉ trọng Follower nữ (%):</label>
+                <label className="text-ink-2 font-medium block mb-1">Tỉ trọng Follower nữ (%):</label>
                 <input
                   type="number"
                   min={0}
                   max={100}
                   value={femaleRatio}
                   onChange={(e) => setFemaleRatio(Number(e.target.value))}
-                  className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-pink-600 font-mono font-semibold focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  className="w-full bg-surface border border-line-strong rounded-lg px-3 py-2 text-xs text-primary font-mono tabular-nums font-semibold focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                 />
               </div>
 
               <div>
-                <label className="text-slate-600 font-medium block mb-1">Nhóm tuổi khán giả chính:</label>
+                <label className="text-ink-2 font-medium block mb-1">Nhóm tuổi khán giả chính:</label>
                 <select
                   value={ageGroup}
-                  onChange={(e) => setAgeGroup(e.target.value as any)}
-                  className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-2 text-xs text-slate-800 font-semibold focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  onChange={(e) => setAgeGroup(e.target.value as '18-24' | '25-34' | '35+')}
+                  className="w-full bg-surface border border-line-strong rounded-lg px-2.5 py-2 text-xs text-ink font-semibold focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                 >
                   <option value="18-24">18 - 24 Tuổi</option>
                   <option value="25-34">25 - 34 tuổi (dân VP, sức mua cao)</option>
@@ -536,19 +534,19 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
           </div>
 
           {/* Section 4: Sample Logistics & Operational PIC */}
-          <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
-            <span className="text-emerald-700 font-semibold flex items-center gap-1.5">
-              <Truck className="w-3.5 h-3.5 text-emerald-600" />
-              4. Hậu cần gửi mẫu & nhân sự booking phụ trách:
+          <div className="p-3.5 bg-sunken rounded-xl border border-line space-y-3">
+            <span className="text-ink font-semibold flex items-center gap-1.5">
+              <Truck className="w-3.5 h-3.5 text-success" />
+              Hậu cần gửi mẫu &amp; nhân sự booking phụ trách
             </span>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <label className="text-slate-600 font-medium block mb-1">Khu vực địa lý:</label>
+                <label className="text-ink-2 font-medium block mb-1">Khu vực địa lý:</label>
                 <select
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
-                  className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  className="w-full bg-surface border border-line-strong rounded-lg px-3 py-2 text-xs text-ink focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                 >
                   <option value="Hà Nội">Hà Nội</option>
                   <option value="TP. Hồ Chí Minh">TP. Hồ Chí Minh</option>
@@ -559,11 +557,11 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
               </div>
 
               <div>
-                <label className="text-slate-600 font-medium block mb-1">Nhân sự PIC phụ trách:</label>
+                <label className="text-ink-2 font-medium block mb-1">Nhân sự PIC phụ trách:</label>
                 <select
                   value={bookingPic}
                   onChange={(e) => setBookingPic(e.target.value)}
-                  className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-amber-700 font-semibold focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  className="w-full bg-surface border border-line-strong rounded-lg px-3 py-2 text-xs text-ink font-semibold focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                 >
                   <option value="Khánh Vy">Khánh Vy</option>
                   <option value="Lê Thị Thùy Linh">Lê Thị Thùy Linh</option>
@@ -574,11 +572,11 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
               </div>
 
               <div>
-                <label className="text-slate-600 font-medium block mb-1">Gian hàng phù hợp đề xuất:</label>
+                <label className="text-ink-2 font-medium block mb-1">Gian hàng phù hợp đề xuất:</label>
                 <select
                   value={brandName}
                   onChange={(e) => setBrandName(e.target.value)}
-                  className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-blue-700 font-semibold focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  className="w-full bg-surface border border-line-strong rounded-lg px-3 py-2 text-xs text-primary font-semibold focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                 >
                   <option value="Kutieskin Mama">Kutieskin Mama</option>
                   <option value="Bye Bye Blemish">Bye Bye Blemish</option>
@@ -591,7 +589,7 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
             </div>
 
             <div>
-              <label className="text-slate-600 font-medium block mb-1">
+              <label className="text-ink-2 font-medium block mb-1">
                 Thông tin nhận hàng chi tiết (tên người nhận, SĐT, địa chỉ giao mẫu vật lý):
               </label>
               <input
@@ -599,29 +597,29 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
                 placeholder="VD: Nguyễn Hải Yến — 0987654321 — Tầng 5, tòa Charmvit, 117 Trần Duy Hưng, Hà Nội"
                 value={shippingAddress}
                 onChange={(e) => setShippingAddress(e.target.value)}
-                className="w-full bg-white border border-slate-300 rounded-lg px-3.5 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                className="w-full bg-surface border border-line-strong rounded-lg px-3.5 py-2 text-xs text-ink placeholder-muted focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
               />
             </div>
           </div>
 
           {/* Section 5: Legal & Payment Data */}
-          <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
-            <span className="text-blue-700 font-semibold flex items-center gap-1.5">
-              <CreditCard className="w-3.5 h-3.5 text-blue-600" />
-              5. Pháp lý & thanh toán (tự động sinh hợp đồng & VietQR cọc 50%):
+          <div className="p-3.5 bg-sunken rounded-xl border border-line space-y-3">
+            <span className="text-ink font-semibold flex items-center gap-1.5">
+              <CreditCard className="w-3.5 h-3.5 text-primary" />
+              Pháp lý &amp; thanh toán (tự động sinh hợp đồng &amp; VietQR cọc 50%)
             </span>
 
             {/* Legal Entity Type Selector */}
-            <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-200">
-              <span className="text-2xs font-semibold text-slate-500 uppercase">Hình thức pháp lý ký kết & thuế:</span>
-              <div className="flex items-center gap-1 bg-white p-1 rounded-lg border border-slate-200">
+            <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-line">
+              <span className="text-2xs font-medium text-muted">Hình thức pháp lý ký kết &amp; thuế:</span>
+              <div className="flex items-center gap-1 bg-surface p-1 rounded-lg border border-line">
                 <button
                   type="button"
                   onClick={() => setLegalType('INDIVIDUAL')}
                   className={`px-2.5 py-1 rounded text-2xs font-semibold transition cursor-pointer ${
                     legalType === 'INDIVIDUAL'
-                      ? 'bg-emerald-600 text-white shadow-xs'
-                      : 'text-slate-600 hover:text-slate-900'
+                      ? 'bg-primary text-primary-fg'
+                      : 'text-ink-2 hover:text-ink'
                   }`}
                 >
                   Cá nhân (CCCD · Thuế 10%)
@@ -631,8 +629,8 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
                   onClick={() => setLegalType('BUSINESS_HOUSEHOLD')}
                   className={`px-2.5 py-1 rounded text-2xs font-semibold transition cursor-pointer ${
                     legalType === 'BUSINESS_HOUSEHOLD'
-                      ? 'bg-amber-600 text-white shadow-xs'
-                      : 'text-slate-600 hover:text-slate-900'
+                      ? 'bg-primary text-primary-fg'
+                      : 'text-ink-2 hover:text-ink'
                   }`}
                 >
                   Hộ kinh doanh (HKD)
@@ -642,8 +640,8 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
                   onClick={() => setLegalType('BUSINESS_COMPANY')}
                   className={`px-2.5 py-1 rounded text-2xs font-semibold transition cursor-pointer ${
                     legalType === 'BUSINESS_COMPANY'
-                      ? 'bg-purple-600 text-white shadow-xs'
-                      : 'text-slate-600 hover:text-slate-900'
+                      ? 'bg-primary text-primary-fg'
+                      : 'text-ink-2 hover:text-ink'
                   }`}
                 >
                   Công ty / MCN (Xuất VAT)
@@ -655,18 +653,18 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
             {legalType === 'INDIVIDUAL' ? (
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="text-slate-600 font-medium block mb-1">Họ &amp; tên thật (trên CCCD):</label>
+                  <label className="text-ink-2 font-medium block mb-1">Họ &amp; tên thật (trên CCCD):</label>
                   <input
                     type="text"
                     placeholder="VD: Nguyễn Thị Hải Yến"
                     value={realName}
                     onChange={(e) => setRealName(e.target.value)}
-                    className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                    className="w-full bg-surface border border-line-strong rounded-lg px-3 py-2 text-xs text-ink focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                   />
                 </div>
 
                 <div>
-                  <label className="text-slate-600 font-medium block mb-1">Số điện thoại / Zalo:</label>
+                  <label className="text-ink-2 font-medium block mb-1">Số điện thoại / Zalo:</label>
                   <input
                     type="text"
                     placeholder="0987654321"
@@ -675,18 +673,18 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
                       setPhone(e.target.value);
                       if (!zalo) setZalo(e.target.value);
                     }}
-                    className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-800 font-mono focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                    className="w-full bg-surface border border-line-strong rounded-lg px-3 py-2 text-xs text-ink font-mono focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                   />
                 </div>
 
                 <div>
-                  <label className="text-slate-600 font-medium block mb-1">Số CCCD (12 số):</label>
+                  <label className="text-ink-2 font-medium block mb-1">Số CCCD (12 số):</label>
                   <input
                     type="text"
                     placeholder="001203004567"
                     value={cccd}
                     onChange={(e) => setCccd(e.target.value)}
-                    className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-800 font-mono focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                    className="w-full bg-surface border border-line-strong rounded-lg px-3 py-2 text-xs text-ink font-mono focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                   />
                 </div>
               </div>
@@ -694,36 +692,36 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
               <div className="space-y-3">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="text-slate-600 font-medium block mb-1">
-                      {legalType === 'BUSINESS_COMPANY' ? 'Tên Công Ty / Pháp Nhân (Theo ĐKKD):' : 'Tên Hộ Kinh Doanh Cá Thể:'}
+                    <label className="text-ink-2 font-medium block mb-1">
+                      {legalType === 'BUSINESS_COMPANY' ? 'Tên công ty / pháp nhân (theo ĐKKD):' : 'Tên hộ kinh doanh cá thể:'}
                     </label>
                     <input
                       type="text"
                       placeholder={legalType === 'BUSINESS_COMPANY' ? 'CÔNG TY TNHH TRUYỀN THÔNG CREATOR VIỆT' : 'HỘ KINH DOANH VY STUDIO & MEDIA'}
                       value={companyName}
                       onChange={(e) => setCompanyName(e.target.value)}
-                      className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-800 font-semibold focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                      className="w-full bg-surface border border-line-strong rounded-lg px-3 py-2 text-xs text-ink font-semibold focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                     />
                   </div>
 
                   <div>
-                    <label className="text-slate-600 font-medium block mb-1">
-                      Mã Số Thuế (MST Doanh nghiệp / HKD):
+                    <label className="text-ink-2 font-medium block mb-1">
+                      Mã số thuế (MST doanh nghiệp / HKD):
                     </label>
                     <input
                       type="text"
                       placeholder={legalType === 'BUSINESS_COMPANY' ? '0109876543' : '8491238475-001'}
                       value={taxCode}
                       onChange={(e) => setTaxCode(e.target.value)}
-                      className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-800 font-mono font-semibold focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                      className="w-full bg-surface border border-line-strong rounded-lg px-3 py-2 text-xs text-ink font-mono font-semibold focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
-                    <label className="text-slate-600 font-medium block mb-1">
-                      {legalType === 'BUSINESS_COMPANY' ? 'Người Đại Diện Theo Pháp Luật:' : 'Tên Chủ Hộ Kinh Doanh:'}
+                    <label className="text-ink-2 font-medium block mb-1">
+                      {legalType === 'BUSINESS_COMPANY' ? 'Người đại diện theo pháp luật:' : 'Tên chủ hộ kinh doanh:'}
                     </label>
                     <input
                       type="text"
@@ -733,23 +731,23 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
                         setLegalRepresentative(e.target.value);
                         if (!realName) setRealName(e.target.value);
                       }}
-                      className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                      className="w-full bg-surface border border-line-strong rounded-lg px-3 py-2 text-xs text-ink focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                     />
                   </div>
 
                   <div>
-                    <label className="text-slate-600 font-medium block mb-1">Số CCCD Người Đại Diện / Chủ Hộ:</label>
+                    <label className="text-ink-2 font-medium block mb-1">Số CCCD người đại diện / chủ hộ:</label>
                     <input
                       type="text"
                       placeholder="001201019876"
                       value={cccd}
                       onChange={(e) => setCccd(e.target.value)}
-                      className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-800 font-mono focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                      className="w-full bg-surface border border-line-strong rounded-lg px-3 py-2 text-xs text-ink font-mono focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                     />
                   </div>
 
                   <div>
-                    <label className="text-slate-600 font-medium block mb-1">Số điện thoại liên hệ:</label>
+                    <label className="text-ink-2 font-medium block mb-1">Số điện thoại liên hệ:</label>
                     <input
                       type="text"
                       placeholder="0987654321"
@@ -758,7 +756,7 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
                         setPhone(e.target.value);
                         if (!zalo) setZalo(e.target.value);
                       }}
-                      className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-800 font-mono focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                      className="w-full bg-surface border border-line-strong rounded-lg px-3 py-2 text-xs text-ink font-mono focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                     />
                   </div>
                 </div>
@@ -767,11 +765,11 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
               <div>
-                <label className="text-slate-600 font-medium block mb-1">Ngân hàng thụ hưởng:</label>
+                <label className="text-ink-2 font-medium block mb-1">Ngân hàng thụ hưởng:</label>
                 <select
                   value={bankName}
                   onChange={(e) => setBankName(e.target.value)}
-                  className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  className="w-full bg-surface border border-line-strong rounded-lg px-3 py-2 text-xs text-ink focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                 >
                   <option value="Techcombank">Techcombank</option>
                   <option value="Vietcombank">Vietcombank</option>
@@ -785,33 +783,33 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
               </div>
 
               <div>
-                <label className="text-slate-600 font-medium block mb-1">Số tài khoản ngân hàng (STK):</label>
+                <label className="text-ink-2 font-medium block mb-1">Số tài khoản ngân hàng (STK):</label>
                 <input
                   type="text"
                   placeholder="VD: 190394857281"
                   value={bankAccount}
                   onChange={(e) => setBankAccount(e.target.value)}
-                  className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-emerald-700 font-mono font-semibold focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  className="w-full bg-surface border border-line-strong rounded-lg px-3 py-2 text-xs text-success font-mono font-semibold focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                 />
               </div>
             </div>
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-200">
+          <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-line">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 transition"
+              className="px-4 py-2 rounded-lg text-xs font-semibold text-ink-2 hover:text-ink bg-sunken hover:bg-hover transition"
             >
               Hủy bỏ
             </button>
             <button
               type="submit"
-              className="px-5 py-2.5 rounded-lg text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 shadow-sm transition flex items-center gap-1.5"
+              className="px-5 py-2.5 rounded-lg text-xs font-semibold text-primary-fg bg-primary hover:bg-primary-hover transition flex items-center gap-1.5"
             >
               <Check className="w-3.5 h-3.5" />
-              <span>Lưu KOC & đưa vào danh mục</span>
+              <span>Lưu KOC &amp; đưa vào danh mục</span>
             </button>
           </div>
         </form>
@@ -819,4 +817,5 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
     </div>
   );
 };
+
 

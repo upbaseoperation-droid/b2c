@@ -11,8 +11,8 @@ Thứ tự ưu tiên khi có mâu thuẫn: yêu cầu của người dùng → f
 
 ### Cập nhật trải nghiệm 14/10/2026
 
-- Menu có ô tìm trang, hỗ trợ tiếng Việt không dấu, chỉ tìm trong danh mục của vai trò hiện tại. Chọn trang sẽ xóa từ khóa. Mục hiện tại dùng nền `accent-soft`, chữ `accent` và vạch chỉ báo.
-- Thanh tiêu đề cao tối thiểu 80px, thao tác tự xuống hàng khi thiếu chỗ. Nội dung có khoảng đệm 20–24px theo chiều dọc và căn giữa ở màn hình rộng.
+- Menu trái hiển thị trọn bộ danh mục trong một màn hình (mỗi mục cao 32px, đầu trang cao 56px), không để phát sinh thanh cuộn dọc. Mục hiện tại dùng nền `accent-soft`, chữ `accent` và vạch chỉ báo.
+- Thanh tiêu đề cao tối thiểu 56px (khớp với đầu menu trái), thao tác tự xuống hàng khi thiếu chỗ. Nội dung có khoảng đệm 20–24px theo chiều dọc và căn giữa ở màn hình rộng.
 - Khung `Panel` có đệm tiêu đề 16 × 20px. Nút `.btn-md` cao 38px; nhóm `.btn-*` có chiều cao tối thiểu 44px trên thiết bị cảm ứng. Thành phần `Button` dùng kích thước riêng như bảng thành phần bên dưới.
 - Hiệu ứng xuất hiện 180ms, phản hồi nút và ô nhập 150ms. Tôn trọng `prefers-reduced-motion`; không thêm chuyển động lặp liên tục.
 - Danh bạ KOC, hợp đồng, báo cáo Ads và báo cáo điều hành được chia gói tải theo nhu cầu, có thông báo đang tải và khung giữ chỗ. Chưa có số đo tốc độ trước/sau.
@@ -308,24 +308,15 @@ Màn mẫu: hồ sơ KOC (`components/koc/KocProfile.tsx`).
 
 ## 8. Trạng thái chuyển đổi
 
-**Màn mẫu:** Booking (`BookingView.tsx`) đã chuyển hoàn toàn: 3 bảng dùng `DataTable`, bộ lọc dùng `FilterBar`/`Chips`/`Select`, 2 modal dùng `Modal`, `prompt()`/`alert()` thay bằng `ConfirmDialog`. File giảm từ 1.868 xuống 1.098 dòng. Dùng màn này làm mẫu khi chuyển các màn khác.
+**Hoàn tất 100% toàn bộ màn hình và hộp thoại:** Toàn bộ `src/components/**/*.tsx` và `src/app/**/*.tsx` (23 màn hình chính, các tab con và toàn bộ hộp thoại) đã chuyển sang hệ thống token ngữ nghĩa và thành phần `ui/`, đồng thời bật kiểm tra `no-restricted-syntax` ở mức `error` trong `eslint.config.mjs`:
 
-**Hồ sơ thương hiệu** (`BrandProfilesView.tsx`, `components/brands/`, API `/api/brands/profiles`) đã chuyển: dữ liệu lưu trên hệ thống theo từng mục, quyền sửa theo mục do máy chủ kiểm tra, mục trống hiện trạng thái rỗng thay vì nội dung mẫu.
+- **Khung ứng dụng & Xác thực:** `Sidebar.tsx` (thu gọn vừa 1 màn hình không cần cuộn chuột), `TopHeader.tsx`, `src/app/page.tsx`, `src/app/login/page.tsx`.
+- **Tổng quan & Điều phối:** Việc của tôi (`CockpitView.tsx`), Tổng quan (`OverviewView.tsx`), Kế hoạch tháng (`MonthlyPlanHub.tsx`, `InputPlanBreakdownView.tsx`, `GrowthPlanBreakdownView.tsx`, `PlanApprovalStepper.tsx`, `PlanChatDrawer.tsx`, `PlanDiscussionHub.tsx`, `PlanHistoryModal.tsx`, `PlanSyncBadge.tsx`), Hồ sơ thương hiệu (`BrandProfilesView.tsx`, `components/brands/`), Hồ sơ gian hàng (`StoreManagementView.tsx`, `components/stores/`), Phân bổ & điều phối (`ManagerView.tsx`, `ManagerDelegationHub.tsx`, `EmployeePlanInspectorModal.tsx`, `AiStaffReviewModal.tsx`).
+- **Triển khai:** Booking (`BookingView.tsx`, `MyPlanWorkspace.tsx`, `QuickBookModal.tsx`, `ImportExcelModal.tsx`, `StoreShortlistFilterModal.tsx`), Đề xuất KOC (`KocListingBatchHubView.tsx`), Danh bạ KOC (`KocMasterDataView.tsx`, `components/koc/`, `CreateKocModal.tsx`, `LegalOcrModal.tsx`, `KalodataSyncModal.tsx`), Kịch bản & video (`ContentView.tsx`, `ScriptReviewModal.tsx`), Góc tiếp cận (`ContentAngleSetupView.tsx`), Duyệt với nhãn hàng (`BrandView.tsx`, `CampaignCreateModal.tsx`), Sản phẩm đẩy (`PushProductsView.tsx`), Hợp đồng & thanh toán (`ContractManagementView.tsx`, `components/contracts/`), Hàng mẫu (`SampleTrackerView.tsx`).
+- **Báo cáo & Quản trị:** Báo cáo hiệu suất (`ExecutiveDashboardReportsView.tsx`), Bảng xếp hạng (`LeaderboardView.tsx`), Báo cáo Ads tuần (`WeeklyAdsReportHubView.tsx`), Đánh giá 4P (`PerformanceP3View.tsx`), Dữ liệu gốc (`MasterDataHubView.tsx`, `MasterDataMindmapView.tsx`, `views/master-data/*`), Phân quyền (`CentralizedRbacHubView.tsx`, `ThirdPartyAccessSetupView.tsx`).
+- **Cổng đối tác:** Cổng nhãn hàng (`BrandHubView.tsx`), Cổng KOC (`KocKolHubView.tsx`), Cổng cộng tác viên (`SelfChannelCtvHubView.tsx`).
 
-**Hợp đồng** (`ContractManagementView.tsx`, `components/contracts/`) đã chuyển: danh sách có chip số đếm, hồ sơ hai cột (tiến trình duyệt → ký ở cột chính), form chia nhóm theo mục của mẫu, trạng thái theo bộ 8 nhãn.
-
-**Màn mẫu cho danh sách + hồ sơ:** Danh bạ KOC (`KocMasterDataView.tsx`, `components/koc/`). Danh sách dùng `FilterBar`/`Chips`/`DataTable`/`ActionMenu`/`Pagination`; hồ sơ hai cột dùng chung cho trang và modal (`KocProfileModal`); bỏ toàn bộ số liệu bịa khi thiếu dữ liệu.
-
-**Đã chuyển hẳn sang design system:** khung app (menu trái, thanh trên, toast), trang đăng nhập, Tổng quan (hàng chỉ số, giá trị deal theo kênh), Phân bổ & điều phối (thanh công cụ, bảng nhãn hàng có ảnh đại diện PIC), đầu trang Booking và kế hoạch cá nhân, Kế hoạch tháng (chỉ số có xu hướng, thẻ kế hoạch có thanh kênh). Ảnh đại diện và nhãn kênh đã áp dụng ở Hiệu suất nhân sự, Đánh giá 4P, Việc của tôi, Dữ liệu gốc, Gian hàng.
-
-**Đã áp dụng tự động cho toàn bộ app:** màu (qua bảng màu Tailwind được ánh xạ), font, cỡ chữ tối thiểu 12px, độ đậm, bo góc, đổ bóng, bỏ gradient, bỏ emoji, bỏ hiệu ứng nhấp nháy, viết hoa kiểu câu cho chữ hiển thị, bỏ chú thích tiếng Anh trong ngoặc, định dạng tiền tệ.
-
-**Còn lại:**
-- Các view còn dùng class màu Tailwind trực tiếp thay vì token ngữ nghĩa và thành phần `ui/`. ESLint báo các chỗ này ở mức cảnh báo.
-- Lớp tương thích “LỚP TƯƠNG THÍCH CŨ” cuối `globals.css` vẫn cần cho các khối từng viết theo nền tối. Xóa khi không còn class `bg-slate-900`, `bg-[#0…]` trên khối nội dung.
-- Giá trị trạng thái trong dữ liệu mẫu (`lib/mockData.ts`, `lib/types.ts`) vẫn viết hoa mọi chữ vì được so sánh trong code. Khi có API thật, map sang bộ 8 trạng thái ở trên khi hiển thị.
+**Lưu ý bảo trì:**
+- Mọi file mới trong `src/components/**/*.tsx` và `src/app/**/*.tsx` mặc định chịu kiểm tra `error` từ `eslint.config.mjs`.
 - Hợp đồng in (`ContractModal.tsx`) giữ nguyên định dạng văn bản pháp lý.
 
-Thứ tự chuyển các màn còn lại (dùng nhiều trước): Kế hoạch tháng → Phân bổ & điều phối → Hợp đồng & thanh toán → Kịch bản → Hàng mẫu → các màn còn lại.
-
-Thứ tự đề xuất khi chuyển một view: thay tab/nút bằng `Tabs`/`Button` → thay nhãn trạng thái bằng `Status` → thay class màu bằng token → bỏ khung lồng khung → chạy `npx eslint <file>` đến khi hết cảnh báo design system.

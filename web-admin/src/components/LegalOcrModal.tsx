@@ -1,25 +1,22 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { 
-  X, 
-  Upload, 
-  Sparkles, 
-  FileText, 
-  CheckCircle2, 
+import {
+  X,
+  Upload,
+  FileText,
+  CheckCircle2,
   AlertCircle,
-  AlertTriangle, 
-  Copy, 
-  Check, 
-  ShieldCheck, 
-  Building2, 
-  RefreshCw, 
+  Copy,
+  Check,
+  ShieldCheck,
+  RefreshCw,
   ArrowRight,
   FileCheck,
   ChevronDown,
   ChevronUp,
   Eye,
-  Info
+  Info,
 } from 'lucide-react';
 import { OcrLegalExtractionResult, OcrExtractedFields } from '../lib/types';
 import { SAMPLE_OCR_PRESETS } from '../lib/ocrPresets';
@@ -69,7 +66,7 @@ export const LegalOcrModal: React.FC<LegalOcrModalProps> = ({
   const handleFieldChange = (key: keyof OcrExtractedFields, value: string) => {
     setEditableFields(prev => ({
       ...prev,
-      [key]: value
+      [key]: value,
     }));
   };
 
@@ -82,7 +79,7 @@ export const LegalOcrModal: React.FC<LegalOcrModalProps> = ({
       const res = await fetch('/api/ocr/extract-legal-doc', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ presetKey })
+        body: JSON.stringify({ presetKey }),
       });
       const data = await res.json();
       if (data.success && data.data) {
@@ -135,8 +132,8 @@ export const LegalOcrModal: React.FC<LegalOcrModalProps> = ({
         body: JSON.stringify({
           imageBase64: base64Image,
           fileName,
-          documentTypeHint: activeTab === 'AUTO' ? undefined : (activeTab === 'CCCD' ? 'CCCD' : 'BUSINESS_LICENSE')
-        })
+          documentTypeHint: activeTab === 'AUTO' ? undefined : (activeTab === 'CCCD' ? 'CCCD' : 'BUSINESS_LICENSE'),
+        }),
       });
       clearTimeout(timeoutId);
 
@@ -145,19 +142,20 @@ export const LegalOcrModal: React.FC<LegalOcrModalProps> = ({
         setOcrError(null);
         setExtractionResult({
           ...data.data,
-          fileName
+          fileName,
         });
         setEditableFields(data.data.fields || {});
       } else {
         setOcrError(data.error || 'Không thể bóc tách tài liệu từ ảnh');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       clearTimeout(timeoutId);
       console.error('[Upload OCR error]:', err);
-      if (err.name === 'AbortError') {
+      if (err instanceof Error && err.name === 'AbortError') {
         setOcrError('Quá trình nhận diện vượt quá 20 giây. Vui lòng thử lại với ảnh rõ nét hoặc dung lượng nhỏ hơn.');
       } else {
-        setOcrError('Đã xảy ra lỗi khi bóc tách OCR từ ảnh: ' + (err?.message || 'Lỗi kết nối'));
+        const message = err instanceof Error ? err.message : 'Lỗi kết nối';
+        setOcrError('Đã xảy ra lỗi khi bóc tách OCR từ ảnh: ' + message);
       }
     } finally {
       setIsScanning(false);
@@ -168,53 +166,47 @@ export const LegalOcrModal: React.FC<LegalOcrModalProps> = ({
     if (!extractionResult) return;
     onApplyToContract({
       ...extractionResult,
-      fields: editableFields
+      fields: editableFields,
     });
     onClose();
   };
 
   return (
-    <div 
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto animate-in fade-in duration-150"
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-ink/50 backdrop-blur-xs p-4 overflow-y-auto animate-in fade-in duration-150"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
       role="dialog"
       aria-modal="true"
     >
-      <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-5xl shadow-2xl overflow-hidden my-6 animate-in zoom-in-95 duration-150 flex flex-col max-h-[92vh]">
-        
+      <div className="bg-surface border border-line rounded-2xl w-full max-w-5xl shadow-2xl overflow-hidden my-6 animate-in zoom-in-95 duration-150 flex flex-col max-h-[92vh]">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50/80 shrink-0">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-line bg-sunken shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-semibold shadow-md">
-              <ShieldCheck className="w-5 h-5 text-white" />
+            <div className="w-10 h-10 rounded-xl bg-success-soft border border-success-line text-success flex items-center justify-center font-semibold">
+              <ShieldCheck className="w-5 h-5 text-success" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-sm font-semibold text-slate-900">
-                  Đọc ảnh giấy tờ pháp lý (CCCD / ĐKKD)
+                <h3 className="text-sm font-semibold text-ink">
+                  Đọc ảnh giấy tờ pháp lý
                 </h3>
-                <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200 flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
-                  Ngoại tuyến 100%
+                <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-success-soft text-success border border-success-line flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-success"></span>
+                  Xử lý nội bộ
                 </span>
               </div>
-              <p className="text-xs text-slate-500 mt-0.5">
+              <p className="text-xs text-muted mt-0.5">
                 Đọc thông tin trực tiếp từ ảnh chụp trên máy chủ nội bộ — Bảo mật thông tin — Tự động điền &amp; cho phép chỉnh sửa.
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold shadow-2xs">
-              <ShieldCheck className="w-4 h-4 text-emerald-600" />
-              <span>Xử lý nội bộ</span>
-            </div>
-
-            <button 
-              onClick={onClose} 
-              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer"
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-lg text-muted hover:text-ink hover:bg-hover transition cursor-pointer"
               aria-label="Đóng"
             >
               <X className="w-5 h-5" />
@@ -223,17 +215,17 @@ export const LegalOcrModal: React.FC<LegalOcrModalProps> = ({
         </div>
 
         {/* Preset Selector Bar */}
-        <div className="px-6 py-2.5 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3 text-xs shrink-0">
+        <div className="px-6 py-2.5 bg-sunken border-b border-line flex flex-wrap items-center justify-between gap-3 text-xs shrink-0">
           <div className="flex items-center gap-2">
-            <span className="font-semibold text-slate-700">Dữ liệu mẫu thử nghiệm:</span>
-            <div className="inline-flex rounded-lg border border-slate-200 bg-white p-0.5 shadow-2xs">
+            <span className="font-semibold text-ink-2">Dữ liệu mẫu thử nghiệm:</span>
+            <div className="inline-flex rounded-lg border border-line bg-surface p-0.5">
               <button
                 type="button"
                 onClick={() => handleLoadPreset('CCCD_INDIVIDUAL')}
                 className={`px-2.5 py-1 rounded-md font-medium text-xs transition ${
                   extractionResult?.documentType === 'CCCD' && !selectedFile
-                    ? 'bg-blue-600 text-white shadow-xs font-semibold'
-                    : 'text-slate-600 hover:text-slate-900'
+                    ? 'bg-primary text-primary-fg font-semibold'
+                    : 'text-ink-2 hover:text-ink'
                 }`}
               >
                 Mẫu CCCD KOC
@@ -243,19 +235,19 @@ export const LegalOcrModal: React.FC<LegalOcrModalProps> = ({
                 onClick={() => handleLoadPreset('BUSINESS_COMPANY')}
                 className={`px-2.5 py-1 rounded-md font-medium text-xs transition ${
                   extractionResult?.documentType === 'BUSINESS_LICENSE' && !selectedFile
-                    ? 'bg-blue-600 text-white shadow-xs font-semibold'
-                    : 'text-slate-600 hover:text-slate-900'
+                    ? 'bg-primary text-primary-fg font-semibold'
+                    : 'text-ink-2 hover:text-ink'
                 }`}
               >
-                Mẫu ĐKKD công Ty
+                Mẫu ĐKKD công ty
               </button>
               <button
                 type="button"
                 onClick={() => handleLoadPreset('BUSINESS_HOUSEHOLD')}
                 className={`px-2.5 py-1 rounded-md font-medium text-xs transition ${
                   extractionResult?.documentType === 'BUSINESS_HOUSEHOLD' && !selectedFile
-                    ? 'bg-blue-600 text-white shadow-xs font-semibold'
-                    : 'text-slate-600 hover:text-slate-900'
+                    ? 'bg-primary text-primary-fg font-semibold'
+                    : 'text-ink-2 hover:text-ink'
                 }`}
               >
                 Mẫu hộ kinh doanh
@@ -263,43 +255,42 @@ export const LegalOcrModal: React.FC<LegalOcrModalProps> = ({
             </div>
           </div>
 
-          <div className="text-2xs text-slate-500 flex items-center gap-1.5">
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+          <div className="text-2xs text-muted flex items-center gap-1.5">
+            <ShieldCheck className="w-3.5 h-3.5 text-success" />
             Bảo mật thông tin nhân thân theo luật an ninh mạng Việt Nam
           </div>
         </div>
 
         {ocrError && (
-          <div className="mx-6 mt-4 p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs font-semibold flex items-center justify-between">
+          <div className="mx-6 mt-4 p-3 bg-danger-soft border border-danger-line text-danger rounded-xl text-xs font-semibold flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+              <AlertCircle className="w-4 h-4 text-danger shrink-0" />
               <span>{ocrError}</span>
             </div>
-            <button type="button" onClick={() => setOcrError(null)} className="text-rose-500 hover:text-rose-800 font-bold">×</button>
+            <button type="button" onClick={() => setOcrError(null)} className="text-danger hover:opacity-80 font-semibold">×</button>
           </div>
         )}
 
         {/* Modal Body: 2 Columns */}
         <div className="p-6 overflow-y-auto grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1">
-          
           {/* Left Column: Upload / Preview Area */}
           <div className="lg:col-span-5 space-y-4">
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-800 block">
+              <label className="text-xs font-semibold text-ink block">
                 Tải lên bản chụp CCCD hoặc giấy phép ĐKKD thực tế
               </label>
-              <p className="text-2xs text-slate-500">
+              <p className="text-2xs text-muted">
                 Chụp ảnh rõ nét, vuông góc, không bị lóa hoặc che góc giấy tờ
               </p>
             </div>
 
             {/* Target Hint Filter Tabs */}
-            <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-lg text-xs">
+            <div className="flex items-center gap-1.5 p-1 bg-sunken rounded-lg text-xs border border-line">
               <button
                 type="button"
                 onClick={() => setActiveTab('AUTO')}
                 className={`flex-1 py-1 px-2 rounded-md font-medium transition text-center ${
-                  activeTab === 'AUTO' ? 'bg-white text-blue-700 shadow-2xs font-semibold' : 'text-slate-600'
+                  activeTab === 'AUTO' ? 'bg-surface text-primary font-semibold' : 'text-ink-2'
                 }`}
               >
                 Tự động
@@ -308,7 +299,7 @@ export const LegalOcrModal: React.FC<LegalOcrModalProps> = ({
                 type="button"
                 onClick={() => setActiveTab('CCCD')}
                 className={`flex-1 py-1 px-2 rounded-md font-medium transition text-center ${
-                  activeTab === 'CCCD' ? 'bg-white text-blue-700 shadow-2xs font-semibold' : 'text-slate-600'
+                  activeTab === 'CCCD' ? 'bg-surface text-primary font-semibold' : 'text-ink-2'
                 }`}
               >
                 CCCD cá nhân
@@ -317,7 +308,7 @@ export const LegalOcrModal: React.FC<LegalOcrModalProps> = ({
                 type="button"
                 onClick={() => setActiveTab('BUSINESS')}
                 className={`flex-1 py-1 px-2 rounded-md font-medium transition text-center ${
-                  activeTab === 'BUSINESS' ? 'bg-white text-blue-700 shadow-2xs font-semibold' : 'text-slate-600'
+                  activeTab === 'BUSINESS' ? 'bg-surface text-primary font-semibold' : 'text-ink-2'
                 }`}
               >
                 ĐKKD / hộ KD
@@ -325,73 +316,73 @@ export const LegalOcrModal: React.FC<LegalOcrModalProps> = ({
             </div>
 
             {/* Upload Dropzone */}
-            <div 
+            <div
               onClick={() => fileInputRef.current?.click()}
               className={`border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition relative overflow-hidden group ${
-                previewUrl 
-                  ? 'border-blue-400 bg-blue-50/20' 
-                  : 'border-slate-300 hover:border-blue-500 bg-slate-50/60 hover:bg-blue-50/30'
+                previewUrl
+                  ? 'border-info-line bg-info-soft/20'
+                  : 'border-line-strong hover:border-primary bg-sunken hover:bg-hover'
               }`}
             >
-              <input 
+              <input
                 ref={fileInputRef}
-                type="file" 
-                accept="image/*,.pdf" 
-                className="hidden" 
+                type="file"
+                accept="image/*,.pdf"
+                className="hidden"
                 onChange={handleFileChange}
               />
 
               {previewUrl && !imageLoadError && !selectedFile?.name.toLowerCase().endsWith('.pdf') ? (
-                <div className="relative aspect-[4/3] rounded-lg overflow-hidden border border-slate-200 bg-slate-100 flex items-center justify-center">
-                  <img 
-                    src={previewUrl} 
-                    alt="Preview tài liệu" 
+                <div className="relative aspect-[4/3] rounded-lg overflow-hidden border border-line bg-sunken flex items-center justify-center">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={previewUrl}
+                    alt="Preview tài liệu"
                     className="w-full h-full object-contain"
                     onError={() => setImageLoadError(true)}
                   />
                   {isScanning && (
-                    <div className="absolute inset-0 bg-emerald-950/40 pointer-events-none flex flex-col items-center justify-center gap-2">
-                      <div className="w-full h-1 bg-transparent shadow-[0_0_15px_#10b981]" />
-                      <div className="px-3 py-1.5 rounded-full bg-slate-900/90 text-white text-xs font-semibold flex items-center gap-2">
-                        <RefreshCw className="w-3.5 h-3.5 animate-spin text-emerald-400" />
+                    <div className="absolute inset-0 bg-ink/40 pointer-events-none flex flex-col items-center justify-center gap-2">
+                      <div className="px-3 py-1.5 rounded-full bg-surface text-ink text-xs font-semibold flex items-center gap-2 border border-line">
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin text-primary" />
                         Đang quét ký tự Tesseract...
                       </div>
                     </div>
                   )}
-                  <div className="absolute bottom-2 right-2 px-2 py-1 bg-slate-900/80 text-white rounded text-2xs font-medium backdrop-blur-xs">
+                  <div className="absolute bottom-2 right-2 px-2 py-1 bg-surface/90 text-ink border border-line rounded text-2xs font-medium backdrop-blur-xs">
                     Nhấp để đổi ảnh khác
                   </div>
                 </div>
               ) : selectedFile ? (
-                <div className="relative aspect-[4/3] rounded-lg overflow-hidden border border-slate-200 bg-slate-50 flex flex-col items-center justify-center p-4">
-                  <FileText className="w-12 h-12 text-emerald-600 mb-2" />
-                  <span className="text-xs font-semibold text-slate-800 text-center truncate max-w-full px-2">
+                <div className="relative aspect-[4/3] rounded-lg overflow-hidden border border-line bg-sunken flex flex-col items-center justify-center p-4">
+                  <FileText className="w-12 h-12 text-success mb-2" />
+                  <span className="text-xs font-semibold text-ink text-center truncate max-w-full px-2">
                     {selectedFile.name}
                   </span>
-                  <span className="text-2xs text-slate-500 mt-1">
+                  <span className="text-2xs text-muted mt-1">
                     {(selectedFile.size / 1024).toFixed(1)} KB
                   </span>
                   {isScanning && (
-                    <div className="absolute inset-0 bg-emerald-950/40 pointer-events-none flex flex-col items-center justify-center gap-2">
-                      <div className="px-3 py-1.5 rounded-full bg-slate-900/90 text-white text-xs font-semibold flex items-center gap-2">
-                        <RefreshCw className="w-3.5 h-3.5 animate-spin text-emerald-400" />
+                    <div className="absolute inset-0 bg-ink/40 pointer-events-none flex flex-col items-center justify-center gap-2">
+                      <div className="px-3 py-1.5 rounded-full bg-surface text-ink text-xs font-semibold flex items-center gap-2 border border-line">
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin text-primary" />
                         Đang quét ký tự Tesseract...
                       </div>
                     </div>
                   )}
-                  <div className="absolute bottom-2 right-2 px-2 py-1 bg-slate-900/80 text-white rounded text-2xs font-medium backdrop-blur-xs">
+                  <div className="absolute bottom-2 right-2 px-2 py-1 bg-surface/90 text-ink border border-line rounded text-2xs font-medium backdrop-blur-xs">
                     Nhấp để đổi tệp khác
                   </div>
                 </div>
               ) : (
                 <div className="py-8 space-y-2.5">
-                  <div className="w-12 h-12 mx-auto rounded-full bg-blue-100 text-blue-600 flex items-center justify-center group-hover:scale-105 transition">
+                  <div className="w-12 h-12 mx-auto rounded-full bg-info-soft text-primary flex items-center justify-center group-hover:scale-105 transition">
                     <Upload className="w-6 h-6" />
                   </div>
-                  <div className="text-xs font-semibold text-slate-800">
-                    Kéo &amp; thả ảnh vào đây hoặc <span className="text-blue-600 underline">chọn từ máy tính</span>
+                  <div className="text-xs font-semibold text-ink">
+                    Kéo &amp; thả ảnh vào đây hoặc <span className="text-primary underline">chọn từ máy tính</span>
                   </div>
-                  <p className="text-2xs text-slate-400 max-w-xs mx-auto">
+                  <p className="text-2xs text-muted max-w-xs mx-auto">
                     Hỗ trợ ảnh chụp CCCD 2 mặt, giấy phép ĐKKD công ty hoặc hộ kinh doanh
                   </p>
                 </div>
@@ -400,14 +391,14 @@ export const LegalOcrModal: React.FC<LegalOcrModalProps> = ({
 
             {/* Quick Upload Info / File Name */}
             {extractionResult?.fileName && (
-              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs flex items-center justify-between">
+              <div className="p-3 rounded-xl bg-sunken border border-line text-xs flex items-center justify-between">
                 <div className="flex items-center gap-2 truncate min-w-0 pr-2">
-                  <FileText className="w-4 h-4 text-slate-500 shrink-0" />
-                  <span className="font-medium text-slate-700 truncate">
+                  <FileText className="w-4 h-4 text-muted shrink-0" />
+                  <span className="font-medium text-ink-2 truncate">
                     {extractionResult.fileName}
                   </span>
                 </div>
-                <span className="text-2xs font-semibold px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 shrink-0">
+                <span className="text-2xs font-semibold px-2 py-0.5 rounded bg-success-soft text-success shrink-0">
                   {Math.round((extractionResult.confidence || 0.85) * 100)}% Tin cậy
                 </span>
               </div>
@@ -415,12 +406,12 @@ export const LegalOcrModal: React.FC<LegalOcrModalProps> = ({
 
             {/* Validation Tips Box */}
             {extractionResult && (
-              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2 text-xs">
-                <span className="font-semibold text-slate-800 flex items-center gap-1.5">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+              <div className="p-3.5 rounded-xl bg-sunken border border-line space-y-2 text-xs">
+                <span className="font-semibold text-ink flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4 text-success" />
                   Nhật ký kiểm tra thông tin:
                 </span>
-                <ul className="space-y-1 text-2xs text-slate-600 list-disc pl-4">
+                <ul className="space-y-1 text-2xs text-ink-2 list-disc pl-4">
                   {extractionResult.validationNotes.map((note, idx) => (
                     <li key={idx}>{note}</li>
                   ))}
@@ -430,20 +421,20 @@ export const LegalOcrModal: React.FC<LegalOcrModalProps> = ({
 
             {/* Raw Text Preview Collapsible */}
             {extractionResult?.rawTextPreview && (
-              <div className="border border-slate-200 rounded-xl overflow-hidden text-xs">
+              <div className="border border-line rounded-xl overflow-hidden text-xs">
                 <button
                   type="button"
                   onClick={() => setShowRawText(!showRawText)}
-                  className="w-full px-3 py-2 bg-slate-50 hover:bg-slate-100 flex items-center justify-between font-semibold text-slate-700"
+                  className="w-full px-3 py-2 bg-sunken hover:bg-hover flex items-center justify-between font-semibold text-ink-2"
                 >
                   <span className="flex items-center gap-1.5">
-                    <Eye className="w-3.5 h-3.5 text-slate-500" />
+                    <Eye className="w-3.5 h-3.5 text-muted" />
                     Xem văn bản thô bóc tách từ ảnh
                   </span>
                   {showRawText ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                 </button>
                 {showRawText && (
-                  <pre className="p-3 bg-slate-900 text-emerald-400 text-2xs font-mono whitespace-pre-wrap max-h-48 overflow-y-auto leading-relaxed">
+                  <pre className="p-3 bg-sunken text-ink border-t border-line text-2xs font-mono whitespace-pre-wrap max-h-48 overflow-y-auto leading-relaxed">
                     {extractionResult.rawTextPreview}
                   </pre>
                 )}
@@ -453,34 +444,33 @@ export const LegalOcrModal: React.FC<LegalOcrModalProps> = ({
 
           {/* Right Column: Structured Extraction & Form Editing */}
           <div className="lg:col-span-7 space-y-4">
-            
             {/* If no result yet */}
             {!extractionResult && !isScanning && (
-              <div className="p-8 rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/50 text-center space-y-3">
-                <div className="w-12 h-12 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center mx-auto">
-                  <Sparkles className="w-6 h-6" />
+              <div className="p-8 rounded-2xl border-2 border-dashed border-line bg-sunken text-center space-y-3">
+                <div className="w-12 h-12 rounded-2xl bg-info-soft text-primary flex items-center justify-center mx-auto">
+                  <FileText className="w-6 h-6" />
                 </div>
-                <h4 className="text-sm font-semibold text-slate-800">
+                <h4 className="text-sm font-semibold text-ink">
                   Chưa có dữ liệu giấy tờ nào được bóc tách
                 </h4>
-                <p className="text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
+                <p className="text-xs text-muted max-w-sm mx-auto leading-relaxed">
                   Vui lòng tải ảnh CCCD / ĐKKD ở khung bên trái hoặc nhấp vào một trong các nút mẫu thử nghiệm phía trên để xem demo.
                 </p>
               </div>
             )}
 
             {isScanning && (
-              <div className="p-12 rounded-2xl border border-emerald-200 bg-emerald-50/50 text-center space-y-3">
-                <RefreshCw className="w-8 h-8 text-emerald-600 animate-spin mx-auto" />
-                <h4 className="text-sm font-semibold text-emerald-950">
+              <div className="p-12 rounded-2xl border border-success-line bg-success-soft/50 text-center space-y-3">
+                <RefreshCw className="w-8 h-8 text-success animate-spin mx-auto" />
+                <h4 className="text-sm font-semibold text-ink">
                   Đang đọc thông tin từ ảnh chụp...
                 </h4>
-                <p className="text-xs text-emerald-700 max-w-sm mx-auto leading-relaxed">
+                <p className="text-xs text-ink-2 max-w-sm mx-auto leading-relaxed">
                   Hệ thống đang đọc thông tin từ ảnh trên máy chủ Upbase, trích xuất số CCCD/MST, họ tên, ngày sinh và địa chỉ...
                 </p>
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-2xs font-semibold border border-emerald-200">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-success-soft text-success text-2xs font-semibold border border-success-line">
                   <ShieldCheck className="w-3.5 h-3.5" />
-                  Bảo mật nội bộ 100% — Không gửi dữ liệu ra bên ngoài
+                  Xử lý nội bộ — Không gửi dữ liệu ra bên ngoài
                 </div>
               </div>
             )}
@@ -488,48 +478,48 @@ export const LegalOcrModal: React.FC<LegalOcrModalProps> = ({
             {extractionResult && (
               <>
                 {/* Document Type Badge & Status */}
-                <div className="flex items-center justify-between gap-2 p-3 rounded-xl bg-slate-50 border border-slate-200">
+                <div className="flex items-center justify-between gap-2 p-3 rounded-xl bg-sunken border border-line">
                   <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center font-semibold text-xs shrink-0">
+                    <div className="w-8 h-8 rounded-lg bg-primary text-primary-fg flex items-center justify-center font-semibold text-xs shrink-0">
                       {extractionResult.documentType === 'CCCD' ? 'ID' : 'DN'}
                     </div>
                     <div>
-                      <span className="text-xs font-semibold text-slate-900 block">
+                      <span className="text-xs font-semibold text-ink block">
                         {extractionResult.documentTypeLabel}
                       </span>
-                      <span className="text-2xs text-slate-500">
+                      <span className="text-2xs text-muted">
                         {extractionResult.documentType === 'CCCD' ? 'Cá nhân (Căn cước công dân)' : 'Pháp nhân kinh doanh / Hộ kinh doanh'}
                       </span>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-semibold">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-success-soft text-success border border-success-line text-xs font-semibold">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-success" />
                     Đã trích xuất
                   </div>
                 </div>
 
                 {/* Form Editing Notice */}
-                <div className="p-2.5 rounded-xl bg-blue-50/70 border border-blue-200 text-xs text-blue-900 flex items-start gap-2">
-                  <Info className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+                <div className="p-2.5 rounded-xl bg-info-soft border border-info-line text-xs text-info flex items-start gap-2">
+                  <Info className="w-4 h-4 text-primary shrink-0 mt-0.5" />
                   <span className="text-2xs leading-relaxed">
                     Dữ liệu được trích xuất tự động từ ảnh. Bạn có thể <strong>chỉnh sửa trực tiếp</strong> các ô bên dưới nếu ảnh chụp bị mờ hoặc có sai sót trước khi bấm lưu.
                   </span>
                 </div>
 
                 {/* Extracted Fields Form */}
-                <div className="space-y-3 bg-white border border-slate-200 rounded-xl p-4 shadow-2xs">
-                  <h4 className="text-xs font-semibold text-slate-900 pb-2 border-b border-slate-100 flex items-center justify-between">
+                <div className="space-y-3 bg-surface border border-line rounded-xl p-4">
+                  <h4 className="text-xs font-semibold text-ink pb-2 border-b border-line flex items-center justify-between">
                     <span>Thông tin pháp lý bóc tách được:</span>
-                    <span className="text-2xs text-slate-400 font-normal">Cho phép chỉnh sửa</span>
+                    <span className="text-2xs text-muted font-normal">Cho phép chỉnh sửa</span>
                   </h4>
 
                   {/* Individual (CCCD) Fields */}
                   {extractionResult.documentType === 'CCCD' && (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                       <div className="sm:col-span-2">
-                        <label className="text-2xs font-semibold text-slate-700 block mb-1">
-                          Số CCCD / số định danh (12 số) <span className="text-rose-500">*</span>:
+                        <label className="text-2xs font-semibold text-ink-2 block mb-1">
+                          Số CCCD / số định danh (12 số) <span className="text-danger">*</span>:
                         </label>
                         <div className="flex items-center gap-1.5">
                           <input
@@ -537,49 +527,49 @@ export const LegalOcrModal: React.FC<LegalOcrModalProps> = ({
                             value={editableFields.idNumber || ''}
                             onChange={(e) => handleFieldChange('idNumber', e.target.value)}
                             placeholder="Ví dụ: 001201004567"
-                            className="flex-1 px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg font-mono text-slate-900 font-semibold text-sm focus:outline-none focus:border-blue-500 focus:bg-white"
+                            className="flex-1 px-3 py-2 bg-sunken border border-line-strong rounded-lg font-mono text-ink font-semibold text-sm focus:outline-none focus:border-primary focus:bg-surface"
                           />
-                          <button 
+                          <button
                             type="button"
                             onClick={() => handleCopy(editableFields.idNumber || '', 'idNumber')}
-                            className="p-2 text-slate-500 hover:text-blue-600 border border-slate-200 rounded-lg hover:bg-slate-50"
+                            className="p-2 text-muted hover:text-primary border border-line rounded-lg hover:bg-hover"
                             title="Sao chép"
                           >
-                            {copiedKey === 'idNumber' ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
+                            {copiedKey === 'idNumber' ? <Check className="w-4 h-4 text-success" /> : <Copy className="w-4 h-4" />}
                           </button>
                         </div>
                       </div>
 
                       <div>
-                        <label className="text-2xs font-semibold text-slate-700 block mb-1">
-                          Họ và tên In hoa <span className="text-rose-500">*</span>:
+                        <label className="text-2xs font-semibold text-ink-2 block mb-1">
+                          Họ và tên in hoa <span className="text-danger">*</span>:
                         </label>
                         <input
                           type="text"
                           value={editableFields.fullName || ''}
                           onChange={(e) => handleFieldChange('fullName', e.target.value)}
                           placeholder="NGUYỄN VĂN A"
-                          className="w-full px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-lg font-semibold text-slate-900 text-xs focus:outline-none focus:border-blue-500 focus:bg-white"
+                          className="w-full px-3 py-1.5 bg-sunken border border-line-strong rounded-lg font-semibold text-ink text-xs focus:outline-none focus:border-primary focus:bg-surface"
                         />
                       </div>
 
                       <div className="grid grid-cols-2 gap-2">
                         <div>
-                          <label className="text-2xs font-semibold text-slate-700 block mb-1">Ngày Sinh:</label>
+                          <label className="text-2xs font-semibold text-ink-2 block mb-1">Ngày sinh:</label>
                           <input
                             type="text"
                             value={editableFields.dob || ''}
                             onChange={(e) => handleFieldChange('dob', e.target.value)}
                             placeholder="DD/MM/YYYY"
-                            className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 text-xs focus:outline-none focus:border-blue-500 focus:bg-white font-mono"
+                            className="w-full px-2.5 py-1.5 bg-sunken border border-line-strong rounded-lg text-ink text-xs focus:outline-none focus:border-primary focus:bg-surface font-mono"
                           />
                         </div>
                         <div>
-                          <label className="text-2xs font-semibold text-slate-700 block mb-1">Giới tính:</label>
+                          <label className="text-2xs font-semibold text-ink-2 block mb-1">Giới tính:</label>
                           <select
                             value={editableFields.gender || 'Nữ'}
                             onChange={(e) => handleFieldChange('gender', e.target.value)}
-                            className="w-full px-2 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 text-xs focus:outline-none focus:border-blue-500 focus:bg-white"
+                            className="w-full px-2 py-1.5 bg-sunken border border-line-strong rounded-lg text-ink text-xs focus:outline-none focus:border-primary focus:bg-surface"
                           >
                             <option value="Nam">Nam</option>
                             <option value="Nữ">Nữ</option>
@@ -588,37 +578,37 @@ export const LegalOcrModal: React.FC<LegalOcrModalProps> = ({
                       </div>
 
                       <div className="sm:col-span-2">
-                        <label className="text-2xs font-semibold text-slate-700 block mb-1">
-                          Nơi thường trú (địa chỉ ghi hợp đồng) <span className="text-rose-500">*</span>:
+                        <label className="text-2xs font-semibold text-ink-2 block mb-1">
+                          Nơi thường trú (địa chỉ ghi hợp đồng) <span className="text-danger">*</span>:
                         </label>
                         <textarea
                           rows={2}
                           value={editableFields.permanentAddress || ''}
                           onChange={(e) => handleFieldChange('permanentAddress', e.target.value)}
                           placeholder="Số nhà, đường phố, phường/xã, quận/huyện, tỉnh/thành phố"
-                          className="w-full px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-800 text-xs leading-relaxed focus:outline-none focus:border-blue-500 focus:bg-white"
+                          className="w-full px-3 py-1.5 bg-sunken border border-line-strong rounded-lg text-ink text-xs leading-relaxed focus:outline-none focus:border-primary focus:bg-surface"
                         />
                       </div>
 
                       <div>
-                        <label className="text-2xs font-semibold text-slate-700 block mb-1">Ngày cấp CCCD:</label>
+                        <label className="text-2xs font-semibold text-ink-2 block mb-1">Ngày cấp CCCD:</label>
                         <input
                           type="text"
                           value={editableFields.issueDate || ''}
                           onChange={(e) => handleFieldChange('issueDate', e.target.value)}
                           placeholder="DD/MM/YYYY"
-                          className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 text-xs focus:outline-none focus:border-blue-500 focus:bg-white font-mono"
+                          className="w-full px-2.5 py-1.5 bg-sunken border border-line-strong rounded-lg text-ink text-xs focus:outline-none focus:border-primary focus:bg-surface font-mono"
                         />
                       </div>
 
                       <div>
-                        <label className="text-2xs font-semibold text-slate-700 block mb-1">Nơi cấp:</label>
+                        <label className="text-2xs font-semibold text-ink-2 block mb-1">Nơi cấp:</label>
                         <input
                           type="text"
                           value={editableFields.issuePlace || 'Cục Cảnh sát QLHC về TTXH'}
                           onChange={(e) => handleFieldChange('issuePlace', e.target.value)}
                           placeholder="Cục Cảnh sát QLHC về TTXH"
-                          className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 text-xs focus:outline-none focus:border-blue-500 focus:bg-white"
+                          className="w-full px-2.5 py-1.5 bg-sunken border border-line-strong rounded-lg text-ink text-xs focus:outline-none focus:border-primary focus:bg-surface"
                         />
                       </div>
                     </div>
@@ -628,21 +618,21 @@ export const LegalOcrModal: React.FC<LegalOcrModalProps> = ({
                   {(extractionResult.documentType === 'BUSINESS_LICENSE' || extractionResult.documentType === 'BUSINESS_HOUSEHOLD') && (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                       <div className="sm:col-span-2">
-                        <label className="text-2xs font-semibold text-slate-700 block mb-1">
-                          Tên đơn vị (công Ty / hộ kinh doanh) <span className="text-rose-500">*</span>:
+                        <label className="text-2xs font-semibold text-ink-2 block mb-1">
+                          Tên đơn vị (công ty / hộ kinh doanh) <span className="text-danger">*</span>:
                         </label>
                         <input
                           type="text"
                           value={editableFields.companyName || ''}
                           onChange={(e) => handleFieldChange('companyName', e.target.value)}
                           placeholder="CÔNG TY TNHH..."
-                          className="w-full px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-lg font-semibold text-slate-900 text-xs focus:outline-none focus:border-blue-500 focus:bg-white"
+                          className="w-full px-3 py-1.5 bg-sunken border border-line-strong rounded-lg font-semibold text-ink text-xs focus:outline-none focus:border-primary focus:bg-surface"
                         />
                       </div>
 
                       <div>
-                        <label className="text-2xs font-semibold text-slate-700 block mb-1">
-                          Mã số doanh nghiệp / MST <span className="text-rose-500">*</span>:
+                        <label className="text-2xs font-semibold text-ink-2 block mb-1">
+                          Mã số doanh nghiệp / MST <span className="text-danger">*</span>:
                         </label>
                         <div className="flex items-center gap-1.5">
                           <input
@@ -650,31 +640,31 @@ export const LegalOcrModal: React.FC<LegalOcrModalProps> = ({
                             value={editableFields.taxCode || ''}
                             onChange={(e) => handleFieldChange('taxCode', e.target.value)}
                             placeholder="0109876543"
-                            className="flex-1 px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-lg font-mono text-slate-900 font-semibold focus:outline-none focus:border-blue-500 focus:bg-white"
+                            className="flex-1 px-3 py-1.5 bg-sunken border border-line-strong rounded-lg font-mono text-ink font-semibold focus:outline-none focus:border-primary focus:bg-surface"
                           />
-                          <button 
+                          <button
                             type="button"
                             onClick={() => handleCopy(editableFields.taxCode || '', 'taxCode')}
-                            className="p-1.5 text-slate-500 hover:text-blue-600 border border-slate-200 rounded-lg"
+                            className="p-1.5 text-muted hover:text-primary border border-line rounded-lg"
                           >
-                            {copiedKey === 'taxCode' ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                            {copiedKey === 'taxCode' ? <Check className="w-3.5 h-3.5 text-success" /> : <Copy className="w-3.5 h-3.5" />}
                           </button>
                         </div>
                       </div>
 
                       <div>
-                        <label className="text-2xs font-semibold text-slate-700 block mb-1">Người đại diện pháp luật:</label>
+                        <label className="text-2xs font-semibold text-ink-2 block mb-1">Người đại diện pháp luật:</label>
                         <input
                           type="text"
                           value={editableFields.legalRepresentative || ''}
                           onChange={(e) => handleFieldChange('legalRepresentative', e.target.value)}
                           placeholder="Họ và tên người đại diện"
-                          className="w-full px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-lg font-semibold text-slate-900 text-xs focus:outline-none focus:border-blue-500 focus:bg-white"
+                          className="w-full px-3 py-1.5 bg-sunken border border-line-strong rounded-lg font-semibold text-ink text-xs focus:outline-none focus:border-primary focus:bg-surface"
                         />
                       </div>
 
                       <div className="sm:col-span-2">
-                        <label className="text-2xs font-semibold text-slate-700 block mb-1">
+                        <label className="text-2xs font-semibold text-ink-2 block mb-1">
                           Địa chỉ trụ sở chính (xuất VAT):
                         </label>
                         <textarea
@@ -682,29 +672,29 @@ export const LegalOcrModal: React.FC<LegalOcrModalProps> = ({
                           value={editableFields.headquartersAddress || ''}
                           onChange={(e) => handleFieldChange('headquartersAddress', e.target.value)}
                           placeholder="Địa chỉ trụ sở chính theo ĐKKD"
-                          className="w-full px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-800 text-xs leading-relaxed focus:outline-none focus:border-blue-500 focus:bg-white"
+                          className="w-full px-3 py-1.5 bg-sunken border border-line-strong rounded-lg text-ink text-xs leading-relaxed focus:outline-none focus:border-primary focus:bg-surface"
                         />
                       </div>
 
                       <div>
-                        <label className="text-2xs font-semibold text-slate-700 block mb-1">Ngày đăng ký:</label>
+                        <label className="text-2xs font-semibold text-ink-2 block mb-1">Ngày đăng ký:</label>
                         <input
                           type="text"
                           value={editableFields.registrationDate || ''}
                           onChange={(e) => handleFieldChange('registrationDate', e.target.value)}
                           placeholder="DD/MM/YYYY"
-                          className="w-full px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 text-xs focus:outline-none focus:border-blue-500 focus:bg-white font-mono"
+                          className="w-full px-3 py-1.5 bg-sunken border border-line-strong rounded-lg text-ink text-xs focus:outline-none focus:border-primary focus:bg-surface font-mono"
                         />
                       </div>
 
                       <div>
-                        <label className="text-2xs font-semibold text-slate-700 block mb-1">Vốn điều lệ:</label>
+                        <label className="text-2xs font-semibold text-ink-2 block mb-1">Vốn điều lệ:</label>
                         <input
                           type="text"
                           value={editableFields.charterCapital || ''}
                           onChange={(e) => handleFieldChange('charterCapital', e.target.value)}
                           placeholder="Ví dụ: 1.000.000.000 VNĐ"
-                          className="w-full px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 text-xs focus:outline-none focus:border-blue-500 focus:bg-white"
+                          className="w-full px-3 py-1.5 bg-sunken border border-line-strong rounded-lg text-ink text-xs focus:outline-none focus:border-primary focus:bg-surface"
                         />
                       </div>
                     </div>
@@ -713,31 +703,31 @@ export const LegalOcrModal: React.FC<LegalOcrModalProps> = ({
 
                 {/* Recommended Template Card */}
                 {extractionResult.recommendedTemplate && (
-                  <div className="p-4 rounded-xl bg-blue-50 border border-blue-200 space-y-2 text-xs">
+                  <div className="p-4 rounded-xl bg-info-soft border border-info-line space-y-2 text-xs">
                     <div className="flex items-center justify-between">
-                      <span className="font-semibold text-blue-900 flex items-center gap-1.5">
-                        <FileCheck className="w-4 h-4 text-blue-600" />
+                      <span className="font-semibold text-info flex items-center gap-1.5">
+                        <FileCheck className="w-4 h-4 text-primary" />
                         Biểu mẫu chuẩn theo quy định Upbase 2026:
                       </span>
-                      <span className="font-mono text-2xs bg-blue-200/60 text-blue-800 px-2 py-0.5 rounded font-semibold">
+                      <span className="font-mono text-2xs bg-surface text-info border border-info-line px-2 py-0.5 rounded font-semibold">
                         {extractionResult.recommendedTemplate.templateCode}
                       </span>
                     </div>
 
-                    <div className="bg-white p-2.5 rounded-lg border border-blue-100 flex items-center justify-between">
+                    <div className="bg-surface p-2.5 rounded-lg border border-line flex items-center justify-between">
                       <div>
-                        <span className="font-semibold text-slate-900 block">
+                        <span className="font-semibold text-ink block">
                           {extractionResult.recommendedTemplate.templateName}
                         </span>
-                        <span className="text-2xs text-slate-500 font-mono">
+                        <span className="text-2xs text-muted font-mono">
                           File mẫu: {extractionResult.recommendedTemplate.sampleFileName}
                         </span>
                       </div>
                     </div>
 
-                    <div className="space-y-1 text-2xs text-blue-950 pt-1">
-                      <span className="font-semibold block">Quy chuẩn thẩm định pháp lý UpBase:</span>
-                      <ul className="list-disc pl-4 space-y-0.5 text-blue-900/90">
+                    <div className="space-y-1 text-2xs text-ink-2 pt-1">
+                      <span className="font-semibold block text-ink">Quy chuẩn thẩm định pháp lý Upbase:</span>
+                      <ul className="list-disc pl-4 space-y-0.5">
                         {extractionResult.recommendedTemplate.legalRules.map((rule, idx) => (
                           <li key={idx}>{rule}</li>
                         ))}
@@ -747,15 +737,13 @@ export const LegalOcrModal: React.FC<LegalOcrModalProps> = ({
                 )}
               </>
             )}
-
           </div>
-
         </div>
 
         {/* Modal Footer */}
-        <div className="px-6 py-4 border-t border-slate-200 bg-slate-50/80 flex items-center justify-between gap-3 shrink-0">
-          <div className="text-xs text-slate-500 flex items-center gap-1.5">
-            <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+        <div className="px-6 py-4 border-t border-line bg-sunken flex items-center justify-between gap-3 shrink-0">
+          <div className="text-xs text-muted flex items-center gap-1.5">
+            <CheckCircle2 className="w-4 h-4 text-success shrink-0" />
             Dữ liệu sau khi kiểm tra có thể bấm lưu trực tiếp vào Master Data hoặc hợp đồng.
           </div>
 
@@ -763,7 +751,7 @@ export const LegalOcrModal: React.FC<LegalOcrModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 rounded-xl text-xs font-semibold transition cursor-pointer"
+              className="px-4 py-2 bg-surface hover:bg-hover text-ink-2 border border-line-strong rounded-xl text-xs font-semibold transition cursor-pointer"
             >
               Hủy
             </button>
@@ -772,15 +760,15 @@ export const LegalOcrModal: React.FC<LegalOcrModalProps> = ({
               type="button"
               onClick={handleApply}
               disabled={!extractionResult}
-              className="px-5 py-2 bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white rounded-xl text-xs font-semibold transition shadow-md flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-5 py-2 bg-primary hover:bg-primary-hover active:scale-[0.99] text-primary-fg rounded-xl text-xs font-semibold transition flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <span>Áp dụng dữ liệu vào hồ sơ KOC</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>
         </div>
-
       </div>
     </div>
   );
 };
+

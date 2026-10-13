@@ -4,56 +4,35 @@ import React, { useState, useMemo } from 'react';
 import { 
   Button, 
   Tabs, 
-  TabItem, 
-  Panel, 
   Modal, 
-  ConfirmDialog, 
   Pagination, 
-  ChannelTag 
+  ChannelTag,
+  channelOf
 } from '../ui';
 import { formatVndShort, formatVnd } from '../../lib/format';
 import { 
   Search, 
   ExternalLink, 
-  Filter, 
   RotateCcw, 
   Plus, 
   X, 
-  CheckCircle2,
-  Shield,
-  Tag,
-  ChevronLeft,
   ChevronRight,
   Trash2,
   Archive,
-  AlertTriangle,
-  Building2,
-  Store,
-  ShoppingBag,
   AlertCircle,
-  GitFork,
   BookOpen,
-  ArrowRight,
-  Database,
   RefreshCw,
   CloudDownload,
-  Edit3,
-  ShieldCheck,
-  Clock,
-  UserCheck,
-  Users,
-  Layers
+  Edit3
 } from 'lucide-react';
 import { UserProfile, BrandDetail, StorePortfolioItem, KocItem, MasterContentPillar } from '../../lib/types';
-import { INITIAL_BRANDS, INITIAL_STORE_PORTFOLIOS, USERS, INITIAL_KOCS, INITIAL_PUSH_PRODUCTS } from '../../lib/mockData';
+import { INITIAL_BRANDS, INITIAL_STORE_PORTFOLIOS, INITIAL_KOCS, INITIAL_PUSH_PRODUCTS } from '../../lib/mockData';
 import { 
   UPBASE_MASTER_PILLARS, 
   UPBASE_CAST_TIERS, 
   UPBASE_VIDEO_FORMATS, 
   UPBASE_KOC_NICHES, 
-  UPBASE_STORES_MASTER, 
-  UPBASE_STAFF_MASTER, 
-  UPBASE_BRANDS_MASTER 
+  UPBASE_STAFF_MASTER
 } from '../../lib/importedMasterData';
 import { KocMasterDataView } from './KocMasterDataView';
 import { 
@@ -154,21 +133,11 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
   const [brandPage, setBrandPage] = useState(1);
   const BRAND_PAGE_SIZE = 25;
 
-  // Dynamic Brand Categories & PICs
+  // Dynamic Brand Categories
   const brandCategories = useMemo(() => {
     const set = new Set<string>();
     brandList.forEach(b => {
       if (b.category) set.add(b.category.trim());
-    });
-    return Array.from(set).sort();
-  }, [brandList]);
-
-  const brandPics = useMemo(() => {
-    const set = new Set<string>();
-    brandList.forEach(b => {
-      if (b.accountPic) set.add(b.accountPic.trim());
-      if (b.growthPic) set.add(b.growthPic.trim());
-      if (b.bookingPicLead) set.add(b.bookingPicLead.trim());
     });
     return Array.from(set).sort();
   }, [brandList]);
@@ -213,8 +182,6 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
   };
 
   // Master Product Catalog state (Dữ liệu gốc sản phẩm)
-
-  // Master Product Catalog state (Dữ liệu gốc sản phẩm)
   const [productList, setProductList] = useState<MasterProductItem[]>(() => 
     INITIAL_PUSH_PRODUCTS.map(p => ({
       id: p.id,
@@ -226,10 +193,10 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
       category: p.brandCategory,
       originalPrice: p.originalPrice,
       pdpUrl: p.pdpUrl || '',
-      commissionRate: (p as any).affiliateCommissionRate || 15,
-      heroType: ((p as any).heroType as any) || 'HERO',
-      sampleAvailableCount: (p as any).availableStock || 50,
-      usp: (p as any).keySellingPoints?.join(', ') || '',
+      commissionRate: p.affiliateRate ?? 15,
+      heroType: 'HERO',
+      sampleAvailableCount: Math.max(0, (p.monthlySampleQuota ?? 50) - (p.allocatedSampleCount ?? 0)),
+      usp: p.usp || '',
       status: 'ACTIVE'
     }))
   );
@@ -266,7 +233,6 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
   });
   const [deletingProduct, setDeletingProduct] = useState<MasterProductItem | null>(null);
 
-  // Staff state
   // Master Content Pillars state (15 Trụ cột nội dung chuẩn Upbase Master Data 5.5)
   const [pillarList, setPillarList] = useState<MasterContentPillar[]>(UPBASE_MASTER_PILLARS);
   const [pillarSearch, setPillarSearch] = useState('');
@@ -287,9 +253,6 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
     status: 'ACTIVE' as 'ACTIVE' | 'INACTIVE',
     colorTag: '#4F46E5'
   });
-
-  const [staffSearch, setStaffSearch] = useState('');
-  const [selectedStaffRole, setSelectedStaffRole] = useState('ALL');
 
   // Filtered Brands with Multi-dimensions
   const filteredBrands = useMemo(() => {
@@ -333,7 +296,6 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
     setBrandPage(1);
   };
 
-  const totalBrandPages = Math.ceil(filteredBrands.length / BRAND_PAGE_SIZE) || 1;
   const currentBrands = filteredBrands.slice((brandPage - 1) * BRAND_PAGE_SIZE, brandPage * BRAND_PAGE_SIZE);
 
   // Filtered Master Products with Multi-dimensions
@@ -374,16 +336,6 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
     setSelectedProductStatus('ALL');
   };
 
-  // Filtered Staff
-  const filteredStaff = USERS.filter(u => {
-    if (selectedStaffRole !== 'ALL' && u.role !== selectedStaffRole) return false;
-    if (staffSearch.trim()) {
-      const q = staffSearch.toLowerCase();
-      return u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q) || u.roleTitle.toLowerCase().includes(q);
-    }
-    return true;
-  });
-
   // Filtered Content Pillars with Multi-dimensions
   const filteredPillars = useMemo(() => {
     return pillarList.filter(p => {
@@ -421,11 +373,6 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
     setSelectedPillarNiche('ALL');
     setSelectedPillarStatus('ALL');
     setSelectedPillarCostTier('ALL');
-  };
-
-  // Format Currency
-  const formatVnd = (num: number) => {
-    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(num);
   };
 
   // Check brand relational dependencies
@@ -1014,7 +961,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                                     {b.code || b.id.replace('brand-b2c-', '').toUpperCase()}
                                   </span>
                                   {b.platforms && b.platforms.map(p => (
-                                    <ChannelTag key={p} channel={p as any} />
+                                    <ChannelTag key={p} channel={channelOf(p)} />
                                   ))}
                                 </div>
                               </div>
@@ -1445,7 +1392,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
 
               <select
                 value={selectedPillarStatus}
-                onChange={(e) => setSelectedPillarStatus(e.target.value as any)}
+                onChange={(e) => setSelectedPillarStatus(e.target.value as 'ALL' | 'ACTIVE' | 'INACTIVE')}
                 className="text-xs border border-line rounded-lg px-2.5 py-1.5 bg-surface text-ink focus:outline-none"
               >
                 <option value="ALL">Mọi trạng thái ({pillarList.length})</option>
@@ -1788,7 +1735,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                 placeholder="Tự sinh nếu trống"
                 value={quickBrandCode}
                 onChange={(e) => setQuickBrandCode(e.target.value.toUpperCase())}
-                className="w-full px-2.5 py-1.5 border border-line-strong rounded-lg font-mono focus:outline-none focus:border-focus bg-surface text-ink uppercase"
+                className="w-full px-2.5 py-1.5 border border-line-strong rounded-lg font-mono focus:outline-none focus:border-focus bg-surface text-ink "
               />
             </div>
           </div>
@@ -1847,7 +1794,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
             </Button>
           </div>
 
-          <div className="flex items-center gap-2 text-ink-3 text-2xs uppercase tracking-wider font-semibold">
+          <div className="flex items-center gap-2 text-ink-3 text-2xs font-semibold">
             <div className="h-px bg-line flex-1" />
             <span>Hoặc dán danh sách tên Brand</span>
             <div className="h-px bg-line flex-1" />
@@ -1928,7 +1875,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                   type="text"
                   value={editBrandCode}
                   onChange={(e) => setEditBrandCode(e.target.value.toUpperCase())}
-                  className="w-full px-2.5 py-1.5 border border-line-strong rounded-lg font-mono focus:outline-none focus:border-focus bg-surface text-ink uppercase"
+                  className="w-full px-2.5 py-1.5 border border-line-strong rounded-lg font-mono focus:outline-none focus:border-focus bg-surface text-ink "
                 />
               </div>
 
@@ -1954,7 +1901,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
               </label>
               <select
                 value={editBrandStatus}
-                onChange={(e) => setEditBrandStatus(e.target.value as any)}
+                onChange={(e) => setEditBrandStatus(e.target.value as 'ACTIVE' | 'PAUSED' | 'UPCOMING')}
                 className="w-full px-2.5 py-1.5 border border-line-strong rounded-lg bg-surface text-ink focus:outline-none focus:border-focus font-medium"
               >
                 <option value="ACTIVE">Đang hợp tác (Active)</option>
@@ -2172,7 +2119,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
               <label className="block text-ink-2 font-medium mb-1">Nền tảng sàn</label>
               <select
                 value={productForm.platform}
-                onChange={(e) => setProductForm(prev => ({ ...prev, platform: e.target.value as any }))}
+                onChange={(e) => setProductForm(prev => ({ ...prev, platform: e.target.value as 'TikTok Shop' | 'Shopee Mall' | 'Lazada' }))}
                 className="w-full px-3 py-1.5 border border-line-strong rounded-lg bg-surface text-ink focus:outline-none focus:border-focus"
               >
                 <option value="Shopee Mall">Shopee Mall</option>
@@ -2206,7 +2153,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
 
           {/* Tùy chọn B2C Marketing: Loại sản phẩm, Hoa hồng, Mẫu thử */}
           <div className="p-3 bg-canvas rounded-lg border border-line space-y-3">
-            <span className="text-2xs font-semibold uppercase tracking-wider text-ink block">
+            <span className="text-2xs font-semibold text-ink block">
               Chính sách phân phối & Booking KOC
             </span>
             <div className="grid grid-cols-3 gap-2">
@@ -2214,7 +2161,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                 <label className="block text-ink-2 font-medium mb-1">Phân loại vai trò</label>
                 <select
                   value={productForm.heroType}
-                  onChange={(e) => setProductForm(prev => ({ ...prev, heroType: e.target.value as any }))}
+                  onChange={(e) => setProductForm(prev => ({ ...prev, heroType: e.target.value as 'HERO' | 'ENTRY' | 'ADDON' }))}
                   className="w-full px-2 py-1.5 border border-line-strong rounded-lg bg-surface text-ink focus:outline-none focus:border-focus text-xs font-semibold"
                 >
                   <option value="HERO">HERO (Chủ lực)</option>
@@ -2272,7 +2219,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
             <label className="block text-ink-2 font-medium mb-1">Trạng thái kinh doanh</label>
             <select
               value={productForm.status}
-              onChange={(e) => setProductForm(prev => ({ ...prev, status: e.target.value as any }))}
+              onChange={(e) => setProductForm(prev => ({ ...prev, status: e.target.value as 'ACTIVE' | 'DISCONTINUED' }))}
               className="w-full px-3 py-1.5 border border-line-strong rounded-lg bg-surface text-ink focus:outline-none focus:border-focus font-medium"
             >
               <option value="ACTIVE">Đang kinh doanh (Active)</option>
@@ -2328,7 +2275,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                 onClick={() => handleDiscontinueProduct(deletingProduct)}
                 icon={Archive}
               >
-                Chuyển sang "Tạm ngừng kinh doanh" (An toàn)
+                Chuyển sang &quot;Tạm ngừng kinh doanh&quot; (An toàn)
               </Button>
             </div>
           </div>
@@ -2370,7 +2317,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                 placeholder="VD: EDUCATIONAL, STORYTELLING..."
                 value={pillarForm.code}
                 onChange={(e) => setPillarForm(prev => ({ ...prev, code: e.target.value.toUpperCase() }))}
-                className="w-full px-3 py-1.5 border border-line-strong rounded-lg font-mono uppercase focus:outline-none focus:border-focus bg-surface text-ink"
+                className="w-full px-3 py-1.5 border border-line-strong rounded-lg font-mono focus:outline-none focus:border-focus bg-surface text-ink"
               />
             </div>
 
@@ -2485,7 +2432,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
             <label className="block text-ink-2 font-medium mb-1">Trạng thái áp dụng</label>
             <select
               value={pillarForm.status}
-              onChange={(e) => setPillarForm(prev => ({ ...prev, status: e.target.value as any }))}
+              onChange={(e) => setPillarForm(prev => ({ ...prev, status: e.target.value as 'ACTIVE' | 'INACTIVE' }))}
               className="w-full px-3 py-1.5 border border-line-strong rounded-lg bg-surface text-ink focus:outline-none focus:border-focus"
             >
               <option value="ACTIVE">Đang áp dụng (Khả dụng cho mọi Brand)</option>
@@ -2660,7 +2607,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                         {h.storeName}
                       </td>
                       <td className="py-3 px-4">
-                        <span className={`px-2 py-0.5 rounded text-2xs font-semibold uppercase tracking-wider ${
+                        <span className={`px-2 py-0.5 rounded text-2xs font-semibold ${
                           h.action === 'ASSIGNED'
                             ? 'bg-positive-soft text-positive border border-line'
                             : h.action === 'REASSIGNED'
@@ -2734,7 +2681,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                         {b.notes && <div className="text-ink-3 text-2xs mt-0.5">{b.notes}</div>}
                       </td>
                       <td className="py-3 px-4 text-center">
-                        <span className={`px-2 py-0.5 rounded text-2xs font-semibold uppercase tracking-wider ${
+                        <span className={`px-2 py-0.5 rounded text-2xs font-semibold ${
                           b.isActive
                             ? 'bg-positive-soft text-positive border border-line'
                             : 'bg-sunken text-ink-3 border border-line'
@@ -2792,7 +2739,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                         {log.timestamp}
                       </td>
                       <td className="py-3 px-4">
-                        <span className={`px-2 py-0.5 rounded text-2xs font-semibold uppercase tracking-wider ${
+                        <span className={`px-2 py-0.5 rounded text-2xs font-semibold ${
                           log.action === 'CREATE'
                             ? 'bg-positive-soft text-positive border border-line'
                             : log.action === 'UPDATE' || log.action === 'APPROVE'

@@ -2,27 +2,45 @@
 
 import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { AlertTriangle, ArrowRight, Building, Users, Video, KeyRound, Check, Mail, Sparkles } from 'lucide-react';
+import { AlertTriangle, ArrowRight, Building, Users, Video, Mail } from 'lucide-react';
 import { USERS } from '@/lib/mockData';
 import { INITIAL_THIRD_PARTY_ACCOUNTS } from '@/lib/thirdPartyAccessData';
-import { BrandLogo, Button, PageActionsSlot } from '@/components/ui';
+import { BrandLogo, Button, Input, PageActionsSlot, Segmented, Status } from '../../components/ui';
+import type { StatusTone } from '../../components/ui';
 import { ContractManagementView } from '@/components/views/ContractManagementView';
 import { enableBrowserDemo } from '@/components/contracts/browserDemo';
 import { sanitizeReturnTo } from '@/lib/urlUtils';
 
 const ROLE_LABEL: Record<string, string> = {
   ADMIN: 'Quản trị (BOD)',
-  MANAGER: 'Trưởng phòng',
+  MANAGER: 'Trưởng phòng B2C',
+  GROWTH_MANAGER: 'Trưởng phòng Growth',
+  MEDIA_MANAGER: 'Trưởng phòng Media',
   LEADER: 'Trưởng nhóm',
   MEMBER: 'Chuyên viên',
   BRAND_MEMBER: 'Brand PIC',
   CONTENT_MEMBER: 'Content',
   BOOKING_MEMBER: 'Booking B2C',
-  GROWTH_MEMBER: 'Growth (Chiến lược & PnL)',
-  MEDIA_MEMBER: 'Media (Quảng cáo & Ads)',
-  BRAND_PARTNER: 'Đối tác Brand (Gmail)',
-  KOC_PARTNER: 'KOC / KOL (Gmail)',
-  CTV_PARTNER: 'Cộng tác viên (Gmail)',
+  GROWTH_MEMBER: 'Growth',
+  MEDIA_MEMBER: 'Media',
+  BRAND_PARTNER: 'Đối tác Brand',
+  KOC_PARTNER: 'KOC / KOL',
+  CTV_PARTNER: 'Cộng tác viên',
+};
+
+const ROLE_TONE: Record<string, StatusTone> = {
+  ADMIN: 'critical',
+  MANAGER: 'info',
+  GROWTH_MANAGER: 'info',
+  MEDIA_MANAGER: 'info',
+  LEADER: 'info',
+  BOOKING_MEMBER: 'positive',
+  GROWTH_MEMBER: 'positive',
+  MEDIA_MEMBER: 'info',
+  CONTENT_MEMBER: 'warning',
+  BRAND_PARTNER: 'info',
+  KOC_PARTNER: 'warning',
+  CTV_PARTNER: 'positive',
 };
 
 function LarkMark({ className = 'w-4 h-4' }: { className?: string }) {
@@ -77,30 +95,26 @@ function LoginContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedUser, setSelectedUser] = useState<string>(USERS[0].id);
   const [sandboxError, setSandboxError] = useState<string | null>(null);
+  const [staffIdentifierInput, setStaffIdentifierInput] = useState<string>('');
 
   // Partner Gmail state
   const [partnerEmail, setPartnerEmail] = useState('');
   const [selectedPartnerId, setSelectedPartnerId] = useState<string>(INITIAL_THIRD_PARTY_ACCOUNTS[0]?.id || '');
   const [partnerError, setPartnerError] = useState<string | null>(null);
 
-  // Đã đăng nhập thì chuyển thẳng vào app (dùng strict=1 để tránh tự động cấp phiên khi vừa logout)
+  // Đồng bộ vai trò đang chọn trước đó nếu có (không tự động đá khỏi trang /login để người dùng đổi role)
   useEffect(() => {
-    if (showContractDemo) return;
-    async function checkAuth() {
-      try {
-        const res = await fetch('/api/auth/me?strict=1');
-        const data = await res.json();
-        if (data.authenticated) router.replace(returnTo);
-      } catch (err) {
-        console.error('Error checking auth:', err);
+    if (typeof window !== 'undefined') {
+      const savedId = localStorage.getItem('upbase_selected_user_id');
+      if (savedId && USERS.some(u => u.id === savedId)) {
+        setSelectedUser(savedId);
       }
     }
-    checkAuth();
-  }, [router, returnTo, showContractDemo]);
+  }, []);
 
   const handleLarkLogin = () => {
     setIsLoading(true);
-    window.location.href = `/api/auth/lark/login?returnTo=${encodeURIComponent(returnTo)}`;
+    router.push(`/api/auth/lark/login?returnTo=${encodeURIComponent(returnTo)}`);
   };
 
   const handleSandboxLogin = async (userId: string) => {
@@ -129,12 +143,52 @@ function LoginContent() {
     }
   };
 
-  // Xử lý đăng nhập Gmail bên thứ 3 (Brand / KOC / CTV)
+  const handleDirectoryStaffLogin = async (identifierOverride?: string) => {
+    const identifier = (identifierOverride ?? staffIdentifierInput).trim();
+    if (!identifier) {
+      setSandboxError('Vui lòng nhập Mã nhân viên (VD: HN222, HN862, HN782) hoặc Email công ty.');
+      return;
+    }
+    setIsLoading(true);
+    setSandboxError(null);
+    try {
+      let staffOverrides = {};
+      if (typeof window !== 'undefined') {
+        try {
+          const raw = localStorage.getItem('upbase_b2c_staff_access_overrides_v1');
+          if (raw) staffOverrides = JSON.parse(raw);
+        } catch {
+          // ignore
+        }
+      }
+      const res = await fetch('/api/auth/lark/sandbox', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ staffIdentifier: identifier, staffOverrides }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        if (data.user?.id && typeof window !== 'undefined') {
+          localStorage.setItem('upbase_selected_user_id', data.user.id);
+        }
+        router.push(returnTo);
+      } else {
+        setSandboxError(data.error || 'Nhân sự không có quyền đăng nhập vào hệ thống.');
+        setIsLoading(false);
+      }
+    } catch (err) {
+      console.error(err);
+      setSandboxError('Không kết nối được máy chủ. Kiểm tra mạng rồi thử lại.');
+      setIsLoading(false);
+    }
+  };
+
+  // Xử lý đăng nhập đối tác
   const handlePartnerGmailLogin = async (accountIdOrEmail?: string) => {
     setIsLoading(true);
     setPartnerError(null);
     try {
-      const payload: any = {};
+      const payload: Record<string, string> = {};
       if (accountIdOrEmail && accountIdOrEmail.includes('@')) {
         payload.email = accountIdOrEmail;
       } else if (accountIdOrEmail) {
@@ -170,65 +224,59 @@ function LoginContent() {
 
   const larkError =
     errorParam === 'lark_not_configured'
-      ? 'Đăng nhập Lark chưa được cấu hình (thiếu LARK_APP_ID, LARK_APP_SECRET). Bạn có thể truy cập trực tiếp bằng các vai trò bên dưới.'
+      ? 'Đăng nhập Lark chưa được cấu hình. Bạn có thể truy cập trực tiếp bằng các vai trò bên dưới.'
       : errorParam
       ? messageParam || 'Lark chưa xác thực được tài khoản của bạn. Thử đăng nhập lại hoặc dùng truy cập nhanh bên dưới.'
       : null;
 
-  if (showContractDemo) return <div className="min-h-screen bg-canvas text-ink">
-    <header className="flex flex-wrap items-center justify-between gap-3 border-b border-line bg-surface px-6 py-4"><div className="flex items-center gap-4"><BrandLogo height={26} /><h1 className="font-semibold">B2C · Quản lý hợp đồng</h1></div><div className="flex items-center gap-3"><PageActionsSlot /><Button onClick={() => setShowContractDemo(false)}>Về đăng nhập</Button></div></header>
-    <main className="mx-auto max-w-7xl p-6">{demoNotice && <p role="status" className="mb-4 rounded-lg bg-warning-soft p-3 text-[13px]">{demoNotice}</p>}<ContractManagementView demoMode onNotify={message => setDemoNotice(message)} /></main>
-  </div>;
+  if (showContractDemo) return (
+    <div className="min-h-screen bg-canvas text-ink">
+      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-line bg-surface px-6 py-4">
+        <div className="flex items-center gap-4">
+          <BrandLogo height={26} />
+          <h1 className="font-semibold">B2C · Quản lý hợp đồng</h1>
+        </div>
+        <div className="flex items-center gap-3">
+          <PageActionsSlot />
+          <Button onClick={() => setShowContractDemo(false)}>Về đăng nhập</Button>
+        </div>
+      </header>
+      <main className="mx-auto max-w-7xl p-6">
+        {demoNotice && <p role="status" className="mb-4 rounded-lg bg-warning-soft p-3 text-[13px]">{demoNotice}</p>}
+        <ContractManagementView demoMode onNotify={message => setDemoNotice(message)} />
+      </main>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-canvas text-ink flex flex-col">
-      <main className="flex-1 flex items-center justify-center px-4 py-12">
-        <div className="w-full max-w-[420px] space-y-6">
+      <main className="flex-1 flex items-center justify-center px-4 py-10">
+        <div className="w-full max-w-[460px] space-y-5">
           <BrandLogo height={26} />
 
           <div className="space-y-1.5">
-            <h1 className="text-2xl font-semibold tracking-tight">Hệ Thống Đăng Nhập</h1>
-            <p className="text-[13.5px] text-ink-2">
-              Dành cho nhân sự UpBase và các bên thứ 3 (Brand, KOC, CTV).
+            <h1 className="text-xl font-semibold tracking-tight">Hệ thống đăng nhập B2C</h1>
+            <p className="text-[13px] text-ink-2">
+              Chỉ nhân sự thuộc 3 khối <strong>Marketing B2C</strong>, <strong>Growth</strong>, <strong>Media</strong> (hoặc được Admin cấp quyền) mới được đăng nhập.
             </p>
           </div>
 
-          {/* Portal Switcher Tabs */}
-          <Button onClick={() => { enableBrowserDemo(); setShowContractDemo(true); }}>Thử quản lý hợp đồng (giả lập)</Button>
-          <div className="flex rounded-xl bg-sunken p-1 border border-line text-xs font-semibold">
-            <button
-              type="button"
-              onClick={() => setActivePortalTab('INTERNAL')}
-              className={`flex-1 py-2 rounded-lg transition flex items-center justify-center gap-1.5 ${
-                activePortalTab === 'INTERNAL'
-                  ? 'bg-surface text-ink shadow-xs'
-                  : 'text-ink-3 hover:text-ink'
-              }`}
-            >
-              <LarkMark className="w-3.5 h-3.5" />
-              <span>Nội Bộ UpBase</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActivePortalTab('GMAIL_PARTNER')}
-              className={`flex-1 py-2 rounded-lg transition flex items-center justify-center gap-1.5 ${
-                activePortalTab === 'GMAIL_PARTNER'
-                  ? 'bg-surface text-purple-700 shadow-xs'
-                  : 'text-ink-3 hover:text-ink'
-              }`}
-            >
-              <GoogleMark className="w-3.5 h-3.5" />
-              <span>Đối Tác (Gmail SSO)</span>
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            </button>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <Segmented
+              value={activePortalTab}
+              onChange={setActivePortalTab}
+              items={[
+                { key: 'INTERNAL', label: 'Nội bộ Upbase' },
+                { key: 'GMAIL_PARTNER', label: 'Đối tác' },
+              ]}
+            />
+            <Button size="sm" variant="ghost" onClick={() => { enableBrowserDemo(); setShowContractDemo(true); }}>
+              Xem thử hợp đồng
+            </Button>
           </div>
 
-          {/* ========================================================================= */}
-          {/* TAB 1: INTERNAL STAFF (DIRECT ROLE ACCESS & LARK SSO)                     */}
-          {/* ========================================================================= */}
           {activePortalTab === 'INTERNAL' && (
-            <div className="space-y-5 animate-in fade-in duration-150">
+            <div className="space-y-4 animate-in fade-in duration-150">
               {larkError && (
                 <div role="alert" className="flex items-start gap-2.5 p-3 rounded-md bg-critical-soft text-critical text-[13px]">
                   <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
@@ -236,28 +284,16 @@ function LoginContent() {
                 </div>
               )}
 
-              {/* Nút hành động nhanh: Vào thẳng với quyền BOD */}
-              <button
-                type="button"
-                onClick={() => handleSandboxLogin(USERS[0].id)}
-                disabled={isLoading}
-                className="w-full h-11 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold flex items-center justify-center gap-2 transition-colors disabled:opacity-60 shadow-xs"
-              >
-                <Sparkles className="w-4 h-4 text-emerald-200" />
-                <span>Vào Thẳng Hệ Thống (Quản Trị BOD)</span>
-                <ArrowRight className="w-4 h-4 text-emerald-200" />
-              </button>
-
-              <section className="space-y-3 pt-3 border-t border-line" aria-labelledby="sandbox-title">
+              <section className="space-y-2.5" aria-labelledby="sandbox-title">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 id="sandbox-title" className="text-[13.5px] font-medium">Chọn vai trò truy cập trực tiếp</h2>
-                    <p className="text-2xs text-ink-3 mt-0.5">Vào hệ thống theo vai trò mà không cần đăng nhập Lark.</p>
+                    <h2 id="sandbox-title" className="text-[13.5px] font-medium">Chọn vai trò đăng nhập</h2>
+                    <p className="text-2xs text-ink-3 mt-0.5">Bao gồm Admin, Trưởng phòng (B2C, Growth, Media), Chuyên viên và Đối tác (Brand, KOC, CTV).</p>
                   </div>
                 </div>
 
-                <div className="border border-line rounded-xl bg-surface divide-y divide-line overflow-hidden max-h-64 overflow-y-auto" role="radiogroup" aria-label="Chọn vai trò">
-                  {USERS.filter(u => !['BRAND_PARTNER', 'KOC_PARTNER', 'CTV_PARTNER'].includes(u.role)).map((u) => {
+                <div className="border border-line rounded-xl bg-surface divide-y divide-line overflow-hidden max-h-80 overflow-y-auto" role="radiogroup" aria-label="Chọn vai trò">
+                  {USERS.map((u) => {
                     const isSelected = selectedUser === u.id;
                     return (
                       <button
@@ -266,7 +302,8 @@ function LoginContent() {
                         role="radio"
                         aria-checked={isSelected}
                         onClick={() => setSelectedUser(u.id)}
-                        className={`w-full text-left px-3 py-2.5 flex items-center gap-3 transition-colors ${isSelected ? 'bg-sunken' : 'hover:bg-canvas'}`}
+                        onDoubleClick={() => handleSandboxLogin(u.id)}
+                        className={`w-full text-left px-3 py-2 flex items-center gap-3 transition-colors ${isSelected ? 'bg-sunken' : 'hover:bg-canvas'}`}
                       >
                         <span
                           className={`w-4 h-4 rounded-full border shrink-0 flex items-center justify-center ${isSelected ? 'border-accent' : 'border-line-strong'}`}
@@ -275,64 +312,120 @@ function LoginContent() {
                           {isSelected && <span className="w-2 h-2 rounded-full bg-accent" />}
                         </span>
                         <span className="min-w-0 flex-1">
-                          <span className="block text-[13.5px] font-medium truncate">{u.name}</span>
+                          <span className="block text-[13px] font-medium truncate">{u.name}</span>
                           <span className="block text-2xs text-ink-3 truncate">{u.roleTitle}</span>
                         </span>
-                        <span className={`text-3xs font-bold px-2 py-0.5 rounded-full border shrink-0 ${
-                          u.role === 'ADMIN' ? 'bg-red-50 text-red-700 border-red-200' :
-                          u.role === 'MANAGER' ? 'bg-purple-50 text-purple-700 border-purple-200' :
-                          u.role === 'LEADER' ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                          u.role === 'BOOKING_MEMBER' ? 'bg-cyan-50 text-cyan-800 border-cyan-200' :
-                          u.role === 'CONTENT_MEMBER' ? 'bg-amber-50 text-amber-800 border-amber-200' :
-                          'bg-emerald-50 text-emerald-800 border-emerald-200'
-                        }`}>
+                        <Status tone={ROLE_TONE[u.role] ?? 'neutral'}>
                           {ROLE_LABEL[u.role] ?? u.role}
-                        </span>
+                        </Status>
                       </button>
                     );
                   })}
                 </div>
 
                 {sandboxError && (
-                  <p role="alert" className="text-[13px] text-critical">{sandboxError}</p>
+                  <div role="alert" className="flex items-start gap-2 p-2.5 rounded-lg bg-critical-soft text-critical text-xs leading-relaxed">
+                    <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                    <span>{sandboxError}</span>
+                  </div>
                 )}
 
-                <button
-                  type="button"
+                <Button
+                  variant="primary"
                   onClick={() => handleSandboxLogin(selectedUser)}
                   disabled={isLoading}
-                  className="w-full h-[38px] px-3 rounded-xl border border-line-strong bg-surface hover:bg-sunken text-[13.5px] font-medium flex items-center justify-center gap-1.5 transition-colors disabled:opacity-60"
+                  icon={ArrowRight}
+                  className="w-full h-10"
                 >
-                  <span>Vào hệ thống với vai trò đã chọn</span>
-                  <ArrowRight className="w-4 h-4 text-ink-3" />
-                </button>
+                  Đăng nhập với vai trò đã chọn
+                </Button>
               </section>
 
-              <div className="pt-2 text-center">
+              {/* Kiểm tra cổng đăng nhập từ danh bạ 1.011 nhân sự */}
+              <section className="p-3.5 rounded-xl border border-line bg-surface space-y-2.5">
+                <div>
+                  <h3 className="text-xs font-semibold text-ink">
+                    Kiểm tra đăng nhập theo Mã NV / Email (Danh bạ 1.011 nhân sự)
+                  </h3>
+                  <p className="text-2xs text-ink-3 mt-0.5">
+                    Nhập mã NV bất kỳ để kiểm tra cổng chặn đăng nhập tự động theo phòng ban.
+                  </p>
+                </div>
+
+                <div className="flex gap-2">
+                  <Input
+                    type="text"
+                    value={staffIdentifierInput}
+                    onChange={(e) => setStaffIdentifierInput(e.target.value)}
+                    placeholder="VD: HN222 (Growth), HN862 (Media), HN782 (Bị chặn)..."
+                    className="flex-1 text-xs"
+                  />
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    disabled={isLoading}
+                    onClick={() => handleDirectoryStaffLogin()}
+                  >
+                    Đăng nhập
+                  </Button>
+                </div>
+
+                <div className="flex flex-wrap gap-1.5 pt-0.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStaffIdentifierInput('HN222');
+                      handleDirectoryStaffLogin('HN222');
+                    }}
+                    className="text-2xs px-2 py-1 rounded bg-sunken hover:bg-canvas border border-line text-ink-2"
+                  >
+                    HN222 · Đỗ Quyên (TP Growth)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStaffIdentifierInput('HN862');
+                      handleDirectoryStaffLogin('HN862');
+                    }}
+                    className="text-2xs px-2 py-1 rounded bg-sunken hover:bg-canvas border border-line text-ink-2"
+                  >
+                    HN862 · Đức Quảng (TP Media)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStaffIdentifierInput('HN782');
+                      handleDirectoryStaffLogin('HN782');
+                    }}
+                    className="text-2xs px-2 py-1 rounded bg-critical-soft text-critical border border-line font-medium"
+                  >
+                    Thử HN782 · Phòng Livestream (Chặn Login)
+                  </button>
+                </div>
+              </section>
+
+              <div className="pt-1 text-center">
                 <button
+                  type="button"
                   onClick={handleLarkLogin}
                   disabled={isLoading}
                   className="text-xs text-ink-3 hover:text-ink transition-colors inline-flex items-center gap-1.5 underline decoration-line-strong"
                 >
                   <LarkMark className="w-3 h-3" />
-                  <span>Hoặc đăng nhập bằng Lark SSO (Nếu có tài khoản Lark)</span>
+                  <span>Hoặc đăng nhập bằng Lark</span>
                 </button>
               </div>
             </div>
           )}
 
-          {/* ========================================================================= */}
-          {/* TAB 2: THIRD-PARTY PARTNERS (BRAND, KOC, CTV VIA GMAIL SSO)               */}
-          {/* ========================================================================= */}
           {activePortalTab === 'GMAIL_PARTNER' && (
             <div className="space-y-5 animate-in fade-in duration-150">
-              <div className="bg-purple-50/70 border border-purple-200/80 rounded-xl p-3.5 text-xs text-purple-900 space-y-1">
-                <div className="font-bold flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-purple-600" />
-                  <span>Cổng Đăng Nhập Phân Quyền Bên Thứ 3</span>
+              <div className="bg-accent-soft border border-line rounded-xl p-3.5 text-xs text-ink space-y-1">
+                <div className="font-semibold text-accent">
+                  Cổng đăng nhập đối tác
                 </div>
-                <p className="text-2xs text-purple-700 leading-relaxed">
-                  Đăng nhập bằng tài khoản Gmail đã được UpBase cấp quyền. Hệ thống sẽ tự động chuyển bạn vào đúng không gian làm việc của mình (Brand Hub, KOC Hub hoặc CTV Hub).
+                <p className="text-2xs text-ink-2 leading-relaxed">
+                  Đăng nhập bằng tài khoản Gmail đã được Upbase cấp quyền. Hệ thống sẽ chuyển bạn vào đúng Cổng đối tác Brand, KOC hoặc CTV.
                 </p>
               </div>
 
@@ -343,7 +436,6 @@ function LoginContent() {
                 </div>
               )}
 
-              {/* Quick Select Partner Whitelist */}
               <div className="space-y-2">
                 <label className="text-xs font-semibold text-ink block">
                   Chọn tài khoản đối tác được cấp quyền:
@@ -364,66 +456,60 @@ function LoginContent() {
                           setPartnerEmail(acc.gmail);
                         }}
                         className={`w-full text-left px-3.5 py-2.5 flex items-center justify-between gap-3 transition-colors ${
-                          isSelected ? 'bg-purple-50/70 text-purple-900' : 'hover:bg-sunken text-ink'
+                          isSelected ? 'bg-accent-soft text-ink' : 'hover:bg-sunken text-ink'
                         }`}
                       >
                         <div className="min-w-0">
                           <div className="font-semibold text-xs flex items-center gap-1.5 truncate">
-                            {isBrand && <Building className="w-3.5 h-3.5 text-purple-600 shrink-0" />}
-                            {isKoc && <Users className="w-3.5 h-3.5 text-blue-600 shrink-0" />}
-                            {isCtv && <Video className="w-3.5 h-3.5 text-emerald-600 shrink-0" />}
+                            {isBrand && <Building className="w-3.5 h-3.5 text-accent shrink-0" />}
+                            {isKoc && <Users className="w-3.5 h-3.5 text-ink-2 shrink-0" />}
+                            {isCtv && <Video className="w-3.5 h-3.5 text-positive shrink-0" />}
                             <span className="truncate">{acc.displayName}</span>
                           </div>
-                          <div className="text-2xs text-ink-3 font-mono truncate">{acc.gmail}</div>
+                          <div className="text-2xs text-ink-3 font-code truncate">{acc.gmail}</div>
                         </div>
 
-                        <span className={`text-3xs font-bold px-2 py-0.5 rounded-full border shrink-0 ${
-                          isBrand ? 'bg-purple-100 text-purple-800 border-purple-200' :
-                          isKoc ? 'bg-blue-100 text-blue-800 border-blue-200' :
-                          'bg-emerald-100 text-emerald-800 border-emerald-200'
-                        }`}>
+                        <Status tone={isBrand ? 'info' : isKoc ? 'warning' : 'positive'}>
                           {acc.partnerType}
-                        </span>
+                        </Status>
                       </button>
                     );
                   })}
                 </div>
               </div>
 
-              {/* Or Type Custom Gmail */}
               <div className="space-y-1.5">
-                <label className="text-2xs font-semibold text-ink-3">Hoặc gõ địa chỉ Gmail khác:</label>
+                <label className="text-2xs font-medium text-ink-3 block">Hoặc nhập địa chỉ Gmail khác</label>
                 <div className="relative">
-                  <Mail className="w-4 h-4 text-ink-3 absolute left-3 top-1/2 -translate-y-1/2" />
-                  <input
+                  <Mail className="w-4 h-4 text-ink-3 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <Input
                     type="email"
                     value={partnerEmail}
                     onChange={(e) => {
                       setPartnerEmail(e.target.value);
                       setSelectedPartnerId('');
                     }}
-                    placeholder="ví dụ: brand.partner@gmail.com"
-                    className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-line-strong bg-surface text-ink placeholder-ink-3 focus:outline-none focus:border-purple-600"
+                    placeholder="brand.partner@gmail.com"
+                    className="pl-9"
                   />
                 </div>
               </div>
 
-              {/* Google Login Submit Button */}
-              <button
-                type="button"
+              <Button
+                variant="secondary"
                 onClick={() => handlePartnerGmailLogin(partnerEmail || selectedPartnerId)}
                 disabled={isLoading}
-                className="w-full h-11 px-4 rounded-xl bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 shadow-xs text-sm font-semibold flex items-center justify-center gap-2.5 transition cursor-pointer disabled:opacity-60"
+                className="w-full h-10"
               >
                 <GoogleMark className="w-4 h-4" />
-                <span>{isLoading ? 'Đang xác thực Gmail…' : 'Đăng Nhập Bằng Google Gmail'}</span>
-              </button>
+                <span>{isLoading ? 'Đang xác thực Gmail…' : 'Đăng nhập bằng Google'}</span>
+              </Button>
             </div>
           )}
         </div>
       </main>
 
-      <footer className="px-4 py-5 text-center text-2xs text-ink-3">© 2026 Upbase · Marketing B2C · Third-Party Multi-Tenant SSO</footer>
+      <footer className="px-4 py-5 text-center text-2xs text-ink-3">© 2026 Upbase · Marketing B2C · Đăng nhập đối tác</footer>
     </div>
   );
 }

@@ -1,39 +1,26 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { ConfirmDialog } from '../ui';
+import { ConfirmDialog, PageActions, StatRow, Stat, Button } from '../ui';
 import { 
-  Sparkles, 
   Layers, 
   Search, 
   Plus, 
-  Filter, 
   Copy, 
   Check, 
   Edit3, 
   Trash2, 
   Flame, 
-  Zap, 
   Store, 
   Package, 
-  Tag, 
-  Users, 
-  Eye, 
   CheckCircle2, 
-  AlertCircle, 
-  Clock, 
-  HelpCircle, 
-  ExternalLink,
-  ChevronDown,
   LayoutGrid,
   Table as TableIcon,
   Grid3X3,
   Lightbulb,
   ArrowRight,
   Info,
-  X,
-  Share2,
-  Video
+  X
 } from 'lucide-react';
 import { ContentAngleItem, UserProfile, MasterContentPillar, PushProductItem } from '../../lib/types';
 import { INITIAL_CONTENT_ANGLES, generateAiAngleSuggestions } from '../../lib/contentAngleData';
@@ -68,7 +55,7 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
   const [selectedStore, setSelectedStore] = useState<string>(initialStoreName || 'ALL');
   const [selectedProduct, setSelectedProduct] = useState<string>(initialProductId || 'ALL');
   const [selectedPillar, setSelectedPillar] = useState<string>('ALL');
-  const [selectedStatus, setSelectedStatus] = useState<string>('ALL');
+  const [selectedStatus] = useState<string>('ALL');
 
   // Modal State for Create / Edit
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -88,7 +75,7 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
   const [formSuggestedFormat, setFormSuggestedFormat] = useState('Voiceover B-roll');
   const [formStatus, setFormStatus] = useState<'ACTIVE' | 'DRAFT' | 'ARCHIVED'>('ACTIVE');
 
-  // AI Generator Modal State
+  // Suggestion Modal State
   const [isAiModalOpen, setIsAiModalOpen] = useState(false);
   const [aiProductSelect, setAiProductSelect] = useState<string>('');
   const [aiPillarSelect, setAiPillarSelect] = useState<string>('Nỗi đau - Giải pháp');
@@ -164,7 +151,7 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
     setFormSolutionApproach('');
     setFormKeySellingPoints(prod?.usp ? [prod.usp] : ['']);
     setFormTargetAudience(prod?.targetKocNiche ? prod.targetKocNiche.join(', ') : 'Khách hàng đa kênh');
-    setFormCallToAction('Bấm ngay vào giỏ hàng góc trái để nhận ưu đãi độc quyền!');
+    setFormCallToAction('Bấm ngay vào giỏ hàng góc trái để nhận ưu đãi.');
     setFormSuggestedFormat(pil?.suggestedFormats?.[0] || 'Voiceover B-roll');
     setFormStatus('ACTIVE');
     setIsModalOpen(true);
@@ -192,7 +179,7 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
   const handleSaveAngle = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formName.trim() || !formHookIdea.trim()) {
-      if (onNotify) onNotify('Vui lòng nhập tên kịch bản và câu Hook 3 giây đầu!', 'warning');
+      if (onNotify) onNotify('Vui lòng nhập tên kịch bản và câu mở đầu 3 giây.', 'warning');
       return;
     }
 
@@ -229,7 +216,7 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
       };
 
       setAngles(prev => prev.map(a => a.id === updated.id ? updated : a));
-      if (onNotify) onNotify(`Đã cập nhật góc kịch bản "${updated.name}" thành công!`, 'success');
+      if (onNotify) onNotify(`Đã cập nhật góc kịch bản "${updated.name}"`, 'success');
     } else {
       // Create new
       const codePrefix = matchedProd?.brandName?.toLowerCase().includes('kuti') ? 'KUTI' :
@@ -261,13 +248,13 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
         status: formStatus,
         usageCount: 0,
         avgViewsEstimate: 50000,
-        createdBy: currentUser?.name || 'Content Lead',
+        createdBy: currentUser?.name || 'Trưởng nhóm nội dung',
         createdAt: new Date().toISOString().substring(0, 10),
         updatedAt: new Date().toISOString().substring(0, 10)
       };
 
       setAngles(prev => [newAngle, ...prev]);
-      if (onNotify) onNotify(`Đã thêm mới góc kịch bản "${newAngle.name}" cho sản phẩm!`, 'success');
+      if (onNotify) onNotify(`Đã thêm góc kịch bản "${newAngle.name}"`, 'success');
     }
 
     setIsModalOpen(false);
@@ -283,10 +270,10 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
     navigator.clipboard.writeText(hookText);
     setCopiedId(angleId);
     setTimeout(() => setCopiedId(null), 2500);
-    if (onNotify) onNotify('Đã sao chép câu Hook 3 giây vào bộ nhớ tạm!', 'success');
+    if (onNotify) onNotify('Đã sao chép câu mở đầu 3 giây', 'success');
   };
 
-  // Handle Open AI Suggestions
+  // Handle Open Suggestions
   const handleOpenAiModal = () => {
     const prod = matrixProducts[0] || products[0];
     setAiProductSelect(prod?.id || '');
@@ -319,7 +306,7 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
 
     setIsAiModalOpen(false);
     setIsModalOpen(true);
-    if (onNotify) onNotify('Đã áp dụng góc kịch bản mẫu vào biểu mẫu!', 'info');
+    if (onNotify) onNotify('Đã áp dụng góc kịch bản mẫu vào biểu mẫu', 'info');
   };
 
   // Pillar color map
@@ -329,87 +316,29 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
     if (name.includes('review') || name.includes('trực tiếp')) return 'bg-blue-50 text-blue-700 border-blue-200';
     if (name.includes('unbox')) return 'bg-emerald-50 text-emerald-700 border-emerald-200';
     if (name.includes('fomo') || name.includes('trend')) return 'bg-amber-50 text-amber-700 border-amber-200';
-    if (name.includes('vlog') || name.includes('story')) return 'bg-purple-50 text-purple-700 border-purple-200';
-    if (name.includes('controversial') || name.includes('tranh cãi')) return 'bg-pink-50 text-pink-700 border-pink-200';
+    if (name.includes('vlog') || name.includes('story')) return 'bg-accent-soft text-accent border-line';
+    if (name.includes('controversial') || name.includes('tranh cãi')) return 'bg-sunken text-ink-2 border-line';
     return 'bg-slate-100 text-slate-700 border-slate-200';
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-150">
-      {/* ========================================================================= */}
-      {/* 1. HEADER & HERO ACTION BAR                                               */}
-      {/* ========================================================================= */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-purple-50 via-blue-50 to-transparent -mr-20 -mt-20 rounded-full blur-3xl opacity-70 pointer-events-none" />
+    <div className="space-y-4 animate-in fade-in duration-150">
+      <PageActions>
+        <Button variant="secondary" icon={Lightbulb} onClick={handleOpenAiModal}>
+          Gợi ý góc tiếp cận
+        </Button>
+        <Button variant="primary" icon={Plus} onClick={() => handleOpenCreateModal()}>
+          Thêm góc tiếp cận
+        </Button>
+      </PageActions>
 
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="space-y-1.5 max-w-2xl">
-            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-purple-50 border border-purple-200/80 text-purple-700 text-xs font-semibold">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Phân Hệ Kịch Bản Chiến Lược</span>
-            </div>
-            <h1 className="text-xl font-bold text-slate-900 tracking-tight">
-              Thiết Lập & Quản Lý Góc Nội Dung (Content Angles)
-            </h1>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              Phân rã <strong>Trụ cột nội dung (Content Pillars)</strong> thành các <strong>hướng kịch bản chi tiết đi theo từng sản phẩm của gian hàng</strong>. Cung cấp sẵn Hook 3s, nỗi đau khách hàng & luận điểm USP để các bạn Booking PIC gắn trực tiếp cho KOC khi phân bổ kế hoạch.
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2.5">
-            <button
-              onClick={handleOpenAiModal}
-              className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-xs hover:opacity-95 transition flex items-center gap-2 cursor-pointer"
-            >
-              <Lightbulb className="w-4 h-4 text-amber-300" />
-              <span>Gợi ý góc kịch bản</span>
-            </button>
-
-            <button
-              onClick={() => handleOpenCreateModal()}
-              className="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-900 text-white hover:bg-slate-800 shadow-xs transition flex items-center gap-2 cursor-pointer"
-            >
-              <Plus className="w-4 h-4" />
-              <span>+ Thêm Content Angle</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Overview Metric Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6 pt-5 border-t border-slate-100">
-          <div className="p-3 bg-slate-50/80 rounded-xl border border-slate-200/60">
-            <div className="text-2xs text-slate-500 font-medium">Tổng số Content Angles</div>
-            <div className="text-lg font-bold text-slate-900 mt-0.5 flex items-baseline gap-1.5">
-              <span>{angles.length}</span>
-              <span className="text-2xs font-semibold text-emerald-600">({activeCount} Active)</span>
-            </div>
-          </div>
-
-          <div className="p-3 bg-slate-50/80 rounded-xl border border-slate-200/60">
-            <div className="text-2xs text-slate-500 font-medium">Sản phẩm đã phủ Angles</div>
-            <div className="text-lg font-bold text-purple-700 mt-0.5 flex items-baseline gap-1.5">
-              <span>{new Set(angles.map(a => a.productId)).size}</span>
-              <span className="text-2xs text-slate-500">/ {products.length} SP đẩy</span>
-            </div>
-          </div>
-
-          <div className="p-3 bg-slate-50/80 rounded-xl border border-slate-200/60">
-            <div className="text-2xs text-slate-500 font-medium">Trụ cột (Pillars) tham gia</div>
-            <div className="text-lg font-bold text-blue-700 mt-0.5 flex items-baseline gap-1.5">
-              <span>{new Set(angles.map(a => a.pillarId)).size}</span>
-              <span className="text-2xs text-slate-500">/ {pillars.length} Pillars</span>
-            </div>
-          </div>
-
-          <div className="p-3 bg-slate-50/80 rounded-xl border border-slate-200/60">
-            <div className="text-2xs text-slate-500 font-medium">Lượt Booking KOC đã dùng</div>
-            <div className="text-lg font-bold text-emerald-600 mt-0.5 flex items-baseline gap-1.5">
-              <span>{totalBookingsApplied}</span>
-              <span className="text-2xs text-slate-500">deals</span>
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* Overview Metric Stats */}
+      <StatRow>
+        <Stat label="Tổng số góc tiếp cận" value={angles.length} note={`${activeCount} đang dùng`} />
+        <Stat label="Sản phẩm đã có góc tiếp cận" value={`${new Set(angles.map(a => a.productId)).size} / ${products.length}`} note="Sản phẩm thúc đẩy" />
+        <Stat label="Trụ cột nội dung tham gia" value={`${new Set(angles.map(a => a.pillarId)).size} / ${pillars.length}`} note="Trụ cột" />
+        <Stat label="Lượt booking KOC đã dùng" value={totalBookingsApplied} note="Hồ sơ áp dụng" tone="positive" />
+      </StatRow>
 
       {/* ========================================================================= */}
       {/* 2. FILTER & TOOLBAR                                                       */}
@@ -422,8 +351,8 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Tìm theo tên kịch bản, câu Hook 3s, nỗi đau, sản phẩm..."
-            className="w-full pl-9 pr-3 py-2 text-xs rounded-lg border border-slate-200 bg-slate-50/50 text-slate-800 placeholder-slate-400 focus:outline-none focus:border-purple-500 focus:bg-white"
+            placeholder="Tìm theo tên kịch bản, câu mở đầu 3s, nỗi đau, sản phẩm..."
+            className="w-full pl-9 pr-3 py-2 text-xs rounded-lg border border-slate-200 bg-slate-50/50 text-slate-800 placeholder-slate-400 focus:outline-none focus:border-accent focus:bg-white"
           />
         </div>
 
@@ -436,7 +365,7 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
               setSelectedStore(e.target.value);
               setSelectedProduct('ALL');
             }}
-            className="text-xs h-9 px-2.5 rounded-lg border border-slate-200 bg-white text-slate-700 font-medium focus:outline-none focus:border-purple-500"
+            className="text-xs h-9 px-2.5 rounded-lg border border-slate-200 bg-white text-slate-700 font-medium focus:outline-none focus:border-accent"
           >
             <option value="ALL">Tất cả gian hàng ({availableStores.length})</option>
             {availableStores.map(store => (
@@ -448,7 +377,7 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
           <select
             value={selectedProduct}
             onChange={(e) => setSelectedProduct(e.target.value)}
-            className="text-xs h-9 px-2.5 rounded-lg border border-slate-200 bg-white text-slate-700 font-medium focus:outline-none focus:border-purple-500 max-w-[200px] truncate"
+            className="text-xs h-9 px-2.5 rounded-lg border border-slate-200 bg-white text-slate-700 font-medium focus:outline-none focus:border-accent max-w-[200px] truncate"
           >
             <option value="ALL">Tất cả sản phẩm ({availableProducts.length})</option>
             {availableProducts.map(p => (
@@ -460,9 +389,9 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
           <select
             value={selectedPillar}
             onChange={(e) => setSelectedPillar(e.target.value)}
-            className="text-xs h-9 px-2.5 rounded-lg border border-slate-200 bg-white text-slate-700 font-medium focus:outline-none focus:border-purple-500"
+            className="text-xs h-9 px-2.5 rounded-lg border border-slate-200 bg-white text-slate-700 font-medium focus:outline-none focus:border-accent"
           >
-            <option value="ALL">Tất cả Pillars ({pillars.length})</option>
+            <option value="ALL">Tất cả trụ cột ({pillars.length})</option>
             {pillars.map(p => (
               <option key={p.id} value={p.id}>{p.name}</option>
             ))}
@@ -474,31 +403,31 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
               onClick={() => setViewMode('CARDS')}
               title="Xem dạng thẻ kịch bản"
               className={`px-2.5 py-1 rounded-md font-semibold flex items-center gap-1.5 transition ${
-                viewMode === 'CARDS' ? 'bg-white text-purple-700 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                viewMode === 'CARDS' ? 'bg-white text-accent shadow-xs' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               <LayoutGrid className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Thẻ Brief</span>
+              <span className="hidden sm:inline">Thẻ brief</span>
             </button>
             <button
               onClick={() => setViewMode('MATRIX')}
-              title="Xem ma trận phủ sản phẩm x pillar"
+              title="Xem ma trận phủ sản phẩm x trụ cột"
               className={`px-2.5 py-1 rounded-md font-semibold flex items-center gap-1.5 transition ${
-                viewMode === 'MATRIX' ? 'bg-white text-purple-700 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                viewMode === 'MATRIX' ? 'bg-white text-accent shadow-xs' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               <Grid3X3 className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Ma Trận Phủ SP</span>
+              <span className="hidden sm:inline">Ma trận phủ SP</span>
             </button>
             <button
               onClick={() => setViewMode('TABLE')}
               title="Xem dạng bảng chi tiết"
               className={`px-2.5 py-1 rounded-md font-semibold flex items-center gap-1.5 transition ${
-                viewMode === 'TABLE' ? 'bg-white text-purple-700 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                viewMode === 'TABLE' ? 'bg-white text-accent shadow-xs' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               <TableIcon className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Bảng Tổng Hợp</span>
+              <span className="hidden sm:inline">Bảng tổng hợp</span>
             </button>
           </div>
         </div>
@@ -512,13 +441,13 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
           <div className="flex items-center justify-between text-xs text-slate-500 px-1">
             <span>Hiển thị <strong>{filteredAngles.length}</strong> góc kịch bản phù hợp</span>
             {selectedStore !== 'ALL' && (
-              <span className="font-semibold text-purple-700">Gian hàng: {selectedStore}</span>
+              <span className="font-semibold text-accent">Gian hàng: {selectedStore}</span>
             )}
           </div>
 
           {filteredAngles.length === 0 ? (
             <div className="bg-white border border-slate-200 rounded-2xl p-12 text-center space-y-3">
-              <div className="w-12 h-12 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center mx-auto">
+              <div className="w-12 h-12 rounded-full bg-accent-soft text-accent flex items-center justify-center mx-auto">
                 <Search className="w-6 h-6" />
               </div>
               <h3 className="text-sm font-semibold text-slate-900">Không tìm thấy góc kịch bản nào</h3>
@@ -527,9 +456,9 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
               </p>
               <button
                 onClick={() => handleOpenCreateModal()}
-                className="px-4 py-2 rounded-xl text-xs font-semibold bg-purple-600 text-white hover:bg-purple-700 transition"
+                className="px-4 py-2 rounded-xl text-xs font-semibold bg-primary text-white hover:bg-primary-hover transition"
               >
-                + Thêm Content Angle Mới
+                Thêm góc tiếp cận mới
               </button>
             </div>
           ) : (
@@ -540,7 +469,7 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
                 return (
                   <div
                     key={angle.id}
-                    className="bg-white border border-slate-200 hover:border-purple-300 rounded-2xl p-5 shadow-xs hover:shadow-md transition flex flex-col justify-between space-y-4 relative group"
+                    className="bg-white border border-slate-200 hover:border-line-strong rounded-2xl p-5 shadow-xs hover:shadow-md transition flex flex-col justify-between space-y-4 relative group"
                   >
                     {/* Top Row: Product & Pillar Badge */}
                     <div className="space-y-2">
@@ -558,6 +487,7 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
                       {/* Product & Store Tag */}
                       <div className="flex items-center gap-2 pt-0.5">
                         {angle.productImageUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
                           <img
                             src={angle.productImageUrl}
                             alt={angle.productName}
@@ -569,7 +499,7 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
                           </div>
                         )}
                         <div className="min-w-0 flex-1">
-                          <div className="text-xs font-bold text-slate-900 truncate" title={angle.productName}>
+                          <div className="text-xs font-semibold text-slate-900 truncate" title={angle.productName}>
                             {angle.productName}
                           </div>
                           <div className="text-2xs text-slate-500 flex items-center gap-1 truncate">
@@ -580,22 +510,22 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
                       </div>
 
                       {/* Angle Title */}
-                      <h3 className="text-sm font-semibold text-slate-900 group-hover:text-purple-700 transition leading-snug pt-1">
+                      <h3 className="text-sm font-semibold text-slate-900 group-hover:text-accent transition leading-snug pt-1">
                         {angle.name}
                       </h3>
                     </div>
 
                     {/* Middle Section: Hook Idea (Prominent Visual) */}
-                    <div className="bg-purple-50/70 border border-purple-200/80 rounded-xl p-3.5 space-y-1.5 relative">
-                      <div className="flex items-center justify-between text-2xs font-bold text-purple-700 uppercase tracking-wide">
+                    <div className="bg-accent-soft border border-line rounded-xl p-3.5 space-y-1.5 relative">
+                      <div className="flex items-center justify-between text-2xs font-semibold text-accent">
                         <span className="flex items-center gap-1">
                           <Flame className="w-3.5 h-3.5 text-amber-500" />
-                          Hook 3 Giây Đầu (Viral Opener)
+                          Mở đầu 3 giây
                         </span>
                         <button
                           onClick={() => handleCopyHook(angle.hookIdea, angle.id)}
-                          className="hover:text-purple-900 flex items-center gap-1 cursor-pointer bg-white/80 px-1.5 py-0.5 rounded border border-purple-200"
-                          title="Sao chép câu hook này"
+                          className="hover:text-ink flex items-center gap-1 cursor-pointer bg-white/80 px-1.5 py-0.5 rounded border border-line"
+                          title="Sao chép câu mở đầu này"
                         >
                           {isCopied ? (
                             <>
@@ -604,8 +534,8 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
                             </>
                           ) : (
                             <>
-                              <Copy className="w-3 h-3 text-purple-600" />
-                              <span className="text-2xs">Chép Hook</span>
+                              <Copy className="w-3 h-3 text-accent" />
+                              <span className="text-2xs">Chép câu mở đầu</span>
                             </>
                           )}
                         </button>
@@ -618,11 +548,11 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
                     {/* Painpoint & Solution */}
                     <div className="space-y-2 text-xs">
                       <div>
-                        <span className="text-2xs font-semibold text-rose-600 uppercase tracking-wide">Nỗi đau / Vấn đề: </span>
+                        <span className="text-2xs font-semibold text-rose-600">Nỗi đau / vấn đề: </span>
                         <span className="text-slate-600">{angle.painPoint}</span>
                       </div>
                       <div>
-                        <span className="text-2xs font-semibold text-emerald-600 uppercase tracking-wide">Hướng giải quyết: </span>
+                        <span className="text-2xs font-semibold text-emerald-600">Hướng giải quyết: </span>
                         <span className="text-slate-600">{angle.solutionApproach}</span>
                       </div>
                     </div>
@@ -630,7 +560,7 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
                     {/* USPs / Key Selling Points */}
                     {angle.keySellingPoints && angle.keySellingPoints.length > 0 && (
                       <div className="space-y-1 pt-1 border-t border-slate-100">
-                        <span className="text-2xs font-semibold text-slate-400 uppercase tracking-wide block">USPs Bắt Buộc Nói:</span>
+                        <span className="text-2xs font-semibold text-slate-400 block">Luận điểm bắt buộc nói:</span>
                         <div className="flex flex-wrap gap-1">
                           {angle.keySellingPoints.map((usp, uIdx) => (
                             <span
@@ -648,7 +578,7 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
                     {/* Card Footer: Metadata & Actions */}
                     <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-2xs text-slate-500">
                       <div className="flex items-center gap-2">
-                        <span className="font-semibold text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-200">
+                        <span className="font-semibold text-accent bg-accent-soft px-2 py-0.5 rounded border border-line">
                           {angle.usageCount || 0} booking đã dùng
                         </span>
                         <span className="text-slate-400">• {angle.suggestedFormat || 'Voiceover'}</span>
@@ -658,10 +588,10 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
                         {onSelectAngleForBooking && (
                           <button
                             onClick={() => onSelectAngleForBooking(angle)}
-                            className="px-2 py-1 rounded bg-purple-600 text-white font-semibold hover:bg-purple-700 transition"
+                            className="px-2 py-1 rounded bg-primary text-white font-semibold hover:bg-primary-hover transition"
                             title="Chọn góc này cho booking deal"
                           >
-                            Gắn Booking
+                            Gắn booking
                           </button>
                         )}
                         <button
@@ -696,9 +626,9 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
           <div className="bg-blue-50/70 border border-blue-200 rounded-xl p-4 flex items-start gap-3 text-xs text-blue-900">
             <Info className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
             <div>
-              <strong className="font-semibold">Ma trận mức độ sẵn sàng kịch bản (Content Angles Coverage):</strong>
+              <strong className="font-semibold">Ma trận mức độ sẵn sàng kịch bản:</strong>
               <p className="text-blue-700 mt-0.5">
-                Bảng này thể hiện mỗi sản phẩm trọng tâm của gian hàng đã có bao nhiêu góc kịch bản ứng với từng Trụ cột nội dung (Content Pillar). Ô màu vàng / trống nghĩa là sản phẩm đó chưa có góc kịch bản ở trụ cột tương ứng — bấm vào nút <strong className="font-semibold">+</strong> tại ô để bổ sung kịch bản tức thì!
+                Bảng này thể hiện mỗi sản phẩm trọng tâm của gian hàng đã có bao nhiêu góc kịch bản ứng với từng trụ cột nội dung. Ô màu vàng nghĩa là sản phẩm đó chưa có góc kịch bản ở trụ cột tương ứng — bấm vào nút <strong className="font-semibold">Thiếu góc tiếp cận</strong> tại ô để bổ sung.
               </p>
             </div>
           </div>
@@ -706,16 +636,16 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
           <div className="card-enterprise overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs border-collapse min-w-[900px]">
-                <thead className="bg-slate-50 text-slate-700 border-b border-slate-200 text-2xs font-semibold uppercase tracking-wider">
+                <thead className="bg-slate-50 text-slate-700 border-b border-slate-200 text-2xs font-semibold">
                   <tr>
-                    <th className="p-3.5 pl-6 w-[280px] min-w-[280px]">Sản Phẩm & Gian Hàng</th>
+                    <th className="p-3.5 pl-6 w-[280px] min-w-[280px]">Sản phẩm & gian hàng</th>
                     {pillars.map(pillar => (
                       <th key={pillar.id} className="p-3.5 text-center min-w-[140px]">
                         <div className="font-semibold text-slate-800">{pillar.name}</div>
-                        <div className="text-3xs text-slate-400 font-normal font-mono lowercase">{pillar.code}</div>
+                        <div className="text-2xs text-slate-400 font-normal font-mono lowercase">{pillar.code}</div>
                       </th>
                     ))}
-                    <th className="p-3.5 pr-6 text-center w-[120px]">Tổng Angles</th>
+                    <th className="p-3.5 pr-6 text-center w-[120px]">Tổng góc tiếp cận</th>
                   </tr>
                 </thead>
 
@@ -729,6 +659,7 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
                         <td className="p-3.5 pl-6">
                           <div className="flex items-center gap-3">
                             {product.imageUrl ? (
+                              // eslint-disable-next-line @next/next/no-img-element
                               <img
                                 src={product.imageUrl}
                                 alt={product.productName}
@@ -740,11 +671,11 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
                               </div>
                             )}
                             <div className="min-w-0">
-                              <div className="font-bold text-slate-900 text-xs truncate max-w-[200px]" title={product.productName}>
+                              <div className="font-semibold text-slate-900 text-xs truncate max-w-[200px]" title={product.productName}>
                                 {product.productName}
                               </div>
                               <div className="text-2xs text-slate-500 font-mono">{product.sku}</div>
-                              <div className="text-2xs text-purple-700 font-medium truncate max-w-[200px]">{product.storeName}</div>
+                              <div className="text-2xs text-accent font-medium truncate max-w-[200px]">{product.storeName}</div>
                             </div>
                           </div>
                         </td>
@@ -761,13 +692,13 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
                             <td key={pillar.id} className="p-3 text-center align-middle">
                               {hasAngles ? (
                                 <div className="inline-flex flex-col items-center gap-1 group relative">
-                                  <div className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 font-bold text-xs border border-emerald-200 flex items-center gap-1 shadow-xs">
+                                  <div className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 font-semibold text-xs border border-emerald-200 flex items-center gap-1 shadow-xs">
                                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                                    <span>{matchedAngles.length} Angle{matchedAngles.length > 1 ? 's' : ''}</span>
+                                    <span>{matchedAngles.length} góc</span>
                                   </div>
                                   
                                   {/* Quick tooltip list of hooks */}
-                                  <div className="text-3xs text-slate-500 truncate max-w-[130px]" title={matchedAngles[0].name}>
+                                  <div className="text-2xs text-slate-500 truncate max-w-[130px]" title={matchedAngles[0].name}>
                                     {matchedAngles[0].name}
                                   </div>
                                 </div>
@@ -778,7 +709,7 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
                                   title={`Thêm góc kịch bản ${pillar.name} cho sản phẩm này`}
                                 >
                                   <Plus className="w-3 h-3 text-amber-600" />
-                                  <span>Thiếu Angle</span>
+                                  <span>Thiếu góc tiếp cận</span>
                                 </button>
                               )}
                             </td>
@@ -787,14 +718,14 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
 
                         {/* Total Count */}
                         <td className="p-3.5 pr-6 text-center">
-                          <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-bold ${
+                          <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-semibold ${
                             productAngles.length >= 3 
-                              ? 'bg-purple-50 text-purple-700 border border-purple-200' 
+                              ? 'bg-accent-soft text-accent border border-line' 
                               : productAngles.length > 0 
                               ? 'bg-blue-50 text-blue-700 border border-blue-200' 
                               : 'bg-rose-50 text-rose-700 border border-rose-200'
                           }`}>
-                            {productAngles.length} Angles
+                            {productAngles.length} góc
                           </span>
                         </td>
                       </tr>
@@ -814,22 +745,22 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
         <div className="card-enterprise overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse min-w-[1000px]">
-              <thead className="bg-slate-50 text-slate-700 border-b border-slate-200 text-2xs font-semibold uppercase tracking-wider">
+              <thead className="bg-slate-50 text-slate-700 border-b border-slate-200 text-2xs font-semibold">
                 <tr>
                   <th className="p-3.5 pl-6 w-[100px]">Mã</th>
-                  <th className="p-3.5 w-[220px]">Sản Phẩm & Gian Hàng</th>
-                  <th className="p-3.5 w-[140px]">Trụ Cột (Pillar)</th>
-                  <th className="p-3.5 w-[220px]">Tên Góc Tiếp Cận</th>
-                  <th className="p-3.5 min-w-[260px]">Hook 3 Giây Đầu</th>
-                  <th className="p-3.5 w-[120px] text-center">Đã Dùng</th>
-                  <th className="p-3.5 w-[100px] text-center">Trạng Thái</th>
-                  <th className="p-3.5 pr-6 text-right w-[100px]">Thao Tác</th>
+                  <th className="p-3.5 w-[220px]">Sản phẩm & gian hàng</th>
+                  <th className="p-3.5 w-[140px]">Trụ cột</th>
+                  <th className="p-3.5 w-[220px]">Tên góc tiếp cận</th>
+                  <th className="p-3.5 min-w-[260px]">Mở đầu 3 giây</th>
+                  <th className="p-3.5 w-[120px] text-center">Đã dùng</th>
+                  <th className="p-3.5 w-[100px] text-center">Trạng thái</th>
+                  <th className="p-3.5 pr-6 text-right w-[100px]">Thao tác</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200">
                 {filteredAngles.map((angle) => (
                   <tr key={angle.id} className="hover:bg-slate-50/70 transition">
-                    <td className="p-3.5 pl-6 font-mono font-semibold text-purple-700 text-2xs">
+                    <td className="p-3.5 pl-6 font-mono font-semibold text-accent text-2xs">
                       {angle.code}
                     </td>
                     <td className="p-3.5">
@@ -847,7 +778,7 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
                     <td className="p-3.5 italic text-slate-600">
                       &ldquo;{angle.hookIdea}&rdquo;
                     </td>
-                    <td className="p-3.5 text-center font-bold text-slate-900">
+                    <td className="p-3.5 text-center font-semibold text-slate-900">
                       {angle.usageCount || 0}
                     </td>
                     <td className="p-3.5 text-center">
@@ -856,7 +787,7 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
                           ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
                           : 'bg-slate-100 text-slate-600 border border-slate-200'
                       }`}>
-                        {angle.status}
+                        {angle.status === 'ACTIVE' ? 'Đang chạy' : angle.status === 'DRAFT' ? 'Nháp' : 'Đã lưu trữ'}
                       </span>
                     </td>
                     <td className="p-3.5 pr-6 text-right">
@@ -892,9 +823,9 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
             {/* Modal Header */}
             <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/80">
               <div className="flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-purple-600" />
-                <h2 className="text-base font-bold text-slate-900">
-                  {editingAngle ? 'Chỉnh Sửa Góc Kịch Bản (Content Angle)' : 'Thiết Lập Góc Kịch Bản Mới Cho Sản Phẩm'}
+                <Layers className="w-5 h-5 text-accent" />
+                <h2 className="text-base font-semibold text-slate-900">
+                  {editingAngle ? 'Chỉnh sửa góc tiếp cận' : 'Thiết lập góc tiếp cận mới cho sản phẩm'}
                 </h2>
               </div>
               <button
@@ -922,7 +853,7 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
                       const matching = products.filter(p => p.storeName === e.target.value);
                       if (matching.length > 0) setFormProductId(matching[0].id);
                     }}
-                    className="w-full text-xs h-9 px-3 rounded-lg border border-slate-200 bg-white font-medium focus:outline-none focus:border-purple-500"
+                    className="w-full text-xs h-9 px-3 rounded-lg border border-slate-200 bg-white font-medium focus:outline-none focus:border-accent"
                     required
                   >
                     {availableStores.map(store => (
@@ -944,7 +875,7 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
                       const selProd = products.find(p => p.id === e.target.value);
                       if (selProd?.usp) setFormKeySellingPoints([selProd.usp]);
                     }}
-                    className="w-full text-xs h-9 px-3 rounded-lg border border-slate-200 bg-white font-medium focus:outline-none focus:border-purple-500 truncate"
+                    className="w-full text-xs h-9 px-3 rounded-lg border border-slate-200 bg-white font-medium focus:outline-none focus:border-accent truncate"
                     required
                   >
                     {formAvailableProducts.map(p => (
@@ -957,12 +888,12 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-slate-700 flex items-center gap-1">
                     <Layers className="w-3.5 h-3.5 text-slate-400" />
-                    <span>Trụ cột nội dung (Pillar) *</span>
+                    <span>Trụ cột nội dung *</span>
                   </label>
                   <select
                     value={formPillarId}
                     onChange={(e) => setFormPillarId(e.target.value)}
-                    className="w-full text-xs h-9 px-3 rounded-lg border border-slate-200 bg-white font-medium focus:outline-none focus:border-purple-500"
+                    className="w-full text-xs h-9 px-3 rounded-lg border border-slate-200 bg-white font-medium focus:outline-none focus:border-accent"
                     required
                   >
                     {pillars.map(p => (
@@ -975,33 +906,33 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
               {/* Row 2: Angle Name */}
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-slate-700">
-                  Tên góc tiếp cận / Tiêu đề kịch bản *
+                  Tên góc tiếp cận / tiêu đề kịch bản *
                 </label>
                 <input
                   type="text"
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
                   placeholder="Ví dụ: Cứu nguy da bé chàm sữa nửa đêm / Thử thách 72h không thâm sẹo"
-                  className="w-full text-xs px-3.5 py-2 rounded-lg border border-slate-200 bg-white focus:outline-none focus:border-purple-500 font-medium"
+                  className="w-full text-xs px-3.5 py-2 rounded-lg border border-slate-200 bg-white focus:outline-none focus:border-accent font-medium"
                   required
                 />
               </div>
 
               {/* Row 3: Hook Idea (3s Opener) */}
-              <div className="space-y-1.5 bg-purple-50/60 p-4 rounded-xl border border-purple-200/80">
+              <div className="space-y-1.5 bg-accent-soft p-4 rounded-xl border border-line">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold text-purple-900 flex items-center gap-1.5">
+                  <label className="text-xs font-semibold text-ink flex items-center gap-1.5">
                     <Flame className="w-4 h-4 text-amber-500" />
-                    <span>Hook 3 Giây Đầu Mở Màn Video (Cốt lõi thu hút giữ chân) *</span>
+                    <span>Mở đầu 3 giây (thu hút giữ chân người xem) *</span>
                   </label>
-                  <span className="text-2xs text-purple-600 font-semibold">Tỷ lệ giữ chân quyết định GMV</span>
+                  <span className="text-2xs text-accent font-semibold">Tỷ lệ giữ chân quyết định GMV</span>
                 </div>
                 <textarea
                   value={formHookIdea}
                   onChange={(e) => setFormHookIdea(e.target.value)}
-                  placeholder="Nhập câu thoại hoặc hành động 3 giây đầu gây tò mò / giật mình / đánh trúng tâm lý..."
+                  placeholder="Nhập câu thoại hoặc hành động 3 giây đầu gây tò mò / đánh trúng tâm lý..."
                   rows={2}
-                  className="w-full text-xs px-3 py-2 rounded-lg border border-purple-200 bg-white text-slate-900 placeholder-slate-400 focus:outline-none focus:border-purple-600 italic"
+                  className="w-full text-xs px-3 py-2 rounded-lg border border-line bg-white text-slate-900 placeholder-slate-400 focus:outline-none focus:border-accent italic"
                   required
                 />
               </div>
@@ -1010,14 +941,14 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-rose-700">
-                    Nỗi đau khách hàng / Insight cốt lõi
+                    Nỗi đau khách hàng
                   </label>
                   <textarea
                     value={formPainPoint}
                     onChange={(e) => setFormPainPoint(e.target.value)}
-                    placeholder="Khách hàng đang gặp khó khăn gì? Bức xúc gì trước khi tìm thấy sản phẩm?"
+                    placeholder="Khách hàng đang gặp khó khăn gì trước khi tìm thấy sản phẩm?"
                     rows={3}
-                    className="w-full text-xs px-3 py-2 rounded-lg border border-slate-200 bg-white focus:outline-none focus:border-purple-500"
+                    className="w-full text-xs px-3 py-2 rounded-lg border border-slate-200 bg-white focus:outline-none focus:border-accent"
                   />
                 </div>
 
@@ -1030,7 +961,7 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
                     onChange={(e) => setFormSolutionApproach(e.target.value)}
                     placeholder="Sản phẩm xuất hiện ở giây thứ mấy? Giải quyết nỗi đau trên như thế nào?"
                     rows={3}
-                    className="w-full text-xs px-3 py-2 rounded-lg border border-slate-200 bg-white focus:outline-none focus:border-purple-500"
+                    className="w-full text-xs px-3 py-2 rounded-lg border border-slate-200 bg-white focus:outline-none focus:border-accent"
                   />
                 </div>
               </div>
@@ -1039,15 +970,15 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-semibold text-slate-700">
-                    Luận điểm USP bắt buộc phải nói trong kịch bản (Key Selling Points)
+                    Luận điểm sản phẩm bắt buộc phải nói trong kịch bản
                   </label>
                   <button
                     type="button"
                     onClick={() => setFormKeySellingPoints(prev => [...prev, ''])}
-                    className="text-2xs font-semibold text-purple-600 hover:text-purple-700 flex items-center gap-1 cursor-pointer"
+                    className="text-2xs font-semibold text-accent hover:text-ink flex items-center gap-1 cursor-pointer"
                   >
                     <Plus className="w-3 h-3" />
-                    <span>Thêm USP</span>
+                    <span>Thêm luận điểm</span>
                   </button>
                 </div>
                 {formKeySellingPoints.map((usp, idx) => (
@@ -1060,8 +991,8 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
                         newKsps[idx] = e.target.value;
                         setFormKeySellingPoints(newKsps);
                       }}
-                      placeholder={`USP #${idx + 1}: Điểm khác biệt / Thành phần độc quyền / Chứng nhận`}
-                      className="flex-1 text-xs px-3 py-1.5 rounded-lg border border-slate-200 bg-white focus:outline-none focus:border-purple-500"
+                      placeholder={`Luận điểm #${idx + 1}: Điểm khác biệt / thành phần / chứng nhận`}
+                      className="flex-1 text-xs px-3 py-1.5 rounded-lg border border-slate-200 bg-white focus:outline-none focus:border-accent"
                     />
                     {formKeySellingPoints.length > 1 && (
                       <button
@@ -1085,7 +1016,7 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
                     value={formTargetAudience}
                     onChange={(e) => setFormTargetAudience(e.target.value)}
                     placeholder="Mẹ bỉm có con 0-3 tuổi, Gen Z..."
-                    className="w-full text-xs px-3 py-2 rounded-lg border border-slate-200 bg-white focus:outline-none focus:border-purple-500"
+                    className="w-full text-xs px-3 py-2 rounded-lg border border-slate-200 bg-white focus:outline-none focus:border-accent"
                   />
                 </div>
 
@@ -1096,7 +1027,7 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
                     value={formCallToAction}
                     onChange={(e) => setFormCallToAction(e.target.value)}
                     placeholder="Bấm ngay vào giỏ hàng vàng..."
-                    className="w-full text-xs px-3 py-2 rounded-lg border border-slate-200 bg-white focus:outline-none focus:border-purple-500"
+                    className="w-full text-xs px-3 py-2 rounded-lg border border-slate-200 bg-white focus:outline-none focus:border-accent"
                   />
                 </div>
 
@@ -1105,14 +1036,14 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
                   <select
                     value={formSuggestedFormat}
                     onChange={(e) => setFormSuggestedFormat(e.target.value)}
-                    className="w-full text-xs h-9 px-3 rounded-lg border border-slate-200 bg-white focus:outline-none focus:border-purple-500"
+                    className="w-full text-xs h-9 px-3 rounded-lg border border-slate-200 bg-white focus:outline-none focus:border-accent"
                   >
-                    <option value="Voiceover B-roll">Voiceover B-roll</option>
+                    <option value="Voiceover B-roll">Lồng tiếng & cảnh quay phụ</option>
                     <option value="Review trực tiếp cận mặt">Review trực tiếp cận mặt</option>
-                    <option value="POV Tình huống kịch tính">POV Tình huống kịch tính</option>
-                    <option value="Unboxing ASMR">Unboxing ASMR</option>
-                    <option value="Daily Vlog nhẹ nhàng">Daily Vlog nhẹ nhàng</option>
-                    <option value="Chuyên gia / Dược sĩ tư vấn">Chuyên gia / Dược sĩ tư vấn</option>
+                    <option value="POV Tình huống kịch tính">Tình huống thực tế</option>
+                    <option value="Unboxing ASMR">Mở hộp</option>
+                    <option value="Daily Vlog nhẹ nhàng">Nhật ký hằng ngày</option>
+                    <option value="Chuyên gia / Dược sĩ tư vấn">Chuyên gia / dược sĩ tư vấn</option>
                   </select>
                 </div>
               </div>
@@ -1123,12 +1054,12 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
                   <label className="text-xs text-slate-600 font-medium">Trạng thái:</label>
                   <select
                     value={formStatus}
-                    onChange={(e) => setFormStatus(e.target.value as any)}
+                    onChange={(e) => setFormStatus(e.target.value as 'ACTIVE' | 'DRAFT' | 'ARCHIVED')}
                     className="text-xs h-8 px-2 rounded-md border border-slate-200 bg-white font-semibold"
                   >
-                    <option value="ACTIVE">ACTIVE (Sẵn sàng dùng)</option>
-                    <option value="DRAFT">DRAFT (Bản nháp)</option>
-                    <option value="ARCHIVED">ARCHIVED (Lưu trữ)</option>
+                    <option value="ACTIVE">Đang chạy (sẵn sàng dùng)</option>
+                    <option value="DRAFT">Nháp</option>
+                    <option value="ARCHIVED">Lưu trữ</option>
                   </select>
                 </div>
 
@@ -1138,13 +1069,13 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
                     onClick={() => setIsModalOpen(false)}
                     className="px-4 py-2 rounded-xl text-xs font-semibold border border-slate-200 text-slate-700 hover:bg-slate-50 transition"
                   >
-                    Hủy bỏ
+                    Hủy
                   </button>
                   <button
                     type="submit"
-                    className="px-5 py-2 rounded-xl text-xs font-semibold bg-purple-600 text-white hover:bg-purple-700 shadow-xs transition"
+                    className="px-5 py-2 rounded-xl text-xs font-semibold bg-primary text-white hover:bg-primary-hover shadow-xs transition"
                   >
-                    {editingAngle ? 'Lưu Thay Đổi' : 'Tạo Content Angle'}
+                    {editingAngle ? 'Lưu thay đổi' : 'Tạo góc tiếp cận'}
                   </button>
                 </div>
               </div>
@@ -1154,16 +1085,16 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
       )}
 
       {/* ========================================================================= */}
-      {/* 7. MODAL: AI MAGIC ANGLE SUGGESTIONS                                      */}
+      {/* 7. MODAL: ANGLE SUGGESTIONS                                               */}
       {/* ========================================================================= */}
       {isAiModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
           <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-gradient-to-r from-purple-50 to-indigo-50">
+            <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-sunken">
               <div className="flex items-center gap-2">
                 <Lightbulb className="w-5 h-5 text-amber-500" />
-                <h2 className="text-base font-bold text-slate-900">
-                  Gợi ý góc kịch bản & Hook mở đầu (Content Angles & Hooks)
+                <h2 className="text-base font-semibold text-slate-900">
+                  Gợi ý góc tiếp cận theo sản phẩm
                 </h2>
               </div>
               <button
@@ -1177,7 +1108,7 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
             <div className="p-6 space-y-4 overflow-y-auto flex-1">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pb-2 border-b border-slate-100">
                 <div className="space-y-1">
-                  <label className="text-2xs font-semibold text-slate-500 uppercase">Chọn sản phẩm cần gợi ý:</label>
+                  <label className="text-2xs font-semibold text-slate-500">Chọn sản phẩm cần gợi ý:</label>
                   <select
                     value={aiProductSelect}
                     onChange={(e) => {
@@ -1194,7 +1125,7 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-2xs font-semibold text-slate-500 uppercase">Định hướng Trụ cột:</label>
+                  <label className="text-2xs font-semibold text-slate-500">Định hướng trụ cột:</label>
                   <select
                     value={aiPillarSelect}
                     onChange={(e) => {
@@ -1213,25 +1144,25 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
 
               {/* Suggestions Cards */}
               <div className="space-y-3">
-                <div className="text-xs font-bold text-slate-800 flex items-center justify-between">
-                  <span>3 Hướng tiếp cận đề xuất cho sản phẩm này:</span>
-                  <span className="text-2xs text-purple-600 font-semibold">Tối ưu theo thị hiếu TikTok Shop 2026</span>
+                <div className="text-xs font-semibold text-slate-800 flex items-center justify-between">
+                  <span>3 hướng tiếp cận đề xuất cho sản phẩm này:</span>
+                  <span className="text-2xs text-accent font-semibold">Theo cấu trúc kịch bản TikTok Shop</span>
                 </div>
 
                 {aiSuggestions.map((sugg, sIdx) => (
                   <div
                     key={sIdx}
-                    className="p-4 rounded-xl border border-slate-200 hover:border-purple-300 bg-slate-50/50 hover:bg-white transition space-y-2.5"
+                    className="p-4 rounded-xl border border-slate-200 hover:border-line-strong bg-slate-50/50 hover:bg-white transition space-y-2.5"
                   >
                     <div className="flex items-start justify-between gap-2">
-                      <h4 className="text-xs font-bold text-slate-900">{sugg.name}</h4>
-                      <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-purple-50 text-purple-700 border border-purple-200">
+                      <h4 className="text-xs font-semibold text-slate-900">{sugg.name}</h4>
+                      <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-accent-soft text-accent border border-line">
                         {sugg.pillarName}
                       </span>
                     </div>
 
-                    <div className="p-2.5 bg-purple-50/80 rounded-lg border border-purple-200 text-xs italic text-slate-800">
-                      <strong>Hook:</strong> &ldquo;{sugg.hookIdea}&rdquo;
+                    <div className="p-2.5 bg-accent-soft rounded-lg border border-line text-xs italic text-slate-800">
+                      <strong>Mở đầu:</strong> &ldquo;{sugg.hookIdea}&rdquo;
                     </div>
 
                     <p className="text-2xs text-slate-600 leading-relaxed">
@@ -1239,13 +1170,13 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
                     </p>
 
                     <div className="flex items-center justify-between pt-1">
-                      <span className="text-2xs text-slate-400">Format: {sugg.suggestedFormat}</span>
+                      <span className="text-2xs text-slate-400">Định dạng: {sugg.suggestedFormat}</span>
                       <button
                         type="button"
                         onClick={() => handleApplyAiSuggestion(sugg)}
-                        className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-purple-600 text-white hover:bg-purple-700 transition flex items-center gap-1.5"
+                        className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-primary text-white hover:bg-primary-hover transition flex items-center gap-1.5"
                       >
-                        <span>Áp Dụng Hướng Này</span>
+                        <span>Áp dụng hướng này</span>
                         <ArrowRight className="w-3.5 h-3.5" />
                       </button>
                     </div>

@@ -19,7 +19,7 @@ import {
   UserCheck
 } from 'lucide-react';
 import type { BookingDealItem, BrandDetail, StorePortfolioItem, UserProfile } from '../../lib/types';
-import { formatNumber, formatVnd, formatVndShort } from '../../lib/format';
+import { formatNumber, formatPercent, formatVnd, formatVndShort } from '../../lib/format';
 import { Button, ChannelTag, DataTable, EmptyState, Panel, Person, Stat, StatRow, Status } from '../ui';
 import type { Column } from '../ui';
 import { INITIAL_PUSH_PRODUCTS } from '../../lib/mockData';
@@ -258,7 +258,7 @@ export function StoreProfile({
             <div className="flex items-center gap-2">
               {nav?.onBack && (
                 <Button variant="ghost" size="sm" icon={ArrowLeft} onClick={nav.onBack}>
-                  Danh sách gian hàng
+                  Hồ sơ gian hàng
                 </Button>
               )}
               {nav?.position !== undefined && nav?.total !== undefined && (
@@ -312,61 +312,59 @@ export function StoreProfile({
         )}
 
         {/* Identity & Status */}
-        <div className="bg-surface border border-line rounded-xl p-4 sm:p-5">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div className="flex items-start gap-3 min-w-0">
-              <div className="w-10 h-10 rounded-lg bg-sunken border border-line flex items-center justify-center text-ink shrink-0 mt-0.5">
-                <Store className="w-5 h-5 text-ink-2" />
+        <header className="flex flex-wrap items-start justify-between gap-4">
+          <div className="flex items-start gap-3 min-w-0">
+            <div className="w-10 h-10 rounded-lg bg-sunken border border-line flex items-center justify-center text-ink shrink-0 mt-0.5">
+              <Store className="w-5 h-5 text-ink-2" />
+            </div>
+
+            <div className="min-w-0 space-y-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="text-lg font-semibold text-ink truncate">
+                  {store.storeName}
+                </h2>
+                <ChannelTag channel={store.platform} />
+                {store.operationStatus === 'Live' || store.accountStatus === 'ACTIVE' ? (
+                  <Status tone="positive">Đang chạy</Status>
+                ) : (
+                  <Status tone="neutral">Dừng hợp tác</Status>
+                )}
+                {isOverbudget ? (
+                  <Status tone="critical">Bội chi</Status>
+                ) : isUnbudgetedSpend ? (
+                  <Status tone="warning">Chi ngoài kế hoạch</Status>
+                ) : budgetNet === 0 ? (
+                  <Status tone="neutral">Chỉ gửi mẫu 0 đ</Status>
+                ) : (
+                  <Status tone="positive">Ngân sách an toàn</Status>
+                )}
               </div>
 
-              <div className="min-w-0 space-y-1">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h1 className="text-base sm:text-lg font-semibold text-ink truncate">
-                    {store.storeName}
-                  </h1>
-                  <ChannelTag channel={store.platform} />
-                  {store.operationStatus === 'Live' || store.accountStatus === 'ACTIVE' ? (
-                    <Status tone="positive">Đang chạy</Status>
-                  ) : (
-                    <Status tone="neutral">Dừng hợp tác</Status>
-                  )}
-                  {isOverbudget ? (
-                    <Status tone="critical">Bội chi</Status>
-                  ) : isUnbudgetedSpend ? (
-                    <Status tone="warning">Chi ngoài kế hoạch</Status>
-                  ) : budgetNet === 0 ? (
-                    <Status tone="neutral">Chỉ gửi mẫu 0 đ</Status>
-                  ) : (
-                    <Status tone="positive">Ngân sách an toàn</Status>
-                  )}
-                </div>
-
-                <div className="flex items-center gap-2 text-2xs text-ink-3 flex-wrap">
-                  <span>Thuộc nhãn hàng</span>
-                  {onNavigateToBrandProfile ? (
-                    <button
-                      type="button"
-                      onClick={() => onNavigateToBrandProfile(store.brandName)}
-                      className="font-medium text-ink hover:text-accent hover:underline inline-flex items-center gap-1"
-                    >
-                      <Building2 className="w-3 h-3 text-ink-3" />
-                      <span>{store.brandName}</span>
-                    </button>
-                  ) : (
-                    <span className="font-medium text-ink">{store.brandName}</span>
-                  )}
-                  <span>·</span>
-                  <span>Mã: <strong className="font-code text-ink">{store.storeOperationId || store.id}</strong></span>
-                  <span>·</span>
-                  <span>Gói: <strong className="text-ink">{store.servicePackage || 'E2E-S'}</strong></span>
-                  <span>·</span>
-                  <span>Chuyên viên PIC:</span>
-                  <Person name={specialistPic} size={18} />
-                </div>
+              <div className="flex items-center gap-2 text-2xs text-ink-3 flex-wrap">
+                <span>Thuộc nhãn hàng</span>
+                {onNavigateToBrandProfile ? (
+                  <button
+                    type="button"
+                    onClick={() => onNavigateToBrandProfile(store.brandName)}
+                    className="font-medium text-ink hover:text-accent hover:underline inline-flex items-center gap-1"
+                  >
+                    <Building2 className="w-3 h-3 text-ink-3" />
+                    <span>{store.brandName}</span>
+                  </button>
+                ) : (
+                  <span className="font-medium text-ink">{store.brandName}</span>
+                )}
+                <span>·</span>
+                <span>Mã: <strong className="font-code text-ink">{store.storeOperationId || store.id}</strong></span>
+                <span>·</span>
+                <span>Gói: <strong className="text-ink">{store.servicePackage || 'E2E-S'}</strong></span>
+                <span>·</span>
+                <span>Chuyên viên PIC:</span>
+                <Person name={specialistPic} size={18} />
               </div>
             </div>
           </div>
-        </div>
+        </header>
       </div>
 
       {/* 2. TWO-COLUMN LAYOUT */}
@@ -388,7 +386,7 @@ export function StoreProfile({
                 budgetNet > 0
                   ? (spent > budgetNet
                       ? `Vượt ${formatVndShort(spent - budgetNet)}`
-                      : `Đã giải ngân ${(spent / budgetNet * 100).toFixed(0)}%`)
+                      : `Đã giải ngân ${formatPercent(spent / budgetNet, 0)}`)
                   : 'Suất gửi mẫu 0 đ'
               }
               tone={isOverbudget ? 'critical' : isUnbudgetedSpend ? 'warning' : 'positive'}

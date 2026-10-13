@@ -53,8 +53,10 @@ export const TYPE_LABELS: Record<PlanDiscussionType, string> = {
 /** Map vai trò tài khoản sang vai trò trong biên bản trao đổi. */
 export function chatRoleFromUser(user: Pick<UserProfile, 'role'>): Exclude<PlanDiscussionRole, 'SYSTEM'> {
   switch (user.role) {
+    case 'GROWTH_MANAGER':
     case 'GROWTH_MEMBER':
       return 'GROWTH';
+    case 'MEDIA_MANAGER':
     case 'MEDIA_MEMBER':
       return 'MEDIA';
     case 'ADMIN':
@@ -69,9 +71,9 @@ export function chatRoleFromUser(user: Pick<UserProfile, 'role'>): Exclude<PlanD
 export function chatTitleFor(role: PlanDiscussionRole, user?: Pick<UserProfile, 'role'>): string {
   switch (role) {
     case 'GROWTH':
-      return 'Growth PIC';
+      return user?.role === 'GROWTH_MANAGER' ? 'Trưởng phòng Growth' : 'Growth PIC';
     case 'MEDIA':
-      return 'Chuyên viên Media';
+      return user?.role === 'MEDIA_MANAGER' ? 'Trưởng phòng Media' : 'Chuyên viên Media';
     case 'LEAD':
       return user?.role === 'ADMIN' ? 'Quản trị hệ thống' : 'Trưởng phòng B2C';
     case 'SYSTEM':

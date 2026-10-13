@@ -191,7 +191,7 @@ export const AiStaffReviewModal: React.FC<AiStaffReviewModalProps> = ({
         suggestedManagerNote: `Duyệt tiến độ của ${selectedStaffName}. Nhắc nhở nhân viên bám sát tiến độ video của các KOC trọng điểm tuần W4.`,
         suggestedLarkPingMessage: `${selectedStaffName} ơi, kế hoạch tuần của bạn đã được duyệt. Tiếp tục bám sát tiến độ nhé!`,
         evaluatedAt: new Date().toISOString(),
-        providerUsed: 'Upbase B2C Operations Core Engine'
+        providerUsed: 'Hệ thống phân tích nội bộ'
       });
     } finally {
       setIsLoading(false);
@@ -227,35 +227,26 @@ export const AiStaffReviewModal: React.FC<AiStaffReviewModalProps> = ({
       <div 
         role="dialog"
         aria-modal="true"
-        aria-label="Gợi ý nhận xét tiến độ &amp; hiệu suất nhân sự"
+        aria-label="Gợi ý nhận xét tiến độ và hiệu suất"
         className="bg-white border border-slate-200 rounded-xl w-full max-w-4xl shadow-2xl overflow-hidden my-6"
       >
         {/* Header Banner */}
-        <div className="p-5 bg-purple-900 text-white relative">
+        <div className="p-5 bg-surface text-ink border-b border-line relative">
           <button
             type="button"
             onClick={onClose}
             aria-label="Đóng modal"
-            className="absolute top-4 right-4 p-1.5 text-purple-200 hover:text-white hover:bg-white/10 rounded-lg transition"
+            className="absolute top-4 right-4 p-1.5 text-ink-3 hover:text-ink hover:bg-sunken rounded-lg transition"
           >
             <X className="w-5 h-5" />
           </button>
 
           <div className="space-y-1.5 max-w-2xl">
-            <div className="flex items-center gap-2">
-              <span className="px-2.5 py-0.5 rounded-full text-2xs font-semibold bg-purple-500/30 text-purple-200 border border-purple-400/40 flex items-center gap-1.5">
-                <Sparkles className="w-3 h-3 text-purple-300" />
-                Next.js API Engine • /api/ai/employee-review
-              </span>
-              <span className="text-xs text-purple-300 font-medium">
-                Upbase Operations Suite v2.5
-              </span>
-            </div>
-            <h3 className="text-lg font-semibold tracking-tight text-white flex items-center gap-2">
-              <Bot className="w-5 h-5 text-purple-400" />
-              <span>Gợi Ý Nhận Xét Tiến Độ &amp; Đánh Giá Hiệu Suất Nhân Viên</span>
+            <h3 className="text-lg font-semibold tracking-tight text-ink flex items-center gap-2">
+              <Bot className="w-5 h-5 text-accent" />
+              <span>Gợi ý nhận xét tiến độ và hiệu suất</span>
             </h3>
-            <p className="text-xs text-purple-200/90 leading-relaxed">
+            <p className="text-xs text-ink-2 leading-relaxed">
               Tổng hợp và phân tích 4 nhóm dữ liệu: Tỷ lệ thực hiện kế hoạch video, kỷ luật tuân thủ quy tắc SLA, danh mục gian hàng P3 và đề xuất nội dung trao đổi 1-on-1 cho trưởng phòng.
             </p>
           </div>
@@ -269,7 +260,7 @@ export const AiStaffReviewModal: React.FC<AiStaffReviewModalProps> = ({
               {/* Staff Dropdown */}
               <div className="sm:col-span-4 space-y-1">
                 <label className="font-semibold text-slate-700 flex items-center gap-1.5">
-                  <User className="w-3.5 h-3.5 text-purple-600" />
+                  <User className="w-3.5 h-3.5 text-blue-600" />
                   <span>Chọn nhân sự cần nhận xét:</span>
                 </label>
                 <select
@@ -278,7 +269,7 @@ export const AiStaffReviewModal: React.FC<AiStaffReviewModalProps> = ({
                     setSelectedStaffName(e.target.value);
                     setReviewResult(null);
                   }}
-                  className="w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-slate-900 font-medium text-xs focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 focus:outline-none"
+                  className="w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-slate-900 font-medium text-xs focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
                 >
                   {allStaffNames.map((name) => (
                     <option key={name} value={name}>
@@ -304,7 +295,7 @@ export const AiStaffReviewModal: React.FC<AiStaffReviewModalProps> = ({
                       onClick={() => setReviewType(tab.key as AiReviewType)}
                       className={`px-2.5 py-1.5 rounded-md font-medium text-2xs transition ${
                         reviewType === tab.key
-                          ? 'bg-purple-600 text-white font-semibold shadow-xs'
+                          ? 'bg-blue-600 text-white font-semibold shadow-xs'
                           : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
                       }`}
                     >
@@ -343,7 +334,7 @@ export const AiStaffReviewModal: React.FC<AiStaffReviewModalProps> = ({
               <button
                 type="button"
                 onClick={() => setShowApiSettings(!showApiSettings)}
-                className="text-2xs font-semibold text-purple-700 hover:text-purple-800 flex items-center gap-1 transition"
+                className="text-2xs font-semibold text-blue-700 hover:text-blue-800 flex items-center gap-1 transition"
               >
                 <Key className="w-3 h-3" />
                 <span>Cấu hình kết nối mô hình phân tích (tùy chọn API Key Gemini / OpenAI)</span>
@@ -351,37 +342,37 @@ export const AiStaffReviewModal: React.FC<AiStaffReviewModalProps> = ({
               </button>
 
               {showApiSettings && (
-                <div className="mt-2.5 p-3 rounded-md bg-purple-50/50 border border-purple-200 space-y-2.5 animate-in fade-in duration-150">
+                <div className="mt-2.5 p-3 rounded-md bg-blue-50/50 border border-blue-200 space-y-2.5 animate-in fade-in duration-150">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-1">
-                      <label className="text-2xs font-semibold text-purple-900">Mô hình phân tích:</label>
+                      <label className="text-2xs font-semibold text-blue-900">Mô hình phân tích:</label>
                       <select
                         value={apiProvider}
                         onChange={(e) => setApiProvider(e.target.value as any)}
-                        className="w-full p-1.5 bg-white border border-purple-200 rounded text-xs text-slate-800 font-medium"
+                        className="w-full p-1.5 bg-white border border-blue-200 rounded text-xs text-slate-800 font-medium"
                       >
-                        <option value="AUTO">Tự động (Upbase Cloud Core / khuyến nghị)</option>
+                        <option value="AUTO">Tự động (Mặc định)</option>
                         <option value="GEMINI">Google Gemini 1.5 Flash (API Key)</option>
                         <option value="OPENAI">OpenAI GPT-4o-mini (API Key)</option>
                       </select>
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-2xs font-semibold text-purple-900">
-                        Khóa API Key (tùy chọn, để trống nếu dùng Cloud mặc định):
+                      <label className="text-2xs font-semibold text-blue-900">
+                        Khóa API Key (tùy chọn, để trống nếu dùng mặc định):
                       </label>
                       <input
                         type="password"
                         placeholder="sk-... hoặc AIzaSy..."
                         value={customApiKey}
                         onChange={(e) => setCustomApiKey(e.target.value)}
-                        className="w-full p-1.5 bg-white border border-purple-200 rounded text-xs text-slate-800 font-mono"
+                        className="w-full p-1.5 bg-white border border-blue-200 rounded text-xs text-slate-800 font-mono"
                       />
                     </div>
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-2xs font-semibold text-purple-900">
+                    <label className="text-2xs font-semibold text-blue-900">
                       Ghi chú / Yêu cầu thêm khi đánh giá:
                     </label>
                     <input
@@ -389,7 +380,7 @@ export const AiStaffReviewModal: React.FC<AiStaffReviewModalProps> = ({
                       placeholder="VD: Nhấn mạnh vào việc chuẩn bị cho chiến dịch 10.10, cảnh báo trễ hạn gửi mẫu..."
                       value={customInstruction}
                       onChange={(e) => setCustomInstruction(e.target.value)}
-                      className="w-full p-1.5 bg-white border border-purple-200 rounded text-xs text-slate-800"
+                      className="w-full p-1.5 bg-white border border-blue-200 rounded text-xs text-slate-800"
                     />
                   </div>
                 </div>
@@ -404,8 +395,8 @@ export const AiStaffReviewModal: React.FC<AiStaffReviewModalProps> = ({
                 disabled={isLoading}
                 className={`w-full py-2.5 px-4 rounded-md font-semibold text-white text-xs shadow-sm flex items-center justify-center gap-2 transition ${
                   isLoading
-                    ? 'bg-purple-300 cursor-not-allowed'
-                    : 'bg-purple-600 hover:bg-purple-700 active:scale-98'
+                    ? 'bg-blue-300 cursor-not-allowed'
+                    : 'bg-blue-600 hover:bg-blue-700 active:scale-98'
                 }`}
               >
                 {isLoading ? (
@@ -540,15 +531,15 @@ export const AiStaffReviewModal: React.FC<AiStaffReviewModalProps> = ({
               </div>
 
               {/* Actionable Coaching for Manager */}
-              <div className="card-enterprise p-4 bg-purple-50/30 border-purple-200 space-y-2">
-                <h4 className="font-semibold text-purple-900 flex items-center gap-1.5 text-xs">
-                  <TrendingUp className="w-4 h-4 text-purple-600" />
+              <div className="card-enterprise p-4 bg-blue-50/30 border-blue-200 space-y-2">
+                <h4 className="font-semibold text-blue-900 flex items-center gap-1.5 text-xs">
+                  <TrendingUp className="w-4 h-4 text-blue-600" />
                   <span>Chỉ Dẫn Hành Động &amp; Huấn Luyện 1-on-1 Dành Cho Trưởng Phòng</span>
                 </h4>
                 <div className="space-y-1.5 text-slate-700 text-xs">
                   {reviewResult.actionableCoaching.map((c, idx) => (
-                    <div key={idx} className="p-2 rounded bg-white border border-purple-100 flex items-start gap-2">
-                      <span className="px-1.5 py-0.2 bg-purple-100 text-purple-800 rounded font-semibold text-2xs">
+                    <div key={idx} className="p-2 rounded bg-white border border-blue-100 flex items-start gap-2">
+                      <span className="px-1.5 py-0.2 bg-blue-100 text-blue-800 rounded font-semibold text-2xs">
                         0{idx + 1}
                       </span>
                       <span>{c}</span>

@@ -1,49 +1,32 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
-import { ConfirmDialog } from '../ui';
+import React, { useState, useMemo, useRef } from 'react';
+import { ConfirmDialog, Tabs } from '../ui';
 import {
   ShieldCheck,
   ShieldAlert,
   KeyRound,
-  Users,
-  Building,
-  Video,
-  Plus,
   Search,
-  Filter,
   CheckCircle2,
   AlertCircle,
   Eye,
   Edit3,
-  Trash2,
-  Lock,
-  Unlock,
-  ExternalLink,
   Mail,
   UserCheck,
-  Sparkles,
-  Info,
-  Clock,
-  ArrowRight,
   X,
-  Store,
-  Check,
   Layers,
-  BarChart3,
-  FileCheck,
-  Coins,
-  Database,
   RefreshCw,
-  Download,
-  SlidersHorizontal,
-  ChevronRight,
-  Shield,
-  HelpCircle
+  Users,
+  Lock,
+  Unlock,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import {
   UserProfile,
   UserRole,
+  SystemDepartmentScope,
+  DepartmentAccessRule,
   BrandDetail,
   KocItem,
   PermissionAccessLevel,
@@ -57,8 +40,14 @@ import {
   INITIAL_INTERNAL_STAFF_RBAC,
   INITIAL_RBAC_AUDIT_LOGS,
   PERMISSION_BADGE_CONFIG,
-  RoleDefinition
+  classifyMasterStaffMember,
+  getSavedStaffAccessOverrides,
+  saveStaffAccessOverrides,
+  getSavedDeptAccessRules,
+  saveDeptAccessRules,
+  StaffAccessOverrideItem
 } from '../../lib/rbacData';
+import { UPBASE_STAFF_MASTER } from '../../lib/importedMasterData';
 import { ThirdPartyAccessSetupView } from './ThirdPartyAccessSetupView';
 import { INITIAL_BRANDS, INITIAL_KOCS } from '../../lib/mockData';
 
@@ -71,7 +60,47 @@ interface CentralizedRbacHubViewProps {
   onImpersonatePartner?: (partnerUser: UserProfile) => void;
 }
 
-type MainTab = 'matrix' | 'internal' | 'third-party' | 'audit';
+type MainTab = 'gatekeeper' | 'internal' | 'matrix' | 'third-party' | 'audit';
+
+const SCOPE_LABELS: Record<SystemDepartmentScope, { label: string; badgeClass: string; managerLabel: string }> = {
+  MARKETING_B2C: {
+    label: 'Khối Marketing B2C',
+    badgeClass: 'bg-blue-50 text-blue-700 border-blue-200',
+    managerLabel: 'Đặng Thị Yến Nhi (Trưởng phòng B2C)'
+  },
+  GROWTH: {
+    label: 'Khối Growth Ecom',
+    badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    managerLabel: 'Trần Thị Đỗ Quyên (Trưởng phòng Growth)'
+  },
+  MEDIA: {
+    label: 'Khối Media & Ads',
+    badgeClass: 'bg-amber-50 text-amber-700 border-amber-200',
+    managerLabel: 'Nguyễn Đức Quảng (Trưởng phòng Media)'
+  },
+  OTHER_BLOCKED: {
+    label: 'Phòng ban khác (Ngoài hệ thống)',
+    badgeClass: 'bg-slate-100 text-slate-600 border-slate-200',
+    managerLabel: 'Không thuộc phạm vi B2C'
+  }
+};
+
+const ROLE_DISPLAY_NAME: Record<UserRole, string> = {
+  ADMIN: 'Quản trị hệ thống (Admin)',
+  MANAGER: 'Trưởng phòng Marketing B2C',
+  GROWTH_MANAGER: 'Trưởng phòng Growth',
+  MEDIA_MANAGER: 'Trưởng phòng Media',
+  LEADER: 'Trưởng nhóm B2C',
+  BOOKING_MEMBER: 'Chuyên viên Booking B2C',
+  CONTENT_MEMBER: 'Chuyên viên Content B2C',
+  BRAND_MEMBER: 'Chuyên viên Brand PIC',
+  GROWTH_MEMBER: 'Chuyên viên Growth',
+  MEDIA_MEMBER: 'Chuyên viên Media',
+  MEMBER: 'Chuyên viên vận hành',
+  BRAND_PARTNER: 'Đối tác Brand',
+  KOC_PARTNER: 'KOC / KOL',
+  CTV_PARTNER: 'Cộng tác viên'
+};
 
 export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
   currentUser,
@@ -81,7 +110,326 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
   onImpersonateUser,
   onImpersonatePartner
 }) => {
-  const [activeMainTab, setActiveMainTab] = useState<MainTab>('matrix');
+  const [activeMainTab, setActiveMainTab] = useState<MainTab>('gatekeeper');
+  const logCounterRef = useRef(100);
+
+  const isAdmin = !currentUser || currentUser.role === 'ADMIN';
+  const isGrowthManager = currentUser?.role === 'GROWTH_MANAGER';
+  const isMediaManager = currentUser?.role === 'MEDIA_MANAGER';
+  const isB2cManager = currentUser?.role === 'MANAGER';
+
+  // --- STATE TAB 0: CỔNG KIỂM SOÁT TRUY CẬP 1.011 NHÂN SỰ & PHÒNG BAN ---
+  const [deptRules, setDeptRules] = useState<DepartmentAccessRule[]>(() => getSavedDeptAccessRules());
+  const [staffOverrides, setStaffOverrides] = useState<Record<string, StaffAccessOverrideItem>>(() => getSavedStaffAccessOverrides());
+  const [dirSearch, setDirSearch] = useState('');
+  const [dirScopeFilter, setDirScopeFilter] = useState<string>(() => {
+    if (isGrowthManager) return 'GROWTH';
+    if (isMediaManager) return 'MEDIA';
+    if (isB2cManager) return 'MARKETING_B2C';
+    return 'ALLOWED_3_SCOPES';
+  });
+  const [dirLoginFilter, setDirLoginFilter] = useState<'ALL' | 'ALLOWED' | 'BLOCKED' | 'OVERRIDDEN'>('ALL');
+  const [dirDeptFilter, setDirDeptFilter] = useState<string>('ALL');
+  const [dirPage, setDirPage] = useState(1);
+  const DIR_PAGE_SIZE = 20;
+
+  // Modal cấu hình quyền truy cập & phân khối cho 1 nhân viên trong danh bạ 1.011 người
+  const [editingDirectoryStaffId, setEditingDirectoryStaffId] = useState<string | null>(null);
+  const [dirEditCanLogin, setDirEditCanLogin] = useState<boolean>(true);
+  const [dirEditScope, setDirEditScope] = useState<SystemDepartmentScope>('MARKETING_B2C');
+  const [dirEditRole, setDirEditRole] = useState<UserRole>('BOOKING_MEMBER');
+  const [dirEditManager, setDirEditManager] = useState<string>('Đặng Thị Yến Nhi');
+
+  // Trình mô phỏng kiểm tra cổng đăng nhập (Login Gatekeeper Simulator)
+  const [simSelectedStaffId, setSimSelectedStaffId] = useState<string>('HN782'); // Mặc định thử 1 nhân sự Livestream bị chặn
+
+  // Tự động đồng bộ bộ lọc theo vai trò Trưởng phòng khi đổi tài khoản
+  const [prevUserRole, setPrevUserRole] = useState<UserRole | undefined>(currentUser?.role);
+  if (currentUser?.role !== prevUserRole) {
+    setPrevUserRole(currentUser?.role);
+    if (currentUser?.role === 'GROWTH_MANAGER') {
+      setDirScopeFilter('GROWTH');
+      setDirPage(1);
+    } else if (currentUser?.role === 'MEDIA_MANAGER') {
+      setDirScopeFilter('MEDIA');
+      setDirPage(1);
+    } else if (currentUser?.role === 'MANAGER') {
+      setDirScopeFilter('MARKETING_B2C');
+      setDirPage(1);
+    } else if (currentUser?.role === 'ADMIN') {
+      setDirScopeFilter('ALL');
+      setDirPage(1);
+    }
+  }
+
+  // Phân loại toàn bộ 1.011 nhân sự từ UPBASE_STAFF_MASTER
+  const classifiedDirectory = useMemo(() => {
+    return UPBASE_STAFF_MASTER.map(member => {
+      const result = classifyMasterStaffMember(member, deptRules, staffOverrides);
+      return {
+        ...member,
+        classifiedScope: result.departmentScope,
+        canLogin: result.canLogin,
+        mappedRole: result.role,
+        mappedRoleTitle: result.roleTitle,
+        managerName: result.managerName,
+        accessSource: result.accessSource,
+        accessReason: result.reason
+      };
+    });
+  }, [deptRules, staffOverrides]);
+
+  // Thống kê tổng quan 4 nhóm
+  const directoryStats = useMemo(() => {
+    let mktTotal = 0, mktAllowed = 0;
+    let growthTotal = 0, growthAllowed = 0;
+    let mediaTotal = 0, mediaAllowed = 0;
+    let otherTotal = 0, otherAllowed = 0;
+
+    classifiedDirectory.forEach(s => {
+      if (s.classifiedScope === 'MARKETING_B2C') {
+        mktTotal++;
+        if (s.canLogin) mktAllowed++;
+      } else if (s.classifiedScope === 'GROWTH') {
+        growthTotal++;
+        if (s.canLogin) growthAllowed++;
+      } else if (s.classifiedScope === 'MEDIA') {
+        mediaTotal++;
+        if (s.canLogin) mediaAllowed++;
+      } else {
+        otherTotal++;
+        if (s.canLogin) otherAllowed++;
+      }
+    });
+
+    return {
+      totalStaff: classifiedDirectory.length,
+      totalAllowed: mktAllowed + growthAllowed + mediaAllowed + otherAllowed,
+      totalBlocked: classifiedDirectory.length - (mktAllowed + growthAllowed + mediaAllowed + otherAllowed),
+      mktTotal, mktAllowed,
+      growthTotal, growthAllowed,
+      mediaTotal, mediaAllowed,
+      otherTotal, otherAllowed
+    };
+  }, [classifiedDirectory]);
+
+  // Danh sách phòng ban/team duy nhất để lọc
+  const directoryDepartments = useMemo(() => {
+    const set = new Set<string>();
+    classifiedDirectory.forEach(s => {
+      const label = (s.department || s.team || '').trim();
+      if (label) set.add(label);
+    });
+    return Array.from(set).sort();
+  }, [classifiedDirectory]);
+
+  // Lọc danh sách nhân viên trong Danh bạ 1.011 người
+  const filteredDirectory = useMemo(() => {
+    return classifiedDirectory.filter(s => {
+      // Nếu là Trưởng phòng Growth / Media / B2C thì khóa phạm vi trong khối của mình (trừ Admin xem được hết)
+      if (isGrowthManager && s.classifiedScope !== 'GROWTH') return false;
+      if (isMediaManager && s.classifiedScope !== 'MEDIA') return false;
+
+      if (dirScopeFilter === 'ALLOWED_3_SCOPES') {
+        if (!['MARKETING_B2C', 'GROWTH', 'MEDIA'].includes(s.classifiedScope) && !s.canLogin) return false;
+      } else if (dirScopeFilter !== 'ALL') {
+        if (s.classifiedScope !== dirScopeFilter) return false;
+      }
+
+      if (dirLoginFilter === 'ALLOWED' && !s.canLogin) return false;
+      if (dirLoginFilter === 'BLOCKED' && s.canLogin) return false;
+      if (dirLoginFilter === 'OVERRIDDEN' && !['ADMIN_EXPLICIT', 'REVOKED'].includes(s.accessSource)) return false;
+
+      if (dirDeptFilter !== 'ALL') {
+        const label = (s.department || s.team || '').trim();
+        if (label !== dirDeptFilter && s.team !== dirDeptFilter && s.department !== dirDeptFilter) return false;
+      }
+
+      if (dirSearch.trim()) {
+        const q = dirSearch.toLowerCase().trim();
+        const match =
+          s.name.toLowerCase().includes(q) ||
+          (s.staffCode && s.staffCode.toLowerCase().includes(q)) ||
+          s.email.toLowerCase().includes(q) ||
+          (s.department && s.department.toLowerCase().includes(q)) ||
+          (s.team && s.team.toLowerCase().includes(q)) ||
+          (s.position && s.position.toLowerCase().includes(q)) ||
+          s.managerName.toLowerCase().includes(q);
+        if (!match) return false;
+      }
+
+      return true;
+    });
+  }, [classifiedDirectory, isGrowthManager, isMediaManager, dirScopeFilter, dirLoginFilter, dirDeptFilter, dirSearch]);
+
+  const totalDirPages = Math.ceil(filteredDirectory.length / DIR_PAGE_SIZE) || 1;
+  const pagedDirectory = useMemo(() => {
+    const start = (dirPage - 1) * DIR_PAGE_SIZE;
+    return filteredDirectory.slice(start, start + DIR_PAGE_SIZE);
+  }, [filteredDirectory, dirPage]);
+
+  // Bật/Tắt Quy tắc cấp quyền theo Phòng ban (Chỉ Admin)
+  const handleToggleDeptRule = (ruleId: string) => {
+    if (!isAdmin) {
+      onNotify?.('Chỉ Quản trị viên (Admin) mới có quyền thay đổi quy tắc mở cổng phòng ban.', 'warning');
+      return;
+    }
+    const targetRule = deptRules.find(r => r.id === ruleId);
+    if (!targetRule) return;
+    const nextAllow = !targetRule.autoAllowLogin;
+    const updated = deptRules.map(r => r.id === ruleId ? { ...r, autoAllowLogin: nextAllow } : r);
+    setDeptRules(updated);
+    saveDeptAccessRules(updated);
+
+    const newLog: RbacAuditLogItem = {
+      id: `log-${++logCounterRef.current}`,
+      timestamp: new Date().toISOString().substring(0, 19).replace('T', ' '),
+      actorName: currentUser?.name || 'Nguyễn Trọng Chỉnh',
+      actorEmail: currentUser?.email || 'chinhnt@upbase.vn',
+      actorRole: currentUser?.role || 'ADMIN',
+      actionType: 'DEPT_RULE_UPDATE',
+      targetUserOrEntity: targetRule.departmentOrTeamName,
+      description: `${nextAllow ? 'Mở cổng cho phép đăng nhập' : 'Khóa cổng chặn đăng nhập'} đối với toàn bộ nhân sự thuộc cụm phòng ban "${targetRule.departmentOrTeamName}".`,
+      ipAddress: '118.70.182.44',
+      deviceInfo: 'Chrome 128 / Windows',
+      status: nextAllow ? 'SUCCESS' : 'WARNING'
+    };
+    setAuditLogs(prev => [newLog, ...prev]);
+    onNotify?.(
+      `${nextAllow ? 'Đã mở quyền đăng nhập' : 'Đã khóa quyền đăng nhập'} cho cụm phòng ban: ${targetRule.departmentOrTeamName}`,
+      nextAllow ? 'success' : 'warning'
+    );
+  };
+
+  // Bật/tắt nhanh quyền Login của 1 nhân viên trong danh bạ 1.011 người
+  const handleQuickToggleStaffLogin = (staff: typeof classifiedDirectory[0]) => {
+    if (!isAdmin) {
+      onNotify?.('Chỉ Role Admin mới được phép cấp hoặc thu hồi quyền đăng nhập hệ thống của nhân viên.', 'warning');
+      return;
+    }
+    const nextCanLogin = !staff.canLogin;
+    const nextScope: SystemDepartmentScope =
+      nextCanLogin && staff.classifiedScope === 'OTHER_BLOCKED'
+        ? 'MARKETING_B2C'
+        : staff.classifiedScope;
+    const nextRole: UserRole =
+      nextCanLogin && staff.classifiedScope === 'OTHER_BLOCKED'
+        ? 'BOOKING_MEMBER'
+        : staff.mappedRole;
+
+    const newOverride: StaffAccessOverrideItem = {
+      staffId: staff.id,
+      canLogin: nextCanLogin,
+      departmentScope: nextScope,
+      role: nextRole,
+      managerName:
+        nextScope === 'GROWTH' ? 'Trần Thị Đỗ Quyên' :
+        nextScope === 'MEDIA' ? 'Nguyễn Đức Quảng' : 'Đặng Thị Yến Nhi',
+      updatedBy: currentUser?.name || 'Admin',
+      updatedAt: new Date().toISOString()
+    };
+
+    const nextMap = { ...staffOverrides, [staff.id]: newOverride };
+    setStaffOverrides(nextMap);
+    saveStaffAccessOverrides(nextMap);
+
+    const newLog: RbacAuditLogItem = {
+      id: `log-${++logCounterRef.current}`,
+      timestamp: new Date().toISOString().substring(0, 19).replace('T', ' '),
+      actorName: currentUser?.name || 'Nguyễn Trọng Chỉnh',
+      actorEmail: currentUser?.email || 'chinhnt@upbase.vn',
+      actorRole: currentUser?.role || 'ADMIN',
+      actionType: nextCanLogin ? 'ACCESS_GRANT' : 'ACCESS_REVOKE',
+      targetUserOrEntity: `${staff.name} (${staff.staffCode || staff.id} - ${staff.department || staff.team})`,
+      description: nextCanLogin
+        ? `Admin cấp quyền đăng nhập hệ thống cho ${staff.name} vào ${SCOPE_LABELS[nextScope].label} (${ROLE_DISPLAY_NAME[nextRole]}).`
+        : `Admin thu hồi quyền đăng nhập hệ thống của ${staff.name}.`,
+      ipAddress: '118.70.182.44',
+      deviceInfo: 'Chrome 128 / Windows',
+      status: nextCanLogin ? 'SUCCESS' : 'WARNING'
+    };
+    setAuditLogs(prev => [newLog, ...prev]);
+    onNotify?.(
+      nextCanLogin
+        ? `Đã cấp quyền đăng nhập cho ${staff.name} (${SCOPE_LABELS[nextScope].label})`
+        : `Đã chặn quyền đăng nhập của ${staff.name}`,
+      nextCanLogin ? 'success' : 'info'
+    );
+  };
+
+  // Mở modal chỉnh sửa phân khối / vai trò / người quản lý cho nhân sự trong danh bạ
+  const handleOpenEditDirectoryStaff = (staff: typeof classifiedDirectory[0]) => {
+    setEditingDirectoryStaffId(staff.id);
+    setDirEditCanLogin(staff.canLogin);
+    setDirEditScope(staff.classifiedScope === 'OTHER_BLOCKED' ? 'MARKETING_B2C' : staff.classifiedScope);
+    setDirEditRole(staff.mappedRole);
+    setDirEditManager(staff.managerName === 'Ngoài phạm vi B2C' ? 'Đặng Thị Yến Nhi' : staff.managerName);
+  };
+
+  const handleSaveDirectoryStaff = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingDirectoryStaffId) return;
+    const target = classifiedDirectory.find(s => s.id === editingDirectoryStaffId);
+    if (!target) return;
+
+    const newOverride: StaffAccessOverrideItem = {
+      staffId: target.id,
+      canLogin: dirEditCanLogin,
+      departmentScope: dirEditCanLogin ? dirEditScope : target.classifiedScope,
+      role: dirEditRole,
+      managerName: dirEditManager,
+      updatedBy: currentUser?.name || 'Admin',
+      updatedAt: new Date().toISOString()
+    };
+
+    const nextMap = { ...staffOverrides, [target.id]: newOverride };
+    setStaffOverrides(nextMap);
+    saveStaffAccessOverrides(nextMap);
+
+    const newLog: RbacAuditLogItem = {
+      id: `log-${++logCounterRef.current}`,
+      timestamp: new Date().toISOString().substring(0, 19).replace('T', ' '),
+      actorName: currentUser?.name || 'Nguyễn Trọng Chỉnh',
+      actorEmail: currentUser?.email || 'chinhnt@upbase.vn',
+      actorRole: currentUser?.role || 'ADMIN',
+      actionType: 'ROLE_CHANGE',
+      targetUserOrEntity: `${target.name} (${target.staffCode || target.id})`,
+      description: `Cấu hình nhân sự: Trạng thái Login=${dirEditCanLogin ? 'CHO PHÉP' : 'CHẶN'}, Khối=${SCOPE_LABELS[dirEditScope].label}, Vai trò=${ROLE_DISPLAY_NAME[dirEditRole]}, Quản lý=${dirEditManager}.`,
+      ipAddress: '118.70.182.44',
+      deviceInfo: 'Chrome 128 / Windows',
+      status: 'SUCCESS'
+    };
+    setAuditLogs(prev => [newLog, ...prev]);
+    setEditingDirectoryStaffId(null);
+    onNotify?.(`Đã lưu phân quyền cho ${target.name} (${ROLE_DISPLAY_NAME[dirEditRole]})`, 'success');
+  };
+
+  // Đóng vai bất kỳ nhân sự nào từ danh bạ (nếu nhân sự đó được phép login)
+  const handleImpersonateDirectoryStaff = (staff: typeof classifiedDirectory[0]) => {
+    if (!staff.canLogin) {
+      onNotify?.(`Nhân sự ${staff.name} đang bị chặn cổng Login. Hãy cấp quyền trước khi đóng vai!`, 'error');
+      return;
+    }
+    const initials = staff.name.trim().split(/\s+/).map(w => w[0]).slice(-2).join('').toUpperCase();
+    const impersonatedProfile: UserProfile = {
+      id: `staff_${staff.id}`,
+      name: staff.name,
+      email: staff.email,
+      role: staff.mappedRole,
+      roleTitle: `${staff.mappedRoleTitle} (${SCOPE_LABELS[staff.classifiedScope].label})`,
+      avatar: initials || 'NV',
+      staffCode: staff.staffCode,
+      departmentScope: staff.classifiedScope,
+      departmentName: staff.department || staff.team,
+      managerName: staff.managerName,
+      canLogin: true,
+      loginProvider: 'SANDBOX',
+      assignedBrands: ['MANAGER', 'GROWTH_MANAGER', 'MEDIA_MANAGER', 'ADMIN'].includes(staff.mappedRole)
+        ? ['Tất cả nhãn hàng', 'Kutieskin', 'ClubClio', 'Fresh', 'Cocoon', 'Senka']
+        : ['Kutieskin', 'ClubClio', 'Fresh']
+    };
+    onImpersonateUser?.(impersonatedProfile);
+  };
 
   // --- STATE TAB 1: MA TRẬN PHÂN QUYỀN ---
   const [matrixItems, setMatrixItems] = useState<PermissionMatrixItem[]>(INITIAL_PERMISSION_MATRIX);
@@ -146,11 +494,11 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
     // Ghi nhận Audit Log
     const targetFeature = matrixItems.find(i => i.id === itemId)?.featureName || itemId;
     const newLog: RbacAuditLogItem = {
-      id: `log-${Date.now()}`,
+      id: `log-${++logCounterRef.current}`,
       timestamp: new Date().toISOString().substring(0, 19).replace('T', ' '),
-      actorName: currentUser?.name || 'Vân Ngọc',
-      actorEmail: currentUser?.email || 'vanngoc@upbase.vn',
-      actorRole: currentUser?.role || 'MANAGER',
+      actorName: currentUser?.name || 'Nguyễn Trọng Chỉnh',
+      actorEmail: currentUser?.email || 'chinhnt@upbase.vn',
+      actorRole: currentUser?.role || 'ADMIN',
       actionType: 'PERMISSION_TOGGLE',
       targetUserOrEntity: `${role} -> ${targetFeature}`,
       description: `Đổi cấp độ quyền của vai trò ${role} tại tính năng "${targetFeature}" thành ${newLevel}.`,
@@ -169,40 +517,11 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
     setIsConfirmingResetMatrix(true);
   };
 
-  // Áp dụng Template Ma trận
-  const handleApplyTemplate = (type: 'STRICT' | 'AGILE' | 'DEFAULT') => {
-    if (type === 'DEFAULT') {
-      setMatrixItems(INITIAL_PERMISSION_MATRIX);
-      if (onNotify) onNotify('Đã áp dụng Template "Chuẩn Vận Hành UpBase B2C"!', 'success');
-      return;
-    }
-
-    if (type === 'STRICT') {
-      setMatrixItems(prev => prev.map(item => {
-        const copy = { ...item.permissions };
-        // Siết chặt: Member chuyển sang VIEW thay vì SCOPED ở một số mục tài chính
-        if (item.category === 'CONTRACTS_FINANCE' && copy.MEMBER === 'SCOPED') {
-          copy.MEMBER = 'VIEW';
-        }
-        return { ...item, permissions: copy };
-      }));
-      if (onNotify) onNotify('Đã áp dụng Template "Bảo Mật Nghiêm Ngặt (Strict Least-Privilege)"!', 'success');
-    } else if (type === 'AGILE') {
-      setMatrixItems(prev => prev.map(item => {
-        const copy = { ...item.permissions };
-        // Linh hoạt: Leader được duyệt chi tiền nhỏ
-        if (item.id === 'payment_approval_disbursement') {
-          copy.LEADER = 'APPROVE';
-        }
-        return { ...item, permissions: copy };
-      }));
-      if (onNotify) onNotify('Đã áp dụng Template "Vận Hành Tốc Độ (Agile High-Velocity)"!', 'success');
-    }
-  };
-
-  // Lọc Nhân sự nội bộ
+  // Lọc Nhân sự nội bộ cốt lõi (theo phạm vi của Trưởng phòng nếu không phải Admin)
   const filteredStaff = useMemo(() => {
     return internalStaff.filter(staff => {
+      if (isGrowthManager && staff.departmentScope !== 'GROWTH') return false;
+      if (isMediaManager && staff.departmentScope !== 'MEDIA') return false;
       if (staffRoleFilter !== 'ALL' && staff.role !== staffRoleFilter) return false;
       if (searchStaff.trim()) {
         const q = searchStaff.toLowerCase();
@@ -215,7 +534,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
       }
       return true;
     });
-  }, [internalStaff, staffRoleFilter, searchStaff]);
+  }, [internalStaff, isGrowthManager, isMediaManager, staffRoleFilter, searchStaff]);
 
   // Mở modal sửa nhân sự
   const handleOpenEditStaff = (staff: InternalStaffRbacMember) => {
@@ -245,11 +564,11 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
     }));
 
     const newLog: RbacAuditLogItem = {
-      id: `log-${Date.now()}`,
+      id: `log-${++logCounterRef.current}`,
       timestamp: new Date().toISOString().substring(0, 19).replace('T', ' '),
-      actorName: currentUser?.name || 'Vân Ngọc',
-      actorEmail: currentUser?.email || 'vanngoc@upbase.vn',
-      actorRole: currentUser?.role || 'MANAGER',
+      actorName: currentUser?.name || 'Nguyễn Trọng Chỉnh',
+      actorEmail: currentUser?.email || 'chinhnt@upbase.vn',
+      actorRole: currentUser?.role || 'ADMIN',
       actionType: 'ROLE_CHANGE',
       targetUserOrEntity: `${editingStaff.name} (${editingStaff.email})`,
       description: `Cập nhật phân vai trò thành ${staffFormRole}, phụ trách các brand: ${staffFormPicBrands.join(', ') || 'Chưa gán'}.`,
@@ -272,16 +591,23 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
       role: staff.role,
       roleTitle: `${staff.roleTitle} (Xem thử)`,
       avatar: staff.avatar,
+      departmentScope: staff.departmentScope,
+      departmentName: staff.department,
+      managerName: staff.managerName,
+      canLogin: staff.canLogin ?? true,
       loginProvider: 'LARK',
-      linkedEntityName: staff.picBrands.join(', ')
+      linkedEntityName: staff.picBrands.join(', '),
+      assignedBrands: staff.picBrands.includes('ALL_BRANDS')
+        ? ['Tất cả nhãn hàng', 'ClubClio', 'Kutieskin', 'Fresh', 'Cocoon', 'Senka']
+        : staff.picBrands
     };
 
     const newLog: RbacAuditLogItem = {
-      id: `log-${Date.now()}`,
+      id: `log-${++logCounterRef.current}`,
       timestamp: new Date().toISOString().substring(0, 19).replace('T', ' '),
-      actorName: currentUser?.name || 'Vân Ngọc',
-      actorEmail: currentUser?.email || 'vanngoc@upbase.vn',
-      actorRole: currentUser?.role || 'MANAGER',
+      actorName: currentUser?.name || 'Nguyễn Trọng Chỉnh',
+      actorEmail: currentUser?.email || 'chinhnt@upbase.vn',
+      actorRole: currentUser?.role || 'ADMIN',
       actionType: 'IMPERSONATE',
       targetUserOrEntity: `${staff.name} (${staff.role})`,
       description: `Đóng vai nhân sự ${staff.name} để kiểm tra giao diện phân quyền.`,
@@ -321,134 +647,704 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
     return RBAC_ROLE_DEFINITIONS.filter(r => r.id === roleColumnFilter);
   }, [roleColumnFilter]);
 
+  const simTargetStaff = useMemo(() => {
+    return classifiedDirectory.find(s => s.id === simSelectedStaffId) || classifiedDirectory[0];
+  }, [classifiedDirectory, simSelectedStaffId]);
+
+  const editingDirStaffObj = useMemo(() => {
+    if (!editingDirectoryStaffId) return null;
+    return classifiedDirectory.find(s => s.id === editingDirectoryStaffId) || null;
+  }, [classifiedDirectory, editingDirectoryStaffId]);
+
   return (
     <div className="space-y-5 pb-12">
-      {/* Top Header & Overview */}
-      <div className="bg-gradient-to-r from-slate-900 via-purple-950 to-indigo-950 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden border border-purple-800/40">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="space-y-1.5 max-w-2xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/20 border border-purple-400/30 text-purple-200 text-xs font-semibold">
-              <ShieldCheck className="w-3.5 h-3.5 text-purple-300" />
-              <span>Trung Tâm Quản Lý Phân Quyền Tập Trung (Centralized RBAC Hub)</span>
-            </div>
-            <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white flex items-center gap-2.5">
-              Ma Trận & Phân Quyền Vận Hành B2C
-            </h1>
-            <p className="text-xs sm:text-sm text-purple-200/80 leading-relaxed">
-              Thiết lập chính sách bảo mật đa tầng từ Ban Giám Đốc, Trưởng phòng, Trưởng nhóm tới Chuyên viên và các Bên thứ 3 (Brand, KOC, CTV).
-            </p>
+      {/* Top Banner: Vai trò đang đăng nhập & Cơ chế Kiểm soát 3 Khối */}
+      <div className="bg-surface border border-line rounded-xl p-4 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div className="space-y-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-2xs font-semibold bg-accent-soft text-accent border border-line">
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>
+                {isAdmin
+                  ? 'Quyền Admin: Kiểm soát cổng đăng nhập 1.011 nhân sự & 3 Khối (MKT B2C · Growth · Media)'
+                  : isGrowthManager
+                  ? 'Quyền Trưởng Phòng Growth: Quản lý đội ngũ & phân công nhân sự Khối Growth'
+                  : isMediaManager
+                  ? 'Quyền Trưởng Phòng Media: Quản lý đội ngũ & phân công nhân sự Khối Media'
+                  : 'Quyền Trưởng Phòng Marketing B2C: Quản lý đội ngũ Booking, Content & Brand'}
+              </span>
+            </span>
+            <span className="text-2xs text-ink-3">
+              Đang mở cổng: <strong className="text-positive">{directoryStats.totalAllowed} nhân sự</strong> · Đang chặn: <strong className="text-critical">{directoryStats.totalBlocked} nhân sự ngoài phạm vi</strong>
+            </span>
           </div>
-
-          <div className="flex flex-wrap items-center gap-2.5">
-            <button
-              onClick={handleResetMatrix}
-              className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-white text-xs font-semibold border border-white/20 transition flex items-center gap-2 shadow-xs"
-              title="Khôi phục ma trận chuẩn"
-            >
-              <RefreshCw className="w-3.5 h-3.5" />
-              <span>Khôi Phục Mặc Định</span>
-            </button>
-            <div className="relative group">
-              <button
-                className="px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold transition flex items-center gap-2 shadow-md shadow-purple-900/30"
-              >
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>Mẫu Phân Quyền</span>
-              </button>
-              <div className="absolute right-0 top-full mt-1.5 w-64 bg-white rounded-xl shadow-xl border border-slate-200 py-1.5 hidden group-hover:block z-50 animate-in fade-in">
-                <button
-                  onClick={() => handleApplyTemplate('DEFAULT')}
-                  className="w-full text-left px-3.5 py-2 hover:bg-purple-50 text-xs text-slate-800 flex flex-col"
-                >
-                  <span className="font-bold text-purple-900">1. Chuẩn Vận Hành UpBase (Khuyên dùng)</span>
-                  <span className="text-3xs text-slate-500">Cân bằng giữa bảo mật và tốc độ chốt deal</span>
-                </button>
-                <button
-                  onClick={() => handleApplyTemplate('STRICT')}
-                  className="w-full text-left px-3.5 py-2 hover:bg-purple-50 text-xs text-slate-800 flex flex-col"
-                >
-                  <span className="font-bold text-slate-900">2. Bảo Mật Nghiêm Ngặt</span>
-                  <span className="text-3xs text-slate-500">Giới hạn xem biên lợi nhuận, duyệt 2 lớp bắt buộc</span>
-                </button>
-                <button
-                  onClick={() => handleApplyTemplate('AGILE')}
-                  className="w-full text-left px-3.5 py-2 hover:bg-purple-50 text-xs text-slate-800 flex flex-col"
-                >
-                  <span className="font-bold text-slate-900">3. Vận Hành Tốc Độ (Agile)</span>
-                  <span className="text-3xs text-slate-500">Trao quyền duyệt chi nhanh cho Trưởng nhóm</span>
-                </button>
-              </div>
-            </div>
-          </div>
+          <p className="text-xs text-muted leading-relaxed">
+            Không phải toàn bộ 1.011 nhân viên công ty đều đăng nhập được vào hệ thống. Chỉ nhân sự thuộc <strong>Marketing B2C</strong>, <strong>Growth</strong>, <strong>Media</strong> được Admin mở cổng mới có quyền truy cập và chịu sự quản lý của Trưởng phòng tương ứng.
+          </p>
         </div>
 
-        {/* 4 Navigation Subtabs */}
-        <div className="mt-6 flex flex-wrap gap-2 border-t border-purple-800/50 pt-4">
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
           <button
-            onClick={() => setActiveMainTab('matrix')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition ${
-              activeMainTab === 'matrix'
-                ? 'bg-white text-purple-950 shadow-md'
-                : 'bg-white/10 text-purple-200 hover:bg-white/15'
-            }`}
+            onClick={handleResetMatrix}
+            className="px-3 py-1.5 rounded-lg bg-surface hover:bg-surface-muted text-ink text-xs font-medium border border-line transition flex items-center gap-1.5"
+            title="Khôi phục ma trận chuẩn"
           >
-            <Layers className="w-4 h-4 text-purple-600" />
-            <span>1. Ma Trận Phân Quyền (Role Matrix)</span>
-            <span className="px-1.5 py-0.5 rounded-full text-3xs font-mono bg-purple-100 text-purple-900">
-              {matrixItems.length}
-            </span>
-          </button>
-
-          <button
-            onClick={() => setActiveMainTab('internal')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition ${
-              activeMainTab === 'internal'
-                ? 'bg-white text-purple-950 shadow-md'
-                : 'bg-white/10 text-purple-200 hover:bg-white/15'
-            }`}
-          >
-            <Users className="w-4 h-4 text-blue-600" />
-            <span>2. Nhân Sự Nội Bộ (Lark SSO)</span>
-            <span className="px-1.5 py-0.5 rounded-full text-3xs font-mono bg-blue-100 text-blue-900">
-              {internalStaff.length}
-            </span>
-          </button>
-
-          <button
-            onClick={() => setActiveMainTab('third-party')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition ${
-              activeMainTab === 'third-party'
-                ? 'bg-white text-purple-950 shadow-md'
-                : 'bg-white/10 text-purple-200 hover:bg-white/15'
-            }`}
-          >
-            <Building className="w-4 h-4 text-emerald-600" />
-            <span>3. Đối Tác Bên Thứ 3 (Gmail SSO)</span>
-            <span className="px-1.5 py-0.5 rounded-full text-3xs font-mono bg-emerald-100 text-emerald-900">
-              Brand / KOC / CTV
-            </span>
-          </button>
-
-          <button
-            onClick={() => setActiveMainTab('audit')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition ${
-              activeMainTab === 'audit'
-                ? 'bg-white text-purple-950 shadow-md'
-                : 'bg-white/10 text-purple-200 hover:bg-white/15'
-            }`}
-          >
-            <Clock className="w-4 h-4 text-amber-600" />
-            <span>4. Kiểm Toán & Nhật Ký Phiên (Audit Logs)</span>
-            <span className="px-1.5 py-0.5 rounded-full text-3xs font-mono bg-amber-100 text-amber-900">
-              {auditLogs.length}
-            </span>
+            <RefreshCw className="w-3.5 h-3.5 text-muted" />
+            <span>Khôi phục mặc định</span>
           </button>
         </div>
       </div>
 
+      <Tabs
+        items={[
+          { key: 'gatekeeper', label: '1. Cổng truy cập & Phân khối (1.011 NV)', count: `${directoryStats.totalAllowed}/${directoryStats.totalStaff}` },
+          { key: 'internal', label: '2. Trưởng phòng & PIC cốt lõi', count: filteredStaff.length },
+          { key: 'matrix', label: '3. Ma trận phân quyền (9 Vai trò)', count: matrixItems.length },
+          { key: 'third-party', label: '4. Tài khoản đối tác ngoài', count: 'Brand / KOC / CTV' },
+          { key: 'audit', label: '5. Nhật ký bảo mật', count: auditLogs.length },
+        ]}
+        value={activeMainTab}
+        onChange={(k) => setActiveMainTab(k as MainTab)}
+      />
+
       {/* ========================================================================= */}
-      {/* SUB-TAB 1: MA TRẬN PHÂN QUYỀN (INTERACTIVE RBAC MATRIX)                   */}
+      {/* SUB-TAB 0: CỔNG TRUY CẬP & PHÂN KHỐI 1.011 NHÂN VIÊN TOÀN CÔNG TY          */}
+      {/* ========================================================================= */}
+      {activeMainTab === 'gatekeeper' && (
+        <div className="space-y-4 animate-in fade-in duration-200">
+          {/* 4 Cards: 3 Khối Được Vào Hệ Thống + 1 Khối Phòng Ban Khác Bị Chặn */}
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
+            {/* Card 1: Marketing B2C */}
+            <div
+              onClick={() => { setDirScopeFilter('MARKETING_B2C'); setDirPage(1); }}
+              className={`p-4 rounded-xl border transition cursor-pointer ${
+                dirScopeFilter === 'MARKETING_B2C'
+                  ? 'bg-blue-50/70 border-blue-400 shadow-xs'
+                  : 'bg-white border-slate-200 hover:border-blue-300'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                  1. Khối Marketing B2C
+                </span>
+                <span className="text-2xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                  Được phép Login
+                </span>
+              </div>
+              <div className="text-xl font-semibold text-slate-900">
+                {directoryStats.mktAllowed} <span className="text-xs font-normal text-slate-500">/ {directoryStats.mktTotal} nhân sự</span>
+              </div>
+              <div className="mt-2 pt-2 border-t border-slate-100 text-2xs text-slate-600 space-y-0.5">
+                <div>Trưởng phòng: <strong className="text-slate-900">Đặng Thị Yến Nhi</strong></div>
+                <div>Trưởng nhóm: <strong className="text-slate-800">Nguyễn Thị Ngọc Tâm</strong></div>
+                <div className="text-slate-400">Team: Booking, Sub-Booking, Content, Brand</div>
+              </div>
+            </div>
+
+            {/* Card 2: Khối Growth */}
+            <div
+              onClick={() => { setDirScopeFilter('GROWTH'); setDirPage(1); }}
+              className={`p-4 rounded-xl border transition cursor-pointer ${
+                dirScopeFilter === 'GROWTH'
+                  ? 'bg-emerald-50/70 border-emerald-400 shadow-xs'
+                  : 'bg-white border-slate-200 hover:border-emerald-300'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  2. Khối Growth Ecom
+                </span>
+                <span className="text-2xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                  Được phép Login
+                </span>
+              </div>
+              <div className="text-xl font-semibold text-slate-900">
+                {directoryStats.growthAllowed} <span className="text-xs font-normal text-slate-500">/ {directoryStats.growthTotal} nhân sự</span>
+              </div>
+              <div className="mt-2 pt-2 border-t border-slate-100 text-2xs text-slate-600 space-y-0.5">
+                <div>Trưởng phòng: <strong className="text-slate-900">Trần Thị Đỗ Quyên</strong></div>
+                <div>Lead cụm: <strong className="text-slate-800">Hoài Linh (HCM), Phạm Nhung</strong></div>
+                <div className="text-slate-400">Team: Growth 1, Growth 2, Growth 3, Growth 6, HCM</div>
+              </div>
+            </div>
+
+            {/* Card 3: Khối Media */}
+            <div
+              onClick={() => { setDirScopeFilter('MEDIA'); setDirPage(1); }}
+              className={`p-4 rounded-xl border transition cursor-pointer ${
+                dirScopeFilter === 'MEDIA'
+                  ? 'bg-amber-50/70 border-amber-400 shadow-xs'
+                  : 'bg-white border-slate-200 hover:border-amber-300'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                  3. Khối Media & Ads
+                </span>
+                <span className="text-2xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                  Được phép Login
+                </span>
+              </div>
+              <div className="text-xl font-semibold text-slate-900">
+                {directoryStats.mediaAllowed} <span className="text-xs font-normal text-slate-500">/ {directoryStats.mediaTotal} nhân sự</span>
+              </div>
+              <div className="mt-2 pt-2 border-t border-slate-100 text-2xs text-slate-600 space-y-0.5">
+                <div>Trưởng phòng: <strong className="text-slate-900">Nguyễn Đức Quảng</strong></div>
+                <div>Lead TikTok: <strong className="text-slate-800">Nguyễn Đình Long</strong></div>
+                <div className="text-slate-400">Team: Media Omni, Media TikTok</div>
+              </div>
+            </div>
+
+            {/* Card 4: Các Phòng Ban Khác (Bị Chặn Mặc Định) */}
+            <div
+              onClick={() => { if (isAdmin) { setDirScopeFilter('OTHER_BLOCKED'); setDirPage(1); } }}
+              className={`p-4 rounded-xl border transition ${
+                isAdmin ? 'cursor-pointer' : 'opacity-75 cursor-not-allowed'
+              } ${
+                dirScopeFilter === 'OTHER_BLOCKED'
+                  ? 'bg-red-50/70 border-red-400 shadow-xs'
+                  : 'bg-white border-slate-200 hover:border-red-300'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-slate-100 text-slate-700 border border-slate-300">
+                  4. Phòng Ban Khác (Ngoài B2C)
+                </span>
+                <span className="text-2xs font-semibold text-red-700 bg-red-50 px-2 py-0.5 rounded border border-red-200">
+                  Chặn Login
+                </span>
+              </div>
+              <div className="text-xl font-semibold text-slate-900">
+                {directoryStats.otherTotal - directoryStats.otherAllowed} <span className="text-xs font-normal text-slate-500">bị chặn / {directoryStats.otherTotal} NV</span>
+              </div>
+              <div className="mt-2 pt-2 border-t border-slate-100 text-2xs text-slate-600 space-y-0.5">
+                <div>Ngoại lệ Admin cấp: <strong className="text-emerald-700">{directoryStats.otherAllowed} người</strong></div>
+                <div>Trạng thái cổng: <strong className="text-red-600">Từ chối đăng nhập (403)</strong></div>
+                <div className="text-slate-400">Fulfillment, Livestream, Kế toán, HCNS, Tech...</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Bảng Quy Tắc Cấp Quyền Tự Động Theo Phòng Ban (Admin Gatekeeper Rules) */}
+          {isAdmin && (
+            <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
+              <div className="px-4 py-3 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <KeyRound className="w-4 h-4 text-blue-600" />
+                  <h3 className="text-xs font-semibold text-slate-900">
+                    Quy Tắc Mở Cổng Đăng Nhập Theo Phòng Ban (Admin Department Rules)
+                  </h3>
+                </div>
+                <span className="text-2xs text-slate-500">
+                  Admin xác định cụm phòng ban nào được tự động vào hệ thống và gán về Trưởng phòng quản lý
+                </span>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr className="border-b border-slate-200 text-2xs text-slate-500 bg-slate-50/50 font-semibold">
+                      <th className="py-2.5 px-4">Cụm Phòng Ban / Team (Đồng bộ từ HR Lark)</th>
+                      <th className="py-2.5 px-3">Khối Hệ Thống</th>
+                      <th className="py-2.5 px-3">Trưởng Phòng Quản Lý Trực Tiếp</th>
+                      <th className="py-2.5 px-3">Role Mặc Định Khi Vào</th>
+                      <th className="py-2.5 px-3 text-center">Quân Số</th>
+                      <th className="py-2.5 px-4 text-center">Cổng Đăng Nhập</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {deptRules.map(rule => {
+                      const scopeMeta = SCOPE_LABELS[rule.mappedScope];
+                      return (
+                        <tr key={rule.id} className="hover:bg-slate-50/70">
+                          <td className="py-2.5 px-4">
+                            <div className="font-semibold text-slate-900">{rule.departmentOrTeamName}</div>
+                            <div className="text-2xs text-slate-500">{rule.description}</div>
+                          </td>
+                          <td className="py-2.5 px-3">
+                            <span className={`inline-flex px-2 py-0.5 rounded text-2xs font-semibold border ${scopeMeta.badgeClass}`}>
+                              {scopeMeta.label}
+                            </span>
+                          </td>
+                          <td className="py-2.5 px-3 font-medium text-slate-800 text-2xs">
+                            {rule.defaultManagerName}
+                          </td>
+                          <td className="py-2.5 px-3 text-2xs text-slate-600 font-mono">
+                            {rule.autoAllowLogin ? ROLE_DISPLAY_NAME[rule.defaultRole] : 'Không cấp Role'}
+                          </td>
+                          <td className="py-2.5 px-3 text-center font-mono font-semibold text-slate-700">
+                            {rule.staffCount} NV
+                          </td>
+                          <td className="py-2.5 px-4 text-center">
+                            <button
+                              type="button"
+                              onClick={() => handleToggleDeptRule(rule.id)}
+                              className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-2xs font-semibold border transition cursor-pointer ${
+                                rule.autoAllowLogin
+                                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+                                  : 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100'
+                              }`}
+                            >
+                              {rule.autoAllowLogin ? (
+                                <>
+                                  <Unlock className="w-3 h-3" />
+                                  <span>Cho phép Login</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Lock className="w-3 h-3" />
+                                  <span>Đang chặn Login</span>
+                                </>
+                              )}
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Thanh Mô Phỏng Kiểm Tra Cổng Đăng Nhập (Login Gatekeeper Simulator) */}
+          <div className="bg-slate-900 text-white rounded-xl p-4 border border-slate-800 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div className="space-y-1 max-w-xl">
+              <div className="text-xs font-semibold flex items-center gap-2 text-amber-300">
+                <ShieldAlert className="w-4 h-4" />
+                <span>Kiểm Tra Thử Cổng Đăng Nhập Nhân Sự (Login Gatekeeper Test)</span>
+              </div>
+              <p className="text-2xs text-slate-300">
+                Chọn bất kỳ nhân viên nào trong danh bạ 1.011 người để kiểm tra xem khi họ bấm đăng nhập Lark SSO, hệ thống sẽ cho vào hay chặn lại.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3 flex-1 justify-end">
+              <select
+                value={simSelectedStaffId}
+                onChange={(e) => setSimSelectedStaffId(e.target.value)}
+                className="text-xs h-9 px-3 rounded-lg bg-slate-800 border border-slate-700 text-white font-medium focus:outline-none focus:border-blue-400 max-w-xs w-full"
+              >
+                <optgroup label="Nhân sự thuộc Phòng ban bị chặn (Test Chặn Login)">
+                  <option value="HN782">HN782 - Dương Quỳnh Anh (Team Livestream - CTV)</option>
+                  <option value="HN223">HN223 - Nhân sự Fulfillment / Kho vận</option>
+                  {classifiedDirectory.filter(s => !s.canLogin).slice(0, 6).map(s => (
+                    <option key={s.id} value={s.id}>
+                      {s.staffCode || s.id} - {s.name} ({s.department || s.team || 'Phòng khác'})
+                    </option>
+                  ))}
+                </optgroup>
+                <optgroup label="Nhân sự thuộc 3 Khối MKT B2C / Growth / Media (Test Cho Phép)">
+                  {classifiedDirectory.filter(s => s.canLogin).slice(0, 10).map(s => (
+                    <option key={s.id} value={s.id}>
+                      {s.staffCode || s.id} - {s.name} ({SCOPE_LABELS[s.classifiedScope].label})
+                    </option>
+                  ))}
+                </optgroup>
+              </select>
+
+              {simTargetStaff && (
+                <div className={`px-3.5 py-2 rounded-lg border text-2xs flex items-center gap-2.5 ${
+                  simTargetStaff.canLogin
+                    ? 'bg-emerald-950/90 border-emerald-500/50 text-emerald-200'
+                    : 'bg-red-950/90 border-red-500/50 text-red-200'
+                }`}>
+                  {simTargetStaff.canLogin ? (
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                  ) : (
+                    <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+                  )}
+                  <div>
+                    <div className="font-semibold">
+                      {simTargetStaff.canLogin
+                        ? `CHO PHÉP ĐĂNG NHẬP → ${ROLE_DISPLAY_NAME[simTargetStaff.mappedRole]}`
+                        : `CHẶN ĐĂNG NHẬP (403 ACCESS DENIED)`}
+                    </div>
+                    <div className="opacity-80">
+                      {simTargetStaff.accessReason} · Quản lý: <strong>{simTargetStaff.managerName}</strong>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Bộ Lọc Danh Bạ 1.011 Nhân Sự & Quản Lý Theo Trưởng Phòng */}
+          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h3 className="text-xs font-semibold text-slate-900 flex items-center gap-2">
+                  <Users className="w-4 h-4 text-blue-600" />
+                  <span>
+                    {isGrowthManager
+                      ? `Danh Sách Nhân Viên Khối Growth Của Bạn (${filteredDirectory.length} nhân sự)`
+                      : isMediaManager
+                      ? `Danh Sách Nhân Viên Khối Media Của Bạn (${filteredDirectory.length} nhân sự)`
+                      : isB2cManager
+                      ? `Danh Sách Nhân Viên Khối Marketing B2C (${filteredDirectory.length} nhân sự)`
+                      : `Danh Bạ Nhân Sự Toàn Công Ty & Phân Quyền Đăng Nhập (${filteredDirectory.length} / ${directoryStats.totalStaff} nhân sự)`}
+                  </span>
+                </h3>
+                <p className="text-2xs text-slate-500 mt-0.5">
+                  {isAdmin
+                    ? 'Admin có thể bật/tắt quyền đăng nhập cho từng cá nhân, chuyển khối (Marketing / Growth / Media) hoặc bổ nhiệm Trưởng phòng.'
+                    : 'Trưởng phòng quản lý trực tiếp danh sách nhân viên trong khối của mình và có thể đóng vai kiểm tra công việc.'}
+                </p>
+              </div>
+
+              {isAdmin && Object.keys(staffOverrides).length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStaffOverrides({});
+                    saveStaffAccessOverrides({});
+                    onNotify?.('Đã xóa các thiết lập ngoại lệ cá nhân, quay về quy tắc phòng ban chuẩn.', 'info');
+                  }}
+                  className="px-2.5 py-1.5 rounded-lg border border-slate-200 text-2xs font-medium text-slate-600 hover:bg-slate-50"
+                >
+                  Đặt lại {Object.keys(staffOverrides).length} ngoại lệ cá nhân
+                </button>
+              )}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2.5">
+              <div className="relative flex-1 min-w-[220px] max-w-sm">
+                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Tìm tên, mã NV (HN222), email, phòng ban..."
+                  value={dirSearch}
+                  onChange={(e) => { setDirSearch(e.target.value); setDirPage(1); }}
+                  className="w-full pl-8.5 pr-3 h-9 text-xs rounded-lg border border-slate-200 focus:outline-none focus:border-blue-500 bg-slate-50/50"
+                />
+              </div>
+
+              {isAdmin && (
+                <select
+                  value={dirScopeFilter}
+                  onChange={(e) => { setDirScopeFilter(e.target.value); setDirPage(1); }}
+                  className="text-xs h-9 px-3 rounded-lg border border-slate-200 bg-white font-medium"
+                >
+                  <option value="ALLOWED_3_SCOPES">3 Khối được vào (MKT B2C + Growth + Media)</option>
+                  <option value="ALL">Toàn bộ công ty ({directoryStats.totalStaff} nhân sự)</option>
+                  <option value="MARKETING_B2C">1. Khối Marketing B2C ({directoryStats.mktTotal})</option>
+                  <option value="GROWTH">2. Khối Growth Ecom ({directoryStats.growthTotal})</option>
+                  <option value="MEDIA">3. Khối Media & Ads ({directoryStats.mediaTotal})</option>
+                  <option value="OTHER_BLOCKED">4. Phòng ban khác - Đang chặn ({directoryStats.otherTotal})</option>
+                </select>
+              )}
+
+              <select
+                value={dirLoginFilter}
+                onChange={(e) => { setDirLoginFilter(e.target.value as 'ALL' | 'ALLOWED' | 'BLOCKED' | 'OVERRIDDEN'); setDirPage(1); }}
+                className="text-xs h-9 px-3 rounded-lg border border-slate-200 bg-white font-medium"
+              >
+                <option value="ALL">Mọi trạng thái Login</option>
+                <option value="ALLOWED">Được phép Login ({directoryStats.totalAllowed})</option>
+                <option value="BLOCKED">Bị chặn Login ({directoryStats.totalBlocked})</option>
+                <option value="OVERRIDDEN">Admin phân quyền đích danh ({Object.keys(staffOverrides).length})</option>
+              </select>
+
+              <select
+                value={dirDeptFilter}
+                onChange={(e) => { setDirDeptFilter(e.target.value); setDirPage(1); }}
+                className="text-xs h-9 px-3 rounded-lg border border-slate-200 bg-white font-medium max-w-[200px]"
+              >
+                <option value="ALL">Mọi Team / Phòng ban ({directoryDepartments.length})</option>
+                {directoryDepartments.map(d => (
+                  <option key={d} value={d}>{d}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Bảng Danh Bạ 1.011 Nhân Sự */}
+            <div className="border border-slate-200 rounded-xl overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr className="bg-slate-50 border-b border-slate-200 text-2xs font-semibold text-slate-600">
+                      <th className="py-2.5 px-3 w-[90px]">Mã NV</th>
+                      <th className="py-2.5 px-3 min-w-[180px]">Nhân Viên & Email</th>
+                      <th className="py-2.5 px-3">Phòng Ban / Team Gốc</th>
+                      <th className="py-2.5 px-3">Khối Hệ Thống</th>
+                      <th className="py-2.5 px-3">Vai Trò & Trưởng Phòng Quản Lý</th>
+                      <th className="py-2.5 px-3 text-center">Quyền Đăng Nhập</th>
+                      <th className="py-2.5 px-3 text-center">Thao Tác</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {pagedDirectory.length === 0 ? (
+                      <tr>
+                        <td colSpan={7} className="py-10 text-center text-slate-400">
+                          Không tìm thấy nhân viên nào khớp với bộ lọc hiện tại.
+                        </td>
+                      </tr>
+                    ) : (
+                      pagedDirectory.map(staff => {
+                        const scopeMeta = SCOPE_LABELS[staff.classifiedScope];
+                        return (
+                          <tr key={staff.id} className="hover:bg-slate-50/70 transition">
+                            <td className="py-2.5 px-3 font-mono font-semibold text-slate-800">
+                              <span className="px-1.5 py-0.5 rounded bg-slate-100 border border-slate-200 text-2xs">
+                                {staff.staffCode || staff.id}
+                              </span>
+                            </td>
+                            <td className="py-2.5 px-3">
+                              <div className="font-semibold text-slate-900">{staff.name}</div>
+                              <div className="text-2xs text-slate-500 font-mono">{staff.email}</div>
+                            </td>
+                            <td className="py-2.5 px-3">
+                              <div className="font-medium text-slate-800">{staff.department || staff.team || 'Chưa phân phòng'}</div>
+                              <div className="text-2xs text-slate-500">
+                                {staff.position || staff.roleTitle} · {staff.location || 'HN'}
+                              </div>
+                            </td>
+                            <td className="py-2.5 px-3">
+                              <span className={`inline-flex px-2 py-0.5 rounded text-2xs font-semibold border ${scopeMeta.badgeClass}`}>
+                                {scopeMeta.label}
+                              </span>
+                              {staff.accessSource === 'ADMIN_EXPLICIT' && (
+                                <span className="block text-2xs text-blue-600 font-semibold mt-0.5">
+                                  Admin cấp đích danh
+                                </span>
+                              )}
+                            </td>
+                            <td className="py-2.5 px-3">
+                              {staff.canLogin ? (
+                                <>
+                                  <span className="font-semibold text-slate-900 block">
+                                    {ROLE_DISPLAY_NAME[staff.mappedRole]}
+                                  </span>
+                                  <span className="text-2xs text-slate-500">
+                                    Quản lý: <strong className="text-slate-700">{staff.managerName}</strong>
+                                  </span>
+                                </>
+                              ) : (
+                                <span className="text-2xs text-slate-400 italic">
+                                  Không có quyền truy cập B2C
+                                </span>
+                              )}
+                            </td>
+                            <td className="py-2.5 px-3 text-center">
+                              <button
+                                type="button"
+                                onClick={() => handleQuickToggleStaffLogin(staff)}
+                                disabled={!isAdmin}
+                                title={isAdmin ? 'Bấm để Bật / Tắt quyền đăng nhập hệ thống của nhân viên này' : 'Chỉ Admin mới được đóng/mở quyền đăng nhập'}
+                                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-2xs font-semibold border transition ${
+                                  isAdmin ? 'cursor-pointer' : 'cursor-default'
+                                } ${
+                                  staff.canLogin
+                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+                                    : 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100'
+                                }`}
+                              >
+                                {staff.canLogin ? (
+                                  <>
+                                    <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                                    <span>Được vào</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Lock className="w-3 h-3 text-red-500" />
+                                    <span>Chặn Login</span>
+                                  </>
+                                )}
+                              </button>
+                            </td>
+                            <td className="py-2.5 px-3 text-center">
+                              <div className="flex items-center justify-center gap-1.5">
+                                {staff.canLogin && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleImpersonateDirectoryStaff(staff)}
+                                    className="px-2 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-2xs font-semibold flex items-center gap-1"
+                                    title="Đóng vai nhân viên này để kiểm tra giao diện"
+                                  >
+                                    <Eye className="w-3 h-3" />
+                                    <span>Đóng vai</span>
+                                  </button>
+                                )}
+                                {isAdmin && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleOpenEditDirectoryStaff(staff)}
+                                    className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-600"
+                                    title="Phân khối Marketing / Growth / Media & bổ nhiệm Vai trò"
+                                  >
+                                    <Edit3 className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Pagination */}
+              <div className="px-4 py-2.5 bg-slate-50 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2 text-2xs text-slate-600">
+                <div>
+                  Hiển thị <strong>{Math.min(filteredDirectory.length, (dirPage - 1) * DIR_PAGE_SIZE + 1)} - {Math.min(filteredDirectory.length, dirPage * DIR_PAGE_SIZE)}</strong> / <strong>{filteredDirectory.length}</strong> nhân sự
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    disabled={dirPage <= 1}
+                    onClick={() => setDirPage(p => Math.max(1, p - 1))}
+                    className="p-1 rounded border border-slate-200 bg-white disabled:opacity-40"
+                  >
+                    <ChevronLeft className="w-3.5 h-3.5" />
+                  </button>
+                  <span className="px-2 font-mono font-semibold">
+                    Trang {dirPage} / {totalDirPages}
+                  </span>
+                  <button
+                    type="button"
+                    disabled={dirPage >= totalDirPages}
+                    onClick={() => setDirPage(p => Math.min(totalDirPages, p + 1))}
+                    className="p-1 rounded border border-slate-200 bg-white disabled:opacity-40"
+                  >
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Modal Admin Phân Khối & Cấp Quyền Truy Cập Cho Nhân Sự */}
+          {editingDirStaffObj && (
+            <div className="fixed inset-0 bg-slate-900/40 z-50 flex items-center justify-center p-4 animate-in fade-in duration-150">
+              <div className="bg-white rounded-2xl max-w-lg w-full p-5 shadow-2xl border border-slate-200 space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                  <div>
+                    <h3 className="font-semibold text-sm text-slate-900">
+                      Cấu Hình Cổng Đăng Nhập & Phân Khối Nhân Sự
+                    </h3>
+                    <p className="text-2xs text-slate-500">
+                      {editingDirStaffObj.name} ({editingDirStaffObj.staffCode} · Phòng gốc: {editingDirStaffObj.department || editingDirStaffObj.team || 'Khác'})
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setEditingDirectoryStaffId(null)}
+                    className="p-1 rounded-lg text-slate-400 hover:text-slate-600"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <form onSubmit={handleSaveDirectoryStaff} className="space-y-4 text-xs">
+                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
+                    <div>
+                      <div className="font-semibold text-slate-900">Cho phép đăng nhập hệ thống B2C</div>
+                      <div className="text-2xs text-slate-500">Nếu tắt, nhân viên này sẽ bị chặn ở màn hình Login.</div>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={dirEditCanLogin}
+                      onChange={(e) => setDirEditCanLogin(e.target.checked)}
+                      className="w-4 h-4 rounded text-blue-600"
+                    />
+                  </div>
+
+                  {dirEditCanLogin && (
+                    <>
+                      <div className="space-y-1.5">
+                        <label className="font-semibold text-slate-700 block">
+                          1. Thuộc Khối chức năng nào trong hệ thống? *
+                        </label>
+                        <select
+                          value={dirEditScope}
+                          onChange={(e) => {
+                            const nextScope = e.target.value as SystemDepartmentScope;
+                            setDirEditScope(nextScope);
+                            if (nextScope === 'GROWTH') {
+                              setDirEditRole('GROWTH_MEMBER');
+                              setDirEditManager('Trần Thị Đỗ Quyên');
+                            } else if (nextScope === 'MEDIA') {
+                              setDirEditRole('MEDIA_MEMBER');
+                              setDirEditManager('Nguyễn Đức Quảng');
+                            } else {
+                              setDirEditRole('BOOKING_MEMBER');
+                              setDirEditManager('Đặng Thị Yến Nhi');
+                            }
+                          }}
+                          className="w-full h-9 px-3 rounded-lg border border-slate-200 bg-white font-semibold"
+                        >
+                          <option value="MARKETING_B2C">Khối Marketing B2C (Booking / Content / Brand)</option>
+                          <option value="GROWTH">Khối Growth Ecom (Growth 1 - 6 & HCM)</option>
+                          <option value="MEDIA">Khối Media & Ads (Media Omni & TikTok)</option>
+                        </select>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="font-semibold text-slate-700 block">
+                          2. Vai trò (Role) trong hệ thống *
+                        </label>
+                        <select
+                          value={dirEditRole}
+                          onChange={(e) => setDirEditRole(e.target.value as UserRole)}
+                          className="w-full h-9 px-3 rounded-lg border border-slate-200 bg-white font-semibold"
+                        >
+                          <optgroup label="Cấp Quản Trị & Trưởng Phòng 3 Khối">
+                            <option value="ADMIN">Quản Trị Hệ Thống (ADMIN)</option>
+                            <option value="MANAGER">Trưởng Phòng Marketing B2C (MANAGER)</option>
+                            <option value="GROWTH_MANAGER">Trưởng Phòng Growth (GROWTH_MANAGER)</option>
+                            <option value="MEDIA_MANAGER">Trưởng Phòng Media (MEDIA_MANAGER)</option>
+                            <option value="LEADER">Trưởng Nhóm Booking B2C (LEADER)</option>
+                          </optgroup>
+                          <optgroup label="Cấp Chuyên Viên Thực Thi">
+                            <option value="BOOKING_MEMBER">Chuyên Viên Booking B2C (BOOKING_MEMBER)</option>
+                            <option value="CONTENT_MEMBER">Chuyên Viên Content B2C (CONTENT_MEMBER)</option>
+                            <option value="BRAND_MEMBER">Chuyên Viên Brand PIC (BRAND_MEMBER)</option>
+                            <option value="GROWTH_MEMBER">Chuyên Viên Growth (GROWTH_MEMBER)</option>
+                            <option value="MEDIA_MEMBER">Chuyên Viên Media & Ads (MEDIA_MEMBER)</option>
+                          </optgroup>
+                        </select>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="font-semibold text-slate-700 block">
+                          3. Trưởng phòng / Quản lý trực tiếp
+                        </label>
+                        <input
+                          type="text"
+                          value={dirEditManager}
+                          onChange={(e) => setDirEditManager(e.target.value)}
+                          className="w-full h-9 px-3 rounded-lg border border-slate-200 bg-white"
+                          placeholder="Tên Trưởng phòng quản lý..."
+                        />
+                      </div>
+                    </>
+                  )}
+
+                  <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                    <button
+                      type="button"
+                      onClick={() => setEditingDirectoryStaffId(null)}
+                      className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100"
+                    >
+                      Hủy
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold"
+                    >
+                      Lưu Phân Quyền
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* SUB-TAB 1: MA TRẬN PHÂN QUYỀN (INTERACTIVE RBAC MATRIX) */}
       {/* ========================================================================= */}
       {activeMainTab === 'matrix' && (
         <div className="space-y-4 animate-in fade-in duration-200">
@@ -463,7 +1359,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                   placeholder="Tìm tính năng, quyền hạn..."
                   value={searchMatrix}
                   onChange={(e) => setSearchMatrix(e.target.value)}
-                  className="w-full pl-9 pr-3 text-xs h-9 rounded-lg border border-slate-200 focus:outline-none focus:border-purple-500 bg-slate-50/50"
+                  className="w-full pl-9 pr-3 text-xs h-9 rounded-lg border border-slate-200 focus:outline-none focus:border-blue-500 bg-slate-50/50"
                 />
               </div>
 
@@ -471,7 +1367,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
               <select
                 value={categoryFilter}
                 onChange={(e) => setCategoryFilter(e.target.value)}
-                className="text-xs h-9 px-3 rounded-lg border border-slate-200 bg-white font-medium focus:outline-none focus:border-purple-500"
+                className="text-xs h-9 px-3 rounded-lg border border-slate-200 bg-white font-medium focus:outline-none focus:border-blue-500"
               >
                 <option value="ALL">Tất cả 5 Phân hệ</option>
                 <option value="PLANNING">1. Lập Kế Hoạch & Phân Bổ Tải</option>
@@ -485,9 +1381,9 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
               <select
                 value={roleColumnFilter}
                 onChange={(e) => setRoleColumnFilter(e.target.value)}
-                className="text-xs h-9 px-3 rounded-lg border border-slate-200 bg-white font-medium focus:outline-none focus:border-purple-500"
+                className="text-xs h-9 px-3 rounded-lg border border-slate-200 bg-white font-medium focus:outline-none focus:border-blue-500"
               >
-                <option value="ALL">Hiển thị cả 7 Vai trò (Grid Matrix)</option>
+                <option value="ALL">Hiển thị cả 9 Vai trò (Grid Matrix)</option>
                 {RBAC_ROLE_DEFINITIONS.map(r => (
                   <option key={r.id} value={r.id}>{r.name}</option>
                 ))}
@@ -497,10 +1393,10 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
             {/* Quick Badge Legend */}
             <div className="flex items-center gap-2 text-2xs text-slate-600 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200">
               <span className="font-semibold text-slate-700">Chú giải:</span>
-              <span className="inline-flex items-center text-emerald-700 font-bold">ALL</span>
-              <span className="inline-flex items-center text-blue-700 font-bold">SCOPED</span>
-              <span className="inline-flex items-center text-amber-700 font-bold">VIEW</span>
-              <span className="inline-flex items-center text-purple-700 font-bold">APPROVE</span>
+              <span className="inline-flex items-center text-emerald-700 font-semibold">ALL</span>
+              <span className="inline-flex items-center text-blue-700 font-semibold">SCOPED</span>
+              <span className="inline-flex items-center text-amber-700 font-semibold">VIEW</span>
+              <span className="inline-flex items-center text-blue-700 font-semibold">APPROVE</span>
               <span className="inline-flex items-center text-slate-400 font-medium">DENIED</span>
             </div>
           </div>
@@ -510,15 +1406,15 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse min-w-[1000px]">
                 <thead>
-                  <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-700 text-xs font-bold">
+                  <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-700 text-xs font-semibold">
                     <th className="py-3 px-4 w-[280px]">Tính Năng & Nghiệp Vụ</th>
                     {matrixRolesToRender.map(role => (
                       <th key={role.id} className="py-3 px-3 text-center min-w-[110px]">
                         <div className="flex flex-col items-center gap-0.5">
-                          <span className={`px-2 py-0.5 rounded-full text-3xs font-bold border ${role.badgeColor}`}>
+                          <span className={`px-2 py-0.5 rounded-full text-2xs font-semibold border ${role.badgeColor}`}>
                             {role.name.split(' (')[0]}
                           </span>
-                          <span className="text-3xs text-slate-400 font-normal">
+                          <span className="text-2xs text-slate-400 font-normal">
                             {role.scopeType === 'INTERNAL' ? 'Nội bộ' : 'Gmail'}
                           </span>
                         </div>
@@ -533,12 +1429,12 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                     return (
                       <React.Fragment key={item.id}>
                         {isNewCategory && (
-                          <tr className="bg-purple-50/40 border-y border-purple-100/80">
+                          <tr className="bg-blue-50/40 border-y border-blue-100/80">
                             <td
                               colSpan={matrixRolesToRender.length + 1}
-                              className="py-2 px-4 text-xs font-black text-purple-900 uppercase tracking-wider flex items-center gap-2"
+                              className="py-2 px-4 text-xs font-semibold text-blue-900 flex items-center gap-2"
                             >
-                              <Layers className="w-3.5 h-3.5 text-purple-600" />
+                              <Layers className="w-3.5 h-3.5 text-blue-600" />
                               <span>{item.categoryTitle}</span>
                             </td>
                           </tr>
@@ -547,14 +1443,14 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                           {/* Feature Column */}
                           <td className="py-3 px-4 align-top">
                             <div className="space-y-1">
-                              <span className="font-bold text-slate-900 block leading-snug">
+                              <span className="font-semibold text-slate-900 block leading-snug">
                                 {item.featureName}
                               </span>
-                              <span className="text-3xs text-slate-500 block leading-relaxed">
+                              <span className="text-2xs text-slate-500 block leading-relaxed">
                                 {item.description}
                               </span>
                               {item.securityNote && (
-                                <div className="inline-flex items-center gap-1 text-3xs text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200/80">
+                                <div className="inline-flex items-center gap-1 text-2xs text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200/80">
                                   <AlertCircle className="w-3 h-3 text-amber-600 shrink-0" />
                                   <span>{item.securityNote}</span>
                                 </div>
@@ -597,11 +1493,11 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
               <div className="flex items-center gap-1.5">
                 <ShieldCheck className="w-4 h-4 text-emerald-600" />
                 <span>
-                  Ma trận đang kiểm soát <strong>{matrixItems.length} quyền hạn</strong> trên <strong>7 vai trò</strong>. Bấm vào ô bất kỳ để đổi cấp độ quyền.
+                  Ma trận đang kiểm soát <strong>{matrixItems.length} quyền hạn</strong> trên <strong>9 vai trò</strong> (bao gồm Trưởng phòng Growth & Trưởng phòng Media).
                 </span>
               </div>
               <span className="text-slate-400">
-                Chính sách áp dụng theo thời gian thực (Zero-restart security)
+                Chính sách áp dụng theo thời gian thực
               </span>
             </div>
           </div>
@@ -612,11 +1508,11 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
               <div className="bg-white rounded-2xl max-w-md w-full p-5 shadow-2xl border border-slate-200 space-y-4">
                 <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                   <div className="flex items-center gap-2">
-                    <KeyRound className="w-5 h-5 text-purple-600" />
+                    <KeyRound className="w-5 h-5 text-blue-600" />
                     <div>
-                      <h3 className="font-bold text-sm text-slate-900">Thiết Lập Cấp Độ Quyền</h3>
+                      <h3 className="font-semibold text-sm text-slate-900">Thiết Lập Cấp Độ Quyền</h3>
                       <span className="text-2xs text-slate-500">
-                        Vai trò: <strong className="text-purple-700">{selectedCell.role}</strong>
+                        Vai trò: <strong className="text-blue-700">{selectedCell.role}</strong>
                       </span>
                     </div>
                   </div>
@@ -628,13 +1524,13 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                   </button>
                 </div>
 
-                <div className="p-3 bg-purple-50/50 rounded-xl border border-purple-100 text-xs text-purple-900">
+                <div className="p-3 bg-blue-50/50 rounded-xl border border-blue-100 text-xs text-blue-900">
                   <span className="font-semibold block mb-0.5">Tính năng:</span>
                   <span>{matrixItems.find(i => i.id === selectedCell.itemId)?.featureName}</span>
                 </div>
 
                 <div className="space-y-2">
-                  <span className="text-2xs font-bold text-slate-700 uppercase tracking-wider block">
+                  <span className="text-2xs font-semibold text-slate-700 block">
                     Chọn cấp độ phân quyền mới:
                   </span>
                   {(['ALL', 'SCOPED', 'VIEW', 'APPROVE', 'DENIED'] as PermissionAccessLevel[]).map(lvl => {
@@ -648,15 +1544,15 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                         onClick={() => handleUpdatePermission(selectedCell.itemId, selectedCell.role, lvl)}
                         className={`w-full p-3 rounded-xl border text-left flex items-start justify-between gap-3 transition ${
                           isSelected
-                            ? `${cfg.bg} ${cfg.border} ring-2 ring-purple-500/20 shadow-xs`
+                            ? `${cfg.bg} ${cfg.border} ring-2 ring-blue-500/20 shadow-xs`
                             : 'bg-white border-slate-200 hover:bg-slate-50'
                         }`}
                       >
                         <div className="space-y-0.5">
                           <span className={`text-xs block ${cfg.text}`}>{cfg.label}</span>
-                          <span className="text-3xs text-slate-500 block">{cfg.description}</span>
+                          <span className="text-2xs text-slate-500 block">{cfg.description}</span>
                         </div>
-                        {isSelected && <CheckCircle2 className="w-4 h-4 text-purple-600 shrink-0 mt-0.5" />}
+                        {isSelected && <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />}
                       </button>
                     );
                   })}
@@ -678,7 +1574,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
       )}
 
       {/* ========================================================================= */}
-      {/* SUB-TAB 2: NHÂN SỰ NỘI BỘ (LARK SSO RBAC)                                */}
+      {/* SUB-TAB 2: NHÂN SỰ NỘI BỘ (LARK SSO RBAC) */}
       {/* ========================================================================= */}
       {activeMainTab === 'internal' && (
         <div className="space-y-4 animate-in fade-in duration-200">
@@ -692,22 +1588,26 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                   placeholder="Tìm nhân sự, email, nhãn phụ trách..."
                   value={searchStaff}
                   onChange={(e) => setSearchStaff(e.target.value)}
-                  className="w-full pl-9 pr-3 text-xs h-9 rounded-lg border border-slate-200 focus:outline-none focus:border-purple-500 bg-slate-50/50"
+                  className="w-full pl-9 pr-3 text-xs h-9 rounded-lg border border-slate-200 focus:outline-none focus:border-blue-500 bg-slate-50/50"
                 />
               </div>
 
               <select
                 value={staffRoleFilter}
                 onChange={(e) => setStaffRoleFilter(e.target.value)}
-                className="text-xs h-9 px-3 rounded-lg border border-slate-200 bg-white font-medium focus:outline-none focus:border-purple-500"
+                className="text-xs h-9 px-3 rounded-lg border border-slate-200 bg-white font-medium focus:outline-none focus:border-blue-500"
               >
                 <option value="ALL">Tất cả vai trò nội bộ</option>
-                <option value="ADMIN">Ban Giám Đốc (ADMIN)</option>
-                <option value="MANAGER">Trưởng Phòng (MANAGER)</option>
-                <option value="LEADER">Trưởng Nhóm (LEADER)</option>
-                <option value="MEMBER">Chuyên Viên (MEMBER)</option>
+                <option value="ADMIN">Quản Trị Hệ Thống (ADMIN)</option>
+                <option value="MANAGER">Trưởng Phòng Marketing B2C (MANAGER)</option>
+                <option value="GROWTH_MANAGER">Trưởng Phòng Growth (GROWTH_MANAGER)</option>
+                <option value="MEDIA_MANAGER">Trưởng Phòng Media (MEDIA_MANAGER)</option>
+                <option value="LEADER">Trưởng Nhóm Booking (LEADER)</option>
+                <option value="BOOKING_MEMBER">Chuyên Viên Booking B2C</option>
+                <option value="GROWTH_MEMBER">Chuyên Viên Growth</option>
+                <option value="MEDIA_MEMBER">Chuyên Viên Media & Ads</option>
+                <option value="CONTENT_MEMBER">Chuyên Viên Content</option>
                 <option value="BRAND_MEMBER">Brand PIC</option>
-                <option value="BOOKING_MEMBER">Booking Specialist</option>
               </select>
             </div>
 
@@ -721,7 +1621,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-600 text-2xs font-bold uppercase tracking-wider">
+                  <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-600 text-2xs font-semibold ">
                     <th className="py-3 px-4">Nhân Sự & Email Lark</th>
                     <th className="py-3 px-4">Vai Trò Hệ Thống</th>
                     <th className="py-3 px-4">Phòng Ban & Vị Trí</th>
@@ -736,12 +1636,12 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                       {/* Name & Avatar */}
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-xl bg-purple-100 border border-purple-200 text-purple-700 font-bold flex items-center justify-center text-xs shrink-0 shadow-2xs">
+                          <div className="w-9 h-9 rounded-xl bg-blue-100 border border-blue-200 text-blue-700 font-semibold flex items-center justify-center text-xs shrink-0 shadow-2xs">
                             {staff.avatar}
                           </div>
                           <div>
-                            <span className="font-bold text-slate-900 block leading-tight">{staff.name}</span>
-                            <span className="text-3xs text-slate-500 flex items-center gap-1 mt-0.5">
+                            <span className="font-semibold text-slate-900 block leading-tight">{staff.name}</span>
+                            <span className="text-2xs text-slate-500 flex items-center gap-1 mt-0.5">
                               <Mail className="w-3 h-3 text-slate-400" />
                               <span>{staff.email}</span>
                             </span>
@@ -751,47 +1651,49 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
 
                       {/* System Role */}
                       <td className="py-3 px-4">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-2xs font-bold border ${
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-2xs font-semibold border ${
                           staff.role === 'ADMIN' ? 'bg-red-50 text-red-700 border-red-200' :
-                          staff.role === 'MANAGER' ? 'bg-purple-50 text-purple-700 border-purple-200' :
+                          staff.role === 'MANAGER' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                          staff.role === 'GROWTH_MANAGER' ? 'bg-amber-50 text-amber-800 border-amber-300' :
+                          staff.role === 'MEDIA_MANAGER' ? 'bg-blue-50 text-blue-800 border-blue-300' :
                           staff.role === 'LEADER' ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                          'bg-cyan-50 text-cyan-700 border-cyan-200'
+                          'bg-emerald-50 text-emerald-700 border-emerald-200'
                         }`}>
-                          {staff.role}
+                          {ROLE_DISPLAY_NAME[staff.role] || staff.role}
                         </span>
-                        <span className="text-3xs text-slate-500 block mt-1">{staff.roleTitle}</span>
+                        <span className="text-2xs text-slate-500 block mt-1">{staff.roleTitle}</span>
                       </td>
 
                       {/* Department */}
                       <td className="py-3 px-4">
                         <span className="font-medium text-slate-700 block">{staff.department}</span>
-                        <span className="text-3xs text-slate-500">{staff.position}</span>
+                        <span className="text-2xs text-slate-500">{staff.position}</span>
                       </td>
 
                       {/* PIC Brands */}
                       <td className="py-3 px-4">
                         <div className="flex flex-wrap gap-1 max-w-xs">
                           {staff.picBrands.includes('ALL_BRANDS') ? (
-                            <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 text-3xs font-bold">
+                            <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 text-2xs font-semibold">
                               Tất cả nhãn hàng
                             </span>
                           ) : staff.picBrands.length > 0 ? (
                             staff.picBrands.map((b, i) => (
-                              <span key={i} className="px-2 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200 text-3xs font-medium">
+                              <span key={i} className="px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 text-2xs font-medium">
                                 {b}
                               </span>
                             ))
                           ) : (
-                            <span className="text-3xs text-slate-400 italic">Chưa gán nhãn</span>
+                            <span className="text-2xs text-slate-400 italic">Chưa gán nhãn</span>
                           )}
                         </div>
                       </td>
 
                       {/* Special Permissions Badges */}
                       <td className="py-3 px-4">
-                        <div className="flex flex-wrap gap-1 text-3xs">
+                        <div className="flex flex-wrap gap-1 text-2xs">
                           {staff.permissions.canApproveBudget && (
-                            <span className="px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200 font-semibold" title="Duyệt ngân sách">
+                            <span className="px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 font-semibold" title="Duyệt ngân sách">
                               Duyệt Ngân Sách
                             </span>
                           )}
@@ -819,10 +1721,10 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                           <button
                             type="button"
                             onClick={() => handleImpersonateInternal(staff)}
-                            className="px-2.5 py-1.5 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 text-2xs font-bold transition flex items-center gap-1 shadow-2xs"
+                            className="px-2.5 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-2xs font-semibold transition flex items-center gap-1 shadow-2xs"
                             title="Xem trước giao diện nhân sự này"
                           >
-                            <Eye className="w-3.5 h-3.5 text-purple-600" />
+                            <Eye className="w-3.5 h-3.5 text-blue-600" />
                             <span>Đóng vai</span>
                           </button>
                           <button
@@ -848,9 +1750,9 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
               <div className="bg-white rounded-2xl max-w-lg w-full p-5 shadow-2xl border border-slate-200 space-y-4">
                 <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                   <div className="flex items-center gap-2">
-                    <UserCheck className="w-5 h-5 text-purple-600" />
+                    <UserCheck className="w-5 h-5 text-blue-600" />
                     <div>
-                      <h3 className="font-bold text-sm text-slate-900">Phân Vai Trò & Phụ Trách Nhãn</h3>
+                      <h3 className="font-semibold text-sm text-slate-900">Phân Vai Trò & Phụ Trách Nhãn</h3>
                       <span className="text-2xs text-slate-500">{editingStaff.name} ({editingStaff.email})</span>
                     </div>
                   </div>
@@ -865,25 +1767,28 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                 <form onSubmit={handleSaveStaff} className="space-y-4 text-xs">
                   {/* Role select */}
                   <div className="space-y-1.5">
-                    <label className="font-bold text-slate-700">Vai trò hệ thống *</label>
+                    <label className="font-semibold text-slate-700">Vai trò hệ thống *</label>
                     <select
                       value={staffFormRole}
                       onChange={(e) => setStaffFormRole(e.target.value as UserRole)}
-                      className="w-full h-9 px-3 rounded-lg border border-slate-200 bg-white font-semibold focus:outline-none focus:border-purple-500"
+                      className="w-full h-9 px-3 rounded-lg border border-slate-200 bg-white font-semibold focus:outline-none focus:border-blue-500"
                     >
-                      <option value="ADMIN">Ban Giám Đốc (ADMIN) - Toàn quyền</option>
-                      <option value="MANAGER">Trưởng Phòng Vận Hành (MANAGER) - Duyệt Plan & Hạn mức</option>
-                      <option value="LEADER">Trưởng Nhóm / PIC Lead (LEADER) - Duyệt Deal & Kịch bản</option>
-                      <option value="MEMBER">Chuyên Viên Vận Hành (MEMBER) - Tác nghiệp trực tiếp</option>
-                      <option value="BRAND_MEMBER">Senior Brand PIC Lead</option>
-                      <option value="BOOKING_MEMBER">Chuyên Viên Booking KOC</option>
-                      <option value="CONTENT_MEMBER">Chuyên Viên Sáng Tạo Kịch Bản</option>
+                      <option value="ADMIN">Quản Trị Hệ Thống (ADMIN) - Toàn quyền</option>
+                      <option value="MANAGER">Trưởng Phòng Marketing B2C (MANAGER)</option>
+                      <option value="GROWTH_MANAGER">Trưởng Phòng Growth (GROWTH_MANAGER)</option>
+                      <option value="MEDIA_MANAGER">Trưởng Phòng Media (MEDIA_MANAGER)</option>
+                      <option value="LEADER">Trưởng Nhóm Booking B2C (LEADER)</option>
+                      <option value="BOOKING_MEMBER">Chuyên Viên Booking KOC (BOOKING_MEMBER)</option>
+                      <option value="GROWTH_MEMBER">Chuyên Viên Growth (GROWTH_MEMBER)</option>
+                      <option value="MEDIA_MEMBER">Chuyên Viên Media & Ads (MEDIA_MEMBER)</option>
+                      <option value="CONTENT_MEMBER">Chuyên Viên Sáng Tạo Kịch Bản (CONTENT_MEMBER)</option>
+                      <option value="BRAND_MEMBER">Chuyên Viên Brand PIC (BRAND_MEMBER)</option>
                     </select>
                   </div>
 
                   {/* Brand PIC assignment */}
                   <div className="space-y-1.5">
-                    <label className="font-bold text-slate-700">Nhãn hàng phụ trách (PIC Brands):</label>
+                    <label className="font-semibold text-slate-700">Nhãn hàng phụ trách (PIC Brands):</label>
                     <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-2 bg-slate-50 rounded-xl border border-slate-200">
                       {brands.map(b => {
                         const isChecked = staffFormPicBrands.includes(b.name);
@@ -891,7 +1796,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                           <label
                             key={b.id}
                             className={`px-2.5 py-1 rounded-lg border text-2xs font-medium cursor-pointer transition flex items-center gap-1.5 ${
-                              isChecked ? 'bg-purple-100 text-purple-900 border-purple-300 font-bold' : 'bg-white text-slate-600 border-slate-200'
+                              isChecked ? 'bg-blue-100 text-blue-900 border-blue-300 font-semibold' : 'bg-white text-slate-600 border-slate-200'
                             }`}
                           >
                             <input
@@ -904,7 +1809,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                                   setStaffFormPicBrands(prev => prev.filter(x => x !== b.name));
                                 }
                               }}
-                              className="rounded text-purple-600 focus:ring-0"
+                              className="rounded text-blue-600 focus:ring-0"
                             />
                             <span>{b.name}</span>
                           </label>
@@ -915,14 +1820,14 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
 
                   {/* Special Permission Checkboxes */}
                   <div className="space-y-1.5">
-                    <label className="font-bold text-slate-700">Quyền phê duyệt đặc thù:</label>
-                    <div className="grid grid-cols-2 gap-2 p-3 bg-purple-50/40 rounded-xl border border-purple-100">
+                    <label className="font-semibold text-slate-700">Quyền phê duyệt đặc thù:</label>
+                    <div className="grid grid-cols-2 gap-2 p-3 bg-blue-50/40 rounded-xl border border-blue-100">
                       <label className="flex items-center gap-2 cursor-pointer text-2xs font-medium text-slate-700">
                         <input
                           type="checkbox"
                           checked={staffFormPerms.canApproveBudget}
                           onChange={(e) => setStaffFormPerms(p => ({ ...p, canApproveBudget: e.target.checked }))}
-                          className="rounded text-purple-600"
+                          className="rounded text-blue-600"
                         />
                         <span>Duyệt Ngân Sách Tháng</span>
                       </label>
@@ -931,7 +1836,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                           type="checkbox"
                           checked={staffFormPerms.canApproveP3}
                           onChange={(e) => setStaffFormPerms(p => ({ ...p, canApproveP3: e.target.checked }))}
-                          className="rounded text-purple-600"
+                          className="rounded text-blue-600"
                         />
                         <span>Đánh giá & Duyệt P3</span>
                       </label>
@@ -940,7 +1845,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                           type="checkbox"
                           checked={staffFormPerms.canApprovePayment}
                           onChange={(e) => setStaffFormPerms(p => ({ ...p, canApprovePayment: e.target.checked }))}
-                          className="rounded text-purple-600"
+                          className="rounded text-blue-600"
                         />
                         <span>Duyệt Chi Thanh Toán</span>
                       </label>
@@ -949,7 +1854,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                           type="checkbox"
                           checked={staffFormPerms.canExportRawData}
                           onChange={(e) => setStaffFormPerms(p => ({ ...p, canExportRawData: e.target.checked }))}
-                          className="rounded text-purple-600"
+                          className="rounded text-blue-600"
                         />
                         <span>Xuất File Báo Cáo Excel</span>
                       </label>
@@ -966,7 +1871,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                     </button>
                     <button
                       type="submit"
-                      className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold transition shadow-md shadow-purple-600/30"
+                      className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold transition shadow-md shadow-blue-600/30"
                     >
                       Lưu Thay Đổi
                     </button>
@@ -979,7 +1884,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
       )}
 
       {/* ========================================================================= */}
-      {/* SUB-TAB 3: ĐỐI TÁC BÊN THỨ 3 (GMAIL SSO SETUP VIEW)                       */}
+      {/* SUB-TAB 3: ĐỐI TÁC BÊN THỨ 3 (GMAIL SSO SETUP VIEW) */}
       {/* ========================================================================= */}
       {activeMainTab === 'third-party' && (
         <div className="animate-in fade-in duration-200">
@@ -994,7 +1899,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
       )}
 
       {/* ========================================================================= */}
-      {/* SUB-TAB 4: KIỂM TOÁN & NHẬT KÝ PHIÊN (AUDIT LOGS)                        */}
+      {/* SUB-TAB 4: KIỂM TOÁN & NHẬT KÝ PHIÊN (AUDIT LOGS) */}
       {/* ========================================================================= */}
       {activeMainTab === 'audit' && (
         <div className="space-y-4 animate-in fade-in duration-200">
@@ -1008,17 +1913,21 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                   placeholder="Tìm theo người thực hiện, đối tượng, IP..."
                   value={searchAudit}
                   onChange={(e) => setSearchAudit(e.target.value)}
-                  className="w-full pl-9 pr-3 text-xs h-9 rounded-lg border border-slate-200 focus:outline-none focus:border-purple-500 bg-slate-50/50"
+                  className="w-full pl-9 pr-3 text-xs h-9 rounded-lg border border-slate-200 focus:outline-none focus:border-blue-500 bg-slate-50/50"
                 />
               </div>
 
               <select
                 value={auditFilterType}
                 onChange={(e) => setAuditFilterType(e.target.value)}
-                className="text-xs h-9 px-3 rounded-lg border border-slate-200 bg-white font-medium focus:outline-none focus:border-purple-500"
+                className="text-xs h-9 px-3 rounded-lg border border-slate-200 bg-white font-medium focus:outline-none focus:border-blue-500"
               >
                 <option value="ALL">Tất cả hành động bảo mật</option>
                 <option value="LOGIN">Đăng nhập hệ thống (LOGIN)</option>
+                <option value="LOGIN_BLOCKED">Chặn đăng nhập sai phòng ban (LOGIN_BLOCKED)</option>
+                <option value="ACCESS_GRANT">Cấp quyền đăng nhập (ACCESS_GRANT)</option>
+                <option value="ACCESS_REVOKE">Thu hồi quyền đăng nhập (ACCESS_REVOKE)</option>
+                <option value="DEPT_RULE_UPDATE">Cập nhật rule phòng ban (DEPT_RULE_UPDATE)</option>
                 <option value="IMPERSONATE">Xem thử giao diện (IMPERSONATE)</option>
                 <option value="ROLE_CHANGE">Cập nhật phân vai (ROLE_CHANGE)</option>
                 <option value="PERMISSION_TOGGLE">Đổi cấp độ quyền (PERMISSION_TOGGLE)</option>
@@ -1037,7 +1946,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-600 text-2xs font-bold uppercase tracking-wider">
+                  <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-600 text-2xs font-semibold ">
                     <th className="py-3 px-4 w-[170px]">Thời Gian</th>
                     <th className="py-3 px-4 w-[200px]">Người Thực Hiện (Actor)</th>
                     <th className="py-3 px-4 w-[160px]">Loại Hành Động</th>
@@ -1053,15 +1962,15 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                         {log.timestamp}
                       </td>
                       <td className="py-3 px-4">
-                        <span className="font-bold text-slate-900 block leading-tight">{log.actorName}</span>
-                        <span className="text-3xs text-purple-700 font-semibold">{log.actorRole}</span>
+                        <span className="font-semibold text-slate-900 block leading-tight">{log.actorName}</span>
+                        <span className="text-2xs text-blue-700 font-semibold">{log.actorRole}</span>
                       </td>
                       <td className="py-3 px-4">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-3xs font-bold border ${
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-2xs font-semibold border ${
+                          log.actionType === 'LOGIN_BLOCKED' || log.actionType === 'ACCESS_REVOKE' ? 'bg-red-50 text-red-700 border-red-200' :
+                          log.actionType === 'ACCESS_GRANT' || log.actionType === 'INVITE_PARTNER' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' :
                           log.actionType === 'IMPERSONATE' ? 'bg-amber-50 text-amber-800 border-amber-200' :
-                          log.actionType === 'LOGIN' ? 'bg-blue-50 text-blue-800 border-blue-200' :
-                          log.actionType === 'INVITE_PARTNER' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' :
-                          'bg-purple-50 text-purple-800 border-purple-200'
+                          'bg-blue-50 text-blue-800 border-blue-200'
                         }`}>
                           {log.actionType}
                         </span>
@@ -1072,7 +1981,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                       <td className="py-3 px-4 text-slate-600 text-2xs leading-relaxed">
                         {log.description}
                       </td>
-                      <td className="py-3 px-4 text-3xs text-slate-400 font-mono">
+                      <td className="py-3 px-4 text-2xs text-slate-400 font-mono">
                         <div>{log.ipAddress}</div>
                         <div className="text-slate-500 truncate max-w-[140px]">{log.deviceInfo}</div>
                       </td>

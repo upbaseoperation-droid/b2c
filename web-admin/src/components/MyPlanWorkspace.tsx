@@ -1,28 +1,16 @@
 'use client';
 
 import React, { useState } from 'react';
-import { formatVndShort } from '../lib/format';
-import { Button, EmptyState, ConfirmDialog } from './ui';
+import { formatVnd, formatVndShort } from '../lib/format';
+import { Button, EmptyState, ConfirmDialog, Modal, Status } from './ui';
 import { 
   Target, 
   DollarSign, 
   Video, 
-  Calendar, 
   Plus, 
   Send, 
-  CheckCircle2, 
-  AlertCircle, 
-  Sparkles, 
-  Layers, 
-  ExternalLink,
-  Edit3,
   Trash2,
-  Zap,
-  Info,
-  UserCheck,
-  Award,
-  Clock,
-  ArrowRight
+  Zap
 } from 'lucide-react';
 import { 
   StaffDetailedPlanItem, 
@@ -30,8 +18,7 @@ import {
   KocItem, 
   KocTier, 
   SalaryGrade,
-  TepKenh,
-  StaffPlanStatus
+  TepKenh
 } from '../lib/types';
 import { INITIAL_CONTENT_ANGLES } from '../lib/contentAngleData';
 import { INITIAL_PUSH_PRODUCTS } from '../lib/mockData';
@@ -42,7 +29,7 @@ interface MyPlanWorkspaceProps {
   planItems: StaffDetailedPlanItem[];
   kocs: KocItem[];
   onAddPlanItem: (newItem: Omit<StaffDetailedPlanItem, 'id' | 'updatedAt'>) => void;
-  onUpdatePlanItem: (item: StaffDetailedPlanItem) => void;
+  onUpdatePlanItem?: (item: StaffDetailedPlanItem) => void;
   onDeletePlanItem: (itemId: string) => void;
   onSubmitPlanToLead: (staffName: string) => void;
   onConvertItemToDeal: (item: StaffDetailedPlanItem) => void;
@@ -54,7 +41,6 @@ export const MyPlanWorkspace: React.FC<MyPlanWorkspaceProps> = ({
   planItems,
   kocs,
   onAddPlanItem,
-  onUpdatePlanItem,
   onDeletePlanItem,
   onSubmitPlanToLead,
   onConvertItemToDeal
@@ -171,19 +157,18 @@ export const MyPlanWorkspace: React.FC<MyPlanWorkspaceProps> = ({
       {/* ========================================================================= */}
       {/* 1. MASTER ALLOCATION BRIEF FROM MANAGER                                    */}
       {/* ========================================================================= */}
-      <div className="card-enterprise p-5 bg-white border border-slate-200 shadow-xs">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-200">
+      <div className="card-enterprise p-5 bg-surface border border-line shadow-xs">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-line">
           <div>
             <div className="flex items-center gap-2.5 flex-wrap">
-              <h2 className="text-base font-semibold text-slate-900 tracking-tight">
+              <h2 className="text-base font-semibold text-ink tracking-tight">
                 Kế hoạch tháng của {currentStaffName}
               </h2>
-              <span className="text-2xs px-2 py-0.5 rounded font-mono font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+              <span className="text-2xs px-2 py-0.5 rounded font-mono font-semibold bg-accent-soft text-accent">
                 {allocation?.month || '2026/09'}
               </span>
-              
             </div>
-            <p className="text-xs text-slate-500 mt-1">
+            <p className="text-xs text-ink-3 mt-1">
               Chia hạn mức trưởng phòng giao thành các slot KOC theo tuần, rồi gửi duyệt để mở khóa hợp đồng.
             </p>
           </div>
@@ -197,79 +182,79 @@ export const MyPlanWorkspace: React.FC<MyPlanWorkspaceProps> = ({
         {/* 4 Metric Columns */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
           {/* Col 1 */}
-          <div className="p-3.5 rounded-md bg-slate-50 border border-slate-200 shadow-2xs">
-            <div className="flex justify-between items-center text-xs text-slate-500 mb-1">
+          <div className="p-3.5 rounded-md bg-sunken border border-line shadow-2xs">
+            <div className="flex justify-between items-center text-xs text-ink-3 mb-1">
               <span className="flex items-center gap-1.5">
-                <Video className="w-3.5 h-3.5 text-blue-500" />
+                <Video className="w-3.5 h-3.5 text-accent" />
                 Số Video Giao
               </span>
-              <span className={`font-mono font-semibold ${fillRateVideos >= 90 ? 'text-emerald-600' : 'text-amber-600'}`}>
+              <span className={`font-mono font-semibold ${fillRateVideos >= 90 ? 'text-positive' : 'text-warning'}`}>
                 {fillRateVideos}% lấp đầy
               </span>
             </div>
-            <div className="text-xl font-semibold font-mono text-slate-900">
-              {plannedVideos} <span className="text-xs text-slate-500 font-normal">/ {targetVideos} video</span>
+            <div className="text-xl font-semibold font-mono text-ink">
+              {plannedVideos} <span className="text-xs text-ink-3 font-normal">/ {targetVideos} video</span>
             </div>
-            <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden mt-2">
+            <div className="w-full bg-line h-1.5 rounded-full overflow-hidden mt-2">
               <div 
-                className={`h-full ${fillRateVideos >= 90 ? 'bg-emerald-500' : 'bg-amber-500'}`}
+                className={`h-full ${fillRateVideos >= 90 ? 'bg-positive' : 'bg-warning'}`}
                 style={{ width: `${Math.min(100, fillRateVideos)}%` }}
               />
             </div>
           </div>
 
           {/* Col 2 */}
-          <div className="p-3.5 rounded-md bg-slate-50 border border-slate-200 shadow-2xs">
-            <div className="flex justify-between items-center text-xs text-slate-500 mb-1">
+          <div className="p-3.5 rounded-md bg-sunken border border-line shadow-2xs">
+            <div className="flex justify-between items-center text-xs text-ink-3 mb-1">
               <span className="flex items-center gap-1.5">
-                <DollarSign className="w-3.5 h-3.5 text-blue-600" />
+                <DollarSign className="w-3.5 h-3.5 text-accent" />
                 Ngân sách được giao
               </span>
-              <span className="font-mono font-semibold text-blue-600">
+              <span className="font-mono font-semibold text-accent">
                 {fillRateBudget}%
               </span>
             </div>
-            <div className="text-xl font-semibold font-mono text-blue-600">
-              {formatVndShort(plannedBudget)} <span className="text-xs text-slate-500 font-normal">/ {formatVndShort(targetBudget)}</span>
+            <div className="text-xl font-semibold font-mono text-accent">
+              {formatVndShort(plannedBudget)} <span className="text-xs text-ink-3 font-normal">/ {formatVndShort(targetBudget)}</span>
             </div>
-            <div className="text-2xs text-slate-500 mt-2">
-              Khoảng trống còn lại: <strong className="text-slate-900">{Math.max(0, targetBudget - plannedBudget).toLocaleString('vi-VN')} đ</strong>
+            <div className="text-2xs text-ink-3 mt-2">
+              Khoảng trống còn lại: <strong className="text-ink">{formatVnd(Math.max(0, targetBudget - plannedBudget))}</strong>
             </div>
           </div>
 
           {/* Col 3 */}
-          <div className="p-3.5 rounded-md bg-slate-50 border border-slate-200 shadow-2xs">
-            <div className="flex justify-between items-center text-xs text-slate-500 mb-1">
+          <div className="p-3.5 rounded-md bg-sunken border border-line shadow-2xs">
+            <div className="flex justify-between items-center text-xs text-ink-3 mb-1">
               <span className="flex items-center gap-1.5">
-                <Target className="w-3.5 h-3.5 text-emerald-600" />
+                <Target className="w-3.5 h-3.5 text-positive" />
                 Target GMV Tháng
               </span>
-              <span className="font-mono font-semibold text-emerald-600">
+              <span className="font-mono font-semibold text-positive">
                 {formatVndShort(plannedGmv)}
               </span>
             </div>
-            <div className="text-xl font-semibold font-mono text-emerald-600">
+            <div className="text-xl font-semibold font-mono text-positive">
               {formatVndShort(targetGmv)}
             </div>
-            <div className="text-2xs text-slate-500 mt-2">
+            <div className="text-2xs text-ink-3 mt-2">
               Cam kết GMV đóng góp cho phòng Marketing B2C
             </div>
           </div>
 
           {/* Col 4 */}
-          <div className="p-3.5 rounded-md bg-slate-50 border border-slate-200 shadow-2xs">
-            <span className="text-xs text-slate-500 block font-medium mb-1">
+          <div className="p-3.5 rounded-md bg-sunken border border-line shadow-2xs">
+            <span className="text-xs text-ink-3 block font-medium mb-1">
               Brand & chỉ đạo của trưởng phòng:
             </span>
             <div className="flex flex-wrap gap-1 mb-1.5">
               {(allocation?.assignedBrands || ['Senka', 'Cure']).map(b => (
-                <span key={b} className="px-1.5 py-0.2 rounded bg-slate-100 text-slate-700 text-2xs font-semibold border border-slate-200">
+                <span key={b} className="px-1.5 py-0.2 rounded bg-surface text-ink-2 text-2xs font-semibold border border-line">
                   {b}
                 </span>
               ))}
             </div>
-            <p className="text-2xs text-slate-600 italic line-clamp-2">
-              "{allocation?.managerNote || 'Tập trung đẩy mạnh KOC Macro cho đợt Mega Day tuần 3.'}"
+            <p className="text-2xs text-ink-2 italic line-clamp-2">
+              &ldquo;{allocation?.managerNote || 'Tập trung đẩy mạnh KOC Macro cho đợt Mega Day tuần 3.'}&rdquo;
             </p>
           </div>
         </div>
@@ -278,30 +263,26 @@ export const MyPlanWorkspace: React.FC<MyPlanWorkspaceProps> = ({
       {/* ========================================================================= */}
       {/* 2. DETAILED PLAN SLOTS TABLE                                              */}
       {/* ========================================================================= */}
-      <div className="card-enterprise overflow-hidden">
-        <div className="px-5 py-3 border-b border-slate-200 bg-slate-50 flex flex-col md:flex-row md:items-center justify-between gap-3">
+      <div className="card-enterprise overflow-hidden bg-surface border border-line">
+        <div className="px-5 py-3 border-b border-line bg-sunken flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <h3 className="text-xs font-semibold text-slate-900">
+            <h3 className="text-xs font-semibold text-ink">
               Slot KOC · {staffItems.length}
             </h3>
-            <span className="text-2xs px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 font-medium">
-              {approvedCount} đã duyệt
-            </span>
+            <Status tone="positive">{approvedCount} đã duyệt</Status>
             {pendingCount > 0 && (
-              <span className="text-2xs px-2 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200 font-medium">
-                {pendingCount} chờ duyệt
-              </span>
+              <Status tone="warning">{pendingCount} chờ duyệt</Status>
             )}
           </div>
 
           {/* Week Filter */}
-          <div className="flex items-center gap-1 bg-slate-100 border border-slate-200 rounded-md p-1 text-xs">
+          <div className="flex items-center gap-1 bg-surface border border-line rounded-md p-1 text-xs">
             {(['ALL', 'W1', 'W2', 'W3', 'W4'] as const).map(w => (
               <button
                 key={w}
                 onClick={() => setSelectedWeekFilter(w)}
                 className={`px-2.5 py-0.5 rounded text-2xs font-semibold transition ${
-                  selectedWeekFilter === w ? 'bg-blue-600 text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+                  selectedWeekFilter === w ? 'bg-primary text-white shadow-2xs' : 'text-ink-2 hover:text-ink'
                 }`}
               >
                 {w === 'ALL' ? 'Cả tháng' : w}
@@ -313,7 +294,7 @@ export const MyPlanWorkspace: React.FC<MyPlanWorkspaceProps> = ({
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
-              <tr className="bg-slate-50 text-slate-700 border-b border-slate-200 font-semibold">
+              <tr className="bg-sunken text-ink-2 border-b border-line font-semibold">
                 <th className="p-3 pl-4">Tuần</th>
                 <th className="p-3">Nhãn hàng</th>
                 <th className="p-3">KOC / Creator</th>
@@ -326,7 +307,7 @@ export const MyPlanWorkspace: React.FC<MyPlanWorkspaceProps> = ({
                 <th className="p-3 pr-4 text-right">Thao Tác</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200">
+            <tbody className="divide-y divide-line">
               {filteredItems.length === 0 ? (
                 <tr>
                   <td colSpan={10} className="px-4">
@@ -339,85 +320,78 @@ export const MyPlanWorkspace: React.FC<MyPlanWorkspaceProps> = ({
                 </tr>
               ) : (
                 filteredItems.map(item => (
-                  <tr key={item.id} className="hover:bg-slate-50 transition-colors">
+                  <tr key={item.id} className="hover:bg-sunken/50 transition-colors">
                     {/* Week */}
                     <td className="p-3 pl-4">
-                      <span className="font-semibold font-mono px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 text-2xs">
+                      <span className="font-semibold font-mono px-2 py-0.5 rounded bg-sunken text-ink-2 border border-line text-2xs">
                         {item.targetWeek}
                       </span>
                     </td>
 
                     {/* Brand */}
-                    <td className="p-3 font-semibold text-slate-900">
+                    <td className="p-3 font-semibold text-ink">
                       {item.brandName}
                     </td>
 
                     {/* KOC Info */}
                     <td className="p-3">
-                      <div className="font-semibold text-slate-900 text-xs">{item.kocStageName}</div>
+                      <div className="font-semibold text-ink text-xs">{item.kocStageName}</div>
                       {item.channelId && (
-                        <div className="text-2xs text-slate-500 font-mono">{item.channelId}</div>
+                        <div className="text-2xs text-ink-3 font-mono">{item.channelId}</div>
                       )}
                     </td>
 
                     {/* Tier */}
                     <td className="p-3">
-                      <span className={`text-2xs font-semibold px-1.5 py-0.5 rounded border inline-block ${
-                        item.tier === 'TIER_1_CELEB' ? 'bg-rose-50 text-rose-700 border-rose-200' :
-                        item.tier === 'TIER_2_MACRO' ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                        item.tier === 'TIER_3_MICRO' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-                        'bg-purple-50 text-purple-700 border-purple-200'
-                      }`}>
+                      <span className="text-2xs font-semibold px-1.5 py-0.5 rounded border border-line bg-sunken text-ink-2 inline-block">
                         {item.salaryGrade} ({item.tier.replace('TIER_', '')})
                       </span>
                       {item.tepKenh && (
-                        <div className="text-2xs text-slate-500 mt-0.5">{item.tepKenh}</div>
+                        <div className="text-2xs text-ink-3 mt-0.5">{item.tepKenh}</div>
                       )}
                     </td>
 
                     {/* Pillar & Angle */}
-                    <td className="p-3 text-slate-700 text-2xs">
-                      <div className="font-medium text-slate-800">{item.contentPillar}</div>
+                    <td className="p-3 text-ink-2 text-2xs">
+                      <div className="font-medium text-ink">{item.contentPillar}</div>
                       {item.contentAngleName && (
-                        <div className="text-purple-700 font-semibold text-3xs mt-0.5 flex items-center gap-1" title={item.contentHook}>
-                          <Sparkles className="w-3 h-3 text-purple-600 shrink-0" />
+                        <div className="text-accent font-medium text-2xs mt-0.5 flex items-center gap-1" title={item.contentHook}>
                           <span className="truncate max-w-[130px]">{item.contentAngleName}</span>
                         </div>
                       )}
                       {item.productName && (
-                        <div className="text-slate-400 text-3xs truncate max-w-[130px]">{item.productName}</div>
+                        <div className="text-ink-3 text-2xs truncate max-w-[130px]">{item.productName}</div>
                       )}
                     </td>
 
                     {/* Cost */}
-                    <td className="p-3 text-right font-mono font-semibold text-cyan-400">
-                      {item.budgetEstimated === 0 ? 'FOC (0đ)' : `${item.budgetEstimated.toLocaleString('vi-VN')} đ`}
+                    <td className="p-3 text-right font-mono font-semibold text-ink">
+                      {item.budgetEstimated === 0 ? 'FOC (0đ)' : formatVnd(item.budgetEstimated)}
                     </td>
 
                     {/* GMV */}
-                    <td className="p-3 text-right font-mono font-semibold text-emerald-400">
-                      {item.targetGmv.toLocaleString('vi-VN')} đ
+                    <td className="p-3 text-right font-mono font-semibold text-positive">
+                      {formatVnd(item.targetGmv)}
                     </td>
 
                     {/* Status */}
                     <td className="p-3 text-center">
-                      <span className={`text-2xs font-semibold px-2 py-0.5 rounded border inline-block ${
-                        item.status === 'APPROVED' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' :
-                        item.status === 'CONVERTED' ? 'bg-purple-500/20 text-purple-300 border-purple-500/30' :
-                        item.status === 'SUBMITTED' ? 'bg-blue-500/20 text-blue-300 border-blue-500/30' :
-                        item.status === 'REVISION_REQUESTED' ? 'bg-rose-500/20 text-rose-300 border-rose-500/30' :
-                        'bg-slate-700 text-slate-300 border-slate-600'
-                      }`}>
-                        {item.status === 'APPROVED' ? '✓ Đã Duyệt' :
-                         item.status === 'CONVERTED' ? '✓ Đã Lên Deal' :
-                         item.status === 'SUBMITTED' ? 'Chờ Duyệt' :
-                         item.status === 'REVISION_REQUESTED' ? 'Cần Sửa' : 'Bản Nháp'}
-                      </span>
+                      {item.status === 'APPROVED' ? (
+                        <Status tone="positive">Đã duyệt</Status>
+                      ) : item.status === 'CONVERTED' ? (
+                        <Status tone="info">Đã lên deal</Status>
+                      ) : item.status === 'SUBMITTED' ? (
+                        <Status tone="warning">Chờ duyệt</Status>
+                      ) : item.status === 'REVISION_REQUESTED' ? (
+                        <Status tone="critical">Cần sửa</Status>
+                      ) : (
+                        <Status tone="neutral">Bản nháp</Status>
+                      )}
                     </td>
 
                     {/* Lead Notes */}
                     <td className="p-3 max-w-[180px]">
-                      <p className="text-2xs text-slate-400 truncate hover:text-clip" title={item.leadNotes}>
+                      <p className="text-2xs text-ink-3 truncate hover:text-clip" title={item.leadNotes}>
                         {item.leadNotes || '—'}
                       </p>
                     </td>
@@ -426,20 +400,21 @@ export const MyPlanWorkspace: React.FC<MyPlanWorkspaceProps> = ({
                     <td className="p-3 pr-4 text-right">
                       <div className="flex items-center justify-end gap-1.5">
                         {item.status === 'APPROVED' && (
-                          <button
+                          <Button
+                            size="sm"
+                            variant="primary"
+                            icon={Zap}
                             onClick={() => onConvertItemToDeal(item)}
-                            title="1-Click chuyển slot này sang Booking Deal thực tế để ký HĐ và cọc"
-                            className="btn-sm bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-xs transition"
+                            title="Chuyển slot này sang booking thực tế để ký hợp đồng và tạm ứng"
                           >
-                            <Zap className="w-3 h-3 text-amber-300" />
-                            <span>Lên Deal</span>
-                          </button>
+                            Lên deal
+                          </Button>
                         )}
                         <button
                           onClick={() => setDeletingSlotItem(item)}
                           title="Xóa slot khỏi plan"
                           aria-label={`Xóa slot KOC ${item.kocStageName}`}
-                          className="h-7 w-7 rounded-md text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition flex items-center justify-center"
+                          className="h-7 w-7 rounded-md text-ink-3 hover:text-critical hover:bg-critical-soft transition flex items-center justify-center"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -456,244 +431,215 @@ export const MyPlanWorkspace: React.FC<MyPlanWorkspaceProps> = ({
       {/* ========================================================================= */}
       {/* 3. MODAL: ADD KOC SLOT TO PLAN                                            */}
       {/* ========================================================================= */}
-      {isAddModalOpen && (
-        <div 
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setIsAddModalOpen(false);
-          }}
-          role="dialog"
-          aria-modal="true"
-        >
-          <div className="bg-white border border-slate-200 rounded-xl shadow-2xl w-full max-w-xl p-6 text-slate-900 animate-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-200 mb-4">
-              <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-                <Plus className="w-4 h-4 text-blue-600" />
-                <span>Thêm slot KOC vào kế hoạch tháng</span>
-              </h3>
-              <button 
-                onClick={() => setIsAddModalOpen(false)} 
-                className="p-1 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition"
-                aria-label="Đóng"
-              >
-                ✕
-              </button>
-            </div>
-
-            <form onSubmit={handleCreateSlot} className="space-y-4 text-xs">
-              
-              {/* Quick Pick from Master KOC Directory */}
-              <div>
-                <label className="text-slate-700 font-semibold block mb-1">
-                  Gợi ý chọn nhanh từ danh bạ KOC:
-                </label>
-                <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto p-2 bg-slate-50 rounded-lg border border-slate-200">
-                  {kocs.slice(0, 8).map(koc => (
-                    <button
-                      type="button"
-                      key={koc.id}
-                      onClick={() => handleSelectExistingKoc(koc)}
-                      className="px-2 py-0.5 rounded bg-white hover:bg-blue-50 text-slate-700 hover:text-blue-700 text-xs font-medium border border-slate-300 shadow-2xs transition"
-                    >
-                      {koc.stageName} ({koc.salaryGrade})
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-slate-700 font-semibold block mb-1">Tên KOC / Stage Name:</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="VD: Chloe nguyễn, bác sĩ hằng..."
-                    value={formKocName}
-                    onChange={(e) => setFormKocName(e.target.value)}
-                    className="w-full bg-white border border-slate-300 rounded-lg p-2 text-slate-900 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="text-slate-700 font-semibold block mb-1">Kênh TikTok:</label>
-                  <input
-                    type="text"
-                    placeholder="VD: @chloenguyen.official"
-                    value={formChannelId}
-                    onChange={(e) => setFormChannelId(e.target.value)}
-                    className="w-full bg-white border border-slate-300 rounded-lg p-2 text-slate-900 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <label className="text-slate-700 font-semibold block mb-1">Nhãn hàng:</label>
-                  <select
-                    value={formBrand}
-                    onChange={(e) => setFormBrand(e.target.value)}
-                    className="w-full bg-white border border-slate-300 rounded-lg p-2 text-slate-900 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
-                  >
-                    {(allocation?.assignedBrands || ['Senka', 'Cure Natural Aqua Gel']).map(b => (
-                      <option key={b} value={b}>{b}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-slate-700 font-semibold block mb-1">Tuần lên sóng:</label>
-                  <select
-                    value={formWeek}
-                    onChange={(e) => setFormWeek(e.target.value as any)}
-                    className="w-full bg-white border border-slate-300 rounded-lg p-2 text-slate-900 font-semibold focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
-                  >
-                    <option value="W1">Tuần 1 (W1: Mở màn)</option>
-                    <option value="W2">Tuần 2 (W2: Tăng tốc)</option>
-                    <option value="W3">Tuần 3 (W3: Mega D-Day)</option>
-                    <option value="W4">Tuần 4 (W4: Về đích)</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-slate-700 font-semibold block mb-1">Tier KOC:</label>
-                  <select
-                    value={formTier}
-                    onChange={(e) => {
-                      const t = e.target.value as KocTier;
-                      setFormTier(t);
-                      if (t === 'TIER_1_CELEB') setFormSalaryGrade('KL7');
-                      else if (t === 'TIER_2_MACRO') setFormSalaryGrade('KL6');
-                      else if (t === 'TIER_3_MICRO') setFormSalaryGrade('KL4');
-                      else setFormSalaryGrade('KL2');
-                    }}
-                    className="w-full bg-white border border-slate-300 rounded-lg p-2 text-slate-900 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
-                  >
-                    <option value="TIER_1_CELEB">Tier 1: Celeb / Mega</option>
-                    <option value="TIER_2_MACRO">Tier 2: Macro KOL</option>
-                    <option value="TIER_3_MICRO">Tier 3: Micro KOC</option>
-                    <option value="TIER_4_AFFILIATE">Tier 4: Nano &amp; Affiliate</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-slate-700 font-semibold block mb-1">Góc Quay / Content Pillar:</label>
-                  <select
-                    value={formPillar}
-                    onChange={(e) => setFormPillar(e.target.value)}
-                    className="w-full bg-white border border-slate-300 rounded-lg p-2 text-slate-900 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
-                  >
-                    <option value="Review trực tiếp">Review trực tiếp</option>
-                    <option value="Nỗi đau - Giải pháp">Nỗi đau - Giải pháp</option>
-                    <option value="Unboxing">Unboxing</option>
-                    <option value="Educate">Educate / Bác sĩ</option>
-                    <option value="Daily Vlog">Daily Vlog</option>
-                    <option value="FOMO">FOMO giờ vàng</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-slate-700 font-semibold block mb-1">Tệp kênh (25 tệp):</label>
-                  <select
-                    value={formTepKenh}
-                    onChange={(e) => setFormTepKenh(e.target.value as any)}
-                    className="w-full bg-white border border-slate-300 rounded-lg p-2 text-slate-900 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
-                  >
-                    <option value="Beauty">Beauty (Làm đẹp)</option>
-                    <option value="Review Nữ">Review Nữ</option>
-                    <option value="Review Nam">Review Nam</option>
-                    <option value="Mẹ bé (bầu)">Mẹ bé (bầu)</option>
-                    <option value="Mẹ bé (bé)">Mẹ bé (bé)</option>
-                    <option value="Bác sỹ/chuyên gia">Bác sỹ/chuyên gia</option>
-                    <option value="Lifestyle">Lifestyle</option>
-                    <option value="Unboxing">Unboxing</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Product & Content Angle Selection */}
-              <div className="grid grid-cols-2 gap-3 p-3 bg-purple-50/50 rounded-xl border border-purple-200/80">
-                <div>
-                  <label className="text-slate-800 font-semibold block mb-1">Sản phẩm đẩy của gian hàng:</label>
-                  <select
-                    value={formProduct}
-                    onChange={(e) => setFormProduct(e.target.value)}
-                    className="w-full bg-white border border-slate-300 rounded-lg p-2 text-slate-900 focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 focus:outline-none truncate"
-                  >
-                    {INITIAL_PUSH_PRODUCTS.map(p => (
-                      <option key={p.id} value={p.productName}>{p.productName}</option>
-                    ))}
-                    <option value="Combo Sản Phẩm Chủ Lực">Combo Sản Phẩm Chủ Lực</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="text-slate-800 font-semibold block mb-1 flex items-center justify-between">
-                    <span>Góc tiếp cận (Content Angle):</span>
-                    {relevantAngles.length > 0 && (
-                      <span className="text-3xs text-purple-700 font-bold font-mono">({relevantAngles.length} góc)</span>
-                    )}
-                  </label>
-                  <select
-                    value={formAngleId}
-                    onChange={(e) => handleSelectAngle(e.target.value)}
-                    className="w-full bg-white border border-purple-300 rounded-lg p-2 text-slate-900 font-medium focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 focus:outline-none truncate"
-                  >
-                    <option value="">-- Chọn góc kịch bản có sẵn --</option>
-                    {relevantAngles.map(a => (
-                      <option key={a.id} value={a.id}>[{a.pillarName}] {a.name}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {formHook && (
-                  <div className="col-span-2 pt-2 border-t border-purple-100 text-xs">
-                    <div className="text-2xs font-bold text-purple-700 uppercase flex items-center gap-1 mb-0.5">
-                      <Sparkles className="w-3 h-3 text-amber-500" />
-                      Hook 3 giây đầu gợi ý cho KOC:
-                    </div>
-                    <p className="italic text-slate-800 text-2xs">&ldquo;{formHook}&rdquo;</p>
-                  </div>
-                )}
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-slate-700 font-semibold block mb-1">Dự toán chi phí Cast (VND):</label>
-                  <input
-                    type="number"
-                    value={formBudget}
-                    onChange={(e) => setFormBudget(Number(e.target.value))}
-                    className="w-full bg-white border border-slate-300 rounded-lg p-2 text-blue-700 font-mono font-semibold focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="text-slate-700 font-semibold block mb-1">Target GMV kỳ vọng (VND):</label>
-                  <input
-                    type="number"
-                    value={formGmv}
-                    onChange={(e) => setFormGmv(Number(e.target.value))}
-                    className="w-full bg-white border border-slate-300 rounded-lg p-2 text-emerald-700 font-mono font-semibold focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-200">
+      <Modal
+        open={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        title="Thêm slot KOC vào kế hoạch tháng"
+        size="lg"
+      >
+        <form onSubmit={handleCreateSlot} className="space-y-4 text-xs">
+          {/* Quick Pick from Master KOC Directory */}
+          <div>
+            <label className="text-ink-2 font-semibold block mb-1">
+              Gợi ý chọn nhanh từ danh bạ KOC:
+            </label>
+            <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto p-2 bg-sunken rounded-lg border border-line">
+              {kocs.slice(0, 8).map(koc => (
                 <button
                   type="button"
-                  onClick={() => setIsAddModalOpen(false)}
-                  className="px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition"
+                  key={koc.id}
+                  onClick={() => handleSelectExistingKoc(koc)}
+                  className="px-2 py-0.5 rounded bg-surface hover:bg-accent-soft text-ink-2 hover:text-accent text-xs font-medium border border-line shadow-2xs transition"
                 >
-                  Hủy bỏ
+                  {koc.stageName} ({koc.salaryGrade})
                 </button>
-                <button
-                  type="submit"
-                  className="px-4 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold transition shadow-xs"
-                >
-                  Lưu vào kế hoạch
-                </button>
-              </div>
-            </form>
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-ink-2 font-semibold block mb-1">Tên KOC / Stage Name:</label>
+              <input
+                type="text"
+                required
+                placeholder="VD: Chloe nguyễn, bác sĩ hằng..."
+                value={formKocName}
+                onChange={(e) => setFormKocName(e.target.value)}
+                className="w-full bg-surface border border-line-strong rounded-lg p-2 text-ink focus:border-accent focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="text-ink-2 font-semibold block mb-1">Kênh TikTok:</label>
+              <input
+                type="text"
+                placeholder="VD: @chloenguyen.official"
+                value={formChannelId}
+                onChange={(e) => setFormChannelId(e.target.value)}
+                className="w-full bg-surface border border-line-strong rounded-lg p-2 text-ink focus:border-accent focus:outline-none"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className="text-ink-2 font-semibold block mb-1">Nhãn hàng:</label>
+              <select
+                value={formBrand}
+                onChange={(e) => setFormBrand(e.target.value)}
+                className="w-full bg-surface border border-line-strong rounded-lg p-2 text-ink focus:border-accent focus:outline-none"
+              >
+                {(allocation?.assignedBrands || ['Senka', 'Cure Natural Aqua Gel']).map(b => (
+                  <option key={b} value={b}>{b}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-ink-2 font-semibold block mb-1">Tuần lên sóng:</label>
+              <select
+                value={formWeek}
+                onChange={(e) => setFormWeek(e.target.value as 'W1' | 'W2' | 'W3' | 'W4')}
+                className="w-full bg-surface border border-line-strong rounded-lg p-2 text-ink font-semibold focus:border-accent focus:outline-none"
+              >
+                <option value="W1">Tuần 1 (W1: Mở màn)</option>
+                <option value="W2">Tuần 2 (W2: Tăng tốc)</option>
+                <option value="W3">Tuần 3 (W3: Mega D-Day)</option>
+                <option value="W4">Tuần 4 (W4: Về đích)</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-ink-2 font-semibold block mb-1">Tier KOC:</label>
+              <select
+                value={formTier}
+                onChange={(e) => {
+                  const t = e.target.value as KocTier;
+                  setFormTier(t);
+                  if (t === 'TIER_1_CELEB') setFormSalaryGrade('KL7');
+                  else if (t === 'TIER_2_MACRO') setFormSalaryGrade('KL6');
+                  else if (t === 'TIER_3_MICRO') setFormSalaryGrade('KL4');
+                  else setFormSalaryGrade('KL2');
+                }}
+                className="w-full bg-surface border border-line-strong rounded-lg p-2 text-ink focus:border-accent focus:outline-none"
+              >
+                <option value="TIER_1_CELEB">Tier 1: Celeb / Mega</option>
+                <option value="TIER_2_MACRO">Tier 2: Macro KOL</option>
+                <option value="TIER_3_MICRO">Tier 3: Micro KOC</option>
+                <option value="TIER_4_AFFILIATE">Tier 4: Nano &amp; Affiliate</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-ink-2 font-semibold block mb-1">Góc Quay / Content Pillar:</label>
+              <select
+                value={formPillar}
+                onChange={(e) => setFormPillar(e.target.value)}
+                className="w-full bg-surface border border-line-strong rounded-lg p-2 text-ink focus:border-accent focus:outline-none"
+              >
+                <option value="Review trực tiếp">Review trực tiếp</option>
+                <option value="Nỗi đau - Giải pháp">Nỗi đau - Giải pháp</option>
+                <option value="Unboxing">Unboxing</option>
+                <option value="Educate">Educate / Bác sĩ</option>
+                <option value="Daily Vlog">Daily Vlog</option>
+                <option value="FOMO">FOMO giờ vàng</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-ink-2 font-semibold block mb-1">Tệp kênh (25 tệp):</label>
+              <select
+                value={formTepKenh}
+                onChange={(e) => setFormTepKenh(e.target.value as TepKenh)}
+                className="w-full bg-surface border border-line-strong rounded-lg p-2 text-ink focus:border-accent focus:outline-none"
+              >
+                <option value="Beauty">Beauty (Làm đẹp)</option>
+                <option value="Review Nữ">Review Nữ</option>
+                <option value="Review Nam">Review Nam</option>
+                <option value="Mẹ bé (bầu)">Mẹ bé (bầu)</option>
+                <option value="Mẹ bé (bé)">Mẹ bé (bé)</option>
+                <option value="Bác sỹ/chuyên gia">Bác sỹ/chuyên gia</option>
+                <option value="Lifestyle">Lifestyle</option>
+                <option value="Unboxing">Unboxing</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Product & Content Angle Selection */}
+          <div className="grid grid-cols-2 gap-3 p-3 bg-sunken rounded-xl border border-line">
+            <div>
+              <label className="text-ink font-semibold block mb-1">Sản phẩm đẩy của gian hàng:</label>
+              <select
+                value={formProduct}
+                onChange={(e) => setFormProduct(e.target.value)}
+                className="w-full bg-surface border border-line-strong rounded-lg p-2 text-ink focus:border-accent focus:outline-none truncate"
+              >
+                {INITIAL_PUSH_PRODUCTS.map(p => (
+                  <option key={p.id} value={p.productName}>{p.productName}</option>
+                ))}
+                <option value="Combo Sản Phẩm Chủ Lực">Combo Sản Phẩm Chủ Lực</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="text-ink font-semibold block mb-1 flex items-center justify-between">
+                <span>Góc tiếp cận (Content Angle):</span>
+                {relevantAngles.length > 0 && (
+                  <span className="text-2xs text-accent font-semibold font-mono">({relevantAngles.length} góc)</span>
+                )}
+              </label>
+              <select
+                value={formAngleId}
+                onChange={(e) => handleSelectAngle(e.target.value)}
+                className="w-full bg-surface border border-line-strong rounded-lg p-2 text-ink font-medium focus:border-accent focus:outline-none truncate"
+              >
+                <option value="">-- Chọn góc kịch bản có sẵn --</option>
+                {relevantAngles.map(a => (
+                  <option key={a.id} value={a.id}>[{a.pillarName}] {a.name}</option>
+                ))}
+              </select>
+            </div>
+
+            {formHook && (
+              <div className="col-span-2 pt-2 border-t border-line text-xs">
+                <div className="text-2xs font-semibold text-accent flex items-center gap-1 mb-0.5">
+                  Hook 3 giây đầu gợi ý cho KOC:
+                </div>
+                <p className="italic text-ink-2 text-2xs">&ldquo;{formHook}&rdquo;</p>
+              </div>
+            )}
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-ink-2 font-semibold block mb-1">Dự toán chi phí Cast (VND):</label>
+              <input
+                type="number"
+                value={formBudget}
+                onChange={(e) => setFormBudget(Number(e.target.value))}
+                className="w-full bg-surface border border-line-strong rounded-lg p-2 text-accent font-mono font-semibold focus:border-accent focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="text-ink-2 font-semibold block mb-1">Target GMV kỳ vọng (VND):</label>
+              <input
+                type="number"
+                value={formGmv}
+                onChange={(e) => setFormGmv(Number(e.target.value))}
+                className="w-full bg-surface border border-line-strong rounded-lg p-2 text-positive font-mono font-semibold focus:border-accent focus:outline-none"
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end gap-2 pt-3 border-t border-line">
+            <Button variant="ghost" onClick={() => setIsAddModalOpen(false)}>
+              Hủy bỏ
+            </Button>
+            <Button type="submit" variant="primary">
+              Lưu vào kế hoạch
+            </Button>
+          </div>
+        </form>
+      </Modal>
 
       {/* Confirm Delete Slot Dialog */}
       <ConfirmDialog

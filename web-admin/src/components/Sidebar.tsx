@@ -1,18 +1,15 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import {
   CheckSquare,
-  BarChart2,
   BarChart3,
   LayoutDashboard,
   Layers,
   FileText,
-  Building2,
   Users,
   FileCheck,
   TrendingUp,
-  Award,
   Package,
   Coins,
   BookOpen,
@@ -23,11 +20,10 @@ import {
   Video,
   X,
   LogOut,
-  Sparkles,
+  Compass,
   KeyRound,
   Film,
   Store,
-  Search,
   type LucideIcon,
 } from 'lucide-react';
 import { UserProfile, TabKey } from '../lib/types';
@@ -41,7 +37,7 @@ interface NavItem {
 }
 
 interface NavSection {
-  title: string;
+  title?: string;
   items: NavItem[];
 }
 
@@ -54,20 +50,19 @@ interface SidebarProps {
   onLogout?: () => void;
 }
 
-// Hàm phân quyền danh mục điều hướng theo vai trò (Bảo mật 100% dữ liệu nội bộ UpBase)
+// Danh mục điều hướng theo vai trò — gọn trên một màn hình, không cần cuộn chuột
 function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
   switch (role) {
     case 'ADMIN':
     case 'MANAGER':
       return [
         {
-          title: 'Cá nhân',
           items: [
             { key: 'cockpit', label: 'Việc của tôi', icon: CheckSquare },
           ],
         },
         {
-          title: '1. Kế hoạch & Phân bổ',
+          title: 'Kế hoạch & Phân bổ',
           items: [
             { key: 'input-plan', label: 'Kế hoạch tháng', icon: Calendar },
             { key: 'brand-knowledge', label: 'Hồ sơ thương hiệu', icon: BookOpen },
@@ -76,7 +71,7 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           ],
         },
         {
-          title: '2. Vận hành Booking & KOC',
+          title: 'Vận hành Booking & KOC',
           items: [
             { key: 'booking', label: 'Quản lý Booking', icon: Users },
             { key: 'content', label: 'Kịch bản & Video', icon: FileText },
@@ -84,18 +79,86 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           ],
         },
         {
-          title: '3. Hợp đồng & Hàng mẫu',
+          title: 'Hợp đồng & Hàng mẫu',
           items: [
             { key: 'contracts', label: 'Hợp đồng', icon: FileCheck },
             { key: 'sample-tracker', label: 'Hàng mẫu & Spark Ads', icon: Package },
           ],
         },
         {
-          title: '4. Báo cáo & Dữ liệu',
+          title: 'Báo cáo & Dữ liệu',
           items: [
-            { key: 'dashboard-bi', label: 'Báo cáo hiệu suất & GMV', icon: LayoutDashboard },
+            { key: 'dashboard-bi', label: 'Báo cáo hiệu suất', icon: LayoutDashboard },
             { key: 'master-data', label: 'Dữ liệu gốc', icon: Database },
             { key: 'partner-access', label: 'Phân quyền & Tài khoản', icon: KeyRound },
+          ],
+        },
+      ];
+
+    case 'GROWTH_MANAGER':
+      return [
+        {
+          items: [
+            { key: 'cockpit', label: 'Việc của tôi', icon: CheckSquare },
+          ],
+        },
+        {
+          title: 'Quản trị Khối Growth',
+          items: [
+            { key: 'manager', label: 'Quản lý Nhân sự Growth', icon: Split },
+            { key: 'input-plan', label: 'Kế hoạch tháng (Plan 4.1)', icon: Calendar },
+            { key: 'stores', label: 'Hồ sơ gian hàng', icon: Store },
+            { key: 'brand-knowledge', label: 'Hồ sơ thương hiệu', icon: BookOpen },
+          ],
+        },
+        {
+          title: 'Chiến dịch & Hiệu suất',
+          items: [
+            { key: 'campaigns', label: 'Chiến dịch Brand', icon: Layers },
+            { key: 'dashboard-bi', label: 'Báo cáo hiệu suất GMV', icon: LayoutDashboard },
+            { key: 'ads-report', label: 'Báo cáo Ads TikTok', icon: BarChart3 },
+            { key: 'performance-p3', label: 'Đánh giá 4P & thưởng', icon: Coins },
+          ],
+        },
+        {
+          title: 'Hệ thống & Phân quyền',
+          items: [
+            { key: 'master-data', label: 'Dữ liệu gốc', icon: Database },
+            { key: 'partner-access', label: 'Phân quyền & Nhân sự', icon: KeyRound },
+          ],
+        },
+      ];
+
+    case 'MEDIA_MANAGER':
+      return [
+        {
+          items: [
+            { key: 'cockpit', label: 'Việc của tôi', icon: CheckSquare },
+          ],
+        },
+        {
+          title: 'Quản trị Khối Media',
+          items: [
+            { key: 'manager', label: 'Quản lý Nhân sự Media', icon: Split },
+            { key: 'input-plan', label: 'Kế hoạch tháng & Ngân sách', icon: Calendar },
+            { key: 'ads-report', label: 'Báo cáo Ads TikTok', icon: BarChart3 },
+            { key: 'sample-tracker', label: 'Mã Spark Ads & Hàng mẫu', icon: Package },
+          ],
+        },
+        {
+          title: 'Gian hàng & Hiệu suất',
+          items: [
+            { key: 'stores', label: 'Hồ sơ gian hàng', icon: Store },
+            { key: 'campaigns', label: 'Chiến dịch Brand', icon: Layers },
+            { key: 'dashboard-bi', label: 'Báo cáo hiệu suất', icon: LayoutDashboard },
+            { key: 'performance-p3', label: 'Đánh giá 4P & thưởng', icon: Coins },
+          ],
+        },
+        {
+          title: 'Hệ thống & Phân quyền',
+          items: [
+            { key: 'master-data', label: 'Dữ liệu gốc', icon: Database },
+            { key: 'partner-access', label: 'Phân quyền & Nhân sự', icon: KeyRound },
           ],
         },
       ];
@@ -103,22 +166,21 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
     case 'LEADER':
       return [
         {
-          title: 'Cá nhân',
           items: [
             { key: 'cockpit', label: 'Việc của tôi', icon: CheckSquare },
           ],
         },
         {
-          title: '1. Kế hoạch & Phân bổ',
+          title: 'Kế hoạch & Phân bổ',
           items: [
             { key: 'input-plan', label: 'Kế hoạch tháng', icon: Calendar },
             { key: 'brand-knowledge', label: 'Hồ sơ thương hiệu', icon: BookOpen },
             { key: 'stores', label: 'Hồ sơ gian hàng', icon: Store },
-            { key: 'manager', label: 'Điều phối nhóm', icon: Split },
+            { key: 'manager', label: 'Điều phối & Quản lý', icon: Split },
           ],
         },
         {
-          title: '2. Vận hành Booking & KOC',
+          title: 'Vận hành Booking & KOC',
           items: [
             { key: 'booking', label: 'Quản lý Booking', icon: Users },
             { key: 'content', label: 'Kịch bản & Video', icon: FileText },
@@ -126,14 +188,14 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           ],
         },
         {
-          title: '3. Hợp đồng & Hàng mẫu',
+          title: 'Hợp đồng & Hàng mẫu',
           items: [
             { key: 'contracts', label: 'Hợp đồng', icon: FileCheck },
             { key: 'sample-tracker', label: 'Hàng mẫu & Spark Ads', icon: Package },
           ],
         },
         {
-          title: '4. Báo cáo & Dữ liệu',
+          title: 'Báo cáo & Dữ liệu',
           items: [
             { key: 'dashboard-bi', label: 'Báo cáo hiệu suất', icon: LayoutDashboard },
             { key: 'master-data', label: 'Dữ liệu gốc', icon: Database },
@@ -144,13 +206,12 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
     case 'BOOKING_MEMBER':
       return [
         {
-          title: 'Cá nhân',
           items: [
             { key: 'cockpit', label: 'Việc của tôi', icon: CheckSquare },
           ],
         },
         {
-          title: '1. Kế hoạch & Đợt chạy',
+          title: 'Kế hoạch & Đợt chạy',
           items: [
             { key: 'input-plan', label: 'Kế hoạch tháng', icon: Calendar },
             { key: 'brand-knowledge', label: 'Hồ sơ thương hiệu', icon: BookOpen },
@@ -159,17 +220,17 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           ],
         },
         {
-          title: '2. Vận hành Booking & KOC',
+          title: 'Vận hành Booking & KOC',
           items: [
             { key: 'booking', label: 'Quản lý Booking', icon: Users },
             { key: 'koc-master', label: 'Danh bạ KOC', icon: Users },
           ],
         },
         {
-          title: '3. Hợp đồng & Hàng mẫu',
+          title: 'Hợp đồng & Hàng mẫu',
           items: [
             { key: 'contracts', label: 'Hợp đồng', icon: FileCheck },
-            { key: 'sample-tracker', label: 'Hàng mẫu', icon: Package },
+            { key: 'sample-tracker', label: 'Hàng mẫu & Spark Ads', icon: Package },
           ],
         },
       ];
@@ -177,20 +238,19 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
     case 'CONTENT_MEMBER':
       return [
         {
-          title: 'Cá nhân',
           items: [
             { key: 'cockpit', label: 'Việc của tôi', icon: CheckSquare },
           ],
         },
         {
-          title: '1. Sáng tạo & Kịch bản',
+          title: 'Sáng tạo & Kịch bản',
           items: [
-            { key: 'content', label: 'Kịch bản video', icon: FileText },
-            { key: 'content-angles', label: 'Góc nội dung (Angles)', icon: Sparkles },
+            { key: 'content', label: 'Kịch bản & Video', icon: FileText },
+            { key: 'content-angles', label: 'Góc nội dung', icon: Compass },
           ],
         },
         {
-          title: '2. Làm việc với Brand',
+          title: 'Làm việc với Brand',
           items: [
             { key: 'campaigns', label: 'Chiến dịch Brand', icon: Layers },
             { key: 'brand-knowledge', label: 'Hồ sơ thương hiệu', icon: BookOpen },
@@ -198,9 +258,9 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           ],
         },
         {
-          title: '3. Vận hành & Đánh giá',
+          title: 'Vận hành & Đánh giá',
           items: [
-            { key: 'sample-tracker', label: 'Hàng mẫu', icon: Package },
+            { key: 'sample-tracker', label: 'Hàng mẫu & Spark Ads', icon: Package },
             { key: 'performance-p3', label: 'Đánh giá 4P & thưởng', icon: Coins },
           ],
         },
@@ -209,13 +269,12 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
     case 'BRAND_MEMBER':
       return [
         {
-          title: 'Cá nhân',
           items: [
             { key: 'cockpit', label: 'Việc của tôi', icon: CheckSquare },
           ],
         },
         {
-          title: '1. Kế hoạch & Brand',
+          title: 'Kế hoạch & Brand',
           items: [
             { key: 'input-plan', label: 'Kế hoạch tháng', icon: Calendar },
             { key: 'campaigns', label: 'Chiến dịch Brand', icon: Layers },
@@ -223,15 +282,15 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           ],
         },
         {
-          title: '2. Vận hành & Sản phẩm',
+          title: 'Vận hành & Sản phẩm',
           items: [
-            { key: 'content', label: 'Kịch bản video', icon: FileText },
-            { key: 'sample-tracker', label: 'Hàng mẫu', icon: Package },
+            { key: 'content', label: 'Kịch bản & Video', icon: FileText },
+            { key: 'sample-tracker', label: 'Hàng mẫu & Spark Ads', icon: Package },
             { key: 'push-products', label: 'Sản phẩm đẩy', icon: TrendingUp },
           ],
         },
         {
-          title: '3. Báo cáo hiệu suất',
+          title: 'Báo cáo hiệu suất',
           items: [
             { key: 'ads-report', label: 'Báo cáo Ads TikTok', icon: BarChart3 },
             { key: 'performance-p3', label: 'Đánh giá 4P & thưởng', icon: Coins },
@@ -242,22 +301,21 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
     case 'GROWTH_MEMBER':
       return [
         {
-          title: 'Cá nhân',
           items: [
             { key: 'cockpit', label: 'Việc của tôi', icon: CheckSquare },
           ],
         },
         {
-          title: '1. Kế hoạch & Doanh số',
+          title: 'Kế hoạch & Doanh số',
           items: [
             { key: 'input-plan', label: 'Kế hoạch tháng', icon: Calendar },
             { key: 'brand-knowledge', label: 'Hồ sơ thương hiệu', icon: BookOpen },
-            { key: 'dashboard-bi', label: 'Dashboard điều hành', icon: BarChart3 },
+            { key: 'dashboard-bi', label: 'Báo cáo hiệu suất', icon: BarChart3 },
             { key: 'stores', label: 'Hồ sơ gian hàng', icon: Store },
           ],
         },
         {
-          title: '2. Chiến dịch & Báo cáo',
+          title: 'Chiến dịch & Báo cáo',
           items: [
             { key: 'campaigns', label: 'Chiến dịch Brand', icon: Layers },
             { key: 'ads-report', label: 'Báo cáo Ads TikTok', icon: BarChart3 },
@@ -269,22 +327,21 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
     case 'MEDIA_MEMBER':
       return [
         {
-          title: 'Cá nhân',
           items: [
             { key: 'cockpit', label: 'Việc của tôi', icon: CheckSquare },
           ],
         },
         {
-          title: '1. Kế hoạch & Ads',
+          title: 'Kế hoạch & Ads',
           items: [
             { key: 'input-plan', label: 'Kế hoạch tháng', icon: Calendar },
             { key: 'ads-report', label: 'Báo cáo Ads TikTok', icon: BarChart3 },
           ],
         },
         {
-          title: '2. Báo cáo & Hiệu suất',
+          title: 'Báo cáo & Hiệu suất',
           items: [
-            { key: 'dashboard-bi', label: 'Dashboard điều hành', icon: BarChart3 },
+            { key: 'dashboard-bi', label: 'Báo cáo hiệu suất', icon: BarChart3 },
             { key: 'campaigns', label: 'Chiến dịch Brand', icon: Layers },
             { key: 'performance-p3', label: 'Đánh giá 4P & thưởng', icon: Coins },
           ],
@@ -294,31 +351,30 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
     case 'MEMBER':
       return [
         {
-          title: 'Cá nhân',
           items: [
             { key: 'cockpit', label: 'Việc của tôi', icon: CheckSquare },
           ],
         },
         {
-          title: '1. Kế hoạch',
+          title: 'Kế hoạch',
           items: [
             { key: 'input-plan', label: 'Kế hoạch tháng', icon: Calendar },
           ],
         },
         {
-          title: '2. Vận hành Booking & KOC',
+          title: 'Vận hành Booking & KOC',
           items: [
             { key: 'booking', label: 'Quản lý Booking', icon: Users },
-            { key: 'content', label: 'Kịch bản video', icon: FileText },
+            { key: 'content', label: 'Kịch bản & Video', icon: FileText },
             { key: 'koc-master', label: 'Danh bạ KOC', icon: Users },
           ],
         },
         {
-          title: '3. Hàng mẫu & Đánh giá',
+          title: 'Hàng mẫu & Đánh giá',
           items: [
-            { key: 'sample-tracker', label: 'Hàng mẫu', icon: Package },
+            { key: 'sample-tracker', label: 'Hàng mẫu & Spark Ads', icon: Package },
             { key: 'performance-p3', label: 'Đánh giá 4P & thưởng', icon: Coins },
-            { key: 'brand-knowledge', label: 'Hướng dẫn nhãn hàng', icon: BookOpen },
+            { key: 'brand-knowledge', label: 'Hồ sơ thương hiệu', icon: BookOpen },
           ],
         },
       ];
@@ -326,12 +382,12 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
     case 'BRAND_PARTNER':
       return [
         {
-          title: 'Cổng Thương Hiệu',
+          title: 'Cổng thương hiệu',
           items: [
             { key: 'brand-hub', label: 'Cổng đối tác Brand', icon: ExternalLink },
-            { key: 'koc-listing', label: 'Duyệt Listing KOC', icon: Film },
+            { key: 'koc-listing', label: 'Listing & Air Video', icon: Film },
             { key: 'push-products', label: 'Sản phẩm đẩy', icon: TrendingUp },
-            { key: 'content', label: 'Kịch bản video', icon: FileText },
+            { key: 'content', label: 'Kịch bản & Video', icon: FileText },
           ],
         },
       ];
@@ -339,9 +395,9 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
     case 'KOC_PARTNER':
       return [
         {
-          title: 'Không Gian KOC / KOL',
+          title: 'Không gian KOC / KOL',
           items: [
-            { key: 'koc-hub', label: 'Hub đối tác KOC / KOL', icon: Users },
+            { key: 'koc-hub', label: 'Cổng đối tác KOC / KOL', icon: Users },
           ],
         },
       ];
@@ -349,9 +405,9 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
     case 'CTV_PARTNER':
       return [
         {
-          title: 'Không Gian CTV Video',
+          title: 'Không gian CTV video',
           items: [
-            { key: 'self-channel-hub', label: 'Hub CTV Video', icon: Video },
+            { key: 'self-channel-hub', label: 'Cộng tác viên video', icon: Video },
           ],
         },
       ];
@@ -359,7 +415,6 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
     default:
       return [
         {
-          title: 'Cá nhân',
           items: [
             { key: 'cockpit', label: 'Việc của tôi', icon: CheckSquare },
           ],
@@ -376,18 +431,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onCloseMobile,
   onLogout,
 }) => {
-  // Phân quyền menu hiển thị theo vai trò (Bảo mật 100% dữ liệu nội bộ UpBase)
   const navSections = getNavSectionsForUserRole(currentUser.role);
-  const [query, setQuery] = useState('');
-  const normalize = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase();
-  const visibleSections = navSections.map(section => ({
-    ...section,
-    items: section.items.filter(item => normalize(item.label).includes(normalize(query.trim()))),
-  })).filter(section => section.items.length > 0);
 
   const handleItemClick = (key: TabKey) => {
     onTabSelect(key);
-    setQuery('');
     onCloseMobile?.();
   };
 
@@ -395,96 +442,76 @@ export const Sidebar: React.FC<SidebarProps> = ({
     <>
       {isMobileOpen && (
         <div
-          className="fixed inset-0 bg-slate-900/40 z-40 lg:hidden animate-in fade-in duration-150"
+          className="fixed inset-0 bg-ink/40 z-40 lg:hidden animate-in fade-in duration-150"
           onClick={onCloseMobile}
           aria-hidden="true"
         />
       )}
 
       <aside
-        className={`app-sidebar w-60 bg-surface border-r border-line flex flex-col shrink-0 h-dvh select-none transition-transform duration-200 ease-in-out fixed inset-y-0 left-0 z-30 overscroll-contain ${
+        className={`app-sidebar w-60 bg-surface border-r border-line flex flex-col justify-between shrink-0 h-dvh select-none transition-transform duration-200 ease-in-out fixed inset-y-0 left-0 z-30 ${
           isMobileOpen
             ? 'translate-x-0 shadow-2xl z-50'
             : '-translate-x-full lg:translate-x-0'
         }`}
         aria-label="Điều hướng chính"
       >
-        <div className="h-20 px-5 flex items-center justify-between shrink-0">
-          <BrandLogo height={22} />
+        <div className="flex flex-col min-h-0">
+          <div className="h-14 px-4 flex items-center justify-between border-b border-line shrink-0">
+            <BrandLogo height={22} />
 
-          {onCloseMobile && (
-            <button
-              onClick={onCloseMobile}
-              className="lg:hidden p-1.5 rounded-md text-ink-3 hover:text-ink hover:bg-sunken transition-colors"
-              aria-label="Đóng menu"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          )}
-        </div>
+            {onCloseMobile && (
+              <button
+                onClick={onCloseMobile}
+                className="lg:hidden p-1.5 rounded-md text-ink-3 hover:text-ink hover:bg-sunken transition-colors"
+                aria-label="Đóng menu"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
 
-        <div className="px-3 pb-4">
-          <label className="relative block">
-            <Search className="absolute left-3 top-3 w-4 h-4 text-ink-3 pointer-events-none" aria-hidden="true" />
-            <input type="search" value={query} onChange={event => setQuery(event.target.value)} aria-label="Tìm trang trong menu" placeholder="Tìm trang…" className="w-full h-10 pl-9 pr-3 rounded-lg border border-line text-xs" />
-          </label>
-        </div>
-        <nav className="flex-1 overflow-y-auto px-3 pt-2 pb-4 space-y-5 sidebar-scrollbar overscroll-contain">
-          {visibleSections.length === 0 && <p role="status" className="px-2 text-xs text-ink-3">Không tìm thấy trang. Thử từ khóa khác.</p>}
-          {visibleSections.map((section) => (
-            <div key={section.title}>
-              <div className="px-3 pb-2 text-2xs font-medium text-ink-3">{section.title.replace(/^\d+\.\s*/, '')}</div>
-              <div className="space-y-1">
-                {section.items.map((item) => {
-                  const Icon = item.icon;
-                  const isActive = activeTab === item.key;
-                  return (
-                    <button
-                      key={item.key}
-                      onClick={() => handleItemClick(item.key)}
-                      aria-current={isActive ? 'page' : undefined}
-                      title={item.label}
-                      className={`sidebar-item w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-left text-[13.5px] transition-colors ${
-                        isActive
-                          ? 'bg-accent-soft text-accent font-semibold'
-                          : 'text-ink-2 hover:text-ink hover:bg-sunken'
-                      }`}
-                    >
-                      <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-accent' : 'text-ink-3'}`} strokeWidth={1.75} />
-                      <span className="truncate">{item.label}</span>
-                    </button>
-                  );
-                })}
+          <nav className="px-2.5 py-2.5 space-y-2.5">
+            {navSections.map((section, idx) => (
+              <div key={section.title || `sec-${idx}`}>
+                {section.title && (
+                  <div className="px-2.5 pb-1 text-2xs font-medium text-ink-3">
+                    {section.title}
+                  </div>
+                )}
+                <div className="space-y-0.5">
+                  {section.items.map((item) => {
+                    const Icon = item.icon;
+                    const isActive = activeTab === item.key;
+                    return (
+                      <button
+                        key={item.key}
+                        onClick={() => handleItemClick(item.key)}
+                        aria-current={isActive ? 'page' : undefined}
+                        className={`sidebar-item w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-left text-[13px] leading-5 transition-colors ${
+                          isActive
+                            ? 'bg-accent-soft text-accent font-semibold'
+                            : 'text-ink-2 hover:text-ink hover:bg-sunken'
+                        }`}
+                      >
+                        <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-accent' : 'text-ink-3'}`} strokeWidth={1.75} />
+                        <span className="truncate">{item.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          ))}
-        </nav>
+            ))}
+          </nav>
+        </div>
 
-        <div className="shrink-0 px-3 py-3 border-t border-line">
-          <div className="flex items-center justify-between gap-2 px-1">
+        <div className="shrink-0 px-3 py-2.5 border-t border-line">
+          <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2.5 min-w-0">
               <Avatar name={currentUser.name} src={currentUser.larkAvatarUrl} size={28} />
               <div className="min-w-0 leading-tight">
                 <span className="block text-[13px] font-medium text-ink truncate">{currentUser.name}</span>
-                <div className="flex items-center gap-1.5 mt-0.5">
-                  <span className={`inline-block px-1.5 py-0.5 rounded text-[9.5px] font-bold tracking-wider uppercase shrink-0 ${
-                    currentUser.role === 'ADMIN' ? 'bg-red-100 text-red-700' :
-                    currentUser.role === 'MANAGER' ? 'bg-purple-100 text-purple-700' :
-                    currentUser.role === 'LEADER' ? 'bg-blue-100 text-blue-700' :
-                    currentUser.role === 'BOOKING_MEMBER' ? 'bg-cyan-100 text-cyan-800' :
-                    currentUser.role === 'GROWTH_MEMBER' ? 'bg-amber-100 text-amber-900 border border-amber-300 font-black' :
-                    currentUser.role === 'MEDIA_MEMBER' ? 'bg-blue-100 text-blue-900 border border-blue-300 font-black' :
-                    currentUser.role === 'CONTENT_MEMBER' ? 'bg-amber-100 text-amber-800' :
-                    currentUser.role === 'BRAND_MEMBER' ? 'bg-emerald-100 text-emerald-800' :
-                    currentUser.role === 'BRAND_PARTNER' ? 'bg-purple-100 text-purple-800' :
-                    currentUser.role === 'KOC_PARTNER' ? 'bg-amber-100 text-amber-800' :
-                    currentUser.role === 'CTV_PARTNER' ? 'bg-emerald-100 text-emerald-800' :
-                    'bg-slate-100 text-slate-700'
-                  }`}>
-                    {currentUser.role.replace('_PARTNER', ' (Đối tác)').replace('_MEMBER', '')}
-                  </span>
-                  <span className="text-2xs text-ink-3 truncate">{currentUser.roleTitle}</span>
-                </div>
+                <span className="block text-2xs text-ink-3 truncate mt-0.5">{currentUser.roleTitle}</span>
               </div>
             </div>
 
@@ -504,3 +531,4 @@ export const Sidebar: React.FC<SidebarProps> = ({
     </>
   );
 };
+

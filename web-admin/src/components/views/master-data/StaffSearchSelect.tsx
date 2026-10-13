@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Search, X, Check, Users, User, ChevronDown } from 'lucide-react';
+import { Search, X, Check, ChevronDown } from 'lucide-react';
 import { StaffMasterMember } from '../../../lib/types';
 import { UPBASE_STAFF_MASTER } from '../../../lib/importedMasterData';
 import { STAFF_MASTER_DIRECTORY } from '../../../lib/mockData';
@@ -39,15 +39,15 @@ export const StaffSearchSelect: React.FC<StaffSearchSelectProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState(value || '');
+  const [prevValue, setPrevValue] = useState(value);
+  if (value !== prevValue) {
+    setPrevValue(value);
+    setQuery(value || '');
+  }
   const [highlightedIndex, setHighlightedIndex] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
-
-  // Sync internal query with prop value when prop value changes
-  useEffect(() => {
-    setQuery(value || '');
-  }, [value]);
 
   // Merge and deduplicate all staff members across datasets
   const allStaff = useMemo(() => {
@@ -335,10 +335,10 @@ export const StaffSearchSelect: React.FC<StaffSearchSelectProps> = ({
                     {/* Department Tag & Selection Status */}
                     <div className="shrink-0 flex items-center gap-1.5">
                       {staff.role && (
-                        <span className={`px-1.5 py-0.5 rounded text-3xs font-semibold ${
+                        <span className={`px-1.5 py-0.5 rounded text-2xs font-semibold ${
                           staff.role === 'ACCOUNT' ? 'bg-blue-50 text-blue-700 border border-blue-200' :
                           staff.role === 'GROWTH' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
-                          staff.role === 'BOOKING' ? 'bg-purple-50 text-purple-700 border border-purple-200' :
+                          staff.role === 'BOOKING' ? 'bg-accent-soft text-accent border border-line' :
                           staff.role === 'CONTENT' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
                           'bg-slate-100 text-slate-600 border border-slate-200'
                         }`}>

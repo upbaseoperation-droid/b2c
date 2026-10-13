@@ -1,18 +1,20 @@
 'use client';
 
 import React from 'react';
-import {
-  TrendingUp,
-  Clock,
-  Video,
-  Award,
-  ArrowRight,
-  ShieldCheck,
-  Eye,
-} from 'lucide-react';
+import { Eye, Plus } from 'lucide-react';
 import { BookingDealItem } from '../../lib/types';
-import { Stat, StatRow, Person, ChannelBar } from '../ui';
-import { formatVndShort } from '../../lib/format';
+import {
+  Button,
+  ChannelBar,
+  DataTable,
+  Panel,
+  Person,
+  Stat,
+  StatRow,
+  Status,
+} from '../ui';
+import type { Column } from '../ui';
+import { formatVnd, formatVndShort } from '../../lib/format';
 
 interface OverviewViewProps {
   deals: BookingDealItem[];
@@ -25,9 +27,103 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
   onOpenQuickBook,
   onSelectDeal,
 }) => {
+  const columns: Column<BookingDealItem>[] = [
+    {
+      key: 'dealCode',
+      header: 'Mã deal',
+      width: 110,
+      render: (deal) => (
+        <span className="font-code font-medium text-ink whitespace-nowrap">
+          {deal.dealCode}
+        </span>
+      ),
+    },
+    {
+      key: 'koc',
+      header: 'KOC & chiến dịch',
+      width: 240,
+      render: (deal) => (
+        <div className="space-y-0.5 min-w-0">
+          <div className="font-medium text-ink truncate">{deal.kocStageName}</div>
+          <div className="text-2xs text-ink-3 truncate max-w-xs">
+            {deal.campaignTitle} · PIC: {deal.assignedStaff}
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'totalValue',
+      header: 'Tổng deal',
+      align: 'right',
+      width: 130,
+      render: (deal) => (
+        <span className="font-medium text-ink whitespace-nowrap">
+          {formatVnd(deal.totalValue)}
+        </span>
+      ),
+    },
+    {
+      key: 'advanceAmount',
+      header: 'Tạm ứng đợt 1',
+      align: 'right',
+      width: 130,
+      render: (deal) => (
+        <span className="font-medium text-positive whitespace-nowrap">
+          {formatVnd(deal.advanceAmount)}
+        </span>
+      ),
+    },
+    {
+      key: 'finalAmount',
+      header: 'Còn lại đợt 2',
+      align: 'right',
+      width: 130,
+      render: (deal) => (
+        <span className="text-ink-2 whitespace-nowrap">
+          {formatVnd(deal.finalAmount ?? Math.max(0, deal.totalValue - deal.advanceAmount))}
+        </span>
+      ),
+    },
+    {
+      key: 'status',
+      header: 'Trạng thái',
+      width: 150,
+      render: (deal) => (
+        <Status
+          tone={
+            deal.status === 'ADVANCE_PAID' || deal.status === 'FINAL_PAID' || deal.status === 'COMPLETED'
+              ? 'positive'
+              : deal.status === 'SCRIPT_APPROVED' || deal.status === 'VIDEO_SUBMITTED'
+              ? 'info'
+              : deal.status === 'CANCELLED'
+              ? 'critical'
+              : 'warning'
+          }
+        >
+          {deal.statusLabel}
+        </Status>
+      ),
+    },
+    {
+      key: 'actions',
+      header: 'Thao tác',
+      align: 'right',
+      width: 140,
+      render: (deal) => (
+        <Button
+          variant="secondary"
+          size="sm"
+          icon={Eye}
+          onClick={() => onSelectDeal(deal)}
+        >
+          Xem hợp đồng
+        </Button>
+      ),
+    },
+  ];
+
   return (
     <div className="space-y-6">
-      {/* Chỉ số chính, tính từ danh sách deal */}
       {(() => {
         const totalValue = deals.reduce((sum, d) => sum + (d.totalValue || 0), 0);
         const advance = deals.reduce((sum, d) => sum + (d.advanceAmount || 0), 0);
@@ -61,172 +157,105 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
         );
       })()}
 
-      {/* 3-Team Pipeline Visualization */}
-      <div className="card-enterprise p-6">
-        <div className="flex items-center justify-between mb-5">
-          <div>
-            <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-blue-600" />
-              Bàn giao giữa các team
-            </h3>
-            <p className="text-xs text-slate-500 mt-0.5">Mỗi việc có người nhận và hạn SLA, không giao qua tin nhắn</p>
-          </div>
-          <span className="badge-emerald px-2.5 py-1 rounded-full text-xs font-semibold">
-            8 bước có SLA
-          </span>
-        </div>
-
+      <Panel
+        title="Bàn giao giữa các team"
+        description="Mỗi việc có người nhận và hạn SLA, không giao qua tin nhắn"
+        actions={<Status tone="positive">8 bước có SLA</Status>}
+      >
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Column 1: Brand */}
-          <div className="card-inner-box p-4 border border-blue-200/80 bg-blue-50/20 space-y-3">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-200">
-              <span className="text-xs font-semibold text-blue-600">1. Brand Team</span>
-              <span className="badge-blue px-2 py-0.5 rounded text-2xs font-semibold">SLA: 24h</span>
+          <div className="p-4 rounded-xl border border-line bg-canvas space-y-3">
+            <div className="flex items-center justify-between pb-2 border-b border-line">
+              <span className="text-xs font-semibold text-ink">1. Team Brand</span>
+              <Status tone="info">SLA 24h</Status>
             </div>
             <div className="space-y-2">
-              <div className="p-3.5 bg-white rounded-xl border border-slate-200 text-xs space-y-1.5 shadow-2xs">
-                <span className="font-semibold text-slate-900 block">Mega Sale 10.10: Kháng nắng</span>
-                <p className="text-slate-600 text-2xs">Big Idea: &quot;Lá Chắn Đa Tầng&quot; - Target 1.8 Tỷ GMV</p>
-                <div className="flex justify-between text-2xs text-slate-500 pt-1.5 border-t border-slate-100">
-                  <span className="font-medium text-slate-700">Phương Thảo</span>
-                  <span className="text-emerald-600 font-semibold">Đã duyệt brief</span>
+              <div className="p-3.5 bg-surface rounded-lg border border-line text-xs space-y-1.5">
+                <span className="font-semibold text-ink block">Mega Sale 10.10: Kháng nắng</span>
+                <p className="text-ink-2 text-2xs">Thông điệp &quot;Lá chắn đa tầng&quot; · Mục tiêu 1,8 tỷ GMV</p>
+                <div className="flex items-center justify-between text-2xs text-ink-3 pt-1.5 border-t border-line">
+                  <span className="font-medium text-ink-2">Phương Thảo</span>
+                  <Status tone="positive">Đã duyệt brief</Status>
                 </div>
               </div>
-              <div className="p-3.5 bg-white rounded-xl border border-slate-200 text-xs space-y-1.5 shadow-2xs">
-                <span className="font-semibold text-slate-900 block">Re-positioning Thu Đông Q4</span>
-                <p className="text-slate-600 text-2xs">Value Proposition cho dòng phục hồi da mùa khô</p>
-                <div className="flex justify-between text-2xs text-slate-500 pt-1.5 border-t border-slate-100">
-                  <span className="font-medium text-slate-700">Tiến</span>
-                  <span className="text-blue-600 font-semibold">SLA còn 14h</span>
+              <div className="p-3.5 bg-surface rounded-lg border border-line text-xs space-y-1.5">
+                <span className="font-semibold text-ink block">Chiến dịch Thu Đông Q4</span>
+                <p className="text-ink-2 text-2xs">Định vị dòng phục hồi da mùa khô</p>
+                <div className="flex items-center justify-between text-2xs text-ink-3 pt-1.5 border-t border-line">
+                  <span className="font-medium text-ink-2">Tiến</span>
+                  <Status tone="info">SLA còn 14h</Status>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Column 2: Content */}
-          <div className="card-inner-box p-4 border border-purple-200/80 bg-purple-50/20 space-y-3">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-200">
-              <span className="text-xs font-semibold text-purple-600">2. Content Team</span>
-              <span className="badge-purple px-2 py-0.5 rounded text-2xs font-semibold">SLA: 24h - 48h</span>
+          <div className="p-4 rounded-xl border border-line bg-canvas space-y-3">
+            <div className="flex items-center justify-between pb-2 border-b border-line">
+              <span className="text-xs font-semibold text-ink">2. Team Content</span>
+              <Status tone="info">SLA 24–48h</Status>
             </div>
             <div className="space-y-2">
-              <div className="p-3.5 bg-white rounded-xl border border-slate-200 text-xs space-y-1.5 shadow-2xs">
-                <span className="font-semibold text-slate-900 block">Master Plan 10.10: 45 Posts</span>
-                <p className="text-slate-600 text-2xs">Pillars: Giáo dục UV (35%) + Social Proof (45%)</p>
-                <div className="flex justify-between text-2xs text-slate-500 pt-1.5 border-t border-slate-100">
-                  <span className="font-medium text-slate-700">Quỳnh Như</span>
-                  <span className="text-emerald-600 font-semibold">Đã chuyển Booking</span>
+              <div className="p-3.5 bg-surface rounded-lg border border-line text-xs space-y-1.5">
+                <span className="font-semibold text-ink block">Kế hoạch 10.10: 45 bài đăng</span>
+                <p className="text-ink-2 text-2xs">Trụ cột: Kiến thức tia UV (35%) + Trải nghiệm thực tế (45%)</p>
+                <div className="flex items-center justify-between text-2xs text-ink-3 pt-1.5 border-t border-line">
+                  <span className="font-medium text-ink-2">Quỳnh Như</span>
+                  <Status tone="positive">Đã chuyển Booking</Status>
                 </div>
               </div>
-              <div className="p-3.5 bg-white rounded-xl border border-slate-200 text-xs space-y-1.5 shadow-2xs">
-                <span className="font-semibold text-slate-900 block">Duyệt kịch bản KOC 60s</span>
-                <p className="text-slate-600 text-2xs">Angle &quot;Soi camera UV trước và sau khi thoa&quot;</p>
-                <div className="flex justify-between text-2xs text-slate-500 pt-1.5 border-t border-slate-100">
-                  <span className="font-medium text-slate-700">Hoàng Linh</span>
-                  <span className="text-amber-600 font-semibold">SLA còn 4h</span>
+              <div className="p-3.5 bg-surface rounded-lg border border-line text-xs space-y-1.5">
+                <span className="font-semibold text-ink block">Duyệt kịch bản KOC 60s</span>
+                <p className="text-ink-2 text-2xs">Góc quay &quot;Soi camera UV trước và sau khi thoa&quot;</p>
+                <div className="flex items-center justify-between text-2xs text-ink-3 pt-1.5 border-t border-line">
+                  <span className="font-medium text-ink-2">Hoàng Linh</span>
+                  <Status tone="warning">SLA còn 4h</Status>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Column 3: Booking */}
-          <div className="card-inner-box p-4 border border-emerald-200/80 bg-emerald-50/20 space-y-3">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-200">
-              <span className="text-xs font-semibold text-emerald-600">3. Booking Execution</span>
-              <span className="badge-emerald px-2 py-0.5 rounded text-2xs font-semibold">SLA: 12h - 48h</span>
+          <div className="p-4 rounded-xl border border-line bg-canvas space-y-3">
+            <div className="flex items-center justify-between pb-2 border-b border-line">
+              <span className="text-xs font-semibold text-ink">3. Team Booking</span>
+              <Status tone="positive">SLA 12–48h</Status>
             </div>
             <div className="space-y-2">
-              <div className="p-3.5 bg-white rounded-xl border border-slate-200 text-xs space-y-1.5 shadow-2xs">
-                <span className="font-semibold text-slate-900 block">Booking 30 KOC Video Tier 3</span>
-                <p className="text-slate-600 text-2xs">Đã chốt 28/30 KOCs • 18 HĐ đã chi tạm ứng 2tr</p>
-                <div className="flex justify-between text-2xs text-slate-500 pt-1.5 border-t border-slate-100">
-                  <span className="font-medium text-slate-700">Khánh Vy</span>
-                  <span className="text-emerald-600 font-semibold">Đang tiến độ tốt</span>
+              <div className="p-3.5 bg-surface rounded-lg border border-line text-xs space-y-1.5">
+                <span className="font-semibold text-ink block">Booking 30 KOC video Micro</span>
+                <p className="text-ink-2 text-2xs">Đã chốt 28/30 KOC · 18 hợp đồng đã chi tạm ứng 2 tr</p>
+                <div className="flex items-center justify-between text-2xs text-ink-3 pt-1.5 border-t border-line">
+                  <span className="font-medium text-ink-2">Khánh Vy</span>
+                  <Status tone="positive">Đang chạy</Status>
                 </div>
               </div>
-              <div className="p-3.5 bg-white rounded-xl border border-slate-200 text-xs space-y-1.5 shadow-2xs">
-                <span className="font-semibold text-slate-900 block">Live Affiliate Marathon D-Day</span>
-                <p className="text-slate-600 text-2xs">Booking 8 KOC Live đồng thời khung 19h - 24h</p>
-                <div className="flex justify-between text-2xs text-slate-500 pt-1.5 border-t border-slate-100">
-                  <span className="font-medium text-slate-700">Nguyễn Anh</span>
-                  <span className="text-blue-600 font-semibold">Chờ nghiệm thu</span>
+              <div className="p-3.5 bg-surface rounded-lg border border-line text-xs space-y-1.5">
+                <span className="font-semibold text-ink block">Livestream Affiliate ngày sale</span>
+                <p className="text-ink-2 text-2xs">Booking 8 KOC livestream đồng thời khung 19h–24h</p>
+                <div className="flex items-center justify-between text-2xs text-ink-3 pt-1.5 border-t border-line">
+                  <span className="font-medium text-ink-2">Nguyễn Anh</span>
+                  <Status tone="warning">Chờ nghiệm thu</Status>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </Panel>
 
-      {/* Active Deals Table */}
-      <div className="card-enterprise overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/60">
-          <div>
-            <h3 className="text-sm font-semibold text-slate-900">Deal KOC và tạm ứng</h3>
-            <p className="text-xs text-slate-500 mt-0.5">Giá trị deal, tạm ứng và trạng thái của từng KOC</p>
-          </div>
-          <button
-            onClick={onOpenQuickBook}
-            className="btn-md bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-lg shadow-2xs transition"
-          >
-            + Thêm deal mới
-          </button>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-separate border-spacing-0 text-xs min-w-[1050px]">
-            <thead>
-              <tr className="bg-slate-50 text-slate-600 border-b border-slate-200 text-2xs font-semibold">
-                <th className="p-3.5 pl-6 border-b border-slate-200 w-[110px] min-w-[110px] whitespace-nowrap">Mã Deal</th>
-                <th className="p-3.5 border-b border-slate-200 w-[180px] min-w-[180px]">KOC / Kênh</th>
-                <th className="p-3.5 border-b border-slate-200 w-[240px] min-w-[240px]">Chiến dịch</th>
-                <th className="p-3.5 border-b border-slate-200 w-[130px] min-w-[130px] whitespace-nowrap">Nhân sự</th>
-                <th className="p-3.5 border-b border-slate-200 w-[140px] min-w-[140px] whitespace-nowrap">Tổng Deal</th>
-                <th className="p-3.5 border-b border-slate-200 w-[140px] min-w-[140px] whitespace-nowrap">Tạm ứng đợt 1</th>
-                <th className="p-3.5 border-b border-slate-200 w-[140px] min-w-[140px] whitespace-nowrap">Trạng Thái</th>
-                <th className="p-3.5 pr-6 text-right border-b border-slate-200 w-[110px] min-w-[110px] whitespace-nowrap sticky right-0 bg-slate-50 border-l border-slate-200 z-10">Thao Tác</th>
-              </tr>
-            </thead>
-            <tbody>
-              {deals.map((deal) => (
-                <tr key={deal.id} className="group hover:bg-slate-50/80 transition-colors">
-                  <td className="p-3.5 pl-6 border-b border-slate-100 font-mono font-semibold text-blue-600 whitespace-nowrap">{deal.dealCode}</td>
-                  <td className="p-3.5 border-b border-slate-100">
-                    <div className="font-semibold text-slate-900">{deal.kocStageName}</div>
-                    <div className="text-2xs text-slate-500">{deal.kocTier}</div>
-                  </td>
-                  <td className="p-3.5 border-b border-slate-100 text-slate-700 max-w-xs truncate">{deal.campaignTitle}</td>
-                  <td className="p-3.5 border-b border-slate-100 whitespace-nowrap"><Person name={deal.assignedStaff} size={22} /></td>
-                  <td className="p-3.5 border-b border-slate-100 font-semibold text-slate-900 whitespace-nowrap font-mono">
-                    {deal.totalValue.toLocaleString('vi-VN')}&nbsp;₫
-                  </td>
-                  <td className="p-3.5 border-b border-slate-100 font-semibold text-emerald-600 whitespace-nowrap font-mono">
-                    {deal.advanceAmount.toLocaleString('vi-VN')}&nbsp;₫
-                  </td>
-                  <td className="p-3.5 border-b border-slate-100 whitespace-nowrap">
-                    <span className={`px-2.5 py-1 rounded-full text-2xs font-semibold ${
-                      deal.status === 'ADVANCE_PAID' ? 'badge-emerald' :
-                      deal.status === 'SCRIPT_APPROVED' ? 'badge-purple' :
-                      deal.status === 'VIDEO_SUBMITTED' ? 'badge-blue' :
-                      'badge-slate'
-                    }`}>
-                      {deal.statusLabel}
-                    </span>
-                  </td>
-                  <td className="p-3.5 pr-6 text-right border-b border-slate-100 whitespace-nowrap sticky right-0 bg-white group-hover:bg-slate-50 border-l border-slate-200 z-10">
-                    <button
-                      onClick={() => onSelectDeal(deal)}
-                      className="btn-sm bg-white hover:bg-slate-50 text-blue-600 rounded-lg text-xs font-semibold border border-slate-200 transition flex items-center gap-1.5 ml-auto shadow-2xs"
-                    >
-                      <Eye className="w-3.5 h-3.5 text-blue-600" />
-                      <span>Xem HĐ</span>
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <Panel
+        flush
+        title="Theo dõi deal và giải ngân"
+        actions={
+          <Button variant="primary" size="sm" icon={Plus} onClick={onOpenQuickBook}>
+            Thêm deal
+          </Button>
+        }
+      >
+        <DataTable
+          columns={columns}
+          rows={deals}
+          rowKey={(deal) => deal.id}
+          stickyLast
+        />
+      </Panel>
     </div>
   );
 };

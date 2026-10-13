@@ -133,7 +133,7 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
         confirmedAt: now,
         note: actionNote || 'Growth đã xác nhận số tổng và gói Ads cho gian hàng.'
       };
-      const msg = `Growth PIC (${author}) đã XÁC NHẬN GIAO SỐ TỔNG & GÓI ADS: "${actionNote || 'Đạt yêu cầu P&L'}"`;
+      const msg = `Growth PIC (${author}) đã xác nhận giao số tổng và gói Ads: "${actionNote || 'Đạt yêu cầu P&L'}"`;
       onStatusChange(allThreePartiesConfirmed ? 'PENDING_APPROVAL' : 'PENDING_PRE_APPROVAL', msg, actionNote);
     } else if (pendingActionType === 'CONFIRM_BOOKING') {
       const author = currentUser?.name || plan.pic || 'Khánh Vy';
@@ -143,7 +143,7 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
         confirmedAt: now,
         note: actionNote || 'Booking PIC đã hoàn thành phân rã chi tiết 4 kênh và định mức KL1-KL7.'
       };
-      const msg = `Booking PIC (${author}) đã XÁC NHẬN CƠ CẤU PHÂN RÃ KOC & KÊNH THƯƠNG HIỆU: "${actionNote || 'Khớp trần chi phí'}"`;
+      const msg = `Booking PIC (${author}) đã xác nhận cơ cấu phân rã KOC và kênh thương hiệu: "${actionNote || 'Khớp trần chi phí'}"`;
       onStatusChange(allThreePartiesConfirmed ? 'PENDING_APPROVAL' : 'PENDING_PRE_APPROVAL', msg, actionNote);
     } else if (pendingActionType === 'CONFIRM_MEDIA') {
       const author = currentUser?.name || plan.mediaPic || 'Phan Thành Đạt';
@@ -155,7 +155,7 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
         acceptedAdsBudget: plan.budgetAdsTotal || 45000000,
         note: actionNote || `Media nhận trọn gói ngân sách Ads ${formatVndShort(plan.budgetAdsTotal || 0)} và cam kết ROAS ${mediaRoasInput}x.`
       };
-      const msg = `Media PIC (${author}) đã XÁC NHẬN NHẬN GÓI TỔNG NGÂN SÁCH ADS (${formatVndShort(plan.budgetAdsTotal || 0)}) & CAM KẾT ROAS ${mediaRoasInput}x: "${actionNote || 'Cam kết ROAS đạt chuẩn'}"`;
+      const msg = `Media PIC (${author}) đã xác nhận nhận gói tổng ngân sách Ads (${formatVndShort(plan.budgetAdsTotal || 0)}) và cam kết ROAS ${mediaRoasInput}x: "${actionNote || 'Cam kết ROAS đạt chuẩn'}"`;
       onStatusChange(allThreePartiesConfirmed ? 'PENDING_APPROVAL' : 'PENDING_PRE_APPROVAL', msg, actionNote);
     } else if (pendingActionType === 'FINAL_APPROVE') {
       const author = currentUser?.name || 'Vân Ngọc (Trưởng Phòng B2C)';
@@ -163,7 +163,7 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
         confirmed: true,
         confirmedBy: author,
         confirmedAt: now,
-        note: actionNote || 'Trưởng phòng phê duyệt chính thức và đóng băng phiên bản.'
+        note: actionNote || 'Trưởng phòng phê duyệt chính thức và khóa phiên bản.'
       };
 
       // Đóng băng dữ liệu phiên bản chốt (Freeze Snapshot)
@@ -195,9 +195,9 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
         });
       }
 
-      const msg = `Trưởng Phòng B2C đã PHÊ DUYỆT CHÍNH THỨC & ĐÓNG BĂNG PHIÊN BẢN ${currentVersion}. Kế hoạch chuyển sang trạng thái triển khai thực thi.`;
+      const msg = `Trưởng Phòng B2C đã Phê duyệt chính thức và khóa phiên bản ${currentVersion}. Kế hoạch chuyển sang trạng thái triển khai thực thi.`;
       onStatusChange('IN_EXECUTION', msg, actionNote);
-      if (onNotify) onNotify(`Đã phê duyệt và đóng băng ${currentVersion} thành công!`);
+      if (onNotify) onNotify(`Đã phê duyệt và khóa ${currentVersion} thành công!`);
 
       setIsActionNoteOpen(false);
       setActionNote('');
@@ -248,7 +248,7 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
       });
     }
 
-    const msg = `Growth PIC (${author}) đã KHỞI TẠO PHIÊN BẢN ĐIỀU CHỈNH MỚI ${newVersionCode}: "${newChangeReason}". Ngân sách mới: ${formatVndShort(newBudget)}, Gói Ads mới: ${formatVndShort(newAdsBudget)}, Target GMV: ${formatVndShort(newGmv)}.`;
+    const msg = `Growth PIC (${author}) đã khởi tạo phiên bản điều chỉnh mới ${newVersionCode}: "${newChangeReason}". Ngân sách mới: ${formatVndShort(newBudget)}, Gói Ads mới: ${formatVndShort(newAdsBudget)}, Target GMV: ${formatVndShort(newGmv)}.`;
     onStatusChange('DRAFT', msg, newChangeReason);
 
     setIsGrowthNewVersionModalOpen(false);
@@ -266,7 +266,7 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
       : currentRole === 'MEDIA'
       ? `Media PIC (${plan.mediaPic || 'Media Team'})`
       : `Trưởng Phòng B2C`;
-    const log = `${actor} đã YÊU CẦU HIỆU CHỈNH kế hoạch: "${revisionNote}"`;
+    const log = `${actor} đã yêu cầu hiệu chỉnh kế hoạch: "${revisionNote}"`;
 
     onStatusChange('REVISION_REQUESTED', log, revisionNote);
     setIsRevisionModalOpen(false);
@@ -308,7 +308,7 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
             setPendingActionType('CONFIRM_GROWTH');
             setIsActionNoteOpen(true);
           }}
-          className="w-full py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-2xs transition"
+          className="w-full py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-2xs transition"
         >
           Xác nhận giao số
         </button>
@@ -334,7 +334,7 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
             setPendingActionType('CONFIRM_BOOKING');
             setIsActionNoteOpen(true);
           }}
-          className="w-full py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-2xs transition"
+          className="w-full py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-2xs transition"
         >
           Xác nhận cơ cấu
         </button>
@@ -403,9 +403,9 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 px-5 py-3.5 border-b border-slate-100">
         <div className="flex items-center gap-3 min-w-0">
           <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border ${
-            isLocked ? 'bg-emerald-50 border-emerald-200' : 'bg-indigo-50 border-indigo-200'
+            isLocked ? 'bg-emerald-50 border-emerald-200' : 'bg-blue-50 border-blue-200'
           }`}>
-            {isLocked ? <Lock className="w-4 h-4 text-emerald-600" /> : <Layers className="w-4 h-4 text-indigo-600" />}
+            {isLocked ? <Lock className="w-4 h-4 text-emerald-600" /> : <Layers className="w-4 h-4 text-blue-600" />}
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
@@ -448,7 +448,7 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
                 setNewVersionCode(`v${(Math.round(current * 10) + 1) / 10}`.replace(/^v(\d+)$/, 'v$1.0'));
                 setIsGrowthNewVersionModalOpen(true);
               }}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white hover:bg-purple-50 text-purple-700 border border-purple-200 font-semibold text-xs transition"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white hover:bg-blue-50 text-blue-700 border border-blue-200 font-semibold text-xs transition"
               title="Growth tạo phiên bản điều chỉnh mới"
             >
               <PlusCircle className="w-3.5 h-3.5" />
@@ -468,16 +468,16 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
             }`}
           >
             <div className="flex items-center gap-2">
-              <span className={`w-6 h-6 rounded-full flex items-center justify-center text-2xs font-bold shrink-0 ${
+              <span className={`w-6 h-6 rounded-full flex items-center justify-center text-2xs font-semibold shrink-0 ${
                 step.confirmed ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600 border border-slate-200'
               }`}>
                 {step.confirmed ? <CheckCircle2 className="w-3.5 h-3.5" /> : step.no}
               </span>
               <div className="min-w-0 flex-1">
-                <div className="text-2xs font-semibold text-slate-500 uppercase tracking-wide">{step.team}</div>
+                <div className="text-2xs font-semibold text-slate-500">{step.team}</div>
                 <div className="text-xs font-semibold text-slate-900 truncate">{step.task}</div>
               </div>
-              <span className={`text-3xs font-semibold px-1.5 py-0.5 rounded-full whitespace-nowrap ${
+              <span className={`text-2xs font-semibold px-1.5 py-0.5 rounded-full whitespace-nowrap ${
                 step.confirmed ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-50 text-amber-700 border border-amber-200'
               }`}>
                 {step.confirmed ? step.doneLabel : step.pendingLabel}
@@ -494,7 +494,7 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
             </dl>
 
             {step.confirmed && step.confirmedBy && (
-              <div className="mt-2 text-3xs text-emerald-700 truncate" title={step.confirmedBy}>
+              <div className="mt-2 text-2xs text-emerald-700 truncate" title={step.confirmedBy}>
                 ✓ {step.confirmedBy}
               </div>
             )}
@@ -534,12 +534,12 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
           <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 border border-slate-200 animate-in fade-in zoom-in-95">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center">
                   <PlusCircle className="w-4 h-4" />
                 </div>
                 <div>
-                  <h4 className="font-bold text-sm text-slate-900">
-                    Growth: Khởi Tạo Phiên Bản Kế Hoạch Mới
+                  <h4 className="font-semibold text-sm text-slate-900">
+                    Growth: Khởi tạo phiên bản kế hoạch mới
                   </h4>
                   <p className="text-2xs text-slate-500">
                     Phân nhánh từ {currentVersion} để điều chỉnh chỉ tiêu hoặc bổ sung ngân sách Top-up
@@ -557,29 +557,29 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
             <div className="space-y-3.5 text-xs">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-700 font-bold mb-1">Mã phiên bản mới:</label>
+                  <label className="block text-slate-700 font-semibold mb-1">Mã phiên bản mới:</label>
                   <input
                     type="text"
                     value={newVersionCode}
                     onChange={(e) => setNewVersionCode(e.target.value)}
-                    className="w-full px-3 py-1.5 border border-slate-200 rounded-xl text-xs font-bold text-purple-700 focus:outline-none focus:border-purple-500"
+                    className="w-full px-3 py-1.5 border border-slate-200 rounded-xl text-xs font-semibold text-blue-700 focus:outline-none focus:border-blue-500"
                     placeholder="v1.1, v2.0..."
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-700 font-bold mb-1">Tên phiên bản:</label>
+                  <label className="block text-slate-700 font-semibold mb-1">Tên phiên bản:</label>
                   <input
                     type="text"
                     value={newVersionTitle}
                     onChange={(e) => setNewVersionTitle(e.target.value)}
-                    className="w-full px-3 py-1.5 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-purple-500"
+                    className="w-full px-3 py-1.5 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-blue-500"
                     placeholder="VD: Điều chỉnh Đợt 2..."
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-slate-700 font-bold mb-1">
+                <label className="block text-slate-700 font-semibold mb-1">
                   Lý do điều chỉnh (Bắt buộc để lưu lịch sử đối soát) <span className="text-rose-500">*</span>:
                 </label>
                 <textarea
@@ -587,14 +587,14 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
                   value={newChangeReason}
                   onChange={(e) => setNewChangeReason(e.target.value)}
                   placeholder="Ví dụ: Nhãn hàng tăng 30M ngân sách Ads và bổ sung 10 video Shopee cho chiến dịch Mega 10.10. Cần B2C và Media cân đối lại..."
-                  className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-purple-500 resize-none"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-blue-500 resize-none"
                 />
               </div>
 
               {/* Nhập số tổng mới */}
               <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2.5">
-                <div className="font-bold text-slate-800 text-2xs uppercase tracking-wider">
-                  Chỉ Tiêu & Ngân Sách Giao Mới:
+                <div className="font-semibold text-slate-800 text-2xs">
+                  Chỉ tiêu và ngân sách giao mới:
                 </div>
                 <div className="grid grid-cols-3 gap-2">
                   <div>
@@ -604,7 +604,7 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
                       step={5000000}
                       value={newBudget}
                       onChange={(e) => setNewBudget(Number(e.target.value))}
-                      className="w-full px-2 py-1 border border-slate-300 rounded-lg text-xs font-bold text-slate-800"
+                      className="w-full px-2 py-1 border border-slate-300 rounded-lg text-xs font-semibold text-slate-800"
                     />
                   </div>
                   <div>
@@ -614,7 +614,7 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
                       step={5000000}
                       value={newAdsBudget}
                       onChange={(e) => setNewAdsBudget(Number(e.target.value))}
-                      className="w-full px-2 py-1 border border-slate-300 rounded-lg text-xs font-bold text-indigo-700"
+                      className="w-full px-2 py-1 border border-slate-300 rounded-lg text-xs font-semibold text-blue-700"
                     />
                   </div>
                   <div>
@@ -624,7 +624,7 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
                       step={50000000}
                       value={newGmv}
                       onChange={(e) => setNewGmv(Number(e.target.value))}
-                      className="w-full px-2 py-1 border border-slate-300 rounded-lg text-xs font-bold text-emerald-700"
+                      className="w-full px-2 py-1 border border-slate-300 rounded-lg text-xs font-semibold text-emerald-700"
                     />
                   </div>
                 </div>
@@ -640,7 +640,7 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
               </button>
               <button
                 onClick={handleGrowthCreateNewVersion}
-                className="px-4 py-2 rounded-xl text-xs font-bold bg-purple-600 hover:bg-purple-700 text-white shadow-xs"
+                className="px-4 py-2 rounded-xl text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white shadow-xs"
               >
                 Kích Hoạt Phiên Bản {newVersionCode}
               </button>
@@ -655,12 +655,12 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
           <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 border border-slate-200 animate-in fade-in zoom-in-95">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2">
-                <BadgeCheck className="w-5 h-5 text-indigo-600" />
-                <h4 className="font-bold text-sm text-slate-900">
-                  {pendingActionType === 'CONFIRM_GROWTH' && 'Growth: Xác Nhận Giao Số Tổng & Gói Ads'}
-                  {pendingActionType === 'CONFIRM_BOOKING' && 'Marketing B2C: Xác Nhận Cơ Cấu Phân Rã'}
-                  {pendingActionType === 'CONFIRM_MEDIA' && 'Media: Xác Nhận Nhận Gói Tổng Ads & ROAS'}
-                  {pendingActionType === 'FINAL_APPROVE' && `Trưởng Phòng: Phê Duyệt & Đóng Băng ${currentVersion}`}
+                <BadgeCheck className="w-5 h-5 text-blue-600" />
+                <h4 className="font-semibold text-sm text-slate-900">
+                  {pendingActionType === 'CONFIRM_GROWTH' && 'Growth: Xác nhận giao số tổng và gói Ads'}
+                  {pendingActionType === 'CONFIRM_BOOKING' && 'Marketing B2C: Xác nhận cơ cấu phân rã'}
+                  {pendingActionType === 'CONFIRM_MEDIA' && 'Media: Xác nhận nhận gói tổng Ads và ROAS'}
+                  {pendingActionType === 'FINAL_APPROVE' && `Trưởng phòng: Phê duyệt chính thức và khóa phiên bản ${currentVersion}`}
                 </h4>
               </div>
               <button
@@ -681,7 +681,7 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
                   Kế hoạch: <strong className="text-slate-900">{plan.title}</strong>
                 </div>
                 <div className="text-slate-600">
-                  Phiên bản: <strong className="text-purple-700">{currentVersion}</strong> • Ngân sách: <strong>{formatVndShort(plan.totalTargetBudget)}</strong> • Gói Ads: <strong className="text-blue-700">{formatVndShort(plan.budgetAdsTotal || 0)}</strong>
+                  Phiên bản: <strong className="text-blue-700">{currentVersion}</strong> • Ngân sách: <strong>{formatVndShort(plan.totalTargetBudget)}</strong> • Gói Ads: <strong className="text-blue-700">{formatVndShort(plan.budgetAdsTotal || 0)}</strong>
                 </div>
                 <div className="text-2xs text-slate-500">
                   Thao tác bởi: <strong className="text-slate-800">{currentUser?.name || 'Chuyên viên'}</strong> ({currentUser?.roleTitle || 'Thành viên'})
@@ -691,7 +691,7 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
               {pendingActionType === 'CONFIRM_MEDIA' && (
                 <div className="bg-blue-50/70 p-3 rounded-xl border border-blue-200 space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="font-bold text-blue-900">Mức ROAS cam kết tối thiểu:</span>
+                    <span className="font-semibold text-blue-900">Mức ROAS cam kết tối thiểu:</span>
                     <div className="flex items-center gap-1.5">
                       <input
                         type="number"
@@ -700,9 +700,9 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
                         max="20.0"
                         value={mediaRoasInput}
                         onChange={(e) => setMediaRoasInput(parseFloat(e.target.value) || 4.5)}
-                        className="w-20 px-2 py-1 bg-white border border-blue-300 rounded-lg text-xs font-bold text-blue-800 text-center focus:outline-none focus:border-blue-500"
+                        className="w-20 px-2 py-1 bg-white border border-blue-300 rounded-lg text-xs font-semibold text-blue-800 text-center focus:outline-none focus:border-blue-500"
                       />
-                      <span className="font-bold text-blue-900 text-xs">x</span>
+                      <span className="font-semibold text-blue-900 text-xs">x</span>
                     </div>
                   </div>
                   <p className="text-2xs text-blue-700 leading-relaxed">
@@ -712,7 +712,7 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
               )}
 
               <div>
-                <label className="block text-slate-700 font-bold mb-1">
+                <label className="block text-slate-700 font-semibold mb-1">
                   Ý kiến ghi chú (lưu vào lịch sử trao đổi điện tử):
                 </label>
                 <textarea
@@ -720,7 +720,7 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
                   value={actionNote}
                   onChange={(e) => setActionNote(e.target.value)}
                   placeholder="Nhập ý kiến cam kết hoặc lưu ý thực hiện..."
-                  className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-indigo-500 resize-none"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-blue-500 resize-none"
                 />
               </div>
             </div>
@@ -738,7 +738,7 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
               </button>
               <button
                 onClick={handleConfirmAction}
-                className="px-4 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs"
+                className="px-4 py-2 rounded-xl text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white shadow-xs"
               >
                 Xác nhận & Cập nhật
               </button>
@@ -754,7 +754,7 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2">
                 <RotateCcw className="w-5 h-5 text-rose-600" />
-                <h4 className="font-bold text-sm text-slate-900">
+                <h4 className="font-semibold text-sm text-slate-900">
                   Yêu Cầu Hiệu Chỉnh Kế Hoạch
                 </h4>
               </div>
@@ -771,7 +771,7 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
 
             <div className="space-y-3 text-xs">
               <div className="bg-rose-50/70 p-3 rounded-xl border border-rose-200 text-rose-800 space-y-1">
-                <div className="font-bold flex items-center gap-1.5">
+                <div className="font-semibold flex items-center gap-1.5">
                   <AlertCircle className="w-4 h-4 text-rose-600" />
                   Kế hoạch sẽ chuyển về trạng thái "Yêu cầu hiệu chỉnh"
                 </div>
@@ -781,7 +781,7 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
               </div>
 
               <div>
-                <label className="block text-slate-700 font-bold mb-1">
+                <label className="block text-slate-700 font-semibold mb-1">
                   Nội dung chỉ đạo / yêu cầu điều chỉnh <span className="text-rose-500">*</span>:
                 </label>
                 <textarea
@@ -806,7 +806,7 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
               </button>
               <button
                 onClick={handleRevisionSubmit}
-                className="px-4 py-2 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white shadow-xs"
+                className="px-4 py-2 rounded-xl text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white shadow-xs"
               >
                 Gửi Yêu Cầu Hiệu Chỉnh
               </button>

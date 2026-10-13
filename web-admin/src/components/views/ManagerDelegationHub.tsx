@@ -40,10 +40,18 @@ import {
   SlaTask,
   UserRole,
   BookingTeamGroup,
-  BookingTeamMemberInfo
+  BookingTeamMemberInfo,
+  SystemDepartmentScope
 } from '../../lib/types';
-import { UPBASE_BRANDS_MASTER } from '../../lib/importedMasterData';
+import { UPBASE_BRANDS_MASTER, UPBASE_STAFF_MASTER } from '../../lib/importedMasterData';
 import { BOOKING_TEAMS_STRUCTURE } from '../../lib/mockData';
+import {
+  classifyMasterStaffMember,
+  getSavedDeptAccessRules,
+  getSavedStaffAccessOverrides,
+  INITIAL_DEPARTMENT_ACCESS_RULES,
+  ROLE_DISPLAY_NAME
+} from '../../lib/rbacData';
 import { MasterDataMindmapView } from './MasterDataMindmapView';
 import { Avatar, Button, Segmented, Status , ChannelTag } from '../ui';
 import { formatVndShort } from '../../lib/format';
@@ -75,10 +83,82 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
   onPingStaff,
   onNotify
 }) => {
+  const isGrowthManager = currentUser.role === 'GROWTH_MANAGER';
+  const isMediaManager = currentUser.role === 'MEDIA_MANAGER';
+
   // Active Section Tab
-  const [activeSection, setActiveSection] = useState<'BRANDS' | 'STORES' | 'LEADER_TEAMS' | 'STAFF' | 'TASKS' | 'MINDMAP'>('BRANDS');
+  const [activeSection, setActiveSection] = useState<'BRANDS' | 'STORES' | 'LEADER_TEAMS' | 'STAFF' | 'TASKS' | 'MINDMAP'>(
+    isGrowthManager || isMediaManager ? 'STAFF' : 'BRANDS'
+  );
   const [selectedLeaderTeam, setSelectedLeaderTeam] = useState<'ALL' | 'TEAM_1' | 'TEAM_2' | 'TEAM_MULTI'>('ALL');
   const [leaderConsoleViewMode, setLeaderConsoleViewMode] = useState<'STORES_ASSIGN' | 'WORKLOAD_BALANCE'>('STORES_ASSIGN');
+
+  // Bộ lọc nhân sự theo Khối của Trưởng phòng (Marketing B2C / Growth / Media)
+  const [deptStaffScope, setDeptStaffScope] = useState<SystemDepartmentScope>(
+    isGrowthManager ? 'GROWTH' : isMediaManager ? 'MEDIA' : 'MARKETING_B2C'
+  );
+  const [deptStaffTeamFilter, setDeptStaffTeamFilter] = useState<string>('ALL');
+  const [deptStaffSearch, setDeptStaffSearch] = useState<string>('');
+
+  React.useEffect(() => {
+    if (currentUser.role === 'GROWTH_MANAGER') {
+      setDeptStaffScope('GROWTH');
+      setActiveSection('STAFF');
+    } else if (currentUser.role === 'MEDIA_MANAGER') {
+      setDeptStaffScope('MEDIA');
+      setActiveSection('STAFF');
+    } else if (currentUser.role === 'MANAGER') {
+      setDeptStaffScope('MARKETING_B2C');
+    }
+    setDeptStaffTeamFilter('ALL');
+  }, [currentUser.role]);
+
+  // Phân loại toàn bộ nhân sự thuộc 3 khối từ UPBASE_STAFF_MASTER
+  const classifiedMasterStaff = useMemo(() => {
+    const rules = getSavedDeptAccessRules(INITIAL_DEPARTMENT_ACCESS_RULES);
+    const overrides = getSavedStaffAccessOverrides();
+    return UPBASE_STAFF_MASTER.map(s => {
+      const c = classifyMasterStaffMember(s, rules, overrides);
+      return {
+        ...s,
+        ...c,
+        classifiedScope: c.departmentScope,
+        mappedRole: c.role,
+      };
+    });
+  }, []);
+
+  const scopedDepartmentStaff = useMemo(() => {
+    return classifiedMasterStaff.filter(s => s.classifiedScope === deptStaffScope && s.canLogin);
+  }, [classifiedMasterStaff, deptStaffScope]);
+
+  const scopedTeams = useMemo(() => {
+    const set = new Set<string>();
+    scopedDepartmentStaff.forEach(s => {
+      const t = (s.department || s.team || '').trim();
+      if (t) set.add(t);
+    });
+    return Array.from(set).sort();
+  }, [scopedDepartmentStaff]);
+
+  const filteredDepartmentStaff = useMemo(() => {
+    const q = deptStaffSearch.trim().toLowerCase();
+    return scopedDepartmentStaff.filter(s => {
+      if (deptStaffTeamFilter !== 'ALL') {
+        const t = (s.department || s.team || '').trim();
+        if (t !== deptStaffTeamFilter) return false;
+      }
+      if (q) {
+        return (
+          s.name.toLowerCase().includes(q) ||
+          (s.staffCode && s.staffCode.toLowerCase().includes(q)) ||
+          s.email.toLowerCase().includes(q) ||
+          (s.position && s.position.toLowerCase().includes(q))
+        );
+      }
+      return true;
+    });
+  }, [scopedDepartmentStaff, deptStaffTeamFilter, deptStaffSearch]);
 
   // Search & Filter
   const [searchTerm, setSearchTerm] = useState('');
@@ -715,11 +795,11 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
 
                         <td className="py-3 px-3 text-center">
                           {isB2c ? (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-3xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-2xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
                               Làm plan B2C
                             </span>
                           ) : (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-3xs font-medium bg-slate-100 text-slate-500 border border-slate-200">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-2xs font-medium bg-slate-100 text-slate-500 border border-slate-200">
                               Miễn trừ plan
                             </span>
                           )}
@@ -794,11 +874,11 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
               <div>
                 <div className="flex items-center gap-2">
-                  <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                    <Users className="w-5 h-5 text-indigo-600" />
+                  <h3 className="text-base font-semibold text-slate-900 flex items-center gap-2">
+                    <Users className="w-5 h-5 text-blue-600" />
                     <span>Bàn Điều Phối Của Trưởng Nhóm & Chuyên Viên (Leader & Team Member Console)</span>
                   </h3>
-                  <span className="text-2xs font-semibold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
+                  <span className="text-2xs font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
                     Mô hình 2 Tầng
                   </span>
                 </div>
@@ -813,7 +893,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                   onClick={() => setLeaderConsoleViewMode('STORES_ASSIGN')}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition ${
                     leaderConsoleViewMode === 'STORES_ASSIGN'
-                      ? 'bg-white text-slate-900 shadow-2xs font-bold'
+                      ? 'bg-white text-slate-900 shadow-2xs font-semibold'
                       : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
@@ -824,7 +904,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                   onClick={() => setLeaderConsoleViewMode('WORKLOAD_BALANCE')}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition ${
                     leaderConsoleViewMode === 'WORKLOAD_BALANCE'
-                      ? 'bg-white text-slate-900 shadow-2xs font-bold'
+                      ? 'bg-white text-slate-900 shadow-2xs font-semibold'
                       : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
@@ -853,7 +933,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                   onClick={() => setSelectedLeaderTeam(t.teamCode as any)}
                   className={`px-3 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition ${
                     selectedLeaderTeam === t.teamCode
-                      ? 'bg-indigo-600 text-white shadow-2xs'
+                      ? 'bg-blue-600 text-white shadow-2xs'
                       : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                   }`}
                 >
@@ -872,21 +952,21 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                 <div
                   key={team.id}
                   className={`bg-white rounded-2xl border p-4 transition ${
-                    isSelected ? 'border-indigo-300 ring-2 ring-indigo-500/10 shadow-xs' : 'border-slate-200 opacity-60'
+                    isSelected ? 'border-blue-300 ring-2 ring-blue-500/10 shadow-xs' : 'border-slate-200 opacity-60'
                   }`}
                 >
                   {/* Leader Header */}
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-2.5">
-                      <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white font-bold flex items-center justify-center text-sm shadow-xs">
+                      <div className="w-10 h-10 rounded-xl bg-blue-600 text-white font-semibold flex items-center justify-center text-sm shadow-xs">
                         {team.leaderAvatar}
                       </div>
                       <div>
-                        <span className="text-2xs font-semibold px-2 py-0.2 rounded bg-indigo-50 text-indigo-700 border border-indigo-200">
+                        <span className="text-2xs font-semibold px-2 py-0.2 rounded bg-blue-50 text-blue-700 border border-blue-200">
                           {team.teamCode}
                         </span>
-                        <h4 className="text-xs font-bold text-slate-900 mt-0.5">{team.leaderName}</h4>
-                        <span className="text-3xs text-slate-500 block">{team.leaderTitle}</span>
+                        <h4 className="text-xs font-semibold text-slate-900 mt-0.5">{team.leaderName}</h4>
+                        <span className="text-2xs text-slate-500 block">{team.leaderTitle}</span>
                       </div>
                     </div>
                     <span className="text-2xs bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full font-semibold">
@@ -897,37 +977,37 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                   {/* Team Scope */}
                   <div className="mt-3 pt-3 border-t border-slate-100 grid grid-cols-3 gap-2 text-center">
                     <div className="bg-slate-50 p-2 rounded-lg">
-                      <span className="text-3xs text-slate-400 block">Gian hàng</span>
-                      <strong className="text-xs font-mono font-bold text-slate-900">{team.managedStoresCount}</strong>
+                      <span className="text-2xs text-slate-400 block">Gian hàng</span>
+                      <strong className="text-xs font-mono font-semibold text-slate-900">{team.managedStoresCount}</strong>
                     </div>
                     <div className="bg-slate-50 p-2 rounded-lg">
-                      <span className="text-3xs text-slate-400 block">Ngân sách</span>
-                      <strong className="text-xs font-mono font-bold text-indigo-700">{formatVndShort(team.totalMonthlyTargetBudget)}</strong>
+                      <span className="text-2xs text-slate-400 block">Ngân sách</span>
+                      <strong className="text-xs font-mono font-semibold text-blue-700">{formatVndShort(team.totalMonthlyTargetBudget)}</strong>
                     </div>
                     <div className="bg-slate-50 p-2 rounded-lg">
-                      <span className="text-3xs text-slate-400 block">Chỉ tiêu clip</span>
-                      <strong className="text-xs font-mono font-bold text-slate-900">{team.totalMonthlyTargetClips}</strong>
+                      <span className="text-2xs text-slate-400 block">Chỉ tiêu clip</span>
+                      <strong className="text-xs font-mono font-semibold text-slate-900">{team.totalMonthlyTargetClips}</strong>
                     </div>
                   </div>
 
                   {/* Team Members List */}
                   <div className="mt-3">
-                    <span className="text-3xs text-slate-400 font-semibold uppercase tracking-wider block mb-1.5">
+                    <span className="text-2xs text-slate-400 font-semibold   block mb-1.5">
                       Thành viên trong nhóm ({team.members.length} chuyên viên)
                     </span>
                     <div className="space-y-1.5">
                       {team.members.map(m => (
-                        <div key={m.id} className="flex items-center justify-between p-1.5 rounded-lg bg-slate-50 text-2xs hover:bg-indigo-50/50 transition">
+                        <div key={m.id} className="flex items-center justify-between p-1.5 rounded-lg bg-slate-50 text-2xs hover:bg-blue-50/50 transition">
                           <div className="flex items-center gap-1.5">
-                            <span className="w-5 h-5 rounded-md bg-white border border-slate-200 flex items-center justify-center font-bold text-3xs text-slate-700">
+                            <span className="w-5 h-5 rounded-md bg-white border border-slate-200 flex items-center justify-center font-semibold text-2xs text-slate-700">
                               {m.avatar}
                             </span>
                             <div>
                               <strong className="text-slate-900 block leading-tight">{m.name}</strong>
-                              <span className="text-3xs text-slate-400">{m.expertise.split('&')[0]}</span>
+                              <span className="text-2xs text-slate-400">{m.expertise.split('&')[0]}</span>
                             </div>
                           </div>
-                          <span className="font-mono text-3xs text-indigo-700 font-semibold">
+                          <span className="font-mono text-2xs text-blue-700 font-semibold">
                             {m.assignedClips || 0}/{m.maxCapacityClips} clip
                           </span>
                         </div>
@@ -944,8 +1024,8 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
             <div className="bg-white rounded-2xl border border-slate-200/90 overflow-hidden shadow-xs">
               <div className="p-4 border-b border-slate-200 bg-slate-50/70 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                  <h4 className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-                    <Store className="w-4 h-4 text-indigo-600" />
+                  <h4 className="text-xs font-semibold text-slate-900 flex items-center gap-1.5">
+                    <Store className="w-4 h-4 text-blue-600" />
                     <span>Bảng Phân Công Gian Hàng Cho Chuyên Viên Dưới Sự Giám Sát Của Leader</span>
                   </h4>
                   <p className="text-2xs text-slate-500 mt-0.5">
@@ -982,10 +1062,10 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                         <tr key={store.id} className="hover:bg-slate-50 transition">
                           {/* Gian hàng */}
                           <td className="py-3 px-3">
-                            <span className="font-bold text-slate-900 block truncate max-w-[200px]">{store.storeName}</span>
+                            <span className="font-semibold text-slate-900 block truncate max-w-[200px]">{store.storeName}</span>
                             <div className="flex items-center gap-1.5 mt-0.5">
                               <ChannelTag channel={store.platform} />
-                              <span className="text-3xs text-slate-400">{store.category}</span>
+                              <span className="text-2xs text-slate-400">{store.category}</span>
                             </div>
                           </td>
 
@@ -1014,7 +1094,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                                   ? `Gian "${store.storeName}" chuyển sang: Không có leader (Duyệt thẳng Trưởng phòng)!`
                                   : `Đã chuyển gian "${store.storeName}" cho Trưởng nhóm: Nguyễn Thị Ngọc Tâm!`);
                               }}
-                              className="w-full text-xs font-semibold px-2 py-1.5 bg-indigo-50/50 border border-indigo-200 rounded-lg text-indigo-950 focus:outline-none focus:border-indigo-500"
+                              className="w-full text-xs font-semibold px-2 py-1.5 bg-blue-50/50 border border-blue-200 rounded-lg text-blue-950 focus:outline-none focus:border-blue-500"
                             >
                               <option value="NONE">Không có leader (Duyệt thẳng Trưởng phòng)</option>
                               <option value="Nguyễn Thị Ngọc Tâm">Nguyễn Thị Ngọc Tâm (Trưởng nhóm Booking)</option>
@@ -1036,7 +1116,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                                 onUpdateStore(updated);
                                 notify(`Leader đã gán chuyên viên "${newPic}" chủ trì gian "${store.storeName}"!`);
                               }}
-                              className="w-full text-xs font-medium px-2 py-1.5 bg-white border border-slate-200 rounded-lg text-slate-800 focus:outline-none focus:border-indigo-500 shadow-2xs"
+                              className="w-full text-xs font-medium px-2 py-1.5 bg-white border border-slate-200 rounded-lg text-slate-800 focus:outline-none focus:border-blue-500 shadow-2xs"
                             >
                               {matchingTeam.members.map(m => (
                                 <option key={m.id} value={m.name}>
@@ -1057,7 +1137,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                           <td className="py-3 px-3">
                             <div className="flex items-center gap-1 flex-wrap">
                               {(store.assignedMembers || [store.primaryPic || store.b2cOwnerName || 'Khánh Vy']).map(mem => (
-                                <span key={mem} className="text-3xs bg-slate-100 text-slate-700 border border-slate-200 px-1.5 py-0.5 rounded font-medium">
+                                <span key={mem} className="text-2xs bg-slate-100 text-slate-700 border border-slate-200 px-1.5 py-0.5 rounded font-medium">
                                   {mem.split(' ').slice(-1)[0]}
                                 </span>
                               ))}
@@ -1065,7 +1145,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                           </td>
 
                           {/* Ngân sách */}
-                          <td className="py-3 px-3 text-right font-mono font-semibold text-indigo-700">
+                          <td className="py-3 px-3 text-right font-mono font-semibold text-blue-700">
                             {formatVndShort(store.monthlyBudget || 150000000)}
                           </td>
 
@@ -1081,7 +1161,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                                   notify(`Đã lưu chỉ đạo của Leader cho gian "${store.storeName}"!`);
                                 }
                               }}
-                              className="w-full text-2xs px-2 py-1 bg-slate-50 hover:bg-white border border-slate-200 rounded text-slate-700 focus:outline-none focus:border-indigo-500"
+                              className="w-full text-2xs px-2 py-1 bg-slate-50 hover:bg-white border border-slate-200 rounded text-slate-700 focus:outline-none focus:border-blue-500"
                               placeholder="Chỉ đạo của Leader..."
                             />
                           </td>
@@ -1090,7 +1170,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                           <td className="py-3 px-3 text-center">
                             <button
                               onClick={() => handleOpenEditStore(store)}
-                              className="text-2xs text-indigo-600 hover:text-indigo-800 font-semibold px-2 py-1 rounded bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 transition"
+                              className="text-2xs text-blue-600 hover:text-blue-800 font-semibold px-2 py-1 rounded bg-blue-50 hover:bg-blue-100 border border-blue-200 transition"
                             >
                               Chi tiết
                             </button>
@@ -1109,7 +1189,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
             <div className="bg-white rounded-2xl border border-slate-200/90 overflow-hidden shadow-xs">
               <div className="p-4 border-b border-slate-200 bg-slate-50/70 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                  <h4 className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                  <h4 className="text-xs font-semibold text-slate-900 flex items-center gap-1.5">
                     <UserCheck className="w-4 h-4 text-emerald-600" />
                     <span>Cân Bằng Tải & Sức Chứa Của Từng Chuyên Viên (Capacity & Workload)</span>
                   </h4>
@@ -1151,12 +1231,12 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                           {/* Chuyên viên */}
                           <td className="py-3 px-4">
                             <div className="flex items-center gap-2">
-                              <span className="w-8 h-8 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-700 font-bold flex items-center justify-center text-xs">
+                              <span className="w-8 h-8 rounded-lg bg-blue-50 border border-blue-200 text-blue-700 font-semibold flex items-center justify-center text-xs">
                                 {member.avatar}
                               </span>
                               <div>
-                                <span className="font-bold text-slate-900 block">{member.name}</span>
-                                <span className="text-3xs text-slate-400 block">{member.roleTitle}</span>
+                                <span className="font-semibold text-slate-900 block">{member.name}</span>
+                                <span className="text-2xs text-slate-400 block">{member.roleTitle}</span>
                               </div>
                             </div>
                           </td>
@@ -1164,7 +1244,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                           {/* Tổ đội */}
                           <td className="py-3 px-3">
                             <span className="text-2xs font-semibold text-slate-700 block">{member.team}</span>
-                            <span className="text-3xs text-indigo-600 block">Leader: {team.leaderName.split(' ').slice(-2).join(' ')}</span>
+                            <span className="text-2xs text-blue-600 block">Leader: {team.leaderName.split(' ').slice(-2).join(' ')}</span>
                           </td>
 
                           {/* Thế mạnh chuyên môn */}
@@ -1173,13 +1253,13 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                           </td>
 
                           {/* Số gian phụ trách */}
-                          <td className="py-3 px-3 text-center font-mono font-bold text-slate-900">
+                          <td className="py-3 px-3 text-center font-mono font-semibold text-slate-900">
                             {assignedStores.length} gian
                           </td>
 
                           {/* Định mức clip tháng */}
                           <td className="py-3 px-4 text-center font-mono">
-                            <strong className="text-indigo-900">{currentClips}</strong> / {capacity} clip
+                            <strong className="text-blue-900">{currentClips}</strong> / {capacity} clip
                           </td>
 
                           {/* Tỷ lệ tải */}
@@ -1202,14 +1282,14 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
 
                           {/* Trạng thái */}
                           <td className="py-3 px-3 text-center">
-                            <span className={`text-3xs px-2 py-0.5 rounded-full font-semibold border ${
+                            <span className={`text-2xs px-2 py-0.5 rounded-full font-semibold border ${
                               isOverloaded
                                 ? 'bg-rose-50 text-rose-700 border-rose-200'
                                 : isNearFull
                                 ? 'bg-amber-50 text-amber-700 border-amber-200'
                                 : 'bg-emerald-50 text-emerald-700 border-emerald-200'
                             }`}>
-                              {isOverloaded ? '⚠ Quá tải' : isNearFull ? 'Đầy tải' : '✓ An toàn'}
+                              {isOverloaded ? ' Quá tải' : isNearFull ? 'Đầy tải' : '✓ An toàn'}
                             </span>
                           </td>
 
@@ -1219,7 +1299,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                               onClick={() => {
                                 notify(`Leader đã chọn điều phối công việc cho ${member.name}!`);
                               }}
-                              className="text-2xs font-semibold text-slate-700 hover:text-indigo-600 px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 transition"
+                              className="text-2xs font-semibold text-slate-700 hover:text-blue-600 px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 transition"
                             >
                               Điều chuyển
                             </button>
@@ -1234,15 +1314,172 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
           )}
         </div>
       )}
-      {/* 5. SECTION 3: THEO DÕI TẢI NHÂN SỰ TOÀN PHÒNG (STAFF CAPACITY)             */}
+      {/* 5. SECTION 3: QUẢN LÝ NHÂN SỰ THEO TRƯỞNG PHÒNG 3 KHỐI & TẢI GIAN HÀNG B2C */}
       {/* ========================================================================= */}
       {activeSection === 'STAFF' && (
         <div className="space-y-4">
+          {/* Bảng Quản Lý Nhân Sự Theo Phòng Ban Của Trưởng Phòng (Marketing B2C / Growth / Media) */}
+          <div className="bg-white border border-slate-200 p-4 rounded-2xl space-y-3 shadow-xs">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+              <div>
+                <h3 className="text-xs font-semibold text-slate-900 flex items-center gap-2">
+                  <Users className="w-4 h-4 text-blue-600" />
+                  <span>
+                    {deptStaffScope === 'GROWTH'
+                      ? `Danh sách nhân sự khối Growth (${filteredDepartmentStaff.length} / ${scopedDepartmentStaff.length} nhân viên) — Trưởng phòng: Trần Thị Đỗ Quyên`
+                      : deptStaffScope === 'MEDIA'
+                      ? `Danh sách nhân sự khối Media (${filteredDepartmentStaff.length} / ${scopedDepartmentStaff.length} nhân viên) — Trưởng phòng: Nguyễn Đức Quảng`
+                      : `Danh sách nhân sự khối Marketing B2C (${filteredDepartmentStaff.length} / ${scopedDepartmentStaff.length} nhân viên) — Trưởng phòng: Đặng Thị Yến Nhi`}
+                  </span>
+                </h3>
+                <p className="text-2xs text-slate-500 mt-0.5">
+                  Đồng bộ từ danh bạ 1.011 nhân sự UpBase. Chỉ hiển thị các nhân viên thuộc khối đã được cấp quyền đăng nhập hệ thống.
+                </p>
+              </div>
+
+              {/* Nếu là Admin thì cho phép chuyển xem cả 3 khối */}
+              {currentUser.role === 'ADMIN' && (
+                <div className="inline-flex p-0.5 bg-slate-100 rounded-lg text-xs font-medium">
+                  <button
+                    type="button"
+                    onClick={() => { setDeptStaffScope('MARKETING_B2C'); setDeptStaffTeamFilter('ALL'); }}
+                    className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-all ${
+                      deptStaffScope === 'MARKETING_B2C' ? 'bg-white text-blue-700 shadow-2xs' : 'text-slate-600'
+                    }`}
+                  >
+                    Khối MKT B2C
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setDeptStaffScope('GROWTH'); setDeptStaffTeamFilter('ALL'); }}
+                    className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-all ${
+                      deptStaffScope === 'GROWTH' ? 'bg-white text-amber-800 shadow-2xs' : 'text-slate-600'
+                    }`}
+                  >
+                    Khối Growth
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setDeptStaffScope('MEDIA'); setDeptStaffTeamFilter('ALL'); }}
+                    className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-all ${
+                      deptStaffScope === 'MEDIA' ? 'bg-white text-accent shadow-2xs' : 'text-slate-600'
+                    }`}
+                  >
+                    Khối Media
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Thanh tìm kiếm & lọc theo Team trong khối */}
+            <div className="flex flex-wrap items-center gap-2.5">
+              <div className="relative min-w-[220px] max-w-sm flex-1">
+                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Tìm nhân viên theo tên, mã NV, email, vị trí..."
+                  value={deptStaffSearch}
+                  onChange={(e) => setDeptStaffSearch(e.target.value)}
+                  className="w-full pl-8.5 pr-3 h-8.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:border-blue-500 bg-slate-50/60"
+                />
+              </div>
+
+              <div className="flex flex-wrap items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setDeptStaffTeamFilter('ALL')}
+                  className={`px-2.5 py-1 rounded-lg text-2xs font-semibold border transition ${
+                    deptStaffTeamFilter === 'ALL'
+                      ? 'bg-slate-900 text-white border-slate-900'
+                      : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                  }`}
+                >
+                  Tất cả Team ({scopedDepartmentStaff.length})
+                </button>
+                {scopedTeams.map(t => {
+                  const count = scopedDepartmentStaff.filter(s => (s.department || s.team || '').trim() === t).length;
+                  return (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => setDeptStaffTeamFilter(t)}
+                      className={`px-2.5 py-1 rounded-lg text-2xs font-semibold border transition ${
+                        deptStaffTeamFilter === t
+                          ? 'bg-blue-600 text-white border-blue-600'
+                          : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                      }`}
+                    >
+                      {t} ({count})
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Danh sách nhân viên thuộc khối của Trưởng phòng */}
+            <div className="border border-slate-200 rounded-xl overflow-hidden max-h-96 overflow-y-auto">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead className="bg-slate-50 border-b border-slate-200 text-2xs font-semibold text-slate-600 sticky top-0">
+                  <tr>
+                    <th className="py-2.5 px-3 w-[90px]">Mã NV</th>
+                    <th className="py-2.5 px-3">Họ và tên nhân viên</th>
+                    <th className="py-2.5 px-3">Team / Bộ phận</th>
+                    <th className="py-2.5 px-3">Chức danh</th>
+                    <th className="py-2.5 px-3">Vai trò hệ thống</th>
+                    <th className="py-2.5 px-3 text-center w-[130px]">Giao việc</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filteredDepartmentStaff.slice(0, 60).map(emp => (
+                    <tr key={emp.id} className="hover:bg-slate-50/80 transition">
+                      <td className="py-2 px-3 font-mono font-semibold text-slate-800">
+                        <span className="px-1.5 py-0.5 rounded bg-slate-100 border border-slate-200 text-2xs">
+                          {emp.staffCode || emp.id}
+                        </span>
+                      </td>
+                      <td className="py-2 px-3">
+                        <div className="font-semibold text-slate-900">{emp.name}</div>
+                        <div className="text-2xs text-slate-400 font-mono">{emp.email}</div>
+                      </td>
+                      <td className="py-2 px-3 font-medium text-slate-700">
+                        {emp.department || emp.team} · {emp.location || 'HN'}
+                      </td>
+                      <td className="py-2 px-3 text-slate-600">
+                        {emp.position || emp.roleTitle}
+                      </td>
+                      <td className="py-2 px-3">
+                        <span className="px-2 py-0.5 rounded-full text-2xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                          {ROLE_DISPLAY_NAME[emp.mappedRole] || emp.mappedRole}
+                        </span>
+                      </td>
+                      <td className="py-2 px-3 text-center">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setNewTaskState(prev => ({
+                              ...prev,
+                              targetStaff: emp.name
+                            }));
+                            setIsTaskModalOpen(true);
+                          }}
+                          className="px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-2xs font-semibold inline-flex items-center gap-1"
+                        >
+                          <Send className="w-3 h-3" />
+                          <span>Giao việc</span>
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
           <div className="bg-white border border-slate-200 p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
             <div>
               <h3 className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
                 <Users className="w-4 h-4 text-blue-600" />
-                Theo dõi tải gian hàng nhân sự B2C
+                Theo dõi tải gian hàng nhân sự nòng cốt B2C
               </h3>
               <p className="text-2xs text-slate-500 mt-0.5">
                 {storeFilterMode === 'B2C_ONLY'
@@ -1309,8 +1546,8 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                         </div>
                       </div>
                       <span className={`text-2xs font-semibold px-2 py-0.5 rounded-full ${
-                        staff.role === 'BOOKING' ? 'bg-purple-50 text-purple-700 border border-purple-200' :
-                        staff.role === 'CONTENT' ? 'bg-orange-50 text-orange-700 border border-orange-200' :
+                        staff.role === 'BOOKING' ? 'bg-slate-50 text-slate-700 border border-slate-200' :
+                        staff.role === 'CONTENT' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
                         'bg-blue-50 text-blue-700 border border-blue-200'
                       }`}>
                         {staff.role}
@@ -1508,17 +1745,17 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
       {isTaskModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-200 bg-slate-900 text-white flex items-center justify-between">
+            <div className="px-6 py-4 border-b border-line bg-surface text-ink flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <Send className="w-5 h-5 text-blue-400" />
+                <Send className="w-5 h-5 text-blue-600" />
                 <div>
                   <h3 className="text-sm font-semibold">Giao việc trực tiếp cho nhân sự</h3>
-                  <p className="text-2xs text-slate-400">Trưởng phòng phân công nhiệm vụ và hạn định SLA</p>
+                  <p className="text-2xs text-ink-2">Trưởng phòng phân công nhiệm vụ và hạn định SLA</p>
                 </div>
               </div>
               <button
                 onClick={() => setIsTaskModalOpen(false)}
-                className="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition"
+                className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 flex items-center justify-center transition"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1534,11 +1771,20 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                   onChange={(e) => setNewTaskState(prev => ({ ...prev, targetStaff: e.target.value }))}
                   className="w-full text-xs font-medium px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:outline-none focus:border-blue-500"
                 >
-                  {staffList.map(s => (
-                    <option key={s.id} value={s.name}>
-                      {s.name} ({s.roleTitle} - {s.team})
-                    </option>
-                  ))}
+                  <optgroup label="Nhân sự nòng cốt B2C">
+                    {staffList.map(s => (
+                      <option key={s.id} value={s.name}>
+                        {s.name} ({s.roleTitle} - {s.team})
+                      </option>
+                    ))}
+                  </optgroup>
+                  <optgroup label={`Nhân sự thuộc ${deptStaffScope === 'GROWTH' ? 'Khối Growth' : deptStaffScope === 'MEDIA' ? 'Khối Media' : 'Khối Marketing B2C'}`}>
+                    {scopedDepartmentStaff.slice(0, 60).map(s => (
+                      <option key={`dept-${s.id}`} value={s.name}>
+                        {s.staffCode} - {s.name} ({s.department || s.team})
+                      </option>
+                    ))}
+                  </optgroup>
                 </select>
               </div>
 
@@ -1651,25 +1897,25 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[92vh]">
             {/* Modal Header */}
-            <div className="px-6 py-4 border-b border-slate-200 bg-slate-900 text-white flex items-center justify-between shrink-0">
+            <div className="px-6 py-4 border-b border-line bg-surface text-ink flex items-center justify-between shrink-0">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-blue-600/30 border border-blue-500/30 flex items-center justify-center">
-                  <Database className="w-4 h-4 text-blue-400" />
+                <div className="w-8 h-8 rounded-lg bg-blue-50 border border-blue-200 flex items-center justify-center">
+                  <Database className="w-4 h-4 text-blue-600" />
                 </div>
                 <div>
                   <h3 className="text-sm font-semibold">
-                    {editingBrand ? `Chỉnh Sửa Phân Bổ Nhãn Hàng: ${editingBrand.name}` : 'Thêm Nhãn Hàng Vào Phân Bổ & Điều Phối PIC'}
+                    {editingBrand ? `Chỉnh sửa phân bổ nhãn hàng: ${editingBrand.name}` : 'Thêm nhãn hàng vào phân bổ & điều phối PIC'}
                   </h3>
-                  <p className="text-2xs text-slate-400">
+                  <p className="text-2xs text-ink-2">
                     {editingBrand 
                       ? 'Trưởng phòng điều chỉnh Brand PIC Lead, Account PIC và ngân sách trần'
-                      : `Lựa chọn từ Master Data doanh nghiệp (${UPBASE_BRANDS_MASTER.length} thương hiệu chuẩn) để phân bổ vận hành`}
+                      : `Lựa chọn từ danh mục doanh nghiệp (${UPBASE_BRANDS_MASTER.length} thương hiệu chuẩn) để phân bổ vận hành`}
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setIsBrandModalOpen(false)}
-                className="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition"
+                className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 flex items-center justify-center transition"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1752,14 +1998,14 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
 
                         {/* Selected Brand Banner or Brand Picker List */}
                         {selectedMasterBrand ? (
-                          <div className="p-3 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl flex items-start justify-between gap-3 shadow-2xs animate-in fade-in duration-150">
+                          <div className="p-3 bg-slate-50   border border-blue-200 rounded-xl flex items-start justify-between gap-3 shadow-2xs animate-in fade-in duration-150">
                             <div className="flex items-start gap-2.5">
-                              <div className="w-8 h-8 rounded-lg bg-blue-600 text-white font-bold flex items-center justify-center shrink-0 text-xs shadow-xs">
+                              <div className="w-8 h-8 rounded-lg bg-blue-600 text-white font-semibold flex items-center justify-center shrink-0 text-xs shadow-xs">
                                 {selectedMasterBrand.name.substring(0, 2).toUpperCase()}
                               </div>
                               <div>
                                 <div className="flex items-center gap-1.5 flex-wrap">
-                                  <span className="font-bold text-slate-900 text-xs">{selectedMasterBrand.name}</span>
+                                  <span className="font-semibold text-slate-900 text-xs">{selectedMasterBrand.name}</span>
                                   <span className="px-1.5 py-0.2 rounded font-mono text-2xs font-semibold bg-blue-100 text-blue-800">
                                     {selectedMasterBrand.code}
                                   </span>
@@ -1893,7 +2139,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                   <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between">
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="font-bold text-slate-900 text-sm">{editingBrand.name}</span>
+                        <span className="font-semibold text-slate-900 text-sm">{editingBrand.name}</span>
                         <span className="px-1.5 py-0.2 rounded font-mono text-2xs font-semibold bg-blue-100 text-blue-800">
                           {editingBrand.code}
                         </span>
@@ -2071,17 +2317,17 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
       {editingStore && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-200 bg-slate-900 text-white flex items-center justify-between">
+            <div className="px-6 py-4 border-b border-line bg-surface text-ink flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <Store className="w-5 h-5 text-blue-400" />
+                <Store className="w-5 h-5 text-blue-600" />
                 <div>
                   <h3 className="text-sm font-semibold">Phân công gian hàng</h3>
-                  <p className="text-2xs text-slate-400">{editingStore.storeName}</p>
+                  <p className="text-2xs text-ink-2">{editingStore.storeName}</p>
                 </div>
               </div>
               <button
                 onClick={() => setEditingStore(null)}
-                className="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition"
+                className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 flex items-center justify-center transition"
               >
                 <X className="w-4 h-4" />
               </button>

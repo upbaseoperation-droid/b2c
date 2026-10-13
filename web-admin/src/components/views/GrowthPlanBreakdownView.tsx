@@ -444,7 +444,7 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
                       demand.status === 'PENDING_BREAKDOWN' ? 'bg-amber-50 text-amber-800 border-amber-300 ' :
                       demand.status === 'PLANNED' ? 'bg-blue-50 text-blue-700 border-blue-200' :
                       demand.status === 'LEAD_APPROVED' ? 'bg-emerald-50 text-emerald-700 border-emerald-300' :
-                      'bg-purple-50 text-purple-700 border-purple-200'
+                      'bg-slate-50 text-slate-700 border-slate-200'
                     }`}>
                       {demand.status === 'PENDING_BREAKDOWN' ? 'Chờ Lập Plan' :
                        demand.status === 'PLANNED' ? 'Đã Lập Xong' :
@@ -514,7 +514,7 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
                   activeDemand.status === 'PENDING_BREAKDOWN' ? 'bg-amber-50 text-amber-800 border-amber-300' :
                   activeDemand.status === 'PLANNED' ? 'bg-blue-50 text-blue-700 border-blue-200' :
                   activeDemand.status === 'LEAD_APPROVED' ? 'bg-emerald-50 text-emerald-700 border-emerald-300' :
-                  'bg-purple-50 text-purple-700 border-purple-200'
+                  'bg-slate-50 text-slate-700 border-slate-200'
                 }`}>
                   {activeDemand.status === 'PENDING_BREAKDOWN' ? 'Chờ Lập Kế Hoạch' :
                    activeDemand.status === 'PLANNED' ? 'Đã Lập (Chờ Duyệt)' :
@@ -552,7 +552,7 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
                 <button
                   type="button"
                   onClick={() => applyPreset('BRAND_PUSH')}
-                  className="px-2.5 py-1 rounded-md text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100 transition cursor-pointer"
+                  className="px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-50 text-slate-700 border border-slate-200 hover:bg-slate-100 transition cursor-pointer"
                 >
                   Đẩy Thương Hiệu &amp; Trust (Celeb + Macro)
                 </button>
@@ -630,7 +630,7 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
                 channelTab === 'SELF_CHANNEL' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <Video className="w-3.5 h-3.5 text-purple-600" />
+              <Video className="w-3.5 h-3.5 text-slate-600" />
               2. Video Self-Channel (Inhouse &amp; Reup)
             </button>
 
@@ -820,7 +820,7 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
               <div className="flex items-center justify-between pb-3 border-b border-slate-200">
                 <div>
                   <h4 className="text-xs font-semibold text-slate-900 flex items-center gap-2">
-                    <Video className="w-4 h-4 text-purple-600" />
+                    <Video className="w-4 h-4 text-slate-600" />
                     Kế hoạch video self-channel (kênh thương hiệu inhouse)
                   </h4>
                   <p className="text-2xs text-slate-500">
@@ -846,7 +846,7 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
                 </div>
                 <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
                   <div className="text-2xs text-slate-500">Chi phí đã giải ngân (MTD)</div>
-                  <div className="text-base font-semibold text-purple-600 mt-1">14.200.000đ</div>
+                  <div className="text-base font-semibold text-slate-600 mt-1">14.200.000đ</div>
                   <div className="text-2xs text-slate-400 mt-0.5">Tiến độ ngân sách: 78.8%</div>
                 </div>
               </div>
@@ -889,8 +889,8 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
                     <tr className="hover:bg-slate-50">
                       <td className="py-2.5 px-3 font-semibold text-slate-900">Threads video (tương tác Viral)</td>
                       <td className="py-2.5 px-3 text-center font-mono text-slate-700">12 video</td>
-                      <td className="py-2.5 px-3 text-center font-mono text-purple-600 font-semibold">10 video</td>
-                      <td className="py-2.5 px-3 text-center text-purple-600 font-semibold">83%</td>
+                      <td className="py-2.5 px-3 text-center font-mono text-slate-600 font-semibold">10 video</td>
+                      <td className="py-2.5 px-3 text-center text-slate-600 font-semibold">83%</td>
                       <td className="py-2.5 px-3 text-right font-mono text-slate-500">0đ</td>
                     </tr>
                   </tbody>

@@ -54,15 +54,18 @@ import { REAL_B2C_42_BRANDS } from './realB2cBrandsData';
 
 export const USERS: UserProfile[] = [
   // =========================================================================
-  // 1. BAN ĐIỀU HÀNH & QUẢN TRỊ (BOD / OPERATIONS HEAD)
+  // 1. BAN ĐIỀU HÀNH & TRƯỞNG PHÒNG 3 KHỐI (ADMIN / MARKETING B2C / GROWTH / MEDIA)
   // =========================================================================
   {
     id: 'user-admin-chinh',
     name: 'Nguyễn Trọng Chỉnh',
     email: 'chinhnt@upbase.vn',
     role: 'ADMIN',
-    roleTitle: 'Ban Giám Đốc (BOD / Super Admin)',
+    roleTitle: 'Quản Trị Hệ Thống (BOD / Admin)',
     avatar: 'NC',
+    departmentScope: 'MARKETING_B2C',
+    departmentName: 'Ban Giám Đốc',
+    canLogin: true,
     loginProvider: 'LARK',
     assignedBrands: ['Tất cả nhãn hàng', 'Kutieskin', 'Royal Ausnz', 'Mega Uri', 'pHCare', 'La Roche-Posay', 'Senka'],
     permissions: ['ALL_PERMISSIONS']
@@ -72,14 +75,47 @@ export const USERS: UserProfile[] = [
     name: 'Đặng Thị Yến Nhi',
     email: 'yennhi@upbase.vn',
     role: 'MANAGER',
-    roleTitle: 'Trưởng Phòng Vận Hành B2C (Lead B2C)',
+    roleTitle: 'Trưởng Phòng Marketing B2C (Lead B2C)',
     avatar: 'YN',
+    departmentScope: 'MARKETING_B2C',
+    departmentName: 'Khối Marketing B2C',
+    canLogin: true,
     loginProvider: 'LARK',
     assignedBrands: ['Tất cả nhãn hàng', 'BELLA', 'Baniphar', 'EUPC', 'ClubClio', 'Fresh', 'Kutieskin', 'Natural Care', 'Miss Saigon']
   },
+  {
+    id: 'user-growth-manager-quyen',
+    name: 'Trần Thị Đỗ Quyên',
+    email: 'quyenttd@upbase.vn',
+    role: 'GROWTH_MANAGER',
+    roleTitle: 'Trưởng Phòng Growth (Head of Growth)',
+    avatar: 'ĐQ',
+    staffCode: 'HN018',
+    departmentScope: 'GROWTH',
+    departmentName: 'Khối Growth Ecom',
+    teamName: 'Growth 1 - 6 & HCM',
+    canLogin: true,
+    loginProvider: 'LARK',
+    assignedBrands: ['Tất cả nhãn hàng', 'ClubClio', 'Kutieskin', 'Fresh', 'Cocoon', 'Senka', 'La Roche-Posay', 'BELLA']
+  },
+  {
+    id: 'user-media-manager-quang',
+    name: 'Nguyễn Đức Quảng',
+    email: 'quangnd@upbase.vn',
+    role: 'MEDIA_MANAGER',
+    roleTitle: 'Trưởng Phòng Media (Head of Media)',
+    avatar: 'ĐQ',
+    staffCode: 'HN045',
+    departmentScope: 'MEDIA',
+    departmentName: 'Khối Media & Ads',
+    teamName: 'Media Omni & TikTok',
+    canLogin: true,
+    loginProvider: 'LARK',
+    assignedBrands: ['Tất cả nhãn hàng', 'ClubClio', 'Kutieskin', 'Fresh', 'Cocoon', 'Senka', 'La Roche-Posay', 'BELLA']
+  },
 
   // =========================================================================
-  // 2. TRƯỞNG NHÓM & CHUYÊN VIÊN TÁC NGHIỆP NỘI BỘ
+  // 2. TRƯỞNG NHÓM & CHUYÊN VIÊN TÁC NGHIỆP 3 KHỐI (MARKETING B2C - GROWTH - MEDIA)
   // =========================================================================
   {
     id: 'user-ngoc-tam',
@@ -88,6 +124,12 @@ export const USERS: UserProfile[] = [
     role: 'LEADER',
     roleTitle: 'Trưởng Nhóm Booking (Mỹ Phẩm & FMCG)',
     avatar: 'NT',
+    departmentScope: 'MARKETING_B2C',
+    departmentName: 'Phòng Marketing B2C',
+    teamName: 'Booking',
+    managerId: 'user-yen-nhi',
+    managerName: 'Đặng Thị Yến Nhi',
+    canLogin: true,
     loginProvider: 'LARK',
     linkedEntityName: 'ClubClio, Cindy Bloom, EUPC, Mine, Cathy Doll',
     assignedBrands: ['ClubClio', 'Cindy Bloom', 'EUPC', 'Mine', 'Cathy Doll']
@@ -99,6 +141,12 @@ export const USERS: UserProfile[] = [
     role: 'BOOKING_MEMBER',
     roleTitle: 'Chuyên Viên Booking Chính (Dược Mỹ Phẩm & Skincare)',
     avatar: 'PT',
+    departmentScope: 'MARKETING_B2C',
+    departmentName: 'Phòng Marketing B2C',
+    teamName: 'Booking',
+    managerId: 'user-yen-nhi',
+    managerName: 'Đặng Thị Yến Nhi',
+    canLogin: true,
     loginProvider: 'LARK',
     linkedEntityName: 'BELLA, Dynik, Miss Saigon, Ekseption, 4PM',
     assignedBrands: ['BELLA', 'Dynik', 'Miss Saigon', 'Ekseption', '4PM']
@@ -110,6 +158,12 @@ export const USERS: UserProfile[] = [
     role: 'BOOKING_MEMBER',
     roleTitle: 'Chuyên Viên Booking Chính (Mẹ & Bé, Sức Khỏe)',
     avatar: 'NQ',
+    departmentScope: 'MARKETING_B2C',
+    departmentName: 'Phòng Marketing B2C',
+    teamName: 'Booking',
+    managerId: 'user-yen-nhi',
+    managerName: 'Đặng Thị Yến Nhi',
+    canLogin: true,
     loginProvider: 'LARK',
     linkedEntityName: 'Kutieskin, Baniphar, Nabizam, Docilee, Nature\'s Way, Ziaja',
     assignedBrands: ['Kutieskin', 'Baniphar', 'Nabizam', 'Docilee', 'Nature\'s Way', 'Ziaja']
@@ -121,6 +175,12 @@ export const USERS: UserProfile[] = [
     role: 'BOOKING_MEMBER',
     roleTitle: 'Chuyên Viên Booking Chính (Đa Sàn & Tự Xây)',
     avatar: 'TH',
+    departmentScope: 'MARKETING_B2C',
+    departmentName: 'Phòng Marketing B2C',
+    teamName: 'Booking',
+    managerId: 'user-yen-nhi',
+    managerName: 'Đặng Thị Yến Nhi',
+    canLogin: true,
     loginProvider: 'LARK',
     linkedEntityName: 'Bye Bye Blemish, Herbal Care, Fresh, HDT, pHCare, Nucos',
     assignedBrands: ['Bye Bye Blemish', 'Herbal Care', 'Fresh', 'HDT', 'pHCare', 'Nucos']
@@ -132,6 +192,12 @@ export const USERS: UserProfile[] = [
     role: 'BOOKING_MEMBER',
     roleTitle: 'Chuyên Viên Booking (Booking Specialist)',
     avatar: 'TH',
+    departmentScope: 'MARKETING_B2C',
+    departmentName: 'Phòng Marketing B2C',
+    teamName: 'Booking',
+    managerId: 'user-ngoc-tam',
+    managerName: 'Nguyễn Thị Ngọc Tâm',
+    canLogin: true,
     loginProvider: 'LARK',
     linkedEntityName: 'ClubClio, Lipit, Fresh',
     assignedBrands: ['ClubClio', 'Lipit', 'Fresh']
@@ -143,6 +209,12 @@ export const USERS: UserProfile[] = [
     role: 'BOOKING_MEMBER',
     roleTitle: 'Chuyên Viên Booking (Booking Specialist)',
     avatar: 'HL',
+    departmentScope: 'MARKETING_B2C',
+    departmentName: 'Phòng Marketing B2C',
+    teamName: 'Booking',
+    managerId: 'user-yen-nhi',
+    managerName: 'Đặng Thị Yến Nhi',
+    canLogin: true,
     loginProvider: 'LARK',
     linkedEntityName: 'Dynik, Badlab, Natural Care',
     assignedBrands: ['Dynik', 'Badlab', 'Natural Care']
@@ -153,9 +225,15 @@ export const USERS: UserProfile[] = [
     email: 'anhtt@upbase.vn',
     role: 'GROWTH_MEMBER',
     roleTitle: 'Chuyên Viên Chiến Lược & PnL (Growth PIC)',
-    avatar: 'Á',
+    avatar: 'TÁ',
+    departmentScope: 'GROWTH',
+    departmentName: 'Khối Growth Ecom',
+    teamName: 'Growth 1',
+    managerId: 'user-growth-manager-quyen',
+    managerName: 'Trần Thị Đỗ Quyên',
+    canLogin: true,
     loginProvider: 'LARK',
-    assignedBrands: ['Tất cả nhãn hàng', 'Cocoon', 'Kutieskin', 'Senka', 'Lemonade']
+    assignedBrands: ['Cocoon', 'Kutieskin', 'Senka', 'Lemonade', 'Fresh']
   },
   {
     id: 'user-media-dat',
@@ -163,9 +241,15 @@ export const USERS: UserProfile[] = [
     email: 'datpt@upbase.vn',
     role: 'MEDIA_MEMBER',
     roleTitle: 'Chuyên Viên Quảng Cáo & Ads (Media PIC)',
-    avatar: 'Đ',
+    avatar: 'PĐ',
+    departmentScope: 'MEDIA',
+    departmentName: 'Khối Media & Ads',
+    teamName: 'Media TikTok',
+    managerId: 'user-media-manager-quang',
+    managerName: 'Nguyễn Đức Quảng',
+    canLogin: true,
     loginProvider: 'LARK',
-    assignedBrands: ['Tất cả nhãn hàng', 'Cocoon', 'Kutieskin', 'Senka', 'Lemonade']
+    assignedBrands: ['Cocoon', 'Kutieskin', 'Senka', 'Lemonade', 'Fresh']
   },
   {
     id: 'user-quynh-nhu',
@@ -174,6 +258,12 @@ export const USERS: UserProfile[] = [
     role: 'CONTENT_MEMBER',
     roleTitle: 'Chuyên Viên Kịch Bản & Content (Script Lead)',
     avatar: 'QN',
+    departmentScope: 'MARKETING_B2C',
+    departmentName: 'Phòng Marketing B2C',
+    teamName: 'Content',
+    managerId: 'user-yen-nhi',
+    managerName: 'Đặng Thị Yến Nhi',
+    canLogin: true,
     loginProvider: 'LARK',
     linkedEntityName: 'Kutieskin, La Roche-Posay, Royal Ausnz',
     assignedBrands: ['Kutieskin', 'La Roche-Posay', 'Royal Ausnz']
@@ -185,6 +275,12 @@ export const USERS: UserProfile[] = [
     role: 'BRAND_MEMBER',
     roleTitle: 'Chuyên Viên Quản Lý Nhãn Hàng (Brand PIC)',
     avatar: 'HL',
+    departmentScope: 'MARKETING_B2C',
+    departmentName: 'Phòng Marketing B2C',
+    teamName: 'Brand',
+    managerId: 'user-yen-nhi',
+    managerName: 'Đặng Thị Yến Nhi',
+    canLogin: true,
     loginProvider: 'LARK',
     linkedEntityName: 'Kutieskin, Royal Ausnz',
     assignedBrands: ['Kutieskin', 'Royal Ausnz']
@@ -196,6 +292,12 @@ export const USERS: UserProfile[] = [
     role: 'MEMBER',
     roleTitle: 'Chuyên Viên Vận Hành (General Member)',
     avatar: 'MĐ',
+    departmentScope: 'MARKETING_B2C',
+    departmentName: 'Phòng Marketing B2C',
+    teamName: 'Booking',
+    managerId: 'user-yen-nhi',
+    managerName: 'Đặng Thị Yến Nhi',
+    canLogin: true,
     loginProvider: 'LARK',
     linkedEntityName: 'Mega Uri, Kutieskin',
     assignedBrands: ['Mega Uri', 'Kutieskin']
@@ -207,19 +309,15 @@ export const USERS: UserProfile[] = [
     role: 'BOOKING_MEMBER',
     roleTitle: 'Booking Specialist (Micro & Sàn)',
     avatar: 'TT',
+    departmentScope: 'MARKETING_B2C',
+    departmentName: 'Phòng Marketing B2C',
+    teamName: 'Booking',
+    managerId: 'user-ngoc-tam',
+    managerName: 'Nguyễn Thị Ngọc Tâm',
+    canLogin: true,
     loginProvider: 'LARK',
     linkedEntityName: 'La Roche-Posay, Kutieskin',
     assignedBrands: ['La Roche-Posay', 'Kutieskin']
-  },
-  {
-    id: 'user-phuong-thao',
-    name: 'Phương Thảo',
-    email: 'phuongthao@upbase.vn',
-    role: 'BRAND_MEMBER',
-    roleTitle: 'Brand Strategy & Campaign Lead',
-    avatar: 'PT',
-    loginProvider: 'LARK',
-    assignedBrands: ['Kutieskin', 'Royal Ausnz', 'pHCare']
   },
 
   // =========================================================================

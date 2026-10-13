@@ -3,42 +3,28 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   BarChart3, 
-  TrendingUp, 
-  DollarSign, 
-  ShoppingBag, 
   Video, 
   CheckCircle2, 
   AlertTriangle, 
-  Clock, 
   Upload, 
   FileSpreadsheet, 
-  RefreshCw, 
   Sparkles, 
-  Eye, 
   Search, 
-  Filter, 
-  ArrowUpRight, 
-  ArrowDownRight, 
   ShieldCheck, 
   Check, 
   Layers, 
   Award,
   Zap,
-  ExternalLink,
-  ChevronRight,
   Database
 } from 'lucide-react';
 import { 
   WeeklyAdsReportMeta, 
-  AdsCampaignPerformance, 
-  AdsCreatorPerformance, 
-  AdsCreativeDetailItem, 
   AdsReportParseResult,
   KocMasterItem,
   BookingDealItem,
   UserProfile
 } from '../../lib/types';
-import { formatVndShort } from '../../lib/format';
+import { formatVndShort, formatVnd } from '../../lib/format';
 
 interface WeeklyAdsReportHubViewProps {
   currentUser: UserProfile;
@@ -50,7 +36,6 @@ interface WeeklyAdsReportHubViewProps {
 }
 
 export const WeeklyAdsReportHubView: React.FC<WeeklyAdsReportHubViewProps> = ({
-  currentUser,
   kocs = [],
   deals = [],
   onNotify,
@@ -103,11 +88,11 @@ export const WeeklyAdsReportHubView: React.FC<WeeklyAdsReportHubViewProps> = ({
       const data = await res.json();
       if (data.success && data.data) {
         setActiveReportData(data.data);
-        notify(`Đã nạp & mapping thành công báo cáo [${fileName}]!`);
+        notify(`Đã nạp và đối soát báo cáo ${fileName}`);
       } else {
         notify(data.error || 'Lỗi khi đọc file báo cáo', 'error');
       }
-    } catch (err) {
+    } catch {
       notify('Không thể kết nối đến máy chủ xử lý file', 'error');
     } finally {
       setIsLoading(false);
@@ -133,11 +118,11 @@ export const WeeklyAdsReportHubView: React.FC<WeeklyAdsReportHubViewProps> = ({
         setActiveReportData(data.data);
         setSelectedFileName(file.name);
         await fetchReportsList();
-        notify(`Đã tải lên và đọc thành công ${file.name}!`);
+        notify(`Đã tải lên và đọc ${file.name}`);
       } else {
         notify(data.error || 'Lỗi khi tải file', 'error');
       }
-    } catch (err) {
+    } catch {
       notify('Lỗi tải file lên máy chủ', 'error');
     } finally {
       setIsUploading(false);
@@ -147,8 +132,11 @@ export const WeeklyAdsReportHubView: React.FC<WeeklyAdsReportHubViewProps> = ({
 
   // Initial load
   useEffect(() => {
-    fetchReportsList();
-    handleParseReport('creative data for product campaigns 2026-10-01 00 ~ 2026-10-08 06.xlsx');
+    void Promise.resolve().then(() => {
+      fetchReportsList();
+      handleParseReport('creative data for product campaigns 2026-10-01 00 ~ 2026-10-08 06.xlsx');
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // 4. Áp dụng đồng bộ dữ liệu vào KOC Master Data & Deal Booking
@@ -240,25 +228,19 @@ export const WeeklyAdsReportHubView: React.FC<WeeklyAdsReportHubViewProps> = ({
   return (
     <div className="space-y-6">
       {/* ========================================================================= */}
-      {/* HEADER & INGESTION CONTROL                                                */}
+      {/* HEADER & INGESTION CONTROL */}
       {/* ========================================================================= */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs">
+      <div className="bg-surface rounded-xl border border-line p-5">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2.5 flex-wrap">
-              <span className="px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider bg-rose-50 text-rose-700 border border-rose-200 flex items-center gap-1.5">
+              <span className="px-2.5 py-1 rounded-md text-xs font-semibold bg-accent-soft text-accent border border-line flex items-center gap-1.5">
                 <BarChart3 className="w-3.5 h-3.5" />
-                TikTok Seller Ads Ingestion
-              </span>
-              <span className="text-xs text-slate-500 font-mono">
-                Thư mục: E:\Upbase\B2C\Baocao ads
+                Đối soát báo cáo quảng cáo tuần
               </span>
             </div>
-            <h1 className="text-xl font-bold text-slate-900 mt-1">
-              Báo Cáo Ads TikTok Seller & Mapping Hiệu Quả Tuần
-            </h1>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Hệ thống tự động đọc file báo cáo tuần xuất từ TikTok Shop Seller Center, đối soát mã Spark Ads, tính ROAS thực tế và đồng bộ vào KOC Master Data.
+            <p className="text-xs text-ink-3 mt-1.5">
+              Đọc file báo cáo tuần xuất từ TikTok Shop, đối soát mã Spark Ads, tính ROAS thực tế và đồng bộ vào danh bạ KOC.
             </p>
           </div>
 
@@ -276,9 +258,9 @@ export const WeeklyAdsReportHubView: React.FC<WeeklyAdsReportHubViewProps> = ({
               type="button"
               disabled={isUploading}
               onClick={() => fileInputRef.current?.click()}
-              className="btn-md bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition shadow-2xs cursor-pointer"
+              className="btn-md bg-surface hover:bg-sunken text-ink border border-line-strong rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
             >
-              <Upload className="w-3.5 h-3.5 text-slate-500" />
+              <Upload className="w-3.5 h-3.5 text-ink-3" />
               <span>{isUploading ? 'Đang tải file...' : 'Tải lên báo cáo mới (.xlsx)'}</span>
             </button>
 
@@ -286,21 +268,21 @@ export const WeeklyAdsReportHubView: React.FC<WeeklyAdsReportHubViewProps> = ({
               type="button"
               disabled={isLoading || !activeReportData}
               onClick={handleApplyMappingToSystem}
-              className={`btn-md text-xs font-semibold rounded-lg flex items-center gap-1.5 transition shadow-xs ${
+              className={`btn-md text-xs font-semibold rounded-lg flex items-center gap-1.5 transition ${
                 isMappingApplied 
-                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
-                  : 'bg-rose-600 hover:bg-rose-700 text-white'
+                  ? 'bg-positive-soft text-positive border border-line' 
+                  : 'bg-primary hover:bg-primary-hover text-white'
               }`}
             >
               {isMappingApplied ? (
                 <>
-                  <Check className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>Đã đồng bộ KOC Master & Deals</span>
+                  <Check className="w-3.5 h-3.5 text-positive" />
+                  <span>Đã đồng bộ KOC & deal</span>
                 </>
               ) : (
                 <>
                   <Database className="w-3.5 h-3.5 text-white" />
-                  <span>Áp dụng Mapping vào Hệ thống</span>
+                  <span>Đồng bộ vào danh bạ KOC</span>
                 </>
               )}
             </button>
@@ -308,8 +290,8 @@ export const WeeklyAdsReportHubView: React.FC<WeeklyAdsReportHubViewProps> = ({
         </div>
 
         {/* Weekly Report Selector Pills */}
-        <div className="mt-4 pt-4 border-t border-slate-100 flex items-center gap-3 overflow-x-auto pb-1">
-          <span className="text-2xs font-bold uppercase tracking-wider text-slate-400 shrink-0">
+        <div className="mt-4 pt-4 border-t border-line flex items-center gap-3 overflow-x-auto pb-1">
+          <span className="text-2xs font-semibold text-ink-3 shrink-0">
             Kỳ báo cáo đã lưu:
           </span>
           {reportsList.map(rep => {
@@ -321,13 +303,13 @@ export const WeeklyAdsReportHubView: React.FC<WeeklyAdsReportHubViewProps> = ({
                 onClick={() => handleParseReport(rep.fileName)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-2 shrink-0 border ${
                   isSelected
-                    ? 'bg-slate-900 text-white border-slate-900 shadow-2xs font-semibold'
-                    : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
+                    ? 'bg-primary text-white border-primary font-semibold'
+                    : 'bg-canvas hover:bg-sunken text-ink-2 border-line'
                 }`}
               >
-                <FileSpreadsheet className={`w-3.5 h-3.5 ${isSelected ? 'text-rose-400' : 'text-slate-500'}`} />
+                <FileSpreadsheet className={`w-3.5 h-3.5 ${isSelected ? 'text-white' : 'text-ink-3'}`} />
                 <span>{rep.reportWeek}</span>
-                <span className={`text-2xs px-1.5 py-0.2 rounded font-mono ${isSelected ? 'bg-slate-800 text-slate-300' : 'bg-slate-200 text-slate-600'}`}>
+                <span className={`text-2xs px-1.5 py-0.5 rounded font-mono ${isSelected ? 'bg-white/20 text-white' : 'bg-sunken text-ink-2'}`}>
                   {rep.totalRows.toLocaleString()} dòng
                 </span>
               </button>
@@ -337,69 +319,69 @@ export const WeeklyAdsReportHubView: React.FC<WeeklyAdsReportHubViewProps> = ({
       </div>
 
       {/* ========================================================================= */}
-      {/* KPI METRIC CARDS                                                          */}
+      {/* KPI METRIC CARDS */}
       {/* ========================================================================= */}
       {activeReportData && (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-          <div className="bg-white rounded-xl border border-slate-200 p-3.5 shadow-2xs">
-            <div className="text-2xs font-semibold text-slate-500 uppercase tracking-wider">Chi phí Ads (Spend)</div>
-            <div className="text-lg font-extrabold font-mono text-slate-900 mt-1">
+          <div className="bg-surface rounded-xl border border-line p-3.5">
+            <div className="text-2xs font-medium text-ink-3">Chi phí Ads</div>
+            <div className="text-lg font-semibold font-mono text-ink mt-1">
               {formatVndShort(activeReportData.meta.totalSpend)}
             </div>
-            <div className="text-3xs text-slate-500 mt-0.5 font-mono">
-              {activeReportData.meta.totalSpend.toLocaleString('vi-VN')} đ
+            <div className="text-2xs text-ink-3 mt-0.5 font-mono">
+              {formatVnd(activeReportData.meta.totalSpend)}
             </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-slate-200 p-3.5 shadow-2xs">
-            <div className="text-2xs font-semibold text-slate-500 uppercase tracking-wider">Doanh thu gộp (GMV)</div>
-            <div className="text-lg font-extrabold font-mono text-emerald-600 mt-1">
+          <div className="bg-surface rounded-xl border border-line p-3.5">
+            <div className="text-2xs font-medium text-ink-3">Doanh thu gộp (GMV)</div>
+            <div className="text-lg font-semibold font-mono text-positive mt-1">
               {formatVndShort(activeReportData.meta.totalGmv)}
             </div>
-            <div className="text-3xs text-emerald-700 mt-0.5 font-mono">
-              {activeReportData.meta.totalGmv.toLocaleString('vi-VN')} đ
+            <div className="text-2xs text-positive mt-0.5 font-mono">
+              {formatVnd(activeReportData.meta.totalGmv)}
             </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-slate-200 p-3.5 shadow-2xs">
-            <div className="text-2xs font-semibold text-slate-500 uppercase tracking-wider">ROAS Tổng thể</div>
-            <div className="text-lg font-extrabold font-mono text-indigo-600 mt-1 flex items-center gap-1">
+          <div className="bg-surface rounded-xl border border-line p-3.5">
+            <div className="text-2xs font-medium text-ink-3">ROAS tổng thể</div>
+            <div className="text-lg font-semibold font-mono text-accent mt-1 flex items-center gap-1">
               <span>{activeReportData.meta.overallRoas}x</span>
-              <span className="text-2xs font-medium text-emerald-600 bg-emerald-50 px-1 py-0.2 rounded border border-emerald-200">
-                Lãi cao
+              <span className="text-2xs font-medium text-positive bg-positive-soft px-1.5 py-0.5 rounded">
+                Hiệu quả tốt
               </span>
             </div>
-            <div className="text-3xs text-slate-500 mt-0.5">
+            <div className="text-2xs text-ink-3 mt-0.5">
               1đ chi phí → {activeReportData.meta.overallRoas}đ GMV
             </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-slate-200 p-3.5 shadow-2xs">
-            <div className="text-2xs font-semibold text-slate-500 uppercase tracking-wider">Số đơn hàng (SKU)</div>
-            <div className="text-lg font-extrabold font-mono text-slate-900 mt-1">
-              {activeReportData.meta.totalOrders.toLocaleString()} <span className="text-xs font-normal text-slate-500">đơn</span>
+          <div className="bg-surface rounded-xl border border-line p-3.5">
+            <div className="text-2xs font-medium text-ink-3">Số đơn hàng</div>
+            <div className="text-lg font-semibold font-mono text-ink mt-1">
+              {activeReportData.meta.totalOrders.toLocaleString()} <span className="text-xs font-normal text-ink-3">đơn</span>
             </div>
-            <div className="text-3xs text-slate-500 mt-0.5">
+            <div className="text-2xs text-ink-3 mt-0.5">
               CPA: {formatVndShort(Math.round(activeReportData.meta.totalSpend / (activeReportData.meta.totalOrders || 1)))}/đơn
             </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-slate-200 p-3.5 shadow-2xs">
-            <div className="text-2xs font-semibold text-slate-500 uppercase tracking-wider">Creator & Video</div>
-            <div className="text-lg font-extrabold font-mono text-slate-900 mt-1">
-              {activeReportData.totalCreatorCount.toLocaleString()} <span className="text-xs font-normal text-slate-500">kênh</span>
+          <div className="bg-surface rounded-xl border border-line p-3.5">
+            <div className="text-2xs font-medium text-ink-3">KOC & video</div>
+            <div className="text-lg font-semibold font-mono text-ink mt-1">
+              {activeReportData.totalCreatorCount.toLocaleString()} <span className="text-xs font-normal text-ink-3">kênh</span>
             </div>
-            <div className="text-3xs text-slate-500 mt-0.5 font-mono">
+            <div className="text-2xs text-ink-3 mt-0.5 font-mono">
               {activeReportData.meta.totalRows.toLocaleString()} video ads
             </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-slate-200 p-3.5 shadow-2xs">
-            <div className="text-2xs font-semibold text-slate-500 uppercase tracking-wider">Tỷ lệ khớp KOC Master</div>
-            <div className="text-lg font-extrabold font-mono text-rose-600 mt-1">
+          <div className="bg-surface rounded-xl border border-line p-3.5">
+            <div className="text-2xs font-medium text-ink-3">Tỷ lệ khớp danh bạ KOC</div>
+            <div className="text-lg font-semibold font-mono text-accent mt-1">
               {activeReportData.matchRatePercent}%
             </div>
-            <div className="text-3xs text-slate-500 mt-0.5">
+            <div className="text-2xs text-ink-3 mt-0.5">
               Khớp {activeReportData.matchedKocCount} / {activeReportData.totalCreatorCount} KOC
             </div>
           </div>
@@ -407,23 +389,23 @@ export const WeeklyAdsReportHubView: React.FC<WeeklyAdsReportHubViewProps> = ({
       )}
 
       {/* ========================================================================= */}
-      {/* SUB-TABS NAVIGATION                                                       */}
+      {/* SUB-TABS NAVIGATION */}
       {/* ========================================================================= */}
-      <div className="border-b border-slate-200 flex items-center justify-between gap-4">
+      <div className="border-b border-line flex items-center justify-between gap-4">
         <div className="flex items-center gap-1 -mb-px overflow-x-auto">
           <button
             type="button"
             onClick={() => setActiveTab('CAMPAIGNS')}
             className={`py-3 px-4 text-xs font-semibold border-b-2 flex items-center gap-2 transition ${
               activeTab === 'CAMPAIGNS'
-                ? 'border-slate-900 text-slate-900'
-                : 'border-transparent text-slate-500 hover:text-slate-700'
+                ? 'border-ink text-ink'
+                : 'border-transparent text-ink-3 hover:text-ink'
             }`}
           >
             <Layers className="w-4 h-4" />
-            <span>Theo Chiến dịch & Sản phẩm</span>
+            <span>Theo chiến dịch & sản phẩm</span>
             {activeReportData && (
-              <span className="text-2xs bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded-full font-mono">
+              <span className="text-2xs bg-sunken text-ink-2 px-1.5 py-0.5 rounded font-mono">
                 {activeReportData.campaigns.length}
               </span>
             )}
@@ -434,15 +416,15 @@ export const WeeklyAdsReportHubView: React.FC<WeeklyAdsReportHubViewProps> = ({
             onClick={() => setActiveTab('KOC_MAPPING')}
             className={`py-3 px-4 text-xs font-semibold border-b-2 flex items-center gap-2 transition ${
               activeTab === 'KOC_MAPPING'
-                ? 'border-slate-900 text-slate-900'
-                : 'border-transparent text-slate-500 hover:text-slate-700'
+                ? 'border-ink text-ink'
+                : 'border-transparent text-ink-3 hover:text-ink'
             }`}
           >
-            <Award className="w-4 h-4 text-amber-500" />
-            <span>Mapping KOC & Creator Winners</span>
+            <Award className="w-4 h-4 text-warning" />
+            <span>Đối soát KOC & nhóm hiệu quả cao</span>
             {activeReportData && (
-              <span className="text-2xs bg-amber-50 text-amber-700 border border-amber-200 px-1.5 py-0.5 rounded-full font-mono font-bold">
-                {activeReportData.creators.filter(c => c.isWinnerTop20).length} Winner
+              <span className="text-2xs bg-warning-soft text-warning px-1.5 py-0.5 rounded font-mono font-semibold">
+                {activeReportData.creators.filter(c => c.isWinnerTop20).length}
               </span>
             )}
           </button>
@@ -452,15 +434,15 @@ export const WeeklyAdsReportHubView: React.FC<WeeklyAdsReportHubViewProps> = ({
             onClick={() => setActiveTab('CREATIVES')}
             className={`py-3 px-4 text-xs font-semibold border-b-2 flex items-center gap-2 transition ${
               activeTab === 'CREATIVES'
-                ? 'border-slate-900 text-slate-900'
-                : 'border-transparent text-slate-500 hover:text-slate-700'
+                ? 'border-ink text-ink'
+                : 'border-transparent text-ink-3 hover:text-ink'
             }`}
           >
-            <Video className="w-4 h-4 text-rose-500" />
-            <span>Chi tiết Creative & Đối soát Spark Ads</span>
+            <Video className="w-4 h-4 text-accent" />
+            <span>Chi tiết video & đối soát Spark Ads</span>
             {activeReportData && (
-              <span className="text-2xs bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded-full font-mono">
-                Top 100
+              <span className="text-2xs bg-sunken text-ink-2 px-1.5 py-0.5 rounded font-mono">
+                100
               </span>
             )}
           </button>
@@ -470,95 +452,95 @@ export const WeeklyAdsReportHubView: React.FC<WeeklyAdsReportHubViewProps> = ({
             onClick={() => setActiveTab('INSIGHTS')}
             className={`py-3 px-4 text-xs font-semibold border-b-2 flex items-center gap-2 transition ${
               activeTab === 'INSIGHTS'
-                ? 'border-slate-900 text-slate-900'
-                : 'border-transparent text-slate-500 hover:text-slate-700'
+                ? 'border-ink text-ink'
+                : 'border-transparent text-ink-3 hover:text-ink'
             }`}
           >
-            <Sparkles className="w-4 h-4 text-purple-600" />
-            <span>Khuyến nghị Tối ưu Growth Ads</span>
+            <Sparkles className="w-4 h-4 text-accent" />
+            <span>Gợi ý tối ưu quảng cáo</span>
           </button>
         </div>
       </div>
 
       {/* ========================================================================= */}
-      {/* TAB 1: CHIẾN DỊCH & SẢN PHẨM PGM                                          */}
+      {/* TAB 1: CHIẾN DỊCH & SẢN PHẨM PGM */}
       {/* ========================================================================= */}
       {activeTab === 'CAMPAIGNS' && activeReportData && (
         <div className="space-y-4">
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs">
-            <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+          <div className="bg-surface rounded-xl border border-line overflow-hidden">
+            <div className="p-4 border-b border-line flex items-center justify-between">
               <div>
-                <h3 className="text-sm font-bold text-slate-900">Bảng Tổng Hợp Chiến Dịch Sản Phẩm PGM</h3>
-                <p className="text-xs text-slate-500">Phân bổ chi phí, doanh thu gộp và chỉ số hoàn vốn ROAS của từng dòng sản phẩm chủ lực.</p>
+                <h3 className="text-sm font-semibold text-ink">Bảng tổng hợp chiến dịch sản phẩm PGM</h3>
+                <p className="text-xs text-ink-3">Phân bổ chi phí, doanh thu gộp và chỉ số hoàn vốn ROAS của từng dòng sản phẩm chủ lực.</p>
               </div>
             </div>
 
             <div className="overflow-x-auto">
               <table className="w-full text-xs text-left">
-                <thead className="bg-slate-50 text-slate-600 border-b border-slate-200 uppercase font-semibold text-3xs">
+                <thead className="bg-canvas text-ink-3 border-b border-line font-medium text-2xs">
                   <tr>
-                    <th className="py-3 px-4">Tên Chiến Dịch / Sản Phẩm</th>
+                    <th className="py-3 px-4">Tên chiến dịch / sản phẩm</th>
                     <th className="py-3 px-3 text-right">Chi phí Ads</th>
                     <th className="py-3 px-3 text-right">Doanh thu GMV</th>
                     <th className="py-3 px-3 text-center">ROAS</th>
                     <th className="py-3 px-3 text-right">Đơn hàng</th>
                     <th className="py-3 px-3 text-right">CPA (Chi phí/đơn)</th>
                     <th className="py-3 px-3 text-center">CTR</th>
-                    <th className="py-3 px-3 text-center">Hook 2s</th>
-                    <th className="py-3 px-3 text-center">Số Video</th>
+                    <th className="py-3 px-3 text-center">Giữ chân 2s</th>
+                    <th className="py-3 px-3 text-center">Số video</th>
                     <th className="py-3 px-4 text-center">Đánh giá hành động</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-line">
                   {activeReportData.campaigns.map((camp, idx) => (
-                    <tr key={idx} className="hover:bg-slate-50/80 transition">
+                    <tr key={idx} className="hover:bg-canvas transition">
                       <td className="py-3 px-4">
-                        <div className="font-bold text-slate-900 text-xs">{camp.campaignName}</div>
-                        <div className="text-3xs text-slate-400 font-mono mt-0.5">ID: {camp.campaignId || 'PGM-CAMPAIGN'}</div>
+                        <div className="font-semibold text-ink text-xs">{camp.campaignName}</div>
+                        <div className="text-2xs text-ink-3 font-mono mt-0.5">Mã: {camp.campaignId || 'PGM-CAMPAIGN'}</div>
                       </td>
-                      <td className="py-3 px-3 text-right font-mono font-semibold text-slate-800">
-                        {camp.cost.toLocaleString('vi-VN')} đ
+                      <td className="py-3 px-3 text-right font-mono font-semibold text-ink">
+                        {formatVnd(camp.cost)}
                       </td>
-                      <td className="py-3 px-3 text-right font-mono font-bold text-emerald-600">
-                        {camp.gmv.toLocaleString('vi-VN')} đ
+                      <td className="py-3 px-3 text-right font-mono font-semibold text-positive">
+                        {formatVnd(camp.gmv)}
                       </td>
                       <td className="py-3 px-3 text-center">
-                        <span className={`px-2 py-0.5 rounded text-xs font-mono font-bold ${
+                        <span className={`px-2 py-0.5 rounded text-xs font-mono font-semibold ${
                           camp.roas >= 5.0
-                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                            ? 'bg-positive-soft text-positive'
                             : camp.roas >= 3.0
-                            ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                            : 'bg-amber-50 text-amber-700 border border-amber-200'
+                            ? 'bg-accent-soft text-accent'
+                            : 'bg-warning-soft text-warning'
                         }`}>
                           {camp.roas}x
                         </span>
                       </td>
-                      <td className="py-3 px-3 text-right font-mono text-slate-700">
+                      <td className="py-3 px-3 text-right font-mono text-ink-2">
                         {camp.orders.toLocaleString()}
                       </td>
-                      <td className="py-3 px-3 text-right font-mono text-slate-600">
-                        {camp.cpa.toLocaleString('vi-VN')} đ
+                      <td className="py-3 px-3 text-right font-mono text-ink-2">
+                        {formatVnd(camp.cpa)}
                       </td>
-                      <td className="py-3 px-3 text-center font-mono text-slate-600">
+                      <td className="py-3 px-3 text-center font-mono text-ink-2">
                         {(camp.ctr * 100).toFixed(2)}%
                       </td>
-                      <td className="py-3 px-3 text-center font-mono text-indigo-600 font-semibold">
+                      <td className="py-3 px-3 text-center font-mono text-accent font-semibold">
                         {(camp.hookRate2s * 100).toFixed(1)}%
                       </td>
-                      <td className="py-3 px-3 text-center font-mono text-slate-500">
+                      <td className="py-3 px-3 text-center font-mono text-ink-3">
                         {camp.videoCount.toLocaleString()}
                       </td>
                       <td className="py-3 px-4 text-center">
                         {camp.roas >= 5.0 ? (
-                          <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded text-3xs font-semibold">
-                            Scale ngân sách
+                          <span className="px-2 py-0.5 bg-positive-soft text-positive rounded text-2xs font-semibold">
+                            Tăng ngân sách
                           </span>
                         ) : camp.roas >= 3.5 ? (
-                          <span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded text-3xs font-semibold">
+                          <span className="px-2 py-0.5 bg-accent-soft text-accent rounded text-2xs font-semibold">
                             Duy trì ổn định
                           </span>
                         ) : (
-                          <span className="px-2 py-0.5 bg-amber-100 text-amber-800 rounded text-3xs font-semibold">
+                          <span className="px-2 py-0.5 bg-warning-soft text-warning rounded text-2xs font-semibold">
                             Tối ưu kịch bản
                           </span>
                         )}
@@ -573,150 +555,150 @@ export const WeeklyAdsReportHubView: React.FC<WeeklyAdsReportHubViewProps> = ({
       )}
 
       {/* ========================================================================= */}
-      {/* TAB 2: MAPPING KOC & CREATOR WINNERS                                      */}
+      {/* TAB 2: MAPPING KOC & CREATOR WINNERS */}
       {/* ========================================================================= */}
       {activeTab === 'KOC_MAPPING' && activeReportData && (
         <div className="space-y-4">
           {/* Filter Bar */}
-          <div className="bg-white rounded-xl border border-slate-200 p-3 shadow-2xs flex flex-col md:flex-row items-center justify-between gap-3">
+          <div className="bg-surface rounded-xl border border-line p-3 flex flex-col md:flex-row items-center justify-between gap-3">
             <div className="flex items-center gap-2 w-full md:w-auto">
               <div className="relative flex-1 md:w-64">
-                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <Search className="w-3.5 h-3.5 text-ink-3 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
-                  placeholder="Tìm tên KOC / Kênh TikTok..."
-                  className="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-900"
+                  placeholder="Tìm tên KOC / kênh TikTok..."
+                  className="w-full pl-8 pr-3 py-1.5 text-xs bg-surface border border-line-strong rounded-lg focus:outline-none focus:ring-1 focus:ring-focus"
                 />
               </div>
 
-              <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-xs shrink-0">
+              <div className="flex items-center gap-1 bg-sunken p-0.5 rounded-lg text-xs shrink-0">
                 <button
                   type="button"
                   onClick={() => setKocFilter('ALL')}
-                  className={`px-2.5 py-1 rounded-md transition ${kocFilter === 'ALL' ? 'bg-white font-semibold text-slate-900 shadow-2xs' : 'text-slate-600'}`}
+                  className={`px-2.5 py-1 rounded-md transition ${kocFilter === 'ALL' ? 'bg-surface font-semibold text-ink' : 'text-ink-3'}`}
                 >
                   Tất cả ({activeReportData.creators.length})
                 </button>
                 <button
                   type="button"
                   onClick={() => setKocFilter('WINNERS')}
-                  className={`px-2.5 py-1 rounded-md transition ${kocFilter === 'WINNERS' ? 'bg-white font-semibold text-amber-700 shadow-2xs' : 'text-slate-600'}`}
+                  className={`px-2.5 py-1 rounded-md transition ${kocFilter === 'WINNERS' ? 'bg-surface font-semibold text-warning' : 'text-ink-3'}`}
                 >
-                  Top Winners ({activeReportData.creators.filter(c => c.isWinnerTop20).length})
+                  Nhóm hiệu quả ({activeReportData.creators.filter(c => c.isWinnerTop20).length})
                 </button>
                 <button
                   type="button"
                   onClick={() => setKocFilter('MATCHED')}
-                  className={`px-2.5 py-1 rounded-md transition ${kocFilter === 'MATCHED' ? 'bg-white font-semibold text-emerald-700 shadow-2xs' : 'text-slate-600'}`}
+                  className={`px-2.5 py-1 rounded-md transition ${kocFilter === 'MATCHED' ? 'bg-surface font-semibold text-positive' : 'text-ink-3'}`}
                 >
-                  Đã khớp Master ({activeReportData.matchedKocCount})
+                  Đã khớp danh bạ ({activeReportData.matchedKocCount})
                 </button>
               </div>
             </div>
 
-            <div className="text-xs text-slate-500 flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-emerald-600" />
-              <span>Tiêu chuẩn Winner: ROAS ≥ 4.0 & Doanh thu ≥ 3.000.000đ</span>
+            <div className="text-xs text-ink-3 flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-positive" />
+              <span>Tiêu chuẩn nhóm hiệu quả: ROAS ≥ 4.0 và doanh thu ≥ 3.000.000 đ</span>
             </div>
           </div>
 
           {/* Creators Table */}
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs">
+          <div className="bg-surface rounded-xl border border-line overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-xs text-left">
-                <thead className="bg-slate-50 text-slate-600 border-b border-slate-200 uppercase font-semibold text-3xs">
+                <thead className="bg-canvas text-ink-3 border-b border-line font-medium text-2xs">
                   <tr>
-                    <th className="py-3 px-4">Kênh TikTok (Từ Ads)</th>
-                    <th className="py-3 px-3">Khớp KOC Master Data</th>
+                    <th className="py-3 px-4">Kênh TikTok</th>
+                    <th className="py-3 px-3">Khớp danh bạ KOC</th>
                     <th className="py-3 px-3 text-right">Chi phí Ads</th>
                     <th className="py-3 px-3 text-right">Doanh thu GMV</th>
                     <th className="py-3 px-3 text-center">ROAS</th>
                     <th className="py-3 px-3 text-right">Đơn hàng</th>
                     <th className="py-3 px-3 text-right">CPA</th>
-                    <th className="py-3 px-3 text-center">Hook 2s</th>
+                    <th className="py-3 px-3 text-center">Giữ chân 2s</th>
                     <th className="py-3 px-3">Hình thức cấp quyền</th>
                     <th className="py-3 px-4 text-center">Xếp hạng</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-line">
                   {filteredCreators.slice(0, 50).map((cr, idx) => (
-                    <tr key={idx} className="hover:bg-slate-50/80 transition">
+                    <tr key={idx} className="hover:bg-canvas transition">
                       <td className="py-3 px-4">
-                        <div className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
+                        <div className="font-semibold text-ink text-xs flex items-center gap-1.5">
                           {cr.accountName}
                           {cr.isWinnerTop20 && (
-                            <span className="text-3xs bg-amber-100 text-amber-800 px-1.5 py-0.2 rounded font-bold">
-                              WINNER
+                            <span className="text-2xs bg-warning-soft text-warning px-1.5 py-0.5 rounded font-semibold">
+                              Hiệu quả cao
                             </span>
                           )}
                         </div>
                         {cr.topVideoTitle && (
-                          <div className="text-3xs text-slate-400 truncate max-w-xs mt-0.5">
-                            "{cr.topVideoTitle}"
+                          <div className="text-2xs text-ink-3 truncate max-w-xs mt-0.5">
+                            &quot;{cr.topVideoTitle}&quot;
                           </div>
                         )}
                       </td>
                       <td className="py-3 px-3">
                         {cr.isMatched ? (
-                          <div className="flex items-center gap-1.5 text-emerald-700 font-semibold">
+                          <div className="flex items-center gap-1.5 text-positive font-semibold">
                             <CheckCircle2 className="w-3.5 h-3.5" />
                             <span>{cr.mappedStageName}</span>
                             {cr.mappedTier && (
-                              <span className="text-3xs bg-slate-100 text-slate-600 px-1 rounded font-normal">
+                              <span className="text-2xs bg-sunken text-ink-2 px-1 rounded font-normal">
                                 {cr.mappedTier}
                               </span>
                             )}
                           </div>
                         ) : (
-                          <span className="text-slate-400 text-3xs italic">
-                            Chưa liên kết Master
+                          <span className="text-ink-3 text-2xs">
+                            Chưa liên kết danh bạ
                           </span>
                         )}
                       </td>
-                      <td className="py-3 px-3 text-right font-mono font-semibold text-slate-800">
-                        {cr.cost.toLocaleString('vi-VN')} đ
+                      <td className="py-3 px-3 text-right font-mono font-semibold text-ink">
+                        {formatVnd(cr.cost)}
                       </td>
-                      <td className="py-3 px-3 text-right font-mono font-bold text-emerald-600">
-                        {cr.gmv.toLocaleString('vi-VN')} đ
+                      <td className="py-3 px-3 text-right font-mono font-semibold text-positive">
+                        {formatVnd(cr.gmv)}
                       </td>
                       <td className="py-3 px-3 text-center">
-                        <span className={`px-2 py-0.5 rounded text-xs font-mono font-bold ${
+                        <span className={`px-2 py-0.5 rounded text-xs font-mono font-semibold ${
                           cr.roas >= 6.0
-                            ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                            ? 'bg-positive-soft text-positive'
                             : cr.roas >= 4.0
-                            ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                            : 'bg-slate-100 text-slate-700'
+                            ? 'bg-accent-soft text-accent'
+                            : 'bg-sunken text-ink-2'
                         }`}>
                           {cr.roas}x
                         </span>
                       </td>
-                      <td className="py-3 px-3 text-right font-mono text-slate-700">
+                      <td className="py-3 px-3 text-right font-mono text-ink-2">
                         {cr.orders.toLocaleString()}
                       </td>
-                      <td className="py-3 px-3 text-right font-mono text-slate-600">
-                        {cr.cpa.toLocaleString('vi-VN')} đ
+                      <td className="py-3 px-3 text-right font-mono text-ink-2">
+                        {formatVnd(cr.cpa)}
                       </td>
-                      <td className="py-3 px-3 text-center font-mono text-indigo-600 font-semibold">
+                      <td className="py-3 px-3 text-center font-mono text-accent font-semibold">
                         {(cr.avgHookRate2s * 100).toFixed(1)}%
                       </td>
                       <td className="py-3 px-3">
-                        <span className="text-3xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded">
+                        <span className="text-2xs bg-sunken text-ink-2 px-2 py-0.5 rounded">
                           {cr.authorizationType}
                         </span>
                       </td>
                       <td className="py-3 px-4 text-center">
                         {cr.roas >= 6.0 ? (
-                          <span className="px-2 py-0.5 bg-amber-50 text-amber-700 border border-amber-200 rounded text-3xs font-bold">
-                            Top 1 Winner
+                          <span className="px-2 py-0.5 bg-warning-soft text-warning rounded text-2xs font-semibold">
+                            Nhóm dẫn đầu
                           </span>
                         ) : cr.roas >= 4.0 ? (
-                          <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded text-3xs font-semibold">
-                            Winner Đạt KPI
+                          <span className="px-2 py-0.5 bg-positive-soft text-positive rounded text-2xs font-semibold">
+                            Đạt KPI
                           </span>
                         ) : (
-                          <span className="px-2 py-0.5 bg-slate-100 text-slate-500 rounded text-3xs">
+                          <span className="px-2 py-0.5 bg-sunken text-ink-3 rounded text-2xs">
                             Cần tối ưu
                           </span>
                         )}
@@ -731,131 +713,131 @@ export const WeeklyAdsReportHubView: React.FC<WeeklyAdsReportHubViewProps> = ({
       )}
 
       {/* ========================================================================= */}
-      {/* TAB 3: CHI TIẾT CREATIVE & ĐỐI SOÁT SPARK ADS                             */}
+      {/* TAB 3: CHI TIẾT CREATIVE & ĐỐI SOÁT SPARK ADS */}
       {/* ========================================================================= */}
       {activeTab === 'CREATIVES' && activeReportData && (
         <div className="space-y-4">
           {/* Filters */}
-          <div className="bg-white rounded-xl border border-slate-200 p-3 shadow-2xs flex flex-wrap items-center justify-between gap-3">
+          <div className="bg-surface rounded-xl border border-line p-3 flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2 flex-wrap">
               <div className="relative w-64">
-                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <Search className="w-3.5 h-3.5 text-ink-3 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
-                  placeholder="Tìm Video ID / Tiêu đề..."
-                  className="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none"
+                  placeholder="Tìm mã video / tiêu đề..."
+                  className="w-full pl-8 pr-3 py-1.5 text-xs bg-surface border border-line-strong rounded-lg focus:outline-none"
                 />
               </div>
 
               <select
                 value={authFilter}
                 onChange={e => setAuthFilter(e.target.value)}
-                className="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700 focus:outline-none"
+                className="text-xs bg-surface border border-line-strong rounded-lg px-2.5 py-1.5 text-ink focus:outline-none"
               >
                 <option value="ALL">Tất cả hình thức cấp quyền</option>
-                <option value="Video code">Spark Ads (Video code)</option>
-                <option value="Affiliate">Affiliate mass authorization</option>
-                <option value="TikTok Shop">TikTok Shop official account</option>
+                <option value="Video code">Mã Spark Ads</option>
+                <option value="Affiliate">Ủy quyền Affiliate</option>
+                <option value="TikTok Shop">Tài khoản TikTok Shop</option>
               </select>
 
               <select
                 value={statusFilter}
                 onChange={e => setStatusFilter(e.target.value)}
-                className="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700 focus:outline-none"
+                className="text-xs bg-surface border border-line-strong rounded-lg px-2.5 py-1.5 text-ink focus:outline-none"
               >
                 <option value="ALL">Tất cả trạng thái phân phối</option>
-                <option value="Performing">Performing (Đang phân phối tốt)</option>
-                <option value="Authorization needed">Authorization needed (Cần gia hạn mã!)</option>
-                <option value="Ineligible">Ineligible (Không đủ điều kiện)</option>
+                <option value="Performing">Đang phân phối tốt</option>
+                <option value="Authorization needed">Cần gia hạn mã</option>
+                <option value="Ineligible">Không đủ điều kiện</option>
               </select>
             </div>
 
-            <div className="text-xs font-semibold text-rose-600 bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-200 flex items-center gap-1.5">
+            <div className="text-xs font-semibold text-critical bg-critical-soft px-2.5 py-1 rounded-lg flex items-center gap-1.5">
               <AlertTriangle className="w-3.5 h-3.5" />
               <span>Cảnh báo: Có {activeReportData.topCreatives.filter(c => c.explorationSecondaryStatus.includes('Authorization')).length} video cần KOC cấp lại mã Ads</span>
             </div>
           </div>
 
           {/* Creatives Table */}
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs">
+          <div className="bg-surface rounded-xl border border-line overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-xs text-left">
-                <thead className="bg-slate-50 text-slate-600 border-b border-slate-200 uppercase font-semibold text-3xs">
+                <thead className="bg-canvas text-ink-3 border-b border-line font-medium text-2xs">
                   <tr>
-                    <th className="py-3 px-4">Video ID & Tiêu đề</th>
-                    <th className="py-3 px-3">KOC / Creator</th>
+                    <th className="py-3 px-4">Mã video & tiêu đề</th>
+                    <th className="py-3 px-3">KOC</th>
                     <th className="py-3 px-3">Chiến dịch</th>
                     <th className="py-3 px-3 text-right">Chi phí Ads</th>
                     <th className="py-3 px-3 text-right">Doanh thu GMV</th>
                     <th className="py-3 px-3 text-center">ROAS</th>
-                    <th className="py-3 px-3 text-center">Hook 2s</th>
-                    <th className="py-3 px-3 text-center">Xem hết 100%</th>
+                    <th className="py-3 px-3 text-center">Giữ chân 2s</th>
+                    <th className="py-3 px-3 text-center">Xem hết</th>
                     <th className="py-3 px-3">Hình thức quyền</th>
                     <th className="py-3 px-4 text-center">Trạng thái phân phối</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-line">
                   {filteredCreatives.map((cr, idx) => {
                     const isAlertAuth = cr.explorationSecondaryStatus.includes('Authorization');
                     return (
-                      <tr key={idx} className={`hover:bg-slate-50/80 transition ${isAlertAuth ? 'bg-amber-50/40' : ''}`}>
+                      <tr key={idx} className={`hover:bg-canvas transition ${isAlertAuth ? 'bg-warning-soft/40' : ''}`}>
                         <td className="py-3 px-4">
-                          <div className="font-mono text-3xs font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded w-fit">
-                            ID: {cr.videoId}
+                          <div className="font-mono text-2xs font-semibold text-ink-3 bg-sunken px-1.5 py-0.5 rounded w-fit">
+                            Mã: {cr.videoId}
                           </div>
-                          <div className="font-medium text-slate-900 text-xs mt-1 max-w-sm truncate" title={cr.videoTitle}>
+                          <div className="font-medium text-ink text-xs mt-1 max-w-sm truncate" title={cr.videoTitle}>
                             {cr.videoTitle}
                           </div>
                         </td>
-                        <td className="py-3 px-3 font-semibold text-slate-800">
+                        <td className="py-3 px-3 font-semibold text-ink">
                           {cr.tiktokAccount}
                         </td>
-                        <td className="py-3 px-3 text-slate-600">
+                        <td className="py-3 px-3 text-ink-2">
                           {cr.campaignName}
                         </td>
-                        <td className="py-3 px-3 text-right font-mono font-semibold text-slate-800">
-                          {cr.cost.toLocaleString('vi-VN')} đ
+                        <td className="py-3 px-3 text-right font-mono font-semibold text-ink">
+                          {formatVnd(cr.cost)}
                         </td>
-                        <td className="py-3 px-3 text-right font-mono font-bold text-emerald-600">
-                          {cr.gmv.toLocaleString('vi-VN')} đ
+                        <td className="py-3 px-3 text-right font-mono font-semibold text-positive">
+                          {formatVnd(cr.gmv)}
                         </td>
                         <td className="py-3 px-3 text-center">
-                          <span className={`px-2 py-0.5 rounded text-xs font-mono font-bold ${
+                          <span className={`px-2 py-0.5 rounded text-xs font-mono font-semibold ${
                             cr.roas >= 4.0
-                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                              : 'bg-slate-100 text-slate-700'
+                              ? 'bg-positive-soft text-positive'
+                              : 'bg-sunken text-ink-2'
                           }`}>
                             {cr.roas}x
                           </span>
                         </td>
-                        <td className="py-3 px-3 text-center font-mono text-indigo-600 font-semibold">
+                        <td className="py-3 px-3 text-center font-mono text-accent font-semibold">
                           {(cr.hookRate2s * 100).toFixed(1)}%
                         </td>
-                        <td className="py-3 px-3 text-center font-mono text-slate-600">
+                        <td className="py-3 px-3 text-center font-mono text-ink-2">
                           {(cr.completionRate100 * 100).toFixed(1)}%
                         </td>
                         <td className="py-3 px-3">
-                          <span className={`text-3xs px-2 py-0.5 rounded ${
+                          <span className={`text-2xs px-2 py-0.5 rounded ${
                             cr.isSparkAds 
-                              ? 'bg-rose-50 text-rose-700 border border-rose-200 font-bold'
-                              : 'bg-slate-100 text-slate-600'
+                              ? 'bg-accent-soft text-accent font-semibold'
+                              : 'bg-sunken text-ink-2'
                           }`}>
                             {cr.authorizationType}
                           </span>
                         </td>
                         <td className="py-3 px-4 text-center">
                           {isAlertAuth ? (
-                            <span className="px-2 py-0.5 bg-amber-100 text-amber-800 border border-amber-300 rounded text-3xs font-bold animate-pulse">
-                              Cần cấp lại mã Ads!
+                            <span className="px-2 py-0.5 bg-warning-soft text-warning rounded text-2xs font-semibold">
+                              Cần cấp lại mã Ads
                             </span>
                           ) : cr.explorationSecondaryStatus === 'Performing' ? (
-                            <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded text-3xs font-semibold">
-                              Performing
+                            <span className="px-2 py-0.5 bg-positive-soft text-positive rounded text-2xs font-semibold">
+                              Đang chạy
                             </span>
                           ) : (
-                            <span className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded text-3xs">
+                            <span className="px-2 py-0.5 bg-sunken text-ink-2 rounded text-2xs">
                               {cr.explorationSecondaryStatus}
                             </span>
                           )}
@@ -871,61 +853,61 @@ export const WeeklyAdsReportHubView: React.FC<WeeklyAdsReportHubViewProps> = ({
       )}
 
       {/* ========================================================================= */}
-      {/* TAB 4: KHUYẾN NGHỊ TỐI ƯU GROWTH ADS                                     */}
+      {/* TAB 4: KHUYẾN NGHỊ TỐI ƯU GROWTH ADS */}
       {/* ========================================================================= */}
       {activeTab === 'INSIGHTS' && activeReportData && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs">
-            <div className="flex items-center gap-2 text-emerald-700 font-bold text-sm">
-              <Zap className="w-4 h-4 text-emerald-600" />
-              <span>Khuyến nghị 1: Scale ngân sách Top Creator Winner</span>
+          <div className="bg-surface rounded-xl border border-line p-5">
+            <div className="flex items-center gap-2 text-positive font-semibold text-sm">
+              <Zap className="w-4 h-4 text-positive" />
+              <span>Gợi ý 1: Tăng ngân sách nhóm KOC hiệu quả cao</span>
             </div>
-            <p className="text-xs text-slate-600 mt-2 leading-relaxed">
-              Các Creator như <strong>Kim Chung Phan</strong> (ROAS 11.07), <strong>Sandy</strong> (ROAS 6.86), <strong>Ngọc Matcha</strong> (ROAS 5.84) đang có hiệu suất chuyển đổi vượt bậc so với mặt bằng chung.
+            <p className="text-xs text-ink-2 mt-2 leading-relaxed">
+              Các KOC như <strong>Kim Chung Phan</strong> (ROAS 11.07), <strong>Sandy</strong> (ROAS 6.86), <strong>Ngọc Matcha</strong> (ROAS 5.84) đang có hiệu suất chuyển đổi tốt hơn mặt bằng chung.
             </p>
-            <div className="mt-3 bg-emerald-50 p-3 rounded-lg border border-emerald-200 text-xs text-emerald-800 space-y-1">
+            <div className="mt-3 bg-positive-soft p-3 rounded-lg text-xs text-positive space-y-1">
               <div>• Đề xuất tăng 30-50% ngân sách PGM_Body Lotion và PGM_Gel kẻ mắt cho nhóm này.</div>
-              <div>• Kích hoạt hợp tác dài hạn (kế hoạch tháng tiếp theo) với các KOC này tại Hub Booking.</div>
+              <div>• Ký kế hoạch tháng tiếp theo với các KOC này tại màn Booking.</div>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs">
-            <div className="flex items-center gap-2 text-rose-700 font-bold text-sm">
-              <AlertTriangle className="w-4 h-4 text-rose-600" />
-              <span>Khuyến nghị 2: Xử lý gấp các mã Spark Ads hết hạn</span>
+          <div className="bg-surface rounded-xl border border-line p-5">
+            <div className="flex items-center gap-2 text-critical font-semibold text-sm">
+              <AlertTriangle className="w-4 h-4 text-critical" />
+              <span>Gợi ý 2: Xử lý các mã Spark Ads hết hạn</span>
             </div>
-            <p className="text-xs text-slate-600 mt-2 leading-relaxed">
-              Phát hiện các video đang phát sinh doanh thu nhưng chuyển trạng thái <code>Authorization needed</code>. Nếu không gia hạn kịp thời, TikTok sẽ dừng phân phối quảng cáo.
+            <p className="text-xs text-ink-2 mt-2 leading-relaxed">
+              Phát hiện các video đang phát sinh doanh thu nhưng cần cấp lại quyền quảng cáo. Nếu không gia hạn kịp thời, TikTok sẽ dừng phân phối quảng cáo.
             </p>
-            <div className="mt-3 bg-rose-50 p-3 rounded-lg border border-rose-200 text-xs text-rose-800 space-y-1">
+            <div className="mt-3 bg-critical-soft p-3 rounded-lg text-xs text-critical space-y-1">
               <div>• PIC Booking cần liên hệ ngay KOC để lấy mã Spark Ads gia hạn thêm 30 ngày.</div>
-              <div>• KOC có thể nộp mã trực tiếp qua Cổng KOC Partner Hub ([`koc-hub`]).</div>
+              <div>• KOC có thể nộp mã trực tiếp qua Cổng đối tác KOC.</div>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs">
-            <div className="flex items-center gap-2 text-indigo-700 font-bold text-sm">
-              <Video className="w-4 h-4 text-indigo-600" />
-              <span>Khuyến nghị 3: Nhân bản kịch bản có Hook 2 giây cao</span>
+          <div className="bg-surface rounded-xl border border-line p-5">
+            <div className="flex items-center gap-2 text-accent font-semibold text-sm">
+              <Video className="w-4 h-4 text-accent" />
+              <span>Gợi ý 3: Nhân bản kịch bản có tỷ lệ giữ chân 2 giây cao</span>
             </div>
-            <p className="text-xs text-slate-600 mt-2 leading-relaxed">
-              Tỷ lệ giữ chân 2 giây trung bình đạt <strong>24.8%</strong>. Các video hướng dẫn trực diện (Tutorial kẻ mắt, giải quyết nỗi đau da body) có hook rate &gt; 35%.
+            <p className="text-xs text-ink-2 mt-2 leading-relaxed">
+              Tỷ lệ giữ chân 2 giây trung bình đạt <strong>24,8%</strong>. Các video hướng dẫn trực diện (kẻ mắt, dưỡng thể) có tỷ lệ giữ chân &gt; 35%.
             </p>
-            <div className="mt-3 bg-indigo-50 p-3 rounded-lg border border-indigo-200 text-xs text-indigo-800 space-y-1">
-              <div>• Chuyển angle và 3 giây đầu của các video này sang phân hệ <strong>Kịch bản (Content View)</strong> làm mẫu cho CTV.</div>
+            <div className="mt-3 bg-accent-soft p-3 rounded-lg text-xs text-accent space-y-1">
+              <div>• Chuyển góc tiếp cận và 3 giây đầu của các video này sang màn <strong>Kịch bản</strong> làm mẫu cho CTV.</div>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs">
-            <div className="flex items-center gap-2 text-slate-900 font-bold text-sm">
-              <ShieldCheck className="w-4 h-4 text-slate-700" />
-              <span>Khuyến nghị 4: Nghiệm thu & Xuất báo cáo gửi Brand</span>
+          <div className="bg-surface rounded-xl border border-line p-5">
+            <div className="flex items-center gap-2 text-ink font-semibold text-sm">
+              <ShieldCheck className="w-4 h-4 text-ink-2" />
+              <span>Gợi ý 4: Nghiệm thu và xuất báo cáo gửi Brand</span>
             </div>
-            <p className="text-xs text-slate-600 mt-2 leading-relaxed">
-              Chiến dịch 7 ngày đạt tổng GMV <strong>165.2 triệu</strong> với chi phí <strong>30.25 triệu</strong> (ROAS 5.46). Đây là số liệu nghiệm thu hoàn hảo để gửi Brand duyệt giải ngân.
+            <p className="text-xs text-ink-2 mt-2 leading-relaxed">
+              Chiến dịch 7 ngày đạt tổng GMV <strong>165,2 tr</strong> với chi phí <strong>30,25 tr</strong> (ROAS 5.46). Số liệu đã sẵn sàng để gửi Brand duyệt giải ngân.
             </p>
-            <div className="mt-3 bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs text-slate-800 space-y-1">
-              <div>• Đồng bộ trực tiếp số liệu này sang <strong>Cổng đối tác Brand (Brand Hub)</strong> để nhãn hàng đối soát.</div>
+            <div className="mt-3 bg-canvas p-3 rounded-lg border border-line text-xs text-ink-2 space-y-1">
+              <div>• Đồng bộ số liệu này sang <strong>Cổng đối tác Brand</strong> để nhãn hàng đối soát.</div>
             </div>
           </div>
         </div>

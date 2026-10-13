@@ -36,7 +36,7 @@ export function PlanChatButton({ unreadCount = 0, onClick, className = '', label
       <MessageSquare className="w-3.5 h-3.5" aria-hidden="true" />
       <span>{label}</span>
       {unreadCount > 0 && (
-        <span className="ml-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white text-[10px] font-bold leading-[18px] text-center">
+        <span className="ml-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white text-2xs font-semibold leading-[18px] text-center">
           {unreadCount > 99 ? '99+' : unreadCount}
         </span>
       )}
@@ -100,7 +100,7 @@ const QUICK_REPLIES: Record<Exclude<PlanDiscussionRole, 'SYSTEM'>, string[]> = {
 
 const ROLE_BADGE: Record<PlanDiscussionRole, string> = {
   GROWTH: 'bg-amber-50 text-amber-700 border-amber-200',
-  BOOKING: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+  BOOKING: 'bg-blue-50 text-blue-700 border-blue-200',
   MEDIA: 'bg-blue-50 text-blue-700 border-blue-200',
   LEAD: 'bg-emerald-50 text-emerald-700 border-emerald-200',
   SYSTEM: 'bg-slate-100 text-slate-500 border-slate-200'
@@ -109,7 +109,7 @@ const ROLE_BADGE: Record<PlanDiscussionRole, string> = {
 const CONNECTION_VIEW: Record<PlanChatConnection, { label: string; dot: string }> = {
   live: { label: 'Trực tiếp', dot: 'bg-emerald-500' },
   polling: { label: 'Cập nhật 10 giây', dot: 'bg-amber-400' },
-  connecting: { label: 'Đang kết nối', dot: 'bg-slate-300 animate-pulse' }
+  connecting: { label: 'Đang kết nối', dot: 'bg-slate-300' }
 };
 
 const GROUP_WINDOW_MS = 5 * 60 * 1000;
@@ -281,7 +281,7 @@ export function PlanChatDrawer({ open, onClose, plan, currentUser, chat, reviewS
       rows.push(
         <div key={`day-${dk}`} className="flex items-center gap-2 py-2" role="separator">
           <div className="flex-1 h-px bg-slate-200" />
-          <span className="text-[10px] font-semibold text-slate-400">{dayLabel(d)}</span>
+          <span className="text-2xs font-semibold text-slate-400">{dayLabel(d)}</span>
           <div className="flex-1 h-px bg-slate-200" />
         </div>
       );
@@ -292,7 +292,7 @@ export function PlanChatDrawer({ open, onClose, plan, currentUser, chat, reviewS
     if (isSystemMessage(m)) {
       rows.push(
         <div key={m.id} className="flex justify-center py-1">
-          <div className="max-w-[90%] text-center text-[11px] text-slate-500 bg-slate-100 rounded-full px-3 py-1">
+          <div className="max-w-[90%] text-center text-2xs text-slate-500 bg-slate-100 rounded-full px-3 py-1">
             <span className="font-semibold">{TYPE_LABELS[m.type] ?? 'Hệ thống'}</span>
             <span> · {m.content}</span>
             <BudgetDiffLine m={m} />
@@ -315,9 +315,9 @@ export function PlanChatDrawer({ open, onClose, plan, currentUser, chat, reviewS
     rows.push(
       <div key={m.id} className={`flex flex-col ${mine ? 'items-end' : 'items-start'} ${grouped ? 'mt-0.5' : 'mt-3'}`}>
         {!grouped && (
-          <div className={`flex items-center gap-1.5 mb-1 text-[11px] ${mine ? 'flex-row-reverse' : ''}`}>
+          <div className={`flex items-center gap-1.5 mb-1 text-2xs ${mine ? 'flex-row-reverse' : ''}`}>
             <span className="font-semibold text-slate-700">{mine ? 'Bạn' : m.authorName}</span>
-            <span className={`px-1.5 py-px rounded border text-[10px] font-semibold ${ROLE_BADGE[m.authorRole] ?? ROLE_BADGE.BOOKING}`}>
+            <span className={`px-1.5 py-px rounded border text-2xs font-semibold ${ROLE_BADGE[m.authorRole] ?? ROLE_BADGE.BOOKING}`}>
               {ROLE_LABELS[m.authorRole] ?? m.authorRole}
             </span>
             {m.authorTitle && !mine && <span className="text-slate-400 truncate max-w-[140px]">{m.authorTitle}</span>}
@@ -325,12 +325,12 @@ export function PlanChatDrawer({ open, onClose, plan, currentUser, chat, reviewS
         )}
         <div
           className={`max-w-[85%] rounded-2xl px-3 py-2 text-[13px] leading-relaxed whitespace-pre-wrap break-words ${
-            mine ? 'bg-indigo-600 text-white rounded-br-md' : 'bg-white text-slate-800 border border-slate-200 rounded-bl-md'
+            mine ? 'bg-blue-600 text-white rounded-br-md' : 'bg-white text-slate-800 border border-slate-200 rounded-bl-md'
           } ${m.status === 'sending' ? 'opacity-70' : ''} ${m.status === 'failed' ? 'ring-2 ring-rose-300' : ''}`}
         >
           {m.type !== 'COMMENT' && (
             <span
-              className={`inline-block mb-1 mr-1 px-1.5 py-px rounded text-[10px] font-bold ${
+              className={`inline-block mb-1 mr-1 px-1.5 py-px rounded text-2xs font-semibold ${
                 mine
                   ? 'bg-white/20 text-white'
                   : m.type === 'REVISION_REQUEST'
@@ -343,21 +343,21 @@ export function PlanChatDrawer({ open, onClose, plan, currentUser, chat, reviewS
           )}
           {m.content}
           {m.budgetDiff && (
-            <div className={`mt-1 text-[11px] ${mine ? 'text-indigo-100' : 'text-slate-500'}`}>
+            <div className={`mt-1 text-2xs ${mine ? 'text-blue-100' : 'text-slate-500'}`}>
               <BudgetDiffLine m={m} />
             </div>
           )}
           {m.tags && m.tags.length > 0 && (
             <div className="mt-1 flex flex-wrap gap-1">
               {m.tags.map(t => (
-                <span key={t} className={`text-[10px] ${mine ? 'text-indigo-100' : 'text-slate-400'}`}>
+                <span key={t} className={`text-2xs ${mine ? 'text-blue-100' : 'text-slate-400'}`}>
                   #{t}
                 </span>
               ))}
             </div>
           )}
         </div>
-        <div className="mt-0.5 flex items-center gap-2 text-[10px] text-slate-400">
+        <div className="mt-0.5 flex items-center gap-2 text-2xs text-slate-400">
           {m.status === 'sending' && <span>Đang gửi…</span>}
           {m.status === 'failed' && (
             <button
@@ -398,12 +398,12 @@ export function PlanChatDrawer({ open, onClose, plan, currentUser, chat, reviewS
         <header className="shrink-0 bg-white border-b border-slate-200 px-4 pt-3 pb-2.5">
           <div className="flex items-start gap-2">
             <div className="flex-1 min-w-0">
-              <h2 className="text-sm font-bold text-slate-900">Trao đổi kế hoạch</h2>
-              <p className="text-[11px] text-slate-500 truncate" title={plan.title}>
+              <h2 className="text-sm font-semibold text-slate-900">Trao đổi kế hoạch</h2>
+              <p className="text-2xs text-slate-500 truncate" title={plan.title}>
                 {shortTitle(plan)}
               </p>
             </div>
-            <span className="mt-0.5 inline-flex items-center gap-1.5 text-[10px] font-semibold text-slate-500" aria-live="polite">
+            <span className="mt-0.5 inline-flex items-center gap-1.5 text-2xs font-semibold text-slate-500" aria-live="polite">
               <span className={`w-2 h-2 rounded-full ${conn.dot}`} aria-hidden="true" />
               {conn.label}
             </span>
@@ -416,7 +416,7 @@ export function PlanChatDrawer({ open, onClose, plan, currentUser, chat, reviewS
               <X className="w-4 h-4" />
             </button>
           </div>
-          <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] text-slate-500">
+          <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-2xs text-slate-500">
             {pics.map(p => (
               <span key={p.label}>
                 {p.label}: <span className="font-semibold text-slate-700">{p.name || '—'}</span>
@@ -424,7 +424,7 @@ export function PlanChatDrawer({ open, onClose, plan, currentUser, chat, reviewS
             ))}
           </div>
           {chat.onlineUsers.length > 1 && (
-            <div className="mt-1 text-[10px] text-emerald-600">
+            <div className="mt-1 text-2xs text-emerald-600">
               Đang mở: {chat.onlineUsers.map(u => u.name).join(', ')}
             </div>
           )}
@@ -442,7 +442,7 @@ export function PlanChatDrawer({ open, onClose, plan, currentUser, chat, reviewS
             {reviewOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
           </button>
           {reviewOpen && (
-            <div className="px-3 pb-2.5 text-[11px] text-slate-500 max-h-48 overflow-y-auto">
+            <div className="px-3 pb-2.5 text-2xs text-slate-500 max-h-48 overflow-y-auto">
               {reviewSlot ?? <p className="italic">Chưa có nhận xét.</p>}
             </div>
           )}
@@ -457,7 +457,7 @@ export function PlanChatDrawer({ open, onClose, plan, currentUser, chat, reviewS
               role="tab"
               aria-selected={filter === f.key}
               onClick={() => setFilter(f.key)}
-              className={`shrink-0 px-2.5 py-1 rounded-full text-[11px] font-semibold border ${
+              className={`shrink-0 px-2.5 py-1 rounded-full text-2xs font-semibold border ${
                 filter === f.key
                   ? 'bg-slate-800 text-white border-slate-800'
                   : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'
@@ -484,7 +484,7 @@ export function PlanChatDrawer({ open, onClose, plan, currentUser, chat, reviewS
                   {filter === 'ALL' ? 'Chưa có trao đổi nào' : 'Không có tin phù hợp bộ lọc'}
                 </p>
                 {filter === 'ALL' && (
-                  <p className="mt-1 text-[11px]">Gửi tin đầu tiên để các bên Growth, Booking, Media cùng thống nhất kế hoạch.</p>
+                  <p className="mt-1 text-2xs">Gửi tin đầu tiên để các bên Growth, Booking, Media cùng thống nhất kế hoạch.</p>
                 )}
               </div>
             ) : (
@@ -495,7 +495,7 @@ export function PlanChatDrawer({ open, onClose, plan, currentUser, chat, reviewS
             <button
               type="button"
               onClick={() => scrollToBottom(true)}
-              className="absolute bottom-2 left-1/2 -translate-x-1/2 inline-flex items-center gap-1 px-3 py-1 rounded-full bg-indigo-600 text-white text-[11px] font-semibold shadow-lg"
+              className="absolute bottom-2 left-1/2 -translate-x-1/2 inline-flex items-center gap-1 px-3 py-1 rounded-full bg-blue-600 text-white text-2xs font-semibold shadow-lg"
             >
               Có tin mới <ArrowDown className="w-3 h-3" aria-hidden="true" />
             </button>
@@ -503,7 +503,7 @@ export function PlanChatDrawer({ open, onClose, plan, currentUser, chat, reviewS
         </div>
 
         {/* Đang nhập */}
-        <div className="shrink-0 h-5 px-4 text-[11px] italic text-slate-400" aria-live="polite">
+        <div className="shrink-0 h-5 px-4 text-2xs italic text-slate-400" aria-live="polite">
           {typingText}
         </div>
 
@@ -517,13 +517,13 @@ export function PlanChatDrawer({ open, onClose, plan, currentUser, chat, reviewS
                 role="radio"
                 aria-checked={msgType === c.type}
                 onClick={() => setMsgType(c.type)}
-                className={`shrink-0 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
+                className={`shrink-0 px-2 py-0.5 rounded-full text-2xs font-semibold border ${
                   msgType === c.type
                     ? c.type === 'REVISION_REQUEST'
                       ? 'bg-rose-50 text-rose-700 border-rose-300'
                       : c.type === 'BUDGET_ADJUST'
                         ? 'bg-amber-50 text-amber-700 border-amber-300'
-                        : 'bg-indigo-50 text-indigo-700 border-indigo-300'
+                        : 'bg-blue-50 text-blue-700 border-blue-300'
                     : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
                 }`}
               >
@@ -541,7 +541,7 @@ export function PlanChatDrawer({ open, onClose, plan, currentUser, chat, reviewS
                   setDraft(d => (d.trim() ? `${d.trimEnd()} ${q}` : q));
                   textareaRef.current?.focus();
                 }}
-                className="shrink-0 px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-[10px] text-slate-600 whitespace-nowrap"
+                className="shrink-0 px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-2xs text-slate-600 whitespace-nowrap"
               >
                 {q}
               </button>
@@ -561,20 +561,20 @@ export function PlanChatDrawer({ open, onClose, plan, currentUser, chat, reviewS
               placeholder={currentUser ? 'Nhập nội dung trao đổi…' : 'Cần đăng nhập để gửi tin'}
               disabled={!currentUser}
               aria-label="Nội dung tin nhắn"
-              className="flex-1 resize-none rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-[13px] leading-5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300 disabled:opacity-60"
+              className="flex-1 resize-none rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-[13px] leading-5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 disabled:opacity-60"
               style={{ maxHeight: MAX_TEXTAREA_PX }}
             />
             <button
               type="button"
               onClick={() => void submit()}
               disabled={!draft.trim() || overLimit || !currentUser}
-              className="shrink-0 h-9 w-9 inline-flex items-center justify-center rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 disabled:bg-slate-200 disabled:text-slate-400"
+              className="shrink-0 h-9 w-9 inline-flex items-center justify-center rounded-xl bg-blue-600 text-white hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400"
               aria-label="Gửi tin"
             >
               {chat.sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
             </button>
           </div>
-          <div className="mt-1.5 flex items-center justify-between gap-2 text-[10px] text-slate-400">
+          <div className="mt-1.5 flex items-center justify-between gap-2 text-2xs text-slate-400">
             <span>Tin đã gửi được lưu vào biên bản, không sửa hoặc xóa được.</span>
             {draft.length > MAX_MESSAGE_LENGTH * 0.8 && (
               <span className={overLimit ? 'text-rose-600 font-semibold' : ''}>
@@ -582,7 +582,7 @@ export function PlanChatDrawer({ open, onClose, plan, currentUser, chat, reviewS
               </span>
             )}
           </div>
-          {chat.error && <div className="mt-1 text-[10px] text-rose-600" role="alert">{chat.error}</div>}
+          {chat.error && <div className="mt-1 text-2xs text-rose-600" role="alert">{chat.error}</div>}
         </footer>
       </aside>
     </>
