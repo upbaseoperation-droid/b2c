@@ -1030,7 +1030,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                             </div>
                           </td>
 
-                          {/* 4. NHÂN SỰ PHỤ TRÁCH */}
+                          {/* 4. NHÂN SỰ PHỤ TRÁCH & MÔ HÌNH DUYỆT */}
                           <td className="py-3.5 px-4">
                             <div className="text-xs">
                               <span className="text-slate-400 font-medium">B2C PIC: </span>
@@ -1041,6 +1041,56 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                             <div className="text-2xs text-amber-700 mt-0.5">
                               <span>Growth: </span>
                               <span className="font-medium">{store.growthPic || 'Trần Thị Ánh'}</span>
+                            </div>
+
+                            {/* Mô hình duyệt tháng: Có Lead vs Duyệt trực tiếp */}
+                            <div className="mt-1 flex items-center gap-1.5 flex-wrap">
+                              {plan?.hasBookingLeader ?? store.hasBookingLeader ? (
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-3xs font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                                  <span>Lead: {plan?.bookingLeader?.split(' (')[0] || store.bookingLeader || 'Nguyễn Thị Ngọc Tâm'}</span>
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-3xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">
+                                  <span>Duyệt trực tiếp</span>
+                                </span>
+                              )}
+
+                              {/* Quyền Trưởng phòng đổi nhanh */}
+                              {(currentUser?.role === 'MANAGER' || currentUser?.role === 'ADMIN') && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const currentHas = Boolean(plan?.hasBookingLeader ?? store.hasBookingLeader);
+                                    const nextHas = !currentHas;
+                                    const newLeader = nextHas ? (plan?.bookingLeader || store.bookingLeader || 'Nguyễn Thị Ngọc Tâm') : undefined;
+
+                                    if (plan && onUpdatePlan) {
+                                      onUpdatePlan(plan.id, {
+                                        hasBookingLeader: nextHas,
+                                        bookingLeader: newLeader,
+                                        leaderApprovalStatus: nextHas ? 'CHƯA_DUYỆT' : 'KHÔNG_ÁP_DỤNG'
+                                      });
+                                    }
+                                    if (onUpdateStore) {
+                                      onUpdateStore({
+                                        ...store,
+                                        hasBookingLeader: nextHas,
+                                        bookingLeader: newLeader
+                                      });
+                                    }
+                                    if (onNotify) {
+                                      onNotify(nextHas
+                                        ? `Đã bật yêu cầu Leader sơ duyệt cho ${store.storeName} (${selectedMonth})`
+                                        : `Đã chuyển ${store.storeName} sang Duyệt trực tiếp (${selectedMonth})`);
+                                    }
+                                  }}
+                                  className="text-3xs text-indigo-600 hover:text-indigo-800 font-semibold underline cursor-pointer"
+                                  title="Trưởng phòng đổi mô hình duyệt cho tháng này"
+                                >
+                                  {plan?.hasBookingLeader ?? store.hasBookingLeader ? 'Bỏ Lead' : 'Gán Lead'}
+                                </button>
+                              )}
                             </div>
                           </td>
 

@@ -30,6 +30,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "accountOwnerName": "Nguyễn Đức Mạnh",
     "b2cOwnerName": "Chưa phân công",
     "assignedStaff": "Chưa phân công",
+    "hasBookingLeader": false,
     "primaryPic": "Chưa phân công",
     "assignedMembers": [
       "Chưa phân công"
@@ -65,6 +66,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "accountOwnerName": "Nguyễn Như Quỳnh",
     "b2cOwnerName": "Lê Phương Thảo",
     "assignedStaff": "Lê Phương Thảo",
+    "hasBookingLeader": false,
     "primaryPic": "Lê Phương Thảo",
     "assignedMembers": [
       "Lê Phương Thảo"
@@ -100,6 +102,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "accountOwnerName": "Trần Anh Thư",
     "b2cOwnerName": "Lê Phương Thảo",
     "assignedStaff": "Lê Phương Thảo",
+    "hasBookingLeader": false,
     "primaryPic": "Lê Phương Thảo",
     "assignedMembers": [
       "Lê Phương Thảo"
@@ -135,6 +138,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "accountOwnerName": "Nguyễn Khánh Linh",
     "b2cOwnerName": "Lê Phương Thảo",
     "assignedStaff": "Lê Phương Thảo",
+    "hasBookingLeader": false,
     "primaryPic": "Lê Phương Thảo",
     "assignedMembers": [
       "Lê Phương Thảo"
@@ -170,6 +174,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "accountOwnerName": "Vũ Mai Linh",
     "b2cOwnerName": "Nguyễn Quỳnh Trang",
     "assignedStaff": "Nguyễn Quỳnh Trang",
+    "hasBookingLeader": false,
     "primaryPic": "Nguyễn Quỳnh Trang",
     "assignedMembers": [
       "Nguyễn Quỳnh Trang"
@@ -205,6 +210,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "accountOwnerName": "Phan Đức Hoàng",
     "b2cOwnerName": "Hoàng Hải Long",
     "assignedStaff": "Hoàng Hải Long",
+    "hasBookingLeader": false,
     "primaryPic": "Hoàng Hải Long",
     "assignedMembers": [
       "Hoàng Hải Long",
@@ -242,6 +248,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "accountOwnerName": "Chu Nhật Linh",
     "b2cOwnerName": "Chưa phân công",
     "assignedStaff": "Chưa phân công",
+    "hasBookingLeader": false,
     "primaryPic": "Chưa phân công",
     "assignedMembers": [
       "Chưa phân công"
@@ -277,6 +284,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "accountOwnerName": "Nguyễn Văn Dũng",
     "b2cOwnerName": "Nguyễn Ngọc Huyền",
     "assignedStaff": "Nguyễn Ngọc Huyền",
+    "hasBookingLeader": false,
     "primaryPic": "Nguyễn Ngọc Huyền",
     "assignedMembers": [
       "Nguyễn Ngọc Huyền",
@@ -314,6 +322,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "accountOwnerName": "Nguyễn Văn Dũng",
     "b2cOwnerName": "Nguyễn Ngọc Huyền",
     "assignedStaff": "Nguyễn Ngọc Huyền",
+    "hasBookingLeader": false,
     "primaryPic": "Nguyễn Ngọc Huyền",
     "assignedMembers": [
       "Nguyễn Ngọc Huyền",
@@ -355,6 +364,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "accountOwnerName": "Đỗ Minh Nhật",
     "b2cOwnerName": "Lê Thanh Hải",
     "assignedStaff": "Lê Thanh Hải",
+    "hasBookingLeader": false,
     "primaryPic": "Lê Thanh Hải",
     "assignedMembers": [
       "Lê Thanh Hải",
@@ -392,6 +402,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "accountOwnerName": "Ngô Lan Hương",
     "b2cOwnerName": "Lê Thanh Hải",
     "assignedStaff": "Lê Thanh Hải",
+    "hasBookingLeader": true,
     "bookingLeader": "Nguyễn Thị Ngọc Tâm",
     "primaryPic": "Lê Thanh Hải",
     "assignedMembers": [
@@ -430,6 +441,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "accountOwnerName": "Đào Thị Lệ Quyên",
     "b2cOwnerName": "Vũ Hoài Lâm",
     "assignedStaff": "Vũ Hoài Lâm",
+    "hasBookingLeader": false,
     "primaryPic": "Vũ Hoài Lâm",
     "assignedMembers": [
       "Vũ Hoài Lâm"
@@ -465,6 +477,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "accountOwnerName": "Đặng Nhật Hoài",
     "b2cOwnerName": "Vũ Hoài Lâm",
     "assignedStaff": "Vũ Hoài Lâm",
+    "hasBookingLeader": false,
     "primaryPic": "Vũ Hoài Lâm",
     "assignedMembers": [
       "Vũ Hoài Lâm",
@@ -502,6 +515,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "accountOwnerName": "Hà Thúy Quỳnh",
     "b2cOwnerName": "Trần Hải Phượng",
     "assignedStaff": "Trần Hải Phượng",
+    "hasBookingLeader": false,
     "primaryPic": "Trần Hải Phượng",
     "assignedMembers": [
       "Trần Hải Phượng"
@@ -537,6 +551,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "accountOwnerName": "Ngô Thị Mai Linh",
     "b2cOwnerName": "Trần Hải Phượng",
     "assignedStaff": "Trần Hải Phượng",
+    "hasBookingLeader": false,
     "primaryPic": "Trần Hải Phượng",
     "assignedMembers": [
       "Trần Hải Phượng",
@@ -576,6 +591,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "accountOwnerName": "Đào Thị Ánh Hồng",
     "b2cOwnerName": "Lương Nguyễn Trang Nhung",
     "assignedStaff": "Lương Nguyễn Trang Nhung",
+    "hasBookingLeader": false,
     "primaryPic": "Lương Nguyễn Trang Nhung",
     "assignedMembers": [
       "Lương Nguyễn Trang Nhung"
@@ -611,6 +627,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "accountOwnerName": "Nguyễn Mai Oanh",
     "b2cOwnerName": "Nguyễn Ngọc Huyền",
     "assignedStaff": "Nguyễn Ngọc Huyền",
+    "hasBookingLeader": false,
     "primaryPic": "Nguyễn Ngọc Huyền",
     "assignedMembers": [
       "Nguyễn Ngọc Huyền",
@@ -648,6 +665,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "accountOwnerName": "Đỗ Hồng Hạnh",
     "b2cOwnerName": "Bùi Ngọc Ánh",
     "assignedStaff": "Bùi Ngọc Ánh",
+    "hasBookingLeader": true,
     "bookingLeader": "Nguyễn Thị Ngọc Tâm",
     "primaryPic": "Bùi Ngọc Ánh",
     "assignedMembers": [
@@ -694,6 +712,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "accountOwnerName": "Nguyễn Khắc Công",
     "b2cOwnerName": "Phạm Thị Thu Hằng",
     "assignedStaff": "Phạm Thị Thu Hằng",
+    "hasBookingLeader": true,
     "bookingLeader": "Nguyễn Thị Ngọc Tâm",
     "primaryPic": "Phạm Thị Thu Hằng",
     "assignedMembers": [
@@ -734,6 +753,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "accountOwnerName": "Đàm Thùy Dung",
     "b2cOwnerName": "Phạm Thị Thu Hằng",
     "assignedStaff": "Phạm Thị Thu Hằng",
+    "hasBookingLeader": true,
     "bookingLeader": "Nguyễn Thị Ngọc Tâm",
     "primaryPic": "Phạm Thị Thu Hằng",
     "assignedMembers": [
@@ -774,6 +794,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "accountOwnerName": "Vũ Thị Như Quỳnh",
     "b2cOwnerName": "Đinh Thị Bích Liên",
     "assignedStaff": "Đinh Thị Bích Liên",
+    "hasBookingLeader": false,
     "primaryPic": "Đinh Thị Bích Liên",
     "assignedMembers": [
       "Đinh Thị Bích Liên"
@@ -809,6 +830,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "accountOwnerName": "Lưu Hoàng Khánh Linh",
     "b2cOwnerName": "Đinh Thị Bích Liên",
     "assignedStaff": "Đinh Thị Bích Liên",
+    "hasBookingLeader": false,
     "primaryPic": "Đinh Thị Bích Liên",
     "assignedMembers": [
       "Đinh Thị Bích Liên",
@@ -848,6 +870,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "accountOwnerName": "Chu Nhật Linh",
     "b2cOwnerName": "Hoàng Hải Long",
     "assignedStaff": "Hoàng Hải Long",
+    "hasBookingLeader": false,
     "primaryPic": "Hoàng Hải Long",
     "assignedMembers": [
       "Hoàng Hải Long",
@@ -885,6 +908,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "accountOwnerName": "Nguyễn Thị Mỹ Hạnh",
     "b2cOwnerName": "Nguyễn Thị Hồng Ngát",
     "assignedStaff": "Nguyễn Thị Hồng Ngát",
+    "hasBookingLeader": false,
     "primaryPic": "Nguyễn Thị Hồng Ngát",
     "assignedMembers": [
       "Nguyễn Thị Hồng Ngát",
@@ -924,6 +948,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "accountOwnerName": "Phùng Thị Thu Huệ",
     "b2cOwnerName": "Nguyễn Ngọc Huyền",
     "assignedStaff": "Nguyễn Ngọc Huyền",
+    "hasBookingLeader": true,
     "bookingLeader": "Nguyễn Thị Ngọc Tâm",
     "primaryPic": "Nguyễn Ngọc Huyền",
     "assignedMembers": [
@@ -972,6 +997,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "accountOwnerName": "Nguyễn Khắc Công",
     "b2cOwnerName": "Lê Phương Thảo",
     "assignedStaff": "Lê Phương Thảo",
+    "hasBookingLeader": false,
     "primaryPic": "Lê Phương Thảo",
     "assignedMembers": [
       "Lê Phương Thảo"
@@ -1007,6 +1033,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "accountOwnerName": "Vũ Ngọc Trâm Anh",
     "b2cOwnerName": "Lê Phương Thảo",
     "assignedStaff": "Lê Phương Thảo",
+    "hasBookingLeader": false,
     "primaryPic": "Lê Phương Thảo",
     "assignedMembers": [
       "Lê Phương Thảo"
@@ -1042,6 +1069,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "accountOwnerName": "Nguyễn Khánh Linh",
     "b2cOwnerName": "Chưa phân công",
     "assignedStaff": "Chưa phân công",
+    "hasBookingLeader": false,
     "primaryPic": "Chưa phân công",
     "assignedMembers": [
       "Chưa phân công"
@@ -1077,6 +1105,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "accountOwnerName": "Vũ Mai Linh",
     "b2cOwnerName": "Phan Diệu Ánh",
     "assignedStaff": "Phan Diệu Ánh",
+    "hasBookingLeader": false,
     "primaryPic": "Phan Diệu Ánh",
     "assignedMembers": [
       "Phan Diệu Ánh"
@@ -1112,6 +1141,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "accountOwnerName": "Lê Hương Mai",
     "b2cOwnerName": "Phan Diệu Ánh",
     "assignedStaff": "Phan Diệu Ánh",
+    "hasBookingLeader": false,
     "primaryPic": "Phan Diệu Ánh",
     "assignedMembers": [
       "Phan Diệu Ánh",
@@ -1151,6 +1181,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "accountOwnerName": "Nguyễn Anh Tú",
     "b2cOwnerName": "Trần Thị Hảo",
     "assignedStaff": "Trần Thị Hảo",
+    "hasBookingLeader": false,
     "primaryPic": "Trần Thị Hảo",
     "assignedMembers": [
       "Trần Thị Hảo",
@@ -1190,6 +1221,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "accountOwnerName": "Trần Phương Anh",
     "b2cOwnerName": "Hà Thị Thủy",
     "assignedStaff": "Hà Thị Thủy",
+    "hasBookingLeader": false,
     "primaryPic": "Hà Thị Thủy",
     "assignedMembers": [
       "Hà Thị Thủy",
@@ -1227,6 +1259,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "accountOwnerName": "Bùi Thị Phương Chi",
     "b2cOwnerName": "Trần Thị Hảo",
     "assignedStaff": "Trần Thị Hảo",
+    "hasBookingLeader": false,
     "primaryPic": "Trần Thị Hảo",
     "assignedMembers": [
       "Trần Thị Hảo",
@@ -1268,6 +1301,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "accountOwnerName": "Chu Nhật Linh",
     "b2cOwnerName": "Trần Hải Phượng",
     "assignedStaff": "Trần Hải Phượng",
+    "hasBookingLeader": false,
     "primaryPic": "Trần Hải Phượng",
     "assignedMembers": [
       "Trần Hải Phượng"
@@ -1303,6 +1337,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "accountOwnerName": "Nguyễn Trung Kiên",
     "b2cOwnerName": "Trần Hải Phượng",
     "assignedStaff": "Trần Hải Phượng",
+    "hasBookingLeader": false,
     "primaryPic": "Trần Hải Phượng",
     "assignedMembers": [
       "Trần Hải Phượng",
@@ -1340,6 +1375,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "accountOwnerName": "Nguyễn Khắc Công",
     "b2cOwnerName": "Chưa phân công",
     "assignedStaff": "Chưa phân công",
+    "hasBookingLeader": false,
     "primaryPic": "Chưa phân công",
     "assignedMembers": [
       "Chưa phân công"
@@ -1375,6 +1411,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "accountOwnerName": "Thiều Thị Lan Anh",
     "b2cOwnerName": "Bùi Thu Hằng",
     "assignedStaff": "Bùi Thu Hằng",
+    "hasBookingLeader": false,
     "primaryPic": "Bùi Thu Hằng",
     "assignedMembers": [
       "Bùi Thu Hằng"
@@ -1410,6 +1447,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "accountOwnerName": "Nguyễn Văn Tú",
     "b2cOwnerName": "Lại Ngọc Huyền",
     "assignedStaff": "Lại Ngọc Huyền",
+    "hasBookingLeader": false,
     "primaryPic": "Lại Ngọc Huyền",
     "assignedMembers": [
       "Lại Ngọc Huyền",
@@ -1451,6 +1489,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "accountOwnerName": "Nguyễn Thị Vân Hồng",
     "b2cOwnerName": "Lê Thanh Hải",
     "assignedStaff": "Lê Thanh Hải",
+    "hasBookingLeader": false,
     "primaryPic": "Lê Thanh Hải",
     "assignedMembers": [
       "Lê Thanh Hải"
@@ -1486,6 +1525,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "accountOwnerName": "Nguyễn Thị Xuân",
     "b2cOwnerName": "Lê Thanh Hải",
     "assignedStaff": "Lê Thanh Hải",
+    "hasBookingLeader": true,
     "bookingLeader": "Nguyễn Thị Ngọc Tâm",
     "primaryPic": "Lê Thanh Hải",
     "assignedMembers": [
@@ -1522,6 +1562,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "accountOwnerName": "Vũ Thị Thanh Hoài",
     "b2cOwnerName": "Phạm Thị Thu Hằng",
     "assignedStaff": "Phạm Thị Thu Hằng",
+    "hasBookingLeader": false,
     "primaryPic": "Phạm Thị Thu Hằng",
     "assignedMembers": [
       "Phạm Thị Thu Hằng",
@@ -1559,6 +1600,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "accountOwnerName": "Vũ Thị Thanh Hoài",
     "b2cOwnerName": "Lê Phương Thảo",
     "assignedStaff": "Lê Phương Thảo",
+    "hasBookingLeader": false,
     "primaryPic": "Lê Phương Thảo",
     "assignedMembers": [
       "Lê Phương Thảo",
@@ -1596,6 +1638,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "accountOwnerName": "Nguyễn Đức Mạnh",
     "b2cOwnerName": "Lại Ngọc Huyền",
     "assignedStaff": "Lại Ngọc Huyền",
+    "hasBookingLeader": false,
     "primaryPic": "Lại Ngọc Huyền",
     "assignedMembers": [
       "Lại Ngọc Huyền"
@@ -1631,6 +1674,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "accountOwnerName": "Phùng Thị Thu Huệ",
     "b2cOwnerName": "Lại Ngọc Huyền",
     "assignedStaff": "Lại Ngọc Huyền",
+    "hasBookingLeader": true,
     "bookingLeader": "Nguyễn Thị Ngọc Tâm",
     "primaryPic": "Lại Ngọc Huyền",
     "assignedMembers": [
@@ -1669,6 +1713,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "accountOwnerName": "Nguyễn Trung Kiên",
     "b2cOwnerName": "Lê Phương Thảo",
     "assignedStaff": "Lê Phương Thảo",
+    "hasBookingLeader": false,
     "primaryPic": "Lê Phương Thảo",
     "assignedMembers": [
       "Lê Phương Thảo"
@@ -1704,6 +1749,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "accountOwnerName": "Đàm Thùy Dung",
     "b2cOwnerName": "Bùi Ngọc Ánh",
     "assignedStaff": "Bùi Ngọc Ánh",
+    "hasBookingLeader": false,
     "primaryPic": "Bùi Ngọc Ánh",
     "assignedMembers": [
       "Bùi Ngọc Ánh",
@@ -1743,6 +1789,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "accountOwnerName": "Đỗ Hồng Hạnh",
     "b2cOwnerName": "Nguyễn Thị Quỳnh Nhi",
     "assignedStaff": "Nguyễn Thị Quỳnh Nhi",
+    "hasBookingLeader": false,
     "primaryPic": "Nguyễn Thị Quỳnh Nhi",
     "assignedMembers": [
       "Nguyễn Thị Quỳnh Nhi"
@@ -1778,6 +1825,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "accountOwnerName": "Thiều Thị Lan Anh",
     "b2cOwnerName": "Trần Thị Hảo",
     "assignedStaff": "Trần Thị Hảo",
+    "hasBookingLeader": false,
     "primaryPic": "Trần Thị Hảo",
     "assignedMembers": [
       "Trần Thị Hảo",
@@ -1815,6 +1863,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "accountOwnerName": "Phùng Thị Thu Huệ",
     "b2cOwnerName": "Hoàng Hải Long",
     "assignedStaff": "Hoàng Hải Long",
+    "hasBookingLeader": false,
     "primaryPic": "Hoàng Hải Long",
     "assignedMembers": [
       "Hoàng Hải Long"
@@ -1850,6 +1899,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "accountOwnerName": "Ngô Lan Hương",
     "b2cOwnerName": "Trần Thị Hảo",
     "assignedStaff": "Trần Thị Hảo",
+    "hasBookingLeader": false,
     "primaryPic": "Trần Thị Hảo",
     "assignedMembers": [
       "Trần Thị Hảo",
@@ -1891,6 +1941,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "accountOwnerName": "Phạm Thị Hồng Yến",
     "b2cOwnerName": "Phan Diệu Ánh",
     "assignedStaff": "Phan Diệu Ánh",
+    "hasBookingLeader": false,
     "primaryPic": "Phan Diệu Ánh",
     "assignedMembers": [
       "Phan Diệu Ánh",
@@ -1928,6 +1979,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "accountOwnerName": "Đỗ Thị Thanh Loan",
     "b2cOwnerName": "Nguyễn Thị Mai Anh",
     "assignedStaff": "Nguyễn Thị Mai Anh",
+    "hasBookingLeader": false,
     "primaryPic": "Nguyễn Thị Mai Anh",
     "assignedMembers": [
       "Nguyễn Thị Mai Anh"
@@ -1963,6 +2015,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "accountOwnerName": "Đoàn Gia Huy",
     "b2cOwnerName": "Phạm Huyền Thương",
     "assignedStaff": "Phạm Huyền Thương",
+    "hasBookingLeader": false,
     "primaryPic": "Phạm Huyền Thương",
     "assignedMembers": [
       "Phạm Huyền Thương"
@@ -1998,6 +2051,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "accountOwnerName": "Đoàn Gia Huy",
     "b2cOwnerName": "Nguyễn Thị Quỳnh Nhi",
     "assignedStaff": "Nguyễn Thị Quỳnh Nhi",
+    "hasBookingLeader": false,
     "primaryPic": "Nguyễn Thị Quỳnh Nhi",
     "assignedMembers": [
       "Nguyễn Thị Quỳnh Nhi"
@@ -2033,6 +2087,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "accountOwnerName": "Phạm Trương Thu Đông",
     "b2cOwnerName": "Phạm Huyền Thương",
     "assignedStaff": "Phạm Huyền Thương",
+    "hasBookingLeader": false,
     "primaryPic": "Phạm Huyền Thương",
     "assignedMembers": [
       "Phạm Huyền Thương",
@@ -2072,6 +2127,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "accountOwnerName": "Đỗ Minh Nhật",
     "b2cOwnerName": "Chưa phân công",
     "assignedStaff": "Chưa phân công",
+    "hasBookingLeader": false,
     "primaryPic": "Chưa phân công",
     "assignedMembers": [
       "Chưa phân công"
@@ -2107,6 +2163,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "accountOwnerName": "Nguyễn Như Quỳnh",
     "b2cOwnerName": "Nguyễn Thị Quỳnh Nhi",
     "assignedStaff": "Nguyễn Thị Quỳnh Nhi",
+    "hasBookingLeader": true,
     "bookingLeader": "Nguyễn Thị Ngọc Tâm",
     "primaryPic": "Nguyễn Thị Quỳnh Nhi",
     "assignedMembers": [
@@ -2145,6 +2202,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "accountOwnerName": "Vũ Mai Linh",
     "b2cOwnerName": "Chưa phân công",
     "assignedStaff": "Chưa phân công",
+    "hasBookingLeader": false,
     "primaryPic": "Chưa phân công",
     "assignedMembers": [
       "Chưa phân công"
@@ -2180,6 +2238,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "accountOwnerName": "Trần Phương Anh",
     "b2cOwnerName": "Hoàng Diệu Thuỳ",
     "assignedStaff": "Hoàng Diệu Thuỳ",
+    "hasBookingLeader": false,
     "primaryPic": "Hoàng Diệu Thuỳ",
     "assignedMembers": [
       "Hoàng Diệu Thuỳ"
@@ -2215,6 +2274,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "accountOwnerName": "Đặng Nhật Hoài",
     "b2cOwnerName": "Lương Nguyễn Trang Nhung",
     "assignedStaff": "Lương Nguyễn Trang Nhung",
+    "hasBookingLeader": false,
     "primaryPic": "Lương Nguyễn Trang Nhung",
     "assignedMembers": [
       "Lương Nguyễn Trang Nhung"
@@ -2250,6 +2310,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "accountOwnerName": "Nguyễn Thị Ánh Tuyết",
     "b2cOwnerName": "Nguyễn Thị Ngọc Tâm",
     "assignedStaff": "Nguyễn Thị Ngọc Tâm",
+    "hasBookingLeader": false,
     "primaryPic": "Nguyễn Thị Ngọc Tâm",
     "assignedMembers": [
       "Nguyễn Thị Ngọc Tâm"
@@ -2285,6 +2346,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "accountOwnerName": "Nguyễn Vũ Gia Long",
     "b2cOwnerName": "Nguyễn Thị Mai Anh",
     "assignedStaff": "Nguyễn Thị Mai Anh",
+    "hasBookingLeader": false,
     "primaryPic": "Nguyễn Thị Mai Anh",
     "assignedMembers": [
       "Nguyễn Thị Mai Anh"
@@ -2320,6 +2382,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "accountOwnerName": "Đào Thị Ánh Hồng",
     "b2cOwnerName": "Nguyễn Thị Mai Anh",
     "assignedStaff": "Nguyễn Thị Mai Anh",
+    "hasBookingLeader": false,
     "primaryPic": "Nguyễn Thị Mai Anh",
     "assignedMembers": [
       "Nguyễn Thị Mai Anh",
@@ -2357,6 +2420,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "accountOwnerName": "Bùi Thị Phương Chi",
     "b2cOwnerName": "Lại Ngọc Huyền",
     "assignedStaff": "Lại Ngọc Huyền",
+    "hasBookingLeader": false,
     "primaryPic": "Lại Ngọc Huyền",
     "assignedMembers": [
       "Lại Ngọc Huyền",
@@ -2394,6 +2458,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "accountOwnerName": "Hứa Thị Ngọc Lam",
     "b2cOwnerName": "Bùi Ngọc Ánh",
     "assignedStaff": "Bùi Ngọc Ánh",
+    "hasBookingLeader": false,
     "primaryPic": "Bùi Ngọc Ánh",
     "assignedMembers": [
       "Bùi Ngọc Ánh"
@@ -2429,6 +2494,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "accountOwnerName": "Phạm Hà Hoàng Trang",
     "b2cOwnerName": "Bùi Ngọc Ánh",
     "assignedStaff": "Bùi Ngọc Ánh",
+    "hasBookingLeader": false,
     "primaryPic": "Bùi Ngọc Ánh",
     "assignedMembers": [
       "Bùi Ngọc Ánh",
@@ -2468,6 +2534,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "accountOwnerName": "Nguyễn Thị Vân Hồng",
     "b2cOwnerName": "Nguyễn Ngọc Linh",
     "assignedStaff": "Nguyễn Ngọc Linh",
+    "hasBookingLeader": false,
     "primaryPic": "Nguyễn Ngọc Linh",
     "assignedMembers": [
       "Nguyễn Ngọc Linh",
@@ -2505,6 +2572,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "accountOwnerName": "Lưu Hoàng Khánh Linh",
     "b2cOwnerName": "Nguyễn Ngọc Linh",
     "assignedStaff": "Nguyễn Ngọc Linh",
+    "hasBookingLeader": false,
     "primaryPic": "Nguyễn Ngọc Linh",
     "assignedMembers": [
       "Nguyễn Ngọc Linh",
@@ -2544,6 +2612,7 @@ export const REAL_B2C_69_STORES: StorePortfolioItem[] = [
     "accountOwnerName": "Phạm Thương Thảo",
     "b2cOwnerName": "Trần Phương Thảo",
     "assignedStaff": "Trần Phương Thảo",
+    "hasBookingLeader": false,
     "primaryPic": "Trần Phương Thảo",
     "assignedMembers": [
       "Trần Phương Thảo",
@@ -3212,6 +3281,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "month": "2026/10",
     "week": "W41 [05.10 - 11.10]",
     "pic": "Chưa phân công",
+    "hasBookingLeader": false,
     "primaryPic": "Chưa phân công",
     "assignedMembers": [
       "Chưa phân công"
@@ -3279,6 +3349,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "month": "2026/10",
     "week": "W41 [05.10 - 11.10]",
     "pic": "Lê Phương Thảo",
+    "hasBookingLeader": false,
     "primaryPic": "Lê Phương Thảo",
     "assignedMembers": [
       "Lê Phương Thảo"
@@ -3346,6 +3417,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "month": "2026/10",
     "week": "W41 [05.10 - 11.10]",
     "pic": "Lê Phương Thảo",
+    "hasBookingLeader": false,
     "primaryPic": "Lê Phương Thảo",
     "assignedMembers": [
       "Lê Phương Thảo"
@@ -3430,6 +3502,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "month": "2026/10",
     "week": "W41 [05.10 - 11.10]",
     "pic": "Lê Phương Thảo",
+    "hasBookingLeader": false,
     "primaryPic": "Lê Phương Thảo",
     "assignedMembers": [
       "Lê Phương Thảo"
@@ -3651,6 +3724,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "month": "2026/10",
     "week": "W41 [05.10 - 11.10]",
     "pic": "Nguyễn Quỳnh Trang",
+    "hasBookingLeader": false,
     "primaryPic": "Nguyễn Quỳnh Trang",
     "assignedMembers": [
       "Nguyễn Quỳnh Trang"
@@ -3737,6 +3811,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "month": "2026/10",
     "week": "W41 [05.10 - 11.10]",
     "pic": "Hoàng Hải Long",
+    "hasBookingLeader": false,
     "primaryPic": "Hoàng Hải Long",
     "assignedMembers": [
       "Hoàng Hải Long",
@@ -3854,6 +3929,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "month": "2026/10",
     "week": "W41 [05.10 - 11.10]",
     "pic": "Chưa phân công",
+    "hasBookingLeader": false,
     "primaryPic": "Chưa phân công",
     "assignedMembers": [
       "Chưa phân công"
@@ -3921,6 +3997,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "month": "2026/10",
     "week": "W41 [05.10 - 11.10]",
     "pic": "Nguyễn Ngọc Huyền",
+    "hasBookingLeader": false,
     "primaryPic": "Nguyễn Ngọc Huyền",
     "assignedMembers": [
       "Nguyễn Ngọc Huyền",
@@ -4006,6 +4083,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "month": "2026/10",
     "week": "W41 [05.10 - 11.10]",
     "pic": "Nguyễn Ngọc Huyền",
+    "hasBookingLeader": false,
     "primaryPic": "Nguyễn Ngọc Huyền",
     "assignedMembers": [
       "Nguyễn Ngọc Huyền",
@@ -4260,6 +4338,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "month": "2026/10",
     "week": "W41 [05.10 - 11.10]",
     "pic": "Lê Thanh Hải",
+    "hasBookingLeader": false,
     "primaryPic": "Lê Thanh Hải",
     "assignedMembers": [
       "Lê Thanh Hải",
@@ -4328,6 +4407,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "month": "2026/10",
     "week": "W41 [05.10 - 11.10]",
     "pic": "Lê Thanh Hải",
+    "hasBookingLeader": true,
     "bookingLeader": "Nguyễn Thị Ngọc Tâm (Trưởng nhóm Booking)",
     "primaryPic": "Lê Thanh Hải",
     "assignedMembers": [
@@ -4534,6 +4614,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "month": "2026/10",
     "week": "W41 [05.10 - 11.10]",
     "pic": "Vũ Hoài Lâm",
+    "hasBookingLeader": false,
     "primaryPic": "Vũ Hoài Lâm",
     "assignedMembers": [
       "Vũ Hoài Lâm"
@@ -4601,6 +4682,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "month": "2026/10",
     "week": "W41 [05.10 - 11.10]",
     "pic": "Vũ Hoài Lâm",
+    "hasBookingLeader": false,
     "primaryPic": "Vũ Hoài Lâm",
     "assignedMembers": [
       "Vũ Hoài Lâm",
@@ -4737,6 +4819,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "month": "2026/10",
     "week": "W41 [05.10 - 11.10]",
     "pic": "Trần Hải Phượng",
+    "hasBookingLeader": false,
     "primaryPic": "Trần Hải Phượng",
     "assignedMembers": [
       "Trần Hải Phượng"
@@ -4823,6 +4906,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "month": "2026/10",
     "week": "W41 [05.10 - 11.10]",
     "pic": "Trần Hải Phượng",
+    "hasBookingLeader": false,
     "primaryPic": "Trần Hải Phượng",
     "assignedMembers": [
       "Trần Hải Phượng",
@@ -5045,6 +5129,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "month": "2026/10",
     "week": "W41 [05.10 - 11.10]",
     "pic": "Lương Nguyễn Trang Nhung",
+    "hasBookingLeader": false,
     "primaryPic": "Lương Nguyễn Trang Nhung",
     "assignedMembers": [
       "Lương Nguyễn Trang Nhung"
@@ -5129,6 +5214,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "month": "2026/10",
     "week": "W41 [05.10 - 11.10]",
     "pic": "Nguyễn Ngọc Huyền",
+    "hasBookingLeader": false,
     "primaryPic": "Nguyễn Ngọc Huyền",
     "assignedMembers": [
       "Nguyễn Ngọc Huyền",
@@ -5315,6 +5401,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "month": "2026/10",
     "week": "W41 [05.10 - 11.10]",
     "pic": "Bùi Ngọc Ánh",
+    "hasBookingLeader": true,
     "bookingLeader": "Nguyễn Thị Ngọc Tâm (Trưởng nhóm Booking)",
     "primaryPic": "Bùi Ngọc Ánh",
     "assignedMembers": [
@@ -5492,6 +5579,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "month": "2026/10",
     "week": "W41 [05.10 - 11.10]",
     "pic": "Phạm Thị Thu Hằng",
+    "hasBookingLeader": true,
     "bookingLeader": "Nguyễn Thị Ngọc Tâm (Trưởng nhóm Booking)",
     "primaryPic": "Phạm Thị Thu Hằng",
     "assignedMembers": [
@@ -5564,6 +5652,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "month": "2026/10",
     "week": "W41 [05.10 - 11.10]",
     "pic": "Phạm Thị Thu Hằng",
+    "hasBookingLeader": true,
     "bookingLeader": "Nguyễn Thị Ngọc Tâm (Trưởng nhóm Booking)",
     "primaryPic": "Phạm Thị Thu Hằng",
     "assignedMembers": [
@@ -5755,6 +5844,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "month": "2026/10",
     "week": "W41 [05.10 - 11.10]",
     "pic": "Đinh Thị Bích Liên",
+    "hasBookingLeader": false,
     "primaryPic": "Đinh Thị Bích Liên",
     "assignedMembers": [
       "Đinh Thị Bích Liên"
@@ -5822,6 +5912,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "month": "2026/10",
     "week": "W41 [05.10 - 11.10]",
     "pic": "Đinh Thị Bích Liên",
+    "hasBookingLeader": false,
     "primaryPic": "Đinh Thị Bích Liên",
     "assignedMembers": [
       "Đinh Thị Bích Liên",
@@ -5976,6 +6067,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "month": "2026/10",
     "week": "W41 [05.10 - 11.10]",
     "pic": "Hoàng Hải Long",
+    "hasBookingLeader": false,
     "primaryPic": "Hoàng Hải Long",
     "assignedMembers": [
       "Hoàng Hải Long",
@@ -6129,6 +6221,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "month": "2026/10",
     "week": "W41 [05.10 - 11.10]",
     "pic": "Nguyễn Thị Hồng Ngát",
+    "hasBookingLeader": false,
     "primaryPic": "Nguyễn Thị Hồng Ngát",
     "assignedMembers": [
       "Nguyễn Thị Hồng Ngát",
@@ -6231,6 +6324,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "month": "2026/10",
     "week": "W41 [05.10 - 11.10]",
     "pic": "Nguyễn Ngọc Huyền",
+    "hasBookingLeader": true,
     "bookingLeader": "Nguyễn Thị Ngọc Tâm (Trưởng nhóm Booking)",
     "primaryPic": "Nguyễn Ngọc Huyền",
     "assignedMembers": [
@@ -6493,6 +6587,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "month": "2026/10",
     "week": "W41 [05.10 - 11.10]",
     "pic": "Lê Phương Thảo",
+    "hasBookingLeader": false,
     "primaryPic": "Lê Phương Thảo",
     "assignedMembers": [
       "Lê Phương Thảo"
@@ -6579,6 +6674,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "month": "2026/10",
     "week": "W41 [05.10 - 11.10]",
     "pic": "Lê Phương Thảo",
+    "hasBookingLeader": false,
     "primaryPic": "Lê Phương Thảo",
     "assignedMembers": [
       "Lê Phương Thảo"
@@ -6646,6 +6742,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "month": "2026/10",
     "week": "W41 [05.10 - 11.10]",
     "pic": "Chưa phân công",
+    "hasBookingLeader": false,
     "primaryPic": "Chưa phân công",
     "assignedMembers": [
       "Chưa phân công"
@@ -6713,6 +6810,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "month": "2026/10",
     "week": "W41 [05.10 - 11.10]",
     "pic": "Phan Diệu Ánh",
+    "hasBookingLeader": false,
     "primaryPic": "Phan Diệu Ánh",
     "assignedMembers": [
       "Phan Diệu Ánh"
@@ -6780,6 +6878,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "month": "2026/10",
     "week": "W41 [05.10 - 11.10]",
     "pic": "Phan Diệu Ánh",
+    "hasBookingLeader": false,
     "primaryPic": "Phan Diệu Ánh",
     "assignedMembers": [
       "Phan Diệu Ánh",
@@ -6968,6 +7067,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "month": "2026/10",
     "week": "W41 [05.10 - 11.10]",
     "pic": "Trần Thị Hảo",
+    "hasBookingLeader": false,
     "primaryPic": "Trần Thị Hảo",
     "assignedMembers": [
       "Trần Thị Hảo",
@@ -7173,6 +7273,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "month": "2026/10",
     "week": "W41 [05.10 - 11.10]",
     "pic": "Hà Thị Thủy",
+    "hasBookingLeader": false,
     "primaryPic": "Hà Thị Thủy",
     "assignedMembers": [
       "Hà Thị Thủy",
@@ -7241,6 +7342,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "month": "2026/10",
     "week": "W41 [05.10 - 11.10]",
     "pic": "Trần Thị Hảo",
+    "hasBookingLeader": false,
     "primaryPic": "Trần Thị Hảo",
     "assignedMembers": [
       "Trần Thị Hảo",
@@ -7448,6 +7550,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "month": "2026/10",
     "week": "W41 [05.10 - 11.10]",
     "pic": "Trần Hải Phượng",
+    "hasBookingLeader": false,
     "primaryPic": "Trần Hải Phượng",
     "assignedMembers": [
       "Trần Hải Phượng"
@@ -7533,6 +7636,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "month": "2026/10",
     "week": "W41 [05.10 - 11.10]",
     "pic": "Trần Hải Phượng",
+    "hasBookingLeader": false,
     "primaryPic": "Trần Hải Phượng",
     "assignedMembers": [
       "Trần Hải Phượng",
@@ -7753,6 +7857,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "month": "2026/10",
     "week": "W41 [05.10 - 11.10]",
     "pic": "Chưa phân công",
+    "hasBookingLeader": false,
     "primaryPic": "Chưa phân công",
     "assignedMembers": [
       "Chưa phân công"
@@ -7839,6 +7944,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "month": "2026/10",
     "week": "W41 [05.10 - 11.10]",
     "pic": "Bùi Thu Hằng",
+    "hasBookingLeader": false,
     "primaryPic": "Bùi Thu Hằng",
     "assignedMembers": [
       "Bùi Thu Hằng"
@@ -7906,6 +8012,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "month": "2026/10",
     "week": "W41 [05.10 - 11.10]",
     "pic": "Lại Ngọc Huyền",
+    "hasBookingLeader": false,
     "primaryPic": "Lại Ngọc Huyền",
     "assignedMembers": [
       "Lại Ngọc Huyền",
@@ -8094,6 +8201,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "month": "2026/10",
     "week": "W41 [05.10 - 11.10]",
     "pic": "Lê Thanh Hải",
+    "hasBookingLeader": false,
     "primaryPic": "Lê Thanh Hải",
     "assignedMembers": [
       "Lê Thanh Hải"
@@ -8161,6 +8269,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "month": "2026/10",
     "week": "W41 [05.10 - 11.10]",
     "pic": "Lê Thanh Hải",
+    "hasBookingLeader": true,
     "bookingLeader": "Nguyễn Thị Ngọc Tâm (Trưởng nhóm Booking)",
     "primaryPic": "Lê Thanh Hải",
     "assignedMembers": [
@@ -8249,6 +8358,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "month": "2026/10",
     "week": "W41 [05.10 - 11.10]",
     "pic": "Phạm Thị Thu Hằng",
+    "hasBookingLeader": false,
     "primaryPic": "Phạm Thị Thu Hằng",
     "assignedMembers": [
       "Phạm Thị Thu Hằng",
@@ -8401,6 +8511,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "month": "2026/10",
     "week": "W41 [05.10 - 11.10]",
     "pic": "Lê Phương Thảo",
+    "hasBookingLeader": false,
     "primaryPic": "Lê Phương Thảo",
     "assignedMembers": [
       "Lê Phương Thảo",
@@ -8502,6 +8613,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "month": "2026/10",
     "week": "W41 [05.10 - 11.10]",
     "pic": "Lại Ngọc Huyền",
+    "hasBookingLeader": false,
     "primaryPic": "Lại Ngọc Huyền",
     "assignedMembers": [
       "Lại Ngọc Huyền"
@@ -8569,6 +8681,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "month": "2026/10",
     "week": "W41 [05.10 - 11.10]",
     "pic": "Lại Ngọc Huyền",
+    "hasBookingLeader": true,
     "bookingLeader": "Nguyễn Thị Ngọc Tâm (Trưởng nhóm Booking)",
     "primaryPic": "Lại Ngọc Huyền",
     "assignedMembers": [
@@ -8826,6 +8939,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "month": "2026/10",
     "week": "W41 [05.10 - 11.10]",
     "pic": "Lê Phương Thảo",
+    "hasBookingLeader": false,
     "primaryPic": "Lê Phương Thảo",
     "assignedMembers": [
       "Lê Phương Thảo"
@@ -8893,6 +9007,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "month": "2026/10",
     "week": "W41 [05.10 - 11.10]",
     "pic": "Bùi Ngọc Ánh",
+    "hasBookingLeader": false,
     "primaryPic": "Bùi Ngọc Ánh",
     "assignedMembers": [
       "Bùi Ngọc Ánh",
@@ -9115,6 +9230,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "month": "2026/10",
     "week": "W41 [05.10 - 11.10]",
     "pic": "Nguyễn Thị Quỳnh Nhi",
+    "hasBookingLeader": false,
     "primaryPic": "Nguyễn Thị Quỳnh Nhi",
     "assignedMembers": [
       "Nguyễn Thị Quỳnh Nhi"
@@ -9199,6 +9315,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "month": "2026/10",
     "week": "W41 [05.10 - 11.10]",
     "pic": "Trần Thị Hảo",
+    "hasBookingLeader": false,
     "primaryPic": "Trần Thị Hảo",
     "assignedMembers": [
       "Trần Thị Hảo",
@@ -9302,6 +9419,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "month": "2026/10",
     "week": "W41 [05.10 - 11.10]",
     "pic": "Hoàng Hải Long",
+    "hasBookingLeader": false,
     "primaryPic": "Hoàng Hải Long",
     "assignedMembers": [
       "Hoàng Hải Long"
@@ -9369,6 +9487,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "month": "2026/10",
     "week": "W41 [05.10 - 11.10]",
     "pic": "Trần Thị Hảo",
+    "hasBookingLeader": false,
     "primaryPic": "Trần Thị Hảo",
     "assignedMembers": [
       "Trần Thị Hảo",
@@ -9608,6 +9727,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "month": "2026/10",
     "week": "W41 [05.10 - 11.10]",
     "pic": "Phan Diệu Ánh",
+    "hasBookingLeader": false,
     "primaryPic": "Phan Diệu Ánh",
     "assignedMembers": [
       "Phan Diệu Ánh",
@@ -9761,6 +9881,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "month": "2026/10",
     "week": "W41 [05.10 - 11.10]",
     "pic": "Nguyễn Thị Mai Anh",
+    "hasBookingLeader": false,
     "primaryPic": "Nguyễn Thị Mai Anh",
     "assignedMembers": [
       "Nguyễn Thị Mai Anh"
@@ -9929,6 +10050,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "month": "2026/10",
     "week": "W41 [05.10 - 11.10]",
     "pic": "Phạm Huyền Thương",
+    "hasBookingLeader": false,
     "primaryPic": "Phạm Huyền Thương",
     "assignedMembers": [
       "Phạm Huyền Thương"
@@ -10015,6 +10137,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "month": "2026/10",
     "week": "W41 [05.10 - 11.10]",
     "pic": "Nguyễn Thị Quỳnh Nhi",
+    "hasBookingLeader": false,
     "primaryPic": "Nguyễn Thị Quỳnh Nhi",
     "assignedMembers": [
       "Nguyễn Thị Quỳnh Nhi"
@@ -10117,6 +10240,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "month": "2026/10",
     "week": "W41 [05.10 - 11.10]",
     "pic": "Phạm Huyền Thương",
+    "hasBookingLeader": false,
     "primaryPic": "Phạm Huyền Thương",
     "assignedMembers": [
       "Phạm Huyền Thương",
@@ -10305,6 +10429,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "month": "2026/10",
     "week": "W41 [05.10 - 11.10]",
     "pic": "Chưa phân công",
+    "hasBookingLeader": false,
     "primaryPic": "Chưa phân công",
     "assignedMembers": [
       "Chưa phân công"
@@ -10391,6 +10516,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "month": "2026/10",
     "week": "W41 [05.10 - 11.10]",
     "pic": "Nguyễn Thị Quỳnh Nhi",
+    "hasBookingLeader": true,
     "bookingLeader": "Nguyễn Thị Ngọc Tâm (Trưởng nhóm Booking)",
     "primaryPic": "Nguyễn Thị Quỳnh Nhi",
     "assignedMembers": [
@@ -10480,6 +10606,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "month": "2026/10",
     "week": "W41 [05.10 - 11.10]",
     "pic": "Chưa phân công",
+    "hasBookingLeader": false,
     "primaryPic": "Chưa phân công",
     "assignedMembers": [
       "Chưa phân công"
@@ -10566,6 +10693,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "month": "2026/10",
     "week": "W41 [05.10 - 11.10]",
     "pic": "Hoàng Diệu Thuỳ",
+    "hasBookingLeader": false,
     "primaryPic": "Hoàng Diệu Thuỳ",
     "assignedMembers": [
       "Hoàng Diệu Thuỳ"
@@ -10652,6 +10780,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "month": "2026/10",
     "week": "W41 [05.10 - 11.10]",
     "pic": "Lương Nguyễn Trang Nhung",
+    "hasBookingLeader": false,
     "primaryPic": "Lương Nguyễn Trang Nhung",
     "assignedMembers": [
       "Lương Nguyễn Trang Nhung"
@@ -10754,6 +10883,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "month": "2026/10",
     "week": "W41 [05.10 - 11.10]",
     "pic": "Nguyễn Thị Ngọc Tâm",
+    "hasBookingLeader": false,
     "primaryPic": "Nguyễn Thị Ngọc Tâm",
     "assignedMembers": [
       "Nguyễn Thị Ngọc Tâm"
@@ -10840,6 +10970,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "month": "2026/10",
     "week": "W41 [05.10 - 11.10]",
     "pic": "Nguyễn Thị Mai Anh",
+    "hasBookingLeader": false,
     "primaryPic": "Nguyễn Thị Mai Anh",
     "assignedMembers": [
       "Nguyễn Thị Mai Anh"
@@ -10926,6 +11057,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "month": "2026/10",
     "week": "W41 [05.10 - 11.10]",
     "pic": "Nguyễn Thị Mai Anh",
+    "hasBookingLeader": false,
     "primaryPic": "Nguyễn Thị Mai Anh",
     "assignedMembers": [
       "Nguyễn Thị Mai Anh",
@@ -11130,6 +11262,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "month": "2026/10",
     "week": "W41 [05.10 - 11.10]",
     "pic": "Lại Ngọc Huyền",
+    "hasBookingLeader": false,
     "primaryPic": "Lại Ngọc Huyền",
     "assignedMembers": [
       "Lại Ngọc Huyền",
@@ -11247,6 +11380,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "month": "2026/10",
     "week": "W41 [05.10 - 11.10]",
     "pic": "Bùi Ngọc Ánh",
+    "hasBookingLeader": false,
     "primaryPic": "Bùi Ngọc Ánh",
     "assignedMembers": [
       "Bùi Ngọc Ánh"
@@ -11333,6 +11467,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "month": "2026/10",
     "week": "W41 [05.10 - 11.10]",
     "pic": "Bùi Ngọc Ánh",
+    "hasBookingLeader": false,
     "primaryPic": "Bùi Ngọc Ánh",
     "assignedMembers": [
       "Bùi Ngọc Ánh",
@@ -11520,6 +11655,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "month": "2026/10",
     "week": "W41 [05.10 - 11.10]",
     "pic": "Nguyễn Ngọc Linh",
+    "hasBookingLeader": false,
     "primaryPic": "Nguyễn Ngọc Linh",
     "assignedMembers": [
       "Nguyễn Ngọc Linh",
@@ -11605,6 +11741,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "month": "2026/10",
     "week": "W41 [05.10 - 11.10]",
     "pic": "Nguyễn Ngọc Linh",
+    "hasBookingLeader": false,
     "primaryPic": "Nguyễn Ngọc Linh",
     "assignedMembers": [
       "Nguyễn Ngọc Linh",
@@ -11792,6 +11929,7 @@ export const REAL_MONTHLY_PLANS_OCT_2026: InputPlanBreakdownState[] = [
     "month": "2026/10",
     "week": "W41 [05.10 - 11.10]",
     "pic": "Trần Phương Thảo",
+    "hasBookingLeader": false,
     "primaryPic": "Trần Phương Thảo",
     "assignedMembers": [
       "Trần Phương Thảo",

@@ -1666,7 +1666,8 @@ export interface StorePortfolioItem {
   accountOwnerName: string; // Account/Growth Owner phụ trách doanh số & quan hệ khách hàng
   b2cOwnerName: string; // B2C Ops Owner phụ trách vận hành nội dung & booking
   assignedStaff?: string; // Alias for primary B2C Ops assignee
-  bookingLeader?: string; // Trưởng nhóm Booking phụ trách nhóm (ví dụ: 'Nguyễn Tuấn Anh' - Leader Team 1)
+  hasBookingLeader?: boolean; // Trưởng phòng chọn theo tháng: true = có Lead sơ duyệt, false = duyệt trực tiếp
+  bookingLeader?: string; // Trưởng nhóm Booking phụ trách nhóm (nếu có)
   primaryPic?: string; // Chuyên viên chính chủ trì gian hàng (ví dụ: 'Khánh Vy')
   assignedMembers?: string[]; // Danh sách các chuyên viên trong nhóm cùng thực thi
   b2cOwners?: string[]; // Danh sách các nhân sự B2C Ops cùng làm 1 shop (hỗ trợ trường hợp 2+ nhân viên làm cùng 1 shop)
@@ -2195,7 +2196,8 @@ export interface InputPlanBreakdownState {
   approvalSteps?: PlanApprovalStep[];
   discussions?: PlanDiscussionMessage[];
   // Phân tầng quản lý 2 cấp: Trưởng nhóm (Leader) & Chuyên viên chính
-  bookingLeader?: string; // Trưởng nhóm Booking phụ trách (ví dụ: 'Nguyễn Tuấn Anh' - Leader Team 1)
+  hasBookingLeader?: boolean; // Trưởng phòng cấu hình theo tháng: true = gian có Lead sơ duyệt, false = duyệt trực tiếp
+  bookingLeader?: string; // Trưởng nhóm Booking phụ trách (nếu có)
   primaryPic?: string; // Chuyên viên chính chủ trì kế hoạch (ví dụ: 'Khánh Vy')
   assignedMembers?: string[]; // Các chuyên viên trong nhóm cùng chạy phân rã
   leaderApprovalStatus?: 'CHƯA_DUYỆT' | 'ĐÃ_SƠ_DUYỆT' | 'YÊU_CẦU_SỬA' | 'KHÔNG_ÁP_DỤNG'; // Trạng thái sơ duyệt nội bộ của Leader

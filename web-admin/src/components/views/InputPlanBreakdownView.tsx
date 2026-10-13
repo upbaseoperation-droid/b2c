@@ -1142,7 +1142,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
   const isLeadUser = ['ADMIN', 'MANAGER'].includes(userRole) || currentRole === 'LEAD';
   const headerSignOff = deriveSignOff(planState);
   const isApprovedStatus = ['APPROVED', 'LEAD_APPROVED', 'BRAND_APPROVED', 'IN_EXECUTION', 'COMPLETED'].includes(planStatus);
-  const hasLeader = Boolean(planState.bookingLeader);
+  const hasLeader = Boolean(planState.hasBookingLeader !== undefined ? planState.hasBookingLeader : planState.bookingLeader);
   const progressSteps = [
     { key: 'growth', label: 'Growth giao số', done: headerSignOff.growth.confirmed, warn: false },
     ...(hasLeader ? [{ key: 'leader', label: 'Leader sơ duyệt', done: leaderStatus === 'ĐÃ_SƠ_DUYỆT', warn: leaderStatus === 'YÊU_CẦU_SỬA' }] : []),
@@ -1345,10 +1345,65 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
           <span className="px-2 py-0.5 rounded-md bg-slate-50 border border-slate-200 font-semibold text-slate-700">
             {planState.month} • {planState.week}
           </span>
-          <span>Leader: <strong className="text-slate-800 font-semibold">{planState.bookingLeader || 'Không có leader'}</strong></span>
+          <span>
+            Leader sơ duyệt: <strong className="text-slate-800 font-semibold">{hasLeader ? (planState.bookingLeader || 'Nguyễn Thị Ngọc Tâm') : 'Duyệt trực tiếp (Không có Lead)'}</strong>
+          </span>
           <span>PIC: <strong className="text-slate-800 font-semibold">{planState.primaryPic || planState.pic || '—'}</strong></span>
           <span>Growth: <strong className="text-slate-800 font-semibold">{planState.growthPic || '—'}</strong></span>
           <span>Media: <strong className="text-slate-800 font-semibold">{planState.mediaPic || '—'}</strong></span>
+
+          {/* QUYỀN TRƯỞNG PHÒNG: Tùy chỉnh gian có Lead / không có Lead theo tháng */}
+          {isLeadUser && !isPlanLocked && (
+            <div className="flex items-center gap-2 ml-auto py-1 px-2.5 bg-indigo-50/80 border border-indigo-200/90 rounded-xl shadow-2xs">
+              <span className="text-2xs font-bold text-indigo-900 uppercase tracking-wider">Cấu hình tháng {planState.month}:</span>
+              <label className="inline-flex items-center gap-1.5 cursor-pointer text-xs font-semibold text-indigo-950">
+                <input
+                  type="checkbox"
+                  checked={hasLeader}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    const defaultLeader = checked ? (planState.bookingLeader || 'Nguyễn Thị Ngọc Tâm') : undefined;
+                    setPlanState(prev => ({
+                      ...prev,
+                      hasBookingLeader: checked,
+                      bookingLeader: defaultLeader,
+                      leaderApprovalStatus: checked 
+                        ? (prev.leaderApprovalStatus === 'KHÔNG_ÁP_DỤNG' ? 'CHƯA_DUYỆT' : (prev.leaderApprovalStatus || 'CHƯA_DUYỆT')) 
+                        : 'KHÔNG_ÁP_DỤNG'
+                    }));
+                    notify(checked
+                      ? `Trưởng Phòng đã BẬT yêu cầu Leader sơ duyệt cho gian ${planState.brandName} (Tháng ${planState.month})`
+                      : `Trưởng Phòng đã CHUYỂN gian ${planState.brandName} sang chế độ Duyệt trực tiếp (Tháng ${planState.month})`);
+                  }}
+                  className="rounded text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5 cursor-pointer"
+                />
+                <span>Yêu cầu Leader sơ duyệt</span>
+              </label>
+
+              {hasLeader && (
+                <select
+                  value={planState.bookingLeader?.split(' (')[0] || 'Nguyễn Thị Ngọc Tâm'}
+                  onChange={(e) => {
+                    const chosen = e.target.value;
+                    setPlanState(prev => ({
+                      ...prev,
+                      hasBookingLeader: true,
+                      bookingLeader: chosen
+                    }));
+                    notify(`Đã chỉ định ${chosen} làm Leader sơ duyệt cho gian ${planState.brandName} (Tháng ${planState.month})`);
+                  }}
+                  className="text-xs bg-white border border-indigo-300 rounded-lg px-2 py-0.5 font-bold text-indigo-900 focus:outline-none cursor-pointer"
+                >
+                  <option value="Nguyễn Thị Ngọc Tâm">Nguyễn Thị Ngọc Tâm (Trưởng nhóm)</option>
+                  <option value="Lê Phương Thảo">Lê Phương Thảo (Chuyên viên chính)</option>
+                  <option value="Lương Thị Như Quỳnh">Lương Thị Như Quỳnh (Chuyên viên chính)</option>
+                  <option value="Lê Thanh Hải">Lê Thanh Hải (Chuyên viên chính)</option>
+                  <option value="Hoàng Diệu Thuỳ">Hoàng Diệu Thuỳ (Chuyên viên)</option>
+                  <option value="Dương Thị Hồng Nhung">Dương Thị Hồng Nhung (Chuyên viên)</option>
+                </select>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Hàng 3: Tiến độ duyệt gọn 1 dòng */}
