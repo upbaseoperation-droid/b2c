@@ -1,0 +1,190 @@
+BÁO CÁO PHÂN TÍCH SO SÁNH PLAN ORDER TỔNG VÀ INPUT PLAN - THÁNG 2026/10
+================================================================================
+
+1. TỔNG QUAN KHỚP GIAN HÀNG:
+  - Tổng số gian hàng trên Plan Order Tổng: 111
+  - Tổng số gian hàng trên Input Plan Chi Tiết: 51
+  - Số gian hàng KHỚP CẢ 2 BÊN: 50
+  - Số gian hàng CÓ TRÊN ORDER TỔNG NHƯNG THIẾU TRÊN INPUT PLAN: 61
+  - Số gian hàng CÓ TRÊN INPUT PLAN NHƯNG KHÔNG CÓ TRÊN ORDER TỔNG: 1
+
+--- DANH SÁCH GIAN HÀNG CÓ TRÊN ORDER TỔNG NHƯNG CHƯA CÓ INPUT PLAN ---
+  * 4PM_Shopee_E2E-S | Brand: 4PM | PIC: 1 | Order Budget: 0 | NMV: 0 | CheckInput: '🆘 Chưa input plan order tổng!'
+  * 4PM_TikTok_E2E-S | Brand: 4PM | PIC: 1 | Order Budget: 0 | NMV: 0 | CheckInput: '🆘 Chưa input plan order tổng!'
+  * 82x_TikTok_SoCom | Brand: 82X | PIC:  | Order Budget: 0 | NMV: 0 | CheckInput: 'Đã input'
+  * AQUA VIETNAM_Shopee_SoCom | Brand: AQUA VIETNAM | PIC:  | Order Budget: 0 | NMV: 0 | CheckInput: 'Đã input'
+  * ARENCIA_Shopee_SoCom | Brand: ARENCIA | PIC:  | Order Budget: 0 | NMV: 0 | CheckInput: 'Đã input'
+  * ARENCIA_TikTok_SoCom | Brand: ARENCIA | PIC:  | Order Budget: 0 | NMV: 0 | CheckInput: 'Đã input'
+  * BaBe_Shopee_E2E-O | Brand: Babe | PIC: Nguyễn Quỳnh Trang | Order Budget: 0 | NMV: 2,700,000,000 | CheckInput: 'Đã input'
+  * BaBe_TikTok_E2E-O | Brand: Babe | PIC: 1 | Order Budget: 100 | NMV: 1,350,000,000 | CheckInput: 'Đã input'
+  * Badlab_Shopee_E2E-S | Brand: Badlab | PIC: Hoàng Hải Long | Order Budget: 0 | NMV: 30,000,000 | CheckInput: 'Đã input'
+  * Baegayul_Meta_E2E-O | Brand: Baegayul | PIC:  | Order Budget: 0 | NMV: 0 | CheckInput: '🆘 Chưa input plan order tổng!'
+  * Baegayul_Shopee_E2E-O | Brand: Baegayul | PIC:  | Order Budget: 0 | NMV: 49,999,997 | CheckInput: 'Đã input'
+  * Baegayul_TikTok_E2E-O | Brand: Baegayul | PIC: 1 | Order Budget: 0 | NMV: 0 | CheckInput: '🆘 Chưa input plan order tổng!'
+  * Blissberry_Shopee_E2E-C | Brand: Blissberry | PIC:  | Order Budget: 0 | NMV: 270,000,000 | CheckInput: 'Đã input'
+  * Cathy Doll_Shopee_E2E-C | Brand: Cathy Doll | PIC: 1 | Order Budget: 30 | NMV: 700,000,000 | CheckInput: 'Đã input'
+  * Docilee_Shopee_E2E-S | Brand: Docilee | PIC: 1 | Order Budget: 0 | NMV: 600,000,000 | CheckInput: 'Đã input'
+  * DOJI VIETNAM_Shopee_E2E-C | Brand: DOJI VIETNAM | PIC: 0 | Order Budget: 0 | NMV: 150,000,000 | CheckInput: 'Đã input'
+  * DOJI VIETNAM_TikTok_E2E-C | Brand: DOJI VIETNAM | PIC:  | Order Budget: 0 | NMV: 50,000,002 | CheckInput: 'Đã input'
+  * Dulux_Shopee_E2E-C | Brand: Dulux | PIC: Phạm Huyền Thương | Order Budget: 33 | NMV: 86,292,689 | CheckInput: 'Đã input'
+  * Ekseption_Shopee_E2E-O | Brand: Ekseption | PIC: 1 | Order Budget: 20 | NMV: 4,050,000,000 | CheckInput: 'Đã input'
+  * Ekseption_TikTok_E2E-O | Brand: Ekseption | PIC: 1 | Order Budget: 0 | NMV: 1,800,000,000 | CheckInput: 'Đã input'
+  * Elprairie_Shopee_E2E-S | Brand: Elprairie | PIC:  | Order Budget: 0 | NMV: 1,900,000,000 | CheckInput: 'Đã input'
+  * Face republic_Shopee_E2E-O | Brand: Face republic | PIC:  | Order Budget: 0 | NMV: 0 | CheckInput: '🆘 Chưa input plan order tổng!'
+  * Face republic_TikTok_E2E-O | Brand: Face republic | PIC: 1 | Order Budget: 0 | NMV: 0 | CheckInput: '🆘 Chưa input plan order tổng!'
+  * FeelCleans_Shopee_E2E-S | Brand: FeelCleans | PIC: 1 | Order Budget: 0 | NMV: 70,000,000 | CheckInput: 'Đã input'
+  * FontActiv_Shopee_E2E-C | Brand: UIP | PIC: 0 | Order Budget: 15 | NMV: 400,000,000 | CheckInput: 'Đã input'
+  * GREE_Shopee_E2E-C | Brand: GREE | PIC:  | Order Budget: 8 | NMV: 400,000,000 | CheckInput: 'Đã input'
+  * GREE_TikTok_E2E-C | Brand: GREE | PIC:  | Order Budget: 108 | NMV: 60,000,000 | CheckInput: 'Đã input'
+  * Hitachi_Shopee_E2E-C | Brand: Hitachi | PIC:  | Order Budget: 20 | NMV: 2,176,000,000 | CheckInput: 'Đã input'
+  * HLA Garment Vietnam_Meta_E2E-C | Brand: HLA Garment Vietnam | PIC:  | Order Budget: 0 | NMV: 0 | CheckInput: '🆘 Chưa input plan order tổng!'
+  * HLA Garment Vietnam_Shopee_E2E-C | Brand: HLA Garment Vietnam | PIC: Ôn Ngọc Hà | Order Budget: 36 | NMV: 278,052,000 | CheckInput: 'Đã input'
+  * HLA_TikTok_E2E-C | Brand: HLA Garment Vietnam | PIC: Ôn Ngọc Hà | Order Budget: 61 | NMV: 70,000,000 | CheckInput: 'Đã input'
+  * Karmart_Shopee_E2E-C | Brand: Karmart | PIC: 1 | Order Budget: 40 | NMV: 1,750,000,000 | CheckInput: 'Đã input'
+  * Keyshu_Philippines_Shopee_E2E-O | Brand: Keyshu_Philippines | PIC:  | Order Budget: 0 | NMV: 3,499,997 | CheckInput: 'Đã input'
+  * Keyshu_Philippines_TikTok_E2E-O | Brand: Keyshu_Philippines | PIC:  | Order Budget: 35 | NMV: 38,000,000 | CheckInput: 'Đã input'
+  * L'Occitane Việt Nam Hana_Website_E2E-C | Brand: L'Occitane Việt Nam | PIC:  | Order Budget: 0 | NMV: 150,000,000 | CheckInput: 'Đã input'
+  * L'Occitane Việt Nam_Lazada_E2E-C | Brand: L'Occitane Việt Nam | PIC:  | Order Budget: 0 | NMV: 40,000,000 | CheckInput: 'Đã input'
+  * L'Occitane Việt Nam_Shopee_E2E-C | Brand: L'Occitane Việt Nam | PIC: 1 | Order Budget: 0 | NMV: 8,999,999,999 | CheckInput: 'Đã input'
+  * L'Occitane Việt Nam_Website_E2E-C | Brand: L'Occitane Việt Nam | PIC:  | Order Budget: 0 | NMV: 352,000,004 | CheckInput: 'Đã input'
+  * Ladofoods_TikTok_E2E-S | Brand: Ladofoods | PIC: Phạm Huyền Thương | Order Budget: 200 | NMV: 214,320,489 | CheckInput: 'Đã input'
+  * lgdailybeauty_vietnam_Shopee_E2E-C | Brand: lgdailybeauty_vietnam | PIC:  | Order Budget: 133 | NMV: 1,322,500,000 | CheckInput: 'Đã input'
+  * MATSUKIYO_Shopee_E2E-S | Brand: MATSUKIYO | PIC:  | Order Budget: 0 | NMV: 509,999,994 | CheckInput: 'Đã input'
+  * Miss Saigon_Shopee_E2E-C | Brand: Miss Saigon | PIC: 1 | Order Budget: 0 | NMV: 1,700,000,000 | CheckInput: 'Đã input'
+  * ORGALIFE_Mall_Shopee_E2E-C | Brand: ORGALIFE | PIC: 1 | Order Budget: 59 | NMV: 400,000,000 | CheckInput: 'Đã input'
+  * ORGALIFE_Shopee_E2E-C | Brand: ORGALIFE | PIC: 1 | Order Budget: 15 | NMV: 734,061,840 | CheckInput: 'Đã input'
+  * Philips Home Appliances_Shopee_E2E-CH | Brand: Philips Home Appliances | PIC:  | Order Budget: 20 | NMV: 216,000,000 | CheckInput: 'Đã input'
+  * Redwin _Shopee_E2E-S | Brand: Redwin | PIC:  | Order Budget: 0 | NMV: 349,999,995 | CheckInput: 'Đã input'
+  * Rejuran_Shopee_E2E-O | Brand: Rejuran | PIC: 1 | Order Budget: 10 | NMV: 750,000,000 | CheckInput: 'Đã input'
+  * Revision_Shopee_E2E-O | Brand: Revision | PIC: 1 | Order Budget: 30 | NMV: 2,500,000,000 | CheckInput: 'Đã input'
+  * Revision_TikTok_E2E-O | Brand: Revision | PIC: 1 | Order Budget: 62 | NMV: 1,000,000,000 | CheckInput: 'Đã input'
+  * Royal Ausnz_Shopee_E2E-S | Brand: Royal Ausnz | PIC:  | Order Budget: 14 | NMV: 2,100,000,000 | CheckInput: 'Đã input'
+  * SCC Saigon Cosmetics_Shopee_E2E-C | Brand: SCC Saigon Cosmetics | PIC: 1 | Order Budget: 8 | NMV: 5,400,000,000 | CheckInput: 'Đã input'
+  * SOME BY MI_Shopee_SoCom | Brand: SOME BY MI | PIC:  | Order Budget: 0 | NMV: 0 | CheckInput: 'Đã input'
+  * SOME BY MI_TikTok_SoCom | Brand: SOME BY MI | PIC:  | Order Budget: 0 | NMV: 0 | CheckInput: 'Đã input'
+  * The Vigo_Shopee_E2E-O | Brand: The Vigo | PIC:  | Order Budget: 0 | NMV: 100,000,000 | CheckInput: 'Đã input'
+  * TM Clean _Shopee_E2E-C | Brand: TM Clean | PIC: 1 | Order Budget: 7 | NMV: 200,000,000 | CheckInput: 'Đã input'
+  * UpBeauty_Meta_E2E-T | Brand: UpBeauty | PIC:  | Order Budget: 0 | NMV: 0 | CheckInput: '🆘 Chưa input plan order tổng!'
+  * UpBeauty_Shopee_E2E-T | Brand: UpBeauty | PIC:  | Order Budget: 31 | NMV: 145,110,421 | CheckInput: 'Đã input'
+  * UpBeauty_Website_E2E-T | Brand: UpBeauty | PIC:  | Order Budget: 0 | NMV: 7,000,000 | CheckInput: 'Đã input'
+  * Venus_Shopee_E2E-C | Brand: Venus | PIC: 1 | Order Budget: 90 | NMV: 2,404,218,000 | CheckInput: 'Đã input'
+  * Vitabiotics_Shopee_E2E-S | Brand: Vitabiotics | PIC: Bùi Thu Hằng | Order Budget: 0 | NMV: 5,000,000,000 | CheckInput: 'Đã input'
+  * Vitabiotics_TikTok_SoCom | Brand: Vitabiotics | PIC: Bùi Thu Hằng | Order Budget: 0 | NMV: 0 | CheckInput: 'Đã input'
+
+--- DANH SÁCH GIAN HÀNG CÓ TRÊN INPUT PLAN NHƯNG KHÔNG KHỚP ORDER TỔNG ---
+  *  | PICs: ['Đinh Thị Bích Liên', 'Lương Nguyễn Trang Nhung'] | Input Budget: 1,100,000 | Weeks: 0
+
+================================================================================
+2. SO SÁNH CHI TIẾT NGÂN SÁCH & SỐ LƯỢNG NỘI DUNG (CÁC GIAN HÀNG KHỚP CẢ 2 BÊN):
+
+TỔNG KẾT TRÊN 50 GIAN HÀNG CHUNG:
+  - Tổng Ngân Sách Order Tổng: 7,789 VNĐ
+  - Tổng Ngân Sách Input Plan: 4,820,104,174 VNĐ
+  - Chênh lệch Ngân Sách (Input - Order): 4,820,096,385 VNĐ
+  - Số gian hàng bị LỆCH NGÂN SÁCH: 41 / 50
+  - Tổng Video Aff Order Tổng: 6,926 | Input Plan: 3,943 | Chênh lệch: -2,983
+  - Tổng Video Self Order Tổng: 863 | Input Plan: 859 | Chênh lệch: -4
+  - Số gian hàng bị LỆCH SỐ VIDEO: 32 / 50
+  - Số gian hàng LỆCH / KHÔNG KHỚP PIC: 49 / 50
+
+--- TOP GIAN HÀNG CÓ CHÊNH LỆCH NGÂN SÁCH LỚN NHẤT ---
+Store                               | Brand           | PIC Order          | PIC Input          | Order Budget   | Input Budget   | Gap (Input-Ord)
+---------------------------------------------------------------------------------------------------------------------------------------
+EUPC _TikTok_E2E-C                  | EUPC            | 1                  | Dương Thị Hồng Nhu |            414 |    672,950,000 |     672,949,586
+Natural Care_TikTok_E2E-C           | Natural Care    | 1                  | Hoàng Hải Long, Hà |            325 |    393,200,000 |     393,199,675
+pHCare_TikTok_E2E-C                 | pHCare          | 1                  | Trần Phương Thảo,  |            470 |    386,000,000 |     385,999,530
+Herbal Care_TikTok_E2E-C            | Herbal Care     | 1                  | Nguyễn Ngọc Linh,  |            213 |    369,800,000 |     369,799,787
+Nature's Way_Shopee_E2E-S           | Nature's Way    | 1                  | Phan Diệu Ánh      |             42 |    243,250,000 |     243,249,958
+Miss Saigon_TikTok_E2E-C            | Miss Saigon     | 1                  | Bùi Ngọc Ánh, Lê P |            375 |    230,000,000 |     229,999,625
+Chulala_TikTok_E2E-C                | Chulala         | 1                  | Lương Nguyễn Trang |            138 |    213,500,000 |     213,499,862
+HDT_TikTok_E2E-C                    | HDT             | 1                  | Hà Thị Thủy, Trần  |            415 |    212,600,000 |     212,599,585
+Venus_TikTok_E2E-C                  | Venus           | 1                  | Bùi Ngọc Ánh       |            571 |    198,000,000 |     197,999,429
+Mine_TikTok_E2E-C                   | Mine            | 1                  | Lại Ngọc Huyền, Ng |            144 |    197,500,000 |     197,499,856
+Bye Bye Blemish_TikTok_E2E-S        | Bye Bye Blemish | 1                  | Lê Thanh Hải, Nguy |            140 |    173,300,000 |     173,299,860
+Kutieskin Mama_TikTok_E2E-S         | Kutieskin Mama  | 1                  | Bùi Thu Hằng, Lại  |            122 |    163,500,000 |     163,499,878
+BELLA_TikTok_E2E-S                  | BELLA           | 1                  | Lê Phương Thảo, Tr |            135 |    135,000,000 |     134,999,865
+Fresh_TikTok_E2E-C                  | Fresh           | 1                  | Phạm Thị Thu Hằng, |            684 |    120,500,000 |     120,499,316
+Baniphar_TikTok_E2E-S               | Baniphar        | 1                  | Nguyễn Ngọc Huyền, |             70 |    113,150,000 |     113,149,930
+ClubClio_TikTok_E2E-O               | ClubClio        | 1                  | Lương Nguyễn Trang |            229 |     90,934,174 |      90,933,945
+FeelCleans_TikTok_E2E-S             | FeelCleans      | 1                  | Lê Phương Thảo, Ph |             39 |     87,600,000 |      87,599,961
+Cathy Doll_TikTok_E2E-C             | Cathy Doll      | 1                  | Phạm Thị Thu Hằng, |            237 |     80,000,000 |      79,999,763
+Ziaja_TikTok_E2E-S                  | Intimate        | 1                  | Nguyễn Ngọc Linh   |             37 |     78,800,000 |      78,799,963
+TM Clean _TikTok_E2E-C              | TM Clean        | 1                  | Nguyễn Thị Mai Anh |            105 |     73,500,000 |      73,499,895
+Nucos_TikTok_E2E-S                  | Nucos           | 1                  | Nguyễn Thị Mai Anh |            128 |     71,250,000 |      71,249,872
+Cindy Bloom_TikTok_E2E-C            | Cindy Bloom     | 1                  | Bùi Ngọc Ánh, Trần |            343 |     64,000,000 |      63,999,657
+Docilee_TikTok_E2E-S                | Docilee         | 1                  | Đinh Thị Bích Liên |             50 |     57,420,000 |      57,419,950
+Rejuran_TikTok_E2E-O                | Rejuran         | 1                  | Nguyễn Thị Quỳnh N |            292 |     50,000,000 |      49,999,708
+Dynik_TikTok_E2E-C                  | Dynik           | 1                  | Hoàng Hải Long, Lê |            221 |     44,400,000 |      44,399,779
+ORGALIFE_TikTok_E2E-C               | ORGALIFE        | 1                  | Nguyễn Ngọc Phương |            431 |     44,000,000 |      43,999,569
+CM24_TikTok_E2E-C                   | CM24            | 1                  | Nguyễn Ngọc Linh,  |            169 |     42,800,000 |      42,799,831
+Lipit_TikTok_E2E-C                  | Lipit           | 1                  | Phạm Thị Thu Hằng  |            134 |     40,000,000 |      39,999,866
+Herbal Care_Shopee_E2E-C            | Herbal Care     | 1                  | Trần Hải Phượng    |             10 |     30,000,000 |      29,999,990
+Royal Canin_TikTok_E2E-S            | Royal Canin     | 1                  | Lương Nguyễn Trang |             63 |     30,000,000 |      29,999,937
+HDT_Shopee_E2E-C                    | HDT             | 1                  | Hà Thị Thủy, Trần  |            122 |     24,000,000 |      23,999,878
+Ziaja_Shopee_E2E-S                  | Intimate        | 1                  | Nguyễn Ngọc Linh   |             55 |     20,000,000 |      19,999,945
+Chulala_Shopee_E2E-C                | Chulala         | 1                  | Lương Nguyễn Trang |             18 |     15,000,000 |      14,999,982
+Meracine_TikTok_E2E-S               | Meracine        | 1                  | Lê Phương Thảo     |             56 |     14,300,000 |      14,299,944
+Dulux_TikTok_E2E-C                  | Dulux           | Phạm Huyền Thương  | Phạm Huyền Thương  |             50 |     14,000,000 |      13,999,950
+EUPC _Shopee_E2E-C                  | EUPC            | 1                  | Nguyễn Ngọc Huyền, |             55 |     11,000,000 |      10,999,945
+BELLA_Shopee_E2E-S                  | BELLA           | 1                  | Lê Phương Thảo     |             60 |      5,000,000 |       4,999,940
+Badlab_TikTok_E2E-S                 | Badlab          | 1                  | Hoàng Hải Long     |             60 |      4,250,000 |       4,249,940
+UpBeauty_TikTok_E2E-T               | UpBeauty        | 1                  | Lại Ngọc Huyền     |              0 |      3,000,000 |       3,000,000
+L'Occitane Việt Nam_TikTok_E2E-C    | L'Occitane Việt | 1                  | Lê Thanh Hải       |             40 |      2,000,000 |       1,999,960
+Nabizam_TikTok_E2E-S                | Nabizam         | 1                  | Nguyễn Thị Quỳnh N |            110 |        600,000 |         599,890
+lgdailybeauty_vietnam_TikTok_E2E-C  | lgdailybeauty_v |                    | Nguyễn Ngọc Phương |            200 |              0 |            -200
+Baniphar_Shopee_E2E-S               | Baniphar        | 1                  | Nguyễn Ngọc Huyền, |             71 |              0 |             -71
+ClubClio_Shopee_E2E-O               | ClubClio        | 1                  | Phạm Thị Thu Hằng  |             60 |              0 |             -60
+Kutieskin Mama_Shopee_E2E-S         | Kutieskin Mama  | 1                  | Bùi Thu Hằng       |             30 |              0 |             -30
+Nabizam_Shopee_E2E-S                | Nabizam         | 1                  | Nguyễn Thị Quỳnh N |             30 |              0 |             -30
+Bye Bye Blemish_Shopee_E2E-S        | Bye Bye Blemish | 1                  | Lê Thanh Hải       |             15 |              0 |             -15
+Mine_Shopee_E2E-C                   | Mine            | 1                  | Lại Ngọc Huyền     |              5 |              0 |              -5
+Natural Care_Shopee_E2E-C           | Natural Care    | 1                  | Hoàng Hải Long     |              5 |              0 |              -5
+CM24_Shopee_E2E-C                   | CM24            | 1                  | Vũ Hoài Lâm        |              1 |              0 |              -1
+
+================================================================================
+3. BÁO CÁO THEO TỪNG NHÂN SỰ PHỤ TRÁCH (PIC INPUT PLAN):
+
+Nhân Sự (PIC)             | Số Gian Hàng   | Gian Lệch Ngân Sách  | Tổng Ngân Sách Input   | Tổng Video Aff | Tổng Video Self 
+------------------------------------------------------------------------------------------------------------------------
+Dương Thị Hồng Nhung
+Nguy | 1              | 1                    |            672,950,000 |            329 |               39
+Hoàng Hải Long, Hà Thị Th | 1              | 1                    |            393,200,000 |            294 |               24
+Trần Phương Thảo, Đinh Th | 1              | 1                    |            386,000,000 |             30 |               40
+Nguyễn Ngọc Linh, Phan Di | 1              | 1                    |            369,800,000 |             45 |               18
+Phan Diệu Ánh             | 1              | 1                    |            243,250,000 |             17 |                0
+Bùi Ngọc Ánh, Lê Phương T | 1              | 1                    |            230,000,000 |            237 |               20
+Lương Nguyễn Trang Nhung, | 1              | 1                    |            213,500,000 |             23 |               15
+Hà Thị Thủy, Trần Phương  | 1              | 1                    |            212,600,000 |            385 |               30
+Bùi Ngọc Ánh              | 1              | 1                    |            198,000,000 |             22 |               20
+Lại Ngọc Huyền, Nguyễn Th | 1              | 1                    |            197,500,000 |             99 |               44
+Lê Thanh Hải, Nguyễn Quỳn | 1              | 1                    |            173,300,000 |             20 |               20
+Bùi Thu Hằng, Lại Ngọc Hu | 1              | 1                    |            163,500,000 |             72 |               65
+Lê Phương Thảo, Trần Thị  | 1              | 1                    |            135,000,000 |            120 |               15
+Phạm Thị Thu Hằng, Trần T | 1              | 1                    |            120,500,000 |            659 |               25
+Nguyễn Ngọc Huyền, Nguyễn | 2              | 1                    |            113,150,000 |             20 |               94
+Nguyễn Ngọc Linh          | 2              | 2                    |             98,800,000 |             68 |               25
+Lương Nguyễn Trang Nhung, | 1              | 1                    |             90,934,174 |             35 |               13
+Lê Phương Thảo, Phan Diệu | 1              | 1                    |             87,600,000 |             14 |               25
+Phạm Thị Thu Hằng, Trần H | 1              | 1                    |             80,000,000 |            217 |               20
+Nguyễn Thị Mai Anh, Phan  | 1              | 1                    |             73,500,000 |             74 |               30
+Nguyễn Thị Mai Anh        | 1              | 1                    |             71,250,000 |              8 |               40
+Bùi Ngọc Ánh, Trần Phương | 1              | 1                    |             64,000,000 |             20 |               23
+Đinh Thị Bích Liên        | 1              | 1                    |             57,420,000 |             35 |               15
+Nguyễn Thị Quỳnh Nhi      | 2              | 1                    |             50,000,000 |              2 |               30
+Lương Nguyễn Trang Nhung  | 2              | 2                    |             45,000,000 |             14 |                0
+Hoàng Hải Long, Lê Phương | 1              | 1                    |             44,400,000 |            206 |               17
+Nguyễn Ngọc Phương Anh, N | 1              | 1                    |             44,000,000 |            224 |               22
+Nguyễn Ngọc Linh, Nguyễn  | 1              | 1                    |             42,800,000 |            171 |               18
+Phạm Thị Thu Hằng         | 2              | 1                    |             40,000,000 |             14 |               15
+Trần Hải Phượng           | 1              | 1                    |             30,000,000 |             10 |                0
+Hà Thị Thủy, Trần Phương  | 1              | 1                    |             24,000,000 |            120 |                0
+Lê Phương Thảo            | 2              | 2                    |             19,300,000 |             60 |               56
+Phạm Huyền Thương         | 1              | 1                    |             14,000,000 |             43 |                7
+Nguyễn Ngọc Huyền, Nguyễn | 1              | 1                    |             11,000,000 |              8 |                0
+Hoàng Hải Long            | 2              | 1                    |              4,250,000 |              0 |               10
+Lại Ngọc Huyền            | 2              | 1                    |              3,000,000 |              0 |               14
+Lê Thanh Hải              | 2              | 1                    |              2,000,000 |             20 |                0
+Nguyễn Thị Quỳnh Nhi, Trầ | 1              | 1                    |                600,000 |            100 |               10
+Vũ Hoài Lâm               | 1              | 0                    |                      0 |              0 |                0
+Bùi Thu Hằng              | 1              | 0                    |                      0 |              0 |                0
+Nguyễn Ngọc Phương Anh    | 1              | 0                    |                      0 |            108 |                0

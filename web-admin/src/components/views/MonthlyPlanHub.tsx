@@ -1124,21 +1124,21 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                                     <button
                                       onClick={(e) => {
                                         e.stopPropagation();
-                                        setApprovingQuickPlan({ planId: plan.id, storeName: store.storeName });
+                                        onSelectPlan(plan);
                                       }}
                                       className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition"
-                                      title="Quản lý phê duyệt nhanh kế hoạch này"
+                                      title="Mở kế hoạch để xem và ký duyệt"
                                     >
                                       <ShieldCheck className="w-3.5 h-3.5" />
-                                      <span>Duyệt Nhanh</span>
+                                      <span>Xem &amp; duyệt</span>
                                     </button>
                                   )}
                                   <button
                                     onClick={() => onSelectPlan(plan)}
                                     className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs shadow-xs transition"
-                                    title="Mở bảng phân rã chi tiết trong Studio"
+                                    title="Mở bảng phân rã chi tiết của kế hoạch"
                                   >
-                                    <span>Xem Studio</span>
+                                    <span>Mở kế hoạch</span>
                                     <ArrowRight className="w-3 h-3" />
                                   </button>
                                 </>
@@ -1640,7 +1640,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                             onClick={() => onSelectPlan(plan)}
                             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs shadow-xs"
                           >
-                            <span>Xem Studio</span>
+                            <span>Mở kế hoạch</span>
                             <ArrowRight className="w-3 h-3" />
                           </button>
                         </div>
@@ -1813,7 +1813,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Chiến lược tự động cân đối:
+                  Cách chia ngân sách gợi ý:
                 </label>
                 <div className="grid grid-cols-3 gap-2 text-xs">
                   {[
@@ -1864,7 +1864,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                   type="submit"
                   className="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 hover: text-white font-semibold text-sm shadow-lg"
                 >
-                  Tạo & mở Studio phân rã
+                  Tạo & mở bảng phân rã
                 </button>
               </div>
             </form>

@@ -1666,6 +1666,9 @@ export interface StorePortfolioItem {
   accountOwnerName: string; // Account/Growth Owner phụ trách doanh số & quan hệ khách hàng
   b2cOwnerName: string; // B2C Ops Owner phụ trách vận hành nội dung & booking
   assignedStaff?: string; // Alias for primary B2C Ops assignee
+  bookingLeader?: string; // Trưởng nhóm Booking phụ trách nhóm (ví dụ: 'Nguyễn Tuấn Anh' - Leader Team 1)
+  primaryPic?: string; // Chuyên viên chính chủ trì gian hàng (ví dụ: 'Khánh Vy')
+  assignedMembers?: string[]; // Danh sách các chuyên viên trong nhóm cùng thực thi
   b2cOwners?: string[]; // Danh sách các nhân sự B2C Ops cùng làm 1 shop (hỗ trợ trường hợp 2+ nhân viên làm cùng 1 shop)
   assignmentNotes?: string; // Ghi chú phân chia công việc (ví dụ: chia theo Tier KOC, chia ca, chia đầu việc)
   activeCandidatesCount?: number;
@@ -1676,6 +1679,10 @@ export interface StorePortfolioItem {
   // Tùy chọn B2C Quản trị Kế hoạch
   isB2cManaged?: boolean; // Marketing B2C có phụ trách gian hàng này không (mặc định true)
   requiresB2cPlan?: boolean; // Gian hàng này có cần làm kế hoạch B2C tháng không (mặc định true)
+  budgetAffiliate?: number; // Ngân sách Affiliate dự toán
+  budgetSelfChannel?: number; // Ngân sách Self Channel dự toán
+  targetAffiliateContents?: number; // Chỉ tiêu số video Affiliate
+  targetSelfChannelContents?: number; // Chỉ tiêu số video Self Channel
 
   // Upbase Master Data (5.1 Stores)
   storeOperationId?: string; // Mã vận hành chuẩn SOxxxx (SO0001, SO1000...)
@@ -2187,12 +2194,50 @@ export interface InputPlanBreakdownState {
   // Luồng duyệt & Lịch sử trao đổi
   approvalSteps?: PlanApprovalStep[];
   discussions?: PlanDiscussionMessage[];
+  // Phân tầng quản lý 2 cấp: Trưởng nhóm (Leader) & Chuyên viên chính
+  bookingLeader?: string; // Trưởng nhóm Booking phụ trách (ví dụ: 'Nguyễn Tuấn Anh' - Leader Team 1)
+  primaryPic?: string; // Chuyên viên chính chủ trì kế hoạch (ví dụ: 'Khánh Vy')
+  assignedMembers?: string[]; // Các chuyên viên trong nhóm cùng chạy phân rã
+  leaderApprovalStatus?: 'CHƯA_DUYỆT' | 'ĐÃ_SƠ_DUYỆT' | 'YÊU_CẦU_SỬA' | 'KHÔNG_ÁP_DỤNG'; // Trạng thái sơ duyệt nội bộ của Leader
+  leaderApprovedBy?: string; // Trưởng nhóm đã sơ duyệt nội bộ
+  leaderApprovedAt?: string; // Thời gian sơ duyệt
+  leaderNotes?: string; // Ghi chú nghiệp vụ / chỉ đạo của Trưởng nhóm
   preApprovedBy?: string;
   preApprovedAt?: string;
   preApprovalNotes?: string;
   approvedBy?: string;
   approvedAt?: string;
   revisionNotes?: string;
+}
+
+// =========================================================================
+// CƠ CẤU ĐỘI NGŨ BOOKING (LEADER & TEAM MEMBERS HIERARCHY)
+// =========================================================================
+export interface BookingTeamMemberInfo {
+  id: string;
+  name: string;
+  roleTitle: string; // 'Senior Booking Specialist', 'Junior Booking Specialist', 'Booking Intern'
+  avatar: string;
+  team: string; // 'Booking Team 1', 'Booking Team 2', 'Team Đa Sàn & Live'
+  expertise: string; // Thế mạnh chuyên môn
+  maxCapacityClips: number; // Định mức năng lực tối đa (clip/tháng)
+  assignedStoresCount?: number;
+  assignedClips?: number;
+  assignedBudget?: number;
+}
+
+export interface BookingTeamGroup {
+  id: string;
+  teamCode: string; // 'TEAM_1', 'TEAM_2', 'TEAM_MULTI'
+  name: string; // 'Booking Team 1 (Beauty & Mom Baby)'
+  leaderName: string; // 'Nguyễn Tuấn Anh'
+  leaderTitle: string; // 'Trưởng Nhóm Booking (Booking Lead)'
+  leaderAvatar: string;
+  leaderEmail: string;
+  members: BookingTeamMemberInfo[];
+  managedStoresCount: number;
+  totalMonthlyTargetBudget: number;
+  totalMonthlyTargetClips: number;
 }
 
 // =========================================================================

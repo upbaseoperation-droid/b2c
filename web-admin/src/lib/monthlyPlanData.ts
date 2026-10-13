@@ -5,6 +5,7 @@ import {
   MOCK_PLAN_SCENARIOS 
 } from './inputPlanDefaults';
 import { DEFAULT_CONTENT_PILLARS } from './selfChannelData';
+import { REAL_MONTHLY_PLANS_OCT_2026 } from './realB2cPlanData';
 
 // HÀM TẠO ITEMS TỰ ĐỘNG THEO CHIẾN LƯỢC CHO KẾ HOẠCH THÁNG
 export function createPlanItemsForScenario(
@@ -24,11 +25,13 @@ export function createPlanItemsForScenario(
   }));
 }
 
-// DANH MỤC MASTER 11 KẾ HOẠCH THEO THÁNG (MONTHLY PLAN REPOSITORY)
+// DANH MỤC MASTER KẾ HOẠCH THEO THÁNG (MONTHLY PLAN REPOSITORY)
 export const INITIAL_MONTHLY_PLANS: InputPlanBreakdownState[] = [
   // =========================================================================
-  // THÁNG 10/2026 (THÁNG HIỆN TẠI - CÁC KẾ HOẠCH THEO CÁC GIAI ĐOẠN DUYỆT)
+  // DỮ LIỆU THẬT 69 GIAN HÀNG THÁNG 10/2026 (TỪ FILE 4.1 VÀ 4.1.1)
   // =========================================================================
+  ...REAL_MONTHLY_PLANS_OCT_2026,
+
   {
     id: 'PLAN-2026-10-KUTIESKIN',
     title: 'Kế Hoạch B2C Tháng 10 - Kutieskin (Affiliate 150M + Self Channel 50M)',
@@ -36,6 +39,13 @@ export const INITIAL_MONTHLY_PLANS: InputPlanBreakdownState[] = [
     month: '2026/10',
     week: 'W41 [05.10 - 11.10]',
     pic: 'Khánh Vy',
+    bookingLeader: 'Nguyễn Tuấn Anh (Leader Team 1)',
+    primaryPic: 'Khánh Vy',
+    assignedMembers: ['Khánh Vy', 'Trần Minh Đức', 'Nguyễn Quỳnh Trang'],
+    leaderApprovalStatus: 'ĐÃ_SƠ_DUYỆT',
+    leaderApprovedBy: 'Nguyễn Tuấn Anh',
+    leaderApprovedAt: '2026-09-30T17:00:00Z',
+    leaderNotes: 'Đạt định mức CIR và tỷ trọng bậc KL1-KL4 an toàn. Đồng ý thông qua nội bộ để chuyển Growth thẩm định.',
     growthPic: 'Trần Thị Ánh (Growth PIC)',
     mediaPic: 'Phan Thành Đạt (Media PIC)',
     totalTargetBudget: 200000000, // 200 Tr

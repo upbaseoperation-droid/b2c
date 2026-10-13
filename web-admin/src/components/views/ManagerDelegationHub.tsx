@@ -38,9 +38,12 @@ import {
   StorePortfolioItem, 
   StaffMasterMember, 
   SlaTask,
-  UserRole
+  UserRole,
+  BookingTeamGroup,
+  BookingTeamMemberInfo
 } from '../../lib/types';
 import { UPBASE_BRANDS_MASTER } from '../../lib/importedMasterData';
+import { BOOKING_TEAMS_STRUCTURE } from '../../lib/mockData';
 import { MasterDataMindmapView } from './MasterDataMindmapView';
 import { Avatar, Button, Segmented, Status , ChannelTag } from '../ui';
 import { formatVndShort } from '../../lib/format';
@@ -73,7 +76,9 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
   onNotify
 }) => {
   // Active Section Tab
-  const [activeSection, setActiveSection] = useState<'BRANDS' | 'STORES' | 'STAFF' | 'TASKS' | 'MINDMAP'>('BRANDS');
+  const [activeSection, setActiveSection] = useState<'BRANDS' | 'STORES' | 'LEADER_TEAMS' | 'STAFF' | 'TASKS' | 'MINDMAP'>('BRANDS');
+  const [selectedLeaderTeam, setSelectedLeaderTeam] = useState<'ALL' | 'TEAM_1' | 'TEAM_2' | 'TEAM_MULTI'>('ALL');
+  const [leaderConsoleViewMode, setLeaderConsoleViewMode] = useState<'STORES_ASSIGN' | 'WORKLOAD_BALANCE'>('STORES_ASSIGN');
 
   // Search & Filter
   const [searchTerm, setSearchTerm] = useState('');
@@ -406,6 +411,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                 ? `Gian B2C làm plan · ${b2cPlanStores.length}` 
                 : `Tất cả gian hàng · ${storePortfolios.length}` 
             },
+            { key: 'LEADER_TEAMS', label: 'Đội ngũ Leader & Member' },
             { key: 'STAFF', label: `Tải nhân sự · ${staffList.length}` },
             { key: 'TASKS', label: `Giao việc · ${tasks.length}` },
             { key: 'MINDMAP', label: 'Sơ đồ dữ liệu' },
@@ -779,6 +785,446 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
       )}
 
       {/* ========================================================================= */}
+      {/* SECTION: ĐỘI NGŨ LEADER & TEAM MEMBER (CƠ CHẾ PHÂN CÔNG 2 TẦNG)           */}
+      {/* ========================================================================= */}
+      {activeSection === 'LEADER_TEAMS' && (
+        <div className="space-y-5">
+          {/* Header Card & Filter */}
+          <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-xs">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                    <Users className="w-5 h-5 text-indigo-600" />
+                    <span>Bàn Điều Phối Của Trưởng Nhóm & Chuyên Viên (Leader & Team Member Console)</span>
+                  </h3>
+                  <span className="text-2xs font-semibold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
+                    Mô hình 2 Tầng
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 mt-1 max-w-3xl">
+                  Trưởng phòng phân bổ nhóm gian hàng cho các Trưởng nhóm (Leader) • Trưởng nhóm chủ động phân công Chuyên viên chính (Primary PIC), giao hạn ngạch (quota) và kiểm soát cân bằng tải công việc trong nhóm.
+                </p>
+              </div>
+
+              {/* View Mode Toggle: Phân Công Gian Hàng vs Cân Bằng Tải */}
+              <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-xl border border-slate-200 shrink-0">
+                <button
+                  onClick={() => setLeaderConsoleViewMode('STORES_ASSIGN')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition ${
+                    leaderConsoleViewMode === 'STORES_ASSIGN'
+                      ? 'bg-white text-slate-900 shadow-2xs font-bold'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <Store className="w-3.5 h-3.5" />
+                  <span>Phân công gian hàng</span>
+                </button>
+                <button
+                  onClick={() => setLeaderConsoleViewMode('WORKLOAD_BALANCE')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition ${
+                    leaderConsoleViewMode === 'WORKLOAD_BALANCE'
+                      ? 'bg-white text-slate-900 shadow-2xs font-bold'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <UserCheck className="w-3.5 h-3.5" />
+                  <span>Cân bằng tải ({staffList.length} nhân sự)</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Filter by Team */}
+            <div className="flex items-center gap-2 mt-4 pt-4 border-t border-slate-100 flex-wrap">
+              <span className="text-xs font-semibold text-slate-600">Lọc theo nhóm:</span>
+              <button
+                onClick={() => setSelectedLeaderTeam('ALL')}
+                className={`px-3 py-1 rounded-lg text-xs font-semibold transition ${
+                  selectedLeaderTeam === 'ALL'
+                    ? 'bg-slate-900 text-white'
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                Tất cả 3 Nhóm ({storePortfolios.length} gian)
+              </button>
+              {BOOKING_TEAMS_STRUCTURE.map(t => (
+                <button
+                  key={t.id}
+                  onClick={() => setSelectedLeaderTeam(t.teamCode as any)}
+                  className={`px-3 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition ${
+                    selectedLeaderTeam === t.teamCode
+                      ? 'bg-indigo-600 text-white shadow-2xs'
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  }`}
+                >
+                  <span>{t.name.split('(')[0].trim()}</span>
+                  <span className="text-2xs opacity-80">({t.leaderName.split(' ').slice(-2).join(' ')})</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* 3 Team Cards Overview */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {BOOKING_TEAMS_STRUCTURE.map(team => {
+              const isSelected = selectedLeaderTeam === 'ALL' || selectedLeaderTeam === team.teamCode;
+              return (
+                <div
+                  key={team.id}
+                  className={`bg-white rounded-2xl border p-4 transition ${
+                    isSelected ? 'border-indigo-300 ring-2 ring-indigo-500/10 shadow-xs' : 'border-slate-200 opacity-60'
+                  }`}
+                >
+                  {/* Leader Header */}
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white font-bold flex items-center justify-center text-sm shadow-xs">
+                        {team.leaderAvatar}
+                      </div>
+                      <div>
+                        <span className="text-2xs font-semibold px-2 py-0.2 rounded bg-indigo-50 text-indigo-700 border border-indigo-200">
+                          {team.teamCode}
+                        </span>
+                        <h4 className="text-xs font-bold text-slate-900 mt-0.5">{team.leaderName}</h4>
+                        <span className="text-3xs text-slate-500 block">{team.leaderTitle}</span>
+                      </div>
+                    </div>
+                    <span className="text-2xs bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full font-semibold">
+                      Tải an toàn
+                    </span>
+                  </div>
+
+                  {/* Team Scope */}
+                  <div className="mt-3 pt-3 border-t border-slate-100 grid grid-cols-3 gap-2 text-center">
+                    <div className="bg-slate-50 p-2 rounded-lg">
+                      <span className="text-3xs text-slate-400 block">Gian hàng</span>
+                      <strong className="text-xs font-mono font-bold text-slate-900">{team.managedStoresCount}</strong>
+                    </div>
+                    <div className="bg-slate-50 p-2 rounded-lg">
+                      <span className="text-3xs text-slate-400 block">Ngân sách</span>
+                      <strong className="text-xs font-mono font-bold text-indigo-700">{formatVndShort(team.totalMonthlyTargetBudget)}</strong>
+                    </div>
+                    <div className="bg-slate-50 p-2 rounded-lg">
+                      <span className="text-3xs text-slate-400 block">Chỉ tiêu clip</span>
+                      <strong className="text-xs font-mono font-bold text-slate-900">{team.totalMonthlyTargetClips}</strong>
+                    </div>
+                  </div>
+
+                  {/* Team Members List */}
+                  <div className="mt-3">
+                    <span className="text-3xs text-slate-400 font-semibold uppercase tracking-wider block mb-1.5">
+                      Thành viên trong nhóm ({team.members.length} chuyên viên)
+                    </span>
+                    <div className="space-y-1.5">
+                      {team.members.map(m => (
+                        <div key={m.id} className="flex items-center justify-between p-1.5 rounded-lg bg-slate-50 text-2xs hover:bg-indigo-50/50 transition">
+                          <div className="flex items-center gap-1.5">
+                            <span className="w-5 h-5 rounded-md bg-white border border-slate-200 flex items-center justify-center font-bold text-3xs text-slate-700">
+                              {m.avatar}
+                            </span>
+                            <div>
+                              <strong className="text-slate-900 block leading-tight">{m.name}</strong>
+                              <span className="text-3xs text-slate-400">{m.expertise.split('&')[0]}</span>
+                            </div>
+                          </div>
+                          <span className="font-mono text-3xs text-indigo-700 font-semibold">
+                            {m.assignedClips || 0}/{m.maxCapacityClips} clip
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* VIEW MODE 1: BẢNG PHÂN CÔNG GIAN HÀNG 2 TẦNG (LEADER & PRIMARY PIC) */}
+          {leaderConsoleViewMode === 'STORES_ASSIGN' && (
+            <div className="bg-white rounded-2xl border border-slate-200/90 overflow-hidden shadow-xs">
+              <div className="p-4 border-b border-slate-200 bg-slate-50/70 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h4 className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                    <Store className="w-4 h-4 text-indigo-600" />
+                    <span>Bảng Phân Công Gian Hàng Cho Chuyên Viên Dưới Sự Giám Sát Của Leader</span>
+                  </h4>
+                  <p className="text-2xs text-slate-500 mt-0.5">
+                    Trưởng nhóm trực tiếp chỉ định Chuyên viên chính (Primary PIC) và ghi chú chỉ đạo chuyên môn cho từng gian hàng
+                  </p>
+                </div>
+                <span className="text-xs text-slate-500 font-mono">
+                  Hiển thị: <strong className="text-slate-900 font-semibold">{b2cPlanStores.length}</strong> gian B2C làm plan
+                </span>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="bg-slate-100 text-slate-700 font-semibold border-b border-slate-200 text-2xs">
+                      <th className="py-3 px-3 w-56">Gian hàng / Thương hiệu</th>
+                      <th className="py-3 px-3 w-48">Trưởng nhóm phụ trách (Leader)</th>
+                      <th className="py-3 px-3 w-48">Chuyên viên chính (Primary PIC)</th>
+                      <th className="py-3 px-3 w-44">Thành viên cùng chạy</th>
+                      <th className="py-3 px-3 text-right w-28">Ngân sách</th>
+                      <th className="py-3 px-3 min-w-[200px]">Ghi chú chỉ đạo của Leader</th>
+                      <th className="py-3 px-3 text-center w-24">Thao tác</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {b2cPlanStores.map(store => {
+                      const currentLeader = store.bookingLeader || 'Nguyễn Tuấn Anh';
+                      const matchingTeam = BOOKING_TEAMS_STRUCTURE.find(t => t.leaderName.includes(currentLeader.split(' ')[0])) || BOOKING_TEAMS_STRUCTURE[0];
+
+                      return (
+                        <tr key={store.id} className="hover:bg-slate-50 transition">
+                          {/* Gian hàng */}
+                          <td className="py-3 px-3">
+                            <span className="font-bold text-slate-900 block truncate max-w-[200px]">{store.storeName}</span>
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                              <ChannelTag channel={store.platform} />
+                              <span className="text-3xs text-slate-400">{store.category}</span>
+                            </div>
+                          </td>
+
+                          {/* Leader Dropdown */}
+                          <td className="py-3 px-3">
+                            <select
+                              value={store.bookingLeader || 'Nguyễn Tuấn Anh'}
+                              onChange={(e) => {
+                                const newLeader = e.target.value;
+                                const newTeam = BOOKING_TEAMS_STRUCTURE.find(t => t.leaderName === newLeader) || BOOKING_TEAMS_STRUCTURE[0];
+                                const defaultPic = newTeam.members[0]?.name || 'Khánh Vy';
+                                const updated: StorePortfolioItem = {
+                                  ...store,
+                                  bookingLeader: newLeader,
+                                  primaryPic: defaultPic,
+                                  assignedStaff: defaultPic,
+                                  b2cOwnerName: defaultPic
+                                };
+                                onUpdateStore(updated);
+                                notify(`Đã chuyển gian "${store.storeName}" cho Leader: ${newLeader}!`);
+                              }}
+                              className="w-full text-xs font-semibold px-2 py-1.5 bg-indigo-50/50 border border-indigo-200 rounded-lg text-indigo-950 focus:outline-none focus:border-indigo-500"
+                            >
+                              <option value="Nguyễn Tuấn Anh">Nguyễn Tuấn Anh (Leader Team 1)</option>
+                              <option value="Đặng Mai Hà Linh">Đặng Mai Hà Linh (Leader Team 2)</option>
+                              <option value="Lê Hoàng Yến">Lê Hoàng Yến (Leader Đa Sàn)</option>
+                            </select>
+                          </td>
+
+                          {/* Primary PIC Dropdown */}
+                          <td className="py-3 px-3">
+                            <select
+                              value={store.primaryPic || store.b2cOwnerName || matchingTeam.members[0]?.name}
+                              onChange={(e) => {
+                                const newPic = e.target.value;
+                                const updated: StorePortfolioItem = {
+                                  ...store,
+                                  primaryPic: newPic,
+                                  assignedStaff: newPic,
+                                  b2cOwnerName: newPic
+                                };
+                                onUpdateStore(updated);
+                                notify(`Leader đã gán chuyên viên "${newPic}" chủ trì gian "${store.storeName}"!`);
+                              }}
+                              className="w-full text-xs font-medium px-2 py-1.5 bg-white border border-slate-200 rounded-lg text-slate-800 focus:outline-none focus:border-indigo-500 shadow-2xs"
+                            >
+                              {matchingTeam.members.map(m => (
+                                <option key={m.id} value={m.name}>
+                                  {m.name} ({m.roleTitle})
+                                </option>
+                              ))}
+                              {/* Option cho phép chọn thành viên khác nếu cần mượn quân */}
+                              <option disabled>──────────</option>
+                              {staffList.filter(s => !matchingTeam.members.some(m => m.name === s.name)).map(s => (
+                                <option key={s.id} value={s.name}>
+                                  {s.name} ({s.team})
+                                </option>
+                              ))}
+                            </select>
+                          </td>
+
+                          {/* Thành viên cùng chạy */}
+                          <td className="py-3 px-3">
+                            <div className="flex items-center gap-1 flex-wrap">
+                              {(store.assignedMembers || [store.primaryPic || store.b2cOwnerName || 'Khánh Vy']).map(mem => (
+                                <span key={mem} className="text-3xs bg-slate-100 text-slate-700 border border-slate-200 px-1.5 py-0.5 rounded font-medium">
+                                  {mem.split(' ').slice(-1)[0]}
+                                </span>
+                              ))}
+                            </div>
+                          </td>
+
+                          {/* Ngân sách */}
+                          <td className="py-3 px-3 text-right font-mono font-semibold text-indigo-700">
+                            {formatVndShort(store.monthlyBudget || 150000000)}
+                          </td>
+
+                          {/* Ghi chú chỉ đạo của Leader */}
+                          <td className="py-3 px-3">
+                            <input
+                              type="text"
+                              defaultValue={store.assignmentNotes || 'Ưu tiên KOC đúng tệp, tỷ lệ hoàn < 8%'}
+                              onBlur={(e) => {
+                                const notes = e.target.value;
+                                if (notes !== store.assignmentNotes) {
+                                  onUpdateStore({ ...store, assignmentNotes: notes });
+                                  notify(`Đã lưu chỉ đạo của Leader cho gian "${store.storeName}"!`);
+                                }
+                              }}
+                              className="w-full text-2xs px-2 py-1 bg-slate-50 hover:bg-white border border-slate-200 rounded text-slate-700 focus:outline-none focus:border-indigo-500"
+                              placeholder="Chỉ đạo của Leader..."
+                            />
+                          </td>
+
+                          {/* Thao tác */}
+                          <td className="py-3 px-3 text-center">
+                            <button
+                              onClick={() => handleOpenEditStore(store)}
+                              className="text-2xs text-indigo-600 hover:text-indigo-800 font-semibold px-2 py-1 rounded bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 transition"
+                            >
+                              Chi tiết
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* VIEW MODE 2: BẢNG CÂN BẰNG TẢI KHỐI LƯỢNG CÔNG VIỆC CỦA CHUYÊN VIÊN */}
+          {leaderConsoleViewMode === 'WORKLOAD_BALANCE' && (
+            <div className="bg-white rounded-2xl border border-slate-200/90 overflow-hidden shadow-xs">
+              <div className="p-4 border-b border-slate-200 bg-slate-50/70 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h4 className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                    <UserCheck className="w-4 h-4 text-emerald-600" />
+                    <span>Cân Bằng Tải & Sức Chứa Của Từng Chuyên Viên (Capacity & Workload)</span>
+                  </h4>
+                  <p className="text-2xs text-slate-500 mt-0.5">
+                    Leader theo dõi định mức số video và số gian hàng để không chuyên viên nào bị quá tải (&gt;50 video/tháng)
+                  </p>
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="bg-slate-100 text-slate-700 font-semibold border-b border-slate-200 text-2xs">
+                      <th className="py-3 px-4 w-48">Chuyên viên</th>
+                      <th className="py-3 px-3 w-40">Tổ đội / Leader</th>
+                      <th className="py-3 px-3 min-w-[180px]">Thế mạnh chuyên môn</th>
+                      <th className="py-3 px-3 text-center w-28">Số gian phụ trách</th>
+                      <th className="py-3 px-4 text-center w-36">Định mức clip tháng</th>
+                      <th className="py-3 px-4 w-44">Tỷ lệ tải công việc</th>
+                      <th className="py-3 px-3 text-center w-28">Trạng thái</th>
+                      <th className="py-3 px-3 text-center w-28">Điều phối</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {BOOKING_TEAMS_STRUCTURE.flatMap(team => team.members.map(member => {
+                      const assignedStores = storePortfolios.filter(s => 
+                        (s.primaryPic === member.name) || 
+                        (s.b2cOwnerName && s.b2cOwnerName.includes(member.name)) ||
+                        (s.assignedStaff === member.name)
+                      );
+                      const currentClips = member.assignedClips || assignedStores.length * 15 || 25;
+                      const capacity = member.maxCapacityClips || 50;
+                      const workloadPct = Math.round((currentClips / capacity) * 100);
+                      const isOverloaded = workloadPct > 95;
+                      const isNearFull = workloadPct >= 80 && workloadPct <= 95;
+
+                      return (
+                        <tr key={member.id} className="hover:bg-slate-50 transition">
+                          {/* Chuyên viên */}
+                          <td className="py-3 px-4">
+                            <div className="flex items-center gap-2">
+                              <span className="w-8 h-8 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-700 font-bold flex items-center justify-center text-xs">
+                                {member.avatar}
+                              </span>
+                              <div>
+                                <span className="font-bold text-slate-900 block">{member.name}</span>
+                                <span className="text-3xs text-slate-400 block">{member.roleTitle}</span>
+                              </div>
+                            </div>
+                          </td>
+
+                          {/* Tổ đội */}
+                          <td className="py-3 px-3">
+                            <span className="text-2xs font-semibold text-slate-700 block">{member.team}</span>
+                            <span className="text-3xs text-indigo-600 block">Leader: {team.leaderName.split(' ').slice(-2).join(' ')}</span>
+                          </td>
+
+                          {/* Thế mạnh chuyên môn */}
+                          <td className="py-3 px-3 text-slate-600 text-2xs">
+                            {member.expertise}
+                          </td>
+
+                          {/* Số gian phụ trách */}
+                          <td className="py-3 px-3 text-center font-mono font-bold text-slate-900">
+                            {assignedStores.length} gian
+                          </td>
+
+                          {/* Định mức clip tháng */}
+                          <td className="py-3 px-4 text-center font-mono">
+                            <strong className="text-indigo-900">{currentClips}</strong> / {capacity} clip
+                          </td>
+
+                          {/* Tỷ lệ tải */}
+                          <td className="py-3 px-4">
+                            <div className="flex items-center justify-between text-2xs font-mono mb-1">
+                              <span className="text-slate-500">Tải:</span>
+                              <strong className={isOverloaded ? 'text-rose-600' : isNearFull ? 'text-amber-600' : 'text-emerald-600'}>
+                                {workloadPct}%
+                              </strong>
+                            </div>
+                            <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                              <div
+                                className={`h-full rounded-full transition-all ${
+                                  isOverloaded ? 'bg-rose-500' : isNearFull ? 'bg-amber-500' : 'bg-emerald-500'
+                                }`}
+                                style={{ width: `${Math.min(100, workloadPct)}%` }}
+                              />
+                            </div>
+                          </td>
+
+                          {/* Trạng thái */}
+                          <td className="py-3 px-3 text-center">
+                            <span className={`text-3xs px-2 py-0.5 rounded-full font-semibold border ${
+                              isOverloaded
+                                ? 'bg-rose-50 text-rose-700 border-rose-200'
+                                : isNearFull
+                                ? 'bg-amber-50 text-amber-700 border-amber-200'
+                                : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                            }`}>
+                              {isOverloaded ? '⚠ Quá tải' : isNearFull ? 'Đầy tải' : '✓ An toàn'}
+                            </span>
+                          </td>
+
+                          {/* Nút điều phối */}
+                          <td className="py-3 px-3 text-center">
+                            <button
+                              onClick={() => {
+                                notify(`Leader đã chọn điều phối công việc cho ${member.name}!`);
+                              }}
+                              className="text-2xs font-semibold text-slate-700 hover:text-indigo-600 px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 transition"
+                            >
+                              Điều chuyển
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    }))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
       {/* 5. SECTION 3: THEO DÕI TẢI NHÂN SỰ TOÀN PHÒNG (STAFF CAPACITY)             */}
       {/* ========================================================================= */}
       {activeSection === 'STAFF' && (

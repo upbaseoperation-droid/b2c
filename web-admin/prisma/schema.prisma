@@ -706,3 +706,85 @@ model StaffP3Record {
   @@index([staffName])
   @@index([approvalStatus])
 }
+
+// =========================================================================
+// 9. QUẢN LÝ KẾ HOẠCH THÁNG (MONTHLY PLAN) — PHIÊN BẢN CHỐT & SỔ TRAO ĐỔI
+// Quy trình: docs/QUY_TRINH_PHAN_RA_KE_HOACH_B2C.md
+// =========================================================================
+
+// Kế hoạch tháng đang làm việc (bản nháp hiện hành). Toàn bộ cấu trúc phân rã
+// (items, signOff, pillars...) lưu ở cột `data` để giữ nguyên hình dạng
+// InputPlanBreakdownState phía giao diện; các cột còn lại để lọc/báo cáo.
+model MonthlyPlan {
+  id                  String   @id // Giữ nguyên mã kế hoạch phía giao diện (PLAN-2026-10-xxxx)
+  title               String
+  brandName           String
+  storeId             String?
+  month               String   // 2026/10
+  week                String?
+  pic                 String?
+  growthPic           String?
+  mediaPic            String?
+  bookingLeader       String?
+  status              String   @default("DRAFT")
+  currentVersionCode  String   @default("v1.0")
+  isVersionLocked     Boolean  @default(false)
+  totalTargetBudget   Decimal  @default(0) @db.Decimal(14, 2)
+  budgetAdsTotal      Decimal  @default(0) @db.Decimal(14, 2)
+  targetGmv           Decimal  @default(0) @db.Decimal(14, 2)
+  totalTargetContents Int      @default(0)
+  data                Json     // InputPlanBreakdownState (không gồm versionSnapshots & discussions)
+  revision            Int      @default(1) // Chống ghi đè khi nhiều người cùng sửa
+  createdBy           String?
+  updatedBy           String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  deletedAt           DateTime?
+
+  versionSnapshots MonthlyPlanVersionSnapshot[]
+  discussions      MonthlyPlanDiscussion[]
+
+  @@index([month])
+  @@index([brandName])
+  @@index([status])
+}
+
+// Bản chụp phiên bản đã chốt (v1.0 Baseline, v1.1...). Chỉ thêm mới, không sửa/xóa.
+model MonthlyPlanVersionSnapshot {
+  id                String      @id @default(uuid())
+  planId            String
+  plan              MonthlyPlan @relation(fields: [planId], references: [id], onDelete: Restrict)
+  clientId          String      // id snapshot phía giao diện
+  versionCode       String
+  versionName       String
+  createdBy         String
+  creatorRole       String
+  changeReason      String?
+  totalTargetBudget Decimal     @db.Decimal(14, 2)
+  budgetAdsTotal    Decimal     @db.Decimal(14, 2)
+  targetGmv         Decimal     @db.Decimal(14, 2)
+  data              Json        // PlanVersionSnapshot đầy đủ (items + signOffRecord)
+  lockedAt          DateTime    @default(now())
+
+  @@unique([planId, clientId])
+  @@index([planId, versionCode])
+}
+
+// Sổ biên bản & lịch sử trao đổi 4 bên. Chỉ thêm mới, không sửa/xóa.
+model MonthlyPlanDiscussion {
+  id          String      @id @default(uuid())
+  planId      String
+  plan        MonthlyPlan @relation(fields: [planId], references: [id], onDelete: Restrict)
+  clientId    String      // id tin nhắn phía giao diện
+  authorName  String
+  authorRole  String
+  authorTitle String?
+  type        String
+  content     String
+  data        Json        // PlanDiscussionMessage đầy đủ (tags, budgetDiff)
+  postedAt    DateTime
+  createdAt   DateTime    @default(now())
+
+  @@unique([planId, clientId])
+  @@index([planId, postedAt])
+}

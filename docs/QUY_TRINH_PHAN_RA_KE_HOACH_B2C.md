@@ -191,3 +191,19 @@ Khi kế hoạch đang chạy ở bản `v1.0`, nếu giữa tháng phát sinh T
 ### 8.3. Mẫu Biên Bản BB-NT: Biên Bản Nghiệm Thu & Đối Soát Cuối Kỳ
 * **Thời điểm lập:** Mùng 2 đến ngày làm việc thứ 5 của tháng T+1.
 * **Nội dung:** Đối soát Thực tế (Actual) so với Bản chốt đầu tháng (`v1.0`) và các Bản điều chỉnh (`v1.x`), giải trình GAP ngân sách và GAP doanh số để quyết toán P&L và đánh giá KPI P2/P3.
+
+---
+
+## 9. CƠ CHẾ PHÂN TẦNG NHÂN SỰ & CHỐT CHẶN VẬN HÀNH B2C
+
+Dựa trên thực tế đối soát vận hành giữa Plan Order tổng (File 4.1), Input plan (File 4.1.1) và List duyệt book (File 3.2), quy trình vận hành B2C thiết lập các cơ chế sau:
+
+### 9.1. Mô hình nhân sự 2 tầng (2-Tier Team Structure)
+* **Cấp 1 - Trưởng nhóm (Leader / Account Owner):** Là người đứng tên đại diện nhận hạn mức Order tổng từ Growth (`Nguyễn Thị Ngọc Tâm`, `Lương Thị Như Quỳnh`, `Lê Phương Thảo`, `Lê Thanh Hải`, `Hoàng Diệu Thuỳ`, `Dương Thị Hồng Nhung`...). Leader chịu trách nhiệm quản lý hạn mức và tiến độ chung của toàn team.
+* **Cấp 2 - Chuyên viên thực thi (Specialist / Executor):** Được Leader phân công trực tiếp lập Input plan tuần và ký duyệt/nghiệm thu thực tế trên File 3.2 (`Hoàng Hải Long`, `Trần Thị Hảo`, `Nguyễn Ngọc Linh`, `Phan Diệu Ánh`, `Phạm Thị Thu Hằng`, `Lương Nguyễn Trang Nhung`, `Nguyễn Thị Quỳnh Nhi`...).
+* **Phân tách chuyên môn FOC:** Phân công riêng nhân sự chuyên trách gửi sản phẩm mẫu miễn phí (FOC) với số lượng lớn (50 – 200 video, chi phí 0đ) tách biệt hoàn toàn với chuyên viên phụ trách đàm phán hợp đồng KOC trả phí.
+
+### 9.2. Các chốt chặn kiểm soát ngân sách tự động
+1. **Khóa vượt trần ngân sách (Hard Budget Gate):** Khi tổng chi phí thực tế duyệt trên File 3.2 chạm trần hạn mức Net được giao trên Order, hệ thống tự động khóa không cho phép duyệt thêm booking mới trừ khi có Phiếu đề xuất bổ sung ngân sách (Top-up) được Growth và Trưởng phòng B2C duyệt.
+2. **Kiểm soát chi ngoài kế hoạch (Zero-Budget Gate):** Gian hàng có hạn mức Order bằng 0 VNĐ không được phép phát sinh hợp đồng trả phí nếu không có phê duyệt ngoại lệ bằng văn bản từ Brand/BOD.
+3. **Quy chuẩn đối soát Net vs Gross:** Toàn bộ hạn mức Kế toán và Growth duyệt được quản lý theo giá **Net**. Khi deal giá với KOC, chuyên viên phải quy đổi chuẩn thuế suất VAT/TNCN để không làm thâm hụt hạn mức Net của gian hàng.

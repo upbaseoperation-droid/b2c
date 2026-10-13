@@ -6,7 +6,25 @@
   - DÙNG: "Tải ảnh giấy tờ", "Đọc ảnh CCCD", "Soạn hợp đồng", "Xem hợp đồng", "Duyệt chi", "Mã QR".
 - **Giao tiếp:** Trả lời ngắn gọn, thẳng thắn, không liệt kê hoa mỹ, không dùng giọng điệu robot hay marketing quảng cáo.
 
-## 2. Tiêu Chuẩn Kỹ Thuật
+## 2. Tiêu Chuẩn Kỹ Thuật & Vận Hành B2C
 - Kiểm tra `npm run build` trước khi báo cáo kết quả.
 - Đảm bảo mã nguồn TypeScript sạch sẽ, không lỗi type.
 - Tôn trọng các quy chuẩn SLA B2C và luồng duyệt tài chính.
+
+## 3. Quy Tắc Nghiệp Vụ Đối Soát Kế Hoạch & Booking B2C
+- **Phân cấp quản trị Thương hiệu (Brand -> Gian hàng):**
+  - **Mức Brand (Thương hiệu):** Là cấp cao nhất, ký hợp đồng dịch vụ tổng thể, giao ngân sách chiến dịch tổng và định mức phê duyệt kịch bản/đơn giá (Brand Guideline).
+  - **Mức Gian hàng (Store / Platform):** Một Brand sở hữu nhiều gian hàng trên các sàn (`TikTok`, `Shopee`, `Lazada`...). Hạn mức Order được phân bổ chi tiết theo từng gian hàng nhưng phải tuân thủ định mức của Brand.
+- **Phạm vi phân tích B2C:** Chỉ tính toán các gian hàng có `B2C phụ trách = 1` (Cột 25 trong file 4.1 Plan order tổng). Tuyệt đối không gộp gian hàng thuộc Social Commerce hoặc Outright của phòng ban khác trừ khi được yêu cầu rõ ràng.
+- **Cơ cấu tổ chức & Phân bổ Leader - Specialist phòng B2C:**
+  - **Cấp Trưởng Phòng (Lead B2C):** `Đặng Thị Yến Nhi` — Phụ trách chung toàn phòng, quản lý trần PnL/ngân sách toàn bộ 69 gian hàng B2C, ký duyệt kế hoạch tháng và đại diện ký biên bản 4 bên.
+  - **Cấp Trưởng Nhóm (Leader):** Xem thực tế tại Cột 55 File 4.1.1 (chỉ có `Nguyễn Thị Ngọc Tâm` làm Trưởng nhóm phụ trách 8 gian hàng: ClubClio TikTok/Shopee, Cindy Bloom, Mine, EUPC, L'Occitane, Bye Bye Blemish, Rejuran).
+  - **Cấp Chuyên Viên (Specialist / PIC):** Các nhân sự nhận order tại File 4.1 (Cột 25, 39, 60) và File 4.1.1 (Cột 3, 50) như `Lê Phương Thảo`, `Lương Thị Như Quỳnh`, `Lê Thanh Hải`, `Phạm Thị Thu Hằng`, `Hoàng Hải Long`, `Trần Hải Phượng`, `Phan Diệu Ánh`, `Vũ Hoài Lâm`, `Nguyễn Thị Mai Anh`... là **Chuyên viên thực thi**, KHÔNG PHẢI Leader.
+  - **Quy tắc gian hàng không có Leader:** Đối với các gian hàng chỉ có 1 người phụ trách (toàn bộ các gian Shopee và nhiều gian TikTok) hoặc Cột 55 trong File 4.1.1 để trống, gian hàng ghi nhận **Không có leader** (`bookingLeader: undefined`). Chuyên viên chủ động lập phân rã và trình duyệt trực tiếp lên Trưởng Phòng (`Đặng Thị Yến Nhi`) mà không cần bước sơ duyệt trung gian.
+- **Bóc tách chỉ tiêu Order Growth:**
+  - Tách bạch rõ ràng **Chi phí Gross** và **Chi phí Net** (Kế toán kiểm soát theo hạn mức Net).
+  - Tách bạch rõ **Video KOC trả phí** (Paid) và **Suất gửi mẫu sản phẩm miễn phí (FOC)** (chi phí 0đ, thường do chuyên viên riêng phụ trách như Trần Thị Hảo).
+  - Tách biệt rõ **Video Affiliate**, **Video kênh Brand (Self-channel)** và **Livestream**.
+- **Nguyên tắc cảnh báo tài chính:**
+  - Cảnh báo ngay khi gian hàng có Thực tế duyệt chi vượt hạn mức Order Net (Overbudget).
+  - Báo động đỏ khi có gian hàng phát sinh chi phí lớn nhưng hạn mức Order ghi nhận 0đ (Unbudgeted Spend) để yêu cầu bổ sung phê duyệt.

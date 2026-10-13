@@ -200,7 +200,7 @@ export const PlanHistoryModal: React.FC<PlanHistoryModalProps> = ({
               plan={plan}
               currentRole={currentRole}
               currentUser={currentUser}
-              onRoleChange={setCurrentRole}
+              onRoleChange={currentUser?.role === 'ADMIN' ? setCurrentRole : undefined}
               onStatusChange={(newStatus, log, note) => onStatusChange(plan.id, newStatus, log, note)}
               onUpdatePlan={onUpdatePlan}
               onNotify={onNotify}
@@ -351,23 +351,32 @@ export const PlanHistoryModal: React.FC<PlanHistoryModalProps> = ({
           )}
 
           {activeTab === 'DISCUSSION' && (
-            <div className="space-y-4">
-              <PlanApprovalStepper
-                plan={plan}
-                currentRole={currentRole}
-                currentUser={currentUser}
-                onRoleChange={setCurrentRole}
-                onStatusChange={(newStatus, log, note) => onStatusChange(plan.id, newStatus, log, note)}
-                onUpdatePlan={onUpdatePlan}
-                onNotify={onNotify}
-              />
-              <PlanDiscussionHub
-                plan={plan}
-                currentRole={currentRole}
-                currentUser={currentUser}
-                onSendMessage={(msg) => onSendMessage(plan.id, msg)}
-                onNotify={onNotify}
-              />
+            <div className="space-y-3">
+              <p className="text-xs text-slate-500">
+                Biên bản trao đổi chỉ để xem lại. Muốn nhắn tiếp, mở kế hoạch và bấm nút <strong>Trao đổi</strong> trên tiêu đề.
+              </p>
+              {(plan.discussions?.length || 0) === 0 ? (
+                <div className="text-center text-xs text-slate-400 py-10 border border-dashed border-slate-200 rounded-xl bg-white">
+                  Chưa có trao đổi nào.
+                </div>
+              ) : (
+                <ul className="space-y-2">
+                  {[...(plan.discussions || [])]
+                    .sort((a, b) => (a.timestamp || '').localeCompare(b.timestamp || ''))
+                    .map(msg => (
+                      <li key={msg.id} className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs">
+                        <div className="flex items-center gap-2 text-2xs text-slate-500 mb-0.5">
+                          <span className="font-semibold text-slate-700">{msg.authorName}</span>
+                          {msg.authorTitle && <span>• {msg.authorTitle}</span>}
+                          <span className="ml-auto font-mono">
+                            {msg.timestamp ? new Date(msg.timestamp).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' }) : ''}
+                          </span>
+                        </div>
+                        <div className="text-slate-700 whitespace-pre-wrap">{msg.content}</div>
+                      </li>
+                    ))}
+                </ul>
+              )}
             </div>
           )}
         </div>

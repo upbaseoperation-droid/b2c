@@ -41,11 +41,14 @@ import {
   BrandKnowledgeBase,
   PushProductItem,
   KocListingItem,
-  KocListingBatchHeader
+  KocListingBatchHeader,
+  BookingTeamGroup,
+  BookingTeamMemberInfo
 } from './types';
 import { LIVE_STORE_PORTFOLIOS_MASTER } from './liveStoresData';
 import { UPBASE_STORES_MASTER } from './importedMasterData';
 import { UPBASE_FULL_KOC_MASTER } from './kocMasterDataset';
+import { REAL_B2C_69_STORES, REAL_BOOKING_TEAMS_STRUCTURE } from './realB2cPlanData';
 
 
 export const USERS: UserProfile[] = [
@@ -64,40 +67,84 @@ export const USERS: UserProfile[] = [
     permissions: ['ALL_PERMISSIONS']
   },
   {
-    id: 'user-van-ngoc',
-    name: 'Vân Ngọc',
-    email: 'vanngoc@upbase.vn',
+    id: 'user-yen-nhi',
+    name: 'Đặng Thị Yến Nhi',
+    email: 'yennhi@upbase.vn',
     role: 'MANAGER',
-    roleTitle: 'Trưởng Phòng Vận Hành (Operations Head)',
-    avatar: 'VN',
+    roleTitle: 'Trưởng Phòng Vận Hành B2C (Lead B2C)',
+    avatar: 'YN',
     loginProvider: 'LARK',
-    assignedBrands: ['Tất cả nhãn hàng', 'Kutieskin', 'Royal Ausnz', 'Mega Uri', 'pHCare', 'La Roche-Posay', 'Senka']
+    assignedBrands: ['Tất cả nhãn hàng', 'BELLA', 'Baniphar', 'EUPC', 'ClubClio', 'Fresh', 'Kutieskin', 'Natural Care', 'Miss Saigon']
   },
 
   // =========================================================================
   // 2. TRƯỞNG NHÓM & CHUYÊN VIÊN TÁC NGHIỆP NỘI BỘ
   // =========================================================================
   {
-    id: 'user-tuan-anh',
-    name: 'Nguyễn Tuấn Anh',
-    email: 'tuananh@upbase.vn',
+    id: 'user-ngoc-tam',
+    name: 'Nguyễn Thị Ngọc Tâm',
+    email: 'ngoctam@upbase.vn',
     role: 'LEADER',
-    roleTitle: 'Trưởng Nhóm Booking (Booking Lead)',
-    avatar: 'TA',
+    roleTitle: 'Trưởng Nhóm Booking (Mỹ Phẩm & FMCG)',
+    avatar: 'NT',
     loginProvider: 'LARK',
-    linkedEntityName: 'Kutieskin, Royal Ausnz, Mega Uri',
-    assignedBrands: ['Kutieskin', 'Royal Ausnz', 'Mega Uri']
+    linkedEntityName: 'ClubClio, Cindy Bloom, EUPC, Mine, Cathy Doll',
+    assignedBrands: ['ClubClio', 'Cindy Bloom', 'EUPC', 'Mine', 'Cathy Doll']
   },
   {
-    id: 'user-khanh-vy',
-    name: 'Khánh Vy',
-    email: 'khanhvy@upbase.vn',
+    id: 'user-phuong-thao',
+    name: 'Lê Phương Thảo',
+    email: 'phuongthao@upbase.vn',
+    role: 'BOOKING_MEMBER',
+    roleTitle: 'Chuyên Viên Booking Chính (Dược Mỹ Phẩm & Skincare)',
+    avatar: 'PT',
+    loginProvider: 'LARK',
+    linkedEntityName: 'BELLA, Dynik, Miss Saigon, Ekseption, 4PM',
+    assignedBrands: ['BELLA', 'Dynik', 'Miss Saigon', 'Ekseption', '4PM']
+  },
+  {
+    id: 'user-nhu-quynh',
+    name: 'Lương Thị Như Quỳnh',
+    email: 'nhuquynh@upbase.vn',
+    role: 'BOOKING_MEMBER',
+    roleTitle: 'Chuyên Viên Booking Chính (Mẹ & Bé, Sức Khỏe)',
+    avatar: 'NQ',
+    loginProvider: 'LARK',
+    linkedEntityName: 'Kutieskin, Baniphar, Nabizam, Docilee, Nature\'s Way, Ziaja',
+    assignedBrands: ['Kutieskin', 'Baniphar', 'Nabizam', 'Docilee', 'Nature\'s Way', 'Ziaja']
+  },
+  {
+    id: 'user-thanh-hai',
+    name: 'Lê Thanh Hải',
+    email: 'thanhhai@upbase.vn',
+    role: 'BOOKING_MEMBER',
+    roleTitle: 'Chuyên Viên Booking Chính (Đa Sàn & Tự Xây)',
+    avatar: 'TH',
+    loginProvider: 'LARK',
+    linkedEntityName: 'Bye Bye Blemish, Herbal Care, Fresh, HDT, pHCare, Nucos',
+    assignedBrands: ['Bye Bye Blemish', 'Herbal Care', 'Fresh', 'HDT', 'pHCare', 'Nucos']
+  },
+  {
+    id: 'user-thu-hang',
+    name: 'Phạm Thị Thu Hằng',
+    email: 'thuhang@upbase.vn',
     role: 'BOOKING_MEMBER',
     roleTitle: 'Chuyên Viên Booking (Booking Specialist)',
-    avatar: 'KV',
+    avatar: 'TH',
     loginProvider: 'LARK',
-    linkedEntityName: 'Kutieskin, pHCare, Mega Uri',
-    assignedBrands: ['Kutieskin', 'pHCare', 'Mega Uri']
+    linkedEntityName: 'ClubClio, Lipit, Fresh',
+    assignedBrands: ['ClubClio', 'Lipit', 'Fresh']
+  },
+  {
+    id: 'user-hai-long',
+    name: 'Hoàng Hải Long',
+    email: 'hailong@upbase.vn',
+    role: 'BOOKING_MEMBER',
+    roleTitle: 'Chuyên Viên Booking (Booking Specialist)',
+    avatar: 'HL',
+    loginProvider: 'LARK',
+    linkedEntityName: 'Dynik, Badlab, Natural Care',
+    assignedBrands: ['Dynik', 'Badlab', 'Natural Care']
   },
   {
     id: 'user-growth-anh',
@@ -5706,22 +5753,55 @@ const DEFAULT_SAMPLE_STORES: StorePortfolioItem[] = [
   }
 ];
 
-export const INITIAL_STORE_PORTFOLIOS: StorePortfolioItem[] = UPBASE_STORES_MASTER;
+export const INITIAL_STORE_PORTFOLIOS: StorePortfolioItem[] = [
+  ...REAL_B2C_69_STORES,
+  ...UPBASE_STORES_MASTER.filter(s => !REAL_B2C_69_STORES.some(r => r.storeName.toLowerCase() === s.storeName.toLowerCase()))
+];
 
-// MASTER DATA DANH BẠ NHÂN SỰ & QUẢN LÝ PHÂN CÔNG
+// CƠ CẤU PHÂN CẤP TỔ ĐỘI BOOKING (LEADER & TEAM MEMBERS DỰA TRÊN DỮ LIỆU THẬT 4.1 & 4.1.1)
+export const BOOKING_TEAMS_STRUCTURE: BookingTeamGroup[] = REAL_BOOKING_TEAMS_STRUCTURE;
+
+// MASTER DATA DANH BẠ NHÂN SỰ & QUẢN LÝ PHÂN CÔNG (THỰC TẾ PHÒNG B2C)
 export const STAFF_MASTER_DIRECTORY: StaffMasterMember[] = [
-  { id: 'st-1', name: 'Khánh Vy', role: 'BOOKING', team: 'Booking Team 1', roleTitle: 'Senior Booking Specialist', avatar: 'KV', email: 'khanhvy@upbase.vn', phone: '0981.234.567', maxStoresCapacity: 3 },
-  { id: 'st-2', name: 'Trần Minh Đức', role: 'BOOKING', team: 'Booking Team 1', roleTitle: 'Junior Booking Specialist', avatar: 'MĐ', email: 'minhduc@upbase.vn', phone: '0982.345.678', maxStoresCapacity: 3 },
-  { id: 'st-3', name: 'Đặng Mai Hà Linh', role: 'BOOKING', team: 'Booking Team 2', roleTitle: 'Junior Booking Specialist', avatar: 'HL', email: 'halinh@upbase.vn', phone: '0983.456.789', maxStoresCapacity: 2 },
-  { id: 'st-4', name: 'Nguyễn Ngọc Huyền', role: 'BOOKING', team: 'Booking Team 2', roleTitle: 'Junior Booking Specialist', avatar: 'NH', email: 'ngochuyen@upbase.vn', phone: '0984.567.890', maxStoresCapacity: 3 },
-  { id: 'st-5', name: 'Nguyễn Quỳnh Trang', role: 'BOOKING', team: 'Booking Team 1', roleTitle: 'Booking Intern', avatar: 'QT', email: 'quinhtrang@upbase.vn', phone: '0985.678.901', maxStoresCapacity: 2 },
+  // Cấp Trưởng Phòng (Operations Head / Lead B2C)
+  { id: 'st-mgr-1', name: 'Đặng Thị Yến Nhi', role: 'MANAGER', team: 'Ban Quản Trị Vận Hành B2C', roleTitle: 'Trưởng Phòng Vận Hành B2C (Lead B2C)', avatar: 'YN', email: 'yennhi@upbase.vn', phone: '0980.000.001', maxStoresCapacity: 69 },
+
+  // Cấp Trưởng nhóm (Leader)
+  { id: 'st-ld-1', name: 'Nguyễn Thị Ngọc Tâm', role: 'BOOKING', team: 'Nhóm Booking Mỹ Phẩm & FMCG', roleTitle: 'Trưởng Nhóm Booking', avatar: 'NT', email: 'ngoctam@upbase.vn', phone: '0980.111.001', maxStoresCapacity: 15 },
+
+  // Cấp Chuyên viên chính & Chuyên viên thực thi (Specialist)
+  { id: 'st-sp-0a', name: 'Lê Phương Thảo', role: 'BOOKING', team: 'Khối Vận Hành B2C', roleTitle: 'Chuyên viên Booking Chính (Senior)', avatar: 'PT', email: 'phuongthao@upbase.vn', phone: '0980.111.002', maxStoresCapacity: 10 },
+  { id: 'st-sp-0b', name: 'Lương Thị Như Quỳnh', role: 'BOOKING', team: 'Khối Vận Hành B2C', roleTitle: 'Chuyên viên Booking Chính (Senior)', avatar: 'NQ', email: 'nhuquynh@upbase.vn', phone: '0980.111.003', maxStoresCapacity: 10 },
+  { id: 'st-sp-0c', name: 'Lê Thanh Hải', role: 'BOOKING', team: 'Khối Vận Hành B2C', roleTitle: 'Chuyên viên Booking Chính (Senior)', avatar: 'TH', email: 'thanhhai@upbase.vn', phone: '0980.111.004', maxStoresCapacity: 10 },
+  { id: 'st-sp-0d', name: 'Hoàng Diệu Thuỳ', role: 'BOOKING', team: 'Khối Vận Hành B2C', roleTitle: 'Chuyên viên Booking', avatar: 'DT', email: 'dieuthuy@upbase.vn', phone: '0980.111.005', maxStoresCapacity: 8 },
+  { id: 'st-sp-0e', name: 'Dương Thị Hồng Nhung', role: 'BOOKING', team: 'Khối Vận Hành B2C', roleTitle: 'Chuyên viên Booking', avatar: 'HN', email: 'hongnhung@upbase.vn', phone: '0980.111.006', maxStoresCapacity: 8 },
+  { id: 'st-sp-1', name: 'Phạm Thị Thu Hằng', role: 'BOOKING', team: 'Đội 1: Mỹ Phẩm Trang Điểm & FMCG', roleTitle: 'Chuyên viên Booking (Senior)', avatar: 'TH', email: 'thuhang@upbase.vn', phone: '0981.222.001', maxStoresCapacity: 5 },
+  { id: 'st-sp-2', name: 'Lại Ngọc Huyền', role: 'BOOKING', team: 'Đội 1: Mỹ Phẩm Trang Điểm & FMCG', roleTitle: 'Chuyên viên Booking', avatar: 'LH', email: 'ngochuyen.lai@upbase.vn', phone: '0981.222.002', maxStoresCapacity: 5 },
+  { id: 'st-sp-3', name: 'Lương Nguyễn Trang Nhung', role: 'BOOKING', team: 'Đội 1: Mỹ Phẩm Trang Điểm & FMCG', roleTitle: 'Chuyên viên Booking', avatar: 'TN', email: 'trangnhung@upbase.vn', phone: '0981.222.003', maxStoresCapacity: 5 },
+  { id: 'st-sp-4', name: 'Hà Thị Thủy', role: 'BOOKING', team: 'Đội 1: Mỹ Phẩm Trang Điểm & FMCG', roleTitle: 'Chuyên viên Booking', avatar: 'HT', email: 'thuyha@upbase.vn', phone: '0981.222.004', maxStoresCapacity: 5 },
+  { id: 'st-sp-5', name: 'Nguyễn Thị Hồng Ngát', role: 'BOOKING', team: 'Đội 1: Mỹ Phẩm Trang Điểm & FMCG', roleTitle: 'Chuyên viên Booking', avatar: 'HN', email: 'hongngat@upbase.vn', phone: '0981.222.005', maxStoresCapacity: 5 },
+  { id: 'st-sp-6', name: 'Hoàng Hải Long', role: 'BOOKING', team: 'Đội 2: Dược Mỹ Phẩm & Chăm Sóc Da', roleTitle: 'Chuyên viên Booking (Senior)', avatar: 'HL', email: 'hailong@upbase.vn', phone: '0981.222.006', maxStoresCapacity: 5 },
+  { id: 'st-sp-7', name: 'Bùi Ngọc Ánh', role: 'BOOKING', team: 'Đội 2: Dược Mỹ Phẩm & Chăm Sóc Da', roleTitle: 'Chuyên viên Booking', avatar: 'NA', email: 'ngocanh.bui@upbase.vn', phone: '0981.222.007', maxStoresCapacity: 5 },
+  { id: 'st-sp-8', name: 'Trần Phương Thảo', role: 'BOOKING', team: 'Đội 2: Dược Mỹ Phẩm & Chăm Sóc Da', roleTitle: 'Chuyên viên Booking', avatar: 'TT', email: 'phuongthao.tran@upbase.vn', phone: '0981.222.008', maxStoresCapacity: 5 },
+  { id: 'st-sp-9', name: 'Nguyễn Quỳnh Trang', role: 'BOOKING', team: 'Đội 2: Dược Mỹ Phẩm & Chăm Sóc Da', roleTitle: 'Chuyên viên Booking', avatar: 'QT', email: 'quinhtrang@upbase.vn', phone: '0981.222.009', maxStoresCapacity: 5 },
+  { id: 'st-sp-10', name: 'Nguyễn Ngọc Huyền', role: 'BOOKING', team: 'Đội 3: Mẹ & Bé, Chăm Sóc Sức Khỏe', roleTitle: 'Chuyên viên Booking', avatar: 'NH', email: 'ngochuyen@upbase.vn', phone: '0981.222.010', maxStoresCapacity: 5 },
+  { id: 'st-sp-11', name: 'Nguyễn Thị Quỳnh Nhi', role: 'BOOKING', team: 'Đội 3: Mẹ & Bé, Chăm Sóc Sức Khỏe', roleTitle: 'Chuyên viên Booking', avatar: 'QN', email: 'quynhnhi@upbase.vn', phone: '0981.222.011', maxStoresCapacity: 5 },
+  { id: 'st-sp-12', name: 'Bùi Thu Hằng', role: 'BOOKING', team: 'Đội 3: Mẹ & Bé, Chăm Sóc Sức Khỏe', roleTitle: 'Chuyên viên Booking', avatar: 'BH', email: 'thuhang.bui@upbase.vn', phone: '0981.222.012', maxStoresCapacity: 5 },
+  { id: 'st-sp-13', name: 'Đinh Thị Bích Liên', role: 'BOOKING', team: 'Đội 3: Mẹ & Bé, Chăm Sóc Sức Khỏe', roleTitle: 'Chuyên viên Booking', avatar: 'BL', email: 'bichlien@upbase.vn', phone: '0981.222.013', maxStoresCapacity: 5 },
+  { id: 'st-sp-14', name: 'Trần Thị Hảo', role: 'BOOKING', team: 'Đội 3: Mẹ & Bé, Chăm Sóc Sức Khỏe', roleTitle: 'Chuyên viên Điều phối Mẫu FOC & TAP', avatar: 'TH', email: 'thihao@upbase.vn', phone: '0981.222.014', maxStoresCapacity: 10 },
+  { id: 'st-sp-15', name: 'Trần Hải Phượng', role: 'BOOKING', team: 'Đội 4: Đa Kênh, Tự Xây & Livestream', roleTitle: 'Chuyên viên Booking', avatar: 'HP', email: 'haiphuong@upbase.vn', phone: '0981.222.015', maxStoresCapacity: 5 },
+  { id: 'st-sp-16', name: 'Phan Diệu Ánh', role: 'BOOKING', team: 'Đội 4: Đa Kênh, Tự Xây & Livestream', roleTitle: 'Chuyên viên Booking Đa Sàn', avatar: 'DA', email: 'dieuannh@upbase.vn', phone: '0981.222.016', maxStoresCapacity: 5 },
+  { id: 'st-sp-17', name: 'Vũ Hoài Lâm', role: 'BOOKING', team: 'Đội 4: Đa Kênh, Tự Xây & Livestream', roleTitle: 'Chuyên viên Booking & Tự Xây', avatar: 'HL', email: 'hoailam@upbase.vn', phone: '0981.222.017', maxStoresCapacity: 5 },
+  { id: 'st-sp-18', name: 'Nguyễn Thị Mai Anh', role: 'BOOKING', team: 'Đội 4: Đa Kênh, Tự Xây & Livestream', roleTitle: 'Chuyên viên Booking', avatar: 'MA', email: 'maianh@upbase.vn', phone: '0981.222.018', maxStoresCapacity: 5 },
+  { id: 'st-sp-19', name: 'Phạm Huyền Thương', role: 'BOOKING', team: 'Đội 4: Đa Kênh, Tự Xây & Livestream', roleTitle: 'Chuyên viên Booking & Livestream', avatar: 'HT', email: 'huyenthuong@upbase.vn', phone: '0981.222.019', maxStoresCapacity: 5 },
+  { id: 'st-sp-20', name: 'Nguyễn Ngọc Linh', role: 'BOOKING', team: 'Đội 4: Đa Kênh, Tự Xây & Livestream', roleTitle: 'Chuyên viên Booking', avatar: 'NL', email: 'ngoclinh@upbase.vn', phone: '0981.222.020', maxStoresCapacity: 5 },
+
+  // Nhân sự phối hợp các phòng ban (Growth, Account, Media, Content)
   { id: 'st-6', name: 'Quỳnh Như', role: 'CONTENT', team: 'Content Studio', roleTitle: 'Content Creative & Script Lead', avatar: 'QN', email: 'quynhnhu@upbase.vn', phone: '0986.789.012', maxStoresCapacity: 4 },
-  { id: 'st-7', name: 'Phương Thảo', role: 'GROWTH', team: 'Brand & Growth', roleTitle: 'Brand Strategy & Campaign Lead', avatar: 'PT', email: 'phuongthao@upbase.vn', phone: '0987.890.123', maxStoresCapacity: 4 },
-  { id: 'st-8', name: 'Phạm Thị Nhài', role: 'ACCOUNT', team: 'Account Management', roleTitle: 'Senior Account Manager', avatar: 'PN', email: 'thinhai@upbase.vn', phone: '0988.901.234', maxStoresCapacity: 5 },
-  { id: 'st-9', name: 'Nguyễn Anh Tú', role: 'GROWTH', team: 'Growth Ops', roleTitle: 'Growth Operations Lead', avatar: 'AT', email: 'anhtu@upbase.vn', phone: '0989.012.345', maxStoresCapacity: 4 },
-  { id: 'st-10', name: 'Hà Thị Thương', role: 'ACCOUNT', team: 'Account Management', roleTitle: 'Account Specialist', avatar: 'HT', email: 'thithuong@upbase.vn', phone: '0971.123.456', maxStoresCapacity: 4 },
-  { id: 'st-11', name: 'Phạm Thị Hồng Yến', role: 'GROWTH', team: 'Growth Ops', roleTitle: 'Senior Growth Specialist', avatar: 'HY', email: 'hongyen@upbase.vn', phone: '0972.234.567', maxStoresCapacity: 4 },
-  { id: 'st-12', name: 'Hoàng Long', role: 'GROWTH', team: 'Growth Ops', roleTitle: 'E-commerce Growth Specialist', avatar: 'HL', email: 'hoanglong@upbase.vn', phone: '0973.345.678', maxStoresCapacity: 4 }
+  { id: 'st-8', name: 'Đào Phương Anh', role: 'ACCOUNT', team: 'Account Management', roleTitle: 'Senior Account Manager', avatar: 'PA', email: 'phuonganh@upbase.vn', phone: '0988.901.234', maxStoresCapacity: 10 },
+  { id: 'st-9', name: 'Nguyễn Đức Mạnh', role: 'GROWTH', team: 'Growth Ops', roleTitle: 'Growth Operations Lead', avatar: 'DM', email: 'ducmanh@upbase.vn', phone: '0989.012.345', maxStoresCapacity: 8 },
+  { id: 'st-10', name: 'Nguyễn Khánh Linh', role: 'GROWTH', team: 'Growth Ops', roleTitle: 'Growth Specialist', avatar: 'KL', email: 'khanhlinh@upbase.vn', phone: '0971.123.456', maxStoresCapacity: 8 },
+  { id: 'st-11', name: 'Trần Anh Thư', role: 'GROWTH', team: 'Growth Ops', roleTitle: 'Senior Growth Specialist', avatar: 'AT', email: 'anhthu@upbase.vn', phone: '0972.234.567', maxStoresCapacity: 8 }
 ];
 
 // --- MODULE 3: EXECUTION (CANDIDATE POOL & OUTREACH PIPELINE) ---
