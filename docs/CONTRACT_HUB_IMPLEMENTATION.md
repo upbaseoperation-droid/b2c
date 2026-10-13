@@ -76,6 +76,17 @@ Nguồn: [OpenAPI MISA](https://amisapp.misa.vn/wesign/api/public/swagger/v1/swa
 
 ## Giới hạn cần review trước dùng thật
 
+## Kết quả kiểm thử ngày 13/10/2026
+
+- Build production thành công; TypeScript và lint phạm vi hợp đồng đạt. Build còn cảnh báo tracing đường dẫn file động và quy ước middleware cũ; cần tối ưu đóng gói trước triển khai hạ tầng.
+- 20 kiểm thử đạt: domain, 8 mẫu Word thật, giữ nguồn bất biến, API toàn luồng, phân quyền Lark, adapter MISA qua mock và ký giả lập. Kiểm thử API bổ sung xác minh trạng thái WAITING/PARTIAL/COMPLETED và chặn đồng bộ/tải file ký từ luồng DEMO.
+- Đã thao tác trên app B2C: tạo/lưu hồ sơ giả lập, gửi duyệt, pháp chế duyệt, kế toán duyệt, điều phối mở ký, hai người ký lần lượt, hoàn tất. Không ký hoặc gửi tài liệu thật.
+- Diff phạm vi hợp đồng không có lỗi khoảng trắng. Không thay đổi các màn hình khác đang được chỉnh song song.
+
+Tự đánh giá theo skill agent-self-evaluation: chính xác 4/5 (đã xác minh local, chưa có MISA thật); đầy đủ 4/5 (MVP giả lập đủ luồng, đối chiếu pháp chế và tích hợp thật còn chờ); rõ ràng 4/5 (giao diện ghi rõ DEMO, cần UAT người dùng); khả năng sử dụng 4/5 (có hướng dẫn và tài khoản giả lập, chưa vận hành thật); ngắn gọn 4/5 (báo cáo tách khỏi giao diện, tài liệu cấu hình còn dài). Cải thiện tiếp theo khi có môi trường: UAT 8 mẫu, quyền Lark thực và mã trạng thái MISA.
+
+## Giới hạn trước vận hành
+
 - Mapping trường tự nhận diện phải được pháp chế đối chiếu từng mẫu, đặc biệt ô trống trong bảng và trường tùy chọn. Không tự suy ra ngưỡng tiền/thuế từ prototype.
 - Xuất Word là bản giữ bố cục gốc. Preview web chỉ để đọc nội dung; chưa có chuyển đổi PDF giữ bố cục trên máy chủ.
 - Mẫu có mã/hash nguồn; mỗi hồ sơ tạo mới lưu bản nguồn bất biến. File mẫu hiện hành thay đổi không đổi bản nguồn của hồ sơ cũ. Pháp chế quản lý bộ file hiện hành trên máy chủ; chưa có giao diện upload/phát hành mẫu mới.

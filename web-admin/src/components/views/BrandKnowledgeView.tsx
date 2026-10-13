@@ -1893,6 +1893,26 @@ export const BrandKnowledgeView: React.FC<BrandKnowledgeViewProps> = ({
       {/* ========================================================================= */}
       {(activeKnowledgeTab === 'BRAND_PROFILE' || activeKnowledgeTab === 'OVERVIEW_PIC') && (
         <div className="space-y-6 animate-in fade-in duration-150">
+          {/* Sub-tab toggle Brand Profile */}
+          <div className="flex items-center gap-2 p-1 bg-slate-100 rounded-lg border border-slate-200 w-fit">
+            <button
+              type="button"
+              onClick={() => setProfileSubTab('GENERAL')}
+              className="px-3 py-1.5 rounded-md text-xs font-semibold bg-white text-blue-700 shadow-2xs transition"
+            >
+              Thông Tin Pháp Nhân &amp; Định Vị
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setProfileSubTab('VISUAL_RULES');
+                setActiveKnowledgeTab('VISUAL_IDENTITY');
+              }}
+              className="px-3 py-1.5 rounded-md text-xs font-semibold text-slate-600 hover:text-slate-900 transition"
+            >
+              Quy Chuẩn Hình Ảnh Do&apos;s &amp; Don&apos;ts
+            </button>
+          </div>
           {/* Card 1: Thông tin pháp nhân & Định danh */}
           <div className="card-enterprise p-5 bg-white space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
