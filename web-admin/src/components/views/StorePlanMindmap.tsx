@@ -21,7 +21,14 @@ import {
   Layers,
   Maximize2,
   Minimize2,
+  Video,
+  Package,
 } from 'lucide-react';
+import {
+  PlatformLogo,
+  TikTokLogo,
+} from '../ui';
+import type { PlatformKey } from '../ui';
 
 export type MindmapBranchId =
   | 'VIDEO_AFFILIATE'
@@ -35,6 +42,8 @@ export type MindmapBranchId =
 interface BranchMetadata {
   id: MindmapBranchId;
   label: string;
+  shortLabel?: string;
+  platformKey?: PlatformKey;
   shortDesc: string;
   unitLabel: string;
   colorClass: string;
@@ -48,6 +57,8 @@ export const MINDMAP_BRANCHES: BranchMetadata[] = [
   {
     id: 'VIDEO_AFFILIATE',
     label: 'Video Affiliate',
+    shortLabel: 'Affiliate',
+    platformKey: 'TIKTOK',
     shortDesc: 'KOC TikTok có chi phí cast (KL1 → KL7)',
     unitLabel: 'Khung lương KL1 – KL7',
     colorClass: 'border-blue-300 text-blue-950',
@@ -58,6 +69,7 @@ export const MINDMAP_BRANCHES: BranchMetadata[] = [
   {
     id: 'SELF_CHANNEL',
     label: 'Kênh tự xây',
+    shortLabel: 'Tự xây',
     shortDesc: 'Sản xuất video kênh thương hiệu (Voice, Nhạc text, Remix, POV...)',
     unitLabel: 'Định dạng video kênh thương hiệu',
     colorClass: 'border-emerald-300 text-emerald-950',
@@ -68,6 +80,7 @@ export const MINDMAP_BRANCHES: BranchMetadata[] = [
   {
     id: 'FOC',
     label: 'Gửi mẫu miễn phí (FOC)',
+    shortLabel: 'Mẫu FOC',
     shortDesc: 'Suất gửi mẫu miễn phí cho KOC / TAP (0đ chi phí cast)',
     unitLabel: 'Nguồn mẫu FOC 0đ',
     colorClass: 'border-emerald-300 text-emerald-950',
@@ -79,6 +92,8 @@ export const MINDMAP_BRANCHES: BranchMetadata[] = [
   {
     id: 'FACEBOOK',
     label: 'Facebook',
+    shortLabel: 'Facebook',
+    platformKey: 'FACEBOOK',
     shortDesc: 'Facebook Reels & bài đăng gắn link',
     unitLabel: 'Hạng mục Facebook',
     colorClass: 'border-blue-300 text-blue-950',
@@ -89,6 +104,8 @@ export const MINDMAP_BRANCHES: BranchMetadata[] = [
   {
     id: 'THREADS',
     label: 'Threads',
+    shortLabel: 'Threads',
+    platformKey: 'THREADS',
     shortDesc: 'Bài đăng thảo luận & gắn link trên Threads',
     unitLabel: 'Hạng mục Threads',
     colorClass: 'border-slate-300 text-slate-900',
@@ -99,6 +116,8 @@ export const MINDMAP_BRANCHES: BranchMetadata[] = [
   {
     id: 'INSTA',
     label: 'Instagram',
+    shortLabel: 'Instagram',
+    platformKey: 'INSTA',
     shortDesc: 'Instagram Reels & Story gắn thẻ thương hiệu',
     unitLabel: 'Hạng mục Instagram',
     colorClass: 'border-rose-300 text-rose-950',
@@ -109,6 +128,8 @@ export const MINDMAP_BRANCHES: BranchMetadata[] = [
   {
     id: 'SHOPEE',
     label: 'Shopee Video',
+    shortLabel: 'Shopee',
+    platformKey: 'SHOPEE',
     shortDesc: 'Video gắn giỏ hàng Shopee',
     unitLabel: 'Hạng mục Shopee Video',
     colorClass: 'border-amber-300 text-amber-950',
@@ -117,6 +138,19 @@ export const MINDMAP_BRANCHES: BranchMetadata[] = [
     sliderAccent: 'accent-amber-600',
   },
 ];
+
+export function renderBranchIcon(branch: BranchMetadata, className = 'w-4 h-4 shrink-0') {
+  if (branch.platformKey) {
+    return <PlatformLogo platform={branch.platformKey} className={className} />;
+  }
+  if (branch.id === 'SELF_CHANNEL') {
+    return <Video className={`${className} text-emerald-600`} />;
+  }
+  if (branch.id === 'FOC') {
+    return <Package className={`${className} text-emerald-600`} />;
+  }
+  return <TikTokLogo className={className} />;
+}
 
 // Kiểm tra 1 dòng item thuộc nhánh Mindmap nào
 export function matchItemToBranch(item: InputPlanRowItem, branchId: MindmapBranchId): boolean {
@@ -625,10 +659,11 @@ export const StorePlanMindmap: React.FC<StorePlanMindmapProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap mt-2.5">
+        <div className="flex items-center gap-2 overflow-x-auto py-1 mt-2.5 scrollbar-none">
           {MINDMAP_BRANCHES.map(branch => {
             const stat = branchStatsMap[branch.id];
             const isEnabled = stat?.isEnabled;
+            const isPlatform = Boolean(branch.platformKey && branch.id !== 'VIDEO_AFFILIATE');
 
             return (
               <div
@@ -646,14 +681,18 @@ export const StorePlanMindmap: React.FC<StorePlanMindmapProps> = ({
                     handleEnableBranch(branch.id);
                   }
                 }}
-                className={`group inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-semibold transition select-none cursor-pointer ${
+                title={`${branch.label} (${branch.shortDesc})`}
+                className={`group shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-semibold transition select-none cursor-pointer ${
                   isEnabled
                     ? 'bg-primary text-white border-primary'
                     : 'bg-canvas text-ink-2 border-dashed border-line-strong hover:border-blue-400 hover:bg-surface'
                 }`}
               >
                 <GripVertical className={`w-3.5 h-3.5 ${isEnabled ? 'text-blue-200' : 'text-ink-3'}`} />
-                <span>{branch.label}</span>
+                {renderBranchIcon(branch, 'w-4 h-4 shrink-0')}
+                {!isPlatform && (
+                  <span>{branch.shortLabel || branch.label}</span>
+                )}
                 {isEnabled ? (
                   <>
                     <span className="px-1.5 py-0.5 rounded bg-white/20 text-2xs font-mono">
@@ -669,7 +708,7 @@ export const StorePlanMindmap: React.FC<StorePlanMindmapProps> = ({
                     </button>
                   </>
                 ) : (
-                  <span className="text-2xs text-accent font-medium">+ Bật nhánh</span>
+                  <span className="text-2xs text-accent font-medium">+ Bật</span>
                 )}
               </div>
             );
@@ -789,6 +828,7 @@ export const StorePlanMindmap: React.FC<StorePlanMindmapProps> = ({
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5">
+                        {renderBranchIcon(branch, 'w-4 h-4 shrink-0')}
                         <span className="font-semibold text-xs text-ink">{branch.label}</span>
                         {!branch.isFreeCast && budgetSharePct > 0 && (
                           <span className={`text-2xs font-mono font-semibold px-1.5 py-0.5 rounded border ${branch.badgeClass}`}>
@@ -854,8 +894,9 @@ export const StorePlanMindmap: React.FC<StorePlanMindmapProps> = ({
           <div className="p-4 bg-canvas border-b border-line flex flex-wrap items-center justify-between gap-3">
             <div>
               <div className="flex items-center gap-2">
-                <span className={`px-2 py-0.5 rounded-md text-xs font-semibold border ${selectedBranchMeta.badgeClass}`}>
-                  Nhánh: {selectedBranchMeta.label}
+                <span className={`px-2 py-0.5 rounded-md text-xs font-semibold border inline-flex items-center gap-1.5 ${selectedBranchMeta.badgeClass}`}>
+                  {renderBranchIcon(selectedBranchMeta, 'w-3.5 h-3.5 shrink-0')}
+                  <span>Nhánh: {selectedBranchMeta.label}</span>
                 </span>
                 <span className="text-xs text-ink-3">•</span>
                 <span className="text-xs font-semibold text-ink-2">{selectedBranchMeta.unitLabel}</span>

@@ -81,7 +81,14 @@ import { PlanApprovalStepper, deriveSignOff } from './PlanApprovalStepper';
 import { PlanChatDrawer, PlanChatButton } from './PlanChatDrawer';
 import { usePlanChat } from '../../lib/usePlanChat';
 import { PlanSyncBadge } from './PlanSyncBadge';
-import { ConfirmDialog } from '../ui';
+import {
+  ConfirmDialog,
+  ShopeeLogo,
+  FacebookLogo,
+  InstagramLogo,
+  ThreadsLogo,
+  TikTokLogo,
+} from '../ui';
 import { StorePlanMindmap } from './StorePlanMindmap';
 
 interface InputPlanBreakdownViewProps {
@@ -1719,13 +1726,19 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
           <div className="px-4 py-3">
             <div className="flex items-center justify-between text-2xs text-slate-500">
               <span className="font-medium">4. Đa sàn ngoài TikTok</span>
-              <span className="px-1.5 py-0.2 rounded bg-amber-50 text-amber-700 font-semibold">SP/FB/IG/Threads</span>
+              <span className="px-1.5 py-0.2 rounded bg-amber-50 text-amber-700 font-semibold">Đa sàn</span>
             </div>
             <div className="mt-1 flex items-baseline justify-between gap-2">
               <span className="text-sm font-semibold font-mono text-slate-900">{channelTotals.multiPlatform.qty} video</span>
               <span className="text-xs font-semibold font-mono text-amber-700">{formatVndShort(channelTotals.multiPlatform.budget)}</span>
             </div>
-            <div className="text-2xs text-slate-400 mt-0.5">Shopee, Facebook, Insta, Threads</div>
+            <div className="flex items-center gap-1.5 text-2xs text-slate-400 mt-1">
+              <ShopeeLogo className="w-3.5 h-3.5 shrink-0" />
+              <FacebookLogo className="w-3.5 h-3.5 shrink-0" />
+              <InstagramLogo className="w-3.5 h-3.5 shrink-0" />
+              <ThreadsLogo className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate">Shopee, FB, Insta, Threads</span>
+            </div>
           </div>
         </div>
 

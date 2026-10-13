@@ -9,52 +9,8 @@ import { QuickBookModal } from '../components/QuickBookModal';
 import { ImportExcelModal } from '../components/ImportExcelModal';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 
-import { CockpitView } from '../components/views/CockpitView';
-import { OverviewView } from '../components/views/OverviewView';
-import { BrandView } from '../components/views/BrandView';
-import { BrandProfilesView } from '../components/views/BrandProfilesView';
-import { ContentView } from '../components/views/ContentView';
-import { BookingView } from '../components/views/BookingView';
-import type { ContractIntent } from '../components/views/ContractManagementView';
-import { ManagerView } from '../components/views/ManagerView';
-import { LeaderboardView } from '../components/views/LeaderboardView';
-import { BrandHubView } from '../components/views/BrandHubView';
-import { InputPlanBreakdownView } from '../components/views/InputPlanBreakdownView';
-import SampleTrackerView from '../components/views/SampleTrackerView';
-import PerformanceP3View from '../components/views/PerformanceP3View';
 import dynamic from 'next/dynamic';
-import { PushProductsView } from '../components/views/PushProductsView';
-import { SelfChannelCtvHubView } from '../components/views/SelfChannelCtvHubView';
-import { StoreManagementView } from '../components/views/StoreManagementView';
-
-const MasterDataHubView = dynamic(
-  () => import('../components/views/MasterDataHubView').then((mod) => mod.MasterDataHubView),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="bg-surface rounded-xl border border-line p-12 text-center text-ink-3 text-xs">
-        Đang tải dữ liệu gốc…
-      </div>
-    ),
-  }
-);
-const KocListingBatchHubView = dynamic(
-  () => import('../components/views/KocListingBatchHubView').then((mod) => mod.KocListingBatchHubView),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="bg-surface rounded-xl border border-line p-12 text-center text-ink-3 text-xs">
-        Đang tải Listing & Air Video…
-      </div>
-    ),
-  }
-);
-import { KocKolHubView } from '../components/views/KocKolHubView';
-import { ContentAngleSetupView } from '../components/views/ContentAngleSetupView';
-import { CentralizedRbacHubView } from '../components/views/CentralizedRbacHubView';
-import { isThirdPartyPartner } from '../lib/thirdPartyAccessData';
-import { isTabAllowedForRole, getAllowedTabsForRole, getDefaultLandingTabForRole } from '../lib/rbacData';
-import { Button, PageActiveContext } from '../components/ui';
+import type { ContractIntent } from '../components/views/ContractManagementView';
 
 function ViewLoading() {
   return (
@@ -69,10 +25,35 @@ function ViewLoading() {
   );
 }
 
-const KocMasterDataView = dynamic(() => import('../components/views/KocMasterDataView').then(mod => mod.KocMasterDataView), { loading: ViewLoading });
-const ContractManagementView = dynamic(() => import('../components/views/ContractManagementView').then(mod => mod.ContractManagementView), { loading: ViewLoading });
-const WeeklyAdsReportHubView = dynamic(() => import('../components/views/WeeklyAdsReportHubView').then(mod => mod.WeeklyAdsReportHubView), { loading: ViewLoading });
-const ExecutiveDashboardReportsView = dynamic(() => import('../components/views/ExecutiveDashboardReportsView').then(mod => mod.ExecutiveDashboardReportsView), { loading: ViewLoading });
+import { CockpitView } from '../components/views/CockpitView';
+const OverviewView = dynamic(() => import('../components/views/OverviewView').then(m => m.OverviewView), { loading: ViewLoading });
+const BrandView = dynamic(() => import('../components/views/BrandView').then(m => m.BrandView), { loading: ViewLoading });
+const BrandProfilesView = dynamic(() => import('../components/views/BrandProfilesView').then(m => m.BrandProfilesView), { loading: ViewLoading });
+const ContentView = dynamic(() => import('../components/views/ContentView').then(m => m.ContentView), { loading: ViewLoading });
+const BookingView = dynamic(() => import('../components/views/BookingView').then(m => m.BookingView), { loading: ViewLoading });
+const ManagerView = dynamic(() => import('../components/views/ManagerView').then(m => m.ManagerView), { loading: ViewLoading });
+const LeaderboardView = dynamic(() => import('../components/views/LeaderboardView').then(m => m.LeaderboardView), { loading: ViewLoading });
+const BrandHubView = dynamic(() => import('../components/views/BrandHubView').then(m => m.BrandHubView), { loading: ViewLoading });
+const InputPlanBreakdownView = dynamic(() => import('../components/views/InputPlanBreakdownView').then(m => m.InputPlanBreakdownView), { loading: ViewLoading });
+const SampleTrackerView = dynamic(() => import('../components/views/SampleTrackerView'), { loading: ViewLoading });
+const PerformanceP3View = dynamic(() => import('../components/views/PerformanceP3View'), { loading: ViewLoading });
+const PushProductsView = dynamic(() => import('../components/views/PushProductsView').then(m => m.PushProductsView), { loading: ViewLoading });
+const SelfChannelCtvHubView = dynamic(() => import('../components/views/SelfChannelCtvHubView').then(m => m.SelfChannelCtvHubView), { loading: ViewLoading });
+const StoreManagementView = dynamic(() => import('../components/views/StoreManagementView').then(m => m.StoreManagementView), { loading: ViewLoading });
+const KocKolHubView = dynamic(() => import('../components/views/KocKolHubView').then(m => m.KocKolHubView), { loading: ViewLoading });
+const ContentAngleSetupView = dynamic(() => import('../components/views/ContentAngleSetupView').then(m => m.ContentAngleSetupView), { loading: ViewLoading });
+const CentralizedRbacHubView = dynamic(() => import('../components/views/CentralizedRbacHubView').then(m => m.CentralizedRbacHubView), { loading: ViewLoading });
+const MasterDataHubView = dynamic(() => import('../components/views/MasterDataHubView').then(m => m.MasterDataHubView), { loading: ViewLoading });
+const KocListingBatchHubView = dynamic(() => import('../components/views/KocListingBatchHubView').then(m => m.KocListingBatchHubView), { loading: ViewLoading });
+const KocMasterDataView = dynamic(() => import('../components/views/KocMasterDataView').then(m => m.KocMasterDataView), { loading: ViewLoading });
+const CtvManagementView = dynamic(() => import('../components/views/CtvManagementView').then(m => m.CtvManagementView), { loading: ViewLoading });
+const ContractManagementView = dynamic(() => import('../components/views/ContractManagementView').then(m => m.ContractManagementView), { loading: ViewLoading });
+const WeeklyAdsReportHubView = dynamic(() => import('../components/views/WeeklyAdsReportHubView').then(m => m.WeeklyAdsReportHubView), { loading: ViewLoading });
+const ExecutiveDashboardReportsView = dynamic(() => import('../components/views/ExecutiveDashboardReportsView').then(m => m.ExecutiveDashboardReportsView), { loading: ViewLoading });
+
+import { isThirdPartyPartner } from '../lib/thirdPartyAccessData';
+import { isTabAllowedForRole, getAllowedTabsForRole, getDefaultLandingTabForRole } from '../lib/rbacData';
+import { Button, PageActiveContext } from '../components/ui';
 
 import { 
   USERS, 
@@ -85,12 +66,14 @@ import {
   INITIAL_STORE_PORTFOLIOS,
   INITIAL_KOC_LISTINGS
 } from '../lib/mockData';
+import { INITIAL_CONTRIBUTORS } from '../lib/selfChannelData';
 import { 
   UserProfile, 
   BookingDealItem, 
   DealStatus,
   SlaTask, 
   KocItem, 
+  Contributor,
   CampaignItem, 
   StaffDetailedPlanItem, 
   MonthlyStaffAllocation,
@@ -136,11 +119,28 @@ function KeepAliveTab({
 
 export default function App() {
   const router = useRouter();
-  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
-  const [isLoadingAuth, setIsLoadingAuth] = useState<boolean>(true);
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => {
+    if (typeof window !== 'undefined') {
+      const savedUserId = localStorage.getItem('upbase_selected_user_id');
+      if (savedUserId) {
+        return USERS.find(u => u.id === savedUserId) || USERS[0];
+      }
+    }
+    return null;
+  });
+  const [isLoadingAuth, setIsLoadingAuth] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      const savedUserId = localStorage.getItem('upbase_selected_user_id');
+      if (savedUserId && USERS.some(u => u.id === savedUserId)) {
+        return false;
+      }
+    }
+    return true;
+  });
   const [activeTab, setActiveTab] = useState<TabKey>('dashboard-bi');
   const [selectedBrandContext, setSelectedBrandContext] = useState<string>('ALL');
   const [selectedStoreContext, setSelectedStoreContext] = useState<string>('');
+  const [selectedCtvContext, setSelectedCtvContext] = useState<string | null>(null);
 
   // Notifications Toast (Enhanced with Type & Dismiss)
   const [toastData, setToastData] = useState<{ message: string; type: 'success' | 'warning' | 'info' | 'error' } | null>(null);
@@ -250,6 +250,7 @@ export default function App() {
   };
 
   const [kocs, setKocs] = useState<KocItem[]>(INITIAL_KOCS);
+  const [contributors, setContributors] = useState<Contributor[]>(INITIAL_CONTRIBUTORS);
   const [deals, setDeals] = useState<BookingDealItem[]>(INITIAL_DEALS);
   const [tasks, setTasks] = useState<SlaTask[]>(INITIAL_TASKS);
   const [brands, setBrands] = useState<BrandDetail[]>(INITIAL_BRANDS);
@@ -629,6 +630,21 @@ export default function App() {
     showToast(`Đã cập nhật hồ sơ pháp lý của ${updatedKoc.stageName}`);
   };
 
+  const handleContributorCreated = (newCtv: Contributor) => {
+    setContributors(prev => [newCtv, ...prev]);
+    showToast(`Đã thêm CTV / VJ ${newCtv.name} vào danh bạ`);
+  };
+
+  const handleContributorUpdated = (updatedCtv: Contributor) => {
+    setContributors(prev => prev.map(c => c.id === updatedCtv.id ? updatedCtv : c));
+    showToast(`Đã cập nhật hồ sơ CTV / VJ ${updatedCtv.name}`);
+  };
+
+  const handleContributorDeleted = (ctvId: string) => {
+    setContributors(prev => prev.filter(c => c.id !== ctvId));
+    showToast('Đã xóa CTV / VJ khỏi danh sách');
+  };
+
   const handleTaskActionClick = (task: SlaTask) => {
     if (task.dealCode) {
       const matched = deals.find(d => d.dealCode === task.dealCode);
@@ -656,7 +672,7 @@ export default function App() {
     'input-plan': { title: 'Kế hoạch tháng', subtitle: 'Ngân sách, kênh và nhân sự booking theo từng tháng' },
     'koc-listing': { title: 'Đề xuất KOC', subtitle: 'Chu kỳ đợt ngày 10-20-30, duyệt song song nhãn hàng và KOC, theo dõi lên sóng' },
     'self-channel-hub': { title: 'Cổng cộng tác viên', subtitle: 'Sản xuất video kênh tự xây theo trụ cột nội dung và nghiệm thu clip' },
-    'ctv-master': { title: 'Danh bạ CTV', subtitle: 'Hồ sơ, định mức đơn giá và đối soát sản lượng cộng tác viên' },
+    'ctv-master': { title: 'Danh bạ CTV / VJ', subtitle: 'Hồ sơ pháp lý CCCD, hợp đồng Partnership, đơn giá, địa chỉ gửi mẫu 48h và lịch sử sản xuất video kênh Brand' },
     'master-data': { title: 'Dữ liệu gốc', subtitle: 'Thương hiệu, gian hàng, sản phẩm, ngành hàng và khung lương' },
     'push-products': { title: 'Sản phẩm đẩy', subtitle: 'Danh mục sản phẩm trọng tâm, tồn kho và mức hoa hồng' },
     stores: { title: 'Hồ sơ gian hàng', subtitle: 'Chỉ số vận hành, hạn mức ngân sách, bàn giao PIC và liên kết thương hiệu' },
@@ -864,10 +880,14 @@ export default function App() {
               brands={brands}
               stores={storePortfolios}
               kocs={kocs}
+              contributors={contributors}
               onNotify={showToast}
               onOpenQuickBookWithKoc={handleOpenQuickBookWithKoc}
               onKocCreated={handleKocCreated}
               onKocUpdated={handleKocUpdated}
+              onContributorCreated={handleContributorCreated}
+              onContributorUpdated={handleContributorUpdated}
+              onContributorDeleted={handleContributorDeleted}
               onUpdateStore={handleUpdateStore}
               onNavigateToBrandProfile={(brandName) => {
                 if (brandName && brandName !== 'ALL') {
@@ -880,6 +900,10 @@ export default function App() {
                   setSelectedStoreContext(storeName);
                 }
                 setActiveTab('stores');
+              }}
+              onNavigateToCtvProfile={(ctvId) => {
+                setSelectedCtvContext(ctvId || null);
+                setActiveTab('ctv-master');
               }}
             />
           </KeepAliveTab>
@@ -899,6 +923,19 @@ export default function App() {
               onNotify={showToast}
               onOpenPushProducts={() => setActiveTab('push-products')}
               onNavigateToBrand={['ADMIN', 'MANAGER'].includes(currentUser.role) ? () => setActiveTab('campaigns') : undefined}
+            />
+          </KeepAliveTab>
+
+          <KeepAliveTab tabKey="ctv-master" currentTab={activeTab}>
+            <CtvManagementView
+              contributors={contributors}
+              currentUser={currentUser}
+              selectedCtvId={selectedCtvContext}
+              onContributorCreated={handleContributorCreated}
+              onContributorUpdated={handleContributorUpdated}
+              onOpenSelfChannelHub={() => setActiveTab('self-channel-hub')}
+              onNavigateBackToMaster={() => setActiveTab('master-data')}
+              onNotify={showToast}
             />
           </KeepAliveTab>
 

@@ -95,7 +95,9 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
     }
   }
 
-  const activePortal = portals.find(p => p.id === selectedPortalId) || portals[0];
+  const activePortal = useMemo(() => {
+    return portals.find(p => p.id === selectedPortalId) || portals[0];
+  }, [portals, selectedPortalId]);
 
   // The 5 Universal Enterprise Hub Tabs
   const [activeTab, setActiveTab] = useState<BrandHubPillarTab>('OVERVIEW');

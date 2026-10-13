@@ -948,12 +948,14 @@ function CtvProfileDetail({
     {
       key: 'status',
       header: 'Trạng thái',
-      width: 135,
+      width: 145,
       render: (t) => {
         if (t.status === 'PAID') return <Status tone="positive">Đã quyết toán</Status>;
         if (t.status === 'ACCEPTED_COMPLETED') return <Status tone="positive">Đã nghiệm thu</Status>;
-        if (t.status === 'DRAFT_VIDEO_SUBMITTED') return <Status tone="info">Chờ duyệt Demo</Status>;
+        if (t.status === 'INTERNAL_QA_PASSED') return <Status tone="info">Chờ Brand nghiệm thu</Status>;
+        if (t.status === 'DRAFT_VIDEO_SUBMITTED') return <Status tone="info">Chờ QA nội bộ</Status>;
         if (t.status === 'SCRIPT_PENDING_REVIEW') return <Status tone="warning">Chờ duyệt kịch bản</Status>;
+        if (t.status === 'BRAND_ORIENTATION_PENDING') return <Status tone="warning">Chờ Brand duyệt VJ</Status>;
         return <Status tone="info">Đang quay dựng</Status>;
       },
     },

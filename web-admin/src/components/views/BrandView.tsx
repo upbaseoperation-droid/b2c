@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { formatVndShort } from '../../lib/format';
 import { Tabs, PageActions, Button } from '../ui';
 import {
@@ -115,7 +115,9 @@ export const BrandView: React.FC<BrandViewProps> = ({
   const [retainerHealthList] = useState<BrandRetainerHealth[]>(INITIAL_BRAND_RETAINER_HEALTH);
 
   // Active Selected Guideline
-  const currentGuideline = guidelines.find(g => g.brandName === selectedBrandName) || guidelines[0];
+  const currentGuideline = useMemo(() => {
+    return guidelines.find(g => g.brandName === selectedBrandName) || guidelines[0];
+  }, [guidelines, selectedBrandName]);
 
   // ----------------------------------------------------
   // HANDLERS FOR BRIEF
@@ -229,38 +231,42 @@ export const BrandView: React.FC<BrandViewProps> = ({
   };
 
   // ----------------------------------------------------
-  // CALCULATIONS & METRICS
+  // CALCULATIONS & METRICS (Memoized for high performance)
   // ----------------------------------------------------
-  const filteredCampaigns = campaigns.filter(c => {
-    const matchStatus = selectedFilter === 'ALL'
-      || (selectedFilter === 'ACTIVE' && c.status === 'ACTIVE')
-      || (selectedFilter === 'UPCOMING' && c.status === 'UPCOMING')
-      || (selectedFilter === 'DRAFT' && c.briefStatus === 'DRAFT');
+  const filteredCampaigns = useMemo(() => {
+    return campaigns.filter(c => {
+      const matchStatus = selectedFilter === 'ALL'
+        || (selectedFilter === 'ACTIVE' && c.status === 'ACTIVE')
+        || (selectedFilter === 'UPCOMING' && c.status === 'UPCOMING')
+        || (selectedFilter === 'DRAFT' && c.briefStatus === 'DRAFT');
 
-    const matchSearch = !searchCampaign.trim()
-      || c.title.toLowerCase().includes(searchCampaign.toLowerCase())
-      || c.code.toLowerCase().includes(searchCampaign.toLowerCase())
-      || c.brand.toLowerCase().includes(searchCampaign.toLowerCase());
+      const matchSearch = !searchCampaign.trim()
+        || c.title.toLowerCase().includes(searchCampaign.toLowerCase())
+        || c.code.toLowerCase().includes(searchCampaign.toLowerCase())
+        || c.brand.toLowerCase().includes(searchCampaign.toLowerCase());
 
-    return matchStatus && matchSearch;
-  });
+      return matchStatus && matchSearch;
+    });
+  }, [campaigns, selectedFilter, searchCampaign]);
 
-  const totalCampaignBudget = campaigns.reduce((sum, c) => sum + (c.budget || 0), 0);
-  const totalCampaignGmv = campaigns.reduce((sum, c) => sum + (c.currentGmv || 0), 0);
-  const activeCampaignsCount = campaigns.filter(c => c.status === 'ACTIVE').length;
+  const totalCampaignBudget = useMemo(() => campaigns.reduce((sum, c) => sum + (c.budget || 0), 0), [campaigns]);
+  const totalCampaignGmv = useMemo(() => campaigns.reduce((sum, c) => sum + (c.currentGmv || 0), 0), [campaigns]);
+  const activeCampaignsCount = useMemo(() => campaigns.filter(c => c.status === 'ACTIVE').length, [campaigns]);
 
-  const filteredKeywords = (currentGuideline?.blacklistKeywords || []).filter(k => {
-    const matchSeverity = severityFilter === 'ALL' || k.severity === severityFilter;
-    const matchSearch = !keywordSearch.trim()
-      || k.keyword.toLowerCase().includes(keywordSearch.toLowerCase())
-      || k.rationale.toLowerCase().includes(keywordSearch.toLowerCase())
-      || (k.alternativeSuggestion && k.alternativeSuggestion.toLowerCase().includes(keywordSearch.toLowerCase()));
-    return matchSeverity && matchSearch;
-  });
+  const filteredKeywords = useMemo(() => {
+    return (currentGuideline?.blacklistKeywords || []).filter(k => {
+      const matchSeverity = severityFilter === 'ALL' || k.severity === severityFilter;
+      const matchSearch = !keywordSearch.trim()
+        || k.keyword.toLowerCase().includes(keywordSearch.toLowerCase())
+        || k.rationale.toLowerCase().includes(keywordSearch.toLowerCase())
+        || (k.alternativeSuggestion && k.alternativeSuggestion.toLowerCase().includes(keywordSearch.toLowerCase()));
+      return matchSeverity && matchSearch;
+    });
+  }, [currentGuideline?.blacklistKeywords, severityFilter, keywordSearch]);
 
-  const pendingApprovals = approvalQueue.filter(i => i.status === 'PENDING');
-  const pendingKocCount = pendingApprovals.filter(i => i.submissionRound === 'ROUND_1_KOC').length;
-  const pendingScriptCount = pendingApprovals.filter(i => i.submissionRound === 'ROUND_2_SCRIPT').length;
+  const pendingApprovals = useMemo(() => approvalQueue.filter(i => i.status === 'PENDING'), [approvalQueue]);
+  const pendingKocCount = useMemo(() => pendingApprovals.filter(i => i.submissionRound === 'ROUND_1_KOC').length, [pendingApprovals]);
+  const pendingScriptCount = useMemo(() => pendingApprovals.filter(i => i.submissionRound === 'ROUND_2_SCRIPT').length, [pendingApprovals]);
 
   return (
     <div className="space-y-6 animate-in fade-in duration-200">

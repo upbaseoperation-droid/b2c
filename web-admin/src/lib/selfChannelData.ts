@@ -609,7 +609,7 @@ export const INITIAL_CONTRIBUTORS: Contributor[] = [
 // 4. DANH SÁCH TASK SẢN XUẤT VIDEO SELF CHANNEL (VIDEO PIPELINE)
 // ==========================================
 export const INITIAL_SELF_CHANNEL_TASKS: SelfChannelVideoTask[] = [
-  // 1. OPEN_TASK (Mở task chờ nhận)
+  // 1. OPEN_TASK (Mở task chờ phân bổ VJ từ Kế hoạch tháng)
   {
     id: 'task-sc-01',
     taskCode: 'SC-KUTI-202610-01',
@@ -618,19 +618,62 @@ export const INITIAL_SELF_CHANNEL_TASKS: SelfChannelVideoTask[] = [
     brandName: 'Kutieskin Mama & Baby',
     storeId: 'store-kutieskin-tts',
     storeName: 'Kutieskin Official Store (TikTok)',
+    planMonth: '2026/10',
+    videoFormat: 'Review voice',
+    contentPic: 'Lê Phương Thảo',
     pillarId: 'pillar-edu',
     pillarName: 'Giáo Dục / Lời Khuyên Chuyên Gia',
     pillarCode: 'EDUCATIONAL',
     linkedSku: 'KUTIE-SOOTH-30G',
     productName: 'Kem Bôi Dịu Da Kutieskin 30g',
     remuneration: 1500000,
-    deadline: '2026-10-18',
+    deadline: '2026-10-22',
+    brandApprovalMode: 'BRAND_REVIEW_REQUIRED',
+    brandOrientationStatus: 'PENDING',
+    sampleShippingStatus: 'PENDING_SHIP',
     status: 'OPEN_TASK',
     feedbackLogs: [],
     createdAt: '2026-10-06T08:00:00Z'
   },
+
+  // 1B. BRAND_ORIENTATION_PENDING (Đã chọn VJ & Góc kịch bản -> Chờ Brand duyệt định hướng 48h)
+  {
+    id: 'task-sc-11',
+    taskCode: 'SC-KUTI-202610-11',
+    title: 'So sánh thực tế: Bôi kem dưỡng ẩm khi da bé còn ẩm vs khi da đã khô',
+    brandId: 'brand-kutieskin',
+    brandName: 'Kutieskin Mama & Baby',
+    storeId: 'store-kutieskin-tts',
+    storeName: 'Kutieskin Official Store (TikTok)',
+    planMonth: '2026/10',
+    videoFormat: 'POV',
+    contentPic: 'Lê Phương Thảo',
+    pillarId: 'pillar-showcase',
+    pillarName: 'Demo Trải Nghiệm & Hướng Dẫn Sử Dụng',
+    pillarCode: 'PRODUCT_SHOWCASE',
+    linkedSku: 'KUTIE-SOOTH-30G',
+    productName: 'Kem Bôi Dịu Da Kutieskin 30g',
+    remuneration: 1500000,
+    deadline: '2026-10-19',
+    contributorId: 'ctv-1',
+    contributorName: 'Nguyễn Hoàng Yến',
+    contributorAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
+    brandApprovalMode: 'BRAND_REVIEW_REQUIRED',
+    brandOrientationStatus: 'PENDING',
+    brandOrientationSubmittedAt: '2026-10-11T09:00:00Z',
+    brandOrientationSlaHoursRemaining: 6,
+    sampleShippingStatus: 'ON_HAND_AT_HOME',
+    status: 'BRAND_ORIENTATION_PENDING',
+    scriptContent: {
+      hook: 'Cùng 1 tuýp kem Kutieskin nhưng bôi sai thời điểm hiệu quả giảm một nửa!',
+      body: 'Chia đôi màn hình: Bên trái bôi ngay trong 3 phút sau tắm, kem thấm tiệp mịn màng. Bên phải đợi 30 phút da khô mới bôi.',
+      cta: 'Mẹ lưu ngay quy tắc 3 phút vàng và bấm giỏ hàng săn combo tắm + dưỡng nhé!'
+    },
+    feedbackLogs: [],
+    createdAt: '2026-10-10T15:00:00Z'
+  },
   
-  // 2. SCRIPT_PENDING_REVIEW (Chờ duyệt kịch bản)
+  // 2. SCRIPT_PENDING_REVIEW (Chờ duyệt kịch bản chi tiết - SLA 24h)
   {
     id: 'task-sc-02',
     taskCode: 'SC-KUTI-202610-02',
@@ -639,16 +682,22 @@ export const INITIAL_SELF_CHANNEL_TASKS: SelfChannelVideoTask[] = [
     brandName: 'Kutieskin Mama & Baby',
     storeId: 'store-kutieskin-tts',
     storeName: 'Kutieskin Official Store (TikTok)',
+    planMonth: '2026/10',
+    videoFormat: 'Unbox Voice',
+    contentPic: 'Lê Phương Thảo',
     pillarId: 'pillar-showcase',
     pillarName: 'Demo Trải Nghiệm & Hướng Dẫn Sử Dụng',
     pillarCode: 'PRODUCT_SHOWCASE',
     linkedSku: 'KUTIE-SOOTH-30G',
     productName: 'Kem Bôi Dịu Da Kutieskin 30g',
-    remuneration: 1000000,
-    deadline: '2026-10-15',
+    remuneration: 1500000,
+    deadline: '2026-10-17',
     contributorId: 'ctv-1',
     contributorName: 'Nguyễn Hoàng Yến',
     contributorAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
+    brandApprovalMode: 'UPBASE_DELEGATED',
+    brandOrientationStatus: 'DELEGATED',
+    sampleShippingStatus: 'ON_HAND_AT_HOME',
     status: 'SCRIPT_PENDING_REVIEW',
     scriptContent: {
       hook: 'Nhiều mẹ sợ bôi kem cho bé bị bết dính bí da, nhìn kỹ thử nghiệm này xem có thật không nha!',
@@ -660,7 +709,7 @@ export const INITIAL_SELF_CHANNEL_TASKS: SelfChannelVideoTask[] = [
     createdAt: '2026-10-05T09:00:00Z'
   },
 
-  // 3. SCRIPT_APPROVED (Kịch bản đã duyệt -> Đang quay dựng)
+  // 3. SCRIPT_APPROVED (Kịch bản đã duyệt -> Đang giao hàng mẫu / Đang quay dựng)
   {
     id: 'task-sc-03',
     taskCode: 'SC-KUTI-202610-03',
@@ -669,16 +718,24 @@ export const INITIAL_SELF_CHANNEL_TASKS: SelfChannelVideoTask[] = [
     brandName: 'Kutieskin Mama & Baby',
     storeId: 'store-kutieskin-tts',
     storeName: 'Kutieskin Official Store (TikTok)',
+    planMonth: '2026/10',
+    videoFormat: 'POV',
+    contentPic: 'Lê Phương Thảo',
     pillarId: 'pillar-story',
     pillarName: 'Tình Huống / Drama Gia Đình Nuôi Con',
     pillarCode: 'STORYTELLING',
     linkedSku: 'KUTIE-MOSQ-20ML',
     productName: 'Tinh Chất Bôi Muỗi Đốt Kutieskin 20ml',
-    remuneration: 1500000,
-    deadline: '2026-10-14',
+    remuneration: 1600000,
+    deadline: '2026-10-16',
     contributorId: 'ctv-4',
     contributorName: 'Phạm Đức Minh & Bé Gấu',
     contributorAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80',
+    brandApprovalMode: 'BRAND_REVIEW_REQUIRED',
+    brandOrientationStatus: 'APPROVED',
+    sampleShippingStatus: 'SHIPPING',
+    sampleTrackingCode: 'SPXVN048291823',
+    sampleShippedAt: '2026-10-05T10:00:00Z',
     status: 'SCRIPT_APPROVED',
     scriptContent: {
       hook: 'Nửa đêm con khóc thét vì muỗi cắn mí mắt, mẹ xem cách bố xử lý chỉ sau 1 nốt nhạc!',
@@ -690,7 +747,7 @@ export const INITIAL_SELF_CHANNEL_TASKS: SelfChannelVideoTask[] = [
       {
         id: 'fb-01',
         version: 1,
-        reviewedBy: 'Khánh Vy (B2C Lead)',
+        reviewedBy: 'Lê Phương Thảo (Content B2C)',
         reviewedAt: '2026-10-04T16:00:00Z',
         type: 'SCRIPT',
         verdict: 'APPROVED',
@@ -700,7 +757,7 @@ export const INITIAL_SELF_CHANNEL_TASKS: SelfChannelVideoTask[] = [
     createdAt: '2026-10-03T09:00:00Z'
   },
 
-  // 4. DRAFT_VIDEO_SUBMITTED (Chờ duyệt video nháp)
+  // 4. DRAFT_VIDEO_SUBMITTED (Chờ Content B2C duyệt QA nội bộ vòng 1)
   {
     id: 'task-sc-04',
     taskCode: 'SC-KUTI-202610-04',
@@ -709,16 +766,24 @@ export const INITIAL_SELF_CHANNEL_TASKS: SelfChannelVideoTask[] = [
     brandName: 'Kutieskin Mama & Baby',
     storeId: 'store-kutieskin-tts',
     storeName: 'Kutieskin Official Store (TikTok)',
+    planMonth: '2026/10',
+    videoFormat: 'Review voice',
+    contentPic: 'Lê Phương Thảo',
     pillarId: 'pillar-edu',
     pillarName: 'Giáo Dục / Lời Khuyên Chuyên Gia',
     pillarCode: 'EDUCATIONAL',
     linkedSku: 'KUTIE-BATH-250ML',
     productName: 'Nước Tắm Gội Thảo Dược Kutieskin 250ml',
-    remuneration: 1500000,
-    deadline: '2026-10-12',
+    remuneration: 1800000,
+    deadline: '2026-10-15',
     contributorId: 'ctv-3',
     contributorName: 'Dược Sĩ Lê Mai Anh',
     contributorAvatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=200&q=80',
+    brandApprovalMode: 'BRAND_REVIEW_REQUIRED',
+    brandOrientationStatus: 'APPROVED',
+    sampleShippingStatus: 'DELIVERED',
+    sampleTrackingCode: 'GHN-88291042',
+    sampleDeliveredAt: '2026-10-04T14:00:00Z',
     status: 'DRAFT_VIDEO_SUBMITTED',
     scriptContent: {
       hook: 'Sai lầm 90% mẹ bỉm mắc phải: Đợi da con khô cong mới bôi kem ẩm!',
@@ -728,6 +793,7 @@ export const INITIAL_SELF_CHANNEL_TASKS: SelfChannelVideoTask[] = [
     videoDeliverables: {
       currentVersion: 1,
       draftVideoUrl: 'https://drive.google.com/kutieskin-draft-v1-maianh.mp4',
+      storeDriveFolderUrl: 'https://drive.google.com/drive/folders/store-kutieskin-tts-oct2026',
       captionSuggested: 'Thời điểm vàng 3 phút khóa ẩm cho da bé không phải mẹ nào cũng biết! #kutieskin #chamsocdabe #duocsi',
       durationSeconds: 48,
       submittedAt: '2026-10-07T11:00:00Z'
@@ -736,7 +802,70 @@ export const INITIAL_SELF_CHANNEL_TASKS: SelfChannelVideoTask[] = [
     createdAt: '2026-10-02T10:00:00Z'
   },
 
-  // 5. ACCEPTED_COMPLETED (Đã nghiệm thu - Chờ chi trả)
+  // 4B. INTERNAL_QA_PASSED (Đã qua QA nội bộ Content B2C -> Chờ Brand nghiệm thu & Đăng kênh chính chủ)
+  {
+    id: 'task-sc-12',
+    taskCode: 'SC-SEN-202610-12',
+    title: 'Soi độ sạch lỗ chân lông vùng cánh mũi sau khi rửa bọt tơ tằm Senka',
+    brandId: 'brand-senka',
+    brandName: 'Senka Skincare Nhật Bản',
+    storeId: 'store-senka-tts',
+    storeName: 'Senka Official Store (TikTok)',
+    planMonth: '2026/10',
+    videoFormat: 'Review voice',
+    contentPic: 'Lương Thị Như Quỳnh',
+    pillarId: 'pil-sen-02',
+    pillarName: 'Bí Quyết Làm Sạch Sâu Cho Da Dầu Mụn',
+    pillarCode: 'EDUCATIONAL',
+    linkedSku: 'SEN-WHIP-ACNE-100G',
+    productName: 'Sữa Rửa Mặt Senka Perfect Whip Acne Care 100g',
+    remuneration: 1400000,
+    deadline: '2026-10-15',
+    contributorId: 'ctv-6',
+    contributorName: 'Trần Thu Thảo (Dược Sĩ)',
+    contributorAvatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80',
+    brandApprovalMode: 'BRAND_REVIEW_REQUIRED',
+    brandOrientationStatus: 'APPROVED',
+    sampleShippingStatus: 'DELIVERED',
+    sampleTrackingCode: 'VTP-99102834',
+    status: 'INTERNAL_QA_PASSED',
+    scriptContent: {
+      hook: 'Tại sao rửa mặt ngày 2 lần mà mụn đầu đen ở mũi vẫn mọc dày đặc?',
+      body: 'Dùng camera soi da phóng đại 50x trước và sau khi rửa mặt bằng bọt tơ tằm trắng Senka Acne Care.',
+      cta: 'Da dầu mụn nhạy cảm chốt ngay tuýp xanh lá Senka tại giỏ hàng chính hãng nhé!'
+    },
+    videoDeliverables: {
+      currentVersion: 1,
+      draftVideoUrl: 'https://drive.google.com/senka-acne-camera50x-v1.mp4',
+      finalVideoUrl: 'https://drive.google.com/senka-acne-camera50x-clean-no-watermark.mp4',
+      storeDriveFolderUrl: 'https://drive.google.com/drive/folders/store-senka-tts-oct2026',
+      captionSuggested: 'Soi cận cảnh lỗ chân lông sạch thoáng sau lớp bọt tơ tằm Senka Acne Care ✨ #senka #perfectwhip',
+      durationSeconds: 44,
+      submittedAt: '2026-10-11T16:00:00Z',
+      internalQaApprovedBy: 'Lương Thị Như Quỳnh (Content B2C)',
+      internalQaApprovedAt: '2026-10-12T09:30:00Z'
+    },
+    feedbackLogs: [
+      {
+        id: 'fb-12',
+        version: 1,
+        reviewedBy: 'Lương Thị Như Quỳnh (Content B2C)',
+        reviewedAt: '2026-10-12T09:30:00Z',
+        type: 'VIDEO',
+        verdict: 'APPROVED',
+        comment: 'Đã kiểm tra QA nội bộ đạt 4/4 tiêu chí, file sạch đã tải lên Drive tổng gian hàng Senka. Chờ Brand nghiệm thu & lên sóng.',
+        checklist: {
+          hookCompliant: true,
+          productAppearance: true,
+          audioClear: true,
+          guidelinesFollowed: true
+        }
+      }
+    ],
+    createdAt: '2026-10-06T08:00:00Z'
+  },
+
+  // 5. ACCEPTED_COMPLETED (Đã nghiệm thu & Đăng kênh Brand - Chờ lập DNTT quyết toán)
   {
     id: 'task-sc-05',
     taskCode: 'SC-KUTI-202610-05',
@@ -745,6 +874,9 @@ export const INITIAL_SELF_CHANNEL_TASKS: SelfChannelVideoTask[] = [
     brandName: 'Kutieskin Mama & Baby',
     storeId: 'store-kutieskin-tts',
     storeName: 'Kutieskin Official Store (TikTok)',
+    planMonth: '2026/10',
+    videoFormat: 'Nhạc text',
+    contentPic: 'Lương Thị Như Quỳnh',
     pillarId: 'pillar-trend',
     pillarName: 'Bắt Trend TikTok & Âm Thanh Hot',
     pillarCode: 'TREND_JACKING',
@@ -755,20 +887,30 @@ export const INITIAL_SELF_CHANNEL_TASKS: SelfChannelVideoTask[] = [
     contributorId: 'ctv-2',
     contributorName: 'Trần Quốc Huy (Huy Dựng Phim)',
     contributorAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80',
+    brandApprovalMode: 'UPBASE_DELEGATED',
+    brandOrientationStatus: 'DELEGATED',
+    sampleShippingStatus: 'ON_HAND_AT_HOME',
     status: 'ACCEPTED_COMPLETED',
     videoDeliverables: {
       currentVersion: 2,
       draftVideoUrl: 'https://drive.google.com/kutieskin-trend-bath-v1.mp4',
       finalVideoUrl: 'https://drive.google.com/kutieskin-trend-bath-final.mp4',
+      storeDriveFolderUrl: 'https://drive.google.com/drive/folders/store-kutieskin-tts-oct2026',
+      publishedChannelUrl: 'https://www.tiktok.com/@kutieskin.official/video/74229182736451',
+      publishedAt: '2026-10-07T12:00:00Z',
       captionSuggested: 'Tắm mát rượi bé cười tít mắt, da sạch thơm tự nhiên 🌿 #kutieskin #nuoctamthaoduoc',
       durationSeconds: 28,
-      submittedAt: '2026-10-06T15:00:00Z'
+      submittedAt: '2026-10-06T15:00:00Z',
+      internalQaApprovedBy: 'Lương Thị Như Quỳnh',
+      internalQaApprovedAt: '2026-10-06T16:30:00Z',
+      brandAcceptedBy: 'Đặng Thị Yến Nhi (Lead B2C)',
+      brandAcceptedAt: '2026-10-06T17:30:00Z'
     },
     feedbackLogs: [
       {
         id: 'fb-02',
         version: 1,
-        reviewedBy: 'Khánh Vy (B2C Lead)',
+        reviewedBy: 'Lương Thị Như Quỳnh (Content B2C)',
         reviewedAt: '2026-10-05T18:00:00Z',
         type: 'VIDEO',
         verdict: 'REVISE',
@@ -777,9 +919,9 @@ export const INITIAL_SELF_CHANNEL_TASKS: SelfChannelVideoTask[] = [
       {
         id: 'fb-03',
         version: 2,
-        reviewedBy: 'Khánh Vy (B2C Lead)',
+        reviewedBy: 'Đặng Thị Yến Nhi (Lead B2C)',
         reviewedAt: '2026-10-06T17:30:00Z',
-        type: 'VIDEO',
+        type: 'BRAND_ACCEPTANCE',
         verdict: 'APPROVED',
         comment: 'Bản v2 màu sắc rất tươi sáng, nhạc khớp nhịp. Đạt chuẩn nghiệm thu đăng kênh!',
         checklist: {
@@ -791,11 +933,12 @@ export const INITIAL_SELF_CHANNEL_TASKS: SelfChannelVideoTask[] = [
       }
     ],
     acceptedAt: '2026-10-06T17:30:00Z',
-    acceptedBy: 'Khánh Vy (Booking Lead)',
+    acceptedBy: 'Đặng Thị Yến Nhi (Lead B2C)',
+    dnttStatus: 'NOT_CREATED',
     createdAt: '2026-09-30T08:00:00Z'
   },
 
-  // 6. PAID (Đã thanh toán nhuận bút)
+  // 6. PAID (Đã lập DNTT & Quyết toán nhuận bút)
   {
     id: 'task-sc-06',
     taskCode: 'SC-KUTI-202610-06',
@@ -804,21 +947,30 @@ export const INITIAL_SELF_CHANNEL_TASKS: SelfChannelVideoTask[] = [
     brandName: 'Kutieskin Mama & Baby',
     storeId: 'store-kutieskin-tts',
     storeName: 'Kutieskin Official Store (TikTok)',
+    planMonth: '2026/10',
+    videoFormat: 'Review voice',
+    contentPic: 'Lê Phương Thảo',
     pillarId: 'pillar-showcase',
     pillarName: 'Demo Trải Nghiệm & Hướng Dẫn Sử Dụng',
     pillarCode: 'PRODUCT_SHOWCASE',
     linkedSku: 'KUTIE-SOOTH-30G',
     productName: 'Kem Bôi Dịu Da Kutieskin 30g',
-    remuneration: 1000000,
+    remuneration: 1500000,
     deadline: '2026-10-05',
     contributorId: 'ctv-1',
     contributorName: 'Nguyễn Hoàng Yến',
     contributorAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
+    brandApprovalMode: 'BRAND_REVIEW_REQUIRED',
+    brandOrientationStatus: 'APPROVED',
+    sampleShippingStatus: 'ON_HAND_AT_HOME',
     status: 'PAID',
     videoDeliverables: {
       currentVersion: 1,
       draftVideoUrl: 'https://drive.google.com/kutieskin-3days-v1.mp4',
       finalVideoUrl: 'https://drive.google.com/kutieskin-3days-final.mp4',
+      storeDriveFolderUrl: 'https://drive.google.com/drive/folders/store-kutieskin-tts-oct2026',
+      publishedChannelUrl: 'https://www.tiktok.com/@kutieskin.official/video/74210092837120',
+      publishedAt: '2026-10-04T18:00:00Z',
       captionSuggested: 'Khoảnh khắc da con êm dịu trở lại là lúc mẹ thở phào nhẹ nhõm ❤️ #kutieskin #kemdiuda',
       durationSeconds: 42,
       submittedAt: '2026-10-03T16:00:00Z'
@@ -827,7 +979,7 @@ export const INITIAL_SELF_CHANNEL_TASKS: SelfChannelVideoTask[] = [
       {
         id: 'fb-04',
         version: 1,
-        reviewedBy: 'Khánh Vy (B2C Lead)',
+        reviewedBy: 'Lê Phương Thảo (Content B2C)',
         reviewedAt: '2026-10-04T09:00:00Z',
         type: 'VIDEO',
         verdict: 'APPROVED',
@@ -835,11 +987,16 @@ export const INITIAL_SELF_CHANNEL_TASKS: SelfChannelVideoTask[] = [
       }
     ],
     acceptedAt: '2026-10-04T09:00:00Z',
-    acceptedBy: 'Khánh Vy (Booking Lead)',
+    acceptedBy: 'Đặng Thị Yến Nhi (Lead B2C)',
+    dnttCode: 'DNTT-CTV-202610-001',
+    dnttStatus: 'DISBURSED',
+    pitTaxDeducted: 0,
+    netPayoutAmount: 1500000,
     paidAt: '2026-10-05T14:00:00Z',
     paymentRef: 'UNC-TCB-982134',
     createdAt: '2026-09-28T09:00:00Z'
   },
+
   // 7. TASK pHCare - SCRIPT_PENDING_REVIEW
   {
     id: 'task-sc-07',
@@ -849,16 +1006,22 @@ export const INITIAL_SELF_CHANNEL_TASKS: SelfChannelVideoTask[] = [
     brandName: 'pHCare Chăm Sóc Vệ Sinh Nữ',
     storeId: 'store-phcare-tts',
     storeName: 'pHCare Official Store (TikTok)',
+    planMonth: '2026/10',
+    videoFormat: 'Review voice',
+    contentPic: 'Lương Thị Như Quỳnh',
     pillarId: 'pil-ph-02',
     pillarName: 'Demo Độ pH & Trải Nghiệm Mùi Hương',
     pillarCode: 'PRODUCT_SHOWCASE',
     linkedSku: 'PH-WASH-150ML',
     productName: 'Dung Dịch Vệ Sinh Nữ pHCare 150ml',
-    remuneration: 1200000,
+    remuneration: 1400000,
     deadline: '2026-10-20',
-    contributorId: 'ctv-2',
+    contributorId: 'ctv-6',
     contributorName: 'Trần Thu Thảo (Dược Sĩ)',
     contributorAvatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80',
+    brandApprovalMode: 'UPBASE_DELEGATED',
+    brandOrientationStatus: 'DELEGATED',
+    sampleShippingStatus: 'ON_HAND_AT_HOME',
     status: 'SCRIPT_PENDING_REVIEW',
     scriptContent: {
       hook: 'Nhiều bạn nghĩ bọt càng nhiều càng sạch, nhưng pH mất cân bằng là nguyên nhân gây ngứa ngáy đấy!',
@@ -879,20 +1042,27 @@ export const INITIAL_SELF_CHANNEL_TASKS: SelfChannelVideoTask[] = [
     brandName: 'Royal Ausnz Sữa Hoàng Gia',
     storeId: 'store-royal-tts',
     storeName: 'Royal Ausnz Official Store (TikTok)',
+    planMonth: '2026/10',
+    videoFormat: 'Unbox Voice',
+    contentPic: 'Lê Phương Thảo',
     pillarId: 'pil-ro-02',
     pillarName: 'Quy Trình Trộn Ướt 20 Phút 12 Giờ',
     pillarCode: 'PRODUCT_SHOWCASE',
     linkedSku: 'RO-PREM-900G',
     productName: 'Sữa Hoàng Gia Úc Premium Gold 900g',
-    remuneration: 1300000,
+    remuneration: 1600000,
     deadline: '2026-10-16',
     contributorId: 'ctv-4',
     contributorName: 'Phạm Đức Minh & Bé Gấu',
     contributorAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80',
+    brandApprovalMode: 'BRAND_REVIEW_REQUIRED',
+    brandOrientationStatus: 'APPROVED',
+    sampleShippingStatus: 'ON_HAND_AT_HOME',
     status: 'DRAFT_VIDEO_SUBMITTED',
     videoDeliverables: {
       currentVersion: 1,
       draftVideoUrl: 'https://drive.google.com/royal-ausnz-wet-blend-v1.mp4',
+      storeDriveFolderUrl: 'https://drive.google.com/drive/folders/store-royal-tts-oct2026',
       captionSuggested: 'Bí mật đằng sau hạt sữa vàng óng tan ngay trong nước của Hoàng Gia Úc #royalausnz #suauc',
       durationSeconds: 48,
       submittedAt: '2026-10-08T11:30:00Z'
@@ -910,6 +1080,9 @@ export const INITIAL_SELF_CHANNEL_TASKS: SelfChannelVideoTask[] = [
     brandName: 'Mega Uri Hỗ Trợ Đề Kháng & Sức Khỏe',
     storeId: 'store-megauri-tts',
     storeName: 'Mega Uri Official Store (TikTok)',
+    planMonth: '2026/10',
+    videoFormat: 'Review voice',
+    contentPic: 'Lương Thị Như Quỳnh',
     pillarId: 'pil-mu-01',
     pillarName: 'Bác Sĩ Chia Sẻ Đề Kháng Hô Hấp',
     pillarCode: 'EDUCATIONAL',
@@ -917,23 +1090,33 @@ export const INITIAL_SELF_CHANNEL_TASKS: SelfChannelVideoTask[] = [
     productName: 'Siro Hỗ Trợ Đường Hô Hấp Mega Uri 120ml',
     remuneration: 1500000,
     deadline: '2026-10-10',
-    contributorId: 'ctv-2',
+    contributorId: 'ctv-6',
     contributorName: 'Trần Thu Thảo (Dược Sĩ)',
     contributorAvatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80',
+    brandApprovalMode: 'BRAND_REVIEW_REQUIRED',
+    brandOrientationStatus: 'APPROVED',
+    sampleShippingStatus: 'ON_HAND_AT_HOME',
     status: 'ACCEPTED_COMPLETED',
     videoDeliverables: {
       currentVersion: 1,
       draftVideoUrl: 'https://drive.google.com/megauri-dr-v1.mp4',
       finalVideoUrl: 'https://drive.google.com/megauri-dr-final.mp4',
+      storeDriveFolderUrl: 'https://drive.google.com/drive/folders/store-megauri-tts-oct2026',
+      publishedChannelUrl: 'https://www.tiktok.com/@megauri.vn/video/74231029384712',
+      publishedAt: '2026-10-08T19:30:00Z',
       captionSuggested: 'Bí kíp phòng ho sổ mũi từ thảo dược tự nhiên cho con #megauri #dekhang',
       durationSeconds: 52,
-      submittedAt: '2026-10-06T15:00:00Z'
+      submittedAt: '2026-10-06T15:00:00Z',
+      internalQaApprovedBy: 'Lương Thị Như Quỳnh',
+      internalQaApprovedAt: '2026-10-07T08:30:00Z',
+      brandAcceptedBy: 'Đặng Thị Yến Nhi (Lead B2C)',
+      brandAcceptedAt: '2026-10-07T10:00:00Z'
     },
     feedbackLogs: [
       {
         id: 'fb-09',
         version: 1,
-        reviewedBy: 'Khánh Vy (B2C Lead)',
+        reviewedBy: 'Lương Thị Như Quỳnh (Content B2C)',
         reviewedAt: '2026-10-07T10:00:00Z',
         type: 'VIDEO',
         verdict: 'APPROVED',
@@ -941,7 +1124,8 @@ export const INITIAL_SELF_CHANNEL_TASKS: SelfChannelVideoTask[] = [
       }
     ],
     acceptedAt: '2026-10-07T10:00:00Z',
-    acceptedBy: 'Khánh Vy (Booking Lead)',
+    acceptedBy: 'Đặng Thị Yến Nhi (Lead B2C)',
+    dnttStatus: 'NOT_CREATED',
     createdAt: '2026-10-01T08:00:00Z'
   },
 
@@ -954,16 +1138,22 @@ export const INITIAL_SELF_CHANNEL_TASKS: SelfChannelVideoTask[] = [
     brandName: 'Senka Skincare Nhật Bản',
     storeId: 'store-senka-tts',
     storeName: 'Senka Official Store (TikTok)',
+    planMonth: '2026/10',
+    videoFormat: 'POV',
+    contentPic: 'Lương Thị Như Quỳnh',
     pillarId: 'pil-sen-01',
     pillarName: 'Test Tạo Bọt Tơ Tằm Trắng Khổng Lồ',
     pillarCode: 'PRODUCT_SHOWCASE',
     linkedSku: 'SEN-WHIP-120G',
     productName: 'Sữa Rửa Mặt Tạo Bọt Senka Perfect Whip 120g',
-    remuneration: 1300000,
+    remuneration: 1500000,
     deadline: '2026-10-18',
     contributorId: 'ctv-1',
     contributorName: 'Nguyễn Hoàng Yến',
     contributorAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
+    brandApprovalMode: 'UPBASE_DELEGATED',
+    brandOrientationStatus: 'DELEGATED',
+    sampleShippingStatus: 'ON_HAND_AT_HOME',
     status: 'SCRIPT_APPROVED',
     scriptContent: {
       hook: 'Lớp bọt này có thể giữ được đồng xu mà không hề xẹp, tin được không?',
@@ -975,7 +1165,7 @@ export const INITIAL_SELF_CHANNEL_TASKS: SelfChannelVideoTask[] = [
       {
         id: 'fb-10',
         version: 1,
-        reviewedBy: 'Khánh Vy (B2C Lead)',
+        reviewedBy: 'Lương Thị Như Quỳnh (Content B2C)',
         reviewedAt: '2026-10-08T08:30:00Z',
         type: 'SCRIPT',
         verdict: 'APPROVED',
@@ -984,5 +1174,4 @@ export const INITIAL_SELF_CHANNEL_TASKS: SelfChannelVideoTask[] = [
     ],
     createdAt: '2026-10-05T14:00:00Z'
   }
-
 ];

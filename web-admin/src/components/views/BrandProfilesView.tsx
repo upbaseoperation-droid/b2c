@@ -7,6 +7,7 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Loader2 } from 'lucide-react';
 import type { BookingDealItem, BrandDetail, UserProfile } from '../../lib/types';
 import type { BrandProfile, BrandSection } from '../../lib/brands/types';
 import { brandKey } from '../../lib/brands/types';
@@ -21,9 +22,11 @@ type Filter = 'ALL' | 'MINE' | 'EMPTY' | 'NO_LEGAL';
 
 class LoadError extends Error { constructor(message: string, public status: number) { super(message); } }
 
+// Bộ nhớ tạm phía client giúp chuyển tab tức thì không cần tải lại
+let brandProfilesClientCache: { profiles: BrandProfile[]; access: BrandAccess } | null = null;
+
 async function request<T>(body?: unknown): Promise<T> {
   const res = await fetch('/api/brands/profiles', {
-    cache: 'no-store',
     ...(body ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : {}),
   });
   const data = await res.json().catch(() => ({}));
@@ -46,8 +49,8 @@ export function BrandProfilesView({
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
   onOpenBooking?: () => void;
 }) {
-  const [profiles, setProfiles] = useState<BrandProfile[] | null>(null);
-  const [access, setAccess] = useState<BrandAccess>();
+  const [profiles, setProfiles] = useState<BrandProfile[] | null>(() => brandProfilesClientCache?.profiles || null);
+  const [access, setAccess] = useState<BrandAccess | undefined>(() => brandProfilesClientCache?.access);
   const [loadError, setLoadError] = useState<LoadError | null>(null);
   const [busy, setBusy] = useState(false);
   const [openKey, setOpenKey] = useState<string | null>(selectedBrand !== 'ALL' ? brandKey(selectedBrand) : null);
@@ -56,14 +59,33 @@ export function BrandProfilesView({
   const [page, setPage] = useState(1);
 
   const load = useCallback(
-    () => request<{ profiles: BrandProfile[]; access: BrandAccess }>().then(r => { setProfiles(r.profiles); setAccess(r.access); setLoadError(null); }),
+    () => request<{ profiles: BrandProfile[]; access: BrandAccess }>().then(r => {
+      brandProfilesClientCache = r;
+      setProfiles(r.profiles);
+      setAccess(r.access);
+      setLoadError(null);
+    }),
     [],
   );
-  // Tải lần đầu và mỗi khi đổi người dùng (đổi vai trò ở bản phát triển) để lấy lại quyền.
+
+  // Tải lần đầu hoặc đồng bộ ngầm khi đổi người dùng
   useEffect(() => {
+    let isCancelled = false;
     request<{ profiles: BrandProfile[]; access: BrandAccess }>()
-      .then(r => { setProfiles(r.profiles); setAccess(r.access); setLoadError(null); })
-      .catch(e => setLoadError(e instanceof LoadError ? e : new LoadError((e as Error).message, 503)));
+      .then(r => {
+        if (!isCancelled) {
+          brandProfilesClientCache = r;
+          setProfiles(r.profiles);
+          setAccess(r.access);
+          setLoadError(null);
+        }
+      })
+      .catch(e => {
+        if (!isCancelled && !brandProfilesClientCache) {
+          setLoadError(e instanceof LoadError ? e : new LoadError((e as Error).message, 503));
+        }
+      });
+    return () => { isCancelled = true; };
   }, [currentUser?.id]);
 
   // Bộ chọn Nhãn trên thanh trên quyết định nhãn đang mở.
@@ -75,14 +97,15 @@ export function BrandProfilesView({
 
   const rows = useMemo(() => buildRows(brands?.length ? brands : UPBASE_BRANDS_MASTER, profiles || []), [brands, profiles]);
   const me = access?.name.trim().toLowerCase();
-  const matches: Record<Filter, (r: BrandRow) => boolean> = {
+  const matches: Record<Filter, (r: BrandRow) => boolean> = useMemo(() => ({
     ALL: () => true,
     MINE: r => !!me && real(r.master?.accountPic).toLowerCase() === me,
     EMPTY: r => !r.saved,
     NO_LEGAL: r => r.profile.legal.length === 0,
-  };
-  const searched = rows.filter(r => !search.trim() || `${r.name} ${real(r.master?.category)} ${real(r.master?.accountPic)}`.toLowerCase().includes(search.trim().toLowerCase()));
-  const visible = searched.filter(matches[filter]);
+  }), [me]);
+
+  const searched = useMemo(() => rows.filter(r => !search.trim() || `${r.name} ${real(r.master?.category)} ${real(r.master?.accountPic)}`.toLowerCase().includes(search.trim().toLowerCase())), [rows, search]);
+  const visible = useMemo(() => searched.filter(matches[filter]), [searched, matches, filter]);
   const [pagedKey, setPagedKey] = useState('');
   if (`${search}|${filter}` !== pagedKey) { setPagedKey(`${search}|${filter}`); setPage(1); }
 
@@ -90,7 +113,9 @@ export function BrandProfilesView({
     setBusy(true);
     try {
       const r = await request<{ profile: BrandProfile }>({ brandName: row.name, revision: row.profile.revision, section, data, summary });
-      setProfiles(prev => [...(prev || []).filter(p => p.key !== r.profile.key), r.profile]);
+      const nextProfiles = [...(profiles || []).filter(p => p.key !== r.profile.key), r.profile];
+      setProfiles(nextProfiles);
+      if (brandProfilesClientCache) brandProfilesClientCache.profiles = nextProfiles;
       onNotify?.(summary ? `Đã lưu: ${summary.charAt(0).toLowerCase()}${summary.slice(1)}` : 'Đã lưu hồ sơ', 'success');
       return true;
     } catch (e) {
@@ -113,7 +138,6 @@ export function BrandProfilesView({
       </Panel>
     );
   }
-  if (!profiles) return <p className="text-[13px] text-ink-3 px-1">Đang tải hồ sơ thương hiệu…</p>;
 
   const open = openKey ? rows.find(r => r.key === openKey) : undefined;
   if (open) {
@@ -138,6 +162,8 @@ export function BrandProfilesView({
     );
   }
 
+  const isSyncing = !profiles;
+
   const chips = (['ALL', 'MINE', 'EMPTY', 'NO_LEGAL'] as Filter[]).map(key => ({
     key, label: { ALL: 'Tất cả', MINE: 'Tôi phụ trách', EMPTY: 'Chưa có hồ sơ', NO_LEGAL: 'Thiếu pháp lý' }[key], count: searched.filter(matches[key]).length,
   }));
@@ -157,14 +183,22 @@ export function BrandProfilesView({
       key: 'status', header: 'Hồ sơ', width: 150,
       render: r => (
         <div className="grid gap-1 justify-items-start">
-          {!r.saved ? <Status tone="neutral">Nháp</Status> : r.done === r.total ? <Status tone="positive">Hoàn tất</Status> : <Status tone="info">Đang chạy</Status>}
+          {isSyncing ? (
+            <span className="text-2xs text-ink-3 italic">Đang đồng bộ…</span>
+          ) : !r.saved ? (
+            <Status tone="neutral">Nháp</Status>
+          ) : r.done === r.total ? (
+            <Status tone="positive">Hoàn tất</Status>
+          ) : (
+            <Status tone="info">Đang chạy</Status>
+          )}
           <span className="text-2xs text-ink-3 tabular-nums">{r.done}/{r.total} mục</span>
         </div>
       ),
     },
-    { key: 'products', header: 'Sản phẩm', width: 80, align: 'right', render: r => r.profile.products.length || <span className="text-ink-3">—</span> },
-    { key: 'banned', header: 'Từ cấm', width: 80, align: 'right', render: r => r.profile.contentRules?.banned.length || <span className="text-ink-3">—</span> },
-    { key: 'legal', header: 'Pháp lý', width: 80, align: 'right', render: r => r.profile.legal.length || <span className="text-ink-3">—</span> },
+    { key: 'products', header: 'Sản phẩm', width: 80, align: 'right', render: r => isSyncing ? <span className="text-ink-3">—</span> : (r.profile.products.length || <span className="text-ink-3">—</span>) },
+    { key: 'banned', header: 'Từ cấm', width: 80, align: 'right', render: r => isSyncing ? <span className="text-ink-3">—</span> : (r.profile.contentRules?.banned.length || <span className="text-ink-3">—</span>) },
+    { key: 'legal', header: 'Pháp lý', width: 80, align: 'right', render: r => isSyncing ? <span className="text-ink-3">—</span> : (r.profile.legal.length || <span className="text-ink-3">—</span>) },
     {
       key: 'updated', header: 'Cập nhật', width: 140, align: 'right',
       render: r => (r.saved && r.profile.updatedAt ? (
@@ -175,12 +209,20 @@ export function BrandProfilesView({
 
   return (
     <Panel flush>
-      <div className="p-4 border-b border-line">
-        <FilterBar
-          search={{ value: search, onChange: setSearch, placeholder: 'Tên nhãn, ngành hàng, Account PIC' }}
-          chips={<Chips items={chips} value={filter} onChange={setFilter} />}
-          resultCount={search.trim() ? visible.length : undefined}
-        />
+      <div className="p-4 border-b border-line flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex-1">
+          <FilterBar
+            search={{ value: search, onChange: setSearch, placeholder: 'Tên nhãn, ngành hàng, Account PIC' }}
+            chips={<Chips items={chips} value={filter} onChange={setFilter} />}
+            resultCount={search.trim() ? visible.length : undefined}
+          />
+        </div>
+        {isSyncing && (
+          <div className="flex items-center gap-1.5 text-xs text-ink-3 shrink-0 self-end sm:self-auto py-1">
+            <Loader2 className="w-3.5 h-3.5 animate-spin text-ink-3" />
+            <span>Đang đồng bộ hồ sơ…</span>
+          </div>
+        )}
       </div>
       <DataTable
         columns={columns}

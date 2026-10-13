@@ -100,7 +100,7 @@ function seedFromMock(kb: BrandKnowledgeBase): BrandProfile {
   };
 }
 
-// Bộ nhớ tạm phòng ngừa khi database Postgres không khả dụng trên serverless
+// Bộ nhớ tạm phòng ngừa khi database Postgres không khả dụng trên serverless hoặc local
 let inMemoryFallback: BrandProfile[] | null = null;
 
 function getFallbackProfiles(): BrandProfile[] {
@@ -110,19 +110,45 @@ function getFallbackProfiles(): BrandProfile[] {
   return inMemoryFallback;
 }
 
+// Bộ nhớ đệm tầng ứng dụng (In-Memory Cache) với TTL 30 giây để phản hồi ngay lập tức (<1ms)
+let profilesMemoryCache: { profiles: BrandProfile[]; timestamp: number } | null = null;
+const PROFILES_CACHE_TTL_MS = 30_000;
+
+// Circuit Breaker chống treo server khi Postgres không thể kết nối hoặc độ trễ mạng cao
+const dbHealth = {
+  isAvailable: true,
+  lastFailureTime: 0,
+};
+const DB_FAILURE_COOLDOWN_MS = 60_000; // Nghỉ 60 giây trước khi thử kết nối lại nếu vừa gặp lỗi
+
+async function withTimeout<T>(promise: Promise<T>, ms: number, errorMsg: string): Promise<T> {
+  let timeoutId: ReturnType<typeof setTimeout>;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => reject(new Error(errorMsg)), ms);
+  });
+  return Promise.race([promise, timeoutPromise]).finally(() => clearTimeout(timeoutId));
+}
+
 async function ensurePostgresTable(): Promise<boolean> {
+  if (!dbHealth.isAvailable) return false;
   try {
-    await prisma.$executeRaw`
-      CREATE TABLE IF NOT EXISTS "BrandProfileRecord" (
-        "key" TEXT NOT NULL PRIMARY KEY,
-        "revision" INTEGER NOT NULL DEFAULT 1,
-        "data" JSONB NOT NULL,
-        "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
-      );
-    `;
+    await withTimeout(
+      prisma.$executeRaw`
+        CREATE TABLE IF NOT EXISTS "BrandProfileRecord" (
+          "key" TEXT NOT NULL PRIMARY KEY,
+          "revision" INTEGER NOT NULL DEFAULT 1,
+          "data" JSONB NOT NULL,
+          "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
+      `,
+      1500,
+      'Khởi tạo bảng BrandProfileRecord quá thời gian cho phép'
+    );
     return true;
   } catch (err) {
     console.warn('[BrandProfileStore] Could not auto-create BrandProfileRecord table:', err);
+    dbHealth.isAvailable = false;
+    dbHealth.lastFailureTime = Date.now();
     return false;
   }
 }
@@ -140,91 +166,120 @@ async function localProfiles(): Promise<BrandProfile[]> {
 }
 
 export async function listProfiles(): Promise<BrandProfile[]> {
+  // 1. Phục vụ ngay từ in-memory cache nếu còn hạn
+  if (profilesMemoryCache && Date.now() - profilesMemoryCache.timestamp < PROFILES_CACHE_TTL_MS) {
+    return profilesMemoryCache.profiles;
+  }
+
+  // 2. Chế độ cục bộ (local JSON)
   if (local()) {
     try {
-      return await localProfiles();
+      const data = await localProfiles();
+      profilesMemoryCache = { profiles: data, timestamp: Date.now() };
+      return data;
     } catch {
-      return getFallbackProfiles();
+      const data = getFallbackProfiles();
+      profilesMemoryCache = { profiles: data, timestamp: Date.now() };
+      return data;
     }
   }
 
-  try {
-    const rows = await prisma.$queryRaw<Array<{ data: BrandProfile }>>`SELECT data FROM "BrandProfileRecord"`;
-    if (rows.length === 0) {
-      // Bảng rỗng, nạp dữ liệu khởi tạo
-      const seeds = getFallbackProfiles();
-      try {
-        for (const s of seeds) {
-          await prisma.$executeRaw`
-            INSERT INTO "BrandProfileRecord" (key, revision, data, "updatedAt")
-            VALUES (${s.key}, 1, ${JSON.stringify(s)}::jsonb, NOW())
-            ON CONFLICT (key) DO NOTHING;
-          `;
-        }
-      } catch {
-        // bỏ qua nếu không ghi được
-      }
-      return seeds;
-    }
-    return rows.map(r => r.data);
-  } catch (dbErr) {
-    console.warn('[BrandProfileStore] Failed to query BrandProfileRecord, attempting auto-create table:', dbErr);
-    const tableReady = await ensurePostgresTable();
-    if (tableReady) {
-      try {
-        const rows = await prisma.$queryRaw<Array<{ data: BrandProfile }>>`SELECT data FROM "BrandProfileRecord"`;
-        if (rows.length === 0) {
-          const seeds = getFallbackProfiles();
+  // 3. Chế độ database với Circuit Breaker & Timeout (tối đa 1.5s)
+  const isCooldown = Date.now() - dbHealth.lastFailureTime < DB_FAILURE_COOLDOWN_MS;
+  if (!isCooldown) {
+    try {
+      const rows = await withTimeout(
+        prisma.$queryRaw<Array<{ data: BrandProfile }>>`SELECT data FROM "BrandProfileRecord"`,
+        1500,
+        'Truy vấn BrandProfileRecord vượt quá thời gian cho phép'
+      );
+      dbHealth.isAvailable = true;
+
+      if (rows.length === 0) {
+        const seeds = getFallbackProfiles();
+        // Cập nhật ngầm trong nền không chặn người dùng
+        ensurePostgresTable().then(async ready => {
+          if (!ready) return;
           for (const s of seeds) {
             await prisma.$executeRaw`
               INSERT INTO "BrandProfileRecord" (key, revision, data, "updatedAt")
               VALUES (${s.key}, 1, ${JSON.stringify(s)}::jsonb, NOW())
               ON CONFLICT (key) DO NOTHING;
-            `;
+            `.catch(() => undefined);
           }
-          return seeds;
-        }
-        return rows.map(r => r.data);
-      } catch (retryErr) {
-        console.warn('[BrandProfileStore] Retry query after create table failed, falling back:', retryErr);
+        }).catch(() => undefined);
+
+        profilesMemoryCache = { profiles: seeds, timestamp: Date.now() };
+        return seeds;
       }
+
+      const profiles = rows.map(r => r.data);
+      profilesMemoryCache = { profiles, timestamp: Date.now() };
+      return profiles;
+    } catch (dbErr) {
+      console.warn('[BrandProfileStore] Database query failed or timed out, activating circuit breaker fallback:', (dbErr as Error).message);
+      dbHealth.isAvailable = false;
+      dbHealth.lastFailureTime = Date.now();
     }
-    // Database hoàn toàn không khả dụng -> fallback dữ liệu để UI luôn tải được
-    return getFallbackProfiles();
+  }
+
+  // 4. Fallback mượt mà: ưu tiên đọc file cục bộ nếu có, sau đó đến in-memory seed
+  try {
+    const fallback = await localProfiles();
+    profilesMemoryCache = { profiles: fallback, timestamp: Date.now() };
+    return fallback;
+  } catch {
+    const fallback = getFallbackProfiles();
+    profilesMemoryCache = { profiles: fallback, timestamp: Date.now() };
+    return fallback;
   }
 }
 
 /** Ghi hồ sơ. `expected` là revision người dùng đang xem; khác revision trên máy chủ thì từ chối. */
 export async function saveProfile(profile: BrandProfile, expected: number): Promise<BrandProfile> {
   const next = { ...profile, revision: expected + 1, updatedAt: new Date().toISOString() };
+  
+  // Cập nhật ngay vào cache bộ nhớ để phản hồi tức thì
+  if (profilesMemoryCache) {
+    const list = profilesMemoryCache.profiles;
+    const idx = list.findIndex(p => p.key === next.key);
+    if (idx >= 0) list[idx] = next; else list.push(next);
+    profilesMemoryCache.timestamp = Date.now();
+  }
+
   if (!local()) {
-    try {
-      if (expected === 0) {
-        const inserted = await prisma.$executeRaw`INSERT INTO "BrandProfileRecord" (key, revision, data, "updatedAt") VALUES (${next.key}, 1, ${JSON.stringify(next)}::jsonb, NOW()) ON CONFLICT (key) DO NOTHING`;
-        requireBrand(inserted === 1, 'Hồ sơ vừa được người khác tạo. Tải lại rồi sửa tiếp.', 409);
-      } else {
-        const updated = await prisma.$executeRaw`UPDATE "BrandProfileRecord" SET revision=${next.revision}, data=${JSON.stringify(next)}::jsonb, "updatedAt"=NOW() WHERE key=${next.key} AND revision=${expected}`;
-        requireBrand(updated === 1, 'Hồ sơ đã được người khác cập nhật. Tải lại rồi sửa tiếp.', 409);
-      }
-      return next;
-    } catch (dbErr) {
-      if (dbErr instanceof BrandError) throw dbErr;
-      console.warn('[BrandProfileStore] Postgres save failed, checking table existence:', dbErr);
-      const created = await ensurePostgresTable();
-      if (created) {
+    const isCooldown = Date.now() - dbHealth.lastFailureTime < DB_FAILURE_COOLDOWN_MS;
+    if (!isCooldown) {
+      try {
         if (expected === 0) {
-          await prisma.$executeRaw`INSERT INTO "BrandProfileRecord" (key, revision, data, "updatedAt") VALUES (${next.key}, 1, ${JSON.stringify(next)}::jsonb, NOW()) ON CONFLICT (key) DO NOTHING`;
+          const inserted = await withTimeout(
+            prisma.$executeRaw`INSERT INTO "BrandProfileRecord" (key, revision, data, "updatedAt") VALUES (${next.key}, 1, ${JSON.stringify(next)}::jsonb, NOW()) ON CONFLICT (key) DO NOTHING`,
+            2000,
+            'Lưu hồ sơ vào Database quá thời gian cho phép'
+          );
+          requireBrand(inserted === 1, 'Hồ sơ vừa được người khác tạo. Tải lại rồi sửa tiếp.', 409);
         } else {
-          await prisma.$executeRaw`UPDATE "BrandProfileRecord" SET revision=${next.revision}, data=${JSON.stringify(next)}::jsonb, "updatedAt"=NOW() WHERE key=${next.key} AND revision=${expected}`;
+          const updated = await withTimeout(
+            prisma.$executeRaw`UPDATE "BrandProfileRecord" SET revision=${next.revision}, data=${JSON.stringify(next)}::jsonb, "updatedAt"=NOW() WHERE key=${next.key} AND revision=${expected}`,
+            2000,
+            'Cập nhật hồ sơ vào Database quá thời gian cho phép'
+          );
+          requireBrand(updated === 1, 'Hồ sơ đã được người khác cập nhật. Tải lại rồi sửa tiếp.', 409);
         }
+        dbHealth.isAvailable = true;
         return next;
+      } catch (dbErr) {
+        if (dbErr instanceof BrandError) throw dbErr;
+        console.warn('[BrandProfileStore] Postgres save failed or timed out:', (dbErr as Error).message);
+        dbHealth.isAvailable = false;
+        dbHealth.lastFailureTime = Date.now();
       }
-      // Fallback in-memory
-      const list = getFallbackProfiles();
-      const index = list.findIndex(p => p.key === next.key);
-      if (index < 0) list.push(next); else list[index] = next;
-      return next;
     }
+    // Fallback in-memory
+    const list = getFallbackProfiles();
+    const index = list.findIndex(p => p.key === next.key);
+    if (index < 0) list.push(next); else list[index] = next;
+    return next;
   }
 
   // Local filesystem
@@ -251,4 +306,4 @@ export async function saveProfile(profile: BrandProfile, expected: number): Prom
   }
 }
 
-export const brandStorageMode = () => (local() ? 'LOCAL_DEVELOPMENT' : 'POSTGRES');
+export const brandStorageMode = () => (local() ? 'LOCAL_DEVELOPMENT' : (dbHealth.isAvailable ? 'POSTGRES' : 'POSTGRES_FALLBACK'));

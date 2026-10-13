@@ -2576,21 +2576,33 @@ export interface Contributor {
 
 // Trạng thái vòng đời của một Task sản xuất Video Self Channel
 export type VideoTaskStatus = 
-  | 'OPEN_TASK'              // Task mới tạo, mở cho CTV nhận hoặc Brand chỉ định
-  | 'SCRIPT_PENDING_REVIEW'  // CTV đã nộp kịch bản, chờ Brand duyệt
-  | 'SCRIPT_REVISION'        // Yêu cầu sửa kịch bản
-  | 'SCRIPT_APPROVED'        // Kịch bản đã duyệt, CTV tiến hành quay & edit
-  | 'DRAFT_VIDEO_SUBMITTED'  // CTV đã nộp video nháp (v1, v2)
-  | 'VIDEO_REVISION'         // Brand yêu cầu chỉnh sửa video
-  | 'ACCEPTED_COMPLETED'     // Đã nghiệm thu video đạt chuẩn (chờ thanh toán)
-  | 'PAID';                  // Đã thanh toán nhuận bút
+  | 'OPEN_TASK'                 // Task mới tạo, mở cho CTV nhận hoặc chờ phân bổ VJ
+  | 'BRAND_ORIENTATION_PENDING' // Đã chọn VJ & góc kịch bản, chờ Brand duyệt định hướng (SLA 48h, quá 72h Auto-Pass)
+  | 'SCRIPT_PENDING_REVIEW'     // CTV đã nộp kịch bản chi tiết, chờ duyệt kịch bản (SLA 24h)
+  | 'SCRIPT_REVISION'           // Yêu cầu sửa kịch bản
+  | 'SCRIPT_APPROVED'           // Kịch bản đã duyệt & gửi hàng mẫu, CTV tiến hành quay & edit
+  | 'DRAFT_VIDEO_SUBMITTED'     // CTV đã nộp video nháp (v1, v2) vào Drive, chờ Content B2C QA nội bộ
+  | 'INTERNAL_QA_PASSED'        // Đã đạt QA nội bộ, chờ Brand nghiệm thu hoặc đăng lên kênh Brand
+  | 'VIDEO_REVISION'            // Yêu cầu chỉnh sửa video nháp
+  | 'ACCEPTED_COMPLETED'        // Đã nghiệm thu & đăng kênh Brand (chờ lập DNTT quyết toán)
+  | 'PAID';                     // Đã thanh toán nhuận bút (có mã DNTT & UNC)
+
+export type SampleShippingStatus =
+  | 'ON_HAND_AT_HOME' // VJ đã có sẵn sản phẩm mẫu tại nhà (nhận job gấp < 5 ngày được ngay)
+  | 'PENDING_SHIP'    // Chờ kho/Brand gửi hàng mẫu (SLA 48h)
+  | 'SHIPPING'        // Đang vận chuyển (đã có mã vận đơn)
+  | 'DELIVERED';      // VJ đã nhận được hàng mẫu
+
+export type BrandApprovalMode =
+  | 'BRAND_REVIEW_REQUIRED' // Phải gửi Brand duyệt VJ & định hướng kịch bản (SLA 48h)
+  | 'UPBASE_DELEGATED';     // Brand ủy quyền hoàn toàn cho Upbase B2C chủ động duyệt
 
 export interface VideoRevisionFeedback {
   id: string;
   version: number;
-  reviewedBy: string; // Tên nhân sự Brand duyệt
+  reviewedBy: string; // Tên nhân sự Content B2C hoặc Brand duyệt
   reviewedAt: string;
-  type: 'SCRIPT' | 'VIDEO';
+  type: 'ORIENTATION' | 'SCRIPT' | 'VIDEO' | 'BRAND_ACCEPTANCE';
   verdict: 'APPROVED' | 'REVISE';
   comment: string;
   checklist?: {
@@ -2609,6 +2621,9 @@ export interface SelfChannelVideoTask {
   brandName: string;
   storeId?: string;
   storeName?: string;
+  planMonth?: string; // Chu kỳ kế hoạch tháng (VD: "2026/10")
+  videoFormat?: string; // Định dạng video từ kế hoạch (VD: "Review voice", "Unbox Voice", "POV", "Nhạc text")
+  contentPic?: string; // Chuyên viên Content B2C phụ trách (VD: "Lê Phương Thảo", "Lương Thị Như Quỳnh")
   
   // Thuộc Pillar nào
   pillarId: string;
@@ -2620,13 +2635,26 @@ export interface SelfChannelVideoTask {
   productName?: string;
   
   // Thù lao & Thời hạn
-  remuneration: number; // Thù lao chi trả cho CTV (VNĐ) - VD: 1,500,000 đ
+  remuneration: number; // Thù lao Gross chi trả cho CTV (VNĐ) - VD: 1,500,000 đ
   deadline: string; // Ngày hoàn tất dự kiến (YYYY-MM-DD)
+  isUrgentUnder5Days?: boolean; // Cờ cảnh báo đơn gấp < 5 ngày trước ngày đăng
   
-  // CTV được giao
+  // CTV / VJ được giao
   contributorId?: string;
   contributorName?: string;
   contributorAvatar?: string;
+  
+  // Bước 2 SOP: Trình Brand duyệt VJ & Định hướng (hoặc Ủy quyền Upbase tự duyệt)
+  brandApprovalMode?: BrandApprovalMode;
+  brandOrientationStatus?: 'PENDING' | 'APPROVED' | 'AUTO_PASSED_72H' | 'DELEGATED';
+  brandOrientationSubmittedAt?: string;
+  brandOrientationSlaHoursRemaining?: number;
+  
+  // Bước 3 SOP: Hậu cần gửi hàng mẫu (SLA 48h) & Sản phẩm cầm sẵn
+  sampleShippingStatus?: SampleShippingStatus;
+  sampleTrackingCode?: string;
+  sampleShippedAt?: string;
+  sampleDeliveredAt?: string;
   
   // Trạng thái vòng đời
   status: VideoTaskStatus;
@@ -2639,22 +2667,33 @@ export interface SelfChannelVideoTask {
     submittedAt?: string;
   };
   
-  // Video Deliverables
+  // Bước 4 SOP: Video Deliverables, Drive tổng gian hàng & Link đăng kênh Brand
   videoDeliverables?: {
     currentVersion: number;
     draftVideoUrl?: string; // Link Drive / Capcut / Video preview
-    finalVideoUrl?: string; // Link video chính thức đạt nghiệm thu
+    finalVideoUrl?: string; // Link video chính thức đạt nghiệm thu (file sạch không logo)
+    storeDriveFolderUrl?: string; // Link thư mục Drive tổng của Gian hàng bàn giao cho Brand/Media
+    publishedChannelUrl?: string; // Link bài đăng thực tế trên kênh TikTok / Shopee Video của Brand
+    publishedAt?: string;
     captionSuggested?: string; // Gợi ý caption đăng bài
     submittedAt?: string;
     durationSeconds?: number;
+    internalQaApprovedBy?: string;
+    internalQaApprovedAt?: string;
+    brandAcceptedBy?: string;
+    brandAcceptedAt?: string;
   };
   
   // Feedback & Lịch sử duyệt
   feedbackLogs: VideoRevisionFeedback[];
   
-  // Kế toán & Quyết toán
+  // Bước 5 SOP: Đề nghị thanh toán (DNTT), Thuế TNCN 10% & Quyết toán Kế toán
   acceptedAt?: string;
   acceptedBy?: string;
+  dnttCode?: string; // Mã phiếu Đề nghị thanh toán (VD: "DNTT-CTV-202610-01")
+  dnttStatus?: 'NOT_CREATED' | 'PENDING_ACCOUNTING' | 'DISBURSED';
+  pitTaxDeducted?: number; // Khấu trừ thuế TNCN 10%
+  netPayoutAmount?: number; // Thực nhận Net của CTV
   paidAt?: string;
   paymentRef?: string;
   

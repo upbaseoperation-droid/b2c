@@ -40,9 +40,10 @@ export async function GET(request: NextRequest) {
     larkConfigured: config.isConfigured
   });
 
+  const isHttps = request.nextUrl.protocol === 'https:' || request.headers.get('x-forwarded-proto') === 'https';
   response.cookies.set(SESSION_COOKIE_NAME, token, {
     httpOnly: true,
-    secure: (process.env.NODE_ENV as string) === 'production',
+    secure: (process.env.NODE_ENV as string) === 'production' && isHttps,
     sameSite: 'lax',
     path: '/',
     maxAge: 7 * 24 * 60 * 60 // 7 ngày
