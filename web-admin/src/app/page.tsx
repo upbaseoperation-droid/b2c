@@ -644,7 +644,7 @@ export default function App() {
     'push-products': { title: 'Sản phẩm đẩy của nhãn', subtitle: 'Danh mục sản phẩm trọng tâm, tồn kho và mức hoa hồng push' },
     stores: { title: 'Gian hàng & nhãn hàng', subtitle: 'Danh mục 957 gian hàng Shopee, TikTok Shop, Lazada' },
     campaigns: { title: 'Làm việc với Brand', subtitle: 'Brief chiến dịch, Brand Guideline, Blacklist từ khóa và duyệt KOC của team Brand' },
-    'brand-knowledge': { title: 'Hướng dẫn nhãn hàng', subtitle: 'Thông tin thương hiệu, hồ sơ pháp lý, Hero SKU và từ khóa cần tránh' },
+    'brand-knowledge': { title: 'Hồ sơ thương hiệu & Quy chuẩn nhãn hàng', subtitle: 'Thiết lập định vị thương hiệu, guidelines, trần thù lao KOC, Hero SKU và hồ sơ pháp lý' },
     content: { title: 'Quản lý Kịch bản & Nội dung Video', subtitle: 'Kho sản phẩm nội dung, hàng chờ duyệt kịch bản 24h, video nháp KOC và đối soát bài đăng live' },
     'content-angles': { title: 'Thiết Lập Góc Nội Dung (Content Angles)', subtitle: 'Kho kịch bản phân rã theo Trụ cột nội dung và từng sản phẩm của gian hàng' },
     'partner-access': { title: 'Quản Trị Phân Quyền & RBAC Tập Trung', subtitle: 'Ma trận phân quyền 7 vai trò, quản lý PIC nhân sự nội bộ và cấp quyền Gmail cho đối tác bên thứ 3' },
@@ -854,6 +854,12 @@ export default function App() {
               onKocCreated={handleKocCreated}
               onKocUpdated={handleKocUpdated}
               onUpdateStore={handleUpdateStore}
+              onNavigateToBrandProfile={(brandName) => {
+                if (brandName && brandName !== 'ALL') {
+                  setSelectedBrandContext(brandName);
+                }
+                setActiveTab('brand-knowledge');
+              }}
             />
           </KeepAliveTab>
 
@@ -884,6 +890,12 @@ export default function App() {
               kocs={kocs}
               onNotify={showToast}
               onUpdateStore={handleUpdateStore}
+              onNavigateToBrandProfile={(brandName) => {
+                if (brandName && brandName !== 'ALL') {
+                  setSelectedBrandContext(brandName);
+                }
+                setActiveTab('brand-knowledge');
+              }}
             />
           </KeepAliveTab>
 
@@ -900,7 +912,9 @@ export default function App() {
             <BrandKnowledgeView
               currentUser={currentUser}
               selectedBrand={selectedBrandContext}
+              brands={brands}
               onNotify={showToast}
+              onNavigateBackToBrands={() => setActiveTab('master-data')}
             />
           </KeepAliveTab>
 
@@ -967,6 +981,7 @@ export default function App() {
           <KeepAliveTab tabKey="koc-master" currentTab={activeTab}>
             <KocMasterDataView
               kocs={kocs}
+              allDeals={deals}
               currentUser={currentUser}
               onOpenQuickBookWithKoc={handleOpenQuickBookWithKoc}
               onKocCreated={handleKocCreated}

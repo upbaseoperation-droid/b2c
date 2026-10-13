@@ -27,10 +27,13 @@ import {
   IdCard,
   FileCheck,
   RotateCcw,
+  User,
+  ArrowLeft,
   X
 } from 'lucide-react';
 import { 
   KocItem, 
+  BookingDealItem,
   SalaryGrade, 
   CreatorSegment, 
   KocCategory, 
@@ -43,9 +46,11 @@ import { LegalOcrModal } from '../LegalOcrModal';
 import { KocProfileModal } from '../KocProfileModal';
 import { CreateKocModal } from '../CreateKocModal';
 import { KalodataSyncModal } from '../kalodata/KalodataSyncModal';
+import { KocDetailScreen } from './KocDetailScreen';
 
 interface KocMasterDataViewProps {
   kocs?: KocItem[];
+  allDeals?: BookingDealItem[];
   currentUser?: UserProfile;
   onOpenQuickBookWithKoc: (koc: KocItem) => void;
   onKocUpdated?: (updatedKoc: KocItem) => void;
@@ -55,6 +60,7 @@ interface KocMasterDataViewProps {
 
 export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
   kocs = INITIAL_KOCS,
+  allDeals,
   currentUser,
   onOpenQuickBookWithKoc,
   onKocUpdated,
@@ -76,6 +82,10 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
   const [inspectedKoc, setInspectedKoc] = useState<KocItem | null>(null);
   const [isKalodataModalOpen, setIsKalodataModalOpen] = useState(false);
   const [kalodataTargetKoc, setKalodataTargetKoc] = useState<KocItem | null>(null);
+
+  // Phân chia 2 màn hình: 'OVERVIEW' (Tổng quan danh bạ) & 'DETAIL' (Hồ sơ chi tiết KOC)
+  const [activeViewTab, setActiveViewTab] = useState<'OVERVIEW' | 'DETAIL'>('OVERVIEW');
+  const [selectedKocForDetail, setSelectedKocForDetail] = useState<KocItem | null>(null);
 
   // Search & Filter States
   const [searchTerm, setSearchTerm] = useState('');
@@ -367,90 +377,143 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
         </div>
       )}
       
-      {/* Header Banner & Title */}
-      <div className="bg-blue-900 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden">
-        <div className="absolute right-0 top-0 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
-        
-        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div className="space-y-1.5">
-            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-blue-500/20 border border-blue-400/30 text-blue-300 text-xs font-semibold">
-              <ShieldCheck className="w-3.5 h-3.5 text-cyan-300" />
-              Master Data &amp; Quản Trị Hồ Sơ Pháp Lý KOC
+      {/* Modern, Compact Header Bar with Overview vs Detail Switcher */}
+      <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+          {/* Left: Title + Mode Switcher Tabs */}
+          <div className="flex items-center gap-3.5 flex-wrap">
+            <div>
+              <h2 className="text-base font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                <span>Danh Bạ Master KOC</span>
+              </h2>
+              <div className="flex items-center gap-2 mt-0.5 text-2xs text-slate-500">
+                <span>Tổng <strong>{totalKocs}</strong> KOC</span>
+                <span>•</span>
+                <span className="text-emerald-700 font-medium">
+                  {verifiedCount} đã có CCCD/ĐKKD ({verifiedPercent}%)
+                </span>
+                {duplicateAnalysis.totalDuplicates > 0 && (
+                  <>
+                    <span>•</span>
+                    <span className="text-amber-700 font-medium flex items-center gap-1">
+                      <AlertTriangle className="w-3 h-3 text-amber-500" />
+                      {duplicateAnalysis.totalDuplicates} nghi trùng lặp
+                    </span>
+                  </>
+                )}
+              </div>
             </div>
-            <h2 className="text-2xl font-semibold tracking-tight text-white">
-              Danh Bạ Master KOC
-            </h2>
-            <p className="text-xs text-blue-100/90 max-w-2xl leading-relaxed">
-              Cơ sở dữ liệu gốc quản lý danh sách KOC toàn phòng B2C: 4 phân loại chuẩn hóa (khung lương, Segment, tệp, ngành hàng), đọc ảnh CCCD / ĐKKD phục vụ hợp đồng và tích hợp <strong className="text-cyan-300 font-semibold">số liệu thương mại Kalodata</strong>.
-            </p>
+
+            {/* Mode Switcher Buttons */}
+            <div className="flex items-center bg-slate-100 p-1 rounded-lg border border-slate-200 text-xs">
+              <button
+                type="button"
+                onClick={() => setActiveViewTab('OVERVIEW')}
+                className={`px-3 py-1 rounded-md font-semibold transition flex items-center gap-1.5 ${
+                  activeViewTab === 'OVERVIEW'
+                    ? 'bg-white text-slate-900 shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <Layers className="w-3.5 h-3.5 text-blue-600" />
+                <span>1. Tổng quan danh bạ</span>
+                <span className="text-2xs px-1.5 py-0.2 rounded-full bg-slate-200 text-slate-700 font-bold">
+                  {totalKocs}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (!selectedKocForDetail && localKocs.length > 0) {
+                    setSelectedKocForDetail(localKocs[0]);
+                  }
+                  setActiveViewTab('DETAIL');
+                }}
+                className={`px-3 py-1 rounded-md font-semibold transition flex items-center gap-1.5 ${
+                  activeViewTab === 'DETAIL'
+                    ? 'bg-white text-slate-900 shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <User className="w-3.5 h-3.5 text-purple-600" />
+                <span>2. Hồ sơ chi tiết</span>
+                {selectedKocForDetail && (
+                  <span className="text-2xs px-1.5 py-0.2 rounded bg-purple-50 text-purple-700 font-medium max-w-[130px] truncate border border-purple-200">
+                    {selectedKocForDetail.stageName}
+                  </span>
+                )}
+              </button>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2.5 shrink-0 flex-wrap">
-            {/* Kalodata Sync Button */}
+          {/* Right: Quick Actions */}
+          <div className="flex items-center gap-2 shrink-0 flex-wrap">
             <button
+              type="button"
               onClick={() => {
                 setKalodataTargetKoc(null);
                 setIsKalodataModalOpen(true);
               }}
-              className="btn-md bg-blue-600 hover:bg-blue-500 active:scale-[0.99] text-white font-semibold text-xs shadow-lg flex items-center gap-2 cursor-pointer"
+              className="px-2.5 py-1.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-300 rounded-lg shadow-2xs transition flex items-center gap-1.5"
+              title="Đồng bộ chỉ số bán hàng từ Kalodata"
             >
-              <TrendingUp className="w-4 h-4 text-white" />
-              <span>Đồng bộ Kalodata</span>
+              <TrendingUp className="w-3.5 h-3.5 text-blue-600" />
+              <span className="hidden sm:inline">Đồng bộ Kalodata</span>
             </button>
 
-            {/* Primary Action Button: Scan OCR */}
             <button
+              type="button"
               onClick={() => {
                 setOcrTargetKoc(null);
                 setIsOcrModalOpen(true);
               }}
-              className="btn-md bg-cyan-500 hover:bg-cyan-400 hover: active:scale-[0.99] text-white font-semibold text-xs shadow-lg flex items-center gap-2 cursor-pointer"
+              className="px-2.5 py-1.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-2xs transition flex items-center gap-1.5"
+              title="Đọc ảnh CCCD hoặc Giấy phép kinh doanh để trích xuất tự động"
             >
-              <Sparkles className="w-4 h-4 text-white" />
-              <span>Đọc ảnh CCCD / ĐKKD thêm KOC</span>
+              <Sparkles className="w-3.5 h-3.5 text-cyan-200" />
+              <span>Đọc ảnh CCCD / ĐKKD</span>
             </button>
 
-            {/* Secondary Action: Manual Create */}
             <button
+              type="button"
               onClick={() => setIsCreateModalOpen(true)}
-              className="btn-md bg-white/10 hover:bg-white/20 text-white border border-white/20 font-semibold text-xs transition flex items-center gap-1.5 cursor-pointer backdrop-blur-xs"
+              className="px-2.5 py-1.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition flex items-center gap-1.5"
             >
-              <UserPlus className="w-3.5 h-3.5" />
-              <span>+ Thêm thủ công</span>
+              <UserPlus className="w-3.5 h-3.5 text-slate-600" />
+              <span className="hidden sm:inline">Thêm KOC</span>
             </button>
-          </div>
-        </div>
-
-        {/* Mini KPI Cards Bar */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6 pt-5 border-t border-white/10">
-          <div className="p-3 rounded-xl bg-white/5 border border-white/10">
-            <span className="text-2xs text-slate-200 font-medium block">Tổng KOC Trong Master Data</span>
-            <span className="text-xl font-semibold text-white mt-0.5 block">{totalKocs}</span>
-          </div>
-
-          <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
-            <span className="text-2xs text-emerald-200 font-medium block flex items-center gap-1">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Đã xác thực CCCD / ĐKKD
-            </span>
-            <div className="flex items-baseline gap-2 mt-0.5">
-              <span className="text-xl font-semibold text-emerald-300">{verifiedCount}</span>
-              <span className="text-xs text-emerald-200">({verifiedPercent}%)</span>
-            </div>
-          </div>
-
-          <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
-            <span className="text-2xs text-amber-200 font-medium block flex items-center gap-1">
-              <AlertTriangle className="w-3.5 h-3.5 text-amber-400" /> Chưa có thông tin CCCD
-            </span>
-            <span className="text-xl font-semibold text-amber-300 mt-0.5 block">{totalKocs - verifiedCount}</span>
-          </div>
-
-          <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20">
-            <span className="text-2xs text-blue-200 font-medium block">Sẵn sàng xuất hợp đồng</span>
-            <span className="text-xl font-semibold text-cyan-300 mt-0.5 block">{verifiedCount} KOC</span>
           </div>
         </div>
       </div>
+
+      {/* RENDER SCREEN 2: HỒ SƠ CHI TIẾT KOC */}
+      {activeViewTab === 'DETAIL' && (selectedKocForDetail || localKocs[0]) ? (
+        <KocDetailScreen
+          koc={selectedKocForDetail || localKocs[0]}
+          allKocs={filteredKocs.length > 0 ? filteredKocs : localKocs}
+          allDeals={allDeals}
+          currentUser={currentUser}
+          duplicateReasons={
+            (selectedKocForDetail || localKocs[0])
+              ? duplicateAnalysis.kocDuplicateReasons.get((selectedKocForDetail || localKocs[0]).id)
+              : undefined
+          }
+          onBackToOverview={() => setActiveViewTab('OVERVIEW')}
+          onSelectKoc={(k) => setSelectedKocForDetail(k)}
+          onOpenQuickBook={(k) => onOpenQuickBookWithKoc && onOpenQuickBookWithKoc(k)}
+          onSyncKalodata={(k) => {
+            setKalodataTargetKoc(k);
+            setIsKalodataModalOpen(true);
+          }}
+          onScanOcr={(k) => {
+            setOcrTargetKoc(k);
+            setIsOcrModalOpen(true);
+          }}
+        />
+      ) : (
+        /* RENDER SCREEN 1: TỔNG QUAN DANH BẠ */
+        <>
 
       {/* Control Toolbar: Search & 4 Core Dimensions Filter */}
       <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-2xs space-y-3">
@@ -740,9 +803,17 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
                           {koc.stageName.slice(0, 2).toUpperCase()}
                         </div>
                         <div className="min-w-0">
-                          <span className="font-semibold text-slate-900 block truncate leading-tight">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedKocForDetail(koc);
+                              setActiveViewTab('DETAIL');
+                            }}
+                            className="font-semibold text-slate-900 block truncate leading-tight hover:text-blue-600 text-left cursor-pointer transition"
+                            title="Bấm để mở màn hình hồ sơ chi tiết KOC"
+                          >
                             {koc.stageName}
-                          </span>
+                          </button>
                           <span className="text-2xs text-slate-500 block truncate leading-tight mt-0.5">
                             {koc.realName ? `${koc.realName} • ` : ''}@{koc.channelId}
                           </span>
@@ -887,13 +958,18 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
                           <TrendingUp className="w-4 h-4 text-indigo-600" />
                         </button>
 
-                        {/* Quick View Profile */}
+                        {/* Detail Screen Button */}
                         <button
-                          onClick={() => setInspectedKoc(koc)}
-                          className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition cursor-pointer"
-                          title="Xem toàn bộ hồ sơ 360 độ"
+                          type="button"
+                          onClick={() => {
+                            setSelectedKocForDetail(koc);
+                            setActiveViewTab('DETAIL');
+                          }}
+                          className="px-2.5 py-1 text-2xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition cursor-pointer flex items-center gap-1 shrink-0"
+                          title="Mở màn hình hồ sơ chi tiết KOC 360 độ"
                         >
-                          <Eye className="w-4 h-4" />
+                          <Eye className="w-3.5 h-3.5 text-blue-600" />
+                          <span>Chi tiết</span>
                         </button>
 
                         {/* OCR Update Button */}
@@ -982,6 +1058,8 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
           </div>
         )}
       </div>
+        </>
+      )}
 
       {/* Embedded OCR Modal */}
       <LegalOcrModal

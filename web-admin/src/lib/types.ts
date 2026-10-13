@@ -1016,6 +1016,21 @@ export interface BrandKnowledgeBase {
   publicShareSlug: string; // e.g. "senka-japan-official"
   shareAccessPin?: string;
   documents?: BrandDocumentFile[];
+  isConfigured?: boolean;
+  companyName?: string;
+  taxCode?: string;
+  contactPerson?: string;
+  accountPic?: string;
+  growthPic?: string;
+  bookingPicLead?: string;
+  monthlyBudget?: number;
+  targetGmv?: number;
+  platforms?: ('Shopee Mall' | 'TikTok Shop' | 'Lazada')[];
+  ratecardCeiling?: {
+    grade: SalaryGrade;
+    maxBudget: number;
+    description: string;
+  }[];
 }
 
 // ==========================================
@@ -1376,6 +1391,7 @@ export interface BrandDetail {
   servicePackages?: string[];
   contentPic?: string;
   mediaPic?: string;
+  profileStatus?: 'CONFIGURED' | 'NOT_CONFIGURED';
 }
 
 export type GrowthDemandStatus = 

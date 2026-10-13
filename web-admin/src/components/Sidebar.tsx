@@ -68,6 +68,7 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           title: '1. Kế hoạch & Phân bổ',
           items: [
             { key: 'input-plan', label: 'Kế hoạch tháng', icon: Calendar },
+            { key: 'brand-knowledge', label: 'Hồ sơ thương hiệu', icon: BookOpen },
             { key: 'manager', label: 'Điều phối & Quản lý', icon: Split },
           ],
         },
@@ -108,6 +109,7 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           title: '1. Kế hoạch & Phân bổ',
           items: [
             { key: 'input-plan', label: 'Kế hoạch tháng', icon: Calendar },
+            { key: 'brand-knowledge', label: 'Hồ sơ thương hiệu', icon: BookOpen },
             { key: 'manager', label: 'Điều phối nhóm', icon: Split },
           ],
         },
@@ -147,6 +149,7 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           title: '1. Kế hoạch & Đợt chạy',
           items: [
             { key: 'input-plan', label: 'Kế hoạch tháng', icon: Calendar },
+            { key: 'brand-knowledge', label: 'Hồ sơ thương hiệu', icon: BookOpen },
             { key: 'koc-listing', label: 'Listing & Air Video', icon: Film },
           ],
         },
@@ -185,7 +188,7 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           title: '2. Làm việc với Brand',
           items: [
             { key: 'campaigns', label: 'Chiến dịch Brand', icon: Layers },
-            { key: 'brand-knowledge', label: 'Hướng dẫn nhãn hàng', icon: BookOpen },
+            { key: 'brand-knowledge', label: 'Hồ sơ thương hiệu', icon: BookOpen },
             { key: 'push-products', label: 'Sản phẩm đẩy', icon: TrendingUp },
           ],
         },
@@ -211,7 +214,7 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           items: [
             { key: 'input-plan', label: 'Kế hoạch tháng', icon: Calendar },
             { key: 'campaigns', label: 'Chiến dịch Brand', icon: Layers },
-            { key: 'brand-knowledge', label: 'Hướng dẫn nhãn hàng', icon: BookOpen },
+            { key: 'brand-knowledge', label: 'Hồ sơ thương hiệu', icon: BookOpen },
           ],
         },
         {
@@ -243,6 +246,7 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           title: '1. Kế hoạch & Doanh số',
           items: [
             { key: 'input-plan', label: 'Kế hoạch tháng', icon: Calendar },
+            { key: 'brand-knowledge', label: 'Hồ sơ thương hiệu', icon: BookOpen },
             { key: 'dashboard-bi', label: 'Dashboard điều hành', icon: BarChart3 },
             { key: 'stores', label: 'Danh mục gian hàng', icon: Building2 },
           ],
@@ -253,7 +257,6 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
             { key: 'campaigns', label: 'Chiến dịch Brand', icon: Layers },
             { key: 'ads-report', label: 'Báo cáo Ads TikTok', icon: BarChart3 },
             { key: 'performance-p3', label: 'Đánh giá 4P & thưởng', icon: Coins },
-            { key: 'brand-knowledge', label: 'Hướng dẫn nhãn hàng', icon: BookOpen },
           ],
         },
       ];

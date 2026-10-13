@@ -43,7 +43,11 @@ import {
   Lightbulb,
   FolderOpen,
   LayoutDashboard,
-  CheckCheck
+  CheckCheck,
+  Save,
+  Coins,
+  TrendingUp,
+  Building2
 } from 'lucide-react';
 import {
   BrandKnowledgeBase,
@@ -54,9 +58,11 @@ import {
   WhitelistKeyword,
   CrisisProtocol,
   AiScriptAnalysisResult,
-  UserProfile
+  UserProfile,
+  BrandDetail
 } from '../../lib/types';
 import { INITIAL_BRAND_KNOWLEDGE_BASES } from '../../lib/mockData';
+import { UPBASE_BRANDS_MASTER } from '../../lib/importedMasterData';
 import { analyzeScriptWithAi } from '../../lib/aiScriptAnalyzer';
 import { BrandDocumentsTab } from './BrandDocumentsTab';
 import { SAMPLE_BRAND_DOCUMENTS } from '../../lib/brandDocumentExtractor';
@@ -64,23 +70,129 @@ import { SAMPLE_BRAND_DOCUMENTS } from '../../lib/brandDocumentExtractor';
 export interface BrandKnowledgeViewProps {
   currentUser?: UserProfile | null;
   selectedBrand?: string;
+  brands?: BrandDetail[];
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
+  onNavigateBackToBrands?: () => void;
 }
 
-type KnowledgeTabKey = 'DOCUMENTS' | 'SKUS' | 'LEGAL' | 'KEYWORDS' | 'OBJECTIONS' | 'VISUAL_IDENTITY' | 'AI_INSPECTOR';
+type KnowledgeTabKey = 
+  | 'OVERVIEW_PIC' 
+  | 'RATECARD_CEILING' 
+  | 'DOCUMENTS' 
+  | 'SKUS' 
+  | 'LEGAL' 
+  | 'KEYWORDS' 
+  | 'OBJECTIONS' 
+  | 'VISUAL_IDENTITY' 
+  | 'AI_INSPECTOR';
 
 export const BrandKnowledgeView: React.FC<BrandKnowledgeViewProps> = ({
   currentUser,
   selectedBrand = 'ALL',
-  onNotify
+  brands,
+  onNotify,
+  onNavigateBackToBrands
 }) => {
   const [knowledgeBases, setKnowledgeBases] = useState<BrandKnowledgeBase[]>(() => {
-    return INITIAL_BRAND_KNOWLEDGE_BASES.map(brand => ({
+    const list: BrandKnowledgeBase[] = INITIAL_BRAND_KNOWLEDGE_BASES.map(brand => ({
       ...brand,
       documents: brand.documents || SAMPLE_BRAND_DOCUMENTS.filter(
         d => d.brandId === brand.id || d.brandName.toLowerCase() === brand.brandName.toLowerCase()
-      )
+      ),
+      isConfigured: true,
+      ratecardCeiling: brand.ratecardCeiling || [
+        { grade: 'KL1', maxBudget: 500000, description: 'Creator khởi đầu (< 500k)' },
+        { grade: 'KL2', maxBudget: 1500000, description: 'Micro Creator (500k - 1.5tr)' },
+        { grade: 'KL3', maxBudget: 3500000, description: 'Mid Creator (1.5tr - 3.5tr)' },
+        { grade: 'KL4', maxBudget: 7000000, description: 'Key Creator (3.5tr - 7tr)' },
+        { grade: 'KL5', maxBudget: 12000000, description: 'Macro Creator (7tr - 12tr)' },
+        { grade: 'KL6', maxBudget: 20000000, description: 'Top Creator (12tr - 20tr)' },
+        { grade: 'KL7', maxBudget: 35000000, description: 'Celeb / Star (> 20tr)' }
+      ]
     }));
+
+    // Merge in all brands from Master Data (UPBASE_BRANDS_MASTER + props)
+    const allMasterBrands = brands && brands.length > 0 ? brands : UPBASE_BRANDS_MASTER;
+    allMasterBrands.forEach(b => {
+      const existing = list.find(item => item.brandName.toLowerCase() === b.name.toLowerCase());
+      if (existing) {
+        existing.companyName = existing.companyName || b.companyName || b.name;
+        existing.accountPic = existing.accountPic || b.accountPic;
+        existing.growthPic = existing.growthPic || b.growthPic;
+        existing.bookingPicLead = existing.bookingPicLead || b.bookingPicLead;
+        existing.monthlyBudget = existing.monthlyBudget || b.monthlyBudget || b.planBudget || 0;
+        existing.targetGmv = existing.targetGmv || b.targetGmv || 0;
+        existing.platforms = existing.platforms || (b.platforms as any) || ['Shopee Mall', 'TikTok Shop'];
+      } else {
+        const hasGuideline = b.brandGuideline && b.brandGuideline.length > 10;
+        const brandSlug = (b.code || b.name).toLowerCase().replace(/[^a-z0-9]/g, '-');
+        list.push({
+          id: `kb-${brandSlug}`,
+          brandName: b.name,
+          companyName: b.companyName || b.name,
+          category: b.category || 'Mỹ phẩm & Làm đẹp',
+          originCountry: 'Việt Nam',
+          foundedYear: 2024,
+          slogan: hasGuideline ? b.brandGuideline.slice(0, 80) : 'Chưa thiết lập slogan',
+          brandStory: b.brandGuideline || 'Chưa thiết lập câu chuyện thương hiệu và định vị',
+          toneOfVoice: 'Chuyên nghiệp, tin cậy, gần gũi',
+          toneTag: 'BÁC_SĨ_CHUYÊN_GIA',
+          targetPersonaSummary: 'Khách hàng quan tâm đến chất lượng và nguồn gốc xuất xứ',
+          colors: [
+            { name: 'Chủ đạo', hex: '#4F46E5', role: 'PRIMARY' },
+            { name: 'Phụ trợ', hex: '#0284C7', role: 'SECONDARY' }
+          ],
+          logoAssetRules: 'Sử dụng logo chính thức',
+          logoDownloadUrls: [],
+          visualDoList: ['Sử dụng hình ảnh bao bì sắc nét', 'Đặt logo góc trên video', 'Hình ảnh sản phẩm rõ ràng'],
+          visualDontList: ['Không dùng từ ngữ phóng đại', 'Không vi phạm chính sách sàn', 'Không nhắc tên đối thủ'],
+          certifications: [],
+          skus: (b.heroProducts || []).map(p => ({
+            id: p.id,
+            skuCode: p.sku,
+            name: p.productName || p.sku,
+            volumeOrWeight: 'Fullsize',
+            category: p.category || 'Mỹ phẩm & Làm đẹp',
+            priceVnd: p.price || 250000,
+            sampleStockCount: p.sampleStock || 50,
+            pdpUrl: p.pdpUrl || '#',
+            scientificMechanism: 'Cơ chế tác động chuẩn theo tài liệu thương hiệu',
+            keyActiveIngredients: [],
+            uniqueSellingPoints: p.keySellingPoints || ['Sản phẩm chủ lực'],
+            clinicalTrials: 'Đạt chuẩn kiểm định chất lượng',
+            usageInstructions: 'Sử dụng theo hướng dẫn của nhà sản xuất',
+            targetSkinOrUser: 'Người tiêu dùng có nhu cầu',
+            contraindications: p.restrictedClaims?.join(', ') || 'Không dùng cho người mẫn cảm với thành phần'
+          })),
+          blacklistKeywords: [],
+          whitelistKeywords: [],
+          objectionFaqs: [],
+          crisisProtocols: [],
+          lastUpdated: new Date().toISOString(),
+          updatedBy: 'Hệ thống Lark Sync',
+          publicShareSlug: brandSlug,
+          documents: [],
+          isConfigured: b.profileStatus === 'CONFIGURED' || !!hasGuideline,
+          accountPic: b.accountPic || 'Chưa phân công',
+          growthPic: b.growthPic || 'Chưa phân công',
+          bookingPicLead: b.bookingPicLead || 'Chưa phân công',
+          monthlyBudget: b.monthlyBudget || b.planBudget || 0,
+          targetGmv: b.targetGmv || 0,
+          platforms: (b.platforms as any) || ['Shopee Mall', 'TikTok Shop'],
+          ratecardCeiling: [
+            { grade: 'KL1', maxBudget: 500000, description: 'Creator khởi đầu (< 500k)' },
+            { grade: 'KL2', maxBudget: 1500000, description: 'Micro Creator (500k - 1.5tr)' },
+            { grade: 'KL3', maxBudget: 3500000, description: 'Mid Creator (1.5tr - 3.5tr)' },
+            { grade: 'KL4', maxBudget: 7000000, description: 'Key Creator (3.5tr - 7tr)' },
+            { grade: 'KL5', maxBudget: 12000000, description: 'Macro Creator (7tr - 12tr)' },
+            { grade: 'KL6', maxBudget: 20000000, description: 'Top Creator (12tr - 20tr)' },
+            { grade: 'KL7', maxBudget: 35000000, description: 'Celeb / Star (> 20tr)' }
+          ]
+        });
+      }
+    });
+
+    return list;
   });
 
   const isManagerOrBOD = !currentUser || ['ADMIN', 'MANAGER', 'LEADER'].includes(currentUser.role);
@@ -105,9 +217,11 @@ export const BrandKnowledgeView: React.FC<BrandKnowledgeViewProps> = ({
       }
     }
   }, [selectedBrand, knowledgeBases]);
-  const [activeKnowledgeTab, setActiveKnowledgeTab] = useState<KnowledgeTabKey>('DOCUMENTS');
+  const [activeKnowledgeTab, setActiveKnowledgeTab] = useState<KnowledgeTabKey>('OVERVIEW_PIC');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string>('ALL');
+  const [isBrandDropdownOpen, setIsBrandDropdownOpen] = useState(false);
+  const [brandSelectorSearch, setBrandSelectorSearch] = useState('');
 
   const handleUpdateBrand = (updatedBrand: BrandKnowledgeBase) => {
     setKnowledgeBases(prev => prev.map(b => b.id === updatedBrand.id ? updatedBrand : b));
@@ -141,6 +255,33 @@ export const BrandKnowledgeView: React.FC<BrandKnowledgeViewProps> = ({
 
   // Active Brand Knowledge Base
   const currentBrand = knowledgeBases.find(b => b.id === selectedBrandId) || knowledgeBases[0];
+
+  const updateCurrentBrandField = <K extends keyof BrandKnowledgeBase>(field: K, value: BrandKnowledgeBase[K]) => {
+    setKnowledgeBases(prev => prev.map(kb => {
+      if (kb.id === currentBrand.id) {
+        return {
+          ...kb,
+          [field]: value
+        };
+      }
+      return kb;
+    }));
+  };
+
+  const handleSaveCurrentProfile = () => {
+    setKnowledgeBases(prev => prev.map(kb => {
+      if (kb.id === currentBrand.id) {
+        return {
+          ...kb,
+          isConfigured: true,
+          lastUpdated: new Date().toISOString(),
+          updatedBy: currentUser?.name || 'Chuyên viên B2C'
+        };
+      }
+      return kb;
+    }));
+    onNotify?.(`Đã lưu hồ sơ thương hiệu "${currentBrand.brandName}" thành công!`, 'success');
+  };
 
   const handleRunAiAnalysis = () => {
     setIsAnalyzing(true);
@@ -254,53 +395,141 @@ export const BrandKnowledgeView: React.FC<BrandKnowledgeViewProps> = ({
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
       {/* TOP TOOLBAR & GLOBAL ACTIONS */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white p-4 rounded-md border border-slate-200 shadow-sm">
-        {/* Brand Selector Bar */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 lg:pb-0">
-          <span className="text-xs text-slate-500 font-semibold flex items-center gap-1.5 whitespace-nowrap">
-            <Building className="w-4 h-4 text-blue-600" /> Nhãn hàng:
-          </span>
-
-          <button
-            onClick={() => setSelectedBrandId('ALL')}
-            className={`px-3 py-1.5 rounded-md text-xs font-semibold transition flex items-center gap-1.5 whitespace-nowrap ${
-              selectedBrandId === 'ALL'
-                ? 'bg-slate-900 text-white shadow-sm'
-                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-            }`}
-          >
-            <LayoutDashboard className="w-3.5 h-3.5" />
-            <span>Tất cả nhãn hàng</span>
-            <span className={`text-2xs px-1.5 py-0.2 rounded-full ${
-              selectedBrandId === 'ALL' ? 'bg-slate-700 text-white' : 'bg-white text-slate-500'
-            }`}>
-              {knowledgeBases.length}
-            </span>
-          </button>
-
-          {knowledgeBases.map((brand) => (
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 bg-white p-4 rounded-md border border-slate-200 shadow-sm">
+        {/* Left: Back button & Brand Selector Dropdown */}
+        <div className="flex items-center gap-2.5 flex-wrap">
+          {onNavigateBackToBrands && (
             <button
-              key={brand.id}
-              onClick={() => setSelectedBrandId(brand.id)}
-              className={`px-3 py-1.5 rounded-md text-xs font-semibold transition flex items-center gap-2 whitespace-nowrap ${
-                selectedBrandId === brand.id
-                  ? 'bg-blue-600 text-white shadow-sm'
-                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-              }`}
+              onClick={onNavigateBackToBrands}
+              className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md text-xs font-semibold flex items-center gap-1.5 transition border border-slate-300"
+              title="Quay lại Danh sách Brand để thêm hoặc đồng bộ Lark Base"
             >
-              <span>{brand.brandName}</span>
-              <span className={`text-2xs px-1.5 py-0.2 rounded-full ${
-                selectedBrandId === brand.id ? 'bg-blue-700 text-white' : 'bg-white text-slate-500'
-              }`}>
-                {brand.skus.length} SKUs
-              </span>
+              <ArrowLeft className="w-3.5 h-3.5 text-slate-600" />
+              <span>Danh sách Brand</span>
             </button>
-          ))}
+          )}
+
+          {/* Brand Combobox / Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setIsBrandDropdownOpen(prev => !prev)}
+              className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-300 rounded-md text-xs font-semibold text-slate-800 hover:bg-slate-50 transition shadow-xs min-w-[240px] justify-between"
+            >
+              <div className="flex items-center gap-2 truncate">
+                <Building className="w-4 h-4 text-blue-600 shrink-0" />
+                <span className="truncate">
+                  {selectedBrandId === 'ALL' ? 'Tất cả nhãn hàng (Ma trận)' : currentBrand.brandName}
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5 shrink-0">
+                {selectedBrandId !== 'ALL' && (
+                  <span className={`text-2xs px-1.5 py-0.2 rounded-full font-medium ${
+                    currentBrand.isConfigured ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                  }`}>
+                    {currentBrand.isConfigured ? 'Đã lập' : 'Chưa'}
+                  </span>
+                )}
+                <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+              </div>
+            </button>
+
+            {/* Dropdown Popover */}
+            {isBrandDropdownOpen && (
+              <>
+                <div
+                  className="fixed inset-0 z-30"
+                  onClick={() => setIsBrandDropdownOpen(false)}
+                />
+                <div className="absolute left-0 top-full mt-1.5 w-80 max-h-96 bg-white border border-slate-200 rounded-lg shadow-xl z-40 flex flex-col overflow-hidden animate-in fade-in duration-100">
+                  <div className="p-2 border-b border-slate-200 bg-slate-50">
+                    <div className="relative">
+                      <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        placeholder="Tìm kiếm trong danh sách brand..."
+                        value={brandSelectorSearch}
+                        onChange={(e) => setBrandSelectorSearch(e.target.value)}
+                        className="w-full pl-8 pr-3 py-1 text-xs bg-white border border-slate-200 rounded focus:outline-none focus:border-blue-500"
+                        autoFocus
+                      />
+                    </div>
+                  </div>
+
+                  <div className="overflow-y-auto flex-1 divide-y divide-slate-100">
+                    <button
+                      onClick={() => {
+                        setSelectedBrandId('ALL');
+                        setIsBrandDropdownOpen(false);
+                        setBrandSelectorSearch('');
+                      }}
+                      className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between hover:bg-slate-50 transition ${
+                        selectedBrandId === 'ALL' ? 'bg-blue-50/70 font-semibold text-blue-700' : 'text-slate-700'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <LayoutDashboard className="w-3.5 h-3.5 text-slate-500" />
+                        <span>Tất cả nhãn hàng (Ma trận đối soát)</span>
+                      </div>
+                      <span className="text-2xs bg-slate-200 px-1.5 py-0.5 rounded text-slate-600 font-semibold">
+                        {knowledgeBases.length}
+                      </span>
+                    </button>
+
+                    {knowledgeBases
+                      .filter(b => !brandSelectorSearch || b.brandName.toLowerCase().includes(brandSelectorSearch.toLowerCase()) || b.category.toLowerCase().includes(brandSelectorSearch.toLowerCase()))
+                      .map(brand => (
+                        <button
+                          key={brand.id}
+                          onClick={() => {
+                            setSelectedBrandId(brand.id);
+                            setIsBrandDropdownOpen(false);
+                            setBrandSelectorSearch('');
+                          }}
+                          className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between hover:bg-slate-50 transition ${
+                            selectedBrandId === brand.id ? 'bg-blue-50/70 font-semibold text-blue-700' : 'text-slate-700'
+                          }`}
+                        >
+                          <div className="truncate pr-2">
+                            <div className="font-medium text-slate-900 truncate">{brand.brandName}</div>
+                            <div className="text-2xs text-slate-400 truncate">{brand.category} • {brand.originCountry}</div>
+                          </div>
+                          <div className="shrink-0 flex items-center gap-1.5">
+                            <span className={`text-2xs px-1.5 py-0.5 rounded-full font-medium ${
+                              brand.isConfigured ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'
+                            }`}>
+                              {brand.isConfigured ? 'Đã lập' : 'Chưa'}
+                            </span>
+                          </div>
+                        </button>
+                      ))
+                    }
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Quick Major Brands Switcher */}
+          <div className="hidden xl:flex items-center gap-1 pl-2 border-l border-slate-200">
+            {knowledgeBases.slice(0, 5).map(brand => (
+              <button
+                key={brand.id}
+                onClick={() => setSelectedBrandId(brand.id)}
+                className={`px-2.5 py-1 rounded text-2xs font-semibold transition ${
+                  selectedBrandId === brand.id
+                    ? 'bg-blue-600 text-white shadow-2xs'
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                {brand.brandName}
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* Action Buttons: Search & KOC Share Link */}
-        <div className="flex items-center gap-2.5">
-          <div className="relative w-full sm:w-60">
+        {/* Right: Search & Action Buttons */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="relative w-full sm:w-56">
             <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
@@ -311,9 +540,20 @@ export const BrandKnowledgeView: React.FC<BrandKnowledgeViewProps> = ({
             />
           </div>
 
+          {selectedBrandId !== 'ALL' && (
+            <button
+              onClick={handleSaveCurrentProfile}
+              className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-md shadow-sm transition flex items-center gap-1.5 whitespace-nowrap"
+              title="Lưu tất cả thông tin hồ sơ của nhãn hàng này"
+            >
+              <Save className="w-3.5 h-3.5" />
+              <span>Lưu hồ sơ</span>
+            </button>
+          )}
+
           <button
             onClick={() => setIsShareModalOpen(true)}
-            className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 hover: text-white text-xs font-semibold rounded-md shadow-sm transition flex items-center gap-1.5 whitespace-nowrap"
+            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-md shadow-sm transition flex items-center gap-1.5 whitespace-nowrap"
           >
             <Share2 className="w-3.5 h-3.5" />
             <span>Sinh Link KOC</span>
@@ -321,10 +561,10 @@ export const BrandKnowledgeView: React.FC<BrandKnowledgeViewProps> = ({
 
           <button
             onClick={() => setIsAddModalOpen(true)}
-            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-md shadow-sm transition flex items-center gap-1.5 whitespace-nowrap"
+            className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold rounded-md border border-slate-300 transition flex items-center gap-1.5 whitespace-nowrap"
           >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Bổ Sung Tri thức</span>
+            <Plus className="w-3.5 h-3.5 text-slate-600" />
+            <span>Bổ sung Tri thức</span>
           </button>
         </div>
       </div>
@@ -649,6 +889,38 @@ export const BrandKnowledgeView: React.FC<BrandKnowledgeViewProps> = ({
       <div className="border-b border-slate-200">
         <div className="flex items-center gap-2 overflow-x-auto pb-1">
           <button
+            onClick={() => setActiveKnowledgeTab('OVERVIEW_PIC')}
+            className={`px-4 py-2.5 text-xs font-semibold border-b-2 transition flex items-center gap-2 whitespace-nowrap ${
+              activeKnowledgeTab === 'OVERVIEW_PIC'
+                ? 'border-blue-600 text-blue-700 bg-blue-50/50'
+                : 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+            }`}
+          >
+            <Building2 className="w-4 h-4 text-blue-600" />
+            <span>Hồ sơ &amp; Phân công PIC</span>
+            {currentBrand.isConfigured ? (
+              <span className="px-1.5 py-0.2 rounded-full text-2xs bg-emerald-100 text-emerald-800 font-semibold">Đã lập</span>
+            ) : (
+              <span className="px-1.5 py-0.2 rounded-full text-2xs bg-amber-100 text-amber-800 font-semibold">Cần điền</span>
+            )}
+          </button>
+
+          <button
+            onClick={() => setActiveKnowledgeTab('RATECARD_CEILING')}
+            className={`px-4 py-2.5 text-xs font-semibold border-b-2 transition flex items-center gap-2 whitespace-nowrap ${
+              activeKnowledgeTab === 'RATECARD_CEILING'
+                ? 'border-blue-600 text-blue-700 bg-blue-50/50'
+                : 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+            }`}
+          >
+            <Coins className="w-4 h-4 text-amber-600" />
+            <span>Định mức &amp; Trần thù lao</span>
+            <span className="px-1.5 py-0.2 rounded-full text-2xs bg-slate-200 text-slate-700 font-semibold">
+              {(currentBrand.ratecardCeiling || []).length || 7} bậc
+            </span>
+          </button>
+
+          <button
             onClick={() => setActiveKnowledgeTab('DOCUMENTS')}
             className={`px-4 py-2.5 text-xs font-semibold border-b-2 transition flex items-center gap-2 whitespace-nowrap ${
               activeKnowledgeTab === 'DOCUMENTS'
@@ -757,6 +1029,494 @@ export const BrandKnowledgeView: React.FC<BrandKnowledgeViewProps> = ({
           </button>
         </div>
       </div>
+
+      {/* ========================================================================= */}
+      {/* TAB 0A: HỒ SƠ DOANH NGHIỆP & PHÂN CÔNG PIC 3 BÊN (SLA B2C)                 */}
+      {/* ========================================================================= */}
+      {activeKnowledgeTab === 'OVERVIEW_PIC' && (
+        <div className="space-y-6 animate-in fade-in duration-150">
+          {/* Card 1: Thông tin pháp nhân & Định danh */}
+          <div className="card-enterprise p-5 bg-white space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <Building2 className="w-4 h-4 text-blue-600" />
+                <h3 className="text-sm font-semibold text-slate-900">
+                  Thông Tin Pháp Nhân &amp; Định Danh Thương Hiệu
+                </h3>
+              </div>
+              <span className={`text-2xs px-2.5 py-0.5 rounded-full font-semibold ${
+                currentBrand.isConfigured ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+              }`}>
+                {currentBrand.isConfigured ? 'Hồ sơ: Đã hoàn thiện' : 'Hồ sơ: Đang thiết lập'}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">
+                  Tên thương hiệu (Brand Name) *
+                </label>
+                <input
+                  type="text"
+                  value={currentBrand.brandName}
+                  onChange={(e) => updateCurrentBrandField('brandName', e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-slate-900 font-semibold focus:outline-none focus:border-blue-500 focus:bg-white"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">
+                  Công ty đại diện / Pháp nhân hợp đồng
+                </label>
+                <input
+                  type="text"
+                  placeholder="VD: Công ty TNHH Shiseido Việt Nam"
+                  value={currentBrand.companyName || ''}
+                  onChange={(e) => updateCurrentBrandField('companyName', e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-slate-900 focus:outline-none focus:border-blue-500 focus:bg-white"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">
+                  Mã số thuế (MST)
+                </label>
+                <input
+                  type="text"
+                  placeholder="VD: 0309998888"
+                  value={currentBrand.taxCode || ''}
+                  onChange={(e) => updateCurrentBrandField('taxCode', e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-slate-900 font-mono focus:outline-none focus:border-blue-500 focus:bg-white"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">
+                  Đầu mối liên hệ phía Brand (Contact Person)
+                </label>
+                <input
+                  type="text"
+                  placeholder="VD: Nguyễn Lan Anh - Brand Manager (0988.xxx.xxx)"
+                  value={currentBrand.contactPerson || ''}
+                  onChange={(e) => updateCurrentBrandField('contactPerson', e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-slate-900 focus:outline-none focus:border-blue-500 focus:bg-white"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">
+                  Quốc gia xuất xứ
+                </label>
+                <input
+                  type="text"
+                  value={currentBrand.originCountry}
+                  onChange={(e) => updateCurrentBrandField('originCountry', e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-slate-900 focus:outline-none focus:border-blue-500 focus:bg-white"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">
+                  Ngành hàng chủ lực
+                </label>
+                <input
+                  type="text"
+                  value={currentBrand.category}
+                  onChange={(e) => updateCurrentBrandField('category', e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-slate-900 focus:outline-none focus:border-blue-500 focus:bg-white"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Card 2: Phân công nhân sự 3 bên (SLA B2C) */}
+          <div className="card-enterprise p-5 bg-white space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div>
+                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                  <span>Phân Công Nhân Sự Phụ Trách 3 Bên (SLA B2C)</span>
+                </h3>
+                <p className="text-2xs text-slate-500 mt-0.5">
+                  Thiết lập nhân sự chịu trách nhiệm đối soát và xử lý các điểm nghẽn SLA vận hành
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+              <div className="p-3.5 bg-blue-50/50 rounded-lg border border-blue-100 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-blue-900">1. Account PIC</span>
+                  <span className="text-2xs bg-blue-100 text-blue-700 px-1.5 py-0.2 rounded font-medium">Khách hàng</span>
+                </div>
+                <p className="text-2xs text-slate-500">Chịu trách nhiệm brief, hợp đồng thương hiệu và nghiệm thu</p>
+                <input
+                  type="text"
+                  placeholder="VD: Phạm Thị Nhài / Hà Thị Thương"
+                  value={currentBrand.accountPic || ''}
+                  onChange={(e) => updateCurrentBrandField('accountPic', e.target.value)}
+                  className="w-full bg-white border border-slate-200 rounded px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-blue-500 font-medium"
+                />
+              </div>
+
+              <div className="p-3.5 bg-emerald-50/50 rounded-lg border border-emerald-100 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-emerald-900">2. Growth PIC</span>
+                  <span className="text-2xs bg-emerald-100 text-emerald-700 px-1.5 py-0.2 rounded font-medium">Vận hành Sàn</span>
+                </div>
+                <p className="text-2xs text-slate-500">Phụ trách traffic, deal sàn, target GMV và phối hợp live</p>
+                <input
+                  type="text"
+                  placeholder="VD: Phạm Thị Hồng Yến / Nguyễn Anh Tú"
+                  value={currentBrand.growthPic || ''}
+                  onChange={(e) => updateCurrentBrandField('growthPic', e.target.value)}
+                  className="w-full bg-white border border-slate-200 rounded px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-blue-500 font-medium"
+                />
+              </div>
+
+              <div className="p-3.5 bg-purple-50/50 rounded-lg border border-purple-100 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-purple-900">3. Booking PIC / Leader</span>
+                  <span className="text-2xs bg-purple-100 text-purple-700 px-1.5 py-0.2 rounded font-medium">B2C Booking</span>
+                </div>
+                <p className="text-2xs text-slate-500">Phụ trách kế hoạch Creator, duyệt kịch bản, nghiệm thu video</p>
+                <input
+                  type="text"
+                  placeholder="VD: Nguyễn Thị Ngọc Tâm / Lê Phương Thảo"
+                  value={currentBrand.bookingPicLead || ''}
+                  onChange={(e) => updateCurrentBrandField('bookingPicLead', e.target.value)}
+                  className="w-full bg-white border border-slate-200 rounded px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-blue-500 font-medium"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Card 3: Kế hoạch tài chính & Sàn phân phối */}
+          <div className="card-enterprise p-5 bg-white space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-indigo-600" />
+                <h3 className="text-sm font-semibold text-slate-900">
+                  Hạn Mức Ngân Sách Tháng &amp; Kênh Sàn Phân Phối
+                </h3>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">
+                  Trần Ngân Sách Booking Tháng (VNĐ)
+                </label>
+                <input
+                  type="number"
+                  placeholder="50000000"
+                  value={currentBrand.monthlyBudget || 0}
+                  onChange={(e) => updateCurrentBrandField('monthlyBudget', Number(e.target.value) || 0)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-slate-900 font-mono font-semibold focus:outline-none focus:border-blue-500 focus:bg-white"
+                />
+                <p className="text-2xs text-slate-400 mt-1">
+                  Tương đương: {((currentBrand.monthlyBudget || 0)).toLocaleString('vi-VN')} đ
+                </p>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">
+                  Doanh Thu Mục Tiêu GMV Tháng (VNĐ)
+                </label>
+                <input
+                  type="number"
+                  placeholder="250000000"
+                  value={currentBrand.targetGmv || 0}
+                  onChange={(e) => updateCurrentBrandField('targetGmv', Number(e.target.value) || 0)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-slate-900 font-mono font-semibold focus:outline-none focus:border-blue-500 focus:bg-white"
+                />
+                <p className="text-2xs text-slate-400 mt-1">
+                  Tương đương: {((currentBrand.targetGmv || 0)).toLocaleString('vi-VN')} đ
+                </p>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1.5">
+                  Sàn Thương Mại Điện Tử Hoạt Động
+                </label>
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {(['TikTok Shop', 'Shopee Mall', 'Lazada'] as const).map(platform => {
+                    const currentPlatforms = currentBrand.platforms || ['Shopee Mall', 'TikTok Shop'];
+                    const isSelected = currentPlatforms.includes(platform as any);
+                    return (
+                      <button
+                        type="button"
+                        key={platform}
+                        onClick={() => {
+                          const next = isSelected
+                            ? currentPlatforms.filter(p => p !== platform)
+                            : [...currentPlatforms, platform];
+                          updateCurrentBrandField('platforms', next as any);
+                        }}
+                        className={`px-3 py-1.5 rounded text-xs font-semibold border transition flex items-center gap-1.5 ${
+                          isSelected
+                            ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                            : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                        }`}
+                      >
+                        {isSelected && <Check className="w-3 h-3" />}
+                        <span>{platform}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Card 4: Định vị thương hiệu & Giá trị cốt lõi */}
+          <div className="card-enterprise p-5 bg-white space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
+                <Award className="w-4 h-4 text-purple-600" />
+                <span>Định Vị Thương Hiệu &amp; Quy Chuẩn Truyền Thông (Brand Identity)</span>
+              </h3>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+              <div className="space-y-3">
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">
+                    Slogan / Tuyên ngôn thương hiệu
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="VD: Dưỡng ẩm chuẩn Nhật Bản cho làn da mộc rạng ngời"
+                    value={currentBrand.slogan}
+                    onChange={(e) => updateCurrentBrandField('slogan', e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-slate-900 italic focus:outline-none focus:border-blue-500 focus:bg-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">
+                    Nhóm phong cách (Tone Tag)
+                  </label>
+                  <select
+                    value={currentBrand.toneTag}
+                    onChange={(e) => updateCurrentBrandField('toneTag', e.target.value as any)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-slate-900 font-semibold focus:outline-none focus:border-blue-500"
+                  >
+                    <option value="BÁC_SĨ_CHUYÊN_GIA">Bác sĩ &amp; Chuyên gia da liễu</option>
+                    <option value="MẸ_BỈM_CHÂN_THỰC">Mẹ bỉm &amp; Gia đình chân thực</option>
+                    <option value="GEN_Z_TRENDING">Gen Z tươi trẻ &amp; Bắt trend</option>
+                    <option value="SANG_TRỌNG_CAO_CẤP">Sang trọng &amp; Đẳng cấp (High-end)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">
+                    Giọng văn &amp; Phong cách (Tone of Voice)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="VD: Chuyên nghiệp, tin cậy, nhẹ nhàng, giải thích cơ chế khoa học"
+                    value={currentBrand.toneOfVoice}
+                    onChange={(e) => updateCurrentBrandField('toneOfVoice', e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-slate-900 focus:outline-none focus:border-blue-500 focus:bg-white"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">
+                    Chân dung khách hàng mục tiêu (Target Persona)
+                  </label>
+                  <textarea
+                    rows={2}
+                    placeholder="VD: Nữ 18-28 tuổi, da dầu mụn, học sinh sinh viên hoặc nhân viên văn phòng quan tâm giá thành hợp lý..."
+                    value={currentBrand.targetPersonaSummary}
+                    onChange={(e) => updateCurrentBrandField('targetPersonaSummary', e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-slate-900 focus:outline-none focus:border-blue-500 focus:bg-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">
+                    Câu chuyện thương hiệu (Brand Story &amp; Guideline)
+                  </label>
+                  <textarea
+                    rows={3}
+                    placeholder="Lịch sử thương hiệu, nguồn gốc nguyên liệu, giá trị cam kết..."
+                    value={currentBrand.brandStory}
+                    onChange={(e) => updateCurrentBrandField('brandStory', e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded px-3 py-2 text-slate-900 focus:outline-none focus:border-blue-500 focus:bg-white"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Action bottom bar */}
+          <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-200">
+            <span className="text-2xs text-slate-500">
+              Cập nhật lần cuối: {new Date(currentBrand.lastUpdated).toLocaleString('vi-VN')} bởi {currentBrand.updatedBy}
+            </span>
+            <button
+              onClick={handleSaveCurrentProfile}
+              className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-md shadow-sm transition flex items-center gap-2 text-xs"
+            >
+              <Save className="w-4 h-4" />
+              <span>Lưu Hồ Sơ Thương Hiệu</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* TAB 0B: ĐỊNH MỨC & TRẦN THÙ LAO CREATOR                                   */}
+      {/* ========================================================================= */}
+      {activeKnowledgeTab === 'RATECARD_CEILING' && (
+        <div className="space-y-6 animate-in fade-in duration-150">
+          <div className="card-enterprise overflow-hidden bg-white">
+            <div className="p-5 border-b border-slate-200 bg-slate-50/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
+                  <Coins className="w-4 h-4 text-amber-600" />
+                  <span>Trần Thù Lao Creator Theo Phân Cấp (Ratecard Ceiling B2C)</span>
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Định mức trần tối đa nhãn hàng cho phép trả theo từng cấp độ KOC (Bảo đảm không bị vượt ngân sách Net)
+                </p>
+              </div>
+
+              <button
+                onClick={handleSaveCurrentProfile}
+                className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-md shadow-xs transition flex items-center gap-1.5 shrink-0 self-start sm:self-auto"
+              >
+                <Save className="w-3.5 h-3.5" />
+                <span>Lưu định mức trần</span>
+              </button>
+            </div>
+
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 font-semibold border-b border-slate-200">
+                  <th className="py-3 px-4 w-28">Bậc Creator</th>
+                  <th className="py-3 px-4 w-44">Tên phân cấp</th>
+                  <th className="py-3 px-4 w-48">Trần thù lao Net (VNĐ)</th>
+                  <th className="py-3 px-4">Mô tả &amp; Tiêu chuẩn định vị</th>
+                  <th className="py-3 px-4 w-44 text-right">Kiểm soát hệ thống</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {(currentBrand.ratecardCeiling || [
+                  { grade: 'KL1', maxBudget: 500000, description: 'Creator khởi đầu / Hạt giống (< 500k)' },
+                  { grade: 'KL2', maxBudget: 1500000, description: 'Micro Creator (500k - 1.5tr)' },
+                  { grade: 'KL3', maxBudget: 3500000, description: 'Mid Creator (1.5tr - 3.5tr)' },
+                  { grade: 'KL4', maxBudget: 7000000, description: 'Key Creator (3.5tr - 7tr)' },
+                  { grade: 'KL5', maxBudget: 12000000, description: 'Macro Creator (7tr - 12tr)' },
+                  { grade: 'KL6', maxBudget: 20000000, description: 'Top Creator (12tr - 20tr)' },
+                  { grade: 'KL7', maxBudget: 35000000, description: 'Celeb / Star (> 20tr)' }
+                ]).map((item, idx) => (
+                  <tr key={item.grade} className="hover:bg-slate-50/70 transition">
+                    <td className="py-3 px-4 font-mono font-bold text-slate-800">
+                      <span className="px-2 py-0.5 rounded bg-slate-100 border border-slate-300">
+                        {item.grade}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 font-semibold text-slate-900">
+                      {item.grade === 'KL1' && 'Creator Khởi Đầu / FOC'}
+                      {item.grade === 'KL2' && 'Micro Creator'}
+                      {item.grade === 'KL3' && 'Mid Creator'}
+                      {item.grade === 'KL4' && 'Key Creator'}
+                      {item.grade === 'KL5' && 'Macro Creator'}
+                      {item.grade === 'KL6' && 'Top Creator'}
+                      {item.grade === 'KL7' && 'Celeb / Star'}
+                    </td>
+                    <td className="py-3 px-4">
+                      <div className="flex items-center gap-1.5">
+                        <input
+                          type="number"
+                          value={item.maxBudget}
+                          onChange={(e) => {
+                            const newBudget = Number(e.target.value) || 0;
+                            const updatedCeilings = (currentBrand.ratecardCeiling || []).map((c, i) =>
+                              i === idx ? { ...c, maxBudget: newBudget } : c
+                            );
+                            updateCurrentBrandField('ratecardCeiling', updatedCeilings);
+                          }}
+                          className="w-36 px-2.5 py-1 text-xs font-mono font-semibold bg-slate-50 border border-slate-200 rounded focus:bg-white focus:outline-none focus:border-blue-500"
+                        />
+                        <span className="text-2xs text-slate-500">đ</span>
+                      </div>
+                    </td>
+                    <td className="py-3 px-4">
+                      <input
+                        type="text"
+                        value={item.description}
+                        onChange={(e) => {
+                          const newDesc = e.target.value;
+                          const updatedCeilings = (currentBrand.ratecardCeiling || []).map((c, i) =>
+                            i === idx ? { ...c, description: newDesc } : c
+                          );
+                          updateCurrentBrandField('ratecardCeiling', updatedCeilings);
+                        }}
+                        className="w-full px-2.5 py-1 text-xs bg-slate-50 border border-slate-200 rounded focus:bg-white focus:outline-none focus:border-blue-500 text-slate-700"
+                      />
+                    </td>
+                    <td className="py-3 px-4 text-right">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        <ShieldCheck className="w-3 h-3" />
+                        <span>Chặn vượt trần</span>
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Quy định nghiệm thu & Hoa hồng trần */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+            <div className="card-enterprise p-4 bg-white space-y-2">
+              <span className="font-semibold text-slate-900 block">1. Suất Mẫu FOC Tối Đa</span>
+              <p className="text-2xs text-slate-500">Hạn mức số lượng mẫu gửi miễn phí không phát sinh chi phí thù lao cho nhãn này</p>
+              <div className="flex items-center gap-2 pt-1">
+                <input
+                  type="number"
+                  defaultValue={30}
+                  className="w-24 px-2.5 py-1 text-xs font-mono bg-slate-50 border border-slate-200 rounded focus:bg-white"
+                />
+                <span className="text-slate-600 font-medium">suất / tháng</span>
+              </div>
+            </div>
+
+            <div className="card-enterprise p-4 bg-white space-y-2">
+              <span className="font-semibold text-slate-900 block">2. Tỷ Lệ Tương Tác Tối Thiểu (ER)</span>
+              <p className="text-2xs text-slate-500">KOC phải đạt mức độ tương tác tối thiểu trên các video gần nhất để được book</p>
+              <div className="flex items-center gap-2 pt-1">
+                <input
+                  type="number"
+                  defaultValue={3.5}
+                  step={0.1}
+                  className="w-24 px-2.5 py-1 text-xs font-mono bg-slate-50 border border-slate-200 rounded focus:bg-white"
+                />
+                <span className="text-slate-600 font-medium">%</span>
+              </div>
+            </div>
+
+            <div className="card-enterprise p-4 bg-white space-y-2">
+              <span className="font-semibold text-slate-900 block">3. Trần Hoa Hồng Tiếp Thị Liên Kết</span>
+              <p className="text-2xs text-slate-500">Mức hoa hồng Affiliate tối đa cho phép cấu hình trên sàn đối với KOC của nhãn</p>
+              <div className="flex items-center gap-2 pt-1">
+                <input
+                  type="number"
+                  defaultValue={18}
+                  className="w-24 px-2.5 py-1 text-xs font-mono bg-slate-50 border border-slate-200 rounded focus:bg-white"
+                />
+                <span className="text-slate-600 font-medium">% GMV</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ========================================================================= */}
       {/* TAB 0: KHO TÀI LIỆU & ĐỌC TỆP TRÍCH XUẤT THÔNG TIN                       */}

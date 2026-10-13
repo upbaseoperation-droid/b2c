@@ -606,8 +606,8 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
               </h3>
               <p className="text-2xs text-slate-500 mt-0.5">
                 {storeFilterMode === 'B2C_ONLY'
-                  ? `Đang lọc mặc định: ${displayedStores.length}/${b2cPlanStores.length} gian hàng Marketing B2C phụ trách lập kế hoạch tháng`
-                  : `Đang hiển thị toàn bộ: ${displayedStores.length}/${storePortfolios.length} gian hàng trên hệ thống Upbase`}
+                  ? `Đang lọc: ${displayedStores.length}/${b2cPlanStores.length} gian hàng B2C phụ trách lập kế hoạch tháng`
+                  : `Đang hiển thị: ${displayedStores.length}/${storePortfolios.length} gian hàng phòng B2C`}
               </p>
             </div>
             
@@ -845,7 +845,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                     : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                 }`}
               >
-                Tất cả 3 Nhóm ({storePortfolios.length} gian)
+                Tất cả gian hàng ({storePortfolios.length} gian)
               </button>
               {BOOKING_TEAMS_STRUCTURE.map(t => (
                 <button
