@@ -23,7 +23,7 @@ export function ContractHubView() {
   const refresh = useCallback(async () => { const result = await api<Bootstrap>('/api/contracts'); setData(result); return result; }, []);
   useEffect(() => { (async () => { if (process.env.NODE_ENV === 'development') await api('/api/auth/me'); await refresh(); })().catch(e => setError(e.message)); }, [refresh]);
   useEffect(() => {
-    if (!templateId) { setTemplate(null); return; }
+    if (!templateId) return;
     let cancelled = false; api<{ template: LegalTemplate }>(`/api/contracts/templates/${templateId}`).then(r => { if (!cancelled) setTemplate(r.template); }).catch(e => { if (!cancelled) setError(e.message); });
     return () => { cancelled = true; };
   }, [templateId]);
@@ -40,7 +40,7 @@ export function ContractHubView() {
   // Đồng bộ khi đang xem hồ sơ; máy chủ vẫn kiểm tra quyền và revision.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selected, record?.revision, data?.config.wesign, busy]);
-  const startCreate = () => { setCreating(true); setEditing(false); setSelected(null); setTemplateId(''); setTitle(''); setBrand(data?.actor.brands[0] || ''); setPartner(''); setParentId(''); setValues({}); setError(''); setPreview(null); };
+  const startCreate = () => { setCreating(true); setEditing(false); setSelected(null); setTemplateId(''); setTemplate(null); setTitle(''); setBrand(data?.actor.brands[0] || ''); setPartner(''); setParentId(''); setValues({}); setError(''); setPreview(null); };
   const startEdit = () => { if (!record) return; setCreating(false); setEditing(true); setTemplateId(record.templateId); setTitle(record.title); setBrand(record.brand); setPartner(record.partner); setParentId(record.parentId || ''); setValues(record.values); setPreview(null); };
   const fields = template ? [...new Map(template.fields.map(f => [f.key, f])).values()] : [];
   const editable = record && record.ownerId === data?.actor.id && record.approval !== 'IN_REVIEW' && !record.signing.some(s => !['CANCELLED', 'REJECTED'].includes(s.status));
