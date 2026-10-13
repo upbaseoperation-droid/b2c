@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { formatVndShort } from '../../lib/format';
-import { ChannelTag, channelOf, Stat, StatRow } from '../ui';
+import { ChannelTag, channelOf } from '../ui';
 import {
   GitFork,
   Building2,
@@ -672,30 +672,7 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
   };
 
   return (
-    <div className="space-y-4">
-      {/* Top Overview */}
-      <StatRow>
-        <Stat
-          label="Thương hiệu Master"
-          value={`${brands.length} thương hiệu`}
-          note="Cấp cao nhất, ký hợp đồng & định mức"
-        />
-        <Stat
-          label="Gian hàng các sàn"
-          value={`${stores.length} gian hàng`}
-          note={`${filteredStores.length} gian hàng theo bộ lọc hiện tại`}
-        />
-        <Stat
-          label="Chuyên viên phụ trách (PIC)"
-          value={`${new Set(stores.map(s => s.primaryPic).filter(p => p && p !== 'Chưa phân công' && p !== 'Chưa gán')).size} nhân sự`}
-          note="Chủ trì vận hành và phân rã kế hoạch"
-        />
-        <Stat
-          label="Sản phẩm trên sàn"
-          value={`${stores.reduce((acc, s) => acc + (s.storeProducts?.length || 0), 0)} SKUs`}
-          note="Đã map SKU và ID sản phẩm từng sàn"
-        />
-      </StatRow>
+    <div className="space-y-3">
 
       {/* Toolbar & Filters */}
       <div className="bg-surface border border-line rounded-xl p-3.5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">

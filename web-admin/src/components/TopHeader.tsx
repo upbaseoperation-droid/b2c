@@ -3,27 +3,8 @@
 import React from 'react';
 import { Menu, ChevronDown, Sparkles, ArrowRight, Building2 } from 'lucide-react';
 import { UserProfile } from '../lib/types';
-import { USERS } from '../lib/mockData';
 import type { TabKey } from './Sidebar';
 import { PageActionsSlot } from './ui';
-
-// Cho phép chuyển đổi linh hoạt giữa các vai trò trên mọi môi trường (kể cả Production)
-const SHOW_ROLE_SWITCHER = true;
-
-const ROLE_LABEL: Record<UserProfile['role'], string> = {
-  ADMIN: 'Quản trị (BOD)',
-  MANAGER: 'Trưởng phòng',
-  LEADER: 'Trưởng nhóm (PIC Lead)',
-  MEMBER: 'Chuyên viên vận hành',
-  BRAND_MEMBER: 'Brand PIC',
-  CONTENT_MEMBER: 'Content',
-  BOOKING_MEMBER: 'Booking B2C',
-  GROWTH_MEMBER: 'Growth (Chiến lược & PnL)',
-  MEDIA_MEMBER: 'Media (Quảng cáo & Ads)',
-  BRAND_PARTNER: 'Đối tác Brand (Gmail)',
-  KOC_PARTNER: 'KOC / KOL (Gmail)',
-  CTV_PARTNER: 'Cộng tác viên (Gmail)',
-};
 
 // Các tab có phạm vi theo nhãn hàng
 const BRAND_FILTERABLE_TABS = new Set<TabKey>([
@@ -36,7 +17,7 @@ const BRAND_FILTERABLE_TABS = new Set<TabKey>([
 
 interface TopHeaderProps {
   currentUser: UserProfile;
-  onUserChange: (user: UserProfile) => void;
+  onUserChange?: (user: UserProfile) => void;
   onOpenQuickBook?: () => void;
   onOpenImport?: () => void;
   title: string;
@@ -51,7 +32,6 @@ interface TopHeaderProps {
 
 export const TopHeader: React.FC<TopHeaderProps> = ({
   currentUser,
-  onUserChange,
   title,
   subtitle,
   activeTab,
@@ -119,61 +99,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
           </label>
         )}
 
-        {SHOW_ROLE_SWITCHER && (
-          <div className="hidden sm:flex items-center gap-2">
-            <span className={`px-2 py-1 rounded text-2xs font-bold border shrink-0 ${
-              currentUser.role === 'ADMIN' ? 'bg-red-50 text-red-700 border-red-200' :
-              currentUser.role === 'MANAGER' ? 'bg-purple-50 text-purple-700 border-purple-200' :
-              currentUser.role === 'LEADER' ? 'bg-blue-50 text-blue-700 border-blue-200' :
-              currentUser.role === 'BOOKING_MEMBER' ? 'bg-cyan-50 text-cyan-800 border-cyan-200' :
-              currentUser.role === 'CONTENT_MEMBER' ? 'bg-amber-50 text-amber-800 border-amber-200' :
-              currentUser.role === 'BRAND_MEMBER' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' :
-              currentUser.role === 'BRAND_PARTNER' ? 'bg-purple-50 text-purple-800 border-purple-200' :
-              currentUser.role === 'KOC_PARTNER' ? 'bg-amber-50 text-amber-800 border-amber-200' :
-              currentUser.role === 'CTV_PARTNER' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' :
-              'bg-slate-50 text-slate-700 border-slate-200'
-            }`}>
-              {ROLE_LABEL[currentUser.role] ?? currentUser.role}
-            </span>
 
-            <label className="relative flex items-center h-[34px] pl-3 pr-8 rounded-md border border-dashed border-line-strong text-[13px] text-ink-2 hover:border-ink-3 transition-colors cursor-pointer bg-surface/50">
-              <span className="text-ink-3 mr-1.5 hidden md:inline">Tài khoản:</span>
-              <select
-                value={currentUser.id}
-                onChange={(e) => {
-                  const u = USERS.find((item) => item.id === e.target.value);
-                  if (u) onUserChange(u);
-                }}
-                className="appearance-none bg-transparent font-medium text-ink focus:outline-none cursor-pointer pr-2"
-                style={{ backgroundColor: 'transparent' }}
-                aria-label="Xem với vai trò"
-              >
-                <optgroup label="Ban Điều Hành & Quản Trị">
-                  {USERS.filter(u => u.role === 'ADMIN' || u.role === 'MANAGER').map((user) => (
-                    <option key={user.id} value={user.id}>
-                      {user.name} · {ROLE_LABEL[user.role] ?? user.role}
-                    </option>
-                  ))}
-                </optgroup>
-                <optgroup label="Trưởng Nhóm & Chuyên Viên Nội Bộ">
-                  {USERS.filter(u => ['LEADER', 'BOOKING_MEMBER', 'CONTENT_MEMBER', 'BRAND_MEMBER', 'MEMBER'].includes(u.role)).map((user) => (
-                    <option key={user.id} value={user.id}>
-                      {user.name} · {ROLE_LABEL[user.role] ?? user.role}
-                    </option>
-                  ))}
-                </optgroup>
-                <optgroup label="Đối Tác Bên Thứ 3 (Gmail SSO)">
-                  {USERS.filter(u => ['BRAND_PARTNER', 'KOC_PARTNER', 'CTV_PARTNER'].includes(u.role)).map((user) => (
-                    <option key={user.id} value={user.id}>
-                      {user.name} · {ROLE_LABEL[user.role] ?? user.role}
-                    </option>
-                  ))}
-                </optgroup>
-              </select>
-              <ChevronDown className="w-3.5 h-3.5 text-ink-3 absolute right-2.5 pointer-events-none" />
-            </label>
-          </div>
-        )}
 
         {/* Nút thao tác nhanh chuyển sang Content Angle khi ở tab Kịch bản */}
         {activeTab === 'content' && onNavigateTab && (

@@ -5,8 +5,6 @@ import {
   Button, 
   Tabs, 
   TabItem, 
-  Stat, 
-  StatRow, 
   Panel, 
   Modal, 
   ConfirmDialog, 
@@ -843,14 +841,89 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
 
       {/* SUB-TAB 1: THƯƠNG HIỆU */}
       {activeSubTab === 'brands' && (
-        <div className="space-y-4">
-          {/* 1. Header & Quick Stats */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div>
-              <h2 className="text-base font-semibold text-ink">Danh mục thương hiệu B2C</h2>
-              <p className="text-[13px] text-ink-3">Quản lý nhãn hàng, liên kết gian hàng sàn và theo dõi định mức ngân sách</p>
+        <div className="space-y-3">
+          {/* Action & Filter Toolbar */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+            <div className="flex items-center gap-2 flex-1 flex-wrap">
+              {/* Search */}
+              <div className="relative min-w-[200px] max-w-xs flex-1">
+                <Search className="w-3.5 h-3.5 text-ink-3 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Tìm thương hiệu, mã, ngành hàng, PIC..."
+                  value={brandSearch}
+                  onChange={(e) => {
+                    setBrandSearch(e.target.value);
+                    setBrandPage(1);
+                  }}
+                  className="w-full pl-8.5 pr-8 py-1.5 text-xs rounded-lg border border-line bg-surface focus:outline-none focus:ring-1 focus:ring-line-strong text-ink"
+                />
+                {brandSearch && (
+                  <button
+                    onClick={() => setBrandSearch('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-3 hover:text-ink cursor-pointer"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+
+              {/* Filters */}
+              <select
+                value={selectedBrandCategory}
+                onChange={(e) => {
+                  setSelectedBrandCategory(e.target.value);
+                  setBrandPage(1);
+                }}
+                className="text-xs border border-line rounded-lg px-2.5 py-1.5 bg-surface text-ink focus:outline-none"
+              >
+                <option value="ALL">Mọi ngành hàng ({brandCategories.length})</option>
+                {brandCategories.map(cat => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+              </select>
+
+              <select
+                value={selectedBrandStatus}
+                onChange={(e) => {
+                  setSelectedBrandStatus(e.target.value);
+                  setBrandPage(1);
+                }}
+                className="text-xs border border-line rounded-lg px-2.5 py-1.5 bg-surface text-ink focus:outline-none"
+              >
+                <option value="ALL">Mọi trạng thái</option>
+                <option value="ACTIVE">Đang hợp tác</option>
+                <option value="PAUSED">Tạm dừng</option>
+              </select>
+
+              <select
+                value={selectedBrandBudgetTier}
+                onChange={(e) => {
+                  setSelectedBrandBudgetTier(e.target.value);
+                  setBrandPage(1);
+                }}
+                className="text-xs border border-line rounded-lg px-2.5 py-1.5 bg-surface text-ink focus:outline-none"
+              >
+                <option value="ALL">Mọi quy mô ngân sách</option>
+                <option value="TIER_TOP">Trọng điểm (&gt; 100M)</option>
+                <option value="TIER_MID">Trung bình (50M - 100M)</option>
+                <option value="TIER_LOW">Khởi tạo (&lt; 50M)</option>
+                <option value="TIER_ZERO">Chưa có ngân sách (0đ)</option>
+              </select>
+
+              {isBrandFiltered && (
+                <button
+                  type="button"
+                  onClick={handleResetBrandFilters}
+                  className="py-1 px-2 rounded-lg border border-line bg-surface text-critical hover:bg-critical-soft text-xs font-medium transition flex items-center gap-1 cursor-pointer"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                  <span>Đặt lại</span>
+                </button>
+              )}
             </div>
-            <div className="flex items-center gap-2 flex-wrap">
+
+            <div className="flex items-center gap-2 shrink-0">
               <Button
                 variant="secondary"
                 onClick={() => {
@@ -874,6 +947,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
               </Button>
               <Button
                 variant="primary"
+                icon={Plus}
                 onClick={() => {
                   setQuickBrandName('');
                   setQuickBrandCode('');
@@ -883,130 +957,6 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
               >
                 Thêm thương hiệu
               </Button>
-            </div>
-          </div>
-
-          <StatRow>
-            <Stat
-              label="Tổng thương hiệu B2C"
-              value={`${brandList.length} nhãn`}
-              note="Chuẩn hóa 100% Master Data"
-            />
-            <Stat
-              label="Gian hàng sàn trực thuộc"
-              value={`${storeList.length} gian`}
-              note={`${storeList.filter(s => s.platform.includes('TikTok')).length} TikTok Shop • ${storeList.filter(s => s.platform.includes('Shopee')).length} Shopee Mall`}
-            />
-            <Stat
-              label="Tổng ngân sách tháng"
-              value={formatVndShort(brandList.reduce((s, b) => s + (b.planBudget || b.monthlyBudget || 0), 0))}
-              note="Hạn mức chi tiêu tháng 10/2026"
-            />
-            <Stat
-              label="Hồ sơ thương hiệu"
-              value={`${brandList.filter(b => b.brandGuideline && b.brandGuideline.length > 5).length} / ${brandList.length}`}
-              note="Đã thiết lập guideline & tiêu chuẩn"
-            />
-          </StatRow>
-
-          {/* 2. Filter & Search Toolbar */}
-          <div className="bg-surface p-3.5 rounded-xl border border-line shadow-xs space-y-3">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-              {/* Search */}
-              <div className="relative flex-1 max-w-md">
-                <Search className="w-4 h-4 text-ink-3 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  placeholder="Tìm thương hiệu, mã, ngành hàng, PIC..."
-                  value={brandSearch}
-                  onChange={(e) => {
-                    setBrandSearch(e.target.value);
-                    setBrandPage(1);
-                  }}
-                  className="w-full pl-9 pr-8 py-1.5 text-xs rounded-lg border border-line bg-surface focus:outline-none focus:ring-1 focus:ring-line-strong text-ink"
-                />
-                {brandSearch && (
-                  <button
-                    onClick={() => setBrandSearch('')}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-3 hover:text-ink cursor-pointer"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                )}
-              </div>
-
-              {/* Filters */}
-              <div className="flex items-center gap-2 flex-wrap">
-                <select
-                  value={selectedBrandCategory}
-                  onChange={(e) => {
-                    setSelectedBrandCategory(e.target.value);
-                    setBrandPage(1);
-                  }}
-                  className="text-xs border border-line rounded-lg px-2.5 py-1.5 bg-surface text-ink focus:outline-none"
-                >
-                  <option value="ALL">Tất cả ngành hàng ({brandCategories.length})</option>
-                  {brandCategories.map(cat => (
-                    <option key={cat} value={cat}>{cat}</option>
-                  ))}
-                </select>
-
-                <select
-                  value={selectedBrandStatus}
-                  onChange={(e) => {
-                    setSelectedBrandStatus(e.target.value);
-                    setBrandPage(1);
-                  }}
-                  className="text-xs border border-line rounded-lg px-2.5 py-1.5 bg-surface text-ink focus:outline-none"
-                >
-                  <option value="ALL">Tất cả trạng thái</option>
-                  <option value="ACTIVE">Đang hợp tác</option>
-                  <option value="PAUSED">Tạm dừng</option>
-                </select>
-
-                <select
-                  value={selectedBrandBudgetTier}
-                  onChange={(e) => {
-                    setSelectedBrandBudgetTier(e.target.value);
-                    setBrandPage(1);
-                  }}
-                  className="text-xs border border-line rounded-lg px-2.5 py-1.5 bg-surface text-ink focus:outline-none"
-                >
-                  <option value="ALL">Mọi quy mô ngân sách</option>
-                  <option value="TIER_TOP">Trọng điểm (&gt; 100M)</option>
-                  <option value="TIER_MID">Trung bình (50M - 100M)</option>
-                  <option value="TIER_LOW">Khởi tạo (&lt; 50M)</option>
-                  <option value="TIER_ZERO">Chưa có ngân sách (0đ)</option>
-                </select>
-
-                {isBrandFiltered && (
-                  <button
-                    type="button"
-                    onClick={handleResetBrandFilters}
-                    className="py-1.5 px-2.5 rounded-lg border border-line bg-surface text-critical hover:bg-critical-soft text-xs font-medium transition flex items-center gap-1 cursor-pointer"
-                  >
-                    <RotateCcw className="w-3.5 h-3.5" />
-                    <span>Đặt lại</span>
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Results Counter */}
-            <div className="flex items-center justify-between pt-2 border-t border-line text-2xs text-ink-3">
-              <div className="flex items-center gap-2">
-                <span>
-                  Đang hiển thị <strong className="text-ink font-semibold">{filteredBrands.length}</strong> / {brandList.length} thương hiệu B2C
-                </span>
-                {isBrandFiltered && (
-                  <span className="px-2 py-0.5 rounded-full bg-accent-soft text-accent border border-line font-medium text-2xs">
-                    Đang lọc kết quả
-                  </span>
-                )}
-              </div>
-              <span className="text-ink-3">
-                Trang {brandPage} / {totalBrandPages} (25 thương hiệu/trang)
-              </span>
             </div>
           </div>
 
@@ -1216,170 +1166,121 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
 
       {/* SUB-TAB 3: SẢN PHẨM (Master Product Catalog) */}
       {activeSubTab === 'products' && (
-        <div className="space-y-4">
-          {/* Enhanced Products Multi-Filter Bar */}
-          <div className="bg-surface p-3.5 rounded-xl border border-line shadow-xs space-y-3">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div className="relative flex-1 max-w-md">
-                <Search className="w-4 h-4 text-ink-3 absolute left-3 top-1/2 -translate-y-1/2" />
+        <div className="space-y-3">
+          {/* Action & Filter Toolbar */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+            <div className="flex items-center gap-2 flex-1 flex-wrap">
+              <div className="relative min-w-[200px] max-w-xs flex-1">
+                <Search className="w-3.5 h-3.5 text-ink-3 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
-                  placeholder="Tìm theo SKU, tên sản phẩm, thương hiệu, gian hàng..."
+                  placeholder="Tìm SKU, tên sản phẩm, gian hàng..."
                   value={productSearch}
                   onChange={(e) => setProductSearch(e.target.value)}
-                  className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border border-line bg-surface text-ink focus:outline-none focus:ring-1 focus:ring-line-strong"
+                  className="w-full pl-8.5 pr-8 py-1.5 text-xs rounded-lg border border-line bg-surface text-ink focus:outline-none focus:ring-1 focus:ring-line-strong"
                 />
                 {productSearch && (
                   <button
                     onClick={() => setProductSearch('')}
                     className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-3 hover:text-ink cursor-pointer"
                   >
-                    <X className="w-3.5 h-3.5" />
+                    <X className="w-3 h-3" />
                   </button>
                 )}
               </div>
 
-              <Button
-                variant="primary"
-                onClick={() => {
-                  setEditingProduct(null);
-                  setProductForm({
-                    sku: '',
-                    productName: '',
-                    brandName: brandList[0]?.name || 'Kutieskin',
-                    storeName: '',
-                    platform: 'Shopee Mall',
-                    category: productCategories[0] || 'Mẹ & Bé',
-                    originalPrice: 150000,
-                    pdpUrl: '',
-                    commissionRate: 15,
-                    heroType: 'HERO',
-                    sampleAvailableCount: 50,
-                    usp: '',
-                    status: 'ACTIVE'
-                  });
-                  setIsProductModalOpen(true);
-                }}
+              <select
+                value={selectedProductPlatform}
+                onChange={(e) => setSelectedProductPlatform(e.target.value)}
+                className="text-xs border border-line rounded-lg px-2.5 py-1.5 bg-surface text-ink focus:outline-none"
               >
-                <Plus className="w-3.5 h-3.5" />
-                Thêm sản phẩm
-              </Button>
+                <option value="ALL">Mọi sàn</option>
+                <option value="TikTok Shop">TikTok Shop</option>
+                <option value="Shopee Mall">Shopee Mall</option>
+                <option value="Lazada">Lazada</option>
+              </select>
+
+              <select
+                value={selectedProductBrand}
+                onChange={(e) => setSelectedProductBrand(e.target.value)}
+                className="text-xs border border-line rounded-lg px-2.5 py-1.5 bg-surface text-ink focus:outline-none"
+              >
+                <option value="ALL">Mọi nhãn hàng ({brandList.length})</option>
+                {brandList.slice(0, 60).map(b => (
+                  <option key={b.id} value={b.name}>{b.name}</option>
+                ))}
+              </select>
+
+              <select
+                value={selectedProductCategory}
+                onChange={(e) => setSelectedProductCategory(e.target.value)}
+                className="text-xs border border-line rounded-lg px-2.5 py-1.5 bg-surface text-ink focus:outline-none"
+              >
+                <option value="ALL">Mọi ngành hàng ({productCategories.length})</option>
+                {productCategories.map(cat => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+              </select>
+
+              <select
+                value={selectedProductPriceRange}
+                onChange={(e) => setSelectedProductPriceRange(e.target.value)}
+                className="text-xs border border-line rounded-lg px-2.5 py-1.5 bg-surface text-ink focus:outline-none"
+              >
+                <option value="ALL">Mọi mức giá</option>
+                <option value="UNDER_200K">&lt; 200.000đ</option>
+                <option value="200K_500K">200K - 500K</option>
+                <option value="500K_1M">500K - 1M</option>
+                <option value="OVER_1M">&gt; 1.000.000đ</option>
+              </select>
+
+              <select
+                value={selectedProductStatus}
+                onChange={(e) => setSelectedProductStatus(e.target.value)}
+                className="text-xs border border-line rounded-lg px-2.5 py-1.5 bg-surface text-ink focus:outline-none"
+              >
+                <option value="ALL">Mọi trạng thái</option>
+                <option value="ACTIVE">Đang bán</option>
+                <option value="DISCONTINUED">Ngừng bán</option>
+              </select>
+
+              {isProductFiltered && (
+                <button
+                  type="button"
+                  onClick={handleResetProductFilters}
+                  className="py-1 px-2 rounded-lg border border-line bg-surface text-critical hover:bg-critical-soft text-xs font-medium transition flex items-center gap-1 cursor-pointer"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                  <span>Đặt lại</span>
+                </button>
+              )}
             </div>
 
-            {/* Bottom Row Filters */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 pt-2 border-t border-line text-xs">
-              <div>
-                <label className="text-2xs text-ink-3 block mb-1">
-                  1. Sàn / Nền tảng:
-                </label>
-                <select
-                  value={selectedProductPlatform}
-                  onChange={(e) => setSelectedProductPlatform(e.target.value)}
-                  className="w-full text-xs border border-line rounded-lg px-2.5 py-1.5 bg-surface text-ink focus:outline-none"
-                >
-                  <option value="ALL">Tất cả các sàn</option>
-                  <option value="TikTok Shop">TikTok Shop</option>
-                  <option value="Shopee Mall">Shopee Mall</option>
-                  <option value="Lazada">Lazada</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="text-2xs text-ink-3 block mb-1">
-                  2. Thương hiệu:
-                </label>
-                <select
-                  value={selectedProductBrand}
-                  onChange={(e) => setSelectedProductBrand(e.target.value)}
-                  className="w-full text-xs border border-line rounded-lg px-2.5 py-1.5 bg-surface text-ink focus:outline-none"
-                >
-                  <option value="ALL">Mọi nhãn hàng ({brandList.length})</option>
-                  {brandList.slice(0, 60).map(b => (
-                    <option key={b.id} value={b.name}>{b.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="text-2xs text-ink-3 block mb-1">
-                  3. Ngành hàng:
-                </label>
-                <select
-                  value={selectedProductCategory}
-                  onChange={(e) => setSelectedProductCategory(e.target.value)}
-                  className="w-full text-xs border border-line rounded-lg px-2.5 py-1.5 bg-surface text-ink focus:outline-none"
-                >
-                  <option value="ALL">Mọi ngành hàng ({productCategories.length})</option>
-                  {productCategories.map(cat => (
-                    <option key={cat} value={cat}>{cat}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="text-2xs text-ink-3 block mb-1">
-                  4. Khoảng giá niêm yết:
-                </label>
-                <select
-                  value={selectedProductPriceRange}
-                  onChange={(e) => setSelectedProductPriceRange(e.target.value)}
-                  className="w-full text-xs border border-line rounded-lg px-2.5 py-1.5 bg-surface text-ink focus:outline-none"
-                >
-                  <option value="ALL">Mọi mức giá</option>
-                  <option value="UNDER_200K">Dưới 200.000đ</option>
-                  <option value="200K_500K">200.000đ - 500.000đ</option>
-                  <option value="500K_1M">500.000đ - 1.000.000đ</option>
-                  <option value="OVER_1M">Trên 1.000.000đ</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="text-2xs text-ink-3 block mb-1">
-                  5. Trạng thái kinh doanh:
-                </label>
-                <select
-                  value={selectedProductStatus}
-                  onChange={(e) => setSelectedProductStatus(e.target.value)}
-                  className="w-full text-xs border border-line rounded-lg px-2.5 py-1.5 bg-surface text-ink focus:outline-none"
-                >
-                  <option value="ALL">Tất cả</option>
-                  <option value="ACTIVE">Đang bán</option>
-                  <option value="DISCONTINUED">Ngừng bán</option>
-                </select>
-              </div>
-
-              <div className="flex items-end">
-                {isProductFiltered ? (
-                  <button
-                    type="button"
-                    onClick={handleResetProductFilters}
-                    className="w-full py-1.5 px-3 rounded-lg border border-line bg-surface text-critical hover:bg-critical-soft text-xs font-medium transition flex items-center justify-center gap-1.5 cursor-pointer"
-                  >
-                    <RotateCcw className="w-3.5 h-3.5" />
-                    <span>Xóa bộ lọc</span>
-                  </button>
-                ) : (
-                  <div className="text-2xs text-ink-3 px-2 py-1.5 flex items-center gap-1">
-                    <Filter className="w-3.5 h-3.5 text-ink-3" />
-                    <span>Bộ lọc sản phẩm</span>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Filter Results Summary */}
-            <div className="flex items-center justify-between pt-2 border-t border-line text-2xs text-ink-3">
-              <div className="flex items-center gap-2">
-                <span>
-                  Tìm thấy <strong className="text-ink font-semibold">{filteredProducts.length}</strong> / {productList.length} sản phẩm Master
-                </span>
-                {isProductFiltered && (
-                  <span className="px-2 py-0.5 rounded-full bg-accent-soft text-accent border border-line font-medium text-2xs">
-                    Đang lọc kết quả
-                  </span>
-                )}
-              </div>
-            </div>
+            <Button
+              variant="primary"
+              icon={Plus}
+              onClick={() => {
+                setEditingProduct(null);
+                setProductForm({
+                  sku: '',
+                  productName: '',
+                  brandName: brandList[0]?.name || 'Kutieskin',
+                  storeName: '',
+                  platform: 'Shopee Mall',
+                  category: productCategories[0] || 'Mẹ & Bé',
+                  originalPrice: 150000,
+                  pdpUrl: '',
+                  commissionRate: 15,
+                  heroType: 'HERO',
+                  sampleAvailableCount: 50,
+                  usp: '',
+                  status: 'ACTIVE'
+                });
+                setIsProductModalOpen(true);
+              }}
+            >
+              Thêm sản phẩm
+            </Button>
           </div>
 
           <div className="bg-surface rounded-xl border border-line shadow-xs overflow-hidden">
@@ -1505,142 +1406,98 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
 
       {/* SUB-TAB: TRỤ CỘT NỘI DUNG (Content Pillars Master Data) */}
       {activeSubTab === 'pillars' && (
-        <div className="space-y-4">
-          {/* Top Filter and Action Bar */}
-          <div className="bg-surface p-3.5 rounded-xl border border-line shadow-xs space-y-3">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div className="relative flex-1 max-w-md">
-                <Search className="w-4 h-4 text-ink-3 absolute left-3 top-1/2 -translate-y-1/2" />
+        <div className="space-y-3">
+          {/* Action & Filter Toolbar */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+            <div className="flex items-center gap-2 flex-1 flex-wrap">
+              <div className="relative min-w-[200px] max-w-xs flex-1">
+                <Search className="w-3.5 h-3.5 text-ink-3 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
-                  placeholder="Tìm theo mã, tên trụ cột, định hướng, ngành hàng..."
+                  placeholder="Tìm mã, tên trụ cột, định hướng..."
                   value={pillarSearch}
                   onChange={(e) => setPillarSearch(e.target.value)}
-                  className="w-full pl-9 pr-8 py-1.5 text-xs rounded-lg border border-line bg-surface text-ink focus:outline-none focus:ring-1 focus:ring-line-strong"
+                  className="w-full pl-8.5 pr-8 py-1.5 text-xs rounded-lg border border-line bg-surface text-ink focus:outline-none focus:ring-1 focus:ring-line-strong"
                 />
                 {pillarSearch && (
                   <button
                     onClick={() => setPillarSearch('')}
                     className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-3 hover:text-ink cursor-pointer"
                   >
-                    <X className="w-3.5 h-3.5" />
+                    <X className="w-3 h-3" />
                   </button>
                 )}
               </div>
 
-              <Button
-                variant="primary"
-                onClick={() => {
-                  setEditingPillar(null);
-                  setPillarForm({
-                    code: '',
-                    name: '',
-                    description: '',
-                    applicableNiches: 'Mẹ & Bé, Chăm Sóc Da',
-                    suggestedFormats: 'Voiceover chuyên gia + B-roll, Infographic trực quan',
-                    benchmarkUnitCost: 1500000,
-                    targetAudience: 'Phụ huynh có con nhỏ, người có vấn đề da liễu',
-                    keyObjectives: 'Xây dựng uy tín nhãn hàng, định vị chuyên gia & gieo niềm tin',
-                    status: 'ACTIVE',
-                    colorTag: '#4F46E5'
-                  });
-                  setIsPillarModalOpen(true);
-                }}
+              <select
+                value={selectedPillarNiche}
+                onChange={(e) => setSelectedPillarNiche(e.target.value)}
+                className="text-xs border border-line rounded-lg px-2.5 py-1.5 bg-surface text-ink focus:outline-none"
               >
-                <Plus className="w-3.5 h-3.5" />
-                Thêm trụ cột nội dung
-              </Button>
+                <option value="ALL">Mọi ngành hàng</option>
+                <option value="Mẹ & Bé">Mẹ & Bé</option>
+                <option value="Chăm Sóc Da">Chăm Sóc Da</option>
+                <option value="Sức Khỏe">Sức Khỏe</option>
+                <option value="Gia Dụng">Gia Dụng</option>
+                <option value="F&B">F&B</option>
+                <option value="Toàn ngành">Toàn ngành</option>
+              </select>
+
+              <select
+                value={selectedPillarStatus}
+                onChange={(e) => setSelectedPillarStatus(e.target.value as any)}
+                className="text-xs border border-line rounded-lg px-2.5 py-1.5 bg-surface text-ink focus:outline-none"
+              >
+                <option value="ALL">Mọi trạng thái ({pillarList.length})</option>
+                <option value="ACTIVE">Đang áp dụng ({pillarList.filter(p => p.status === 'ACTIVE').length})</option>
+                <option value="INACTIVE">Tạm dừng ({pillarList.filter(p => p.status === 'INACTIVE').length})</option>
+              </select>
+
+              <select
+                value={selectedPillarCostTier}
+                onChange={(e) => setSelectedPillarCostTier(e.target.value)}
+                className="text-xs border border-line rounded-lg px-2.5 py-1.5 bg-surface text-ink focus:outline-none"
+              >
+                <option value="ALL">Mọi mức chi phí</option>
+                <option value="UNDER_1M">&lt; 1.000.000đ</option>
+                <option value="1M_2M">1M - 2.000.000đ</option>
+                <option value="OVER_2M">&gt; 2.000.000đ</option>
+              </select>
+
+              {isPillarFiltered && (
+                <button
+                  type="button"
+                  onClick={handleResetPillarFilters}
+                  className="py-1 px-2 rounded-lg border border-line bg-surface text-critical hover:bg-critical-soft text-xs font-medium transition flex items-center gap-1 cursor-pointer"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                  <span>Đặt lại</span>
+                </button>
+              )}
             </div>
 
-            {/* Multi-dimensional filters for Pillars */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-line text-xs">
-              <div>
-                <label className="text-2xs text-ink-3 block mb-1">
-                  1. Ngành hàng áp dụng:
-                </label>
-                <select
-                  value={selectedPillarNiche}
-                  onChange={(e) => setSelectedPillarNiche(e.target.value)}
-                  className="w-full text-xs border border-line rounded-lg px-2.5 py-1.5 bg-surface text-ink focus:outline-none"
-                >
-                  <option value="ALL">Mọi ngành hàng</option>
-                  <option value="Mẹ & Bé">Mẹ & Bé</option>
-                  <option value="Chăm Sóc Da">Chăm Sóc Da</option>
-                  <option value="Sức Khỏe">Sức Khỏe</option>
-                  <option value="Gia Dụng">Gia Dụng</option>
-                  <option value="F&B">F&B</option>
-                  <option value="Toàn ngành">Toàn ngành</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="text-2xs text-ink-3 block mb-1">
-                  2. Trạng thái áp dụng:
-                </label>
-                <select
-                  value={selectedPillarStatus}
-                  onChange={(e) => setSelectedPillarStatus(e.target.value as any)}
-                  className="w-full text-xs border border-line rounded-lg px-2.5 py-1.5 bg-surface text-ink focus:outline-none"
-                >
-                  <option value="ALL">Mọi trạng thái ({pillarList.length})</option>
-                  <option value="ACTIVE">Đang áp dụng ({pillarList.filter(p => p.status === 'ACTIVE').length})</option>
-                  <option value="INACTIVE">Tạm dừng ({pillarList.filter(p => p.status === 'INACTIVE').length})</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="text-2xs text-ink-3 block mb-1">
-                  3. Định mức benchmark:
-                </label>
-                <select
-                  value={selectedPillarCostTier}
-                  onChange={(e) => setSelectedPillarCostTier(e.target.value)}
-                  className="w-full text-xs border border-line rounded-lg px-2.5 py-1.5 bg-surface text-ink focus:outline-none"
-                >
-                  <option value="ALL">Mọi mức chi phí</option>
-                  <option value="UNDER_1M">Dưới 1.000.000đ</option>
-                  <option value="1M_2M">1.000.000đ - 2.000.000đ</option>
-                  <option value="OVER_2M">Trên 2.000.000đ</option>
-                </select>
-              </div>
-
-              <div className="flex items-end">
-                {isPillarFiltered ? (
-                  <button
-                    type="button"
-                    onClick={handleResetPillarFilters}
-                    className="w-full py-1.5 px-3 rounded-lg border border-line bg-surface text-critical hover:bg-critical-soft text-xs font-medium transition flex items-center justify-center gap-1.5 cursor-pointer"
-                  >
-                    <RotateCcw className="w-3.5 h-3.5" />
-                    <span>Xóa bộ lọc</span>
-                  </button>
-                ) : (
-                  <div className="text-2xs text-ink-3 px-2 py-1.5 flex items-center gap-1">
-                    <Filter className="w-3.5 h-3.5 text-ink-3" />
-                    <span>Bộ lọc Content Pillar</span>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Filter Summary */}
-            <div className="flex items-center justify-between pt-2 border-t border-line text-2xs text-ink-3">
-              <div className="flex items-center gap-2">
-                <span>
-                  Tìm thấy <strong className="text-ink font-semibold">{filteredPillars.length}</strong> / {pillarList.length} trụ cột nội dung
-                </span>
-                {isPillarFiltered && (
-                  <span className="px-2 py-0.5 rounded-full bg-accent-soft text-accent border border-line font-medium text-2xs">
-                    Đang lọc kết quả
-                  </span>
-                )}
-              </div>
-              <div className="hidden sm:flex items-center gap-2">
-                <span>
-                  Định mức TB: <strong className="text-ink font-semibold">{formatVnd(Math.round(pillarList.reduce((acc, p) => acc + p.benchmarkUnitCost, 0) / (pillarList.length || 1)))}</strong>
-                </span>
-              </div>
-            </div>
+            <Button
+              variant="primary"
+              icon={Plus}
+              onClick={() => {
+                setEditingPillar(null);
+                setPillarForm({
+                  code: '',
+                  name: '',
+                  description: '',
+                  applicableNiches: 'Mẹ & Bé, Chăm Sóc Da',
+                  suggestedFormats: 'Voiceover chuyên gia + B-roll, Infographic trực quan',
+                  benchmarkUnitCost: 1500000,
+                  targetAudience: 'Phụ huynh có con nhỏ, người có vấn đề da liễu',
+                  keyObjectives: 'Xây dựng uy tín nhãn hàng, định vị chuyên gia & gieo niềm tin',
+                  status: 'ACTIVE',
+                  colorTag: '#4F46E5'
+                });
+                setIsPillarModalOpen(true);
+              }}
+            >
+              Thêm trụ cột
+            </Button>
           </div>
 
           {/* Master Content Pillar Table */}
@@ -2643,18 +2500,15 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
         <div className="space-y-6">
           {/* Section 1: SLA Milestones Config */}
           <div className="bg-surface rounded-xl border border-line overflow-hidden">
-            <div className="p-4 border-b border-line bg-canvas flex items-center justify-between">
-              <div>
-                <h3 className="font-semibold text-xs text-ink uppercase tracking-wide">
-                  1. Bảng định nghĩa chuẩn 7 mốc thời gian cam kết dịch vụ (SLA Milestones)
+            <div className="px-4 py-2.5 border-b border-line bg-canvas flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <h3 className="font-semibold text-xs text-ink">
+                  Mốc thời gian cam kết dịch vụ (SLA)
                 </h3>
-                <p className="text-2xs text-ink-3 mt-0.5">
-                  Quy định giới hạn thời gian phản hồi, xử lý kịch bản, điều phối hàng mẫu và nghiệm thu video cho toàn bộ chu trình Booking
-                </p>
+                <span className="px-2 py-0.5 rounded text-2xs font-mono font-medium text-ink-2 bg-sunken border border-line">
+                  {UPBASE_MASTER_SLA_CONFIG.length} mốc
+                </span>
               </div>
-              <span className="px-2.5 py-1 rounded-md bg-accent-soft text-accent font-mono text-2xs font-semibold border border-line">
-                {UPBASE_MASTER_SLA_CONFIG.length} Mốc chuẩn hóa
-              </span>
             </div>
 
             <div className="overflow-x-auto">
@@ -2708,18 +2562,15 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
 
           {/* Section 2: Master KPI Definitions */}
           <div className="bg-surface rounded-xl border border-line overflow-hidden">
-            <div className="p-4 border-b border-line bg-canvas flex items-center justify-between">
-              <div>
-                <h3 className="font-semibold text-xs text-ink uppercase tracking-wide">
-                  2. Bảng định nghĩa định mức & trọng số KPI chuẩn theo chức danh
+            <div className="px-4 py-2.5 border-b border-line bg-canvas flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <h3 className="font-semibold text-xs text-ink">
+                  Chỉ số đo lường hiệu suất làm việc (KPI)
                 </h3>
-                <p className="text-2xs text-ink-3 mt-0.5">
-                  Khung đánh giá hiệu suất (KPI Framework) chuẩn hóa cho các bộ phận Account, Growth, Booking và Content
-                </p>
+                <span className="px-2 py-0.5 rounded text-2xs font-mono font-medium text-ink-2 bg-sunken border border-line">
+                  {UPBASE_MASTER_KPI_DEFINITIONS.length} chỉ số
+                </span>
               </div>
-              <span className="px-2.5 py-1 rounded-md bg-positive-soft text-positive font-mono text-2xs font-semibold border border-line">
-                {UPBASE_MASTER_KPI_DEFINITIONS.length} Chỉ số KPI
-              </span>
             </div>
 
             <div className="overflow-x-auto">
@@ -2775,18 +2626,15 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
         <div className="space-y-6">
           {/* Section 1: Store Assignment History */}
           <div className="bg-surface rounded-xl border border-line overflow-hidden">
-            <div className="p-4 border-b border-line bg-canvas flex items-center justify-between">
-              <div>
-                <h3 className="font-semibold text-xs text-ink uppercase tracking-wide">
-                  1. Nhật ký lịch sử điều chuyển & phân công gian hàng (Store Assignment History)
+            <div className="px-4 py-2.5 border-b border-line bg-canvas flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <h3 className="font-semibold text-xs text-ink">
+                  Lịch sử điều chuyển & phân công gian hàng
                 </h3>
-                <p className="text-2xs text-ink-3 mt-0.5">
-                  Lưu vết toàn bộ các lần thay đổi nhân sự Account, Growth, Booking và Content trên từng gian hàng vận hành
-                </p>
+                <span className="px-2 py-0.5 rounded text-2xs font-mono font-medium text-ink-2 bg-sunken border border-line">
+                  {INITIAL_STORE_ASSIGNMENT_HISTORY.length} bản ghi
+                </span>
               </div>
-              <span className="px-2.5 py-1 rounded-md bg-warning-soft text-warning font-mono text-2xs font-semibold border border-line">
-                {INITIAL_STORE_ASSIGNMENT_HISTORY.length} Bản ghi
-              </span>
             </div>
 
             <div className="overflow-x-auto">
@@ -2844,18 +2692,15 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
 
           {/* Section 2: Backup Staff Assignments */}
           <div className="bg-surface rounded-xl border border-line overflow-hidden">
-            <div className="p-4 border-b border-line bg-canvas flex items-center justify-between">
-              <div>
-                <h3 className="font-semibold text-xs text-ink uppercase tracking-wide">
-                  2. Danh sách nhân sự dự phòng được ủy quyền (Backup Staff Assignments)
+            <div className="px-4 py-2.5 border-b border-line bg-canvas flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <h3 className="font-semibold text-xs text-ink">
+                  Nhân sự dự phòng được ủy quyền (Backup PIC)
                 </h3>
-                <p className="text-2xs text-ink-3 mt-0.5">
-                  Ủy quyền xử lý nghiệp vụ khi PIC chính vắng mặt, đảm bảo không tắc nghẽn cam kết SLA
-                </p>
+                <span className="px-2 py-0.5 rounded text-2xs font-mono font-medium text-ink-2 bg-sunken border border-line">
+                  {INITIAL_BACKUP_ASSIGNMENTS.length} cặp
+                </span>
               </div>
-              <span className="px-2.5 py-1 rounded-md bg-accent-soft text-accent font-mono text-2xs font-semibold border border-line">
-                {INITIAL_BACKUP_ASSIGNMENTS.length} Cặp ủy quyền
-              </span>
             </div>
 
             <div className="overflow-x-auto">
@@ -2913,18 +2758,15 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
       {activeSubTab === 'audit-trail' && (
         <div className="space-y-4">
           <div className="bg-surface rounded-xl border border-line overflow-hidden">
-            <div className="p-4 border-b border-line bg-canvas flex items-center justify-between">
-              <div>
-                <h3 className="font-semibold text-xs text-ink uppercase tracking-wide">
-                  Nhật ký kiểm toán hệ thống nghiệp vụ (Audit Trail & Change Logs)
+            <div className="px-4 py-2.5 border-b border-line bg-canvas flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <h3 className="font-semibold text-xs text-ink">
+                  Nhật ký kiểm toán hệ thống
                 </h3>
-                <p className="text-2xs text-ink-3 mt-0.5">
-                  Ghi nhận đầy đủ thông tin kiểm toán (ai làm gì, tác động lên thực thể nào, thời gian và địa chỉ IP) theo chuẩn BRD
-                </p>
+                <span className="px-2 py-0.5 rounded text-2xs font-mono font-medium text-ink-2 bg-sunken border border-line">
+                  {INITIAL_AUDIT_LOGS.length} sự kiện
+                </span>
               </div>
-              <span className="px-2.5 py-1 rounded-md bg-sunken text-ink font-mono text-2xs font-semibold border border-line">
-                {INITIAL_AUDIT_LOGS.length} Sự kiện kiểm toán
-              </span>
             </div>
 
             <div className="overflow-x-auto">

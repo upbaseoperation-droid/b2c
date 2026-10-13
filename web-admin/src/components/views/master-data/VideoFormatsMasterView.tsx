@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Search, Plus, X } from 'lucide-react';
-import { Button, Modal, Stat, StatRow } from '../../ui';
+import { Button, Modal } from '../../ui';
 import { MasterVideoFormat } from '../../../lib/types';
 
 interface VideoFormatsMasterViewProps {
@@ -73,47 +73,35 @@ export const VideoFormatsMasterView: React.FC<VideoFormatsMasterViewProps> = ({
   };
 
   return (
-    <div className="space-y-4">
-      {/* Top Overview */}
-      <StatRow>
-        <Stat
-          label="Định dạng tiêu chuẩn"
-          value={formats.length}
-          note="Voiceover, Nhạc nền text, Ảnh lướt..."
-        />
-        <Stat
-          label="Mẫu dựng sẵn & Tự động"
-          value={`${formats.filter(f => f.name.toLowerCase().includes('voice') || f.name.toLowerCase().includes('text')).length} mẫu`}
-          note="Tối ưu thời gian sản xuất video hàng loạt"
-        />
-        <Stat
-          label="Kênh phát hành trọng điểm"
-          value="TikTok & Reels"
-          note="Quy chuẩn khung hình 9:16 cho B2C"
-        />
-      </StatRow>
-
-      {/* Filter and Action Bar */}
-      <div className="bg-surface p-3.5 rounded-xl border border-line shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="relative w-full sm:w-80">
-          <Search className="w-4 h-4 text-ink-3 absolute left-3 top-1/2 -translate-y-1/2" />
+    <div className="space-y-3">
+      {/* Action & Filter Toolbar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+        <div className="relative min-w-[200px] max-w-xs flex-1">
+          <Search className="w-3.5 h-3.5 text-ink-3 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             placeholder="Tìm theo tên định dạng, phân loại..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border border-line bg-surface focus:outline-none focus:ring-1 focus:ring-line-strong text-ink"
+            className="w-full pl-8.5 pr-8 py-1.5 text-xs rounded-lg border border-line bg-surface focus:outline-none focus:ring-1 focus:ring-line-strong text-ink"
           />
+          {search && (
+            <button
+              onClick={() => setSearch('')}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-3 hover:text-ink cursor-pointer"
+            >
+              <X className="w-3 h-3" />
+            </button>
+          )}
         </div>
 
-        <button
-          type="button"
+        <Button
+          variant="primary"
+          icon={Plus}
           onClick={handleOpenAdd}
-          className="px-3.5 py-1.5 bg-primary hover:bg-primary-hover text-white text-xs font-medium rounded-lg transition flex items-center gap-1.5 shrink-0"
         >
-          <Plus className="w-3.5 h-3.5" />
           Thêm định dạng video
-        </button>
+        </Button>
       </div>
 
       {/* Video Formats Table */}

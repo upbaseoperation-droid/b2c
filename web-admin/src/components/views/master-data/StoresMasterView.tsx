@@ -31,12 +31,12 @@ import {
   Activity,
   BarChart3
 } from 'lucide-react';
-import { ChannelTag, Stat, StatRow } from '../../ui';
+import { ChannelTag } from '../../ui';
 import { StorePortfolioItem, BrandDetail, BookingDealItem } from '../../../lib/types';
 import { StaffSearchSelect } from './StaffSearchSelect';
 import { StoreDetailModal } from './StoreDetailModal';
 import { StoreHandoverModal } from './StoreHandoverModal';
-import { formatVndShort, formatVnd, formatNumber } from '../../../lib/format';
+import { formatVndShort, formatVnd } from '../../../lib/format';
 import { INITIAL_DEALS } from '../../../lib/mockData';
 
 interface StoresMasterViewProps {
@@ -309,22 +309,6 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
   const withLeaderCount = stores.filter(s => s.hasBookingLeader && s.bookingLeader).length;
   const directLeadCount = totalStoresCount - withLeaderCount;
 
-  // Financial totals
-  const totalNetBudget = useMemo(() => {
-    return stores.reduce((sum, s) => sum + (s.budgetNet ?? s.monthlyBudget ?? 0), 0);
-  }, [stores]);
-
-  const totalAffiliateBudget = useMemo(() => {
-    return stores.reduce((sum, s) => sum + (s.budgetAffiliateNet ?? s.budgetAffiliate ?? 0), 0);
-  }, [stores]);
-
-  const totalSelfBudget = useMemo(() => {
-    return stores.reduce((sum, s) => sum + (s.budgetSelfChannelNet ?? s.budgetSelfChannel ?? 0), 0);
-  }, [stores]);
-
-  const totalTargetVideos = useMemo(() => {
-    return stores.reduce((sum, s) => sum + (s.targetAffiliateContents || 0) + (s.targetSelfChannelContents || 0), 0);
-  }, [stores]);
 
   // Overbudget detection
   const overbudgetStores = useMemo(() => {
@@ -530,47 +514,21 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
   };
 
   return (
-    <div className="space-y-4">
-      {/* 1. KPI & Financial Overview */}
-      <StatRow>
-        <Stat
-          label="Gian hàng B2C"
-          value={totalStoresCount}
-          note={`${tiktokCount} TTS · ${shopeeCount} Shopee · ${lazadaCount} Lazada`}
-        />
-        <Stat
-          label="Hạn mức Order Net"
-          value={formatVndShort(totalNetBudget)}
-          note={`Aff: ${formatVndShort(totalAffiliateBudget)} · Self: ${formatVndShort(totalSelfBudget)}`}
-        />
-        <Stat
-          label="Chỉ tiêu video tháng"
-          value={formatNumber(totalTargetVideos)}
-          note="Video trả phí & mẫu FOC"
-        />
-        <Stat
-          label="Cảnh báo tài chính"
-          value={overbudgetStores.length > 0 ? `${overbudgetStores.length} gian` : '0 gian'}
-          note={overbudgetStores.length > 0 ? 'Vượt hạn mức chi tiêu' : 'Trong trần ngân sách'}
-          tone={overbudgetStores.length > 0 ? 'critical' : 'positive'}
-        />
-      </StatRow>
-
-      {/* 2. MULTI-DIMENSIONAL FILTER BAR */}
-      <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs space-y-3">
-        {/* Search & Action Row */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="relative flex-1 max-w-md">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+    <div className="space-y-3">
+      {/* Filter and Action Toolbar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+        <div className="flex items-center gap-2 flex-1 flex-wrap">
+          <div className="relative min-w-[200px] max-w-xs flex-1">
+            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder="Tìm theo gian hàng, mã SO-B2C-xxx, nhãn hàng, chuyên viên PIC..."
+              placeholder="Tìm gian hàng, mã SO-B2C-xxx, brand, PIC..."
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
                 setPage(1);
               }}
-              className="w-full pl-9 pr-8 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-slate-800 bg-slate-50/50"
+              className="w-full pl-8.5 pr-8 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:border-slate-800 bg-white"
             />
             {search && (
               <button
@@ -578,181 +536,115 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                   setSearch('');
                   setPage(1);
                 }}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
               >
-                <X className="w-3.5 h-3.5" />
+                <X className="w-3 h-3" />
               </button>
             )}
           </div>
 
-          <div className="flex items-center gap-2">
+          <select
+            value={selectedBrand}
+            onChange={(e) => {
+              setSelectedBrand(e.target.value);
+              setPage(1);
+            }}
+            className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-800 focus:outline-none focus:border-slate-800"
+          >
+            <option value="ALL">Mọi nhãn hàng ({uniqueBrands.length})</option>
+            {uniqueBrands.map(b => (
+              <option key={b} value={b}>{b}</option>
+            ))}
+          </select>
+
+          <select
+            value={selectedPlatform}
+            onChange={(e) => {
+              setSelectedPlatform(e.target.value);
+              setPage(1);
+            }}
+            className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-800 focus:outline-none focus:border-slate-800"
+          >
+            <option value="ALL">Mọi sàn ({stores.length})</option>
+            <option value="TikTok Shop">TikTok Shop ({tiktokCount})</option>
+            <option value="Shopee Mall">Shopee Mall ({shopeeCount})</option>
+            <option value="Lazada">Lazada ({lazadaCount})</option>
+          </select>
+
+          <select
+            value={selectedOwner}
+            onChange={(e) => {
+              setSelectedOwner(e.target.value);
+              setPage(1);
+            }}
+            className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-800 focus:outline-none focus:border-slate-800"
+          >
+            <option value="ALL">Mọi chuyên viên ({accountOwners.length})</option>
+            {accountOwners.map(owner => (
+              <option key={owner} value={owner}>{owner}</option>
+            ))}
+          </select>
+
+          <select
+            value={selectedBudgetStatus}
+            onChange={(e) => {
+              setSelectedBudgetStatus(e.target.value as any);
+              setPage(1);
+            }}
+            className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-800 focus:outline-none focus:border-slate-800"
+          >
+            <option value="ALL">Mọi ngân sách</option>
+            <option value="HAS_BUDGET">Có ngân sách &gt; 0đ</option>
+            <option value="ZERO_BUDGET">Hạn mức 0đ</option>
+            <option value="OVERBUDGET">Bội chi ({overbudgetStores.length})</option>
+          </select>
+
+          <select
+            value={selectedTeamStructure}
+            onChange={(e) => {
+              setSelectedTeamStructure(e.target.value as any);
+              setPage(1);
+            }}
+            className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-800 focus:outline-none focus:border-slate-800"
+          >
+            <option value="ALL">Mọi cơ cấu</option>
+            <option value="WITH_LEADER">Có Leader sơ duyệt ({withLeaderCount})</option>
+            <option value="DIRECT_TO_LEAD">Trực tiếp Trưởng phòng ({directLeadCount})</option>
+          </select>
+
+          <select
+            value={selectedStatus}
+            onChange={(e) => {
+              setSelectedStatus(e.target.value);
+              setPage(1);
+            }}
+            className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-800 focus:outline-none focus:border-slate-800"
+          >
+            <option value="ALL">Mọi trạng thái</option>
+            <option value="Live">Live ({liveCount})</option>
+            <option value="Off">Off ({offCount})</option>
+          </select>
+
+          {isFiltered && (
             <button
               type="button"
-              onClick={handleOpenAdd}
-              className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-xl transition flex items-center gap-1.5 shrink-0 shadow-xs cursor-pointer"
+              onClick={handleResetFilters}
+              className="py-1 px-2 rounded-lg border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 text-xs font-semibold transition flex items-center gap-1 cursor-pointer"
             >
-              <Plus className="w-3.5 h-3.5" />
-              Thêm gian hàng
+              <RotateCcw className="w-3 h-3" />
+              <span>Đặt lại</span>
             </button>
-          </div>
-        </div>
-
-        {/* Filters Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 pt-2 border-t border-slate-100 text-xs">
-          {/* 1. Brand */}
-          <div>
-            <label className="text-3xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">
-              1. Thương hiệu ({uniqueBrands.length}):
-            </label>
-            <select
-              value={selectedBrand}
-              onChange={(e) => {
-                setSelectedBrand(e.target.value);
-                setPage(1);
-              }}
-              className="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-slate-50 font-medium text-slate-800 focus:outline-none focus:border-slate-800"
-            >
-              <option value="ALL">Mọi nhãn hàng ({uniqueBrands.length})</option>
-              {uniqueBrands.map(b => (
-                <option key={b} value={b}>{b}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* 2. Platform */}
-          <div>
-            <label className="text-3xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">
-              2. Sàn / Nền tảng:
-            </label>
-            <select
-              value={selectedPlatform}
-              onChange={(e) => {
-                setSelectedPlatform(e.target.value);
-                setPage(1);
-              }}
-              className="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-slate-50 font-medium text-slate-800 focus:outline-none focus:border-slate-800"
-            >
-              <option value="ALL">Mọi sàn ({stores.length})</option>
-              <option value="TikTok Shop">TikTok Shop ({tiktokCount})</option>
-              <option value="Shopee Mall">Shopee Mall ({shopeeCount})</option>
-              <option value="Lazada">Lazada ({lazadaCount})</option>
-            </select>
-          </div>
-
-          {/* 3. Team Structure */}
-          <div>
-            <label className="text-3xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">
-              3. Cơ cấu quản lý:
-            </label>
-            <select
-              value={selectedTeamStructure}
-              onChange={(e) => {
-                setSelectedTeamStructure(e.target.value as any);
-                setPage(1);
-              }}
-              className="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-slate-50 font-medium text-slate-800 focus:outline-none focus:border-slate-800"
-            >
-              <option value="ALL">Mọi cơ cấu ({stores.length})</option>
-              <option value="WITH_LEADER">Có Leader sơ duyệt ({withLeaderCount})</option>
-              <option value="DIRECT_TO_LEAD">Trực tiếp Trưởng phòng ({directLeadCount})</option>
-            </select>
-          </div>
-
-          {/* 4. Budget Status */}
-          <div>
-            <label className="text-3xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">
-              4. Tình trạng Ngân sách:
-            </label>
-            <select
-              value={selectedBudgetStatus}
-              onChange={(e) => {
-                setSelectedBudgetStatus(e.target.value as any);
-                setPage(1);
-              }}
-              className="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-slate-50 font-medium text-slate-800 focus:outline-none focus:border-slate-800"
-            >
-              <option value="ALL">Mọi ngân sách ({stores.length})</option>
-              <option value="HAS_BUDGET">Có ngân sách Order &gt; 0đ</option>
-              <option value="ZERO_BUDGET">Hạn mức 0đ (Chỉ gửi mẫu FOC)</option>
-              <option value="OVERBUDGET">Cảnh báo Bội chi ({overbudgetStores.length})</option>
-            </select>
-          </div>
-
-          {/* 5. Specialist / PIC */}
-          <div>
-            <label className="text-3xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">
-              5. Chuyên viên thực thi:
-            </label>
-            <select
-              value={selectedOwner}
-              onChange={(e) => {
-                setSelectedOwner(e.target.value);
-                setPage(1);
-              }}
-              className="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-slate-50 font-medium text-slate-800 focus:outline-none focus:border-slate-800"
-            >
-              <option value="ALL">Mọi chuyên viên ({accountOwners.length})</option>
-              {accountOwners.map(owner => (
-                <option key={owner} value={owner}>{owner}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* 6. Operation Status */}
-          <div>
-            <label className="text-3xs font-semibold uppercase tracking-wider text-slate-400 block mb-1">
-              6. Trạng thái vận hành:
-            </label>
-            <select
-              value={selectedStatus}
-              onChange={(e) => {
-                setSelectedStatus(e.target.value);
-                setPage(1);
-              }}
-              className="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-slate-50 font-medium text-slate-800 focus:outline-none focus:border-slate-800"
-            >
-              <option value="ALL">Mọi trạng thái ({stores.length})</option>
-              <option value="Live">Live (Đang chạy - {liveCount})</option>
-              <option value="Off">Off (Dừng hợp tác - {offCount})</option>
-            </select>
-          </div>
-
-          {/* Reset button bar */}
-          <div className="flex items-end col-span-2 sm:col-span-3 lg:col-span-6 justify-end pt-1">
-            {isFiltered ? (
-              <button
-                type="button"
-                onClick={handleResetFilters}
-                className="py-1.5 px-3 rounded-lg border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 text-xs font-semibold transition flex items-center justify-center gap-1.5 cursor-pointer"
-              >
-                <RotateCcw className="w-3.5 h-3.5" />
-                <span>Xóa bộ lọc</span>
-              </button>
-            ) : (
-              <div className="text-2xs text-slate-400 px-2 py-1.5 flex items-center gap-1">
-                <Filter className="w-3.5 h-3.5 text-slate-400" />
-                <span>Đang hiển thị toàn bộ {stores.length} gian hàng B2C</span>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Filter Summary */}
-        <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-2xs text-slate-500">
-          <div className="flex items-center gap-2">
-            <span>
-              Tìm thấy <strong className="text-slate-900 font-bold">{filteredStores.length}</strong> / {stores.length} gian hàng B2C
-            </span>
-            {isFiltered && (
-              <span className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 font-semibold text-3xs">
-                Đang lọc kết quả
-              </span>
-            )}
-          </div>
-          {totalPages > 1 && (
-            <span>Trang {page} / {totalPages}</span>
           )}
         </div>
+
+        <button
+          type="button"
+          onClick={handleOpenAdd}
+          className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg transition flex items-center gap-1.5 shrink-0 shadow-xs cursor-pointer"
+        >
+          <Plus className="w-3.5 h-3.5" />
+          Thêm gian hàng
+        </button>
       </div>
 
       {/* 3. STORES MASTER TABLE */}

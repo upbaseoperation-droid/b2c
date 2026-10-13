@@ -1,9 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Search, Plus, X, FolderTree, Tag, Compass, Filter, RotateCcw } from 'lucide-react';
+import { Search, Plus, X, RotateCcw } from 'lucide-react';
 import { MasterKocNiche } from '../../../lib/types';
-import { Stat, StatRow } from '../../ui';
 
 interface KocNichesMasterViewProps {
   initialNiches: MasterKocNiche[];
@@ -109,93 +108,60 @@ export const KocNichesMasterView: React.FC<KocNichesMasterViewProps> = ({
   };
 
   return (
-    <div className="space-y-4">
-      {/* KPI Overview */}
-      <StatRow>
-        <Stat
-          label="Tổng số tệp kênh KOC"
-          value={niches.length}
-          note="Review Nữ, Mẹ bé, Chuyên gia, Makeup..."
-        />
-        <Stat
-          label="Chuyên mục ngành hàng"
-          value={categories.length}
-          note="Beauty, Health, Mom & Baby, Tech, F&B..."
-        />
-        <Stat
-          label="Chuẩn hóa Trụ cột nội dung"
-          value={niches.filter(n => n.pillarMatch).length}
-          note="Liên kết trực tiếp ma trận phân bổ booking"
-        />
-      </StatRow>
-
-      {/* Filter and Action Bar */}
-      <div className="bg-surface p-3.5 rounded-xl border border-line shadow-xs space-y-3">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-2 flex-1 max-w-xl">
-            <div className="relative w-full sm:w-64">
-              <Search className="w-4 h-4 text-ink-3 absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                placeholder="Tìm tên tệp, định nghĩa, pillar..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-9 pr-8 py-1.5 text-xs rounded-lg border border-line bg-surface focus:outline-none focus:ring-1 focus:ring-line-strong text-ink"
-              />
-              {search && (
-                <button
-                  onClick={() => setSearch('')}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-ink-3 hover:text-ink"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              )}
-            </div>
-
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="text-xs border border-line rounded-lg px-2.5 py-1.5 bg-surface text-ink focus:outline-none shrink-0"
-            >
-              <option value="ALL">Mọi chuyên mục ({categories.length})</option>
-              {categories.map(c => (
-                <option key={c} value={c}>{c}</option>
-              ))}
-            </select>
-
-            {isNicheFiltered && (
+    <div className="space-y-3">
+      {/* Action & Filter Toolbar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+        <div className="flex items-center gap-2 flex-1 flex-wrap">
+          <div className="relative min-w-[200px] max-w-xs flex-1">
+            <Search className="w-3.5 h-3.5 text-ink-3 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder="Tìm tên tệp, định nghĩa, pillar..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-8.5 pr-8 py-1.5 text-xs rounded-lg border border-line bg-surface focus:outline-none focus:ring-1 focus:ring-line-strong text-ink"
+            />
+            {search && (
               <button
-                type="button"
-                onClick={handleResetNicheFilters}
-                className="py-1.5 px-2.5 rounded-lg border border-line bg-surface text-critical hover:bg-critical-soft text-xs font-medium transition flex items-center gap-1"
+                onClick={() => setSearch('')}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-ink-3 hover:text-ink cursor-pointer"
               >
-                <RotateCcw className="w-3 h-3" />
-                <span>Xóa lọc</span>
+                <X className="w-3.5 h-3.5" />
               </button>
             )}
           </div>
 
-          <button
-            type="button"
-            onClick={handleOpenAdd}
-            className="px-3.5 py-1.5 bg-primary hover:bg-primary-hover text-white text-xs font-medium rounded-lg transition flex items-center gap-1.5 shrink-0"
+          <select
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
+            className="text-xs border border-line rounded-lg px-2.5 py-1.5 bg-surface text-ink focus:outline-none shrink-0"
           >
-            <Plus className="w-3.5 h-3.5" />
-            Thêm tệp KOC
-          </button>
+            <option value="ALL">Mọi chuyên mục ({categories.length})</option>
+            {categories.map(c => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+
+          {isNicheFiltered && (
+            <button
+              type="button"
+              onClick={handleResetNicheFilters}
+              className="py-1 px-2 rounded-lg border border-line bg-surface text-critical hover:bg-critical-soft text-xs font-medium transition flex items-center gap-1 cursor-pointer"
+            >
+              <RotateCcw className="w-3 h-3" />
+              <span>Đặt lại</span>
+            </button>
+          )}
         </div>
 
-        {/* Results summary */}
-        <div className="flex items-center justify-between pt-2 border-t border-line text-2xs text-ink-3">
-          <div className="flex items-center gap-2">
-            <span>Tìm thấy <strong className="text-ink font-semibold">{filteredNiches.length}</strong> / {niches.length} tệp KOC</span>
-            {isNicheFiltered && (
-              <span className="px-2 py-0.5 rounded-full bg-accent-soft text-accent border border-line font-medium text-2xs">
-                Đang lọc kết quả
-              </span>
-            )}
-          </div>
-        </div>
+        <button
+          type="button"
+          onClick={handleOpenAdd}
+          className="px-3.5 py-1.5 bg-primary hover:bg-primary-hover text-white text-xs font-medium rounded-lg transition flex items-center gap-1.5 shrink-0 shadow-xs cursor-pointer"
+        >
+          <Plus className="w-3.5 h-3.5" />
+          Thêm tệp KOC
+        </button>
       </div>
 
       {/* Master Niches Table */}
