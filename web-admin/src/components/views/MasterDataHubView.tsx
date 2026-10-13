@@ -1877,7 +1877,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
               type="submit"
               form="quick-brand-form"
               variant="primary"
-              icon={<Plus className="w-4 h-4" />}
+              icon={Plus}
             >
               Tạo thương hiệu
             </Button>
@@ -1964,7 +1964,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
               variant="primary"
               disabled={!larkRawText.trim()}
               onClick={handleLarkBulkImport}
-              icon={<CloudDownload className="w-4 h-4" />}
+              icon={CloudDownload}
             >
               Xác nhận nhập từ danh sách
             </Button>
@@ -1984,9 +1984,9 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
               variant="secondary"
               disabled={isSyncingLark}
               onClick={handleSyncFromLarkBaseApi}
-              icon={<RefreshCw className={`w-3.5 h-3.5 ${isSyncingLark ? 'animate-spin' : ''}`} />}
             >
-              {isSyncingLark ? 'Đang đồng bộ...' : 'Đồng bộ ngay'}
+              <RefreshCw className={`w-4 h-4 shrink-0 text-ink-3 ${isSyncingLark ? 'animate-spin' : ''}`} />
+              <span>{isSyncingLark ? 'Đang đồng bộ...' : 'Đồng bộ ngay'}</span>
             </Button>
           </div>
 
@@ -2156,7 +2156,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                   variant="danger"
                   disabled={hasDeps && !isConfirmMatch}
                   onClick={handleConfirmHardDeleteBrand}
-                  icon={<Trash2 className="w-3.5 h-3.5" />}
+                  icon={Trash2}
                 >
                   Xác nhận xóa vĩnh viễn
                 </Button>
@@ -2203,7 +2203,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                     variant="secondary"
                     className="w-full"
                     onClick={() => handleArchiveBrand(deletingBrand)}
-                    icon={<Archive className="w-3.5 h-3.5" />}
+                    icon={Archive}
                   >
                     Chuyển thành Tạm dừng (Khuyên dùng)
                   </Button>
@@ -2444,7 +2444,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
               <Button
                 variant="danger"
                 onClick={() => handleDeleteProduct(deletingProduct)}
-                icon={<Trash2 className="w-3.5 h-3.5" />}
+                icon={Trash2}
               >
                 Xóa vĩnh viễn
               </Button>
@@ -2469,7 +2469,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
                 variant="secondary"
                 className="w-full"
                 onClick={() => handleDiscontinueProduct(deletingProduct)}
-                icon={<Archive className="w-3.5 h-3.5" />}
+                icon={Archive}
               >
                 Chuyển sang "Tạm ngừng kinh doanh" (An toàn)
               </Button>
