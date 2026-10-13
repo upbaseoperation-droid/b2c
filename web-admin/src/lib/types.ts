@@ -1191,6 +1191,8 @@ export interface HeroProduct {
   category: string;
   pdpUrl: string;
   imageUrl?: string;
+  keySellingPoints?: string[];
+  restrictedClaims?: string[];
 }
 
 // ==========================================

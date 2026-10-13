@@ -158,11 +158,11 @@ export const BrandKnowledgeView: React.FC<BrandKnowledgeViewProps> = ({
             pdpUrl: p.pdpUrl || '#',
             scientificMechanism: 'Cơ chế tác động chuẩn theo tài liệu thương hiệu',
             keyActiveIngredients: [],
-            uniqueSellingPoints: p.keySellingPoints || ['Sản phẩm chủ lực'],
+            uniqueSellingPoints: [p.productName || 'Sản phẩm chủ lực'],
             clinicalTrials: 'Đạt chuẩn kiểm định chất lượng',
             usageInstructions: 'Sử dụng theo hướng dẫn của nhà sản xuất',
             targetSkinOrUser: 'Người tiêu dùng có nhu cầu',
-            contraindications: p.restrictedClaims?.join(', ') || 'Không dùng cho người mẫn cảm với thành phần'
+            contraindications: 'Không dùng cho người mẫn cảm với thành phần'
           })),
           blacklistKeywords: [],
           whitelistKeywords: [],
