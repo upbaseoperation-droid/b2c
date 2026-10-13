@@ -47,6 +47,8 @@ export interface BrandContentRules {
 
 export interface BrandFaq { id: string; question: string; answer: string; mention: string[]; avoid: string[] }
 
+export type BrandFileStorage = 'R2' | 'LOCAL' | 'LINK';
+
 export interface BrandLegalDoc {
   id: string;
   title: string;
@@ -56,12 +58,30 @@ export interface BrandLegalDoc {
   validUntil: string;
   disclaimer: string;
   url: string;
+  fileKey?: string;
+  fileName?: string;
+  fileSize?: number;
+  mimeType?: string;
+  storage?: BrandFileStorage;
 }
 
 export interface BrandRatecardRow { grade: string; maxBudget?: number }
 
 export type BrandDocCategory = 'GUIDELINE' | 'LEGAL' | 'PRODUCT' | 'BRIEF' | 'ASSET' | 'OTHER';
-export interface BrandDocument { id: string; title: string; category: BrandDocCategory; url: string; note: string; addedBy: string; addedAt: string }
+export interface BrandDocument {
+  id: string;
+  title: string;
+  category: BrandDocCategory;
+  url: string;
+  note: string;
+  addedBy: string;
+  addedAt: string;
+  fileKey?: string;
+  fileName?: string;
+  fileSize?: number;
+  mimeType?: string;
+  storage?: BrandFileStorage;
+}
 
 export interface BrandHistoryEntry { at: string; actorName: string; section: BrandSection; summary: string }
 

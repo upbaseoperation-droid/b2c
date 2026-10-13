@@ -7,7 +7,7 @@ import { randomUUID } from 'node:crypto';
 import type { UserProfile } from '../types';
 import { configuredActors } from '../contracts/access';
 import type {
-  BrandContentRules, BrandDocCategory, BrandDocument, BrandEntity, BrandFaq, BrandLegalDoc, BrandPermissions,
+  BrandContentRules, BrandDocCategory, BrandDocument, BrandEntity, BrandFaq, BrandFileStorage, BrandLegalDoc, BrandPermissions,
   BrandPositioning, BrandProduct, BrandProfile, BrandRatecardRow, BrandSection, ToneTag,
 } from './types';
 import { SECTION_LABEL } from './types';
@@ -65,7 +65,21 @@ const list = <T>(v: unknown, maxItems: number, fn: (x: Record<string, unknown>) 
 const id = (v: unknown) => (typeof v === 'string' && /^[\w-]{1,64}$/.test(v) ? v : randomUUID());
 const url = (v: unknown) => {
   const s = text(v, 1000);
-  return /^https?:\/\/\S+$/i.test(s) ? s : '';
+  if (/^https?:\/\/\S+$/i.test(s)) return s;
+  if (/^\/api\/brands\/files\?key=[a-zA-Z0-9._~%\-/]+$/.test(s)) return s;
+  return '';
+};
+const fileKeyField = (v: unknown) => {
+  const s = text(v, 300);
+  return /^brands\/[a-z0-9-]+\/\d{4}-\d{2}\/[a-zA-Z0-9._-]+$/.test(s) && !s.includes('..') ? s : undefined;
+};
+const fileSizeField = (v: unknown) => {
+  const n = typeof v === 'number' ? v : typeof v === 'string' ? Number(v) : NaN;
+  return Number.isFinite(n) && n > 0 && n <= 100 * 1024 * 1024 ? Math.round(n) : undefined;
+};
+const storageField = (v: unknown, hasFileKey: boolean): BrandFileStorage | undefined => {
+  if (v === 'R2' || v === 'LOCAL' || v === 'LINK') return v;
+  return hasFileKey ? 'R2' : undefined;
 };
 const TONES: ToneTag[] = ['EXPERT', 'MOM', 'GENZ', 'PREMIUM'];
 const DOC_CATEGORIES: BrandDocCategory[] = ['GUIDELINE', 'LEGAL', 'PRODUCT', 'BRIEF', 'ASSET', 'OTHER'];
@@ -114,7 +128,25 @@ export function parseSection(section: BrandSection, raw: unknown, actorName: str
       return {
         legal: list<BrandLegalDoc>(d.legal, 100, l => {
           const title = text(l.title, 300); if (!title) return null;
-          return { id: id(l.id), title, docNumber: text(l.docNumber, 100), authority: text(l.authority, 200), issueDate: text(l.issueDate, 20), validUntil: text(l.validUntil, 20), disclaimer: text(l.disclaimer, 1000), url: url(l.url) };
+          const fileKey = fileKeyField(l.fileKey);
+          const link = url(l.url) || (fileKey ? `/api/brands/files?key=${encodeURIComponent(fileKey)}` : '');
+          return {
+            id: id(l.id),
+            title,
+            docNumber: text(l.docNumber, 100),
+            authority: text(l.authority, 200),
+            issueDate: text(l.issueDate, 20),
+            validUntil: text(l.validUntil, 20),
+            disclaimer: text(l.disclaimer, 1000),
+            url: link,
+            ...(fileKey ? {
+              fileKey,
+              fileName: text(l.fileName, 200) || undefined,
+              fileSize: fileSizeField(l.fileSize),
+              mimeType: text(l.mimeType, 120) || undefined,
+              storage: storageField(l.storage, true),
+            } : {}),
+          };
         }),
       };
     case 'RATECARD':
@@ -123,11 +155,28 @@ export function parseSection(section: BrandSection, raw: unknown, actorName: str
       const known = new Map(previous.documents.map(x => [x.id, x]));
       return {
         documents: list<BrandDocument>(d.documents, 200, x => {
-          const title = text(x.title, 200); const link = url(x.url);
+          const title = text(x.title, 200);
+          const fileKey = fileKeyField(x.fileKey);
+          const link = url(x.url) || (fileKey ? `/api/brands/files?key=${encodeURIComponent(fileKey)}` : '');
           if (!title || !link) return null;
           const old = typeof x.id === 'string' ? known.get(x.id) : undefined;
           const category = DOC_CATEGORIES.includes(x.category as BrandDocCategory) ? (x.category as BrandDocCategory) : 'OTHER';
-          return { id: old?.id || randomUUID(), title, category, url: link, note: text(x.note, 500), addedBy: old?.addedBy || actorName, addedAt: old?.addedAt || new Date().toISOString() };
+          return {
+            id: old?.id || randomUUID(),
+            title,
+            category,
+            url: link,
+            note: text(x.note, 500),
+            addedBy: old?.addedBy || actorName,
+            addedAt: old?.addedAt || new Date().toISOString(),
+            ...(fileKey ? {
+              fileKey,
+              fileName: text(x.fileName, 200) || old?.fileName || undefined,
+              fileSize: fileSizeField(x.fileSize) ?? old?.fileSize,
+              mimeType: text(x.mimeType, 120) || old?.mimeType || undefined,
+              storage: storageField(x.storage, true) || old?.storage,
+            } : { storage: 'LINK' as const }),
+          };
         }),
       };
     }
