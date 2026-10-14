@@ -1252,7 +1252,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
               <Package className="w-12 h-12 text-slate-300 mx-auto" />
               <div className="text-base font-semibold text-slate-700">Không tìm thấy sản phẩm thúc đẩy phù hợp</div>
               <p className="text-xs text-slate-500 max-w-md mx-auto">
-                Vui lòng kiểm tra lại bộ lọc thời gian ({timeHorizon === 'AVAILABLE' ? 'Đang mở bán' : timeHorizon === 'FUTURE' ? 'Kế hoạch sắp tới' : 'Lịch sử'}) hoặc nhấn nút bên dưới để khởi tạo sản phẩm mới.
+                Không có sản phẩm nào trong giai đoạn {timeHorizon === 'AVAILABLE' ? 'đang mở bán' : timeHorizon === 'FUTURE' ? 'kế hoạch sắp tới' : 'lịch sử'}.
               </p>
               <button
                 type="button"
@@ -1909,21 +1909,18 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                     </div>
 
                     {(!selectedProduct.usp || selectedProduct.b2cBriefStatus === 'PENDING_BRIEF') ? (
-                      <div className="p-4 bg-amber-50/70 rounded-xl border border-amber-200 text-amber-900 space-y-2">
+                      <div className="p-3.5 bg-amber-50/70 rounded-xl border border-amber-200 text-amber-900 flex items-center justify-between gap-3">
                         <div className="flex items-center gap-2 text-xs font-semibold">
-                          <AlertCircle className="w-4 h-4 text-amber-600" />
-                          Chờ B2C tiếp nhận & bổ sung thông tin brief KOC
+                          <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                          <span>Chưa có nội dung brief KOC cho sản phẩm này</span>
                         </div>
-                        <p className="text-2xs text-amber-800 leading-relaxed">
-                          Sản phẩm thúc đẩy này được Growth khởi tạo với các thông tin thương mại (giá, tồn kho, hoa hồng, mẫu). Đội ngũ B2C nghiên cứu góc nhìn người tiêu dùng để bổ sung điểm bán hàng độc nhất, thông điệp chính, góc quay video, tài liệu hướng dẫn và chính sách mẫu trước khi gửi Creator.
-                        </p>
                         <button
                           type="button"
                           onClick={() => handleOpenEditBriefModal(selectedProduct)}
-                          className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-amber-600 hover:bg-amber-700 text-white inline-flex items-center gap-1.5 shadow-2xs transition-colors"
+                          className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-600 hover:bg-amber-700 text-white inline-flex items-center gap-1.5 shadow-2xs transition-colors shrink-0"
                         >
                           <FileEdit className="w-3.5 h-3.5" />
-                          Bổ sung brief KOC ngay
+                          Bổ sung brief KOC
                         </button>
                       </div>
                     ) : (
@@ -2423,16 +2420,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                 />
               </div>
 
-              {/* Note on KOC Brief - To be inputted by B2C later */}
-              <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-1.5">
-                <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-800">
-                  <FileText className="w-3.5 h-3.5 text-accent" />
-                  Thông tin brief KOC (B2C đảm nhiệm sau khi tiếp nhận)
-                </div>
-                <p className="text-2xs text-slate-500 leading-relaxed">
-                  Các thông tin như điểm bán hàng độc nhất, thông điệp truyền thông, góc quay gợi ý, lưu ý nội dung và link tài liệu brief chi tiết sẽ do đội ngũ B2C nghiên cứu và cập nhật sau khi tiếp nhận sản phẩm.
-                </p>
-              </div>
+
 
               {/* Submit Buttons */}
               <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200">
@@ -2481,12 +2469,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
             </div>
 
             <form onSubmit={handleSaveB2cBrief} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto text-xs">
-              <div className="p-3 bg-accent-soft rounded-xl border border-line text-xs text-ink space-y-1">
-                <span className="font-semibold block">Thông tin dành riêng cho B2C Booking & Content:</span>
-                <p className="text-2xs text-ink-2 leading-relaxed">
-                  Đội ngũ B2C nghiên cứu góc nhìn người tiêu dùng, đúc kết USP nổi bật, thông điệp truyền thông và tài liệu hướng dẫn để gửi Creator. Dữ liệu này sẽ tự động tích hợp vào tính năng sao chép nhanh gửi KOC.
-                </p>
-              </div>
+
 
               {/* USP */}
               <div className="space-y-1">

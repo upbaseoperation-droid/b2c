@@ -360,10 +360,10 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
             <div className="flex items-center gap-2 flex-wrap">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-2xs" />
               <h2 className="text-base font-semibold text-slate-900 tracking-tight">
-                Bàn làm việc: Phân bổ KOC / KOL từ yêu cầu growth
+                Phân bổ KOC / KOL từ yêu cầu Growth
               </h2>
               <span className="text-xs text-ink-3">·</span>
-              <span className="text-xs text-ink-3">Luồng Handoff Growth → Booking</span>
+              <span className="text-xs text-ink-3">Tiếp nhận Growth</span>
               {pendingCount > 0 && (
                 <>
                   <span className="text-xs text-ink-3">·</span>
@@ -373,9 +373,6 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
                 </>
               )}
             </div>
-            <p className="text-xs text-slate-500 mt-1">
-              Nhận đề bài ngân sách &amp; GMV từ Growth Lead → Break-down chi tiết số lượng KOC theo 4 Level (Celeb, Macro, Micro, Affiliate) &amp; dự phóng CIR thời gian thực.
-            </p>
           </div>
 
           {/* Quick Filters */}
@@ -663,9 +660,7 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
                   <Layers className="w-4 h-4 text-blue-600" />
                   BẢNG PHÂN BỔ SỐ LƯỢNG KOC &amp; DỰ PHÓNG NGÂN SÁCH THEO 4 LEVEL
                 </h4>
-                <p className="text-2xs text-slate-500">
-                  Điều chỉnh số lượng và đơn giá dự kiến để hệ thống tự động cân đối ngân sách và doanh số kỳ vọng.
-                </p>
+
               </div>
               <span className="text-xs font-medium text-ink-2">
                 Tổng Target: <strong className="font-mono font-semibold text-accent">{totalKocCount} KOCs</strong>
@@ -820,9 +815,7 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
                     <Video className="w-4 h-4 text-slate-600" />
                     Kế hoạch video self-channel (kênh thương hiệu inhouse)
                   </h4>
-                  <p className="text-2xs text-slate-500">
-                    Sản xuất nội dung độc quyền bởi Content Team Upbase và phân phối Reup đa nền tảng để phủ sóng sản phẩm.
-                  </p>
+
                 </div>
                 <span className="text-xs font-semibold text-positive tabular-nums">
                   Tiết kiệm ~45.000.000đ chi phí Cast KOC
@@ -905,9 +898,7 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
                     <Tv className="w-4 h-4 text-amber-600" />
                     KẾ HOẠCH LIVESTREAM GIAN HÀNG (INHOUSE HN/HCM &amp; CTV)
                   </h4>
-                  <p className="text-2xs text-slate-500">
-                    Phân bổ phiên live định kỳ 3h và 2h (CTV) nhằm giữ nhịp chuyển đổi trong các khung giờ vàng.
-                  </p>
+
                 </div>
                 <span className="text-xs font-medium text-ink-2">
                   Tổng 34 phiên · 92 giờ Live
@@ -953,9 +944,7 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
                     <BarChart3 className="w-4 h-4 text-emerald-600" />
                     Bảng đối soát 4 cột: Plan → Duyệt → Điều chỉnh → Thực tế MTD
                   </h4>
-                  <p className="text-2xs text-slate-500">
-                    Theo dõi sát vòng đời ngân sách và chênh lệch Gap NMV thực thu sau khi trừ tỷ lệ hủy đơn của sàn.
-                  </p>
+
                 </div>
                 <span className="text-xs font-medium text-ink-2">
                   Tỷ lệ hủy: <strong className="font-mono font-semibold text-warning">8.0%</strong>
@@ -1279,9 +1268,7 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
                 Mẫu Input 4.1.1
               </button>
             </div>
-            <p className="text-2xs text-slate-500 text-center">
-              Khởi tạo tự động các deal booking vào phân hệ quản lý booking để nhân viên bắt đầu tiếp cận KOC.
-            </p>
+
           </div>
         </div>
       </div>

@@ -1514,7 +1514,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
               <div>
                 <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
                   <ShieldCheck className="w-4 h-4 text-blue-600" />
-                  <span>1. Phân quyền thao tác nhân sự trong Quy trình sản xuất Video Self-Channel (6 Bước SOP)</span>
+                  <span>1. Phân quyền nhân sự quy trình sản xuất Video Self-Channel</span>
                 </h3>
               </div>
               <span className="text-2xs text-slate-500">
@@ -1875,7 +1875,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                     </span>
                   </div>
                   <p className="text-2xs text-slate-600 mt-0.5">
-                    Quản lý trực tiếp <strong>{SELF_CHANNEL_CONTENT_MEMBERS.length} chuyên viên Content</strong> bên dưới • Chuyên trách liên hệ CTV/VJ, đàm phán đơn giá, thu thập CCCD/Hợp đồng, điều phối CTV vào đề bài của Content và lập bảng kê DNTT.
+                    Quản lý trực tiếp <strong>{SELF_CHANNEL_CONTENT_MEMBERS.length} chuyên viên Content</strong>
                   </p>
                 </div>
               </div>
@@ -1907,11 +1907,8 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
               <div className="flex items-center justify-between">
                 <h4 className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
                   <Users className="w-3.5 h-3.5 text-blue-600" />
-                  <span>Đội ngũ Chuyên viên Content dưới quyền ({SELF_CHANNEL_CONTENT_MEMBERS.length} nhân sự) — Lên đề bài, duyệt kịch bản 24h &amp; QA video nội bộ</span>
+                  <span>Đội ngũ Chuyên viên Content ({SELF_CHANNEL_CONTENT_MEMBERS.length} nhân sự)</span>
                 </h4>
-                <span className="text-2xs text-slate-400 hidden sm:inline">
-                  Bấm vào từng nhân sự để lọc công việc trong Bảng điều phối
-                </span>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
@@ -3772,7 +3769,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                 </div>
 
                 <div className="space-y-1">
-                  <label className="font-semibold text-slate-700 block">Cơ chế duyệt với Nhãn hàng (SOP B2)</label>
+                  <label className="font-semibold text-slate-700 block">Phương thức duyệt với Nhãn hàng</label>
                   <select
                     value={newTaskForm.brandApprovalMode}
                     onChange={(e) =>

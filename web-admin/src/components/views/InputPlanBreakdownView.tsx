@@ -1995,31 +1995,26 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
       {/* ========================================================================= */}
       {activeTab === 'OVERVIEW' && (
         <div className="space-y-4">
-          {/* Thanh trạng thái quy trình 2 Layer trong mỗi Phiên bản kế hoạch */}
-          <div className="bg-slate-900 text-white rounded-xl p-4 flex flex-wrap items-center justify-between gap-3">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2 flex-wrap text-xs font-semibold">
-                <span className="text-blue-300">
-                  Phiên bản {activeVersionCode} · Cơ chế 2 Layer
-                </span>
-                <span className="text-slate-500">·</span>
-                <span className={
-                  isPlanLocked
-                    ? 'text-emerald-300'
-                    : isLayer1Locked
-                    ? 'text-blue-200'
-                    : 'text-amber-300'
-                }>
-                  {isPlanLocked
-                    ? 'Phiên bản đã khóa chốt'
-                    : isLayer1Locked
-                    ? 'Chỉ tiêu tháng đã chốt — Đang mở phân bổ chi tiết'
-                    : 'Đang mở để các bên điền chỉ tiêu và lập phân bổ'}
-                </span>
-              </div>
-              <p className="text-xs text-slate-300">
-                Thống nhất chỉ tiêu cốt lõi rồi nhấn <strong>Chốt chỉ tiêu</strong> để chuyển sang phân bổ kênh &amp; lịch tuần.
-              </p>
+          {/* Thanh trạng thái kế hoạch */}
+          <div className="bg-slate-900 text-white rounded-xl p-3 px-4 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2 flex-wrap text-xs font-semibold">
+              <span className="text-blue-300">
+                Phiên bản {activeVersionCode}
+              </span>
+              <span className="text-slate-500">·</span>
+              <span className={
+                isPlanLocked
+                  ? 'text-emerald-300'
+                  : isLayer1Locked
+                  ? 'text-blue-200'
+                  : 'text-amber-300'
+              }>
+                {isPlanLocked
+                  ? 'Đã khóa chốt'
+                  : isLayer1Locked
+                  ? 'Đã chốt chỉ tiêu tháng'
+                  : 'Đang điền chỉ tiêu'}
+              </span>
             </div>
 
             <div className="flex items-center gap-2 flex-wrap">
@@ -2082,16 +2077,13 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                   <div>
                     <div className="flex items-center gap-2 flex-wrap">
                       <h3 className="text-xs font-semibold text-slate-900 uppercase tracking-wide">
-                        Thực thể Chiến dịch (Campaign 1–3 Tháng) &amp; Key Visual kỳ {planState.month}
+                        Chiến dịch &amp; Key Visual kỳ {planState.month}
                       </h3>
                       <span className="text-slate-400">·</span>
                       <span className={`text-2xs font-semibold ${hasCampaignActive ? 'text-accent' : 'text-slate-600'}`}>
-                        {hasCampaignActive ? 'Có chiến dịch (Campaign)' : 'Duy trì thường nhật (Không Campaign)'}
+                        {hasCampaignActive ? 'Có chiến dịch' : 'Duy trì (Không campaign)'}
                       </span>
                     </div>
-                    <p className="text-2xs text-slate-500">
-                      Một tháng gian hàng có thể gắn với 1 Chiến dịch cấp Brand (kéo dài 1–3 tháng) hoặc chạy Duy trì thường nhật (Always-on).
-                    </p>
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2">
@@ -2167,7 +2159,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                       className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold text-2xs transition cursor-pointer"
                     >
                       <Plus className="w-3.5 h-3.5" />
-                      <span>Tạo Campaign mới (1–3 tháng)</span>
+                      <span>Tạo Campaign mới</span>
                     </button>
                   </div>
                 </div>
@@ -2333,7 +2325,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                 ) : (
                   <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-slate-50 border border-slate-200 px-3 py-1.5 text-xs text-slate-600">
                     <span>
-                      Chế độ vận hành: <strong className="text-slate-900">Duy trì thường nhật (Always-on)</strong>
+                      Chế độ: <strong className="text-slate-900">Duy trì thường nhật</strong>
                     </span>
                     <button
                       type="button"
@@ -2513,7 +2505,6 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                     <tr className="hover:bg-slate-50/70">
                       <td className="py-2.5 px-3.5">
                         <div className="font-semibold text-slate-900">1. Video KOC trả phí (Affiliate Paid)</div>
-                        <div className="text-2xs text-slate-500">Video có cast (phân bổ KL1 → KL7 theo tuần)</div>
                       </td>
                       <td className="py-2.5 px-2.5 text-right">
                         <div className="inline-flex items-center justify-end gap-1">
@@ -2577,7 +2568,6 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                     <tr className="hover:bg-slate-50/70">
                       <td className="py-2.5 px-3.5">
                         <div className="font-semibold text-slate-900">2. Suất gửi mẫu miễn phí (FOC 0đ)</div>
-                        <div className="text-2xs text-slate-500">TAP Brand, TAP &amp; UpAffiliate (Chi phí cast 0đ)</div>
                       </td>
                       <td className="py-2.5 px-2.5 text-right">
                         <div className="inline-flex items-center justify-end gap-1">
@@ -2623,7 +2613,6 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                     <tr className="hover:bg-slate-50/70">
                       <td className="py-2.5 px-3.5">
                         <div className="font-semibold text-slate-900">3. Video kênh thương hiệu (Self-channel)</div>
-                        <div className="text-2xs text-slate-500">Review voice, Nhạc text, Remix, POV trên kênh Brand</div>
                       </td>
                       <td className="py-2.5 px-2.5 text-right">
                         <div className="inline-flex items-center justify-end gap-1">
@@ -2687,7 +2676,6 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                     <tr className="hover:bg-slate-50/70">
                       <td className="py-2.5 px-3.5">
                         <div className="font-semibold text-slate-900">4. Đa sàn khác (Shopee, FB, IG, Threads)</div>
-                        <div className="text-2xs text-slate-500">Video đa nền tảng gắn giỏ hàng / link</div>
                       </td>
                       <td className="py-2.5 px-2.5 text-right">
                         <div className="inline-flex items-center justify-end gap-1">
@@ -2743,7 +2731,6 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                     <tr className="hover:bg-slate-50/70">
                       <td className="py-2.5 px-3.5">
                         <div className="font-semibold text-slate-900">5. Phiên Livestream (Affiliate / Inhouse / CTV)</div>
-                        <div className="text-2xs text-slate-500">Số ca livestream &amp; chi phí booking host/phần thưởng</div>
                       </td>
                       <td className="py-2.5 px-2.5 text-right">
                         <div className="inline-flex items-center justify-end gap-1">
@@ -3872,7 +3859,6 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                                         <span className="font-mono font-semibold text-blue-900">{row.tapChannels?.upbase || 0} clip</span>
                                       </div>
                                     </div>
-                                    <p className="text-2xs text-blue-500 italic mt-1">Cam kết phát mẫu FOC, không phát sinh chi phí thù lao</p>
                                   </div>
 
                                   {/* Khối 3: Định dạng Kênh Tự Xây */}

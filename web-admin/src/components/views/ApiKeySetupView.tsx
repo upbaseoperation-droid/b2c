@@ -2546,16 +2546,13 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({ onNotify }) =>
                     Chưa có kết quả chạy thử
                   </div>
                   <p className="text-2xs text-ink-3 max-w-md mx-auto leading-relaxed">
-                    Chọn một mục đích nghiệp vụ ở cột bên trái và bấm <strong>&ldquo;Chạy thử nghiệm vụ này&rdquo;</strong> để kiểm tra phản hồi của Google Gemini, ChatGPT hoặc Claude.
+                    Chọn mục đích nghiệp vụ để kiểm tra kết nối API.
                   </p>
                 </div>
               )}
             </div>
 
-            <div className="pt-3 border-t border-line flex flex-wrap items-center justify-between gap-2 text-2xs text-ink-3">
-              <span>
-                Cấu hình tại đây được áp dụng đồng bộ cho các màn Hợp đồng (Đọc CCCD), Kịch bản &amp; Video, và Đánh giá 4P.
-              </span>
+            <div className="pt-3 border-t border-line flex items-center justify-end text-2xs text-ink-3">
               <button
                 type="button"
                 onClick={() => setActiveTab('routing')}

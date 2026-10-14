@@ -1845,7 +1845,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                 Hiển thị <strong className="text-ink">{slaBreaches.length}</strong> cảnh báo vi phạm SLA
               </span>
               <div className="text-2xs text-ink-3">
-                Cơ chế tự động đối soát SLA Upbase B2C • Cập nhật mỗi 15 phút
+                Cập nhật mỗi 15 phút
               </div>
             </div>
           </div>
@@ -2245,9 +2245,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
             </div>
 
             <div className="p-6 space-y-4 text-xs max-h-[75vh] overflow-y-auto">
-              <div className="p-3 bg-accent-soft border border-accent/20 rounded-xl text-accent text-xs">
-                <strong>Nguyên tắc quản trị Top-Down:</strong> Trưởng phòng chốt tổng ngân sách và trần video cho 4 Tier. Sau đó hệ thống sẽ dùng các mốc này để kiểm soát cân đối khi phân bổ xuống 26 nhân sự.
-              </div>
+
 
               <div className="space-y-3">
                 {editTierForm.map((tier, idx) => {

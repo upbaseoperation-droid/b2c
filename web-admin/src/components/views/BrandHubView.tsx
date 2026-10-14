@@ -1166,14 +1166,11 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
                 )}
               </div>
 
-              <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-2xs text-slate-500">
-                <span>
-                  Mọi chỉnh sửa tại đây được áp dụng ngay vào màn hình Tạo lệnh đặt KOC và Duyệt kịch bản của chuyên viên B2C.
-                </span>
+              <div className="pt-2 border-t border-slate-100 flex items-center justify-end text-2xs text-slate-500">
                 <button
                   type="button"
                   onClick={() => setActiveTab('BRAND_PROFILE')}
-                  className="px-2.5 py-1 rounded-md bg-slate-900 hover:bg-slate-800 text-white font-semibold shrink-0 ml-2"
+                  className="px-2.5 py-1 rounded-md bg-slate-900 hover:bg-slate-800 text-white font-semibold shrink-0"
                 >
                   Cập nhật quy chuẩn
                 </button>

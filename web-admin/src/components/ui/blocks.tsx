@@ -46,11 +46,12 @@ export function Panel({
   className?: string;
 }) {
   return (
-    <section className={cx('workspace-panel bg-surface border border-line rounded-xl overflow-hidden', className)}>
-      {(title || actions) && (
-        <header className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-b border-line">
+    <section className={cx('workspace-panel bg-surface border border-line rounded-xl overflow-hidden shadow-2xs', className)}>
+      {(title || description || actions) && (
+        <header className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-b border-line bg-surface">
           <div className="min-w-0">
-            {title && <h3 className="text-sm font-semibold text-ink">{title}</h3>}
+            {title && <h3 className="text-sm font-semibold text-ink leading-tight">{title}</h3>}
+            {description && <p className="text-2xs text-ink-3 mt-0.5 leading-normal">{description}</p>}
           </div>
           {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
         </header>
@@ -201,9 +202,9 @@ export function DataTable<T>({
                 scope="col"
                 style={c.width ? { minWidth: c.width } : undefined}
                 className={cx(
-                  'px-4 py-2.5 text-[12.5px] font-medium text-ink-3 bg-surface border-b border-line',
+                  'px-4 py-2.5 text-[12px] font-semibold text-ink-3 bg-sunken/40 border-b border-line whitespace-nowrap',
                   align(c.align),
-                  stickyLast && i === last && 'sticky right-0 z-10 border-l',
+                  stickyLast && i === last && 'sticky right-0 z-10 bg-sunken/60 border-l border-line',
                 )}
               >
                 {c.header}

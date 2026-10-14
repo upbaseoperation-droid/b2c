@@ -620,15 +620,7 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
       {/* ========================================================================= */}
       {viewMode === 'MATRIX' && (
         <div className="space-y-4">
-          <div className="bg-blue-50/70 border border-blue-200 rounded-xl p-4 flex items-start gap-3 text-xs text-blue-900">
-            <Info className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
-            <div>
-              <strong className="font-semibold">Ma trận mức độ sẵn sàng kịch bản:</strong>
-              <p className="text-blue-700 mt-0.5">
-                Bảng này thể hiện mỗi sản phẩm trọng tâm của gian hàng đã có bao nhiêu góc kịch bản ứng với từng trụ cột nội dung. Ô màu vàng nghĩa là sản phẩm đó chưa có góc kịch bản ở trụ cột tương ứng — bấm vào nút <strong className="font-semibold">Thiếu góc tiếp cận</strong> tại ô để bổ sung.
-              </p>
-            </div>
-          </div>
+
 
           <div className="card-enterprise overflow-hidden">
             <div className="overflow-x-auto">

@@ -58,7 +58,7 @@ const SYNC_STATUS_META: Record<
     label: 'Gom cụm nhưng thiếu lịch dự kiến',
     shortBadge: 'Đang chạy',
     tone: 'info',
-    description: 'Thực tế có gom video nổ đồng loạt theo đợt nhưng chuyên viên bỏ trống ngày dự kiến Air trên file kế hoạch.',
+    description: 'Thực tế có gom video nổ đồng loạt theo đợt nhưng chuyên viên bỏ trống ngày dự kiến lên sóng trên kế hoạch.',
   },
   AIR_FRAGMENTED_LATE: {
     label: 'Vỡ lịch đồng loạt (Rải rác / Trễ)',
@@ -346,7 +346,7 @@ export const WeeklyAirSyncDashboardSection: React.FC<WeeklyAirSyncDashboardSecti
           value={`${formatNumber(executiveMetrics.totalAired)} / ${formatNumber(executiveMetrics.totalBooked)}`}
           tone="positive"
           progress={{ value: executiveMetrics.totalAired, max: Math.max(executiveMetrics.totalBooked, 1) }}
-          note={`Đạt ${executiveMetrics.airedVsBookedPct}% đơn book File 3.2 · Còn ${executiveMetrics.pending} đơn chờ lên sóng`}
+          note={`Đạt ${executiveMetrics.airedVsBookedPct}% đơn book · Còn ${executiveMetrics.pending} đơn chờ lên sóng`}
         />
         <Stat
           label="Độ khớp lịch cam kết (Đúng & Sớm)"
@@ -1155,7 +1155,7 @@ export const WeeklyAirSyncDashboardSection: React.FC<WeeklyAirSyncDashboardSecti
         footer={
           <div className="flex items-center justify-between w-full">
             <span className="text-2xs text-ink-3">
-              Nguồn đối soát: File 4.1 · File 4.1.1 (Input Plan tuần) · File 3.2 (List duyệt book)
+              Dữ liệu đối soát: Kế hoạch tuần &amp; Lịch duyệt book
             </span>
             <Button variant="secondary" size="sm" onClick={() => setInspectStore(null)}>
               Đóng
@@ -1215,7 +1215,7 @@ export const WeeklyAirSyncDashboardSection: React.FC<WeeklyAirSyncDashboardSecti
             {/* Bảng đối chiếu 6 Tuần W40 -> W45 của Gian hàng */}
             <div>
               <h4 className="text-xs font-semibold text-ink mb-2">
-                1. Bảng đối chiếu lịch air kế hoạch tuần (File 4.1.1) vs. thực tế lên sóng (File 3.2)
+                1. Bảng đối chiếu lịch air kế hoạch tuần vs. thực tế lên sóng
               </h4>
               <div className="overflow-x-auto rounded-lg border border-line">
                 <table className="w-full text-xs text-left">

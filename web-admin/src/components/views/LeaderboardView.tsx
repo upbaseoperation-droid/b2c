@@ -115,7 +115,7 @@ export const LeaderboardView: React.FC = () => {
           ]}
         />
         <span className="text-2xs text-ink-3">
-          Cơ chế tính điểm: 30% kỷ luật SLA + 40% sản lượng video + 30% doanh thu GMV
+          Tính điểm: 30% SLA + 40% sản lượng + 30% GMV
         </span>
       </Toolbar>
 

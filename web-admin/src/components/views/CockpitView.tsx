@@ -6,6 +6,8 @@ import {
   ArrowRight,
   ExternalLink,
   ClipboardList,
+  AlertCircle,
+  Clock,
 } from 'lucide-react';
 import {
   Avatar,
@@ -13,6 +15,7 @@ import {
   EmptyState,
   Panel,
   Person,
+  Segmented,
   Stat,
   StatRow,
   Status,
@@ -75,6 +78,15 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
     return { criticalCount: crit, warningCount: warn, doneCount: done };
   }, [relevantTasks]);
 
+  const [filterTab, setFilterTab] = React.useState<'ALL' | 'CRITICAL' | 'WARNING' | 'DONE'>('ALL');
+
+  const displayedTasks = React.useMemo(() => {
+    if (filterTab === 'CRITICAL') return relevantTasks.filter(t => t.urgency === 'critical');
+    if (filterTab === 'WARNING') return relevantTasks.filter(t => t.urgency === 'warning' || t.urgency === 'normal');
+    if (filterTab === 'DONE') return relevantTasks.filter(t => t.urgency === 'done');
+    return relevantTasks;
+  }, [relevantTasks, filterTab]);
+
   const dealsMap = React.useMemo(() => {
     const map = new Map<string, BookingDealItem>();
     for (const d of deals) {
@@ -104,35 +116,52 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
           label="Khẩn cấp"
           value={criticalCount}
           tone={criticalCount > 0 ? 'critical' : undefined}
+          icon={AlertCircle}
         />
         <Stat
           label="Trong ngày"
           value={warningCount}
           tone={warningCount > 0 ? 'warning' : undefined}
+          icon={Clock}
         />
         <Stat
           label="Đã hoàn tất"
           value={doneCount}
           tone="positive"
+          icon={CheckCircle2}
         />
         <Stat
           label="Tổng đầu việc"
           value={relevantTasks.length}
+          icon={ClipboardList}
         />
       </StatRow>
 
       <Panel
         flush
-        title={`Nhiệm vụ cần xử lý (${relevantTasks.length})`}
+        title={`Nhiệm vụ cần xử lý (${displayedTasks.length}/${relevantTasks.length})`}
+        description="Các đầu việc tác nghiệp theo phân công và thời hạn SLA"
+        actions={
+          <Segmented
+            items={[
+              { key: 'ALL', label: `Tất cả (${relevantTasks.length})` },
+              { key: 'CRITICAL', label: `Khẩn cấp (${criticalCount})` },
+              { key: 'WARNING', label: `Trong ngày (${warningCount})` },
+              { key: 'DONE', label: `Đã xong (${doneCount})` },
+            ]}
+            value={filterTab}
+            onChange={setFilterTab}
+          />
+        }
       >
         <div className="divide-y divide-line">
-          {relevantTasks.length === 0 ? (
+          {displayedTasks.length === 0 ? (
             <EmptyState
-              title="Không có công việc tồn đọng"
-              description="Các đầu việc trong ngày đã được xử lý xong."
+              title="Không có công việc trong mục này"
+              description="Các đầu việc thuộc trạng thái đã chọn đã được xử lý xong."
             />
           ) : (
-            relevantTasks.map((task) => {
+            displayedTasks.map((task) => {
               const matchedDeal = task.dealCode ? dealsMap.get(task.dealCode) : undefined;
               return (
                 <div

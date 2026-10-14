@@ -73,26 +73,36 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
         )}
 
         <div className="min-w-0 flex-1">
-          <h1 className="text-xl font-semibold text-ink leading-7 tracking-tight">{title}</h1>
+          <div className="flex items-baseline gap-2.5 min-w-0">
+            <h1 className="text-xl font-semibold text-ink leading-7 tracking-tight">{title}</h1>
+            {subtitle && (
+              <span className="hidden md:inline-block text-2xs text-ink-3 truncate max-w-sm">
+                / {subtitle}
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-2 min-w-0 max-w-full">
         {currentUser.role === 'BRAND_PARTNER' ? (
-          <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-positive-soft text-positive text-xs font-medium">
-            <Building2 className="w-3.5 h-3.5 text-positive" />
+          <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-positive-soft text-positive text-xs font-medium border border-positive/20">
+            <span className="w-1.5 h-1.5 rounded-full bg-positive shrink-0" aria-hidden="true" />
+            <Building2 className="w-3.5 h-3.5 text-positive shrink-0" />
             <span>{currentUser.assignedBrands?.[0] || currentUser.linkedEntityName || 'Kutieskin'}</span>
           </div>
         ) : userScopeSummary && !userScopeSummary.isGlobal ? (
           <div 
             title={userScopeSummary.scopeTooltip}
-            className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-accent-soft text-accent text-xs font-medium border border-line"
+            className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-accent-soft text-accent text-xs font-medium border border-accent/25"
           >
+            <span className="w-1.5 h-1.5 rounded-full bg-accent shrink-0" aria-hidden="true" />
             <Building2 className="w-3.5 h-3.5 text-accent shrink-0" />
             <span className="truncate max-w-[260px]">{userScopeSummary.scopeBadgeText}</span>
           </div>
         ) : (
           <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-sunken text-ink-2 text-xs font-medium border border-line">
+            <span className="w-1.5 h-1.5 rounded-full bg-positive shrink-0" aria-hidden="true" />
             <Building2 className="w-3.5 h-3.5 text-ink-3 shrink-0" />
             <span>Toàn hệ thống (69 gian hàng)</span>
           </div>

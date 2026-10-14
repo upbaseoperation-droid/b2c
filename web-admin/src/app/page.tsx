@@ -342,6 +342,7 @@ export default function App() {
   const scopedDeals = useMemo(() => filterScopedDeals(deals, currentUser, storePortfolios), [deals, currentUser, storePortfolios]);
   const scopedMonthlyPlans = useMemo(() => filterScopedPlans(sharedMonthlyPlans, currentUser, storePortfolios), [sharedMonthlyPlans, currentUser, storePortfolios]);
   const userScopeSummary = useMemo(() => getUserScopeSummary(currentUser, brands, storePortfolios), [currentUser, brands, storePortfolios]);
+  const pendingTasksCount = useMemo(() => tasks.filter(t => t.urgency !== 'done').length, [tasks]);
 
   const [listingPlanContext, setListingPlanContext] = useState<ListingPlanContext | null>(null);
   const [planDrilldownIntent, setPlanDrilldownIntent] = useState<{
@@ -914,6 +915,7 @@ export default function App() {
         isCollapsed={isSidebarCollapsed}
         onToggleCollapse={handleToggleSidebarCollapse}
         onLogout={handleLogout}
+        badgeCounts={pendingTasksCount > 0 ? { cockpit: pendingTasksCount } : undefined}
       />
 
       {/* Main Content Space */}

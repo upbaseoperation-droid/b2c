@@ -819,9 +819,7 @@ export const PlanHistoryModal: React.FC<PlanHistoryModalProps> = ({
 
           {activeTab === 'DISCUSSION' && (
             <div className="space-y-3">
-              <p className="text-xs text-slate-500">
-                Biên bản trao đổi giữa 4 bên (Growth, Marketing B2C, Media, Trưởng phòng). Muốn nhắn tiếp, mở kế hoạch và bấm nút <strong>Trao đổi</strong> trên tiêu đề.
-              </p>
+
               {(plan.discussions?.length || 0) === 0 ? (
                 <div className="text-center text-xs text-slate-400 py-10 border border-dashed border-slate-200 rounded-xl bg-white">
                   Chưa có trao đổi nào.

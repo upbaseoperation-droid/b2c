@@ -1394,12 +1394,7 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
                     </div>
                   </div>
 
-                  <div className="p-3 bg-canvas border border-line rounded-xl text-2xs text-ink-2 space-y-1.5">
-                    <div className="font-semibold text-ink">Cơ chế ánh xạ ID tự động:</div>
-                    <p>
-                      Khi PIC lập Plan cho gian hàng này và chọn sản phẩm <em>{selectedNode.data.productName}</em>, hệ thống sẽ tự động gán mã <strong>{selectedNode.data.platformProductId}</strong> để KOC gắn đúng giỏ hàng, tránh nhầm lẫn giữa các sàn.
-                    </p>
-                  </div>
+
                 </div>
               ) : selectedNode.type === 'BRAND' ? (
                 <div className="space-y-4">

@@ -63,6 +63,7 @@ interface SidebarProps {
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
   onLogout?: () => void;
+  badgeCounts?: Partial<Record<TabKey, number | string>>;
 }
 
 const B2C_DASHBOARD_SUB_ITEMS: NavItem[] = [
@@ -633,6 +634,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isCollapsed = false,
   onToggleCollapse,
   onLogout,
+  badgeCounts,
 }) => {
   const [rbacTick, setRbacTick] = React.useState(0);
   React.useEffect(() => {
@@ -650,17 +652,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
     for (const sec of baseSections) {
       const items: NavItem[] = [];
       for (const item of sec.items) {
+        const itemBadge = badgeCounts?.[item.key] !== undefined ? String(badgeCounts[item.key]) : item.badge;
         if (item.children && item.children.length > 0) {
           const allowedChildren = item.children.filter(c => allowedSet.has(c.key));
           if (allowedChildren.length > 0) {
             items.push({
               ...item,
+              badge: itemBadge,
               key: allowedChildren[0].key,
-              children: allowedChildren,
+              children: allowedChildren.map(c => ({
+                ...c,
+                badge: badgeCounts?.[c.key] !== undefined ? String(badgeCounts[c.key]) : c.badge,
+              })),
             });
           }
         } else if (allowedSet.has(item.key)) {
-          items.push(item);
+          items.push({
+            ...item,
+            badge: itemBadge,
+          });
         }
       }
       if (items.length > 0) {
@@ -669,7 +679,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     }
 
     return filtered;
-  }, [currentUser.role, rbacTick]);
+  }, [currentUser.role, rbacTick, badgeCounts]);
 
   const isAnyDashboardActive = DASHBOARD_TAB_KEYS.includes(activeTab);
   const [isDashboardMenuOpen, setIsDashboardMenuOpen] = React.useState<boolean>(true);
@@ -838,14 +848,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         onClick={() => handleItemClick(item.key)}
                         aria-current={isActive ? 'page' : undefined}
                         data-active={isActive}
-                        className={`sidebar-item w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-left text-[13px] leading-5 transition-colors ${
+                        className={`sidebar-item w-full flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-md text-left text-[13px] leading-5 transition-colors cursor-pointer ${
                           isActive
                             ? 'text-accent font-semibold'
                             : 'text-ink-2 hover:text-ink hover:bg-sunken'
                         }`}
                       >
-                        <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-accent' : 'text-ink-3'}`} strokeWidth={1.75} />
-                        <span className="truncate">{item.label}</span>
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-accent' : 'text-ink-3'}`} strokeWidth={1.75} />
+                          <span className="truncate">{item.label}</span>
+                        </div>
+                        {item.badge && (
+                          <span className={`px-1.5 py-0.25 rounded text-3xs font-medium tabular-nums ${
+                            isActive ? 'bg-accent/15 text-accent' : 'bg-sunken text-ink-3'
+                          }`}>
+                            {item.badge}
+                          </span>
+                        )}
                       </button>
                     );
                   })}

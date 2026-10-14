@@ -76,7 +76,24 @@ Mở trình duyệt tại `http://localhost:3000`.
 
 ---
 
-## 5. Tài liệu liên quan
+## 5. Cập nhật nâng cấp giao diện & Trải nghiệm người dùng (15/10/2026)
+
+- **Trang đăng nhập Enterprise SaaS (`/login`):** Nâng cấp bố cục 2 cột cân đối: cột trái giới thiệu hệ sinh thái B2C với 3 khối tính năng then chốt (Quản lý 69 gian hàng, Đối soát kế hoạch Gross/Net, Báo cáo Ads & Đo lường Video); cột phải là card đăng nhập tối giản, hỗ trợ Lark SSO nội bộ, đối tác Gmail và bảng chọn vai trò thử nghiệm nhanh.
+- **Thanh menu trái (`Sidebar`):** Tích hợp huy hiệu số lượng việc tồn đọng (`badgeCounts`) theo thời gian thực (hiển thị trực tiếp số việc cần xử lý ở mục *Việc của tôi*), vạch chỉ báo trượt chuẩn xác, phân nhóm danh mục tinh tế.
+- **Thanh tiêu đề (`TopHeader`):** Hỗ trợ hiển thị đường dẫn phân hệ phụ (`subtitle`), nâng cấp thẻ phạm vi dữ liệu (`userScopeSummary`) với chấm chỉ báo trạng thái và viền phân tách sang trọng.
+- **Bộ thành phần lõi (`ui/index.tsx`, `ui/blocks.tsx`):**
+  - `Panel`: Hỗ trợ trường mô tả phụ (`description`) dưới tiêu đề khối, bổ sung đổ bóng nhẹ `shadow-2xs`.
+  - `Stat`: Hỗ trợ biểu tượng chuyên biệt (`icon`), hiệu ứng hover nhẹ nhàng `hover:bg-canvas/50`, định dạng số lớn và sparkline xu hướng sắc nét.
+  - `DataTable`: Header bảng có nền phân tách nhẹ `bg-sunken/40` giúp mắt không mỏi khi đọc hàng chục dòng deal và KOC.
+- **Bàn làm việc nhân sự (`CockpitView`):** Thêm biểu tượng trực quan cho các ô chỉ số (Khẩn cấp, Trong ngày, Hoàn tất, Tổng đầu việc), tích hợp bộ điều khiển phân đoạn `Segmented` để lọc nhanh danh sách nhiệm vụ.
+
+---
+
+## 6. Tài liệu liên quan
+
+- [Design System & Quy chuẩn giao diện](DESIGN_SYSTEM.md)
+- [Quy tắc vận hành & Nghiệp vụ B2C (GEMINI.md)](../GEMINI.md)
+- [Bộ hồ sơ thiết kế Blueprint](../blueprint/README.md)
 
 - Quy tắc vận hành & nghiệp vụ: [GEMINI.md](../GEMINI.md)
 - Đặc tả yêu cầu phần mềm: [HUB-2.1 SRS](../blueprint/2-design/2.1_SRS_B2C_OPS_HUB.md)

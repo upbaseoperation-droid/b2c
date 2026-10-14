@@ -1367,12 +1367,9 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
               <div>
                 <div className="flex items-center gap-2 flex-wrap">
                   <h3 className="text-sm font-semibold text-ink">
-                    Nhập &amp; Quản trị Kế hoạch Tháng theo Brand ({filteredBrandMonthlyPlans.length} thương hiệu B2C)
+                    Kế hoạch tháng theo Brand ({filteredBrandMonthlyPlans.length} thương hiệu)
                   </h3>
                 </div>
-                <p className="text-xs text-ink-3 mt-0.5">
-                  Nơi nhập kế hoạch tháng cho 3 vị trí gắn cấp Brand: <strong className="text-ink">Content / Brand main</strong>, <strong className="text-ink">Plan / Strategy</strong> và <strong className="text-ink">Key Visual / SIS</strong>. Giám đốc Marketing B2C (<strong className="text-ink">Đặng Thị Yến Nhi</strong>) phân bổ nhân sự và phê duyệt định hướng tháng của từng Brand.
-                </p>
               </div>
 
               <div className="flex items-center gap-1.5 flex-wrap">
@@ -1610,11 +1607,8 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h3 className="text-sm font-semibold text-ink">
-                  Không gian kế hoạch cá nhân — Tách riêng phần việc theo Gian hàng &amp; theo Brand của từng nhân sự
+                  Kế hoạch cá nhân theo nhân sự
                 </h3>
-                <p className="text-xs text-ink-3 mt-0.5">
-                  Bao gồm 4 đầu việc thực thi theo Gian hàng (KOC trả phí, FOC, Self-Channel, Đa sàn) và 3 vị trí gắn theo Brand (<strong className="text-ink">Content / Brand main</strong>, <strong className="text-ink">Plan / Strategy</strong>, <strong className="text-ink">Key Visual / SIS</strong>).
-                </p>
               </div>
               <div className="flex items-center gap-2">
                 {currentUser?.name && personalStaffSummaryList.some(s => s.staffName === currentUser.name) && (

@@ -1081,16 +1081,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                 </div>
               </div>
 
-              {/* Informative notice */}
-              <div className="p-3 bg-accent-soft rounded-xl border border-accent/20/70 text-2xs text-accent space-y-1">
-                <div className="font-semibold flex items-center gap-1.5 text-accent">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-accent shrink-0" />
-                  <span>Quy trình quản trị B2C Upbase:</span>
-                </div>
-                <p className="text-accent text-2xs leading-relaxed">
-                  Tại Master Data, chỉ cần khai báo Tên gian hàng và thuộc Brand nào. Sau khi lưu, bấm nút <strong>&quot;Hồ sơ&quot;</strong> để sang màn hình Quản lý gian hàng riêng biệt, cấu hình hạn mức Net (File 4.1), cơ cấu 2 tầng (Trưởng phòng / Leader / Specialist) và chỉ tiêu Order.
-                </p>
-              </div>
+
 
               {/* Action Buttons */}
               <div className="flex items-center justify-end gap-2 pt-3 border-t border-line">
@@ -1276,7 +1267,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
               {/* Group 4: Order Budget & Targets */}
               <div className="pt-2 border-t border-line space-y-2">
                 <span className="text-xs font-semibold text-ink block">
-                  Hạn mức Kế hoạch Tháng (File 4.1 Plan Order)
+                  Hạn mức Kế hoạch Tháng
                 </span>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                   <div>

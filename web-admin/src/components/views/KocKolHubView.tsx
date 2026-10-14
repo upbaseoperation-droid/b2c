@@ -1469,11 +1469,8 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
               <div className="bg-white rounded-xl border border-slate-200/80 p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                   <h3 className="text-sm font-semibold text-slate-900">
-                    Quản Lý Thông Tin Cá Nhân, Hồ Sơ Pháp Lý, Ngân Hàng &amp; Nhận Hàng Mẫu
+                    Thông tin KOC &amp; Hồ sơ pháp lý
                   </h3>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    Thông tin lưu tại đây được đồng bộ tức thì sang Danh bạ KOC, phân hệ Hợp đồng &amp; Thanh toán và phân hệ Hàng mẫu.
-                  </p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <button

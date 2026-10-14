@@ -903,7 +903,7 @@ export const DEFAULT_TASK_DIFFICULTY_CONFIGS: TaskCategoryDifficultyConfig[] = [
   {
     categoryKey: 'RESEARCH',
     categoryName: 'Nghiên cứu (Research)',
-    tableTitle: 'Bảng 2b. Hệ số cấp độ research (chỉ dùng cho nhóm Nghiên cứu)',
+    tableTitle: 'Hệ số cấp độ nghiên cứu',
     unitLabel: 'Hồ sơ Research',
     baseWorkloadPoints: 20.0,
     levels: [
@@ -952,7 +952,7 @@ export const DEFAULT_TASK_DIFFICULTY_CONFIGS: TaskCategoryDifficultyConfig[] = [
   {
     categoryKey: 'BOOKING',
     categoryName: 'Content Affiliate (Booking KOC)',
-    tableTitle: 'Bảng 2a-1. Hệ số độ khó — Nhóm Booking Video KOC',
+    tableTitle: 'Hệ số độ khó — Booking KOC',
     unitLabel: 'Video KOC nghiệm thu',
     baseWorkloadPoints: 2.0,
     levels: [
@@ -993,7 +993,7 @@ export const DEFAULT_TASK_DIFFICULTY_CONFIGS: TaskCategoryDifficultyConfig[] = [
   {
     categoryKey: 'CONTENT',
     categoryName: 'Content Kênh & Kịch bản',
-    tableTitle: 'Bảng 2a-2. Hệ số độ khó — Nhóm Content Kênh & Kịch bản',
+    tableTitle: 'Hệ số độ khó — Content Kênh & Kịch bản',
     unitLabel: 'Video / Kịch bản kênh',
     baseWorkloadPoints: 1.0,
     levels: [
@@ -1034,7 +1034,7 @@ export const DEFAULT_TASK_DIFFICULTY_CONFIGS: TaskCategoryDifficultyConfig[] = [
   {
     categoryKey: 'KEY_VISUAL',
     categoryName: 'Key Visual & SIS',
-    tableTitle: 'Bảng 2a-3. Hệ số độ khó — Nhóm Key Visual / SIS',
+    tableTitle: 'Hệ số độ khó — Key Visual / SIS',
     unitLabel: 'Bộ Key Visual / SIS',
     baseWorkloadPoints: 10.0,
     levels: [
@@ -1075,7 +1075,7 @@ export const DEFAULT_TASK_DIFFICULTY_CONFIGS: TaskCategoryDifficultyConfig[] = [
   {
     categoryKey: 'CAMPAIGN',
     categoryName: 'Brief & JBP Plan / Report',
-    tableTitle: 'Bảng 2a-4. Hệ số độ khó — Nhóm Chiến dịch, Brief & JBP Plan',
+    tableTitle: 'Hệ số độ khó — Chiến dịch & Kế hoạch',
     unitLabel: 'Bộ Kế hoạch / Brief',
     baseWorkloadPoints: 10.0,
     levels: [
@@ -1108,7 +1108,7 @@ export const DEFAULT_TASK_DIFFICULTY_CONFIGS: TaskCategoryDifficultyConfig[] = [
   {
     categoryKey: 'LIVESTREAM',
     categoryName: 'Livestream Affiliate',
-    tableTitle: 'Bảng 2a-5. Hệ số độ khó — Nhóm Livestream Affiliate',
+    tableTitle: 'Hệ số độ khó — Livestream Affiliate',
     unitLabel: 'Phiên Livestream',
     baseWorkloadPoints: 5.0,
     levels: [
@@ -2038,17 +2038,9 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
             <ClipboardList className="w-5 h-5 text-accent" />
           </div>
           <div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="text-sm font-semibold text-ink">
-                Giao việc &amp; Đo lường Workload Nhân sự B2C
-              </h2>
-              <span className="text-2xs font-semibold text-accent -accent/20">
-                Bảng 1 → Bảng 7 · 33 Đầu việc SOW &amp; 28 Nhân sự
-              </span>
-            </div>
-            <p className="text-xs text-ink-3 mt-0.5">
-              Tổng hợp đồng thời <strong>Task thuộc luồng quy trình hệ thống</strong> (Booking, Content kênh, Livestream, KV/SIS, Plan tháng) và <strong>Task Giám đốc giao</strong> (Nghiên cứu gian hàng mới, Chiến lược campaign) để tính điểm Workload cá nhân cuối kỳ.
-            </p>
+            <h2 className="text-sm font-semibold text-ink">
+              Giao việc &amp; Định mức nhân sự
+            </h2>
           </div>
         </div>
 
@@ -2064,7 +2056,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
               }`}
             >
               <ClipboardList className="w-3.5 h-3.5 text-accent" />
-              <span>1. Nhật ký Task: Quy trình &amp; GĐ giao ({tasks.length})</span>
+              <span>Nhật ký nhiệm vụ ({tasks.length})</span>
             </button>
             <button
               type="button"
@@ -2076,7 +2068,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
               }`}
             >
               <BarChart3 className="w-3.5 h-3.5 text-positive" />
-              <span>2. Đo lường Workload Nhân sự (28 NS)</span>
+              <span>Đo lường định mức nhân sự</span>
             </button>
             <button
               type="button"
@@ -2088,7 +2080,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
               }`}
             >
               <Sliders className="w-3.5 h-3.5 text-accent" />
-              <span>3. Setup Độ khó &amp; Bảng 1–7 (33 SOW)</span>
+              <span>Cấu hình độ khó &amp; định mức</span>
             </button>
           </div>
 
@@ -2109,27 +2101,23 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
       {/* KPI Row */}
       <StatRow>
         <Stat
-          label="Task Luồng Quy Trình Hệ Thống"
+          label="Nhiệm vụ theo quy trình"
           value={metrics.workflowTasksCount}
-          note="Tự động từ Booking, Content, Live, KV/SIS"
         />
         <Stat
-          label="Task Giám Đốc / Quản Lý Giao"
+          label="Nhiệm vụ quản lý giao"
           value={metrics.directorTasksCount}
           tone="positive"
-          note="Research gian hàng mới, Chiến lược Campaign, JBP"
         />
         <Stat
-          label="Nhân sự đạt chuẩn Việc Khó (Bảng 4)"
+          label="Đạt chuẩn việc khó"
           value={`${metrics.passCount}/${metrics.totalStaffCount}`}
           tone="positive"
-          note="Đạt tỷ lệ việc Khó theo Level L0.5 → L3 (HS x1,00)"
         />
         <Stat
-          label="Tổng điểm Workload toàn khối"
+          label="Tổng điểm định mức toàn khối"
           value={`${metrics.totalStaffFinalPts} pts`}
           tone="positive"
-          note="Đã nhân HS phạm vi, Độ khó, Đa sàn & Cơ cấu Bảng 4"
         />
       </StatRow>
 
@@ -2159,15 +2147,12 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-semibold text-ink">
-                      Nguồn 1: Task thuộc Luồng Quy Trình Hệ Thống
+                      Nhiệm vụ theo quy trình hệ thống
                     </span>
                     <span className="text-2xs font-mono font-semibold text-accent">
-                      {metrics.workflowTasksCount} task
+                      {metrics.workflowTasksCount} nhiệm vụ
                     </span>
                   </div>
-                  <p className="text-2xs text-ink-2 mt-1">
-                    Phát sinh từ quy trình vận hành chuẩn: <strong>Booking KOC (KL1–KL7, Reup)</strong>, <strong>Content Kênh (Voice/AI, POV/Remix)</strong>, <strong>Livestream (Độc quyền/Mix/Daily)</strong>, <strong>Key Visual &amp; SIS</strong>, <strong>Plan tháng</strong>.
-                  </p>
                 </div>
               </div>
               <Button
@@ -2204,15 +2189,12 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-semibold text-ink">
-                      Nguồn 2: Task Giám Đốc / Quản Lý Giao Trực Tiếp
+                      Nhiệm vụ Quản lý giao trực tiếp
                     </span>
                     <span className="text-2xs font-mono font-semibold text-accent">
-                      {metrics.directorTasksCount} task
+                      {metrics.directorTasksCount} nhiệm vụ
                     </span>
                   </div>
-                  <p className="text-2xs text-ink-2 mt-1">
-                    Các đề bài chiến lược do Giám Đốc Marketing / Leader giao: <strong>Nghiên cứu gian hàng mới (&lt;15 tỷ đến &gt;100 tỷ)</strong>, <strong>Nghiên cứu &amp; lập kế hoạch Campaign</strong>, <strong>Xây mới Brand Guideline</strong>, <strong>JBP Năm / Quý</strong>.
-                  </p>
                 </div>
               </div>
               <Button
@@ -2226,7 +2208,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                   setIsAssignModalOpen(true);
                 }}
               >
-                + GĐ Giao việc mới
+                + Giao việc mới
               </Button>
             </div>
           </div>
@@ -2247,7 +2229,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                   className="text-2xs font-semibold text-positive hover:text-positive inline-flex items-center gap-1"
                 >
                   <BarChart3 className="w-3 h-3" />
-                  <span>Xem Bảng đo lường Workload 28 nhân sự</span>
+                  <span>Xem bảng định mức</span>
                 </button>
                 <button
                   type="button"
@@ -2259,7 +2241,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                   className="text-2xs font-semibold text-accent hover:text-accent inline-flex items-center gap-1"
                 >
                   <Sliders className="w-3 h-3" />
-                  <span>Chỉnh sửa hệ số &amp; Bảng 1</span>
+                  <span>Cấu hình hệ số</span>
                 </button>
               </div>
             </div>
@@ -2410,12 +2392,12 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                 <thead>
                   <tr className="bg-canvas border-b border-line text-2xs font-semibold text-ink-2">
                     <th className="py-3 px-4 min-w-[270px]">Đầu việc &amp; Nguồn phát sinh</th>
-                    <th className="py-3 px-3 min-w-[180px]">Loại SOW (Bảng 1) &amp; Hệ số</th>
-                    <th className="py-3 px-3 min-w-[150px]">Sàn / Store &amp; Bảng 7</th>
+                    <th className="py-3 px-3 min-w-[180px]">Loại công việc &amp; Hệ số</th>
+                    <th className="py-3 px-3 min-w-[150px]">Sàn / Gian hàng</th>
                     <th className="py-3 px-3 min-w-[155px]">Nhân sự &amp; Vai trò</th>
-                    <th className="py-3 px-3 text-center min-w-[150px]">Công thức Điểm Workload</th>
-                    <th className="py-3 px-3 min-w-[165px]">Đầu ra (Deliverable)</th>
-                    <th className="py-3 px-3 text-center min-w-[105px]">Timeline (Bảng 5)</th>
+                    <th className="py-3 px-3 text-center min-w-[150px]">Điểm định mức</th>
+                    <th className="py-3 px-3 min-w-[165px]">Đầu ra nghiệm thu</th>
+                    <th className="py-3 px-3 text-center min-w-[105px]">Tiến độ</th>
                     <th className="py-3 px-3 text-right min-w-[120px]">Thao tác</th>
                   </tr>
                 </thead>
@@ -2716,22 +2698,14 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
       {/* ===================================================================== */}
       {activeSubTab === 'WORKLOAD_MEASUREMENT' && (
         <div className="space-y-5">
-          {/* Formula Banner from Sheet 2 Excel */}
-          <div className="bg-ink text-white rounded-xl p-4 border border-accent/20 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <span className="text-2xs font-mono font-semibold bg-accent/30 text-accent -accent/20/30">
-                  CÔNG THỨC CHUẨN (SHEET WORKLOAD)
-                </span>
-                <span className="text-xs font-semibold text-accent">
-                  Tổng hợp tự động từ Task Luồng Quy Trình + Task Giám Đốc Giao
-                </span>
-              </div>
+          {/* Formula Banner */}
+          <div className="bg-ink text-white rounded-xl p-3.5 px-4 border border-accent/20 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+            <div className="space-y-0.5">
               <div className="font-mono text-xs sm:text-sm font-semibold text-warning">
-                Điểm workload = SL nghiệm thu × Point chuẩn (Bảng 1) × HS phạm vi (Bảng 2/2b) × HS công việc (Bảng 3) × HS timeline (Bảng 5) × HS đa sàn (Bảng 6) × HS cơ cấu (Bảng 4)
+                Điểm định mức = SL nghiệm thu × Điểm chuẩn × HS phạm vi × HS độ khó × HS tiến độ × HS đa sàn × HS cơ cấu
               </div>
-              <p className="text-2xs text-accent">
-                <strong>Bảng 4 (Yêu cầu tỷ trọng công việc khó theo Level nhân sự):</strong> L0 (15%) · L0.5 (17,5%) · L1 (20%) · L1.5 (25%) · L2 (30%) · L2.5 (35%) · L3 (40%) · L4 (50%) · L5 (60%). Đạt chuẩn: <strong>×1,00</strong> | Không đạt: <strong>×0,70</strong> (Ngoại lệ: công ty không phân bổ đủ việc khó và được quản lý xác nhận thì giữ <strong>×1,00</strong>).
+              <p className="text-2xs text-ink-3">
+                Hệ số cơ cấu theo cấp bậc nhân sự (Đạt chuẩn: <strong>×1,00</strong> | Chưa đạt: <strong>×0,70</strong>)
               </p>
             </div>
 
@@ -2745,7 +2719,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                   setIsAssignModalOpen(true);
                 }}
               >
-                Giao thêm việc cho nhân sự
+                Giao việc
               </Button>
             </div>
           </div>
@@ -2790,7 +2764,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                 }
                 className="px-2.5 py-1.5 bg-canvas border border-line rounded-lg text-xs text-ink-2 focus:outline-none"
               >
-                <option value="ALL">Mọi trạng thái HS cơ cấu (Bảng 4)</option>
+                <option value="ALL">Mọi trạng thái hệ số cơ cấu</option>
                 <option value="PASS">Đạt chuẩn tỷ lệ việc Khó (×1,00)</option>
                 <option value="FAIL_07">Chưa đạt chuẩn — Bị nhân ×0,70</option>
                 <option value="EXCEPTION">Được Quản lý xác nhận ngoại lệ (×1,00)</option>
@@ -2804,15 +2778,15 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="bg-canvas border-b border-line text-2xs font-semibold text-ink-2">
-                    <th className="py-3 px-4 min-w-[210px]">Nhân sự &amp; Mã NV (Sheet 4)</th>
+                    <th className="py-3 px-4 min-w-[210px]">Nhân sự &amp; Mã NV</th>
                     <th className="py-3 px-3 text-center w-[95px]">Level &amp; Chuẩn Khó</th>
-                    <th className="py-3 px-3 min-w-[180px]">Phạm vi Store phụ trách (T10)</th>
-                    <th className="py-3 px-3 text-right w-[125px]">Điểm Luồng Quy Trình</th>
-                    <th className="py-3 px-3 text-right w-[115px]">Điểm Task GĐ Giao</th>
-                    <th className="py-3 px-3 text-right w-[120px]">Tổng điểm Trước Bảng 4</th>
-                    <th className="py-3 px-3 min-w-[185px]">Tỷ lệ điểm Khó thực tế (Bảng 4)</th>
-                    <th className="py-3 px-3 text-center w-[135px]">HS Cơ Cấu (Bảng 4)</th>
-                    <th className="py-3 px-3 text-right w-[135px]">Tổng Workload Cuối Kỳ</th>
+                    <th className="py-3 px-3 min-w-[180px]">Phạm vi Store phụ trách</th>
+                    <th className="py-3 px-3 text-right w-[125px]">Điểm quy trình</th>
+                    <th className="py-3 px-3 text-right w-[115px]">Điểm quản lý giao</th>
+                    <th className="py-3 px-3 text-right w-[120px]">Điểm trước nhân HS</th>
+                    <th className="py-3 px-3 min-w-[185px]">Tỷ lệ việc khó thực tế</th>
+                    <th className="py-3 px-3 text-center w-[135px]">Hệ số cơ cấu</th>
+                    <th className="py-3 px-3 text-right w-[135px]">Tổng điểm định mức</th>
                     <th className="py-3 px-3 text-right w-[130px]">Thao tác</th>
                   </tr>
                 </thead>
@@ -3049,7 +3023,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                     : 'bg-canvas text-ink-2 border-line hover:bg-sunken'
                 }`}
               >
-                Bảng 1. Chính sách Point 33 Đầu việc SOW
+                Định mức công việc (SOW)
               </button>
               <button
                 type="button"
@@ -3060,7 +3034,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                     : 'bg-canvas text-ink-2 border-line hover:bg-sunken'
                 }`}
               >
-                Bảng 2b &amp; 2a. Hệ số Cấp độ Research &amp; Nhóm việc
+                Hệ số cấp độ nghiên cứu
               </button>
               <button
                 type="button"
@@ -3071,7 +3045,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                     : 'bg-canvas text-ink-2 border-line hover:bg-sunken'
                 }`}
               >
-                Bảng 2, 3, 4, 5, 6, 7. Hệ số Gian hàng, Cơ cấu Level &amp; Timeline
+                Hệ số quy mô, cơ cấu &amp; tiến độ
               </button>
             </div>
 
@@ -3082,7 +3056,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                 className="px-3 py-1.5 rounded-lg border border-line bg-canvas hover:bg-sunken text-ink-2 text-xs font-medium inline-flex items-center gap-1.5 transition shrink-0"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
-                <span>Khôi phục chuẩn gốc Excel</span>
+                <span>Khôi phục mặc định</span>
               </button>
             )}
           </div>
@@ -3093,7 +3067,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
               <div className="px-5 py-3.5 bg-accent-soft border-b border-accent/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                   <h3 className="text-sm font-semibold text-ink">
-                    Bảng 1. Chính sách Point theo Scope of Work (33 đầu việc chuẩn B2C)
+                    Chính sách điểm theo danh mục công việc (SOW)
                   </h3>
                 </div>
                 <select
@@ -3732,7 +3706,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                   </div>
                   <div>
                     <h3 className="text-sm font-semibold text-ink">
-                      Giao việc &amp; Ghi nhận Điểm Workload (Chuẩn Bảng 1 → Bảng 7)
+                      Giao việc &amp; Ghi nhận nhiệm vụ
                     </h3>
                   </div>
                 </div>
@@ -3776,7 +3750,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
 
                     <div className="sm:col-span-8">
                       <label className="block font-semibold text-ink mb-1">
-                        2. Chọn Loại công việc theo Bảng 1 (33 SOW chuẩn) *
+                        2. Chọn loại công việc (SOW) *
                       </label>
                       <select
                         value={formSowStt}

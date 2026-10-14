@@ -196,6 +196,7 @@ export function Stat({
   progress,
   numeric,
   invert,
+  icon: Icon,
 }: {
   label: string;
   /** Chuỗi hoặc số sẽ lăn khi đổi (NumberRoll). Truyền phần tử React nếu cần định dạng riêng. */
@@ -208,11 +209,15 @@ export function Stat({
   tone?: 'warning' | 'critical' | 'positive';
   trend?: number[];
   progress?: { value: number; max: number; target?: number; invert?: boolean };
+  icon?: LucideIcon;
 }) {
   const noteColor = tone === 'warning' ? 'text-warning' : tone === 'critical' ? 'text-critical' : tone === 'positive' ? 'text-positive' : 'text-ink-3';
   return (
-    <div className="bg-surface px-4 pt-3.5 pb-4 grid gap-1 content-start">
-      <span className="text-[12.5px] text-ink-3">{label}</span>
+    <div className="bg-surface px-4 pt-3.5 pb-4 grid gap-1 content-start transition-colors hover:bg-canvas/50">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-[12.5px] text-ink-3">{label}</span>
+        {Icon && <Icon className="w-3.5 h-3.5 text-ink-3/70 shrink-0" strokeWidth={1.75} />}
+      </div>
       <div className="flex items-end justify-between gap-3">
         <span className="text-[26px] leading-8 font-semibold text-ink tabular-nums tracking-tight">
           {typeof value === 'string' || typeof value === 'number'
