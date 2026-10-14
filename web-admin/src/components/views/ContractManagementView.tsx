@@ -7,9 +7,9 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Download, FileText, Plus } from 'lucide-react';
+import { Download, Eye, FileText, Plus } from 'lucide-react';
 import type { BookingDealItem, KocItem } from '../../lib/types';
-import type { ContractRecord } from '../../lib/contracts/types';
+import type { ContractField, ContractRecord, DocBlock, LegalTemplate } from '../../lib/contracts/types';
 import { formatDate } from '../../lib/format';
 import { Button, Chips, DataTable, EmptyState, FilterBar, Modal, PageActions, Pagination, Panel, Person, Status } from '../ui';
 import type { Column } from '../ui';
@@ -17,6 +17,7 @@ import { ApiError, contractApi, type ContractBootstrap } from '../contracts/api'
 import { browserDemoEnabled, downloadBrowserDemo, enableBrowserDemo } from '../contracts/browserDemo';
 import { ROLE_LABEL, contractStatus, isAcceptance } from '../contracts/contractUi';
 import { ContractDetail } from '../contracts/ContractDetail';
+import { ContractDocumentViewer } from '../contracts/ContractDocumentViewer';
 import { ContractForm, type ContractFormInit, type ContractFormPayload } from '../contracts/ContractForm';
 
 /** Yêu cầu mở hồ sơ của một booking (từ màn Booking). `nonce` đổi mỗi lần bấm. */
@@ -46,6 +47,10 @@ export function ContractManagementView({
   const [filter, setFilter] = useState<Filter>('ALL');
   const [page, setPage] = useState(1);
   const [showTemplates, setShowTemplates] = useState(false);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
+  const [loadedTemplate, setLoadedTemplate] = useState<LegalTemplate | null>(null);
+  const [quickViewRecord, setQuickViewRecord] = useState<ContractRecord | null>(null);
+  const [quickViewDoc, setQuickViewDoc] = useState<{ paragraphs: string[]; blocks?: DocBlock[]; fields?: ContractField[]; values?: Record<string, string> } | null>(null);
 
   const refresh = useCallback(async () => {
     if (demoMode) enableBrowserDemo();
@@ -59,6 +64,28 @@ export function ContractManagementView({
       await refresh();
     })().catch(e => setLoadError(e instanceof ApiError ? e : new ApiError((e as Error).message, 503)));
   }, [refresh]);
+
+  // Tải chi tiết mẫu pháp chế khi mở cửa sổ Mẫu pháp chế
+  useEffect(() => {
+    if (!showTemplates || !data?.templates.length) return;
+    const targetId = selectedTemplateId || data.templates[0].id;
+    if (!selectedTemplateId) setSelectedTemplateId(targetId);
+    let cancelled = false;
+    contractApi<{ template: LegalTemplate }>(`/api/contracts/templates/${targetId}`)
+      .then(r => { if (!cancelled) setLoadedTemplate(r.template); })
+      .catch(() => undefined);
+    return () => { cancelled = true; };
+  }, [showTemplates, selectedTemplateId, data?.templates]);
+
+  // Tải văn bản hợp đồng khi bấm Xem nhanh trên bảng danh sách
+  useEffect(() => {
+    if (!quickViewRecord) { setQuickViewDoc(null); return; }
+    let cancelled = false;
+    contractApi<{ paragraphs: string[]; blocks?: DocBlock[]; fields?: ContractField[]; values?: Record<string, string> }>(`/api/contracts/${quickViewRecord.id}/document?preview=1`)
+      .then(r => { if (!cancelled) setQuickViewDoc(r); })
+      .catch(() => undefined);
+    return () => { cancelled = true; };
+  }, [quickViewRecord]);
 
   // Mở theo booking khi được gọi từ màn Booking.
   const [handledIntent, setHandledIntent] = useState<number | null>(null);
@@ -166,6 +193,25 @@ export function ContractManagementView({
     },
     { key: 'owner', header: 'Người phụ trách', width: 160, render: r => <Person name={r.ownerName} size={20} /> },
     { key: 'updated', header: 'Cập nhật', width: 100, align: 'right', render: r => <span className="text-ink-2 tabular-nums">{formatDate(r.updatedAt)}</span> },
+    {
+      key: 'preview',
+      header: 'Văn bản',
+      width: 110,
+      align: 'right',
+      render: r => (
+        <button
+          type="button"
+          onClick={e => {
+            e.stopPropagation();
+            setQuickViewRecord(r);
+          }}
+          className="inline-flex items-center gap-1 rounded-md border border-line bg-surface px-2.5 py-1 text-2xs font-medium text-ink hover:bg-sunken"
+        >
+          <Eye className="w-3.5 h-3.5 text-accent" />
+          Xem hợp đồng
+        </button>
+      ),
+    },
   ];
 
   /* ------------------------------------------------------------ Render */
@@ -201,7 +247,7 @@ export function ContractManagementView({
 
       {screen.mode === 'form' ? (
         <ContractForm
-          key={screen.editId || `new-${screen.init?.dealId || ''}-${screen.init?.kind || ''}-${screen.init?.parentId || ''}`}
+          key={screen.editId || `new-${screen.init?.dealId || ''}-${screen.init?.kind || ''}-${screen.init?.parentId || ''}-${screen.init?.templateId || ''}`}
           data={data}
           deals={deals}
           kocs={kocs}
@@ -278,20 +324,133 @@ export function ContractManagementView({
         </div>
       )}
 
-      <Modal open={showTemplates} onClose={() => setShowTemplates(false)} title="Mẫu pháp chế" description="Bản gốc do pháp chế ban hành. Hồ sơ tạo từ mẫu giữ nguyên điều khoản." size="lg">
-        <ul className="divide-y divide-line border border-line rounded-lg">
-          {data.templates.map(t => (
-            <li key={t.id} className="flex items-center justify-between gap-3 px-3 py-2.5">
-              <div className="min-w-0">
-                <span className="block text-[13px] text-ink">{t.name}</span>
-                <span className="block text-2xs text-ink-3">{t.version}</span>
-              </div>
-              <a href={`/api/contracts/templates/${t.id}?download=1`} className="inline-flex items-center gap-1.5 text-[13px] text-accent hover:underline">
-                <Download className="w-4 h-4" strokeWidth={1.75} />Tải
+      {/* Xem nhanh văn bản hợp đồng ngay từ bảng danh sách */}
+      <Modal
+        open={Boolean(quickViewRecord)}
+        onClose={() => setQuickViewRecord(null)}
+        title={quickViewRecord?.title || 'Xem hợp đồng'}
+        description={quickViewRecord ? `${quickViewRecord.partner} · ${quickViewRecord.brand} · Phiên bản ${quickViewRecord.version}` : ''}
+        size="lg"
+        footer={
+          quickViewRecord && (
+            <div className="flex items-center justify-between w-full gap-2">
+              <a
+                href={`/api/contracts/${quickViewRecord.id}/document`}
+                className="inline-flex items-center gap-1.5 text-[13px] text-accent hover:underline"
+              >
+                <Download className="w-4 h-4" />
+                Tải file Word (.docx)
               </a>
-            </li>
-          ))}
-        </ul>
+              <div className="flex items-center gap-2">
+                <Button variant="ghost" onClick={() => setQuickViewRecord(null)}>Đóng</Button>
+                <Button
+                  variant="primary"
+                  onClick={() => {
+                    const id = quickViewRecord.id;
+                    setQuickViewRecord(null);
+                    setScreen({ mode: 'detail', id });
+                  }}
+                >
+                  Mở chi tiết & xử lý hồ sơ
+                </Button>
+              </div>
+            </div>
+          )
+        }
+      >
+        {quickViewRecord && (
+          <ContractDocumentViewer
+            title={quickViewRecord.title}
+            templateName={`${data.templates.find(t => t.id === quickViewRecord.templateId)?.name || quickViewRecord.templateId} · Phiên bản ${quickViewRecord.version}`}
+            blocks={quickViewDoc?.blocks || []}
+            paragraphs={quickViewDoc?.paragraphs || []}
+            fields={quickViewDoc?.fields || []}
+            values={quickViewDoc?.values || quickViewRecord.values}
+            downloadHref={`/api/contracts/${quickViewRecord.id}/document`}
+            signingPeople={quickViewRecord.signing.at(-1)?.people}
+            maxHeight="65vh"
+          />
+        )}
+      </Modal>
+
+      {/* Cửa sổ Mẫu pháp chế: chọn mẫu và xem trực tiếp bố cục A4 ngay trên màn hình */}
+      <Modal
+        open={showTemplates}
+        onClose={() => setShowTemplates(false)}
+        title="Mẫu pháp chế"
+        description="Bản gốc do pháp chế ban hành. Bấm vào từng mẫu để kiểm tra trực tiếp văn bản và các trường điền."
+        size="lg"
+        footer={
+          <div className="flex items-center justify-between w-full gap-2">
+            {loadedTemplate ? (
+              <a
+                href={`/api/contracts/templates/${loadedTemplate.id}?download=1`}
+                className="inline-flex items-center gap-1.5 text-[13px] text-accent hover:underline"
+              >
+                <Download className="w-4 h-4" strokeWidth={1.75} />
+                Tải file mẫu ({loadedTemplate.filename})
+              </a>
+            ) : <span />}
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" onClick={() => setShowTemplates(false)}>Đóng</Button>
+              {canCreate && loadedTemplate && (
+                <Button
+                  variant="primary"
+                  icon={Plus}
+                  onClick={() => {
+                    setShowTemplates(false);
+                    setScreen({ mode: 'form', init: { templateId: loadedTemplate.id, kind: loadedTemplate.kind } });
+                  }}
+                >
+                  Soạn hợp đồng theo mẫu này
+                </Button>
+              )}
+            </div>
+          </div>
+        }
+      >
+        <div className="grid gap-4 lg:grid-cols-[240px_minmax(0,1fr)] items-start">
+          <ul className="divide-y divide-line border border-line rounded-lg overflow-hidden bg-surface">
+            {data.templates.map(t => {
+              const active = (selectedTemplateId || data.templates[0]?.id) === t.id;
+              return (
+                <li key={t.id}>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedTemplateId(t.id)}
+                    className={`w-full text-left px-3 py-2.5 transition-colors flex items-center justify-between gap-2 ${
+                      active ? 'bg-accent/10 text-ink font-medium' : 'hover:bg-sunken text-ink-2'
+                    }`}
+                  >
+                    <div className="min-w-0">
+                      <span className="block text-[13px] truncate">{t.name}</span>
+                      <span className="block text-2xs text-ink-3">{t.version}</span>
+                    </div>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+          <div className="min-w-0">
+            {loadedTemplate ? (
+              <ContractDocumentViewer
+                title={loadedTemplate.name}
+                templateName={`${loadedTemplate.name} (${loadedTemplate.version})`}
+                blocks={loadedTemplate.blocks || []}
+                paragraphs={loadedTemplate.paragraphs}
+                fields={loadedTemplate.fields}
+                values={{}}
+                downloadHref={`/api/contracts/templates/${loadedTemplate.id}?download=1`}
+                maxHeight="62vh"
+                compactToolbar
+              />
+            ) : (
+              <div className="p-8 text-center text-[13px] text-ink-3 border border-line rounded-xl">
+                Đang tải nội dung mẫu pháp chế…
+              </div>
+            )}
+          </div>
+        </div>
       </Modal>
     </div>
   );

@@ -787,6 +787,12 @@ model MonthlyPlan {
   budgetAdsTotal      Decimal  @default(0) @db.Decimal(14, 2)
   targetGmv           Decimal  @default(0) @db.Decimal(14, 2)
   totalTargetContents Int      @default(0)
+  sourceSystem        String   @default("WEB_ADMIN") // WEB_ADMIN | LARKBASE
+  larkRecordId        String?  @unique // record_id của bản ghi kế hoạch đã duyệt trên Larkbase
+  larkAppToken        String?  // app_token của Bitable Larkbase
+  larkTableId         String?  // table_id của bảng Kế hoạch B2C Booking trên Larkbase
+  larkApprovalCode    String?  // Mã phiếu phê duyệt / Trạng thái duyệt trên Lark
+  larkSyncedAt        DateTime? // Thời điểm kéo từ Larkbase về hệ thống gần nhất
   data                Json     // InputPlanBreakdownState (không gồm versionSnapshots & discussions)
   revision            Int      @default(1) // Chống ghi đè khi nhiều người cùng sửa
   createdBy           String?
@@ -797,10 +803,75 @@ model MonthlyPlan {
 
   versionSnapshots MonthlyPlanVersionSnapshot[]
   discussions      MonthlyPlanDiscussion[]
+  larkbaseRecords  LarkbaseBookingPlanRecord[]
 
   @@index([month])
   @@index([brandName])
   @@index([status])
+  @@index([sourceSystem])
+}
+
+// Bảng hứng Kế hoạch B2C Booking kéo về từ Larkbase khi đã được duyệt (Chuẩn File 4.1 & 4.1.1)
+model LarkbaseBookingPlanRecord {
+  id                      String       @id @default(uuid())
+  larkRecordId            String       @unique // record_id gốc trên Larkbase Bitable
+  larkAppToken            String       // app_token của Bitable
+  larkTableId             String       // table_id của bảng kế hoạch trên Larkbase
+  planId                  String?      // Liên kết sang bảng MonthlyPlan (VD: PLAN-2026-10-...)
+  plan                    MonthlyPlan? @relation(fields: [planId], references: [id], onDelete: SetNull)
+  month                   String       // Chu kỳ tháng (VD: 2026/10)
+  week                    String?      // Tuần áp dụng (VD: W41, W42... hoặc Cả tháng)
+  versionCode             String       @default("v1.0") // Phiên bản kế hoạch trong tháng (v1.0, v1.1, v1.2...)
+  versionName             String?      // Tên đợt kế hoạch (Bản chốt đầu tháng / Điều chỉnh Mega Sale / Top-up...)
+  storeName               String       // Tên gian hàng chuẩn (VD: ClubClio_TikTok_E2E-C)
+  brandName               String       // Thương hiệu
+  platform                String       @default("TikTok Shop") // TikTok Shop, Shopee, Lazada...
+  isB2cManaged            Boolean      @default(true) // Cột 25 File 4.1: B2C phụ trách = 1
+  b2cPic                  String       // Chuyên viên B2C thực thi (PIC)
+  bookingLeader           String?      // Cột 55 File 4.1.1: Nguyễn Thị Ngọc Tâm hoặc null (Duyệt trực tiếp)
+  growthPic               String?      // Nhân sự Growth giao số
+  mediaPic                String?      // Nhân sự Media nhận gói Ads
+  approvalStatus          String       @default("LEAD_APPROVED") // LEAD_APPROVED, BRAND_APPROVED, APPROVED, IN_EXECUTION
+  larkApprovalInstanceId  String?      // Mã quy trình duyệt trên Lark Approval / Base
+  approvedBy              String?      // Người ký duyệt (VD: Đặng Thị Yến Nhi)
+  approvedAt              DateTime?    // Thời điểm được duyệt trên Larkbase
+
+  // Bóc tách chỉ tiêu tài chính Gross / Net & 4 đầu việc B2C
+  budgetGross             Decimal      @default(0) @db.Decimal(14, 2)
+  budgetNet               Decimal      @default(0) @db.Decimal(14, 2) // Hạn mức Order Net kế toán kiểm soát
+  budgetAdsTotal          Decimal      @default(0) @db.Decimal(14, 2) // Gói Ads tổng giao Media
+  targetGmv               Decimal      @default(0) @db.Decimal(14, 2)
+  totalTargetVideos       Int          @default(0)
+
+  // 1. Đầu việc 1: Video Affiliate KOC trả phí (Paid)
+  affiliatePaidVideos     Int          @default(0)
+  affiliatePaidBudgetNet  Decimal      @default(0) @db.Decimal(14, 2)
+  kocTierBreakdown        Json?        // Phân bổ theo khung lương { kl1, kl2, kl3, kl4, kl5, kl6, kl7 }
+
+  // 2. Đầu việc 2: Suất gửi mẫu FOC miễn phí (0đ)
+  focFreeVideos           Int          @default(0)
+  focPic                  String?      // Chuyên viên phụ trách FOC (VD: Trần Thị Hảo)
+
+  // 3. Đầu việc 3: Video kênh Brand tự xây (Self-channel)
+  selfChannelVideos       Int          @default(0)
+  selfChannelBudgetNet    Decimal      @default(0) @db.Decimal(14, 2)
+
+  // 4. Đầu việc 4: Đa sàn / Kênh khác & Livestream
+  multiPlatformVideos     Int          @default(0)
+  multiPlatformBudgetNet  Decimal      @default(0) @db.Decimal(14, 2)
+  liveSessions            Int          @default(0)
+  liveBudgetNet           Decimal      @default(0) @db.Decimal(14, 2)
+
+  rawFields               Json         // Nguyên bản fields trả về từ Larkbase Bitable API để đối soát
+  syncSource              String       @default("LARKBASE_API") // LARKBASE_API | LARKBASE_WEBHOOK | MANUAL_IMPORT
+  syncedBy                String?
+  syncedAt                DateTime     @default(now())
+  updatedAt               DateTime     @updatedAt
+
+  @@index([month, storeName])
+  @@index([brandName])
+  @@index([approvalStatus])
+  @@index([planId])
 }
 
 // Bản chụp phiên bản đã chốt (v1.0 Baseline, v1.1...). Chỉ thêm mới, không sửa/xóa.

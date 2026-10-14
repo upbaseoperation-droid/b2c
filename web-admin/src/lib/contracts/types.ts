@@ -9,7 +9,28 @@ export interface ContractField {
   /** Nhãn hiển thị trên form; `label` giữ nguyên chữ trong mẫu. */
   title?: string; group?: FieldGroup; kind?: FieldKind; source?: FieldSource;
 }
-export interface LegalTemplate { id: string; name: string; filename: string; subject: string; kind: 'CONTRACT' | 'ACCEPTANCE'; version: string; hash: string; fields: ContractField[]; paragraphs: string[] }
+export interface DocParagraph {
+  kind: 'p';
+  part: string;
+  paragraph: number;
+  text: string;
+  align?: 'left' | 'center' | 'right' | 'justify';
+  bold?: boolean;
+  italic?: boolean;
+  boldPrefix?: number;
+}
+export interface DocTableCell {
+  colSpan?: number;
+  blocks: DocBlock[];
+}
+export interface DocTable {
+  kind: 'table';
+  part: string;
+  variant: 'party' | 'signature' | 'grid';
+  rows: DocTableCell[][];
+}
+export type DocBlock = DocParagraph | DocTable;
+export interface LegalTemplate { id: string; name: string; filename: string; subject: string; kind: 'CONTRACT' | 'ACCEPTANCE'; version: string; hash: string; fields: ContractField[]; paragraphs: string[]; blocks?: DocBlock[] }
 export interface ReviewStep { role: 'LEGAL' | 'FINANCE' | 'LEAD'; reviewerId: string; reviewerName: string; status: 'PENDING' | 'APPROVED' | 'CHANGES' | 'REJECTED'; note: string; decidedAt?: string; version: number }
 export interface ContractFinding { severity: 'ERROR' | 'WARNING' | 'INFO'; message: string; evidence: string; fieldKey?: string }
 export interface AiCheck { version: number; at: string; provider: 'RULES' | 'AI'; findings: ContractFinding[] }

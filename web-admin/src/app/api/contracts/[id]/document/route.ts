@@ -18,7 +18,18 @@ export async function GET(req: NextRequest, context: { params: Promise<{ id: str
     const snapshot = requested === record.version ? { values: record.values } : record.versions.find(v => v.version === requested);
     requireCondition(snapshot, 'Không tìm thấy phiên bản tài liệu.', 404);
     const output = await renderTemplate(record.templateId, record.templateHash, snapshot.values);
-    if (req.nextUrl.searchParams.get('preview') === '1') return NextResponse.json({ paragraphs: output.paragraphs, version: requested }, { headers: { 'Cache-Control': 'no-store' } });
+    if (req.nextUrl.searchParams.get('preview') === '1') {
+      return NextResponse.json(
+        {
+          paragraphs: output.paragraphs,
+          blocks: output.template.blocks,
+          fields: output.template.fields,
+          values: snapshot.values,
+          version: requested,
+        },
+        { headers: { 'Cache-Control': 'no-store' } },
+      );
+    }
     return new NextResponse(new Uint8Array(output.buffer), { headers: { 'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'Content-Disposition': `attachment; filename="${record.id}-v${requested}.docx"`, 'Cache-Control': 'private, no-store' } });
   } catch (e) { return NextResponse.json({ error: e instanceof ContractError ? e.message : 'Không thể tải tài liệu.' }, { status: e instanceof ContractError ? e.status : 503 }); }
 }

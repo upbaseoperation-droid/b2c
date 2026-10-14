@@ -2333,7 +2333,71 @@ export interface InputPlanBreakdownState {
   approvedBy?: string;
   approvedAt?: string;
   revisionNotes?: string;
+  // Nguồn đồng bộ Larkbase (khi kéo kế hoạch B2C Booking đã duyệt từ Larkbase về hệ thống)
+  sourceSystem?: 'WEB_ADMIN' | 'LARKBASE';
+  larkRecordId?: string;
+  larkAppToken?: string;
+  larkTableId?: string;
+  larkApprovalCode?: string;
+  larkSyncedAt?: string;
 }
+
+// Bản ghi trong Bảng hứng Kế hoạch B2C Booking từ Larkbase (Bitable API / Webhook)
+export interface LarkbaseBookingPlanRecordItem {
+  id: string;
+  larkRecordId: string;
+  larkAppToken: string;
+  larkTableId: string;
+  planId: string;
+  month: string;
+  week?: string;
+  versionCode: string;
+  versionName: string;
+  storeId?: string;
+  storeName: string;
+  brandName: string;
+  platform: string;
+  isB2cManaged: boolean;
+  b2cPic: string;
+  bookingLeader?: string;
+  growthPic?: string;
+  mediaPic?: string;
+  approvalStatus: 'APPROVED' | 'LEAD_APPROVED' | 'LOCKED' | 'PENDING';
+  larkApprovalInstanceId?: string;
+  approvedBy: string;
+  approvedAt: string;
+  // Hạn mức Gross / Net (Kế toán kiểm soát theo Net)
+  budgetGross: number;
+  budgetNet: number;
+  budgetAdsTotal: number;
+  targetGmv: number;
+  totalTargetVideos: number;
+  // 4 đầu việc cốt lõi của B2C Booking (File 4.1 & 4.1.1)
+  affiliatePaidVideos: number;
+  affiliatePaidBudgetNet: number;
+  kocTierBreakdown: {
+    kl1: number;
+    kl2: number;
+    kl3: number;
+    kl4: number;
+    kl5: number;
+    kl6: number;
+    kl7: number;
+  };
+  focFreeVideos: number;
+  focPic?: string;
+  selfChannelVideos: number;
+  selfChannelBudgetNet: number;
+  multiPlatformVideos: number;
+  multiPlatformBudgetNet: number;
+  liveSessions: number;
+  liveBudgetNet: number;
+  changeReason?: string;
+  syncSource: 'API_PULL' | 'WEBHOOK' | 'SANDBOX_FALLBACK';
+  syncedBy: string;
+  syncedAt: string;
+}
+
 
 // =========================================================================
 // CƠ CẤU ĐỘI NGŨ BOOKING (LEADER & TEAM MEMBERS HIERARCHY)

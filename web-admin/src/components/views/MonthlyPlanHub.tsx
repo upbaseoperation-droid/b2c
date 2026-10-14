@@ -39,10 +39,14 @@ import {
   BarChart3,
   MessageSquare,
   Layers,
-  Store as StoreIcon
+  Store as StoreIcon,
+  RefreshCw,
+  Database,
+  CheckCircle2
 } from 'lucide-react';
 import {
   InputPlanBreakdownState,
+  LarkbaseBookingPlanRecordItem,
   MonthlyPlanStatus,
   PlanDiscussionMessage,
   UserProfile,
@@ -172,6 +176,7 @@ interface MonthlyPlanHubProps {
   onUpdatePlanStatus?: (planId: string, newStatus: MonthlyPlanStatus, logMessage?: string, note?: string) => void;
   onUpdatePlan?: (planId: string, updated: Partial<InputPlanBreakdownState>) => void;
   onSendMessage?: (planId: string, msg: Omit<PlanDiscussionMessage, 'id' | 'timestamp'>) => void;
+  onImportLarkbasePlans?: (importedPlans: InputPlanBreakdownState[]) => void;
   onUpdateStore?: (store: StorePortfolioItem) => void;
   currentUser?: UserProfile;
   onNotify?: (msg: string) => void;
@@ -186,6 +191,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
   onUpdatePlanStatus,
   onUpdatePlan,
   onSendMessage,
+  onImportLarkbasePlans,
   onUpdateStore,
   currentUser,
   onNotify
@@ -207,6 +213,17 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
   const [governancePage, setGovernancePage] = useState<number>(1);
   const GOVERNANCE_PAGE_SIZE = 15;
   const [approvingQuickPlan, setApprovingQuickPlan] = useState<{ planId: string; storeName: string } | null>(null);
+
+  // Bảng hứng kế hoạch B2C Booking từ Larkbase (API / Webhook)
+  const [isLarkbaseModalOpen, setIsLarkbaseModalOpen] = useState<boolean>(false);
+  const [larkbaseRecords, setLarkbaseRecords] = useState<LarkbaseBookingPlanRecordItem[]>([]);
+  const [larkbaseConvertedPlans, setLarkbaseConvertedPlans] = useState<InputPlanBreakdownState[]>([]);
+  const [larkbaseAppToken, setLarkbaseAppToken] = useState<string>('bascnUpbaseB2CPlan41');
+  const [larkbaseTableId, setLarkbaseTableId] = useState<string>('tblBookingInputPlan411');
+  const [larkbaseViewId, setLarkbaseViewId] = useState<string>('');
+  const [hasLiveLarkCredentials, setHasLiveLarkCredentials] = useState<boolean>(false);
+  const [isLoadingLarkbase, setIsLoadingLarkbase] = useState<boolean>(false);
+  const [isPullingLarkbase, setIsPullingLarkbase] = useState<boolean>(false);
 
   // Thu gọn / mở rộng bảng chỉ số
   const [isGovernanceExpanded, setIsGovernanceExpanded] = useState<boolean>(false);
@@ -540,6 +557,69 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
     setCloningPlan(null);
   };
 
+  // Tải danh sách bản ghi trong Bảng hứng Kế hoạch B2C Booking từ Larkbase
+  const openLarkbaseIngestionModal = async () => {
+    setIsLarkbaseModalOpen(true);
+    setIsLoadingLarkbase(true);
+    try {
+      const res = await fetch(`/api/integrations/larkbase/booking-plans?month=${encodeURIComponent(selectedMonth)}`);
+      const data = await res.json();
+      if (res.ok && data) {
+        if (data.config) {
+          setLarkbaseAppToken(data.config.appToken || 'bascnUpbaseB2CPlan41');
+          setLarkbaseTableId(data.config.tableId || 'tblBookingInputPlan411');
+          setLarkbaseViewId(data.config.viewId || '');
+          setHasLiveLarkCredentials(Boolean(data.config.hasLarkCredentials));
+        }
+        setLarkbaseRecords(Array.isArray(data.records) ? data.records : []);
+        setLarkbaseConvertedPlans(Array.isArray(data.convertedPlans) ? data.convertedPlans : []);
+      }
+    } catch {
+      notify('Không thể tải bảng hứng kế hoạch Larkbase.');
+    } finally {
+      setIsLoadingLarkbase(false);
+    }
+  };
+
+  // Kéo toàn bộ kế hoạch B2C Booking đã duyệt từ Larkbase về hệ thống
+  const handlePullApprovedFromLarkbase = async () => {
+    setIsPullingLarkbase(true);
+    try {
+      const res = await fetch('/api/integrations/larkbase/booking-plans', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mode: 'PULL',
+          appToken: larkbaseAppToken,
+          tableId: larkbaseTableId,
+          viewId: larkbaseViewId,
+          month: selectedMonth,
+          actorName: currentUser?.name || 'Đặng Thị Yến Nhi'
+        })
+      });
+      const data = await res.json();
+      if (res.ok && data) {
+        const nextRecords: LarkbaseBookingPlanRecordItem[] = Array.isArray(data.records) ? data.records : [];
+        const nextPlans: InputPlanBreakdownState[] = Array.isArray(data.plans) ? data.plans : [];
+        setLarkbaseRecords(nextRecords);
+        setLarkbaseConvertedPlans(nextPlans);
+        if (onImportLarkbasePlans && nextPlans.length > 0) {
+          onImportLarkbasePlans(nextPlans);
+        }
+        notify(
+          data.message ||
+            `Đã kéo ${nextPlans.length} kế hoạch B2C Booking đã duyệt từ Larkbase về danh sách kế hoạch tháng.`
+        );
+      } else {
+        notify(data?.error || 'Lỗi khi đồng bộ kế hoạch từ Larkbase.');
+      }
+    } catch {
+      notify('Lỗi kết nối khi kéo kế hoạch từ Larkbase.');
+    } finally {
+      setIsPullingLarkbase(false);
+    }
+  };
+
   const getStatusBadge = (status?: MonthlyPlanStatus) => {
     switch (status) {
       case 'PENDING_PRE_APPROVAL':
@@ -568,6 +648,14 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
     <div className="space-y-6">
       <PageActions>
         <Button
+          variant="secondary"
+          size="md"
+          icon={Database}
+          onClick={() => void openLarkbaseIngestionModal()}
+        >
+          Bảng hứng Larkbase
+        </Button>
+        <Button
           variant="primary"
           size="md"
           icon={Plus}
@@ -577,10 +665,19 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
         </Button>
       </PageActions>
 
-      {/* 1. THANH CÔNG CỤ TRÊN: BỘ CHỌN KỲ */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      {/* 1. THANH ĐIỀU HƯỚNG GỘP 1 DÒNG: CHUYỂN TAB + CHỌN THÁNG */}
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-2.5">
+        <Tabs
+          items={[
+            { key: 'STORE_GOVERNANCE', label: 'Ma trận gian hàng', count: governanceStats.totalActive },
+            { key: 'PLAN_CATALOG', label: 'Danh mục kế hoạch', count: monthlyMetrics.planCount },
+          ]}
+          value={activeHubTab}
+          onChange={setActiveHubTab}
+        />
+
         {/* Bộ chọn tháng */}
-        <div className="flex items-center gap-1.5 overflow-x-auto p-0.5 rounded-lg bg-sunken">
+        <div className="flex items-center gap-1 overflow-x-auto p-0.5 rounded-lg bg-sunken">
           {AVAILABLE_MONTHS.map(m => {
             const isSelected = selectedMonth === m.value;
             const countInMonth = m.value === 'ALL'
@@ -597,14 +694,14 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                   setGovernancePage(1);
                 }}
                 className={cx(
-                  'h-7 px-3 rounded-[5px] text-[13px] whitespace-nowrap transition-colors flex items-center gap-1.5',
+                  'h-7 px-2.5 rounded-[5px] text-xs whitespace-nowrap transition-colors flex items-center gap-1.5',
                   isSelected
-                    ? 'bg-surface text-ink font-medium shadow-[0_1px_2px_rgb(22_23_26/0.08)]'
+                    ? 'bg-surface text-ink font-semibold shadow-[0_1px_2px_rgb(22_23_26/0.08)]'
                     : 'text-ink-3 hover:text-ink'
                 )}
               >
                 <span>{label}</span>
-                <span className={cx('text-2xs tabular-nums', isSelected ? 'text-ink' : 'text-ink-3')}>
+                <span className={cx('text-2xs tabular-nums', isSelected ? 'text-ink-2' : 'text-ink-3')}>
                   {countInMonth}
                 </span>
               </button>
@@ -613,120 +710,89 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
         </div>
       </div>
 
-      {/* 2. CHUYỂN TAB: MA TRẬN GIAN HÀNG vs DANH MỤC KẾ HOẠCH */}
-      <Tabs
-        items={[
-          { key: 'STORE_GOVERNANCE', label: 'Ma trận gian hàng', count: governanceStats.totalActive },
-          { key: 'PLAN_CATALOG', label: 'Danh mục kế hoạch', count: monthlyMetrics.planCount },
-        ]}
-        value={activeHubTab}
-        onChange={setActiveHubTab}
-      />
-
       {activeHubTab === 'STORE_GOVERNANCE' ? (
         /* ========================================================================= */
         /* TAB 1: MA TRẬN QUẢN TRỊ GIAN HÀNG VÀ TRẠNG THÁI GỬI DUYỆT PLAN            */
         /* ========================================================================= */
-        <div className="space-y-6">
-          {/* TỔNG HỢP ĐỀ BÀI B2C & 4 ĐẦU VIỆC THỰC THI */}
+        <div className="space-y-4">
+          {/* TỔNG HỢP ĐỀ BÀI B2C & 4 ĐẦU VIỆC THỰC THI (GỌN 1 KHỐI) */}
           <section className="bg-surface border border-line rounded-xl overflow-hidden">
-            <div className="px-4 py-3 flex flex-wrap items-center justify-between gap-3 border-b border-line bg-sunken/30">
-              <div className="flex items-center gap-3 min-w-0 flex-wrap">
-                <span className="text-[13px] font-semibold text-ink">
-                  Đề bài Growth bàn giao &amp; Phân rã B2C ({selectedMonth === 'ALL' ? 'Toàn kỳ' : selectedMonth}):
+            <div className="px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 border-b border-line bg-sunken/30 text-xs">
+              <div className="flex items-center gap-2.5 min-w-0 flex-wrap">
+                <span className="font-semibold text-ink">
+                  Tổng hợp kế hoạch B2C kỳ {selectedMonth === 'ALL' ? 'Toàn bộ' : selectedMonth}
                 </span>
-                <div className="flex items-center gap-2">
-                  <span className="text-[13px] font-semibold text-positive tabular-nums">
-                    {governanceStats.approvedPct}% đã duyệt
-                  </span>
-                  <span className="text-2xs text-ink-3 tabular-nums">
-                    ({governanceStats.countApproved}/{governanceStats.totalB2cManaged} gian B2C)
-                  </span>
-                </div>
-                <div className="w-28 sm:w-36">
-                  <Progress
-                    value={governanceStats.countApproved}
-                    max={governanceStats.totalB2cManaged || 1}
-                    label="Tiến độ duyệt kế hoạch"
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2.5 text-2xs text-ink-3 flex-wrap">
-                <span><strong className="text-ink font-medium">{governanceStats.totalB2cManaged}</strong> gian B2C</span>
-                <span>•</span>
-                <span><strong className="text-ink font-medium">{governanceStats.countWithPlan}</strong> đã có plan</span>
+                <span className="text-ink-3">•</span>
+                <span className="font-semibold text-positive tabular-nums">
+                  Đã duyệt {governanceStats.countApproved}/{governanceStats.totalB2cManaged} gian ({governanceStats.approvedPct}%)
+                </span>
                 {governanceStats.countMissingPlan > 0 && (
-                  <>
-                    <span>•</span>
-                    <span className="text-warning font-medium inline-flex items-center gap-1">
-                      <AlertCircle className="w-3 h-3" />
-                      {governanceStats.countMissingPlan} chưa lập
-                    </span>
-                  </>
+                  <span className="text-warning font-medium inline-flex items-center gap-1">
+                    • <AlertCircle className="w-3 h-3" /> {governanceStats.countMissingPlan} chưa lập
+                  </span>
                 )}
-                <span>•</span>
-                <span className="text-ink-3">Livestream do Growth phụ trách</span>
+              </div>
+              <div className="w-32 sm:w-40">
+                <Progress
+                  value={governanceStats.countApproved}
+                  max={governanceStats.totalB2cManaged || 1}
+                  label="Tiến độ duyệt kế hoạch"
+                />
               </div>
             </div>
 
-            {/* 5 Ô THÔNG SỐ TỔNG & 4 ĐẦU VIỆC B2C */}
+            {/* 5 Ô THÔNG SỐ TỔNG & 4 ĐẦU VIỆC B2C (BỎ CHỮ PHỤ RƯỜM RÀ) */}
             <div className="grid grid-cols-2 sm:grid-cols-5 divide-y sm:divide-y-0 sm:divide-x divide-line bg-surface">
-              <div className="p-3">
-                <div className="text-2xs text-ink-3 font-medium">Tổng đề bài B2C</div>
+              <div className="px-3.5 py-2.5">
+                <div className="text-2xs text-ink-3 font-medium">Tổng hạn mức Net B2C</div>
                 <div className="mt-1 flex items-baseline justify-between gap-2">
                   <span className="text-sm font-semibold text-ink tabular-nums">{formatVndShort(governanceStats.totalBudget)}</span>
                   <span className="text-xs font-semibold text-accent tabular-nums">{governanceStats.totalVideos.toLocaleString('vi-VN')} video</span>
                 </div>
-                <div className="text-2xs text-ink-3 mt-0.5">Trần ngân sách Net &amp; tổng video</div>
               </div>
 
-              <div className="p-3">
+              <div className="px-3.5 py-2.5">
                 <div className="text-2xs text-ink-3 font-medium flex items-center justify-between">
-                  <span>1. Video Affiliate (Trả phí)</span>
-                  <span className="px-1.5 py-0.2 rounded bg-accent/10 text-accent text-2xs font-semibold">KL1 → KL7</span>
+                  <span>1. KOC trả phí</span>
+                  <span className="text-accent font-semibold">KL1–KL7</span>
                 </div>
                 <div className="mt-1 flex items-baseline justify-between gap-2">
-                  <span className="text-sm font-semibold text-ink tabular-nums">{ governanceStats.affPaidQty.toLocaleString('vi-VN') } video</span>
+                  <span className="text-sm font-semibold text-ink tabular-nums">{governanceStats.affPaidQty.toLocaleString('vi-VN')} video</span>
                   <span className="text-xs font-semibold text-ink-2 tabular-nums">{formatVndShort(governanceStats.affPaidBudget)}</span>
                 </div>
-                <div className="text-2xs text-ink-3 mt-0.5">KOC TikTok có chi phí cast</div>
               </div>
 
-              <div className="p-3">
+              <div className="px-3.5 py-2.5">
                 <div className="text-2xs text-ink-3 font-medium flex items-center justify-between">
-                  <span>2. FOC (Gửi mẫu 0đ)</span>
-                  <span className="px-1.5 py-0.2 rounded bg-positive-soft text-positive text-2xs font-semibold">0đ Cast</span>
+                  <span>2. Gửi mẫu FOC</span>
+                  <span className="text-positive font-semibold">0đ Cast</span>
                 </div>
                 <div className="mt-1 flex items-baseline justify-between gap-2">
                   <span className="text-sm font-semibold text-positive tabular-nums">{governanceStats.focQty.toLocaleString('vi-VN')} video</span>
                   <span className="text-xs font-medium text-ink-3 tabular-nums">0 đ</span>
                 </div>
-                <div className="text-2xs text-ink-3 mt-0.5">Suất gửi sản phẩm mẫu miễn phí</div>
               </div>
 
-              <div className="p-3">
+              <div className="px-3.5 py-2.5">
                 <div className="text-2xs text-ink-3 font-medium flex items-center justify-between">
-                  <span>3. Self-channel (Kênh Brand)</span>
-                  <span className="px-1.5 py-0.2 rounded bg-sunken text-ink-2 text-2xs font-medium">In-house</span>
+                  <span>3. Kênh Brand</span>
+                  <span className="text-ink-3">Self-channel</span>
                 </div>
                 <div className="mt-1 flex items-baseline justify-between gap-2">
                   <span className="text-sm font-semibold text-ink tabular-nums">{governanceStats.selfQty.toLocaleString('vi-VN')} video</span>
                   <span className="text-xs font-semibold text-ink-2 tabular-nums">{formatVndShort(governanceStats.selfBudget)}</span>
                 </div>
-                <div className="text-2xs text-ink-3 mt-0.5">Review, Nhạc text, Remix, POV...</div>
               </div>
 
-              <div className="p-3">
+              <div className="px-3.5 py-2.5">
                 <div className="text-2xs text-ink-3 font-medium flex items-center justify-between">
-                  <span>4. Kênh khác (Đa sàn)</span>
-                  <span className="px-1.5 py-0.2 rounded bg-sunken text-ink-2 text-2xs font-medium">FB/SP/IG</span>
+                  <span>4. Đa sàn khác</span>
+                  <span className="text-ink-3">SP/FB/IG</span>
                 </div>
                 <div className="mt-1 flex items-baseline justify-between gap-2">
                   <span className="text-sm font-semibold text-ink tabular-nums">{governanceStats.otherQty.toLocaleString('vi-VN')} video</span>
                   <span className="text-xs font-semibold text-ink-2 tabular-nums">{formatVndShort(governanceStats.otherBudget)}</span>
                 </div>
-                <div className="text-2xs text-ink-3 mt-0.5">Shopee, Facebook, Insta, Threads</div>
               </div>
             </div>
           </section>
@@ -734,7 +800,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
           {/* BẢNG MA TRẬN GIAN HÀNG & PHÂN RÃ 4 ĐẦU VIỆC */}
           <Panel flush>
             {/* Bộ lọc bảng */}
-            <div className="p-3.5 border-b border-line">
+            <div className="p-3 border-b border-line">
               <FilterBar
                 search={{
                   value: storeSearchQuery,
@@ -742,18 +808,18 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                     setStoreSearchQuery(v);
                     setGovernancePage(1);
                   },
-                  placeholder: 'Tìm gian hàng, thương hiệu, PIC B2C, Growth...',
+                  placeholder: 'Tìm gian hàng, thương hiệu, PIC B2C...',
                 }}
                 chips={
                   <Chips
                     items={[
-                      { key: 'ALL', label: 'Tất cả', count: governanceStats.totalActive },
                       { key: 'B2C_ONLY', label: 'B2C phụ trách', count: governanceStats.totalB2cManaged },
                       { key: 'MULTI_VERSION', label: 'Nhiều phiên bản', count: governanceStats.countMultiVersion },
-                      { key: 'MISSING_PLAN', label: 'Chưa lập plan', count: governanceStats.countMissingPlan },
                       { key: 'PENDING_APPROVAL', label: 'Chờ duyệt', count: governanceStats.countPendingApproval },
                       { key: 'APPROVED', label: 'Đã duyệt', count: governanceStats.countApproved },
+                      { key: 'MISSING_PLAN', label: 'Chưa lập', count: governanceStats.countMissingPlan },
                       { key: 'EXEMPT', label: 'Miễn trừ', count: governanceStats.totalExempt },
+                      { key: 'ALL', label: 'Tất cả', count: governanceStats.totalActive },
                     ]}
                     value={storeGovernanceFilter}
                     onChange={(k) => {
@@ -766,19 +832,19 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
               />
             </div>
 
-            {/* Nội dung bảng gọn gàng, không cuộn ngang */}
+            {/* Nội dung bảng gọn gàng, chỉ 2 dòng mỗi ô */}
             <div className="w-full">
               <table className="w-full table-fixed text-left text-xs border-collapse">
                 <thead>
                   <tr className="bg-sunken/70 border-b border-line text-ink-2 font-semibold text-2xs">
-                    <th className="py-2.5 px-2.5 w-[20%]">Gian hàng &amp; Phiên bản</th>
-                    <th className="py-2.5 px-2 w-[16%]">Nhân sự (B2C / Growth)</th>
-                    <th className="py-2.5 px-2 text-right w-[12%] bg-sunken">Tổng đề bài B2C</th>
-                    <th className="py-2.5 px-2 text-right w-[11%]">1. Affiliate (Trả phí)</th>
-                    <th className="py-2.5 px-2 text-center w-[9%]">2. FOC (0đ)</th>
-                    <th className="py-2.5 px-2 text-right w-[10%]">3. Self-channel</th>
-                    <th className="py-2.5 px-2 text-right w-[10%]">4. Kênh khác</th>
-                    <th className="py-2.5 px-2.5 text-center w-[12%]">Trạng thái &amp; Duyệt</th>
+                    <th className="py-2.5 px-3 w-[23%]">Gian hàng &amp; Phiên bản</th>
+                    <th className="py-2.5 px-2.5 w-[15%]">Chuyên viên / Luồng duyệt</th>
+                    <th className="py-2.5 px-2 text-right w-[11%] bg-sunken">Hạn mức Net</th>
+                    <th className="py-2.5 px-2 text-right w-[11%]">1. KOC trả phí</th>
+                    <th className="py-2.5 px-2 text-center w-[8%]">2. FOC (0đ)</th>
+                    <th className="py-2.5 px-2 text-right w-[10%]">3. Kênh Brand</th>
+                    <th className="py-2.5 px-2 text-right w-[9%]">4. Đa sàn</th>
+                    <th className="py-2.5 px-3 text-right w-[13%]">Trạng thái</th>
                   </tr>
                 </thead>
                 <tbody ref={governanceBodyRef} className="divide-y divide-line">
@@ -803,13 +869,14 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                       const budgetDelta = plan && baselineSnapshot && versionCount > 1
                         ? (plan.totalTargetBudget || bd.totalBudget) - (baselineSnapshot.totalTargetBudget || 0)
                         : 0;
+                      const hasLeader = Boolean(plan?.hasBookingLeader ?? store.hasBookingLeader);
 
                       return (
                         <tr
                           key={store.id}
                           data-flip={store.id}
                           className={cx(
-                            'hover:bg-canvas transition-colors',
+                            'group hover:bg-canvas transition-colors',
                             plan && 'cursor-pointer',
                             !isB2c && 'bg-sunken/30 text-ink-3'
                           )}
@@ -817,43 +884,21 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                             if (plan) onSelectPlan(plan);
                           }}
                         >
-                          {/* 1. GIAN HÀNG & THƯƠNG HIỆU + NÚT B2C + PHIÊN BẢN TRONG THÁNG */}
-                          <td className="py-2 px-2.5 align-middle">
-                            <div className="flex items-center gap-1.5 min-w-0">
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleToggleB2cManaged(store, e);
-                                }}
-                                className={cx(
-                                  'inline-flex items-center justify-center px-1.5 py-0.2 rounded text-2xs font-semibold transition-colors cursor-pointer border shrink-0',
-                                  isB2c
-                                    ? 'bg-positive-soft text-positive border-positive/30 hover:bg-positive-soft/80'
-                                    : 'bg-sunken text-ink-3 border-line hover:bg-sunken/80 hover:text-ink'
-                                )}
-                                title={isB2c ? 'Gian hàng B2C phụ trách. Bấm để chuyển sang miễn trừ.' : 'Đang miễn trừ. Bấm để bật B2C phụ trách.'}
-                              >
-                                {isB2c ? 'B2C' : 'Miễn'}
-                              </button>
-                              <span className="font-semibold text-ink text-[12px] truncate" title={store.storeName}>
+                          {/* 1. GIAN HÀNG & PHIÊN BẢN (GỌN 2 DÒNG) */}
+                          <td className="py-2.5 px-3 align-middle">
+                            <div className="flex items-center justify-between gap-1.5 min-w-0">
+                              <span className="font-semibold text-ink text-xs truncate" title={store.storeName}>
                                 {store.storeName}
                               </span>
-                            </div>
-                            <div className="flex items-center gap-1.5 mt-0.5 text-2xs text-ink-3 min-w-0 flex-wrap">
-                              <ChannelTag channel={store.platform} className="text-2xs px-1 py-0" />
-                              <span>•</span>
-                              <span className="font-medium text-ink-2 truncate" title={store.brandName}>
-                                {store.brandName}
-                              </span>
-                            </div>
-                            {plan && (
-                              <div className="flex items-center gap-1 mt-1 flex-wrap" onClick={(e) => e.stopPropagation()}>
+                              {plan && (
                                 <button
                                   type="button"
-                                  onClick={() => openVersionModal(plan.id, 'VERSION_HISTORY')}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    openVersionModal(plan.id, 'VERSION_HISTORY');
+                                  }}
                                   className={cx(
-                                    'inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-2xs font-semibold border transition-colors cursor-pointer',
+                                    'inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-2xs font-semibold border transition-colors shrink-0 cursor-pointer',
                                     versionCount > 1
                                       ? 'bg-accent-soft text-accent border-accent/30 hover:bg-accent-soft/80'
                                       : 'bg-sunken text-ink-2 border-line hover:bg-sunken/80'
@@ -862,93 +907,89 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                                 >
                                   <Layers className="w-2.5 h-2.5" />
                                   <span>{activeVersionCode}</span>
-                                  <span>• {versionCount} bản</span>
+                                  {versionCount > 1 && <span>({versionCount})</span>}
                                 </button>
-                                {budgetDelta !== 0 && (
-                                  <span
-                                    className={cx(
-                                      'text-2xs font-semibold px-1 py-0.5 rounded tabular-nums',
-                                      budgetDelta > 0
-                                        ? 'bg-emerald-50 text-emerald-700'
-                                        : 'bg-amber-50 text-amber-700'
-                                    )}
-                                    title="Chênh lệch ngân sách so với bản gốc v1.0 đầu tháng"
-                                  >
-                                    {budgetDelta > 0 ? `+${formatVndShort(budgetDelta)}` : formatVndShort(budgetDelta)} vs v1.0
-                                  </span>
-                                )}
-                              </div>
-                            )}
-                          </td>
-
-                          {/* 2. NHÂN SỰ (B2C / GROWTH / DUYỆT) */}
-                          <td className="py-2 px-2 align-middle">
-                            <div className="space-y-0.5 text-2xs leading-tight">
-                              <div className="flex items-center gap-1 min-w-0">
-                                <span className="text-ink-3 w-10 shrink-0">B2C:</span>
-                                <span className="font-medium text-ink truncate" title={store.b2cOwners?.[0] || store.b2cOwnerName || 'Chưa phân công'}>
-                                  {store.b2cOwners?.[0] || store.b2cOwnerName || 'Chưa gán'}
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1.5 mt-1 text-2xs text-ink-3 min-w-0">
+                              <ChannelTag channel={store.platform} className="text-2xs px-1 py-0" />
+                              <span className="truncate">{store.brandName}</span>
+                              {budgetDelta !== 0 && (
+                                <span
+                                  className={cx(
+                                    'text-2xs font-semibold px-1 py-0 rounded tabular-nums shrink-0',
+                                    budgetDelta > 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
+                                  )}
+                                >
+                                  {budgetDelta > 0 ? `+${formatVndShort(budgetDelta)}` : formatVndShort(budgetDelta)}
                                 </span>
-                              </div>
-                              <div className="flex items-center gap-1 min-w-0">
-                                <span className="text-ink-3 w-10 shrink-0">Growth:</span>
-                                <span className="text-ink-2 truncate" title={store.growthPic || 'Chưa gán'}>
-                                  {store.growthPic || 'Chưa gán'}
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-1 min-w-0" onClick={(e) => e.stopPropagation()}>
-                                <span className="text-ink-3 w-10 shrink-0">Duyệt:</span>
-                                {plan?.hasBookingLeader ?? store.hasBookingLeader ? (
-                                  <span className="text-ink-2 font-medium truncate" title="Trưởng nhóm: Nguyễn Thị Ngọc Tâm">
-                                    Ngọc Tâm
-                                  </span>
-                                ) : (
-                                  <span className="text-ink-3 truncate" title="Duyệt trực tiếp Trưởng phòng Đặng Thị Yến Nhi">
-                                    Trực tiếp
-                                  </span>
+                              )}
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleToggleB2cManaged(store, e);
+                                }}
+                                className={cx(
+                                  'ml-auto px-1 py-0 rounded text-[10px] font-medium border transition-opacity shrink-0 cursor-pointer',
+                                  isB2c
+                                    ? 'opacity-0 group-hover:opacity-100 bg-sunken text-ink-3 border-line hover:text-ink'
+                                    : 'opacity-100 bg-sunken text-ink-3 border-line hover:text-ink'
                                 )}
-                                {(currentUser?.role === 'MANAGER' || currentUser?.role === 'ADMIN') && (
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      const currentHas = Boolean(plan?.hasBookingLeader ?? store.hasBookingLeader);
-                                      const nextHas = !currentHas;
-                                      const newLeader = nextHas ? (plan?.bookingLeader || store.bookingLeader || 'Nguyễn Thị Ngọc Tâm') : undefined;
-
-                                      if (plan && onUpdatePlan) {
-                                        onUpdatePlan(plan.id, {
-                                          hasBookingLeader: nextHas,
-                                          bookingLeader: newLeader,
-                                          leaderApprovalStatus: nextHas ? 'CHƯA_DUYỆT' : 'KHÔNG_ÁP_DỤNG'
-                                        });
-                                      }
-                                      if (onUpdateStore) {
-                                        onUpdateStore({
-                                          ...store,
-                                          hasBookingLeader: nextHas,
-                                          bookingLeader: newLeader
-                                        });
-                                      }
-                                      if (onNotify) {
-                                        onNotify(nextHas
-                                          ? `Đã bật yêu cầu Trưởng nhóm sơ duyệt cho ${store.storeName} (${selectedMonth}).`
-                                          : `Đã chuyển ${store.storeName} sang duyệt trực tiếp (${selectedMonth}).`);
-                                      }
-                                    }}
-                                    className="text-2xs text-accent hover:underline font-medium cursor-pointer shrink-0 ml-0.5"
-                                    title="Đổi luồng duyệt"
-                                  >
-                                    ({plan?.hasBookingLeader ?? store.hasBookingLeader ? 'Đổi' : 'Gán'})
-                                  </button>
-                                )}
-                              </div>
+                                title={isB2c ? 'Bấm để chuyển sang miễn trừ B2C' : 'Đang miễn trừ. Bấm để bật B2C phụ trách'}
+                              >
+                                {isB2c ? 'Miễn trừ?' : 'Miễn trừ'}
+                              </button>
                             </div>
                           </td>
 
-                          {/* 3. TỔNG ĐỀ BÀI B2C */}
-                          <td className="py-2 px-2 text-right tabular-nums align-middle bg-sunken/25">
-                            <div className="font-semibold text-ink text-[12px]">
+                          {/* 2. CHUYÊN VIÊN B2C & LUỒNG DUYỆT (GỌN 2 DÒNG) */}
+                          <td className="py-2.5 px-2.5 align-middle">
+                            <div className="font-medium text-ink text-xs truncate" title={store.b2cOwners?.[0] || store.b2cOwnerName || 'Chưa phân công'}>
+                              {store.b2cOwners?.[0] || store.b2cOwnerName || 'Chưa gán'}
+                            </div>
+                            <div className="flex items-center gap-1 mt-0.5 text-2xs text-ink-3" onClick={(e) => e.stopPropagation()}>
+                              <span className="truncate">
+                                {hasLeader ? 'Leader: Ngọc Tâm' : 'Duyệt trực tiếp'}
+                              </span>
+                              {(currentUser?.role === 'MANAGER' || currentUser?.role === 'ADMIN') && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const nextHas = !hasLeader;
+                                    const newLeader = nextHas ? (plan?.bookingLeader || store.bookingLeader || 'Nguyễn Thị Ngọc Tâm') : undefined;
+                                    if (plan && onUpdatePlan) {
+                                      onUpdatePlan(plan.id, {
+                                        hasBookingLeader: nextHas,
+                                        bookingLeader: newLeader,
+                                        leaderApprovalStatus: nextHas ? 'CHƯA_DUYỆT' : 'KHÔNG_ÁP_DỤNG'
+                                      });
+                                    }
+                                    if (onUpdateStore) {
+                                      onUpdateStore({
+                                        ...store,
+                                        hasBookingLeader: nextHas,
+                                        bookingLeader: newLeader
+                                      });
+                                    }
+                                    if (onNotify) {
+                                      onNotify(nextHas
+                                        ? `Đã bật yêu cầu Trưởng nhóm sơ duyệt cho ${store.storeName}.`
+                                        : `Đã chuyển ${store.storeName} sang duyệt trực tiếp.`);
+                                    }
+                                  }}
+                                  className="opacity-0 group-hover:opacity-100 text-2xs text-accent hover:underline font-medium cursor-pointer shrink-0"
+                                >
+                                  Đổi
+                                </button>
+                              )}
+                            </div>
+                          </td>
+
+                          {/* 3. HẠN MỨC NET B2C */}
+                          <td className="py-2.5 px-2 text-right tabular-nums align-middle bg-sunken/25">
+                            <div className="font-semibold text-ink text-xs">
                               {formatVndShort(bd.totalBudget)}
                             </div>
                             <div className="text-2xs font-medium text-accent">
@@ -957,10 +998,10 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                           </td>
 
                           {/* 4. ĐẦU VIỆC 1: VIDEO AFFILIATE TRẢ PHÍ */}
-                          <td className="py-2 px-2 text-right tabular-nums align-middle">
+                          <td className="py-2.5 px-2 text-right tabular-nums align-middle">
                             {bd.affPaidQty > 0 || bd.affPaidBudget > 0 ? (
                               <div>
-                                <div className="font-semibold text-ink text-[12px]">
+                                <div className="font-semibold text-ink text-xs">
                                   {bd.affPaidQty} video
                                 </div>
                                 <div className="text-2xs text-ink-3">
@@ -973,24 +1014,21 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                           </td>
 
                           {/* 5. ĐẦU VIỆC 2: FOC (0Đ) */}
-                          <td className="py-2 px-2 text-center tabular-nums align-middle">
+                          <td className="py-2.5 px-2 text-center tabular-nums align-middle">
                             {bd.focQty > 0 ? (
-                              <div>
-                                <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-positive-soft text-positive font-semibold text-2xs">
-                                  {bd.focQty} video
-                                </span>
-                                <div className="text-2xs text-ink-3 mt-0.5">0 đ</div>
-                              </div>
+                              <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-positive-soft text-positive font-semibold text-2xs">
+                                {bd.focQty} mẫu
+                              </span>
                             ) : (
                               <span className="text-ink-3 text-2xs">—</span>
                             )}
                           </td>
 
                           {/* 6. ĐẦU VIỆC 3: SELF-CHANNEL */}
-                          <td className="py-2 px-2 text-right tabular-nums align-middle">
+                          <td className="py-2.5 px-2 text-right tabular-nums align-middle">
                             {bd.selfQty > 0 || bd.selfBudget > 0 ? (
                               <div>
-                                <div className="font-semibold text-ink text-[12px]">
+                                <div className="font-semibold text-ink text-xs">
                                   {bd.selfQty} video
                                 </div>
                                 <div className="text-2xs text-ink-3">
@@ -1002,11 +1040,11 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                             )}
                           </td>
 
-                          {/* 7. ĐẦU VIỆC 4: KÊNH KHÁC (SHOPEE/FB/IG/THREADS) */}
-                          <td className="py-2 px-2 text-right tabular-nums align-middle">
+                          {/* 7. ĐẦU VIỆC 4: KÊNH KHÁC */}
+                          <td className="py-2.5 px-2 text-right tabular-nums align-middle">
                             {bd.otherQty > 0 || bd.otherBudget > 0 ? (
                               <div>
-                                <div className="font-semibold text-ink text-[12px]">
+                                <div className="font-semibold text-ink text-xs">
                                   {bd.otherQty} video
                                 </div>
                                 <div className="text-2xs text-ink-3">
@@ -1018,63 +1056,45 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                             )}
                           </td>
 
-                          {/* 8. TRẠNG THÁI & THAO TÁC */}
-                          <td className="py-2 px-2.5 text-center align-middle" onClick={(e) => e.stopPropagation()}>
-                            <div className="flex flex-col items-center gap-1">
+                          {/* 8. TRẠNG THÁI & THAO TÁC (GỌN 1 DÒNG, KHÔNG LẶP NÚT PHIÊN BẢN) */}
+                          <td className="py-2.5 px-3 text-right align-middle" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex items-center justify-end gap-1.5">
                               {!isB2c ? (
                                 <Status tone="neutral">Miễn trừ</Status>
                               ) : plan ? (
-                                getStatusBadge(plan.status)
-                              ) : (
-                                <Status tone="critical">Chưa nộp</Status>
-                              )}
-
-                              {plan ? (
-                                <div className="flex items-center gap-1 w-full">
-                                  <button
-                                    type="button"
-                                    onClick={() => openVersionModal(plan.id, 'VERSION_HISTORY')}
-                                    title={`Xem & quản lý ${versionCount} phiên bản kế hoạch trong tháng`}
-                                    className="h-6 px-1.5 rounded border border-line bg-surface hover:bg-sunken text-ink-2 text-2xs font-semibold inline-flex items-center gap-0.5 shrink-0 cursor-pointer"
-                                  >
-                                    <Layers className="w-3 h-3 text-accent" />
-                                    <span>{versionCount}</span>
-                                  </button>
+                                <>
+                                  {getStatusBadge(plan.status)}
                                   {plan.status === 'PENDING_APPROVAL' ? (
                                     <Button
                                       size="sm"
                                       variant="primary"
-                                      icon={ShieldCheck}
                                       onClick={() => onSelectPlan(plan)}
-                                      title="Mở kế hoạch để xem và duyệt"
-                                      className="h-6 px-2 text-2xs font-medium flex-1 justify-center"
+                                      className="h-6 px-2 text-2xs font-medium shrink-0"
                                     >
                                       Duyệt
                                     </Button>
                                   ) : (
                                     <Button
                                       size="sm"
-                                      variant="secondary"
+                                      variant="ghost"
                                       onClick={() => onSelectPlan(plan)}
-                                      title="Mở bảng phân rã chi tiết theo khung lương, định dạng, tuần"
-                                      className="h-6 px-2 text-2xs font-medium flex-1 justify-center"
+                                      className="h-6 px-2 text-2xs font-medium shrink-0 opacity-0 group-hover:opacity-100"
                                     >
-                                      Phân rã
+                                      Mở
                                     </Button>
                                   )}
-                                </div>
-                              ) : isB2c ? (
+                                </>
+                              ) : (
                                 <Button
                                   size="sm"
                                   variant="secondary"
                                   icon={Plus}
                                   onClick={(e) => handleCreatePlanForStore(store, e)}
-                                  title="Tạo kế hoạch mới cho gian hàng này"
-                                  className="h-6 px-2 text-2xs font-medium w-full justify-center"
+                                  className="h-6 px-2 text-2xs font-medium"
                                 >
                                   Lập plan
                                 </Button>
-                              ) : null}
+                              )}
                             </div>
                           </td>
                         </tr>
@@ -1723,6 +1743,257 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
         }}
         onCancel={() => setApprovingQuickPlan(null)}
       />
+
+      {/* 7. MODAL BẢNG HỨNG KẾ HOẠCH B2C BOOKING ĐÃ DUYỆT TỪ LARKBASE */}
+      <Modal
+        open={isLarkbaseModalOpen}
+        onClose={() => setIsLarkbaseModalOpen(false)}
+        title="Bảng hứng Kế hoạch B2C Booking từ Larkbase (API / Webhook)"
+        description="Hứng các dòng kế hoạch B2C Booking đã được duyệt trên Larkbase (File 4.1 & 4.1.1, lọc B2C phụ trách = 1) và đồng bộ về danh sách Kế hoạch tháng."
+        size="xl"
+        footer={
+          <div className="flex flex-wrap items-center justify-between gap-2 w-full">
+            <div className="text-2xs text-ink-3">
+              Bảng dữ liệu: <code className="px-1.5 py-0.5 rounded bg-sunken text-ink font-mono">LarkbaseBookingPlanRecord</code> → Đồng bộ sang <code className="px-1.5 py-0.5 rounded bg-sunken text-ink font-mono">MonthlyPlan</code> &amp; <code className="px-1.5 py-0.5 rounded bg-sunken text-ink font-mono">MonthlyPlanVersionSnapshot</code>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" onClick={() => setIsLarkbaseModalOpen(false)}>
+                Đóng
+              </Button>
+              <Button
+                variant="primary"
+                icon={RefreshCw}
+                disabled={isPullingLarkbase}
+                onClick={() => void handlePullApprovedFromLarkbase()}
+              >
+                {isPullingLarkbase ? 'Đang kéo kế hoạch từ Larkbase...' : 'Kéo kế hoạch đã duyệt về hệ thống'}
+              </Button>
+            </div>
+          </div>
+        }
+      >
+        <div className="space-y-4">
+          {/* Khối 1: Cấu hình kết nối API Bitable & Webhook Larkbase Automation */}
+          <div className="rounded-lg border border-line bg-sunken/50 p-3.5 space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <Database className="w-4 h-4 text-indigo-600" />
+                <span className="text-xs font-semibold text-ink">
+                  Cấu hình kết nối Larkbase Bitable API &amp; Webhook tự động
+                </span>
+                <span
+                  className={cx(
+                    'inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-medium',
+                    hasLiveLarkCredentials
+                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                      : 'bg-amber-50 text-amber-800 border border-amber-200'
+                  )}
+                >
+                  {hasLiveLarkCredentials
+                    ? 'Đã cấu hình LARK_APP_ID / SECRET'
+                    : 'Đang dùng bộ dữ liệu chuẩn File 4.1.1 (Chờ cấu hình .env)'}
+                </span>
+              </div>
+              <span className="text-2xs text-ink-3">
+                Điều kiện lọc: <strong>B2C phụ trách = 1</strong> &amp; <strong>Trạng thái = Đã duyệt</strong>
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <Field label="Larkbase App Token (LARKBASE_PLAN_APP_TOKEN)">
+                <Input
+                  value={larkbaseAppToken}
+                  onChange={e => setLarkbaseAppToken(e.target.value)}
+                  placeholder="VD: bascnUpbaseB2CPlan41"
+                />
+              </Field>
+              <Field label="Table ID Kế hoạch 4.1.1 (LARKBASE_PLAN_TABLE_ID)">
+                <Input
+                  value={larkbaseTableId}
+                  onChange={e => setLarkbaseTableId(e.target.value)}
+                  placeholder="VD: tblBookingInputPlan411"
+                />
+              </Field>
+              <Field label="Webhook nhận tự động khi duyệt trên Larkbase">
+                <Input
+                  readOnly
+                  value="POST /api/integrations/larkbase/booking-plans"
+                />
+              </Field>
+            </div>
+          </div>
+
+          {/* Khối 2: Bảng hứng kế hoạch B2C Booking đã duyệt */}
+          <div className="rounded-lg border border-line overflow-hidden bg-surface">
+            <div className="px-3.5 py-2.5 border-b border-line bg-sunken/40 flex flex-wrap items-center justify-between gap-2">
+              <div className="text-xs font-semibold text-ink">
+                Danh sách bản ghi trong Bảng hứng Kế hoạch B2C Booking ({larkbaseRecords.length} bản ghi đã duyệt)
+              </div>
+              <div className="text-2xs text-ink-3">
+                Tách bạch Hạn mức Gross / Net và 4 đầu việc: KOC trả phí (KL1–KL7) • FOC 0đ • Kênh Brand • Đa kênh &amp; Live
+              </div>
+            </div>
+
+            {isLoadingLarkbase ? (
+              <div className="p-8 text-center text-xs text-ink-3">
+                Đang tải dữ liệu bảng hứng kế hoạch từ Larkbase...
+              </div>
+            ) : larkbaseRecords.length === 0 ? (
+              <div className="p-8 text-center text-xs text-ink-3">
+                Chưa có bản ghi kế hoạch nào cho kỳ {selectedMonth}. Nhấn <strong>&ldquo;Kéo kế hoạch đã duyệt về hệ thống&rdquo;</strong> để đồng bộ từ Larkbase.
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr className="border-b border-line bg-sunken/60 text-2xs font-semibold text-ink-3 uppercase">
+                      <th className="py-2.5 px-3">Record Larkbase &amp; Phiên bản</th>
+                      <th className="py-2.5 px-3">Gian hàng &amp; Brand</th>
+                      <th className="py-2.5 px-3">Nhân sự B2C &amp; Cấp duyệt</th>
+                      <th className="py-2.5 px-3 text-right">Hạn mức Net / Gross</th>
+                      <th className="py-2.5 px-3">4 Đầu việc B2C (File 4.1.1)</th>
+                      <th className="py-2.5 px-3">Thông tin duyệt Lark</th>
+                      <th className="py-2.5 px-3 text-right">Thao tác</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-line">
+                    {larkbaseRecords.map((rec, idx) => {
+                      const convertedPlan = larkbaseConvertedPlans[idx];
+                      const tierSummary = Object.entries(rec.kocTierBreakdown || {})
+                        .filter(([, count]) => count > 0)
+                        .map(([k, count]) => `${k.toUpperCase()}: ${count}`)
+                        .join(' • ');
+
+                      return (
+                        <tr key={rec.larkRecordId} className="hover:bg-sunken/30 transition-colors">
+                          <td className="py-2.5 px-3 align-top">
+                            <div className="font-mono text-2xs text-indigo-700 font-semibold">
+                              {rec.larkRecordId}
+                            </div>
+                            <div className="mt-1 flex items-center gap-1.5">
+                              <span className="px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-800 border border-indigo-200 text-2xs font-semibold">
+                                {rec.versionCode}
+                              </span>
+                              <span className="text-2xs text-ink-2 font-medium">{rec.month}</span>
+                            </div>
+                            <div className="mt-0.5 text-2xs text-ink-3 line-clamp-1" title={rec.versionName}>
+                              {rec.versionName}
+                            </div>
+                          </td>
+
+                          <td className="py-2.5 px-3 align-top">
+                            <div className="font-semibold text-ink">{rec.storeName}</div>
+                            <div className="text-2xs text-ink-3 mt-0.5">
+                              Brand: <span className="text-ink-2 font-medium">{rec.brandName}</span> • {rec.platform}
+                            </div>
+                            <span className="mt-1 inline-flex items-center px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 text-[10px] font-medium">
+                              B2C phụ trách = 1
+                            </span>
+                          </td>
+
+                          <td className="py-2.5 px-3 align-top">
+                            <div className="text-xs font-medium text-ink">
+                              PIC: {rec.b2cPic}
+                            </div>
+                            <div className="text-2xs text-ink-3 mt-0.5">
+                              {rec.bookingLeader ? (
+                                <span>
+                                  Leader sơ duyệt: <strong className="text-ink-2">{rec.bookingLeader}</strong>
+                                </span>
+                              ) : (
+                                <span className="text-amber-700 font-medium">
+                                  Không qua Leader (Trình trực tiếp Lead B2C)
+                                </span>
+                              )}
+                            </div>
+                            {rec.focPic && (
+                              <div className="text-2xs text-ink-3 mt-0.5">
+                                PIC FOC 0đ: {rec.focPic}
+                              </div>
+                            )}
+                          </td>
+
+                          <td className="py-2.5 px-3 align-top text-right tabular-nums">
+                            <div className="font-semibold text-emerald-700">
+                              Net: {formatVndShort(rec.budgetNet)}
+                            </div>
+                            <div className="text-2xs text-ink-3 mt-0.5">
+                              Gross: {formatVndShort(rec.budgetGross)}
+                            </div>
+                            <div className="text-2xs text-ink-2 mt-0.5">
+                              GMV: {formatVndShort(rec.targetGmv)}
+                            </div>
+                          </td>
+
+                          <td className="py-2.5 px-3 align-top">
+                            <div className="space-y-1 text-2xs">
+                              <div>
+                                <span className="font-semibold text-ink">1. KOC trả phí:</span>{' '}
+                                <span className="text-indigo-700 font-semibold">{rec.affiliatePaidVideos} video</span>{' '}
+                                ({formatVndShort(rec.affiliatePaidBudgetNet)})
+                                {tierSummary && (
+                                  <div className="text-[10px] text-ink-3 font-mono mt-0.5">{tierSummary}</div>
+                                )}
+                              </div>
+                              <div>
+                                <span className="font-semibold text-ink">2. Suất FOC 0đ:</span>{' '}
+                                <span className="text-emerald-700 font-semibold">{rec.focFreeVideos} video</span> (0đ)
+                              </div>
+                              <div>
+                                <span className="font-semibold text-ink">3. Kênh Brand:</span>{' '}
+                                <span className="font-medium text-ink-2">{rec.selfChannelVideos} video</span>{' '}
+                                ({formatVndShort(rec.selfChannelBudgetNet)})
+                              </div>
+                              <div>
+                                <span className="font-semibold text-ink">4. Đa kênh &amp; Live:</span>{' '}
+                                <span className="font-medium text-ink-2">
+                                  {rec.multiPlatformVideos} video • {rec.liveSessions} phiên live
+                                </span>
+                              </div>
+                            </div>
+                          </td>
+
+                          <td className="py-2.5 px-3 align-top">
+                            <div className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 text-2xs font-medium">
+                              <CheckCircle2 className="w-3 h-3" />
+                              Đã duyệt
+                            </div>
+                            <div className="text-2xs text-ink-2 font-medium mt-1">
+                              {rec.approvedBy}
+                            </div>
+                            <div className="text-[10px] text-ink-3">
+                              {new Date(rec.approvedAt).toLocaleString('vi-VN')}
+                            </div>
+                          </td>
+
+                          <td className="py-2.5 px-3 align-top text-right">
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => {
+                                if (convertedPlan) {
+                                  if (onImportLarkbasePlans) {
+                                    onImportLarkbasePlans([convertedPlan]);
+                                  }
+                                  setIsLarkbaseModalOpen(false);
+                                  onSelectPlan(convertedPlan);
+                                  notify(`Đã nạp kế hoạch "${convertedPlan.storeName}" (${rec.versionCode}) từ bảng hứng Larkbase.`);
+                                }
+                              }}
+                            >
+                              Nạp &amp; Mở phân rã
+                            </Button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };

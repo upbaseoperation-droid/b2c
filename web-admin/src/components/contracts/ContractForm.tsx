@@ -6,17 +6,19 @@
  */
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, Download } from 'lucide-react';
+import { ArrowLeft, Columns2, Download } from 'lucide-react';
 import type { BookingDealItem, KocItem } from '../../lib/types';
 import type { ContractField, ContractRecord, LegalTemplate } from '../../lib/contracts/types';
 import { Button, Field, Input, Panel, Segmented, Select, Textarea } from '../ui';
 import { contractApi, type ContractBootstrap } from './api';
+import { ContractDocumentViewer } from './ContractDocumentViewer';
 import { GROUP_ORDER, formatMoneyInput, isAcceptance, partnerName, prefill, templateFor, uniqueFields } from './contractUi';
 
 export interface ContractFormInit {
   dealId?: string;
   kind?: 'CONTRACT' | 'ACCEPTANCE';
   parentId?: string;
+  templateId?: string;
 }
 
 export interface ContractFormPayload {
@@ -50,8 +52,12 @@ export function ContractForm({
   const editing = !!record;
   const initialDeal = deals.find(d => d.id === (record?.dealId || init?.dealId));
   const [dealId, setDealId] = useState(initialDeal?.id || '');
-  const [kind, setKind] = useState<'CONTRACT' | 'ACCEPTANCE'>(record ? (isAcceptance(record.templateId) ? 'ACCEPTANCE' : 'CONTRACT') : init?.kind || 'CONTRACT');
-  const [templateId, setTemplateId] = useState(record?.templateId || (initialDeal ? templateFor(findKoc(kocs, initialDeal), init?.kind || 'CONTRACT') : ''));
+  const [kind, setKind] = useState<'CONTRACT' | 'ACCEPTANCE'>(
+    record ? (isAcceptance(record.templateId) ? 'ACCEPTANCE' : 'CONTRACT') : init?.templateId ? (isAcceptance(init.templateId) ? 'ACCEPTANCE' : 'CONTRACT') : init?.kind || 'CONTRACT',
+  );
+  const [templateId, setTemplateId] = useState(
+    record?.templateId || init?.templateId || (initialDeal ? templateFor(findKoc(kocs, initialDeal), init?.kind || 'CONTRACT') : ''),
+  );
   const [title, setTitle] = useState(
     record?.title || (initialDeal ? [init?.kind === 'ACCEPTANCE' ? 'Nghiệm thu video' : 'Hợp đồng video', initialDeal.kocStageName, initialDeal.brandName].filter(Boolean).join(' · ') : ''),
   );
@@ -62,7 +68,8 @@ export function ContractForm({
   const [prefilled, setPrefilled] = useState<Set<string>>(new Set());
   const [template, setTemplate] = useState<LegalTemplate | null>(null);
   const [loadError, setLoadError] = useState('');
-  const [showSource, setShowSource] = useState(false);
+  const [showSplitPreview, setShowSplitPreview] = useState(true);
+  const [activeFieldKey, setActiveFieldKey] = useState<string | null>(null);
 
   const deal = deals.find(d => d.id === dealId);
   const koc = findKoc(kocs, deal);
@@ -120,6 +127,15 @@ export function ContractForm({
     const v = f.kind === 'money' ? formatMoneyInput(raw) : raw;
     setValues(prev => ({ ...prev, [f.key]: v }));
     if (prefilled.has(f.key)) setPrefilled(prev => { const n = new Set(prev); n.delete(f.key); return n; });
+  };
+
+  const focusFieldInput = (fieldKey: string) => {
+    setActiveFieldKey(fieldKey);
+    const input = document.getElementById(`ct-f-${fieldKey}`);
+    if (input) {
+      input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      input.focus();
+    }
   };
 
   const templates = data.templates.filter(t => t.kind === kind);
@@ -201,49 +217,73 @@ export function ContractForm({
               Đã điền <span className="font-semibold text-ink tabular-nums">{requiredDone}/{required.length}</span> ô bắt buộc. Lưu nháp được khi chưa điền hết; đủ ô bắt buộc mới gửi duyệt được.
             </p>
             <div className="flex items-center gap-2">
-              <Button size="sm" variant="ghost" onClick={() => setShowSource(v => !v)}>{showSource ? 'Ẩn toàn văn mẫu' : 'Xem toàn văn mẫu'}</Button>
+              <Button size="sm" variant="secondary" icon={Columns2} onClick={() => setShowSplitPreview(v => !v)}>
+                {showSplitPreview ? 'Ẩn khung xem hợp đồng' : 'Xem hợp đồng song song'}
+              </Button>
               <a href={`/api/contracts/templates/${template.id}?download=1`} className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md text-[13px] text-ink-2 hover:bg-sunken">
                 <Download className="w-4 h-4 text-ink-3" strokeWidth={1.75} />Tải mẫu gốc
               </a>
             </div>
           </div>
 
-          {showSource && (
-            <Panel title={template.name} description="Toàn văn mẫu pháp chế. Điều khoản giữ nguyên, chỉ điền vào chỗ trống.">
-              <div className="max-h-[420px] overflow-auto grid gap-2 text-[13px] leading-relaxed text-ink-2">
-                {template.paragraphs.map((p, i) => p && <p key={i}>{p}</p>)}
-              </div>
-            </Panel>
-          )}
+          <div className={`grid gap-6 items-start ${showSplitPreview ? 'xl:grid-cols-[minmax(0,1fr)_minmax(480px,54%)]' : ''}`}>
+            <div className="grid gap-6 min-w-0">
+              {groups.map(g => (
+                <Panel key={g.key} title={g.title}>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {g.fields.map(f => {
+                      const id = `ct-f-${f.key}`;
+                      const hint = prefilled.has(f.key) ? 'Lấy từ hồ sơ KOC / booking. Kiểm tra lại.' : f.title !== f.context && f.context.length < 160 ? f.context : undefined;
+                      const label = `${f.title || f.label}${f.required ? ' *' : ''}`;
+                      return (
+                        <Field key={f.key} label={label} htmlFor={id} hint={hint} className={f.kind === 'long' ? 'md:col-span-2' : undefined}>
+                          {f.kind === 'long' ? (
+                            <Textarea
+                              id={id}
+                              rows={2}
+                              maxLength={4000}
+                              value={values[f.key] || ''}
+                              onFocus={() => setActiveFieldKey(f.key)}
+                              onChange={e => setValue(f, e.target.value)}
+                            />
+                          ) : (
+                            <Input
+                              id={id}
+                              maxLength={4000}
+                              inputMode={f.kind === 'money' || f.kind === 'number' ? 'numeric' : undefined}
+                              placeholder={f.kind === 'date' ? 'dd/mm/yyyy' : f.kind === 'money' ? 'Số tiền (đ)' : undefined}
+                              className={f.kind === 'money' || f.kind === 'number' ? 'tabular-nums' : undefined}
+                              value={values[f.key] || ''}
+                              onFocus={() => setActiveFieldKey(f.key)}
+                              onChange={e => setValue(f, e.target.value)}
+                            />
+                          )}
+                        </Field>
+                      );
+                    })}
+                  </div>
+                </Panel>
+              ))}
+            </div>
 
-          {groups.map(g => (
-            <Panel key={g.key} title={g.title}>
-              <div className="grid gap-4 md:grid-cols-2">
-                {g.fields.map(f => {
-                  const id = `ct-f-${f.key}`;
-                  const hint = prefilled.has(f.key) ? 'Lấy từ hồ sơ KOC / booking. Kiểm tra lại.' : f.title !== f.context && f.context.length < 160 ? f.context : undefined;
-                  const label = `${f.title || f.label}${f.required ? ' *' : ''}`;
-                  return (
-                    <Field key={f.key} label={label} htmlFor={id} hint={hint} className={f.kind === 'long' ? 'md:col-span-2' : undefined}>
-                      {f.kind === 'long' ? (
-                        <Textarea id={id} rows={2} maxLength={4000} value={values[f.key] || ''} onChange={e => setValue(f, e.target.value)} />
-                      ) : (
-                        <Input
-                          id={id}
-                          maxLength={4000}
-                          inputMode={f.kind === 'money' || f.kind === 'number' ? 'numeric' : undefined}
-                          placeholder={f.kind === 'date' ? 'dd/mm/yyyy' : f.kind === 'money' ? 'Số tiền (đ)' : undefined}
-                          className={f.kind === 'money' || f.kind === 'number' ? 'tabular-nums' : undefined}
-                          value={values[f.key] || ''}
-                          onChange={e => setValue(f, e.target.value)}
-                        />
-                      )}
-                    </Field>
-                  );
-                })}
+            {showSplitPreview && (
+              <div className="xl:sticky xl:top-4 min-w-0">
+                <ContractDocumentViewer
+                  title={title || template.name}
+                  templateName={`${template.name} · Xem trực tiếp khi nhập`}
+                  blocks={template.blocks || []}
+                  paragraphs={template.paragraphs}
+                  fields={template.fields}
+                  values={values}
+                  compareValues={record?.values}
+                  activeFieldKey={activeFieldKey}
+                  onSelectField={focusFieldInput}
+                  maxHeight="calc(100vh - 150px)"
+                  compactToolbar
+                />
               </div>
-            </Panel>
-          ))}
+            )}
+          </div>
 
           <div className="flex justify-end gap-2">
             <Button variant="ghost" onClick={onCancel}>Hủy</Button>

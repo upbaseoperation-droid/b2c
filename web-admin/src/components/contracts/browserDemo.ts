@@ -1,6 +1,6 @@
 import JSZip from 'jszip';
 import { assertCanSign, canRead, createContract, decideContract, editContract, event, requireCondition, submitContract } from '../../lib/contracts/domain';
-import type { ContractActor, ContractField, ContractRecord, LegalTemplate, ReviewStep } from '../../lib/contracts/types';
+import type { ContractActor, ContractField, ContractRecord, DocBlock, LegalTemplate, ReviewStep } from '../../lib/contracts/types';
 import type { ContractBootstrap } from './api';
 
 // Kho thử riêng trên trình duyệt; không chứa hoặc gọi dữ liệu hợp đồng trên máy chủ.
@@ -18,10 +18,77 @@ const fields: ContractField[] = [
   { key: 'scope', label: 'Nội dung dịch vụ', title: 'Nội dung dịch vụ', group: 'SCOPE', source: 'product', required: true, kind: 'long', context: 'Mô tả công việc giả lập', part: '', paragraph: 3 },
   { key: 'money', label: 'Giá trị', title: 'Giá trị', group: 'MONEY', source: 'netTotal', required: true, kind: 'money', context: 'Số tiền giả lập', part: '', paragraph: 4 },
 ];
+const buildDemoBlocks = (kind: string, subject: string): DocBlock[] => [
+  { kind: 'p', part: 'word/header1.xml', paragraph: 90, text: `BM.${kind}.VID.${subject}.GIẢ-LẬP`, align: 'right' },
+  { kind: 'p', part: '', paragraph: 10, text: 'CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM', align: 'center', bold: true },
+  { kind: 'p', part: '', paragraph: 11, text: 'Độc lập - Tự do - Hạnh phúc', align: 'center', bold: true },
+  { kind: 'p', part: '', paragraph: 12, text: kind === 'HD' ? `HỢP ĐỒNG DỊCH VỤ BOOKING VIDEO (${subject.toUpperCase()})` : `BIÊN BẢN NGHIỆM THU DỊCH VỤ VIDEO (${subject.toUpperCase()})`, align: 'center', bold: true },
+  { kind: 'p', part: '', paragraph: 0, text: 'Số: [Số hồ sơ]/HĐDV/UPBASE', align: 'center', bold: true, start: 4, end: 15 } as unknown as DocBlock,
+  { kind: 'p', part: '', paragraph: 2, text: '', align: 'left', italic: true },
+  {
+    kind: 'table',
+    part: '',
+    variant: 'party',
+    rows: [
+      [{ colSpan: 3, blocks: [{ kind: 'p', part: '', paragraph: 20, text: 'BÊN SỬ DỤNG DỊCH VỤ (BÊN A)', bold: true }] }],
+      [
+        { blocks: [{ kind: 'p', part: '', paragraph: 21, text: 'BÊN A', bold: true }] },
+        { blocks: [{ kind: 'p', part: '', paragraph: 22, text: ':' }] },
+        { blocks: [{ kind: 'p', part: '', paragraph: 23, text: 'CÔNG TY CỔ PHẦN CÔNG NGHỆ UPBASE', bold: true }] },
+      ],
+      [
+        { blocks: [{ kind: 'p', part: '', paragraph: 24, text: 'Mã số thuế' }] },
+        { blocks: [{ kind: 'p', part: '', paragraph: 25, text: ':' }] },
+        { blocks: [{ kind: 'p', part: '', paragraph: 26, text: '0109361325' }] },
+      ],
+      [
+        { blocks: [{ kind: 'p', part: '', paragraph: 27, text: 'Người đại diện' }] },
+        { blocks: [{ kind: 'p', part: '', paragraph: 28, text: ':' }] },
+        { blocks: [{ kind: 'p', part: '', paragraph: 29, text: 'Ông Đỗ Văn Giang — Tổng Giám Đốc' }] },
+      ],
+      [{ colSpan: 3, blocks: [{ kind: 'p', part: '', paragraph: 30, text: 'BÊN CUNG ỨNG DỊCH VỤ (BÊN B)', bold: true }] }],
+      [
+        { blocks: [{ kind: 'p', part: '', paragraph: 31, text: 'BÊN B', bold: true }] },
+        { blocks: [{ kind: 'p', part: '', paragraph: 32, text: ':' }] },
+        { blocks: [{ kind: 'p', part: '', paragraph: 1, text: '' }] },
+      ],
+    ],
+  },
+  { kind: 'p', part: '', paragraph: 40, text: 'ĐIỀU 1: NỘI DUNG DỊCH VỤ VÀ GIÁ TRỊ HỢP ĐỒNG', bold: true },
+  {
+    kind: 'table',
+    part: '',
+    variant: 'grid',
+    rows: [
+      [
+        { blocks: [{ kind: 'p', part: '', paragraph: 41, text: 'STT', bold: true, align: 'center' }] },
+        { blocks: [{ kind: 'p', part: '', paragraph: 42, text: 'Hạng mục công việc', bold: true }] },
+        { blocks: [{ kind: 'p', part: '', paragraph: 43, text: 'Giá trị (VNĐ)', bold: true, align: 'right' }] },
+      ],
+      [
+        { blocks: [{ kind: 'p', part: '', paragraph: 44, text: '1', align: 'center' }] },
+        { blocks: [{ kind: 'p', part: '', paragraph: 3, text: '' }] },
+        { blocks: [{ kind: 'p', part: '', paragraph: 4, text: '', align: 'right' }] },
+      ],
+    ],
+  },
+  {
+    kind: 'table',
+    part: '',
+    variant: 'signature',
+    rows: [
+      [
+        { blocks: [{ kind: 'p', part: '', paragraph: 50, text: 'ĐẠI DIỆN BÊN A', bold: true, align: 'center' }, { kind: 'p', part: '', paragraph: 51, text: '(Ký, ghi rõ họ tên)', italic: true, align: 'center' }] },
+        { blocks: [{ kind: 'p', part: '', paragraph: 52, text: 'ĐẠI DIỆN BÊN B', bold: true, align: 'center' }, { kind: 'p', part: '', paragraph: 53, text: '(Ký, ghi rõ họ tên)', italic: true, align: 'center' }] },
+      ],
+    ],
+  },
+];
 const templates: LegalTemplate[] = ['IND', 'HKD', 'COM', 'CTV'].flatMap((subject, i) => ['HD', 'BBNT'].map(kind => ({
   id: `${subject}-${kind}`, name: `${kind === 'HD' ? 'Hợp đồng' : 'Nghiệm thu'} · ${['Cá nhân', 'Hộ kinh doanh', 'Công ty', 'CTV tháng'][i]} (mẫu thử)`,
   filename: `mau-thu-${subject}-${kind}.docx`, subject: ['Cá nhân', 'Hộ kinh doanh', 'Công ty', 'CTV tháng'][i], kind: kind === 'HD' ? 'CONTRACT' as const : 'ACCEPTANCE' as const,
   version: 'Giả lập', hash: `demo-${subject}-${kind}`, fields, paragraphs: ['MẪU GIẢ LẬP — KHÔNG DÙNG ĐỂ KÝ', 'Mẫu rút gọn dùng thử quy trình. Bộ mẫu pháp chế gốc sẽ dùng khi kết nối môi trường thật.'],
+  blocks: buildDemoBlocks(kind, ['Cá nhân', 'Hộ kinh doanh', 'Công ty', 'CTV tháng'][i]),
 })));
 interface DemoState { actorId: string; records: ContractRecord[] }
 let memory: DemoState = { actorId: actors[0].id, records: [] };
@@ -49,7 +116,9 @@ export function browserDemoRequest<T>(url: string, body?: Record<string, unknown
     const record = state.records.find(r => r.id === path.pathname.split('/')[3]); requireCondition(record && canRead(record, actor), 'Không có quyền đọc hồ sơ thử.', 403);
     requireCondition(path.searchParams.get('signed') !== '1', 'Giả lập không tạo tài liệu có chữ ký.');
     const version = Number(path.searchParams.get('version') || record.version); const snapshot = version === record.version ? record : record.versions.find(v => v.version === version);
-    requireCondition(snapshot, 'Không tìm thấy phiên bản.'); return { paragraphs: paragraphs({ ...record, values: snapshot.values }), version } as T;
+    requireCondition(snapshot, 'Không tìm thấy phiên bản.');
+    const tpl = templates.find(t => t.id === record.templateId);
+    return { paragraphs: paragraphs({ ...record, values: snapshot.values }), blocks: tpl?.blocks, fields: tpl?.fields || fields, values: snapshot.values, version } as T;
   }
   requireCondition(body && path.pathname === '/api/contracts', 'Thao tác thử không được hỗ trợ.');
   const template = templates.find(t => t.id === body.templateId);

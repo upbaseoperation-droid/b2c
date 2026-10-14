@@ -5,15 +5,24 @@
  * Cột phụ: thông tin hồ sơ, phiên bản, lịch sử. Nút chính đổi theo việc người xem cần làm tiếp.
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ArrowLeft, Download, FileCheck2, FilePlus2, Pencil, RefreshCw, RotateCcw, ScanSearch } from 'lucide-react';
-import type { ContractRecord, ContractRole } from '../../lib/contracts/types';
+import type { ContractField, ContractRecord, ContractRole, DocBlock } from '../../lib/contracts/types';
 import { ActionMenu, Button, ConfirmDialog, EmptyState, Field, Input, Modal, Person, SectionHeader, Select, Status } from '../ui';
 import type { ActionMenuItem } from '../ui';
 import { contractApi, type ContractBootstrap } from './api';
+import { ContractDocumentViewer } from './ContractDocumentViewer';
 import { HISTORY_LABEL, ROLE_LABEL, contractStatus, dateTime, isAcceptance, signerStatus, stepStatus } from './contractUi';
 
 type Action = (payload: Record<string, unknown>, done?: string) => Promise<ContractRecord | undefined>;
+
+interface PreviewResponse {
+  paragraphs: string[];
+  blocks?: DocBlock[];
+  fields?: ContractField[];
+  values?: Record<string, string>;
+  version: number;
+}
 
 export function ContractDetail({
   record,
@@ -52,13 +61,36 @@ export function ContractDetail({
   const parent = record.parentId ? data.records.find(r => r.id === record.parentId) : undefined;
 
   const [dialog, setDialog] = useState<null | 'submit' | 'approve' | 'changes' | 'reject' | 'withdraw' | 'link'>(null);
-  const [preview, setPreview] = useState<string[] | null>(null);
+  const [selectedVersion, setSelectedVersion] = useState<number>(record.version);
+  const [comparePrev, setComparePrev] = useState<boolean>(record.versions.length > 0);
+  const [previewData, setPreviewData] = useState<PreviewResponse | null>(null);
+  const [previewLoading, setPreviewLoading] = useState<boolean>(true);
   const [previewError, setPreviewError] = useState('');
+  const [activeFieldKey, setActiveFieldKey] = useState<string | null>(null);
 
-  const loadPreview = () =>
-    contractApi<{ paragraphs: string[] }>(`/api/contracts/${record.id}/document?preview=1`)
-      .then(r => { setPreview(r.paragraphs); setPreviewError(''); })
-      .catch(e => setPreviewError((e as Error).message));
+  useEffect(() => {
+    setSelectedVersion(record.version);
+  }, [record.id, record.version]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setPreviewLoading(true);
+    contractApi<PreviewResponse>(`/api/contracts/${record.id}/document?preview=1&version=${selectedVersion}`)
+      .then(r => {
+        if (cancelled) return;
+        setPreviewData(r);
+        setPreviewError('');
+      })
+      .catch(e => {
+        if (!cancelled) setPreviewError((e as Error).message);
+      })
+      .finally(() => {
+        if (!cancelled) setPreviewLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [record.id, record.revision, selectedVersion]);
 
   // Nút chính: việc tiếp theo của người đang xem.
   const primary = canSubmit ? (
@@ -80,6 +112,8 @@ export function ContractDetail({
   ];
 
   const current = record.checks.filter(c => c.version === record.version).at(-1);
+  const previousSnapshot = record.versions.find(v => v.version === selectedVersion - 1);
+  const shownValues = previewData?.values || (selectedVersion === record.version ? record.values : record.versions.find(v => v.version === selectedVersion)?.values || record.values);
 
   return (
     <div className="space-y-6">
@@ -184,8 +218,15 @@ export function ContractDetail({
               ) : (
                 <ul className="grid gap-3">
                   {current.findings.map((f, i) => (
-                    <li key={i} className={`pl-3 border-l-2 ${f.severity === 'ERROR' ? 'border-critical' : f.severity === 'WARNING' ? 'border-warning' : 'border-line-strong'}`}>
-                      <p className="text-[13px] text-ink">{f.message}</p>
+                    <li
+                      key={i}
+                      onClick={f.fieldKey ? () => setActiveFieldKey(f.fieldKey!) : undefined}
+                      className={`pl-3 border-l-2 ${f.severity === 'ERROR' ? 'border-critical' : f.severity === 'WARNING' ? 'border-warning' : 'border-line-strong'} ${f.fieldKey ? 'cursor-pointer hover:bg-sunken/60 rounded-r py-0.5' : ''}`}
+                    >
+                      <p className="text-[13px] text-ink">
+                        {f.message}
+                        {f.fieldKey && <span className="ml-2 text-2xs text-accent hover:underline">Xem trên hợp đồng ↓</span>}
+                      </p>
                       {f.evidence && <p className="text-2xs text-ink-3 mt-0.5 line-clamp-2">{f.evidence}</p>}
                     </li>
                   ))}
@@ -195,18 +236,60 @@ export function ContractDetail({
             </div>
           </section>
 
-          {/* Nội dung */}
+          {/* Xem trực tiếp văn bản hợp đồng trên màn hình */}
           <section className="grid gap-3">
             <SectionHeader
-              title="Nội dung đã điền"
-              description="Bố cục chính thức nằm trong file Word."
-              actions={!preview && <Button size="sm" onClick={loadPreview}>Xem nội dung</Button>}
+              title="Văn bản hợp đồng trực tiếp"
+              description="Xem và kiểm tra trực tiếp trên giao diện trang A4. Các vị trí thông tin đã điền và mục còn trống được đánh dấu màu để rà soát nhanh."
             />
             {previewError && <p role="alert" className="text-[13px] text-critical">{previewError}</p>}
-            {preview && (
-              <div className="bg-surface border border-line rounded-xl px-5 py-4 max-h-[560px] overflow-auto grid gap-2 text-[13px] leading-relaxed text-ink-2">
-                {preview.map((p, i) => p && <p key={i}>{p}</p>)}
+            {previewLoading && !previewData ? (
+              <div className="bg-surface border border-line rounded-xl p-8 text-center text-[13px] text-ink-3">
+                Đang dựng văn bản hợp đồng…
               </div>
+            ) : (
+              <ContractDocumentViewer
+                title={record.title}
+                templateName={`${template?.name || record.templateId} · Phiên bản ${selectedVersion}`}
+                blocks={previewData?.blocks || template?.blocks || []}
+                paragraphs={previewData?.paragraphs || []}
+                fields={previewData?.fields || template?.fields || []}
+                values={shownValues}
+                compareValues={comparePrev && previousSnapshot ? previousSnapshot.values : undefined}
+                activeFieldKey={activeFieldKey}
+                onSelectField={key => setActiveFieldKey(key)}
+                downloadHref={`/api/contracts/${record.id}/document?version=${selectedVersion}`}
+                signingPeople={selectedVersion === signing?.version ? signing.people : undefined}
+                versionSelector={
+                  record.versions.length > 0 ? (
+                    <div className="inline-flex items-center gap-1.5">
+                      <select
+                        aria-label="Chọn phiên bản hợp đồng"
+                        value={selectedVersion}
+                        onChange={e => setSelectedVersion(Number(e.target.value))}
+                        className="h-7 rounded-md border border-line bg-surface px-2 text-2xs font-medium text-ink"
+                      >
+                        <option value={record.version}>Phiên bản {record.version} (hiện tại)</option>
+                        {[...record.versions].reverse().map(v => (
+                          <option key={v.version} value={v.version}>
+                            Phiên bản {v.version}
+                          </option>
+                        ))}
+                      </select>
+                      {previousSnapshot && (
+                        <label className="inline-flex items-center gap-1 text-2xs text-ink-2 cursor-pointer px-1.5">
+                          <input
+                            type="checkbox"
+                            checked={comparePrev}
+                            onChange={e => setComparePrev(e.target.checked)}
+                          />
+                          Đối chiếu v{previousSnapshot.version}
+                        </label>
+                      )}
+                    </div>
+                  ) : undefined
+                }
+              />
             )}
           </section>
         </div>
@@ -230,14 +313,26 @@ export function ContractDetail({
           </AsideSection>
           <AsideSection title="Phiên bản">
             <ul className="grid gap-1.5 text-[13px]">
-              <li className="flex items-center justify-between">
-                <span className="text-ink">Phiên bản {record.version} <span className="text-ink-3">· hiện tại</span></span>
-                <a className="text-accent hover:underline" href={`/api/contracts/${record.id}/document`}>Tải</a>
+              <li className="flex items-center justify-between gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSelectedVersion(record.version)}
+                  className={`text-left hover:underline ${selectedVersion === record.version ? 'font-semibold text-accent' : 'text-ink'}`}
+                >
+                  Phiên bản {record.version} <span className="text-ink-3 font-normal">· hiện tại</span>
+                </button>
+                <a className="text-accent hover:underline shrink-0" href={`/api/contracts/${record.id}/document`}>Tải</a>
               </li>
               {[...record.versions].reverse().map(v => (
-                <li key={v.version} className="flex items-center justify-between">
-                  <span className="text-ink-2">Phiên bản {v.version} <span className="text-ink-3">· {dateTime(v.at)}</span></span>
-                  <a className="text-accent hover:underline" href={`/api/contracts/${record.id}/document?version=${v.version}`}>Tải</a>
+                <li key={v.version} className="flex items-center justify-between gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedVersion(v.version)}
+                    className={`text-left hover:underline ${selectedVersion === v.version ? 'font-semibold text-accent' : 'text-ink-2'}`}
+                  >
+                    Phiên bản {v.version} <span className="text-ink-3 font-normal">· {dateTime(v.at)}</span>
+                  </button>
+                  <a className="text-accent hover:underline shrink-0" href={`/api/contracts/${record.id}/document?version=${v.version}`}>Tải</a>
                 </li>
               ))}
             </ul>

@@ -66,3 +66,18 @@ test('Ô bảng có nhãn theo dòng · cột, không còn nhãn trùng nhau', a
   const titles = fields.map(f => f.title); assert.equal(new Set(titles).size, titles.length);
   assert.ok(!fields.some(f => /Sau đây gọi tắt/.test(f.label)), 'dòng “Sau đây gọi tắt là Bên B” không phải ô điền');
 });
+test('Dựng cấu trúc trang A4 (blocks) giữ đủ bảng Bên A/B, bảng hạng mục, chữ ký và tọa độ trường', async () => {
+  const { template } = await loadTemplate('IND-HD');
+  assert.ok(template.blocks && template.blocks.length > 20);
+  const coords = new Set<string>();
+  const walk = (blocks: NonNullable<typeof template.blocks>) => {
+    for (const b of blocks) {
+      if (b.kind === 'p') coords.add(`${b.part}:${b.paragraph}`);
+      else for (const row of b.rows) for (const cell of row) walk(cell.blocks);
+    }
+  };
+  walk(template.blocks);
+  for (const f of template.fields) {
+    assert.ok(coords.has(`${f.part}:${f.paragraph}`), `Trường ${f.key} (${f.part}:${f.paragraph}) phải nằm trong cấu trúc trang A4`);
+  }
+});
