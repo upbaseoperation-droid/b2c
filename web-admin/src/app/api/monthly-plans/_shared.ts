@@ -1,13 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { decodeSessionToken, SESSION_COOKIE_NAME } from '@/lib/larkAuth';
+import { requestActor } from '@/lib/server/requestActor';
 import type { UserProfile } from '@/lib/types';
 import { PlanStoreError } from '@/lib/server/monthlyPlanStore';
 
 /** Lấy người dùng nội bộ từ cookie phiên. Tài khoản đối tác (Brand/KOC/CTV) không được truy cập kế hoạch. */
-export function getPlanActor(request: NextRequest): UserProfile | null {
-  const token = request.cookies.get(SESSION_COOKIE_NAME)?.value;
-  if (!token) return null;
-  const user = decodeSessionToken(token);
+export async function getPlanActor(request: NextRequest): Promise<UserProfile | null> {
+  const user = await requestActor(request);
   if (!user || user.partnerType) return null;
   return user;
 }
@@ -19,6 +17,7 @@ export function unauthorized() {
 export function handlePlanError(err: unknown) {
   if (err instanceof PlanStoreError) {
     const status = {
+      FORBIDDEN: 403,
       NOT_FOUND: 404,
       CONFLICT: 409,
       LOCKED: 423,

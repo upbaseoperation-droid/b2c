@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 
 // PUT /api/monthly-plans/:id — lưu bản làm việc (kèm revision để chống ghi đè)
 export async function PUT(request: NextRequest, context: { params: Promise<{ id: string }> }) {
-  const actor = getPlanActor(request);
+  const actor = await getPlanActor(request);
   if (!actor) return unauthorized();
   try {
     const { id } = await context.params;

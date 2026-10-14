@@ -57,7 +57,7 @@ export function isBrandPartnerForBrand(user: UserProfile | null | undefined, bra
 
   for (const c of candidates) {
     const ck = brandKey(c);
-    if (ck && (ck === targetKey || ck.includes(targetKey) || targetKey.includes(ck))) {
+    if (ck && (ck === targetKey)) {
       return true;
     }
   }

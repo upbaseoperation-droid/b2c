@@ -1007,9 +1007,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                   <h3 className="font-semibold text-sm text-ink">
                     Thêm Gian Hàng Mới (Dữ Liệu Gốc)
                   </h3>
-                  <p className="text-2xs text-ink-3">
-                    Khai báo định danh gian hàng theo quy chuẩn Master Data
-                  </p>
+                  
                 </div>
               </div>
               <button
@@ -1128,9 +1126,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                 <h3 className="font-semibold text-sm text-ink">
                   Cập nhật Gian hàng [{editingStore.storeName}]
                 </h3>
-                <p className="text-2xs text-ink-3">
-                  Cấu hình các thông số vận hành sàn, phân cấp quản lý và hạn mức Order
-                </p>
+                
               </div>
               <button
                 type="button"

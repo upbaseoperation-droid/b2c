@@ -1050,3 +1050,9 @@ model TikTokVideoPerformanceSnapshot {
   @@index([salaryGradeKl])
 }
 
+
+model AppSharedRecord {
+  key String @id
+  revision Int @default(0)
+  data Json
+}

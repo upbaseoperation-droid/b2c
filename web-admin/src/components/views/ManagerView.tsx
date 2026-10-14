@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState, useMemo } from 'react';
 import { formatVndShort } from '../../lib/format';
@@ -965,7 +965,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
               <Search className="w-4 h-4 text-ink-3 shrink-0" />
               <input
                 type="text"
-                placeholder="Tìm theo tên nhân sự hoặc nhãn hàng phụ trách..."
+                placeholder="Tìm nhân sự, nhãn hàng..."
                 value={staffSearch}
                 onChange={(e) => setStaffSearch(e.target.value)}
                 className="w-full bg-white border border-line rounded-lg px-3 py-1.5 text-xs text-ink focus:outline-none focus:border-accent/20 shadow-2xs"
@@ -1009,9 +1009,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                   <span>Cấp 2: Ma trận phân bổ chỉ tiêu & giám sát plan 26 chuyên viên</span>
                   <span className="text-2xs font-normal text-ink-3 font-mono">({currentPlan.monthLabel})</span>
                 </h4>
-                <p className="text-2xs text-ink-3 mt-0.5">
-                  Chuyển đổi giữa 3 ma trận: 4 bậc KOC, nhãn hàng, hoặc tuần lên sóng • Bấm &ldquo;Soi Plan&rdquo; để xem và duyệt danh sách KOC chi tiết
-                </p>
+                
               </div>
 
               <div className="flex items-center gap-2 flex-wrap self-start lg:self-auto">
@@ -1504,10 +1502,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                         ● {reconWindow.phaseLabel}
                       </span>
                     </h3>
-                    <p className="text-xs text-ink-3 mt-0.5">
-                      Quy chế đối soát: Khung giờ mở sửa <strong className="text-ink">{reconWindow.windowOpenTime} - {reconWindow.windowCloseTime}</strong>.
-                      Sau mốc giờ quy định, hệ thống tự động khóa sổ vĩnh viễn mọi bản ghi.
-                    </p>
+                    
                   </div>
                 </div>
               </div>
@@ -1638,9 +1633,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                   <BellRing className="w-4 h-4 text-critical" />
                   Nhân sự có vi phạm SLA đang mở cần đốc thúc ({staffSlaReports.filter(s => s.activeViolationsCount > 0).length} nhân sự)
                 </h3>
-                <p className="text-2xs text-ink-3 mt-0.5">
-                  Bấm để gửi cảnh báo Lark trực tiếp, xem hồ sơ vi phạm hoặc lập biên bản nhắc nhở. (Xem bảng điểm đầy đủ tại Dashboard Tiến độ & SLA)
-                </p>
+                
               </div>
               {onNavigateToTab && (
                 <button
@@ -1708,9 +1701,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                   <ShieldAlert className="w-4 h-4 text-critical" />
                   Danh sách vi phạm SLA đang kích hoạt & cần Leo Thang
                 </h3>
-                <p className="text-xs text-ink-3 mt-0.5">
-                  Tự động phát hiện vi phạm dựa trên 8 điểm SLA B2C • Kích hoạt cơ chế báo cáo Leader B2C / Growth / Account
-                </p>
+                
               </div>
 
               {/* Severity & Category Filters */}
@@ -2241,7 +2232,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                 </div>
                 <div>
                   <h3 className="text-sm font-semibold text-ink">Cấu Hình Hạn Mức 4 Tier KOC / KOL — {currentPlan.monthLabel}</h3>
-                  <p className="text-xs text-ink-3">Thiết lập trần video & ngân sách toàn phòng trước khi phân bổ cho nhân viên</p>
+                  
                 </div>
               </div>
               <button 

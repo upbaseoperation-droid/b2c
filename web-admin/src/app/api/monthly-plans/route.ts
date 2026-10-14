@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 
 // GET /api/monthly-plans — danh sách kế hoạch tháng (kèm phiên bản chốt & sổ trao đổi)
 export async function GET(request: NextRequest) {
-  const actor = getPlanActor(request);
+  const actor = await getPlanActor(request);
   if (!actor) return unauthorized();
   try {
     const plans = await listMonthlyPlans(actor);
@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
 
 // POST /api/monthly-plans — tạo kế hoạch mới (tạo mới hoặc nhân bản)
 export async function POST(request: NextRequest) {
-  const actor = getPlanActor(request);
+  const actor = await getPlanActor(request);
   if (!actor) return unauthorized();
   try {
     const body = (await request.json()) as { plan?: InputPlanBreakdownState };

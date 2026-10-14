@@ -175,7 +175,6 @@ export function SectionHeader({ title, description, actions }: { title: string; 
     <div className="flex flex-wrap items-end justify-between gap-3">
       <div className="min-w-0">
         <h2 className="text-base font-semibold text-ink">{title}</h2>
-        {description && <p className="text-[13px] text-ink-3 mt-0.5">{description}</p>}
       </div>
       {actions && <div className="flex items-center gap-2">{actions}</div>}
     </div>

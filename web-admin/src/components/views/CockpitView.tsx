@@ -85,34 +85,17 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 py-3.5 rounded-xl bg-surface border border-line">
-        <div className="flex items-center gap-3">
-          <Avatar name={currentUser.name} src={currentUser.larkAvatarUrl} size={36} />
-          <div>
-            <h2 className="text-sm font-semibold text-ink">
-              Xin chào, {currentUser.name}
-            </h2>
-            <p className="text-xs text-ink-3">
-              {currentUser.roleTitle} · Hôm nay có <span className="font-semibold text-ink">{criticalCount + warningCount}</span> việc cần xử lý
-            </p>
-          </div>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {onNavigateToTaskDelegation && (
-            <Button variant="secondary" size="sm" icon={ClipboardList} onClick={onNavigateToTaskDelegation}>
-              Giao việc &amp; Định mức Task
-            </Button>
-          )}
-          {onNavigateToAirSync && (
-            <Button variant="primary" size="sm" onClick={onNavigateToAirSync}>
-              Lịch air tuần &amp; độ đồng loạt
-            </Button>
-          )}
-          {onNavigateToInputPlan && (
-            <Button variant="secondary" size="sm" onClick={onNavigateToInputPlan}>
-              Xem kế hoạch tháng
-            </Button>
-          )}
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5 text-xs text-ink-2">
+          <Avatar name={currentUser.name} src={currentUser.larkAvatarUrl} size={26} />
+          <span className="font-semibold text-ink">{currentUser.name}</span>
+          <span className="text-ink-3">·</span>
+          <span>{currentUser.roleTitle}</span>
+          <span className="text-ink-3">·</span>
+          <span>
+            Hôm nay có <strong className="text-ink">{criticalCount + warningCount}</strong> việc cần xử lý
+            {criticalCount > 0 && <strong className="text-critical ml-1">({criticalCount} khẩn cấp)</strong>}
+          </span>
         </div>
       </div>
 
@@ -121,31 +104,26 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
           label="Khẩn cấp"
           value={criticalCount}
           tone={criticalCount > 0 ? 'critical' : undefined}
-          note="Cần xử lý ngay theo hạn SLA"
         />
         <Stat
           label="Trong ngày"
           value={warningCount}
           tone={warningCount > 0 ? 'warning' : undefined}
-          note="Đang trong khung giờ cam kết"
         />
         <Stat
           label="Đã hoàn tất"
           value={doneCount}
           tone="positive"
-          note="Đạt cam kết SLA"
         />
         <Stat
           label="Tổng đầu việc"
           value={relevantTasks.length}
-          note={currentUser.roleTitle}
         />
       </StatRow>
 
       <Panel
         flush
         title={`Nhiệm vụ cần xử lý (${relevantTasks.length})`}
-        description="Sắp xếp theo thứ tự ưu tiên SLA và định mức độ khó Task"
       >
         <div className="divide-y divide-line">
           {relevantTasks.length === 0 ? (
@@ -179,7 +157,7 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
                     </button>
 
                     <div className="min-w-0 space-y-1">
-                      <div className="flex items-center gap-1.5 flex-wrap">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span
                           onClick={() => onTaskActionClick && onTaskActionClick(task)}
                           className={`text-xs font-semibold cursor-pointer hover:text-accent transition truncate ${
@@ -190,54 +168,17 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
                         >
                           {task.title}
                         </span>
-                        <span className="text-2xs text-ink-3">·</span>
-                        <span className="text-2xs font-medium text-ink-2">
-                          {task.team}
-                        </span>
-                        {task.difficultyLabel && (
-                          <>
-                            <span className="text-2xs text-ink-3">·</span>
-                            <span className="text-2xs font-medium text-accent">
-                              {task.difficultyLabel}
-                              {typeof task.difficultyMultiplier === 'number'
-                                ? ` (HS ${task.difficultyMultiplier.toFixed(2).replace('.', ',')})`
-                                : ''}
-                            </span>
-                          </>
-                        )}
-                        {task.assignmentRole && (
-                          <>
-                            <span className="text-2xs text-ink-3">·</span>
-                            <span className="text-2xs text-ink-2">
-                              {ROLE_SHORT_LABELS[task.assignmentRole]}
-                              {typeof task.contributionWeightPct === 'number' ? ` (${task.contributionWeightPct}%)` : ''}
-                            </span>
-                          </>
-                        )}
-                        {typeof task.calculatedWorkloadPoints === 'number' && (
-                          <>
-                            <span className="text-2xs text-ink-3">·</span>
-                            <span className="text-2xs font-mono font-semibold text-ink-2">
-                              {task.calculatedWorkloadPoints.toFixed(1)} điểm WL
-                            </span>
-                          </>
+                        {task.storeName && (
+                          <span className="text-2xs font-medium text-ink-2 bg-canvas px-1.5 py-0.5 rounded border border-line">
+                            {task.storeName}
+                          </span>
                         )}
                       </div>
 
-                      {task.expectedDeliverable && (
-                        <div className="text-2xs text-ink-3 truncate">
-                          Đầu ra: <span className="text-ink-2">{task.expectedDeliverable}</span>
-                        </div>
-                      )}
-
                       <div className="flex flex-wrap items-center gap-2 text-2xs text-ink-3">
                         <Person name={task.pic} size={18} />
-                        {task.storeName && (
-                          <>
-                            <span>·</span>
-                            <span className="font-medium text-ink-2">{task.storeName}</span>
-                          </>
-                        )}
+                        <span>·</span>
+                        <span>{task.team}</span>
                         <span>·</span>
                         <span>Hạn xử lý: <strong className="font-medium text-ink-2">{task.deadline}</strong></span>
                       </div>

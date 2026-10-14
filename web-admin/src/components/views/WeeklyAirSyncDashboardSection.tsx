@@ -382,9 +382,6 @@ export const WeeklyAirSyncDashboardSection: React.FC<WeeklyAirSyncDashboardSecti
                 <h3 className="text-base font-semibold text-ink">
                   1. Lịch air kế hoạch vs. thực tế theo tuần (W40 → W45)
                 </h3>
-                <p className="text-xs text-ink-3">
-                  Bấm vào từng tuần để lọc bảng gian hàng bên dưới
-                </p>
               </div>
               {selectedWeekFilter !== 'ALL' && (
                 <Button
@@ -543,9 +540,6 @@ export const WeeklyAirSyncDashboardSection: React.FC<WeeklyAirSyncDashboardSecti
                 <h3 className="text-base font-semibold text-ink">
                   2. Biểu đồ lịch air từng ngày &amp; kiểm tra nổ sóng đồng loạt (Tháng 10/2026)
                 </h3>
-                <p className="text-xs text-ink-3">
-                  Mỗi ngày gồm 2 cột cạnh nhau: <strong className="text-ink-2">Cột trái (Xám) = Kế hoạch hẹn air</strong> · <strong className="text-ink-2">Cột phải (Màu) = Thực tế đã air</strong>
-                </p>
               </div>
             </div>
 
@@ -785,7 +779,6 @@ export const WeeklyAirSyncDashboardSection: React.FC<WeeklyAirSyncDashboardSecti
       <Panel
         flush
         title={`Ma trận lịch air tuần (W40–W45) & chẩn đoán air đồng loạt (${filteredStores.length} gian hàng)`}
-        description="Bấm vào bất kỳ gian hàng nào để xem biểu đồ lịch air từng ngày và danh sách video đã lên sóng vs. trễ hạn"
       >
         {/* Thanh công cụ lọc bảng */}
         <div className="p-4 border-b border-line space-y-3 bg-surface">

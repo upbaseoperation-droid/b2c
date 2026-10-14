@@ -268,9 +268,6 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
             <h3 className="text-lg font-semibold text-ink">
               Tạo hồ sơ KOC chuẩn 65 trường nghiệp vụ
             </h3>
-            <p className="text-xs text-muted">
-              Đầy đủ thông tin kênh, phân khung lương (KL1 - KL7), hậu cần nhận mẫu gửi hàng, nhân khẩu học &amp; tài khoản ngân hàng
-            </p>
           </div>
           <button
             type="button"

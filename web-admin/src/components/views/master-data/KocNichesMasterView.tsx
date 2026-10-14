@@ -7,14 +7,21 @@ import { Presence } from '../../ui';
 
 interface KocNichesMasterViewProps {
   initialNiches: MasterKocNiche[];
+  onChange?: (items: MasterKocNiche[]) => void;
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
 }
 
 export const KocNichesMasterView: React.FC<KocNichesMasterViewProps> = ({
   initialNiches,
+  onChange,
   onNotify
 }) => {
-  const [niches, setNiches] = useState<MasterKocNiche[]>(initialNiches);
+  const [localItems, setLocalItems] = useState<MasterKocNiche[]>(initialNiches);
+  const niches = onChange ? initialNiches : localItems;
+  const setNiches = (update: React.SetStateAction<MasterKocNiche[]>) => {
+    const next = typeof update === 'function' ? update(niches) : update;
+    if (onChange) onChange(next); else setLocalItems(next);
+  };
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('ALL');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -91,7 +98,7 @@ export const KocNichesMasterView: React.FC<KocNichesMasterViewProps> = ({
         pillarMatch: form.pillarMatch.trim(),
         lastUpdate: new Date().toISOString().split('T')[0]
       } : item));
-      if (onNotify) onNotify(`Đã cập nhật tệp kênh [${form.nicheName}]`);
+      if (onNotify) onNotify(`Đã sửa bản nháp: tệp kênh [${form.nicheName}]`);
     } else {
       const newNiche: MasterKocNiche = {
         id: `NICHE-${String(niches.length + 1).padStart(2, '0')}`,
@@ -103,7 +110,7 @@ export const KocNichesMasterView: React.FC<KocNichesMasterViewProps> = ({
         lastUpdate: new Date().toISOString().split('T')[0]
       };
       setNiches(prev => [...prev, newNiche]);
-      if (onNotify) onNotify(`Đã thêm tệp kênh mới [${newNiche.nicheName}]`);
+      if (onNotify) onNotify(`Đã thêm vào bản nháp: tệp kênh mới [${newNiche.nicheName}]`);
     }
     setIsModalOpen(false);
   };

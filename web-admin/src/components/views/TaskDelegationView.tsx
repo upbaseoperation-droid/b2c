@@ -2239,9 +2239,6 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                   <Layers className="w-4 h-4 text-accent" />
                   <span>Tra cứu nhanh: {difficultyConfigs[0].tableTitle}</span>
                 </h3>
-                <p className="text-2xs text-ink-3 mt-0.5">
-                  Nhấn vào một cấp độ bên dưới để giao nhanh đầu việc Nghiên cứu (STT 24–30 Bảng 1) theo đúng hệ số Bảng 2b
-                </p>
               </div>
               <div className="flex items-center gap-3">
                 <button
@@ -3098,9 +3095,6 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                   <h3 className="text-sm font-semibold text-ink">
                     Bảng 1. Chính sách Point theo Scope of Work (33 đầu việc chuẩn B2C)
                   </h3>
-                  <p className="text-2xs text-ink-2 mt-0.5">
-                    Bấm <strong>&ldquo;Sửa&rdquo;</strong> ở bất kỳ dòng nào để điều chỉnh Point chuẩn hoặc Độ khó mặc định (Dễ / Tiêu chuẩn / Khó)
-                  </p>
                 </div>
                 <select
                   value={sowGroupFilter}
@@ -3740,9 +3734,6 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                     <h3 className="text-sm font-semibold text-ink">
                       Giao việc &amp; Ghi nhận Điểm Workload (Chuẩn Bảng 1 → Bảng 7)
                     </h3>
-                    <p className="text-2xs text-ink-3">
-                      Hỗ trợ cả <strong>Task Giám đốc giao</strong> và <strong>Task thuộc luồng quy trình hệ thống</strong>
-                    </p>
                   </div>
                 </div>
                 <button

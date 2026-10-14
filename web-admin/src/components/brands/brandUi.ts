@@ -133,7 +133,7 @@ export function permissionsOf(access: BrandAccess | undefined, accountPic?: stri
     const candidates = [access.linkedBrand, ...(access.assignedBrands || [])].filter((x): x is string => Boolean(x && x.trim()));
     partnerMatch = candidates.some(c => {
       const ck = brandKey(c);
-      return ck && (ck === targetKey || ck.includes(targetKey) || targetKey.includes(ck));
+      return ck && (ck === targetKey);
     });
   }
   const content = !!access && (access.lead || pic || partnerMatch);

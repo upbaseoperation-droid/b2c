@@ -330,12 +330,11 @@ export const ContentAngleSetupView: React.FC<ContentAngleSetupViewProps> = ({
         </Button>
       </PageActions>
 
-      {/* Overview Metric Stats */}
       <StatRow>
         <Stat label="Tổng số góc tiếp cận" value={angles.length} note={`${activeCount} đang dùng`} />
-        <Stat label="Sản phẩm đã có góc tiếp cận" value={`${new Set(angles.map(a => a.productId)).size} / ${products.length}`} note="Sản phẩm thúc đẩy" />
-        <Stat label="Trụ cột nội dung tham gia" value={`${new Set(angles.map(a => a.pillarId)).size} / ${pillars.length}`} note="Trụ cột" />
-        <Stat label="Lượt booking KOC đã dùng" value={totalBookingsApplied} note="Hồ sơ áp dụng" tone="positive" />
+        <Stat label="Sản phẩm đã có góc tiếp cận" value={`${new Set(angles.map(a => a.productId)).size} / ${products.length}`} />
+        <Stat label="Trụ cột nội dung tham gia" value={`${new Set(angles.map(a => a.pillarId)).size} / ${pillars.length}`} />
+        <Stat label="Lượt booking KOC đã dùng" value={totalBookingsApplied} tone="positive" />
       </StatRow>
 
       {/* ========================================================================= */}

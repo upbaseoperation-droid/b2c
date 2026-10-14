@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthenticatedUser } from '@/lib/larkAuth';
+import { requestActor } from '@/lib/server/requestActor';
+import { requireBrandScope } from '@/lib/server/brandAccess';
 import { UPBASE_BRANDS_MASTER } from '@/lib/importedMasterData';
 import { BrandError, permissionsFor, requireBrand, requireReader } from '@/lib/brands/domain';
 import { assertValidBrandFileKey, brandFileStorageMode, deleteBrandFile, MAX_BRAND_FILE_BYTES, readBrandFile, uploadBrandFile } from '@/lib/brands/r2';
@@ -21,11 +22,15 @@ function failure(error: unknown) {
 /** Xem hoặc tải tệp thương hiệu theo khóa `key`. */
 export async function GET(req: NextRequest) {
   try {
-    const user = getAuthenticatedUser(req);
-    requireBrand(!user?.partnerType, 'Tài khoản đối tác không xem được tệp nội bộ.', 403);
+    const user = await requestActor(req);
+    requireReader(user);
 
     const rawKey = req.nextUrl.searchParams.get('key') || '';
     const key = assertValidBrandFileKey(rawKey);
+    const fileMaster = await requireBrandScope(user, key.split('/')[1]);
+    const fileRights = permissionsFor(user, fileMaster?.accountPic, fileMaster?.name || key.split('/')[1]);
+    const profilesForFile = await listProfiles();
+    requireBrand(fileRights.LEGAL || !profilesForFile.some(p => JSON.stringify(p.legal).includes(key)), 'Không có quyền truy cập tệp pháp lý.', 403);
     const download = req.nextUrl.searchParams.get('download') === '1';
 
     const { buffer, contentType, fileName } = await readBrandFile(key);
@@ -51,7 +56,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     requireBrand(req.headers.get('origin') === req.nextUrl.origin, 'Yêu cầu không xuất phát từ ứng dụng.', 403);
-    const user = getAuthenticatedUser(req);
+    const user = await requestActor(req);
     requireReader(user);
 
     const formData = await req.formData().catch(() => null);
@@ -69,7 +74,7 @@ export async function POST(req: NextRequest) {
     const current = all.find(p => p.key === key);
     requireBrand(master || current, 'Không tìm thấy nhãn hàng trong Dữ liệu gốc.', 404);
 
-    const allowed = permissionsFor(user, master?.accountPic);
+    const allowed = permissionsFor(user, master?.accountPic, master?.name);
     requireBrand(allowed[section], 'Bạn không có quyền tải tệp lên mục này.', 403);
 
     const fileEntry = formData.get('file');
@@ -99,15 +104,15 @@ export async function POST(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   try {
     requireBrand(req.headers.get('origin') === req.nextUrl.origin, 'Yêu cầu không xuất phát từ ứng dụng.', 403);
-    const user = getAuthenticatedUser(req);
+    const user = await requestActor(req);
     requireReader(user);
 
     const rawKey = req.nextUrl.searchParams.get('key') || '';
     const key = assertValidBrandFileKey(rawKey);
     const brandSlug = key.split('/')[1] || '';
 
-    const master = UPBASE_BRANDS_MASTER.find(b => brandKey(b.name) === brandSlug);
-    const allowed = permissionsFor(user, master?.accountPic);
+    const master = await requireBrandScope(user, brandSlug);
+    const allowed = permissionsFor(user, master?.accountPic, master?.name);
     requireBrand(allowed.DOCUMENTS || allowed.LEGAL, 'Bạn không có quyền xóa tệp của nhãn hàng này.', 403);
 
     await deleteBrandFile(key);

@@ -686,9 +686,6 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                     ({filteredKocs.length}/{kocs.length} KOC)
                   </span>
                 </h2>
-                <p className="text-2xs text-slate-500">
-                  Liên thông trực tiếp với Danh bạ KOC, Booking, Hợp đồng &amp; Thanh toán, Hàng mẫu và Báo cáo Ads tuần
-                </p>
               </div>
             </div>
 
@@ -1404,9 +1401,7 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                       <ShieldCheck className="w-4 h-4 text-blue-600" />
                       <span>Liên Thông Dữ Liệu Giữa Các Phân Hệ Vận Hành</span>
                     </h3>
-                    <p className="text-2xs text-slate-500 mt-0.5">
-                      Mọi thay đổi tại Cổng KOC tự động cập nhật sang các phân hệ liên quan
-                    </p>
+                    
                   </div>
                   {onOpenKocMaster && (
                     <button
@@ -1867,9 +1862,7 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                       <h3 className="text-xs font-semibold text-slate-900">
                         Hộp Việc Cần Xác Nhận &amp; Phản Hồi ({pendingActionCount} mục)
                       </h3>
-                      <p className="text-2xs text-slate-500 mt-0.5">
-                        Xác nhận nhận job, ký hợp đồng điện tử hoặc xác nhận đã nhận hàng mẫu
-                      </p>
+                      
                     </div>
                   </div>
 
@@ -2214,10 +2207,7 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
               {activeJobsSubTab === 'SUBMISSION' && (
                 <div className="space-y-4">
                   <div className="bg-white p-5 rounded-xl border border-slate-200/80 shadow-xs">
-                    <h3 className="text-xs font-semibold text-slate-900 mb-1">Cổng Nộp Video Nghiệm Thu &amp; Mã Spark Ads</h3>
-                    <p className="text-xs text-slate-500 mb-4">
-                      Đăng tải video bản nháp (1080p) và cung cấp mã ủy quyền Spark Ads 30 ngày để đồng bộ trực tiếp sang Kịch bản &amp; Video và Báo cáo Ads tuần.
-                    </p>
+                    <h3 className="text-xs font-semibold text-slate-900 mb-4">Cổng Nộp Video Nghiệm Thu &amp; Mã Spark Ads</h3>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       {currentKocDeals.map(d => (
@@ -2676,9 +2666,7 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                       <TrendingUp className="w-4 h-4 text-blue-600" />
                       <span>1. Hiệu Quả Thương Mại &amp; Tuân Thủ SLA Lũy Kế ({perfStats.totalDeals} Chiến Dịch)</span>
                     </h3>
-                    <p className="text-2xs text-slate-500 mt-0.5">
-                      Tính toán trực tiếp từ kết quả các đơn video Booking, Affiliate và Báo cáo Ads tuần
-                    </p>
+                    
                   </div>
                   <button
                     type="button"
@@ -2902,7 +2890,6 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                 <div className="bg-white rounded-xl border border-slate-200/80 p-5 shadow-xs space-y-4">
                   <div className="border-b border-slate-100 pb-3">
                     <h4 className="font-semibold text-slate-900">Chân Dung Khán Giả Kênh</h4>
-                    <p className="text-2xs text-slate-500 mt-0.5">Làm căn cứ ghép nhãn hàng &amp; sản phẩm đẩy</p>
                   </div>
 
                   <div className="space-y-3">
@@ -3203,7 +3190,7 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div>
                   <h3 className="font-semibold text-slate-900 text-sm">Cập Nhật Chỉ Số Kênh TikTok Seller</h3>
-                  <p className="text-2xs text-slate-500">Đồng bộ trực tiếp về Danh bạ KOC và Đề xuất KOC</p>
+                  
                 </div>
                 <button type="button" onClick={() => setIsMetricsModalOpen(false)} className="text-slate-400 hover:text-slate-700">
                   <X className="w-4 h-4" />

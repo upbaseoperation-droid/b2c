@@ -644,7 +644,6 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
           <div className="lg:col-span-8 space-y-4">
             <Panel
               title="Đặt câu hỏi nghiệp vụ Marketing B2C"
-              description="Tra cứu quy trình, mốc SLA, mẫu hợp đồng, cách tính thuế Gross/Net, khung lương KL1–KL7 và thông tin 42 nhãn hàng"
               actions={
                 <div className="flex items-center gap-2">
                   <span className="text-2xs font-medium text-ink-3">
@@ -890,7 +889,7 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
                     <Input
                       value={questionInput}
                       onChange={e => setQuestionInput(e.target.value)}
-                      placeholder="Nhập câu hỏi về quy trình Booking, mốc SLA, mẫu hợp đồng, tính thuế, khung lương KL1-7 hoặc tên nhãn hàng..."
+                      placeholder="Đặt câu hỏi về quy trình, SLA, hợp đồng, thuế, khung lương..."
                       aria-label="Nhập câu hỏi nghiệp vụ"
                     />
                   </div>
@@ -911,7 +910,6 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
           <div className="lg:col-span-4 space-y-4">
             <Panel
               title="Tính nhanh Thuế & Mẫu hợp đồng"
-              description="Quy đổi Gross ↔ Net, khấu trừ thuế và chọn đúng mẫu hợp đồng pháp chế"
             >
               <div className="space-y-3.5">
                 <Field label="Phân loại pháp lý đối tác">
@@ -1022,7 +1020,6 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
             {/* Tóm tắt mốc thời gian trong tháng cho nhân sự mới */}
             <Panel
               title="Lịch mốc cố định hàng tháng"
-              description="Các hạn chót bắt buộc của phòng Marketing B2C"
             >
               <div className="divide-y divide-line text-xs">
                 <div className="py-2 flex items-start justify-between gap-2">
@@ -1449,7 +1446,6 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
           {quickTableSubTab === 'sla' && (
             <Panel
               title="Bảng 21 mốc SLA cam kết của phòng Marketing B2C"
-              description="Thời hạn chuẩn cho từng bước từ lập kế hoạch tháng, đề xuất KOC, gửi mẫu đến khóa sổ nghiệm thu"
               flush
             >
               <div className="overflow-x-auto">
@@ -1488,7 +1484,6 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
           {quickTableSubTab === 'salary' && (
             <Panel
               title="Bảng chuẩn 9 bậc Khung lương Creator (KL1 – KL7 & TAP)"
-              description="Định mức đơn giá Net cho mỗi video và quy tắc kiểm soát tỷ trọng ngân sách (Nhóm ≥ KL4 tối đa 45%)"
               flush
             >
               <div className="overflow-x-auto">
@@ -1534,7 +1529,6 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
           {quickTableSubTab === 'contracts' && (
             <Panel
               title="Bộ 8 Biểu mẫu Hợp đồng & Biên bản nghiệm thu chuẩn Pháp chế"
-              description="Quy định chọn mẫu theo chủ thể pháp lý, chính sách khấu trừ thuế và nguyên tắc ký trước ngày air tối thiểu 01 ngày"
               flush
             >
               <div className="overflow-x-auto">

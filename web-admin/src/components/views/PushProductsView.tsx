@@ -1119,7 +1119,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder="Tìm theo SKU, tên sản phẩm, gian hàng, thương hiệu..."
+              placeholder="Tìm SKU, sản phẩm, gian hàng..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-9 pr-4 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-slate-400"
@@ -2195,9 +2195,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                   <Flame className="w-4 h-4 text-rose-500" />
                   Khởi tạo sản phẩm thúc đẩy mới
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Thiết lập sản phẩm thúc đẩy theo gian hàng cụ thể để B2C xem xét và brief KOC
-                </p>
+                
               </div>
               <button
                 type="button"
@@ -2637,9 +2635,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                   <FileEdit className="w-4 h-4 text-accent" />
                   Yêu cầu thay đổi: {changeRequestForm.fieldLabel}
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Đề xuất sẽ được gửi sang phía đối ứng để phê duyệt và ghi nhận vào lịch sử
-                </p>
+                
               </div>
               <button
                 type="button"

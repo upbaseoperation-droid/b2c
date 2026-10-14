@@ -50,3 +50,5 @@ next-env.d.ts
 /.contract-data/
 /.brand-data/
 /.partner-hub-data/
+
+.shared-data/

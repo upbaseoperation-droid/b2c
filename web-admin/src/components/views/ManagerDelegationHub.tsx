@@ -1364,11 +1364,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                   ? `Cân bằng định mức tải gian hàng B2C (${staffList.length} nhân sự)`
                   : `Danh bạ nhân sự theo khối (${filteredDepartmentStaff.length} / ${scopedDepartmentStaff.length} nhân viên)`}
               </h3>
-              <p className="text-xs text-ink-3 mt-0.5">
-                {staffSubView === 'WORKLOAD'
-                  ? `Kiểm soát định mức số gian hàng phụ trách (khuyến nghị <= 3 gian/chuyên viên) để điều chuyển khi quá tải. Để xem KPI, % Spend, Video Air và ROAS, vui lòng mở Dashboard 5.`
-                  : `Tra cứu nhân sự thuộc khối được cấp quyền truy cập và giao việc trực tiếp`}
-              </p>
+              
             </div>
             <div className="flex items-center gap-1 bg-sunken p-1 rounded-lg border border-line shrink-0">
               <button
@@ -1713,9 +1709,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
               <h3 className="text-xs font-semibold text-ink">
                 Danh sách công việc đã giao ({tasks.length})
               </h3>
-              <p className="text-2xs text-ink-3 mt-0.5">
-                Hiển thị đồng bộ trong phân hệ &ldquo;Công việc của tôi&rdquo; của từng chuyên viên
-              </p>
+              
             </div>
             <Button
               variant="primary"
@@ -1806,9 +1800,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                     {INITIAL_STORE_ASSIGNMENT_HISTORY.length} bản ghi
                   </span>
                 </h3>
-                <p className="text-2xs text-ink-3 mt-0.5">
-                  Lưu vết các quyết định bổ nhiệm, đổi chuyên viên phụ trách và lý do bàn giao công việc giữa kỳ
-                </p>
+                
               </div>
 
               {/* Filters */}
@@ -1917,9 +1909,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                     {INITIAL_BACKUP_ASSIGNMENTS.length} cặp ủy quyền
                   </span>
                 </h3>
-                <p className="text-2xs text-ink-3 mt-0.5">
-                  Quyền xử lý và thẩm quyền ký duyệt thay thế khi chuyên viên chính nghỉ phép hoặc đi công tác
-                </p>
+                
               </div>
             </div>
 
@@ -1986,7 +1976,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                 <Send className="w-5 h-5 text-accent" />
                 <div>
                   <h3 className="text-sm font-semibold">Giao việc trực tiếp cho nhân sự</h3>
-                  <p className="text-2xs text-ink-2">Trưởng phòng phân công nhiệm vụ và hạn định SLA</p>
+                  
                 </div>
               </div>
               <button
@@ -2144,11 +2134,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                   <h3 className="text-sm font-semibold">
                     {editingBrand ? `Chỉnh sửa phân bổ nhãn hàng: ${editingBrand.name}` : 'Thêm nhãn hàng vào phân bổ & điều phối PIC'}
                   </h3>
-                  <p className="text-2xs text-ink-2">
-                    {editingBrand 
-                      ? 'Trưởng phòng điều chỉnh Brand PIC Lead, Account PIC và ngân sách trần'
-                      : `Lựa chọn từ danh mục doanh nghiệp (${UPBASE_BRANDS_MASTER.length} thương hiệu chuẩn) để phân bổ vận hành`}
-                  </p>
+                  
                 </div>
               </div>
               <button

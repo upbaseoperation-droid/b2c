@@ -170,7 +170,6 @@ export const LeaderboardView: React.FC = () => {
       <Panel
         flush
         title="Bảng đánh giá chi tiết toàn bộ 30 nhân sự"
-        description="Đồng bộ từ kết quả nghiệm thu video, doanh số đối soát và thời gian xử lý SLA"
       >
         <DataTable
           columns={columns}

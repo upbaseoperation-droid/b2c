@@ -262,7 +262,6 @@ function LoginContent() {
                 <div className="flex items-center justify-between">
                   <div>
                     <h2 id="sandbox-title" className="text-[13.5px] font-medium">Chọn vai trò đăng nhập</h2>
-                    <p className="text-2xs text-ink-3 mt-0.5">Bao gồm Admin, Trưởng phòng, Chuyên viên, Pháp chế, Kế toán và Đối tác (Brand, KOC, CTV).</p>
                   </div>
                 </div>
 

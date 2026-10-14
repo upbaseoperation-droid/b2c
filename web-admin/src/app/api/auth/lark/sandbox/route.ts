@@ -8,6 +8,12 @@ import { UserProfile } from '@/lib/types';
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
+  if (process.env.NODE_ENV === 'production') {
+    return NextResponse.json(
+      { success: false, error: 'Chế độ giả lập bị chặn trên môi trường production.' },
+      { status: 403 }
+    );
+  }
   try {
     const body = await request.json();
     const { userId, staffIdentifier, staffOverrides } = body;
@@ -115,7 +121,7 @@ export async function POST(request: NextRequest) {
     const isHttps = request.nextUrl.protocol === 'https:' || request.headers.get('x-forwarded-proto') === 'https';
     response.cookies.set(SESSION_COOKIE_NAME, token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production' && isHttps,
+      secure: false,
       sameSite: 'lax',
       path: '/',
       maxAge: 7 * 24 * 60 * 60 // 7 ngày
@@ -135,6 +141,12 @@ export async function POST(request: NextRequest) {
  * Cho phép đăng nhập nhanh trực tiếp qua URL mà không cần đăng nhập Lark/Gmail.
  */
 export async function GET(request: NextRequest) {
+  if ((process.env.NODE_ENV as string) === 'production') {
+    return NextResponse.json(
+      { success: false, error: 'Chế độ giả lập bị chặn trên môi trường production.' },
+      { status: 403 }
+    );
+  }
   const { searchParams } = request.nextUrl;
   const userId = searchParams.get('userId') || USERS[0].id;
   const returnTo = sanitizeReturnTo(searchParams.get('returnTo') || '/');
@@ -153,7 +165,7 @@ export async function GET(request: NextRequest) {
 
   response.cookies.set(SESSION_COOKIE_NAME, token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: false,
     sameSite: 'lax',
     path: '/',
     maxAge: 7 * 24 * 60 * 60 // 7 ngày

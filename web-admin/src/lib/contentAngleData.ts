@@ -401,7 +401,7 @@ export function generateAiAngleSuggestions(
 
   return [
     {
-      name: `Góc kịch bản Đột phá: Đánh trúng Nỗi đau cốt lõi của ${pName}`,
+      name: `Góc kịch bản Trọng tâm: Đánh trúng Nỗi đau cốt lõi của ${pName}`,
       pillarId: 'PIL-02',
       pillarName: pillarName || 'Nỗi đau - Giải pháp',
       pillarCode: 'PROBLEM_SOLUTION',

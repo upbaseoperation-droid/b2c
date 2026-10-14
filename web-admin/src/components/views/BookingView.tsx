@@ -621,13 +621,13 @@ export const BookingView: React.FC<BookingViewProps> = ({
         return (
           <div className="space-y-4">
             <StatRow>
-              <Stat label="Ứng viên" value={candidates.length} note="Đang theo dõi trong tháng" />
+              <Stat label="Ứng viên" value={candidates.length} />
               <Stat label="Đã ký booking" value={`${converted}/${candidates.length}`} progress={{ value: converted, max: candidates.length || 1, target: 0.3 }} note={`Tỷ lệ chốt ${formatPercent(converted / (candidates.length || 1), 0)}`} />
-              <Stat label="Đang trao đổi" value={inProgress} note="Phản hồi trong 24 giờ" />
-              <Stat label="Từ chối" value={rejected} note="Lệch tệp hoặc vượt khung giá" tone={rejected > 0 ? 'warning' : undefined} />
+              <Stat label="Đang trao đổi" value={inProgress} />
+              <Stat label="Từ chối" value={rejected} tone={rejected > 0 ? 'warning' : undefined} />
             </StatRow>
 
-            <Panel flush title="Ứng viên KOC" description="Theo dõi từ lúc liên hệ đến khi ký booking">
+            <Panel flush title="Ứng viên KOC">
               <div className="px-4 py-3 border-b border-line">
                 <Chips
                   value={candidateFilter}
@@ -733,7 +733,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
               <Button size="sm" onClick={() => setDealsFilter('WINNER_TOP20')}>Xem top 20</Button>
             </div>
 
-            <Panel flush title="Job booking" description="Brand duyệt từng job, gửi mẫu, nghiệm thu video và mã Spark Ads, đo GMV">
+            <Panel flush title="Job booking">
               <div className="px-4 py-3 border-b border-line">
                 <FilterBar
                   search={{ value: dealsSearch, onChange: setDealsSearch, placeholder: 'Tìm mã deal, KOC, sản phẩm, chiến dịch' }}
@@ -900,7 +900,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
       {/* TAB: DANH BẠ KOC                                                           */}
       {/* ========================================================================= */}
       {activeSubTab === 'KOC_DIRECTORY' && (
-        <Panel flush title="Danh bạ KOC" description="Bấm vào một KOC để mở hồ sơ đầy đủ và lịch sử hợp tác">
+        <Panel flush title="Danh bạ KOC">
           <div className="px-4 py-3 border-b border-line">
             <FilterBar
               search={{ value: searchTerm, onChange: setSearchTerm, placeholder: 'Tìm tên, kênh, ngành hàng, số điện thoại' }}

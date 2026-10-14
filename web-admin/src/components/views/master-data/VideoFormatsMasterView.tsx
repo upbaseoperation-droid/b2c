@@ -7,14 +7,21 @@ import { MasterVideoFormat } from '../../../lib/types';
 
 interface VideoFormatsMasterViewProps {
   initialFormats: MasterVideoFormat[];
+  onChange?: (items: MasterVideoFormat[]) => void;
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
 }
 
 export const VideoFormatsMasterView: React.FC<VideoFormatsMasterViewProps> = ({
   initialFormats,
+  onChange,
   onNotify
 }) => {
-  const [formats, setFormats] = useState<MasterVideoFormat[]>(initialFormats);
+  const [localItems, setLocalItems] = useState<MasterVideoFormat[]>(initialFormats);
+  const formats = onChange ? initialFormats : localItems;
+  const setFormats = (update: React.SetStateAction<MasterVideoFormat[]>) => {
+    const next = typeof update === 'function' ? update(formats) : update;
+    if (onChange) onChange(next); else setLocalItems(next);
+  };
   const [search, setSearch] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingFormat, setEditingFormat] = useState<MasterVideoFormat | null>(null);
@@ -58,7 +65,7 @@ export const VideoFormatsMasterView: React.FC<VideoFormatsMasterViewProps> = ({
         option: form.option.trim() || form.name.trim(),
         lastUpdate: new Date().toISOString().split('T')[0]
       } : item));
-      if (onNotify) onNotify(`Đã cập nhật định dạng video [${form.name}]`);
+      if (onNotify) onNotify(`Đã sửa bản nháp: định dạng video [${form.name}]`);
     } else {
       const newFormat: MasterVideoFormat = {
         id: `VF-${String(formats.length + 1).padStart(2, '0')}`,
@@ -67,7 +74,7 @@ export const VideoFormatsMasterView: React.FC<VideoFormatsMasterViewProps> = ({
         lastUpdate: new Date().toISOString().split('T')[0]
       };
       setFormats(prev => [...prev, newFormat]);
-      if (onNotify) onNotify(`Đã thêm định dạng video mới [${newFormat.name}]`);
+      if (onNotify) onNotify(`Đã thêm vào bản nháp: định dạng video mới [${newFormat.name}]`);
     }
     setIsModalOpen(false);
   };

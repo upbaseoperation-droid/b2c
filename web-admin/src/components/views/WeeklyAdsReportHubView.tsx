@@ -240,9 +240,6 @@ export const WeeklyAdsReportHubView: React.FC<WeeklyAdsReportHubViewProps> = ({
               <BarChart3 className="w-4 h-4 text-accent" />
               <span>Đối soát báo cáo quảng cáo tuần</span>
             </h2>
-            <p className="text-xs text-ink-3 mt-1">
-              Đọc file báo cáo tuần xuất từ TikTok Shop, đối soát mã Spark Ads, tính ROAS thực tế và đồng bộ vào danh bạ KOC.
-            </p>
           </div>
 
           {/* Action buttons */}
@@ -481,7 +478,6 @@ export const WeeklyAdsReportHubView: React.FC<WeeklyAdsReportHubViewProps> = ({
             <div className="p-4 border-b border-line flex items-center justify-between">
               <div>
                 <h3 className="text-sm font-semibold text-ink">Bảng tổng hợp chiến dịch sản phẩm PGM</h3>
-                <p className="text-xs text-ink-3">Phân bổ chi phí, doanh thu gộp và chỉ số hoàn vốn ROAS của từng dòng sản phẩm chủ lực.</p>
               </div>
             </div>
 

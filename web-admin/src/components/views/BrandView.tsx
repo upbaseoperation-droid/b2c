@@ -673,9 +673,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
                       · {brandCoverageForMonth.withoutCampaign.length} Brand KHÔNG có Campaign (Chạy duy trì tháng)
                     </span>
                   </h4>
-                  <p className="text-2xs text-slate-500 mt-0.5">
-                    Một thương hiệu trong tháng có thể có Chiến dịch (kéo dài 1–3 tháng) hoặc không có Chiến dịch (chỉ chạy kế hoạch duy trì Always-on tại gian hàng).
-                  </p>
+                  
                 </div>
               </div>
 
@@ -1160,9 +1158,6 @@ export const BrandView: React.FC<BrandViewProps> = ({
                   <ShieldAlert className="w-4 h-4 text-rose-600" />
                   <span>Danh mục từ khóa cấm &amp; nhạy cảm</span>
                 </h3>
-                <p className="text-xs text-slate-500">
-                  Dùng để kiểm tra kịch bản KOC trước khi gửi nhãn hàng duyệt
-                </p>
               </div>
 
               {/* Filters */}
@@ -1323,9 +1318,6 @@ export const BrandView: React.FC<BrandViewProps> = ({
                 <Flame className="w-4 h-4 text-amber-500" />
                 <span>Danh mục sản phẩm chủ lực</span>
               </h3>
-              <p className="text-xs text-slate-500">
-                Thông tin thành phần, công dụng và số lượng mẫu gửi KOC
-              </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1732,7 +1724,6 @@ export const BrandView: React.FC<BrandViewProps> = ({
             <div className="px-5 py-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
               <div>
                 <h3 className="text-sm font-semibold text-slate-900">Bảng theo dõi hợp đồng thương hiệu</h3>
-                <p className="text-xs text-slate-500">Đánh giá tiến độ ngân sách, doanh số GMV thực tế và tỷ lệ từ chối KOC</p>
               </div>
             </div>
 

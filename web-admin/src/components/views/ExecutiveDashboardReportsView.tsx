@@ -1439,10 +1439,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                   <h3 className="text-sm font-semibold text-ink">
                     Biểu Đồ Kép Theo Thương Hiệu: % Spend Chi Phí Net &amp; Số Lượng Video Đã Air (Top 16 Brands)
                   </h3>
-                  <p className="text-xs text-ink-3">
-                    Theo dõi song song tỷ lệ giải ngân thực tế (% Spend Net) và sản lượng Video đã lên sóng của từng Brand
-                  </p>
-                </div>
+                  </div>
                 <div className="flex flex-wrap items-center gap-1.5 text-2xs">
                   {[
                     { key: 'AIRED_DESC', label: 'Xếp theo Số Video Air' },
@@ -1584,10 +1581,6 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                 <h3 className="text-sm font-semibold text-ink mb-1">
                   Bóc Tách Cấu Trúc Ngân Sách Order Growth (File 4.1)
                 </h3>
-                <p className="text-xs text-ink-3 mb-4">
-                  Phân tách rõ Hạn mức Affiliate KOC, Video kênh Brand (Self-channel) và Livestream trên 69 gian hàng B2C
-                </p>
-
                 <div className="space-y-3.5">
                   {/* Affiliate KOC */}
                   <div className="p-3 rounded-lg bg-canvas border border-line/80">
@@ -1673,10 +1666,6 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                 <h3 className="text-sm font-semibold text-ink mb-1">
                   Bóc Tách Sản Lượng: Video KOC Trả Phí (Paid) vs Suất Mẫu Miễn Phí (FOC 0đ)
                 </h3>
-                <p className="text-xs text-ink-3 mb-4">
-                  Suất gửi mẫu miễn phí (FOC - chi phí 0đ) được điều phối tách bạch với các đơn Booking KOC có cát-xê
-                </p>
-
                 {(() => {
                   const totalVids =
                     kpiSummary.totalTargetPaidVideos +
@@ -1766,10 +1755,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                 <h3 className="text-sm font-semibold text-ink">
                   Sổ Cái Kiểm Soát Dòng Tiền &amp; Đề Nghị Thanh Toán (ĐNTT) — Tháng 10/2026
                 </h3>
-                <p className="text-xs text-ink-3">
-                  Theo dõi tiến độ từ lúc duyệt tạm ứng hợp đồng đến nghiệm thu video, thanh lý quyết toán với KOC và xuất báo cáo Excel 5 Sheets.
-                </p>
-              </div>
+                </div>
               <button
                 type="button"
                 onClick={handleExportMultiSheetExcel}
@@ -2034,10 +2020,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                     Biểu Đồ Hiệu Suất Chiến Dịch Quảng Cáo Sản Phẩm & Livestream (PGM / LGM)
                   </h3>
                 </div>
-                <p className="text-xs text-ink-3 mt-0.5">
-                  Tổng hợp từ {TIKTOK_SELLER_ADS_SUMMARY.totalCampaignRows.toLocaleString('vi-VN')} dòng báo cáo chiến dịch và {TIKTOK_SELLER_ADS_SUMMARY.totalCreativeRows.toLocaleString('vi-VN')} dòng báo cáo video quảng cáo ({TIKTOK_SELLER_ADS_SUMMARY.reportPeriod})
-                </p>
-              </div>
+                </div>
               <div className="flex items-center gap-4 text-xs font-mono">
                 <div className="bg-canvas px-3 py-1.5 rounded-lg border border-line">
                   Chi phí Ads: <strong className="text-ink">{formatVndShort(TIKTOK_SELLER_ADS_SUMMARY.totalSpend)}</strong>
@@ -2144,10 +2127,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                 <h3 className="text-sm font-semibold text-ink">
                   Bảng Đối Soát Toàn Bộ {filteredStores.length} / 69 Gian Hàng B2C — Trọng Tâm % Spend Chi Phí &amp; Số Lượng Video Đã Air
                 </h3>
-                <p className="text-xs text-ink-3">
-                  Nhấn vào bất kỳ gian hàng nào để mở bảng phân tích chi tiết: Hạn mức Gross/Net, % Spend, Paid/FOC video và danh sách video đã book của gian hàng đó.
-                </p>
-              </div>
+                </div>
               <div className="flex flex-wrap items-center gap-1.5 text-xs">
                 {[
                   { key: 'AIRED_DESC', label: 'Xếp theo Nhiều Video Air nhất' },
@@ -2473,10 +2453,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                   <h3 className="text-sm font-semibold text-ink">
                     Biểu Đồ Hiệu Quả Theo Khung Lương KOC (TAP FOC 0đ & KL1 → KL7)
                   </h3>
-                  <p className="text-xs text-ink-3">
-                    Đối soát 786 video đã booking trong File 3.2: Số lượng đơn book, số video đã lên sóng (Air) và tổng chi phí theo từng bậc KL
-                  </p>
-                </div>
+                  </div>
                 <span className=".5 text-xs font-semibold text-accent">
                   786 Đơn Book · 2,63 Tỷ
                 </span>
@@ -2563,10 +2540,6 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                 <h3 className="text-sm font-semibold text-ink mb-1">
                   Phễu Hiệu Suất Video Quảng Cáo TikTok Seller (4.211 Dòng Creative)
                 </h3>
-                <p className="text-xs text-ink-3 mb-3.5">
-                  Đo lường khả năng giữ chân người xem (Hook 2s → Xem 6s → Xem 100%) và tỷ lệ bấm giỏ hàng (CTR → CVR)
-                </p>
-
                 <div className="space-y-2.5">
                   {[
                     {
@@ -2624,10 +2597,6 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                 <h3 className="text-sm font-semibold text-ink mb-1">
                   Hiệu Quả Theo Định Dạng Sản Xuất Video & Loại Hình Booking
                 </h3>
-                <p className="text-xs text-ink-3 mb-3">
-                  Phân tách rõ Video KOC, Video kênh Brand và Livestream KOC
-                </p>
-
                 <div className="grid grid-cols-2 gap-2 mb-3">
                   {B2C_VIDEO_FORMAT_BREAKDOWN.map((fmt) => (
                     <div
@@ -2939,10 +2908,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                   <h3 className="text-sm font-semibold text-ink">
                     Băng Tải Tiến Độ Thực Thi &amp; SLA Chứng Từ 786 Đơn Video (File 3.2)
                   </h3>
-                  <p className="text-xs text-ink-3">
-                    Theo dõi trạng thái vận hành thực tế từ lúc Gửi mẫu 48h → Air bài → Nghiệm thu Spark Ads → ĐNTT Kế toán
-                  </p>
-                </div>
+                  </div>
                 <span className=".5 text-xs font-mono font-semibold text-positive -positive/20">
                   Đã Air &amp; Done: 566/786 (72,0%)
                 </span>
@@ -3000,10 +2966,6 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                 <h3 className="text-sm font-semibold text-ink">
                   Kiểm Soát SLA Theo 2 Luồng Phê Duyệt B2C
                 </h3>
-                <p className="text-xs text-ink-3 mt-0.5">
-                  Đối chiếu tốc độ xử lý giữa nhóm có Trưởng nhóm sơ duyệt và nhóm trình trực tiếp Giám đốc Marketing
-                </p>
-
                 <div className="mt-4 space-y-3">
                   {/* Luồng 1: 8 gian hàng có Leader Nguyễn Thị Ngọc Tâm */}
                   <div className="p-3.5 rounded-xl bg-accent-soft border border-accent/20">
@@ -3095,10 +3057,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                 <h3 className="text-sm font-semibold text-ink">
                   Theo Dõi Tỷ Lệ Đúng Hạn SLA &amp; Đơn Chờ Air / Chờ Làm ĐNTT Theo Nhân Sự
                 </h3>
-                <p className="text-xs text-ink-3">
-                  Kiểm soát các đơn video đã book nhưng chưa lên sóng hoặc trễ hạn nộp chứng từ thanh toán 10h sáng
-                </p>
-              </div>
+                </div>
               <button
                 type="button"
                 onClick={() => handleSelectDashboardSection('STAFF_EFFICIENCY')}
@@ -3822,10 +3781,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                 <h3 className="text-sm font-semibold text-ink">
                   Biểu Đồ Đối Sánh Hiệu Suất &amp; Hiệu Quả Giữa Các Chuyên Viên B2C
                 </h3>
-                <p className="text-xs text-ink-3">
-                  Nhấn vào thẻ của bất kỳ nhân viên nào để nạp lên khung Hồ sơ Đánh giá 360° phía trên
-                </p>
-              </div>
+                </div>
               <div className="flex flex-wrap items-center gap-1.5">
                 {[
                   { key: 'BOTH', label: '1. Kép: % Spend Net & Số Video Air', activeBg: 'bg-ink text-white' },
@@ -4034,10 +3990,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                   <h3 className="text-sm font-semibold text-ink">
                     Bảng Xếp Hạng &amp; Đối Soát Hiệu Suất, Hiệu Quả Từng Nhân Viên B2C ({filteredStaffList.length} Nhân Sự)
                   </h3>
-                  <p className="text-xs text-ink-3">
-                    Đánh giá đầy đủ cả Sản lượng thực thi (Số Video Air, % Spend) và Hiệu quả đầu tư (Đơn giá/Video, GMV, ROAS, CIR, Điểm KPI)
-                  </p>
-                </div>
+                  </div>
                 <div className="flex flex-wrap items-center gap-2">
                   <div className="relative">
                     <Search className="w-3.5 h-3.5 text-ink-3 absolute left-3 top-1/2 -translate-y-1/2" />

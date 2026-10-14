@@ -1,3 +1,6 @@
+import type { AccessPolicy } from './server/accessPolicy';
+let serverPolicy: AccessPolicy | null = null;
+export function hydrateRbacPolicy(policy: AccessPolicy) { serverPolicy = policy; if (typeof window !== 'undefined') window.dispatchEvent(new Event('upbase-rbac-updated')); }
 import { 
   UserRole, 
   TabKey,
@@ -1284,13 +1287,7 @@ export const STAFF_ACCESS_OVERRIDES_STORAGE_KEY = 'upbase_b2c_staff_access_overr
 export const DEPT_ACCESS_RULES_STORAGE_KEY = 'upbase_b2c_dept_access_rules_v1';
 
 export function getSavedStaffAccessOverrides(): Record<string, StaffAccessOverrideItem> {
-  if (typeof window === 'undefined') return {};
-  try {
-    const raw = localStorage.getItem(STAFF_ACCESS_OVERRIDES_STORAGE_KEY);
-    return raw ? JSON.parse(raw) : {};
-  } catch {
-    return {};
-  }
+  return serverPolicy?.staffOverrides || {};
 }
 
 export function saveStaffAccessOverrides(overrides: Record<string, StaffAccessOverrideItem>): void {
@@ -1305,15 +1302,7 @@ export function saveStaffAccessOverrides(overrides: Record<string, StaffAccessOv
 export function getSavedDeptAccessRules(
   fallback: DepartmentAccessRule[] = INITIAL_DEPARTMENT_ACCESS_RULES
 ): DepartmentAccessRule[] {
-  if (typeof window === 'undefined') return fallback;
-  try {
-    const raw = localStorage.getItem(DEPT_ACCESS_RULES_STORAGE_KEY);
-    if (!raw) return fallback;
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) && parsed.length > 0 ? parsed : fallback;
-  } catch {
-    return fallback;
-  }
+  return serverPolicy?.deptRules || INITIAL_DEPARTMENT_ACCESS_RULES;
 }
 
 export function saveDeptAccessRules(rules: DepartmentAccessRule[]): void {
@@ -2130,15 +2119,7 @@ export const ROLE_LANDING_TAB_STORAGE_KEY = 'upbase_b2c_role_landing_tab_v1';
 export const INTERNAL_STAFF_ROLES_STORAGE_KEY = 'upbase_b2c_internal_staff_roles_v1';
 
 export function getSavedRoleAllowedTabs(): Record<UserRole, TabKey[]> {
-  if (typeof window === 'undefined') return ROLE_ALLOWED_TABS;
-  try {
-    const raw = localStorage.getItem(ROLE_SCREEN_PERMS_STORAGE_KEY);
-    if (!raw) return ROLE_ALLOWED_TABS;
-    const parsed = JSON.parse(raw);
-    return { ...ROLE_ALLOWED_TABS, ...parsed };
-  } catch {
-    return ROLE_ALLOWED_TABS;
-  }
+  return serverPolicy?.roleAllowedTabs || ROLE_ALLOWED_TABS;
 }
 
 export function saveRoleAllowedTabs(map: Record<UserRole, TabKey[]>): void {
@@ -2152,15 +2133,7 @@ export function saveRoleAllowedTabs(map: Record<UserRole, TabKey[]>): void {
 }
 
 export function getSavedRoleDefaultLanding(): Record<UserRole, TabKey> {
-  if (typeof window === 'undefined') return ROLE_DEFAULT_LANDING;
-  try {
-    const raw = localStorage.getItem(ROLE_LANDING_TAB_STORAGE_KEY);
-    if (!raw) return ROLE_DEFAULT_LANDING;
-    const parsed = JSON.parse(raw);
-    return { ...ROLE_DEFAULT_LANDING, ...parsed };
-  } catch {
-    return ROLE_DEFAULT_LANDING;
-  }
+  return serverPolicy?.roleDefaultLanding || ROLE_DEFAULT_LANDING;
 }
 
 export function saveRoleDefaultLanding(map: Record<UserRole, TabKey>): void {
@@ -2181,21 +2154,7 @@ export function resetAllRoleScreenPermissions(): void {
 }
 
 export function getSavedInternalStaffList(): InternalStaffRbacMember[] {
-  if (typeof window === 'undefined') return INITIAL_INTERNAL_STAFF_RBAC;
-  try {
-    const raw = localStorage.getItem(INTERNAL_STAFF_ROLES_STORAGE_KEY);
-    if (!raw) return INITIAL_INTERNAL_STAFF_RBAC;
-    const saved: InternalStaffRbacMember[] = JSON.parse(raw);
-    if (!Array.isArray(saved) || saved.length === 0) return INITIAL_INTERNAL_STAFF_RBAC;
-    const savedMap = new Map(saved.map(s => [s.id, s]));
-    const merged = INITIAL_INTERNAL_STAFF_RBAC.map(init => savedMap.get(init.id) || init);
-    for (const s of saved) {
-      if (!merged.some(m => m.id === s.id)) merged.push(s);
-    }
-    return merged;
-  } catch {
-    return INITIAL_INTERNAL_STAFF_RBAC;
-  }
+  return serverPolicy?.internalStaff || INITIAL_INTERNAL_STAFF_RBAC;
 }
 
 export function saveInternalStaffList(list: InternalStaffRbacMember[]): void {

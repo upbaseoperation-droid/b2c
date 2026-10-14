@@ -51,7 +51,6 @@ export function Panel({
         <header className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-b border-line">
           <div className="min-w-0">
             {title && <h3 className="text-sm font-semibold text-ink">{title}</h3>}
-            {description && <p className="text-2xs text-ink-3 mt-0.5">{description}</p>}
           </div>
           {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
         </header>
@@ -312,7 +311,6 @@ export function Modal({
         <header className="flex items-start justify-between gap-4 px-5 pt-4 pb-3">
           <div className="min-w-0">
             <h2 id={titleId} className="text-base font-semibold text-ink">{view.title}</h2>
-            {view.description && <p className="text-[13px] text-ink-3 mt-0.5">{view.description}</p>}
           </div>
           <button type="button" data-close onClick={onClose} className="p-1 -mr-1 rounded-md text-ink-3 hover:text-ink hover:bg-sunken" aria-label="Đóng">
             <X className="w-4 h-4" />
@@ -372,7 +370,6 @@ export function ConfirmDialog({
       open={open}
       onClose={handleClose}
       title={title}
-      description={effectiveMessage}
       size="sm"
       footer={
         <>
@@ -394,6 +391,7 @@ export function ConfirmDialog({
         </>
       }
     >
+      {effectiveMessage && <p className="text-[13.5px] text-ink leading-relaxed">{effectiveMessage}</p>}
       {reason && (
         <Field label={reason.label} htmlFor={fieldId}>
           <Textarea id={fieldId} rows={3} value={text} onChange={(e) => setText(e.target.value)} placeholder={reason.placeholder} />

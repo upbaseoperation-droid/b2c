@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { 
   ActionMenu,
   Button, 
@@ -20,6 +20,7 @@ import {
   channelOf,
   useFlipList
 } from '../ui';
+import { DEFAULT_MASTER_CATALOG, INITIAL_MASTER_PRODUCTS, type MasterCatalog } from '../../lib/masterCatalog';
 import type { Column } from '../ui';
 import { formatVndShort, formatVnd } from '../../lib/format';
 import { 
@@ -142,12 +143,12 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
 
   // Brand state (Tải 625 thương hiệu chuẩn Upbase Master Data)
   const [brandList, setBrandList] = useState<BrandDetail[]>(() => 
-    brands && brands.length > 0 ? brands : INITIAL_BRANDS
+    brands ?? []
   );
   const [syncedBrands, setSyncedBrands] = useState(brands);
   if (brands !== syncedBrands) {
     setSyncedBrands(brands);
-    if (brands && brands.length > 0) {
+    if (brands) {
       setBrandList(brands);
     }
   }
@@ -192,40 +193,24 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
 
   // Store state (Đồng bộ danh mục 353 gian hàng chuẩn Upbase Master Data)
   const [storeList, setStoreList] = useState<StorePortfolioItem[]>(() => 
-    stores && stores.length > 0 ? stores : INITIAL_STORE_PORTFOLIOS
+    stores ?? []
   );
   const [syncedStores, setSyncedStores] = useState(stores);
   if (stores !== syncedStores) {
     setSyncedStores(stores);
-    if (stores && stores.length > 0) {
+    if (stores) {
       setStoreList(stores);
     }
   }
 
   const handleStoreUpdated = (updated: StorePortfolioItem) => {
+    if (!canEditCatalog) { onNotify?.("Bạn không có quyền sửa danh mục gốc.", "warning"); return; }
     setStoreList(prev => prev.map(s => s.id === updated.id ? updated : s));
-    if (onUpdateStore) onUpdateStore(updated);
+    // Bản nháp được đẩy sang nguồn dùng chung sau khi lưu.
   };
 
   // Master Product Catalog state (Dữ liệu gốc sản phẩm)
-  const [productList, setProductList] = useState<MasterProductItem[]>(() => 
-    INITIAL_PUSH_PRODUCTS.map(p => ({
-      id: p.id,
-      sku: p.sku,
-      productName: p.productName,
-      brandName: p.brandName,
-      storeName: p.storeName || (p.platform === 'TIKTOK_SHOP' ? `${p.brandName} TikTok Shop` : `${p.brandName} Shopee Mall`),
-      platform: p.platform === 'TIKTOK_SHOP' ? 'TikTok Shop' : p.platform === 'SHOPEE_MALL' ? 'Shopee Mall' : 'Lazada',
-      category: p.brandCategory,
-      originalPrice: p.originalPrice,
-      pdpUrl: p.pdpUrl || '',
-      commissionRate: p.affiliateRate ?? 15,
-      heroType: 'HERO',
-      sampleAvailableCount: Math.max(0, (p.monthlySampleQuota ?? 50) - (p.allocatedSampleCount ?? 0)),
-      usp: p.usp || '',
-      status: 'ACTIVE'
-    }))
-  );
+  const [productList, setProductList] = useState<MasterProductItem[]>([]);
   const [productSearch, setProductSearch] = useState('');
   const [selectedProductBrand, setSelectedProductBrand] = useState('ALL');
   const [selectedProductPlatform, setSelectedProductPlatform] = useState('ALL');
@@ -439,6 +424,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
 
   // 1. Tạo nhanh thương hiệu đơn giản (Chỉ cần Tên Brand)
   const handleQuickCreateBrand = (e: React.FormEvent) => {
+    if (!canEditCatalog) { onNotify?.("Bạn không có quyền sửa danh mục gốc.", "warning"); return; }
     e.preventDefault();
     const cleanName = quickBrandName.trim();
     if (!cleanName) return;
@@ -483,11 +469,12 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
     setIsQuickBrandModalOpen(false);
     setQuickBrandName('');
     setQuickBrandCode('');
-    if (onNotify) onNotify(`Đã tạo thương hiệu [${cleanName}] thành công! Bạn có thể vào màn hình Hồ sơ thương hiệu để thiết lập chi tiết.`, 'success');
+    if (onNotify) onNotify(`Đã thêm vào bản nháp thương hiệu [${cleanName}] — chọn Lưu danh mục trước khi mở Hồ sơ thương hiệu.`, 'success');
   };
 
   // 2. Nhập hàng loạt tên thương hiệu từ Lark Base (Dán danh sách text)
   const handleLarkBulkImport = () => {
+    if (!canEditCatalog) { onNotify?.("Bạn không có quyền sửa danh mục gốc.", "warning"); return; }
     if (!larkRawText.trim()) return;
 
     const lines = larkRawText
@@ -545,7 +532,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
       setBrandList(prev => [...newBrands, ...prev]);
       setIsLarkSyncModalOpen(false);
       setLarkRawText('');
-      if (onNotify) onNotify(`Đã nhập thành công ${addedCount} thương hiệu từ Lark Base!`, 'success');
+      if (onNotify) onNotify(`Đã nhập vào bản nháp ${addedCount} thương hiệu từ Lark Base!`, 'success');
     } else {
       if (onNotify) onNotify('Tất cả các thương hiệu trong danh sách đã có trên hệ thống.', 'warning');
     }
@@ -553,62 +540,12 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
 
   // 3. Đồng bộ trực tiếp từ Lark Base 3.5 (API Mock)
   const handleSyncFromLarkBaseApi = () => {
-    setIsSyncingLark(true);
-    setTimeout(() => {
-      setIsSyncingLark(false);
-      const larkSampleBrands = [
-        'ClubClio', 'Peripera', 'Dprogram', 'Anessa', 'Bioderma', 
-        'Cocoon', 'Torriden', 'Skin1004', 'Cosrx', 'Klairs', 
-        'Innisfree', 'Laneige', 'Some By Mi', 'Maybelline', "L'Oreal Paris"
-      ];
-      let added = 0;
-      const toAdd: BrandDetail[] = [];
-      larkSampleBrands.forEach((name, idx) => {
-        const exists = brandList.some(b => b.name.toLowerCase() === name.toLowerCase()) ||
-                       toAdd.some(b => b.name.toLowerCase() === name.toLowerCase());
-        if (!exists) {
-          const autoCode = name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9]/g, '').slice(0, 8).toUpperCase();
-          toAdd.push({
-            id: `brand-lark-api-${Date.now()}-${idx}`,
-            code: autoCode,
-            name: name,
-            companyName: `${name} Vietnam`,
-            category: 'Mỹ phẩm & Làm đẹp',
-            color: '#0284C7',
-            status: 'ACTIVE',
-            planBudget: 0,
-            monthlyBudget: 0,
-            spentBudget: 0,
-            targetGmv: 0,
-            currentGmv: 0,
-            targetVideos: 0,
-            airedVideos: 0,
-            accountPic: 'Chưa phân công',
-            growthPic: 'Chưa phân công',
-            bookingPicLead: 'Chưa phân công',
-            platforms: ['TikTok Shop', 'Shopee Mall'],
-            brandGuideline: '',
-            kocCriteria: '',
-            stores: [],
-            heroProducts: [],
-            profileStatus: 'NOT_CONFIGURED'
-          });
-          added++;
-        }
-      });
-
-      if (toAdd.length > 0) {
-        setBrandList(prev => [...toAdd, ...prev]);
-        setIsLarkSyncModalOpen(false);
-        if (onNotify) onNotify(`Đồng bộ thành công ${added} thương hiệu mới từ Lark Base!`, 'success');
-      } else {
-        if (onNotify) onNotify('Dữ liệu thương hiệu đã được cập nhật mới nhất từ Lark Base.', 'info');
-      }
-    }, 600);
+    onNotify?.('Chưa kết nối API danh mục Lark. Hãy dán danh sách để nhập vào bản nháp, kiểm tra rồi lưu.', 'info');
   };
 
   // 4. Lưu chỉnh sửa thông tin cơ bản của Brand
   const handleSaveEditBrand = (e: React.FormEvent) => {
+    if (!canEditCatalog) { onNotify?.("Bạn không có quyền sửa danh mục gốc.", "warning"); return; }
     e.preventDefault();
     if (!editingBrand) return;
     const cleanName = editBrandName.trim();
@@ -618,6 +555,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
     const oldName = editingBrand.name;
     const isNameChanged = oldName.toLowerCase() !== cleanName.toLowerCase();
 
+    if (isNameChanged && getBrandDependencies(oldName).totalCount > 0) { onNotify?.('Thương hiệu còn dữ liệu liên kết. Không thể đổi tên; hãy giữ tên hoặc tạm dừng.', 'error'); return; }
     // Check duplicate
     const isDuplicate = brandList.some(b => b.id !== editingBrand.id && b.name.toLowerCase() === cleanName.toLowerCase());
     if (isDuplicate) {
@@ -640,7 +578,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
       setProductList(prev => prev.map(p => p.brandName === oldName ? { ...p, brandName: cleanName } : p));
       if (onNotify) onNotify(`Đã đổi tên thương hiệu sang [${cleanName}] và đồng bộ sang các gian hàng, sản phẩm liên kết!`, 'success');
     } else {
-      if (onNotify) onNotify(`Đã cập nhật thông tin thương hiệu [${cleanName}]`, 'success');
+      if (onNotify) onNotify(`Đã sửa bản nháp: thông tin thương hiệu [${cleanName}]`, 'success');
     }
 
     setIsEditBrandModalOpen(false);
@@ -649,6 +587,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
 
   // Handle Soft Archive Brand
   const handleArchiveBrand = (brand: BrandDetail) => {
+    if (!canEditCatalog) { onNotify?.("Bạn không có quyền sửa danh mục gốc.", "warning"); return; }
     setBrandList(prev => prev.map(b => b.id === brand.id ? { ...b, status: 'PAUSED' } : b));
     if (onNotify) onNotify(`Đã chuyển thương hiệu [${brand.name}] sang trạng thái Tạm dừng (Lưu trữ an toàn)`, 'info');
     setDeletingBrand(null);
@@ -657,24 +596,27 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
 
   // Handle Confirm Hard Delete Brand
   const handleConfirmHardDeleteBrand = () => {
+    if (!canEditCatalog) { onNotify?.("Bạn không có quyền sửa danh mục gốc.", "warning"); return; }
     if (!deletingBrand) return;
     const deps = getBrandDependencies(deletingBrand.name);
-    if (deps.totalCount > 0 && deleteConfirmText.trim() !== deletingBrand.name.trim()) {
-      if (onNotify) onNotify(`Vui lòng nhập chính xác tên thương hiệu "${deletingBrand.name}" để xác nhận xóa!`, 'error');
+    if (deps.totalCount > 0) {
+      if (onNotify) onNotify(`Không thể xóa ${deletingBrand.name} vì còn dữ liệu liên kết. Hãy chọn Tạm dừng.`, 'error');
       return;
     }
     setBrandList(prev => prev.filter(b => b.id !== deletingBrand.id));
-    if (onNotify) onNotify(`Đã xóa thương hiệu [${deletingBrand.name}] khỏi Master Data`, 'warning');
+    if (onNotify) onNotify(`Đã đánh dấu xóa trong bản nháp: thương hiệu [${deletingBrand.name}] khỏi Master Data`, 'warning');
     setDeletingBrand(null);
     setDeleteConfirmText('');
   };
 
   // Handle Add / Edit Master Product
   const handleSaveProduct = (e: React.FormEvent) => {
+    if (!canEditCatalog) { onNotify?.("Bạn không có quyền sửa danh mục gốc.", "warning"); return; }
     e.preventDefault();
     const cleanSku = productForm.sku.trim().toUpperCase();
     const cleanName = productForm.productName.trim();
     if (!cleanSku || !cleanName) return;
+    if (![Number(productForm.originalPrice), Number(productForm.commissionRate), Number(productForm.sampleAvailableCount)].every(n => Number.isFinite(n) && n >= 0) || Number(productForm.commissionRate) > 100) { onNotify?.('Giá, tồn kho và hoa hồng phải là số không âm; hoa hồng không quá 100%.', 'error'); return; }
 
     // Check duplicate SKU
     const isDupSku = productList.some(p => 
@@ -697,13 +639,13 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
         category: productForm.category,
         originalPrice: Number(productForm.originalPrice),
         pdpUrl: productForm.pdpUrl.trim(),
-        commissionRate: Number(productForm.commissionRate) || 15,
+        commissionRate: Number(productForm.commissionRate ?? 15),
         heroType: productForm.heroType,
         sampleAvailableCount: Number(productForm.sampleAvailableCount) || 0,
         usp: productForm.usp.trim(),
         status: productForm.status
       } : p));
-      if (onNotify) onNotify(`Đã cập nhật sản phẩm [${cleanSku}] vào dữ liệu gốc`, 'success');
+      if (onNotify) onNotify(`Đã sửa bản nháp: sản phẩm [${cleanSku}] vào dữ liệu gốc`, 'success');
     } else {
       const newProd: MasterProductItem = {
         id: `mp-${Date.now()}`,
@@ -715,26 +657,28 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
         category: productForm.category,
         originalPrice: Number(productForm.originalPrice),
         pdpUrl: productForm.pdpUrl.trim(),
-        commissionRate: Number(productForm.commissionRate) || 15,
+        commissionRate: Number(productForm.commissionRate ?? 15),
         heroType: productForm.heroType,
         sampleAvailableCount: Number(productForm.sampleAvailableCount) || 0,
         usp: productForm.usp.trim(),
         status: productForm.status
       };
       setProductList(prev => [newProd, ...prev]);
-      if (onNotify) onNotify(`Đã thêm sản phẩm [${newProd.sku}] vào dữ liệu gốc`, 'success');
+      if (onNotify) onNotify(`Đã thêm vào bản nháp sản phẩm [${newProd.sku}] vào dữ liệu gốc`, 'success');
     }
     setIsProductModalOpen(false);
     setEditingProduct(null);
   };
 
   const handleDeleteProduct = (prod: MasterProductItem) => {
+    if (!canEditCatalog) { onNotify?.("Bạn không có quyền sửa danh mục gốc.", "warning"); return; }
     setProductList(prev => prev.filter(p => p.id !== prod.id));
-    if (onNotify) onNotify(`Đã xóa sản phẩm [${prod.sku}] khỏi danh mục gốc`, 'warning');
+    if (onNotify) onNotify(`Đã đánh dấu xóa trong bản nháp: sản phẩm [${prod.sku}] khỏi danh mục gốc`, 'warning');
     setDeletingProduct(null);
   };
 
   const handleDiscontinueProduct = (prod: MasterProductItem) => {
+    if (!canEditCatalog) { onNotify?.("Bạn không có quyền sửa danh mục gốc.", "warning"); return; }
     setProductList(prev => prev.map(p => p.id === prod.id ? { ...p, status: 'DISCONTINUED' } : p));
     if (onNotify) onNotify(`Đã chuyển sản phẩm [${prod.sku}] sang trạng thái Tạm ngừng`, 'info');
     setDeletingProduct(null);
@@ -742,9 +686,11 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
 
   // Handle Add / Edit Master Content Pillar
   const handleSavePillar = (e: React.FormEvent) => {
+    if (!canEditCatalog) { onNotify?.("Bạn không có quyền sửa danh mục gốc.", "warning"); return; }
     e.preventDefault();
     if (!pillarForm.code.trim() || !pillarForm.name.trim()) return;
 
+    if (!Number.isFinite(Number(pillarForm.benchmarkUnitCost)) || Number(pillarForm.benchmarkUnitCost) < 0) { onNotify?.('Chi phí phải là số không âm.', 'error'); return; }
     const niches = pillarForm.applicableNiches
       .split(',')
       .map(s => s.trim())
@@ -762,13 +708,13 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
         description: pillarForm.description.trim(),
         applicableNiches: niches.length > 0 ? niches : ['Toàn ngành'],
         suggestedFormats: formats.length > 0 ? formats : ['Video ngắn chuẩn'],
-        benchmarkUnitCost: Number(pillarForm.benchmarkUnitCost) || 1000000,
+        benchmarkUnitCost: Number(pillarForm.benchmarkUnitCost ?? 1000000),
         targetAudience: pillarForm.targetAudience.trim() || 'Người dùng đa kênh',
         keyObjectives: pillarForm.keyObjectives.trim() || 'Tăng độ nhận diện thương hiệu',
         status: pillarForm.status,
         colorTag: pillarForm.colorTag || '#4F46E5'
       } : p));
-      if (onNotify) onNotify(`Đã cập nhật trụ cột nội dung: ${pillarForm.name}`);
+      if (onNotify) onNotify(`Đã sửa bản nháp: trụ cột nội dung: ${pillarForm.name}`);
     } else {
       const newPillar: MasterContentPillar = {
         id: `MASTER-PIL-${Date.now()}`,
@@ -777,7 +723,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
         description: pillarForm.description.trim(),
         applicableNiches: niches.length > 0 ? niches : ['Toàn ngành'],
         suggestedFormats: formats.length > 0 ? formats : ['Video ngắn chuẩn'],
-        benchmarkUnitCost: Number(pillarForm.benchmarkUnitCost) || 1000000,
+        benchmarkUnitCost: Number(pillarForm.benchmarkUnitCost ?? 1000000),
         targetAudience: pillarForm.targetAudience.trim() || 'Người dùng đa kênh',
         keyObjectives: pillarForm.keyObjectives.trim() || 'Tăng độ nhận diện thương hiệu',
         status: pillarForm.status,
@@ -786,13 +732,14 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
         createdAt: new Date().toISOString().split('T')[0]
       };
       setPillarList(prev => [newPillar, ...prev]);
-      if (onNotify) onNotify(`Đã thêm trụ cột nội dung mới: ${pillarForm.name}`);
+      if (onNotify) onNotify(`Đã thêm vào bản nháp trụ cột nội dung mới: ${pillarForm.name}`);
     }
     setIsPillarModalOpen(false);
     setEditingPillar(null);
   };
 
   const handleTogglePillarStatus = (pillarId: string) => {
+    if (!canEditCatalog) { onNotify?.("Bạn không có quyền sửa danh mục gốc.", "warning"); return; }
     setPillarList(prev => prev.map(p => {
       if (p.id === pillarId) {
         const nextStatus = p.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
@@ -803,8 +750,59 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
     }));
   };
 
+
+  const [extraCatalog, setExtraCatalog] = useState({ castTiers: DEFAULT_MASTER_CATALOG.castTiers, niches: DEFAULT_MASTER_CATALOG.niches, formats: DEFAULT_MASTER_CATALOG.formats });
+  const [catalogRevision, setCatalogRevision] = useState<number | null>(null);
+  const [catalogBusy, setCatalogBusy] = useState(false);
+  const [catalogError, setCatalogError] = useState('');
+  const [canEditCatalog, setCanEditCatalog] = useState(false);
+  const [savedCatalog, setSavedCatalog] = useState('');
+  const draftCatalog: MasterCatalog = { brands: brandList, stores: storeList, products: productList, pillars: pillarList, ...extraCatalog };
+  const catalogDirty = savedCatalog !== '' && JSON.stringify(draftCatalog) !== savedCatalog;
+  const acceptCatalog = (body: { revision: number; data: MasterCatalog; canEdit: boolean }) => {
+    const data = body.data;
+    setBrandList(data.brands); setStoreList(data.stores); setProductList(data.products); setPillarList(data.pillars);
+    setExtraCatalog({ castTiers: data.castTiers, niches: data.niches, formats: data.formats });
+    setCatalogRevision(body.revision); setCanEditCatalog(body.canEdit); setSavedCatalog(JSON.stringify(data));
+  };
+  const reloadCatalog = async () => {
+    const res = await fetch('/api/master-data', { cache: 'no-store' });
+    const body = await res.json(); if (!res.ok) throw new Error(body.error);
+    acceptCatalog(body); setCatalogError('');
+  };
+  useEffect(() => {
+    let cancelled = false;
+    setBrandList([]); setStoreList([]); setProductList([]); setCatalogRevision(null); setCanEditCatalog(false);
+    fetch('/api/master-data', { cache: 'no-store' }).then(async res => { const body = await res.json(); if (!res.ok) throw new Error(body.error); if (!cancelled) acceptCatalog(body); }).catch(e => { if (!cancelled) setCatalogError(e.message); });
+    return () => { cancelled = true; };
+  }, [currentUser.id]);
+  useEffect(() => {
+    const warn = (e: BeforeUnloadEvent) => { if (catalogDirty) { e.preventDefault(); e.returnValue = ''; } };
+    window.addEventListener('beforeunload', warn); return () => window.removeEventListener('beforeunload', warn);
+  }, [catalogDirty]);
+  const commitCatalog = async () => {
+    if (!canEditCatalog || catalogBusy || catalogRevision === null) return;
+    setCatalogBusy(true); setCatalogError('');
+    try {
+      const res = await fetch('/api/master-data', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ revision: catalogRevision, data: draftCatalog }) });
+      const body = await res.json(); if (!res.ok) throw new Error(body.error);
+      acceptCatalog(body); window.dispatchEvent(new Event('upbase-master-data-updated'));
+      onNotify?.('Đã lưu danh mục dùng chung trên máy chủ.', 'success');
+    } catch (e) { setCatalogError((e as Error).message); }
+    finally { setCatalogBusy(false); }
+  };
+
   return (
     <div className="space-y-5">
+      <div role="status" className="rounded-lg border border-line bg-surface p-3 text-sm">
+        <strong>{catalogRevision === null ? 'Đang tải danh mục…' : canEditCatalog ? catalogDirty ? 'Có thay đổi chưa lưu' : 'Danh mục đã lưu' : 'Bạn đang xem danh mục trong phạm vi được giao'}</strong>
+        <p>Brand, gian hàng, sản phẩm, pillar, khung cast, tệp kênh và định dạng được lưu cùng nhau. Các chỉnh sửa là bản nháp cho đến khi chọn “Lưu danh mục”.</p>
+        {catalogError && <p role="alert" className="text-red-600">{catalogError}</p>}
+        {canEditCatalog && <Button onClick={commitCatalog} disabled={catalogBusy || !catalogDirty}>{catalogBusy ? 'Đang lưu…' : 'Lưu danh mục'}</Button>}
+        <Button variant="ghost" disabled={catalogBusy} onClick={() => { if (catalogDirty && !window.confirm('Bỏ bản nháp và tải dữ liệu mới nhất?')) return; reloadCatalog().catch(e => setCatalogError(e.message)); }}>Tải lại</Button>
+        {!canEditCatalog && <p>Chỉ quản trị viên hoặc trưởng phòng B2C có quyền sửa danh mục gốc.</p>}
+      </div>
+
       {/* Sub-Tabs Navigation */}
       <Tabs
         items={[
@@ -1762,7 +1760,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
       {/* SUB-TAB: BẬC CAST & PHÂN NHÓM CREATOR */}
       {activeSubTab === 'cast-tiers' && (
         <CastTiersMasterView
-          initialTiers={UPBASE_CAST_TIERS}
+          initialTiers={extraCatalog.castTiers} onChange={items => setExtraCatalog(prev => ({ ...prev, castTiers: items }))}
           onNotify={onNotify}
         />
       )}
@@ -1770,7 +1768,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
       {/* SUB-TAB: TỆP KÊNH & CHUYÊN MỤC KOC */}
       {activeSubTab === 'koc-niches' && (
         <KocNichesMasterView
-          initialNiches={UPBASE_KOC_NICHES}
+          initialNiches={extraCatalog.niches} onChange={items => setExtraCatalog(prev => ({ ...prev, niches: items }))}
           onNotify={onNotify}
         />
       )}
@@ -1778,7 +1776,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
       {/* SUB-TAB: PHÂN LOẠI ĐỊNH DẠNG VIDEO */}
       {activeSubTab === 'video-formats' && (
         <VideoFormatsMasterView
-          initialFormats={UPBASE_VIDEO_FORMATS}
+          initialFormats={extraCatalog.formats} onChange={items => setExtraCatalog(prev => ({ ...prev, formats: items }))}
           onNotify={onNotify}
         />
       )}

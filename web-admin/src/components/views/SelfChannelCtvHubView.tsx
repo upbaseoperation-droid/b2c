@@ -1250,9 +1250,6 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                   · Luồng Self-Channel 5 bước · <span className="font-mono font-medium text-slate-700">{activeAllocation.brandName}</span>
                 </span>
               </div>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Nhận chỉ tiêu Kế hoạch tháng - Chọn VJ &amp; Duyệt định hướng (48h) - Giao mẫu (48h) &amp; Quay dựng - Duyệt QA 2 vòng &amp; Đăng kênh - Lập DNTT &amp; Khấu trừ thuế TNCN.
-              </p>
             </div>
           </div>
 
@@ -1519,9 +1516,6 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                   <ShieldCheck className="w-4 h-4 text-blue-600" />
                   <span>1. Phân quyền thao tác nhân sự trong Quy trình sản xuất Video Self-Channel (6 Bước SOP)</span>
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Gắn quyền rõ ràng giữa <strong>Trưởng phòng B2C (Đặng Thị Yến Nhi)</strong>, <strong>Leader Partnership (Việt Hoàng)</strong> và <strong>4 Chuyên viên Content</strong> bên dưới để không chồng chéo việc liên hệ CTV, duyệt kịch bản và lập DNTT.
-                </p>
               </div>
               <span className="text-2xs text-slate-500">
                 Bấm vào ô quyền để bật / tắt quyền thao tác
@@ -1608,9 +1602,6 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                   <FileCheck2 className="w-4 h-4 text-emerald-600" />
                   <span>2. Đầu vào Quy trình: Kế hoạch Tháng Đã Duyệt (Plan Final) có hạn mức Video Self-Channel</span>
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Chỉ các gian hàng có <strong>Plan Final đã được Trưởng phòng duyệt</strong> mới được mở hạn mức sản xuất Video Self-Channel. Một gian hàng có thể gán 1–2 chuyên viên Content cùng phụ trách dưới sự điều phối CTV của <strong>Việt Hoàng</strong>.
-                </p>
               </div>
 
               <div className="flex items-center gap-2 flex-wrap">
@@ -2016,9 +2007,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                     <Building2 className="w-4 h-4 text-blue-600" />
                     <span>Ma trận phân bổ Video kênh Brand ({availableAllocations.length} thương hiệu)</span>
                   </h3>
-                  <p className="text-2xs text-slate-500">
-                    Đối soát hạn mức ngân sách, chỉ tiêu số lượng video và tiến độ nghiệm thu đăng kênh của từng thương hiệu
-                  </p>
+                  
                 </div>
                 {onOpenInputPlan && (
                   <button
@@ -2194,9 +2183,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                   <h3 className="text-xs font-semibold text-slate-900">
                     Hộp việc Phê duyệt theo 4 bước kiểm soát chất lượng ({stats.pendingApprovalsCount} mục)
                   </h3>
-                  <p className="text-2xs text-slate-500 mt-0.5">
-                    1. Duyệt VJ &amp; Định hướng (SLA 48h) - 2. Duyệt Kịch bản (SLA 24h) - 3. QA Video nội bộ &amp; Lưu Drive gian hàng - 4. Brand nghiệm thu &amp; Đăng kênh
-                  </p>
+                  
                 </div>
               </div>
 
@@ -2901,9 +2888,6 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                 <h2 className="text-xs font-semibold text-slate-900">
                   Tổng hợp Đề nghị thanh toán (DNTT) &amp; Khấu trừ thuế TNCN 10% theo CTV / VJ
                 </h2>
-                <p className="text-2xs text-slate-500 mt-0.5">
-                  Chỉ cho phép lập phiếu DNTT khi CTV đã có đủ CCCD và Hợp đồng dịch vụ còn hiệu lực tại Danh bạ CTV / VJ. Khấu trừ 10% thuế TNCN nếu tổng đợt chi trả từ 2.000.000 đ trở lên.
-                </p>
               </div>
               <button
                 type="button"
@@ -3078,9 +3062,6 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
               <h2 className="text-xs font-semibold text-slate-900">
                 Mạng lưới CTV / VJ &amp; Sản phẩm mẫu đang cầm sẵn tại nhà
               </h2>
-              <p className="text-2xs text-slate-500 mt-0.5">
-                Tra cứu nhanh đơn giá, công suất tháng và các mã SKU VJ đang giữ sẵn để điều phối các đơn hàng gấp &lt; 5 ngày
-              </p>
             </div>
             {onOpenCtvProfile && (
               <button
@@ -3326,9 +3307,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                   <h4 className="text-xs font-semibold text-slate-900">
                     1. Đầu việc của {portalCtv.name} đang triển khai ({activeActionTasks.length} việc)
                   </h4>
-                  <p className="text-2xs text-slate-500 mt-0.5">
-                    Nộp kịch bản (Hook/Body/CTA), xác nhận đã nhận hàng mẫu hoặc dán link Google Drive nộp Video Demo để Content B2C duyệt.
-                  </p>
+                  
                 </div>
               </div>
 
@@ -3485,9 +3464,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                   <h4 className="text-xs font-semibold text-slate-900">
                     2. Đề bài mới từ Partnership &amp; Content đang mở nhận việc ({openTasksForClaim.length} đề bài)
                   </h4>
-                  <p className="text-2xs text-slate-500 mt-0.5">
-                    Các đề bài phù hợp với thế mạnh của CTV. Với đơn gấp &lt; 5 ngày, hệ thống tự động kiểm tra mã SKU có sẵn tại nhà.
-                  </p>
+                  
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {openTasksForClaim.map(task => {
@@ -3546,9 +3523,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                   <h4 className="text-xs font-semibold text-slate-900">
                     3. Lịch sử Video đã nghiệm thu &amp; Quyết toán thù lao của {portalCtv.name} ({completedAndPaidTasks.length} video)
                   </h4>
-                  <p className="text-2xs text-slate-500 mt-0.5">
-                    Minh bạch trạng thái nghiệm thu, số vòng chỉnh sửa, link đăng kênh và mã phiếu DNTT / Ủy nhiệm chi.
-                  </p>
+                  
                 </div>
               </div>
 
@@ -3904,9 +3879,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                   <Sparkles className="w-4 h-4 text-emerald-600" />
                   Nhận chỉ tiêu Video kênh Brand từ Kế hoạch tháng 10/2026
                 </h3>
-                <p className="text-2xs text-slate-500 mt-0.5">
-                  Tự động sinh các slot sản xuất video theo hạn mức Self-Channel đã được Trưởng phòng phê duyệt
-                </p>
+                
               </div>
               <button
                 type="button"

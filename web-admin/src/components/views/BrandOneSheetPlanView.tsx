@@ -279,11 +279,7 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
             <h2 className="text-lg font-semibold tracking-tight">
               {formData.brandName.toUpperCase()} • PLAN THÁNG {formData.month} • MONTHLY CONTENT &amp; KEY VISUAL PLAN
             </h2>
-            <p className="text-xs text-slate-300">
-              Tổng hợp trực tiếp từ 3 vị trí gắn theo Brand (<strong>Plan/Strategy</strong>,{' '}
-              <strong>Key Visual/SIS</strong>, <strong>Content Main</strong>) và số liệu phân rã của{' '}
-              <strong>Booking TikTok Shop + Content Shopee</strong>.
-            </p>
+            
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">

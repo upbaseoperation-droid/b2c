@@ -16,7 +16,7 @@ export function isStaffGlobalAdminOrManager(user: UserProfile | null | undefined
   }
 
   // 2. Quyền tường minh ALL_PERMISSIONS hoặc canViewAllBrands
-  if (user.permissions?.includes('ALL_PERMISSIONS') || user.permissions?.includes('canViewAllBrands')) {
+  if (user.permissions?.includes('ALL_PERMISSIONS')) {
     return true;
   }
 
@@ -80,7 +80,7 @@ export function isBrandManagedByUser(
   const assigned = getUserAssignedBrandNames(user);
   if (assigned.some(a => {
     const aLower = a.toLowerCase();
-    return aLower === bNameLower || bNameLower.includes(aLower) || aLower.includes(bNameLower);
+    return aLower === bNameLower;
   })) {
     return true;
   }
@@ -96,7 +96,7 @@ export function isBrandManagedByUser(
       brand.planStrategyPic,
       brand.keyVisualSisPic,
     ];
-    if (picFields.some(pic => pic && pic.trim().toLowerCase().includes(userNameLower))) {
+    if (picFields.some(pic => pic && userNameLower && pic.split(/[,;|]/).some(name => name.trim().toLowerCase() === userNameLower))) {
       return true;
     }
 
@@ -113,7 +113,7 @@ export function isBrandManagedByUser(
   if (allStores && allStores.length > 0) {
     const hasManagedStore = allStores.some(s => {
       const sBrand = (s.brandName || s.storeName.split('_')[0] || '').trim().toLowerCase();
-      if (sBrand !== bNameLower && !sBrand.includes(bNameLower) && !bNameLower.includes(sBrand)) {
+      if (sBrand !== bNameLower) {
         return false;
       }
       return isStoreManagedByUser(s, user, false); // Tránh đệ quy vô hạn
@@ -161,7 +161,7 @@ export function isStoreManagedByUser(
     ...(store.b2cOwners || [])
   ];
 
-  if (storePics.some(pic => pic && pic.trim().toLowerCase().includes(uName))) {
+  if (storePics.some(pic => pic && uName && pic.split(/[,;|]/).some(name => name.trim().toLowerCase() === uName))) {
     return true;
   }
 
@@ -196,7 +196,7 @@ export function isPlanManagedByUser(
     plan.mediaPic,
     plan.submittedBy
   ];
-  if (planPics.some(pic => pic && pic.trim().toLowerCase().includes(uName))) {
+  if (planPics.some(pic => pic && uName && pic.split(/[,;|]/).some(name => name.trim().toLowerCase() === uName))) {
     return true;
   }
 
@@ -243,7 +243,7 @@ export function isDealManagedByUser(
     deal.accountPic,
     deal.leadBooking
   ];
-  if (dealPics.some(pic => pic && pic.trim().toLowerCase().includes(uName))) {
+  if (dealPics.some(pic => pic && uName && pic.split(/[,;|]/).some(name => name.trim().toLowerCase() === uName))) {
     return true;
   }
 
@@ -271,7 +271,8 @@ export function filterScopedBrands(
   user: UserProfile | null | undefined,
   stores?: StorePortfolioItem[]
 ): BrandDetail[] {
-  if (!user || isStaffGlobalAdminOrManager(user)) {
+  if (!user) return [];
+  if (isStaffGlobalAdminOrManager(user)) {
     return brands;
   }
   return brands.filter(b => isBrandManagedByUser(b, user, stores));
@@ -284,7 +285,8 @@ export function filterScopedStores(
   stores: StorePortfolioItem[],
   user: UserProfile | null | undefined
 ): StorePortfolioItem[] {
-  if (!user || isStaffGlobalAdminOrManager(user)) {
+  if (!user) return [];
+  if (isStaffGlobalAdminOrManager(user)) {
     return stores;
   }
   return stores.filter(s => isStoreManagedByUser(s, user));
@@ -298,7 +300,8 @@ export function filterScopedPlans(
   user: UserProfile | null | undefined,
   stores?: StorePortfolioItem[]
 ): InputPlanBreakdownState[] {
-  if (!user || isStaffGlobalAdminOrManager(user)) {
+  if (!user) return [];
+  if (isStaffGlobalAdminOrManager(user)) {
     return plans;
   }
   return plans.filter(p => isPlanManagedByUser(p, user, stores));
@@ -312,7 +315,8 @@ export function filterScopedDeals(
   user: UserProfile | null | undefined,
   stores?: StorePortfolioItem[]
 ): BookingDealItem[] {
-  if (!user || isStaffGlobalAdminOrManager(user)) {
+  if (!user) return [];
+  if (isStaffGlobalAdminOrManager(user)) {
     return deals;
   }
   return deals.filter(d => isDealManagedByUser(d, user, stores));
@@ -337,7 +341,8 @@ export function getUserScopeSummary(
   allStores: StorePortfolioItem[]
 ): UserScopeSummary {
   const isGlobal = isStaffGlobalAdminOrManager(user);
-  if (!user || isGlobal) {
+  if (!user) return { isGlobal: false, managedBrandNames: [], managedStoreCount: 0, totalStoreCount: 0, totalBrandCount: 0, scopeBadgeText: 'Chưa có quyền truy cập', scopeTooltip: 'Chưa xác định danh tính.' };
+  if (isGlobal) {
     return {
       isGlobal: true,
       managedBrandNames: allBrands.map(b => b.name),

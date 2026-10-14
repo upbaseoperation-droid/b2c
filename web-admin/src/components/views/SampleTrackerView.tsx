@@ -136,12 +136,11 @@ export default function SampleTrackerView({
         </Button>
       </PageActions>
 
-      {/* KPI Strip */}
       <StatRow>
-        <Stat label="Tổng đơn mẫu" value={totalSent} note="Toàn bộ chiến dịch" />
-        <Stat label="Đang vận chuyển" value={deliveringCount} note="Chờ bưu tá giao" tone="warning" />
-        <Stat label="Cảnh báo quá hạn" value={ghostAlertCount} note="Quá 5 ngày chưa nộp video" tone={ghostAlertCount > 0 ? 'critical' : undefined} />
-        <Stat label="Đã lên sóng & có mã Ads" value={airedCount} note="Sẵn sàng chạy quảng cáo" tone="positive" />
+        <Stat label="Tổng đơn mẫu" value={totalSent} />
+        <Stat label="Đang vận chuyển" value={deliveringCount} tone="warning" />
+        <Stat label="Cảnh báo quá hạn" value={ghostAlertCount} tone={ghostAlertCount > 0 ? 'critical' : undefined} />
+        <Stat label="Đã lên sóng & có mã Ads" value={airedCount} tone="positive" />
       </StatRow>
 
       {/* Filter & Search Bar */}
@@ -150,7 +149,7 @@ export default function SampleTrackerView({
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input 
             type="text" 
-            placeholder="Tìm theo KOC, mã vận đơn, sản phẩm..." 
+            placeholder="Tìm KOC, mã vận đơn..." 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded focus:outline-none focus:ring-1 focus:ring-slate-400"

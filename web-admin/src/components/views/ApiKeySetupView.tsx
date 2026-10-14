@@ -1100,9 +1100,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({ onNotify }) =>
                   <Layers className="w-4 h-4 text-accent" />
                   <span>Kho Khóa API Riêng Theo Nhóm Nghiệp Vụ / Tài Khoản Phụ ({config.namedKeys.length})</span>
                 </h3>
-                <p className="text-2xs text-ink-3 mt-0.5">
-                  Nếu bạn có nhiều khóa API khác nhau (ví dụ: khóa Google riêng cho Pháp chế đọc CCCD, khóa Claude riêng cho team Content duyệt kịch bản), hãy lưu tại đây để gán riêng cho từng mục đích.
-                </p>
+                
               </div>
 
               <button
@@ -1313,9 +1311,6 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({ onNotify }) =>
               <h3 className="text-sm font-semibold text-ink">
                 Bảng Phân Bổ Công Cụ (Google · ChatGPT · Claude) Cho Từng Nghiệp Vụ
               </h3>
-              <p className="text-xs text-ink-3">
-                Chọn nhà cung cấp chính, mô hình xử lý, khóa API riêng và công cụ dự phòng cho mỗi nghiệp vụ trong hệ thống B2C.
-              </p>
             </div>
             <div className="text-2xs text-ink-3 bg-sunken px-3 py-1.5 rounded-lg border border-line shrink-0">
               Mẹo: Khi khóa chính chưa nhập hoặc hết hạn mức, hệ thống tự động chuyển sang <strong>Công cụ dự phòng</strong>.
@@ -1778,9 +1773,6 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({ onNotify }) =>
                   Báo Cáo Đo Lường Lượng Token &amp; Chi Phí Thực Tế (USD · VNĐ)
                 </h3>
               </div>
-              <p className="text-xs text-muted max-w-3xl">
-                Giám sát chính xác lượng Token nạp vào (Prompt), Token sinh ra (Completion), định mức đơn giá từng mô hình và tổng chi phí quy đổi VNĐ (tỷ giá cố định 25.450 đ/USD) cho tất cả các nghiệp vụ B2C.
-              </p>
             </div>
 
             <div className="flex items-center gap-2 shrink-0">
@@ -1895,9 +1887,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({ onNotify }) =>
                   <ShieldCheck className="w-4 h-4 text-accent" />
                   <span>Tiến Độ Sử Dụng Hạn Mức Ngân Sách Tháng Theo Nhà Cung Cấp</span>
                 </h4>
-                <p className="text-2xs text-ink-3 mt-0.5">
-                  Kiểm soát trần chi phí tối đa mỗi tháng của từng nhà cung cấp. Hệ thống tự động cảnh báo khi vượt ngân sách.
-                </p>
+                
               </div>
               <span className="text-2xs text-ink-3 .5 -line shrink-0">
                 Tháng hiện tại: {new Date().toLocaleDateString('vi-VN', { month: '2-digit', year: 'numeric' })}
@@ -1997,9 +1987,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({ onNotify }) =>
                   <BarChart3 className="w-4 h-4 text-accent" />
                   <span>Phân Bổ Lượng Token &amp; Chi Phí Theo 6 Nghiệp Vụ B2C</span>
                 </h4>
-                <p className="text-2xs text-ink-3 mt-0.5">
-                  Bảng tổng hợp chi phí thực tế cho từng nghiệp vụ: Đọc CCCD/ĐKKD, Duyệt kịch bản KOC, Soạn hợp đồng, Đánh giá nhân sự, Phân tích Kế hoạch Ads và Đối soát KOC.
-                </p>
+                
               </div>
               <div className="text-2xs font-semibold text-accent bg-accent-soft px-3 py-1 rounded-md border border-line shrink-0">
                 6 Nghiệp vụ đang hoạt động
@@ -2107,9 +2095,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({ onNotify }) =>
                   <Coins className="w-4 h-4 text-warning" />
                   <span>Bảng Đơn Giá Định Mức Của Tất Cả Mô Hình (Model Rate Card)</span>
                 </h4>
-                <p className="text-2xs text-ink-3 mt-0.5">
-                  Đơn giá niêm yết chính thức tính trên 1 triệu token (1M tokens) của Google Gemini, OpenAI ChatGPT và Anthropic Claude.
-                </p>
+                
               </div>
               <span className="text-2xs text-ink-3 font-mono">
                 1 triệu token ≈ 750.000 từ tiếng Việt
@@ -2176,9 +2162,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({ onNotify }) =>
                   <FileSpreadsheet className="w-4 h-4 text-positive" />
                   <span>Nhật Ký Chi Tiết &amp; Đối Soát Từng Lượt Gọi API ({filteredLogs.length}/{usageLogs.length})</span>
                 </h4>
-                <p className="text-2xs text-ink-3 mt-0.5">
-                  Lưu trữ chi tiết từng lượt gửi lệnh, số token prompt, token completion, chi phí quy đổi và trạng thái hoàn thành.
-                </p>
+                
               </div>
 
               {/* Bộ lọc nhật ký */}
@@ -2322,9 +2306,6 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({ onNotify }) =>
               <h3 className="text-sm font-semibold text-ink">
                 1. Chọn mục đích nghiệp vụ cần kiểm tra
               </h3>
-              <p className="text-2xs text-ink-3">
-                Thử nghiệm trực tiếp phản hồi của Google Gemini, ChatGPT hoặc Claude trên dữ liệu nghiệp vụ B2C.
-              </p>
             </div>
 
             <div className="space-y-1.5">
@@ -2451,9 +2432,6 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({ onNotify }) =>
                   <h3 className="text-sm font-semibold text-ink">
                     2. Kết quả xử lý trả về
                   </h3>
-                  <p className="text-2xs text-ink-3">
-                    Hiển thị kết quả thực tế từ nhà cung cấp API đã chọn (hoặc bộ xử lý dự phòng).
-                  </p>
                 </div>
 
                 {testResult && (

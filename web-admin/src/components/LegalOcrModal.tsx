@@ -193,9 +193,6 @@ export const LegalOcrModal: React.FC<LegalOcrModalProps> = ({
                 <h3 className="text-sm font-semibold text-ink">
                   Đọc ảnh giấy tờ pháp lý
                 </h3>
-                <p className="text-xs text-muted mt-0.5">
-                  Đọc thông tin trực tiếp từ ảnh chụp trên máy chủ nội bộ — tự động điền và cho phép chỉnh sửa.
-                </p>
               </div>
           </div>
 

@@ -118,10 +118,7 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           items: [
             { key: 'booking', label: 'Quản lý Booking', icon: Users },
             { key: 'content', label: 'Kịch bản & Video', icon: FileText },
-            { key: 'content-angles', label: 'Góc nội dung', icon: Compass },
             { key: 'koc-listing', label: 'Listing & Air Video', icon: Film },
-            { key: 'koc-master', label: 'Danh bạ KOC', icon: Users },
-            { key: 'ctv-master', label: 'Danh bạ CTV / VJ', icon: Video },
             { key: 'self-channel-hub', label: 'Video kênh Brand', icon: Film },
           ],
         },
@@ -269,8 +266,6 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           items: [
             { key: 'booking', label: 'Quản lý Booking', icon: Users },
             { key: 'content', label: 'Kịch bản & Video', icon: FileText },
-            { key: 'koc-master', label: 'Danh bạ KOC', icon: Users },
-            { key: 'ctv-master', label: 'Danh bạ CTV / VJ', icon: Video },
           ],
         },
         {
@@ -322,8 +317,6 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           title: 'Booking & KOC',
           items: [
             { key: 'booking', label: 'Quản lý Booking', icon: Users },
-            { key: 'koc-master', label: 'Danh bạ KOC', icon: Users },
-            { key: 'ctv-master', label: 'Danh bạ CTV / VJ', icon: Video },
           ],
         },
         {

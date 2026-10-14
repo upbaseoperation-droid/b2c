@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState, useMemo, useRef } from 'react';
 import {
@@ -1407,35 +1407,6 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
               </div>
             </div>
 
-            {/* 3 Thẻ mô tả đầu việc kế hoạch tháng của 3 vị trí gắn theo Brand */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
-              <div className="p-3 rounded-xl bg-amber-50/50 border border-amber-200/80">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs font-semibold text-amber-950">1. Content / Brand main</span>
-                </div>
-                <p className="text-2xs text-ink-2 mt-1">
-                  Lập Master Content Plan tháng, xây dựng các tuyến Content Pillar / Angle, duyệt khung kịch bản Hero/KOL và kiểm soát chất lượng nội dung toàn Brand.
-                </p>
-              </div>
-
-              <div className="p-3 rounded-xl bg-blue-50/50 border border-blue-200/80">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs font-semibold text-blue-950">2. Plan / Strategy</span>
-                </div>
-                <p className="text-2xs text-ink-2 mt-1">
-                  Hoạch định chiến lược Brand &amp; Campaign tháng (Big Idea, Key Message, USP/RTB), báo cáo đối soát thị trường (Brand Audit) và phân bổ hạn mức xuống các gian hàng.
-                </p>
-              </div>
-
-              <div className="p-3 rounded-xl bg-sunken/50 border border-line">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs font-semibold text-ink">3. Key Visual / SIS</span>
-                </div>
-                <p className="text-2xs text-ink-2 mt-1">
-                  Định hướng Key Visual chiến dịch/Mega Sale, thiết kế bộ trang trí gian hàng SIS/Banner đa sàn và chuẩn hóa khung ảnh sản phẩm PDP chuẩn SEO.
-                </p>
-              </div>
-            </div>
           </section>
 
           {/* 2. BẢNG DANH SÁCH KẾ HOẠCH THÁNG THEO BRAND */}
@@ -1445,7 +1416,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                 search={{
                   value: brandPlanSearch,
                   onChange: setBrandPlanSearch,
-                  placeholder: 'Tìm theo tên Brand, nhân sự phụ trách, Big Idea, Content Pillar, chủ đề KV/SIS...',
+                  placeholder: 'Tìm thương hiệu, nhân sự...',
                 }}
                 filters={
                   <div className="flex flex-wrap items-center gap-2">
@@ -1765,7 +1736,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                 search={{
                   value: personalSearchQuery,
                   onChange: setPersonalSearchQuery,
-                  placeholder: 'Tìm theo tên nhân sự, gian hàng, thương hiệu, vị trí theo brand...',
+                  placeholder: 'Tìm nhân sự, gian hàng...',
                 }}
                 resultCount={filteredPersonalPackages.length}
               />
@@ -1945,7 +1916,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                 search={{
                   value: searchQuery,
                   onChange: setSearchQuery,
-                  placeholder: 'Tìm theo tên kế hoạch, thương hiệu, PIC...',
+                  placeholder: 'Tìm kế hoạch, thương hiệu...',
                 }}
                 filters={
                   <>

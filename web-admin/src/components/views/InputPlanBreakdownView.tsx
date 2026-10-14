@@ -2331,10 +2331,9 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                     )}
                   </div>
                 ) : (
-                  <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-slate-50 border border-slate-200 px-3 py-2 text-xs text-slate-600">
+                  <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-slate-50 border border-slate-200 px-3 py-1.5 text-xs text-slate-600">
                     <span>
-                      Tháng <strong>{planState.month}</strong> gian hàng <strong>{planState.storeName || planState.brandName}</strong> vận hành theo chế độ{' '}
-                      <strong className="text-slate-900">Duy trì thường nhật (Always-on, không mở Campaign riêng)</strong>. Vẫn phân rã đầy đủ 4 đầu việc Booking, FOC, Self-channel và Multi-platform.
+                      Chế độ vận hành: <strong className="text-slate-900">Duy trì thường nhật (Always-on)</strong>
                     </span>
                     <button
                       type="button"
@@ -2344,7 +2343,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                       }}
                       className="text-accent font-semibold hover:underline shrink-0 cursor-pointer"
                     >
-                      + Khởi tạo Campaign cho tháng này
+                      + Khởi tạo Campaign
                     </button>
                   </div>
                 )}
@@ -2354,26 +2353,23 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
 
           {/* 1A. ĐẦU VÀO SỐ TỔNG PnL (GROWTH GIAO BAN ĐẦU) */}
           <div className="bg-white rounded-xl border border-slate-200 p-4 space-y-3">
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
-              <div>
-                <h3 className="text-xs font-semibold text-slate-900 uppercase tracking-wide">
-                  Đầu vào ban đầu — Số tổng PnL do Growth đưa vào
-                </h3>
-                <p className="text-2xs text-slate-500">
-                  Growth chỉ cần nhập 3 chỉ số tổng PnL của gian hàng. Ở bản nháp hoặc bản điều chỉnh ({activeVersionCode}), có thể sửa trực tiếp tại đây.
-                </p>
-              </div>
-              <span className="text-2xs font-medium text-slate-500">
-                Công thức quy đổi kế toán: <strong>Gross = Net × 1,08 (VAT) × 1,10 (TNCN) = Net × 1,188</strong>
-              </span>
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-2">
+              <h3 className="text-xs font-semibold text-slate-900 uppercase tracking-wide">
+                Đầu vào ban đầu — Số tổng PnL do Growth giao
+              </h3>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
               {/* Ô 1: Mục tiêu NMV tổng */}
               <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-3">
-                <label className="text-2xs font-semibold text-slate-600 block">
-                  1. Mục tiêu Doanh số tổng (Target NMV)
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="text-2xs font-semibold text-slate-600 block">
+                    1. Mục tiêu Doanh số (NMV)
+                  </label>
+                  <span className="text-2xs font-mono font-semibold text-emerald-700">
+                    {formatVndShort(layer1Metrics.targetNmvTotal)}
+                  </span>
+                </div>
                 <div className="mt-1.5 flex items-center gap-1.5">
                   <input
                     type="number"
@@ -2384,9 +2380,6 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                     className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white font-mono text-sm font-semibold text-emerald-700 focus:outline-none focus:border-blue-500 disabled:bg-slate-100"
                   />
                 </div>
-                <span className="text-2xs text-slate-500 mt-1 block font-mono">
-                  Hiển thị: <strong className="text-slate-800">{formatVndShort(layer1Metrics.targetNmvTotal)}</strong>
-                </span>
               </div>
 
               {/* Ô 2: Tổng ngân sách thúc đẩy Net (PnL) */}
@@ -2414,7 +2407,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
               <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-3">
                 <div className="flex items-center justify-between gap-1">
                   <label className="text-2xs font-semibold text-slate-600">
-                    3. Gói ngân sách Ads tổng (Media)
+                    3. Gói ngân sách Ads (Media)
                   </label>
                   <span className="text-2xs text-blue-700 font-mono font-semibold">
                     ROAS {layer1Metrics.targetAdsRoas}x
@@ -2430,9 +2423,6 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                     className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white font-mono text-sm font-semibold text-blue-700 focus:outline-none focus:border-blue-500 disabled:bg-slate-100"
                   />
                 </div>
-                <span className="text-2xs text-slate-500 mt-1 block font-mono">
-                  Gói Ads: <strong className="text-slate-800">{formatVndShort(layer1Metrics.budgetAdsNet)}</strong>
-                </span>
               </div>
 
               {/* Ô 4: Đối soát tổng khung Layer 1 vs Số tổng PnL */}
@@ -2481,9 +2471,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                       Bảng thống nhất Chỉ tiêu tháng (Growth · Booking B2C · Media)
                     </h3>
                   </div>
-                  <p className="text-2xs text-slate-500 mt-0.5">
-                    Các bên cùng điền số lượng mục tiêu và trần chi phí Net theo 5 luồng cốt lõi trước khi phân bổ chi tiết KL1–KL7.
-                  </p>
+                  
                 </div>
 
                 <div className="flex items-center gap-1.5">
@@ -2948,16 +2936,6 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                     {isLayer1Locked ? 'Đã chốt chỉ tiêu tháng' : 'Đang điền & trao đổi'}
                   </strong>
                 </div>
-              </div>
-
-              <div className="p-3 rounded-lg bg-blue-50/60 border border-blue-100 text-2xs text-slate-700 space-y-1">
-                <div className="font-semibold text-blue-900">Quy tắc điều chỉnh trên các bản nháp / phiên bản:</div>
-                <p>
-                  • Ở <strong>Bản nháp</strong> hoặc <strong>Bản điều chỉnh ({activeVersionCode})</strong>, các bên có thể chỉnh sửa linh hoạt ở cả <strong>Chỉ tiêu tháng</strong> và <strong>Phân bổ chi tiết (KL1–KL7 &amp; Tuần)</strong>.
-                </p>
-                <p>
-                  • Nhấn <strong>&ldquo;Đồng bộ sang Phân bổ&rdquo;</strong> để tự động cân đối bảng KL1–KL7 theo đúng chỉ tiêu mới.
-                </p>
               </div>
 
               <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
@@ -4120,7 +4098,6 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
               <FileSpreadsheet className="w-5 h-5 text-emerald-600" />
               <div>
                 <h3 className="text-sm font-semibold">Đối chiếu Sheet 4.1.1 Input Plan</h3>
-                <p className="text-xs text-ink-2">Xem trước các cột chính của dòng xuất file trước khi gửi trưởng phòng duyệt</p>
               </div>
             </div>
             <button
@@ -4255,9 +4232,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                       <UserCheck className="w-4 h-4 text-blue-600" />
                       Cân bằng tải khối lượng công việc Team ({staffAllocationSummary.filter(s => s.videoCount > 0).length} nhân sự tham gia)
                     </h4>
-                    <p className="text-2xs text-slate-400 mt-0.5">
-                      Bạn PIC chủ trì có trách nhiệm điều phối chỉ tiêu video và ngân sách phù hợp năng lực của từng bạn
-                    </p>
+                    
                   </div>
                   <div className="flex items-center gap-2">
                     <button
@@ -4357,9 +4332,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                       <Sliders className="w-4 h-4 text-slate-600" />
                       Chi tiết phân bổ từng phân bậc KOC & kênh
                     </h4>
-                    <p className="text-2xs text-slate-400 mt-0.5">
-                      Chọn trực tiếp nhân sự thực thi và nhập chỉ đạo chi tiết của PIC cho từng dòng
-                    </p>
+                    
                   </div>
                   <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg border border-slate-200">
                     <button
@@ -4539,7 +4512,6 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                 <ShieldCheck className="w-5 h-5 text-amber-600" />
                 <div>
                   <h3 className="text-sm font-semibold">Trưởng nhóm sơ duyệt kế hoạch nội bộ</h3>
-                  <p className="text-2xs text-ink-2">Kiểm tra định mức thù lao, tỷ trọng kênh và tính khả thi trước khi gửi Growth</p>
                 </div>
               </div>
               <button
@@ -4655,7 +4627,6 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                 </div>
                 <div>
                   <h3 className="font-semibold text-base text-slate-900">Gửi Kế Hoạch Lên Quản Lý Duyệt</h3>
-                  <p className="text-2xs text-slate-500">Trình duyệt kế hoạch phân rã chu kỳ {planState.month}</p>
                 </div>
               </div>
               <button

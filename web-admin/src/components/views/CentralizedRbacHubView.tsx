@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useRef, useDeferredValue } from 'react';
+import React, { useState, useMemo, useRef, useDeferredValue, useEffect } from 'react';
 import { ConfirmDialog, Tabs, Presence } from '../ui';
 import {
   ShieldCheck,
@@ -58,6 +58,7 @@ import {
   saveInternalStaffList,
   StaffAccessOverrideItem
 } from '../../lib/rbacData';
+import { loadAccessPolicy, saveAccessPolicy } from '../../lib/policyClient';
 import type { TabKey } from '../Sidebar';
 import { UPBASE_STAFF_MASTER } from '../../lib/importedMasterData';
 import { ThirdPartyAccessSetupView } from './ThirdPartyAccessSetupView';
@@ -128,7 +129,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
   const [activeMainTab, setActiveMainTab] = useState<MainTab>('roles');
   const logCounterRef = useRef(100);
 
-  const isAdmin = !currentUser || currentUser.role === 'ADMIN';
+  const isAdmin = currentUser?.role === 'ADMIN';
   const isGrowthManager = currentUser?.role === 'GROWTH_MANAGER';
   const isMediaManager = currentUser?.role === 'MEDIA_MANAGER';
   const isB2cManager = currentUser?.role === 'MANAGER';
@@ -302,7 +303,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
     const nextAllow = !targetRule.autoAllowLogin;
     const updated = deptRules.map(r => r.id === ruleId ? { ...r, autoAllowLogin: nextAllow } : r);
     setDeptRules(updated);
-    saveDeptAccessRules(updated);
+
 
     const newLog: RbacAuditLogItem = {
       id: `log-${++logCounterRef.current}`,
@@ -313,13 +314,13 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
       actionType: 'DEPT_RULE_UPDATE',
       targetUserOrEntity: targetRule.departmentOrTeamName,
       description: `${nextAllow ? 'Mở cổng cho phép đăng nhập' : 'Khóa cổng chặn đăng nhập'} đối với toàn bộ nhân sự thuộc cụm phòng ban "${targetRule.departmentOrTeamName}".`,
-      ipAddress: '118.70.182.44',
-      deviceInfo: 'Chrome 128 / Windows',
+      ipAddress: 'Bản nháp',
+      deviceInfo: 'Chưa áp dụng',
       status: nextAllow ? 'SUCCESS' : 'WARNING'
     };
-    setAuditLogs(prev => [newLog, ...prev]);
+    void newLog; // Nhật ký chính thức được ghi bởi server khi lưu.
     onNotify?.(
-      `${nextAllow ? 'Đã mở quyền đăng nhập' : 'Đã khóa quyền đăng nhập'} cho cụm phòng ban: ${targetRule.departmentOrTeamName}`,
+      `${nextAllow ? 'Bản nháp mở quyền đăng nhập' : 'Bản nháp khóa quyền đăng nhập'} cho cụm phòng ban: ${targetRule.departmentOrTeamName}`,
       nextAllow ? 'success' : 'warning'
     );
   };
@@ -354,7 +355,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
 
     const nextMap = { ...staffOverrides, [staff.id]: newOverride };
     setStaffOverrides(nextMap);
-    saveStaffAccessOverrides(nextMap);
+
 
     const newLog: RbacAuditLogItem = {
       id: `log-${++logCounterRef.current}`,
@@ -367,11 +368,11 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
       description: nextCanLogin
         ? `Admin cấp quyền đăng nhập hệ thống cho ${staff.name} vào ${SCOPE_LABELS[nextScope].label} (${ROLE_DISPLAY_NAME[nextRole]}).`
         : `Admin thu hồi quyền đăng nhập hệ thống của ${staff.name}.`,
-      ipAddress: '118.70.182.44',
-      deviceInfo: 'Chrome 128 / Windows',
+      ipAddress: 'Bản nháp',
+      deviceInfo: 'Chưa áp dụng',
       status: nextCanLogin ? 'SUCCESS' : 'WARNING'
     };
-    setAuditLogs(prev => [newLog, ...prev]);
+    void newLog; // Nhật ký chính thức được ghi bởi server khi lưu.
     onNotify?.(
       nextCanLogin
         ? `Đã cấp quyền đăng nhập cho ${staff.name} (${SCOPE_LABELS[nextScope].label})`
@@ -407,7 +408,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
 
     const nextMap = { ...staffOverrides, [target.id]: newOverride };
     setStaffOverrides(nextMap);
-    saveStaffAccessOverrides(nextMap);
+
 
     const newLog: RbacAuditLogItem = {
       id: `log-${++logCounterRef.current}`,
@@ -418,13 +419,13 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
       actionType: 'ROLE_CHANGE',
       targetUserOrEntity: `${target.name} (${target.staffCode || target.id})`,
       description: `Cấu hình nhân sự: Trạng thái Login=${dirEditCanLogin ? 'CHO PHÉP' : 'CHẶN'}, Khối=${SCOPE_LABELS[dirEditScope].label}, Vai trò=${ROLE_DISPLAY_NAME[dirEditRole]}, Quản lý=${dirEditManager}.`,
-      ipAddress: '118.70.182.44',
-      deviceInfo: 'Chrome 128 / Windows',
+      ipAddress: 'Bản nháp',
+      deviceInfo: 'Chưa áp dụng',
       status: 'SUCCESS'
     };
-    setAuditLogs(prev => [newLog, ...prev]);
+    void newLog; // Nhật ký chính thức được ghi bởi server khi lưu.
     setEditingDirectoryStaffId(null);
-    onNotify?.(`Đã lưu phân quyền cho ${target.name} (${ROLE_DISPLAY_NAME[dirEditRole]})`, 'success');
+    onNotify?.(`Đã lưu phân quyền cho ${target.name} (${ROLE_DISPLAY_NAME[dirEditRole]})`, 'info');
   };
 
   // Đóng vai bất kỳ nhân sự nào từ danh bạ (nếu nhân sự đó được phép login)
@@ -482,7 +483,38 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
   });
 
   // --- STATE TAB 4: AUDIT LOGS ---
-  const [auditLogs, setAuditLogs] = useState<RbacAuditLogItem[]>(INITIAL_RBAC_AUDIT_LOGS);
+  const [auditLogs, setAuditLogs] = useState<RbacAuditLogItem[]>([]);
+  const [policyRevision, setPolicyRevision] = useState<number | null>(null);
+  const [policyBusy, setPolicyBusy] = useState(false);
+  const [policyError, setPolicyError] = useState('');
+  const [savedDraft, setSavedDraft] = useState('');
+  const draftPolicy = { staffOverrides, deptRules, roleAllowedTabs: roleAllowedTabsMap, roleDefaultLanding: roleDefaultLandingMap, internalStaff, matrix: matrixItems, audit: auditLogs };
+  const draftText = JSON.stringify({ ...draftPolicy, audit: [] });
+  const policyDirty = savedDraft !== '' && draftText !== savedDraft;
+  const applyPolicy = (record: Awaited<ReturnType<typeof loadAccessPolicy>>) => {
+    const p = record.data;
+    setStaffOverrides(p.staffOverrides); setDeptRules(p.deptRules);
+    setRoleAllowedTabsMap(p.roleAllowedTabs); setRoleDefaultLandingMap(p.roleDefaultLanding);
+    setInternalStaff(p.internalStaff); setMatrixItems(p.matrix); setAuditLogs(p.audit);
+    setPolicyRevision(record.revision); setSavedDraft(JSON.stringify({ ...p, audit: [] }));
+  };
+  useEffect(() => {
+    let cancelled = false;
+    setPolicyRevision(null);
+    loadAccessPolicy().then(record => { if (!cancelled) applyPolicy(record); }).catch(e => { if (!cancelled) setPolicyError(e.message); });
+    return () => { cancelled = true; };
+  }, [currentUser?.id]);
+  const commitPolicy = async () => {
+    if (policyRevision === null || !isAdmin || policyBusy) return;
+    setPolicyBusy(true); setPolicyError('');
+    try {
+      const record = await saveAccessPolicy(policyRevision, draftPolicy);
+      applyPolicy({ ...record, user: currentUser! });
+      onNotify?.('Đã lưu quyền dùng chung. Quyền mới được kiểm tra ở yêu cầu tiếp theo.', 'info');
+    } catch (e) { setPolicyError((e as Error).message); }
+    finally { setPolicyBusy(false); }
+  };
+
   const [auditFilterType, setAuditFilterType] = useState<string>('ALL');
   const [searchAudit, setSearchAudit] = useState<string>('');
   const deferredSearchAudit = useDeferredValue(searchAudit);
@@ -519,13 +551,13 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
 
     const nextMap = { ...roleAllowedTabsMap, [role]: nextTabs };
     setRoleAllowedTabsMap(nextMap);
-    saveRoleAllowedTabs(nextMap);
+
 
     const currentLanding = roleDefaultLandingMap[role] || ROLE_DEFAULT_LANDING[role];
     if (!nextTabs.includes(currentLanding) && nextTabs.length > 0) {
       const nextLandingMap = { ...roleDefaultLandingMap, [role]: nextTabs[0] };
       setRoleDefaultLandingMap(nextLandingMap);
-      saveRoleDefaultLanding(nextLandingMap);
+
     }
 
     const screenLabel = ALL_SYSTEM_SCREENS.find(s => s.key === screenKey)?.label || screenKey;
@@ -538,11 +570,11 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
       actionType: 'PERMISSION_TOGGLE',
       targetUserOrEntity: `Role ${role} -> Màn hình "${screenLabel}"`,
       description: `${exists ? 'Thu hồi quyền xem màn hình' : 'Cấp quyền xem màn hình'} "${screenLabel}" (${screenKey}) đối với vai trò ${ROLE_DISPLAY_NAME[role]}.`,
-      ipAddress: '118.70.182.44',
-      deviceInfo: 'Chrome 128 / Windows',
+      ipAddress: 'Bản nháp',
+      deviceInfo: 'Chưa áp dụng',
       status: 'SUCCESS'
     };
-    setAuditLogs(prev => [newLog, ...prev]);
+    void newLog; // Nhật ký chính thức được ghi bởi server khi lưu.
     onNotify?.(
       `${exists ? 'Đã ẩn màn hình' : 'Đã mở màn hình'} "${screenLabel}" cho vai trò ${ROLE_DISPLAY_NAME[role]}`,
       'success'
@@ -568,8 +600,8 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
     }
     const nextMap = { ...roleAllowedTabsMap, [role]: nextTabs };
     setRoleAllowedTabsMap(nextMap);
-    saveRoleAllowedTabs(nextMap);
-    onNotify?.(`Đã cập nhật cụm màn hình cho vai trò ${ROLE_DISPLAY_NAME[role]}`, 'success');
+
+    onNotify?.(`Đã sửa bản nháp: cụm màn hình cho vai trò ${ROLE_DISPLAY_NAME[role]}`, 'info');
   };
 
   const handleChangeRoleDefaultLanding = (role: UserRole, nextLanding: TabKey) => {
@@ -579,9 +611,9 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
     }
     const nextLandingMap = { ...roleDefaultLandingMap, [role]: nextLanding };
     setRoleDefaultLandingMap(nextLandingMap);
-    saveRoleDefaultLanding(nextLandingMap);
+
     const screenLabel = ALL_SYSTEM_SCREENS.find(s => s.key === nextLanding)?.label || nextLanding;
-    onNotify?.(`Đã đặt màn hình mặc định khi đăng nhập của ${ROLE_DISPLAY_NAME[role]} là "${screenLabel}"`, 'success');
+    onNotify?.(`Đã đặt màn hình mặc định khi đăng nhập của ${ROLE_DISPLAY_NAME[role]} là "${screenLabel}"`, 'info');
   };
 
   const handleResetSingleRoleScreens = (role: UserRole) => {
@@ -591,8 +623,8 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
     const nextLandingMap = { ...roleDefaultLandingMap, [role]: defaultLanding };
     setRoleAllowedTabsMap(nextMap);
     setRoleDefaultLandingMap(nextLandingMap);
-    saveRoleAllowedTabs(nextMap);
-    saveRoleDefaultLanding(nextLandingMap);
+
+
     onNotify?.(`Đã khôi phục danh sách màn hình mặc định cho vai trò ${ROLE_DISPLAY_NAME[role]}`, 'info');
   };
 
@@ -612,7 +644,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
       return s;
     });
     setInternalStaff(updatedList);
-    saveInternalStaffList(updatedList);
+
 
     const newLog: RbacAuditLogItem = {
       id: `log-${++logCounterRef.current}`,
@@ -623,13 +655,13 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
       actionType: 'ROLE_CHANGE',
       targetUserOrEntity: `${targetStaff.name} (${targetStaff.email})`,
       description: `Admin gán vai trò ${ROLE_DISPLAY_NAME[targetRole]} (${targetRole}) cho nhân sự ${targetStaff.name}.`,
-      ipAddress: '118.70.182.44',
-      deviceInfo: 'Chrome 128 / Windows',
+      ipAddress: 'Bản nháp',
+      deviceInfo: 'Chưa áp dụng',
       status: 'SUCCESS'
     };
-    setAuditLogs(prev => [newLog, ...prev]);
+    void newLog; // Nhật ký chính thức được ghi bởi server khi lưu.
     setAssignStaffToRoleId('');
-    onNotify?.(`Đã gán vai trò ${ROLE_DISPLAY_NAME[targetRole]} cho nhân sự ${targetStaff.name}`, 'success');
+    onNotify?.(`Đã gán vai trò ${ROLE_DISPLAY_NAME[targetRole]} cho nhân sự ${targetStaff.name}`, 'info');
   };
 
   // Lọc Ma trận phân quyền
@@ -673,14 +705,14 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
       actionType: 'PERMISSION_TOGGLE',
       targetUserOrEntity: `${role} -> ${targetFeature}`,
       description: `Đổi cấp độ quyền của vai trò ${role} tại tính năng "${targetFeature}" thành ${newLevel}.`,
-      ipAddress: '118.70.182.44',
-      deviceInfo: 'Chrome 128 / Windows',
+      ipAddress: 'Bản nháp',
+      deviceInfo: 'Chưa áp dụng',
       status: 'SUCCESS'
     };
-    setAuditLogs(prev => [newLog, ...prev]);
+    void newLog; // Nhật ký chính thức được ghi bởi server khi lưu.
 
     setSelectedCell(null);
-    if (onNotify) onNotify(`Đã cập nhật quyền "${targetFeature}" cho vai trò ${role} thành ${newLevel}`, 'success');
+    if (onNotify) onNotify(`Đã sửa bản nháp: quyền "${targetFeature}" cho vai trò ${role} thành ${newLevel}`, 'info');
   };
 
   // Khôi phục ma trận về mặc định
@@ -734,7 +766,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
       return s;
     });
     setInternalStaff(updatedList);
-    saveInternalStaffList(updatedList);
+
 
     const newLog: RbacAuditLogItem = {
       id: `log-${++logCounterRef.current}`,
@@ -745,14 +777,14 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
       actionType: 'ROLE_CHANGE',
       targetUserOrEntity: `${editingStaff.name} (${editingStaff.email})`,
       description: `Cập nhật phân vai trò thành ${staffFormRole}, phụ trách các brand: ${staffFormPicBrands.join(', ') || 'Chưa gán'}.`,
-      ipAddress: '118.70.182.44',
-      deviceInfo: 'Chrome 128 / Windows',
+      ipAddress: 'Bản nháp',
+      deviceInfo: 'Chưa áp dụng',
       status: 'SUCCESS'
     };
-    setAuditLogs(prev => [newLog, ...prev]);
+    void newLog; // Nhật ký chính thức được ghi bởi server khi lưu.
 
     setEditingStaff(null);
-    if (onNotify) onNotify(`Đã cập nhật phân quyền và nhãn phụ trách cho ${editingStaff.name}!`, 'success');
+    if (onNotify) onNotify(`Đã sửa bản nháp: phân quyền và nhãn phụ trách cho ${editingStaff.name}!`, 'info');
   };
 
   // Đóng vai nhân sự nội bộ (Impersonate Internal Staff)
@@ -784,11 +816,11 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
       actionType: 'IMPERSONATE',
       targetUserOrEntity: `${staff.name} (${staff.role})`,
       description: `Đóng vai nhân sự ${staff.name} để kiểm tra giao diện phân quyền.`,
-      ipAddress: '118.70.182.44',
-      deviceInfo: 'Chrome 128 / Windows',
+      ipAddress: 'Bản nháp',
+      deviceInfo: 'Chưa áp dụng',
       status: 'SUCCESS'
     };
-    setAuditLogs(prev => [newLog, ...prev]);
+    void newLog; // Nhật ký chính thức được ghi bởi server khi lưu.
 
     if (onImpersonateUser) {
       onImpersonateUser(impersonatedProfile);
@@ -831,6 +863,14 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
 
   return (
     <div className="space-y-5 pb-12">
+      <div role="status" className="rounded-lg border border-line bg-surface p-3 text-sm">
+        <strong>{policyDirty ? 'Có thay đổi chưa áp dụng' : 'Cấu hình quyền dùng chung'}</strong>
+        <p>Thay đổi bên dưới là bản nháp. Chọn “Lưu quyền” để áp dụng trên máy chủ. Chỉ Admin được lưu.</p>
+        {policyError && <p role="alert" className="text-red-600">{policyError}</p>}
+        <button className="px-3 py-2 font-semibold text-accent disabled:opacity-50" disabled={!isAdmin || policyRevision === null || policyBusy || !policyDirty} onClick={commitPolicy}>{policyBusy ? 'Đang lưu…' : 'Lưu quyền'}</button>
+        <button className="px-3 py-2" disabled={policyBusy} onClick={() => { if (policyDirty && !window.confirm('Bỏ bản nháp và tải cấu hình mới nhất?')) return; loadAccessPolicy().then(applyPolicy).catch(e => setPolicyError(e.message)); }}>Tải lại cấu hình</button>
+      </div>
+
       {/* Top Bar: Trạng thái Cổng truy cập & Thao tác nhanh */}
       <div className="flex flex-wrap items-center justify-between gap-3 text-xs bg-white p-3 rounded-xl border border-line">
         <div className="flex items-center gap-2 flex-wrap">
@@ -1506,7 +1546,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                   type="button"
                   onClick={() => {
                     setStaffOverrides({});
-                    saveStaffAccessOverrides({});
+
                     onNotify?.('Đã xóa các thiết lập ngoại lệ cá nhân, quay về quy tắc phòng ban chuẩn.', 'info');
                   }}
                   className="px-2.5 py-1.5 rounded-lg border border-line text-2xs font-medium text-ink-2 hover:bg-canvas"
@@ -2532,7 +2572,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
         cancelLabel="Hủy"
         variant="danger"
         onConfirm={() => {
-          resetAllRoleScreenPermissions();
+
           setRoleAllowedTabsMap({ ...ROLE_ALLOWED_TABS });
           setRoleDefaultLandingMap({ ...ROLE_DEFAULT_LANDING });
           setMatrixItems(INITIAL_PERMISSION_MATRIX);

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { appendPlanMessage, listPlanMessages } from '@/lib/server/monthlyPlanStore';
+import { appendPlanMessage, listPlanMessages, assertPlanIdAccess } from '@/lib/server/monthlyPlanStore';
 import {
   CHAT_ROLES,
   MAX_MESSAGE_LENGTH,
@@ -23,10 +23,11 @@ function badRequest(error: string) {
 
 // GET /api/monthly-plans/:id/messages?after=<ISO> — đọc tin trao đổi (cũ -> mới)
 export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }) {
-  const actor = getPlanActor(request);
+  const actor = await getPlanActor(request);
   if (!actor) return unauthorized();
   try {
     const { id } = await context.params;
+    await assertPlanIdAccess(decodeURIComponent(id), actor);
     const afterRaw = request.nextUrl.searchParams.get('after');
     let after: Date | null = null;
     if (afterRaw) {
@@ -42,10 +43,11 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
 
 // POST /api/monthly-plans/:id/messages — gửi tin trao đổi (chỉ thêm, idempotent theo clientId)
 export async function POST(request: NextRequest, context: { params: Promise<{ id: string }> }) {
-  const actor = getPlanActor(request);
+  const actor = await getPlanActor(request);
   if (!actor) return unauthorized();
   try {
     const { id } = await context.params;
+    await assertPlanIdAccess(decodeURIComponent(id), actor);
     let body: Record<string, unknown>;
     try {
       body = (await request.json()) as Record<string, unknown>;

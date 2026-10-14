@@ -341,9 +341,6 @@ export const CampaignCreateModal: React.FC<CampaignCreateModalProps> = ({
                 <h3 className="text-base font-semibold text-ink">
                   {isEditMode ? `Cập nhật Chiến dịch: ${initialCampaign?.code}` : 'Khởi tạo Chiến dịch (Campaign) & Phân kỳ Tháng'}
                 </h3>
-                <p className="text-xs text-ink-3">
-                  Kéo dài {coveredMonths.length} tháng ({coveredMonths.join(' → ')}) · Đồng bộ xuống kế hoạch tháng của các gian hàng
-                </p>
               </div>
             </div>
             <button

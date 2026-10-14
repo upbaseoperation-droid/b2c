@@ -76,7 +76,6 @@ export const ImportExcelModal: React.FC<ImportExcelModalProps> = ({
               <h3 id="import-excel-title" className="text-sm font-semibold text-ink">
                 Nhập báo cáo doanh số
               </h3>
-              <p className="text-xs text-muted">Kéo thả file Excel đối soát từ TikTok Shop / Shopee</p>
             </div>
           </div>
           <button

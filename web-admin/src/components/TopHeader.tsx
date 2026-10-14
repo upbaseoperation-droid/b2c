@@ -74,7 +74,6 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
 
         <div className="min-w-0 flex-1">
           <h1 className="text-xl font-semibold text-ink leading-7 tracking-tight">{title}</h1>
-          {subtitle && <p className="text-2xs text-ink-3 truncate hidden md:block">{subtitle}</p>}
         </div>
       </div>
 
@@ -95,18 +94,8 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
         ) : (
           <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-sunken text-ink-2 text-xs font-medium border border-line">
             <Building2 className="w-3.5 h-3.5 text-ink-3 shrink-0" />
-            <span>Toàn quyền ({userScopeSummary?.totalBrandCount || 42} thương hiệu / {userScopeSummary?.totalStoreCount || 69} gian hàng B2C)</span>
+            <span>Toàn hệ thống (69 gian hàng)</span>
           </div>
-        )}
-
-        {activeTab === 'content' && onNavigateTab && (
-          <button
-            onClick={() => onNavigateTab('content-angles')}
-            className="h-[34px] px-3 rounded-md bg-accent-soft hover:bg-sunken text-accent border border-line text-[13px] font-medium transition-colors flex items-center gap-1.5"
-          >
-            <span className="hidden sm:inline">Góc nội dung</span>
-            <ArrowRight className="w-3.5 h-3.5 text-accent" />
-          </button>
         )}
 
         <PageActionsSlot />

@@ -695,7 +695,7 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
                 type="text"
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                placeholder="Tìm Brand, Gian hàng, PIC chính, SKU..."
+                placeholder="Tìm Brand, gian hàng, PIC..."
                 className="w-full pl-8 pr-3 py-1.5 bg-canvas border border-line rounded-lg text-ink placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/20 text-xs"
               />
               {searchQuery && (
@@ -852,9 +852,7 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
                     </span>
                   </div>
                   <h3 className="text-sm font-semibold text-ink mt-3">Hệ thống Master Data B2C</h3>
-                  <p className="text-2xs text-ink-3 mt-0.5">
-                    Quản trị tập trung {brands.length} Brands & {stores.length} Gian Hàng
-                  </p>
+                  
                   
                   <div className="mt-3 pt-2.5 border-t border-line flex items-center justify-between text-2xs">
                     <span className="text-ink-3 flex items-center gap-1">
@@ -1473,9 +1471,7 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
               ) : (
                 <div className="space-y-3">
                   <h3 className="text-sm font-semibold text-ink">Tổng quan Master Data toàn hệ thống</h3>
-                  <p className="text-ink-2 text-xs">
-                    Hệ thống đang cấu trúc dữ liệu theo 4 chiều: <strong>Brand → Gian hàng → Nhân sự (1 PIC chính) → Sản phẩm</strong>.
-                  </p>
+                  
                 </div>
               )}
             </div>

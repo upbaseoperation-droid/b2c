@@ -622,9 +622,6 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
                     Chế độ quản lý · {portals.length} nhãn hàng
                   </span>
                 </div>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Theo dõi tiến độ duyệt kế hoạch ngân sách, danh sách KOC và kịch bản video của toàn bộ thương hiệu
-                </p>
               </div>
             </div>
           ) : (
@@ -638,12 +635,9 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
                     {activePortal.brandName}
                   </h2>
                   <span className="text-2xs text-ink-3">
-                    Cổng nhãn hàng · <span className="font-code">{activePortal.campaignCode}</span>
+                    · <span className="font-code">{activePortal.campaignCode}</span> · {activePortal.month}
                   </span>
                 </div>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Chiến dịch: <span className="font-medium text-slate-700">{activePortal.campaignTitle}</span> ({activePortal.month}) • Phụ trách: <span className="text-slate-700 font-medium">{activePortal.accountPic}</span> &amp; <span className="text-slate-700 font-medium">{activePortal.bookingPic}</span> • SLA: &lt; 24h
-                </p>
               </div>
             </div>
           )}
@@ -685,26 +679,22 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
             <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
               <span className="text-2xs font-semibold text-slate-500 block">Cổng Brand Hoạt Động</span>
               <span className="text-2xl font-semibold text-slate-900 mt-1 block">{portals.length}</span>
-              <span className="text-2xs text-emerald-600 mt-0.5 block">100% kết nối realtime</span>
             </div>
             <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
               <span className="text-2xs font-semibold text-slate-500 block">Kế Hoạch Đã Phê Duyệt</span>
               <span className="text-2xl font-semibold text-emerald-600 mt-1 block">
                 {portals.filter(p => p.planApprovalStatus === 'BRAND_PLAN_APPROVED').length} / {portals.length}
               </span>
-              <span className="text-2xs text-slate-500 mt-0.5 block">Ngân sách đã chốt</span>
             </div>
             <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
               <span className="text-2xs font-semibold text-slate-500 block">Tổng KOC Chờ Duyệt</span>
               <span className="text-2xl font-semibold text-amber-600 mt-1 block">
                 {portals.reduce((acc, p) => acc + p.kocCandidates.filter(k => k.brandApprovalStatus === 'CHỜ_DUYỆT').length, 0)}
               </span>
-              <span className="text-2xs text-slate-500 mt-0.5 block">Toàn bộ các chiến dịch</span>
             </div>
             <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
               <span className="text-2xs font-semibold text-slate-500 block">Cam Kết SLA Phản Hồi</span>
               <span className="text-2xl font-semibold text-blue-600 mt-1 block">&lt; 18 giờ</span>
-              <span className="text-2xs text-emerald-600 mt-0.5 block">Đạt chuẩn 98.4%</span>
             </div>
           </div>
 
@@ -715,7 +705,7 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
                 <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
-                  placeholder="Tìm theo tên nhãn, mã chiến dịch, tên PIC..."
+                  placeholder="Tìm nhãn hàng, chiến dịch, PIC..."
                   value={executiveSearchQuery}
                   onChange={(e) => setExecutiveSearchQuery(e.target.value)}
                   className="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-slate-800 text-slate-800"
@@ -1040,7 +1030,7 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
                   </Status>
                 </div>
                 <h4 className="text-xs font-semibold text-slate-800">{formatVndShort(activePortal.totalBudget)}</h4>
-                <p className="text-2xs text-slate-500 mt-0.5">Phân bổ 4 cấp độ KOC</p>
+                
               </div>
 
               {/* Chặng 2 */}
@@ -1061,7 +1051,7 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
                 <h4 className="text-xs font-semibold text-slate-800">
                   {pendingKocs.length > 0 ? `${pendingKocs.length} KOC chờ duyệt` : 'Đã duyệt KOC'}
                 </h4>
-                <p className="text-2xs text-slate-500 mt-0.5">Thẩm định profile và độ phù hợp</p>
+                
               </div>
 
               {/* Chặng 3 */}
@@ -1082,7 +1072,7 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
                 <h4 className="text-xs font-semibold text-slate-800">
                   {pendingScripts.length > 0 ? `${pendingScripts.length} kịch bản chờ góp ý` : 'Đã duyệt kịch bản'}
                 </h4>
-                <p className="text-2xs text-slate-500 mt-0.5">Góp ý Hook, Pain, USP, CTA</p>
+                
               </div>
 
               {/* Chặng 4 */}
@@ -1099,7 +1089,7 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
                 <h4 className="text-xs font-semibold text-slate-800">
                   {Math.round((activePortal.liveAiredVideosCount / activePortal.totalTargetVideos) * 100)}% hoàn thành
                 </h4>
-                <p className="text-2xs text-slate-500 mt-0.5">Đo lường Views, GMV &amp; Spark Ads</p>
+                
               </div>
             </div>
           </div>
@@ -1444,9 +1434,7 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
                     <h3 className="text-xs font-semibold text-slate-900">
                       Danh Sách Gian Hàng Thuộc Thương Hiệu {activePortal.brandName}
                     </h3>
-                    <p className="text-2xs text-slate-500 mt-0.5">
-                      Cập nhật thông số hoa hồng, ngân sách gian hàng hoặc chỉ tiêu nội dung sẽ liên thông trực tiếp với màn hình Quản lý Gian hàng B2C.
-                    </p>
+                    
                   </div>
                 </div>
 
@@ -1591,9 +1579,7 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
                   <h3 className="text-xs font-semibold text-slate-900 ">
                     Hộp Việc Cần Phê Duyệt ({pendingApprovalsCount} mục)
                   </h3>
-                  <p className="text-2xs text-slate-500 mt-0.5">
-                    Click phê duyệt nhanh hoặc mở xem chi tiết để phản hồi cho Booking Lead
-                  </p>
+                  
                 </div>
 
                 {/* Sub-filter pills */}
@@ -2029,9 +2015,7 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
                 <h4 className="text-xs font-semibold text-slate-900 ">
                   Lịch Sử Các Chiến Dịch Trước Đây
                 </h4>
-                <p className="text-2xs text-slate-500 mt-0.5">
-                  Lưu trữ kết quả, biên bản nghiệm thu và quyết toán
-                </p>
+                
               </div>
               <button
                 type="button"

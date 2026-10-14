@@ -274,9 +274,6 @@ export const QuickBookModal: React.FC<QuickBookModalProps> = ({
                 <h3 id="quick-book-title" className="text-sm font-semibold text-ink">
                   Tạo booking deal mới
                 </h3>
-                <p className="text-xs text-muted">
-                  Lập đề xuất booking KOC theo định mức thương hiệu
-                </p>
               </div>
             </div>
             <button

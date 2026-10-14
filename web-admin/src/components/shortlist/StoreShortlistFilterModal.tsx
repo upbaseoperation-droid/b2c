@@ -632,9 +632,6 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
                   Đối soát tiêu chí &amp; Đánh giá lịch sử hợp tác
                 </span>
               </div>
-              <p className="text-xs text-muted">
-                Sàng lọc tệp KOC theo ngành hàng, năng lực ra đơn và kinh nghiệm hợp tác thực tế
-              </p>
             </div>
           </div>
           <button

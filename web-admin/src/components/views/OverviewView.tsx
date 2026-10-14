@@ -174,7 +174,6 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
 
       <Panel
         title="Bàn giao giữa các team"
-        description="Mỗi việc có người nhận và hạn SLA, không giao qua tin nhắn"
       >
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="p-4 rounded-xl border border-line bg-canvas space-y-3">

@@ -8,14 +8,21 @@ import { Presence } from '../../ui';
 
 interface CastTiersMasterViewProps {
   initialTiers: MasterCastTier[];
+  onChange?: (items: MasterCastTier[]) => void;
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
 }
 
 export const CastTiersMasterView: React.FC<CastTiersMasterViewProps> = ({
   initialTiers,
+  onChange,
   onNotify
 }) => {
-  const [tiers, setTiers] = useState<MasterCastTier[]>(initialTiers);
+  const [localItems, setLocalItems] = useState<MasterCastTier[]>(initialTiers);
+  const tiers = onChange ? initialTiers : localItems;
+  const setTiers = (update: React.SetStateAction<MasterCastTier[]>) => {
+    const next = typeof update === 'function' ? update(tiers) : update;
+    if (onChange) onChange(next); else setLocalItems(next);
+  };
   const [search, setSearch] = useState('');
   const [selectedGroup, setSelectedGroup] = useState('ALL');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -104,7 +111,7 @@ export const CastTiersMasterView: React.FC<CastTiersMasterViewProps> = ({
         usageImageCost: form.usageImageCost.trim(),
         lastUpdate: new Date().toISOString().split('T')[0]
       } : t));
-      if (onNotify) onNotify(`Đã cập nhật bậc cast [${form.tierCode}]`);
+      if (onNotify) onNotify(`Đã sửa bản nháp: bậc cast [${form.tierCode}]`);
     } else {
       const newTier: MasterCastTier = {
         id: `CAST-${String(tiers.length + 1).padStart(2, '0')}`,
@@ -120,7 +127,7 @@ export const CastTiersMasterView: React.FC<CastTiersMasterViewProps> = ({
         lastUpdate: new Date().toISOString().split('T')[0]
       };
       setTiers(prev => [...prev, newTier]);
-      if (onNotify) onNotify(`Đã thêm bậc cast mới [${newTier.tierCode}]`);
+      if (onNotify) onNotify(`Đã thêm vào bản nháp: bậc cast mới [${newTier.tierCode}]`);
     }
     setIsModalOpen(false);
   };

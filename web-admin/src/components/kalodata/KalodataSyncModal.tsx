@@ -212,9 +212,6 @@ export const KalodataSyncModal: React.FC<KalodataSyncModalProps> = ({
               <h3 className="text-base font-semibold text-ink">
                 Đồng bộ số liệu thương mại từ Kalodata
               </h3>
-              <p className="text-xs text-muted">
-                Tra cứu doanh số, GPM, đơn hàng và cơ cấu video/live của KOC trên TikTok Shop ({status?.hasApiKey ? 'Kết nối trực tiếp' : 'Chế độ thử nghiệm'})
-              </p>
             </div>
           </div>
           <button

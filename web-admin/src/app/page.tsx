@@ -70,6 +70,7 @@ const TaskDelegationView = dynamic(() => import('../components/views/TaskDelegat
 const AuditTrailView = dynamic(() => import('../components/views/AuditTrailView').then(m => m.AuditTrailView), { loading: ViewLoading });
 
 import { isThirdPartyPartner } from '../lib/thirdPartyAccessData';
+import { loadAccessPolicy } from '../lib/policyClient';
 import { isTabAllowedForRole, getAllowedTabsForRole, getDefaultLandingTabForRole, getSavedInternalStaffList } from '../lib/rbacData';
 import { 
   filterScopedStores, 
@@ -186,8 +187,8 @@ export default function App() {
         if (!prev) return prev;
         const staffList = getSavedInternalStaffList();
         const matchedStaff = staffList.find(s => s.id === prev.id || s.email === prev.email);
-        if (matchedStaff && matchedStaff.role !== prev.role) {
-          return { ...prev, role: matchedStaff.role, roleTitle: matchedStaff.roleTitle };
+        if (matchedStaff) {
+          return { ...prev, role: matchedStaff.role, roleTitle: matchedStaff.roleTitle, assignedBrands: matchedStaff.picBrands, permissions: Object.entries(matchedStaff.permissions).filter(([, value]) => value).map(([key]) => key) };
         }
         return prev;
       });
@@ -266,11 +267,10 @@ export default function App() {
                 }).catch(() => undefined);
               }
             } else {
-              const canonical = USERS.find(u => u.id === resolvedUser.id);
-              if (canonical) {
-                resolvedUser = { ...resolvedUser, role: canonical.role, roleTitle: canonical.roleTitle };
-              }
+              // Quyền hiệu lực lấy từ máy chủ, không ghi đè bằng dữ liệu mẫu.
             }
+            const policy = await loadAccessPolicy();
+            resolvedUser = policy.user;
             handleUserChange(resolvedUser, true);
             setActiveTab(getDefaultLandingTabForRole(resolvedUser.role));
             setIsLoadingAuth(false);
@@ -312,6 +312,16 @@ export default function App() {
   const [tasks, setTasks] = useState<SlaTask[]>(INITIAL_TASKS);
   const [brands, setBrands] = useState<BrandDetail[]>(INITIAL_BRANDS);
   const [storePortfolios, setStorePortfolios] = useState<StorePortfolioItem[]>(INITIAL_STORE_PORTFOLIOS);
+  useEffect(() => {
+    let cancelled = false;
+    const reload = () => fetch('/api/master-data', { cache: 'no-store' }).then(async res => {
+      const body = await res.json(); if (!res.ok) throw new Error(body.error);
+      if (!cancelled) { setBrands(body.data.brands); setStorePortfolios(body.data.stores); }
+    }).catch(e => { if (!cancelled) showToast(e.message, 'error'); });
+    if (currentUser) void reload();
+    window.addEventListener('upbase-master-data-updated', reload);
+    return () => { cancelled = true; window.removeEventListener('upbase-master-data-updated', reload); };
+  }, [currentUser?.id, showToast]);
   const [campaigns, setCampaigns] = useState<CampaignItem[]>(INITIAL_CAMPAIGNS);
 
   // Shared Plan State between Manager & Employees

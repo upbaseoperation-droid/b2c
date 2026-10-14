@@ -1,3 +1,4 @@
+import { effectiveUser } from '@/lib/server/accessPolicy';
 import { type NextRequest, NextResponse } from "next/server";
 import { decodeSessionToken, encodeSessionToken, SESSION_COOKIE_NAME, sanitizeReturnTo } from "@/lib/larkAuth";
 import { USERS } from "@/lib/mockData";
@@ -48,6 +49,9 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
+  try {
+    if (!await effectiveUser(user)) return NextResponse.json({ error: 'Quyền truy cập đã bị thu hồi.' }, { status: 403 });
+  } catch { return NextResponse.json({ error: 'Không kiểm tra được quyền. Thử lại sau.' }, { status: 503 }); }
   return await updateSession(request);
 }
 

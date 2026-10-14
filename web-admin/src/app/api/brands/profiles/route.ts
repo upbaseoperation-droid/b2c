@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthenticatedUser } from '@/lib/larkAuth';
+import { requestActor } from '@/lib/server/requestActor';
+import { requireBrandScope, readableProfile } from '@/lib/server/brandAccess';
+import { readMasterCatalog } from '@/lib/server/masterCatalogStore';
+import { filterScopedBrands } from '@/lib/rbacScope';
 import { UPBASE_BRANDS_MASTER } from '@/lib/importedMasterData';
 import { BrandError, applySection, parseSection, permissionsFor, requireBrand, requireReader } from '@/lib/brands/domain';
 import { brandStorageMode, listProfiles, saveProfile } from '@/lib/brands/store';
@@ -9,7 +12,7 @@ import { brandKey, emptyProfile, type BrandSection } from '@/lib/brands/types';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-const SECTIONS: BrandSection[] = ['POSITIONING', 'ENTITY', 'PRODUCTS', 'CONTENT_RULES', 'FAQS', 'LEGAL', 'RATECARD', 'DOCUMENTS'];
+const SECTIONS: BrandSection[] = ['POSITIONING', 'ENTITY', 'WORKFLOW_RULES', 'PRODUCTS', 'CONTENT_RULES', 'FAQS', 'LEGAL', 'RATECARD', 'DOCUMENTS'];
 const noStore = { 'Cache-Control': 'no-store' };
 
 function failure(error: unknown) {
@@ -22,21 +25,17 @@ function failure(error: unknown) {
 /** Danh sách hồ sơ đã lưu và quyền của người đang xem (quyền theo Account PIC tính ở từng nhãn). */
 export async function GET(req: NextRequest) {
   try {
-    const user = getAuthenticatedUser(req);
-    const effectiveUser = user || {
-      id: 'viewer',
-      name: 'Thành viên UpBase',
-      email: 'viewer@upbase.vn',
-      role: 'BOOKING_MEMBER' as const,
-      roleTitle: 'Chuyên viên B2C',
-      avatar: 'UB',
-      status: 'active' as const,
-    };
-    const base = permissionsFor(effectiveUser);
+    const user = await requestActor(req);
+    requireReader(user);
+    const base = permissionsFor(user);
+    const catalog = await readMasterCatalog();
+    const allowedBrands = filterScopedBrands(catalog.data.brands, user, catalog.data.stores);
+    const keys = new Set(allowedBrands.map(b => brandKey(b.name)));
+    const profiles = (await listProfiles()).filter(p => keys.has(p.key)).map(p => readableProfile(p, user, allowedBrands.find(b => brandKey(b.name) === p.key)));
     return NextResponse.json(
       {
-        profiles: await listProfiles(),
-        access: { name: effectiveUser.name, lead: base.RATECARD, legal: base.LEGAL },
+        profiles,
+        access: { name: user.name, lead: base.RATECARD, legal: base.LEGAL, brandPartner: user.role === 'BRAND_PARTNER' || user.partnerType === 'BRAND', linkedBrand: user.linkedEntityName, assignedBrands: user.assignedBrands },
         storage: brandStorageMode(),
         fileStorage: brandFileStorageMode(),
       },
@@ -51,7 +50,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     requireBrand(req.headers.get('origin') === req.nextUrl.origin, 'Yêu cầu không xuất phát từ ứng dụng.', 403);
-    const user = getAuthenticatedUser(req);
+    const user = await requestActor(req);
     requireReader(user);
     const raw = await req.text();
     requireBrand(Buffer.byteLength(raw) < 400000, 'Dữ liệu vượt giới hạn dung lượng.', 413);
@@ -64,12 +63,12 @@ export async function POST(req: NextRequest) {
     requireBrand(Number.isInteger(body.revision) && (body.revision as number) >= 0, 'Thiếu phiên bản hồ sơ.');
 
     const key = brandKey(body.brandName as string);
-    const master = UPBASE_BRANDS_MASTER.find(b => brandKey(b.name) === key);
+    const master = await requireBrandScope(user, body.brandName as string);
     const all = await listProfiles();
     const current = all.find(p => p.key === key);
     requireBrand(master || current, 'Không tìm thấy nhãn hàng trong Dữ liệu gốc.', 404);
 
-    const allowed = permissionsFor(user, master?.accountPic);
+    const allowed = permissionsFor(user, master?.accountPic, body.brandName as string);
     requireBrand(allowed[section], 'Bạn không có quyền sửa mục này.', 403);
 
     const profile = current || emptyProfile(master?.name || (body.brandName as string));
@@ -77,7 +76,7 @@ export async function POST(req: NextRequest) {
     const data = parseSection(section, body.data, user.name, profile);
     const summary = typeof body.summary === 'string' && body.summary.trim() ? body.summary.trim().slice(0, 200) : undefined;
     const saved = await saveProfile(applySection(profile, section, data, user.name, summary), profile.revision);
-    return NextResponse.json({ profile: saved }, { headers: noStore });
+    return NextResponse.json({ profile: readableProfile(saved, user, master) }, { headers: noStore });
   } catch (e) {
     return failure(e);
   }

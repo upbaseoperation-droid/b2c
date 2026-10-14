@@ -1,3 +1,6 @@
+import { isPlanManagedByUser } from '../rbacScope';
+import { actionAllowed } from './accessPolicy';
+import { readMasterCatalog } from './masterCatalogStore';
 // Chỉ dùng phía server (API routes) — không import từ component giao diện.
 import { Prisma } from '@prisma/client';
 import prisma from '../prisma';
@@ -20,7 +23,7 @@ export interface StoredMonthlyPlan {
 
 export class PlanStoreError extends Error {
   constructor(
-    public readonly code: 'NOT_FOUND' | 'CONFLICT' | 'LOCKED' | 'EXISTS' | 'INVALID',
+    public readonly code: 'FORBIDDEN' | 'NOT_FOUND' | 'CONFLICT' | 'LOCKED' | 'EXISTS' | 'INVALID',
     message: string,
     public readonly current?: StoredMonthlyPlan
   ) {
@@ -146,10 +149,19 @@ function sameValue(a: unknown, b: unknown) {
   return stableStringify(a) === stableStringify(b);
 }
 
+export async function assertPlanAccess(plan: InputPlanBreakdownState, actor: UserProfile, action: 'read' | 'write' | 'approve' = 'read') {
+  const { data } = await readMasterCatalog();
+  if (!isPlanManagedByUser(plan, actor, data.stores) || !await actionAllowed(actor, 'plan_target_month', action)) throw new PlanStoreError('FORBIDDEN', 'Không có quyền với kế hoạch này.');
+}
+export async function assertPlanIdAccess(id: string, actor: UserProfile, action: 'read' | 'write' = 'read') {
+  const row = await prisma.monthlyPlan.findUnique({ where: { id }, include: planInclude });
+  if (!row || row.deletedAt) throw new PlanStoreError('NOT_FOUND', 'Không tìm thấy kế hoạch.');
+  await assertPlanAccess(toStored(row).plan, actor, action);
+}
 /** Lấy danh sách kế hoạch. Lần đầu khi bảng trống sẽ nạp bộ kế hoạch mẫu ban đầu. */
 export async function listMonthlyPlans(actor: UserProfile): Promise<StoredMonthlyPlan[]> {
   const count = await prisma.monthlyPlan.count();
-  if (count === 0) {
+  if (count === 0 && actor.role === 'ADMIN') {
     await seedInitialPlans(actor);
   }
   const rows = await prisma.monthlyPlan.findMany({
@@ -157,7 +169,9 @@ export async function listMonthlyPlans(actor: UserProfile): Promise<StoredMonthl
     include: planInclude,
     orderBy: [{ month: 'desc' }, { updatedAt: 'desc' }]
   });
-  return rows.map(toStored);
+  const { data } = await readMasterCatalog();
+  if (!await actionAllowed(actor, 'plan_target_month', 'read')) throw new PlanStoreError('FORBIDDEN', 'Không có quyền xem kế hoạch.');
+  return rows.map(toStored).filter(row => isPlanManagedByUser(row.plan, actor, data.stores));
 }
 
 async function seedInitialPlans(actor: UserProfile) {
@@ -172,6 +186,7 @@ async function seedInitialPlans(actor: UserProfile) {
 }
 
 export async function createMonthlyPlan(plan: InputPlanBreakdownState, actor: UserProfile): Promise<StoredMonthlyPlan> {
+  await assertPlanAccess(plan, actor, 'write');
   if (!plan?.id) throw new PlanStoreError('INVALID', 'Thiếu mã kế hoạch.');
   const { working, versionSnapshots, discussions } = splitPlan(plan);
 
@@ -231,6 +246,9 @@ export async function saveMonthlyPlan(
     }
 
     const stored = existing.data as unknown as InputPlanBreakdownState;
+    await assertPlanAccess(stored, actor, 'write');
+    await assertPlanAccess(plan, actor, 'write');
+    if (plan.status !== stored.status || plan.isVersionLocked !== stored.isVersionLocked || plan.currentVersionCode !== stored.currentVersionCode) await assertPlanAccess(stored, actor, 'approve');
     const sameVersion = (plan.currentVersionCode || 'v1.0') === existing.currentVersionCode;
     if (existing.isVersionLocked && sameVersion) {
       if (!plan.isVersionLocked) {

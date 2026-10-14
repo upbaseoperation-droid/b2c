@@ -1,0 +1,5 @@
+CREATE TABLE IF NOT EXISTS "AppSharedRecord" (
+  "key" TEXT PRIMARY KEY,
+  "revision" INTEGER NOT NULL DEFAULT 0,
+  "data" JSONB NOT NULL
+);

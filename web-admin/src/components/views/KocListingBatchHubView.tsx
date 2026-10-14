@@ -913,9 +913,6 @@ export function KocListingBatchHubView({
                   </span>
                 )}
               </div>
-              <p className="text-2xs text-slate-500 mt-0.5">
-                Quy trình chuẩn: Nhân sự Booking list KOC vào <strong>Bản nháp (Draft)</strong> theo từng khung lương KL của Plan Final → bấm <strong>Gửi nhãn hàng (Submit Brand)</strong> → trao đổi &amp; đàm phán → <strong>Chốt duyệt (Final)</strong> để sinh Deal Booking.
-              </p>
             </div>
           </div>
 
@@ -1119,47 +1116,35 @@ export function KocListingBatchHubView({
       </div>
 
       {/* KPI Metrics Summary Bar */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         <div className="bg-white border border-slate-200 rounded-lg p-3">
           <div className="text-2xs font-medium text-slate-500">Tổng đề xuất</div>
-          <div className="text-lg font-semibold text-slate-900 mt-1">{metrics.total}</div>
-          <div className="text-2xs text-slate-400 mt-0.5">Hồ sơ đang lọc</div>
+          <div className="flex items-baseline gap-2 mt-1">
+            <span className="text-lg font-semibold text-slate-900">{metrics.total}</span>
+            {metrics.dropped > 0 && (
+              <span className="text-2xs text-rose-600 font-medium">({metrics.dropped} rớt)</span>
+            )}
+          </div>
         </div>
 
         <div className="bg-white border border-slate-200 rounded-lg p-3">
-          <div className="text-2xs font-medium text-slate-500">1. Bản nháp (Draft)</div>
+          <div className="text-2xs font-medium text-slate-500">Bản nháp (Draft)</div>
           <div className="text-lg font-semibold text-slate-700 mt-1">{metrics.draft}</div>
-          <div className="text-2xs text-slate-400 mt-0.5">Mới list, chờ gửi Brand</div>
         </div>
 
         <div className="bg-white border border-slate-200 rounded-lg p-3">
-          <div className="text-2xs font-medium text-blue-600">2. Đã Submit Brand</div>
-          <div className="text-lg font-semibold text-blue-700 mt-1">{metrics.submitted}</div>
-          <div className="text-2xs text-slate-400 mt-0.5">Đang duyệt &amp; trao đổi</div>
+          <div className="text-2xs font-medium text-blue-600">Đã gửi Brand</div>
+          <div className="flex items-baseline gap-2 mt-1">
+            <span className="text-lg font-semibold text-blue-700">{metrics.submitted}</span>
+            {metrics.brandApproved > 0 && (
+              <span className="text-2xs text-emerald-600 font-medium">({metrics.brandApproved} đạt)</span>
+            )}
+          </div>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-lg p-3">
-          <div className="text-2xs font-medium text-emerald-600">Nhãn hàng đã duyệt</div>
-          <div className="text-lg font-semibold text-emerald-700 mt-1">{metrics.brandApproved}</div>
-          <div className="text-2xs text-slate-400 mt-0.5">Đạt tiêu chí nhãn</div>
-        </div>
-
-        <div className="bg-white border border-slate-200 rounded-lg p-3">
-          <div className="text-2xs font-medium text-accent">KOC chốt giá</div>
-          <div className="text-lg font-semibold text-accent mt-1">{metrics.termsAgreed}</div>
-          <div className="text-2xs text-slate-400 mt-0.5">Đã thống nhất phí</div>
-        </div>
-
-        <div className="bg-white border border-slate-200 rounded-lg p-3 bg-emerald-50/40 border-emerald-200">
-          <div className="text-2xs font-semibold text-emerald-800">3. Đã chốt (Final)</div>
+        <div className="bg-white border border-emerald-200 bg-emerald-50/40 rounded-lg p-3">
+          <div className="text-2xs font-semibold text-emerald-800">Đã chốt (Final)</div>
           <div className="text-lg font-semibold text-emerald-900 mt-1">{metrics.finalApproved}</div>
-          <div className="text-2xs text-emerald-700 mt-0.5">Đã sinh Deal Booking</div>
-        </div>
-
-        <div className="bg-white border border-slate-200 rounded-lg p-3 bg-rose-50/40 border-rose-200">
-          <div className="text-2xs font-semibold text-rose-800">Không đạt (Dropped)</div>
-          <div className="text-lg font-semibold text-rose-900 mt-1">{metrics.dropped}</div>
-          <div className="text-2xs text-rose-700 mt-0.5">Hoàn suất về Plan KL</div>
         </div>
 
         <div className="bg-white border border-slate-200 rounded-lg p-3">
@@ -1167,7 +1152,6 @@ export function KocListingBatchHubView({
           <div className="text-sm font-semibold text-slate-900 mt-1 truncate">
             {formatVnd(metrics.totalBudget)}
           </div>
-          <div className="text-2xs text-slate-400 mt-0.5">Không tính KOC rớt</div>
         </div>
       </div>
 
@@ -1277,7 +1261,7 @@ export function KocListingBatchHubView({
               <Search className="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-slate-400" />
               <input
                 type="text"
-                placeholder="Tìm theo tên KOC, kênh, gian hàng, nhãn hàng..."
+                placeholder="Tìm KOC, kênh, gian hàng..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full text-xs pl-8 pr-3 py-1.5 border border-slate-300 rounded bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-slate-400"
@@ -1664,10 +1648,7 @@ export function KocListingBatchHubView({
                 <h2 className="text-sm font-semibold text-slate-900">
                   Theo dõi tiến độ video lên sóng
                 </h2>
-                <p className="text-2xs text-slate-500 mt-0.5">
-                  Tập hợp các KOC đã chốt duyệt. Kiểm soát gửi hàng mẫu, duyệt kịch bản,
-                  duyệt video nháp, lên sóng đúng hạn cam kết, kiểm tra gắn giỏ hàng sàn và mã quảng cáo.
-                </p>
+                
               </div>
 
               <div className="flex items-center gap-2">
@@ -1856,9 +1837,7 @@ export function KocListingBatchHubView({
                 <h3 className="text-sm font-semibold text-slate-900">
                   Thêm KOC vào bản nháp (Draft) gắn với Plan Final
                 </h3>
-                <p className="text-2xs text-slate-500 mt-0.5">
-                  KOC mới sẽ ở trạng thái Bản nháp (Draft) và gắn trực tiếp với khung lương KL để đối soát chỉ tiêu.
-                </p>
+                
               </div>
               <button
                 onClick={() => setShowAddModal(false)}

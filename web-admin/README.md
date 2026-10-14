@@ -63,6 +63,9 @@ npm run dev
 
 # Kiểm tra chất lượng mã nguồn & Build sản phẩm
 npm run build
+
+# Chạy toàn bộ 54 ca kiểm thử tự động (Unit, Integration & E2E)
+npm test
 ```
 
 Mở trình duyệt tại `http://localhost:3000`.

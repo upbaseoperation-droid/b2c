@@ -98,9 +98,6 @@ export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotifi
                   <Layers className="w-4 h-4 text-accent" />
                   <span>Kho sản phẩm nội dung — Quản trị tách biệt với booking</span>
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  1 Booking deal có thể tạo nhiều sản phẩm nội dung (nội dung phái sinh, góc quay khác nhau) mà không làm sai lệch số liệu CPA
-                </p>
               </div>
             </div>
 
@@ -154,7 +151,6 @@ export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotifi
           <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/70">
             <div>
               <h3 className="text-sm font-semibold text-slate-900">Hàng chờ thẩm định kịch bản KOC</h3>
-              <p className="text-xs text-slate-500 mt-0.5">Nhấp vào kịch bản để xem toàn văn 4 phần và thẩm định theo danh mục</p>
             </div>
           </div>
 
@@ -281,9 +277,6 @@ export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotifi
                   <Share2 className="w-4 h-4 text-emerald-600" />
                   <span>Bài đăng thực tế & bàn giao mã Spark Ads</span>
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Đối soát link video lên sóng, mã ủy quyền Spark Ads 30 ngày và doanh thu GMV thực tế phát sinh
-                </p>
               </div>
             </div>
 
@@ -377,9 +370,7 @@ export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotifi
                 <h3 className="text-base font-semibold text-slate-900">
                   Trụ cột nội dung & góc tiếp cận theo sản phẩm
                 </h3>
-                <p className="text-xs text-slate-500 max-w-2xl leading-relaxed">
-                  Trụ cột nội dung định hình phong cách kênh tổng thể. Mỗi sản phẩm đẩy của từng gian hàng cần được xây dựng các <strong>góc tiếp cận cụ thể</strong> (mở đầu 3 giây, nỗi đau, giải pháp) để cung cấp sẵn cho đội ngũ booking và KOC.
-                </p>
+                
               </div>
 
               {onNavigateToAngles && (

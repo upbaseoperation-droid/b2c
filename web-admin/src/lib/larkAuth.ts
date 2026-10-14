@@ -148,8 +148,7 @@ export function resolveUserProfile(larkUser: LarkUserRaw): UserProfile {
 
   // 1. Đối soát với danh sách thành viên cốt lõi đã có trong USERS
   const existingUser = USERS.find(u => 
-    (email && u.email.toLowerCase() === email) ||
-    u.name.toLowerCase() === name.toLowerCase()
+    email && u.email.toLowerCase() === email
   );
 
   if (existingUser) {
@@ -170,8 +169,7 @@ export function resolveUserProfile(larkUser: LarkUserRaw): UserProfile {
   // 2. Đối soát với danh bạ 1.011 nhân sự UPBASE_STAFF_MASTER
   const masterMember = UPBASE_STAFF_MASTER.find(
     m =>
-      (email && m.email.toLowerCase() === email) ||
-      m.name.toLowerCase() === name.toLowerCase()
+      email && m.email.toLowerCase() === email
   );
 
   if (masterMember) {
@@ -207,10 +205,17 @@ export function resolveUserProfile(larkUser: LarkUserRaw): UserProfile {
 
 
 // Khóa bí mật dùng để ký HMAC token phiên làm việc
-const AUTH_SECRET = process.env.AUTH_SECRET || process.env.SESSION_SECRET || 'upbase_b2c_ops_hub_super_secret_auth_key_2026';
+// Sandbox keeps working without configuration, but never uses a publicly known signing key.
+const processSecret = crypto.randomBytes(32).toString('base64url');
+function authSecret() {
+  const configured = process.env.AUTH_SECRET || process.env.SESSION_SECRET;
+  if (configured) return configured;
+  if (process.env.NODE_ENV === 'production') throw new Error('Cần cấu hình AUTH_SECRET hoặc SESSION_SECRET.');
+  return processSecret;
+}
 
 function signData(data: string): string {
-  return crypto.createHmac('sha256', AUTH_SECRET).update(data).digest('base64url');
+  return crypto.createHmac('sha256', authSecret()).update(data).digest('base64url');
 }
 
 function verifySignature(data: string, signature: string): boolean {
