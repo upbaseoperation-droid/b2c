@@ -66,7 +66,7 @@ import {
   enrichPlanWithVersions,
 } from '../../lib/monthlyPlanData';
 import { useMonthlyPlanSync } from '../../lib/useMonthlyPlanSync';
-import { PlanApprovalStepper } from './PlanApprovalStepper';
+import { PlanApprovalStepper, deriveSignOff } from './PlanApprovalStepper';
 import { PlanHistoryModal } from './PlanHistoryModal';
 import { PlanChatDrawer, PlanChatButton } from './PlanChatDrawer';
 import { usePlanChat } from '../../lib/usePlanChat';
@@ -1678,31 +1678,14 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
     setIsSubmitToManagerModalOpen(true);
   };
   const leaderStatus = planState.leaderApprovalStatus;
-  const growthStatus = planState.growthAlignmentStatus || 'CHƯA_TRAO_ĐỔI';
   const planStatus = planState.status || 'DRAFT';
   const userRole = currentUser?.role || '';
   const canLeaderReview = ['ADMIN', 'MANAGER', 'LEADER'].includes(userRole);
   const isLeadUser = ['ADMIN', 'MANAGER'].includes(userRole) || currentRole === 'LEAD';
-  const headerSignOff = deriveSignOff(planState);
   const isApprovedStatus = ['APPROVED', 'LEAD_APPROVED', 'BRAND_APPROVED', 'IN_EXECUTION', 'COMPLETED'].includes(planStatus);
   const hasLeader = Boolean(planState.hasBookingLeader !== undefined ? planState.hasBookingLeader : planState.bookingLeader);
-  const progressSteps = [
-    { key: 'growth', label: 'Growth giao số', done: headerSignOff.growth.confirmed, warn: false },
-    ...(hasLeader ? [{ key: 'leader', label: 'Leader sơ duyệt', done: leaderStatus === 'ĐÃ_SƠ_DUYỆT', warn: leaderStatus === 'YÊU_CẦU_SỬA' }] : []),
-    { key: 'booking', label: 'B2C phân rã', done: headerSignOff.booking.confirmed, warn: planStatus === 'REVISION_REQUESTED' },
-    { key: 'media', label: 'Media nhận Ads', done: headerSignOff.media.confirmed, warn: false },
-    { key: 'lead', label: 'Trưởng phòng duyệt', done: headerSignOff.leadB2c.confirmed || isPlanLocked, warn: false }
-  ];
   const studioVersionSnapshots = getPlanVersionSnapshots(planState);
   const activeVersionCode = planState.currentVersionCode || 'v1.0';
-  const baselineSnapshot = studioVersionSnapshots[0];
-  const activeSnapshot = studioVersionSnapshots.find(s => s.versionCode === activeVersionCode) || studioVersionSnapshots[studioVersionSnapshots.length - 1];
-  const deltaBudgetVsBaseline = baselineSnapshot ? (planState.totalTargetBudget || 0) - (baselineSnapshot.totalTargetBudget || 0) : 0;
-  const deltaQtyVsBaseline = baselineSnapshot ? (planState.totalTargetContents || 0) - (baselineSnapshot.totalTargetContents || 0) : 0;
-
-  const openApprovalDetail = () => {
-    setTimeout(() => document.getElementById('plan-approval-detail')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
-  };
 
   const isDetailBreakdownTab = [
     'ALL_SUMMARY',
@@ -1797,12 +1780,8 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
             }`}
           >
             <span>1. Chỉ tiêu tháng</span>
-            <span className={`px-1.5 py-0.2 rounded text-2xs font-bold ${
-              isLayer1Locked
-                ? 'bg-emerald-100 text-emerald-700'
-                : 'bg-amber-100 text-amber-800'
-            }`}>
-              {isLayer1Locked ? 'Đã chốt' : 'Đang điền'}
+            <span className="text-2xs font-normal text-ink-3">
+              · {isLayer1Locked ? 'Đã chốt' : 'Đang điền'}
             </span>
           </button>
           <button
@@ -1860,7 +1839,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
             <button
               type="button"
               onClick={() => onOpenListingForPlan(planState)}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition cursor-pointer"
               title="Mở bảng Listing KOC theo khung lương KL1–KL7 của kế hoạch này"
             >
               <UserCheck className="w-3.5 h-3.5" />
@@ -1871,7 +1850,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
           <button
             type="button"
             onClick={() => setIsPlanReportOpen(true)}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs transition cursor-pointer"
           >
             <FileText className="w-3.5 h-3.5 text-emerald-400" />
             <span>Báo cáo thẩm định</span>
@@ -1984,10 +1963,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
           </div>
 
           {isPlanLocked ? (
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-semibold">
-              <Lock className="w-3.5 h-3.5" />
-              <span>Đã chốt {activeVersionCode}</span>
-            </span>
+            <Status tone="positive">{`Đã chốt ${activeVersionCode}`}</Status>
           ) : planStatus === 'PENDING_APPROVAL' ? (
             isLeadUser ? (
               <button
@@ -1998,16 +1974,10 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                 <span>Xem &amp; duyệt</span>
               </button>
             ) : (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-blue-50 text-blue-700 border border-blue-200 text-xs font-semibold">
-                <Clock className="w-3.5 h-3.5" />
-                <span>Chờ duyệt</span>
-              </span>
+              <Status tone="warning">Chờ duyệt</Status>
             )
           ) : isApprovedStatus ? (
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-semibold">
-              <ShieldCheck className="w-3.5 h-3.5" />
-              <span>Đã duyệt</span>
-            </span>
+            <Status tone="positive">Đã duyệt</Status>
           ) : (
             <button
               onClick={openSubmitToManager}
@@ -2028,17 +1998,18 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
           {/* Thanh trạng thái quy trình 2 Layer trong mỗi Phiên bản kế hoạch */}
           <div className="bg-slate-900 text-white rounded-xl p-4 flex flex-wrap items-center justify-between gap-3">
             <div className="space-y-1">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="px-2 py-0.5 rounded bg-blue-500/20 border border-blue-400/40 text-blue-300 text-2xs font-bold uppercase tracking-wide">
+              <div className="flex items-center gap-2 flex-wrap text-xs font-semibold">
+                <span className="text-blue-300">
                   Phiên bản {activeVersionCode} · Cơ chế 2 Layer
                 </span>
-                <span className={`px-2 py-0.5 rounded text-2xs font-bold ${
+                <span className="text-slate-500">·</span>
+                <span className={
                   isPlanLocked
-                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/30'
+                    ? 'text-emerald-300'
                     : isLayer1Locked
-                    ? 'bg-blue-500/20 text-blue-200 border border-blue-400/30'
-                    : 'bg-amber-500/20 text-amber-300 border border-amber-400/30'
-                }`}>
+                    ? 'text-blue-200'
+                    : 'text-amber-300'
+                }>
                   {isPlanLocked
                     ? 'Phiên bản đã khóa chốt'
                     : isLayer1Locked
@@ -2056,7 +2027,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                 <button
                   type="button"
                   onClick={handleUnlockLayer1ForEdit}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs transition cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-slate-950 font-semibold text-xs transition cursor-pointer"
                 >
                   <Unlock className="w-3.5 h-3.5" />
                   <span>Mở khóa sửa chỉ tiêu</span>
@@ -2066,7 +2037,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                 <button
                   type="button"
                   onClick={() => handleLockLayer1AndProceed(true)}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold text-xs shadow-xs transition cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-semibold text-xs shadow-xs transition cursor-pointer"
                 >
                   <CheckCircle2 className="w-3.5 h-3.5" />
                   <span>Chốt chỉ tiêu &amp; Sang phân bổ →</span>
@@ -2076,7 +2047,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                 <button
                   type="button"
                   onClick={() => setActiveTab('ALL_SUMMARY')}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs transition cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs transition cursor-pointer"
                 >
                   <span>Mở phân bổ chi tiết</span>
                   <ArrowRight className="w-3.5 h-3.5" />
@@ -2106,26 +2077,21 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
             );
 
             return (
-              <div className="bg-white rounded-xl border border-indigo-200 p-4 space-y-3 shadow-2xs">
+              <div className="bg-white rounded-xl border border-line p-4 space-y-3 shadow-2xs">
                 <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-2.5">
-                  <div className="flex items-center gap-2.5">
-                    <span
-                      className={`px-2 py-0.5 rounded text-2xs font-bold border ${
-                        hasCampaignActive
-                          ? 'bg-indigo-50 text-indigo-800 border-indigo-200'
-                          : 'bg-slate-100 text-slate-700 border-slate-300'
-                      }`}
-                    >
-                      {hasCampaignActive ? 'CÓ CHIẾN DỊCH (CAMPAIGN)' : 'DUY TRÌ THƯỜNG NHẬT (KHÔNG CAMPAIGN)'}
-                    </span>
-                    <div>
-                      <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wide">
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="text-xs font-semibold text-slate-900 uppercase tracking-wide">
                         Thực thể Chiến dịch (Campaign 1–3 Tháng) &amp; Key Visual kỳ {planState.month}
                       </h3>
-                      <p className="text-2xs text-slate-500">
-                        Một tháng gian hàng có thể gắn với 1 Chiến dịch cấp Brand (kéo dài 1–3 tháng) hoặc chạy Duy trì thường nhật (Always-on).
-                      </p>
+                      <span className="text-slate-400">·</span>
+                      <span className={`text-2xs font-semibold ${hasCampaignActive ? 'text-accent' : 'text-slate-600'}`}>
+                        {hasCampaignActive ? 'Có chiến dịch (Campaign)' : 'Duy trì thường nhật (Không Campaign)'}
+                      </span>
                     </div>
+                    <p className="text-2xs text-slate-500">
+                      Một tháng gian hàng có thể gắn với 1 Chiến dịch cấp Brand (kéo dài 1–3 tháng) hoặc chạy Duy trì thường nhật (Always-on).
+                    </p>
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2">
@@ -2152,7 +2118,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                           notify(`Đã bật chế độ CÓ Chiến dịch (Campaign) cho kế hoạch tháng ${planState.month}`);
                         }}
                         className={`px-2.5 py-1 rounded-md text-2xs font-semibold transition cursor-pointer ${
-                          hasCampaignActive ? 'bg-indigo-600 text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+                          hasCampaignActive ? 'bg-accent text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'
                         }`}
                       >
                         Có Campaign
@@ -2186,7 +2152,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                           setEditingCampaignForModal(linkedCampaign);
                           setIsCampaignModalOpen(true);
                         }}
-                        className="px-2.5 py-1.5 rounded-lg border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-800 font-semibold text-2xs transition cursor-pointer"
+                        className="px-2.5 py-1.5 rounded-lg border border-line bg-sunken hover:bg-slate-100 text-ink font-semibold text-2xs transition cursor-pointer"
                       >
                         Sửa / Phân kỳ Campaign
                       </button>
@@ -2230,7 +2196,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                             setMonthlyPlans(prev => prev.map(p => (p.id === planState.id ? { ...p, ...updated } : p)));
                             notify(`Đã gắn Chiến dịch [${selected.code}] ${selected.title} vào kế hoạch tháng ${planState.month}`);
                           }}
-                          className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white text-xs font-semibold text-slate-900 focus:outline-none focus:border-indigo-500"
+                          className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white text-xs font-semibold text-slate-900 focus:outline-none focus:border-accent"
                         >
                           {brandCampaignCandidates.map(c => (
                             <option key={c.id} value={c.id}>
@@ -2244,7 +2210,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                         <label className="text-2xs font-semibold text-slate-600 block mb-1">
                           Giai đoạn (Phase) trong kỳ {planState.month}
                         </label>
-                        <div className="px-2.5 py-1.5 rounded-lg border border-indigo-200 bg-indigo-50/60 text-xs font-semibold text-indigo-950 truncate">
+                        <div className="px-2.5 py-1.5 rounded-lg border border-line bg-sunken text-xs font-semibold text-ink truncate">
                           {activePhase?.phaseName || planState.campaignPhaseName || `Giai đoạn thực thi ${planState.month}`}
                         </div>
                       </div>
@@ -2254,9 +2220,9 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
                         {/* Cột 1: Thông điệp & CTKM Section 01 */}
                         <div className="rounded-lg border border-slate-200 bg-slate-50/70 p-3 space-y-1.5 text-2xs">
-                          <div className="flex items-center justify-between">
-                            <span className="font-bold text-slate-800 uppercase">01. Định hướng &amp; CTKM</span>
-                            <span className="px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-800 font-mono font-semibold text-[10px]">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="font-semibold text-slate-800 uppercase">01. Định hướng &amp; CTKM</span>
+                            <span className="font-mono text-2xs text-slate-500">
                               {(linkedCampaign.coveredMonths || []).length > 1
                                 ? `Kéo dài ${linkedCampaign.coveredMonths?.length} tháng (${linkedCampaign.coveredMonths?.join(', ')})`
                                 : `Chiến dịch 1 tháng (${linkedCampaign.coveredMonths?.[0] || planState.month})`}
@@ -2281,7 +2247,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                         {/* Cột 2: Ngân sách & Mục tiêu của Phase tháng này */}
                         <div className="rounded-lg border border-slate-200 bg-slate-50/70 p-3 space-y-1.5 text-2xs">
                           <div className="flex items-center justify-between">
-                            <span className="font-bold text-slate-800 uppercase">02. Phân kỳ tháng {planState.month}</span>
+                            <span className="font-semibold text-slate-800 uppercase">02. Phân kỳ tháng {planState.month}</span>
                             {activePhase && !isLayer1Locked && (
                               <button
                                 type="button"
@@ -2292,7 +2258,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                                   });
                                   notify(`Đã áp dụng Hạn mức Phase ${planState.month} (${formatVndShort(activePhase.allocatedBudget)}) vào bảng Chỉ tiêu!`);
                                 }}
-                                className="text-[10px] font-semibold text-indigo-700 hover:underline cursor-pointer"
+                                className="text-2xs font-semibold text-accent hover:underline cursor-pointer"
                               >
                                 Áp vào Chỉ tiêu →
                               </button>
@@ -2300,26 +2266,26 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                           </div>
                           <div className="grid grid-cols-2 gap-2 pt-0.5">
                             <div className="p-2 rounded bg-white border border-slate-200/80">
-                              <span className="text-slate-500 block text-[10px]">Ngân sách Phase ({planState.month})</span>
+                              <span className="text-slate-500 block text-2xs">Ngân sách Phase ({planState.month})</span>
                               <strong className="font-mono text-xs text-slate-900">
                                 {formatVndShort(activePhase?.allocatedBudget || linkedCampaign.budget)}
                               </strong>
-                              <span className="text-[10px] text-slate-400 block">
+                              <span className="text-2xs text-slate-400 block">
                                 / Tổng {formatVndShort(linkedCampaign.budget)}
                               </span>
                             </div>
                             <div className="p-2 rounded bg-white border border-slate-200/80">
-                              <span className="text-slate-500 block text-[10px]">Target GMV Phase ({planState.month})</span>
+                              <span className="text-slate-500 block text-2xs">Target GMV Phase ({planState.month})</span>
                               <strong className="font-mono text-xs text-emerald-700">
                                 {formatVndShort(activePhase?.targetGmv || linkedCampaign.targetGmv)}
                               </strong>
-                              <span className="text-[10px] text-slate-400 block">
+                              <span className="text-2xs text-slate-400 block">
                                 {activePhase?.targetKocCount || linkedCampaign.targetKocCount} KOCs
                               </span>
                             </div>
                           </div>
                           {(activePhase?.saleMilestones || linkedCampaign.saleMilestones) && (
-                            <div className="text-[11px] text-slate-600 pt-0.5">
+                            <div className="text-2xs text-slate-600 pt-0.5">
                               Mốc Sale: <strong className="text-slate-800">{activePhase?.saleMilestones || linkedCampaign.saleMilestones}</strong>
                             </div>
                           )}
@@ -2328,9 +2294,9 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                         {/* Cột 3: Key Visual & Lịch treo KV Section 03 */}
                         <div className="rounded-lg border border-slate-200 bg-slate-50/70 p-3 space-y-1.5 text-2xs">
                           <div className="flex items-center justify-between">
-                            <span className="font-bold text-slate-800 uppercase">03. Key Visual &amp; Lịch Treo KV</span>
+                            <span className="font-semibold text-slate-800 uppercase">03. Key Visual &amp; Lịch Treo KV</span>
                             {linkedCampaign.kvPic && (
-                              <span className="text-[10px] text-slate-500">KV PIC: <strong>{linkedCampaign.kvPic}</strong></span>
+                              <span className="text-2xs text-slate-500">KV PIC: <strong>{linkedCampaign.kvPic}</strong></span>
                             )}
                           </div>
                           <div>
@@ -2346,14 +2312,16 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                             </div>
                           )}
                           {linkedCampaign.keyVisualSpec && (
-                            <div className="flex flex-wrap items-center gap-2 pt-1 font-mono text-[10px] text-slate-600">
-                              <span className="px-1.5 py-0.5 rounded bg-white border border-slate-200">
+                            <div className="flex flex-wrap items-center gap-1.5 pt-1 font-mono text-2xs text-slate-600">
+                              <span>
                                 Ref: <strong>{linkedCampaign.keyVisualSpec.refDate}</strong>
                               </span>
-                              <span className="px-1.5 py-0.5 rounded bg-white border border-slate-200">
+                              <span className="text-slate-300">·</span>
+                              <span>
                                 Order: <strong>{linkedCampaign.keyVisualSpec.orderDate}</strong>
                               </span>
-                              <span className="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
+                              <span className="text-slate-300">·</span>
+                              <span className="text-emerald-700 font-semibold">
                                 Treo KV: <strong>{linkedCampaign.keyVisualSpec.hangDate}</strong>
                               </span>
                             </div>
@@ -2374,7 +2342,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                         setEditingCampaignForModal(null);
                         setIsCampaignModalOpen(true);
                       }}
-                      className="text-indigo-700 font-semibold hover:underline shrink-0 cursor-pointer"
+                      className="text-accent font-semibold hover:underline shrink-0 cursor-pointer"
                     >
                       + Khởi tạo Campaign cho tháng này
                     </button>
@@ -2388,7 +2356,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
           <div className="bg-white rounded-xl border border-slate-200 p-4 space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
               <div>
-                <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wide">
+                <h3 className="text-xs font-semibold text-slate-900 uppercase tracking-wide">
                   Đầu vào ban đầu — Số tổng PnL do Growth đưa vào
                 </h3>
                 <p className="text-2xs text-slate-500">
@@ -2413,7 +2381,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                     step={10000000}
                     value={layer1Metrics.targetNmvTotal}
                     onChange={(e) => handleUpdateLayer1Metrics({ targetNmvTotal: Math.max(0, Number(e.target.value) || 0) })}
-                    className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white font-mono text-sm font-bold text-emerald-700 focus:outline-none focus:border-blue-500 disabled:bg-slate-100"
+                    className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white font-mono text-sm font-semibold text-emerald-700 focus:outline-none focus:border-blue-500 disabled:bg-slate-100"
                   />
                 </div>
                 <span className="text-2xs text-slate-500 mt-1 block font-mono">
@@ -2433,7 +2401,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                     step={5000000}
                     value={layer1Metrics.pnlTotalBudgetNet}
                     onChange={(e) => handleUpdateLayer1Metrics({ pnlTotalBudgetNet: Math.max(0, Number(e.target.value) || 0) })}
-                    className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white font-mono text-sm font-bold text-slate-900 focus:outline-none focus:border-blue-500 disabled:bg-slate-100"
+                    className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white font-mono text-sm font-semibold text-slate-900 focus:outline-none focus:border-blue-500 disabled:bg-slate-100"
                   />
                 </div>
                 <div className="flex items-center justify-between text-2xs text-slate-500 mt-1 font-mono">
@@ -2459,7 +2427,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                     step={5000000}
                     value={layer1Metrics.budgetAdsNet}
                     onChange={(e) => handleUpdateLayer1Metrics({ budgetAdsNet: Math.max(0, Number(e.target.value) || 0) })}
-                    className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white font-mono text-sm font-bold text-blue-700 focus:outline-none focus:border-blue-500 disabled:bg-slate-100"
+                    className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white font-mono text-sm font-semibold text-blue-700 focus:outline-none focus:border-blue-500 disabled:bg-slate-100"
                   />
                 </div>
                 <span className="text-2xs text-slate-500 mt-1 block font-mono">
@@ -2479,12 +2447,12 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                   <span className="text-2xs font-semibold text-slate-600">
                     4. Đối soát Chỉ tiêu vs PnL
                   </span>
-                  <span className={`text-2xs font-mono font-bold px-1.5 py-0.5 rounded ${
+                  <span className={`text-2xs font-mono font-semibold tabular-nums ${
                     layer1BudgetGapVsPnl < 0
-                      ? 'bg-rose-100 text-rose-700'
+                      ? 'text-rose-700'
                       : layer1BudgetGapVsPnl === 0
-                      ? 'bg-emerald-100 text-emerald-700'
-                      : 'bg-blue-100 text-blue-700'
+                      ? 'text-emerald-700'
+                      : 'text-blue-700'
                   }`}>
                     {layer1BudgetGapVsPnl < 0
                       ? `Vượt ${formatVndShort(Math.abs(layer1BudgetGapVsPnl))}`
@@ -2493,7 +2461,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                       : `Chưa chia ${formatVndShort(layer1BudgetGapVsPnl)}`}
                   </span>
                 </div>
-                <div className="text-base font-bold font-mono text-slate-900 mt-1.5">
+                <div className="text-base font-semibold font-mono text-slate-900 mt-1.5">
                   {formatVndShort(totalLayer1ChannelBudgetNet)} <span className="text-xs font-normal text-slate-500">/ {formatVndShort(layer1Metrics.pnlTotalBudgetNet)}</span>
                 </div>
                 <span className="text-2xs text-slate-600 mt-1 block">
@@ -2509,7 +2477,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
               <div className="px-4 py-3 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2 bg-slate-50/80">
                 <div>
                   <div className="flex items-center gap-2">
-                    <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wide">
+                    <h3 className="text-xs font-semibold text-slate-900 uppercase tracking-wide">
                       Bảng thống nhất Chỉ tiêu tháng (Growth · Booking B2C · Media)
                     </h3>
                   </div>
@@ -2566,7 +2534,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                             disabled={isLayer1Locked}
                             value={layer1Metrics.qtyAffiliatePaid}
                             onChange={(e) => handleUpdateLayer1Metrics({ qtyAffiliatePaid: Math.max(0, Number(e.target.value) || 0) })}
-                            className="w-16 text-right font-mono font-bold px-2 py-1 rounded border border-slate-300 bg-white text-slate-900 disabled:bg-slate-100"
+                            className="w-16 text-right font-mono font-semibold px-2 py-1 rounded border border-slate-300 bg-white text-slate-900 disabled:bg-slate-100"
                           />
                           <span className="text-2xs text-slate-500">video</span>
                         </div>
@@ -2578,7 +2546,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                           step={1000000}
                           value={layer1Metrics.budgetAffiliateNet}
                           onChange={(e) => handleUpdateLayer1Metrics({ budgetAffiliateNet: Math.max(0, Number(e.target.value) || 0) })}
-                          className="w-28 text-right font-mono font-bold px-2 py-1 rounded border border-slate-300 bg-white text-blue-700 disabled:bg-slate-100"
+                          className="w-28 text-right font-mono font-semibold px-2 py-1 rounded border border-slate-300 bg-white text-blue-700 disabled:bg-slate-100"
                         />
                         <div className="text-2xs font-mono text-slate-500 mt-0.5">{formatVndShort(layer1Metrics.budgetAffiliateNet)}</div>
                       </td>
@@ -2630,7 +2598,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                             disabled={isLayer1Locked}
                             value={layer1Metrics.qtyFocSample}
                             onChange={(e) => handleUpdateLayer1Metrics({ qtyFocSample: Math.max(0, Number(e.target.value) || 0) })}
-                            className="w-16 text-right font-mono font-bold px-2 py-1 rounded border border-slate-300 bg-white text-slate-900 disabled:bg-slate-100"
+                            className="w-16 text-right font-mono font-semibold px-2 py-1 rounded border border-slate-300 bg-white text-slate-900 disabled:bg-slate-100"
                           />
                           <span className="text-2xs text-slate-500">suất</span>
                         </div>
@@ -2676,7 +2644,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                             disabled={isLayer1Locked}
                             value={layer1Metrics.qtySelfChannel}
                             onChange={(e) => handleUpdateLayer1Metrics({ qtySelfChannel: Math.max(0, Number(e.target.value) || 0) })}
-                            className="w-16 text-right font-mono font-bold px-2 py-1 rounded border border-slate-300 bg-white text-slate-900 disabled:bg-slate-100"
+                            className="w-16 text-right font-mono font-semibold px-2 py-1 rounded border border-slate-300 bg-white text-slate-900 disabled:bg-slate-100"
                           />
                           <span className="text-2xs text-slate-500">video</span>
                         </div>
@@ -2688,7 +2656,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                           step={500000}
                           value={layer1Metrics.budgetSelfChannelNet}
                           onChange={(e) => handleUpdateLayer1Metrics({ budgetSelfChannelNet: Math.max(0, Number(e.target.value) || 0) })}
-                          className="w-28 text-right font-mono font-bold px-2 py-1 rounded border border-slate-300 bg-white text-blue-700 disabled:bg-slate-100"
+                          className="w-28 text-right font-mono font-semibold px-2 py-1 rounded border border-slate-300 bg-white text-blue-700 disabled:bg-slate-100"
                         />
                         <div className="text-2xs font-mono text-slate-500 mt-0.5">{formatVndShort(layer1Metrics.budgetSelfChannelNet)}</div>
                       </td>
@@ -2740,7 +2708,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                             disabled={isLayer1Locked}
                             value={layer1Metrics.qtyMultiPlatform}
                             onChange={(e) => handleUpdateLayer1Metrics({ qtyMultiPlatform: Math.max(0, Number(e.target.value) || 0) })}
-                            className="w-16 text-right font-mono font-bold px-2 py-1 rounded border border-slate-300 bg-white text-slate-900 disabled:bg-slate-100"
+                            className="w-16 text-right font-mono font-semibold px-2 py-1 rounded border border-slate-300 bg-white text-slate-900 disabled:bg-slate-100"
                           />
                           <span className="text-2xs text-slate-500">video</span>
                         </div>
@@ -2752,7 +2720,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                           step={500000}
                           value={layer1Metrics.budgetMultiPlatformNet}
                           onChange={(e) => handleUpdateLayer1Metrics({ budgetMultiPlatformNet: Math.max(0, Number(e.target.value) || 0) })}
-                          className="w-28 text-right font-mono font-bold px-2 py-1 rounded border border-slate-300 bg-white text-blue-700 disabled:bg-slate-100"
+                          className="w-28 text-right font-mono font-semibold px-2 py-1 rounded border border-slate-300 bg-white text-blue-700 disabled:bg-slate-100"
                         />
                         <div className="text-2xs font-mono text-slate-500 mt-0.5">{formatVndShort(layer1Metrics.budgetMultiPlatformNet)}</div>
                       </td>
@@ -2796,7 +2764,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                             disabled={isLayer1Locked}
                             value={layer1Metrics.qtyLivestreamSessions}
                             onChange={(e) => handleUpdateLayer1Metrics({ qtyLivestreamSessions: Math.max(0, Number(e.target.value) || 0) })}
-                            className="w-16 text-right font-mono font-bold px-2 py-1 rounded border border-slate-300 bg-white text-slate-900 disabled:bg-slate-100"
+                            className="w-16 text-right font-mono font-semibold px-2 py-1 rounded border border-slate-300 bg-white text-slate-900 disabled:bg-slate-100"
                           />
                           <span className="text-2xs text-slate-500">phiên</span>
                         </div>
@@ -2808,7 +2776,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                           step={500000}
                           value={layer1Metrics.budgetLivestreamNet}
                           onChange={(e) => handleUpdateLayer1Metrics({ budgetLivestreamNet: Math.max(0, Number(e.target.value) || 0) })}
-                          className="w-28 text-right font-mono font-bold px-2 py-1 rounded border border-slate-300 bg-white text-blue-700 disabled:bg-slate-100"
+                          className="w-28 text-right font-mono font-semibold px-2 py-1 rounded border border-slate-300 bg-white text-blue-700 disabled:bg-slate-100"
                         />
                         <div className="text-2xs font-mono text-slate-500 mt-0.5">{formatVndShort(layer1Metrics.budgetLivestreamNet)}</div>
                       </td>
@@ -2834,7 +2802,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                     </tr>
                   </tbody>
                   <tfoot>
-                    <tr className="bg-slate-50 border-t border-slate-200 font-bold text-slate-900">
+                    <tr className="bg-slate-50 border-t border-slate-200 font-semibold text-slate-900">
                       <td className="py-2.5 px-3.5">
                         Tổng cộng Chỉ tiêu (Kèm gói Ads {formatVndShort(layer1Metrics.budgetAdsNet)})
                       </td>
@@ -2878,7 +2846,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                     <button
                       type="button"
                       onClick={() => handleLockLayer1AndProceed(true)}
-                      className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-xs transition inline-flex items-center gap-1.5 cursor-pointer"
+                      className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow-xs transition inline-flex items-center gap-1.5 cursor-pointer"
                     >
                       <CheckCircle2 className="w-4 h-4" />
                       <span>Chốt chỉ tiêu &amp; Sang phân bổ chi tiết →</span>
@@ -2898,7 +2866,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                       <button
                         type="button"
                         onClick={() => setActiveTab('ALL_SUMMARY')}
-                        className="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition inline-flex items-center gap-1.5 cursor-pointer"
+                        className="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs transition inline-flex items-center gap-1.5 cursor-pointer"
                       >
                         <span>Mở bảng Phân bổ chi tiết</span>
                         <ArrowRight className="w-3.5 h-3.5" />
@@ -3243,7 +3211,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                 >
                   <div>
                     <div className="flex items-start justify-between gap-2 mb-2">
-                      <span className={`text-2xs font-semibold px-2.5 py-0.5 rounded-md font-mono border ${getTierBadgeStyle(item.tierCode)}`}>
+                      <span className="text-2xs font-code text-ink-3">
                         {item.tierCode}
                       </span>
                       <span className="text-xs font-semibold font-mono text-slate-800">
@@ -3424,7 +3392,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                       {/* Column 1: Tier Badge & Label */}
                       <td className="py-2 px-3 align-middle">
                         <div className="flex items-center gap-1.5 min-w-0">
-                          <span className={`text-2xs font-semibold px-1.5 py-0.5 rounded font-mono border shrink-0 ${getTierBadgeStyle(item.tierCode)}`}>
+                          <span className="text-2xs font-code text-ink-3 shrink-0">
                             {item.tierCode}
                           </span>
                           <span className="font-semibold text-slate-900 text-xs truncate" title={item.tierLabel}>
@@ -4473,7 +4441,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                               <tr key={item.id} className="hover:bg-slate-50 transition">
                                 <td className="py-2.5 px-3">
                                   <div className="flex items-center gap-1.5">
-                                    <span className={`text-2xs font-semibold px-2 py-0.5 rounded font-mono border ${getTierBadgeStyle(item.tierCode)}`}>
+                                    <span className="text-2xs font-code text-ink-3 shrink-0">
                                       {item.tierCode}
                                     </span>
                                     <span className="font-semibold text-slate-900 truncate max-w-[110px]">
@@ -4897,4 +4865,3 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
     </div>
   );
 };
-          
