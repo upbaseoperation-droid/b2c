@@ -47,12 +47,19 @@ import {
 } from '../../lib/mockData';
 import { analyzeScriptWithAi } from '../../lib/aiScriptAnalyzer';
 import { CampaignCreateModal } from '../CampaignCreateModal';
+import { REAL_B2C_42_BRANDS } from '../../lib/realB2cBrandsData';
+import {
+  useBrandProfiles,
+  findBrandProfile,
+  getBrandRatecardCeiling,
+  brandProfileToKnowledgeBase,
+} from '../../lib/brands/useBrandProfiles';
 
 interface BrandViewProps {
   onCampaignCreatedNotification?: (campaign: CampaignItem) => void;
   onTriggerHandoffNotification?: (campaignTitle: string) => void;
   onNavigateToCtvHub?: () => void;
-  onNavigateToBrandKnowledge?: () => void;
+  onNavigateToBrandKnowledge?: (brandName?: string) => void;
 }
 
 type BrandViewTab = 'BRIEF_STUDIO' | 'GUIDELINE_HUB' | 'APPROVAL_GATE' | 'RETAINER_HEALTH';
@@ -63,6 +70,8 @@ export const BrandView: React.FC<BrandViewProps> = ({
   onNavigateToCtvHub,
   onNavigateToBrandKnowledge,
 }) => {
+  const { profiles, saveSection } = useBrandProfiles();
+
   // Navigation Tab State
   const [activeTab, setActiveTab] = useState<BrandViewTab>('BRIEF_STUDIO');
 
@@ -73,15 +82,73 @@ export const BrandView: React.FC<BrandViewProps> = ({
   const [searchCampaign, setSearchCampaign] = useState('');
   const [handoffSuccessModal, setHandoffSuccessModal] = useState<CampaignItem | null>(null);
 
-  // Tab 2: Brand Guideline & Asset State
-  const [guidelines, setGuidelines] = useState<BrandGuidelineAsset[]>(INITIAL_BRAND_GUIDELINES);
+  // Tab 2: Brand Guideline & Asset State — Synchronized with live BrandProfile API (/api/brands/profiles)
+  const [localGuidelinesFallback, setLocalGuidelinesFallback] = useState<BrandGuidelineAsset[]>(INITIAL_BRAND_GUIDELINES);
   const [selectedBrandName, setSelectedBrandName] = useState<string>(
-    INITIAL_BRAND_GUIDELINES[0]?.brandName || 'Senka'
+    INITIAL_BRAND_GUIDELINES[0]?.brandName || 'ClubClio'
   );
+  const [brandSearchFilter, setBrandSearchFilter] = useState('');
   const [keywordSearch, setKeywordSearch] = useState('');
   const [severityFilter, setSeverityFilter] = useState<'ALL' | BlacklistSeverity>('ALL');
   const [isAddKeywordModalOpen, setIsAddKeywordModalOpen] = useState(false);
   const [copiedKeywordId, setCopiedKeywordId] = useState<string | null>(null);
+
+  const guidelines: BrandGuidelineAsset[] = useMemo(() => {
+    if (!profiles || profiles.length === 0) return localGuidelinesFallback;
+    return profiles.map((p) => {
+      const realBrand = REAL_B2C_42_BRANDS.find(
+        (b) => b.name.toLowerCase() === p.brandName.toLowerCase()
+      );
+      const staticGuide = localGuidelinesFallback.find(
+        (g) => g.brandName.toLowerCase() === p.brandName.toLowerCase()
+      );
+      const mappedKeywords: BlacklistKeyword[] = (p.contentRules?.banned || []).map((b, idx) => ({
+        id: `live-bl-${p.brandName}-${idx}`,
+        keyword: b.phrase,
+        category: 'LEGAL_MEDICAL',
+        severity: 'CRITICAL_BANNED',
+        rationale: b.reason || 'Từ ngữ bị hạn chế theo hồ sơ pháp lý thương hiệu.',
+        alternativeSuggestion: b.replacement || undefined,
+        addedBy: p.updatedBy || 'Phụ trách thương hiệu',
+        addedAt: new Date(p.updatedAt).toLocaleDateString('vi-VN'),
+      }));
+
+      return {
+        id: `guide-${p.brandName}`,
+        brandName: p.brandName,
+        category: realBrand?.category || staticGuide?.category || 'Chăm sóc & Làm đẹp B2C',
+        colorTheme: staticGuide?.colorTheme || '#1e40af',
+        toneOfVoice: p.positioning?.toneOfVoice || staticGuide?.toneOfVoice || 'Chuyên nghiệp, bám sát lợi điểm sản phẩm và trải nghiệm thực tế.',
+        toneTag: staticGuide?.toneTag || 'BÁC_SĨ_CHUYÊN_GIA',
+        visualDoList: (p.contentRules?.visualDo && p.contentRules.visualDo.length > 0)
+          ? p.contentRules.visualDo
+          : (staticGuide?.visualDoList || []),
+        visualDontList: (p.contentRules?.visualDont && p.contentRules.visualDont.length > 0)
+          ? p.contentRules.visualDont
+          : (staticGuide?.visualDontList || []),
+        logoRules: p.legal?.[0]?.disclaimer || staticGuide?.logoRules || 'Hiển thị rõ bao bì sản phẩm chính hãng, không che khuất tên thương hiệu.',
+        blacklistKeywords: mappedKeywords.length > 0 ? mappedKeywords : (staticGuide?.blacklistKeywords || []),
+        heroSkus: (p.products && p.products.length > 0)
+          ? p.products.map((prod, idx) => ({
+              id: prod.id || `sku-${p.brandName}-${idx}`,
+              skuCode: prod.skuCode || `SKU-${idx + 1}`,
+              name: prod.name,
+              category: realBrand?.category || 'Sản phẩm chủ lực',
+              priceVnd: prod.priceVnd || 0,
+              uspBulletPoints: prod.usps || [],
+              clinicalClaims: prod.ingredients?.join(', ') || undefined,
+              sampleStockCount: 30,
+              pdpUrl: prod.pdpUrl || 'https://shopee.vn',
+            }))
+          : (staticGuide?.heroSkus || []),
+      };
+    });
+  }, [profiles, localGuidelinesFallback]);
+
+  const currentProfile = useMemo(
+    () => findBrandProfile(profiles, selectedBrandName),
+    [profiles, selectedBrandName]
+  );
 
   // New Keyword Form
   const [newKeywordText, setNewKeywordText] = useState('');
@@ -105,7 +172,10 @@ export const BrandView: React.FC<BrandViewProps> = ({
 
   const handleAiInspectScript = (item: BrandApprovalQueueItem) => {
     if (!item.scriptContent) return;
-    const brandKb = INITIAL_BRAND_KNOWLEDGE_BASES.find(b => b.brandName.toLowerCase().includes(item.brandName.toLowerCase())) || INITIAL_BRAND_KNOWLEDGE_BASES[0];
+    const matchedProfile = findBrandProfile(profiles, item.brandName);
+    const brandKb = matchedProfile
+      ? brandProfileToKnowledgeBase(matchedProfile)
+      : (INITIAL_BRAND_KNOWLEDGE_BASES.find(b => b.brandName.toLowerCase().includes(item.brandName.toLowerCase())) || INITIAL_BRAND_KNOWLEDGE_BASES[0]);
     const fullText = `${item.scriptContent.hook}\n${item.scriptContent.pain}\n${item.scriptContent.usp}\n${item.scriptContent.cta}`;
     const result = analyzeScriptWithAi(fullText, brandKb);
     setAiScanModalData({ item, result });
@@ -145,7 +215,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
   };
 
   // ----------------------------------------------------
-  // HANDLERS FOR KEYWORDS & ASSETS
+  // HANDLERS FOR KEYWORDS & ASSETS (Synced with /api/brands/profiles)
   // ----------------------------------------------------
   const handleCopySuggestion = (id: string, text: string) => {
     navigator.clipboard.writeText(text);
@@ -153,8 +223,29 @@ export const BrandView: React.FC<BrandViewProps> = ({
     setTimeout(() => setCopiedKeywordId(null), 2000);
   };
 
-  const handleDeleteKeyword = (brandId: string, keywordId: string) => {
-    setGuidelines(prev => prev.map(g => {
+  const handleDeleteKeyword = async (brandId: string, keywordId: string) => {
+    const targetKw = currentGuideline?.blacklistKeywords.find(k => k.id === keywordId);
+    if (currentProfile && targetKw) {
+      const nextBanned = (currentProfile.contentRules?.banned || []).filter(
+        b => b.phrase.toLowerCase() !== targetKw.keyword.toLowerCase()
+      );
+      try {
+        await saveSection({
+          brandName: currentProfile.brandName,
+          revision: currentProfile.revision,
+          section: 'CONTENT_RULES',
+          data: {
+            ...currentProfile.contentRules,
+            banned: nextBanned,
+          },
+        });
+        return;
+      } catch {
+        // Fallback to local state if API save fails
+      }
+    }
+
+    setLocalGuidelinesFallback(prev => prev.map(g => {
       if (g.id === brandId) {
         return {
           ...g,
@@ -165,30 +256,53 @@ export const BrandView: React.FC<BrandViewProps> = ({
     }));
   };
 
-  const handleAddKeyword = (e: React.FormEvent) => {
+  const handleAddKeyword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newKeywordText.trim()) return;
 
-    const newKw: BlacklistKeyword = {
-      id: `bl-custom-${Date.now()}`,
-      keyword: newKeywordText.trim(),
-      category: newKeywordCategory,
-      severity: newKeywordSeverity,
-      rationale: newKeywordRationale || 'Quy chuẩn bảo vệ thương hiệu nội bộ Upbase.',
-      alternativeSuggestion: newKeywordAlt.trim() || undefined,
-      addedBy: 'Phụ trách thương hiệu',
-      addedAt: new Date().toLocaleDateString('vi-VN')
-    };
+    const phrase = newKeywordText.trim();
+    const reason = newKeywordRationale || 'Quy chuẩn bảo vệ thương hiệu nội bộ Upbase.';
+    const alternative = newKeywordAlt.trim() || 'Dùng từ mô tả trải nghiệm thực tế, không cam kết tuyệt đối';
 
-    setGuidelines(prev => prev.map(g => {
-      if (g.brandName === selectedBrandName) {
-        return {
-          ...g,
-          blacklistKeywords: [newKw, ...g.blacklistKeywords]
-        };
+    if (currentProfile) {
+      try {
+        await saveSection({
+          brandName: currentProfile.brandName,
+          revision: currentProfile.revision,
+          section: 'CONTENT_RULES',
+          data: {
+            ...currentProfile.contentRules,
+            banned: [
+              { phrase, reason, alternative },
+              ...(currentProfile.contentRules?.banned || []),
+            ],
+          },
+        });
+      } catch {
+        // Fallback to local state if API fails
       }
-      return g;
-    }));
+    } else {
+      const newKw: BlacklistKeyword = {
+        id: `bl-custom-${Date.now()}`,
+        keyword: phrase,
+        category: newKeywordCategory,
+        severity: newKeywordSeverity,
+        rationale: reason,
+        alternativeSuggestion: alternative,
+        addedBy: 'Phụ trách thương hiệu',
+        addedAt: new Date().toLocaleDateString('vi-VN')
+      };
+
+      setLocalGuidelinesFallback(prev => prev.map(g => {
+        if (g.brandName === selectedBrandName) {
+          return {
+            ...g,
+            blacklistKeywords: [newKw, ...g.blacklistKeywords]
+          };
+        }
+        return g;
+      }));
+    }
 
     // Reset Form
     setNewKeywordText('');
@@ -533,60 +647,81 @@ export const BrandView: React.FC<BrandViewProps> = ({
       {/* ========================================================================= */}
       {activeTab === 'GUIDELINE_HUB' && (
         <div className="space-y-6">
-          {/* Brand Selector Pills */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-2">
-            <span className="text-xs text-slate-500 font-medium flex items-center gap-1 mr-1">
-              <Building className="w-3.5 h-3.5" /> Chọn nhãn hàng:
-            </span>
-            {guidelines.map(g => (
-              <button
-                key={g.id}
-                onClick={() => setSelectedBrandName(g.brandName)}
-                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition flex items-center gap-2 ${
-                  selectedBrandName === g.brandName
-                    ? 'bg-blue-600 text-white shadow-sm'
-                    : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
-                }`}
-              >
-                <span>{g.brandName}</span>
-                <span className={`text-2xs px-1.5 py-0.5 rounded-full ${
-                  selectedBrandName === g.brandName ? 'bg-blue-700 text-white' : 'bg-slate-100 text-slate-500'
-                }`}>
-                  {g.blacklistKeywords.length} cấm
-                </span>
-              </button>
-            ))}
+          {/* Brand Selector Pills + Search across 42 B2C Brands */}
+          <div className="bg-white p-3.5 rounded-md border border-slate-200 space-y-2.5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <span className="text-xs text-slate-600 font-semibold flex items-center gap-1.5">
+                <Building className="w-3.5 h-3.5 text-blue-600" />
+                <span>Chọn thương hiệu B2C ({guidelines.length} thương hiệu đồng bộ từ Hồ sơ thương hiệu):</span>
+              </span>
+              <div className="relative w-full sm:w-64">
+                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Tìm nhanh trong 42 thương hiệu..."
+                  value={brandSearchFilter}
+                  onChange={(e) => setBrandSearchFilter(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded pl-8 pr-2.5 py-1 text-xs text-slate-800 focus:outline-none focus:border-blue-500 focus:bg-white"
+                />
+              </div>
+            </div>
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 max-w-full">
+              {guidelines
+                .filter((g) =>
+                  !brandSearchFilter.trim() ||
+                  g.brandName.toLowerCase().includes(brandSearchFilter.toLowerCase()) ||
+                  g.category.toLowerCase().includes(brandSearchFilter.toLowerCase())
+                )
+                .map((g) => (
+                  <button
+                    key={g.id}
+                    onClick={() => setSelectedBrandName(g.brandName)}
+                    className={`px-3 py-1.5 rounded-md text-xs font-semibold transition flex items-center gap-1.5 shrink-0 ${
+                      selectedBrandName === g.brandName
+                        ? 'bg-blue-600 text-white shadow-sm'
+                        : 'bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200'
+                    }`}
+                  >
+                    <span>{g.brandName}</span>
+                    <span className={`text-2xs px-1.5 py-0.5 rounded-full ${
+                      selectedBrandName === g.brandName ? 'bg-blue-700 text-white' : 'bg-white text-slate-500 border border-slate-200'
+                    }`}>
+                      {g.blacklistKeywords.length} cấm
+                    </span>
+                  </button>
+                ))}
+            </div>
           </div>
 
           {/* Active Brand Profile Header */}
           <div className="card-enterprise p-5 bg-blue-50/50 border-blue-100">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <h2 className="text-lg font-semibold text-slate-900">{currentGuideline.brandName}</h2>
                   <span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded text-xs font-semibold">
                     {currentGuideline.category}
                   </span>
-                  <span className="px-2 py-0.5 bg-accent-soft text-accent rounded text-xs font-semibold">
-                    {currentGuideline.toneTag.replace(/_/g, ' ')}
+                  <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded text-2xs font-semibold">
+                    Đồng bộ trực tiếp với Hồ sơ thương hiệu
                   </span>
                 </div>
                 <p className="text-xs text-slate-600 mt-1 max-w-3xl">
-                  <strong>Giọng văn &amp; phong cách:</strong> {currentGuideline.toneOfVoice}
+                  <strong>Định vị &amp; giọng văn:</strong> {currentGuideline.toneOfVoice}
                 </p>
                 <p className="text-xs text-slate-600 mt-1">
-                  <strong>Quy tắc logo &amp; bộ nhận diện:</strong> {currentGuideline.logoRules}
+                  <strong>Khuyến cáo pháp lý / Nhận diện:</strong> {currentGuideline.logoRules}
                 </p>
               </div>
 
-              <div className="flex items-center gap-2 self-start md:self-auto">
+              <div className="flex items-center gap-2 self-start md:self-auto shrink-0">
                 {onNavigateToBrandKnowledge && (
                   <button
-                    onClick={onNavigateToBrandKnowledge}
+                    onClick={() => onNavigateToBrandKnowledge(currentGuideline.brandName)}
                     className="px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded border border-slate-300 shadow-2xs flex items-center gap-1.5 transition"
                   >
                     <FolderOpen className="w-3.5 h-3.5 text-blue-600" />
-                    <span>Kho tài liệu &amp; đọc tệp</span>
+                    <span>Mở hồ sơ &amp; tệp R2 ({currentProfile?.documents?.length || 0})</span>
                   </button>
                 )}
                 <button
@@ -598,6 +733,56 @@ export const BrandView: React.FC<BrandViewProps> = ({
                 </button>
               </div>
             </div>
+
+            {/* Ratecard KL1-KL7 & R2 Documents Quick Strip */}
+            {currentProfile && (
+              <div className="mt-4 pt-3 border-t border-blue-200/70 grid grid-cols-1 lg:grid-cols-2 gap-3 text-xs">
+                <div>
+                  <p className="text-2xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">
+                    Trần thù lao chuẩn theo khung lương (Ratecard áp vào Tạo Deal &amp; Duyệt KOC)
+                  </p>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {(['KL1', 'KL2', 'KL3', 'KL4', 'KL5', 'KL6', 'KL7'] as const).map((tier) => {
+                      const val = currentProfile.ratecard?.find((r) => r.grade === tier)?.maxBudget || 0;
+                      return (
+                        <span
+                          key={tier}
+                          className="px-2 py-0.5 rounded bg-white border border-blue-200 text-2xs font-medium text-slate-700"
+                        >
+                          <strong className="text-blue-700 font-mono">{tier}:</strong> {formatVndShort(val)}
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-2xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">
+                    Tài liệu thương hiệu trên Cloudflare R2 ({currentProfile.documents?.length || 0} tệp)
+                  </p>
+                  {currentProfile.documents && currentProfile.documents.length > 0 ? (
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {currentProfile.documents.slice(0, 3).map((doc) => (
+                        <a
+                          key={doc.id}
+                          href={`/api/brands/documents/${encodeURIComponent(doc.id)}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="px-2 py-0.5 rounded bg-white border border-slate-200 hover:border-blue-400 text-2xs text-blue-700 font-medium flex items-center gap-1 transition"
+                        >
+                          <FileText className="w-3 h-3 shrink-0" />
+                          <span className="truncate max-w-[160px]">{doc.title}</span>
+                        </a>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-2xs text-slate-500">
+                      Chưa có tệp đính kèm — bấm &ldquo;Mở hồ sơ &amp; tệp R2&rdquo; để tải tài liệu lên Cloudflare R2.
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* SECTION A: BLACKLIST KEYWORD MANAGER */}
@@ -892,7 +1077,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
                       <th className="py-2.5 px-4">KOC &amp; kênh</th>
                       <th className="py-2.5 px-3">Nhãn hàng &amp; mã deal</th>
                       <th className="py-2.5 px-3">Khung lương</th>
-                      <th className="py-2.5 px-3">Giá net booking</th>
+                      <th className="py-2.5 px-3">Giá net &amp; đối chiếu trần Ratecard</th>
                       <th className="py-2.5 px-3">Tệp kênh</th>
                       <th className="py-2.5 px-3">SLA còn lại</th>
                       <th className="py-2.5 px-3">Trạng thái</th>
@@ -902,7 +1087,12 @@ export const BrandView: React.FC<BrandViewProps> = ({
                   <tbody className="divide-y divide-slate-200">
                     {approvalQueue
                       .filter(i => i.submissionRound === 'ROUND_1_KOC')
-                      .map((item) => (
+                      .map((item) => {
+                        const matchedProf = findBrandProfile(profiles, item.brandName);
+                        const rateCeiling = getBrandRatecardCeiling(matchedProf, item.salaryGrade);
+                        const isOverCeiling = rateCeiling !== undefined && rateCeiling > 0 && item.quoteNet > rateCeiling;
+
+                        return (
                         <tr key={item.id} className="hover:bg-slate-50 transition">
                           <td className="py-3 px-4">
                             <div className="flex items-center gap-2.5">
@@ -935,8 +1125,17 @@ export const BrandView: React.FC<BrandViewProps> = ({
                               {item.salaryGrade}
                             </span>
                           </td>
-                          <td className="py-3 px-3 font-semibold text-slate-800">
-                            {item.quoteNet.toLocaleString('vi-VN')} đ
+                          <td className="py-3 px-3">
+                            <div className="font-semibold text-slate-800">
+                              {item.quoteNet.toLocaleString('vi-VN')} đ
+                            </div>
+                            {rateCeiling !== undefined && rateCeiling > 0 && (
+                              <div className={`text-2xs font-medium mt-0.5 ${isOverCeiling ? 'text-rose-600' : 'text-emerald-700'}`}>
+                                {isOverCeiling
+                                  ? `Vượt trần ${item.salaryGrade} (+${(item.quoteNet - rateCeiling).toLocaleString('vi-VN')}đ / Trần ${rateCeiling.toLocaleString('vi-VN')}đ)`
+                                  : `Đúng trần ${item.salaryGrade} (≤ ${rateCeiling.toLocaleString('vi-VN')}đ)`}
+                              </div>
+                            )}
                           </td>
                           <td className="py-3 px-3 text-slate-600">
                             {item.tepKenh}
@@ -986,7 +1185,8 @@ export const BrandView: React.FC<BrandViewProps> = ({
                             )}
                           </td>
                         </tr>
-                      ))}
+                        );
+                      })}
                   </tbody>
                 </table>
               </div>

@@ -621,103 +621,7 @@ export const StorePlanMindmap: React.FC<StorePlanMindmapProps> = ({
       )}
 
       {/* ========================================================================= */}
-      {/* KHO NHÁNH ĐẦU VIỆC: KÉO-THẢ HOẶC BẤM ĐỂ BẬT/TẮT NHÁNH CHO GIAN HÀNG       */}
-      {/* ========================================================================= */}
-      <div className="bg-surface rounded-xl border border-line p-3.5">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs font-semibold text-ink flex items-center gap-1.5">
-              <Layers className="w-4 h-4 text-accent" />
-              Chọn các nhánh triển khai của gian hàng:
-            </span>
-            <span className="text-2xs text-ink-3">
-              Bấm để bật/tắt nhánh hoặc kéo nhánh thả vào sơ đồ bên dưới
-            </span>
-          </div>
-          <div className="flex items-center gap-2.5">
-            <span className="text-2xs font-mono text-ink-3">
-              Đang triển khai: <strong className="text-accent">{activeBranches.length}/7</strong> nhánh
-            </span>
-            <button
-              type="button"
-              onClick={() => setIsFullscreen(prev => !prev)}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-line bg-canvas hover:bg-accent-soft hover:text-accent text-ink-2 text-xs font-semibold transition cursor-pointer"
-              title={isFullscreen ? 'Thu nhỏ (Phím Esc)' : 'Mở rộng sơ đồ nhánh toàn màn hình'}
-            >
-              {isFullscreen ? (
-                <>
-                  <Minimize2 className="w-3.5 h-3.5" />
-                  <span>Thu nhỏ (Esc)</span>
-                </>
-              ) : (
-                <>
-                  <Maximize2 className="w-3.5 h-3.5 text-accent" />
-                  <span>Toàn màn hình</span>
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2 overflow-x-auto py-1 mt-2.5 scrollbar-none">
-          {MINDMAP_BRANCHES.map(branch => {
-            const stat = branchStatsMap[branch.id];
-            const isEnabled = stat?.isEnabled;
-            const isPlatform = Boolean(branch.platformKey && branch.id !== 'VIDEO_AFFILIATE');
-
-            return (
-              <div
-                key={branch.id}
-                draggable={!disabled && !isEnabled}
-                onDragStart={() => setDraggingBranchId(branch.id)}
-                onDragEnd={() => {
-                  setDraggingBranchId(null);
-                  setIsOverCanvasDropzone(false);
-                }}
-                onClick={() => {
-                  if (isEnabled) {
-                    setSelectedBranchId(branch.id);
-                  } else {
-                    handleEnableBranch(branch.id);
-                  }
-                }}
-                title={`${branch.label} (${branch.shortDesc})`}
-                className={`group shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-semibold transition select-none cursor-pointer ${
-                  isEnabled
-                    ? 'bg-primary text-white border-primary'
-                    : 'bg-canvas text-ink-2 border-dashed border-line-strong hover:border-blue-400 hover:bg-surface'
-                }`}
-              >
-                <GripVertical className={`w-3.5 h-3.5 ${isEnabled ? 'text-blue-200' : 'text-ink-3'}`} />
-                {renderBranchIcon(branch, 'w-4 h-4 shrink-0')}
-                {!isPlatform && (
-                  <span>{branch.shortLabel || branch.label}</span>
-                )}
-                {isEnabled ? (
-                  <>
-                    <span className="px-1.5 py-0.5 rounded bg-white/20 text-2xs font-mono">
-                      {stat.totalQty} video · {branch.isFreeCast ? '0đ' : formatVndShort(stat.totalBudget)}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={(e) => handleDisableBranch(branch.id, e)}
-                      className="p-0.5 rounded hover:bg-white/20 text-white/80 hover:text-white transition"
-                      title={`Gỡ nhánh ${branch.label} khỏi gian hàng này`}
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </>
-                ) : (
-                  <span className="text-2xs text-accent font-medium">+ Bật</span>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* ========================================================================= */}
-      {/* SƠ ĐỒ MINDMAP TRỰC QUAN: NÚT GỐC GIAN HÀNG -> NHÁNH ĐẦU VIỆC -> PHÂN RÃ   */}
+      {/* SƠ ĐỒ NHÁNH 2 CỘT GỌN GÀNG: CỘT TRÁI (NHÁNH KÊNH) -> CỘT PHẢI (HẠNG MỤC)   */}
       {/* ========================================================================= */}
       <div
         onDragOver={(e) => {
@@ -740,66 +644,38 @@ export const StorePlanMindmap: React.FC<StorePlanMindmapProps> = ({
         }`}
       >
         {/* ===================================================================== */}
-        {/* CỘT TRÁI (5/12): SƠ ĐỒ CÂY TỪ GIAN HÀNG GỐC RA CÁC NHÁNH ĐANG CHỌN    */}
+        {/* CỘT TRÁI (4/12): CÁC NHÁNH TRIỂN KHAI CỦA GIAN HÀNG                   */}
         {/* ===================================================================== */}
-        <div className="lg:col-span-5 bg-surface rounded-xl border border-line p-4 space-y-4">
-          {/* NÚT GỐC (ROOT NODE): GIAN HÀNG */}
-          <div className="rounded-xl bg-sunken text-ink p-3.5 border border-line">
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex items-center gap-2 min-w-0">
-                <div className="w-8 h-8 rounded-lg bg-accent-soft border border-line flex items-center justify-center shrink-0">
-                  <Store className="w-4 h-4 text-accent" />
-                </div>
-                <div className="min-w-0">
-                  <div className="text-2xs text-ink-3 font-medium">
-                    Nút gốc gian hàng
-                  </div>
-                  <div className="text-sm font-semibold text-ink truncate" title={planState.storeName || planState.brandName}>
-                    {planState.storeName || planState.brandName}
-                  </div>
-                </div>
-              </div>
-              <span className="px-2 py-0.5 rounded-full text-2xs font-mono font-semibold bg-positive-soft text-positive border border-line shrink-0">
-                PIC: {planState.pic}
+        <div className="lg:col-span-4 bg-surface rounded-xl border border-line p-3.5 space-y-3">
+          <div className="flex items-center justify-between gap-2 pb-2 border-b border-line">
+            <div className="flex items-center gap-1.5">
+              <Layers className="w-4 h-4 text-accent" />
+              <span className="text-xs font-semibold text-ink">
+                Nhánh triển khai ({activeBranches.length}/7)
               </span>
             </div>
-
-            {/* Thanh đối soát Ngân sách & Số lượng video trực tiếp tại Nút gốc */}
-            <div className="grid grid-cols-2 gap-2.5 mt-3 pt-2.5 border-t border-line text-xs">
-              <div className="bg-surface rounded-lg p-2 border border-line">
-                <div className="flex items-center justify-between text-2xs text-ink-3">
-                  <span>Ngân sách đã chia</span>
-                  <span className={storeTotals.budgetHeadroom < 0 ? 'text-critical font-semibold' : 'text-positive font-semibold'}>
-                    {storeTotals.budgetHeadroom < 0
-                      ? `Vượt ${formatVndShort(Math.abs(storeTotals.budgetHeadroom))}`
-                      : `Dư ${formatVndShort(storeTotals.budgetHeadroom)}`}
-                  </span>
-                </div>
-                <div className="font-mono font-semibold text-sm text-ink mt-0.5">
-                  {formatVndShort(storeTotals.combinedBudget)}
-                  <span className="text-2xs font-normal text-ink-3"> / {formatVndShort(planState.totalTargetBudget)}</span>
-                </div>
-              </div>
-
-              <div className="bg-surface rounded-lg p-2 border border-line">
-                <div className="flex items-center justify-between text-2xs text-ink-3">
-                  <span>Tổng số lượng video</span>
-                  <span className={storeTotals.videoHeadroom > 0 ? 'text-warning font-semibold' : 'text-positive font-semibold'}>
-                    {storeTotals.videoHeadroom > 0
-                      ? `Thiếu ${storeTotals.videoHeadroom} video`
-                      : 'Đủ chỉ tiêu'}
-                  </span>
-                </div>
-                <div className="font-mono font-semibold text-sm text-ink mt-0.5">
-                  {storeTotals.allocatedVideos}
-                  <span className="text-2xs font-normal text-ink-3"> / {planState.totalTargetContents} video</span>
-                </div>
-              </div>
-            </div>
+            <button
+              type="button"
+              onClick={() => setIsFullscreen(prev => !prev)}
+              className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-line bg-canvas hover:bg-accent-soft hover:text-accent text-ink-2 text-2xs font-semibold transition cursor-pointer"
+              title={isFullscreen ? 'Thu nhỏ (Phím Esc)' : 'Mở rộng toàn màn hình'}
+            >
+              {isFullscreen ? (
+                <>
+                  <Minimize2 className="w-3 h-3" />
+                  <span>Thu nhỏ</span>
+                </>
+              ) : (
+                <>
+                  <Maximize2 className="w-3 h-3 text-accent" />
+                  <span>Toàn màn hình</span>
+                </>
+              )}
+            </button>
           </div>
 
-          {/* CÁC NHÁNH CON TỎA RA TỪ GIAN HÀNG GỐC (MINDMAP TREE CONNECTOR) */}
-          <div className="relative pl-5 space-y-2.5 before:content-[''] before:absolute before:left-2 before:top-0 before:bottom-4 before:w-0.5 before:bg-blue-200">
+          {/* DANH SÁCH NHÁNH ĐANG BẬT */}
+          <div className="relative pl-4 space-y-2 before:content-[''] before:absolute before:left-1.5 before:top-2 before:bottom-3 before:w-0.5 before:bg-blue-200">
             {activeBranches.map(branch => {
               const stat = branchStatsMap[branch.id];
               const isSelected = selectedBranchId === branch.id;
@@ -813,14 +689,13 @@ export const StorePlanMindmap: React.FC<StorePlanMindmapProps> = ({
                 <div
                   key={branch.id}
                   onClick={() => setSelectedBranchId(branch.id)}
-                  className={`relative rounded-xl border p-3 transition cursor-pointer ${
+                  className={`relative rounded-xl border p-2.5 transition cursor-pointer ${
                     isSelected ? branch.activeBgClass : 'bg-surface border-line hover:border-blue-300'
                   }`}
                 >
-                  {/* Đường ngang nối từ trục dọc của Gian hàng gốc vào Nhánh */}
-                  <span className="absolute -left-3 top-1/2 -translate-y-1/2 w-3 h-0.5 bg-blue-300" />
+                  <span className="absolute -left-2.5 top-1/2 -translate-y-1/2 w-2.5 h-0.5 bg-blue-300" />
                   <span
-                    className={`absolute -left-3.5 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full ${
+                    className={`absolute -left-3 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full ${
                       isSelected ? 'bg-primary ring-2 ring-blue-200' : 'bg-blue-300'
                     }`}
                   />
@@ -829,37 +704,43 @@ export const StorePlanMindmap: React.FC<StorePlanMindmapProps> = ({
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5">
                         {renderBranchIcon(branch, 'w-4 h-4 shrink-0')}
-                        <span className="font-semibold text-xs text-ink">{branch.label}</span>
+                        <span className="font-semibold text-xs text-ink truncate">{branch.label}</span>
                         {!branch.isFreeCast && budgetSharePct > 0 && (
                           <span className={`text-2xs font-mono font-semibold px-1.5 py-0.5 rounded border ${branch.badgeClass}`}>
-                            {budgetSharePct}% NS
-                          </span>
-                        )}
-                        {branch.isFreeCast && (
-                          <span className="text-2xs font-mono font-semibold px-1.5 py-0.5 rounded bg-positive-soft text-positive border border-line">
-                            0đ Cast
+                            {budgetSharePct}%
                           </span>
                         )}
                       </div>
                       <p className="text-2xs text-ink-3 truncate mt-0.5">{branch.shortDesc}</p>
                     </div>
 
-                    <div className="text-right shrink-0">
-                      <div className="font-mono font-semibold text-xs text-ink">
-                        {branch.isFreeCast ? '0 đ' : formatVndShort(stat.totalBudget)}
+                    <div className="flex items-start gap-1.5 shrink-0">
+                      <div className="text-right">
+                        <div className="font-mono font-semibold text-xs text-ink">
+                          {branch.isFreeCast ? '0 đ' : formatVndShort(stat.totalBudget)}
+                        </div>
+                        <div className="font-mono text-2xs font-semibold text-accent">
+                          {stat.totalQty} video
+                        </div>
                       </div>
-                      <div className="font-mono text-2xs font-semibold text-accent">
-                        {stat.totalQty} video
-                      </div>
+                      {!disabled && activeBranches.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={(e) => handleDisableBranch(branch.id, e)}
+                          className="p-0.5 rounded text-ink-3 hover:text-critical hover:bg-critical-soft transition"
+                          title={`Gỡ nhánh ${branch.label}`}
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                     </div>
                   </div>
 
-                  {/* THANH KÉO TRỰC QUAN NGAY TRÊN NHÁNH: KÉO TĂNG/GIẢM SỐ LƯỢNG & NGÂN SÁCH TỨC THÌ */}
+                  {/* THANH KÉO TRỰC QUAN NGAY TRÊN NHÁNH */}
                   <div
-                    className="mt-2.5 pt-2 border-t border-line flex items-center gap-2"
+                    className="mt-2 pt-1.5 border-t border-line flex items-center gap-2"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    <span className="text-2xs text-ink-3 font-medium shrink-0">Kéo nhanh:</span>
                     <input
                       type="range"
                       min={0}
@@ -867,114 +748,78 @@ export const StorePlanMindmap: React.FC<StorePlanMindmapProps> = ({
                       value={Math.min(stat.totalQty, maxBranchQty)}
                       onChange={(e) => handleScaleBranchQty(branch.id, Number(e.target.value))}
                       className={`w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer ${branch.sliderAccent}`}
-                      title={`Kéo để tăng/giảm nhanh tổng số lượng video và ngân sách của nhánh ${branch.label}`}
+                      title={`Kéo để tăng/giảm nhanh tổng số lượng video của nhánh ${branch.label}`}
                     />
-                    <span className="text-2xs font-mono font-semibold text-ink-2 w-14 text-right shrink-0">
-                      {stat.totalQty} clip
-                    </span>
                     <ChevronRight className={`w-4 h-4 shrink-0 ${isSelected ? 'text-accent' : 'text-ink-3'}`} />
                   </div>
                 </div>
               );
             })}
-
-            {inactiveBranches.length > 0 && (
-              <div className="pt-1 text-2xs text-ink-3 italic">
-                Còn {inactiveBranches.length} nhánh chưa bật ({inactiveBranches.map(b => b.label).join(', ')}). Kéo từ thanh trên thả vào đây nếu gian hàng có triển khai.
-              </div>
-            )}
           </div>
+
+          {/* KHU VỰC BẬT THÊM NHÁNH CHƯA TRIỂN KHAI (KHÔNG LẶP LẠI NHÁNH ĐÃ BẬT) */}
+          {inactiveBranches.length > 0 && (
+            <div className="pt-2.5 border-t border-line space-y-1.5">
+              <span className="text-2xs font-medium text-ink-3 block">
+                Bật thêm nhánh kênh cho gian hàng:
+              </span>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {inactiveBranches.map(branch => (
+                  <button
+                    key={branch.id}
+                    type="button"
+                    disabled={disabled}
+                    onClick={() => handleEnableBranch(branch.id)}
+                    className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-dashed border-line-strong bg-canvas hover:border-blue-400 hover:bg-surface text-ink-2 text-2xs font-medium transition cursor-pointer disabled:opacity-50"
+                    title={`Thêm nhánh ${branch.label} (${branch.shortDesc})`}
+                  >
+                    <Plus className="w-3 h-3 text-accent" />
+                    {renderBranchIcon(branch, 'w-3.5 h-3.5 shrink-0')}
+                    <span>{branch.shortLabel || branch.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* ===================================================================== */}
-        {/* CỘT PHẢI (7/12): PHÂN RÃ CHI TIẾT CỦA NHÁNH ĐANG CHỌN (SUB-BRANCHES)  */}
+        {/* CỘT PHẢI (8/12): PHÂN RÃ CHI TIẾT CỦA NHÁNH ĐANG CHỌN (SUB-BRANCHES)  */}
         {/* ===================================================================== */}
-        <div className="lg:col-span-7 bg-surface rounded-xl border border-line overflow-hidden">
-          {/* Header của Nhánh đang chọn */}
-          <div className="p-4 bg-canvas border-b border-line flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <div className="flex items-center gap-2">
-                <span className={`px-2 py-0.5 rounded-md text-xs font-semibold border inline-flex items-center gap-1.5 ${selectedBranchMeta.badgeClass}`}>
-                  {renderBranchIcon(selectedBranchMeta, 'w-3.5 h-3.5 shrink-0')}
-                  <span>Nhánh: {selectedBranchMeta.label}</span>
-                </span>
-                <span className="text-xs text-ink-3">•</span>
-                <span className="text-xs font-semibold text-ink-2">{selectedBranchMeta.unitLabel}</span>
-              </div>
-              <p className="text-2xs text-ink-3 mt-1">
-                Kéo thanh trượt trên từng nhánh con bên dưới để phân rã số lượng &amp; đơn giá, hoặc kéo thẻ Định dạng / Nhân sự thả trực tiếp vào nhánh con.
-              </p>
+        <div className="lg:col-span-8 bg-surface rounded-xl border border-line overflow-hidden">
+          {/* Header gọn của Nhánh đang chọn */}
+          <div className="px-4 py-3 bg-canvas border-b border-line flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className={`px-2 py-0.5 rounded-md text-xs font-semibold border inline-flex items-center gap-1.5 ${selectedBranchMeta.badgeClass}`}>
+                {renderBranchIcon(selectedBranchMeta, 'w-3.5 h-3.5 shrink-0')}
+                <span>{selectedBranchMeta.label}</span>
+              </span>
+              <span className="text-xs text-ink-3">•</span>
+              <span className="text-xs font-medium text-ink-2">{selectedBranchMeta.unitLabel}</span>
             </div>
 
-            <div className="flex items-center gap-3 bg-surface px-3 py-2 rounded-lg border border-line">
-              <div className="text-right">
-                <span className="text-2xs text-ink-3 block">Tổng nhánh {selectedBranchMeta.label}</span>
-                <span className="font-mono font-semibold text-sm text-ink">
-                  {selectedBranchStats.totalQty} video ·{' '}
-                  <span className="text-accent">
-                    {selectedBranchMeta.isFreeCast ? '0 đ' : formatVndShort(selectedBranchStats.totalBudget)}
-                  </span>
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={handleAddSubItemToSelectedBranch}
-                className="px-2.5 py-1.5 rounded-lg bg-primary hover:bg-primary-hover text-white text-xs font-semibold flex items-center gap-1 transition cursor-pointer shrink-0"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>Thêm mục con</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Thanh Thẻ Kéo-Thả (Định dạng video & Nhân sự B2C) cho Nhánh đang mở */}
-          <div className="px-4 py-2.5 bg-canvas/60 border-b border-line space-y-1.5 text-2xs">
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-ink-3 font-medium mr-1">Kéo thả định dạng vào mục con:</span>
-              {['Review voice', 'Nhạc text', 'Video remix', 'POV', 'Review trực tiếp', 'Mở hộp & trải nghiệm thực tế'].map(fmt => (
-                <span
-                  key={fmt}
-                  draggable={!disabled}
-                  onDragStart={() => setDraggingChip({ type: 'FORMAT', value: fmt })}
-                  onDragEnd={() => {
-                    setDraggingChip(null);
-                    setDragOverItemId(null);
-                  }}
-                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-surface border border-line text-ink-2 font-medium hover:border-blue-400 hover:text-accent cursor-grab active:cursor-grabbing select-none"
-                  title="Kéo thả vào mục con bên dưới để gán định dạng video"
+            <div className="flex items-center gap-2.5">
+              <span className="font-mono text-xs text-ink-2">
+                Tổng nhánh: <strong className="text-ink">{selectedBranchStats.totalQty} video</strong> ·{' '}
+                <strong className="text-accent">
+                  {selectedBranchMeta.isFreeCast ? '0 đ' : formatVndShort(selectedBranchStats.totalBudget)}
+                </strong>
+              </span>
+              {!disabled && (
+                <button
+                  type="button"
+                  onClick={handleAddSubItemToSelectedBranch}
+                  className="px-2.5 py-1 rounded-lg bg-primary hover:bg-primary-hover text-white text-xs font-semibold flex items-center gap-1 transition cursor-pointer shrink-0"
                 >
-                  <span>⠿</span>
-                  <span>{fmt}</span>
-                </span>
-              ))}
-            </div>
-
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-ink-3 font-medium mr-1">Kéo thả nhân sự phụ trách:</span>
-              {Array.from(new Set([planState.pic, 'Trần Thị Hảo', 'Phan Diệu Ánh', 'Lê Phương Thảo', 'Phạm Thị Thu Hằng']))
-                .filter(Boolean)
-                .slice(0, 5)
-                .map(staff => (
-                  <span
-                    key={staff}
-                    draggable={!disabled}
-                    onDragStart={() => setDraggingChip({ type: 'STAFF', value: staff })}
-                    onDragEnd={() => {
-                      setDraggingChip(null);
-                      setDragOverItemId(null);
-                    }}
-                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-accent-soft border border-line text-accent font-semibold hover:bg-blue-100 cursor-grab active:cursor-grabbing select-none"
-                    title="Kéo thả vào mục con bên dưới để phân công nhân sự"
-                  >
-                    <span>⠿</span>
-                    <span>{staff}</span>
-                  </span>
-                ))}
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Thêm mục con</span>
+                </button>
+              )}
             </div>
           </div>
 
           {/* DANH SÁCH NHÁNH CON (SUB-NODES) CỦA NHÁNH ĐANG CHỌN */}
-          <div className="p-4 space-y-2.5 max-h-[620px] overflow-y-auto">
+          <div className="p-4 space-y-2.5 max-h-[640px] overflow-y-auto">
             {selectedBranchStats.items.length === 0 ? (
               <div className="py-10 text-center text-ink-3 space-y-2">
                 <p className="text-xs font-medium">Nhánh {selectedBranchMeta.label} chưa có hạng mục phân rã.</p>

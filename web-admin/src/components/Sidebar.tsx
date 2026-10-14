@@ -24,6 +24,12 @@ import {
   KeyRound,
   Film,
   Store,
+  PanelLeftClose,
+  Building2,
+  Activity,
+  FileSpreadsheet,
+  ChevronDown,
+  ChevronRight,
   type LucideIcon,
 } from 'lucide-react';
 import { UserProfile, TabKey } from '../lib/types';
@@ -34,6 +40,8 @@ interface NavItem {
   key: TabKey;
   label: string;
   icon: LucideIcon;
+  badge?: string;
+  children?: NavItem[];
 }
 
 interface NavSection {
@@ -47,10 +55,29 @@ interface SidebarProps {
   currentUser: UserProfile;
   isMobileOpen?: boolean;
   onCloseMobile?: () => void;
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
   onLogout?: () => void;
 }
 
-// Danh mục điều hướng theo vai trò — gọn trên một màn hình, không cần cuộn chuột
+const B2C_DASHBOARD_SUB_ITEMS: NavItem[] = [
+  { key: 'dashboard-brand', label: '1. Thương hiệu & Ngân sách', icon: Building2, badge: '42 Brand' },
+  { key: 'dashboard-store', label: '2. Gian hàng & TikTok Seller', icon: Store, badge: '69 Gian' },
+  { key: 'dashboard-video', label: '3. Video Booking & KOC/Ads', icon: Film, badge: '786 Đơn' },
+  { key: 'dashboard-team-sla', label: '4. Tiến độ, SLA & Nhân sự', icon: Activity, badge: 'SLA' },
+  { key: 'dashboard-finance', label: '5. Đối soát Kế toán & Xuất file', icon: FileSpreadsheet, badge: '.xlsx' },
+];
+
+export const DASHBOARD_TAB_KEYS: TabKey[] = [
+  'dashboard-bi',
+  'dashboard-brand',
+  'dashboard-store',
+  'dashboard-video',
+  'dashboard-team-sla',
+  'dashboard-finance',
+];
+
+// Danh mục điều hướng theo vai trò — gọn trên một màn hình, có Tab lớn "Dashboard Quản Trị" chia 5 mục đích
 function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
   switch (role) {
     case 'ADMIN':
@@ -59,6 +86,13 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
         {
           items: [
             { key: 'cockpit', label: 'Việc của tôi', icon: CheckSquare },
+            {
+              key: 'dashboard-brand',
+              label: 'Dashboard Quản Trị B2C',
+              icon: LayoutDashboard,
+              badge: '5 mục',
+              children: B2C_DASHBOARD_SUB_ITEMS,
+            },
           ],
         },
         {
@@ -87,9 +121,8 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           ],
         },
         {
-          title: 'Báo cáo & Dữ liệu',
+          title: 'Hệ thống & Dữ liệu gốc',
           items: [
-            { key: 'dashboard-bi', label: 'Báo cáo hiệu suất', icon: LayoutDashboard },
             { key: 'master-data', label: 'Dữ liệu gốc', icon: Database },
             { key: 'partner-access', label: 'Phân quyền & Tài khoản', icon: KeyRound },
           ],
@@ -101,6 +134,13 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
         {
           items: [
             { key: 'cockpit', label: 'Việc của tôi', icon: CheckSquare },
+            {
+              key: 'dashboard-brand',
+              label: 'Dashboard Quản Trị B2C',
+              icon: LayoutDashboard,
+              badge: '5 mục',
+              children: B2C_DASHBOARD_SUB_ITEMS,
+            },
           ],
         },
         {
@@ -116,7 +156,6 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           title: 'Chiến dịch & Hiệu suất',
           items: [
             { key: 'campaigns', label: 'Chiến dịch Brand', icon: Layers },
-            { key: 'dashboard-bi', label: 'Báo cáo hiệu suất GMV', icon: LayoutDashboard },
             { key: 'ads-report', label: 'Báo cáo Ads TikTok', icon: BarChart3 },
             { key: 'performance-p3', label: 'Đánh giá 4P & thưởng', icon: Coins },
           ],
@@ -135,6 +174,13 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
         {
           items: [
             { key: 'cockpit', label: 'Việc của tôi', icon: CheckSquare },
+            {
+              key: 'dashboard-brand',
+              label: 'Dashboard Quản Trị B2C',
+              icon: LayoutDashboard,
+              badge: '5 mục',
+              children: B2C_DASHBOARD_SUB_ITEMS,
+            },
           ],
         },
         {
@@ -151,7 +197,6 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           items: [
             { key: 'stores', label: 'Hồ sơ gian hàng', icon: Store },
             { key: 'campaigns', label: 'Chiến dịch Brand', icon: Layers },
-            { key: 'dashboard-bi', label: 'Báo cáo hiệu suất', icon: LayoutDashboard },
             { key: 'performance-p3', label: 'Đánh giá 4P & thưởng', icon: Coins },
           ],
         },
@@ -169,6 +214,13 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
         {
           items: [
             { key: 'cockpit', label: 'Việc của tôi', icon: CheckSquare },
+            {
+              key: 'dashboard-brand',
+              label: 'Dashboard Quản Trị B2C',
+              icon: LayoutDashboard,
+              badge: '5 mục',
+              children: B2C_DASHBOARD_SUB_ITEMS,
+            },
           ],
         },
         {
@@ -197,9 +249,8 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           ],
         },
         {
-          title: 'Báo cáo & Dữ liệu',
+          title: 'Dữ liệu gốc',
           items: [
-            { key: 'dashboard-bi', label: 'Báo cáo hiệu suất', icon: LayoutDashboard },
             { key: 'master-data', label: 'Dữ liệu gốc', icon: Database },
           ],
         },
@@ -210,6 +261,17 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
         {
           items: [
             { key: 'cockpit', label: 'Việc của tôi', icon: CheckSquare },
+            {
+              key: 'dashboard-store',
+              label: 'Dashboard Quản Trị B2C',
+              icon: LayoutDashboard,
+              badge: '3 mục',
+              children: [
+                { key: 'dashboard-store', label: 'Gian hàng & TikTok Seller', icon: Store },
+                { key: 'dashboard-video', label: 'Video Booking & KOC/Ads', icon: Film },
+                { key: 'dashboard-team-sla', label: 'Tiến độ, SLA & Nhân sự', icon: Activity },
+              ],
+            },
           ],
         },
         {
@@ -243,6 +305,16 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
         {
           items: [
             { key: 'cockpit', label: 'Việc của tôi', icon: CheckSquare },
+            {
+              key: 'dashboard-video',
+              label: 'Dashboard Quản Trị B2C',
+              icon: LayoutDashboard,
+              badge: '2 mục',
+              children: [
+                { key: 'dashboard-video', label: 'Video Booking & KOC/Ads', icon: Film },
+                { key: 'dashboard-team-sla', label: 'Tiến độ, SLA & Nhân sự', icon: Activity },
+              ],
+            },
           ],
         },
         {
@@ -276,6 +348,17 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
         {
           items: [
             { key: 'cockpit', label: 'Việc của tôi', icon: CheckSquare },
+            {
+              key: 'dashboard-brand',
+              label: 'Dashboard Quản Trị B2C',
+              icon: LayoutDashboard,
+              badge: '3 mục',
+              children: [
+                { key: 'dashboard-brand', label: 'Thương hiệu & Ngân sách', icon: Building2 },
+                { key: 'dashboard-store', label: 'Gian hàng & TikTok Seller', icon: Store },
+                { key: 'dashboard-video', label: 'Video Booking & KOC/Ads', icon: Film },
+              ],
+            },
           ],
         },
         {
@@ -308,6 +391,18 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
         {
           items: [
             { key: 'cockpit', label: 'Việc của tôi', icon: CheckSquare },
+            {
+              key: 'dashboard-brand',
+              label: 'Dashboard Quản Trị B2C',
+              icon: LayoutDashboard,
+              badge: '4 mục',
+              children: [
+                { key: 'dashboard-brand', label: 'Thương hiệu & Ngân sách', icon: Building2 },
+                { key: 'dashboard-store', label: 'Gian hàng & TikTok Seller', icon: Store },
+                { key: 'dashboard-video', label: 'Video Booking & KOC/Ads', icon: Film },
+                { key: 'dashboard-team-sla', label: 'Tiến độ, SLA & Nhân sự', icon: Activity },
+              ],
+            },
           ],
         },
         {
@@ -315,7 +410,6 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           items: [
             { key: 'input-plan', label: 'Kế hoạch tháng', icon: Calendar },
             { key: 'brand-knowledge', label: 'Hồ sơ thương hiệu', icon: BookOpen },
-            { key: 'dashboard-bi', label: 'Báo cáo hiệu suất', icon: BarChart3 },
             { key: 'stores', label: 'Hồ sơ gian hàng', icon: Store },
           ],
         },
@@ -334,6 +428,18 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
         {
           items: [
             { key: 'cockpit', label: 'Việc của tôi', icon: CheckSquare },
+            {
+              key: 'dashboard-brand',
+              label: 'Dashboard Quản Trị B2C',
+              icon: LayoutDashboard,
+              badge: '4 mục',
+              children: [
+                { key: 'dashboard-brand', label: 'Thương hiệu & Ngân sách', icon: Building2 },
+                { key: 'dashboard-store', label: 'Gian hàng & TikTok Seller', icon: Store },
+                { key: 'dashboard-video', label: 'Video Booking & KOC/Ads', icon: Film },
+                { key: 'dashboard-team-sla', label: 'Tiến độ, SLA & Nhân sự', icon: Activity },
+              ],
+            },
           ],
         },
         {
@@ -344,9 +450,8 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           ],
         },
         {
-          title: 'Báo cáo & Hiệu suất',
+          title: 'Chiến dịch & Đánh giá',
           items: [
-            { key: 'dashboard-bi', label: 'Báo cáo hiệu suất', icon: BarChart3 },
             { key: 'campaigns', label: 'Chiến dịch Brand', icon: Layers },
             { key: 'performance-p3', label: 'Đánh giá 4P & thưởng', icon: Coins },
           ],
@@ -358,6 +463,17 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
         {
           items: [
             { key: 'cockpit', label: 'Việc của tôi', icon: CheckSquare },
+            {
+              key: 'dashboard-store',
+              label: 'Dashboard Quản Trị B2C',
+              icon: LayoutDashboard,
+              badge: '3 mục',
+              children: [
+                { key: 'dashboard-store', label: 'Gian hàng & TikTok Seller', icon: Store },
+                { key: 'dashboard-video', label: 'Video Booking & KOC/Ads', icon: Film },
+                { key: 'dashboard-team-sla', label: 'Tiến độ, SLA & Nhân sự', icon: Activity },
+              ],
+            },
           ],
         },
         {
@@ -435,9 +551,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
   currentUser,
   isMobileOpen = false,
   onCloseMobile,
+  isCollapsed = false,
+  onToggleCollapse,
   onLogout,
 }) => {
   const navSections = getNavSectionsForUserRole(currentUser.role);
+  const isAnyDashboardActive = DASHBOARD_TAB_KEYS.includes(activeTab);
+  const [isDashboardMenuOpen, setIsDashboardMenuOpen] = React.useState<boolean>(true);
+
+  React.useEffect(() => {
+    if (isAnyDashboardActive) {
+      setIsDashboardMenuOpen(true);
+    }
+  }, [isAnyDashboardActive]);
+
   // Nền + vạch của mục đang mở là một phần tử, trượt sang mục mới khi chuyển màn.
   const navRef = useRef<HTMLElement>(null);
   const { box, ready } = useActiveBox(navRef, activeTab);
@@ -463,23 +590,39 @@ export const Sidebar: React.FC<SidebarProps> = ({
         className={`app-sidebar w-60 bg-surface border-r border-line flex flex-col justify-between shrink-0 h-dvh select-none transition-transform duration-(--motion-base) ease-move fixed inset-y-0 left-0 z-30 ${
           isMobileOpen
             ? 'translate-x-0 shadow-2xl z-50'
+            : isCollapsed
+            ? '-translate-x-full'
             : '-translate-x-full lg:translate-x-0'
         }`}
         aria-label="Điều hướng chính"
       >
-        <div className="flex flex-col min-h-0">
+        <div className="flex flex-col min-h-0 overflow-y-auto">
           <div className="h-14 px-4 flex items-center justify-between border-b border-line shrink-0">
             <BrandLogo height={22} />
 
-            {onCloseMobile && (
-              <button
-                onClick={onCloseMobile}
-                className="lg:hidden p-1.5 rounded-md text-ink-3 hover:text-ink hover:bg-sunken transition-colors"
-                aria-label="Đóng menu"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            )}
+            <div className="flex items-center gap-1">
+              {onToggleCollapse && (
+                <button
+                  type="button"
+                  onClick={onToggleCollapse}
+                  className="hidden lg:inline-flex p-1.5 rounded-md text-ink-3 hover:text-ink hover:bg-sunken transition-colors cursor-pointer"
+                  title="Ẩn thanh menu bên trái để mở rộng không gian làm việc"
+                  aria-label="Ẩn thanh menu bên trái"
+                >
+                  <PanelLeftClose className="w-4 h-4" />
+                </button>
+              )}
+
+              {onCloseMobile && (
+                <button
+                  onClick={onCloseMobile}
+                  className="lg:hidden p-1.5 rounded-md text-ink-3 hover:text-ink hover:bg-sunken transition-colors"
+                  aria-label="Đóng menu"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
           </div>
 
           <nav ref={navRef} className="relative px-2.5 py-2.5 space-y-2.5">
@@ -494,6 +637,107 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <div className="space-y-0.5">
                   {section.items.map((item) => {
                     const Icon = item.icon;
+                    const hasChildren = Boolean(item.children && item.children.length > 0);
+
+                    if (hasChildren && item.children) {
+                      const isGroupActive =
+                        isAnyDashboardActive ||
+                        item.children.some((c) => c.key === activeTab);
+
+                      return (
+                        <div key={`group-${item.key}-${item.label}`} className="space-y-0.5">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (!isDashboardMenuOpen) {
+                                setIsDashboardMenuOpen(true);
+                                if (!isGroupActive) {
+                                  handleItemClick(item.children![0].key);
+                                }
+                              } else if (!isGroupActive) {
+                                handleItemClick(item.children![0].key);
+                              } else {
+                                setIsDashboardMenuOpen((prev) => !prev);
+                              }
+                            }}
+                            className={`sidebar-item w-full flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-md text-left text-[13px] leading-5 transition-colors cursor-pointer ${
+                              isGroupActive
+                                ? 'bg-indigo-50/70 text-accent font-semibold border border-indigo-200/70'
+                                : 'text-ink-2 hover:text-ink hover:bg-sunken'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <Icon
+                                className={`w-4 h-4 shrink-0 ${
+                                  isGroupActive ? 'text-accent' : 'text-ink-3'
+                                }`}
+                                strokeWidth={1.75}
+                              />
+                              <span className="truncate">{item.label}</span>
+                            </div>
+                            <div className="flex items-center gap-1 shrink-0">
+                              {item.badge && (
+                                <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-indigo-100 text-indigo-800">
+                                  {item.badge}
+                                </span>
+                              )}
+                              {isDashboardMenuOpen ? (
+                                <ChevronDown className="w-3.5 h-3.5 text-ink-3" />
+                              ) : (
+                                <ChevronRight className="w-3.5 h-3.5 text-ink-3" />
+                              )}
+                            </div>
+                          </button>
+
+                          {isDashboardMenuOpen && (
+                            <div className="ml-3.5 pl-2.5 border-l border-line space-y-0.5 py-0.5">
+                              {item.children.map((child) => {
+                                const ChildIcon = child.icon;
+                                const isChildActive =
+                                  activeTab === child.key ||
+                                  (activeTab === 'dashboard-bi' && child.key === 'dashboard-brand');
+                                return (
+                                  <button
+                                    key={child.key}
+                                    type="button"
+                                    onClick={() => handleItemClick(child.key)}
+                                    aria-current={isChildActive ? 'page' : undefined}
+                                    data-active={isChildActive}
+                                    className={`sidebar-item w-full flex items-center justify-between gap-1.5 px-2 py-1.25 rounded-md text-left text-[12px] leading-4 transition-colors cursor-pointer ${
+                                      isChildActive
+                                        ? 'text-accent font-semibold bg-accent-soft/60'
+                                        : 'text-ink-2 hover:text-ink hover:bg-sunken'
+                                    }`}
+                                  >
+                                    <div className="flex items-center gap-2 min-w-0">
+                                      <ChildIcon
+                                        className={`w-3.5 h-3.5 shrink-0 ${
+                                          isChildActive ? 'text-accent' : 'text-ink-3'
+                                        }`}
+                                        strokeWidth={1.75}
+                                      />
+                                      <span className="truncate">{child.label}</span>
+                                    </div>
+                                    {child.badge && (
+                                      <span
+                                        className={`px-1 py-0.2 rounded text-[9px] font-mono shrink-0 ${
+                                          isChildActive
+                                            ? 'bg-indigo-600 text-white font-bold'
+                                            : 'bg-slate-100 text-slate-600'
+                                        }`}
+                                      >
+                                        {child.badge}
+                                      </span>
+                                    )}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    }
+
                     const isActive = activeTab === item.key;
                     return (
                       <button
@@ -544,4 +788,5 @@ export const Sidebar: React.FC<SidebarProps> = ({
     </>
   );
 };
+
 

@@ -192,11 +192,13 @@ export default function App() {
       setSelectedBrandContext('ALL');
     }
 
-    const defaultTab = getDefaultLandingTabForRole(newUser.role);
+    const defaultTab: TabKey = newUser.id.startsWith('contract-demo-')
+      ? 'contracts'
+      : getDefaultLandingTabForRole(newUser.role);
     setActiveTab(prevTab => {
       const allowed = getAllowedTabsForRole(newUser.role);
       const isPartnerRole = ['BRAND_PARTNER', 'KOC_PARTNER', 'CTV_PARTNER'].includes(newUser.role);
-      if (!allowed.includes(prevTab) || isPartnerRole || !isSilent) {
+      if (!allowed.includes(prevTab) || isPartnerRole || !isSilent || newUser.id.startsWith('contract-demo-')) {
         return defaultTab;
       }
       return prevTab;
@@ -222,10 +224,15 @@ export default function App() {
               const matched = USERS.find(u => u.id === savedUserId);
               if (matched) {
                 resolvedUser = matched;
+                await fetch('/api/auth/lark/sandbox', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ userId: matched.id }),
+                }).catch(() => undefined);
               }
             }
             handleUserChange(resolvedUser, true);
-            setActiveTab(getDefaultLandingTabForRole(resolvedUser.role));
+            setActiveTab(resolvedUser.id.startsWith('contract-demo-') ? 'contracts' : getDefaultLandingTabForRole(resolvedUser.role));
             setIsLoadingAuth(false);
             return;
           }
@@ -233,14 +240,14 @@ export default function App() {
 
         const fallbackUser = (savedUserId && USERS.find(u => u.id === savedUserId)) || USERS[0];
         handleUserChange(fallbackUser, true);
-        setActiveTab(getDefaultLandingTabForRole(fallbackUser.role));
+        setActiveTab(fallbackUser.id.startsWith('contract-demo-') ? 'contracts' : getDefaultLandingTabForRole(fallbackUser.role));
         setIsLoadingAuth(false);
       } catch (err) {
         console.warn('Could not fetch user session, using fallback user:', err);
         const savedUserId = typeof window !== 'undefined' ? localStorage.getItem('upbase_selected_user_id') : null;
         const fallbackUser = (savedUserId && USERS.find(u => u.id === savedUserId)) || USERS[0];
         handleUserChange(fallbackUser, true);
-        setActiveTab(getDefaultLandingTabForRole(fallbackUser.role));
+        setActiveTab(fallbackUser.id.startsWith('contract-demo-') ? 'contracts' : getDefaultLandingTabForRole(fallbackUser.role));
         setIsLoadingAuth(false);
       }
     }
@@ -337,8 +344,24 @@ export default function App() {
   const [preselectedKoc, setPreselectedKoc] = useState<KocItem | null>(null);
   const [preselectedBrand, setPreselectedBrand] = useState<string | null>(null);
 
-  // Mobile Drawer State
+  // Mobile Drawer & Desktop Sidebar Collapse State
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('upbase_sidebar_collapsed') === 'true';
+    }
+    return false;
+  });
+
+  const handleToggleSidebarCollapse = useCallback(() => {
+    setIsSidebarCollapsed(prev => {
+      const next = !prev;
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('upbase_sidebar_collapsed', String(next));
+      }
+      return next;
+    });
+  }, []);
 
   // Plan Handlers
   const handleAddPlanItem = (newItem: StaffDetailedPlanItem) => {
@@ -701,7 +724,12 @@ export default function App() {
     'brand-hub': { title: 'Cổng nhãn hàng', subtitle: 'Duyệt kế hoạch → Duyệt KOC → Duyệt kịch bản → Nghiệm thu video' },
     'koc-hub': { title: 'Cổng KOC', subtitle: 'Lời mời booking, xác nhận nhận hàng mẫu, nộp link video và mã Spark Ads' },
     'ads-report': { title: 'Báo cáo Ads tuần', subtitle: 'Đọc file báo cáo từ TikTok Shop Seller, đối soát mã Spark Ads và ROAS thực tế' },
-    'dashboard-bi': { title: 'Báo cáo hiệu suất', subtitle: 'GMV toàn sàn, ngân sách vận hành, ROAS chiến dịch và đối soát tài chính' },
+    'dashboard-bi': { title: 'Dashboard Quản Trị B2C', subtitle: 'Đối soát 42 Thương hiệu, 69 Gian hàng, 786 Đơn Video, TikTok Seller & Nhân sự B2C' },
+    'dashboard-brand': { title: 'Dashboard Thương Hiệu & Ngân Sách (Brand & P&L)', subtitle: 'Đối soát 42 Thương hiệu, Hạn mức Order Gross vs Trần Net Kế toán, Thực chi 3.2 và Cảnh báo đỏ vượt trần' },
+    'dashboard-store': { title: 'Dashboard Gian Hàng & TikTok Seller (69 Gian Hàng B2C)', subtitle: 'Đối soát 39 TikTok Shop & 30 Shopee Mall, chiến dịch PGM/LGM TikTok Seller Center, ROAS và tiến độ giải ngân' },
+    'dashboard-video': { title: 'Dashboard Hiệu Quả Video Booking & KOC/Ads', subtitle: 'Phân tích 786 đơn video File 3.2 & 4.211 dòng Creative TikTok Seller, bóc tách Paid vs FOC 0đ, Khung lương KL1–7 và Phễu giữ chân' },
+    'dashboard-team-sla': { title: 'Dashboard Tiến Độ, SLA & Nhân Sự B2C', subtitle: 'Quản trị 3 cấp (Trưởng phòng Yến Nhi · Leader Ngọc Tâm 8 gian · 61 gian trực tiếp), băng tải tiến độ 786 video, tỷ lệ đúng hạn SLA và điểm 4P' },
+    'dashboard-finance': { title: 'Dashboard Đối Soát Kế Toán & Xuất File (.xlsx)', subtitle: 'Kiểm soát hồ sơ thanh toán (ĐNTT / Tạm ứng / Done), khóa trần Order Net và kết xuất báo cáo đối soát Excel 4 Sheets' },
   };
 
   if (isLoadingAuth || !currentUser) {
@@ -732,18 +760,20 @@ export default function App() {
         onResume={toastQueue.resume}
       />
 
-      {/* Sidebar Navigation (with Mobile Drawer Support) */}
+      {/* Sidebar Navigation (with Mobile Drawer & Desktop Collapse Support) */}
       <Sidebar
         activeTab={activeTab}
         onTabSelect={setActiveTab}
         currentUser={currentUser}
         isMobileOpen={isMobileSidebarOpen}
         onCloseMobile={() => setIsMobileSidebarOpen(false)}
+        isCollapsed={isSidebarCollapsed}
+        onToggleCollapse={handleToggleSidebarCollapse}
         onLogout={handleLogout}
       />
 
       {/* Main Content Space */}
-      <div className="flex-1 flex flex-col min-w-0 lg:pl-60">
+      <div className={`flex-1 flex flex-col min-w-0 transition-[padding] duration-200 ${isSidebarCollapsed ? 'lg:pl-0' : 'lg:pl-60'}`}>
         <TopHeader
           currentUser={currentUser}
           onUserChange={handleUserChange}
@@ -759,6 +789,8 @@ export default function App() {
           activeTab={activeTab}
           onNavigateTab={setActiveTab}
           onToggleMobileSidebar={() => setIsMobileSidebarOpen(prev => !prev)}
+          isSidebarCollapsed={isSidebarCollapsed}
+          onToggleSidebarCollapse={handleToggleSidebarCollapse}
           onLogout={handleLogout}
         />
 
@@ -788,7 +820,7 @@ export default function App() {
           </div>
         )}
 
-        <main id="workspace" className="px-4 sm:px-6 lg:px-8 py-5 sm:py-6 w-full max-w-[1600px] mx-auto space-y-5">
+        <main id="workspace" className={`px-4 sm:px-6 lg:px-8 py-4 sm:py-5 w-full mx-auto space-y-5 ${isSidebarCollapsed ? 'max-w-[1800px]' : 'max-w-[1600px]'}`}>
           {!isTabAllowedForRole(currentUser.role, activeTab) ? (
             <div className="p-8 sm:p-12 rounded-2xl bg-surface border border-line text-center max-w-lg mx-auto my-12 space-y-4 animate-in fade-in">
               <div className="w-14 h-14 rounded-2xl bg-critical-soft text-critical flex items-center justify-center mx-auto border border-line">
@@ -841,13 +873,28 @@ export default function App() {
             />
           </KeepAliveTab>
 
-          <KeepAliveTab tabKey="dashboard-bi" currentTab={activeTab}>
+          <KeepAliveTab
+            tabKey="dashboard-bi"
+            currentTab={
+              [
+                'dashboard-bi',
+                'dashboard-brand',
+                'dashboard-store',
+                'dashboard-video',
+                'dashboard-team-sla',
+                'dashboard-finance'
+              ].includes(activeTab)
+                ? 'dashboard-bi'
+                : activeTab
+            }
+          >
             <ExecutiveDashboardReportsView
               currentUser={currentUser}
               deals={deals}
               brands={brands}
               kocs={kocs}
               storePortfolios={storePortfolios}
+              activeSidebarTab={activeTab}
               onNotify={showToast}
               onNavigateToTab={(tabKey) => setActiveTab(tabKey as TabKey)}
             />
@@ -982,7 +1029,12 @@ export default function App() {
               onCampaignCreatedNotification={handleCampaignCreatedNotification}
               onTriggerHandoffNotification={handleTriggerHandoffNotification}
               onNavigateToCtvHub={() => setActiveTab('self-channel-hub')}
-              onNavigateToBrandKnowledge={() => setActiveTab('brand-knowledge')}
+              onNavigateToBrandKnowledge={(brandName) => {
+                if (brandName) {
+                  setSelectedBrandContext(brandName);
+                }
+                setActiveTab('brand-knowledge');
+              }}
             />
           </KeepAliveTab>
 
@@ -1078,7 +1130,7 @@ export default function App() {
           </KeepAliveTab>
 
           <KeepAliveTab tabKey="contracts" currentTab={activeTab}>
-            <ContractManagementView deals={deals} kocs={kocs} intent={contractIntent} onNotify={showToast} />
+            <ContractManagementView deals={deals} kocs={kocs} intent={contractIntent} onNotify={showToast} currentUserId={currentUser.id} />
           </KeepAliveTab>
 
           <KeepAliveTab tabKey="sample-tracker" currentTab={activeTab}>

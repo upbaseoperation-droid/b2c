@@ -5,10 +5,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { AlertTriangle, ArrowRight, Building, Users, Video, Mail } from 'lucide-react';
 import { USERS } from '@/lib/mockData';
 import { INITIAL_THIRD_PARTY_ACCOUNTS } from '@/lib/thirdPartyAccessData';
-import { BrandLogo, Button, Input, PageActionsSlot, Segmented, Status } from '../../components/ui';
+import { BrandLogo, Button, Input, Segmented, Status } from '../../components/ui';
 import type { StatusTone } from '../../components/ui';
-import { ContractManagementView } from '@/components/views/ContractManagementView';
-import { enableBrowserDemo } from '@/components/contracts/browserDemo';
 import { sanitizeReturnTo } from '@/lib/urlUtils';
 
 const ROLE_LABEL: Record<string, string> = {
@@ -83,10 +81,8 @@ function LoginFallback() {
 }
 
 function LoginContent() {
-  const [demoNotice, setDemoNotice] = useState('');
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [showContractDemo, setShowContractDemo] = useState(searchParams.get('demo') === 'contracts');
   const errorParam = searchParams.get('error');
   const messageParam = searchParams.get('message');
   const returnTo = sanitizeReturnTo(searchParams.get('returnTo'));
@@ -229,25 +225,6 @@ function LoginContent() {
       ? messageParam || 'Lark chưa xác thực được tài khoản của bạn. Thử đăng nhập lại hoặc dùng truy cập nhanh bên dưới.'
       : null;
 
-  if (showContractDemo) return (
-    <div className="min-h-screen bg-canvas text-ink">
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-line bg-surface px-6 py-4">
-        <div className="flex items-center gap-4">
-          <BrandLogo height={26} />
-          <h1 className="font-semibold">B2C · Quản lý hợp đồng</h1>
-        </div>
-        <div className="flex items-center gap-3">
-          <PageActionsSlot />
-          <Button onClick={() => setShowContractDemo(false)}>Về đăng nhập</Button>
-        </div>
-      </header>
-      <main className="mx-auto max-w-7xl p-6">
-        {demoNotice && <p role="status" className="mb-4 rounded-lg bg-warning-soft p-3 text-[13px]">{demoNotice}</p>}
-        <ContractManagementView demoMode onNotify={message => setDemoNotice(message)} />
-      </main>
-    </div>
-  );
-
   return (
     <div className="min-h-screen bg-canvas text-ink flex flex-col">
       <main className="flex-1 flex items-center justify-center px-4 py-10">
@@ -270,9 +247,6 @@ function LoginContent() {
                 { key: 'GMAIL_PARTNER', label: 'Đối tác' },
               ]}
             />
-            <Button size="sm" variant="ghost" onClick={() => { enableBrowserDemo(); setShowContractDemo(true); }}>
-              Xem thử hợp đồng
-            </Button>
           </div>
 
           {activePortalTab === 'INTERNAL' && (
@@ -288,13 +262,21 @@ function LoginContent() {
                 <div className="flex items-center justify-between">
                   <div>
                     <h2 id="sandbox-title" className="text-[13.5px] font-medium">Chọn vai trò đăng nhập</h2>
-                    <p className="text-2xs text-ink-3 mt-0.5">Bao gồm Admin, Trưởng phòng (B2C, Growth, Media), Chuyên viên và Đối tác (Brand, KOC, CTV).</p>
+                    <p className="text-2xs text-ink-3 mt-0.5">Bao gồm Admin, Trưởng phòng, Chuyên viên, Pháp chế, Kế toán và Đối tác (Brand, KOC, CTV).</p>
                   </div>
                 </div>
 
                 <div className="border border-line rounded-xl bg-surface divide-y divide-line overflow-hidden max-h-80 overflow-y-auto" role="radiogroup" aria-label="Chọn vai trò">
                   {USERS.map((u) => {
                     const isSelected = selectedUser === u.id;
+                    const customBadge =
+                      u.id === 'contract-demo-legal'
+                        ? { label: 'Pháp chế', tone: 'warning' as StatusTone }
+                        : u.id === 'contract-demo-finance'
+                          ? { label: 'Kế toán', tone: 'info' as StatusTone }
+                          : u.id === 'contract-demo-sign'
+                            ? { label: 'Điều phối ký', tone: 'positive' as StatusTone }
+                            : null;
                     return (
                       <button
                         key={u.id}
@@ -315,8 +297,8 @@ function LoginContent() {
                           <span className="block text-[13px] font-medium truncate">{u.name}</span>
                           <span className="block text-2xs text-ink-3 truncate">{u.roleTitle}</span>
                         </span>
-                        <Status tone={ROLE_TONE[u.role] ?? 'neutral'}>
-                          {ROLE_LABEL[u.role] ?? u.role}
+                        <Status tone={customBadge ? customBadge.tone : (ROLE_TONE[u.role] ?? 'neutral')}>
+                          {customBadge ? customBadge.label : (ROLE_LABEL[u.role] ?? u.role)}
                         </Status>
                       </button>
                     );

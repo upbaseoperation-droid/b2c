@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Menu, ChevronDown, ArrowRight, Building2 } from 'lucide-react';
+import { Menu, ChevronDown, ArrowRight, Building2, PanelLeftOpen, PanelLeftClose } from 'lucide-react';
 import { UserProfile } from '../lib/types';
 import type { TabKey } from './Sidebar';
 import { PageActionsSlot } from './ui';
@@ -27,6 +27,8 @@ interface TopHeaderProps {
   onBrandChange?: (brand: string) => void;
   onNavigateTab?: (tab: TabKey) => void;
   onToggleMobileSidebar?: () => void;
+  isSidebarCollapsed?: boolean;
+  onToggleSidebarCollapse?: () => void;
   onLogout?: () => void;
 }
 
@@ -39,6 +41,8 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   onBrandChange,
   onNavigateTab,
   onToggleMobileSidebar,
+  isSidebarCollapsed = false,
+  onToggleSidebarCollapse,
 }) => {
   // Danh sách các brand được phép chọn của tài khoản hiện tại
   const userAssignedBrands = currentUser.assignedBrands || (
@@ -55,6 +59,29 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
             aria-label="Mở menu"
           >
             <Menu className="w-5 h-5" />
+          </button>
+        )}
+
+        {onToggleSidebarCollapse && (
+          <button
+            type="button"
+            onClick={onToggleSidebarCollapse}
+            className={`hidden lg:inline-flex items-center gap-1.5 rounded-lg border transition-colors shrink-0 cursor-pointer ${
+              isSidebarCollapsed
+                ? 'px-2.5 py-1.5 bg-accent-soft text-accent border-accent/30 hover:bg-accent-soft/80 text-xs font-semibold'
+                : 'p-1.5 -ml-1.5 text-ink-3 hover:text-ink hover:bg-sunken border-transparent'
+            }`}
+            title={isSidebarCollapsed ? 'Mở lại thanh menu bên trái' : 'Ẩn thanh menu bên trái để mở rộng không gian làm việc'}
+            aria-label={isSidebarCollapsed ? 'Mở lại thanh menu bên trái' : 'Ẩn thanh menu bên trái'}
+          >
+            {isSidebarCollapsed ? (
+              <>
+                <PanelLeftOpen className="w-4 h-4" />
+                <span>Menu</span>
+              </>
+            ) : (
+              <PanelLeftClose className="w-4 h-4" />
+            )}
           </button>
         )}
 

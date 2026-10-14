@@ -65,6 +65,7 @@ interface ExecutiveDashboardReportsViewProps {
   brands?: BrandDetail[];
   kocs?: KocItem[];
   storePortfolios?: StorePortfolioItem[];
+  activeSidebarTab?: string;
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
   onNavigateToTab?: (tabKey: string) => void;
 }
@@ -76,10 +77,28 @@ type DashboardMainTab =
   | 'STAFF_PERFORMANCE'
   | 'EXPORT_CENTER';
 
+const SIDEBAR_TO_DASHBOARD_TAB: Record<string, DashboardMainTab> = {
+  'dashboard-bi': 'OVERVIEW_FINANCE',
+  'dashboard-brand': 'OVERVIEW_FINANCE',
+  'dashboard-store': 'STORE_SELLER',
+  'dashboard-video': 'VIDEO_CREATIVE',
+  'dashboard-team-sla': 'STAFF_PERFORMANCE',
+  'dashboard-finance': 'EXPORT_CENTER',
+};
+
+const DASHBOARD_TO_SIDEBAR_TAB: Record<DashboardMainTab, string> = {
+  OVERVIEW_FINANCE: 'dashboard-brand',
+  STORE_SELLER: 'dashboard-store',
+  VIDEO_CREATIVE: 'dashboard-video',
+  STAFF_PERFORMANCE: 'dashboard-team-sla',
+  EXPORT_CENTER: 'dashboard-finance',
+};
+
 const KL_ORDER = ['TAP UpAffiliate', 'KL1', 'KL2', 'KL3', 'KL4', 'KL5', 'KL6', 'KL7'];
 
 export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsViewProps> = ({
   storePortfolios,
+  activeSidebarTab,
   onNotify,
   onNavigateToTab
 }) => {
@@ -91,8 +110,28 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
     return REAL_B2C_69_STORES;
   }, [storePortfolios]);
 
-  // State bộ lọc chung
-  const [activeTab, setActiveTab] = useState<DashboardMainTab>('OVERVIEW_FINANCE');
+  // State bộ lọc chung đồng bộ 2 chiều với Sidebar "Dashboard Quản Trị B2C"
+  const [activeTab, setActiveTab] = useState<DashboardMainTab>(() => {
+    if (activeSidebarTab && SIDEBAR_TO_DASHBOARD_TAB[activeSidebarTab]) {
+      return SIDEBAR_TO_DASHBOARD_TAB[activeSidebarTab];
+    }
+    return 'OVERVIEW_FINANCE';
+  });
+
+  React.useEffect(() => {
+    if (activeSidebarTab && SIDEBAR_TO_DASHBOARD_TAB[activeSidebarTab]) {
+      setActiveTab(SIDEBAR_TO_DASHBOARD_TAB[activeSidebarTab]);
+    }
+  }, [activeSidebarTab]);
+
+  const handleSelectDashboardSection = (section: DashboardMainTab) => {
+    setActiveTab(section);
+    const targetSidebarKey = DASHBOARD_TO_SIDEBAR_TAB[section];
+    if (targetSidebarKey && onNavigateToTab && activeSidebarTab !== targetSidebarKey) {
+      onNavigateToTab(targetSidebarKey);
+    }
+  };
+
   const tabBarRef = useRef<HTMLDivElement>(null);
   const tabBox = useActiveBox(tabBarRef, activeTab);
   const [selectedBrand, setSelectedBrand] = useState<string>('ALL');
@@ -897,34 +936,34 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
         </div>
       </div>
 
-      {/* THANH ĐIỀU HƯỚNG 5 PHÂN HỆ BIỂU ĐỒ & ĐỐI SOÁT */}
+      {/* THANH ĐIỀU HƯỚNG 5 PHÂN HỆ DASHBOARD QUẢN TRỊ B2C (ĐỒNG BỘ VỚI MENU TRÁI) */}
       <div className="bg-white rounded-xl border border-slate-200 px-4 pt-2 shadow-xs">
         <div ref={tabBarRef} className="relative flex flex-wrap gap-1 border-b border-slate-100">
           <SlidingIndicator box={tabBox.box} ready={tabBox.ready} className="rounded-t-lg bg-accent-soft/50 border-b-2 border-accent" />
           {[
             {
               key: 'OVERVIEW_FINANCE',
-              label: '1. Biểu Đồ Đối Soát Ngân Sách (Gross / Net) & Cảnh Báo Đỏ',
+              label: '1. Thương Hiệu & Ngân Sách (Gross / Net & Cảnh Báo Đỏ)',
               icon: BarChart3
             },
             {
               key: 'STORE_SELLER',
-              label: `2. Hiệu Quả 69 Gian Hàng & Chiến Dịch TikTok Seller (${filteredStores.length})`,
+              label: `2. Gian Hàng & TikTok Seller (${filteredStores.length}/69 Gian)`,
               icon: Store
             },
             {
               key: 'VIDEO_CREATIVE',
-              label: '3. Phân Tích Video Đã Booking (File 3.2) & Creative Ads',
+              label: '3. Hiệu Quả Video Booking (File 3.2) & KOC/Ads',
               icon: PlaySquare
             },
             {
               key: 'STAFF_PERFORMANCE',
-              label: `4. Hiệu Suất Từng Nhân Sự B2C (${filteredStaffList.length} nhân sự)`,
+              label: `4. Tiến Độ, SLA & Nhân Sự B2C (${filteredStaffList.length} nhân sự)`,
               icon: Users
             },
             {
               key: 'EXPORT_CENTER',
-              label: '5. Xuất Sổ Cái Đối Soát Kế Toán (.xlsx)',
+              label: '5. Đối Soát Kế Toán & Xuất File (.xlsx)',
               icon: FileSpreadsheet
             }
           ].map((tab) => {
@@ -934,7 +973,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
               <button
                 key={tab.key}
                 type="button"
-                onClick={() => setActiveTab(tab.key as DashboardMainTab)}
+                onClick={() => handleSelectDashboardSection(tab.key as DashboardMainTab)}
                 data-active={active}
                 className={`relative inline-flex items-center gap-2 px-3.5 py-2.5 text-xs font-bold border-b-2 transition cursor-pointer ${
                   active
@@ -2094,6 +2133,159 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
               <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs font-mono text-slate-800">
                 <span>Đầu mối FOC (0đ): <strong>Trần Thị Hảo</strong></span>
                 <span className="text-emerald-700 font-bold">30 Chuyên viên thực thi</span>
+              </div>
+            </div>
+          </div>
+
+          {/* PHỄU TIẾN ĐỘ PIPELINE 786 ĐƠN VIDEO & ĐỐI SÁNH SLA GIỮA 2 LUỒNG QUẢN TRỊ */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+            {/* Trái 7 cột: Băng tải tiến độ thực thi & hoàn tất chứng từ 786 đơn video File 3.2 */}
+            <div className="lg:col-span-7 bg-white rounded-xl border border-slate-200 p-5 shadow-xs">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">
+                    Băng Tải Tiến Độ Thực Thi & SLA Chứng Từ 786 Đơn Video (File 3.2)
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Theo dõi trạng thái vận hành thực tế từ lúc Gửi mẫu 48h → Air bài → Nghiệm thu Spark Ads → ĐNTT Kế toán
+                  </p>
+                </div>
+                <span className="px-2.5 py-1 rounded-md text-xs font-mono font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  Đã Air & Done: 566/786 (72,0%)
+                </span>
+              </div>
+
+              <div className="space-y-2.5 mt-3">
+                {B2C_VIDEO_PIPELINE_BREAKDOWN.map((stage) => {
+                  const pct = Number(((stage.count / 786) * 100).toFixed(1));
+                  const isDone = stage.pipeline === 'Done';
+                  const isPendingPayment = stage.pipeline === 'Chưa làm ĐNTT';
+                  const isProcessingPayment = stage.pipeline === 'Làm ĐNTT' || stage.pipeline === 'Tạm ứng';
+                  const barColor = isDone
+                    ? 'bg-emerald-500'
+                    : isPendingPayment
+                    ? 'bg-amber-500'
+                    : isProcessingPayment
+                    ? 'bg-indigo-500'
+                    : stage.pipeline === 'Huỷ'
+                    ? 'bg-rose-500'
+                    : 'bg-sky-500';
+
+                  return (
+                    <div key={stage.pipeline} className="p-2.5 rounded-lg bg-slate-50/70 border border-slate-100">
+                      <div className="flex items-center justify-between text-xs mb-1">
+                        <div className="flex items-center gap-2">
+                          <span className={`w-2.5 h-2.5 rounded-full ${barColor}`} />
+                          <span className="font-bold text-slate-900">{stage.pipeline}</span>
+                          {isPendingPayment && (
+                            <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-amber-100 text-amber-900">
+                              Cần nhắc PIC hoàn tất hồ sơ 48h
+                            </span>
+                          )}
+                        </div>
+                        <div className="font-mono text-xs">
+                          <strong className="text-slate-900">{stage.count} đơn</strong>{' '}
+                          <span className="text-slate-500">({pct}%)</span> ·{' '}
+                          <strong className="text-indigo-700">{formatVndShort(stage.totalCost)}</strong>
+                        </div>
+                      </div>
+                      <div className="w-full h-2 bg-slate-200/80 rounded-full overflow-hidden">
+                        <div
+                          className={`data-bar h-full rounded-full ${barColor}`}
+                          style={{ width: `${Math.max(pct, 2)}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Phải 5 cột: Đối sánh SLA & Tiến độ giữa 2 luồng quản trị (8 gian có Leader vs 61 gian Trực tiếp) */}
+            <div className="lg:col-span-5 bg-white rounded-xl border border-slate-200 p-5 shadow-xs flex flex-col justify-between">
+              <div>
+                <h3 className="text-sm font-bold text-slate-900">
+                  Kiểm Soát SLA Theo 2 Luồng Phê Duyệt B2C
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Đối chiếu tốc độ xử lý giữa nhóm có Trưởng nhóm sơ duyệt và nhóm trình trực tiếp Trưởng phòng
+                </p>
+
+                <div className="mt-4 space-y-3">
+                  {/* Luồng 1: 8 gian hàng có Leader Nguyễn Thị Ngọc Tâm */}
+                  <div className="p-3.5 rounded-xl bg-indigo-50/60 border border-indigo-200">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-indigo-950">
+                        Luồng 1: Qua Trưởng nhóm Nguyễn Thị Ngọc Tâm
+                      </span>
+                      <span className="px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-indigo-600 text-white">
+                        8 Gian hàng
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-600 mt-1">
+                      ClubClio (TT/SP), Cindy Bloom, Mine, EUPC, L&apos;Occitane, Bye Bye Blemish, Rejuran
+                    </p>
+                    <div className="grid grid-cols-3 gap-2 mt-2.5 pt-2.5 border-t border-indigo-200/70 text-center font-mono">
+                      <div>
+                        <span className="text-[10px] text-slate-500 block">Đúng hạn SLA</span>
+                        <strong className="text-xs text-emerald-700">91,4%</strong>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-slate-500 block">Giải ngân Net</span>
+                        <strong className="text-xs text-indigo-700">51,2%</strong>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-slate-500 block">Sơ duyệt KB</span>
+                        <strong className="text-xs text-slate-900">&lt; 16 giờ</strong>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Luồng 2: 61 gian hàng không có Leader -> Trình trực tiếp Đặng Thị Yến Nhi */}
+                  <div className="p-3.5 rounded-xl bg-emerald-50/50 border border-emerald-200">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-emerald-950">
+                        Luồng 2: Trình trực tiếp TP Đặng Thị Yến Nhi
+                      </span>
+                      <span className="px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-emerald-700 text-white">
+                        61 Gian hàng
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-600 mt-1">
+                      Toàn bộ 29 gian Shopee còn lại &amp; 32 gian TikTok 1 PIC (<code className="text-[10px]">bookingLeader: undefined</code>)
+                    </p>
+                    <div className="grid grid-cols-3 gap-2 mt-2.5 pt-2.5 border-t border-emerald-200/70 text-center font-mono">
+                      <div>
+                        <span className="text-[10px] text-slate-500 block">Đúng hạn SLA</span>
+                        <strong className="text-xs text-emerald-700">86,8%</strong>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-slate-500 block">Giải ngân Net</span>
+                        <strong className="text-xs text-indigo-700">51,0%</strong>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-slate-500 block">Duyệt thẳng TP</span>
+                        <strong className="text-xs text-slate-900">&lt; 24 giờ</strong>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+                <span className="text-[11px] text-slate-600">
+                  Kết nối tự động sang bảng tính điểm <strong>4P / P3</strong> theo độ khó gian hàng
+                </span>
+                {onNavigateToTab && (
+                  <button
+                    type="button"
+                    onClick={() => onNavigateToTab('performance-p3')}
+                    className="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 hover:text-indigo-800 cursor-pointer"
+                  >
+                    Mở bảng điểm 4P
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                )}
               </div>
             </div>
           </div>

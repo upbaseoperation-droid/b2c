@@ -146,8 +146,9 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
     }
   }, [currentUser]);
 
-  // Active Channel Sub-Tab: Sơ đồ nhánh Mindmap + 4 khối nghiệp vụ + Ma trận tuần
+  // Active Section / Channel Sub-Tab: Tách riêng Tổng quan (OVERVIEW) và Chi tiết phân rã
   const [activeTab, setActiveTab] = useState<
+    | 'OVERVIEW'
     | 'MINDMAP'
     | 'AFFILIATE_PAID'
     | 'TAP_FREECAST'
@@ -158,7 +159,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
     | 'DISCUSSIONS'
     | 'ALL_SUMMARY'
     | 'EXCEL_PREVIEW'
-  >('MINDMAP');
+  >('OVERVIEW');
 
   // Ma trận phân rã 5 tuần thực tế (W41 -> W45) chia tách 4 khối cột nghiệp vụ độc lập
   const [weeklyMatrix, setWeeklyMatrix] = useState([
@@ -1410,452 +1411,616 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
     setTimeout(() => document.getElementById('plan-approval-detail')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
   };
 
+  const isDetailBreakdownTab = [
+    'ALL_SUMMARY',
+    'AFFILIATE_PAID',
+    'TAP_FREECAST',
+    'SELF_CHANNEL',
+    'MULTI_PLATFORM',
+    'MINDMAP',
+  ].includes(activeTab);
+
   return (
-    <div className="space-y-4 animate-in fade-in duration-200 max-w-[1600px] mx-auto pb-12">
+    <div className="space-y-4 animate-in fade-in duration-200 pb-12">
       {/* ========================================================================= */}
-      {/* KHỐI 1: HEADER GỌN 2 HÀNG (ĐIỀU HƯỚNG + PHIÊN BẢN + TIẾN ĐỘ DUYỆT)        */}
+      {/* THANH ĐIỀU HƯỚNG DUY NHẤT CỦA PLAN: TÁCH RỜI TỔNG QUAN & CHI TIẾT          */}
       {/* ========================================================================= */}
-      <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs">
-        {/* Hàng 1: Quay lại + Tên kế hoạch + Bộ chọn Phiên bản | Lưu + Trao đổi + Thao tác + Nút chính */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 px-4 py-3">
-          <div className="flex items-center gap-3 min-w-0 flex-wrap">
-            <button
-              onClick={() => {
-                setMonthlyPlans(prev => prev.map(p => p.id === planState.id ? planState : p));
-                setIsShowingStudio(false);
-                if (planSync.isPersistent) void planSync.saveNow();
-              }}
-              className="w-8 h-8 shrink-0 inline-flex items-center justify-center rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 transition"
-              title="Quay lại danh sách kế hoạch tháng"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-
-            <div className="min-w-0">
-              <div className="flex items-center gap-1.5 text-2xs text-slate-500">
-                <span>Kế hoạch tháng</span>
-                <span>/</span>
-                <select
-                  value={planState.id}
-                  onChange={(e) => {
-                    const found = monthlyPlans.find(p => p.id === e.target.value);
-                    if (found) {
-                      setMonthlyPlans(prev => prev.map(p => p.id === planState.id ? planState : p));
-                      setPlanState(found);
-                    }
-                  }}
-                  className="max-w-[240px] bg-transparent font-semibold text-slate-700 hover:text-blue-700 focus:outline-none cursor-pointer truncate"
-                  title="Chuyển sang kế hoạch khác"
-                >
-                  {monthlyPlans.map(p => (
-                    <option key={p.id} value={p.id}>
-                      [{p.month}] {p.brandName} ({p.currentVersionCode || 'v1.0'})
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="flex items-center gap-2 min-w-0 flex-wrap mt-0.5">
-                <h2 className="text-base font-semibold text-slate-900 truncate" title={planState.title}>
-                  {planState.title}
-                </h2>
-
-                {/* Chuyển nhanh các phiên bản trong tháng ngay trên dòng tiêu đề */}
-                <div className="inline-flex items-center gap-1 p-0.5 rounded-lg bg-slate-100 border border-slate-200/80">
-                  {studioVersionSnapshots.map((snap) => {
-                    const isCurrent = snap.versionCode === activeVersionCode;
-                    return (
-                      <button
-                        key={snap.versionCode}
-                        type="button"
-                        onClick={() => handleSwitchVersionInStudio(snap)}
-                        className={`px-2 py-0.5 rounded-md text-2xs font-semibold transition cursor-pointer ${
-                          isCurrent
-                            ? 'bg-blue-600 text-white shadow-2xs'
-                            : 'text-slate-600 hover:text-slate-900 hover:bg-white'
-                        }`}
-                        title={`${snap.versionName} (${formatVndShort(snap.totalTargetBudget)} • ${snap.totalTargetContents} video)`}
-                      >
-                        {snap.versionCode}
-                      </button>
-                    );
-                  })}
-                  <button
-                    type="button"
-                    onClick={() => setIsVersionHistoryModalOpen(true)}
-                    className="px-2 py-0.5 rounded-md text-2xs font-semibold text-blue-700 hover:bg-white transition inline-flex items-center gap-1 cursor-pointer"
-                    title="So sánh các phiên bản hoặc tạo phiên bản mới trong tháng"
-                  >
-                    <Layers className="w-3 h-3" />
-                    <span>So sánh / Bản mới</span>
-                  </button>
-                </div>
-
-                {studioVersionSnapshots.length > 1 && deltaBudgetVsBaseline !== 0 && (
-                  <span className={`text-2xs font-semibold px-1.5 py-0.5 rounded tabular-nums ${
-                    deltaBudgetVsBaseline > 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
-                  }`}>
-                    {deltaBudgetVsBaseline > 0 ? `+${formatVndShort(deltaBudgetVsBaseline)}` : formatVndShort(deltaBudgetVsBaseline)} vs v1.0
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 flex-wrap">
-            <PlanSyncBadge
-              status={planSync.status}
-              lastSavedAt={planSync.lastSavedAt}
-              errorMessage={planSync.errorMessage}
-              onRetry={() => void planSync.saveNow()}
-            />
-
-            <button
-              onClick={async () => {
-                setMonthlyPlans(prev => prev.map(p => p.id === planState.id ? planState : p));
-                if (!planSync.isPersistent) {
-                  notify('Chưa kết nối database, kế hoạch chưa được lưu.');
-                  return;
-                }
-                const ok = await planSync.saveNow();
-                notify(ok ? `Đã lưu kế hoạch "${planState.title}".` : 'Lưu kế hoạch không thành công, vui lòng thử lại.');
-              }}
-              disabled={planSync.status === 'saving'}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-semibold text-xs transition disabled:opacity-60"
-            >
-              <Save className="w-3.5 h-3.5" />
-              Lưu
-            </button>
-
-            <PlanChatButton unreadCount={planChat.unreadCount} onClick={() => setIsChatOpen(true)} />
-
-            {/* Menu hành động phụ */}
-            <div className="relative">
-              <button
-                onClick={() => setIsActionMenuOpen(prev => !prev)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-semibold text-xs transition"
-                aria-haspopup="menu"
-                aria-expanded={isActionMenuOpen}
-              >
-                Thao tác
-                <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isActionMenuOpen ? 'rotate-180' : ''}`} />
-              </button>
-              {isActionMenuOpen && (
-                <>
-                  <div className="fixed inset-0 z-30" onClick={() => setIsActionMenuOpen(false)} />
-                  <div role="menu" className="absolute right-0 mt-1.5 w-60 z-40 bg-white border border-slate-200 rounded-xl shadow-lg py-1 text-xs">
-                    {[
-                      {
-                        label: 'Quản lý & Tạo phiên bản tháng',
-                        icon: <Layers className="w-3.5 h-3.5" />,
-                        onClick: () => setIsVersionHistoryModalOpen(true),
-                      },
-                      {
-                        label: 'Phân bổ cho team',
-                        icon: <Users className="w-3.5 h-3.5" />,
-                        onClick: () => setIsAllocationModalOpen(true),
-                        disabled: isPlanLocked,
-                        hint: isPlanLocked ? 'Đã chốt' : undefined
-                      },
-                      {
-                        label: 'Đối chiếu 4.1.1',
-                        icon: <FileSpreadsheet className="w-3.5 h-3.5" />,
-                        onClick: () => setActiveTab('EXCEL_PREVIEW')
-                      },
-                      {
-                        label: 'Xuất file Excel 4.1.1',
-                        icon: <Download className="w-3.5 h-3.5" />,
-                        onClick: () => void handleExportExcel()
-                      },
-                      {
-                        label: 'Tạo slot booking',
-                        icon: <Send className="w-3.5 h-3.5" />,
-                        onClick: handleGenerateBookingSlots,
-                        disabled: !isPlanLocked,
-                        hint: !isPlanLocked ? 'Chờ chốt' : undefined
-                      }
-                    ].map(item => (
-                      <button
-                        key={item.label}
-                        role="menuitem"
-                        disabled={item.disabled}
-                        onClick={() => {
-                          setIsActionMenuOpen(false);
-                          item.onClick();
-                        }}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-left text-slate-700 hover:bg-slate-50 disabled:text-slate-400 disabled:hover:bg-transparent disabled:cursor-not-allowed"
-                      >
-                        <span className="text-slate-500">{item.icon}</span>
-                        <span className="flex-1">{item.label}</span>
-                        {item.hint && <span className="text-2xs text-slate-400">{item.hint}</span>}
-                      </button>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
-
-            {/* NÚT CHÍNH: thay đổi theo vai trò & trạng thái */}
-            {isPlanLocked ? (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-semibold">
-                <Lock className="w-3.5 h-3.5" />
-                Đã chốt {planState.currentVersionCode || 'v1.0'}
-              </span>
-            ) : planStatus === 'PENDING_APPROVAL' ? (
-              isLeadUser ? (
-                <button
-                  onClick={openApprovalDetail}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-xs transition cursor-pointer"
-                >
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  Xem &amp; duyệt
-                </button>
-              ) : (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 border border-blue-200 text-xs font-semibold">
-                  <Clock className="w-3.5 h-3.5" />
-                  Chờ trưởng phòng duyệt
-                </span>
-              )
-            ) : isApprovedStatus ? (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-semibold">
-                <ShieldCheck className="w-3.5 h-3.5" />
-                Đã duyệt
-              </span>
-            ) : (
-              <button
-                onClick={openSubmitToManager}
-                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow-xs transition cursor-pointer"
-                title="Gửi duyệt kế hoạch lên trưởng phòng sau khi đã thống nhất với Growth"
-              >
-                <SendHorizonal className="w-3.5 h-3.5" />
-                Gửi duyệt
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Hàng 2: Gộp Thông tin phụ trách & Tiến độ duyệt trên CÙNG 1 DÒNG */}
-        <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-2 border-t border-slate-100 bg-slate-50/60 rounded-b-2xl text-xs">
-          <div className="flex items-center gap-x-4 gap-y-1 flex-wrap text-slate-600">
-            <span className="font-semibold text-slate-800">{planState.month}</span>
-            <span>•</span>
-            <span>PIC B2C: <strong className="text-slate-900">{planState.primaryPic || planState.pic || '—'}</strong></span>
-            <span>•</span>
-            <span className="inline-flex items-center gap-1">
-              <span>Duyệt:</span>
-              <strong className="text-slate-900">
-                {hasLeader ? (planState.bookingLeader || 'Nguyễn Thị Ngọc Tâm') : 'Trực tiếp Lead B2C'}
-              </strong>
-              {isLeadUser && !isPlanLocked && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    const nextHas = !hasLeader;
-                    const defaultLeader = nextHas ? (planState.bookingLeader || 'Nguyễn Thị Ngọc Tâm') : undefined;
-                    setPlanState(prev => ({
-                      ...prev,
-                      hasBookingLeader: nextHas,
-                      bookingLeader: defaultLeader,
-                      leaderApprovalStatus: nextHas
-                        ? (prev.leaderApprovalStatus === 'KHÔNG_ÁP_DỤNG' ? 'CHƯA_DUYỆT' : (prev.leaderApprovalStatus || 'CHƯA_DUYỆT'))
-                        : 'KHÔNG_ÁP_DỤNG'
-                    }));
-                    notify(nextHas
-                      ? `Đã bật yêu cầu Leader sơ duyệt cho gian ${planState.brandName}`
-                      : `Đã chuyển gian ${planState.brandName} sang Duyệt trực tiếp`);
-                  }}
-                  className="text-2xs text-blue-600 hover:underline font-medium ml-1 cursor-pointer"
-                >
-                  (Đổi)
-                </button>
-              )}
-            </span>
-            <span>•</span>
-            <span>Growth: <strong className="text-slate-800">{planState.growthPic || '—'}</strong></span>
-          </div>
-
-          <div className="flex items-center gap-2 flex-wrap">
-            <ol className="flex items-center gap-1 flex-wrap text-2xs">
-              {progressSteps.map((step, idx) => (
-                <li key={step.key} className="flex items-center gap-1">
-                  {idx > 0 && <span className="w-2.5 h-px bg-slate-300" />}
-                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border ${
-                    step.done
-                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200 font-medium'
-                      : step.warn
-                      ? 'bg-rose-50 text-rose-700 border-rose-200 font-medium'
-                      : 'bg-white text-slate-500 border-slate-200'
-                  }`}>
-                    {step.done ? <CheckCircle2 className="w-2.5 h-2.5" /> : step.warn ? <AlertTriangle className="w-2.5 h-2.5" /> : <span className="w-1.5 h-1.5 rounded-full bg-slate-300" />}
-                    {step.label}
-                  </span>
-                </li>
-              ))}
-            </ol>
-
-            {canLeaderReview && hasLeader && leaderStatus !== 'ĐÃ_SƠ_DUYỆT' && !isPlanLocked && (
-              <button
-                onClick={() => {
-                  setLeaderReviewNote(planState.leaderNotes || '');
-                  setLeaderApprovalDecision('APPROVE');
-                  setIsLeaderApprovalModalOpen(true);
-                }}
-                className="px-2 py-0.5 rounded-md bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 font-semibold text-2xs transition cursor-pointer"
-              >
-                Sơ duyệt
-              </button>
-            )}
-
-            <button
-              onClick={() => (isApprovalDetailOpen ? setIsApprovalDetailOpen(false) : openApprovalDetail())}
-              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 font-semibold text-2xs transition"
-              aria-expanded={isApprovalDetailOpen}
-            >
-              {isApprovalDetailOpen ? 'Ẩn ký duyệt' : 'Ký duyệt 4 bên'}
-              <ChevronDown className={`w-3 h-3 transition-transform ${isApprovalDetailOpen ? 'rotate-180' : ''}`} />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* ========================================================================= */}
-      {/* CHI TIẾT KÝ DUYỆT (mở khi bấm "Ký duyệt 4 bên")                           */}
-      {/* ========================================================================= */}
-      {isApprovalDetailOpen && (
-        <div id="plan-approval-detail">
-          <PlanApprovalStepper
-            plan={planState}
-            currentRole={currentRole}
-            currentUser={currentUser}
-            onRoleChange={currentUser?.role === 'ADMIN' ? setCurrentRole : undefined}
-            onStatusChange={(newStatus, log, note) => handleStatusChangeForPlan(planState.id, newStatus, log, note)}
-            onUpdatePlan={(updated) => {
-              setPlanState(prev => ({ ...prev, ...updated }));
-              setMonthlyPlans(prev => prev.map(p => p.id === planState.id ? { ...p, ...updated } : p));
+      <div className="bg-white rounded-xl border border-slate-200/90 px-4 py-2.5 shadow-2xs flex flex-wrap items-center justify-between gap-3">
+        {/* Bên trái: Nút quay lại + Chọn nhanh gian hàng + Phiên bản (Không lặp tiêu đề) */}
+        <div className="flex items-center gap-2.5 min-w-0 flex-wrap">
+          <button
+            onClick={() => {
+              setMonthlyPlans(prev => prev.map(p => p.id === planState.id ? planState : p));
+              setIsShowingStudio(false);
+              if (planSync.isPersistent) void planSync.saveNow();
             }}
-            onNotify={notify}
-            headerExtra={
-              <div
-                className={`flex items-center gap-1.5 px-2 py-1 rounded-lg border text-xs ${
-                  growthStatus === 'ĐÃ_THỐNG_NHẤT'
-                    ? 'bg-emerald-50 border-emerald-200'
-                    : growthStatus === 'ĐANG_TRAO_ĐỔI'
-                    ? 'bg-amber-50 border-amber-200'
-                    : 'bg-slate-50 border-slate-200'
-                }`}
-              >
-                <Users className="w-3.5 h-3.5 text-slate-500" />
-                <span className="text-slate-500">Trao đổi Growth:</span>
-                <select
-                  value={growthStatus}
-                  onChange={(e) => {
-                    const newStatus = e.target.value as 'CHƯA_TRAO_ĐỔI' | 'ĐANG_TRAO_ĐỔI' | 'ĐÃ_THỐNG_NHẤT';
-                    setPlanState(prev => ({ ...prev, growthAlignmentStatus: newStatus }));
-                  }}
-                  className="font-semibold text-slate-800 bg-transparent focus:outline-none cursor-pointer"
-                >
-                  <option value="CHƯA_TRAO_ĐỔI">Chưa trao đổi</option>
-                  <option value="ĐANG_TRAO_ĐỔI">Đang trao đổi</option>
-                  <option value="ĐÃ_THỐNG_NHẤT">Đã thống nhất</option>
-                </select>
-              </div>
-            }
-          />
-        </div>
-      )}
+            className="h-8 px-2.5 shrink-0 inline-flex items-center gap-1 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 text-xs font-medium transition cursor-pointer"
+            title="Quay lại danh sách kế hoạch tháng"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            <span className="hidden sm:inline">Danh sách</span>
+          </button>
 
-      {/* ========================================================================= */}
-      {/* KHỐI 2: THANH TỔNG QUAN HẠN MỨC NET & TIẾN ĐỘ PHÂN RÃ (GỌN 1 DÒNG)       */}
-      {/* ========================================================================= */}
-      <div className="bg-white rounded-xl border border-slate-200/90 px-4 py-2.5 shadow-2xs space-y-1.5">
-        <div className="flex flex-wrap items-center justify-between gap-3 text-xs">
-          <div className="flex items-center gap-2.5 flex-wrap">
-            <span className="font-semibold text-slate-700">Đề bài Growth giao:</span>
-            <span className="font-mono font-semibold text-blue-700">Trần Net {formatVndShort(planState.totalTargetBudget)}</span>
-            <span className="text-slate-300">•</span>
-            <span className="font-mono font-semibold text-slate-800">{planState.totalTargetContents} video</span>
-            <span className="text-slate-300">•</span>
-            <span className="text-slate-600">NMV mục tiêu: <strong className="font-mono text-emerald-700">{formatVndShort(planState.targetGmv)}</strong></span>
-            {(planState.budgetAdsTotal || 0) > 0 && (
+          <select
+            value={planState.id}
+            onChange={(e) => {
+              const found = monthlyPlans.find(p => p.id === e.target.value);
+              if (found) {
+                setMonthlyPlans(prev => prev.map(p => p.id === planState.id ? planState : p));
+                setPlanState(found);
+              }
+            }}
+            className="h-8 px-2.5 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200 font-semibold text-xs text-slate-900 focus:outline-none cursor-pointer max-w-[260px] truncate"
+            title="Chuyển sang gian hàng khác"
+          >
+            {monthlyPlans.map(p => (
+              <option key={p.id} value={p.id}>
+                {p.brandName} · {p.month}
+              </option>
+            ))}
+          </select>
+
+          {/* Nút Phiên bản gọn gàng */}
+          <div className="inline-flex items-center gap-1 p-0.5 rounded-lg bg-slate-100 border border-slate-200/80">
+            {studioVersionSnapshots.map((snap) => {
+              const isCurrent = snap.versionCode === activeVersionCode;
+              return (
+                <button
+                  key={snap.versionCode}
+                  type="button"
+                  onClick={() => handleSwitchVersionInStudio(snap)}
+                  className={`px-2 py-0.5 rounded-md text-2xs font-semibold transition cursor-pointer ${
+                    isCurrent
+                      ? 'bg-blue-600 text-white shadow-2xs'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-white'
+                  }`}
+                  title={`${snap.versionName}`}
+                >
+                  {snap.versionCode}
+                </button>
+              );
+            })}
+            <button
+              type="button"
+              onClick={() => setIsVersionHistoryModalOpen(true)}
+              className="px-2 py-0.5 rounded-md text-2xs font-semibold text-blue-700 hover:bg-white transition inline-flex items-center gap-1 cursor-pointer"
+              title="So sánh các phiên bản hoặc tạo phiên bản mới trong tháng"
+            >
+              <Layers className="w-3 h-3" />
+              <span className="hidden md:inline">Bản mới</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Ở giữa: Chuyển đổi tách biệt giữa TỔNG QUAN và CHI TIẾT */}
+        <div className="inline-flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200/80 flex-wrap">
+          <button
+            type="button"
+            onClick={() => setActiveTab('OVERVIEW')}
+            className={`px-3 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
+              activeTab === 'OVERVIEW'
+                ? 'bg-white text-blue-700 shadow-2xs'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            1. Tổng quan &amp; Duyệt
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              if (!isDetailBreakdownTab) setActiveTab('ALL_SUMMARY');
+            }}
+            className={`px-3 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
+              isDetailBreakdownTab
+                ? 'bg-white text-blue-700 shadow-2xs'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            2. Chi tiết hạng mục
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('WEEKLY_MATRIX')}
+            className={`px-3 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
+              activeTab === 'WEEKLY_MATRIX'
+                ? 'bg-white text-blue-700 shadow-2xs'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            3. Chia 5 tuần (W1–W5)
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('EXCEL_PREVIEW')}
+            className={`px-3 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
+              activeTab === 'EXCEL_PREVIEW'
+                ? 'bg-white text-blue-700 shadow-2xs'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            4. Biểu mẫu 4.1.1
+          </button>
+        </div>
+
+        {/* Bên phải: Lưu + Trao đổi + Thao tác + Nút trạng thái/gửi duyệt */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={async () => {
+              setMonthlyPlans(prev => prev.map(p => p.id === planState.id ? planState : p));
+              if (!planSync.isPersistent) {
+                notify('Chưa kết nối database, kế hoạch đã lưu tạm trên phiên làm việc.');
+                return;
+              }
+              const ok = await planSync.saveNow();
+              notify(ok ? `Đã lưu kế hoạch "${planState.title}".` : 'Lưu kế hoạch không thành công, vui lòng thử lại.');
+            }}
+            disabled={planSync.status === 'saving'}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-semibold text-xs transition disabled:opacity-60 cursor-pointer"
+          >
+            <Save className="w-3.5 h-3.5" />
+            <span>Lưu</span>
+          </button>
+
+          <PlanChatButton unreadCount={planChat.unreadCount} onClick={() => setIsChatOpen(true)} />
+
+          <div className="relative">
+            <button
+              onClick={() => setIsActionMenuOpen(prev => !prev)}
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-semibold text-xs transition cursor-pointer"
+              aria-haspopup="menu"
+              aria-expanded={isActionMenuOpen}
+            >
+              <span>Thao tác</span>
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isActionMenuOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {isActionMenuOpen && (
               <>
-                <span className="text-slate-300">•</span>
-                <span className="text-slate-500">Gói Ads: <strong className="font-mono text-slate-700">{formatVndShort(planState.budgetAdsTotal || 0)}</strong></span>
+                <div className="fixed inset-0 z-30" onClick={() => setIsActionMenuOpen(false)} />
+                <div role="menu" className="absolute right-0 mt-1.5 w-56 z-40 bg-white border border-slate-200 rounded-xl shadow-lg py-1 text-xs">
+                  {[
+                    {
+                      label: 'Quản lý phiên bản tháng',
+                      icon: <Layers className="w-3.5 h-3.5" />,
+                      onClick: () => setIsVersionHistoryModalOpen(true),
+                    },
+                    {
+                      label: 'Phân bổ cho team',
+                      icon: <Users className="w-3.5 h-3.5" />,
+                      onClick: () => setIsAllocationModalOpen(true),
+                      disabled: isPlanLocked,
+                      hint: isPlanLocked ? 'Đã chốt' : undefined
+                    },
+                    {
+                      label: 'Xuất file Excel 4.1.1',
+                      icon: <Download className="w-3.5 h-3.5" />,
+                      onClick: () => void handleExportExcel()
+                    },
+                    {
+                      label: 'Tạo slot booking',
+                      icon: <Send className="w-3.5 h-3.5" />,
+                      onClick: handleGenerateBookingSlots,
+                      disabled: !isPlanLocked,
+                      hint: !isPlanLocked ? 'Chờ chốt' : undefined
+                    }
+                  ].map(item => (
+                    <button
+                      key={item.label}
+                      role="menuitem"
+                      disabled={item.disabled}
+                      onClick={() => {
+                        setIsActionMenuOpen(false);
+                        item.onClick();
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-left text-slate-700 hover:bg-slate-50 disabled:text-slate-400 disabled:hover:bg-transparent disabled:cursor-not-allowed"
+                    >
+                      <span className="text-slate-500">{item.icon}</span>
+                      <span className="flex-1">{item.label}</span>
+                      {item.hint && <span className="text-2xs text-slate-400">{item.hint}</span>}
+                    </button>
+                  ))}
+                </div>
               </>
             )}
           </div>
 
-          <div className="flex items-center gap-2.5 flex-wrap">
-            <span className="text-slate-600">
-              Đã phân rã: <strong className={`font-mono ${isOverBudget ? 'text-rose-600' : 'text-slate-900'}`}>{formatVndShort(totalCombinedBudget)}</strong>
-              <span className="text-slate-400"> / {formatVndShort(planState.totalTargetBudget)}</span>
-              <span className="mx-1.5 text-slate-300">•</span>
-              <span>Video: <strong className="font-mono text-slate-900">{totalAllocatedContents}/{planState.totalTargetContents}</strong></span>
+          {isPlanLocked ? (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-semibold">
+              <Lock className="w-3.5 h-3.5" />
+              <span>Đã chốt {activeVersionCode}</span>
             </span>
-            <span className={`font-mono text-2xs font-semibold px-2 py-0.5 rounded-full ${
-              isOverBudget ? 'bg-rose-100 text-rose-700' : budgetHeadroom === 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-50 text-blue-700'
-            }`}>
-              {isOverBudget ? `Vượt trần ${formatVndShort(Math.abs(budgetHeadroom))}` : budgetHeadroom === 0 ? 'Khớp trần' : `Còn ${formatVndShort(budgetHeadroom)}`}
+          ) : planStatus === 'PENDING_APPROVAL' ? (
+            isLeadUser ? (
+              <button
+                onClick={() => setActiveTab('OVERVIEW')}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-xs transition cursor-pointer"
+              >
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>Xem &amp; duyệt</span>
+              </button>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-blue-50 text-blue-700 border border-blue-200 text-xs font-semibold">
+                <Clock className="w-3.5 h-3.5" />
+                <span>Chờ duyệt</span>
+              </span>
+            )
+          ) : isApprovedStatus ? (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-semibold">
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>Đã duyệt</span>
             </span>
-          </div>
-        </div>
-
-        <div className="h-1.5 rounded-full bg-slate-100 overflow-hidden">
-          <div
-            className={`data-bar h-full rounded-full ${isOverBudget ? 'bg-rose-500' : 'bg-blue-500'}`}
-            style={{ width: `${Math.min(100, budgetUsagePct)}%` }}
-          />
+          ) : (
+            <button
+              onClick={openSubmitToManager}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow-xs transition cursor-pointer"
+            >
+              <SendHorizonal className="w-3.5 h-3.5" />
+              <span>Gửi duyệt</span>
+            </button>
+          )}
         </div>
       </div>
 
       {/* ========================================================================= */}
-      {/* KHỐI 3: DÃY TAB 4 ĐẦU VIỆC B2C & MA TRẬN TUẦN (KHÔNG LẶP HỘP BÊN TRÊN)    */}
+      {/* MÀN 1: TỔNG QUAN & PHÊ DUYỆT PLAN (TÁCH BIỆT VỚI MÀN CHI TIẾT)            */}
       {/* ========================================================================= */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 border-b border-slate-200 pb-2">
-        <div className="flex items-center gap-1.5 flex-wrap">
-          {([
-            { key: 'ALL_SUMMARY', label: 'Tất cả đầu việc', sub: `${totalAllocatedContents} video · ${formatVndShort(totalAllocatedBudget)}` },
-            { key: 'AFFILIATE_PAID', label: '1. KOC trả phí', sub: `${channelTotals.affiliatePaid.qty} video · ${formatVndShort(channelTotals.affiliatePaid.budget)}` },
-            { key: 'TAP_FREECAST', label: '2. Mẫu FOC (0đ)', sub: `${channelTotals.tapFreecast.qty} video · 0 đ` },
-            { key: 'SELF_CHANNEL', label: '3. Kênh Brand', sub: `${channelTotals.selfChannel.qty} video · ${formatVndShort(channelTotals.selfChannel.budget)}` },
-            { key: 'MULTI_PLATFORM', label: '4. Đa sàn', sub: `${channelTotals.multiPlatform.qty} video · ${formatVndShort(channelTotals.multiPlatform.budget)}` },
-            { key: 'WEEKLY_MATRIX', label: 'Chia 5 tuần (W1–W5)', sub: 'Ma trận tuần' },
-            { key: 'MINDMAP', label: 'Sơ đồ nhánh', sub: 'Cây phân bổ' }
-          ] as const).map(tab => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className={`px-3 py-1.5 rounded-xl text-left transition border cursor-pointer ${
-                activeTab === tab.key
-                  ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
-                  : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
-              }`}
-            >
-              <div className="text-xs font-semibold">{tab.label}</div>
-              <div className={`text-2xs font-mono ${activeTab === tab.key ? 'text-blue-100' : 'text-slate-500'}`}>{tab.sub}</div>
-            </button>
-          ))}
-        </div>
+      {activeTab === 'OVERVIEW' && (
+        <div className="space-y-4">
+          {/* 1A. 4 Chỉ số Đề bài Growth giao & Đối soát hạn mức Net */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="bg-white rounded-xl border border-slate-200 p-4">
+              <span className="text-xs text-slate-500 block">1. Hạn mức Ngân sách Net (Growth giao)</span>
+              <div className="text-xl font-bold font-mono text-slate-900 mt-1">
+                {formatVndShort(planState.totalTargetBudget)}
+              </div>
+              <span className="text-2xs text-slate-500 mt-1 block">
+                {(planState.budgetAdsTotal || 0) > 0
+                  ? `Gói Ads: ${formatVndShort(planState.budgetAdsTotal || 0)}`
+                  : 'Toàn bộ cho sản xuất & KOC B2C'}
+              </span>
+            </div>
 
-        {activeTab !== 'MINDMAP' && activeTab !== 'EXCEL_PREVIEW' && activeTab !== 'WEEKLY_MATRIX' && (
-          <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200/80 shrink-0">
-            <button
-              onClick={() => setViewMode('TABLE')}
-              className={`px-2.5 py-1 rounded-md text-xs font-semibold flex items-center gap-1 transition ${
-                viewMode === 'TABLE' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-800'
-              }`}
-            >
-              <TableIcon className="w-3.5 h-3.5" /> Bảng
-            </button>
-            <button
-              onClick={() => setViewMode('CARDS')}
-              className={`px-2.5 py-1 rounded-md text-xs font-semibold flex items-center gap-1 transition ${
-                viewMode === 'CARDS' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-800'
-              }`}
-            >
-              <LayoutGrid className="w-3.5 h-3.5" /> Thẻ
-            </button>
+            <div className="bg-white rounded-xl border border-slate-200 p-4">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs text-slate-500">2. Đã phân bổ thực tế</span>
+                <span className={`text-2xs font-mono font-semibold px-2 py-0.5 rounded-full ${
+                  isOverBudget ? 'bg-rose-100 text-rose-700' : budgetHeadroom === 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-50 text-blue-700'
+                }`}>
+                  {isOverBudget ? `Vượt ${formatVndShort(Math.abs(budgetHeadroom))}` : budgetHeadroom === 0 ? 'Khớp trần' : `Còn ${formatVndShort(budgetHeadroom)}`}
+                </span>
+              </div>
+              <div className={`text-xl font-bold font-mono mt-1 ${isOverBudget ? 'text-rose-600' : 'text-blue-700'}`}>
+                {formatVndShort(totalCombinedBudget)}
+              </div>
+              <div className="h-1.5 rounded-full bg-slate-100 overflow-hidden mt-2">
+                <div
+                  className={`h-full rounded-full ${isOverBudget ? 'bg-rose-500' : 'bg-blue-500'}`}
+                  style={{ width: `${Math.min(100, budgetUsagePct)}%` }}
+                />
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl border border-slate-200 p-4">
+              <span className="text-xs text-slate-500 block">3. Chỉ tiêu Tổng Video</span>
+              <div className="text-xl font-bold font-mono text-slate-900 mt-1">
+                {totalAllocatedContents} <span className="text-sm font-normal text-slate-400">/ {planState.totalTargetContents} video</span>
+              </div>
+              <span className={`text-2xs font-medium mt-1 block ${contentHeadroom > 0 ? 'text-amber-700' : 'text-emerald-700'}`}>
+                {contentHeadroom > 0 ? `Cần phân bổ thêm ${contentHeadroom} video` : 'Đã đủ số lượng video mục tiêu'}
+              </span>
+            </div>
+
+            <div className="bg-white rounded-xl border border-slate-200 p-4">
+              <span className="text-xs text-slate-500 block">4. Mục tiêu NMV chiến dịch</span>
+              <div className="text-xl font-bold font-mono text-emerald-700 mt-1">
+                {formatVndShort(planState.targetGmv)}
+              </div>
+              <span className="text-2xs text-slate-500 mt-1 block">
+                Phiên bản hiện hành: <strong className="text-slate-700">{activeVersionCode}</strong>
+                {studioVersionSnapshots.length > 1 && deltaBudgetVsBaseline !== 0 && (
+                  <span className="ml-1 text-blue-700 font-semibold">
+                    ({deltaBudgetVsBaseline > 0 ? `+${formatVndShort(deltaBudgetVsBaseline)}` : formatVndShort(deltaBudgetVsBaseline)} so với v1.0)
+                  </span>
+                )}
+              </span>
+            </div>
           </div>
-        )}
-      </div>
+
+          {/* 1B. Cơ cấu 4 đầu việc B2C & Thông tin Phụ trách (Chia 2 cột rõ ràng) */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+            {/* Cột trái (7/12): Bảng tóm tắt 4 đầu việc B2C */}
+            <div className="lg:col-span-7 bg-white rounded-xl border border-slate-200 overflow-hidden">
+              <div className="px-4 py-3 border-b border-slate-200 flex items-center justify-between gap-2 bg-slate-50/70">
+                <div>
+                  <h3 className="text-xs font-semibold text-slate-900">Tóm tắt cơ cấu 4 đầu việc B2C</h3>
+                  <p className="text-2xs text-slate-500">Bấm vào từng đầu việc để mở màn hình phân rã chi tiết hạng mục</p>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('MINDMAP')}
+                    className="px-2.5 py-1 rounded-lg bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 text-2xs font-semibold transition cursor-pointer"
+                  >
+                    Mở Sơ đồ nhánh
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('WEEKLY_MATRIX')}
+                    className="px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-2xs font-semibold transition cursor-pointer"
+                  >
+                    Chia 5 tuần (W1–W5)
+                  </button>
+                </div>
+              </div>
+
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="border-b border-slate-200 text-2xs text-slate-500 font-semibold bg-slate-50/40">
+                    <th className="py-2.5 px-4">Đầu việc B2C</th>
+                    <th className="py-2.5 px-3 text-right">Số lượng</th>
+                    <th className="py-2.5 px-3 text-right">Ngân sách Net</th>
+                    <th className="py-2.5 px-3 text-right">Tỷ trọng</th>
+                    <th className="py-2.5 px-4 text-right">Chi tiết</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {([
+                    {
+                      key: 'AFFILIATE_PAID' as const,
+                      label: '1. Video KOC trả phí (Affiliate Paid)',
+                      desc: 'Khung lương KL1 → KL7',
+                      qty: channelTotals.affiliatePaid.qty,
+                      budget: channelTotals.affiliatePaid.budget,
+                    },
+                    {
+                      key: 'TAP_FREECAST' as const,
+                      label: '2. Gửi mẫu miễn phí (FOC 0đ)',
+                      desc: 'TAP UpAffiliate & mẫu thương hiệu',
+                      qty: channelTotals.tapFreecast.qty,
+                      budget: 0,
+                    },
+                    {
+                      key: 'SELF_CHANNEL' as const,
+                      label: '3. Video kênh thương hiệu (Self-channel)',
+                      desc: 'Review voice, Nhạc text, Remix, POV',
+                      qty: channelTotals.selfChannel.qty,
+                      budget: channelTotals.selfChannel.budget,
+                    },
+                    {
+                      key: 'MULTI_PLATFORM' as const,
+                      label: '4. Đa sàn khác (Shopee, FB, IG, Threads)',
+                      desc: 'Video đa kênh gắn giỏ hàng / link',
+                      qty: channelTotals.multiPlatform.qty,
+                      budget: channelTotals.multiPlatform.budget,
+                    },
+                  ]).map(row => {
+                    const share = totalAllocatedBudget > 0 ? Math.round((row.budget / totalAllocatedBudget) * 100) : 0;
+                    return (
+                      <tr
+                        key={row.key}
+                        onClick={() => {
+                          setViewMode('TABLE');
+                          setActiveTab(row.key);
+                        }}
+                        className="hover:bg-slate-50 transition cursor-pointer"
+                      >
+                        <td className="py-2.5 px-4">
+                          <div className="font-semibold text-slate-900">{row.label}</div>
+                          <div className="text-2xs text-slate-500">{row.desc}</div>
+                        </td>
+                        <td className="py-2.5 px-3 text-right font-mono font-semibold text-slate-800">
+                          {row.qty} video
+                        </td>
+                        <td className="py-2.5 px-3 text-right font-mono font-semibold text-blue-700">
+                          {row.key === 'TAP_FREECAST' ? '0 đ' : formatVndShort(row.budget)}
+                        </td>
+                        <td className="py-2.5 px-3 text-right font-mono text-slate-500">
+                          {row.key === 'TAP_FREECAST' ? 'FOC' : `${share}%`}
+                        </td>
+                        <td className="py-2.5 px-4 text-right">
+                          <span className="text-2xs font-semibold text-blue-600 hover:underline">
+                            Phân rã →
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Cột phải (5/12): Nhân sự phụ trách & Lịch sử phiên bản */}
+            <div className="lg:col-span-5 bg-white rounded-xl border border-slate-200 p-4 space-y-3.5">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+                <h3 className="text-xs font-semibold text-slate-900">Thông tin phụ trách &amp; Phiên bản</h3>
+                {canLeaderReview && hasLeader && leaderStatus !== 'ĐÃ_SƠ_DUYỆT' && !isPlanLocked && (
+                  <button
+                    onClick={() => {
+                      setLeaderReviewNote(planState.leaderNotes || '');
+                      setLeaderApprovalDecision('APPROVE');
+                      setIsLeaderApprovalModalOpen(true);
+                    }}
+                    className="px-2.5 py-1 rounded-md bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 font-semibold text-2xs transition cursor-pointer"
+                  >
+                    Leader Sơ duyệt
+                  </button>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 text-xs">
+                <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
+                  <span className="text-2xs text-slate-500 block">Chuyên viên B2C (PIC)</span>
+                  <strong className="text-slate-900 font-semibold mt-0.5 block">
+                    {planState.primaryPic || planState.pic || 'Chưa phân công'}
+                  </strong>
+                </div>
+
+                <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
+                  <div className="flex items-center justify-between">
+                    <span className="text-2xs text-slate-500">Luồng duyệt B2C</span>
+                    {isLeadUser && !isPlanLocked && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const nextHas = !hasLeader;
+                          const defaultLeader = nextHas ? (planState.bookingLeader || 'Nguyễn Thị Ngọc Tâm') : undefined;
+                          setPlanState(prev => ({
+                            ...prev,
+                            hasBookingLeader: nextHas,
+                            bookingLeader: defaultLeader,
+                            leaderApprovalStatus: nextHas
+                              ? (prev.leaderApprovalStatus === 'KHÔNG_ÁP_DỤNG' ? 'CHƯA_DUYỆT' : (prev.leaderApprovalStatus || 'CHƯA_DUYỆT'))
+                              : 'KHÔNG_ÁP_DỤNG'
+                          }));
+                          notify(nextHas
+                            ? `Đã bật yêu cầu Leader sơ duyệt cho gian ${planState.brandName}`
+                            : `Đã chuyển gian ${planState.brandName} sang Duyệt trực tiếp`);
+                        }}
+                        className="text-2xs text-blue-600 hover:underline font-medium cursor-pointer"
+                      >
+                        Đổi
+                      </button>
+                    )}
+                  </div>
+                  <strong className="text-slate-900 font-semibold mt-0.5 block truncate">
+                    {hasLeader ? (planState.bookingLeader || 'Nguyễn Thị Ngọc Tâm') : 'Trực tiếp Lead B2C'}
+                  </strong>
+                </div>
+
+                <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
+                  <span className="text-2xs text-slate-500 block">Phụ trách Growth</span>
+                  <strong className="text-slate-900 font-semibold mt-0.5 block">
+                    {planState.growthPic || '—'}
+                  </strong>
+                </div>
+
+                <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
+                  <span className="text-2xs text-slate-500 block">Thống nhất với Growth</span>
+                  <select
+                    value={growthStatus}
+                    onChange={(e) => {
+                      const newStatus = e.target.value as 'CHƯA_TRAO_ĐỔI' | 'ĐANG_TRAO_ĐỔI' | 'ĐÃ_THỐNG_NHẤT';
+                      setPlanState(prev => ({ ...prev, growthAlignmentStatus: newStatus }));
+                    }}
+                    className="font-semibold text-slate-900 bg-transparent focus:outline-none cursor-pointer mt-0.5 w-full"
+                  >
+                    <option value="CHƯA_TRAO_ĐỔI">Chưa trao đổi</option>
+                    <option value="ĐANG_TRAO_ĐỔI">Đang trao đổi</option>
+                    <option value="ĐÃ_THỐNG_NHẤT">Đã thống nhất</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
+                <div className="text-2xs text-slate-500">
+                  Đang mở <strong className="text-slate-800">{activeVersionCode}</strong> ({studioVersionSnapshots.length} phiên bản trong tháng {planState.month})
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsVersionHistoryModalOpen(true)}
+                  className="text-2xs font-semibold text-blue-600 hover:underline cursor-pointer"
+                >
+                  Lịch sử &amp; So sánh bản →
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* 1C. Quy trình Ký duyệt 4 bên (Hiển thị trực tiếp trong màn Tổng quan) */}
+          <div id="plan-approval-detail">
+            <PlanApprovalStepper
+              plan={planState}
+              currentRole={currentRole}
+              currentUser={currentUser}
+              onRoleChange={currentUser?.role === 'ADMIN' ? setCurrentRole : undefined}
+              onStatusChange={(newStatus, log, note) => handleStatusChangeForPlan(planState.id, newStatus, log, note)}
+              onUpdatePlan={(updated) => {
+                setPlanState(prev => ({ ...prev, ...updated }));
+                setMonthlyPlans(prev => prev.map(p => p.id === planState.id ? { ...p, ...updated } : p));
+              }}
+              onNotify={notify}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MÀN 2: CHI TIẾT HẠNG MỤC (TÁCH RỜI KHỎI TỔNG QUAN, KHÔNG LẶP NỘI DUNG)     */}
+      {/* ========================================================================= */}
+      {isDetailBreakdownTab && (
+        <div className="bg-white rounded-xl border border-slate-200/90 px-3.5 py-2 flex flex-wrap items-center justify-between gap-2">
+          {/* Bộ lọc kênh 1 dòng gọn gàng */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {([
+              { key: 'ALL_SUMMARY', label: `Tất cả (${totalAllocatedContents})` },
+              { key: 'AFFILIATE_PAID', label: `1. KOC trả phí (${channelTotals.affiliatePaid.qty})` },
+              { key: 'TAP_FREECAST', label: `2. Mẫu FOC (${channelTotals.tapFreecast.qty})` },
+              { key: 'SELF_CHANNEL', label: `3. Kênh Brand (${channelTotals.selfChannel.qty})` },
+              { key: 'MULTI_PLATFORM', label: `4. Đa sàn (${channelTotals.multiPlatform.qty})` },
+            ] as const).map(tab => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition border cursor-pointer ${
+                  activeTab === tab.key
+                    ? 'bg-blue-600 text-white border-blue-600'
+                    : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Bên phải: Chỉ số đối soát 1 dòng + Chuyển chế độ Bảng / Sơ đồ nhánh / Thẻ */}
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="text-xs text-slate-600 hidden sm:flex items-center gap-1.5">
+              <span>Đã chia:</span>
+              <strong className={`font-mono ${isOverBudget ? 'text-rose-600' : 'text-slate-900'}`}>
+                {formatVndShort(totalCombinedBudget)}
+              </strong>
+              <span className="text-slate-400">/ {formatVndShort(planState.totalTargetBudget)}</span>
+              <span className={`font-mono text-2xs font-semibold px-1.5 py-0.5 rounded ${
+                isOverBudget ? 'bg-rose-100 text-rose-700' : budgetHeadroom === 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-50 text-blue-700'
+              }`}>
+                {isOverBudget ? `Vượt ${formatVndShort(Math.abs(budgetHeadroom))}` : budgetHeadroom === 0 ? 'Khớp trần' : `Còn ${formatVndShort(budgetHeadroom)}`}
+              </span>
+            </div>
+
+            <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200/80 shrink-0">
+              <button
+                onClick={() => {
+                  if (activeTab === 'MINDMAP') setActiveTab('ALL_SUMMARY');
+                  setViewMode('TABLE');
+                }}
+                className={`px-2.5 py-1 rounded-md text-xs font-semibold flex items-center gap-1 transition cursor-pointer ${
+                  activeTab !== 'MINDMAP' && viewMode === 'TABLE' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                <TableIcon className="w-3.5 h-3.5" /> Bảng
+              </button>
+              <button
+                onClick={() => setActiveTab('MINDMAP')}
+                className={`px-2.5 py-1 rounded-md text-xs font-semibold flex items-center gap-1 transition cursor-pointer ${
+                  activeTab === 'MINDMAP' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                <Layers className="w-3.5 h-3.5" /> Sơ đồ nhánh
+              </button>
+              <button
+                onClick={() => {
+                  if (activeTab === 'MINDMAP') setActiveTab('ALL_SUMMARY');
+                  setViewMode('CARDS');
+                }}
+                className={`px-2.5 py-1 rounded-md text-xs font-semibold flex items-center gap-1 transition cursor-pointer ${
+                  activeTab !== 'MINDMAP' && viewMode === 'CARDS' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                <LayoutGrid className="w-3.5 h-3.5" /> Thẻ
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Khi phiên bản đã chốt: khóa toàn bộ ô nhập của vùng phân rã */}
       <fieldset disabled={isPlanLocked} className="min-w-0 m-0 p-0 border-0 space-y-5">
@@ -1876,7 +2041,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
       {/* ========================================================================= */}
       {/* 3. MAIN CONTENT AREA: VIEW MODE 1 - CARDS VIEW                            */}
       {/* ========================================================================= */}
-      {activeTab !== 'MINDMAP' && activeTab !== 'EXCEL_PREVIEW' && activeTab !== 'DISCUSSIONS' && activeTab !== 'WEEKLY_MATRIX' && viewMode === 'CARDS' && (
+      {activeTab !== 'OVERVIEW' && activeTab !== 'MINDMAP' && activeTab !== 'EXCEL_PREVIEW' && activeTab !== 'DISCUSSIONS' && activeTab !== 'WEEKLY_MATRIX' && viewMode === 'CARDS' && (
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {visibleItems.map((item) => {
@@ -1993,7 +2158,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
       {/* ========================================================================= */}
       {/* 4. MAIN CONTENT AREA: BẢNG PHÂN RÃ GỌN GÀNG, THOÁNG MẮT                   */}
       {/* ========================================================================= */}
-      {activeTab !== 'MINDMAP' && activeTab !== 'EXCEL_PREVIEW' && activeTab !== 'DISCUSSIONS' && activeTab !== 'WEEKLY_MATRIX' && viewMode === 'TABLE' && (
+      {activeTab !== 'OVERVIEW' && activeTab !== 'MINDMAP' && activeTab !== 'EXCEL_PREVIEW' && activeTab !== 'DISCUSSIONS' && activeTab !== 'WEEKLY_MATRIX' && viewMode === 'TABLE' && (
         <div className="bg-white rounded-2xl border border-slate-200/90 overflow-hidden shadow-xs">
           {/* THANH CÔNG CỤ 1 DÒNG GỌN: GỢI Ý CƠ CẤU & KHỚP TRẦN */}
           {!isPlanLocked && (
@@ -2212,172 +2377,55 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
       {/* ========================================================================= */}
       {activeTab === 'WEEKLY_MATRIX' && (
         <div className="space-y-4">
-          {/* Header & Quick Action Card */}
-          <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-xs">
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-300 flex items-center justify-center text-amber-700 shrink-0 mt-0.5">
-                  <Calendar className="w-5 h-5 text-amber-600" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h3 className="text-base font-semibold text-slate-900">
-                      Bảng Ma Trận Phân Rã Tuần - 4 Đầu Việc B2C (W1 → W5)
-                    </h3>
-                    <span className="text-2xs font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
-                      Gian hàng: {planState.brandName}
-                    </span>
-                    <span className="text-2xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
-                      Tháng {planState.month}
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-500 mt-1 max-w-3xl">
-                    Bấm chọn <strong>Nhịp chiến dịch</strong> bên dưới để hệ thống tự động lấy tổng của 4 đầu việc B2C rải xuống 5 tuần (`W1 → W5`) và chia sẵn bậc `KL1 → KL7`, không cần gõ tay từng ô.
-                  </p>
-                  <div className="flex items-center gap-1.5 flex-wrap mt-2.5">
-                    <span className="text-2xs font-semibold text-slate-600 mr-1">Tự động rải 5 tuần từ 4 đầu việc:</span>
-                    <button
-                      type="button"
-                      onClick={() => handleDistributeWeeklyByPattern('MEGA_EARLY')}
-                      className="px-2.5 py-1 rounded-lg text-2xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition cursor-pointer"
-                    >
-                      Nhịp Mega Sale đầu tháng (Dồn W1–W2: 55%)
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleDistributeWeeklyByPattern('PAYDAY_PEAK')}
-                      className="px-2.5 py-1 rounded-lg text-2xs font-semibold bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100 transition cursor-pointer"
-                    >
-                      Nhịp Mid-month &amp; Payday (Đỉnh W2 &amp; W4)
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleDistributeWeeklyByPattern('EVEN')}
-                      className="px-2.5 py-1 rounded-lg text-2xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition cursor-pointer"
-                    >
-                      Rải đều 5 tuần (20% / tuần)
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 flex-wrap shrink-0">
-                <button
-                  onClick={handleResetWeeklyMatrix}
-                  className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition shadow-2xs"
-                  title="Khôi phục phân bổ mẫu đều 5 tuần"
-                >
-                  <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
-                  <span>Khôi phục mẫu</span>
-                </button>
-                <button
-                  onClick={handleSyncWeeklyMatrixToStore}
-                  className="px-3 py-1.5 rounded-lg border border-blue-200 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-semibold flex items-center gap-1.5 transition shadow-2xs"
-                  title="Đồng bộ phân rã tuần vào lịch thực thi gian hàng"
-                >
-                  <SendHorizonal className="w-3.5 h-3.5 text-blue-600" />
-                  <span>Đồng bộ lịch tuần</span>
-                </button>
-                <button
-                  onClick={handleSaveWeeklyMatrix}
-                  className="px-3.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold flex items-center gap-1.5 transition shadow-xs"
-                >
-                  <Save className="w-3.5 h-3.5 text-amber-300" />
-                  <span>Lưu kế hoạch 5 tuần</span>
-                </button>
-              </div>
+          {/* Thanh điều khiển 1 dòng gọn gàng (Bỏ 5 hộp lặp lại chỉ số bên dưới bảng) */}
+          <div className="bg-white rounded-xl border border-slate-200/90 px-4 py-3 shadow-2xs flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs font-semibold text-slate-800 mr-1">Tự động rải 5 tuần theo nhịp:</span>
+              <button
+                type="button"
+                onClick={() => handleDistributeWeeklyByPattern('MEGA_EARLY')}
+                className="px-2.5 py-1 rounded-lg text-2xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition cursor-pointer"
+              >
+                Mega Sale đầu tháng (Dồn W1–W2: 55%)
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDistributeWeeklyByPattern('PAYDAY_PEAK')}
+                className="px-2.5 py-1 rounded-lg text-2xs font-semibold bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100 transition cursor-pointer"
+              >
+                Mid-month &amp; Payday (Đỉnh W2 &amp; W4)
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDistributeWeeklyByPattern('EVEN')}
+                className="px-2.5 py-1 rounded-lg text-2xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition cursor-pointer"
+              >
+                Rải đều 5 tuần (20% / tuần)
+              </button>
             </div>
 
-            {/* Top 4 Pillars Metric Badges & Total Variance */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mt-4 pt-4 border-t border-slate-100">
-              {/* Trụ 1 */}
-              <div className="p-3 rounded-xl bg-blue-50/70 border border-blue-200">
-                <div className="flex items-center justify-between text-2xs text-blue-900 font-semibold mb-1">
-                  <span>1. Affiliate Có Cast</span>
-                  <span className="px-1.5 py-0.2 rounded bg-blue-200/60 font-mono text-blue-800">KL1 → KL7</span>
-                </div>
-                <div className="flex items-baseline justify-between">
-                  <span className="text-lg font-semibold font-mono text-blue-950">
-                    {weeklyMatrixTotals.affQty} <span className="text-2xs font-normal text-blue-700">clip</span>
-                  </span>
-                  <span className="text-xs font-semibold font-mono text-blue-800">
-                    {formatVndShort(weeklyMatrixTotals.affBudget)}
-                  </span>
-                </div>
-                <span className="text-2xs text-blue-600 block mt-0.5">KOC nhận thù lao booking</span>
-              </div>
-
-              {/* Trụ 2 */}
-              <div className="p-3 rounded-xl bg-blue-50/70 border border-blue-200">
-                <div className="flex items-center justify-between text-2xs text-blue-900 font-semibold mb-1">
-                  <span>2. Gửi mẫu miễn phí (FOC)</span>
-                  <span className="px-1.5 py-0.2 rounded bg-blue-200/60 font-mono text-blue-800">FOC Mẫu</span>
-                </div>
-                <div className="flex items-baseline justify-between">
-                  <span className="text-lg font-semibold font-mono text-blue-950">
-                    {weeklyMatrixTotals.tapQty} <span className="text-2xs font-normal text-blue-700">clip</span>
-                  </span>
-                  <span className="text-xs font-semibold font-mono text-blue-800">
-                    0 đ cast
-                  </span>
-                </div>
-                <span className="text-2xs text-blue-600 block mt-0.5">Mạng lưới TAP UpAffiliate & Brand</span>
-              </div>
-
-              {/* Trụ 3 */}
-              <div className="p-3 rounded-xl bg-emerald-50/70 border border-emerald-200">
-                <div className="flex items-center justify-between text-2xs text-emerald-900 font-semibold mb-1">
-                  <span>3. Kênh Tự Xây</span>
-                  <span className="px-1.5 py-0.2 rounded bg-emerald-200/60 font-mono text-emerald-800">Inhouse</span>
-                </div>
-                <div className="flex items-baseline justify-between">
-                  <span className="text-lg font-semibold font-mono text-emerald-950">
-                    {weeklyMatrixTotals.selfQty} <span className="text-2xs font-normal text-emerald-700">clip</span>
-                  </span>
-                  <span className="text-xs font-semibold font-mono text-emerald-800">
-                    {formatVndShort(weeklyMatrixTotals.selfBudget)}
-                  </span>
-                </div>
-                <span className="text-2xs text-emerald-600 block mt-0.5">Voice, remix, POV, kịch bản mẫu</span>
-              </div>
-
-              {/* Trụ 4 */}
-              <div className="p-3 rounded-xl bg-amber-50/70 border border-amber-200">
-                <div className="flex items-center justify-between text-2xs text-amber-900 font-semibold mb-1">
-                  <span>4. Đa Sàn Khác</span>
-                  <span className="px-1.5 py-0.2 rounded bg-amber-200/60 font-mono text-amber-800">Shopee/FB</span>
-                </div>
-                <div className="flex items-baseline justify-between">
-                  <span className="text-lg font-semibold font-mono text-amber-950">
-                    {weeklyMatrixTotals.multiQty} <span className="text-2xs font-normal text-amber-700">clip</span>
-                  </span>
-                  <span className="text-xs font-semibold font-mono text-amber-800">
-                    {formatVndShort(weeklyMatrixTotals.multiBudget)}
-                  </span>
-                </div>
-                <span className="text-2xs text-amber-600 block mt-0.5">Shopee Video, FB, Threads, IG</span>
-              </div>
-
-              {/* Tổng 5 tuần & Đối soát */}
-              <div className="p-3 rounded-xl bg-slate-900 text-white border border-slate-800">
-                <div className="flex items-center justify-between text-2xs text-slate-300 font-semibold mb-1">
-                  <span>Tổng 5 Tuần</span>
-                  <span className="px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-mono">
-                    Khớp 4.1
-                  </span>
-                </div>
-                <div className="flex items-baseline justify-between">
-                  <span className="text-lg font-semibold font-mono text-white">
-                    {weeklyMatrixTotals.totalQty} <span className="text-2xs font-normal text-slate-400">clip</span>
-                  </span>
-                  <span className="text-xs font-semibold font-mono text-emerald-400">
-                    {formatVndShort(weeklyMatrixTotals.totalBudget)}
-                  </span>
-                </div>
-                <span className="text-2xs text-slate-400 block mt-0.5">
-                  Chỉ tiêu: {planState.totalTargetContents} clip ({formatVndShort(planState.totalTargetBudget)})
-                </span>
-              </div>
+            <div className="flex items-center gap-2 flex-wrap shrink-0">
+              <button
+                onClick={handleResetWeeklyMatrix}
+                className="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center gap-1 transition cursor-pointer"
+              >
+                <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
+                <span>Khôi phục mẫu</span>
+              </button>
+              <button
+                onClick={handleSyncWeeklyMatrixToStore}
+                className="px-2.5 py-1.5 rounded-lg border border-blue-200 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-semibold flex items-center gap-1 transition cursor-pointer"
+              >
+                <SendHorizonal className="w-3.5 h-3.5 text-blue-600" />
+                <span>Đồng bộ lịch tuần</span>
+              </button>
+              <button
+                onClick={handleSaveWeeklyMatrix}
+                className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
+              >
+                <Save className="w-3.5 h-3.5 text-amber-300" />
+                <span>Lưu 5 tuần</span>
+              </button>
             </div>
           </div>
 
@@ -2861,42 +2909,6 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                   })()}
                 </tfoot>
               </table>
-            </div>
-
-            {/* Table Footer with Operational Controls */}
-            <div className="p-4 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div className="flex items-center gap-2 text-xs text-slate-600">
-                <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                <span>
-                  Ma trận 5 tuần đang thể hiện <strong>{weeklyMatrixTotals.totalQty} video</strong> • Chi phí kế hoạch: <strong className="text-blue-900">{formatVndShort(weeklyMatrixTotals.totalBudget)}</strong>
-                </span>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={handleResetWeeklyMatrix}
-                  className="px-3.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 font-semibold text-xs flex items-center gap-1.5 shadow-2xs transition"
-                >
-                  <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
-                  <span>Khôi phục chuẩn</span>
-                </button>
-
-                <button
-                  onClick={handleSaveWeeklyMatrix}
-                  className="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs flex items-center gap-1.5 shadow-xs transition"
-                >
-                  <Save className="w-3.5 h-3.5" />
-                  <span>Lưu kế hoạch 5 tuần</span>
-                </button>
-
-                <button
-                  onClick={handleSyncWeeklyMatrixToStore}
-                  className="px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs flex items-center gap-1.5 shadow-xs transition"
-                >
-                  <SendHorizonal className="w-3.5 h-3.5" />
-                  <span>Đồng bộ vào lịch tuần</span>
-                </button>
-              </div>
             </div>
           </div>
         </div>
