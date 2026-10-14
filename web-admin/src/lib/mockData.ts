@@ -57,12 +57,12 @@ export const USERS: UserProfile[] = [
   // 1. BAN ĐIỀU HÀNH & TRƯỞNG PHÒNG 3 KHỐI (ADMIN / MARKETING B2C / GROWTH / MEDIA)
   // =========================================================================
   {
-    id: 'user-admin-chinh',
-    name: 'Nguyễn Trọng Chỉnh',
-    email: 'chinhnt@upbase.vn',
+    id: 'user-admin-giang',
+    name: 'Đỗ Văn Giang',
+    email: 'giangdv@upbase.vn',
     role: 'ADMIN',
-    roleTitle: 'Quản Trị Hệ Thống (BOD / Admin)',
-    avatar: 'NC',
+    roleTitle: 'Tổng Giám Đốc (CEO / BOD)',
+    avatar: 'DG',
     departmentScope: 'MARKETING_B2C',
     departmentName: 'Ban Giám Đốc',
     canLogin: true,

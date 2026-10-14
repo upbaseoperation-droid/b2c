@@ -26026,7 +26026,7 @@ export const UPBASE_STAFF_MASTER: StaffMasterMember[] = [
     "team": "BOD",
     "roleTitle": "CEO",
     "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80",
-    "email": "staff_hn001@upbase.vn",
+    "email": "giangdv@upbase.vn",
     "maxStoresCapacity": 5,
     "gender": "Nam",
     "location": "HN",

@@ -17,6 +17,7 @@
   - **Mức Gian hàng (Store / Platform):** Một Brand sở hữu nhiều gian hàng trên các sàn (`TikTok`, `Shopee`, `Lazada`...). Hạn mức Order được phân bổ chi tiết theo từng gian hàng nhưng phải tuân thủ định mức của Brand.
 - **Phạm vi phân tích B2C:** Chỉ tính toán các gian hàng có `B2C phụ trách = 1` (Cột 25 trong file 4.1 Plan order tổng). Tuyệt đối không gộp gian hàng thuộc Social Commerce hoặc Outright của phòng ban khác trừ khi được yêu cầu rõ ràng.
 - **Cơ cấu tổ chức & Phân bổ Leader - Specialist phòng B2C:**
+  - **Cấp Ban Giám Đốc / Tổng Giám Đốc (CEO):** `Đỗ Văn Giang` — Phụ trách chung định hướng doanh nghiệp, bảo trợ nguồn lực, phê duyệt chiến lược toàn hệ thống và ký duyệt cấp cao nhất.
   - **Cấp Trưởng Phòng (Lead B2C):** `Đặng Thị Yến Nhi` — Phụ trách chung toàn phòng, quản lý trần PnL/ngân sách toàn bộ 69 gian hàng B2C, ký duyệt kế hoạch tháng và đại diện ký biên bản 4 bên.
   - **Cấp Trưởng Nhóm (Leader):** Xem thực tế tại Cột 55 File 4.1.1 (chỉ có `Nguyễn Thị Ngọc Tâm` làm Trưởng nhóm phụ trách 8 gian hàng: ClubClio TikTok/Shopee, Cindy Bloom, Mine, EUPC, L'Occitane, Bye Bye Blemish, Rejuran).
   - **Cấp Chuyên Viên (Specialist / PIC):** Các nhân sự nhận order tại File 4.1 (Cột 25, 39, 60) và File 4.1.1 (Cột 3, 50) như `Lê Phương Thảo`, `Lương Thị Như Quỳnh`, `Lê Thanh Hải`, `Phạm Thị Thu Hằng`, `Hoàng Hải Long`, `Trần Hải Phượng`, `Phan Diệu Ánh`, `Vũ Hoài Lâm`, `Nguyễn Thị Mai Anh`... là **Chuyên viên thực thi**, KHÔNG PHẢI Leader.

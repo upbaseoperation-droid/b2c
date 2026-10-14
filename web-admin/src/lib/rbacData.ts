@@ -598,13 +598,13 @@ export const INITIAL_PERMISSION_MATRIX: PermissionMatrixItem[] = RAW_PERMISSION_
 // =========================================================================
 export const INITIAL_INTERNAL_STAFF_RBAC: InternalStaffRbacMember[] = [
   {
-    id: 'user-trong-chinh',
+    id: 'user-do-van-giang',
     staffCode: 'HN001',
-    name: 'Nguyễn Trọng Chỉnh',
-    email: 'chinhnt@upbase.vn',
-    avatar: 'NC',
+    name: 'Đỗ Văn Giang',
+    email: 'giangdv@upbase.vn',
+    avatar: 'DG',
     role: 'ADMIN',
-    roleTitle: 'Quản Trị Hệ Thống (BOD / Admin)',
+    roleTitle: 'Tổng Giám Đốc (CEO / BOD Admin)',
     department: 'Ban Giám Đốc',
     team: 'BOD',
     location: 'HN',
@@ -612,7 +612,7 @@ export const INITIAL_INTERNAL_STAFF_RBAC: InternalStaffRbacMember[] = [
     departmentScope: 'MARKETING_B2C',
     canLogin: true,
     accessSource: 'ADMIN_EXPLICIT',
-    position: 'Super Admin',
+    position: 'CEO',
     picBrands: ['ALL_BRANDS'],
     permissions: {
       canApproveBudget: true,
@@ -1439,8 +1439,8 @@ export const INITIAL_RBAC_AUDIT_LOGS: RbacAuditLogItem[] = [
   {
     id: 'log-002',
     timestamp: '2026-10-08 23:40:05',
-    actorName: 'Nguyễn Trọng Chỉnh',
-    actorEmail: 'chinhnt@upbase.vn',
+    actorName: 'Đỗ Văn Giang',
+    actorEmail: 'giangdv@upbase.vn',
     actorRole: 'ADMIN',
     actionType: 'DEPT_RULE_UPDATE',
     targetUserOrEntity: 'Khối Growth (Trần Thị Đỗ Quyên) & Khối Media (Nguyễn Đức Quảng)',
