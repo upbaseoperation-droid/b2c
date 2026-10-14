@@ -91,6 +91,36 @@ export const RBAC_ROLE_DEFINITIONS: RoleDefinition[] = [
     userCount: 260
   },
   {
+    id: 'LEGAL',
+    code: 'LEGAL_REVIEW',
+    name: 'Pháp Chế (Duyệt Hợp Đồng & Biểu Mẫu)',
+    scopeType: 'INTERNAL',
+    badgeColor: 'bg-amber-50 text-amber-700 border-amber-200',
+    description: 'Kiểm tra pháp lý hợp đồng & biên bản nghiệm thu, quản lý danh mục và cập nhật biểu mẫu hợp đồng chuẩn (.docx).',
+    defaultLandingTab: 'contracts',
+    userCount: 2
+  },
+  {
+    id: 'FINANCE',
+    code: 'FINANCE_ACC',
+    name: 'Kế Toán (Duyệt Hợp Đồng & Đối Soát Chi)',
+    scopeType: 'INTERNAL',
+    badgeColor: 'bg-sky-50 text-sky-700 border-sky-200',
+    description: 'Duyệt điều khoản thanh toán hợp đồng, kiểm soát thuế TNCN 10% / hóa đơn VAT và đối soát hạn mức chi Order Net.',
+    defaultLandingTab: 'contracts',
+    userCount: 3
+  },
+  {
+    id: 'SIGN_ADMIN',
+    code: 'SIGN_COORD',
+    name: 'Điều Phối Ký Điện Tử (weSign)',
+    scopeType: 'INTERNAL',
+    badgeColor: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    description: 'Điều phối trình ký hợp đồng đã được Pháp chế & Kế toán duyệt lên hệ thống ký số điện tử weSign.',
+    defaultLandingTab: 'contracts',
+    userCount: 1
+  },
+  {
     id: 'BRAND_PARTNER',
     code: 'BRAND_GMAIL',
     name: 'Đại Diện Thương Hiệu (Brand)',
@@ -106,7 +136,7 @@ export const RBAC_ROLE_DEFINITIONS: RoleDefinition[] = [
     name: 'KOC / KOL / Creator',
     scopeType: 'EXTERNAL',
     badgeColor: 'bg-amber-50 text-amber-700 border-amber-200',
-    description: 'Đăng nhập Gmail, chỉ xem Job/Deal của bản thân. Đăng ký nhận hàng mẫu, nộp link video và cấp mã TikTok Spark Ads.',
+    description: 'Đăng nhập Gmail, quản lý thông tin cá nhân & pháp lý, xem & ký xác nhận hợp đồng, theo dõi lịch sử hợp tác, nhận hàng mẫu, nộp video/mã Spark Ads và đối soát hiệu quả.',
     defaultLandingTab: 'koc-hub',
     userCount: 42
   },
@@ -1802,6 +1832,16 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'api-settings',
     'knowledge-qa'
   ],
+  LEGAL: [
+    'contracts'
+  ],
+  FINANCE: [
+    'contracts',
+    'dashboard-finance'
+  ],
+  SIGN_ADMIN: [
+    'contracts'
+  ],
   BRAND_PARTNER: [
     'brand-hub',
     'koc-listing',
@@ -1828,6 +1868,9 @@ export const ROLE_DEFAULT_LANDING: Record<UserRole, TabKey> = {
   GROWTH_MEMBER: 'input-plan',
   MEDIA_MEMBER: 'input-plan',
   MEMBER: 'cockpit',
+  LEGAL: 'contracts',
+  FINANCE: 'contracts',
+  SIGN_ADMIN: 'contracts',
   BRAND_PARTNER: 'brand-hub',
   KOC_PARTNER: 'koc-hub',
   CTV_PARTNER: 'self-channel-hub'
@@ -1859,6 +1902,9 @@ export const ROLE_DISPLAY_NAME: Record<UserRole, string> = {
   GROWTH_MEMBER: 'Chuyên viên Growth',
   MEDIA_MEMBER: 'Chuyên viên Media',
   MEMBER: 'Chuyên viên thực thi',
+  LEGAL: 'Pháp chế',
+  FINANCE: 'Kế toán',
+  SIGN_ADMIN: 'Điều phối ký điện tử',
   BRAND_PARTNER: 'Đại diện thương hiệu',
   KOC_PARTNER: 'Đối tác KOC / Creator',
   CTV_PARTNER: 'Cộng tác viên Self-channel',

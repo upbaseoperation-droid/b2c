@@ -19,7 +19,14 @@ import type {
 } from '../../lib/brands/types';
 import { brandKey, emptyProfile } from '../../lib/brands/types';
 
-export interface BrandAccess { name: string; lead: boolean; legal: boolean }
+export interface BrandAccess {
+  name: string;
+  lead: boolean;
+  legal: boolean;
+  brandPartner?: boolean;
+  linkedBrand?: string;
+  assignedBrands?: string[];
+}
 
 export interface BrandRow {
   key: string;
@@ -118,9 +125,18 @@ export function buildRows(masters: BrandDetail[], profiles: BrandProfile[]): Bra
 }
 
 /** Quyền hiển thị nút “Sửa”. Máy chủ vẫn kiểm tra lại khi lưu. */
-export function permissionsOf(access: BrandAccess | undefined, accountPic?: string): BrandPermissions {
+export function permissionsOf(access: BrandAccess | undefined, accountPic?: string, brandName?: string): BrandPermissions {
   const pic = !!access && !!accountPic && access.name.trim().toLowerCase() === accountPic.trim().toLowerCase();
-  const content = !!access && (access.lead || pic);
+  let partnerMatch = false;
+  if (access?.brandPartner && brandName) {
+    const targetKey = brandKey(brandName);
+    const candidates = [access.linkedBrand, ...(access.assignedBrands || [])].filter((x): x is string => Boolean(x && x.trim()));
+    partnerMatch = candidates.some(c => {
+      const ck = brandKey(c);
+      return ck && (ck === targetKey || ck.includes(targetKey) || targetKey.includes(ck));
+    });
+  }
+  const content = !!access && (access.lead || pic || partnerMatch);
   return {
     POSITIONING: content,
     ENTITY: content,
@@ -129,7 +145,7 @@ export function permissionsOf(access: BrandAccess | undefined, accountPic?: stri
     CONTENT_RULES: content,
     FAQS: content,
     DOCUMENTS: content,
-    LEGAL: !!access && (access.lead || access.legal),
+    LEGAL: !!access && (access.lead || access.legal || partnerMatch),
     RATECARD: !!access && access.lead,
   };
 }
