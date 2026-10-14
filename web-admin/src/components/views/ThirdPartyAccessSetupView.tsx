@@ -219,9 +219,9 @@ export const ThirdPartyAccessSetupView: React.FC<ThirdPartyAccessSetupViewProps>
       {/* ========================================================================= */}
       <div className="bg-surface border border-line rounded-xl p-5 space-y-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <p className="text-xs text-muted leading-relaxed max-w-2xl">
-            Cung cấp cổng đăng nhập độc lập bằng Gmail cho <strong>Nhãn hàng</strong>, <strong>KOC / KOL</strong> và <strong>Cộng tác viên</strong>. Hệ thống tự động phân luồng: đối tác đăng nhập Gmail sẽ vào thẳng cổng của mình và <strong>chỉ xem được dữ liệu được phân quyền</strong>.
-          </p>
+          <div className="text-xs text-muted">
+            Quản trị phân quyền truy cập Gmail theo từng vai trò đối tác.
+          </div>
 
           <div className="flex items-center gap-2.5">
             <button

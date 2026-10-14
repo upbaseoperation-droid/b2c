@@ -75,11 +75,6 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline gap-2.5 min-w-0">
             <h1 className="text-xl font-semibold text-ink leading-7 tracking-tight">{title}</h1>
-            {subtitle && (
-              <span className="hidden md:inline-block text-2xs text-ink-3 truncate max-w-sm">
-                / {subtitle}
-              </span>
-            )}
           </div>
         </div>
       </div>

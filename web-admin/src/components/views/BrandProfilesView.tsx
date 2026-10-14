@@ -618,7 +618,7 @@ export function BrandProfilesView({
           rows={visible.slice((page - 1) * 20, page * 20)}
           rowKey={r => r.key}
           onRowClick={r => openBrand(r.key)}
-          empty={<EmptyState title="Không có nhãn hàng khớp" description="Đổi bộ lọc hoặc tìm bằng tên khác." />}
+          empty={<EmptyState title="Không có nhãn hàng khớp" />}
         />
         <Pagination page={page} pageSize={20} total={visible.length} onPageChange={setPage} />
       </Panel>

@@ -338,7 +338,7 @@ export function ContractManagementView({
                   }
                 />
               ) : (
-                <EmptyState title="Không có hồ sơ khớp" description="Đổi bộ lọc hoặc tìm bằng tên khác." />
+                <EmptyState title="Không có hồ sơ khớp" />
               )
             }
           />

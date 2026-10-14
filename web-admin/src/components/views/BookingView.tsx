@@ -645,7 +645,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
                 rows={rows}
                 rowKey={c => c.id}
                 stickyLast
-                empty={<EmptyState title="Không có ứng viên ở trạng thái này" description="Chọn “Tất cả” để xem toàn bộ danh sách." />}
+                empty={<EmptyState title="Không có ứng viên ở trạng thái này" />}
                 columns={[
                   {
                     key: 'koc', header: 'KOC', width: 220, render: c => (
@@ -765,7 +765,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
                 rows={filteredDeals}
                 rowKey={d => d.id}
                 stickyLast
-                empty={<EmptyState title="Không có job phù hợp" description="Bỏ bớt bộ lọc hoặc xóa từ khóa tìm kiếm." />}
+                empty={<EmptyState title="Không có job phù hợp" />}
                 columns={[
                   {
                     key: 'job', header: 'Job', width: 230, render: d => (
@@ -928,7 +928,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
             rowKey={k => k.id}
             stickyLast
             onRowClick={k => setInspectedKoc(k)}
-            empty={<EmptyState title="Không tìm thấy KOC" description="Thử từ khóa khác hoặc bỏ bớt bộ lọc." action={<Button size="sm" icon={UserPlus} onClick={() => setIsCreateKocOpen(true)}>Thêm KOC</Button>} />}
+            empty={<EmptyState title="Không tìm thấy KOC" action={<Button size="sm" icon={UserPlus} onClick={() => setIsCreateKocOpen(true)}>Thêm KOC</Button>} />}
             columns={[
               {
                 key: 'koc', header: 'KOC', width: 300, render: k => (

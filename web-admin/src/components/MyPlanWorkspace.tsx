@@ -182,9 +182,6 @@ export const MyPlanWorkspace: React.FC<MyPlanWorkspaceProps> = ({
                 · {allocation?.month || '2026/09'}
               </span>
             </div>
-            <p className="text-xs text-ink-3 mt-1">
-              Chia hạn mức trưởng phòng giao thành các slot KOC theo tuần, rồi gửi duyệt để mở khóa hợp đồng.
-            </p>
           </div>
 
           <div className="flex items-center gap-2">
@@ -251,14 +248,14 @@ export const MyPlanWorkspace: React.FC<MyPlanWorkspaceProps> = ({
               {formatVndShort(targetGmv)}
             </div>
             <div className="text-2xs text-ink-3 mt-2">
-              Cam kết GMV đóng góp cho phòng Marketing B2C
+              Đạt {plannedGmv > 0 ? Math.round((plannedGmv / (targetGmv || 1)) * 100) : 0}% mục tiêu
             </div>
           </div>
 
           {/* Col 4 */}
           <div className="p-3.5 rounded-md bg-sunken border border-line shadow-2xs">
             <span className="text-xs text-ink-3 block font-medium mb-1">
-              Brand & chỉ đạo của trưởng phòng:
+              Thương hiệu phụ trách:
             </span>
             <div className="text-xs font-medium text-ink mb-1.5">
               {(allocation?.assignedBrands || ['Senka', 'Cure']).join(' · ')}
@@ -327,7 +324,6 @@ export const MyPlanWorkspace: React.FC<MyPlanWorkspaceProps> = ({
                   <td colSpan={10} className="px-4">
                     <EmptyState
                       title="Kế hoạch chưa có KOC"
-                      description="Thêm KOC từ danh bạ để bắt đầu chia slot theo tuần."
                       action={<Button size="sm" icon={Plus} onClick={() => setIsAddModalOpen(true)}>Thêm KOC</Button>}
                     />
                   </td>

@@ -1737,7 +1737,7 @@ export function BrandProfileDetail({
                 </div>
               </div>
             ) : (
-              <EmptyState title="Chưa có quy tắc vận hành" description="Nhấn “Chỉnh sửa quy tắc vận hành” để thiết lập." />
+              <EmptyState title="Chưa có quy tắc vận hành" />
             )}
           </Panel>
         </div>
@@ -2073,7 +2073,7 @@ export function BrandProfileDetail({
             flush
           >
             {p.products.length === 0 ? (
-              <EmptyState title="Chưa có sản phẩm chủ lực" description="Nhấn “Thêm sản phẩm” để cập nhật thông tin SKU cho KOC." />
+              <EmptyState title="Chưa có sản phẩm chủ lực" />
             ) : (
               <ul className="divide-y divide-line">
                 {p.products.map((x, i) => {
