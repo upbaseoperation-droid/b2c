@@ -477,7 +477,7 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
         <div className="flex items-center gap-2 flex-wrap">
           {headerExtra}
           {onRoleChange && (
-            <div className="flex items-center gap-1.5 bg-canvas px-2 py-1 rounded-lg border border-line text-xs" title="Chỉ tài khoản Admin dùng để chạy thử">
+            <div className="flex items-center gap-1.5 bg-canvas px-2 py-1 rounded-lg border border-line text-xs" title="Chọn vai trò">
               <UserCheck className="w-3.5 h-3.5 text-ink-3" />
               <span className="text-ink-2">Chạy thử vai trò:</span>
               <select

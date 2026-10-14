@@ -1602,8 +1602,8 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({ onNotify }) =>
                         <Sliders className="w-3 h-3" />
                         <span>
                           {isExpanded
-                            ? 'Thu gọn hướng dẫn nghiệp vụ & khóa riêng'
-                            : 'Tùy chỉnh hướng dẫn nghiệp vụ (Prompt) & khóa riêng'}
+                            ? 'Thu gọn cấu hình nâng cao'
+                            : 'Tùy chỉnh câu lệnh (Prompt) & khóa riêng'}
                         </span>
                         {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                       </button>
@@ -2593,7 +2593,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({ onNotify }) =>
           onNotify?.('Đã khôi phục bảng phân bổ mục đích về cấu hình chuẩn (vẫn giữ nguyên các khóa API đã nhập).', 'info');
         }}
         title="Khôi phục bảng phân bổ mặc định?"
-        description="Hệ thống sẽ đặt lại mô hình mặc định và bảng phân bổ 6 mục đích nghiệp vụ về cấu hình chuẩn của Upbase B2C (các khóa API bạn đã dán sẽ được giữ nguyên)."
+        description="Đặt lại mô hình mặc định và bảng phân bổ 6 mục đích nghiệp vụ về cấu hình chuẩn (giữ nguyên các khóa API đã lưu)."
         confirmLabel="Khôi phục mặc định"
       />
     </div>

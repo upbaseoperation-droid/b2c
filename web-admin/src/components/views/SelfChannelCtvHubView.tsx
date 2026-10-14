@@ -1517,9 +1517,6 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                   <span>1. Phân quyền nhân sự quy trình sản xuất Video Self-Channel</span>
                 </h3>
               </div>
-              <span className="text-2xs text-slate-500">
-                Bấm vào ô quyền để bật / tắt quyền thao tác
-              </span>
             </div>
 
             <div className="overflow-x-auto">
@@ -2099,7 +2096,6 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                 <Layers className="w-3.5 h-3.5 text-blue-600" />
                 Phân bổ chỉ tiêu theo Trụ cột nội dung (Content Pillar)
               </h3>
-              <span className="text-2xs text-slate-400">Click vào từng Pillar để tạo việc sản xuất nhanh</span>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">

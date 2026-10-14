@@ -1247,7 +1247,7 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
 
               <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-2xs text-slate-500">
                 <span>
-                  Đồng bộ trực tiếp với Danh mục Gian hàng B2C (File 4.1 &amp; 4.1.1).
+                  Đồng bộ trực tiếp với Danh mục Gian hàng B2C.
                 </span>
                 <button
                   type="button"

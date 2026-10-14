@@ -717,7 +717,7 @@ export function ContractCatalogView({
               <Input id="cat-edit-version" value={editVersion} onChange={e => setEditVersion(e.target.value)} placeholder="VD: Ver102026" />
             </Field>
           </div>
-          <Field label="Mô tả hướng dẫn sử dụng mẫu" htmlFor="cat-edit-desc">
+          <Field label="Mô tả mẫu hợp đồng" htmlFor="cat-edit-desc">
             <Textarea id="cat-edit-desc" rows={2} value={editDescription} onChange={e => setEditDescription(e.target.value)} />
           </Field>
           <Field label="Các cấp duyệt bắt buộc mặc định">

@@ -167,7 +167,7 @@ export function StoreEditDialog({
 
         <div className="pt-2 border-t border-line space-y-3">
           <span className="text-[13px] font-semibold text-ink block">
-            Hạn mức Kế hoạch Tháng (File 4.1 Plan Order)
+            Hạn mức Kế hoạch Tháng
           </span>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

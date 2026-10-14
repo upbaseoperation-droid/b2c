@@ -814,8 +814,8 @@ export function StoreProfile({
         <div className="flex-1 min-w-0 space-y-6 w-full">
           {/* 2.1 Bảng tổng hợp Lịch sử Plan & Report qua các tháng */}
           <Panel
-            title="Hồ sơ Kế hoạch (Plan) & Báo cáo thực thi (Report) theo tháng"
-            description="Doanh số NMV, ngân sách Net/Gross và sản lượng video được quản lý theo từng chu kỳ tháng. Bấm vào một dòng tháng để xem báo cáo đối soát hoặc drill-down xuống Plan & Booking của tháng đó."
+            title="Hồ sơ Kế hoạch &amp; Báo cáo thực thi theo tháng"
+            description="Doanh số NMV, ngân sách Net/Gross và sản lượng video theo từng chu kỳ tháng."
             flush
           >
             <DataTable
@@ -1138,7 +1138,7 @@ export function StoreProfile({
           {detailTab === 'BOOKING_REPORT' && (
             <Panel
               title={`Danh sách Deal Booking & Báo cáo Video (${currentMonthReport.monthLabel})`}
-              description="Bấm vào từng dòng deal để xem chi tiết kết quả video (Views, GMV, Đơn hàng, ROAS) hoặc mở sang màn Quản lý Booking / Hợp đồng"
+              description="Chi tiết kết quả video, doanh thu và hợp đồng của từng lượt booking."
               actions={
                 onDrilldownToBooking && (
                   <Button

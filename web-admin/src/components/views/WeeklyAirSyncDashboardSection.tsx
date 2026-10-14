@@ -633,7 +633,7 @@ export const WeeklyAirSyncDashboardSection: React.FC<WeeklyAirSyncDashboardSecti
             <div className="mt-3 pt-3 px-3 pb-2 rounded-lg bg-canvas/70 border border-line">
               <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-ink-2 mb-2">
                 <span>
-                  <strong>Biểu đồ 31 ngày (01/10 → 31/10/2026):</strong> Bấm vào bất kỳ ngày nào để xem chi tiết bên dưới
+                  <strong>Biểu đồ 31 ngày (01/10 → 31/10/2026)</strong>
                 </span>
                 <span className="font-code text-ink-3">Đỉnh cao nhất: {maxDailyValue} video/ngày (09/10)</span>
               </div>

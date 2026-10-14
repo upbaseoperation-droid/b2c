@@ -1229,8 +1229,8 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
             {/* Content for Selected Node */}
             <div className="mt-4 text-xs">
               {!selectedNode ? (
-                <div className="p-6 text-center text-ink-3 italic">
-                  Nhấn vào bất kỳ Node nào trên sơ đồ Mindmap để xem và điều chỉnh dữ liệu gốc.
+                <div className="p-6 text-center text-ink-3">
+                  Chọn một đối tượng trên sơ đồ để xem thông tin chi tiết.
                 </div>
               ) : selectedNode.type === 'STORE' ? (
                 <div className="space-y-4">

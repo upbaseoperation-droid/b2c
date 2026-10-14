@@ -1911,8 +1911,8 @@ export function BrandProfileDetail({
         <div className="space-y-6">
           {/* 1. BẢNG LỊCH SỬ HỒ SƠ PLAN & REPORT CỦA THƯƠNG HIỆU QUA CÁC THÁNG */}
           <Panel
-            title={`Sổ Hồ Sơ Tháng (Plan & Report) của thương hiệu ${row.name}`}
-            description="Doanh số NMV, ngân sách Net và chỉ tiêu video của thương hiệu được quản lý theo từng kỳ tháng — Nhấn vào dòng tháng để xem báo cáo và drill-down xuống từng gian hàng, kế hoạch, booking"
+            title={`Hồ sơ Tháng (Plan & Report) — ${row.name}`}
+            description="Doanh số NMV, ngân sách Net và chỉ tiêu video theo từng kỳ tháng."
             flush
           >
             <DataTable
@@ -2121,7 +2121,7 @@ export function BrandProfileDetail({
                         </div>
                       )}
                       <dl className="grid gap-3 sm:grid-cols-2">
-                        {x.mechanism && <Info label="Cơ chế tác động / Hướng dẫn quay">{x.mechanism}</Info>}
+                        {x.mechanism && <Info label="Cơ chế tác động &amp; góc quay">{x.mechanism}</Info>}
                         {x.ingredients.length > 0 && <Info label="Thành phần chính">{x.ingredients.join('; ')}</Info>}
                         {x.targetUser && <Info label="Đối tượng phù hợp">{x.targetUser}</Info>}
                         {x.contraindications && <Info label="Chống chỉ định / Lưu ý">{x.contraindications}</Info>}

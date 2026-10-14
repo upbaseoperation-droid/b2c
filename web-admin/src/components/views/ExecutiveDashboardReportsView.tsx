@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState, useMemo, useDeferredValue } from 'react';
 import { Avatar, Tabs, Modal, NumberRoll, Status } from '../ui';
@@ -804,13 +804,13 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
         onNotify?.(json.syncResult.message, 'success');
       } else {
         onNotify?.(
-          `Đã đồng bộ 69 gian hàng B2C, 39 kết nối TikTok Seller, 6 chiến dịch PGM/LGM và 786 bản ghi File 3.2 vào cơ sở dữ liệu.`,
+          `Đã đồng bộ 69 gian hàng B2C, 39 kết nối TikTok Seller, 6 chiến dịch PGM/LGM và 786 đơn book vào cơ sở dữ liệu.`,
           'success'
         );
       }
     } catch {
       onNotify?.(
-        `Đã đối soát 12.554 dòng chiến dịch PGM/LGM, 4.211 dòng Creative TikTok Seller và 786 bản ghi File 3.2 cho 69 gian hàng B2C.`,
+        `Đã đối soát 12.554 dòng chiến dịch PGM/LGM, 4.211 dòng Creative TikTok Seller và 786 đơn book cho 69 gian hàng B2C.`,
         'success'
       );
     } finally {
@@ -841,7 +841,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
         { header: 'Hạn Mức Order Net (VNĐ)', key: 'budgetNet', width: 22 },
         { header: 'Order Affiliate Net (VNĐ)', key: 'affNet', width: 22 },
         { header: 'Order Self-Channel Net (VNĐ)', key: 'selfNet', width: 22 },
-        { header: 'Thực Chi File 3.2 (VNĐ)', key: 'actualSpent', width: 22 },
+        { header: 'Thực Chi Duyệt Book (VNĐ)', key: 'actualSpent', width: 22 },
         { header: 'Tỷ Lệ Giải Ngân Net (%)', key: 'burnPct', width: 18 },
         { header: 'Chỉ Tiêu Video Trả Phí (Paid)', key: 'paidVid', width: 20 },
         { header: 'Chỉ Tiêu Mẫu Miễn Phí (FOC)', key: 'focVid', width: 20 },
@@ -934,8 +934,8 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
         });
       });
 
-      // Sheet 3: Danh sách Video Booking File 3.2
-      const wsVideos = wb.addWorksheet('3. Video Đã Booking (File 3.2)');
+      // Sheet 3: Danh sách Video Booking
+      const wsVideos = wb.addWorksheet('3. Video Đã Booking');
       wsVideos.columns = [
         { header: 'Mã Booking', key: 'code', width: 16 },
         { header: 'Kênh TikTok / KOC', key: 'channelId', width: 22 },
@@ -1135,7 +1135,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
       `- Phạm vi đang lọc: ${filteredStores.length} / 69 gian hàng B2C (B2C phụ trách = 1), thuộc ${allBrands.length} Thương hiệu.`,
       `- Cơ cấu quản trị: 8 gian hàng có Trưởng nhóm (Nguyễn Thị Ngọc Tâm), 61 gian hàng trình trực tiếp Giám đốc Marketing B2C (Đặng Thị Yến Nhi).`,
       `- Hạn mức Order Gross: ${formatVndShort(kpiSummary.totalBudgetGross)} | Hạn mức Order Net: ${formatVndShort(kpiSummary.totalBudgetNet)}.`,
-      `- Thực tế duyệt chi lũy kế (File 3.2): ${formatVndShort(kpiSummary.totalActualSpentNet)} (Đạt ${kpiSummary.pacingNetPct}% trần Net).`,
+      `- Thực tế duyệt chi lũy kế: ${formatVndShort(kpiSummary.totalActualSpentNet)} (Đạt ${kpiSummary.pacingNetPct}% trần Net).`,
       `- Sản lượng Video: Đã lên sóng ${kpiSummary.totalActualAiredVideos} video / Chỉ tiêu ${kpiSummary.totalTargetPaidVideos} Video Paid KOC + ${kpiSummary.totalTargetFocVideos} suất gửi mẫu miễn phí 0đ (FOC) + ${kpiSummary.totalTargetSelfVideos} video kênh Brand.`,
       `- Độ đồng loạt lịch air (W40-W45): 413/623 video (66.3%) nổ tập trung trong sóng Mega Sale 10.10 (06/10-10/10, đỉnh 09/10 đạt 137 video/ngày); 20 gian hàng Air đồng loạt chuẩn sóng, 13 gian hàng có gom sóng nhưng thiếu lịch p_air_date, 3 gian hàng rải rác/trễ sóng (Kutieskin Mama trễ 61/71 video ngày 01/10), 21 gian hàng nghẽn khâu vận đơn/chờ KOC quay.`,
       `- Cảnh báo tài chính: ${kpiSummary.unbudgetedCount} gian hàng chi khi hạn mức 0đ (Unbudgeted Spend), ${kpiSummary.overbudgetCount} gian hàng vượt trần Net (Overbudget), ${kpiSummary.slowBurnCount} gian hàng giải ngân chậm (<25%).`,
@@ -1159,7 +1159,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
             Phạm vi chuẩn: 69 Gian hàng B2C (B2C phụ trách = 1)
           </span>
           <span className="inline-flex items-center gap-1 .5 text-xs font-medium text-ink-2">
-            Kỳ đối soát: Tháng 10/2026 (File 4.1 · 4.1.1 · 3.2 &amp; TikTok Seller)
+            Kỳ đối soát: Tháng 10/2026
           </span>
         </div>
 
@@ -1302,7 +1302,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                     </span>
                   </div>
                   <p className="text-xs text-ink-2 mt-1">
-                    Thực chi duyệt book File 3.2:{' '}
+                    Thực chi duyệt book:{' '}
                     <strong className="font-mono text-ink">{formatVndShort(kpiSummary.totalActualSpentNet)}</strong>{' '}
                     / Trần Order Net Kế toán:{' '}
                     <strong className="font-mono text-accent">{formatVndShort(kpiSummary.totalBudgetNet)}</strong>{' '}
@@ -1399,7 +1399,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
               <div className="mt-3.5 space-y-2">
                 <div>
                   <div className="flex items-center justify-between text-2xs font-semibold mb-1">
-                    <span className="text-ink-2">Tỷ lệ Video Đã Air Lên Sóng / Tổng Đơn Đã Book Tháng 10 (File 3.2):</span>
+                    <span className="text-ink-2">Tỷ lệ Video Đã Lên Sóng / Tổng Đơn Đã Book Tháng 10:</span>
                     <span className="font-mono font-semibold text-positive">
                       {kpiSummary.totalActualAiredVideos} / 786 đơn ({kpiSummary.airedVsBookedPct}%) · Chỉ tiêu Paid: {kpiSummary.totalTargetPaidVideos} ({kpiSummary.airedVsPaidPct}%)
                     </span>
@@ -1579,7 +1579,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
               {/* Khối 2A: Bóc tách Ngân sách Order Growth */}
               <div className="bg-white rounded-xl border border-line p-5 shadow-xs">
                 <h3 className="text-sm font-semibold text-ink mb-1">
-                  Bóc Tách Cấu Trúc Ngân Sách Order Growth (File 4.1)
+                  Cấu Trúc Ngân Sách Order Growth
                 </h3>
                 <div className="space-y-3.5">
                   {/* Affiliate KOC */}
@@ -1652,7 +1652,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                       </span>
                     </div>
                     <div className="flex items-center justify-between text-2xs text-ink-3">
-                      <span>Tổng số ca Livestream kế hoạch (File 4.1.1):</span>
+                      <span>Tổng số ca Livestream kế hoạch:</span>
                       <span className="font-semibold text-ink">
                         {kpiSummary.totalTargetLiveSessions.toLocaleString('vi-VN')} phiên Live
                       </span>
@@ -2326,7 +2326,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3.5">
             <div className="bg-white rounded-xl border border-line p-4 shadow-xs">
               <div className="flex items-center justify-between text-xs text-ink-3 font-medium mb-1">
-                <span>Tổng Đơn Đã Book (File 3.2)</span>
+                <span>Tổng Đơn Đã Book</span>
                 <PlaySquare className="w-4 h-4 text-accent" />
               </div>
               <div className="text-xl font-semibold text-ink font-mono">
@@ -2653,7 +2653,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                       : 'bg-sunken text-ink-2 hover:bg-sunken'
                   }`}
                 >
-                  Sổ Cái Video Đã Booking File 3.2 ({filteredBookedVideos.length} bản ghi)
+                  Sổ Cái Video Đã Booking ({filteredBookedVideos.length} bản ghi)
                 </button>
                 <button
                   type="button"
@@ -2693,7 +2693,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                       <th className="py-2.5 px-3 font-semibold">Chuyên Viên (PIC)</th>
                       <th className="py-2.5 px-3 font-semibold">Loại Hình & Định Dạng</th>
                       <th className="py-2.5 px-3 font-semibold text-center">Bậc KL</th>
-                      <th className="py-2.5 px-3 font-semibold text-right">Cát-xê (File 3.2)</th>
+                      <th className="py-2.5 px-3 font-semibold text-right">Cát-xê</th>
                       <th className="py-2.5 px-3 font-semibold text-right">GMV TikTok Seller</th>
                       <th className="py-2.5 px-3 font-semibold text-center">ROAS</th>
                       <th className="py-2.5 px-3 font-semibold">Trạng Thái Thanh Toán</th>
@@ -2906,7 +2906,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
               <div className="flex items-center justify-between mb-3">
                 <div>
                   <h3 className="text-sm font-semibold text-ink">
-                    Băng Tải Tiến Độ Thực Thi &amp; SLA Chứng Từ 786 Đơn Video (File 3.2)
+                    Tiến Độ Thực Thi &amp; SLA Chứng Từ 786 Đơn Video
                   </h3>
                   </div>
                 <span className=".5 text-xs font-mono font-semibold text-positive -positive/20">
@@ -3253,7 +3253,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
             >
               <div className="flex items-center justify-between mb-2">
                 <span className="text-2xs font-semibold text-ink-2uppercase bg-accent text-white">
-                  Top Điểm Đánh Giá Toàn Diện
+                  Top Điểm Đánh Giá Tổng Hợp
                 </span>
                 <Award className="w-4 h-4 text-accent" />
               </div>
@@ -3293,7 +3293,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                 },
                 {
                   key: 'STAR',
-                  label: `Ngôi sao toàn diện: Air cao & ROAS tốt (${staffQuadrantCounts.star} NS)`,
+                  label: `Nhóm dẫn đầu: Air cao & ROAS tốt (${staffQuadrantCounts.star} NS)`,
                   activeClass: 'bg-positive text-white',
                   idleClass: 'bg-positive-soft text-positive border border-positive/20 hover:bg-positive-soft'
                 },
@@ -3652,7 +3652,6 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                     <span className="text-xs font-semibold text-ink">
                       Gian Hàng Do {focusedStaffProfile.name} Phụ Trách ({focusedStaffProfile.staffStores.length} Gian)
                     </span>
-                    <span className="text-2xs text-ink-3">Nhấn vào gian hàng để xem chi tiết</span>
                   </div>
                   {focusedStaffProfile.staffStores.length === 0 ? (
                     <div className="p-6 text-center text-xs text-ink-3">
@@ -3722,7 +3721,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                   </div>
                   {focusedStaffProfile.staffVideos.length === 0 ? (
                     <div className="p-6 text-center text-xs text-ink-3">
-                      Nhân sự đã thực hiện <strong>{focusedStaffProfile.actualBookedVideos} đơn book</strong> ({focusedStaffProfile.actualAiredVideos} video đã air) trên hệ thống File 3.2.
+                      Nhân sự đã thực hiện <strong>{focusedStaffProfile.actualBookedVideos} đơn book</strong> ({focusedStaffProfile.actualAiredVideos} video đã air) trên hệ thống.
                     </div>
                   ) : (
                     <div className="overflow-x-auto max-h-60">
@@ -4026,7 +4025,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                 </div>
               </div>
 
-              {/* Thanh sắp xếp 1 chạm theo từng chỉ số Hiệu suất & Hiệu quả */}
+              {/* Thanh sắp xếp theo từng chỉ số Hiệu suất & Hiệu quả */}
               <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-line">
                 <span className="text-2xs font-semibold text-ink-2">
                   Sắp xếp bảng xếp hạng nhân viên theo:
@@ -4453,7 +4452,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
 
             <div>
               <h4 className="font-semibold text-ink mb-2">
-                Danh Sách Các Video Nhân Sự Đã Trực Tiếp Book Trong File 3.2:
+                Danh Sách Các Video Nhân Sự Đã Trực Tiếp Book:
               </h4>
               {(() => {
                 const staffVids = B2C_BOOKED_VIDEOS_OCT_2026.filter(
@@ -4535,7 +4534,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                 <strong className="text-ink">{inspectVideo.format} · {inspectVideo.videoType} ({inspectVideo.kl})</strong>
               </div>
               <div className="flex justify-between">
-                <span className="text-ink-3">Chi phí duyệt chi (File 3.2):</span>
+                <span className="text-ink-3">Chi phí duyệt chi:</span>
                 <strong className="font-mono text-critical">{formatVndShort(inspectVideo.cost)}</strong>
               </div>
               <div className="flex justify-between">
@@ -4571,7 +4570,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
         onClose={() => setIsReportDrawerOpen(false)}
         purposeId={dashboardReportMeta.purposeId}
         moduleTitle={dashboardReportMeta.moduleTitle}
-        moduleSubtitle="Tổng hợp trực tiếp từ dữ liệu 69 gian hàng B2C, File 4.1, File 3.2 và TikTok Seller đang lọc"
+        moduleSubtitle="Tổng hợp trực tiếp từ dữ liệu 69 gian hàng B2C và TikTok Seller đang lọc"
         contextDataText={dashboardReportMeta.contextDataText}
         onNotify={onNotify}
       />

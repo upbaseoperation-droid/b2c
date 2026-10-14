@@ -1955,7 +1955,7 @@ export function KocListingBatchHubView({
                     <div>Nhân sự đã thêm: <strong>{newKocDuplicate.assignedStaffName || 'Chưa rõ'}</strong></div>
                     <div>Hồ sơ: <strong>{newKocDuplicate.kocName}</strong> · {newKocDuplicate.kocHandle} · Nhãn: <strong>{newKocDuplicate.brandName}</strong></div>
                     <div>Thù lao đề xuất: <strong>{formatVnd(newKocDuplicate.proposedFee)}</strong></div>
-                    <div className="text-amber-700 italic pt-0.5">Vui lòng kiểm tra với đồng nghiệp để tránh liên hệ trùng KOC hoặc chênh lệch giá.</div>
+                    <div className="text-amber-700 font-medium pt-0.5">Tránh liên hệ trùng KOC hoặc chênh lệch giá.</div>
                   </div>
                 </div>
               )}

@@ -2519,8 +2519,8 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
       <Modal
         open={isLarkbaseModalOpen}
         onClose={() => setIsLarkbaseModalOpen(false)}
-        title="Bảng hứng Kế hoạch B2C Booking từ Larkbase (API / Webhook)"
-        description="Hứng các dòng kế hoạch B2C Booking đã được duyệt trên Larkbase (File 4.1 & 4.1.1, lọc B2C phụ trách = 1) và đồng bộ về danh sách Kế hoạch tháng."
+        title="Đồng bộ Kế hoạch B2C Booking từ Larkbase"
+        description="Đồng bộ các kế hoạch B2C Booking đã được duyệt trên Larkbase về danh sách Kế hoạch tháng."
         size="xl"
         footer={
           <div className="flex flex-wrap items-center justify-between gap-2 w-full">
@@ -2555,7 +2555,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                 <span className="text-2xs text-ink-3">
                   · {hasLiveLarkCredentials
                     ? 'Đã cấu hình LARK_APP_ID / SECRET'
-                    : 'Đang dùng bộ dữ liệu chuẩn File 4.1.1 (Chờ cấu hình .env)'}
+                    : 'Đang dùng bộ dữ liệu chuẩn (Chờ cấu hình .env)'}
                 </span>
               </div>
               <span className="text-2xs text-ink-3">
@@ -2615,7 +2615,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                       <th className="py-2.5 px-3">Gian hàng &amp; Brand</th>
                       <th className="py-2.5 px-3">Nhân sự B2C &amp; Cấp duyệt</th>
                       <th className="py-2.5 px-3 text-right">Hạn mức Net / Gross</th>
-                      <th className="py-2.5 px-3">4 Đầu việc B2C (File 4.1.1)</th>
+                      <th className="py-2.5 px-3">4 Đầu việc B2C</th>
                       <th className="py-2.5 px-3">Thông tin duyệt Lark</th>
                       <th className="py-2.5 px-3 text-right">Thao tác</th>
                     </tr>

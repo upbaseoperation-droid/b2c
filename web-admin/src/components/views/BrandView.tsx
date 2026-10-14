@@ -713,10 +713,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
                 <div className="p-3 bg-white rounded-lg border border-slate-200 space-y-2">
                   <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
                     <span className="font-semibold text-slate-700">
-                      Thương hiệu KHÔNG có Campaign ({brandCoverageForMonth.targetMonth}) — Duy trì Always-on
-                    </span>
-                    <span className="text-2xs text-slate-500">
-                      Nhấn vào Brand để khởi tạo Campaign mới
+                      Thương hiệu không có Campaign ({brandCoverageForMonth.targetMonth}) — Duy trì thường nhật
                     </span>
                   </div>
                   <div className="flex flex-wrap gap-1.5">

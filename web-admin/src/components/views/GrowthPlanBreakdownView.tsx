@@ -93,7 +93,7 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
     }));
 
     if (onNotify) {
-      onNotify(`Đã nạp thành công dữ liệu ${p.week} từ File 4.1.1 (${p.storeName}) vào phân bổ KOC!`);
+      onNotify(`Đã nạp thành công dữ liệu ${p.week} (${p.storeName}) vào phân bổ KOC!`);
     }
   };
 
@@ -565,7 +565,7 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
               <div className="flex items-center gap-2">
                 <span className="text-xs font-semibold text-blue-900 flex items-center gap-1.5">
                   <Zap className="w-3.5 h-3.5 text-blue-600" />
-                  Nạp kế hoạch tuần thực tế (File 4.1.1 - 7 bậc KL1-KL7):
+                  Nạp kế hoạch tuần thực tế (7 bậc KL1-KL7):
                 </span>
                 <select
                   value={selectedPlan411Id}

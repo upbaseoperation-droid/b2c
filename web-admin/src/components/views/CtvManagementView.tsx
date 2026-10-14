@@ -1572,7 +1572,7 @@ export function CtvProfileDetail({
                 <div className="px-4 py-3 border-b border-line flex items-center justify-between">
                   <SectionHeader
                     title="Danh sách video kênh Brand đã & đang thực hiện"
-                    description="Bấm vào một dòng video để xem chi tiết kịch bản, file nộp và nhật ký nhận xét/chỉnh sửa qua từng vòng."
+                    description="Chi tiết kịch bản, video và nhật ký chỉnh sửa qua từng vòng."
                   />
                 </div>
                 <DataTable
