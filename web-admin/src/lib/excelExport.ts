@@ -1,5 +1,5 @@
 import ExcelJS from 'exceljs';
-import { GrowthDemandItem, GrowthDemandBreakdownTier, InputPlanBreakdownState } from './types';
+import { GrowthDemandItem, GrowthDemandBreakdownTier, InputPlanBreakdownState, BrandOneSheetPlanData } from './types';
 import { MOCK_WEEKLY_PLANS_411 } from './mockData';
 
 export async function exportPlanOrderToExcel(demand: GrowthDemandItem, breakdown: GrowthDemandBreakdownTier[]) {
@@ -725,3 +725,662 @@ export async function exportInputPlanStudioToExcel(state: InputPlanBreakdownStat
   a.click();
   URL.revokeObjectURL(url);
 }
+
+// =========================================================================
+// XUẤT FILE 1-SHEET MONTHLY CONTENT & KEY VISUAL PLAN TRÌNH BRAND (5 PHÂN VÙNG)
+// =========================================================================
+export async function exportBrandMonthlyOneSheetToExcel(data: BrandOneSheetPlanData) {
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = 'Upbase B2C Operations';
+  workbook.lastModifiedBy = data.preparedBy || 'Upbase B2C';
+  workbook.created = new Date();
+
+  const ws = workbook.addWorksheet('Monthly Plan', { views: [{ showGridLines: true }] });
+
+  const borderGray = 'CBD5E1';
+  const defaultBorder: Partial<ExcelJS.Borders> = {
+    top: { style: 'thin', color: { argb: borderGray } },
+    left: { style: 'thin', color: { argb: borderGray } },
+    bottom: { style: 'thin', color: { argb: borderGray } },
+    right: { style: 'thin', color: { argb: borderGray } },
+  };
+
+  const sectionHeaderFill: ExcelJS.Fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: '0F172A' },
+  };
+  const tableHeaderFill: ExcelJS.Fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: '1E3A8A' },
+  };
+  const subHeaderFill: ExcelJS.Fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: 'F1F5F9' },
+  };
+  const totalFill: ExcelJS.Fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: 'DBEAFE' },
+  };
+
+  const sectionFont = { name: 'Segoe UI', size: 11, bold: true, color: { argb: 'FFFFFF' } };
+  const thFont = { name: 'Segoe UI', size: 10, bold: true, color: { argb: 'FFFFFF' } };
+  const labelFont = { name: 'Segoe UI', size: 10, bold: true, color: { argb: '1E293B' } };
+  const bodyFont = { name: 'Segoe UI', size: 10, color: { argb: '0F172A' } };
+
+  let r = 2;
+
+  const addSectionHeader = (title: string) => {
+    ws.mergeCells(r, 1, r, 12);
+    const cell = ws.getCell(r, 1);
+    cell.value = title;
+    cell.fill = sectionHeaderFill;
+    cell.font = sectionFont;
+    cell.alignment = { vertical: 'middle', horizontal: 'left' };
+    ws.getRow(r).height = 26;
+    r += 1;
+  };
+
+  // Title Banner
+  ws.mergeCells(r, 1, r, 12);
+  ws.getCell(r, 1).value = `${data.brandName.toUpperCase()} • PLAN THÁNG ${data.month} • MONTHLY CONTENT & KEY VISUAL PLAN`;
+  ws.getCell(r, 1).font = { name: 'Segoe UI', size: 14, bold: true, color: { argb: '0F172A' } };
+  ws.getRow(r).height = 28;
+  r += 1;
+
+  ws.mergeCells(r, 1, r, 12);
+  ws.getCell(r, 1).value = data.hasCampaign
+    ? `Chế độ: Tháng có Chiến dịch [${data.campaignCode || ''}] ${data.campaignTitle || ''} (${data.campaignPhaseName || data.month})`
+    : `Chế độ: Vận hành Duy trì thường nhật (Always-on — Tháng không có Campaign riêng)`;
+  ws.getCell(r, 1).font = { name: 'Segoe UI', size: 9, italic: true, color: { argb: '475569' } };
+  r += 1;
+
+  // Meta Info Rows (R4-R5)
+  ws.getCell(r, 1).value = 'Thương hiệu';
+  ws.getCell(r, 1).font = labelFont;
+  ws.mergeCells(r, 2, r, 6);
+  ws.getCell(r, 2).value = data.brandName;
+  ws.getCell(r, 7).value = 'Tháng (mm/yyyy)';
+  ws.getCell(r, 7).font = labelFont;
+  ws.mergeCells(r, 8, r, 12);
+  ws.getCell(r, 8).value = data.month;
+  for (let c = 1; c <= 12; c++) ws.getCell(r, c).border = defaultBorder;
+  ws.getRow(r).height = 22;
+  r += 1;
+
+  ws.getCell(r, 1).value = 'Người lập / duyệt';
+  ws.getCell(r, 1).font = labelFont;
+  ws.mergeCells(r, 2, r, 6);
+  ws.getCell(r, 2).value = data.preparedBy;
+  ws.getCell(r, 7).value = 'Ngày chốt / trạng thái';
+  ws.getCell(r, 7).font = labelFont;
+  ws.mergeCells(r, 8, r, 12);
+  ws.getCell(r, 8).value = data.statusAndCutoffNote;
+  for (let c = 1; c <= 12; c++) ws.getCell(r, c).border = defaultBorder;
+  ws.getRow(r).height = 22;
+  r += 2;
+
+  // =========================================================================
+  // 01 ĐỊNH HƯỚNG THÁNG
+  // =========================================================================
+  addSectionHeader('01  ĐỊNH HƯỚNG THÁNG');
+  const orientationRows: Array<[string, string]> = [
+    ['Vai trò trong plan năm', data.orientation.roleInYearPlan],
+    ['Mục tiêu & rào cản cần xử lý', data.orientation.objectivesAndBarriers],
+    ['Hero SKU / USP / RTB', data.orientation.heroSkusUspRtb],
+    ['Seasonal opportunity', data.orientation.seasonalOpportunity],
+    ['Big idea / monthly theme', data.orientation.bigIdeaMonthlyTheme],
+    ['Review / bài học tháng trước', data.orientation.previousMonthReview],
+    ['Tệp khách hàng & insight', data.orientation.targetAudienceInsight],
+    ['Combo / deal / quà tặng', data.orientation.comboPromoOffer],
+    ['Campaign / mốc sale', data.orientation.campaignSaleMilestones],
+    ['Key message', data.orientation.keyMessageAndCta],
+  ];
+
+  orientationRows.forEach(([k, v]) => {
+    ws.getCell(r, 1).value = k;
+    ws.getCell(r, 1).font = labelFont;
+    ws.getCell(r, 1).fill = subHeaderFill;
+    ws.mergeCells(r, 2, r, 12);
+    ws.getCell(r, 2).value = v;
+    ws.getCell(r, 2).font = bodyFont;
+    ws.getCell(r, 2).alignment = { vertical: 'middle', wrapText: true };
+    for (let c = 1; c <= 12; c++) ws.getCell(r, c).border = defaultBorder;
+    ws.getRow(r).height = 28;
+    r += 1;
+  });
+  r += 1;
+
+  // =========================================================================
+  // 02 KẾ HOẠCH KPI THÁNG
+  // =========================================================================
+  addSectionHeader('02  KẾ HOẠCH KPI THÁNG');
+  const kpiHeaderRow = ws.getRow(r);
+  kpiHeaderRow.height = 24;
+  ws.mergeCells(r, 1, r, 2);
+  ws.getCell(r, 1).value = 'Nhóm chỉ tiêu';
+  ws.mergeCells(r, 3, r, 6);
+  ws.getCell(r, 3).value = 'Mục tiêu chính';
+  ws.mergeCells(r, 7, r, 8);
+  ws.getCell(r, 7).value = 'Target Shopee';
+  ws.mergeCells(r, 9, r, 10);
+  ws.getCell(r, 9).value = 'Target TikTok Shop';
+  ws.mergeCells(r, 11, r, 12);
+  ws.getCell(r, 11).value = 'Total';
+  for (let c = 1; c <= 12; c++) {
+    ws.getCell(r, c).fill = tableHeaderFill;
+    ws.getCell(r, c).font = thFont;
+    ws.getCell(r, c).alignment = { horizontal: 'center', vertical: 'middle' };
+    ws.getCell(r, c).border = defaultBorder;
+  }
+  r += 1;
+
+  const sp = data.shopeeKpi;
+  const tt = data.tiktokKpi;
+  const spPromoCost =
+    sp.costBookingVideoAff +
+    sp.costVideoSelfChannel +
+    sp.costAds +
+    sp.costBookingLiveAff +
+    sp.costLiveSelfChannel +
+    sp.costDisplayPackage +
+    sp.costOtherNet;
+  const ttPromoCost =
+    tt.costBookingVideoAff +
+    tt.costVideoSelfChannel +
+    tt.costAds +
+    tt.costBookingLiveAff +
+    tt.costLiveSelfChannel +
+    tt.costDisplayPackage +
+    tt.costOtherNet;
+  const totGmv = sp.gmvSeller + tt.gmvSeller;
+  const totNmv = sp.nmvSeller + tt.nmvSeller;
+  const totPromoCost = spPromoCost + ttPromoCost;
+  const spOtherComm = sp.costAffiliateCommission + sp.costAffiliateAdsCommission;
+  const ttOtherComm = tt.costAffiliateCommission + tt.costAffiliateAdsCommission;
+
+  const kpiRows: Array<{
+    group: string;
+    metric: string;
+    spVal: number;
+    ttVal: number;
+    totVal: number;
+    fmt: 'VND' | 'INT' | 'PCT';
+  }> = [
+    { group: 'Chỉ số chính', metric: 'GMV nhà bán', spVal: sp.gmvSeller, ttVal: tt.gmvSeller, totVal: totGmv, fmt: 'VND' },
+    { group: '', metric: 'NMV nhà bán', spVal: sp.nmvSeller, ttVal: tt.nmvSeller, totVal: totNmv, fmt: 'VND' },
+    { group: '', metric: 'Đơn hàng', spVal: sp.orders, ttVal: tt.orders, totVal: sp.orders + tt.orders, fmt: 'INT' },
+    { group: '', metric: 'Lượt truy cập', spVal: sp.traffic, ttVal: tt.traffic, totVal: sp.traffic + tt.traffic, fmt: 'INT' },
+    { group: '', metric: 'Tỷ lệ chuyển đổi (CR)', spVal: sp.conversionRate, ttVal: tt.conversionRate, totVal: (sp.orders + tt.orders) / Math.max(1, sp.traffic + tt.traffic), fmt: 'PCT' },
+    { group: '', metric: 'Giá trung bình/đơn hàng (AOV)', spVal: sp.aov, ttVal: tt.aov, totVal: Math.round(totGmv / Math.max(1, sp.orders + tt.orders)), fmt: 'VND' },
+    { group: '', metric: 'Tỷ lệ hủy', spVal: sp.cancellationRate, ttVal: tt.cancellationRate, totVal: 1 - totNmv / Math.max(1, totGmv), fmt: 'PCT' },
+    { group: '', metric: 'Tổng chi phí thúc đẩy (-VAT)', spVal: spPromoCost, ttVal: ttPromoCost, totVal: totPromoCost, fmt: 'VND' },
+    { group: '', metric: '% Chi phí thúc đẩy / NMV', spVal: spPromoCost / Math.max(1, sp.nmvSeller), ttVal: ttPromoCost / Math.max(1, tt.nmvSeller), totVal: totPromoCost / Math.max(1, totNmv), fmt: 'PCT' },
+    { group: 'Doanh thu các hoạt động', metric: 'GMV từ các hoạt động', spVal: sp.gmvSeller, ttVal: tt.gmvSeller, totVal: totGmv, fmt: 'VND' },
+    { group: '', metric: 'GMV video', spVal: sp.gmvVideo, ttVal: tt.gmvVideo, totVal: sp.gmvVideo + tt.gmvVideo, fmt: 'VND' },
+    { group: '', metric: 'GMV Livestream', spVal: sp.gmvLivestream, ttVal: tt.gmvLivestream, totVal: sp.gmvLivestream + tt.gmvLivestream, fmt: 'VND' },
+    { group: '', metric: 'GMV Thẻ sản phẩm', spVal: sp.gmvProductCard, ttVal: tt.gmvProductCard, totVal: sp.gmvProductCard + tt.gmvProductCard, fmt: 'VND' },
+    { group: 'Chi phí Marketing thúc đẩy', metric: 'Tổng chi phí Marketing (-VAT)', spVal: spPromoCost, ttVal: ttPromoCost, totVal: totPromoCost, fmt: 'VND' },
+    { group: '', metric: 'Chi phí booking video affiliate', spVal: sp.costBookingVideoAff, ttVal: tt.costBookingVideoAff, totVal: sp.costBookingVideoAff + tt.costBookingVideoAff, fmt: 'VND' },
+    { group: '', metric: 'Chi phí video self channel', spVal: sp.costVideoSelfChannel, ttVal: tt.costVideoSelfChannel, totVal: sp.costVideoSelfChannel + tt.costVideoSelfChannel, fmt: 'VND' },
+    { group: '', metric: 'Chi phí ads', spVal: sp.costAds, ttVal: tt.costAds, totVal: sp.costAds + tt.costAds, fmt: 'VND' },
+    { group: '', metric: 'Chi phí booking livestream affiliate', spVal: sp.costBookingLiveAff, ttVal: tt.costBookingLiveAff, totVal: sp.costBookingLiveAff + tt.costBookingLiveAff, fmt: 'VND' },
+    { group: '', metric: 'Chi phí livestream self channel', spVal: sp.costLiveSelfChannel, ttVal: tt.costLiveSelfChannel, totVal: sp.costLiveSelfChannel + tt.costLiveSelfChannel, fmt: 'VND' },
+    { group: '', metric: 'Chi phí gói dịch vụ hiển thị', spVal: sp.costDisplayPackage, ttVal: tt.costDisplayPackage, totVal: sp.costDisplayPackage + tt.costDisplayPackage, fmt: 'VND' },
+    { group: '', metric: 'Chi phí khác (net)', spVal: sp.costOtherNet, ttVal: tt.costOtherNet, totVal: sp.costOtherNet + tt.costOtherNet, fmt: 'VND' },
+    { group: 'Chi phí khác (Ghi chung phí sàn)', metric: 'Tổng chi phí khác', spVal: spOtherComm, ttVal: ttOtherComm, totVal: spOtherComm + ttOtherComm, fmt: 'VND' },
+    { group: '', metric: 'Chi phí tiếp thị liên kết', spVal: sp.costAffiliateCommission, ttVal: tt.costAffiliateCommission, totVal: sp.costAffiliateCommission + tt.costAffiliateCommission, fmt: 'VND' },
+    { group: '', metric: 'Chi phí tiếp thị liên kết (có chạy ads)', spVal: sp.costAffiliateAdsCommission, ttVal: tt.costAffiliateAdsCommission, totVal: sp.costAffiliateAdsCommission + tt.costAffiliateAdsCommission, fmt: 'VND' },
+  ];
+
+  kpiRows.forEach((row) => {
+    ws.mergeCells(r, 1, r, 2);
+    ws.getCell(r, 1).value = row.group;
+    ws.getCell(r, 1).font = labelFont;
+    ws.mergeCells(r, 3, r, 6);
+    ws.getCell(r, 3).value = row.metric;
+    ws.getCell(r, 3).font = row.group ? labelFont : bodyFont;
+    ws.mergeCells(r, 7, r, 8);
+    ws.getCell(r, 7).value = row.spVal;
+    ws.mergeCells(r, 9, r, 10);
+    ws.getCell(r, 9).value = row.ttVal;
+    ws.mergeCells(r, 11, r, 12);
+    ws.getCell(r, 11).value = row.totVal;
+
+    const numFmt = row.fmt === 'PCT' ? '0.0%' : '#,##0';
+    [7, 9, 11].forEach((c) => {
+      ws.getCell(r, c).numFmt = numFmt;
+      ws.getCell(r, c).alignment = { horizontal: 'right', vertical: 'middle' };
+      ws.getCell(r, c).font = row.group ? labelFont : bodyFont;
+    });
+    for (let c = 1; c <= 12; c++) ws.getCell(r, c).border = defaultBorder;
+    ws.getRow(r).height = 20;
+    r += 1;
+  });
+
+  ws.mergeCells(r, 1, r, 12);
+  ws.getCell(r, 1).value = data.kpiBalanceNote;
+  ws.getCell(r, 1).font = { name: 'Segoe UI', size: 9, italic: true, color: { argb: '475569' } };
+  r += 2;
+
+  // =========================================================================
+  // 03 KEY VISUAL CHUNG CỦA THÁNG
+  // =========================================================================
+  addSectionHeader('03  KEY VISUAL CHUNG CỦA THÁNG');
+  const kvRows: Array<[string, string]> = [
+    ['Chủ đề', data.keyVisual.theme || ''],
+    ['Font', data.keyVisual.fonts || ''],
+    ['Moodboard', data.keyVisual.moodboard || ''],
+    ['Link proposal', data.keyVisual.proposalUrl || ''],
+    ['CTKM', data.keyVisual.promoTextOnKv || ''],
+    ['Ngày treo', data.keyVisual.hangDate || ''],
+    ['Ngày order', data.keyVisual.orderDate || ''],
+    ['Ngày cần lên Ref', data.keyVisual.refDate || ''],
+  ];
+
+  kvRows.forEach(([k, v]) => {
+    ws.getCell(r, 1).value = k;
+    ws.getCell(r, 1).font = labelFont;
+    ws.getCell(r, 1).fill = subHeaderFill;
+    ws.mergeCells(r, 2, r, 12);
+    ws.getCell(r, 2).value = v;
+    ws.getCell(r, 2).font = bodyFont;
+    ws.getCell(r, 2).alignment = { vertical: 'middle', wrapText: true };
+    for (let c = 1; c <= 12; c++) ws.getCell(r, c).border = defaultBorder;
+    ws.getRow(r).height = 26;
+    r += 1;
+  });
+  r += 1;
+
+  // =========================================================================
+  // 04 TIKTOK SHOP • CONTENT, KOC & BOOKING
+  // =========================================================================
+  addSectionHeader('04  TIKTOK SHOP • CONTENT, KOC & BOOKING');
+
+  // 4A. Số lượng KOC theo tuần
+  ws.mergeCells(r, 1, r, 12);
+  ws.getCell(r, 1).value = '4A. Chi tiết Số lượng Video Affiliate theo tuần (W1–W5)';
+  ws.getCell(r, 1).font = labelFont;
+  r += 1;
+
+  const ttQtyHeaders = ['Tuần', 'Tổng video AFF', 'TAP', 'KL1', 'KL2', 'KL3', 'KL4', 'KL5', 'KL6', 'KL7', 'Owner / note'];
+  ttQtyHeaders.forEach((h, idx) => {
+    const c = ws.getCell(r, idx + 1);
+    c.value = h;
+    c.fill = tableHeaderFill;
+    c.font = thFont;
+    c.alignment = { horizontal: 'center', vertical: 'middle' };
+    c.border = defaultBorder;
+  });
+  ws.getRow(r).height = 22;
+  r += 1;
+
+  data.tiktokWeeklyRows.forEach((w) => {
+    const totV = w.tapCount + w.kl1Count + w.kl2Count + w.kl3Count + w.kl4Count + w.kl5Count + w.kl6Count + w.kl7Count;
+    const vals = [
+      w.week,
+      totV,
+      w.tapCount,
+      w.kl1Count,
+      w.kl2Count,
+      w.kl3Count,
+      w.kl4Count,
+      w.kl5Count,
+      w.kl6Count,
+      w.kl7Count,
+      `Booking | ${w.dateRange} | ${totV} video`,
+    ];
+    vals.forEach((v, idx) => {
+      const c = ws.getCell(r, idx + 1);
+      c.value = v;
+      c.font = bodyFont;
+      c.border = defaultBorder;
+      c.alignment = { horizontal: idx === 10 ? 'left' : 'center', vertical: 'middle' };
+    });
+    ws.getRow(r).height = 20;
+    r += 1;
+  });
+  r += 1;
+
+  // 4B. Ngân sách KOC theo tuần
+  ws.mergeCells(r, 1, r, 12);
+  ws.getCell(r, 1).value = '4B. Chi tiết Ngân sách Booking Affiliate theo tuần (VNĐ - Chưa VAT)';
+  ws.getCell(r, 1).font = labelFont;
+  r += 1;
+
+  const ttBudHeaders = ['Tuần', 'Tổng Chi phí', 'TAP', 'KL1', 'KL2', 'KL3', 'KL4', 'NS KL5', 'NS KL6', 'NS KL7', 'Cơ sở net/gross'];
+  ttBudHeaders.forEach((h, idx) => {
+    const c = ws.getCell(r, idx + 1);
+    c.value = h;
+    c.fill = tableHeaderFill;
+    c.font = thFont;
+    c.alignment = { horizontal: 'center', vertical: 'middle' };
+    c.border = defaultBorder;
+  });
+  ws.getRow(r).height = 22;
+  r += 1;
+
+  data.tiktokWeeklyRows.forEach((w) => {
+    const totB = w.tapBudget + w.kl1Budget + w.kl2Budget + w.kl3Budget + w.kl4Budget + w.kl5Budget + w.kl6Budget + w.kl7Budget;
+    const vals = [
+      w.week,
+      totB,
+      w.tapBudget,
+      w.kl1Budget,
+      w.kl2Budget,
+      w.kl3Budget,
+      w.kl4Budget,
+      w.kl5Budget,
+      w.kl6Budget,
+      w.kl7Budget,
+      'Net / chưa VAT',
+    ];
+    vals.forEach((v, idx) => {
+      const c = ws.getCell(r, idx + 1);
+      c.value = v;
+      c.font = bodyFont;
+      c.border = defaultBorder;
+      if (typeof v === 'number') {
+        c.numFmt = '#,##0';
+        c.alignment = { horizontal: 'right', vertical: 'middle' };
+      } else {
+        c.alignment = { horizontal: idx === 0 ? 'center' : 'left', vertical: 'middle' };
+      }
+    });
+    ws.getRow(r).height = 20;
+    r += 1;
+  });
+  r += 1;
+
+  // 4C. Chi tiết Content TikTok
+  ws.mergeCells(r, 1, r, 12);
+  ws.getCell(r, 1).value = '4C. Chi tiết Content TikTok Shop (Video Affiliate & Video Self / Ảnh trượt)';
+  ws.getCell(r, 1).font = labelFont;
+  r += 1;
+
+  const ttCntHeaders = [
+    'Tuần / ngày air',
+    'SKU / combo',
+    'Nguồn / điểm chạm',
+    'Nhóm KL',
+    'Tệp KOC / tiêu chí chọn',
+    'Pillar',
+    'Angle / nhiệm vụ nội dung / brief',
+    'Type',
+    'Số lượng',
+    'Ngân sách VNĐ',
+    'PIC',
+  ];
+  ttCntHeaders.forEach((h, idx) => {
+    const c = ws.getCell(r, idx + 1);
+    c.value = h;
+    c.fill = tableHeaderFill;
+    c.font = thFont;
+    c.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+    c.border = defaultBorder;
+  });
+  ws.getRow(r).height = 24;
+  r += 1;
+
+  data.tiktokContentRows.forEach((row) => {
+    const vals = [
+      row.weekAndAirDate,
+      row.skuOrCombo,
+      row.touchpointSource,
+      row.klGroup,
+      row.kocCriteria,
+      row.pillar,
+      row.angleAndBrief,
+      row.contentType,
+      row.qty,
+      row.budgetVnd,
+      row.pic,
+    ];
+    vals.forEach((v, idx) => {
+      const c = ws.getCell(r, idx + 1);
+      c.value = v;
+      c.font = bodyFont;
+      c.border = defaultBorder;
+      if (idx === 8 || idx === 9) {
+        c.numFmt = '#,##0';
+        c.alignment = { horizontal: idx === 8 ? 'center' : 'right', vertical: 'middle' };
+      } else {
+        c.alignment = { vertical: 'middle', wrapText: true };
+      }
+    });
+    ws.getRow(r).height = 28;
+    r += 1;
+  });
+  r += 1;
+
+  // =========================================================================
+  // 05 SHOPEE • CHIẾN LƯỢC PILLAR, CONTENT & TARGET TUẦN
+  // =========================================================================
+  addSectionHeader('05  SHOPEE • CHIẾN LƯỢC PILLAR, CONTENT & TARGET TUẦN');
+
+  // 5A. Chiến lược Pillar P01-P05
+  const pillarHeaders = [
+    'Pillar ID',
+    'Tên pillar',
+    'Mục tiêu / hành vi',
+    'Insight / rào cản',
+    'Thông điệp / RTB',
+    'Angle ưu tiên',
+    'Format phù hợp',
+    'Tỷ trọng video',
+    'Số video tháng',
+  ];
+  pillarHeaders.forEach((h, idx) => {
+    const c = ws.getCell(r, idx + 1);
+    c.value = h;
+    c.fill = tableHeaderFill;
+    c.font = thFont;
+    c.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+    c.border = defaultBorder;
+  });
+  ws.getRow(r).height = 24;
+  r += 1;
+
+  data.contentPillars.forEach((p) => {
+    const vals = [
+      p.pillarId,
+      p.pillarName,
+      p.behaviorObjective,
+      p.insightAndBarrier,
+      p.messageAndRtb,
+      p.priorityAngle,
+      p.suitableFormat,
+      p.videoWeightRatio,
+      p.monthlyVideoCount,
+    ];
+    vals.forEach((v, idx) => {
+      const c = ws.getCell(r, idx + 1);
+      c.value = v;
+      c.font = bodyFont;
+      c.border = defaultBorder;
+      if (idx === 7) {
+        c.numFmt = '0%';
+        c.alignment = { horizontal: 'center', vertical: 'middle' };
+      } else if (idx === 8 || idx === 0) {
+        c.alignment = { horizontal: 'center', vertical: 'middle' };
+      } else {
+        c.alignment = { vertical: 'middle', wrapText: true };
+      }
+    });
+    ws.getRow(r).height = 24;
+    r += 1;
+  });
+  r += 1;
+
+  // 5B. Target Tuần Content Shopee
+  const spWeekHeaders = [
+    'Tuần',
+    'Khoảng ngày air',
+    'Số video plan',
+    'Ngân sách content',
+    'View video target',
+    'GMV video target',
+    'View / video',
+    'GMV / chi phí',
+    'Owner / action',
+  ];
+  spWeekHeaders.forEach((h, idx) => {
+    const c = ws.getCell(r, idx + 1);
+    c.value = h;
+    c.fill = tableHeaderFill;
+    c.font = thFont;
+    c.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+    c.border = defaultBorder;
+  });
+  ws.getRow(r).height = 24;
+  r += 1;
+
+  data.shopeeWeeklyTargets.forEach((w) => {
+    const viewPerVideo = Math.round(w.targetViews / Math.max(1, w.plannedVideos));
+    const gmvToCost = Number((w.targetVideoGmv / Math.max(1, w.contentBudget)).toFixed(1));
+    const vals = [
+      w.week,
+      w.airDateRange,
+      w.plannedVideos,
+      w.contentBudget,
+      w.targetViews,
+      w.targetVideoGmv,
+      viewPerVideo,
+      gmvToCost,
+      w.ownerAction,
+    ];
+    vals.forEach((v, idx) => {
+      const c = ws.getCell(r, idx + 1);
+      c.value = v;
+      c.font = bodyFont;
+      c.border = defaultBorder;
+      if (typeof v === 'number') {
+        c.numFmt = '#,##0';
+        c.alignment = { horizontal: idx === 2 ? 'center' : 'right', vertical: 'middle' };
+      } else {
+        c.alignment = { horizontal: idx <= 1 ? 'center' : 'left', vertical: 'middle' };
+      }
+    });
+    ws.getRow(r).height = 20;
+    r += 1;
+  });
+
+  // Tổng tháng Shopee
+  const totSpVideos = data.shopeeWeeklyTargets.reduce((s, x) => s + x.plannedVideos, 0);
+  const totSpBudget = data.shopeeWeeklyTargets.reduce((s, x) => s + x.contentBudget, 0);
+  const totSpViews = data.shopeeWeeklyTargets.reduce((s, x) => s + x.targetViews, 0);
+  const totSpGmv = data.shopeeWeeklyTargets.reduce((s, x) => s + x.targetVideoGmv, 0);
+  const totSpVals = [
+    'Tổng tháng',
+    `01–30/${data.month.split('/')[1] || '11'}`,
+    totSpVideos,
+    totSpBudget,
+    totSpViews,
+    totSpGmv,
+    Math.round(totSpViews / Math.max(1, totSpVideos)),
+    Number((totSpGmv / Math.max(1, totSpBudget)).toFixed(1)),
+    `${totSpVideos} video self; ${totSpViews.toLocaleString('vi-VN')} view`,
+  ];
+  totSpVals.forEach((v, idx) => {
+    const c = ws.getCell(r, idx + 1);
+    c.value = v;
+    c.font = labelFont;
+    c.fill = totalFill;
+    c.border = defaultBorder;
+    if (typeof v === 'number') {
+      c.numFmt = '#,##0';
+      c.alignment = { horizontal: idx === 2 ? 'center' : 'right', vertical: 'middle' };
+    }
+  });
+  ws.getRow(r).height = 22;
+  r += 2;
+
+  // 5C. Lịch sản xuất & air Content Shopee
+  const spCntHeaders = [
+    'Tuần',
+    'SKU / combo',
+    'Nguồn / điểm chạm',
+    'Ngày air / bàn giao',
+    'Mục tiêu / hành vi',
+    'Pillar ID',
+    'Angle / nội dung / brief',
+    'Format',
+    'Phương thức sản xuất',
+    'Số lượng',
+    'Ngân sách VNĐ',
+    'Owner / deadline / KV / final',
+  ];
+  spCntHeaders.forEach((h, idx) => {
+    const c = ws.getCell(r, idx + 1);
+    c.value = h;
+    c.fill = tableHeaderFill;
+    c.font = thFont;
+    c.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+    c.border = defaultBorder;
+  });
+  ws.getRow(r).height = 24;
+  r += 1;
+
+  data.shopeeContentRows.forEach((row) => {
+    const vals = [
+      row.week,
+      row.skuOrCombo,
+      row.touchpointSource,
+      row.airOrHandoverDate,
+      row.behaviorObjective,
+      row.pillarId,
+      row.angleAndBrief,
+      row.format,
+      row.productionMethod,
+      row.qty,
+      row.budgetVnd,
+      row.ownerDeadlineKvNote,
+    ];
+    vals.forEach((v, idx) => {
+      const c = ws.getCell(r, idx + 1);
+      c.value = v;
+      c.font = bodyFont;
+      c.border = defaultBorder;
+      if (idx === 9 || idx === 10) {
+        c.numFmt = '#,##0';
+        c.alignment = { horizontal: idx === 9 ? 'center' : 'right', vertical: 'middle' };
+      } else if ([0, 3, 5, 8].includes(idx)) {
+        c.alignment = { horizontal: 'center', vertical: 'middle' };
+      } else {
+        c.alignment = { vertical: 'middle', wrapText: true };
+      }
+    });
+    ws.getRow(r).height = 26;
+    r += 1;
+  });
+
+  ws.columns = [
+    { width: 22 },
+    { width: 26 },
+    { width: 18 },
+    { width: 16 },
+    { width: 26 },
+    { width: 18 },
+    { width: 34 },
+    { width: 16 },
+    { width: 18 },
+    { width: 12 },
+    { width: 16 },
+    { width: 32 },
+  ];
+
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const safeBrand = data.brandName.replace(/\s+/g, '_');
+  const safeMonth = data.month.replace('/', '-');
+  a.download = `Monthly_Content_KV_Plan_1Sheet_${safeBrand}_${safeMonth}.xlsx`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+

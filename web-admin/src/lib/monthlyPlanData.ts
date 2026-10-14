@@ -1,4 +1,4 @@
-import { InputPlanBreakdownState, InputPlanRowItem, SalaryGrade, PlanVersionSnapshot, MultiPartySignOff } from './types';
+import { InputPlanBreakdownState, InputPlanRowItem, SalaryGrade, PlanVersionSnapshot, MultiPartySignOff, BrandDetail, BrandMonthlyPlanItem, CampaignItem, isCampaignActiveInMonth, getCampaignPhaseForMonth } from './types';
 import { 
   INITIAL_INPUT_PLAN_ITEMS, 
   autoBalancePlanItems, 
@@ -6,6 +6,27 @@ import {
 } from './inputPlanDefaults';
 import { DEFAULT_CONTENT_PILLARS } from './selfChannelData';
 import { REAL_MONTHLY_PLANS_OCT_2026 } from './realB2cPlanData';
+import { REAL_B2C_42_BRANDS } from './realB2cBrandsData';
+import { INITIAL_CAMPAIGNS } from './mockData';
+
+/** Tìm chiến dịch (Campaign) đang chạy của một Thương hiệu trong chu kỳ tháng ('YYYY/MM') */
+export function findActiveCampaignForBrandInMonth(
+  brandName: string,
+  month: string,
+  campaigns: CampaignItem[] = INITIAL_CAMPAIGNS
+): CampaignItem | undefined {
+  if (!brandName) return undefined;
+  const normBrand = brandName.toLowerCase().replace(/[^a-z0-9]/g, '');
+  return campaigns.find(c => {
+    const normCampBrand = c.brand.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const brandMatches =
+      normBrand === normCampBrand ||
+      normBrand.includes(normCampBrand) ||
+      normCampBrand.includes(normBrand);
+    return brandMatches && isCampaignActiveInMonth(c, month);
+  });
+}
+
 
 // HÀM TẠO ITEMS TỰ ĐỘNG THEO CHIẾN LƯỢC CHO KẾ HOẠCH THÁNG
 export function createPlanItemsForScenario(
@@ -126,7 +147,9 @@ const RAW_MONTHLY_PLANS: InputPlanBreakdownState[] = [
   {
     id: 'PLAN-2026-10-KUTIESKIN',
     title: 'Kế Hoạch B2C Tháng 10 - Kutieskin (Affiliate 150M + Self Channel 50M)',
-    brandName: 'Kutieskin Mama',
+    brandName: 'Kutieskin',
+    storeId: 'ST-SO0001',
+    storeName: 'Kutieskin Chính Hãng - TikTok Shop',
     month: '2026/10',
     week: 'W41 [05.10 - 11.10]',
     pic: 'Khánh Vy',
@@ -875,11 +898,25 @@ function buildScaledItems(items: InputPlanRowItem[], ratio: number): InputPlanRo
   });
 }
 
-export type B2cWorkstreamType = 'AFFILIATE_PAID' | 'FOC_SAMPLE' | 'SELF_CHANNEL' | 'MULTI_PLATFORM';
+export type B2cWorkstreamType =
+  | 'AFFILIATE_PAID'
+  | 'FOC_SAMPLE'
+  | 'SELF_CHANNEL'
+  | 'MULTI_PLATFORM'
+  | 'CONTENT_BRAND_MAIN'
+  | 'PLAN_STRATEGY'
+  | 'KEY_VISUAL_SIS';
 
 export interface WorkstreamStaffSlice {
   staffName: string;
-  roleGroup: 'BOOKING' | 'CONTENT_SELF_CHANNEL' | 'FOC' | 'MULTI_PLATFORM';
+  roleGroup:
+    | 'BOOKING'
+    | 'CONTENT_SELF_CHANNEL'
+    | 'FOC'
+    | 'MULTI_PLATFORM'
+    | 'CONTENT_BRAND_MAIN'
+    | 'PLAN_STRATEGY'
+    | 'KEY_VISUAL_SIS';
   leaderName?: string;
   qty: number;
   videos: number;
@@ -906,7 +943,14 @@ export interface StorePlanWorkstreamSummary {
 export interface PersonalWorkPackageItem {
   id: string;
   staffName: string;
-  roleGroup: 'BOOKING' | 'CONTENT_SELF_CHANNEL' | 'FOC' | 'MULTI_PLATFORM';
+  roleGroup:
+    | 'BOOKING'
+    | 'CONTENT_SELF_CHANNEL'
+    | 'FOC'
+    | 'MULTI_PLATFORM'
+    | 'CONTENT_BRAND_MAIN'
+    | 'PLAN_STRATEGY'
+    | 'KEY_VISUAL_SIS';
   leaderName?: string;
   planId: string;
   planTitle: string;
@@ -931,6 +975,8 @@ export interface PersonalWorkPackageItem {
   allStoreContributors: string[];
   coWorkersOnSameStore: string[];
   rowIds: string[];
+  isBrandPosition?: boolean;
+  brandId?: string;
 }
 
 const BOOKING_CO_PIC_POOL = [
@@ -1290,9 +1336,80 @@ export function getStorePlanWorkstreamSummary(plan: InputPlanBreakdownState | nu
   };
 }
 
+export function buildInitialBrandMonthlyPlans(
+  brands: BrandDetail[] = REAL_B2C_42_BRANDS,
+  month: string = '2026/10'
+): BrandMonthlyPlanItem[] {
+  return brands.map((b, idx) => {
+    const contentPic = b.contentBrandMainPic || b.contentPic || 'Quỳnh Như';
+    const planPic = b.planStrategyPic || b.brandPicName || 'Nguyễn Thị Ngọc Tâm';
+    const kvPic = b.keyVisualSisPic || 'Vũ Hoài Lâm';
+    const budget = b.planBudget || b.monthlyBudget || 0;
+    const isApproved = budget > 0 || idx % 3 !== 2;
+    const activeCamp = findActiveCampaignForBrandInMonth(b.name, month, INITIAL_CAMPAIGNS);
+
+    return {
+      id: `BRAND-PLAN-${month.replace('/', '-')}-${b.code}`,
+      brandId: b.id,
+      brandCode: b.code,
+      brandName: b.name,
+      category: b.category || 'Mỹ phẩm & Chăm sóc da',
+      month,
+      status: isApproved ? 'IN_EXECUTION' : 'PENDING_APPROVAL',
+      hasCampaign: !!activeCamp,
+      campaignId: activeCamp?.id,
+      campaignCode: activeCamp?.code,
+      campaignTitle: activeCamp?.title,
+      linkedCampaignIds: activeCamp ? [activeCamp.id] : [],
+      contentBrandMainPic: contentPic,
+      planStrategyPic: planPic,
+      keyVisualSisPic: kvPic,
+      accountPic: b.accountPic || 'Phạm Thị Nhài',
+      growthPic: b.growthPic || 'Hoàng Long',
+      bookingPicLead: b.bookingPicLead || 'Đặng Thị Yến Nhi',
+      contentBrandMainPlan: {
+        masterContentPlanCount: 1,
+        contentPillarsCount: 4,
+        heroScriptsTarget: Math.max(6, Math.min(24, Math.round((b.targetVideos || 20) * 0.25))),
+        deliveredCount: isApproved ? Math.max(2, Math.round((b.targetVideos || 20) * 0.12)) : 0,
+        focusPillars: `USP sản phẩm chủ lực ${b.name} • Review thực tế • So sánh giải pháp • Ưu đãi Mega Sale`,
+        notes: `Content / Brand main (${contentPic}) duyệt khung kịch bản & định hướng tuyến nội dung xuyên suốt cho ${b.name}.`,
+      },
+      planStrategyPlan: {
+        campaignStrategyCount: activeCamp ? ((b.storeCount || 1) >= 2 ? 2 : 1) : 0,
+        bigIdeaAndKeyMessage: activeCamp
+          ? `${activeCamp.bigIdea} — ${activeCamp.keyMessage || ''}`
+          : `Duy trì nhận diện & chuyển đổi thường nhật (Always-on) cho Hero SKU ${b.name}`,
+        brandAuditCount: 1,
+        deliveredCount: isApproved ? 1 : 0,
+        targetBrandBudget: budget,
+        targetBrandGmv: b.targetGmv || Math.round(budget * 4.5),
+        notes: `Plan / Strategy (${planPic}) lập kế hoạch tổng thể cấp Brand, phân bổ hạn mức xuống ${b.storeCount || b.stores?.length || 1} gian hàng.`,
+      },
+      keyVisualSisPlan: {
+        kvDirectionCount: activeCamp ? 2 : 1,
+        sisBannerPackageCount: Math.max(2, (b.storeCount || 1) * 2),
+        pdpSeoProductCount: Math.max(4, (b.heroProducts?.length || 1) * 4),
+        deliveredCount: isApproved ? 2 : 1,
+        designTheme: activeCamp?.keyVisualSpec?.theme
+          ? `${activeCamp.keyVisualSpec.theme} (${activeCamp.code})`
+          : `Key Visual duy trì tháng ${month} & chuẩn hóa SIS/PDP gian hàng chính hãng ${b.name}`,
+        notes: `Key Visual / SIS (${kvPic}) định hướng bộ KV chiến dịch, trang trí SIS & khung ảnh PDP chuẩn SEO cho ${b.name}.`,
+      },
+      updatedAt: '2026-10-05T10:00:00Z',
+      updatedBy: planPic,
+      approvedBy: isApproved ? 'Đặng Thị Yến Nhi' : undefined,
+      approvedAt: isApproved ? '2026-10-02T09:30:00Z' : undefined,
+    };
+  });
+}
+
+export const INITIAL_BRAND_MONTHLY_PLANS: BrandMonthlyPlanItem[] = buildInitialBrandMonthlyPlans(REAL_B2C_42_BRANDS, '2026/10');
+
 export function buildPersonalWorkPackages(
   plans: InputPlanBreakdownState[],
-  month: string = '2026/10'
+  month: string = '2026/10',
+  brandMonthlyPlans: BrandMonthlyPlanItem[] = INITIAL_BRAND_MONTHLY_PLANS
 ): PersonalWorkPackageItem[] {
   const packages: PersonalWorkPackageItem[] = [];
   const filteredPlans = plans.filter(p => month === 'ALL' || p.month === month);
@@ -1353,11 +1470,158 @@ export function buildPersonalWorkPackages(
     pushSlices('MULTI_PLATFORM', '4. Đa sàn (Shopee / FB / IG)', ws.multiPlatform.assignees);
   }
 
+  // Bổ sung 3 vị trí gắn theo Brand [theo brand]: Content / Brand main, Plan / Strategy, Key Visual / SIS
+  const filteredBrandPlans = brandMonthlyPlans.filter(bp => month === 'ALL' || bp.month === month);
+  for (const bp of filteredBrandPlans) {
+    const brandCoWorkers = Array.from(
+      new Set([bp.contentBrandMainPic, bp.planStrategyPic, bp.keyVisualSisPic].filter(Boolean))
+    );
+    const matchingStorePlan = filteredPlans.find(
+      p => p.brandName.toLowerCase().includes(bp.brandName.toLowerCase()) || bp.brandName.toLowerCase().includes(p.brandName.toLowerCase())
+    );
+    const linkedPlanId = matchingStorePlan?.id || bp.id;
+
+    // 5. Content / Brand main [theo brand]
+    if (bp.contentBrandMainPic) {
+      const qty =
+        bp.contentBrandMainPlan.masterContentPlanCount +
+        bp.contentBrandMainPlan.contentPillarsCount +
+        bp.contentBrandMainPlan.heroScriptsTarget;
+      packages.push({
+        id: `${bp.id}-CONTENT_BRAND_MAIN-${bp.contentBrandMainPic}`,
+        staffName: bp.contentBrandMainPic,
+        roleGroup: 'CONTENT_BRAND_MAIN',
+        leaderName: 'Đặng Thị Yến Nhi',
+        planId: linkedPlanId,
+        planTitle: `Kế hoạch Brand ${bp.brandName} (${bp.month})`,
+        month: bp.month,
+        storeName: `[Theo Brand] ${bp.brandName}`,
+        brandName: bp.brandName,
+        platform: 'Theo Brand',
+        planStatus: bp.status,
+        versionCode: 'v1.0',
+        workstream: 'CONTENT_BRAND_MAIN',
+        workstreamLabel: '5. Content / Brand main [theo brand]',
+        myQty: qty,
+        myBudget: 0,
+        assignedVideos: qty,
+        assignedBudget: 0,
+        storeTotalQty: qty,
+        storeTotalBudget: bp.planStrategyPlan.targetBrandBudget || 0,
+        tierOrFormatLabels: [
+          `${bp.contentBrandMainPlan.masterContentPlanCount} Master Plan`,
+          `${bp.contentBrandMainPlan.contentPillarsCount} Pillars`,
+          `${bp.contentBrandMainPlan.heroScriptsTarget} Kịch bản Hero`
+        ],
+        tiersSummary: `${bp.contentBrandMainPlan.masterContentPlanCount} Master Plan • ${bp.contentBrandMainPlan.contentPillarsCount} Pillars • ${bp.contentBrandMainPlan.heroScriptsTarget} Kịch bản Hero`,
+        coWorkersInSameWorkstream: [],
+        allStoreContributors: brandCoWorkers.filter(n => n !== bp.contentBrandMainPic),
+        coWorkersOnSameStore: brandCoWorkers.filter(n => n !== bp.contentBrandMainPic),
+        rowIds: [],
+        isBrandPosition: true,
+        brandId: bp.brandId,
+      });
+    }
+
+    // 6. Plan / Strategy [theo brand]
+    if (bp.planStrategyPic) {
+      const qty = bp.planStrategyPlan.campaignStrategyCount + bp.planStrategyPlan.brandAuditCount;
+      packages.push({
+        id: `${bp.id}-PLAN_STRATEGY-${bp.planStrategyPic}`,
+        staffName: bp.planStrategyPic,
+        roleGroup: 'PLAN_STRATEGY',
+        leaderName: 'Đặng Thị Yến Nhi',
+        planId: linkedPlanId,
+        planTitle: `Kế hoạch Brand ${bp.brandName} (${bp.month})`,
+        month: bp.month,
+        storeName: `[Theo Brand] ${bp.brandName}`,
+        brandName: bp.brandName,
+        platform: 'Theo Brand',
+        planStatus: bp.status,
+        versionCode: 'v1.0',
+        workstream: 'PLAN_STRATEGY',
+        workstreamLabel: '6. Plan / Strategy [theo brand]',
+        myQty: qty,
+        myBudget: bp.planStrategyPlan.targetBrandBudget || 0,
+        assignedVideos: qty,
+        assignedBudget: bp.planStrategyPlan.targetBrandBudget || 0,
+        storeTotalQty: qty,
+        storeTotalBudget: bp.planStrategyPlan.targetBrandBudget || 0,
+        tierOrFormatLabels: [
+          `${bp.planStrategyPlan.campaignStrategyCount} Brand/Campaign Strategy`,
+          `${bp.planStrategyPlan.brandAuditCount} Brand Audit`,
+          `Big Idea & Key Message`
+        ],
+        tiersSummary: `${bp.planStrategyPlan.campaignStrategyCount} Strategy • ${bp.planStrategyPlan.brandAuditCount} Audit • Big Idea`,
+        coWorkersInSameWorkstream: [],
+        allStoreContributors: brandCoWorkers.filter(n => n !== bp.planStrategyPic),
+        coWorkersOnSameStore: brandCoWorkers.filter(n => n !== bp.planStrategyPic),
+        rowIds: [],
+        isBrandPosition: true,
+        brandId: bp.brandId,
+      });
+    }
+
+    // 7. Key Visual / SIS [theo brand]
+    if (bp.keyVisualSisPic) {
+      const qty =
+        bp.keyVisualSisPlan.kvDirectionCount +
+        bp.keyVisualSisPlan.sisBannerPackageCount +
+        bp.keyVisualSisPlan.pdpSeoProductCount;
+      packages.push({
+        id: `${bp.id}-KEY_VISUAL_SIS-${bp.keyVisualSisPic}`,
+        staffName: bp.keyVisualSisPic,
+        roleGroup: 'KEY_VISUAL_SIS',
+        leaderName: 'Đặng Thị Yến Nhi',
+        planId: linkedPlanId,
+        planTitle: `Kế hoạch Brand ${bp.brandName} (${bp.month})`,
+        month: bp.month,
+        storeName: `[Theo Brand] ${bp.brandName}`,
+        brandName: bp.brandName,
+        platform: 'Theo Brand',
+        planStatus: bp.status,
+        versionCode: 'v1.0',
+        workstream: 'KEY_VISUAL_SIS',
+        workstreamLabel: '7. Key Visual / SIS [theo brand]',
+        myQty: qty,
+        myBudget: 0,
+        assignedVideos: qty,
+        assignedBudget: 0,
+        storeTotalQty: qty,
+        storeTotalBudget: bp.planStrategyPlan.targetBrandBudget || 0,
+        tierOrFormatLabels: [
+          `${bp.keyVisualSisPlan.kvDirectionCount} KV Direction`,
+          `${bp.keyVisualSisPlan.sisBannerPackageCount} Bộ SIS/Banner`,
+          `${bp.keyVisualSisPlan.pdpSeoProductCount} PDP/SEO Product`
+        ],
+        tiersSummary: `${bp.keyVisualSisPlan.kvDirectionCount} KV • ${bp.keyVisualSisPlan.sisBannerPackageCount} SIS/Banner • ${bp.keyVisualSisPlan.pdpSeoProductCount} PDP`,
+        coWorkersInSameWorkstream: [],
+        allStoreContributors: brandCoWorkers.filter(n => n !== bp.keyVisualSisPic),
+        coWorkersOnSameStore: brandCoWorkers.filter(n => n !== bp.keyVisualSisPic),
+        rowIds: [],
+        isBrandPosition: true,
+        brandId: bp.brandId,
+      });
+    }
+  }
+
   return packages;
 }
 
 export function enrichPlanWithVersions(rawPlan: InputPlanBreakdownState, idx: number = 0): InputPlanBreakdownState {
-  const plan = enrichPlanWithMultiStaffWorkstreams(rawPlan, idx);
+  const basePlan = enrichPlanWithMultiStaffWorkstreams(rawPlan, idx);
+  const matchedCamp = basePlan.campaignId
+    ? INITIAL_CAMPAIGNS.find(c => c.id === basePlan.campaignId)
+    : findActiveCampaignForBrandInMonth(basePlan.brandName, basePlan.month, INITIAL_CAMPAIGNS);
+  const matchedPhase = matchedCamp ? getCampaignPhaseForMonth(matchedCamp, basePlan.month) : undefined;
+  const plan: InputPlanBreakdownState = {
+    ...basePlan,
+    hasCampaign: basePlan.hasCampaign !== undefined ? basePlan.hasCampaign : !!matchedCamp,
+    campaignId: basePlan.campaignId ?? matchedCamp?.id,
+    campaignCode: basePlan.campaignCode ?? matchedCamp?.code,
+    campaignTitle: basePlan.campaignTitle ?? matchedCamp?.title,
+    campaignPhaseName: basePlan.campaignPhaseName ?? matchedPhase?.phaseName,
+  };
   if (plan.versionSnapshots && plan.versionSnapshots.length > 0) {
     return plan;
   }

@@ -22,6 +22,8 @@ import {
   KocListingItem,
   BookingDealItem,
   ListingBatchCycle,
+  SalaryGrade,
+  InputPlanBreakdownState,
 } from '@/lib/types';
 import { formatVndShort } from '@/lib/format';
 import { INITIAL_STORE_PORTFOLIOS, INITIAL_KOCS, INITIAL_DEALS } from '@/lib/mockData';
@@ -57,6 +59,9 @@ interface StoreShortlistFilterModalProps {
   kocs?: KocItem[];
   deals?: BookingDealItem[];
   initialStoreId?: string;
+  initialSalaryGrade?: SalaryGrade;
+  activePlan?: InputPlanBreakdownState | null;
+  currentUserName?: string;
   onAddToListingBatch?: (
     newListings: Partial<KocListingItem>[],
     store: StorePortfolioItem,
@@ -186,6 +191,9 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
   kocs = INITIAL_KOCS,
   deals = INITIAL_DEALS,
   initialStoreId,
+  initialSalaryGrade,
+  activePlan,
+  currentUserName = 'Chuyên viên Booking',
   onAddToListingBatch,
   onNotify,
 }) => {
@@ -197,7 +205,9 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
   const [selectedStoreId, setSelectedStoreId] = useState<string>(defaultStoreId);
 
   // Bộ tiêu chí lọc cơ bản
-  const [selectedGrades, setSelectedGrades] = useState<string[]>(['KL2', 'KL3', 'KL4', 'KL5']);
+  const [selectedGrades, setSelectedGrades] = useState<string[]>(
+    initialSalaryGrade ? [initialSalaryGrade] : ['KL2', 'KL3', 'KL4', 'KL5']
+  );
   const [selectedTepKenh, setSelectedTepKenh] = useState<string>(initialDefaults.tepKenh);
   const [minGmvThreshold, setMinGmvThreshold] = useState<number>(0);
   const [preferFormat, setPreferFormat] = useState<'ALL' | 'VIDEO' | 'LIVE'>('ALL');
@@ -224,7 +234,7 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
     history: KocCooperationHistory;
   } | null>(null);
 
-  // Đồng bộ khi initialStoreId thay đổi từ bên ngoài
+  // Đồng bộ khi initialStoreId hoặc initialSalaryGrade thay đổi từ bên ngoài
   const [prevInitialStoreId, setPrevInitialStoreId] = useState(initialStoreId);
   if (prevInitialStoreId !== initialStoreId) {
     setPrevInitialStoreId(initialStoreId);
@@ -236,6 +246,14 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
       setSelectedTepKenh(defaults.tepKenh);
       setMinFemaleRatio(defaults.minFemaleRatio);
       setSelectedKocIds([]);
+    }
+  }
+
+  const [prevInitialGrade, setPrevInitialGrade] = useState(initialSalaryGrade);
+  if (prevInitialGrade !== initialSalaryGrade) {
+    setPrevInitialGrade(initialSalaryGrade);
+    if (initialSalaryGrade) {
+      setSelectedGrades([initialSalaryGrade]);
     }
   }
 
@@ -463,6 +481,7 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
 
     const selectedList = selectedKocsSummary.list;
 
+    const nowIso = new Date().toISOString();
     const newListings: Partial<KocListingItem>[] = selectedList.map((k) => {
       let tier: 'CELEB' | 'MEGA' | 'MACRO' | 'MICRO' | 'NANO' = 'MICRO';
       if (k.tier === 'TIER_1_CELEB') tier = 'CELEB';
@@ -470,27 +489,41 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
       else if (k.tier === 'TIER_3_MICRO') tier = 'MICRO';
       else tier = 'NANO';
 
+      const grade = (k.salaryGrade || initialSalaryGrade || 'KL3') as SalaryGrade;
+      const matchedPlanRow = activePlan?.items?.find(
+        (it) => it.salaryGrade === grade || it.tierCode === grade
+      );
+
       return {
         id: createListingId(k.id),
         batchId: `BATCH-${targetBatchCycle}-${selectedStore.id}`,
         batchCycle: targetBatchCycle,
-        monthKey: '2026/10',
+        monthKey: activePlan?.month || '2026/10',
         storeId: selectedStore.id,
         storeName: selectedStore.storeName,
         brandName: selectedStore.brandName,
+        sourcePlanId: activePlan?.id,
+        sourcePlanVersion: activePlan?.currentVersionCode || 'v1.0',
+        planRowId: matchedPlanRow?.id,
+        salaryGrade: grade,
         kocId: k.id,
         kocName: k.stageName,
-        kocHandle: k.channelId.replace('@', ''),
+        kocHandle: k.channelId.startsWith('@') ? k.channelId : `@${k.channelId}`,
         channel: 'TikTok Shop',
         followersCount: k.followers,
         tier,
         niche: k.niche || k.tepKenh,
-        videoFormat: 'Review & Hướng dẫn sử dụng',
+        videoFormat: matchedPlanRow?.contentFormat || 'Review & Hướng dẫn sử dụng',
         pillarName: `Chiến dịch thúc đẩy ${selectedStore.category}`,
-        proposedFee: k.rateCardVideo || 3000000,
+        proposedFee: k.rateCardVideo || matchedPlanRow?.unitCost || 3000000,
         brandApprovalStatus: 'BRAND_PENDING',
         kocNegotiationStatus: 'NOT_CONTACTED',
+        overallStatus: 'DRAFT',
         expectedAirDate: '2026-10-25',
+        assignedStaffId: 'staff-booking',
+        assignedStaffName: matchedPlanRow?.assignedStaff || selectedStore.b2cOwnerName || currentUserName,
+        createdAt: nowIso,
+        updatedAt: nowIso,
       };
     });
 

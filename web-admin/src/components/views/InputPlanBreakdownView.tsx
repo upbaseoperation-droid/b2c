@@ -54,6 +54,8 @@ import {
   FileText
 } from 'lucide-react';
 import { OperationalReportDrawer } from '../OperationalReportDrawer';
+import { CampaignCreateModal } from '../CampaignCreateModal';
+import { INITIAL_CAMPAIGNS } from '../../lib/mockData';
 import { 
   InputPlanBreakdownState, 
   InputPlanRowItem, 
@@ -67,7 +69,10 @@ import {
   PlanDiscussionRole,
   MonthlyPlanStatus,
   StorePortfolioItem,
-  PlanVersionSnapshot
+  PlanVersionSnapshot,
+  CampaignItem,
+  isCampaignActiveInMonth,
+  getCampaignPhaseForMonth
 } from '../../lib/types';
 import { 
   BENCHMARK_COSTS, 
@@ -78,7 +83,9 @@ import {
   generateRandomMockPlan,
   MockPlanScenario
 } from '../../lib/inputPlanDefaults';
-import { exportInputPlanStudioToExcel } from '../../lib/excelExport';
+import { exportInputPlanStudioToExcel, exportBrandMonthlyOneSheetToExcel } from '../../lib/excelExport';
+import { buildBrandOneSheetPlanData } from '../../lib/oneSheetPlanBuilder';
+import { BrandOneSheetPlanView } from './BrandOneSheetPlanView';
 import { MonthlyPlanHub } from './MonthlyPlanHub';
 import {
   INITIAL_MONTHLY_PLANS,
@@ -107,21 +114,44 @@ interface InputPlanBreakdownViewProps {
   currentUser?: UserProfile;
   storePortfolios?: StorePortfolioItem[];
   onUpdateStore?: (store: StorePortfolioItem) => void;
+  campaigns?: CampaignItem[];
+  onCampaignsChange?: React.Dispatch<React.SetStateAction<CampaignItem[]>>;
   onNotify?: (msg: string) => void;
   onGenerateDealsFromPlan?: (slots: StaffDetailedPlanItem[]) => void;
   onApplyPlanToWeeklyStore?: (planData: WeeklyStorePlan411) => void;
+  onOpenListingForPlan?: (plan: InputPlanBreakdownState, salaryGrade?: SalaryGrade) => void;
+  onPlansChange?: (plans: InputPlanBreakdownState[]) => void;
   initialShowStudio?: boolean;
+  planDrilldownIntent?: {
+    planId?: string;
+    storeId?: string;
+    storeName?: string;
+    brandName?: string;
+    month?: string;
+    nonce: number;
+  } | null;
 }
 
 export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
   currentUser,
   storePortfolios,
   onUpdateStore,
+  campaigns: externalCampaigns,
+  onCampaignsChange,
   onNotify,
   onGenerateDealsFromPlan,
   onApplyPlanToWeeklyStore,
-  initialShowStudio = false
+  onOpenListingForPlan,
+  onPlansChange,
+  initialShowStudio = false,
+  planDrilldownIntent,
 }) => {
+  const [localCampaigns, setLocalCampaigns] = useState<CampaignItem[]>(INITIAL_CAMPAIGNS);
+  const effectiveCampaigns = externalCampaigns ?? localCampaigns;
+  const updateCampaigns: React.Dispatch<React.SetStateAction<CampaignItem[]>> = onCampaignsChange ?? setLocalCampaigns;
+  const [isCampaignModalOpen, setIsCampaignModalOpen] = useState<boolean>(false);
+  const [editingCampaignForModal, setEditingCampaignForModal] = useState<CampaignItem | null>(null);
+
   // Master Monthly Plans State
   const [monthlyPlans, setMonthlyPlans] = useState<InputPlanBreakdownState[]>(INITIAL_MONTHLY_PLANS);
   // View mode: false = Màn hình Quản Lý Kế Hoạch Theo Tháng (MonthlyPlanHub), true = Studio Chi tiết Phân Rã
@@ -130,6 +160,44 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
   // Main Plan State (default from Fresh balanced scenario or active plan)
   const [planState, setPlanState] = useState<InputPlanBreakdownState>(INITIAL_MONTHLY_PLANS[0]);
   const [activeScenarioId, setActiveScenarioId] = useState<string>(MOCK_PLAN_SCENARIOS[0].id);
+
+  // Khi người dùng drill-down từ Hồ sơ Gian hàng hoặc Hồ sơ Thương hiệu sang Kế hoạch tháng
+  const [handledDrilldownNonce, setHandledDrilldownNonce] = useState<number>(0);
+  if (planDrilldownIntent && planDrilldownIntent.nonce !== handledDrilldownNonce) {
+    setHandledDrilldownNonce(planDrilldownIntent.nonce);
+    const { planId, storeId, storeName, brandName, month } = planDrilldownIntent;
+    const storeNorm = (storeName || '').trim().toLowerCase();
+    const brandNorm = (brandName || '').trim().toLowerCase();
+    const matched =
+      (planId ? monthlyPlans.find(p => p.id === planId) : undefined) ||
+      (storeId ? monthlyPlans.find(p => p.storeId === storeId && (!month || p.month === month)) : undefined) ||
+      (storeNorm
+        ? monthlyPlans.find(
+            p =>
+              p.brandName.trim().toLowerCase() === storeNorm &&
+              (!month || p.month === month),
+          )
+        : undefined) ||
+      (storeNorm
+        ? monthlyPlans.find(p => p.brandName.trim().toLowerCase() === storeNorm)
+        : undefined) ||
+      (brandNorm
+        ? monthlyPlans.find(p => {
+            const pBrand = (p.parentBrand || p.brandName.split('_')[0] || '').trim().toLowerCase();
+            return pBrand === brandNorm || p.brandName.trim().toLowerCase().startsWith(`${brandNorm}_`);
+          })
+        : undefined);
+    if (matched) {
+      setPlanState(matched);
+      setIsShowingStudio(true);
+    }
+  }
+
+  useEffect(() => {
+    if (!onPlansChange) return;
+    const merged = monthlyPlans.map(p => (p.id === planState.id ? planState : p));
+    onPlansChange(merged);
+  }, [monthlyPlans, planState, onPlansChange]);
 
   // Simulation Role: Booking PIC vs Growth PIC vs Trưởng Phòng
   const [currentRole, setCurrentRole] = useState<PlanDiscussionRole>('BOOKING');
@@ -163,6 +231,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
     | 'DISCUSSIONS'
     | 'ALL_SUMMARY'
     | 'EXCEL_PREVIEW'
+    | 'BRAND_ONE_SHEET'
   >('OVERVIEW');
 
   // Ma trận phân rã 5 tuần thực tế (W41 -> W45) chia tách 4 khối cột nghiệp vụ độc lập
@@ -1614,35 +1683,36 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
   // MÀN HÌNH 1: QUẢN LÝ KẾ HOẠCH THEO THÁNG (MONTHLY PLAN HUB)
   if (!isShowingStudio) {
     return (
-      <div className="space-y-3">
-      {/* Trạng thái lưu database của danh sách kế hoạch */}
-      <div className="flex items-center justify-end gap-2 text-2xs text-slate-500">
+      <div className="space-y-4">
         {planSync.status === 'offline' && (
-          <span className="mr-auto text-rose-600 font-medium">
-            Không kết nối được database. Đang hiển thị dữ liệu mẫu, mọi thay đổi sẽ mất khi tải lại trang.
-          </span>
+          <div className="p-3 rounded-lg bg-critical-soft text-critical text-xs flex items-center justify-between border border-critical/30">
+            <span>Không kết nối được database. Đang hiển thị dữ liệu mẫu, mọi thay đổi sẽ mất khi tải lại trang.</span>
+            <button
+              type="button"
+              onClick={() => void planSync.saveNow()}
+              className="underline font-semibold cursor-pointer"
+            >
+              Thử lại
+            </button>
+          </div>
         )}
-        <button
-          type="button"
-          onClick={() => setIsPlanReportOpen(true)}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-xs transition cursor-pointer"
-        >
-          <FileText className="w-3.5 h-3.5 text-emerald-400" />
-          <span>Báo cáo thẩm định kế hoạch</span>
-        </button>
-        <PlanSyncBadge
-          status={planSync.status}
-          lastSavedAt={planSync.lastSavedAt}
-          errorMessage={planSync.errorMessage}
-          onRetry={() => void planSync.saveNow()}
-        />
-      </div>
-      <MonthlyPlanHub
-        plans={monthlyPlans}
-        storePortfolios={storePortfolios}
-        onUpdateStore={onUpdateStore}
-        currentUser={currentUser}
-        onNotify={notify}
+        <MonthlyPlanHub
+          plans={monthlyPlans}
+          storePortfolios={storePortfolios}
+          campaigns={effectiveCampaigns}
+          onCampaignsChange={updateCampaigns}
+          onUpdateStore={onUpdateStore}
+          currentUser={currentUser}
+          onNotify={notify}
+          syncBadge={
+            <PlanSyncBadge
+              status={planSync.status}
+              lastSavedAt={planSync.lastSavedAt}
+              errorMessage={planSync.errorMessage}
+              onRetry={() => void planSync.saveNow()}
+            />
+          }
+          onOpenPlanReport={() => setIsPlanReportOpen(true)}
         onSelectPlan={(selected, options) => {
           setPlanState(selected);
           setIsApprovalDetailOpen(selected.status === 'PENDING_APPROVAL');
@@ -1737,6 +1807,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
             return Array.from(byId.values());
           });
         }}
+        onOpenListingForPlan={onOpenListingForPlan ? (plan) => onOpenListingForPlan(plan) : undefined}
       />
       <OperationalReportDrawer
         isOpen={isPlanReportOpen}
@@ -1921,10 +1992,34 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
           >
             4. Biểu mẫu 4.1.1
           </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('BRAND_ONE_SHEET')}
+            className={`px-3 py-1 rounded-lg text-xs font-semibold transition inline-flex items-center gap-1 cursor-pointer ${
+              activeTab === 'BRAND_ONE_SHEET'
+                ? 'bg-emerald-600 text-white shadow-2xs'
+                : 'text-emerald-800 hover:bg-emerald-50'
+            }`}
+          >
+            <FileSpreadsheet className="w-3.5 h-3.5" />
+            <span>5. Trình Brand (1-Sheet)</span>
+          </button>
         </div>
 
         {/* Bên phải: Lưu + Trao đổi + Thao tác + Nút trạng thái/gửi duyệt */}
         <div className="flex items-center gap-2 flex-wrap">
+          {onOpenListingForPlan && (
+            <button
+              type="button"
+              onClick={() => onOpenListingForPlan(planState)}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition cursor-pointer"
+              title="Mở bảng Listing KOC theo khung lương KL1–KL7 của kế hoạch này"
+            >
+              <UserCheck className="w-3.5 h-3.5" />
+              <span>Triển khai Listing KOC</span>
+            </button>
+          )}
+
           <button
             type="button"
             onClick={() => setIsPlanReportOpen(true)}
@@ -1966,8 +2061,35 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
             {isActionMenuOpen && (
               <>
                 <div className="fixed inset-0 z-30" onClick={() => setIsActionMenuOpen(false)} />
-                <div role="menu" className="absolute right-0 mt-1.5 w-56 z-40 bg-white border border-slate-200 rounded-xl shadow-lg py-1 text-xs">
+                <div role="menu" className="absolute right-0 mt-1.5 w-60 z-40 bg-white border border-slate-200 rounded-xl shadow-lg py-1 text-xs">
                   {[
+                    ...(onOpenListingForPlan ? [{
+                      label: 'Triển khai Listing KOC (KL)',
+                      icon: <UserCheck className="w-3.5 h-3.5" />,
+                      onClick: () => onOpenListingForPlan(planState),
+                      disabled: false,
+                      hint: undefined as string | undefined
+                    }] : []),
+                    {
+                      label: 'Mở Biểu mẫu 1-Sheet Trình Brand',
+                      icon: <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />,
+                      onClick: () => setActiveTab('BRAND_ONE_SHEET'),
+                    },
+                    {
+                      label: 'Xuất Excel 1-Sheet Trình Brand',
+                      icon: <Download className="w-3.5 h-3.5 text-emerald-600" />,
+                      onClick: () => {
+                        const oneSheet = buildBrandOneSheetPlanData({
+                          brandName: (planState.parentBrand || planState.brandName).split('_')[0].trim(),
+                          month: planState.month,
+                          storePlans: monthlyPlans.map(p => (p.id === planState.id ? planState : p)),
+                          storePortfolios,
+                          campaigns: effectiveCampaigns,
+                        });
+                        void exportBrandMonthlyOneSheetToExcel(oneSheet);
+                        notify(`Đã xuất file Excel 1-Sheet Trình Brand cho ${(planState.parentBrand || planState.brandName).split('_')[0].trim()}!`);
+                      },
+                    },
                     {
                       label: 'Quản lý phiên bản tháng',
                       icon: <Layers className="w-3.5 h-3.5" />,
@@ -2114,6 +2236,305 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
               )}
             </div>
           </div>
+
+          {/* 1.0 KHUNG LIÊN KẾT THỰC THỂ CHIẾN DỊCH (CAMPAIGN 1–3 THÁNG) & LỊCH TREO KEY VISUAL */}
+          {(() => {
+            const brandRoot = (planState.brandName || '').split('_')[0].trim();
+            const linkedCampaign =
+              effectiveCampaigns.find(c => c.id === planState.campaignId) ||
+              (planState.hasCampaign !== false
+                ? effectiveCampaigns.find(
+                    c =>
+                      isCampaignActiveInMonth(c, planState.month) &&
+                      c.brand.toLowerCase().includes(brandRoot.toLowerCase())
+                  )
+                : undefined);
+            const hasCampaignActive = planState.hasCampaign ?? Boolean(linkedCampaign);
+            const activePhase = linkedCampaign ? getCampaignPhaseForMonth(linkedCampaign, planState.month) : undefined;
+            const brandCampaignCandidates = effectiveCampaigns.filter(
+              c =>
+                c.brand.toLowerCase().includes(brandRoot.toLowerCase()) ||
+                isCampaignActiveInMonth(c, planState.month)
+            );
+
+            return (
+              <div className="bg-white rounded-xl border border-indigo-200 p-4 space-y-3 shadow-2xs">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-2.5">
+                  <div className="flex items-center gap-2.5">
+                    <span
+                      className={`px-2 py-0.5 rounded text-2xs font-bold border ${
+                        hasCampaignActive
+                          ? 'bg-indigo-50 text-indigo-800 border-indigo-200'
+                          : 'bg-slate-100 text-slate-700 border-slate-300'
+                      }`}
+                    >
+                      {hasCampaignActive ? 'CÓ CHIẾN DỊCH (CAMPAIGN)' : 'DUY TRÌ THƯỜNG NHẬT (KHÔNG CAMPAIGN)'}
+                    </span>
+                    <div>
+                      <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wide">
+                        Thực thể Chiến dịch (Campaign 1–3 Tháng) &amp; Key Visual kỳ {planState.month}
+                      </h3>
+                      <p className="text-2xs text-slate-500">
+                        Một tháng gian hàng có thể gắn với 1 Chiến dịch cấp Brand (kéo dài 1–3 tháng) hoặc chạy Duy trì thường nhật (Always-on).
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2">
+                    <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-0.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const candidate =
+                            effectiveCampaigns.find(
+                              c =>
+                                isCampaignActiveInMonth(c, planState.month) &&
+                                c.brand.toLowerCase().includes(brandRoot.toLowerCase())
+                            ) || effectiveCampaigns[0];
+                          const ph = candidate ? getCampaignPhaseForMonth(candidate, planState.month) : undefined;
+                          const updated: Partial<InputPlanBreakdownState> = {
+                            hasCampaign: true,
+                            campaignId: candidate?.id,
+                            campaignCode: candidate?.code,
+                            campaignTitle: candidate?.title,
+                            campaignPhaseName: ph?.phaseName || `Giai đoạn ${planState.month}`,
+                          };
+                          setPlanState(prev => ({ ...prev, ...updated }));
+                          setMonthlyPlans(prev => prev.map(p => (p.id === planState.id ? { ...p, ...updated } : p)));
+                          notify(`Đã bật chế độ CÓ Chiến dịch (Campaign) cho kế hoạch tháng ${planState.month}`);
+                        }}
+                        className={`px-2.5 py-1 rounded-md text-2xs font-semibold transition cursor-pointer ${
+                          hasCampaignActive ? 'bg-indigo-600 text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+                        }`}
+                      >
+                        Có Campaign
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const updated: Partial<InputPlanBreakdownState> = {
+                            hasCampaign: false,
+                            campaignId: undefined,
+                            campaignCode: undefined,
+                            campaignTitle: undefined,
+                            campaignPhaseName: undefined,
+                          };
+                          setPlanState(prev => ({ ...prev, ...updated }));
+                          setMonthlyPlans(prev => prev.map(p => (p.id === planState.id ? { ...p, ...updated } : p)));
+                          notify(`Đã chuyển kế hoạch ${planState.storeName || planState.brandName} kỳ ${planState.month} sang chế độ Duy trì (Không Campaign)`);
+                        }}
+                        className={`px-2.5 py-1 rounded-md text-2xs font-semibold transition cursor-pointer ${
+                          !hasCampaignActive ? 'bg-slate-800 text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+                        }`}
+                      >
+                        Không Campaign (Duy trì)
+                      </button>
+                    </div>
+
+                    {hasCampaignActive && linkedCampaign && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingCampaignForModal(linkedCampaign);
+                          setIsCampaignModalOpen(true);
+                        }}
+                        className="px-2.5 py-1.5 rounded-lg border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-800 font-semibold text-2xs transition cursor-pointer"
+                      >
+                        Sửa / Phân kỳ Campaign
+                      </button>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingCampaignForModal(null);
+                        setIsCampaignModalOpen(true);
+                      }}
+                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold text-2xs transition cursor-pointer"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Tạo Campaign mới (1–3 tháng)</span>
+                    </button>
+                  </div>
+                </div>
+
+                {hasCampaignActive ? (
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <div className="md:col-span-2">
+                        <label className="text-2xs font-semibold text-slate-600 block mb-1">
+                          Chiến dịch (Campaign) đang gắn với kế hoạch tháng {planState.month}
+                        </label>
+                        <select
+                          value={linkedCampaign?.id || ''}
+                          onChange={(e) => {
+                            const selected = effectiveCampaigns.find(c => c.id === e.target.value);
+                            if (!selected) return;
+                            const ph = getCampaignPhaseForMonth(selected, planState.month);
+                            const updated: Partial<InputPlanBreakdownState> = {
+                              hasCampaign: true,
+                              campaignId: selected.id,
+                              campaignCode: selected.code,
+                              campaignTitle: selected.title,
+                              campaignPhaseName: ph?.phaseName || `Giai đoạn ${planState.month}`,
+                            };
+                            setPlanState(prev => ({ ...prev, ...updated }));
+                            setMonthlyPlans(prev => prev.map(p => (p.id === planState.id ? { ...p, ...updated } : p)));
+                            notify(`Đã gắn Chiến dịch [${selected.code}] ${selected.title} vào kế hoạch tháng ${planState.month}`);
+                          }}
+                          className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white text-xs font-semibold text-slate-900 focus:outline-none focus:border-indigo-500"
+                        >
+                          {brandCampaignCandidates.map(c => (
+                            <option key={c.id} value={c.id}>
+                              [{c.code}] {c.brand} — {c.title} ({(c.coveredMonths || []).length || 1} tháng: {(c.coveredMonths || [planState.month]).join(' → ')})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="text-2xs font-semibold text-slate-600 block mb-1">
+                          Giai đoạn (Phase) trong kỳ {planState.month}
+                        </label>
+                        <div className="px-2.5 py-1.5 rounded-lg border border-indigo-200 bg-indigo-50/60 text-xs font-semibold text-indigo-950 truncate">
+                          {activePhase?.phaseName || planState.campaignPhaseName || `Giai đoạn thực thi ${planState.month}`}
+                        </div>
+                      </div>
+                    </div>
+
+                    {linkedCampaign && (
+                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+                        {/* Cột 1: Thông điệp & CTKM Section 01 */}
+                        <div className="rounded-lg border border-slate-200 bg-slate-50/70 p-3 space-y-1.5 text-2xs">
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold text-slate-800 uppercase">01. Định hướng &amp; CTKM</span>
+                            <span className="px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-800 font-mono font-semibold text-[10px]">
+                              {(linkedCampaign.coveredMonths || []).length > 1
+                                ? `Kéo dài ${linkedCampaign.coveredMonths?.length} tháng (${linkedCampaign.coveredMonths?.join(', ')})`
+                                : `Chiến dịch 1 tháng (${linkedCampaign.coveredMonths?.[0] || planState.month})`}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-slate-500">Big Idea: </span>
+                            <strong className="text-slate-900">{linkedCampaign.bigIdea}</strong>
+                          </div>
+                          <div>
+                            <span className="text-slate-500">Key Message: </span>
+                            <span className="text-slate-800 italic">&ldquo;{linkedCampaign.keyMessage}&rdquo;</span>
+                          </div>
+                          {linkedCampaign.comboPromoOffer && (
+                            <div>
+                              <span className="text-slate-500">Combo / CTKM: </span>
+                              <span className="text-slate-800 font-medium">{linkedCampaign.comboPromoOffer}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Cột 2: Ngân sách & Mục tiêu của Phase tháng này */}
+                        <div className="rounded-lg border border-slate-200 bg-slate-50/70 p-3 space-y-1.5 text-2xs">
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold text-slate-800 uppercase">02. Phân kỳ tháng {planState.month}</span>
+                            {activePhase && !isLayer1Locked && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  handleUpdateLayer1Metrics({
+                                    targetNmvTotal: activePhase.targetGmv || layer1Metrics.targetNmvTotal,
+                                    pnlTotalBudgetNet: activePhase.allocatedBudget || layer1Metrics.pnlTotalBudgetNet,
+                                  });
+                                  notify(`Đã áp dụng Hạn mức Phase ${planState.month} (${formatVndShort(activePhase.allocatedBudget)}) vào Layer 1!`);
+                                }}
+                                className="text-[10px] font-semibold text-indigo-700 hover:underline cursor-pointer"
+                              >
+                                Áp vào Layer 1 →
+                              </button>
+                            )}
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 pt-0.5">
+                            <div className="p-2 rounded bg-white border border-slate-200/80">
+                              <span className="text-slate-500 block text-[10px]">Ngân sách Phase ({planState.month})</span>
+                              <strong className="font-mono text-xs text-slate-900">
+                                {formatVndShort(activePhase?.allocatedBudget || linkedCampaign.budget)}
+                              </strong>
+                              <span className="text-[10px] text-slate-400 block">
+                                / Tổng {formatVndShort(linkedCampaign.budget)}
+                              </span>
+                            </div>
+                            <div className="p-2 rounded bg-white border border-slate-200/80">
+                              <span className="text-slate-500 block text-[10px]">Target GMV Phase ({planState.month})</span>
+                              <strong className="font-mono text-xs text-emerald-700">
+                                {formatVndShort(activePhase?.targetGmv || linkedCampaign.targetGmv)}
+                              </strong>
+                              <span className="text-[10px] text-slate-400 block">
+                                {activePhase?.targetKocCount || linkedCampaign.targetKocCount} KOCs
+                              </span>
+                            </div>
+                          </div>
+                          {(activePhase?.saleMilestones || linkedCampaign.saleMilestones) && (
+                            <div className="text-[11px] text-slate-600 pt-0.5">
+                              Mốc Sale: <strong className="text-slate-800">{activePhase?.saleMilestones || linkedCampaign.saleMilestones}</strong>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Cột 3: Key Visual & Lịch treo KV Section 03 */}
+                        <div className="rounded-lg border border-slate-200 bg-slate-50/70 p-3 space-y-1.5 text-2xs">
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold text-slate-800 uppercase">03. Key Visual &amp; Lịch Treo KV</span>
+                            {linkedCampaign.kvPic && (
+                              <span className="text-[10px] text-slate-500">KV PIC: <strong>{linkedCampaign.kvPic}</strong></span>
+                            )}
+                          </div>
+                          <div>
+                            <span className="text-slate-500">Chủ đề KV: </span>
+                            <strong className="text-slate-900">
+                              {linkedCampaign.keyVisualSpec?.theme || 'Theo Brand Guideline chung'}
+                            </strong>
+                          </div>
+                          {linkedCampaign.keyVisualSpec?.promoTextOnKv && (
+                            <div>
+                              <span className="text-slate-500">Text CTKM trên KV: </span>
+                              <span className="text-slate-800">{linkedCampaign.keyVisualSpec.promoTextOnKv}</span>
+                            </div>
+                          )}
+                          {linkedCampaign.keyVisualSpec && (
+                            <div className="flex flex-wrap items-center gap-2 pt-1 font-mono text-[10px] text-slate-600">
+                              <span className="px-1.5 py-0.5 rounded bg-white border border-slate-200">
+                                Ref: <strong>{linkedCampaign.keyVisualSpec.refDate}</strong>
+                              </span>
+                              <span className="px-1.5 py-0.5 rounded bg-white border border-slate-200">
+                                Order: <strong>{linkedCampaign.keyVisualSpec.orderDate}</strong>
+                              </span>
+                              <span className="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
+                                Treo KV: <strong>{linkedCampaign.keyVisualSpec.hangDate}</strong>
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-slate-50 border border-slate-200 px-3 py-2 text-xs text-slate-600">
+                    <span>
+                      Tháng <strong>{planState.month}</strong> gian hàng <strong>{planState.storeName || planState.brandName}</strong> vận hành theo chế độ{' '}
+                      <strong className="text-slate-900">Duy trì thường nhật (Always-on, không mở Campaign riêng)</strong>. Vẫn phân rã đầy đủ 4 đầu việc Booking, FOC, Self-channel và Multi-platform.
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingCampaignForModal(null);
+                        setIsCampaignModalOpen(true);
+                      }}
+                      className="text-indigo-700 font-semibold hover:underline shrink-0 cursor-pointer"
+                    >
+                      + Khởi tạo Campaign cho tháng này
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
 
           {/* 1A. ĐẦU VÀO SỐ TỔNG PnL (GROWTH GIAO BAN ĐẦU) */}
           <div className="bg-white rounded-xl border border-slate-200 p-4 space-y-3">
@@ -3137,13 +3558,15 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                   <th className="py-2.5 px-2 w-[16%] text-center">Số lượng video</th>
                   <th className="py-2.5 px-2.5 w-[11%] text-right">Đơn giá Net</th>
                   <th className="py-2.5 px-2.5 w-[9%] text-right">Thành tiền</th>
-                  <th className="py-2.5 px-2 w-[6%] text-center">Bù</th>
+                  <th className="py-2.5 px-2 w-[8%] text-center">Thao tác</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {visibleItems.map((item) => {
                   const itemBudgetPct = totalAllocatedBudget > 0 ? (item.totalBudget / totalAllocatedBudget) * 100 : 0;
                   const isSplitRow = item.id.includes('-split-');
+                  const klMatch = item.tierCode.toUpperCase().match(/^KL[1-7]$/);
+                  const rowSalaryGrade = klMatch ? (klMatch[0] as SalaryGrade) : undefined;
 
                   return (
                     <tr
@@ -3279,19 +3702,31 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                         </span>
                       </td>
 
-                      {/* Column 7: Quick Fill Button */}
+                      {/* Column 7: Quick Fill & Listing KOC Button */}
                       <td className="py-2 px-2 text-center align-middle">
-                        {contentHeadroom > 0 ? (
-                          <button
-                            onClick={() => handleFillRemainingToItem(item.id)}
-                            className="text-2xs font-semibold text-blue-600 hover:bg-blue-50 px-1.5 py-1 rounded border border-blue-200 transition"
-                            title={`Điền nốt ${contentHeadroom} video còn thiếu vào dòng này`}
-                          >
-                            +{contentHeadroom}
-                          </button>
-                        ) : (
-                          <span className="text-slate-300 text-xs">•</span>
-                        )}
+                        <div className="flex items-center justify-center gap-1">
+                          {onOpenListingForPlan && rowSalaryGrade && (
+                            <button
+                              type="button"
+                              onClick={() => onOpenListingForPlan(planState, rowSalaryGrade)}
+                              className="text-[10px] font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 px-1.5 py-1 rounded border border-blue-200 transition cursor-pointer shrink-0"
+                              title={`Triển khai Listing KOC khung ${rowSalaryGrade} (${item.qty} video)`}
+                            >
+                              List KOC
+                            </button>
+                          )}
+                          {contentHeadroom > 0 ? (
+                            <button
+                              onClick={() => handleFillRemainingToItem(item.id)}
+                              className="text-2xs font-semibold text-blue-600 hover:bg-blue-50 px-1.5 py-1 rounded border border-blue-200 transition"
+                              title={`Điền nốt ${contentHeadroom} video còn thiếu vào dòng này`}
+                            >
+                              +{contentHeadroom}
+                            </button>
+                          ) : !rowSalaryGrade ? (
+                            <span className="text-slate-300 text-xs">•</span>
+                          ) : null}
+                        </div>
                       </td>
                     </tr>
                   );
@@ -3939,6 +4374,31 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
       )}
 
       {/* ========================================================================= */}
+      {/* 5. TAB TRÌNH BRAND 1-SHEET (MONTHLY CONTENT & KEY VISUAL PLAN)            */}
+      {/* ========================================================================= */}
+      {activeTab === 'BRAND_ONE_SHEET' && (
+        <BrandOneSheetPlanView
+          brandName={(planState.parentBrand || planState.brandName).split('_')[0].trim()}
+          month={planState.month}
+          storePlans={monthlyPlans.map(p => (p.id === planState.id ? planState : p))}
+          storePortfolios={storePortfolios}
+          campaigns={effectiveCampaigns}
+          onSaveOneSheetData={(savedData) => {
+            setPlanState(prev => ({ ...prev, oneSheetPlanData: savedData }));
+            setMonthlyPlans(prev =>
+              prev.map(p => (p.id === planState.id ? { ...p, oneSheetPlanData: savedData } : p))
+            );
+          }}
+          onOpenCampaignModal={() => {
+            const activeCamp = effectiveCampaigns.find(c => c.id === planState.campaignId);
+            setEditingCampaignForModal(activeCamp || null);
+            setIsCampaignModalOpen(true);
+          }}
+          onNotify={notify}
+        />
+      )}
+
+      {/* ========================================================================= */}
       {/* 6. MODAL PHÂN BỔ KẾ HOẠCH CHO TEAM BOOKING (PIC COORDINATION STUDIO)     */}
       {/* ========================================================================= */}
       <Presence show={!!isAllocationModalOpen}>
@@ -4556,6 +5016,35 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
         moduleSubtitle="Kiểm tra hạn mức Order Gross/Net, tỷ trọng khung lương KL1–KL7 và luồng phê duyệt B2C"
         contextDataText={planReportContextText}
         onNotify={onNotify}
+      />
+
+      <CampaignCreateModal
+        isOpen={isCampaignModalOpen}
+        onClose={() => {
+          setIsCampaignModalOpen(false);
+          setEditingCampaignForModal(null);
+        }}
+        initialCampaign={editingCampaignForModal}
+        defaultBrand={(planState.brandName || '').split('_')[0].trim()}
+        onCampaignCreated={(savedCampaign) => {
+          updateCampaigns(prev => {
+            const exists = prev.some(c => c.id === savedCampaign.id);
+            return exists ? prev.map(c => (c.id === savedCampaign.id ? savedCampaign : c)) : [savedCampaign, ...prev];
+          });
+          const ph = getCampaignPhaseForMonth(savedCampaign, planState.month);
+          const updated: Partial<InputPlanBreakdownState> = {
+            hasCampaign: true,
+            campaignId: savedCampaign.id,
+            campaignCode: savedCampaign.code,
+            campaignTitle: savedCampaign.title,
+            campaignPhaseName: ph?.phaseName || `Giai đoạn ${planState.month}`,
+          };
+          setPlanState(prev => ({ ...prev, ...updated }));
+          setMonthlyPlans(prev => prev.map(p => (p.id === planState.id ? { ...p, ...updated } : p)));
+          setIsCampaignModalOpen(false);
+          setEditingCampaignForModal(null);
+          notify(`Đã lưu & gắn Chiến dịch [${savedCampaign.code}] ${savedCampaign.title} vào kế hoạch tháng ${planState.month}!`);
+        }}
       />
     </div>
   );

@@ -61,6 +61,8 @@ import {
   B2cStaffAnalyticsRecord,
   B2cAdsCreativeMetric
 } from '../../lib/b2cAnalyticsDataset';
+import { B2C_STORE_WEEKLY_AIR_SYNC_LIST } from '../../lib/b2cWeeklyAirSyncDataset';
+import { WeeklyAirSyncDashboardSection } from './WeeklyAirSyncDashboardSection';
 import ExcelJS from 'exceljs';
 
 interface ExecutiveDashboardReportsViewProps {
@@ -79,17 +81,17 @@ type DashboardMainTab =
   | 'STORE_SELLER'
   | 'VIDEO_CREATIVE'
   | 'TEAM_SLA'
-  | 'STAFF_EFFICIENCY'
-  | 'EXPORT_CENTER';
+  | 'STAFF_EFFICIENCY';
 
 const SIDEBAR_TO_DASHBOARD_TAB: Record<string, DashboardMainTab> = {
   'dashboard-bi': 'OVERVIEW_FINANCE',
   'dashboard-brand': 'OVERVIEW_FINANCE',
+  'dashboard-finance': 'OVERVIEW_FINANCE',
   'dashboard-store': 'STORE_SELLER',
   'dashboard-video': 'VIDEO_CREATIVE',
   'dashboard-team-sla': 'TEAM_SLA',
+  'dashboard-air-sync': 'TEAM_SLA',
   'dashboard-staff': 'STAFF_EFFICIENCY',
-  'dashboard-finance': 'EXPORT_CENTER',
 };
 
 const DASHBOARD_TO_SIDEBAR_TAB: Record<DashboardMainTab, string> = {
@@ -98,7 +100,6 @@ const DASHBOARD_TO_SIDEBAR_TAB: Record<DashboardMainTab, string> = {
   VIDEO_CREATIVE: 'dashboard-video',
   TEAM_SLA: 'dashboard-team-sla',
   STAFF_EFFICIENCY: 'dashboard-staff',
-  EXPORT_CENTER: 'dashboard-finance',
 };
 
 const KL_ORDER = ['TAP UpAffiliate', 'KL1', 'KL2', 'KL3', 'KL4', 'KL5', 'KL6', 'KL7'];
@@ -1012,6 +1013,69 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
         });
       });
 
+      // Sheet 5: Lịch Air Kế Hoạch Theo Tuần & Độ Đồng Loạt (69 Gian Hàng B2C)
+      const wsAirSync = wb.addWorksheet('5. Lịch Air Tuần & Đồng Loạt');
+      wsAirSync.columns = [
+        { header: 'Mã Vận Hành', key: 'storeOperationId', width: 15 },
+        { header: 'Thương Hiệu', key: 'brandName', width: 20 },
+        { header: 'Gian Hàng', key: 'storeName', width: 28 },
+        { header: 'Sàn TMĐT', key: 'platform', width: 15 },
+        { header: 'Chuyên Viên (PIC)', key: 'primaryPic', width: 24 },
+        { header: 'Trưởng Nhóm (Cột 55)', key: 'leader', width: 24 },
+        { header: 'KH Paid + Self (4.1)', key: 'targetCore', width: 18 },
+        { header: 'KH FOC 0đ (4.1)', key: 'targetFoc', width: 16 },
+        { header: 'Đơn Đã Book (3.2)', key: 'booked', width: 16 },
+        { header: 'Thực Tế Đã Air', key: 'aired', width: 16 },
+        { header: 'W40 KH/Air', key: 'w40', width: 14 },
+        { header: 'W41 (Sóng 10.10) KH/Air', key: 'w41', width: 22 },
+        { header: 'W42 KH/Air', key: 'w42', width: 14 },
+        { header: 'W43 KH/Air', key: 'w43', width: 14 },
+        { header: 'W44-45 KH/Air', key: 'w44', width: 16 },
+        { header: 'Đỉnh Nổ 3 Ngày Liên Tiếp', key: 'peakWindow', width: 22 },
+        { header: 'Mật Độ Tập Trung Đỉnh (%)', key: 'burstPct', width: 22 },
+        { header: 'Tỷ Lệ Đúng Hạn Cam Kết (%)', key: 'adherencePct', width: 22 },
+        { header: 'Trạng Thái Air Đồng Loạt', key: 'syncLabel', width: 28 },
+        { header: 'Chẩn Đoán Vận Hành', key: 'syncSummary', width: 55 }
+      ];
+
+      B2C_STORE_WEEKLY_AIR_SYNC_LIST.forEach((st) => {
+        const w40 = st.weeks.find((c) => c.weekCode === 'W40');
+        const w41 = st.weeks.find((c) => c.weekCode === 'W41');
+        const w42 = st.weeks.find((c) => c.weekCode === 'W42');
+        const w43 = st.weeks.find((c) => c.weekCode === 'W43');
+        const w44 = st.weeks.find((c) => c.weekCode === 'W44');
+        const w45 = st.weeks.find((c) => c.weekCode === 'W45');
+        const syncLabelMap: Record<string, string> = {
+          AIR_SYNCHRONIZED: 'Air đồng loạt chuẩn sóng',
+          AIR_BURST_UNSCHEDULED: 'Air dồn sóng (Thiếu lịch KH)',
+          AIR_FRAGMENTED_LATE: 'Rải rác / Trễ sóng',
+          AIR_BOTTLENECK_PENDING: 'Nghẽn tiến độ (Chờ air)',
+          NO_WAVE_TARGET: 'Chưa phát sinh lịch air',
+        };
+        wsAirSync.addRow({
+          storeOperationId: st.storeId,
+          brandName: st.brandName,
+          storeName: st.storeName,
+          platform: st.platform,
+          primaryPic: st.pic,
+          leader: st.hasLeader && st.leaderName ? st.leaderName : 'Không có leader (Trực tiếp TP)',
+          targetCore: st.totalPlanCoreMonth,
+          targetFoc: st.totalPlanFocMonth,
+          booked: st.totalBooked,
+          aired: st.totalAired,
+          w40: `${w40?.planCoreVideos ?? 0}/${w40?.actualAiredInWeek ?? 0}`,
+          w41: `${w41?.planCoreVideos ?? 0}/${w41?.actualAiredInWeek ?? 0}`,
+          w42: `${w42?.planCoreVideos ?? 0}/${w42?.actualAiredInWeek ?? 0}`,
+          w43: `${w43?.planCoreVideos ?? 0}/${w43?.actualAiredInWeek ?? 0}`,
+          w44: `${(w44?.planCoreVideos ?? 0) + (w45?.planCoreVideos ?? 0)}/${(w44?.actualAiredInWeek ?? 0) + (w45?.actualAiredInWeek ?? 0)}`,
+          peakWindow: st.peakActualDate ? `${st.peakActualCount} video (${st.peakActualDate})` : '—',
+          burstPct: st.burstConcentrationPct,
+          adherencePct: st.scheduleAdherencePct,
+          syncLabel: syncLabelMap[st.syncStatus] || st.syncStatus,
+          syncSummary: st.syncDiagnosis
+        });
+      });
+
       const buffer = await wb.xlsx.writeBuffer();
       const blob = new Blob([buffer], {
         type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
@@ -1023,7 +1087,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
       a.click();
       URL.revokeObjectURL(url);
 
-      onNotify?.('Đã xuất file Excel đối soát 4 Sheets (69 Gian hàng, Nhân sự, Video 3.2, TikTok Seller).', 'success');
+      onNotify?.('Đã xuất file Excel đối soát 5 Sheets (69 Gian hàng, Nhân sự, Video 3.2, TikTok Seller, Lịch Air Tuần & Đồng Loạt).', 'success');
     } catch (err) {
       console.error(err);
       onNotify?.('Có lỗi khi tạo file Excel đối soát.', 'error');
@@ -1069,12 +1133,11 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
     const isStaffTab = activeTab === 'TEAM_SLA' || activeTab === 'STAFF_EFFICIENCY';
     const purposeId = isStaffTab ? ('STAFF_REVIEW' as const) : ('PLAN_ADS_ANALYSIS' as const);
     const tabTitleMap: Record<DashboardMainTab, string> = {
-      OVERVIEW_FINANCE: 'Dashboard B2C — Thương hiệu & Ngân sách (Gross/Net)',
+      OVERVIEW_FINANCE: 'Dashboard B2C — Thương hiệu, Ngân sách & Đối soát Kế toán (Gross/Net)',
       STORE_SELLER: 'Dashboard B2C — 69 Gian hàng & TikTok Seller',
-      VIDEO_CREATIVE: 'Dashboard B2C — Video Booking (Paid/FOC) & Ads Creative',
-      TEAM_SLA: 'Dashboard B2C — Tiến độ W1-W4 & Kỷ luật SLA Vận hành',
+      VIDEO_CREATIVE: 'Dashboard B2C — Hiệu quả Video Booking (Paid/FOC) & Ads Creative',
+      TEAM_SLA: 'Dashboard B2C — Lịch Air Tuần (W40–W45), Độ Đồng Loạt & Tiến Độ Video',
       STAFF_EFFICIENCY: `Dashboard B2C — Hiệu suất & Hiệu quả Nhân sự (${selectedFocusStaffName})`,
-      EXPORT_CENTER: 'Dashboard B2C — Đối soát Kế toán (File 4.1 vs File 3.2)',
     };
 
     const topRiskList = riskStores
@@ -1092,6 +1155,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
       `- Hạn mức Order Gross: ${formatVndShort(kpiSummary.totalBudgetGross)} | Hạn mức Order Net: ${formatVndShort(kpiSummary.totalBudgetNet)}.`,
       `- Thực tế duyệt chi lũy kế (File 3.2): ${formatVndShort(kpiSummary.totalActualSpentNet)} (Đạt ${kpiSummary.pacingNetPct}% trần Net).`,
       `- Sản lượng Video: Đã lên sóng ${kpiSummary.totalActualAiredVideos} video / Chỉ tiêu ${kpiSummary.totalTargetPaidVideos} Video Paid KOC + ${kpiSummary.totalTargetFocVideos} suất gửi mẫu miễn phí 0đ (FOC) + ${kpiSummary.totalTargetSelfVideos} video kênh Brand.`,
+      `- Độ đồng loạt lịch air (W40-W45): 413/623 video (66.3%) nổ tập trung trong sóng Mega Sale 10.10 (06/10-10/10, đỉnh 09/10 đạt 137 video/ngày); 20 gian hàng Air đồng loạt chuẩn sóng, 13 gian hàng có gom sóng nhưng thiếu lịch p_air_date, 3 gian hàng rải rác/trễ sóng (Kutieskin Mama trễ 61/71 video ngày 01/10), 21 gian hàng nghẽn khâu vận đơn/chờ KOC quay.`,
       `- Cảnh báo tài chính: ${kpiSummary.unbudgetedCount} gian hàng chi khi hạn mức 0đ (Unbudgeted Spend), ${kpiSummary.overbudgetCount} gian hàng vượt trần Net (Overbudget), ${kpiSummary.slowBurnCount} gian hàng giải ngân chậm (<25%).`,
       topRiskList ? `- Chi tiết gian hàng cảnh báo trọng điểm: ${topRiskList}.` : '',
     ].filter(Boolean);
@@ -1105,14 +1169,14 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
 
   return (
     <div className="space-y-5 pb-12 text-slate-900">
-      {/* THANH CÔNG CỤ NGỮ CẢNH GỌN NHẸ THEO TỪNG TAB DASHBOARD */}
-      <div className="bg-white rounded-xl border border-slate-200 px-4 py-3 shadow-xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      {/* THANH CÔNG CỤ NGỮ CẢNH GỌN TRÊN 1 HÀNG (KHÔNG LỒNG TAB NGANG) */}
+      <div className="bg-white rounded-xl border border-slate-200 px-4 py-2.5 shadow-xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-accent-soft text-accent border border-line">
             <ShieldCheck className="w-3.5 h-3.5" />
             Phạm vi chuẩn: 69 Gian hàng B2C (B2C phụ trách = 1)
           </span>
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-100 text-slate-700">
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium bg-slate-100 text-slate-700">
             Kỳ đối soát: Tháng 10/2026 (File 4.1 · 4.1.1 · 3.2 &amp; TikTok Seller)
           </span>
         </div>
@@ -1121,7 +1185,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
           <button
             type="button"
             onClick={() => setIsReportDrawerOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white shadow-xs transition cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-white shadow-xs transition cursor-pointer"
           >
             <FileText className="w-3.5 h-3.5 text-emerald-400" />
             <span>Lập báo cáo nhận xét</span>
@@ -1132,17 +1196,17 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
             disabled={isSyncingSeller}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-800 transition cursor-pointer disabled:opacity-50"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${isSyncingSeller ? 'animate-spin text-indigo-600' : ''}`} />
+            <RefreshCw className={`w-3.5 h-3.5 ${isSyncingSeller ? 'animate-spin text-accent' : ''}`} />
             {isSyncingSeller ? 'Đang đồng bộ...' : 'Đồng bộ TikTok Seller'}
           </button>
           <button
             type="button"
             onClick={handleExportMultiSheetExcel}
             disabled={isExportingExcel}
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition cursor-pointer disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-accent hover:bg-accent-hover text-white shadow-xs transition cursor-pointer disabled:opacity-50"
           >
             <Download className="w-3.5 h-3.5" />
-            {isExportingExcel ? 'Đang xuất...' : 'Xuất Excel (4 Sheets)'}
+            {isExportingExcel ? 'Đang xuất...' : 'Xuất Excel (5 Sheets)'}
           </button>
         </div>
       </div>
@@ -1709,6 +1773,70 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                     </div>
                   );
                 })()}
+              </div>
+            </div>
+          </div>
+
+          {/* ĐỐI SOÁT DÒNG TIỀN TẠM ỨNG, ĐNTT KẾ TOÁN & XUẤT SỔ CÁI EXCEL (GỘP TỪ MỤC KẾ TOÁN) */}
+          <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs space-y-3.5">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div>
+                <h3 className="text-sm font-semibold text-slate-900">
+                  Sổ Cái Kiểm Soát Dòng Tiền &amp; Đề Nghị Thanh Toán (ĐNTT) — Tháng 10/2026
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Theo dõi tiến độ từ lúc duyệt tạm ứng hợp đồng đến nghiệm thu video, thanh lý quyết toán với KOC và xuất báo cáo Excel 5 Sheets.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleExportMultiSheetExcel}
+                disabled={isExportingExcel}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold bg-accent hover:bg-accent-hover text-white shadow-xs transition cursor-pointer shrink-0"
+              >
+                <Download className="w-3.5 h-3.5" />
+                {isExportingExcel ? 'Đang tạo file Excel...' : 'Tải sổ cái đối soát 5 Sheets (.xlsx)'}
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+              <div className="p-3.5 rounded-xl border border-emerald-200 bg-emerald-50/40">
+                <div className="flex items-center justify-between text-xs font-semibold text-emerald-900 mb-1">
+                  <span>1. Đã nghiệm thu &amp; tất toán ĐNTT 100%</span>
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                </div>
+                <div className="text-lg font-semibold text-emerald-800 font-mono">
+                  642 Đơn · 2,14 Tỷ VNĐ
+                </div>
+                <p className="text-2xs text-slate-600 mt-1">
+                  Video đã lên sóng đạt chuẩn yêu cầu thương hiệu, hoàn tất biên bản nghiệm thu và thanh lý kế toán.
+                </p>
+              </div>
+
+              <div className="p-3.5 rounded-xl border border-amber-200 bg-amber-50/40">
+                <div className="flex items-center justify-between text-xs font-semibold text-amber-900 mb-1">
+                  <span>2. Đang tạm ứng 50% (Chờ KOC air video)</span>
+                  <AlertCircle className="w-4 h-4 text-amber-600" />
+                </div>
+                <div className="text-lg font-semibold text-amber-800 font-mono">
+                  104 Đơn · 376 Triệu VNĐ
+                </div>
+                <p className="text-2xs text-slate-600 mt-1">
+                  KOC đã nhận tạm ứng đợt 1 và sản phẩm mẫu; chuyên viên đang giám sát lịch quay để lên sóng đúng hạn.
+                </p>
+              </div>
+
+              <div className="p-3.5 rounded-xl border border-line bg-slate-50">
+                <div className="flex items-center justify-between text-xs font-semibold text-slate-900 mb-1">
+                  <span>3. Suất gửi mẫu miễn phí TAP FOC (0đ Cát-xê)</span>
+                  <ShoppingBag className="w-4 h-4 text-accent" />
+                </div>
+                <div className="text-lg font-semibold text-slate-900 font-mono">
+                  212 Suất · 0đ Cát-xê
+                </div>
+                <p className="text-2xs text-slate-600 mt-1">
+                  Suất mẫu sản phẩm miễn phí cho KOC liên kết Affiliate (Trần Thị Hảo phụ trách), không phát sinh tiền mặt chi ra.
+                </p>
               </div>
             </div>
           </div>
@@ -2808,135 +2936,19 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
       )}
 
       {/* ========================================================================= */}
-      {/* TAB 4: TIẾN ĐỘ PIPELINE 786 VIDEO & KIỂM SOÁT SLA VẬN HÀNH B2C */}
+      {/* ========================================================================= */}
+      {/* TAB 3: LỊCH AIR KẾ HOẠCH THEO TUẦN (W40–W45), ĐỘ ĐỒNG LOẠT & TIẾN ĐỘ VIDEO */}
       {/* ========================================================================= */}
       {activeTab === 'TEAM_SLA' && (
         <div className="space-y-5">
-          {/* 4 THẺ KPI CHUYÊN BIỆT TAB TIẾN ĐỘ PIPELINE & SLA VẬN HÀNH */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-            <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs">
-              <div className="flex items-center justify-between text-xs text-slate-500 font-semibold">
-                <span>Tiến độ Air / 786 Video</span>
-                <Film className="w-4 h-4 text-emerald-600" />
-              </div>
-              <div className="text-xl font-extrabold font-mono text-emerald-700 mt-1">
-                62,0% (487 Air)
-              </div>
-              <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
-                <span className="text-slate-600">Đã bàn giao sản phẩm: 583</span>
-                <span className="font-bold text-indigo-700">Chờ duyệt KB: 94</span>
-              </div>
-            </div>
+          {/* TRỌNG TÂM 1: LỊCH AIR KẾ HOẠCH THEO TUẦN (W40–W45) & ĐỘ ĐỒNG LOẠT CHIẾN DỊCH */}
+          <WeeklyAirSyncDashboardSection
+            selectedBrandGlobal={selectedBrand}
+            selectedPlatformGlobal={selectedPlatform}
+            selectedGovernanceGlobal={selectedGovernance}
+          />
 
-            <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs">
-              <div className="flex items-center justify-between text-xs text-slate-500 font-semibold">
-                <span>Tỷ lệ Đạt SLA Đúng Hạn</span>
-                <CheckCircle2 className="w-4 h-4 text-indigo-600" />
-              </div>
-              <div className="text-xl font-extrabold font-mono text-slate-900 mt-1">
-                91,4% Đúng SLA
-              </div>
-              <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
-                <span className="text-emerald-700 font-bold">Chờ duyệt Video: 48</span>
-                <span className="font-bold text-amber-700">Quá hạn trả bài: 19</span>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs">
-              <div className="flex items-center justify-between text-xs text-slate-500 font-semibold">
-                <span>Phân tầng Quản trị 69 Gian</span>
-                <ShieldCheck className="w-4 h-4 text-violet-600" />
-              </div>
-              <div className="text-xl font-extrabold font-mono text-slate-900 mt-1">
-                8 Leader · 61 Trực tiếp
-              </div>
-              <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
-                <span className="text-indigo-700 font-bold">Leader: Ngọc Tâm (8)</span>
-                <span className="font-bold text-amber-700">Giám đốc: Yến Nhi</span>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs">
-              <div className="flex items-center justify-between text-xs text-slate-500 font-semibold">
-                <span>Kiểm soát Cọc & Huỷ Deal</span>
-                <AlertTriangle className="w-4 h-4 text-rose-600" />
-              </div>
-              <div className="text-xl font-extrabold font-mono text-rose-700 mt-1">
-                12 Video Huỷ (1,5%)
-              </div>
-              <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
-                <span className="text-slate-600">Chưa bàn giao SP: 45</span>
-                <span className="font-bold text-rose-700">Thu hồi cọc: 100%</span>
-              </div>
-            </div>
-          </div>
-
-          {/* SƠ ĐỒ CƠ CẤU TỔ CHỨC & PHÂN BỔ LEADER - SPECIALIST PHÒNG B2C */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            {/* Cấp Giám Đốc Marketing */}
-            <div className="bg-indigo-950 text-white rounded-xl p-4 shadow-xs border border-indigo-800">
-              <div className="flex items-center justify-between mb-2">
-                <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-indigo-700 text-indigo-100">
-                  Cấp Giám Đốc Marketing (Lead B2C)
-                </span>
-                <ShieldCheck className="w-4 h-4 text-indigo-300" />
-              </div>
-              <div className="text-base font-extrabold">Đặng Thị Yến Nhi</div>
-              <p className="text-xs text-indigo-200 mt-1">
-                Phụ trách chung toàn phòng B2C, quản lý trần PnL/ngân sách toàn bộ <strong>69 gian hàng B2C</strong> (42 Brands), ký duyệt kế hoạch tháng và đại diện ký biên bản 4 bên.
-              </p>
-              <div className="mt-3 pt-2.5 border-t border-indigo-800/80 flex items-center justify-between text-xs font-mono">
-                <span>Tổng hạn mức Net: <strong>4,83 Tỷ</strong></span>
-                <span>Thực chi: <strong>2,47 Tỷ (51,1%)</strong></span>
-              </div>
-            </div>
-
-            {/* Cấp Trưởng nhóm (Leader) */}
-            <div className="bg-white rounded-xl p-4 shadow-xs border border-indigo-200">
-              <div className="flex items-center justify-between mb-2">
-                <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-indigo-100 text-indigo-800">
-                  Cấp Trưởng Nhóm (Cột 55 File 4.1.1)
-                </span>
-                <UserCheck className="w-4 h-4 text-indigo-600" />
-              </div>
-              <div className="text-base font-extrabold text-slate-900">Nguyễn Thị Ngọc Tâm</div>
-              <p className="text-xs text-slate-600 mt-1">
-                Trưởng nhóm duy nhất tại Cột 55 File 4.1.1 — Phụ trách sơ duyệt <strong>8 gian hàng</strong>: ClubClio (TikTok/Shopee), Cindy Bloom, Mine, EUPC, L&apos;Occitane, Bye Bye Blemish, Rejuran.
-              </p>
-              <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs font-mono text-slate-800">
-                <span>Hạn mức Net nhóm: <strong>813,5 Tr</strong></span>
-                <span className="text-indigo-700 font-bold">Thực chi: 416,5 Tr (51,2%)</span>
-              </div>
-            </div>
-
-            {/* Quy tắc 61 gian hàng không có Leader */}
-            <div className="bg-white rounded-xl p-4 shadow-xs border border-slate-200">
-              <div className="flex items-center justify-between mb-2">
-                <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800">
-                  Khối Chuyên Viên Trực Tiếp (61 Gian Hàng)
-                </span>
-                <Users className="w-4 h-4 text-emerald-600" />
-              </div>
-              <div className="text-base font-extrabold text-slate-900">
-                Chuyên Viên Thực Thi (PIC) &amp; FOC
-              </div>
-              <p className="text-xs text-slate-600 mt-1">
-                <strong>61 gian hàng không có Leader</strong> (<code className="text-[11px] bg-slate-100 px-1 rounded">bookingLeader: undefined</code>): Chuyên viên chủ động lập phân rã và trình duyệt trực tiếp lên Giám đốc Marketing <strong>Đặng Thị Yến Nhi</strong>.
-              </p>
-              <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs font-mono text-slate-800">
-                <span>Đầu mối FOC (0đ): <strong>Trần Thị Hảo</strong></span>
-                <button
-                  type="button"
-                  onClick={() => handleSelectDashboardSection('STAFF_EFFICIENCY')}
-                  className="text-indigo-600 hover:text-indigo-800 font-bold inline-flex items-center gap-1 cursor-pointer"
-                >
-                  Xem hiệu suất 32 NS <ChevronRight className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* PHỄU TIẾN ĐỘ PIPELINE 786 ĐƠN VIDEO & ĐỐI SÁNH SLA GIỮA 2 LUỒNG QUẢN TRỊ */}
+          {/* TRỌNG TÂM 2: PHỄU TIẾN ĐỘ PIPELINE 786 ĐƠN VIDEO & KIỂM SOÁT SLA VẬN HÀNH */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
             {/* Trái 7 cột: Băng tải tiến độ thực thi & hoàn tất chứng từ 786 đơn video File 3.2 */}
             <div className="lg:col-span-7 bg-white rounded-xl border border-slate-200 p-5 shadow-xs">
@@ -4317,206 +4329,6 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                 </button>
               </div>
             )}
-          </div>
-        </div>
-      )}
-
-      {/* ========================================================================= */}
-      {/* TAB 6: TRUNG TÂM XUẤT BÁO CÁO ĐỐI SOÁT ĐA SHEET (.XLSX) */}
-      {/* ========================================================================= */}
-      {activeTab === 'EXPORT_CENTER' && (
-        <div className="space-y-5">
-          {/* 1. THANH TIÊU ĐỀ & NÚT TẢI XUẤT EXCEL */}
-          <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-indigo-900 text-white">
-                    Kiểm Soát Tài Chính B2C
-                  </span>
-                  <h3 className="text-base font-bold text-slate-900">
-                    Trung Tâm Đối Soát Kế Toán, Dòng Tiền Booking &amp; Xuất Báo Cáo Đa Sheet (.xlsx)
-                  </h3>
-                </div>
-                <p className="text-xs text-slate-500 mt-1">
-                  Đảm bảo kỷ luật tài chính phòng B2C: Đối soát giữa Định mức Order Gross (File 4.1), Trần duyệt Net Kế toán (File 4.1.1) và Thực tế duyệt chi (File 3.2).
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={handleExportMultiSheetExcel}
-                disabled={isExportingExcel}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition cursor-pointer shrink-0"
-              >
-                <Download className="w-4 h-4" />
-                {isExportingExcel ? 'Đang tạo file Excel...' : 'Tải Xuống Sổ Cái Đối Soát Ngay (.xlsx)'}
-              </button>
-            </div>
-          </div>
-
-          {/* 2. 4 THẺ CHỈ SỐ TÀI CHÍNH CỐT LÕI (GROSS vs NET vs THỰC CHI) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3.5">
-            <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs">
-              <div className="flex items-center justify-between text-xs text-slate-500 font-medium mb-1">
-                <span>Hạn Mức Order Gross (4.1)</span>
-                <DollarSign className="w-4 h-4 text-slate-500" />
-              </div>
-              <div className="text-xl font-extrabold text-slate-900 font-mono">
-                {formatVndShort(kpiSummary.totalBudgetGross)}
-              </div>
-              <div className="mt-2 pt-2 border-t border-slate-100 text-[11px] text-slate-500">
-                Định mức kế hoạch tổng (Trước thuế &amp; phí sàn)
-              </div>
-            </div>
-
-            <div className="bg-white rounded-xl border border-indigo-200 p-4 shadow-xs">
-              <div className="flex items-center justify-between text-xs text-indigo-800 font-bold mb-1">
-                <span>Trần Phê Duyệt Net (4.1.1)</span>
-                <ShieldCheck className="w-4 h-4 text-indigo-600" />
-              </div>
-              <div className="text-xl font-extrabold text-indigo-700 font-mono">
-                {formatVndShort(kpiSummary.totalBudgetNet)}
-              </div>
-              <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
-                <span className="text-slate-500">Kế toán duyệt trần:</span>
-                <strong className="text-indigo-900">100% gian có trần Net</strong>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs">
-              <div className="flex items-center justify-between text-xs text-slate-500 font-medium mb-1">
-                <span>Chênh Lệch Gross - Net</span>
-                <PieChart className="w-4 h-4 text-amber-600" />
-              </div>
-              <div className="text-xl font-extrabold text-amber-600 font-mono">
-                {formatVndShort(Math.max(kpiSummary.totalBudgetGross - kpiSummary.totalBudgetNet, 0))}
-              </div>
-              <div className="mt-2 pt-2 border-t border-slate-100 text-[11px] text-slate-500">
-                Thuế VAT, chiết khấu sàn &amp; giảm trừ biên đại lý
-              </div>
-            </div>
-
-            <div className="bg-white rounded-xl border border-emerald-200 p-4 shadow-xs">
-              <div className="flex items-center justify-between text-xs text-emerald-800 font-bold mb-1">
-                <span>Thực Chi Đã Duyệt Book (3.2)</span>
-                <TrendingUp className="w-4 h-4 text-emerald-600" />
-              </div>
-              <div className="flex items-baseline gap-2">
-                <span className="text-xl font-extrabold text-emerald-700 font-mono">
-                  {formatVndShort(kpiSummary.totalActualSpentNet)}
-                </span>
-                <span className="text-xs font-bold text-emerald-800 bg-emerald-100 px-1.5 py-0.5 rounded">
-                  {kpiSummary.pacingNetPct}% Trần Net
-                </span>
-              </div>
-              <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
-                <span className="text-slate-500">Còn dư hạn mức:</span>
-                <strong className="text-slate-700 font-mono">
-                  {formatVndShort(Math.max(kpiSummary.totalBudgetNet - kpiSummary.totalActualSpentNet, 0))}
-                </strong>
-              </div>
-            </div>
-          </div>
-
-          {/* 3. ĐỐI SOÁT DÒNG TIỀN TẠM ỨNG & HOÀN ỨNG BOOKING (786 ĐƠN) */}
-          <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs space-y-3">
-            <div>
-              <h4 className="text-sm font-bold text-slate-900">
-                Sổ Cái Kiểm Soát Dòng Tiền &amp; Trạng Thái Đề Nghị Thanh Toán (ĐNTT) — Tháng 10/2026
-              </h4>
-              <p className="text-xs text-slate-500">
-                Theo dõi tiến độ từ lúc duyệt tạm ứng hợp đồng đến nghiệm thu video và thanh lý quyết toán với KOC.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
-              <div className="p-3.5 rounded-xl border border-emerald-200 bg-emerald-50/40">
-                <div className="flex items-center justify-between text-xs font-bold text-emerald-900 mb-1">
-                  <span>1. Đã Nghiệm Thu &amp; Tất Toán ĐNTT 100%</span>
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                </div>
-                <div className="text-lg font-extrabold text-emerald-800 font-mono">
-                  642 Đơn · 2,14 Tỷ VNĐ
-                </div>
-                <p className="text-[11px] text-slate-600 mt-1">
-                  Video đã lên sóng (Air) đạt chuẩn yêu cầu thương hiệu, hoàn tất biên bản nghiệm thu và thanh lý kế toán.
-                </p>
-              </div>
-
-              <div className="p-3.5 rounded-xl border border-amber-200 bg-amber-50/40">
-                <div className="flex items-center justify-between text-xs font-bold text-amber-900 mb-1">
-                  <span>2. Đang Tạm Ứng 50% (Chờ KOC Air Video)</span>
-                  <AlertCircle className="w-4 h-4 text-amber-600" />
-                </div>
-                <div className="text-lg font-extrabold text-amber-800 font-mono">
-                  104 Đơn · 376 Triệu VNĐ
-                </div>
-                <p className="text-[11px] text-slate-600 mt-1">
-                  KOC đã nhận tạm ứng đợt 1 và sản phẩm mẫu; chuyên viên đang giám sát lịch quay để lên sóng đúng hạn.
-                </p>
-              </div>
-
-              <div className="p-3.5 rounded-xl border border-sky-200 bg-sky-50/40">
-                <div className="flex items-center justify-between text-xs font-bold text-sky-900 mb-1">
-                  <span>3. Suất Gửi Mẫu Miễn Phí TAP FOC (0đ Cát-xê)</span>
-                  <ShoppingBag className="w-4 h-4 text-sky-600" />
-                </div>
-                <div className="text-lg font-extrabold text-sky-800 font-mono">
-                  212 Suất · 0đ Cát-xê
-                </div>
-                <p className="text-[11px] text-slate-600 mt-1">
-                  Suất mẫu sản phẩm miễn phí cho KOC liên kết Affiliate (Trần Thị Hảo phụ trách), không phát sinh tiền mặt chi ra.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* 4. CẤU TRÚC 4 SHEET EXCEL BÁO CÁO ĐỐI SOÁT */}
-          <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs space-y-4">
-            <div>
-              <h4 className="text-sm font-bold text-slate-900">
-                Cấu Trúc Tệp Báo Cáo Đối Soát Đa Sheet (Định Dạng Excel .xlsx)
-              </h4>
-              <p className="text-xs text-slate-500">
-                Tệp tải xuống bao gồm 4 bảng tính độc lập được định dạng chuẩn kế toán doanh nghiệp:
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {[
-                {
-                  sheet: 'Sheet 1: Đối Soát 69 Gian Hàng B2C',
-                  rows: '69 dòng gian hàng chuẩn',
-                  desc: 'Đầy đủ Brand, Gian hàng, Sàn, Giám đốc Marketing (Yến Nhi), Leader (Ngọc Tâm / Không có leader), PIC, Order Gross, Order Net, Thực chi File 3.2, Paid/FOC/Self video và Cảnh báo vượt trần.'
-                },
-                {
-                  sheet: 'Sheet 2: Hiệu Suất Nhân Sự B2C',
-                  rows: `${B2C_STAFF_ANALYTICS_LIST.length} nhân sự phòng B2C`,
-                  desc: 'Thống kê chi tiết số gian hàng TikTok/Shopee, số gian có Leader vs trực tiếp, tổng hạn mức Gross/Net quản lý, thực chi lũy kế, số đơn book, video đã air và tỷ lệ đúng hạn SLA.'
-                },
-                {
-                  sheet: 'Sheet 3: Sổ Cái Video Đã Book (File 3.2)',
-                  rows: `${B2C_BOOKED_VIDEOS_OCT_2026.length} bản ghi đối soát mẫu & 786 đơn tháng`,
-                  desc: 'Chi tiết mã BO26..., ID kênh KOC, gian hàng, chuyên viên book, bậc khung lương (TAP 0đ, KL1-KL7), cát-xê duyệt chi, trạng thái ĐNTT/Tạm ứng và doanh thu GMV TikTok Seller.'
-                },
-                {
-                  sheet: 'Sheet 4: Chiến Dịch & Creative TikTok Seller',
-                  rows: `${TIKTOK_SELLER_TOP_CREATIVES.length} Top Creative & 6 Chiến dịch PGM/LGM`,
-                  desc: 'Báo cáo hiệu quả chạy quảng cáo thực tế từ TikTok Shop Seller Center: Chi phí Ads, GMV thực thu, ROAS, số đơn hàng, CPA, CTR, CVR và tỷ lệ giữ chân 2s / 6s.'
-                }
-              ].map((item) => (
-                <div key={item.sheet} className="p-4 rounded-xl bg-slate-50 border border-slate-200">
-                  <div className="flex items-center gap-2 text-indigo-700 font-bold text-xs mb-1">
-                    <FileSpreadsheet className="w-4 h-4 shrink-0" />
-                    <span>{item.sheet}</span>
-                  </div>
-                  <div className="text-[11px] font-mono font-semibold text-slate-800 mb-2">
-                    Quy mô: {item.rows}
-                  </div>
-                  <p className="text-xs text-slate-600 leading-relaxed">{item.desc}</p>
-                </div>
-              ))}
-            </div>
           </div>
         </div>
       )}

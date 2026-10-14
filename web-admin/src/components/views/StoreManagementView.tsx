@@ -1,24 +1,59 @@
 'use client';
 
 /**
- * Màn hình Quản lý Danh bạ & Hồ sơ Gian hàng B2C.
+ * Màn hình Quản lý Danh bạ & Hồ sơ Gian hàng B2C theo kỳ tháng.
  * Thiết kế chuẩn Upbase Ops Design System (DESIGN_SYSTEM.md):
- * - Khi chưa chọn gian: Hiển thị Danh bạ gian hàng sàn (Panel flush, FilterBar, Chips, DataTable, Pagination).
- * - Khi chọn gian: Mở hồ sơ chi tiết 2 cột (StoreProfile layout="page"), nút ← Danh bạ gian hàng kèm bộ chuyển ‹ › bản ghi.
- * - Hỗ trợ Bàn giao PIC giữa kỳ (StoreHandoverDialog) và Chỉnh sửa thông số (StoreEditDialog).
+ * - Tách bạch thông số định danh cố định của gian hàng (Mã SO, Sàn, Gói dịch vụ, Đội ngũ PIC)
+ *   với Hồ sơ Kế hoạch (Plan) & Báo cáo (Report) theo từng chu kỳ tháng (NMV, Ngân sách Net, Sản lượng Video, ROAS).
+ * - Từ danh sách hoặc từ hồ sơ chi tiết gian hàng có thể drill-down trực tiếp xuống từng Plan tháng, Đề xuất KOC, Booking và Hợp đồng.
  */
 
 import React, { useState, useMemo, useCallback } from 'react';
-import type { BookingDealItem, BrandDetail, StorePortfolioItem, UserProfile } from '../../lib/types';
-import { ChannelTag, Chips, DataTable, EmptyState, FilterBar, Pagination, Panel, Person, Status, closeShared, openShared, sharedFrom } from '../ui';
+import { Calendar, FileSpreadsheet, Sliders, Video } from 'lucide-react';
+import {
+  type BookingDealItem,
+  type BrandDetail,
+  type InputPlanBreakdownState,
+  type SalaryGrade,
+  type StorePortfolioItem,
+  type UserProfile,
+  normalizeStoreCoefficient,
+} from '../../lib/types';
+import {
+  Button,
+  ChannelTag,
+  Chips,
+  DataTable,
+  EmptyState,
+  FilterBar,
+  Pagination,
+  Panel,
+  Person,
+  Select,
+  Stat,
+  StatRow,
+  Status,
+  closeShared,
+  openShared,
+  sharedFrom,
+} from '../ui';
 import type { Column } from '../ui';
-import { formatNumber, formatVnd } from '../../lib/format';
+import { formatNumber, formatPercent, formatVndShort } from '../../lib/format';
 import { INITIAL_DEALS, INITIAL_STORE_PORTFOLIOS, INITIAL_BRANDS } from '../../lib/mockData';
+import { INITIAL_MONTHLY_PLANS } from '../../lib/monthlyPlanData';
+import {
+  PROFILE_MONTH_OPTIONS,
+  buildStoreMonthlyPlanReport,
+  type StoreMonthlyPlanReport,
+} from '../../lib/monthlyProfileMetrics';
 import { StoreProfile } from '../stores/StoreProfile';
 import { StoreHandoverDialog } from '../stores/StoreHandoverDialog';
 import { StoreEditDialog } from '../stores/StoreEditDialog';
+import { StoreCoefficientHubSection } from '../stores/StoreCoefficientHubSection';
+import { isStoreManagedByUser, isStaffGlobalAdminOrManager } from '../../lib/rbacScope';
 
 type StoreFilter = 'ALL' | 'MINE' | 'OVERBUDGET' | 'ZERO_BUDGET' | 'WITH_LEADER' | 'DIRECT_LEAD';
+type StoreViewSubTab = 'DIRECTORY' | 'MONTHLY_COEFF_SETUP';
 
 export interface StoreManagementViewProps {
   currentUser?: UserProfile | null;
@@ -26,10 +61,32 @@ export interface StoreManagementViewProps {
   stores?: StorePortfolioItem[];
   brands?: BrandDetail[];
   deals?: BookingDealItem[];
+  monthlyPlans?: InputPlanBreakdownState[];
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
   onUpdateStore?: (store: StorePortfolioItem) => void;
   onNavigateToBrandProfile?: (brandName: string) => void;
   onNavigateBackToMaster?: () => void;
+  onDrilldownToPlan?: (params: {
+    planId?: string;
+    storeId?: string;
+    storeName: string;
+    brandName: string;
+    month: string;
+  }) => void;
+  onDrilldownToListing?: (params: {
+    planId?: string;
+    storeName: string;
+    brandName: string;
+    month: string;
+    salaryGrade?: SalaryGrade;
+  }) => void;
+  onDrilldownToBooking?: (params: {
+    storeName: string;
+    brandName: string;
+    month: string;
+    dealCode?: string;
+  }) => void;
+  onSelectDealForContract?: (deal: BookingDealItem) => void;
 }
 
 export function StoreManagementView({
@@ -38,12 +95,19 @@ export function StoreManagementView({
   stores = INITIAL_STORE_PORTFOLIOS,
   brands = INITIAL_BRANDS,
   deals = INITIAL_DEALS,
+  monthlyPlans = INITIAL_MONTHLY_PLANS,
   onNotify,
   onUpdateStore,
   onNavigateToBrandProfile,
+  onDrilldownToPlan,
+  onDrilldownToListing,
+  onDrilldownToBooking,
+  onSelectDealForContract,
 }: StoreManagementViewProps) {
   // Local modifications during the session
   const [storeOverrides, setStoreOverrides] = useState<Record<string, StorePortfolioItem>>({});
+  const [selectedMonth, setSelectedMonth] = useState<string>('2026/10');
+  const [activeSubTab, setActiveSubTab] = useState<StoreViewSubTab>('DIRECTORY');
 
   const storeList = useMemo(() => {
     return stores.map(s => storeOverrides[s.id] || s);
@@ -52,9 +116,10 @@ export function StoreManagementView({
   // Selected store key for detailed profile mode
   const [openStoreKey, setOpenStoreKey] = useState<string | null>(() => {
     if (propSelectedStore) {
-      const found = stores.find(s => 
-        s.id === propSelectedStore || 
-        s.storeName.toLowerCase() === propSelectedStore.toLowerCase()
+      const found = stores.find(
+        s =>
+          s.id === propSelectedStore ||
+          s.storeName.toLowerCase() === propSelectedStore.toLowerCase()
       );
       return found ? found.id : null;
     }
@@ -66,9 +131,10 @@ export function StoreManagementView({
   if (propSelectedStore !== syncedSelectedStore) {
     setSyncedSelectedStore(propSelectedStore);
     if (propSelectedStore) {
-      const found = storeList.find(s => 
-        s.id === propSelectedStore || 
-        s.storeName.toLowerCase() === propSelectedStore.toLowerCase()
+      const found = storeList.find(
+        s =>
+          s.id === propSelectedStore ||
+          s.storeName.toLowerCase() === propSelectedStore.toLowerCase()
       );
       setOpenStoreKey(found ? found.id : null);
     }
@@ -86,60 +152,72 @@ export function StoreManagementView({
   // Current user PIC name matching
   const myName = currentUser?.name?.trim().toLowerCase() || '';
 
-  // Helpers to calculate spent and budget
-  const getStoreFinancials = useCallback((s: StorePortfolioItem) => {
-    const budgetNet = s.budgetNet ?? s.monthlyBudget ?? 0;
-    const sName = s.storeName.toLowerCase();
-    const bName = s.brandName.toLowerCase();
-    const relatedDeals = deals.filter(d =>
-      (d.storeName && d.storeName.toLowerCase() === sName) ||
-      (d.storeId && (d.storeId === s.id || d.storeId === s.storeOperationId)) ||
-      (!d.storeName && d.brandName && d.brandName.toLowerCase() === bName)
-    );
-    const dealSpent = relatedDeals.reduce((sum, d) => sum + (d.totalValue || 0), 0);
-    const spent = s.actualSpentNet ?? (dealSpent > 0 ? dealSpent : 0);
-    const isOverbudget = budgetNet > 0 && spent > budgetNet;
-    const isUnbudgetedSpend = budgetNet === 0 && spent > 0;
-    return { budgetNet, spent, isOverbudget, isUnbudgetedSpend };
-  }, [deals]);
+  // Map StoreId -> StoreMonthlyPlanReport cho kỳ tháng đang chọn
+  const monthlyReportsByStoreId = useMemo(() => {
+    const map = new Map<string, StoreMonthlyPlanReport>();
+    for (const s of storeList) {
+      map.set(
+        s.id,
+        buildStoreMonthlyPlanReport(s, selectedMonth, {
+          plans: monthlyPlans,
+          deals,
+        })
+      );
+    }
+    return map;
+  }, [storeList, selectedMonth, monthlyPlans, deals]);
+
+  const getStoreReport = useCallback(
+    (s: StorePortfolioItem): StoreMonthlyPlanReport => {
+      return (
+        monthlyReportsByStoreId.get(s.id) ||
+        buildStoreMonthlyPlanReport(s, selectedMonth, {
+          plans: monthlyPlans,
+          deals,
+        })
+      );
+    },
+    [monthlyReportsByStoreId, selectedMonth, monthlyPlans, deals]
+  );
 
   // Filtered & searched rows
   const searchedStores = useMemo(() => {
     if (!search.trim()) return storeList;
     const q = search.trim().toLowerCase();
-    return storeList.filter(s =>
-      s.storeName.toLowerCase().includes(q) ||
-      s.brandName.toLowerCase().includes(q) ||
-      (s.storeOperationId && s.storeOperationId.toLowerCase().includes(q)) ||
-      (s.b2cOwnerName && s.b2cOwnerName.toLowerCase().includes(q)) ||
-      (s.bookingLeader && s.bookingLeader.toLowerCase().includes(q))
+    return storeList.filter(
+      s =>
+        s.storeName.toLowerCase().includes(q) ||
+        s.brandName.toLowerCase().includes(q) ||
+        (s.storeOperationId && s.storeOperationId.toLowerCase().includes(q)) ||
+        (s.b2cOwnerName && s.b2cOwnerName.toLowerCase().includes(q)) ||
+        (s.bookingLeader && s.bookingLeader.toLowerCase().includes(q))
     );
   }, [storeList, search]);
 
-  const matchesFilter = useCallback((s: StorePortfolioItem, f: StoreFilter) => {
-    if (f === 'ALL') return true;
-    if (f === 'MINE') {
-      if (!myName) return true;
-      const pic = (s.b2cOwnerName || s.primaryPic || (s.b2cOwners && s.b2cOwners[0]) || '').toLowerCase();
-      const leader = (s.bookingLeader || '').toLowerCase();
-      return pic.includes(myName) || leader.includes(myName);
-    }
-    if (f === 'OVERBUDGET') {
-      const { isOverbudget } = getStoreFinancials(s);
-      return isOverbudget;
-    }
-    if (f === 'ZERO_BUDGET') {
-      const { budgetNet } = getStoreFinancials(s);
-      return budgetNet === 0;
-    }
-    if (f === 'WITH_LEADER') {
-      return Boolean(s.hasBookingLeader && s.bookingLeader);
-    }
-    if (f === 'DIRECT_LEAD') {
-      return !s.hasBookingLeader || !s.bookingLeader;
-    }
-    return true;
-  }, [myName, getStoreFinancials]);
+  const matchesFilter = useCallback(
+    (s: StorePortfolioItem, f: StoreFilter) => {
+      if (f === 'ALL') return true;
+      const rep = getStoreReport(s);
+      if (f === 'MINE') {
+        if (!currentUser) return true;
+        return isStoreManagedByUser(s, currentUser);
+      }
+      if (f === 'OVERBUDGET') {
+        return rep.isOverbudget || rep.isUnbudgetedSpend;
+      }
+      if (f === 'ZERO_BUDGET') {
+        return rep.planBudgetNet === 0;
+      }
+      if (f === 'WITH_LEADER') {
+        return Boolean(s.hasBookingLeader && s.bookingLeader);
+      }
+      if (f === 'DIRECT_LEAD') {
+        return !s.hasBookingLeader || !s.bookingLeader;
+      }
+      return true;
+    },
+    [currentUser, getStoreReport]
+  );
 
   const visibleStores = useMemo(() => {
     return searchedStores.filter(s => matchesFilter(s, filter));
@@ -147,16 +225,67 @@ export function StoreManagementView({
 
   // Reset page when search or filter changes
   const [lastFilterQuery, setLastFilterQuery] = useState('');
-  if (`${search}|${filter}` !== lastFilterQuery) {
-    setLastFilterQuery(`${search}|${filter}`);
+  if (`${search}|${filter}|${selectedMonth}` !== lastFilterQuery) {
+    setLastFilterQuery(`${search}|${filter}|${selectedMonth}`);
     setPage(1);
   }
+
+  // Tổng hợp KPI Plan vs Report của kỳ tháng đang chọn trên toàn bộ gian hàng
+  const monthlyKpiSummary = useMemo(() => {
+    let planNmv = 0;
+    let reportNmv = 0;
+    let planBudgetNet = 0;
+    let reportSpentNet = 0;
+    let planVideos = 0;
+    let reportAired = 0;
+    let reportBooked = 0;
+    let overbudgetCount = 0;
+
+    for (const s of storeList) {
+      const rep = getStoreReport(s);
+      planNmv += rep.planNmv;
+      reportNmv += rep.reportNmv;
+      planBudgetNet += rep.planBudgetNet;
+      reportSpentNet += rep.reportSpentNet;
+      planVideos += rep.planTotalVideos;
+      reportAired += rep.reportAiredVideos;
+      reportBooked += rep.reportBookedVideos;
+      if (rep.isOverbudget || rep.isUnbudgetedSpend) overbudgetCount += 1;
+    }
+
+    return {
+      planNmv,
+      reportNmv,
+      planBudgetNet,
+      reportSpentNet,
+      planVideos,
+      reportAired,
+      reportBooked,
+      overbudgetCount,
+    };
+  }, [storeList, getStoreReport]);
 
   // Handle store updates
   const handleSaveStore = (updated: StorePortfolioItem) => {
     setStoreOverrides(prev => ({ ...prev, [updated.id]: updated }));
     onUpdateStore?.(updated);
-    onNotify?.(`Đã cập nhật thông số gian hàng ${updated.storeName}`, 'success');
+    onNotify?.(`Đã cập nhật thông số định danh gian hàng ${updated.storeName}`, 'success');
+  };
+
+  const handleSilentUpdateStore = (updated: StorePortfolioItem) => {
+    setStoreOverrides(prev => ({ ...prev, [updated.id]: updated }));
+    onUpdateStore?.(updated);
+  };
+
+  const handleBulkUpdateStores = (updatedStores: StorePortfolioItem[]) => {
+    setStoreOverrides(prev => {
+      const next = { ...prev };
+      updatedStores.forEach(st => {
+        next[st.id] = st;
+      });
+      return next;
+    });
+    updatedStores.forEach(st => onUpdateStore?.(st));
   };
 
   const handleConfirmHandover = (
@@ -165,7 +294,10 @@ export function StoreManagementView({
   ) => {
     setStoreOverrides(prev => ({ ...prev, [updated.id]: updated }));
     onUpdateStore?.(updated);
-    onNotify?.(`Đã bàn giao gian hàng ${updated.storeName} từ ${logEntry.fromPic} sang ${logEntry.toPic}`, 'success');
+    onNotify?.(
+      `Đã bàn giao gian hàng ${updated.storeName} từ ${logEntry.fromPic} sang ${logEntry.toPic}`,
+      'success'
+    );
   };
 
   // Currently open store for detail profile
@@ -175,9 +307,15 @@ export function StoreManagementView({
   }, [storeList, openStoreKey]);
 
   // Navigation within filtered stores for profile mode
-  const currentStoreIndex = openStore ? visibleStores.findIndex(s => s.id === openStore.id) : -1;
-  const prevStore = currentStoreIndex > 0 ? visibleStores[currentStoreIndex - 1] : undefined;
-  const nextStore = currentStoreIndex >= 0 && currentStoreIndex < visibleStores.length - 1 ? visibleStores[currentStoreIndex + 1] : undefined;
+  const currentStoreIndex = openStore
+    ? visibleStores.findIndex(s => s.id === openStore.id)
+    : -1;
+  const prevStore =
+    currentStoreIndex > 0 ? visibleStores[currentStoreIndex - 1] : undefined;
+  const nextStore =
+    currentStoreIndex >= 0 && currentStoreIndex < visibleStores.length - 1
+      ? visibleStores[currentStoreIndex + 1]
+      : undefined;
 
   // Associated brand for the currently open store
   const openBrand = useMemo(() => {
@@ -194,6 +332,9 @@ export function StoreManagementView({
           store={openStore}
           brand={openBrand}
           deals={deals}
+          monthlyPlans={monthlyPlans}
+          selectedMonth={selectedMonth}
+          onMonthChange={setSelectedMonth}
           currentUser={currentUser}
           layout="page"
           nav={{
@@ -207,6 +348,10 @@ export function StoreManagementView({
           onOpenHandover={s => setHandoverTarget(s)}
           onOpenEdit={s => setEditTarget(s)}
           onUpdateStore={handleSaveStore}
+          onDrilldownToPlan={onDrilldownToPlan}
+          onDrilldownToListing={onDrilldownToListing}
+          onDrilldownToBooking={onDrilldownToBooking}
+          onSelectDealForContract={onSelectDealForContract}
         />
 
         {handoverTarget && (
@@ -224,6 +369,17 @@ export function StoreManagementView({
             onClose={() => setEditTarget(null)}
             store={editTarget}
             onSave={handleSaveStore}
+            onOpenMonthlyPlan={
+              onDrilldownToPlan
+                ? st =>
+                    onDrilldownToPlan({
+                      storeId: st.id,
+                      storeName: st.storeName,
+                      brandName: st.brandName,
+                      month: selectedMonth,
+                    })
+                : undefined
+            }
           />
         )}
       </div>
@@ -231,14 +387,16 @@ export function StoreManagementView({
   }
 
   // Chips configuration
-  const chips = ([
-    { key: 'ALL', label: 'Tất cả' },
-    { key: 'MINE', label: 'Tôi phụ trách' },
-    { key: 'OVERBUDGET', label: 'Bội chi' },
-    { key: 'ZERO_BUDGET', label: 'Hạn mức 0 đ' },
-    { key: 'WITH_LEADER', label: 'Có trưởng nhóm' },
-    { key: 'DIRECT_LEAD', label: 'Trực tiếp trưởng phòng' },
-  ] as { key: StoreFilter; label: string }[]).map(item => ({
+  const chips = (
+    [
+      { key: 'ALL', label: 'Tất cả' },
+      { key: 'MINE', label: 'Tôi phụ trách' },
+      { key: 'OVERBUDGET', label: `Cảnh báo chi (${selectedMonth})` },
+      { key: 'ZERO_BUDGET', label: `Plan 0 đ (${selectedMonth})` },
+      { key: 'WITH_LEADER', label: 'Có trưởng nhóm' },
+      { key: 'DIRECT_LEAD', label: 'Trực tiếp trưởng phòng' },
+    ] as { key: StoreFilter; label: string }[]
+  ).map(item => ({
     key: item.key,
     label: item.label,
     count: searchedStores.filter(s => matchesFilter(s, item.key)).length,
@@ -248,16 +406,21 @@ export function StoreManagementView({
   const columns: Column<StorePortfolioItem>[] = [
     {
       key: 'storeName',
-      header: 'Gian hàng sàn',
-      width: 260,
+      header: 'Gian hàng sàn & Mã định danh',
+      width: 245,
       render: s => (
-        <div className="min-w-0 max-w-[280px] leading-tight">
+        <div className="min-w-0 max-w-[260px] leading-tight">
           <div className="flex items-center gap-1.5 flex-wrap">
-            <span {...sharedFrom('store-title', s.id)} className="truncate font-medium text-ink">{s.storeName}</span>
+            <span
+              {...sharedFrom('store-title', s.id)}
+              className="truncate font-medium text-ink"
+            >
+              {s.storeName}
+            </span>
             <ChannelTag channel={s.platform} />
           </div>
           <span className="block truncate text-2xs text-ink-3 mt-0.5">
-            {s.storeOperationId || s.id}
+            {s.storeOperationId || s.id} · Gói {s.servicePackage || 'E2E-S'}
           </span>
         </div>
       ),
@@ -265,107 +428,178 @@ export function StoreManagementView({
     {
       key: 'brandName',
       header: 'Thương hiệu',
-      width: 160,
-      render: s => (
-        <span className="truncate font-medium text-ink-2">{s.brandName}</span>
-      ),
+      width: 135,
+      render: s => <span className="truncate font-medium text-ink-2">{s.brandName}</span>,
     },
     {
       key: 'pic',
-      header: 'Chuyên viên PIC',
-      width: 170,
+      header: 'Chuyên viên PIC & Quản lý',
+      width: 180,
       render: s => {
-        const pic = s.b2cOwnerName || s.primaryPic || (s.b2cOwners && s.b2cOwners[0]) || 'Chưa giao';
-        return <Person name={pic} size={20} />;
-      },
-    },
-    {
-      key: 'management',
-      header: 'Tầng quản lý',
-      width: 160,
-      render: s => {
-        if (s.hasBookingLeader && s.bookingLeader) {
-          return (
-            <div className="leading-tight">
-              <span className="block text-2xs text-ink-2 font-medium">{s.bookingLeader}</span>
-              <span className="block text-2xs text-ink-3">Trưởng nhóm</span>
-            </div>
-          );
-        }
+        const pic =
+          s.b2cOwnerName || s.primaryPic || (s.b2cOwners && s.b2cOwners[0]) || 'Chưa giao';
         return (
-          <span className="text-2xs text-ink-3">Trực tiếp Trưởng phòng</span>
-        );
-      },
-    },
-    {
-      key: 'budgetNet',
-      header: 'Hạn mức Net',
-      width: 130,
-      align: 'right',
-      render: s => {
-        const { budgetNet } = getStoreFinancials(s);
-        return (
-          <span className="tabular-nums text-ink font-medium">
-            {budgetNet > 0 ? formatVnd(budgetNet) : '0 đ'}
-          </span>
-        );
-      },
-    },
-    {
-      key: 'spent',
-      header: 'Đã duyệt chi',
-      width: 130,
-      align: 'right',
-      render: s => {
-        const { spent, isOverbudget, isUnbudgetedSpend } = getStoreFinancials(s);
-        if (isOverbudget || isUnbudgetedSpend) {
-          return (
-            <span className="tabular-nums text-critical font-medium">
-              {formatVnd(spent)}
+          <div className="leading-tight">
+            <Person name={pic} size={18} />
+            <span className="block text-2xs text-ink-3 mt-0.5">
+              {s.hasBookingLeader && s.bookingLeader
+                ? `TN: ${s.bookingLeader}`
+                : 'Trực tiếp Trưởng phòng'}
             </span>
-          );
-        }
-        return (
-          <span className="tabular-nums text-ink">
-            {formatVnd(spent)}
-          </span>
+          </div>
         );
       },
     },
     {
-      key: 'status',
-      header: 'Trạng thái',
-      width: 130,
+      key: 'storeCoefficient',
+      header: 'Hệ số gian hàng (Bảng 2)',
+      width: 155,
+      align: 'center',
       render: s => {
-        const { budgetNet, spent, isOverbudget, isUnbudgetedSpend } = getStoreFinancials(s);
-        if (isOverbudget) {
-          return <Status tone="critical">Bội chi</Status>;
-        }
-        if (isUnbudgetedSpend) {
-          return <Status tone="critical">Chưa có trần</Status>;
-        }
-        if (spent > 0) {
-          return <Status tone="positive">Trong trần</Status>;
-        }
-        if (budgetNet > 0) {
-          return <Status tone="neutral">Chưa chi</Status>;
-        }
-        return <Status>Chưa giao trần</Status>;
+        const norm = normalizeStoreCoefficient(s.difficultyTier, s.difficultyMultiplier);
+        const badgeTone =
+          norm.tier === 'Khó'
+            ? 'bg-rose-50 text-rose-800 border-rose-300'
+            : norm.tier === 'Vừa'
+              ? 'bg-amber-50 text-amber-900 border-amber-300'
+              : norm.tier === 'Tiêu chuẩn'
+                ? 'bg-blue-50 text-blue-800 border-blue-200'
+                : 'bg-slate-100 text-slate-800 border-slate-300';
+        return (
+          <div
+            className="inline-flex flex-col items-center gap-0.5 cursor-pointer"
+            onClick={e => {
+              e.stopPropagation();
+              setEditTarget(s);
+            }}
+            title={`${norm.tier} (HS ${norm.label}): ${norm.rule.definition}`}
+          >
+            <span
+              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold border ${badgeTone}`}
+            >
+              <span>{norm.tier}</span>
+              <span className="font-mono font-bold">· {norm.label}</span>
+            </span>
+            <span className="text-[10px] text-ink-3">
+              {s.coefficientApprovalStatus === 'PENDING_MANAGER_APPROVAL'
+                ? 'Chờ GĐ duyệt đầu kỳ'
+                : s.coefficientApprovalStatus === 'ADJUSTED_BY_APPROVED_PLAN'
+                  ? 'Đã duyệt theo Plan'
+                  : 'Đã duyệt đầu tháng'}
+            </span>
+          </div>
+        );
       },
     },
     {
-      key: 'contents',
-      header: 'Chỉ tiêu video',
-      width: 110,
+      key: 'nmvMonthly',
+      header: `NMV Plan / Report (${selectedMonth})`,
+      width: 165,
       align: 'right',
       render: s => {
-        const totalVideos = (s.targetAffiliateContents || 0) + (s.targetSelfChannelContents || 0) + (s.targetFocVideos || 0);
+        const rep = getStoreReport(s);
         return (
-          <div className="leading-tight text-right">
-            <span className="block tabular-nums font-medium text-ink">{formatNumber(totalVideos)}</span>
+          <div className="leading-tight tabular-nums text-right">
+            <span className="block font-medium text-ink text-xs">
+              Report: {rep.reportNmv > 0 ? formatVndShort(rep.reportNmv) : '0 đ'}
+            </span>
             <span className="block text-2xs text-ink-3">
-              Aff {s.targetAffiliateContents || 0} · Kênh {s.targetSelfChannelContents || 0}
+              Plan: {rep.planNmv > 0 ? formatVndShort(rep.planNmv) : '0 đ'}
+              {rep.planNmv > 0 && ` (${Math.round(rep.nmvAchievementPct)}%)`}
             </span>
+          </div>
+        );
+      },
+    },
+    {
+      key: 'budgetMonthly',
+      header: `Ngân sách Net (${selectedMonth})`,
+      width: 165,
+      align: 'right',
+      render: s => {
+        const rep = getStoreReport(s);
+        return (
+          <div className="leading-tight tabular-nums text-right">
+            <span
+              className={`block font-medium text-xs ${
+                rep.isOverbudget || rep.isUnbudgetedSpend ? 'text-critical' : 'text-ink'
+              }`}
+            >
+              Chi: {rep.reportSpentNet > 0 ? formatVndShort(rep.reportSpentNet) : '0 đ'}
+            </span>
+            <span className="block text-2xs text-ink-3">
+              Plan: {rep.planBudgetNet > 0 ? formatVndShort(rep.planBudgetNet) : '0 đ'}
+              {rep.planBudgetNet > 0 && ` (${Math.round(rep.budgetBurnPct)}%)`}
+            </span>
+          </div>
+        );
+      },
+    },
+    {
+      key: 'videosMonthly',
+      header: `Video Plan / Air (${selectedMonth})`,
+      width: 150,
+      align: 'right',
+      render: s => {
+        const rep = getStoreReport(s);
+        return (
+          <div className="leading-tight text-right tabular-nums">
+            <span className="block font-medium text-ink text-xs">
+              Air {formatNumber(rep.reportAiredVideos)} / Plan {formatNumber(rep.planTotalVideos)}
+            </span>
+            <span className="block text-2xs text-ink-3">
+              Aff {rep.planAffVideos} · Kênh {rep.planSelfVideos} · FOC {rep.planFocVideos}
+            </span>
+          </div>
+        );
+      },
+    },
+    {
+      key: 'drilldown',
+      header: 'Hồ sơ tháng & Drill-down',
+      width: 180,
+      align: 'right',
+      render: s => {
+        const rep = getStoreReport(s);
+        return (
+          <div
+            className="inline-flex items-center justify-end gap-1.5"
+            onClick={e => e.stopPropagation()}
+          >
+            {onDrilldownToPlan && (
+              <Button
+                size="sm"
+                variant="secondary"
+                icon={FileSpreadsheet}
+                onClick={() =>
+                  onDrilldownToPlan({
+                    planId: rep.plan?.id,
+                    storeId: s.id,
+                    storeName: s.storeName,
+                    brandName: s.brandName,
+                    month: selectedMonth,
+                  })
+                }
+              >
+                Plan
+              </Button>
+            )}
+            {onDrilldownToBooking && (
+              <Button
+                size="sm"
+                variant="ghost"
+                icon={Video}
+                onClick={() =>
+                  onDrilldownToBooking({
+                    storeName: s.storeName,
+                    brandName: s.brandName,
+                    month: selectedMonth,
+                  })
+                }
+              >
+                Booking
+              </Button>
+            )}
           </div>
         );
       },
@@ -373,56 +607,201 @@ export function StoreManagementView({
   ];
 
   return (
-    <Panel flush>
-      <div className="p-4 border-b border-line">
-        <FilterBar
-          search={{
-            value: search,
-            onChange: setSearch,
-            placeholder: 'Tên gian hàng, thương hiệu, mã vận hành, chuyên viên PIC...',
-          }}
-          chips={<Chips items={chips} value={filter} onChange={setFilter} />}
-          resultCount={search.trim() ? visibleStores.length : undefined}
-        />
+    <div className="space-y-4">
+      {!isStaffGlobalAdminOrManager(currentUser) && (
+        <div className="flex items-center gap-2 p-3 text-xs bg-canvas border border-line rounded-xl text-ink-2">
+          <span className="font-semibold text-ink">Phạm vi phân quyền:</span>
+          <span>
+            Hệ thống đang hiển thị {storeList.length} gian hàng thuộc quyền quản lý trực tiếp của chuyên viên <strong>{currentUser?.name || ''}</strong>.
+          </span>
+        </div>
+      )}
+      {/* Thanh chuyển đổi giữa Danh bạ Gian hàng & Màn hình Setup Hệ số Gian hàng Hàng loạt theo Tháng */}
+      <div className="flex flex-wrap items-center justify-between gap-3 bg-surface border border-line rounded-xl p-2.5 shadow-2xs">
+        <div className="inline-flex items-center gap-1 p-1 bg-sunken rounded-lg border border-line">
+          <button
+            type="button"
+            onClick={() => setActiveSubTab('DIRECTORY')}
+            className={`px-3 py-1.5 rounded-md text-xs font-semibold transition cursor-pointer ${
+              activeSubTab === 'DIRECTORY'
+                ? 'bg-surface text-ink shadow-2xs border border-line-strong'
+                : 'text-ink-2 hover:text-ink'
+            }`}
+          >
+            Danh bạ &amp; Chỉ số Gian hàng ({storeList.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveSubTab('MONTHLY_COEFF_SETUP')}
+            className={`px-3 py-1.5 rounded-md text-xs font-semibold transition cursor-pointer inline-flex items-center gap-1.5 ${
+              activeSubTab === 'MONTHLY_COEFF_SETUP'
+                ? 'bg-brand text-white shadow-2xs'
+                : 'text-ink-2 hover:text-ink'
+            }`}
+          >
+            <Sliders className="w-3.5 h-3.5" />
+            <span>Setup Hệ số Gian hàng theo Tháng (Bảng 2 — Setup hàng loạt)</span>
+          </button>
+        </div>
+
+        <div className="text-2xs text-ink-3">
+          Giám đốc Marketing thiết lập hàng loạt hệ số 0,80 · 1,00 · 1,25 · 1,50 đầu kỳ theo từng Store
+        </div>
       </div>
 
-      <DataTable
-        columns={columns}
-        rows={visibleStores.slice((page - 1) * 20, page * 20)}
-        rowKey={s => s.id}
-        onRowClick={s => openShared(s.id, () => setOpenStoreKey(s.id))}
-        empty={
-          <EmptyState
-            title="Không tìm thấy gian hàng nào"
-            description="Hãy thử thay đổi điều kiện lọc hoặc từ khóa tìm kiếm."
-          />
-        }
-      />
-
-      <Pagination
-        page={page}
-        pageSize={20}
-        total={visibleStores.length}
-        onPageChange={setPage}
-      />
-
-      {handoverTarget && (
-        <StoreHandoverDialog
-          open={Boolean(handoverTarget)}
-          onClose={() => setHandoverTarget(null)}
-          store={handoverTarget}
-          onConfirmHandover={handleConfirmHandover}
+      {activeSubTab === 'MONTHLY_COEFF_SETUP' ? (
+        <StoreCoefficientHubSection
+          stores={storeList}
+          brands={brands}
+          plans={monthlyPlans}
+          selectedMonth={selectedMonth}
+          onMonthChange={setSelectedMonth}
+          currentUser={currentUser}
+          onUpdateStore={handleSilentUpdateStore}
+          onBulkUpdateStores={handleBulkUpdateStores}
+          onNotify={onNotify}
         />
-      )}
+      ) : (
+        <>
+          <StatRow>
+            <Stat
+              label={`Doanh số NMV (${selectedMonth})`}
+              value={formatVndShort(monthlyKpiSummary.reportNmv)}
+              progress={
+                monthlyKpiSummary.planNmv > 0
+                  ? { value: monthlyKpiSummary.reportNmv, max: monthlyKpiSummary.planNmv }
+                  : undefined
+              }
+              note={`Plan giao kỳ ${selectedMonth}: ${formatVndShort(monthlyKpiSummary.planNmv)} (${
+                monthlyKpiSummary.planNmv > 0
+                  ? formatPercent(monthlyKpiSummary.reportNmv / monthlyKpiSummary.planNmv, 0)
+                  : '0%'
+              })`}
+              tone="positive"
+            />
+            <Stat
+              label={`Ngân sách Net (${selectedMonth})`}
+              value={formatVndShort(monthlyKpiSummary.reportSpentNet)}
+              progress={{
+                value: monthlyKpiSummary.reportSpentNet,
+                max: monthlyKpiSummary.planBudgetNet || 1,
+                invert: monthlyKpiSummary.reportSpentNet > monthlyKpiSummary.planBudgetNet,
+              }}
+              note={`Hạn mức Plan Net kỳ ${selectedMonth}: ${formatVndShort(monthlyKpiSummary.planBudgetNet)}`}
+              tone={
+                monthlyKpiSummary.reportSpentNet > monthlyKpiSummary.planBudgetNet
+                  ? 'critical'
+                  : 'positive'
+              }
+            />
+            <Stat
+              label={`Sản lượng Video & Booking (${selectedMonth})`}
+              value={`${formatNumber(monthlyKpiSummary.reportAired)} / ${formatNumber(
+                monthlyKpiSummary.planVideos
+              )} video`}
+              progress={
+                monthlyKpiSummary.planVideos > 0
+                  ? { value: monthlyKpiSummary.reportAired, max: monthlyKpiSummary.planVideos }
+                  : undefined
+              }
+              note={`Đã tạo ${formatNumber(monthlyKpiSummary.reportBooked)} deal booking trong kỳ`}
+            />
+            <Stat
+              label="Danh mục Gian hàng B2C"
+              value={`${storeList.length} gian hàng`}
+              note={
+                monthlyKpiSummary.overbudgetCount > 0
+                  ? `${monthlyKpiSummary.overbudgetCount} gian hàng có cảnh báo chi kỳ ${selectedMonth}`
+                  : `Toàn bộ gian hàng nằm trong trần kỳ ${selectedMonth}`
+              }
+              tone={monthlyKpiSummary.overbudgetCount > 0 ? 'warning' : 'positive'}
+            />
+          </StatRow>
 
-      {editTarget && (
-        <StoreEditDialog
-          open={Boolean(editTarget)}
-          onClose={() => setEditTarget(null)}
-          store={editTarget}
-          onSave={handleSaveStore}
-        />
+          <Panel flush>
+            <div className="p-4 border-b border-line flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+              <div className="flex-1">
+                <FilterBar
+                  search={{
+                    value: search,
+                    onChange: setSearch,
+                    placeholder: 'Tên gian hàng, thương hiệu, mã vận hành, chuyên viên PIC...',
+                  }}
+                  chips={<Chips items={chips} value={filter} onChange={setFilter} />}
+                  resultCount={search.trim() ? visibleStores.length : undefined}
+                />
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0 self-end lg:self-auto">
+                <div className="flex items-center gap-1.5 text-xs text-ink-2 bg-canvas border border-line rounded-md px-2.5 py-1">
+                  <Calendar className="w-3.5 h-3.5 text-accent shrink-0" />
+                  <span className="text-2xs font-medium text-ink-3">Kỳ tháng:</span>
+                  <Select
+                    value={selectedMonth}
+                    onChange={e => setSelectedMonth(e.target.value)}
+                    className="w-48 border-0 bg-transparent h-6 text-xs font-semibold text-ink focus:ring-0 px-1"
+                  >
+                    {PROFILE_MONTH_OPTIONS.map(m => (
+                      <option key={m.value} value={m.value}>
+                        {m.label}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
+              </div>
+            </div>
+
+            <DataTable
+              columns={columns}
+              rows={visibleStores.slice((page - 1) * 20, page * 20)}
+              rowKey={s => s.id}
+              onRowClick={s => openShared(s.id, () => setOpenStoreKey(s.id))}
+              empty={
+                <EmptyState
+                  title="Không tìm thấy gian hàng nào"
+                  description="Hãy thử thay đổi điều kiện lọc hoặc từ khóa tìm kiếm."
+                />
+              }
+            />
+
+            <Pagination
+              page={page}
+              pageSize={20}
+              total={visibleStores.length}
+              onPageChange={setPage}
+            />
+
+            {handoverTarget && (
+              <StoreHandoverDialog
+                open={Boolean(handoverTarget)}
+                onClose={() => setHandoverTarget(null)}
+                store={handoverTarget}
+                onConfirmHandover={handleConfirmHandover}
+              />
+            )}
+
+            {editTarget && (
+              <StoreEditDialog
+                open={Boolean(editTarget)}
+                onClose={() => setEditTarget(null)}
+                store={editTarget}
+                onSave={handleSaveStore}
+                onOpenMonthlyPlan={
+                  onDrilldownToPlan
+                    ? st =>
+                        onDrilldownToPlan({
+                          storeId: st.id,
+                          storeName: st.storeName,
+                          brandName: st.brandName,
+                          month: selectedMonth,
+                        })
+                    : undefined
+                }
+              />
+            )}
+          </Panel>
+        </>
       )}
-    </Panel>
+    </div>
   );
 }

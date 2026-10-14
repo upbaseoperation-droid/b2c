@@ -5,7 +5,7 @@
 
 import { BrandDetail } from './types';
 
-export const REAL_B2C_42_BRANDS: BrandDetail[] = [
+const RAW_B2C_42_BRANDS: BrandDetail[] = [
   {
     "id": "brand-b2c-4pm",
     "code": "4PM",
@@ -2988,3 +2988,58 @@ export const REAL_B2C_42_BRANDS: BrandDetail[] = [
     "mediaPic": "Media Team"
   }
 ];
+
+export const B2C_BRAND_POSITION_STAFF_POOL = {
+  contentBrandMain: [
+    'Quỳnh Như',
+    'Nguyễn Thị Mai Anh',
+    'Vũ Hoài Lâm',
+    'Phan Diệu Ánh',
+    'Lê Phương Thảo',
+    'Lương Thị Như Quỳnh',
+    'Trần Hải Phượng',
+    'Phạm Thị Thu Hằng',
+  ],
+  planStrategy: [
+    'Nguyễn Thị Ngọc Tâm',
+    'Lê Phương Thảo',
+    'Lương Thị Như Quỳnh',
+    'Lê Thanh Hải',
+    'Hoàng Hải Long',
+    'Trần Hải Phượng',
+    'Khánh Vy',
+    'Nguyễn Thu Trang',
+  ],
+  keyVisualSis: [
+    'Vũ Hoài Lâm',
+    'Phan Diệu Ánh',
+    'Quỳnh Như',
+    'Nguyễn Thị Mai Anh',
+    'Lê Hoàng Yến',
+    'Phạm Thị Thu Hằng',
+    'Trần Hải Phượng',
+    'Lê Thanh Hải',
+  ],
+};
+
+export const REAL_B2C_42_BRANDS: BrandDetail[] = RAW_B2C_42_BRANDS.map((brand, idx) => {
+  const defaultContentMain =
+    brand.contentBrandMainPic ||
+    B2C_BRAND_POSITION_STAFF_POOL.contentBrandMain[idx % B2C_BRAND_POSITION_STAFF_POOL.contentBrandMain.length];
+  const defaultPlanStrategy =
+    brand.planStrategyPic ||
+    (brand.brandPicName && B2C_BRAND_POSITION_STAFF_POOL.planStrategy.includes(brand.brandPicName)
+      ? brand.brandPicName
+      : B2C_BRAND_POSITION_STAFF_POOL.planStrategy[idx % B2C_BRAND_POSITION_STAFF_POOL.planStrategy.length]);
+  const defaultKvSis =
+    brand.keyVisualSisPic ||
+    B2C_BRAND_POSITION_STAFF_POOL.keyVisualSis[(idx + 2) % B2C_BRAND_POSITION_STAFF_POOL.keyVisualSis.length];
+
+  return {
+    ...brand,
+    contentBrandMainPic: defaultContentMain,
+    planStrategyPic: defaultPlanStrategy,
+    keyVisualSisPic: defaultKvSis,
+  };
+});
+

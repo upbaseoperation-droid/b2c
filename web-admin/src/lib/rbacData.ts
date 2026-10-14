@@ -1668,6 +1668,7 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'dashboard-brand',
     'dashboard-store',
     'dashboard-video',
+    'dashboard-air-sync',
     'dashboard-team-sla',
     'dashboard-staff',
     'dashboard-finance',
@@ -1687,6 +1688,7 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'ctv-master',
     'contracts',
     'manager',
+    'task-delegation',
     'sample-tracker',
     'performance-p3',
     'leaderboard',
@@ -1703,6 +1705,7 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'dashboard-brand',
     'dashboard-store',
     'dashboard-video',
+    'dashboard-air-sync',
     'dashboard-team-sla',
     'dashboard-staff',
     'dashboard-finance',
@@ -1722,6 +1725,7 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'ctv-master',
     'contracts',
     'manager',
+    'task-delegation',
     'sample-tracker',
     'performance-p3',
     'leaderboard',
@@ -1734,12 +1738,14 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
   GROWTH_MANAGER: [
     'cockpit',
     'manager',
+    'task-delegation',
     'input-plan',
     'overview',
     'dashboard-bi',
     'dashboard-brand',
     'dashboard-store',
     'dashboard-video',
+    'dashboard-air-sync',
     'dashboard-team-sla',
     'dashboard-staff',
     'dashboard-finance',
@@ -1757,6 +1763,7 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
   MEDIA_MANAGER: [
     'cockpit',
     'manager',
+    'task-delegation',
     'input-plan',
     'ads-report',
     'sample-tracker',
@@ -1765,6 +1772,7 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'dashboard-brand',
     'dashboard-store',
     'dashboard-video',
+    'dashboard-air-sync',
     'dashboard-team-sla',
     'dashboard-staff',
     'dashboard-finance',
@@ -1784,12 +1792,14 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'dashboard-brand',
     'dashboard-store',
     'dashboard-video',
+    'dashboard-air-sync',
     'dashboard-team-sla',
     'dashboard-staff',
     'dashboard-finance',
     'ads-report',
     'performance-p3',
     'manager',
+    'task-delegation',
     'input-plan',
     'koc-listing',
     'self-channel-hub',
@@ -1810,9 +1820,11 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
   ],
   BOOKING_MEMBER: [
     'cockpit',
+    'task-delegation',
     'dashboard-bi',
     'dashboard-store',
     'dashboard-video',
+    'dashboard-air-sync',
     'dashboard-team-sla',
     'dashboard-staff',
     'booking',
@@ -1831,8 +1843,10 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
   ],
   CONTENT_MEMBER: [
     'cockpit',
+    'task-delegation',
     'dashboard-bi',
     'dashboard-video',
+    'dashboard-air-sync',
     'dashboard-team-sla',
     'dashboard-staff',
     'content',
@@ -1849,8 +1863,10 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
   ],
   BRAND_MEMBER: [
     'cockpit',
+    'task-delegation',
     'dashboard-bi',
     'dashboard-brand',
+    'dashboard-air-sync',
     'dashboard-store',
     'dashboard-video',
     'campaigns',
@@ -1868,9 +1884,11 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
   ],
   MEMBER: [
     'cockpit',
+    'task-delegation',
     'dashboard-bi',
     'dashboard-store',
     'dashboard-video',
+    'dashboard-air-sync',
     'dashboard-team-sla',
     'dashboard-staff',
     'booking',
@@ -1890,11 +1908,13 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
   GROWTH_MEMBER: [
     'input-plan',
     'cockpit',
+    'task-delegation',
     'overview',
     'dashboard-bi',
     'dashboard-brand',
     'dashboard-store',
     'dashboard-video',
+    'dashboard-air-sync',
     'dashboard-team-sla',
     'dashboard-staff',
     'stores',
@@ -1909,11 +1929,13 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'input-plan',
     'ads-report',
     'cockpit',
+    'task-delegation',
     'overview',
     'dashboard-bi',
     'dashboard-brand',
     'dashboard-store',
     'dashboard-video',
+    'dashboard-air-sync',
     'dashboard-team-sla',
     'dashboard-staff',
     'campaigns',
@@ -1967,6 +1989,9 @@ export const ROLE_DEFAULT_LANDING: Record<UserRole, TabKey> = {
 };
 
 export function isTabAllowedForRole(role: UserRole, tab: TabKey): boolean {
+  if (tab === 'task-delegation' && ROLE_ALLOWED_TABS[role]?.includes('task-delegation')) {
+    return true;
+  }
   const map = getSavedRoleAllowedTabs();
   const allowed = map[role] || ROLE_ALLOWED_TABS[role];
   if (!allowed) return false;
@@ -1975,7 +2000,11 @@ export function isTabAllowedForRole(role: UserRole, tab: TabKey): boolean {
 
 export function getAllowedTabsForRole(role: UserRole): TabKey[] {
   const map = getSavedRoleAllowedTabs();
-  return map[role] || ROLE_ALLOWED_TABS[role] || ['cockpit'];
+  const list = map[role] || ROLE_ALLOWED_TABS[role] || ['cockpit'];
+  if (ROLE_ALLOWED_TABS[role]?.includes('task-delegation') && !list.includes('task-delegation')) {
+    return [...list, 'task-delegation'];
+  }
+  return list;
 }
 
 export function getDefaultLandingTabForRole(role: UserRole): TabKey {
@@ -1997,6 +2026,7 @@ export interface SystemScreenCatalogItem {
 export const ALL_SYSTEM_SCREENS: SystemScreenCatalogItem[] = [
   { key: 'cockpit', label: 'Việc của tôi (Cockpit)', group: 'DASHBOARD', groupTitle: '1. Dashboard & Điều Hành', description: 'Không gian làm việc cá nhân, việc cần xử lý trong ngày.' },
   { key: 'dashboard-brand', label: 'Dashboard Thương hiệu & Ngân sách', group: 'DASHBOARD', groupTitle: '1. Dashboard & Điều Hành', description: 'Theo dõi ngân sách 42 thương hiệu B2C.' },
+  { key: 'dashboard-air-sync', label: 'Dashboard Lịch Air Tuần & Độ Đồng Loạt', group: 'DASHBOARD', groupTitle: '1. Dashboard & Điều Hành', description: 'Đối chiếu lịch air kế hoạch theo tuần (W40–W45) và kiểm soát độ đồng loạt lên sóng thực tế.' },
   { key: 'dashboard-store', label: 'Dashboard Gian hàng & TikTok Seller', group: 'DASHBOARD', groupTitle: '1. Dashboard & Điều Hành', description: 'Theo dõi 69 gian hàng B2C và chỉ số sàn.' },
   { key: 'dashboard-video', label: 'Dashboard Video Booking & Ads', group: 'DASHBOARD', groupTitle: '1. Dashboard & Điều Hành', description: 'Theo dõi tiến độ sản xuất & air video KOC.' },
   { key: 'dashboard-team-sla', label: 'Dashboard Tiến độ & SLA Vận hành', group: 'DASHBOARD', groupTitle: '1. Dashboard & Điều Hành', description: 'Kiểm soát SLA duyệt deal, kịch bản, gửi mẫu, lên bài.' },
@@ -2006,6 +2036,7 @@ export const ALL_SYSTEM_SCREENS: SystemScreenCatalogItem[] = [
   { key: 'brand-knowledge', label: 'Hồ sơ thương hiệu (Brand Profile)', group: 'PLANNING_BRAND', groupTitle: '2. Kế Hoạch & Thương Hiệu', description: 'Định vị nhãn hàng, pháp nhân, ratecard và quy tắc duyệt.' },
   { key: 'stores', label: 'Hồ sơ gian hàng (Store Portfolio)', group: 'PLANNING_BRAND', groupTitle: '2. Kế Hoạch & Thương Hiệu', description: 'Quản lý danh mục gian hàng TikTok Shop, Shopee Mall.' },
   { key: 'manager', label: 'Điều phối & Quản lý nhân sự', group: 'PLANNING_BRAND', groupTitle: '2. Kế Hoạch & Thương Hiệu', description: 'Phân bổ tải, giao việc PIC và duyệt kế hoạch cấp phòng.' },
+  { key: 'task-delegation', label: 'Giao việc & Định mức Task', group: 'PLANNING_BRAND', groupTitle: '2. Kế Hoạch & Thương Hiệu', description: 'Giao việc theo vai trò (PIC/Co-PIC/Execution/Support), cấu hình độ khó Task và Bảng 2b Research.' },
   { key: 'campaigns', label: 'Chiến dịch Brand', group: 'PLANNING_BRAND', groupTitle: '2. Kế Hoạch & Thương Hiệu', description: 'Quản lý chiến dịch, mục tiêu GMV và bàn giao đề bài.' },
   { key: 'push-products', label: 'Sản phẩm đẩy (Hero SKU)', group: 'PLANNING_BRAND', groupTitle: '2. Kế Hoạch & Thương Hiệu', description: 'Danh mục sản phẩm chủ lực, USP và tồn kho hàng mẫu.' },
   { key: 'booking', label: 'Quản lý Booking KOC', group: 'BOOKING_CONTENT', groupTitle: '3. Vận Hành Booking & KOC/CTV', description: 'Tạo deal, chốt đơn giá, duyệt KOC và theo dõi tiến độ air.' },

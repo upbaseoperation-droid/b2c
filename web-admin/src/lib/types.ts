@@ -28,6 +28,7 @@ export type TabKey =
   | 'overview'
   | 'dashboard-bi'
   | 'dashboard-brand'
+  | 'dashboard-air-sync'
   | 'dashboard-store'
   | 'dashboard-video'
   | 'dashboard-team-sla'
@@ -49,6 +50,7 @@ export type TabKey =
   | 'ctv-master'
   | 'contracts'
   | 'manager'
+  | 'task-delegation'
   | 'sample-tracker'
   | 'performance-p3'
   | 'leaderboard'
@@ -848,8 +850,50 @@ export type SlaTaskType =
   | 'DATA_LOCK_7D'
   | 'E2E_RECONCILIATION'
   | 'GENERAL_TASK'
+  | 'RESEARCH_TASK'
   | 'SAMPLE_DELIVERY'
   | 'ADS_CODE_RETRIEVAL';
+
+export type TaskDifficultyCategoryKey =
+  | 'RESEARCH'
+  | 'BOOKING'
+  | 'CONTENT'
+  | 'KEY_VISUAL'
+  | 'CAMPAIGN'
+  | 'LIVESTREAM';
+
+export type TaskAssignmentRoleKey =
+  | 'PIC_OWNER'
+  | 'CO_PIC'
+  | 'EXECUTION'
+  | 'SUPPORT';
+
+export interface TaskDifficultyLevelConfig {
+  id: string;
+  levelCode: string;        // VD: "Level 1 – Cơ bản" hoặc "Cơ bản"
+  multiplier: number;       // VD: 0.80, 1.00, 1.20, 1.40, 1.60
+  scopeDescription: string; // VD: "1 sàn, 1 line sản phẩm"
+  expectedDeliverable: string; // Cột "Đầu ra"
+  defaultSlaHours: number;  // Hạn định SLA gợi ý (giờ)
+}
+
+export interface TaskCategoryDifficultyConfig {
+  categoryKey: TaskDifficultyCategoryKey;
+  categoryName: string;     // VD: "Nghiên cứu (Research)"
+  tableTitle: string;       // VD: "Bảng 2b. Hệ số cấp độ research (chỉ dùng cho nhóm Nghiên cứu)"
+  unitLabel: string;        // VD: "Hồ sơ Research", "Video booking", "Video content"...
+  baseWorkloadPoints: number; // Điểm tải gốc của 1 case tiêu chuẩn (VD: 1.0)
+  levels: TaskDifficultyLevelConfig[];
+}
+
+export interface TaskRoleWeightRule {
+  roleKey: TaskAssignmentRoleKey;
+  roleLabel: string;        // VD: "PIC/Owner", "Co-PIC", "Execution", "Support"
+  definition: string;
+  responsibilities: string;
+  suggestedWeightRange: string; // VD: "50–70%"
+  defaultWeightPct: number;     // VD: 70
+}
 
 export interface SlaTask {
   id: string;
@@ -866,8 +910,45 @@ export interface SlaTask {
   actionLabel?: string; // Nhãn nút xử lý nhanh
   description?: string;
   brand?: string;
+  storeName?: string;
   deadlineHours?: number;
   createdAt?: string;
+  // Mở rộng cho Phân hệ Giao việc & Định mức độ khó Task (Bảng 2b Research & 4P Workload)
+  taskCategory?: TaskDifficultyCategoryKey;
+  difficultyLevelId?: string;
+  difficultyLabel?: string;
+  difficultyMultiplier?: number;
+  scopeDescription?: string;
+  expectedDeliverable?: string;
+  deliverableUrl?: string;
+  assignmentRole?: TaskAssignmentRoleKey;
+  contributionWeightPct?: number; // Tỷ trọng đóng góp (%) — Tổng cùng case = 100%
+  baseWorkloadPoints?: number;
+  calculatedWorkloadPoints?: number; // Workload cá nhân = Workload case × Hệ số độ khó × Tỷ trọng đóng góp
+  platformsCount?: number; // Số sàn thực hiện (1 sàn, 2 sàn, đa sàn)
+  productLinesCount?: number; // Số line sản phẩm
+  assignedBy?: string;
+  groupAssignmentId?: string; // Mã gom nhóm khi 1 task chia cho nhiều nhân sự (PIC + Execution...)
+  // Mở rộng cho Hệ thống Đo lường Workload Nhân sự (Bảng 1 -> Bảng 7 file test claude workload nhân sự)
+  taskSource?: 'WORKFLOW_SYSTEM' | 'DIRECTOR_ASSIGNED'; // Nguồn task: Luồng quy trình hệ thống vs Task GĐ/Quản lý giao
+  workflowStageLabel?: string; // Tên bước quy trình hệ thống phát sinh task (VD: "Luồng Booking KOC · Nghiệm thu Air", "Luồng Content Kênh · Sản xuất")
+  sowStt?: number; // STT 1..33 trong Bảng 1
+  sowGroup?: string; // Phân nhóm Bảng 1 (Content Affiliate, Content kênh, Livestream Affiliate, Key Visual, SIS, Brief, Nghiên cứu gian hàng mới, Nghiên cứu & lập kế hoạch campaign, JBP Plan & Report)
+  sowName?: string; // Chi tiết loại công việc Bảng 1
+  acceptedQuantity?: number; // SL nghiệm thu
+  standardPoint?: number; // Point chuẩn (Bảng 1)
+  scopeCoef?: number; // HS phạm vi: HS gian hàng (Bảng 2: 0.80/1.00/1.25/1.50) hoặc HS cấp độ research (Bảng 2b: 0.80..1.60)
+  taskDifficultyTier?: 'EASY' | 'STANDARD' | 'HARD'; // Độ khó từng lần làm (Bảng 3: Dễ 0.80 / Tiêu chuẩn 1.00 / Khó 1.20)
+  taskDifficultyCoef?: number; // HS công việc Bảng 3 (0.80 | 1.00 | 1.20)
+  timelineStatus?: 'ON_TIME' | 'LATE_1' | 'LATE_2' | 'FAILED'; // Bảng 5: Đúng hạn (1.0), Chậm mức 1 (0.7), Chậm mức 2 (0.4), Không hoàn thành (0)
+  timelineCoef?: number; // HS timeline Bảng 5
+  multiPlatformCoef?: number; // HS đa sàn Bảng 6 (1.0 | 1.3 | 1.6)
+  // Bảng 7: Cột bắt buộc khi ghi nhận đầu việc
+  platformScope?: string; // Sàn (Shopee / TikTok / Lazada)
+  channelPlatform?: string; // Nền tảng (TikTok / FB / IG / YT / Shopee Video)
+  originalAssetRef?: string; // Asset gốc / Reup từ (bắt buộc với đầu việc Reup/Adapt)
+  kocStatusType?: 'NEW_KOC' | 'REBOOK' | 'FRAMEWORK_CONTRACT'; // Trạng thái KOC (KOC mới / Book lại / HĐ nguyên tắc)
+  difficultyOverrideReason?: string; // Lý do đổi độ khó (bắt buộc khi khác mặc định Bảng 1)
 }
 
 // PHÂN LOẠI VI PHẠM SLA B2C (THEO QUY ĐỊNH MỚI)
@@ -933,6 +1014,30 @@ export interface E2EReconciliationWindow {
   pendingErrorsCount: number;
 }
 
+export interface CampaignMonthlyPhase {
+  month: string; // Chu kỳ tháng 'YYYY/MM' (VD: '2026/09', '2026/10', '2026/11')
+  phaseName: string; // Vai trò giai đoạn trong tháng (VD: 'Giai đoạn 1: Teasing & Seeding', 'Giai đoạn 2: Booming Mega Sale')
+  allocatedBudget: number; // Ngân sách phân bổ cho tháng này (VNĐ)
+  spentBudget?: number; // Ngân sách đã giải ngân trong tháng này (VNĐ)
+  targetGmv: number; // Mục tiêu GMV trong tháng này (VNĐ)
+  actualGmv?: number; // GMV thực đạt trong tháng này (VNĐ)
+  targetKocCount: number; // Số lượng KOC / Video mục tiêu trong tháng
+  saleMilestones?: string; // Các mốc sale trong tháng (VD: 'W1: 10.10 Mega Sale | W2: Giữa tháng 15.10 | W4: Payday 25.10')
+  kvAdaptNotes?: string; // Ghi chú adapt Key Visual / Frame / Banner cho tháng này
+}
+
+export interface CampaignKeyVisualSpec {
+  theme: string; // Chủ đề Key Visual (VD: 'Bọt mịn dịu nhẹ - Dịu êm ngày nhạy cảm')
+  fonts?: string; // Font chữ chủ đạo (VD: 'Montserrat Bold / Nunito Sans Regular')
+  moodboard?: string; // Mô tả Moodboard / Tone màu chủ đạo
+  proposalUrl?: string; // Link file Proposal / KV Deck
+  promoTextOnKv?: string; // Thông điệp CTKM hiển thị trên KV (VD: 'Mua 2 giảm 25% + Tặng túi vải')
+  refDate?: string; // Ngày cần lên Ref (YYYY-MM-DD)
+  orderDate?: string; // Ngày order thiết kế (YYYY-MM-DD)
+  hangDate?: string; // Ngày treo KV lên gian hàng (YYYY-MM-DD)
+  kvPic?: string; // Nhân sự Key Visual / SIS phụ trách
+}
+
 export interface CampaignItem {
   id: string;
   code: string;
@@ -950,6 +1055,21 @@ export interface CampaignItem {
   briefStatus: 'DRAFT' | 'HANDED_OFF_TO_CONTENT' | 'IN_PRODUCTION' | 'COMPLETED';
   startDate: string;
   endDate: string;
+  // Quản lý thực thể Chiến dịch độc lập kéo dài 1 hoặc nhiều tháng
+  coveredMonths?: string[]; // Danh sách các tháng chiến dịch đi qua (VD: ['2026/09', '2026/10'])
+  durationMonthsCount?: number; // Số tháng kéo dài (1, 2, 3...)
+  targetStores?: string[]; // Danh sách gian hàng áp dụng chiến dịch
+  platforms?: string[]; // Các sàn triển khai ('TikTok Shop', 'Shopee', 'Lazada')
+  // Định hướng chiến lược & CTKM (Section 01 Template 1 Sheet)
+  roleInYearPlan?: string; // Vai trò chiến dịch trong kế hoạch năm
+  objectivesAndBarriers?: string; // Mục tiêu & rào cản cần xử lý
+  seasonalOpportunity?: string; // Cơ hội mùa vụ (Seasonal opportunity)
+  comboPromoOffer?: string; // Combo / Deal / Quà tặng (CTKM trọng tâm)
+  saleMilestones?: string; // Các mốc sale chính trong chiến dịch (W1..W5)
+  brandStrategyPic?: string; // Nhân sự Plan / Strategy phụ trách chiến dịch
+  kvPic?: string; // Nhân sự Key Visual / SIS phụ trách
+  keyVisualSpec?: CampaignKeyVisualSpec; // Quy chuẩn Key Visual của chiến dịch (Section 03 Template 1 Sheet)
+  monthlyPhases?: CampaignMonthlyPhase[]; // Phân kỳ ngân sách, KPI & vai trò theo từng tháng
   guidelineUrl?: string;
   keyMessage?: string;
   heroSkus?: string[];
@@ -959,6 +1079,56 @@ export interface CampaignItem {
   handoffSlaHours?: number; // Mặc định 24h
   isSlaBreached?: boolean;
 }
+
+/**
+ * Tự động tính danh sách các tháng ('YYYY/MM') mà một chiến dịch kéo dài qua dựa trên startDate và endDate ('YYYY-MM-DD')
+ */
+export function getCoveredMonthsFromRange(startDate?: string, endDate?: string): string[] {
+  if (!startDate || !endDate) return [];
+  const startParts = startDate.split('-');
+  const endParts = endDate.split('-');
+  if (startParts.length < 2 || endParts.length < 2) return [];
+  const startYear = parseInt(startParts[0], 10);
+  const startMonth = parseInt(startParts[1], 10);
+  const endYear = parseInt(endParts[0], 10);
+  const endMonth = parseInt(endParts[1], 10);
+  if (isNaN(startYear) || isNaN(startMonth) || isNaN(endYear) || isNaN(endMonth)) return [];
+
+  const result: string[] = [];
+  let y = startYear;
+  let m = startMonth;
+  let safety = 0;
+  while ((y < endYear || (y === endYear && m <= endMonth)) && safety < 24) {
+    result.push(`${y}/${String(m).padStart(2, '0')}`);
+    m++;
+    if (m > 12) {
+      m = 1;
+      y++;
+    }
+    safety++;
+  }
+  return result;
+}
+
+/**
+ * Kiểm tra xem một chiến dịch có đang hoạt động trong tháng 'YYYY/MM' hay không
+ */
+export function isCampaignActiveInMonth(campaign: CampaignItem, month: string): boolean {
+  if (!month || month === 'ALL') return true;
+  const covered = campaign.coveredMonths && campaign.coveredMonths.length > 0
+    ? campaign.coveredMonths
+    : getCoveredMonthsFromRange(campaign.startDate, campaign.endDate);
+  return covered.includes(month);
+}
+
+/**
+ * Lấy thông tin phân kỳ tháng (CampaignMonthlyPhase) của chiến dịch cho một tháng cụ thể
+ */
+export function getCampaignPhaseForMonth(campaign: CampaignItem, month: string): CampaignMonthlyPhase | undefined {
+  if (!campaign.monthlyPhases || campaign.monthlyPhases.length === 0) return undefined;
+  return campaign.monthlyPhases.find(p => p.month === month);
+}
+
 
 // ==========================================
 // BRAND TEAM WORKSPACE TYPES
@@ -1495,11 +1665,14 @@ export interface BrandDetail {
   targetVideos: number;
   airedVideos: number;
 
-  // Đội ngũ phụ trách 3 bên (PIC)
+  // Đội ngũ phụ trách 3 bên (PIC) & 3 vị trí gắn theo Brand (B2C Brand-level Positions)
   accountPic: string; // Account Manager làm việc với Brand
   growthPic: string; // Growth Lead chạy Ads & GMV
   bookingPicLead: string; // Trưởng nhóm Booking phụ trách KOC
   brandPicName?: string; // Brand PIC Lead (alias)
+  contentBrandMainPic?: string; // Content / Brand main [theo brand]
+  planStrategyPic?: string;     // Plan / Strategy [theo brand]
+  keyVisualSisPic?: string;     // Key Visual / SIS [theo brand]
   
   // Tiêu chí & Guidelines
   brandGuideline: string;
@@ -1722,16 +1895,141 @@ export interface SampleShipment {
   notes?: string;
 }
 
-// Hệ số độ khó Store theo chuẩn 4P Marketing B2C
+// Bảng 2. Hệ số gian hàng (HS phạm vi cho việc cấp Sàn và cấp Brand)
+export type StoreDifficultyTier = 'Cơ bản' | 'Tiêu chuẩn' | 'Vừa' | 'Khó';
+export type StoreCoefficientApprovalStatus =
+  | 'APPROVED_START_OF_MONTH'     // Đã được quản lý duyệt đầu tháng
+  | 'PENDING_MANAGER_APPROVAL'    // Chờ quản lý duyệt đầu tháng
+  | 'ADJUSTED_BY_APPROVED_PLAN';  // Điều chỉnh trong tháng theo Plan điều chỉnh được duyệt
+
+export interface StoreCoefficientRuleItem {
+  tier: StoreDifficultyTier;
+  multiplier: number; // 0.80 | 1.00 | 1.25 | 1.50
+  multiplierLabel: string; // '0,80' | '1,00' | '1,25' | '1,50'
+  definition: string;
+  example: string;
+}
+
+export const STORE_COEFFICIENT_TABLE_2: {
+  title: string;
+  rows: StoreCoefficientRuleItem[];
+  principle: string;
+  applicationScope: string;
+} = {
+  title: 'Bảng 2. Hệ số gian hàng (HS phạm vi cho việc cấp Sàn và cấp Brand)',
+  rows: [
+    {
+      tier: 'Cơ bản',
+      multiplier: 0.8,
+      multiplierLabel: '0,80',
+      definition: 'Store ổn định, quy trình rõ, ít thay đổi, nguồn lực sẵn có',
+      example: 'Chủ yếu vận hành lặp lại',
+    },
+    {
+      tier: 'Tiêu chuẩn',
+      multiplier: 1.0,
+      multiplierLabel: '1,00',
+      definition: 'Khối lượng và yêu cầu đúng benchmark thông thường',
+      example: 'Phối hợp cơ bản, deadline tiêu chuẩn',
+    },
+    {
+      tier: 'Vừa',
+      multiplier: 1.25,
+      multiplierLabel: '1,25',
+      definition: 'Nhiều bên phối hợp, nhiều vòng duyệt hoặc deadline gấp; các case có ngành hàng mới, cần nhân sự mở rộng scope, ngành hàng',
+      example: 'Brief thay đổi, talent khó vừa',
+    },
+    {
+      tier: 'Khó',
+      multiplier: 1.5,
+      multiplierLabel: '1,50',
+      definition: 'Talent hiếm, nhiều ràng buộc, yêu cầu đặc biệt hoặc rủi ro cao',
+      example: 'Campaign chiến lược, độc quyền',
+    },
+  ],
+  principle:
+    'Hệ số gian hàng được quản lý duyệt đầu tháng. Một store chỉ áp dụng một hệ số trong cùng kỳ. Nếu thay đổi scope lớn trong tháng, phải có Plan điều chỉnh được duyệt. Không tự nâng hệ số sau khi đã có kết quả.',
+  applicationScope: 'Áp dụng theo store, không theo brand',
+};
+
+export function getStoreCoefficientByTier(tier?: StoreDifficultyTier | string): number {
+  switch (tier) {
+    case 'Cơ bản':
+      return 0.8;
+    case 'Tiêu chuẩn':
+      return 1.0;
+    case 'Vừa':
+      return 1.25;
+    case 'Khó':
+      return 1.5;
+    default:
+      return 1.0;
+  }
+}
+
+export function getStoreTierByCoefficient(multiplier?: number): StoreDifficultyTier {
+  if (multiplier === undefined || multiplier === null) return 'Tiêu chuẩn';
+  if (multiplier <= 0.85) return 'Cơ bản';
+  if (multiplier <= 1.1) return 'Tiêu chuẩn';
+  if (multiplier <= 1.35) return 'Vừa';
+  return 'Khó';
+}
+
+/**
+ * Chuẩn hóa hệ số gian hàng về đúng 4 mức Bảng 2 (0.80, 1.00, 1.25, 1.50).
+ * Nếu truyền vào dữ liệu cũ (1.2, 1.4, 1.6), ưu tiên lấy theo difficultyTier chuẩn Bảng 2.
+ */
+export function normalizeStoreCoefficient(tier?: StoreDifficultyTier | string, rawMultiplier?: number): {
+  tier: StoreDifficultyTier;
+  multiplier: number;
+  label: string;
+  rule: StoreCoefficientRuleItem;
+} {
+  let resolvedTier: StoreDifficultyTier = 'Tiêu chuẩn';
+  if (tier === 'Cơ bản' || tier === 'Tiêu chuẩn' || tier === 'Vừa' || tier === 'Khó') {
+    resolvedTier = tier;
+  } else if (rawMultiplier !== undefined) {
+    resolvedTier = getStoreTierByCoefficient(rawMultiplier);
+  }
+  const rule =
+    STORE_COEFFICIENT_TABLE_2.rows.find(r => r.tier === resolvedTier) ||
+    STORE_COEFFICIENT_TABLE_2.rows[1];
+  return {
+    tier: rule.tier,
+    multiplier: rule.multiplier,
+    label: rule.multiplierLabel,
+    rule,
+  };
+}
+
+export function formatStoreCoefficient(multiplier?: number, tier?: StoreDifficultyTier | string): string {
+  if (multiplier === 0.8 || multiplier === 1.0 || multiplier === 1.25 || multiplier === 1.5) {
+    return multiplier.toFixed(2).replace('.', ',');
+  }
+  return normalizeStoreCoefficient(tier, multiplier).label;
+}
+
 export interface StoreDifficultyConfig {
   id: string;
   storeName: string;
   platform: 'TikTok Shop' | 'Shopee' | 'Lazada';
-  difficultyTier: 'Cơ bản' | 'Tiêu chuẩn' | 'Vừa' | 'Khó';
-  multiplier: number; // 1.0 | 1.2 | 1.4 | 1.6
+  brandName?: string;
+  difficultyTier: StoreDifficultyTier;
+  multiplier: number; // 0.80 | 1.00 | 1.25 | 1.50 (Bảng 2)
   category: string; // Mỹ phẩm, Thời trang, Mẹ & Bé, Gia dụng
   monthlyTargetGmv: number;
   assignedPic: string;
+  accountOwner?: string;
+  b2cOwner?: string;
+  activeKocsCount?: number;
+  notes?: string;
+  coefficientApprovalStatus?: StoreCoefficientApprovalStatus;
+  coefficientApprovedBy?: string;
+  coefficientApprovedAt?: string;
+  coefficientPeriodMonth?: string;
+  coefficientAdjustedPlanCode?: string;
+  coefficientAdjustmentReason?: string;
+  hasCompletedPeriodResult?: boolean;
 }
 
 // Đánh giá hiệu suất 4P & Tính thưởng P3
@@ -1741,7 +2039,7 @@ export interface StaffP3Record {
   role: 'Booking' | 'Content' | 'Brand';
   level: 'Intern' | 'Junior' | 'Senior' | 'Lead';
   assignedStore: string;
-  storeMultiplier: number; // 1.0 - 1.6
+  storeMultiplier: number; // 0.80 | 1.00 | 1.25 | 1.50 (Bảng 2)
   completedCases: number; // Số ca/job hoàn thành trong tháng
   qualityMultiplier: number; // 0.9 - 1.15
   slaMultiplier: number; // 0.8 - 1.2
@@ -1795,7 +2093,6 @@ export interface WeeklyStorePlan411 {
 // --- MODULE 1: PORTFOLIO / STORE MANAGEMENT ---
 export type ServiceModel = 'FULL_SERVICE' | 'AFFILIATE_ONLY' | 'LIVESTREAM_DEDICATED';
 export type AccountStatus = 'ONBOARDING' | 'ACTIVE' | 'MAINTENANCE' | 'OFFBOARDED';
-export type StoreDifficultyTier = 'Cơ bản' | 'Tiêu chuẩn' | 'Vừa' | 'Khó';
 
 export interface StorePortfolioItem {
   id: string;
@@ -1805,7 +2102,14 @@ export interface StorePortfolioItem {
   storeUrl?: string;
   serviceModel: ServiceModel;
   difficultyTier: StoreDifficultyTier;
-  difficultyMultiplier: number; // 1.0, 1.2, 1.4, 1.6
+  difficultyMultiplier: number; // 0.80, 1.00, 1.25, 1.50 (Bảng 2. Hệ số gian hàng)
+  coefficientApprovalStatus?: StoreCoefficientApprovalStatus; // Trạng thái quản lý duyệt hệ số đầu tháng / điều chỉnh theo Plan
+  coefficientApprovedBy?: string; // Quản lý phê duyệt đầu tháng (VD: Đặng Thị Yến Nhi)
+  coefficientApprovedAt?: string; // Ngày duyệt đầu tháng (VD: 2026-10-01)
+  coefficientPeriodMonth?: string; // Kỳ áp dụng (VD: 2026/10 - Một store chỉ áp dụng 1 hệ số trong cùng kỳ)
+  coefficientAdjustedPlanCode?: string; // Mã Plan điều chỉnh được duyệt nếu thay đổi scope lớn trong tháng
+  coefficientAdjustmentReason?: string; // Lý do / căn cứ áp dụng hoặc điều chỉnh scope trong tháng
+  hasCompletedPeriodResult?: boolean; // Đã có kết quả kỳ (không được tự nâng hệ số sau khi đã có kết quả)
   accountStatus: AccountStatus;
   category: string;
   monthlyTargetGmv: number;
@@ -2345,6 +2649,7 @@ export interface InputPlanBreakdownState {
   id: string;
   title: string;
   brandName: string;
+  parentBrand?: string;
   storeId?: string; // ID gian hàng gắn với kế hoạch
   storeName?: string; // Tên gian hàng gắn với kế hoạch
   month: string; // Chu kỳ tháng (e.g. '2026/10', '2026/09', '2026/08', '2026/11')
@@ -2410,6 +2715,13 @@ export interface InputPlanBreakdownState {
   larkTableId?: string;
   larkApprovalCode?: string;
   larkSyncedAt?: string;
+  // Liên kết với thực thể Chiến dịch (Campaign) của Brand trong tháng (tháng đó có thể Có hoặc Không có Campaign)
+  hasCampaign?: boolean; // true = Tháng có chạy Chiến dịch, false = Tháng duy trì (Always-on / Không có Campaign)
+  campaignId?: string; // ID Chiến dịch liên kết (nếu có)
+  campaignCode?: string; // Mã Chiến dịch (VD: 'CMP-CLIO-Q4-01')
+  campaignTitle?: string; // Tên Chiến dịch
+  campaignPhaseName?: string; // Vai trò giai đoạn của chiến dịch trong tháng này (nếu chiến dịch kéo dài nhiều tháng)
+  oneSheetPlanData?: BrandOneSheetPlanData; // Dữ liệu 1-Sheet Monthly Content & Key Visual Plan trình Brand
 }
 
 // Bản ghi trong Bảng hứng Kế hoạch B2C Booking từ Larkbase (Bitable API / Webhook)
@@ -3049,6 +3361,15 @@ export type AirVideoStage =
   | 'ANCHOR_VERIFIED'    // Đã kiểm tra gắn giỏ hàng & Spark Ads
   | 'COMPLETED';         // Nghiệm thu hoàn tất
 
+export interface KocListingDiscussionItem {
+  id: string;
+  authorName: string;
+  authorRole: string;
+  content: string;
+  createdAt: string;
+  actionType?: 'SUBMIT_BRAND' | 'BRAND_FEEDBACK' | 'FEE_ADJUST' | 'KOC_NEGOTIATION' | 'FINAL_APPROVE' | 'REJECT';
+}
+
 export interface KocListingItem {
   id: string;
   batchId: string;
@@ -3058,6 +3379,10 @@ export interface KocListingItem {
   storeName: string;
   brandName: string;
   planSlotId?: string;
+  sourcePlanId?: string;
+  sourcePlanVersion?: string;
+  planRowId?: string;
+  salaryGrade?: SalaryGrade;
   
   // Thông tin KOC
   kocId: string;
@@ -3084,6 +3409,9 @@ export interface KocListingItem {
   kocNegotiationStatus: KocNegotiationStatus;
   negotiationNote?: string;
   negotiatedAt?: string;
+  
+  // Luồng trao đổi chi tiết (Nội bộ Booking / Account / Brand / KOC)
+  discussions?: KocListingDiscussionItem[];
   
   // Trạng thái tổng hợp
   overallStatus: ListingItemStatus;
@@ -3125,5 +3453,245 @@ export interface KocListingBatchHeader {
   submittedAt?: string;
   closedAt?: string;
 }
+
+// =========================================================================
+// VỊ TRÍ GẮN THEO BRAND (BRAND-LEVEL POSITIONS) & KẾ HOẠCH BRAND HÀNG THÁNG
+// =========================================================================
+
+export type BrandPositionType = 'CONTENT_BRAND_MAIN' | 'PLAN_STRATEGY' | 'KEY_VISUAL_SIS';
+
+export interface BrandMonthlyPlanItem {
+  id: string;
+  brandId: string;
+  brandCode: string;
+  brandName: string;
+  category: string;
+  month: string; // e.g., '2026/10'
+  status: 'DRAFT' | 'PENDING_APPROVAL' | 'APPROVED' | 'IN_EXECUTION' | 'COMPLETED';
+
+  // Phân bổ 3 vị trí gắn theo Brand [theo brand]
+  contentBrandMainPic: string; // Content / Brand main [theo brand]
+  planStrategyPic: string;     // Plan / Strategy [theo brand]
+  keyVisualSisPic: string;     // Key Visual / SIS [theo brand]
+
+  // Phối hợp 3 bên (Account / Growth / Booking Lead)
+  accountPic: string;
+  growthPic: string;
+  bookingPicLead: string;
+
+  // 1. Kế hoạch tháng vị trí Content / Brand main [theo brand]
+  contentBrandMainPlan: {
+    masterContentPlanCount: number; // Số bản Master Content Plan tháng
+    contentPillarsCount: number;    // Số tuyến nội dung (Content Pillar / Angle)
+    heroScriptsTarget: number;      // Số kịch bản Hero / KOL / KOC định hướng
+    deliveredCount: number;         // Đã nghiệm thu trong tháng
+    focusPillars: string;           // Định hướng góc tiếp cận chủ đạo
+    notes: string;
+  };
+
+  // 2. Kế hoạch tháng vị trí Plan / Strategy [theo brand]
+  planStrategyPlan: {
+    campaignStrategyCount: number;  // Số bản kế hoạch chiến dịch / Mega Sale / Brand Plan
+    bigIdeaAndKeyMessage: string;   // Big Idea & Thông điệp trọng tâm tháng
+    brandAuditCount: number;        // Số báo cáo đối soát / nghiên cứu thị trường & đối thủ
+    deliveredCount: number;         // Đã nghiệm thu trong tháng
+    targetBrandBudget: number;      // Ngân sách tổng cấp Brand định hướng
+    targetBrandGmv: number;         // Mục tiêu GMV tổng cấp Brand
+    notes: string;
+  };
+
+  // 3. Kế hoạch tháng vị trí Key Visual / SIS [theo brand]
+  keyVisualSisPlan: {
+    kvDirectionCount: number;       // Số bộ định hướng Key Visual chiến dịch
+    sisBannerPackageCount: number;  // Số bộ trang trí gian hàng SIS / Banner đa sàn
+    pdpSeoProductCount: number;     // Số bộ PDP / khung ảnh sản phẩm chuẩn SEO
+    deliveredCount: number;         // Đã nghiệm thu trong tháng
+    designTheme: string;            // Chủ đề hình ảnh & SIS tháng
+    notes: string;
+  };
+
+  // Liên kết với thực thể Chiến dịch (Campaign) của Brand trong tháng
+  hasCampaign?: boolean;
+  campaignId?: string;
+  campaignCode?: string;
+  campaignTitle?: string;
+  campaignPhaseName?: string;
+  linkedCampaignIds?: string[];
+
+  // Dữ liệu mở rộng cho Biểu mẫu 1-Sheet Trình Brand (Monthly Content & Key Visual Plan)
+  oneSheetPlanData?: BrandOneSheetPlanData;
+
+  updatedAt: string;
+  updatedBy: string;
+  approvedBy?: string;
+  approvedAt?: string;
+}
+
+// =========================================================================
+// BIỂU MẪU 1-SHEET TRÌNH BRAND (MONTHLY CONTENT & KEY VISUAL PLAN — 5 SECTIONS)
+// =========================================================================
+
+/** Section 01: Định hướng Tháng (Plan / Strategy + Campaign) */
+export interface BrandOneSheetOrientation {
+  roleInYearPlan: string;          // Vai trò trong plan năm
+  objectivesAndBarriers: string;   // Mục tiêu & rào cản cần xử lý
+  heroSkusUspRtb: string;          // Hero SKU / USP / RTB
+  seasonalOpportunity: string;     // Seasonal opportunity
+  bigIdeaMonthlyTheme: string;     // Big idea / monthly theme
+  previousMonthReview: string;     // Review / bài học tháng trước
+  targetAudienceInsight: string;   // Tệp khách hàng & insight
+  comboPromoOffer: string;         // Combo / deal / quà tặng
+  campaignSaleMilestones: string;  // Campaign / mốc sale (W1–W5)
+  keyMessageAndCta: string;        // Key message & CTA
+}
+
+/** Section 02: Cột chỉ số KPI theo từng Sàn (Shopee / TikTok Shop) */
+export interface BrandOneSheetPlatformKpi {
+  gmvSeller: number;               // GMV nhà bán
+  nmvSeller: number;               // NMV nhà bán
+  orders: number;                  // Đơn hàng
+  traffic: number;                 // Lượt truy cập
+  conversionRate: number;          // Tỷ lệ chuyển đổi (CR, VD: 0.05 = 5%)
+  aov: number;                     // Giá trung bình/đơn hàng (AOV)
+  cancellationRate: number;        // Tỷ lệ hủy (VD: 0.05 = 5%, 0.10 = 10%)
+  // Doanh thu các hoạt động
+  gmvVideo: number;                // GMV video
+  gmvLivestream: number;           // GMV Livestream
+  gmvProductCard: number;          // GMV Thẻ sản phẩm (= GMV nhà bán - GMV video - GMV live)
+  // Chi phí Marketing thúc đẩy (-VAT)
+  costBookingVideoAff: number;     // Chi phí booking video affiliate
+  costVideoSelfChannel: number;    // Chi phí video self channel
+  costAds: number;                 // Chi phí ads
+  costBookingLiveAff: number;      // Chi phí booking livestream affiliate
+  costLiveSelfChannel: number;     // Chi phí livestream self channel
+  costDisplayPackage: number;      // Chi phí gói dịch vụ hiển thị
+  costOtherNet: number;            // Chi phí khác (net)
+  // Chi phí khác (Ghi nhận chung với phí sàn)
+  costAffiliateCommission: number;     // Chi phí tiếp thị liên kết
+  costAffiliateAdsCommission: number;  // Chi phí tiếp thị liên kết (có chạy ads)
+}
+
+/** Section 04: Dòng kế hoạch tuần KOC / Booking trên TikTok Shop */
+export interface BrandOneSheetTikTokWeeklyRow {
+  week: 'W1' | 'W2' | 'W3' | 'W4' | 'W5';
+  dateRange: string; // VD: '01–07/11'
+  tapCount: number;
+  kl1Count: number;
+  kl2Count: number;
+  kl3Count: number;
+  kl4Count: number;
+  kl5Count: number;
+  kl6Count: number;
+  kl7Count: number;
+  tapBudget: number;
+  kl1Budget: number;
+  kl2Budget: number;
+  kl3Budget: number;
+  kl4Budget: number;
+  kl5Budget: number;
+  kl6Budget: number;
+  kl7Budget: number;
+  targetBookingGmv: number;
+  ownerActionNote: string;
+}
+
+/** Section 04: Dòng chi tiết Content TikTok Shop (Video affiliate & Video self/Ảnh trượt) */
+export interface BrandOneSheetTikTokContentRow {
+  id: string;
+  weekAndAirDate: string;          // VD: 'W1 | 01–07/11'
+  skuOrCombo: string;              // VD: 'Natural / combo 2 Natural'
+  touchpointSource: 'Video affiliate' | 'Video self' | 'Livestream'; // Nguồn / điểm chạm
+  klGroup: string;                 // VD: 'Mix KL / TAP' hoặc 'Không áp dụng'
+  kocCriteria: string;             // Tệp KOC / tiêu chí chọn
+  pillar: string;                  // Pillar (VD: 'Product education: hiểu SKU/RTB')
+  angleAndBrief: string;           // Angle / nhiệm vụ nội dung / brief
+  contentType: 'Video' | 'Ảnh trượt' | 'Livestream'; // Type
+  qty: number;                     // Số lượng
+  budgetVnd: number;               // Ngân sách VNĐ
+  pic: string;                     // PIC phụ trách
+}
+
+/** Section 05: Chiến lược Pillar (P01 -> P05) */
+export interface BrandOneSheetPillarRow {
+  pillarId: string;                // VD: 'P01', 'P02', 'P03', 'P04', 'P05'
+  pillarName: string;              // Tên pillar (Problem / tình huống, Product education, Social proof, Promotion, Usage / mua lại)
+  behaviorObjective: string;       // Mục tiêu / hành vi
+  insightAndBarrier: string;       // Insight / rào cản
+  messageAndRtb: string;           // Thông điệp / RTB
+  priorityAngle: string;           // Angle ưu tiên
+  suitableFormat: string;          // Format phù hợp (FAQ / POV, Demo / tutorial, Review / unbox, Deal explainer, Routine / checklist)
+  videoWeightRatio: number;        // Tỷ trọng video (VD: 0.2 = 20%)
+  monthlyVideoCount: number;       // Số video tháng
+}
+
+/** Section 05: Target tuần Content Shopee */
+export interface BrandOneSheetShopeeWeeklyTarget {
+  week: 'W1' | 'W2' | 'W3' | 'W4' | 'W5';
+  airDateRange: string;            // VD: '01–07/11'
+  plannedVideos: number;           // Số video plan
+  contentBudget: number;           // Ngân sách content
+  targetViews: number;             // View video target
+  targetVideoGmv: number;          // GMV video target
+  ownerAction: string;             // Owner / action
+}
+
+/** Section 05: Lịch sản xuất & air Content Shopee */
+export interface BrandOneSheetShopeeContentRow {
+  id: string;
+  week: 'W1' | 'W2' | 'W3' | 'W4' | 'W5';
+  skuOrCombo: string;              // SKU / combo
+  touchpointSource: string;        // Nguồn / điểm chạm ('Video self', 'Shopee Video Aff'...)
+  airOrHandoverDate: string;       // Ngày air / bàn giao (VD: '03/11/2026')
+  behaviorObjective: 'Awareness' | 'Consideration' | 'Conversion' | 'Loyalty' | string; // Mục tiêu / hành vi
+  pillarId: string;                // Pillar ID ('P01'..'P05')
+  angleAndBrief: string;           // Angle / nội dung / brief
+  format: string;                  // Format ('FAQ', 'Demo', 'Review / unbox', 'Deal explainer', 'Routine')
+  productionMethod: 'VJ' | 'Remix' | 'Inhouse' | 'KOC Reup' | string; // Phương thức sản xuất
+  qty: number;                     // Số lượng
+  budgetVnd: number;               // Ngân sách VNĐ
+  ownerDeadlineKvNote: string;     // Owner / deadline / KV / final
+}
+
+/** Toàn bộ cấu trúc 1-Sheet Monthly Content & Key Visual Plan trình Brand */
+export interface BrandOneSheetPlanData {
+  brandName: string;
+  month: string;                   // VD: '2026/11' hoặc '2026/10'
+  preparedBy: string;              // Người lập / duyệt
+  statusAndCutoffNote: string;     // Ngày chốt / trạng thái
+  hasCampaign: boolean;
+  campaignId?: string;
+  campaignCode?: string;
+  campaignTitle?: string;
+  campaignPhaseName?: string;
+  // 01. Định hướng tháng
+  orientation: BrandOneSheetOrientation;
+  // 02. Kế hoạch KPI tháng (Shopee | TikTok Shop | Total)
+  shopeeKpi: BrandOneSheetPlatformKpi;
+  tiktokKpi: BrandOneSheetPlatformKpi;
+  kpiBalanceNote: string;
+  // 03. Key Visual chung của tháng
+  keyVisual: CampaignKeyVisualSpec;
+  // 04. TikTok Shop • Content, KOC & Booking
+  tiktokOverviewExtra: {
+    selfRevenueTarget: number;
+    selfContentCount: number;
+    selfCostNet: number;
+    affRevenueTarget: number;
+    awarenessVideoTagCount: number; // Nhãn mục tiêu Awareness + Engagement trong tổng AFF
+    brandingVideoTagCount: number;  // Nhãn mục tiêu Branding trong tổng AFF
+    liveSelfOrders: number;
+    liveSelfSessions2h: number;
+    liveAffOrders: number;
+    liveAffSessions: number;
+  };
+  tiktokWeeklyRows: BrandOneSheetTikTokWeeklyRow[];
+  tiktokContentRows: BrandOneSheetTikTokContentRow[];
+  // 05. Shopee • Chiến lược Pillar, Content & Target Tuần
+  contentPillars: BrandOneSheetPillarRow[];
+  shopeeWeeklyTargets: BrandOneSheetShopeeWeeklyTarget[];
+  shopeeContentRows: BrandOneSheetShopeeContentRow[];
+}
+
+
 
 

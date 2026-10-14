@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Zap, 
   ExternalLink,
@@ -53,6 +53,13 @@ interface BookingViewProps {
   onOpenQuickBook?: () => void;
   onOpenImport?: () => void;
   selectedBrand?: string;
+  bookingDrilldownIntent?: {
+    storeName?: string;
+    brandName?: string;
+    dealCode?: string;
+    month?: string;
+    nonce: number;
+  } | null;
 }
 
 export const BookingView: React.FC<BookingViewProps> = ({ 
@@ -74,7 +81,8 @@ export const BookingView: React.FC<BookingViewProps> = ({
   onOpenInputPlan,
   onOpenQuickBook,
   onOpenImport,
-  selectedBrand = 'ALL'
+  selectedBrand = 'ALL',
+  bookingDrilldownIntent,
 }) => {
   const [activeSubTab, setActiveSubTab] = useState<'MY_PLAN' | 'CANDIDATES' | 'BOOKING_DEALS' | 'KOC_DIRECTORY'>('MY_PLAN');
   const [candidates, setCandidates] = useState<KocCandidateItem[]>(INITIAL_KOC_CANDIDATES);
@@ -140,6 +148,24 @@ export const BookingView: React.FC<BookingViewProps> = ({
     setPrevSelectedBrand(selectedBrand);
     if (selectedBrand) {
       setSelectedBrandFilter(selectedBrand);
+    }
+  }
+
+  // Khi người dùng drill-down từ Hồ sơ Gian hàng hoặc Hồ sơ Thương hiệu sang Quản lý Booking
+  const [handledBookingDrilldownNonce, setHandledBookingDrilldownNonce] = useState<number>(0);
+  if (bookingDrilldownIntent && bookingDrilldownIntent.nonce !== handledBookingDrilldownNonce) {
+    setHandledBookingDrilldownNonce(bookingDrilldownIntent.nonce);
+    setActiveSubTab('BOOKING_DEALS');
+    setDealsFilter('ALL');
+    if (bookingDrilldownIntent.brandName) {
+      setSelectedBrandFilter(bookingDrilldownIntent.brandName);
+    } else {
+      setSelectedBrandFilter('ALL');
+    }
+    if (bookingDrilldownIntent.dealCode) {
+      setDealsSearch(bookingDrilldownIntent.dealCode);
+    } else {
+      setDealsSearch('');
     }
   }
 
@@ -297,18 +323,38 @@ export const BookingView: React.FC<BookingViewProps> = ({
     { key: 'Nữ xinh', label: 'Nữ xinh' },
   ];
 
-  // Brands / Gian hàng (from Image 8)
-  const brandsList = [
-    { key: 'ALL', label: 'Tất cả gian hàng' },
-    { key: 'Kutieskin Mama', label: 'Kutieskin Mama' },
-    { key: 'Royal Ausnz', label: 'Royal Ausnz' },
-    { key: 'Bye Bye Blemish', label: 'Bye Bye Blemish' },
-    { key: 'pHCare', label: 'pHCare (cần mã Ads)' },
-    { key: 'EUPC', label: 'EUPC' },
-    { key: 'Natural Care', label: 'Natural Care' },
-    { key: 'Keyshu', label: 'Keyshu' },
-    { key: 'Babe', label: 'Babe (Vượt Plan)' },
-  ];
+  // Brands / Gian hàng (Động theo phân quyền nhân viên và danh sách Deal)
+  const brandsList = useMemo(() => {
+    const set = new Set<string>();
+    if (currentUser?.assignedBrands) {
+      currentUser.assignedBrands.forEach(b => {
+        const norm = b.trim();
+        if (norm && !['ALL_BRANDS', 'Tất cả nhãn hàng', 'ALL', '*'].includes(norm)) {
+          set.add(norm);
+        }
+      });
+    }
+    deals.forEach(d => {
+      if (d.brandName) set.add(d.brandName.trim());
+    });
+
+    if (set.size === 0) {
+      return [
+        { key: 'ALL', label: 'Tất cả gian hàng' },
+        { key: 'Kutieskin Mama', label: 'Kutieskin Mama' },
+        { key: 'Royal Ausnz', label: 'Royal Ausnz' },
+        { key: 'Bye Bye Blemish', label: 'Bye Bye Blemish' },
+        { key: 'pHCare', label: 'pHCare (cần mã Ads)' },
+        { key: 'EUPC', label: 'EUPC' },
+        { key: 'Natural Care', label: 'Natural Care' },
+        { key: 'Keyshu', label: 'Keyshu' },
+        { key: 'Babe', label: 'Babe (Vượt Plan)' },
+      ];
+    }
+
+    const items = Array.from(set).sort().map(b => ({ key: b, label: b }));
+    return [{ key: 'ALL', label: 'Tất cả gian hàng' }, ...items];
+  }, [currentUser, deals]);
 
   const filteredKocs = localKocs.filter((koc) => {
     const matchKL = selectedKL === 'ALL' || koc.salaryGrade === selectedKL;

@@ -1,33 +1,71 @@
 'use client';
 
 /**
- * Hồ sơ một gian hàng sàn — thiết kế theo Upbase Ops Design System (DESIGN_SYSTEM.md).
- * Bố cục hai cột:
- * - Cột chính: Chỉ số vận hành, trần ngân sách Net, Kế hoạch & phân bổ Order (File 4.1), Sản phẩm chủ lực (Hero SKUs), Thực tế Booking (File 3.2).
- * - Cột phụ: Đội ngũ phụ trách (Cơ cấu 2 tầng: Trưởng phòng Đặng Thị Yến Nhi, Trưởng nhóm Nguyễn Thị Ngọc Tâm, Chuyên viên PIC, FOC Trần Thị Hảo), Thông số kỹ thuật sàn, Lịch sử phân công & bàn giao.
+ * Hồ sơ Gian hàng sàn — thiết kế theo Upbase Ops Design System (DESIGN_SYSTEM.md).
+ * Tách bạch rõ bản chất dữ liệu:
+ * 1. Thông tin định danh & cấu hình cố định của gian hàng (Mã SO, Sàn, Gói dịch vụ, Đội ngũ PIC, Sản phẩm SKU).
+ * 2. Hồ sơ Kế hoạch & Báo cáo theo tháng (Monthly Plan & Report: NMV, Ngân sách Net/Gross, Sản lượng Video, ROAS)
+ *    kèm khả năng drill-down trực tiếp xuống từng Plan tháng, Đề xuất KOC, từng Deal Booking (File 3.2) và Hợp đồng.
  */
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   ArrowLeft,
+  ArrowUpRight,
+  BarChart3,
   Building2,
+  Calendar,
   ChevronLeft,
   ChevronRight,
   ExternalLink,
+  FileSpreadsheet,
+  Layers,
   Pencil,
   Store,
-  UserCheck
+  UserCheck,
+  Video,
 } from 'lucide-react';
-import type { BookingDealItem, BrandDetail, StorePortfolioItem, UserProfile } from '../../lib/types';
+import type {
+  BookingDealItem,
+  BrandDetail,
+  InputPlanBreakdownState,
+  InputPlanRowItem,
+  SalaryGrade,
+  StorePortfolioItem,
+  UserProfile,
+} from '../../lib/types';
 import { formatNumber, formatPercent, formatVnd, formatVndShort } from '../../lib/format';
-import { Button, ChannelTag, DataTable, EmptyState, Panel, Person, Stat, StatRow, Status, sharedTo } from '../ui';
+import {
+  Button,
+  ChannelTag,
+  DataTable,
+  EmptyState,
+  Modal,
+  Panel,
+  Person,
+  Select,
+  Stat,
+  StatRow,
+  Status,
+  Tabs,
+  sharedTo,
+} from '../ui';
 import type { Column } from '../ui';
 import { INITIAL_PUSH_PRODUCTS } from '../../lib/mockData';
+import {
+  PROFILE_MONTH_OPTIONS,
+  buildStoreMonthlyPlanReport,
+  type StoreMonthlyBookingRecord,
+  type StoreMonthlyPlanReport,
+} from '../../lib/monthlyProfileMetrics';
 
 export interface StoreProfileProps {
   store: StorePortfolioItem;
   brand?: BrandDetail;
   deals?: BookingDealItem[];
+  monthlyPlans?: InputPlanBreakdownState[];
+  selectedMonth?: string;
+  onMonthChange?: (month: string) => void;
   currentUser?: UserProfile | null;
   layout?: 'page' | 'modal';
   nav?: {
@@ -41,43 +79,89 @@ export interface StoreProfileProps {
   onNavigateToBrandProfile?: (brandName: string) => void;
   onOpenHandover?: (store: StorePortfolioItem) => void;
   onOpenEdit?: (store: StorePortfolioItem) => void;
+  onDrilldownToPlan?: (params: {
+    planId?: string;
+    storeId?: string;
+    storeName: string;
+    brandName: string;
+    month: string;
+  }) => void;
+  onDrilldownToListing?: (params: {
+    planId?: string;
+    storeName: string;
+    brandName: string;
+    month: string;
+    salaryGrade?: SalaryGrade;
+  }) => void;
+  onDrilldownToBooking?: (params: {
+    storeName: string;
+    brandName: string;
+    month: string;
+    dealCode?: string;
+  }) => void;
+  onSelectDealForContract?: (deal: BookingDealItem) => void;
 }
+
+type MonthlyDetailTab = 'PLAN_BREAKDOWN' | 'BOOKING_REPORT' | 'SELLER_AND_SKUS';
 
 export function StoreProfile({
   store,
   brand,
   deals = [],
+  monthlyPlans,
+  selectedMonth: propSelectedMonth,
+  onMonthChange,
   layout = 'page',
   nav,
   onNavigateToBrandProfile,
   onOpenHandover,
-  onOpenEdit
+  onOpenEdit,
+  onDrilldownToPlan,
+  onDrilldownToListing,
+  onDrilldownToBooking,
+  onSelectDealForContract,
 }: StoreProfileProps) {
-  // Budget & spent calculations
-  const budgetNet = store.budgetNet ?? store.monthlyBudget ?? 0;
-  const storeDeals = useMemo(() => {
-    const sName = store.storeName.toLowerCase();
-    const bName = store.brandName.toLowerCase();
-    return deals.filter(d => 
-      (d.storeName && d.storeName.toLowerCase() === sName) ||
-      (d.storeId && (d.storeId === store.id || d.storeId === store.storeOperationId)) ||
-      (!d.storeName && d.brandName && d.brandName.toLowerCase() === bName)
+  const [internalMonth, setInternalMonth] = useState<string>(propSelectedMonth || '2026/10');
+  const activeMonth = propSelectedMonth || internalMonth;
+
+  const handleMonthChange = (nextMonth: string) => {
+    setInternalMonth(nextMonth);
+    onMonthChange?.(nextMonth);
+  };
+
+  const [detailTab, setDetailTab] = useState<MonthlyDetailTab>('PLAN_BREAKDOWN');
+  const [inspectedBooking, setInspectedBooking] = useState<StoreMonthlyBookingRecord | null>(null);
+
+  // Lịch sử Hồ sơ Plan & Report qua các kỳ tháng (2026/11, 2026/10, 2026/09, 2026/08)
+  const monthlyLedger = useMemo(() => {
+    return PROFILE_MONTH_OPTIONS.map(m =>
+      buildStoreMonthlyPlanReport(store, m.value, {
+        plans: monthlyPlans,
+        deals,
+      })
     );
-  }, [store, deals]);
+  }, [store, monthlyPlans, deals]);
 
-  const spentFromDeals = storeDeals.reduce((sum, d) => sum + (d.totalValue || 0), 0);
-  const spent = store.actualSpentNet ?? (spentFromDeals > 0 ? spentFromDeals : 0);
-  const isOverbudget = budgetNet > 0 && spent > budgetNet;
-  const isUnbudgetedSpend = budgetNet === 0 && spent > 0;
-
-  // Target contents
-  const targetVideos = (store.targetAffiliateContents || 0) + (store.targetSelfChannelContents || 0) + (store.targetFocVideos || 0);
+  // Bản ghi Plan & Report của kỳ tháng đang chọn
+  const currentMonthReport = useMemo(() => {
+    return (
+      monthlyLedger.find(r => r.month === activeMonth) ||
+      buildStoreMonthlyPlanReport(store, activeMonth, {
+        plans: monthlyPlans,
+        deals,
+      })
+    );
+  }, [monthlyLedger, activeMonth, store, monthlyPlans, deals]);
 
   // 2-tier team setup per Upbase B2C rule
   const leadB2c = 'Đặng Thị Yến Nhi';
   const hasLeader = store.hasBookingLeader && !!store.bookingLeader;
   const leaderName = hasLeader ? store.bookingLeader : undefined;
-  const specialistPic = store.b2cOwnerName || store.primaryPic || (store.b2cOwners && store.b2cOwners[0]) || 'Lê Phương Thảo';
+  const specialistPic =
+    store.b2cOwnerName ||
+    store.primaryPic ||
+    (store.b2cOwners && store.b2cOwners[0]) ||
+    'Lê Phương Thảo';
   const focSpecialist = 'Trần Thị Hảo';
 
   // Products linked to this store
@@ -85,19 +169,21 @@ export function StoreProfile({
     const bNameLower = store.brandName.toLowerCase();
     const sNameLower = store.storeName.toLowerCase();
 
-    const brandHeroes = brand?.heroProducts?.map(hp => ({
-      id: hp.id,
-      sku: hp.sku,
-      productName: hp.productName,
-      price: hp.price,
-      commissionRate: hp.commissionRate || 15,
-      sampleStock: hp.sampleStock || 50,
-      pdpUrl: hp.pdpUrl || '',
-    })) || [];
+    const brandHeroes =
+      brand?.heroProducts?.map(hp => ({
+        id: hp.id,
+        sku: hp.sku,
+        productName: hp.productName,
+        price: hp.price,
+        commissionRate: hp.commissionRate || 15,
+        sampleStock: hp.sampleStock || 50,
+        pdpUrl: hp.pdpUrl || '',
+      })) || [];
 
-    const pushHeroes = INITIAL_PUSH_PRODUCTS.filter(p => 
-      (p.brandName && p.brandName.toLowerCase().includes(bNameLower)) ||
-      (p.storeName && p.storeName.toLowerCase().includes(sNameLower))
+    const pushHeroes = INITIAL_PUSH_PRODUCTS.filter(
+      p =>
+        (p.brandName && p.brandName.toLowerCase().includes(bNameLower)) ||
+        (p.storeName && p.storeName.toLowerCase().includes(sNameLower))
     ).map(p => ({
       id: p.id,
       sku: p.sku,
@@ -117,6 +203,358 @@ export function StoreProfile({
       return true;
     });
   }, [store, brand]);
+
+  // 1. Cột bảng Lịch sử Hồ sơ theo Tháng (Plan vs Report Ledger)
+  const ledgerColumns: Column<StoreMonthlyPlanReport>[] = [
+    {
+      key: 'month',
+      header: 'Kỳ tháng & Phiên bản Plan',
+      width: 195,
+      render: r => {
+        const isSelected = r.month === activeMonth;
+        return (
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className={`font-semibold ${isSelected ? 'text-accent' : 'text-ink'}`}>
+                {r.monthLabel}
+              </span>
+              <span className="px-1.5 py-0.5 rounded bg-sunken border border-line text-2xs font-code text-ink-2">
+                {r.versionCode}
+              </span>
+              {isSelected && <Status tone="info">Đang xem</Status>}
+            </div>
+            <div className="text-2xs text-ink-3 mt-0.5">
+              {r.planStatusLabel} · PIC: {r.pic}
+            </div>
+          </div>
+        );
+      },
+    },
+    {
+      key: 'nmv',
+      header: 'Doanh số NMV (Plan vs Report)',
+      align: 'right',
+      width: 185,
+      render: r => (
+        <div className="leading-tight tabular-nums text-right">
+          <div className="text-xs font-semibold text-ink">
+            Report: {r.reportNmv > 0 ? formatVndShort(r.reportNmv) : '0 đ'}
+          </div>
+          <div className="text-2xs text-ink-3">
+            Plan: {r.planNmv > 0 ? formatVndShort(r.planNmv) : '0 đ'}
+            {r.planNmv > 0 && (
+              <span
+                className={`ml-1 font-medium ${
+                  r.nmvAchievementPct >= 100
+                    ? 'text-positive'
+                    : r.nmvAchievementPct >= 70
+                      ? 'text-accent'
+                      : 'text-warning'
+                }`}
+              >
+                ({Math.round(r.nmvAchievementPct)}%)
+              </span>
+            )}
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'budget',
+      header: 'Ngân sách Net (Plan vs Chi)',
+      align: 'right',
+      width: 185,
+      render: r => (
+        <div className="leading-tight tabular-nums text-right">
+          <div
+            className={`text-xs font-semibold ${
+              r.isOverbudget || r.isUnbudgetedSpend ? 'text-critical' : 'text-ink'
+            }`}
+          >
+            Chi: {r.reportSpentNet > 0 ? formatVndShort(r.reportSpentNet) : '0 đ'}
+          </div>
+          <div className="text-2xs text-ink-3">
+            Plan Net: {r.planBudgetNet > 0 ? formatVndShort(r.planBudgetNet) : '0 đ'}
+            {r.planBudgetNet > 0 && (
+              <span className="ml-1">({Math.round(r.budgetBurnPct)}%)</span>
+            )}
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'videos',
+      header: 'Sản lượng Video (Plan vs Air)',
+      align: 'right',
+      width: 175,
+      render: r => (
+        <div className="leading-tight tabular-nums text-right">
+          <div className="text-xs font-semibold text-ink">
+            Air: {formatNumber(r.reportAiredVideos)} · Book: {formatNumber(r.reportBookedVideos)}
+          </div>
+          <div className="text-2xs text-ink-3">
+            Plan: {formatNumber(r.planTotalVideos)} ({r.planAffVideos} Aff · {r.planSelfVideos} Kênh · {r.planFocVideos} FOC)
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'roas',
+      header: 'ROAS & Đơn hàng',
+      align: 'right',
+      width: 135,
+      render: r => (
+        <div className="leading-tight tabular-nums text-right">
+          <span className="block text-xs font-semibold text-ink">
+            {r.reportRoas > 0 ? `${r.reportRoas.toFixed(2)}x` : '—'}
+          </span>
+          <span className="block text-2xs text-ink-3">
+            {r.reportOrders > 0 ? `${formatNumber(r.reportOrders)} đơn` : 'Chưa phát sinh'}
+          </span>
+        </div>
+      ),
+    },
+    {
+      key: 'actions',
+      header: 'Drill-down chi tiết',
+      align: 'right',
+      width: 190,
+      render: r => (
+        <div
+          className="inline-flex items-center justify-end gap-1.5"
+          onClick={e => e.stopPropagation()}
+        >
+          {onDrilldownToPlan && (
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() =>
+                onDrilldownToPlan({
+                  planId: r.plan?.id,
+                  storeId: store.id,
+                  storeName: store.storeName,
+                  brandName: store.brandName,
+                  month: r.month,
+                })
+              }
+            >
+              Mở Plan
+            </Button>
+          )}
+          {onDrilldownToBooking && (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() =>
+                onDrilldownToBooking({
+                  storeName: store.storeName,
+                  brandName: store.brandName,
+                  month: r.month,
+                })
+              }
+            >
+              Booking ({r.bookings.length})
+            </Button>
+          )}
+        </div>
+      ),
+    },
+  ];
+
+  // 2. Cột bảng Phân rã Hạng mục Plan trong tháng (InputPlanRowItem)
+  const planItemColumns: Column<InputPlanRowItem>[] = [
+    {
+      key: 'tier',
+      header: 'Hạng mục / Khung lương KOC',
+      width: 230,
+      render: it => (
+        <div className="min-w-0">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="px-1.5 py-0.5 rounded bg-sunken border border-line text-2xs font-code font-semibold text-ink">
+              {it.tierCode}
+            </span>
+            <span className="font-medium text-ink truncate">{it.tierLabel}</span>
+          </div>
+          <span className="block text-2xs text-ink-3 mt-0.5">
+            {it.platform} · {it.contentFormat}
+          </span>
+        </div>
+      ),
+    },
+    {
+      key: 'pic',
+      header: 'Nhân sự thực thi',
+      width: 150,
+      render: it => <Person name={it.assignedStaff || currentMonthReport.pic} size={18} />,
+    },
+    {
+      key: 'qty',
+      header: 'Chỉ tiêu Plan',
+      align: 'right',
+      width: 110,
+      render: it => (
+        <span className="tabular-nums font-semibold text-ink">
+          {formatNumber(it.qty)} video
+        </span>
+      ),
+    },
+    {
+      key: 'unitCost',
+      header: 'Đơn giá định mức',
+      align: 'right',
+      width: 130,
+      render: it => (
+        <span className="tabular-nums text-ink-2">
+          {it.unitCost > 0 ? formatVnd(it.unitCost) : '0 đ (FOC)'}
+        </span>
+      ),
+    },
+    {
+      key: 'totalBudget',
+      header: 'Ngân sách Plan Net',
+      align: 'right',
+      width: 140,
+      render: it => (
+        <span className="tabular-nums font-medium text-ink">
+          {it.totalBudget > 0 ? formatVnd(it.totalBudget) : '0 đ'}
+        </span>
+      ),
+    },
+    {
+      key: 'targetGmv',
+      header: 'Mục tiêu NMV/GMV',
+      align: 'right',
+      width: 140,
+      render: it => (
+        <span className="tabular-nums text-ink-2">
+          {it.targetGmv > 0 ? formatVnd(it.targetGmv) : '—'}
+        </span>
+      ),
+    },
+    {
+      key: 'action',
+      header: '',
+      align: 'right',
+      width: 130,
+      render: it => {
+        const grade = it.tierCode.startsWith('KL') ? (it.tierCode as SalaryGrade) : undefined;
+        return onDrilldownToListing && grade ? (
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() =>
+              onDrilldownToListing({
+                planId: currentMonthReport.plan?.id,
+                storeName: store.storeName,
+                brandName: store.brandName,
+                month: activeMonth,
+                salaryGrade: grade,
+              })
+            }
+          >
+            Listing {grade}
+          </Button>
+        ) : null;
+      },
+    },
+  ];
+
+  // 3. Cột bảng Thực tế Booking & Kết quả Video trong tháng (StoreMonthlyBookingRecord)
+  const bookingColumns: Column<StoreMonthlyBookingRecord>[] = [
+    {
+      key: 'dealCode',
+      header: 'Mã Booking & KOC',
+      width: 220,
+      render: b => (
+        <div className="min-w-0">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="font-code text-xs font-semibold text-accent">{b.dealCode}</span>
+            <span className="px-1.5 py-0.5 rounded bg-sunken border border-line text-2xs font-code text-ink-2">
+              {b.kl}
+            </span>
+          </div>
+          <div className="mt-1">
+            <Person name={b.kocName} size={18} />
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'product',
+      header: 'Sản phẩm & Tuyến nội dung',
+      width: 190,
+      render: b => (
+        <div className="min-w-0 leading-tight">
+          <span className="block truncate font-medium text-ink text-xs">{b.productName}</span>
+          <span className="block truncate text-2xs text-ink-3 mt-0.5">
+            {b.videoType} · {b.weekLabel}
+          </span>
+        </div>
+      ),
+    },
+    {
+      key: 'cost',
+      header: 'Chi phí Net',
+      align: 'right',
+      width: 130,
+      render: b => (
+        <span className="tabular-nums font-medium text-ink">
+          {b.costNet > 0 ? formatVnd(b.costNet) : '0 đ (FOC)'}
+        </span>
+      ),
+    },
+    {
+      key: 'reportMetrics',
+      header: 'Kết quả Report (GMV · Đơn · ROAS)',
+      align: 'right',
+      width: 200,
+      render: b => (
+        <div className="leading-tight tabular-nums text-right">
+          <span className="block text-xs font-semibold text-ink">
+            {b.gmv > 0 ? formatVnd(b.gmv) : 'Chưa ghi nhận GMV'}
+          </span>
+          <span className="block text-2xs text-ink-3">
+            {b.orders > 0 ? `${formatNumber(b.orders)} đơn · ` : ''}
+            {b.roas > 0 ? `ROAS ${b.roas.toFixed(2)}x` : `${formatNumber(b.views)} views`}
+          </span>
+        </div>
+      ),
+    },
+    {
+      key: 'video',
+      header: 'Link bài Air',
+      width: 120,
+      render: b =>
+        b.linkAir ? (
+          <a
+            href={b.linkAir}
+            target="_blank"
+            rel="noreferrer"
+            onClick={e => e.stopPropagation()}
+            className="text-accent hover:underline inline-flex items-center gap-1 text-2xs font-medium"
+          >
+            <span>Xem video</span>
+            <ExternalLink className="w-3 h-3 shrink-0" />
+          </a>
+        ) : (
+          <span className="text-ink-3 text-2xs">Chưa lên bài</span>
+        ),
+    },
+    {
+      key: 'status',
+      header: 'Trạng thái & Nghiệm thu',
+      width: 150,
+      render: b => {
+        const isPaid = b.paymentStatus.toLowerCase().includes('tất toán') || b.paymentStatus.toLowerCase().includes('thanh toán');
+        return (
+          <div className="space-y-0.5">
+            <Status tone={isPaid ? 'positive' : 'info'}>{b.pipeline}</Status>
+            <span className="block text-2xs text-ink-3">{b.paymentStatus}</span>
+          </div>
+        );
+      },
+    },
+  ];
 
   // Product table columns
   interface ProductRow {
@@ -138,21 +576,21 @@ export function StoreProfile({
           <span className="block truncate font-medium text-ink">{r.productName}</span>
           <span className="block text-2xs text-ink-3 font-code">{r.sku}</span>
         </div>
-      )
+      ),
     },
     {
       key: 'price',
       header: 'Giá niêm yết',
       align: 'right',
       width: 130,
-      render: r => <span className="tabular-nums font-medium text-ink">{formatVnd(r.price)}</span>
+      render: r => <span className="tabular-nums font-medium text-ink">{formatVnd(r.price)}</span>,
     },
     {
       key: 'commission',
       header: 'Hoa hồng sàn',
       align: 'right',
       width: 120,
-      render: r => <span className="tabular-nums text-ink-2 font-code">{r.commissionRate}%</span>
+      render: r => <span className="tabular-nums text-ink-2 font-code">{r.commissionRate}%</span>,
     },
     {
       key: 'sample',
@@ -163,155 +601,146 @@ export function StoreProfile({
         <span className="tabular-nums text-positive font-medium">
           {formatNumber(r.sampleStock)} suất
         </span>
-      )
+      ),
     },
     {
       key: 'link',
       header: 'Link sàn',
       align: 'right',
       width: 90,
-      render: r => r.pdpUrl ? (
-        <a
-          href={r.pdpUrl}
-          target="_blank"
-          rel="noreferrer"
-          className="text-ink-3 hover:text-ink inline-flex items-center gap-1 text-2xs font-medium"
-          title="Xem trang sản phẩm trên sàn"
-        >
-          <span>Xem</span>
-          <ExternalLink className="w-3 h-3" />
-        </a>
-      ) : <span className="text-ink-3">—</span>
-    }
-  ];
-
-  // Deal table columns
-  const dealColumns: Column<BookingDealItem>[] = [
-    {
-      key: 'koc',
-      header: 'Creator / KOC',
-      render: d => (
-        <div className="min-w-0">
-          <Person name={d.kocStageName} size={20} />
-          {d.campaignTitle && (
-            <span className="block truncate text-2xs text-ink-3 mt-0.5">{d.campaignTitle}</span>
-          )}
-        </div>
-      )
-    },
-    {
-      key: 'cost',
-      header: 'Chi phí thỏa thuận',
-      align: 'right',
-      width: 150,
-      render: d => {
-        const val = d.totalValue || 0;
-        return <span className="tabular-nums font-medium text-ink">{formatVnd(val)}</span>;
-      }
-    },
-    {
-      key: 'video',
-      header: 'Link video',
-      width: 130,
-      render: d => {
-        const link = d.videoUrl || d.tiktokVideoUrl || '';
-        return link ? (
+      render: r =>
+        r.pdpUrl ? (
           <a
-            href={link}
+            href={r.pdpUrl}
             target="_blank"
             rel="noreferrer"
-            className="text-accent hover:underline inline-flex items-center gap-1 text-2xs font-medium truncate max-w-[120px]"
+            className="text-ink-3 hover:text-ink inline-flex items-center gap-1 text-2xs font-medium"
+            title="Xem trang sản phẩm trên sàn"
           >
-            <span>Video live</span>
-            <ExternalLink className="w-3 h-3 shrink-0" />
+            <span>Xem</span>
+            <ExternalLink className="w-3 h-3" />
           </a>
         ) : (
-          <span className="text-ink-3 text-2xs">Chưa lên bài</span>
-        );
-      }
+          <span className="text-ink-3">—</span>
+        ),
     },
-    {
-      key: 'status',
-      header: 'Trạng thái deal',
-      width: 130,
-      render: d => {
-        const isDone = d.status === 'COMPLETED' || d.status === 'FINAL_PAID';
-        const isPending = d.status === 'DRAFT' || d.status === 'SCRIPT_PENDING' || d.status === 'TERMS_AGREED';
-        return isDone ? (
-          <Status tone="positive">Hoàn tất</Status>
-        ) : isPending ? (
-          <Status tone="warning">Chờ duyệt</Status>
-        ) : (
-          <Status tone="info">Đang chạy</Status>
-        );
-      }
-    }
   ];
 
   return (
     <div className="space-y-6">
-      {/* 1. HEADER PROFILE BAR */}
+      {/* 1. THANH ĐIỀU HƯỚNG & BỘ CHỌN KỲ THÁNG */}
       <div className="space-y-3">
-        {/* Navigation & Controls */}
-        {layout === 'page' && (
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              {nav?.onBack && (
-                <Button variant="ghost" size="sm" icon={ArrowLeft} onClick={nav.onBack}>
-                  Hồ sơ gian hàng
-                </Button>
-              )}
-              {nav?.position !== undefined && nav?.total !== undefined && (
-                <div className="flex items-center gap-1 pl-2 border-l border-line text-2xs text-ink-3">
-                  <button
-                    type="button"
-                    disabled={!nav.onPrev}
-                    onClick={nav.onPrev}
-                    className="p-1 rounded hover:bg-sunken text-ink-3 hover:text-ink disabled:opacity-30 disabled:pointer-events-none"
-                    aria-label="Gian hàng trước"
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                  </button>
-                  <span className="tabular-nums font-medium">{nav.position} / {nav.total}</span>
-                  <button
-                    type="button"
-                    disabled={!nav.onNext}
-                    onClick={nav.onNext}
-                    className="p-1 rounded hover:bg-sunken text-ink-3 hover:text-ink disabled:opacity-30 disabled:pointer-events-none"
-                    aria-label="Gian hàng sau"
-                  >
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                </div>
-              )}
-            </div>
-
-            <div className="flex items-center gap-2">
-              {store.storeUrl && (
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  icon={ExternalLink}
-                  onClick={() => window.open(store.storeUrl, '_blank', 'noreferrer')}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            {layout === 'page' && nav?.onBack && (
+              <Button variant="ghost" size="sm" icon={ArrowLeft} onClick={nav.onBack}>
+                Danh bạ gian hàng
+              </Button>
+            )}
+            {layout === 'page' && nav?.position !== undefined && nav?.total !== undefined && (
+              <div className="flex items-center gap-1 pl-2 border-l border-line text-2xs text-ink-3">
+                <button
+                  type="button"
+                  disabled={!nav.onPrev}
+                  onClick={nav.onPrev}
+                  className="p-1 rounded hover:bg-sunken text-ink-3 hover:text-ink disabled:opacity-30 disabled:pointer-events-none"
+                  aria-label="Gian hàng trước"
                 >
-                  Mở link sàn
-                </Button>
-              )}
-              {onOpenEdit && (
-                <Button variant="secondary" size="sm" icon={Pencil} onClick={() => onOpenEdit(store)}>
-                  Sửa thông số
-                </Button>
-              )}
-              {onOpenHandover && (
-                <Button variant="primary" size="sm" icon={UserCheck} onClick={() => onOpenHandover(store)}>
-                  Lập lệnh bàn giao
-                </Button>
-              )}
-            </div>
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <span className="tabular-nums font-medium">
+                  {nav.position} / {nav.total}
+                </span>
+                <button
+                  type="button"
+                  disabled={!nav.onNext}
+                  onClick={nav.onNext}
+                  className="p-1 rounded hover:bg-sunken text-ink-3 hover:text-ink disabled:opacity-30 disabled:pointer-events-none"
+                  aria-label="Gian hàng sau"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            )}
           </div>
-        )}
 
-        {/* Identity & Status */}
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-1.5 text-xs text-ink-2 bg-surface border border-line rounded-md px-2.5 py-1">
+              <Calendar className="w-3.5 h-3.5 text-accent shrink-0" />
+              <span className="text-2xs font-medium text-ink-3">Kỳ hồ sơ:</span>
+              <Select
+                value={activeMonth}
+                onChange={e => handleMonthChange(e.target.value)}
+                className="w-48 border-0 bg-transparent h-6 text-xs font-semibold text-ink focus:ring-0 px-1"
+              >
+                {PROFILE_MONTH_OPTIONS.map(m => (
+                  <option key={m.value} value={m.value}>
+                    {m.label}
+                  </option>
+                ))}
+              </Select>
+            </div>
+
+            {onDrilldownToPlan && (
+              <Button
+                variant="primary"
+                size="sm"
+                icon={FileSpreadsheet}
+                onClick={() =>
+                  onDrilldownToPlan({
+                    planId: currentMonthReport.plan?.id,
+                    storeId: store.id,
+                    storeName: store.storeName,
+                    brandName: store.brandName,
+                    month: activeMonth,
+                  })
+                }
+              >
+                Chi tiết Plan ({activeMonth})
+              </Button>
+            )}
+
+            {onDrilldownToBooking && (
+              <Button
+                variant="secondary"
+                size="sm"
+                icon={Video}
+                onClick={() =>
+                  onDrilldownToBooking({
+                    storeName: store.storeName,
+                    brandName: store.brandName,
+                    month: activeMonth,
+                  })
+                }
+              >
+                Mở Booking ({currentMonthReport.bookings.length})
+              </Button>
+            )}
+
+            {store.storeUrl && (
+              <Button
+                variant="secondary"
+                size="sm"
+                icon={ExternalLink}
+                onClick={() => window.open(store.storeUrl, '_blank', 'noreferrer')}
+              >
+                Mở link sàn
+              </Button>
+            )}
+            {onOpenEdit && (
+              <Button variant="secondary" size="sm" icon={Pencil} onClick={() => onOpenEdit(store)}>
+                Thông số tĩnh
+              </Button>
+            )}
+            {onOpenHandover && (
+              <Button variant="secondary" size="sm" icon={UserCheck} onClick={() => onOpenHandover(store)}>
+                Bàn giao PIC
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* Định danh cố định của Gian hàng (Không gắn cứng NMV hay Ngân sách vào định danh tĩnh) */}
         <header className="flex flex-wrap items-start justify-between gap-4">
           <div className="flex items-start gap-3 min-w-0">
             <div className="w-10 h-10 rounded-lg bg-sunken border border-line flex items-center justify-center text-ink shrink-0 mt-0.5">
@@ -320,29 +749,25 @@ export function StoreProfile({
 
             <div className="min-w-0 space-y-1">
               <div className="flex items-center gap-2 flex-wrap">
-                {/* Tên chuyển cảnh khớp với hàng trong StoreManagementView */}
-                <h2 className="text-lg font-semibold text-ink truncate" style={layout === 'page' ? sharedTo('store-title') : undefined}>
+                <h2
+                  className="text-lg font-semibold text-ink truncate"
+                  style={layout === 'page' ? sharedTo('store-title') : undefined}
+                >
                   {store.storeName}
                 </h2>
                 <ChannelTag channel={store.platform} />
                 {store.operationStatus === 'Live' || store.accountStatus === 'ACTIVE' ? (
-                  <Status tone="positive">Đang chạy</Status>
+                  <Status tone="positive">Đang vận hành</Status>
                 ) : (
                   <Status tone="neutral">Dừng hợp tác</Status>
                 )}
-                {isOverbudget ? (
-                  <Status tone="critical">Bội chi</Status>
-                ) : isUnbudgetedSpend ? (
-                  <Status tone="warning">Chi ngoài kế hoạch</Status>
-                ) : budgetNet === 0 ? (
-                  <Status tone="neutral">Chỉ gửi mẫu 0 đ</Status>
-                ) : (
-                  <Status tone="positive">Ngân sách an toàn</Status>
-                )}
+                <span className="px-2 py-0.5 rounded bg-canvas border border-line text-2xs text-ink-2 font-medium">
+                  Hồ sơ kỳ {currentMonthReport.monthLabel} · Plan {currentMonthReport.versionCode}
+                </span>
               </div>
 
               <div className="flex items-center gap-2 text-2xs text-ink-3 flex-wrap">
-                <span>Thuộc nhãn hàng</span>
+                <span>Thuộc thương hiệu</span>
                 {onNavigateToBrandProfile ? (
                   <button
                     type="button"
@@ -356,9 +781,17 @@ export function StoreProfile({
                   <span className="font-medium text-ink">{store.brandName}</span>
                 )}
                 <span>·</span>
-                <span>Mã: <strong className="font-code text-ink">{store.storeOperationId || store.id}</strong></span>
+                <span>
+                  Mã SO: <strong className="font-code text-ink">{store.storeOperationId || store.id}</strong>
+                </span>
                 <span>·</span>
-                <span>Gói: <strong className="text-ink">{store.servicePackage || 'E2E-S'}</strong></span>
+                <span>
+                  Gói dịch vụ: <strong className="text-ink">{store.servicePackage || 'E2E-S'}</strong>
+                </span>
+                <span>·</span>
+                <span>
+                  Hoa hồng mặc định: <strong className="font-code text-ink">{store.affiliateRate || 15}%</strong>
+                </span>
                 <span>·</span>
                 <span>Chuyên viên PIC:</span>
                 <Person name={specialistPic} size={18} />
@@ -368,136 +801,446 @@ export function StoreProfile({
         </header>
       </div>
 
-      {/* 2. TWO-COLUMN LAYOUT */}
+      {/* 2. BỐ CỤC 2 CỘT: CỘT CHÍNH (HỒ SƠ PLAN & REPORT THEO THÁNG) + CỘT PHỤ (THÔNG SỐ TĨNH & ĐỘI NGŨ) */}
       <div className="flex flex-col lg:flex-row gap-6 items-start">
-        {/* MAIN COLUMN (flex-1) */}
+        {/* CỘT CHÍNH: QUẢN LÝ HỒ SƠ KẾ HOẠCH (PLAN) & BÁO CÁO (REPORT) THEO THÁNG */}
         <div className="flex-1 min-w-0 space-y-6 w-full">
-          {/* 2.1 Operations & Budget Radar */}
-          <StatRow>
-            <Stat
-              label="Hạn mức Order Net"
-              value={formatVndShort(budgetNet)}
-              note="Kế toán kiểm soát theo hạn mức Net"
-            />
-            <Stat
-              label="Đã duyệt chi"
-              value={formatVndShort(spent)}
-              progress={{ value: spent, max: budgetNet || 1, invert: spent > budgetNet }}
-              note={
-                budgetNet > 0
-                  ? (spent > budgetNet
-                      ? `Vượt ${formatVndShort(spent - budgetNet)}`
-                      : `Đã giải ngân ${formatPercent(spent / budgetNet, 0)}`)
-                  : 'Suất gửi mẫu 0 đ'
-              }
-              tone={isOverbudget ? 'critical' : isUnbudgetedSpend ? 'warning' : 'positive'}
-            />
-            <Stat
-              label="Mục tiêu doanh số NMV"
-              value={formatVndShort(store.monthlyTargetGmv || 0)}
-              note="Chỉ tiêu sàn giao tháng này"
-            />
-            <Stat
-              label="Chỉ tiêu video tháng"
-              value={formatNumber(targetVideos)}
-              note={`${store.targetAffiliateContents || 0} Aff · ${store.targetSelfChannelContents || 0} Brand · ${store.targetFocVideos || 0} FOC`}
-            />
-          </StatRow>
-
-          {/* 2.2 Plan Quota Breakdown (File 4.1) */}
+          {/* 2.1 Bảng tổng hợp Lịch sử Plan & Report qua các tháng */}
           <Panel
-            title="Kế hoạch & phân bổ Order (File 4.1)"
-            description="Phân bổ hạn mức Net cho video Affiliate, kênh Brand và suất gửi mẫu FOC 0 đ"
+            title="Hồ sơ Kế hoạch (Plan) & Báo cáo thực thi (Report) theo tháng"
+            description="Doanh số NMV, ngân sách Net/Gross và sản lượng video được quản lý theo từng chu kỳ tháng. Bấm vào một dòng tháng để xem báo cáo đối soát hoặc drill-down xuống Plan & Booking của tháng đó."
+            flush
           >
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="p-3.5 rounded-lg border border-line bg-surface space-y-1.5">
-                <span className="text-2xs text-ink-3">Video KOC Affiliate (Paid)</span>
-                <div className="text-sm font-semibold text-ink">
-                  {formatVndShort(store.budgetAffiliateNet ?? store.budgetAffiliate ?? 0)}
-                </div>
-                <div className="text-2xs text-ink-3">
-                  Chỉ tiêu: <strong className="text-ink tabular-nums">{formatNumber(store.targetAffiliateContents || 0)}</strong> video
-                </div>
-                <p className="text-2xs text-ink-3 mt-1">
-                  Tính vào chỉ tiêu doanh số tiếp thị liên kết sàn.
-                </p>
+            <DataTable
+              columns={ledgerColumns}
+              rows={monthlyLedger}
+              rowKey={r => r.month}
+              onRowClick={r => handleMonthChange(r.month)}
+            />
+          </Panel>
+
+          {/* 2.2 Chỉ số Đối soát Plan vs Report của Kỳ tháng đang chọn */}
+          <div className="space-y-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-semibold text-ink">
+                  Đối soát Plan vs Report — {currentMonthReport.monthLabel}
+                </h3>
+                <Status
+                  tone={
+                    currentMonthReport.planStatus === 'COMPLETED' ||
+                    currentMonthReport.planStatus === 'IN_EXECUTION'
+                      ? 'positive'
+                      : currentMonthReport.planStatus === 'REVISION_REQUESTED'
+                        ? 'critical'
+                        : 'info'
+                  }
+                >
+                  {currentMonthReport.planStatusLabel} ({currentMonthReport.versionCode})
+                </Status>
+                {currentMonthReport.isOverbudget && (
+                  <Status tone="critical">Vượt trần ngân sách tháng</Status>
+                )}
+                {currentMonthReport.isUnbudgetedSpend && (
+                  <Status tone="warning">Chi ngoài kế hoạch (Plan 0đ)</Status>
+                )}
               </div>
 
-              <div className="p-3.5 rounded-lg border border-line bg-surface space-y-1.5">
-                <span className="text-2xs text-ink-3">Video kênh Brand (Self-channel)</span>
-                <div className="text-sm font-semibold text-ink">
-                  {formatVndShort(store.budgetSelfChannelNet ?? store.budgetSelfChannel ?? 0)}
-                </div>
-                <div className="text-2xs text-ink-3">
-                  Chỉ tiêu: <strong className="text-ink tabular-nums">{formatNumber(store.targetSelfChannelContents || 0)}</strong> video
-                </div>
-                <p className="text-2xs text-ink-3 mt-1">
-                  Sản xuất nội dung và đăng tải trực tiếp trên kênh thương hiệu.
-                </p>
-              </div>
-
-              <div className="p-3.5 rounded-lg border border-line bg-surface space-y-1.5">
-                <span className="text-2xs text-ink-3">Suất gửi mẫu miễn phí (FOC)</span>
-                <div className="text-sm font-semibold text-ink">
-                  0 đ
-                </div>
-                <div className="text-2xs text-ink-3">
-                  Chỉ tiêu: <strong className="text-ink tabular-nums">{formatNumber(store.targetFocVideos || 0)}</strong> suất
-                </div>
-                <p className="text-2xs text-ink-3 mt-1">
-                  Chuyên viên FOC phụ trách: <strong className="text-ink">{focSpecialist}</strong>.
-                </p>
+              <div className="flex items-center gap-2 text-2xs">
+                {onDrilldownToPlan && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      onDrilldownToPlan({
+                        planId: currentMonthReport.plan?.id,
+                        storeId: store.id,
+                        storeName: store.storeName,
+                        brandName: store.brandName,
+                        month: activeMonth,
+                      })
+                    }
+                    className="text-accent hover:underline font-medium inline-flex items-center gap-1"
+                  >
+                    <span>Mở Studio phân rã Plan {activeMonth}</span>
+                    <ArrowUpRight className="w-3.5 h-3.5" />
+                  </button>
+                )}
               </div>
             </div>
-          </Panel>
 
-          {/* 2.3 Hero SKUs & Sample Quota */}
-          <Panel
-            title="Sản phẩm chủ lực & kho mẫu FOC"
-            description="Danh mục sản phẩm trọng tâm và số lượng mẫu khả dụng gửi KOC"
-            flush
-          >
-            {storeProducts.length === 0 ? (
-              <EmptyState
-                title="Chưa có sản phẩm chủ lực"
-                description="Chưa ghi nhận danh mục sản phẩm trọng tâm cho gian hàng này."
+            <StatRow>
+              <Stat
+                label={`Doanh số NMV (${activeMonth})`}
+                value={
+                  currentMonthReport.reportNmv > 0
+                    ? formatVndShort(currentMonthReport.reportNmv)
+                    : '0 đ'
+                }
+                progress={
+                  currentMonthReport.planNmv > 0
+                    ? {
+                        value: currentMonthReport.reportNmv,
+                        max: currentMonthReport.planNmv,
+                      }
+                    : undefined
+                }
+                note={`Plan giao: ${
+                  currentMonthReport.planNmv > 0
+                    ? formatVndShort(currentMonthReport.planNmv)
+                    : '0 đ'
+                }${
+                  currentMonthReport.planNmv > 0
+                    ? ` · Đạt ${formatPercent(currentMonthReport.nmvAchievementPct / 100, 0)}`
+                    : ''
+                }`}
+                tone={
+                  currentMonthReport.nmvAchievementPct >= 100
+                    ? 'positive'
+                    : currentMonthReport.reportNmv > 0
+                      ? 'warning'
+                      : undefined
+                }
               />
-            ) : (
-              <DataTable
-                columns={productColumns}
-                rows={storeProducts}
-                rowKey={r => r.id}
-              />
-            )}
-          </Panel>
 
-          {/* 2.4 Actual Bookings (File 3.2) */}
-          <Panel
-            title="Thực tế booking đã duyệt (File 3.2)"
-            description="Danh sách deal hợp tác KOC đã phát sinh chi phí của gian hàng"
-            flush
-          >
-            {storeDeals.length === 0 ? (
-              <EmptyState
-                title="Chưa có booking trong kỳ"
-                description="Chưa có deal KOC nào được ghi nhận cho gian hàng này trong tháng."
+              <Stat
+                label={`Ngân sách Net (${activeMonth})`}
+                value={
+                  currentMonthReport.reportSpentNet > 0
+                    ? formatVndShort(currentMonthReport.reportSpentNet)
+                    : '0 đ'
+                }
+                progress={{
+                  value: currentMonthReport.reportSpentNet,
+                  max: currentMonthReport.planBudgetNet || 1,
+                  invert: currentMonthReport.reportSpentNet > currentMonthReport.planBudgetNet,
+                }}
+                note={`Plan Net: ${formatVndShort(currentMonthReport.planBudgetNet)} (Gross: ${formatVndShort(
+                  currentMonthReport.planBudgetGross
+                )})`}
+                tone={
+                  currentMonthReport.isOverbudget
+                    ? 'critical'
+                    : currentMonthReport.isUnbudgetedSpend
+                      ? 'warning'
+                      : 'positive'
+                }
               />
-            ) : (
-              <DataTable
-                columns={dealColumns}
-                rows={storeDeals}
-                rowKey={d => d.id}
+
+              <Stat
+                label={`Sản lượng Video (${activeMonth})`}
+                value={`${formatNumber(currentMonthReport.reportAiredVideos)} / ${formatNumber(
+                  currentMonthReport.planTotalVideos
+                )} video`}
+                progress={
+                  currentMonthReport.planTotalVideos > 0
+                    ? {
+                        value: currentMonthReport.reportAiredVideos,
+                        max: currentMonthReport.planTotalVideos,
+                      }
+                    : undefined
+                }
+                note={`Đã book: ${formatNumber(currentMonthReport.reportBookedVideos)} deal · Plan: ${
+                  currentMonthReport.planAffVideos
+                } Aff · ${currentMonthReport.planSelfVideos} Kênh · ${currentMonthReport.planFocVideos} FOC`}
               />
-            )}
-          </Panel>
+
+              <Stat
+                label={`Hiệu suất Report (${activeMonth})`}
+                value={
+                  currentMonthReport.reportRoas > 0
+                    ? `ROAS ${currentMonthReport.reportRoas.toFixed(2)}x`
+                    : 'Chưa có ROAS'
+                }
+                note={`${formatNumber(currentMonthReport.reportOrders)} đơn hàng · ${formatNumber(
+                  currentMonthReport.reportViews
+                )} lượt xem`}
+              />
+            </StatRow>
+          </div>
+
+          {/* 2.3 Phân khu Drill-down Chi tiết trong kỳ tháng đang chọn */}
+          <Tabs<MonthlyDetailTab>
+            value={detailTab}
+            onChange={setDetailTab}
+            items={[
+              {
+                key: 'PLAN_BREAKDOWN',
+                label: `Chi tiết Kế hoạch (Plan ${activeMonth})`,
+                count: currentMonthReport.planItems.length || 3,
+              },
+              {
+                key: 'BOOKING_REPORT',
+                label: `Thực tế Booking & Video (Report ${activeMonth})`,
+                count: currentMonthReport.bookings.length,
+              },
+              {
+                key: 'SELLER_AND_SKUS',
+                label: 'Chiến dịch Seller Ads & Sản phẩm SKU',
+                count: currentMonthReport.adsCampaigns.length + storeProducts.length,
+              },
+            ]}
+          />
+
+          {/* TAB A: CHI TIẾT PHÂN BỔ PLAN CỦA THÁNG */}
+          {detailTab === 'PLAN_BREAKDOWN' && (
+            <div className="space-y-6">
+              <Panel
+                title={`Cơ cấu phân bổ Ngân sách & Chỉ tiêu Plan (${currentMonthReport.monthLabel})`}
+                description="Tách bạch 3 luồng sản xuất nội dung B2C (KOC trả phí, Kênh tự xây, Gửi mẫu FOC 0đ) và gói ngân sách Ads"
+                actions={
+                  <div className="flex items-center gap-2">
+                    {onDrilldownToListing && (
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        icon={Layers}
+                        onClick={() =>
+                          onDrilldownToListing({
+                            planId: currentMonthReport.plan?.id,
+                            storeName: store.storeName,
+                            brandName: store.brandName,
+                            month: activeMonth,
+                          })
+                        }
+                      >
+                        Mở Đề xuất KOC (Listing)
+                      </Button>
+                    )}
+                    {onDrilldownToPlan && (
+                      <Button
+                        size="sm"
+                        variant="primary"
+                        icon={FileSpreadsheet}
+                        onClick={() =>
+                          onDrilldownToPlan({
+                            planId: currentMonthReport.plan?.id,
+                            storeId: store.id,
+                            storeName: store.storeName,
+                            brandName: store.brandName,
+                            month: activeMonth,
+                          })
+                        }
+                      >
+                        Mở Studio Plan 4.1.1
+                      </Button>
+                    )}
+                  </div>
+                }
+              >
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                  <div className="p-3.5 rounded-lg border border-line bg-surface space-y-1">
+                    <span className="text-2xs text-ink-3">1. Video KOC Affiliate (Paid)</span>
+                    <div className="text-sm font-semibold text-ink">
+                      {formatVndShort(currentMonthReport.planAffBudgetNet)}
+                    </div>
+                    <div className="text-2xs text-ink-2">
+                      Plan: <strong className="tabular-nums">{formatNumber(currentMonthReport.planAffVideos)}</strong> video
+                    </div>
+                    <p className="text-2xs text-ink-3">
+                      Phân bổ theo khung lương KL1–KL7.
+                    </p>
+                  </div>
+
+                  <div className="p-3.5 rounded-lg border border-line bg-surface space-y-1">
+                    <span className="text-2xs text-ink-3">2. Video kênh Brand (Self-channel)</span>
+                    <div className="text-sm font-semibold text-ink">
+                      {formatVndShort(currentMonthReport.planSelfBudgetNet)}
+                    </div>
+                    <div className="text-2xs text-ink-2">
+                      Plan: <strong className="tabular-nums">{formatNumber(currentMonthReport.planSelfVideos)}</strong> video
+                    </div>
+                    <p className="text-2xs text-ink-3">
+                      Sản xuất qua mạng lưới CTV / VJ kênh hãng.
+                    </p>
+                  </div>
+
+                  <div className="p-3.5 rounded-lg border border-line bg-surface space-y-1">
+                    <span className="text-2xs text-ink-3">3. Suất gửi mẫu miễn phí (FOC)</span>
+                    <div className="text-sm font-semibold text-ink">0 đ</div>
+                    <div className="text-2xs text-ink-2">
+                      Plan: <strong className="tabular-nums">{formatNumber(currentMonthReport.planFocVideos)}</strong> suất
+                    </div>
+                    <p className="text-2xs text-ink-3">
+                      Điều phối gửi mẫu: <strong className="text-ink">{focSpecialist}</strong>.
+                    </p>
+                  </div>
+
+                  <div className="p-3.5 rounded-lg border border-line bg-surface space-y-1">
+                    <span className="text-2xs text-ink-3">4. Gói ngân sách Media Ads</span>
+                    <div className="text-sm font-semibold text-ink">
+                      {formatVndShort(currentMonthReport.planAdsBudget)}
+                    </div>
+                    <div className="text-2xs text-ink-2">
+                      Thực chi Ads: <strong className="tabular-nums">{formatVndShort(currentMonthReport.adsCost)}</strong>
+                    </div>
+                    <p className="text-2xs text-ink-3">
+                      Vít Spark Ads &amp; chiến dịch PGM/LGM sàn.
+                    </p>
+                  </div>
+                </div>
+              </Panel>
+
+              <Panel
+                title={`Bảng phân rã hạng mục Plan theo khung lương (${currentMonthReport.monthLabel})`}
+                description="Chi tiết định mức số lượng video, đơn giá và mục tiêu doanh số từng dòng trong Plan tháng"
+                flush
+              >
+                {currentMonthReport.planItems.length === 0 ? (
+                  <EmptyState
+                    title={`Chưa có dòng phân rã chi tiết cho kỳ ${activeMonth}`}
+                    description="Gian hàng hiện đang ở hạn mức 0đ hoặc chưa lập bảng phân rã khung lương chi tiết."
+                    action={
+                      onDrilldownToPlan && (
+                        <Button
+                          size="sm"
+                          variant="primary"
+                          onClick={() =>
+                            onDrilldownToPlan({
+                              planId: currentMonthReport.plan?.id,
+                              storeId: store.id,
+                              storeName: store.storeName,
+                              brandName: store.brandName,
+                              month: activeMonth,
+                            })
+                          }
+                        >
+                          Lập phân rã trong Kế hoạch tháng
+                        </Button>
+                      )
+                    }
+                  />
+                ) : (
+                  <DataTable
+                    columns={planItemColumns}
+                    rows={currentMonthReport.planItems}
+                    rowKey={r => r.id}
+                  />
+                )}
+              </Panel>
+            </div>
+          )}
+
+          {/* TAB B: THỰC TẾ BOOKING & VIDEO ĐÃ DUYỆT TRONG THÁNG */}
+          {detailTab === 'BOOKING_REPORT' && (
+            <Panel
+              title={`Danh sách Deal Booking & Báo cáo Video (${currentMonthReport.monthLabel})`}
+              description="Bấm vào từng dòng deal để xem chi tiết kết quả video (Views, GMV, Đơn hàng, ROAS) hoặc mở sang màn Quản lý Booking / Hợp đồng"
+              actions={
+                onDrilldownToBooking && (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    icon={Video}
+                    onClick={() =>
+                      onDrilldownToBooking({
+                        storeName: store.storeName,
+                        brandName: store.brandName,
+                        month: activeMonth,
+                      })
+                    }
+                  >
+                    Xem tất cả trong Quản lý Booking
+                  </Button>
+                )
+              }
+              flush
+            >
+              {currentMonthReport.bookings.length === 0 ? (
+                <EmptyState
+                  title={`Chưa có booking trong kỳ ${activeMonth}`}
+                  description="Chưa có deal KOC nào được ghi nhận cho gian hàng này trong kỳ tháng đang chọn."
+                />
+              ) : (
+                <DataTable
+                  columns={bookingColumns}
+                  rows={currentMonthReport.bookings}
+                  rowKey={b => b.id}
+                  onRowClick={b => setInspectedBooking(b)}
+                />
+              )}
+            </Panel>
+          )}
+
+          {/* TAB C: CHIẾN DỊCH SELLER ADS & SẢN PHẨM CHỦ LỰC */}
+          {detailTab === 'SELLER_AND_SKUS' && (
+            <div className="space-y-6">
+              {currentMonthReport.adsCampaigns.length > 0 && (
+                <Panel
+                  title={`Báo cáo Chiến dịch Quảng cáo TikTok Seller (${currentMonthReport.adsCampaigns.length} chiến dịch)`}
+                  description="Hiệu quả thực tế từ báo cáo TikTok Shop Seller Center của gian hàng"
+                  flush
+                >
+                  <DataTable
+                    columns={[
+                      {
+                        key: 'campaignName',
+                        header: 'Tên chiến dịch Seller',
+                        render: c => (
+                          <div>
+                            <span className="font-medium text-ink block">{c.campaignName}</span>
+                            <span className="text-2xs text-ink-3 font-code">ID: {c.campaignId}</span>
+                          </div>
+                        ),
+                      },
+                      {
+                        key: 'cost',
+                        header: 'Chi phí Ads',
+                        align: 'right',
+                        width: 130,
+                        render: c => <span className="tabular-nums font-medium text-ink">{formatVnd(c.cost)}</span>,
+                      },
+                      {
+                        key: 'gmv',
+                        header: 'Doanh số GMV Ads',
+                        align: 'right',
+                        width: 145,
+                        render: c => <span className="tabular-nums font-semibold text-positive">{formatVnd(c.gmv)}</span>,
+                      },
+                      {
+                        key: 'orders',
+                        header: 'Đơn hàng',
+                        align: 'right',
+                        width: 100,
+                        render: c => <span className="tabular-nums text-ink">{formatNumber(c.orders)}</span>,
+                      },
+                      {
+                        key: 'roas',
+                        header: 'ROAS',
+                        align: 'right',
+                        width: 100,
+                        render: c => <span className="tabular-nums font-code font-semibold text-ink">{c.roas.toFixed(2)}x</span>,
+                      },
+                    ]}
+                    rows={currentMonthReport.adsCampaigns}
+                    rowKey={c => c.campaignId}
+                  />
+                </Panel>
+              )}
+
+              <Panel
+                title="Sản phẩm chủ lực & kho mẫu FOC của gian hàng"
+                description="Danh mục SKU trọng tâm phục vụ lên kịch bản và gửi mẫu cho KOC"
+                flush
+              >
+                {storeProducts.length === 0 ? (
+                  <EmptyState
+                    title="Chưa có sản phẩm chủ lực"
+                    description="Chưa ghi nhận danh mục sản phẩm trọng tâm cho gian hàng này."
+                  />
+                ) : (
+                  <DataTable columns={productColumns} rows={storeProducts} rowKey={r => r.id} />
+                )}
+              </Panel>
+            </div>
+          )}
         </div>
 
-        {/* SIDE COLUMN (w-[340px]) */}
+        {/* CỘT PHỤ BÊN PHẢI: THÔNG TIN TĨNH CỦA GIAN HÀNG & ĐỘI NGŨ PHỤ TRÁCH */}
         <div className="w-full lg:w-[340px] shrink-0 space-y-6">
-          {/* 2.5 Team Organization (2-Tier B2C Structure) */}
+          {/* Đội ngũ phụ trách */}
           <Panel
             title="Đội ngũ phụ trách"
-            description="Phân bổ nhân sự theo quy chuẩn B2C"
+            description="Phân bổ nhân sự theo quy chuẩn 2 tầng B2C"
             actions={
               onOpenHandover && (
                 <Button size="sm" icon={UserCheck} onClick={() => onOpenHandover(store)}>
@@ -517,7 +1260,7 @@ export function StoreProfile({
                 {hasLeader ? (
                   <Person name={leaderName || ''} />
                 ) : (
-                  <span className="text-2xs text-ink-3">Không có trưởng nhóm — Trực tiếp trưởng phòng</span>
+                  <span className="text-2xs text-ink-3">Không có trưởng nhóm — Trực tiếp Trưởng phòng</span>
                 )}
               </div>
 
@@ -538,24 +1281,42 @@ export function StoreProfile({
 
               <div>
                 <span className="block text-2xs text-ink-3 mb-1">Quản lý quan hệ Brand (Account PIC)</span>
-                {store.accountOwnerName ? <Person name={store.accountOwnerName} /> : <span className="text-ink-3 text-2xs">—</span>}
+                {store.accountOwnerName ? (
+                  <Person name={store.accountOwnerName} />
+                ) : (
+                  <span className="text-ink-3 text-2xs">—</span>
+                )}
               </div>
 
               {store.handoverEffectiveDate && (
                 <div className="mt-3 p-2.5 rounded-md bg-sunken border border-line text-2xs text-ink-2 space-y-0.5">
                   <span className="font-medium text-ink">Lệnh bàn giao đang áp dụng</span>
-                  <p>Từ {store.previousPic || 'Chuyên viên trước'} sang {specialistPic}, hiệu lực từ {store.handoverEffectiveDate}.</p>
+                  <p>
+                    Từ {store.previousPic || 'Chuyên viên trước'} sang {specialistPic}, hiệu lực từ{' '}
+                    {store.handoverEffectiveDate}.
+                  </p>
                 </div>
               )}
             </div>
           </Panel>
 
-          {/* 2.6 Technical parameters */}
-          <Panel title="Thông số kỹ thuật">
+          {/* Thông số kỹ thuật cố định của gian hàng */}
+          <Panel
+            title="Thông số định danh cố định"
+            actions={
+              onOpenEdit && (
+                <Button size="sm" variant="ghost" icon={Pencil} onClick={() => onOpenEdit(store)}>
+                  Sửa
+                </Button>
+              )
+            }
+          >
             <dl className="divide-y divide-line text-xs">
               <div className="py-2 flex items-center justify-between gap-2">
                 <dt className="text-ink-3">Nền tảng sàn</dt>
-                <dd><ChannelTag channel={store.platform} /></dd>
+                <dd>
+                  <ChannelTag channel={store.platform} />
+                </dd>
               </div>
 
               <div className="py-2 flex items-center justify-between gap-2">
@@ -574,7 +1335,7 @@ export function StoreProfile({
               </div>
 
               <div className="py-2 flex items-center justify-between gap-2">
-                <dt className="text-ink-3">Hoa hồng sàn Affiliate</dt>
+                <dt className="text-ink-3">Hoa hồng sàn mặc định</dt>
                 <dd className="font-code text-ink">{store.affiliateRate || 15}%</dd>
               </div>
 
@@ -584,18 +1345,15 @@ export function StoreProfile({
               </div>
 
               <div className="py-2 flex items-center justify-between gap-2">
-                <dt className="text-ink-3">Marketing B2C phụ trách</dt>
-                <dd className="text-ink">{store.isB2cManaged !== false ? 'Thuộc phòng B2C' : 'Gian hàng ngoài'}</dd>
-              </div>
-
-              <div className="py-2 flex items-center justify-between gap-2">
-                <dt className="text-ink-3">Yêu cầu lập kế hoạch tháng</dt>
-                <dd className="text-ink">{store.requiresB2cPlan !== false ? 'Bắt buộc' : 'Miễn trừ'}</dd>
+                <dt className="text-ink-3">Phạm vi quản trị</dt>
+                <dd className="text-ink">
+                  {store.isB2cManaged !== false ? 'B2C phụ trách (= 1)' : 'Gian hàng ngoài'}
+                </dd>
               </div>
             </dl>
           </Panel>
 
-          {/* 2.7 Assignment history */}
+          {/* Lịch sử phân công & bàn giao */}
           <Panel title="Lịch sử phân công & bàn giao">
             {store.assignmentNotes ? (
               <p className="text-2xs text-ink-2 leading-relaxed whitespace-pre-line">
@@ -603,12 +1361,127 @@ export function StoreProfile({
               </p>
             ) : (
               <p className="text-2xs text-ink-3">
-                Chưa có ghi chú phân công hoặc bàn giao phát sinh trong kỳ.
+                Chưa có ghi chú phân công hoặc bàn giao phát sinh.
               </p>
             )}
           </Panel>
         </div>
       </div>
+
+      {/* HỘP THOẠI DRILL-DOWN CHI TIẾT 1 DEAL BOOKING & BÁO CÁO VIDEO */}
+      {inspectedBooking && (
+        <Modal
+          open={Boolean(inspectedBooking)}
+          onClose={() => setInspectedBooking(null)}
+          title={`Chi tiết Booking [${inspectedBooking.dealCode}] — ${inspectedBooking.kocName}`}
+          description={`Gian hàng ${inspectedBooking.storeName} · Kỳ hồ sơ ${inspectedBooking.month} · ${inspectedBooking.weekLabel}`}
+          size="lg"
+          footer={
+            <>
+              <Button variant="ghost" onClick={() => setInspectedBooking(null)}>
+                Đóng
+              </Button>
+              {inspectedBooking.sourceDeal && onSelectDealForContract && (
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    const deal = inspectedBooking.sourceDeal!;
+                    setInspectedBooking(null);
+                    onSelectDealForContract(deal);
+                  }}
+                >
+                  Mở Hợp đồng &amp; Thanh toán
+                </Button>
+              )}
+              {onDrilldownToBooking && (
+                <Button
+                  variant="primary"
+                  onClick={() => {
+                    const code = inspectedBooking.dealCode;
+                    setInspectedBooking(null);
+                    onDrilldownToBooking({
+                      storeName: store.storeName,
+                      brandName: store.brandName,
+                      month: activeMonth,
+                      dealCode: code,
+                    });
+                  }}
+                >
+                  Mở trong Quản lý Booking
+                </Button>
+              )}
+            </>
+          }
+        >
+          <div className="space-y-4 text-xs">
+            <StatRow>
+              <Stat
+                label="Chi phí Booking (Net)"
+                value={inspectedBooking.costNet > 0 ? formatVnd(inspectedBooking.costNet) : '0 đ (FOC)'}
+                note={`Khung lương: ${inspectedBooking.kl} · ${inspectedBooking.format}`}
+              />
+              <Stat
+                label="Doanh số GMV tạo ra"
+                value={inspectedBooking.gmv > 0 ? formatVnd(inspectedBooking.gmv) : '0 đ'}
+                note={`${formatNumber(inspectedBooking.orders)} đơn hàng`}
+                tone={inspectedBooking.gmv > 0 ? 'positive' : undefined}
+              />
+              <Stat
+                label="Hiệu suất ROAS & Views"
+                value={inspectedBooking.roas > 0 ? `${inspectedBooking.roas.toFixed(2)}x` : '—'}
+                note={`${formatNumber(inspectedBooking.views)} lượt xem`}
+              />
+            </StatRow>
+
+            <div className="rounded-lg border border-line bg-canvas/50 p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <span className="text-2xs text-ink-3 block">Creator / Kênh KOC</span>
+                <span className="font-semibold text-ink">
+                  {inspectedBooking.kocName} ({inspectedBooking.channelId})
+                </span>
+              </div>
+              <div>
+                <span className="text-2xs text-ink-3 block">Sản phẩm &amp; Định dạng</span>
+                <span className="font-medium text-ink">
+                  {inspectedBooking.productName} · {inspectedBooking.videoType}
+                </span>
+              </div>
+              <div>
+                <span className="text-2xs text-ink-3 block">Chuyên viên Booking (PIC)</span>
+                <Person name={inspectedBooking.pic} size={18} />
+              </div>
+              <div>
+                <span className="text-2xs text-ink-3 block">Tiến độ &amp; Thanh toán</span>
+                <span className="font-medium text-ink">
+                  {inspectedBooking.pipeline} · {inspectedBooking.paymentStatus}
+                </span>
+              </div>
+              <div>
+                <span className="text-2xs text-ink-3 block">Ngày lên sóng (Air Date)</span>
+                <span className="font-code text-ink">
+                  {inspectedBooking.airDate || 'Chưa ghi nhận'} ({inspectedBooking.weekLabel})
+                </span>
+              </div>
+              <div>
+                <span className="text-2xs text-ink-3 block">Link bài đăng thực tế</span>
+                {inspectedBooking.linkAir ? (
+                  <a
+                    href={inspectedBooking.linkAir}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-accent hover:underline inline-flex items-center gap-1 font-medium"
+                  >
+                    <span>Mở video trên sàn</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                ) : (
+                  <span className="text-ink-3">Chưa có link air</span>
+                )}
+              </div>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

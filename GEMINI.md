@@ -29,3 +29,9 @@
 - **Nguyên tắc cảnh báo tài chính:**
   - Cảnh báo ngay khi gian hàng có Thực tế duyệt chi vượt hạn mức Order Net (Overbudget).
   - Báo động đỏ khi có gian hàng phát sinh chi phí lớn nhưng hạn mức Order ghi nhận 0đ (Unbudgeted Spend) để yêu cầu bổ sung phê duyệt.
+
+## 4. Quy Tắc Đồng Bộ Tài Liệu & Mã Nguồn (Documentation Sync Rule)
+- **Nguyên tắc "Code đổi - Doc cập nhật trong cùng một lượt":** Bất kỳ khi nào phát triển tính năng mới, sửa đổi luồng nghiệp vụ, mở rộng API, thêm trường dữ liệu, thay đổi ma trận phân quyền (RBAC) hay cấu trúc điều hướng/giao diện người dùng, BẮT BUỘC phải cập nhật đồng bộ các tài liệu đặc tả hệ thống tương ứng (`blueprint/2-design/`, `blueprint/README.md`, `web-admin/README.md`).
+- **Cấm để tài liệu lỗi thời:** Tuyệt đối không để tài liệu ở trạng thái "Chưa tạo" hoặc giữ nguyên mô tả "prototype cũ" trong khi mã nguồn thực tế đã hoàn thiện và vận hành.
+- **Duy trì tính chính xác của Sổ đăng ký tài liệu (`blueprint/README.md`):** Sổ đăng ký tài liệu phải luôn phản ánh đúng hiện trạng tài liệu thiết kế hệ thống, kiến trúc, phân quyền và tích hợp API.
+- **Rà soát định kỳ:** Trước khi hoàn thành bất kỳ phiên làm việc nào về mã nguồn, trợ lý phải đối soát lại tài liệu xem đặc tả chức năng, tham số API, phân quyền vai trò và luồng dữ liệu đã ăn khớp 100% với mã nguồn hay chưa.

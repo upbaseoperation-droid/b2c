@@ -10,7 +10,18 @@ import {
   HelpCircle,
   Sparkles
 } from 'lucide-react';
-import { StaffP3Record, StoreDifficultyConfig, StorePortfolioItem, BookingDealItem, UserProfile } from '@/lib/types';
+import {
+  StaffP3Record,
+  StoreDifficultyConfig,
+  StoreDifficultyTier,
+  StorePortfolioItem,
+  BookingDealItem,
+  UserProfile,
+  STORE_COEFFICIENT_TABLE_2,
+  normalizeStoreCoefficient,
+  formatStoreCoefficient,
+  getStoreTierByCoefficient,
+} from '@/lib/types';
 import { MOCK_P3_STAFF_RECORDS, MOCK_STORE_DIFFICULTIES } from '@/lib/mockData';
 import { formatVnd } from '../../lib/format';
 import { AiStaffReviewModal } from '../AiStaffReviewModal';
@@ -33,21 +44,30 @@ export default function PerformanceP3View({
 
   const initialMergedStores = React.useMemo<StoreDifficultyConfig[]>(() => {
     if (storePortfolios.length === 0) return MOCK_STORE_DIFFICULTIES;
-    return storePortfolios.map(st => ({
-      id: st.id,
-      storeName: st.storeName,
-      platform: (st.platform === 'Shopee Mall' ? 'Shopee' : st.platform) as 'TikTok Shop' | 'Lazada' | 'Shopee',
-      brandName: st.brandName,
-      category: st.category || 'Tiêu dùng & Bán lẻ',
-      monthlyTargetGmv: st.monthlyTargetGmv || 500000000,
-      difficultyTier: st.difficultyTier,
-      multiplier: st.difficultyMultiplier,
-      assignedPic: st.b2cOwnerName || st.accountOwnerName || 'Khánh Vy',
-      accountOwner: st.accountOwnerName,
-      b2cOwner: st.b2cOwnerName,
-      activeKocsCount: st.activeBookingsCount || 8,
-      notes: st.assignmentNotes || 'Đồng bộ từ Dữ liệu gốc Gian hàng'
-    }));
+    return storePortfolios.map(st => {
+      const normalized = normalizeStoreCoefficient(st.difficultyTier, st.difficultyMultiplier);
+      return {
+        id: st.id,
+        storeName: st.storeName,
+        platform: (st.platform === 'Shopee Mall' ? 'Shopee' : st.platform) as 'TikTok Shop' | 'Lazada' | 'Shopee',
+        brandName: st.brandName,
+        category: st.category || 'Tiêu dùng & Bán lẻ',
+        monthlyTargetGmv: st.monthlyTargetGmv || 500000000,
+        difficultyTier: normalized.tier,
+        multiplier: normalized.multiplier,
+        assignedPic: st.b2cOwnerName || st.accountOwnerName || 'Khánh Vy',
+        accountOwner: st.accountOwnerName,
+        b2cOwner: st.b2cOwnerName,
+        activeKocsCount: st.activeBookingsCount || 8,
+        notes: st.assignmentNotes || 'Đồng bộ từ Dữ liệu gốc Gian hàng',
+        coefficientApprovalStatus: st.coefficientApprovalStatus || 'APPROVED_START_OF_MONTH',
+        coefficientApprovedBy: st.coefficientApprovedBy || 'Đặng Thị Yến Nhi',
+        coefficientApprovedAt: st.coefficientApprovedAt || '2026-10-01',
+        coefficientPeriodMonth: st.coefficientPeriodMonth || '10/2026',
+        coefficientAdjustedPlanCode: st.coefficientAdjustedPlanCode,
+        coefficientAdjustmentReason: st.coefficientAdjustmentReason,
+      };
+    });
   }, [storePortfolios]);
 
   const [storeConfigs, setStoreConfigs] = useState<StoreDifficultyConfig[]>(initialMergedStores);
@@ -84,10 +104,7 @@ export default function PerformanceP3View({
   };
 
   const handleUpdateStoreMultiplier = (storeId: string, newMultiplier: number) => {
-    let tier: 'Cơ bản' | 'Tiêu chuẩn' | 'Vừa' | 'Khó' = 'Cơ bản';
-    if (newMultiplier >= 1.6) tier = 'Khó';
-    else if (newMultiplier >= 1.4) tier = 'Vừa';
-    else if (newMultiplier >= 1.2) tier = 'Tiêu chuẩn';
+    const tier: StoreDifficultyTier = getStoreTierByCoefficient(newMultiplier);
 
     setStoreConfigs(prev => prev.map(s => {
       if (s.id === storeId) {
@@ -100,7 +117,7 @@ export default function PerformanceP3View({
       onUpdateStoreDifficulty(storeId, newMultiplier, tier);
     }
     if (onNotify) {
-      onNotify(`Đã cập nhật hệ số độ khó (x${newMultiplier}) cho gian hàng`);
+      onNotify(`Đã cập nhật hệ số gian hàng (${tier} — ${formatStoreCoefficient(newMultiplier)}) theo Bảng 2`);
     }
   };
 
@@ -149,7 +166,7 @@ export default function PerformanceP3View({
       <Tabs
         items={[
           { key: 'CALC', label: 'Bảng tính thưởng P3', count: staffRecords.length },
-          { key: 'STORE_MATRIX', label: 'Hệ số độ khó gian hàng', count: storeConfigs.length },
+          { key: 'STORE_MATRIX', label: 'Bảng 2. Hệ số gian hàng (Cấp Sàn & Brand)', count: storeConfigs.length },
         ]}
         value={activeTab}
         onChange={setActiveTab}
@@ -161,12 +178,12 @@ export default function PerformanceP3View({
           <div className="bg-canvas border border-line rounded-xl p-3 text-xs text-ink-2 flex items-start gap-2.5">
             <HelpCircle className="w-4 h-4 text-ink-3 mt-0.5 shrink-0" />
             <div>
-              <span className="font-semibold text-ink">Công thức tính điểm P3 chuẩn (4P Marketing B2C):</span>
+              <span className="font-semibold text-ink">Công thức tính điểm P3 chuẩn (4P Marketing B2C — Áp dụng Bảng 2):</span>
               <div className="font-mono text-ink-2 mt-1 bg-surface px-2.5 py-1.5 rounded border border-line inline-block">
-                Điểm khối lượng việc = Số ca hoàn thành × Hệ số độ khó gian hàng (1.0 - 1.6) × Hệ số chất lượng (0.9 - 1.15) × Hệ số SLA (0.8 - 1.2)
+                Điểm khối lượng việc = Số ca hoàn thành × Hệ số gian hàng Bảng 2 (0,80 | 1,00 | 1,25 | 1,50) × Hệ số chất lượng (0.9 - 1.15) × Hệ số SLA (0.8 - 1.2)
               </div>
               <p className="text-2xs text-ink-3 mt-1">
-                Tiền thưởng = Điểm khối lượng việc × Đơn giá điểm theo bậc ({formatVnd(30000)}, {formatVnd(35000)}, {formatVnd(40000)}).
+                Tiền thưởng = Điểm khối lượng việc × Đơn giá điểm theo bậc ({formatVnd(30000)}, {formatVnd(35000)}, {formatVnd(40000)}). Hệ số gian hàng áp dụng theo store (không theo brand), được quản lý duyệt đầu tháng.
               </p>
             </div>
           </div>
@@ -200,7 +217,7 @@ export default function PerformanceP3View({
                 <thead className="bg-canvas border-b border-line text-ink-3 font-medium">
                   <tr>
                     <th className="py-3 px-3">Nhân sự & cấp bậc</th>
-                    <th className="py-3 px-3">Gian hàng phụ trách & hệ số</th>
+                    <th className="py-3 px-3">Gian hàng phụ trách & hệ số (Bảng 2)</th>
                     <th className="py-3 px-3 text-center">Số ca đã làm</th>
                     <th className="py-3 px-3 text-center">Chất lượng & SLA</th>
                     <th className="py-3 px-3 text-right">Điểm khối lượng</th>
@@ -227,12 +244,13 @@ export default function PerformanceP3View({
                           {item.assignedStore}
                         </div>
                         <div className="text-2xs mt-0.5">
-                          <span className={`inline-block px-1.5 py-0.5 font-semibold rounded ${
-                            item.storeMultiplier >= 1.6 ? 'bg-critical-soft text-critical' :
-                            item.storeMultiplier >= 1.4 ? 'bg-warning-soft text-warning' :
+                          <span className={`inline-block px-1.5 py-0.5 font-semibold rounded font-mono ${
+                            item.storeMultiplier >= 1.5 ? 'bg-critical-soft text-critical' :
+                            item.storeMultiplier >= 1.25 ? 'bg-warning-soft text-warning' :
+                            item.storeMultiplier >= 1.0 ? 'bg-accent-soft text-accent' :
                             'bg-sunken text-ink-2'
                           }`}>
-                            Hệ số gian hàng: x{item.storeMultiplier}
+                            HS gian hàng: {formatStoreCoefficient(item.storeMultiplier)} ({getStoreTierByCoefficient(item.storeMultiplier)})
                           </span>
                         </div>
                       </td>
@@ -311,25 +329,24 @@ export default function PerformanceP3View({
       ) : (
         /* Store Matrix Tab */
         <div className="space-y-4">
-          <div className="bg-canvas border border-line rounded-xl p-3 text-xs text-ink-2">
-            <span className="font-semibold text-ink">Nguyên tắc phân tầng độ khó gian hàng:</span>
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 mt-2">
-              <div className="bg-surface p-2 border border-line rounded-md">
-                <div className="font-semibold text-ink">Cơ bản</div>
-                <div className="text-2xs text-ink-3 mt-0.5">Sản phẩm đơn lẻ, tệp KOC quen thuộc, Brand duyệt nhanh.</div>
-              </div>
-              <div className="bg-surface p-2 border border-line rounded-md">
-                <div className="font-semibold text-ink">Tiêu chuẩn</div>
-                <div className="text-2xs text-ink-3 mt-0.5">Gian hàng ổn định, quy trình đàm phán và gửi mẫu chuẩn mực.</div>
-              </div>
-              <div className="bg-surface p-2 border border-line rounded-md">
-                <div className="font-semibold text-ink">Vừa</div>
-                <div className="text-2xs text-ink-3 mt-0.5">Dược mỹ phẩm trị mụn, yêu cầu chuyên môn cao, nhiều SKU.</div>
-              </div>
-              <div className="bg-surface p-2 border border-line rounded-md">
-                <div className="font-semibold text-critical">Khó</div>
-                <div className="text-2xs text-ink-3 mt-0.5">Tuyển chọn khắt khe, Brand quốc tế duyệt lâu, tỷ lệ từ chối cao.</div>
-              </div>
+          <div className="bg-canvas border border-line rounded-xl p-3.5 text-xs text-ink-2 space-y-2.5">
+            <div>
+              <span className="font-semibold text-ink">Bảng 2. Hệ số gian hàng (HS phạm vi cho việc cấp Sàn và cấp Brand):</span>
+              <p className="text-2xs text-ink-3 mt-0.5">
+                <strong>Nguyên tắc:</strong> Hệ số gian hàng được quản lý duyệt đầu tháng. Một store chỉ áp dụng một hệ số trong cùng kỳ. Nếu thay đổi scope lớn trong tháng, phải có Plan điều chỉnh được duyệt. Không tự nâng hệ số sau khi đã có kết quả. <strong>Áp dụng:</strong> Áp dụng theo store, không theo brand.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
+              {STORE_COEFFICIENT_TABLE_2.rows.map((rule) => (
+                <div key={rule.tier} className="bg-surface p-2.5 border border-line rounded-md">
+                  <div className="flex items-center justify-between">
+                    <span className={`font-semibold ${rule.tier === 'Khó' ? 'text-critical' : 'text-ink'}`}>{rule.tier}</span>
+                    <span className="font-mono font-semibold text-ink px-1.5 py-0.5 rounded bg-sunken">{rule.multiplierLabel}</span>
+                  </div>
+                  <div className="text-2xs text-ink-2 mt-1">{rule.definition}</div>
+                  <div className="text-2xs text-ink-3 mt-0.5">VD: {rule.example}</div>
+                </div>
+              ))}
             </div>
           </div>
 
@@ -339,11 +356,11 @@ export default function PerformanceP3View({
               <thead className="bg-canvas border-b border-line text-ink-3 font-medium">
                 <tr>
                   <th className="py-3 px-3">Tên gian hàng & kênh</th>
-                  <th className="py-3 px-3">Ngành hàng</th>
-                  <th className="py-3 px-3">PIC phụ trách</th>
+                  <th className="py-3 px-3">Thương hiệu & Ngành hàng</th>
+                  <th className="py-3 px-3">PIC phụ trách (Sàn / Brand)</th>
                   <th className="py-3 px-3 text-right">Chỉ tiêu GMV tháng</th>
-                  <th className="py-3 px-3 text-center">Tầng độ khó</th>
-                  <th className="py-3 px-3 text-center">Hệ số quy đổi</th>
+                  <th className="py-3 px-3 text-center">Mức độ (Bảng 2)</th>
+                  <th className="py-3 px-3 text-center">Hệ số gian hàng</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-line">
@@ -353,7 +370,10 @@ export default function PerformanceP3View({
                       <div className="font-semibold text-ink">{store.storeName}</div>
                       <ChannelTag channel={store.platform} className="mt-0.5" />
                     </td>
-                    <td className="py-3 px-3 text-ink-2">{store.category}</td>
+                    <td className="py-3 px-3">
+                      <div className="font-medium text-ink">{store.brandName}</div>
+                      <div className="text-2xs text-ink-3">{store.category}</div>
+                    </td>
                     <td className="py-3 px-3 font-medium text-ink">{store.assignedPic}</td>
                     <td className="py-3 px-3 text-right font-semibold text-ink font-mono whitespace-nowrap">
                       {formatVnd(store.monthlyTargetGmv)}
@@ -372,12 +392,12 @@ export default function PerformanceP3View({
                       <select
                         value={store.multiplier}
                         onChange={(e) => handleUpdateStoreMultiplier(store.id, parseFloat(e.target.value))}
-                        className="text-xs font-semibold bg-surface border border-line-strong rounded-md px-2 py-1 focus:outline-none focus:ring-1 focus:ring-focus"
+                        className="text-xs font-semibold font-mono bg-surface border border-line-strong rounded-md px-2 py-1 focus:outline-none focus:ring-1 focus:ring-focus"
                       >
-                        <option value="1.0">x1.0 (Cơ bản)</option>
-                        <option value="1.2">x1.2 (Tiêu chuẩn)</option>
-                        <option value="1.4">x1.4 (Vừa)</option>
-                        <option value="1.6">x1.6 (Khó)</option>
+                        <option value="0.8">0,80 (Cơ bản)</option>
+                        <option value="1">1,00 (Tiêu chuẩn)</option>
+                        <option value="1.25">1,25 (Vừa)</option>
+                        <option value="1.5">1,50 (Khó)</option>
                       </select>
                     </td>
                   </tr>

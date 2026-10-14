@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { ShieldAlert } from 'lucide-react';
 import { Sidebar, TabKey } from '../components/Sidebar';
@@ -11,6 +11,7 @@ import { ErrorBoundary } from '../components/ErrorBoundary';
 
 import dynamic from 'next/dynamic';
 import type { ContractIntent } from '../components/views/ContractManagementView';
+import type { ListingPlanContext } from '../components/views/KocListingBatchHubView';
 
 /** Khung giữ chỗ khi màn đang tải gói: đúng hình dạng màn (thanh lọc → hàng chỉ số → bảng), DESIGN_SYSTEM.md §9. */
 function ViewLoading() {
@@ -65,9 +66,18 @@ const WeeklyAdsReportHubView = dynamic(() => import('../components/views/WeeklyA
 const ExecutiveDashboardReportsView = dynamic(() => import('../components/views/ExecutiveDashboardReportsView').then(m => m.ExecutiveDashboardReportsView), { loading: ViewLoading });
 const ApiKeySetupView = dynamic(() => import('../components/views/ApiKeySetupView').then(m => m.ApiKeySetupView), { loading: ViewLoading });
 const MarketingKnowledgeQaView = dynamic(() => import('../components/views/MarketingKnowledgeQaView').then(m => m.MarketingKnowledgeQaView), { loading: ViewLoading });
+const TaskDelegationView = dynamic(() => import('../components/views/TaskDelegationView').then(m => m.TaskDelegationView), { loading: ViewLoading });
 
 import { isThirdPartyPartner } from '../lib/thirdPartyAccessData';
 import { isTabAllowedForRole, getAllowedTabsForRole, getDefaultLandingTabForRole, getSavedInternalStaffList } from '../lib/rbacData';
+import { 
+  filterScopedStores, 
+  filterScopedBrands, 
+  filterScopedPlans, 
+  filterScopedDeals, 
+  getUserScopeSummary, 
+  isStaffGlobalAdminOrManager 
+} from '../lib/rbacScope';
 import { Button, PageActiveContext, Skeleton, SkeletonRows, ToastStack, useToastQueue } from '../components/ui';
 
 import { 
@@ -79,9 +89,11 @@ import {
   INITIAL_STAFF_ALLOCATIONS_26,
   INITIAL_BRANDS,
   INITIAL_STORE_PORTFOLIOS,
-  INITIAL_KOC_LISTINGS
+  INITIAL_KOC_LISTINGS,
+  INITIAL_CAMPAIGNS
 } from '../lib/mockData';
 import { INITIAL_CONTRIBUTORS, INITIAL_SELF_CHANNEL_TASKS } from '../lib/selfChannelData';
+import { INITIAL_MONTHLY_PLANS } from '../lib/monthlyPlanData';
 import { 
   UserProfile, 
   BookingDealItem, 
@@ -101,7 +113,8 @@ import {
   GrowthDemandItem,
   GrowthDemandBreakdownTier,
   SalaryGrade,
-  KocCategory
+  KocCategory,
+  InputPlanBreakdownState
 } from '../lib/types';
 
 function KeepAliveTab({
@@ -298,6 +311,7 @@ export default function App() {
   const [tasks, setTasks] = useState<SlaTask[]>(INITIAL_TASKS);
   const [brands, setBrands] = useState<BrandDetail[]>(INITIAL_BRANDS);
   const [storePortfolios, setStorePortfolios] = useState<StorePortfolioItem[]>(INITIAL_STORE_PORTFOLIOS);
+  const [campaigns, setCampaigns] = useState<CampaignItem[]>(INITIAL_CAMPAIGNS);
 
   // Shared Plan State between Manager & Employees
   const [detailedPlans, setDetailedPlans] = useState<StaffDetailedPlanItem[]>(INITIAL_DETAILED_STAFF_PLANS);
@@ -309,6 +323,84 @@ export default function App() {
 
   // Monthly KOC Listings (Batch 10, 20, 30 with parallel Brand/KOC approval and Air Video tracking)
   const [kocListings, setKocListings] = useState<KocListingItem[]>(INITIAL_KOC_LISTINGS);
+  const [sharedMonthlyPlans, setSharedMonthlyPlans] = useState<InputPlanBreakdownState[]>(INITIAL_MONTHLY_PLANS);
+
+  // Phân quyền dữ liệu theo phạm vi quản lý của nhân sự Growth và B2C (chỉ cho xem các gian hàng, brand thuộc quản lý)
+  const scopedStores = useMemo(() => filterScopedStores(storePortfolios, currentUser), [storePortfolios, currentUser]);
+  const scopedBrands = useMemo(() => filterScopedBrands(brands, currentUser, storePortfolios), [brands, currentUser, storePortfolios]);
+  const scopedDeals = useMemo(() => filterScopedDeals(deals, currentUser, storePortfolios), [deals, currentUser, storePortfolios]);
+  const scopedMonthlyPlans = useMemo(() => filterScopedPlans(sharedMonthlyPlans, currentUser, storePortfolios), [sharedMonthlyPlans, currentUser, storePortfolios]);
+  const userScopeSummary = useMemo(() => getUserScopeSummary(currentUser, brands, storePortfolios), [currentUser, brands, storePortfolios]);
+
+  const [listingPlanContext, setListingPlanContext] = useState<ListingPlanContext | null>(null);
+  const [planDrilldownIntent, setPlanDrilldownIntent] = useState<{
+    planId?: string;
+    storeId?: string;
+    storeName?: string;
+    brandName?: string;
+    month?: string;
+    nonce: number;
+  } | null>(null);
+  const [bookingDrilldownIntent, setBookingDrilldownIntent] = useState<{
+    storeName?: string;
+    brandName?: string;
+    dealCode?: string;
+    month?: string;
+    nonce: number;
+  } | null>(null);
+
+  const handleDrilldownToPlan = useCallback(
+    (params: { planId?: string; storeId?: string; storeName?: string; brandName?: string; month: string }) => {
+      setPlanDrilldownIntent({
+        ...params,
+        nonce: Date.now(),
+      });
+      setActiveTab('input-plan');
+      showToast(
+        `Đang mở Kế hoạch tháng ${params.month} của "${params.storeName || params.brandName || 'gian hàng'}"`,
+        'info',
+      );
+    },
+    [showToast],
+  );
+
+  const handleDrilldownToListing = useCallback(
+    (params: { storeName?: string; brandName?: string; month: string }) => {
+      const targetName = params.storeName || params.brandName || '';
+      const matchedPlan = sharedMonthlyPlans.find(
+        p =>
+          p.brandName.trim().toLowerCase() === targetName.trim().toLowerCase() ||
+          (p.parentBrand && p.parentBrand.trim().toLowerCase() === targetName.trim().toLowerCase()),
+      );
+      setListingPlanContext({
+        planId: matchedPlan?.id || `plan-${targetName}`,
+        storeName: targetName,
+        monthKey: params.month,
+        nonce: Date.now(),
+      });
+      setActiveTab('koc-listing');
+      showToast(`Đang mở Đề xuất KOC kỳ ${params.month} cho "${targetName}"`, 'info');
+    },
+    [sharedMonthlyPlans, showToast],
+  );
+
+  const handleDrilldownToBooking = useCallback(
+    (params: { storeName?: string; brandName?: string; dealCode?: string; month: string }) => {
+      if (params.brandName && params.brandName !== 'ALL') {
+        setSelectedBrandContext(params.brandName);
+      }
+      setBookingDrilldownIntent({
+        ...params,
+        nonce: Date.now(),
+      });
+      setActiveTab('booking');
+      showToast(
+        `Đang mở Quản lý Booking kỳ ${params.month} ${params.dealCode ? `(Mã deal ${params.dealCode})` : `cho "${params.storeName || params.brandName || ''}"`}`,
+        'info',
+      );
+    },
+    [showToast],
+  );
 
   const handleGenerateDealFromListing = (listingItem: KocListingItem) => {
     const existing = deals.find(d => d.dealCode === listingItem.generatedDealId);
@@ -320,13 +412,14 @@ export default function App() {
         campaignCode: 'CAMP-202610',
         campaignTitle: 'Chiến Dịch Tháng 10/2026',
         brandName: listingItem.brandName,
+        storeId: listingItem.storeId,
         storeName: listingItem.storeName,
         productName: listingItem.pillarName,
         bookingBatch: listingItem.batchCycle === 'BATCH_10' ? 'Đợt 1' : listingItem.batchCycle === 'BATCH_20' ? 'Đợt 2' : 'Đợt 3',
         kocId: listingItem.kocId,
         kocStageName: listingItem.kocName,
         kocTier: listingItem.tier === 'NANO' ? 'TIER_4_AFFILIATE' : listingItem.tier === 'MICRO' ? 'TIER_3_MICRO' : listingItem.tier === 'MACRO' ? 'TIER_2_MACRO' : 'TIER_1_CELEB',
-        salaryGrade: 'KL2',
+        salaryGrade: listingItem.salaryGrade || 'KL3',
         segment: 'Mid Creator',
         tepKenh: 'Mẹ bé (bé)',
         kocCategory: 'Mom and baby',
@@ -351,10 +444,10 @@ export default function App() {
         publishedDays: 0,
         remainingSlaHours: 48,
         isSlaWarning: false,
-        accountComment: `Tự động sinh từ Đợt Listing ${listingItem.batchCycle} tháng ${listingItem.monthKey}`
+        accountComment: `Tự động sinh từ Đợt Listing ${listingItem.batchCycle} tháng ${listingItem.monthKey} (${listingItem.salaryGrade || 'KL3'} · Plan ${listingItem.sourcePlanVersion || 'v1.0'})`
       };
       setDeals(prev => [newDeal, ...prev]);
-      showToast(`Đã tự động tạo Deal ${newDeal.dealCode} cho KOC ${newDeal.kocStageName}`, 'success');
+      showToast(`Đã tự động tạo Deal ${newDeal.dealCode} (${newDeal.salaryGrade}) cho KOC ${newDeal.kocStageName}`, 'success');
     }
   };
 
@@ -629,6 +722,10 @@ export default function App() {
     showToast(`Đã giao việc cho ${newTask.pic}`);
   };
 
+  const handleUpdateTask = (updatedTask: SlaTask) => {
+    setTasks(prev => prev.map(t => t.id === updatedTask.id ? updatedTask : t));
+  };
+
   const handleUpdateBrand = (updatedBrand: BrandDetail) => {
     setBrands(prev => prev.map(b => b.id === updatedBrand.id ? updatedBrand : b));
     showToast(`Đã cập nhật phân bổ ${updatedBrand.name}`);
@@ -712,6 +809,10 @@ export default function App() {
         return;
       }
     }
+    if (task.type === 'RESEARCH_TASK' || task.taskCategory) {
+      setActiveTab('task-delegation');
+      return;
+    }
     if (task.type === 'SCRIPT_REVIEW') {
       setActiveTab('content');
       showToast('Kịch bản chờ duyệt', 'info');
@@ -734,9 +835,9 @@ export default function App() {
     'ctv-master': { title: 'Danh bạ CTV / VJ', subtitle: 'Hồ sơ pháp lý CCCD, hợp đồng Partnership, đơn giá, địa chỉ gửi mẫu 48h và lịch sử sản xuất video kênh Brand' },
     'master-data': { title: 'Dữ liệu gốc', subtitle: 'Thương hiệu, gian hàng, sản phẩm, ngành hàng và khung lương' },
     'push-products': { title: 'Sản phẩm đẩy', subtitle: 'Danh mục sản phẩm trọng tâm, tồn kho và mức hoa hồng' },
-    stores: { title: 'Hồ sơ gian hàng', subtitle: 'Chỉ số vận hành, hạn mức ngân sách, bàn giao PIC và liên kết thương hiệu' },
+    stores: { title: 'Hồ sơ gian hàng', subtitle: 'Hồ sơ định danh tĩnh kết hợp Hồ sơ Tháng (Plan & Report NMV, Ngân sách Net, Video) và drill-down thực thi' },
     campaigns: { title: 'Duyệt với nhãn hàng', subtitle: 'Brief chiến dịch, quy chuẩn nhãn hàng, từ khóa cấm và duyệt KOC' },
-    'brand-knowledge': { title: 'Hồ sơ thương hiệu', subtitle: 'Định vị, sản phẩm chủ lực, quy chuẩn nội dung, pháp lý và trần thù lao của từng nhãn' },
+    'brand-knowledge': { title: 'Hồ sơ thương hiệu', subtitle: 'Hồ sơ định danh tĩnh (Định vị, SKU, Pháp lý, R2) kết hợp Hồ sơ Tháng (Plan & Report theo nhãn và gian hàng)' },
     content: { title: 'Kịch bản & video', subtitle: 'Kho sản phẩm nội dung, hàng chờ duyệt kịch bản 24h, video nháp và đối soát bài đăng' },
     'content-angles': { title: 'Góc tiếp cận', subtitle: 'Kho kịch bản phân rã theo trụ cột nội dung và từng sản phẩm của gian hàng' },
     'partner-access': { title: 'Phân quyền', subtitle: 'Ma trận phân quyền theo vai trò, nhân sự nội bộ và tài khoản đối tác' },
@@ -744,6 +845,7 @@ export default function App() {
     'koc-master': { title: 'Danh bạ KOC', subtitle: 'Hồ sơ, giấy tờ và lịch sử booking của KOC' },
     contracts: { title: 'Hợp đồng & thanh toán', subtitle: 'Tạo từ mẫu pháp chế, duyệt nội bộ và theo dõi ký điện tử' },
     manager: { title: 'Phân bổ & điều phối', subtitle: 'Phân bổ nhãn hàng, gian hàng, nhân sự và cân bằng khối lượng việc' },
+    'task-delegation': { title: 'Giao việc & Định mức Task', subtitle: 'Phân công công việc theo vai trò (PIC/Co-PIC/Execution/Support), cấu hình độ khó Task và Bảng 2b Research' },
     'sample-tracker': { title: 'Hàng mẫu', subtitle: 'Vận đơn mẫu, hạn nộp kịch bản 5 ngày và mã Spark Ads' },
     'performance-p3': { title: 'Đánh giá 4P', subtitle: 'Điểm khối lượng việc theo độ khó gian hàng, chất lượng và SLA' },
     leaderboard: { title: 'Bảng xếp hạng', subtitle: 'Bảng xếp hạng KPI và SLA đội ngũ vận hành' },
@@ -751,12 +853,13 @@ export default function App() {
     'koc-hub': { title: 'Cổng KOC', subtitle: 'Quản lý thông tin cá nhân, hợp đồng, lịch sử hợp tác, hiệu quả kênh và tiến độ công việc' },
     'ads-report': { title: 'Báo cáo Ads tuần', subtitle: 'Đọc file báo cáo từ TikTok Shop Seller, đối soát mã Spark Ads và ROAS thực tế' },
     'dashboard-bi': { title: 'Dashboard Quản Trị B2C', subtitle: 'Đối soát 42 Thương hiệu, 69 Gian hàng, 786 Đơn Video, TikTok Seller & Nhân sự B2C' },
-    'dashboard-brand': { title: 'Dashboard Thương Hiệu & Ngân Sách (Brand & P&L)', subtitle: 'Đối soát 42 Thương hiệu, Hạn mức Order Gross vs Trần Net Kế toán, Thực chi 3.2 và Cảnh báo đỏ vượt trần' },
+    'dashboard-brand': { title: 'Dashboard Ngân Sách & Đối Soát Kế Toán (42 Thương Hiệu)', subtitle: 'Đối soát Hạn mức Order Gross vs Trần Net Kế toán, Thực chi 3.2, Sổ cái ĐNTT và Xuất báo cáo Excel' },
     'dashboard-store': { title: 'Dashboard Gian Hàng & TikTok Seller (69 Gian Hàng B2C)', subtitle: 'Đối soát 39 TikTok Shop & 30 Shopee Mall, chiến dịch PGM/LGM TikTok Seller Center, ROAS và tiến độ giải ngân' },
     'dashboard-video': { title: 'Dashboard Hiệu Quả Video Booking & KOC/Ads', subtitle: 'Phân tích 786 đơn video File 3.2 & 4.211 dòng Creative TikTok Seller, bóc tách Paid vs FOC 0đ, Khung lương KL1–7 và Phễu giữ chân' },
-    'dashboard-team-sla': { title: 'Dashboard Tiến Độ & SLA Vận Hành B2C', subtitle: 'Quản trị 3 cấp (Trưởng phòng Yến Nhi · Leader Ngọc Tâm 8 gian · 61 gian trực tiếp), băng tải tiến độ 786 video và tỷ lệ đúng hạn SLA' },
+    'dashboard-team-sla': { title: 'Dashboard Lịch Air Tuần (W40–W45) & Tiến Độ Video', subtitle: 'Đối soát lịch air kế hoạch theo tuần vs thực tế, mật độ nổ đồng loạt theo sóng chiến dịch và tiến độ SLA 786 đơn video' },
     'dashboard-staff': { title: 'Dashboard Hiệu Suất & Hiệu Quả Từng Nhân Viên B2C', subtitle: 'Đánh giá 360° từng chuyên viên: % Spend Chi phí, Số lượng Video Air, GMV & ROAS tạo ra, Đơn giá TB/Video, SLA và Điểm KPI tổng hợp' },
-    'dashboard-finance': { title: 'Dashboard Đối Soát Kế Toán & Xuất File (.xlsx)', subtitle: 'Kiểm soát hồ sơ thanh toán (ĐNTT / Tạm ứng / Done), khóa trần Order Net và kết xuất báo cáo đối soát Excel 4 Sheets' },
+    'dashboard-finance': { title: 'Dashboard Ngân Sách & Đối Soát Kế Toán (.xlsx)', subtitle: 'Kiểm soát hồ sơ thanh toán (ĐNTT / Tạm ứng / Done), khóa trần Order Net và kết xuất báo cáo đối soát Excel 5 Sheets' },
+    'dashboard-air-sync': { title: 'Dashboard Lịch Air Tuần (W40–W45) & Tiến Độ Video', subtitle: 'Đối soát lịch air kế hoạch theo tuần vs thực tế, mật độ nổ đồng loạt theo sóng chiến dịch và tiến độ SLA 786 đơn video' },
     'api-settings': { title: 'Cấu hình API & Định tuyến Nghiệp vụ', subtitle: 'Quản lý khóa API Google (Gemini), OpenAI (ChatGPT), Anthropic (Claude) và phân bổ công cụ xử lý theo từng nghiệp vụ B2C' },
     'knowledge-qa': { title: 'Sổ tay & Hỏi đáp', subtitle: 'Tra cứu quy trình, mốc SLA, mẫu hợp đồng, tính thuế Gross/Net, khung lương KL1–KL7 và hỏi đáp nghiệp vụ Marketing B2C' },
   };
@@ -821,6 +924,7 @@ export default function App() {
           isSidebarCollapsed={isSidebarCollapsed}
           onToggleSidebarCollapse={handleToggleSidebarCollapse}
           onLogout={handleLogout}
+          userScopeSummary={userScopeSummary}
         />
 
         {isThirdPartyPartner(currentUser) && (
@@ -888,6 +992,8 @@ export default function App() {
               deals={deals}
               onTaskActionClick={handleTaskActionClick}
               onNavigateToInputPlan={() => setActiveTab('input-plan')}
+              onNavigateToAirSync={() => setActiveTab('dashboard-air-sync')}
+              onNavigateToTaskDelegation={() => setActiveTab('task-delegation')}
             />
           </KeepAliveTab>
 
@@ -908,6 +1014,7 @@ export default function App() {
               [
                 'dashboard-bi',
                 'dashboard-brand',
+                'dashboard-air-sync',
                 'dashboard-store',
                 'dashboard-video',
                 'dashboard-team-sla',
@@ -920,10 +1027,10 @@ export default function App() {
           >
             <ExecutiveDashboardReportsView
               currentUser={currentUser}
-              deals={deals}
-              brands={brands}
+              deals={scopedDeals}
+              brands={scopedBrands}
               kocs={kocs}
-              storePortfolios={storePortfolios}
+              storePortfolios={scopedStores}
               activeSidebarTab={activeTab}
               onNotify={showToast}
               onNavigateToTab={(tabKey) => setActiveTab(tabKey as TabKey)}
@@ -933,9 +1040,12 @@ export default function App() {
           <KeepAliveTab tabKey="input-plan" currentTab={activeTab}>
             <InputPlanBreakdownView
               currentUser={currentUser}
-              storePortfolios={storePortfolios}
+              storePortfolios={scopedStores}
               onUpdateStore={handleUpdateStore}
+              campaigns={campaigns}
+              onCampaignsChange={setCampaigns}
               onNotify={showToast}
+              planDrilldownIntent={planDrilldownIntent}
               onGenerateDealsFromPlan={(newSlots) => {
                 setDetailedPlans(prev => [...newSlots, ...prev]);
                 showToast(`Đã tạo ${newSlots.length} slot KOC trong Booking`);
@@ -944,6 +1054,20 @@ export default function App() {
               onApplyPlanToWeeklyStore={(weeklyPlan) => {
                 showToast(`Đã lưu kế hoạch ${weeklyPlan.storeName}, ${weeklyPlan.week}`);
               }}
+              onOpenListingForPlan={(plan, grade) => {
+                setListingPlanContext({
+                  planId: plan.id,
+                  storeName: plan.storeName || plan.brandName,
+                  monthKey: plan.month,
+                  salaryGrade: grade,
+                  nonce: Date.now(),
+                });
+                setActiveTab('koc-listing');
+                showToast(
+                  `Đang mở bảng Listing KOC cho kế hoạch "${plan.storeName || plan.brandName}"${grade ? ` (Khung ${grade})` : ''}`
+                );
+              }}
+              onPlansChange={setSharedMonthlyPlans}
             />
           </KeepAliveTab>
 
@@ -954,16 +1078,22 @@ export default function App() {
               onGenerateDeal={handleGenerateDealFromListing}
               currentRole={currentUser.role}
               currentUserName={currentUser.name}
+              monthlyPlans={scopedMonthlyPlans}
+              stores={scopedStores}
+              kocs={kocs}
+              deals={scopedDeals}
+              activePlanContext={listingPlanContext}
+              onOpenPlanStudio={() => setActiveTab('input-plan')}
             />
           </KeepAliveTab>
 
           <KeepAliveTab tabKey="master-data" currentTab={activeTab}>
             <MasterDataHubView
               currentUser={currentUser}
-              brands={brands}
-              stores={storePortfolios}
+              brands={scopedBrands}
+              stores={scopedStores}
               kocs={kocs}
-              deals={deals}
+              deals={scopedDeals}
               contributors={contributors}
               onNotify={showToast}
               onOpenQuickBookWithKoc={handleOpenQuickBookWithKoc}
@@ -1000,7 +1130,7 @@ export default function App() {
           <KeepAliveTab tabKey="push-products" currentTab={activeTab}>
             <PushProductsView
               currentUser={currentUser}
-              brands={brands}
+              brands={scopedBrands}
               onNotify={showToast}
             />
           </KeepAliveTab>
@@ -1008,7 +1138,7 @@ export default function App() {
           <KeepAliveTab tabKey="self-channel-hub" currentTab={activeTab}>
             <SelfChannelCtvHubView
               currentUser={currentUser}
-              brands={brands}
+              brands={scopedBrands}
               contributors={contributors}
               tasks={selfChannelTasks}
               onTasksChange={setSelfChannelTasks}
@@ -1043,11 +1173,16 @@ export default function App() {
             <StoreManagementView
               currentUser={currentUser}
               selectedStore={selectedStoreContext}
-              stores={storePortfolios}
-              brands={brands}
-              deals={deals}
+              stores={scopedStores}
+              brands={scopedBrands}
+              deals={scopedDeals}
+              monthlyPlans={scopedMonthlyPlans}
               onNotify={showToast}
               onUpdateStore={handleUpdateStore}
+              onDrilldownToPlan={handleDrilldownToPlan}
+              onDrilldownToListing={handleDrilldownToListing}
+              onDrilldownToBooking={handleDrilldownToBooking}
+              onSelectDealForContract={openContractForDeal}
               onNavigateToBrandProfile={(brandName) => {
                 if (brandName && brandName !== 'ALL') {
                   setSelectedBrandContext(brandName);
@@ -1062,6 +1197,8 @@ export default function App() {
 
           <KeepAliveTab tabKey="campaigns" currentTab={activeTab}>
             <BrandView
+              campaigns={campaigns}
+              onCampaignsChange={setCampaigns}
               onCampaignCreatedNotification={handleCampaignCreatedNotification}
               onTriggerHandoffNotification={handleTriggerHandoffNotification}
               onNavigateToCtvHub={() => setActiveTab('self-channel-hub')}
@@ -1078,12 +1215,17 @@ export default function App() {
             <BrandProfilesView
               currentUser={currentUser}
               selectedBrand={selectedBrandContext}
-              brands={brands}
-              stores={storePortfolios}
-              deals={deals}
+              brands={scopedBrands}
+              stores={scopedStores}
+              deals={scopedDeals}
+              monthlyPlans={scopedMonthlyPlans}
               onNotify={showToast}
               onOpenBooking={() => setActiveTab('booking')}
               onUpdateStore={handleUpdateStore}
+              onDrilldownToPlan={handleDrilldownToPlan}
+              onDrilldownToListing={handleDrilldownToListing}
+              onDrilldownToBooking={handleDrilldownToBooking}
+              onSelectDealForContract={openContractForDeal}
               onNavigateToStoreProfile={(storeName) => {
                 if (storeName) {
                   setSelectedStoreContext(storeName);
@@ -1128,10 +1270,11 @@ export default function App() {
 
           <KeepAliveTab tabKey="booking" currentTab={activeTab}>
             <BookingView 
-              deals={deals}
+              deals={scopedDeals}
               kocs={kocs}
               currentUser={currentUser}
               selectedBrand={selectedBrandContext}
+              bookingDrilldownIntent={bookingDrilldownIntent}
               onOpenQuickBookWithKoc={handleOpenQuickBookWithKoc}
               onOpenQuickBook={() => {
                 setPreselectedKoc(null);
@@ -1156,7 +1299,7 @@ export default function App() {
           <KeepAliveTab tabKey="koc-master" currentTab={activeTab}>
             <KocMasterDataView
               kocs={kocs}
-              allDeals={deals}
+              allDeals={scopedDeals}
               currentUser={currentUser}
               selectedBrand={selectedBrandContext}
               selectedKocId={selectedKocContext}
@@ -1173,12 +1316,12 @@ export default function App() {
           </KeepAliveTab>
 
           <KeepAliveTab tabKey="contracts" currentTab={activeTab}>
-            <ContractManagementView deals={deals} kocs={kocs} intent={contractIntent} onNotify={showToast} currentUserId={currentUser.id} />
+            <ContractManagementView deals={scopedDeals} kocs={kocs} intent={contractIntent} onNotify={showToast} currentUserId={currentUser.id} />
           </KeepAliveTab>
 
           <KeepAliveTab tabKey="sample-tracker" currentTab={activeTab}>
             <SampleTrackerView
-              deals={deals}
+              deals={scopedDeals}
               currentUser={currentUser}
               onNotify={showToast}
               onUpdateDealWithSparkAds={(dealCode, sparkCode) => {
@@ -1195,7 +1338,7 @@ export default function App() {
           <KeepAliveTab tabKey="manager" currentTab={activeTab}>
             <ManagerView
               currentUser={currentUser}
-              deals={deals}
+              deals={scopedDeals}
               onPingStaffNotification={handlePingStaffNotification}
               planItems={detailedPlans}
               onUpdatePlanItemStatus={handleUpdatePlanItemStatusFromLead}
@@ -1209,10 +1352,10 @@ export default function App() {
                 setStaffAllocations(prev => ({ ...prev, [month]: updatedList }));
                 showToast(`Đã lưu phân bổ tháng ${month}`);
               }}
-              brands={brands}
+              brands={scopedBrands}
               onUpdateBrand={handleUpdateBrand}
               onAddBrand={handleAddBrand}
-              storePortfolios={storePortfolios}
+              storePortfolios={scopedStores}
               onUpdateStore={handleUpdateStore}
               tasks={tasks}
               onAddTask={handleAddTask}
@@ -1220,10 +1363,24 @@ export default function App() {
             />
           </KeepAliveTab>
 
+          <KeepAliveTab tabKey="task-delegation" currentTab={activeTab}>
+            <TaskDelegationView
+              currentUser={currentUser}
+              tasks={tasks}
+              brands={scopedBrands}
+              storePortfolios={scopedStores}
+              onAddTask={handleAddTask}
+              onCompleteTask={handleCompleteTask}
+              onUpdateTask={handleUpdateTask}
+              onPingStaff={handlePingStaffNotification}
+              onNotify={showToast}
+            />
+          </KeepAliveTab>
+
           <KeepAliveTab tabKey="performance-p3" currentTab={activeTab}>
             <PerformanceP3View
-              storePortfolios={storePortfolios}
-              deals={deals}
+              storePortfolios={scopedStores}
+              deals={scopedDeals}
               currentUser={currentUser}
               onNotify={showToast}
               onUpdateStoreDifficulty={(storeId, multiplier, tier) => {
@@ -1243,9 +1400,9 @@ export default function App() {
           <KeepAliveTab tabKey="brand-hub" currentTab={activeTab}>
             <BrandHubView
               currentUser={currentUser}
-              deals={deals}
-              brands={brands}
-              stores={storePortfolios}
+              deals={scopedDeals}
+              brands={scopedBrands}
+              stores={scopedStores}
               onUpdateStore={handleUpdateStore}
               onOpenBooking={() => setActiveTab('booking')}
               onNavigateToBrandProfile={(brandName: string) => {
@@ -1284,9 +1441,9 @@ export default function App() {
           <KeepAliveTab tabKey="koc-hub" currentTab={activeTab}>
             <KocKolHubView
               currentUser={currentUser}
-              brands={brands}
+              brands={scopedBrands}
               initialKocs={kocs}
-              initialDeals={deals}
+              initialDeals={scopedDeals}
               selectedKocId={selectedKocContext}
               onKocUpdated={handleKocUpdated}
               onUpdateDeal={handleUpdateDeal}
@@ -1305,7 +1462,7 @@ export default function App() {
             <WeeklyAdsReportHubView
               currentUser={currentUser}
               kocs={kocs}
-              deals={deals}
+              deals={scopedDeals}
               onNotify={showToast}
               onUpdateKocsWithAdsData={(updated) => setKocs(updated)}
               onUpdateDealsWithAdsData={(updated) => setDeals(updated)}

@@ -3,81 +3,65 @@
 | Thuộc tính | Giá trị |
 | --- | --- |
 | Mã tài liệu | HUB-REG |
-| Dự án | B2C Ops Hub — quản trị phòng Marketing B2C |
-| Giai đoạn hiện tại | **1 — Yêu cầu** (chưa qua G1) |
-| Cập nhật | 09/10/2026 |
+| Dự án | B2C Ops Hub — Quản trị & Điều hành phòng Marketing B2C |
+| Giai đoạn hiện tại | **2 — Phân tích & Thiết kế kỹ thuật** |
+| Cập nhật | 14/10/2026 |
 
-Danh sách **mọi tài liệu bắt buộc** theo [SDLC-00](../../sdlc/00_SDLC_PROTOCOL.md), kể cả tài liệu chưa tạo. Cập nhật bảng này mỗi khi tạo tài liệu hoặc đổi trạng thái.
+Danh sách **mọi tài liệu bắt buộc** theo quy trình quản lý dự án. Cập nhật bảng này mỗi khi tạo tài liệu hoặc đổi trạng thái.
 
 ## Trạng thái cổng
 
-| Cổng | Trạng thái | Điều kiện còn thiếu |
+| Cổng | Trạng thái | Điều kiện & Tiến độ |
 | --- | --- | --- |
-| G1 | **Chưa đạt** | Chưa có chủ dự án/owner nghiệp vụ; 7 open issue chặn G1 ([OPEN_ISSUES](governance/OPEN_ISSUES.md)); BRD mới là nháp đề xuất; chưa có số gốc; khảo sát Brand/Content/liên phòng ban chưa xong |
-| G2–G5 | Chưa bắt đầu | — |
+| G1 (Yêu cầu) | **Đã hoàn thành sơ bộ** | Đã xác lập phạm vi 69 gian hàng B2C, phân cấp quản trị Brand → Gian hàng, bóc tách chỉ tiêu Paid/FOC, Gross/Net. |
+| G2 (Thiết kế kỹ thuật) | **Đang thực hiện** | Đã hoàn thành các đặc tả thiết kế kỹ thuật cốt lõi: HUB-2.1 (SRS), HUB-2.5 (Tích hợp API) và HUB-2.6 (Xác thực & RBAC) đồng bộ trực tiếp với mã nguồn `web-admin`. |
+| G3–G5 | Đang triển khai | Triển khai mã nguồn sản phẩm thực tế theo các module chức năng. |
 
 ## Dùng chung
 
 | Tài liệu | Trạng thái |
 | --- | --- |
-| [SDLC-00 Quy trình](../../sdlc/00_SDLC_PROTOCOL.md) | Nháp |
-| [SDLC-01 Glossary & số liệu chuẩn](../../sdlc/01_GLOSSARY.md) | Nháp — có mâu thuẫn |
-| [SDLC-02 Ranh giới hệ thống](../../sdlc/02_SYSTEM_BOUNDARY.md) | Đề xuất |
-| [SDLC-03 Mẫu tài liệu](../../sdlc/03_DOCUMENT_TEMPLATES.md) | Nháp |
+| [SDLC-00 Quy trình](../../sdlc/00_SDLC_PROTOCOL.md) | Áp dụng nguyên tắc "Code đổi - Doc cập nhật trong cùng một lượt" |
+| [SDLC-01 Glossary & số liệu chuẩn](../../sdlc/01_GLOSSARY.md) | Đang dùng |
+| [SDLC-02 Ranh giới hệ thống](../../sdlc/02_SYSTEM_BOUNDARY.md) | Đã chuẩn hóa ranh giới với UpAffiliate và Larkbase |
+| [SDLC-03 Mẫu tài liệu](../../sdlc/03_DOCUMENT_TEMPLATES.md) | Đang dùng |
 
 ## Governance
 
 | Mã | Tài liệu | Trạng thái |
 | --- | --- | --- |
-| HUB-GOV-01 | [Decision log](governance/DECISION_LOG.md) | Đang dùng — 6 mục |
-| HUB-GOV-02 | [Open issues](governance/OPEN_ISSUES.md) | Đang dùng — 19 mục, 7 chặn G1 |
-| HUB-GOV-03 | [Ma trận truy vết](governance/TRACEABILITY.md) | Đang dùng — mới có cột BR |
+| HUB-GOV-01 | [Decision log](governance/DECISION_LOG.md) | Đang dùng |
+| HUB-GOV-02 | [Open issues](governance/OPEN_ISSUES.md) | Đang xử lý |
+| HUB-GOV-03 | [Ma trận truy vết](governance/TRACEABILITY.md) | Đang dùng |
 
 ## Giai đoạn 1 — Yêu cầu
 
 | Mã | Tài liệu | Trạng thái | Owner | Ghi chú |
 | --- | --- | --- | --- | --- |
-| HUB-1.1 | [Project Charter](1-requirements/1.1_PROJECT_CHARTER.md) | Nháp | _chưa gán_ | Thiếu chủ dự án, mốc, số gốc |
-| HUB-1.2 | [Stakeholder & RACI](1-requirements/1.2_STAKEHOLDERS_AND_RACI.md) | Nháp | Team DX | Dùng chung với UpAffiliate; nhiều ô `?` |
-| HUB-1.3 | [Hiện trạng (As-is)](1-requirements/1.3_AS_IS_CURRENT_STATE.md) | Nháp | Team DX | Dùng chung với UpAffiliate |
-| HUB-1.4 | [Bộ câu hỏi discovery — Giám đốc khối](1-requirements/1.4_DISCOVERY_GUIDE_GIAM_DOC_KHOI.md) | Sẵn sàng dùng | Team DX | Công cụ khảo sát |
-| HUB-1.5 | [Bảng câu hỏi — nhân viên kỳ cựu](1-requirements/1.5_DISCOVERY_GUIDE_NHAN_VIEN_KY_CUU.md) | Sẵn sàng dùng | Team DX | Công cụ khảo sát |
-| HUB-1.6 | [Mục tiêu vận hành (bản thảo luận)](1-requirements/1.6_OPERATING_GOALS.md) | Nháp — giả thuyết | Team DX | Chờ Giám đốc khối chọn 3 mục tiêu (OI-010) |
-| HUB-1.7 | [BRD Ops Hub](1-requirements/1.7_BRD_OPS_HUB.md) | Nháp đề xuất | _chưa gán_ | 9 BR rút từ khảo sát, chưa xác nhận |
-| HUB-1.8 | Số đo gốc (baseline) | **Chưa tạo** | _chưa gán_ | Xem HUB-1.3 mục 6 |
-| HUB-1.9 | [Nguồn dữ liệu Lark 4.1 Plan order tổng](1-requirements/1.9_DATA_SOURCE_LARK_4.1_PLAN_ORDER.md) | Nháp | Team DX | Mapping 36/228 cột; quy tắc DEC-006; OI-017–019 |
+| HUB-1.1 | [Project Charter](1-requirements/1.1_PROJECT_CHARTER.md) | Hoàn thiện | Ban Điều Hành | Định hướng quản trị số liệu phòng Marketing B2C |
+| HUB-1.2 | [Stakeholder & RACI](1-requirements/1.2_STAKEHOLDERS_AND_RACI.md) | Đã chuẩn hóa | Khối Marketing B2C | Cơ cấu CEO, Giám Đốc MKT, Leader, Specialist, Legal, Finance |
+| HUB-1.3 | [Hiện trạng (As-is)](1-requirements/1.3_AS_IS_CURRENT_STATE.md) | Đang dùng | Team DX & MKT | Khảo sát quy trình hiện tại |
+| HUB-1.4 | [Bộ câu hỏi discovery — Giám đốc khối](1-requirements/1.4_DISCOVERY_GUIDE_GIAM_DOC_KHOI.md) | Hoàn tất | Khối MKT | Công cụ khảo sát |
+| HUB-1.5 | [Bảng câu hỏi — nhân viên kỳ cựu](1-requirements/1.5_DISCOVERY_GUIDE_NHAN_VIEN_KY_CUU.md) | Hoàn tất | Khối MKT | Công cụ khảo sát |
+| HUB-1.6 | [Mục tiêu vận hành](1-requirements/1.6_OPERATING_GOALS.md) | Đã chốt | Khối MKT | Tối ưu SLA, kiểm soát trần PnL, chuẩn hóa đánh giá nhân sự |
+| HUB-1.7 | [BRD Ops Hub](1-requirements/1.7_BRD_OPS_HUB.md) | Đã chuẩn hóa | Khối MKT | 9 Nhu cầu nghiệp vụ cốt lõi |
+| HUB-1.9 | [Nguồn dữ liệu Lark 4.1 Plan order tổng](1-requirements/1.9_DATA_SOURCE_LARK_4.1_PLAN_ORDER.md) | Đã áp dụng | Khối MKT & DX | Quy tắc DEC-006: 69 gian B2C, tách Gross/Net, Paid/FOC |
 
-Tài liệu gốc (giữ nguyên ở `B2C/`): `Pain point Marketing B2C.xlsx`, `4P Marketing B2C.xlsx`, `Bang_Danh_Gia_Workload_Va_Hieu_Suat_MKT_B2C.xlsx`, `Các SLA B2C.pdf`, `Định hướng Marketing B2C _ Cơ cấu team.pdf`, `Quy trình Booking - Tech.md`, `MeUp_Playbook_02_Booking_KOC.docx`, `Luồng quản lý job/`.
-
-## Giai đoạn 2 — Phân tích & thiết kế (chưa bắt đầu, chờ G1)
+## Giai đoạn 2 — Phân tích & thiết kế kỹ thuật
 
 | Mã | Tài liệu | Trạng thái | Ghi chú |
 | --- | --- | --- | --- |
-| HUB-2.1 | SRS (FR/NFR) | Chưa tạo | Định nghĩa từng chỉ số: công thức, mẫu số, thời điểm chốt |
-| HUB-2.2 | User stories + tiêu chí nghiệm thu | Chưa tạo | — |
-| HUB-2.3 | Kiến trúc + ADR | Chưa tạo | ADR đầu tiên: giữ hay chọn lại stack của prototype (OI-012) |
-| HUB-2.4 | Mô hình dữ liệu | Chưa tạo | Store, phân công, SLA catalog, chỉ số; bản sao dữ liệu booking chỉ đọc |
-| HUB-2.5 | Đặc tả tích hợp IF-03, IF-04 (+ đọc Lark) | Chưa tạo | Phụ thuộc UpAffiliate |
-| HUB-2.6 | Bảo mật & phân quyền | Chưa tạo | Dữ liệu đánh giá nhân sự; ai xem điểm của ai |
-| HUB-2.7 | Đặc tả UX | Chưa tạo | Tham khảo màn hình prototype (archive) |
-| HUB-2.8 | Chiến lược kiểm thử | Chưa tạo | — |
-| HUB-2.9 | Kế hoạch phát hành & backlog | Chưa tạo | — |
+| **HUB-2.1** | [**SRS (Đặc tả yêu cầu phần mềm)**](2-design/2.1_SRS_B2C_OPS_HUB.md) | **Đã hoàn thành** | Quy chuẩn Cockpit, 5 Dashboard điều hành tinh gọn (gồm Lịch Air Tuần & Tiến độ Video), Kế hoạch tháng, Booking, Hợp đồng & Cổng đối tác |
+| HUB-2.2 | User stories + tiêu chí nghiệm thu | Đang hoàn thiện | Các kịch bản nghiệp vụ theo 8 nhóm quyền |
+| HUB-2.3 | Kiến trúc tổng thể | Đang hoàn thiện | Next.js App Router, Micro-services API, State Sync |
+| HUB-2.4 | Mô hình dữ liệu | Đang hoàn thiện | Cấu trúc dữ liệu Brand, Store, Monthly Plan, Booking Deal |
+| **HUB-2.5** | [**Đặc tả tích hợp API**](2-design/2.5_INTEGRATION_SPEC.md) | **Đã hoàn thành** | Lark SSO, Larkbase Plans, TikTok Seller, Kalodata, WeSign, OCR |
+| **HUB-2.6** | [**Xác thực & Phân quyền (RBAC)**](2-design/2.6_AUTH_AND_RBAC_SPEC.md) | **Đã hoàn thành** | Phân quyền 8 vai trò (CEO, Giám Đốc MKT, Growth/Media Head, Leader, Specialist, Legal, Finance, Brand) & Động cơ phân quyền phạm vi (Data Scoping Engine) |
+| HUB-2.7 | [Đặc tả hệ thống thiết kế (Design System)](../web-admin/DESIGN_SYSTEM.md) | Đã hoàn thành | Token màu, chuyển động, bảng sticky và component UI |
 
-## Giai đoạn 3–6 (chưa bắt đầu)
-
-| Mã | Tài liệu | Trạng thái |
-| --- | --- | --- |
-| HUB-4.1 | Test cases & báo cáo kiểm thử | Chưa tạo |
-| HUB-4.2 | Kế hoạch & biên bản UAT | Chưa tạo |
-| HUB-5.1 | Runbook triển khai & rollback | Chưa tạo |
-| HUB-6.1 | SOP Lead (phân công, xem SLA, xử lý cảnh báo) | Chưa tạo |
-| HUB-6.2 | Hướng dẫn nhân viên (xem chỉ số, sửa số sai) | Chưa tạo |
-| HUB-6.3 | Báo cáo lợi ích so với baseline | Chưa tạo |
-
-## Prototype và lưu trữ
+## Mã nguồn & Sản phẩm thực thi
 
 | Mục | Vị trí | Trạng thái |
 | --- | --- | --- |
-| Prototype v0 | `B2C/web-admin` | Chỉ dùng khảo sát, thử UX (`DEC-002`) |
-| Đặc tả prototype 01–07 | [archive/prototype-v0](archive/prototype-v0/README.md) | Lưu trữ (`DEC-003`) |
-| Prototype tĩnh cũ | `B2C/app/` | Lưu trữ |
+| **Hệ thống web-admin** | [`B2C/web-admin`](../web-admin/README.md) | Đang vận hành và phát triển các phân hệ theo đặc tả Giai đoạn 2 |
+| Tài liệu lưu trữ prototype v0 | [`blueprint/archive/prototype-v0`](archive/prototype-v0/README.md) | Lưu trữ tư liệu lịch sử khảo sát |

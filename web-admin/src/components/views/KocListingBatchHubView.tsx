@@ -1,19 +1,27 @@
 'use client';
 
-import React, { useState, useMemo, useDeferredValue } from 'react';
+import React, { useState, useMemo, useDeferredValue, useEffect } from 'react';
 import {
   KocListingItem,
+  KocListingDiscussionItem,
   ListingBatchCycle,
   BrandListingStatus,
   KocNegotiationStatus,
   ListingItemStatus,
   AirVideoStage,
-  UserRole
+  UserRole,
+  SalaryGrade,
+  InputPlanBreakdownState,
+  StorePortfolioItem,
+  KocItem,
+  BookingDealItem
 } from '@/lib/types';
 import { ConfirmDialog, PageActions, Button, Presence } from '../ui';
-import { formatVnd } from '../../lib/format';
+import { formatVnd, formatVndShort } from '../../lib/format';
 import { StoreShortlistFilterModal } from '../shortlist/StoreShortlistFilterModal';
 import { OperationalReportDrawer } from '../OperationalReportDrawer';
+import { INITIAL_MONTHLY_PLANS } from '@/lib/monthlyPlanData';
+import { INITIAL_STORE_PORTFOLIOS, INITIAL_KOCS, INITIAL_DEALS } from '@/lib/mockData';
 import {
   Filter,
   Search,
@@ -30,8 +38,21 @@ import {
   Layers,
   ShieldCheck,
   RotateCcw,
-  FileText
+  FileText,
+  MessageSquare,
+  BarChart3,
+  ChevronDown,
+  ChevronUp,
+  ArrowUpRight
 } from 'lucide-react';
+
+export interface ListingPlanContext {
+  planId?: string;
+  storeName?: string;
+  monthKey?: string;
+  salaryGrade?: SalaryGrade;
+  nonce?: number;
+}
 
 interface KocListingBatchHubViewProps {
   listings: KocListingItem[];
@@ -39,13 +60,49 @@ interface KocListingBatchHubViewProps {
   onGenerateDeal?: (item: KocListingItem) => void;
   currentRole?: UserRole;
   currentUserName?: string;
+  monthlyPlans?: InputPlanBreakdownState[];
+  stores?: StorePortfolioItem[];
+  kocs?: KocItem[];
+  deals?: BookingDealItem[];
+  activePlanContext?: ListingPlanContext | null;
+  onOpenPlanStudio?: (plan: InputPlanBreakdownState) => void;
+}
+
+const KL_GRADE_ORDER: Array<{ code: SalaryGrade; label: string; defaultCost: number; defaultTier: KocListingItem['tier'] }> = [
+  { code: 'KL1', label: 'KL1 (< 500K)', defaultCost: 400000, defaultTier: 'NANO' },
+  { code: 'KL2', label: 'KL2 (500K - 1.5M)', defaultCost: 1000000, defaultTier: 'NANO' },
+  { code: 'KL3', label: 'KL3 (1.5M - 3M)', defaultCost: 2200000, defaultTier: 'MICRO' },
+  { code: 'KL4', label: 'KL4 (3M - 6M)', defaultCost: 4500000, defaultTier: 'MICRO' },
+  { code: 'KL5', label: 'KL5 (6M - 12M)', defaultCost: 8500000, defaultTier: 'MACRO' },
+  { code: 'KL6', label: 'KL6 (12M - 25M)', defaultCost: 16000000, defaultTier: 'MACRO' },
+  { code: 'KL7', label: 'KL7 (> 25M)', defaultCost: 30000000, defaultTier: 'MEGA' },
+  { code: 'TAP UpAffiliate', label: 'FOC / TAP (0đ)', defaultCost: 0, defaultTier: 'NANO' },
+];
+
+function inferSalaryGradeFromFee(fee: number, existingGrade?: SalaryGrade): SalaryGrade {
+  if (existingGrade) return existingGrade;
+  if (!fee || fee <= 0) return 'TAP UpAffiliate';
+  if (fee < 500000) return 'KL1';
+  if (fee <= 1500000) return 'KL2';
+  if (fee <= 3000000) return 'KL3';
+  if (fee <= 6000000) return 'KL4';
+  if (fee <= 12000000) return 'KL5';
+  if (fee <= 25000000) return 'KL6';
+  return 'KL7';
 }
 
 export function KocListingBatchHubView({
   listings,
   onUpdateListings,
   onGenerateDeal,
-  currentUserName = 'Quản trị viên'
+  currentRole,
+  currentUserName = 'Quản trị viên',
+  monthlyPlans = INITIAL_MONTHLY_PLANS,
+  stores = INITIAL_STORE_PORTFOLIOS,
+  kocs = INITIAL_KOCS,
+  deals = INITIAL_DEALS,
+  activePlanContext,
+  onOpenPlanStudio,
 }: KocListingBatchHubViewProps) {
   // Navigation sub-tabs
   const [activeSubTab, setActiveSubTab] = useState<'LISTING_APPROVAL' | 'AIR_TRACKER'>('LISTING_APPROVAL');
@@ -53,11 +110,17 @@ export function KocListingBatchHubView({
   // Filters
   const [selectedMonth, setSelectedMonth] = useState<string>('2026/10');
   const [selectedCycle, setSelectedCycle] = useState<ListingBatchCycle | 'ALL'>('ALL');
-  const [selectedStore, setSelectedStore] = useState<string>('ALL');
+  const [selectedStore, setSelectedStore] = useState<string>('Kutieskin Chính Hãng - TikTok Shop');
+  const [selectedGrade, setSelectedGrade] = useState<SalaryGrade | 'ALL'>('ALL');
+  const [selectedOverallStatus, setSelectedOverallStatus] = useState<ListingItemStatus | 'ALL'>('ALL');
   const [selectedBrandStatus, setSelectedBrandStatus] = useState<string>('ALL');
   const [selectedKocStatus, setSelectedKocStatus] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const deferredSearchQuery = useDeferredValue(searchQuery);
+
+  // Plan vs Listing KL matrix collapse state
+  const [isKlMatrixExpanded, setIsKlMatrixExpanded] = useState<boolean>(true);
+  const [shortlistTargetGrade, setShortlistTargetGrade] = useState<SalaryGrade | undefined>(undefined);
 
   // Bulk Selection
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -72,11 +135,31 @@ export function KocListingBatchHubView({
   const [rejectingItem, setRejectingItem] = useState<KocListingItem | null>(null);
   const [isKocReportOpen, setIsKocReportOpen] = useState<boolean>(false);
 
+  // Drawer/Modal trao đổi & duyệt chi tiết 1 KOC Listing (Submit Brand -> Duyệt & Đàm phán -> Final Approve)
+  const [inspectingListingId, setInspectingListingId] = useState<string | null>(null);
+  const [discussionInput, setDiscussionInput] = useState<string>('');
+  const [discussionRole, setDiscussionRole] = useState<'BOOKING' | 'BRAND' | 'LEADER'>('BOOKING');
+
+  // Sync when navigated from Plan Final (InputPlanBreakdownView / MonthlyPlanHub)
+  useEffect(() => {
+    if (!activePlanContext) return;
+    if (activePlanContext.monthKey) setSelectedMonth(activePlanContext.monthKey);
+    if (activePlanContext.storeName) setSelectedStore(activePlanContext.storeName);
+    if (activePlanContext.salaryGrade) {
+      setSelectedGrade(activePlanContext.salaryGrade);
+    } else {
+      setSelectedGrade('ALL');
+    }
+    setActiveSubTab('LISTING_APPROVAL');
+    setIsKlMatrixExpanded(true);
+  }, [activePlanContext]);
+
   // New KOC form state
   const [newKocForm, setNewKocForm] = useState<{
     storeName: string;
     brandName: string;
     batchCycle: ListingBatchCycle;
+    salaryGrade: SalaryGrade;
     kocName: string;
     kocHandle: string;
     channel: KocListingItem['channel'];
@@ -87,9 +170,10 @@ export function KocListingBatchHubView({
     proposedFee: number;
     expectedAirDate: string;
   }>({
-    storeName: 'Kutieskin Official Store',
+    storeName: 'Kutieskin Chính Hãng - TikTok Shop',
     brandName: 'Kutieskin',
-    batchCycle: 'BATCH_10',
+    batchCycle: 'BATCH_30',
+    salaryGrade: 'KL4',
     kocName: '',
     kocHandle: '',
     channel: 'TikTok Shop',
@@ -97,16 +181,174 @@ export function KocListingBatchHubView({
     tier: 'MICRO',
     pillarName: 'Chăm sóc da bé mẩn ngứa',
     videoFormat: 'Review & Hướng dẫn sử dụng',
-    proposedFee: 5000000,
-    expectedAirDate: '2026-10-15'
+    proposedFee: 4500000,
+    expectedAirDate: '2026-10-25'
   });
 
-  // Unique list of stores for filter
+  // Unique list of stores combining listings + monthlyPlans + B2C stores
   const storeOptions = useMemo(() => {
     const set = new Set<string>();
-    listings.forEach((item) => set.add(item.storeName));
+    listings.forEach((item) => {
+      if (item.storeName) set.add(item.storeName);
+    });
+    monthlyPlans.forEach((p) => {
+      if (p.storeName) set.add(p.storeName);
+      else if (p.brandName) set.add(p.brandName);
+    });
+    stores.forEach((s) => {
+      if (s.isB2cManaged !== false && s.storeName) set.add(s.storeName);
+    });
     return Array.from(set);
-  }, [listings]);
+  }, [listings, monthlyPlans, stores]);
+
+  // Tìm Plan Final tương ứng với Gian hàng & Tháng đang chọn
+  const matchedPlanFinal = useMemo(() => {
+    const targetMonth = selectedMonth === 'ALL' ? '2026/10' : selectedMonth;
+    if (selectedStore === 'ALL') return null;
+    const sLower = selectedStore.trim().toLowerCase();
+    return (
+      monthlyPlans.find(
+        (p) =>
+          p.month === targetMonth &&
+          ((p.storeName && p.storeName.trim().toLowerCase() === sLower) ||
+            (p.brandName && sLower.includes(p.brandName.trim().toLowerCase())) ||
+            (p.brandName && p.brandName.trim().toLowerCase().includes(sLower.split('_')[0])))
+      ) || null
+    );
+  }, [monthlyPlans, selectedMonth, selectedStore]);
+
+  // Tìm StorePortfolioItem tương ứng để truyền vào Shortlist Modal
+  const matchedStoreObj = useMemo(() => {
+    if (selectedStore === 'ALL') return stores[0];
+    const sLower = selectedStore.trim().toLowerCase();
+    return (
+      stores.find(
+        (s) =>
+          s.storeName.trim().toLowerCase() === sLower ||
+          (matchedPlanFinal?.storeId && s.id === matchedPlanFinal.storeId) ||
+          sLower.includes(s.brandName.trim().toLowerCase())
+      ) || stores[0]
+    );
+  }, [stores, selectedStore, matchedPlanFinal]);
+
+  // Bảng đối soát Plan Final vs. Thực tế Listing theo từng Khung lương KL (KL1 -> KL7 & FOC)
+  const klTrackingRows = useMemo(() => {
+    const targetMonth = selectedMonth === 'ALL' ? '2026/10' : selectedMonth;
+    // Các plan áp dụng (1 gian hàng hoặc tất cả gian hàng trong tháng)
+    const relevantPlans = matchedPlanFinal
+      ? [matchedPlanFinal]
+      : monthlyPlans.filter((p) => p.month === targetMonth);
+
+    // Các listing thuộc phạm vi gian hàng & tháng (không bị lọc bởi selectedGrade để giữ nguyên bảng tổng hợp KL)
+    const storeListings = listings.filter((item) => {
+      if (selectedMonth !== 'ALL' && item.monthKey !== selectedMonth) return false;
+      if (selectedCycle !== 'ALL' && item.batchCycle !== selectedCycle) return false;
+      if (selectedStore !== 'ALL' && item.storeName !== selectedStore) return false;
+      return true;
+    });
+
+    return KL_GRADE_ORDER.map((klDef) => {
+      // Gom định mức từ Plan Final cho khung lương này
+      let planQty = 0;
+      let planBudget = 0;
+      let benchmarkUnitCost = klDef.defaultCost;
+      const assignedPicSet = new Set<string>();
+
+      relevantPlans.forEach((plan) => {
+        (plan.items || []).forEach((row) => {
+          const isPaidOrTapRow =
+            row.channel === 'TIKTOK' || row.category === 'KOC_TIER' || row.tierCode.includes('TAP');
+          if (!isPaidOrTapRow) return;
+
+          const rowGrade: SalaryGrade =
+            row.salaryGrade ||
+            (row.tierCode.includes('TAP')
+              ? 'TAP UpAffiliate'
+              : (row.tierCode as SalaryGrade));
+
+          if (rowGrade === klDef.code) {
+            planQty += row.qty || 0;
+            planBudget += row.totalBudget || 0;
+            if (row.unitCost && row.unitCost > 0) {
+              benchmarkUnitCost = row.unitCost;
+            }
+            if (row.assignedStaff) assignedPicSet.add(row.assignedStaff);
+          }
+        });
+      });
+
+      // Gom số liệu thực tế từ danh sách KOC Listing
+      const itemsInGrade = storeListings.filter(
+        (l) => inferSalaryGradeFromFee(l.finalFee || l.proposedFee, l.salaryGrade) === klDef.code
+      );
+
+      const draftCount = itemsInGrade.filter((l) => l.overallStatus === 'DRAFT').length;
+      const submittedCount = itemsInGrade.filter((l) => l.overallStatus === 'SUBMITTED').length;
+      const finalApprovedCount = itemsInGrade.filter((l) => l.overallStatus === 'FINAL_APPROVED').length;
+      const droppedCount = itemsInGrade.filter((l) => l.overallStatus === 'DROPPED').length;
+      const activeListedCount = draftCount + submittedCount + finalApprovedCount;
+
+      const listedBudget = itemsInGrade
+        .filter((l) => l.overallStatus !== 'DROPPED')
+        .reduce((sum, l) => sum + (l.finalFee || l.proposedFee || 0), 0);
+      const approvedBudget = itemsInGrade
+        .filter((l) => l.overallStatus === 'FINAL_APPROVED')
+        .reduce((sum, l) => sum + (l.finalFee || l.proposedFee || 0), 0);
+
+      const remainingToList = Math.max(0, planQty - activeListedCount);
+      const remainingToFinal = Math.max(0, planQty - finalApprovedCount);
+      const budgetVariance = listedBudget - planBudget;
+
+      return {
+        code: klDef.code,
+        label: klDef.label,
+        defaultTier: klDef.defaultTier,
+        benchmarkUnitCost,
+        planQty,
+        planBudget,
+        draftCount,
+        submittedCount,
+        finalApprovedCount,
+        droppedCount,
+        activeListedCount,
+        listedBudget,
+        approvedBudget,
+        remainingToList,
+        remainingToFinal,
+        budgetVariance,
+        assignedPics: Array.from(assignedPicSet),
+      };
+    });
+  }, [matchedPlanFinal, monthlyPlans, listings, selectedMonth, selectedCycle, selectedStore]);
+
+  const klTotals = useMemo(() => {
+    return klTrackingRows.reduce(
+      (acc, r) => ({
+        planQty: acc.planQty + r.planQty,
+        planBudget: acc.planBudget + r.planBudget,
+        draftCount: acc.draftCount + r.draftCount,
+        submittedCount: acc.submittedCount + r.submittedCount,
+        finalApprovedCount: acc.finalApprovedCount + r.finalApprovedCount,
+        droppedCount: acc.droppedCount + r.droppedCount,
+        activeListedCount: acc.activeListedCount + r.activeListedCount,
+        listedBudget: acc.listedBudget + r.listedBudget,
+        approvedBudget: acc.approvedBudget + r.approvedBudget,
+        remainingToList: acc.remainingToList + r.remainingToList,
+      }),
+      {
+        planQty: 0,
+        planBudget: 0,
+        draftCount: 0,
+        submittedCount: 0,
+        finalApprovedCount: 0,
+        droppedCount: 0,
+        activeListedCount: 0,
+        listedBudget: 0,
+        approvedBudget: 0,
+        remainingToList: 0,
+      }
+    );
+  }, [klTrackingRows]);
 
   // Kiểm tra trùng lặp KOC giữa các nhân sự listing
   const duplicateHandleMap = useMemo(() => {
@@ -166,6 +408,11 @@ export function KocListingBatchHubView({
       if (selectedMonth !== 'ALL' && item.monthKey !== selectedMonth) return false;
       if (selectedCycle !== 'ALL' && item.batchCycle !== selectedCycle) return false;
       if (selectedStore !== 'ALL' && item.storeName !== selectedStore) return false;
+      if (selectedGrade !== 'ALL') {
+        const itemGrade = inferSalaryGradeFromFee(item.finalFee || item.proposedFee, item.salaryGrade);
+        if (itemGrade !== selectedGrade) return false;
+      }
+      if (selectedOverallStatus !== 'ALL' && item.overallStatus !== selectedOverallStatus) return false;
       if (selectedBrandStatus !== 'ALL' && item.brandApprovalStatus !== selectedBrandStatus) return false;
       if (selectedKocStatus !== 'ALL' && item.kocNegotiationStatus !== selectedKocStatus) return false;
       if (deferredSearchQuery.trim()) {
@@ -178,7 +425,12 @@ export function KocListingBatchHubView({
       }
       return true;
     });
-  }, [listings, filterOnlyDuplicates, duplicateHandleMap, selectedMonth, selectedCycle, selectedStore, selectedBrandStatus, selectedKocStatus, deferredSearchQuery]);
+  }, [listings, filterOnlyDuplicates, duplicateHandleMap, selectedMonth, selectedCycle, selectedStore, selectedGrade, selectedOverallStatus, selectedBrandStatus, selectedKocStatus, deferredSearchQuery]);
+
+  const inspectingListing = useMemo(() => {
+    if (!inspectingListingId) return null;
+    return listings.find((l) => l.id === inspectingListingId) || null;
+  }, [listings, inspectingListingId]);
 
   // KPI Metrics
   const metrics = useMemo(() => {
@@ -189,7 +441,9 @@ export function KocListingBatchHubView({
     const termsAgreed = filteredListings.filter((i) => i.kocNegotiationStatus === 'TERMS_AGREED').length;
     const finalApproved = filteredListings.filter((i) => i.overallStatus === 'FINAL_APPROVED').length;
     const dropped = filteredListings.filter((i) => i.overallStatus === 'DROPPED').length;
-    const totalBudget = filteredListings.reduce((sum, i) => sum + (i.finalFee || i.proposedFee || 0), 0);
+    const totalBudget = filteredListings
+      .filter((i) => i.overallStatus !== 'DROPPED')
+      .reduce((sum, i) => sum + (i.finalFee || i.proposedFee || 0), 0);
 
     return {
       total,
@@ -223,47 +477,72 @@ export function KocListingBatchHubView({
     );
   };
 
-  // Submit Drafts to Brand in bulk
-  const handleSubmitToBrand = () => {
-    if (selectedIds.length === 0) return;
+  // Submit Drafts to Brand (bulk or single)
+  const handleSubmitToBrand = (targetIds?: string[]) => {
+    const idsToSubmit = targetIds || selectedIds;
+    if (idsToSubmit.length === 0) return;
+    const nowIso = new Date().toISOString();
     const updated = listings.map((item) => {
-      if (selectedIds.includes(item.id) && item.overallStatus === 'DRAFT') {
+      if (idsToSubmit.includes(item.id) && item.overallStatus === 'DRAFT') {
+        const newDisc: KocListingDiscussionItem = {
+          id: `disc-sub-${Date.now()}-${item.id}`,
+          authorName: currentUserName,
+          authorRole: 'BOOKING',
+          content: `Đã chuyển trạng thái từ Bản nháp (Draft) sang Gửi nhãn hàng duyệt (Submit Brand) — Khung lương ${item.salaryGrade || inferSalaryGradeFromFee(item.proposedFee)} (${formatVnd(item.proposedFee)}).`,
+          createdAt: nowIso,
+          actionType: 'SUBMIT_BRAND',
+        };
         return {
           ...item,
           overallStatus: 'SUBMITTED' as ListingItemStatus,
-          updatedAt: new Date().toISOString()
+          discussions: [...(item.discussions || []), newDisc],
+          updatedAt: nowIso
         };
       }
       return item;
     });
     onUpdateListings(updated);
-    setSelectedIds([]);
+    if (!targetIds) setSelectedIds([]);
   };
 
   // Brand Approval Action
   const handleBrandDecision = (id: string, decision: 'APPROVE' | 'REJECT', feedback?: string) => {
+    const nowIso = new Date().toISOString();
     const updated = listings.map((item) => {
       if (item.id === id) {
         const nextBrandStatus: BrandListingStatus = decision === 'APPROVE' ? 'BRAND_APPROVED' : 'BRAND_REJECTED';
-        let nextOverall = item.overallStatus;
+        let nextOverall = item.overallStatus === 'DRAFT' ? 'SUBMITTED' : item.overallStatus;
         let dropReason = item.dropReason;
 
         if (decision === 'REJECT') {
           nextOverall = 'DROPPED';
-          dropReason = feedback || 'Nhãn hàng từ chối hồ sơ KOC đợt này. Đã hoàn 1 suất kế hoạch.';
+          dropReason = feedback || `Nhãn hàng từ chối hồ sơ KOC đợt này. Đã hoàn 1 suất ${item.salaryGrade || ''} về Plan tháng.`;
         } else if (decision === 'APPROVE' && item.kocNegotiationStatus === 'TERMS_AGREED') {
           nextOverall = 'FINAL_APPROVED';
         }
+
+        const newDisc: KocListingDiscussionItem = {
+          id: `disc-brand-${Date.now()}`,
+          authorName: currentUserName,
+          authorRole: 'BRAND',
+          content:
+            decision === 'APPROVE'
+              ? `Nhãn hàng ĐỒNG Ý duyệt KOC.${feedback ? ` Ghi chú: "${feedback}"` : ''}`
+              : `Nhãn hàng TỪ CHỐI KOC. Lý do: "${feedback || 'Chưa phù hợp định hướng'}"`,
+          createdAt: nowIso,
+          actionType: decision === 'APPROVE' ? 'BRAND_FEEDBACK' : 'REJECT',
+        };
 
         return {
           ...item,
           brandApprovalStatus: nextBrandStatus,
           brandFeedbackNote: feedback || item.brandFeedbackNote,
-          brandApprovedAt: decision === 'APPROVE' ? new Date().toISOString() : undefined,
+          brandApprovedAt: decision === 'APPROVE' ? nowIso : undefined,
           brandApprovedBy: currentUserName,
           overallStatus: nextOverall,
           dropReason,
-          updatedAt: new Date().toISOString()
+          discussions: [...(item.discussions || []), newDisc],
+          updatedAt: nowIso
         };
       }
       return item;
@@ -272,27 +551,48 @@ export function KocListingBatchHubView({
   };
 
   // KOC Negotiation Status Update
-  const handleKocNegotiationChange = (id: string, newStatus: KocNegotiationStatus, note?: string) => {
+  const handleKocNegotiationChange = (id: string, newStatus: KocNegotiationStatus, note?: string, finalFeeOverride?: number) => {
+    const nowIso = new Date().toISOString();
     const updated = listings.map((item) => {
       if (item.id === id) {
-        let nextOverall = item.overallStatus;
+        let nextOverall = item.overallStatus === 'DRAFT' && newStatus !== 'NOT_CONTACTED' ? 'SUBMITTED' : item.overallStatus;
         let dropReason = item.dropReason;
 
         if (newStatus === 'NEGOTIATION_FAILED') {
           nextOverall = 'DROPPED';
-          dropReason = note || 'Đàm phán thù lao/lịch trình thất bại. Đã hoàn 1 suất kế hoạch.';
+          dropReason = note || `Đàm phán thù lao/lịch trình thất bại. Đã hoàn 1 suất ${item.salaryGrade || ''} về Plan tháng.`;
         } else if (newStatus === 'TERMS_AGREED' && item.brandApprovalStatus === 'BRAND_APPROVED') {
           nextOverall = 'FINAL_APPROVED';
         }
 
+        const nextFee = finalFeeOverride !== undefined ? finalFeeOverride : item.finalFee;
+        const newDisc: KocListingDiscussionItem = {
+          id: `disc-koc-${Date.now()}`,
+          authorName: currentUserName,
+          authorRole: 'BOOKING',
+          content: `Cập nhật đàm phán KOC: ${
+            newStatus === 'TERMS_AGREED'
+              ? 'Đã chốt điều khoản'
+              : newStatus === 'CONTACTING'
+              ? 'Đang trao đổi'
+              : newStatus === 'NEGOTIATION_FAILED'
+              ? 'Đàm phán thất bại'
+              : 'Chưa liên hệ'
+          }${nextFee ? ` · Thù lao chốt: ${formatVnd(nextFee)}` : ''}${note ? ` · Ghi chú: "${note}"` : ''}`,
+          createdAt: nowIso,
+          actionType: 'KOC_NEGOTIATION',
+        };
+
         return {
           ...item,
           kocNegotiationStatus: newStatus,
+          finalFee: nextFee,
           negotiationNote: note !== undefined ? note : item.negotiationNote,
-          negotiatedAt: newStatus === 'TERMS_AGREED' ? new Date().toISOString() : item.negotiatedAt,
+          negotiatedAt: newStatus === 'TERMS_AGREED' ? nowIso : item.negotiatedAt,
           overallStatus: nextOverall,
           dropReason,
-          updatedAt: new Date().toISOString()
+          discussions: [...(item.discussions || []), newDisc],
+          updatedAt: nowIso
         };
       }
       return item;
@@ -300,17 +600,55 @@ export function KocListingBatchHubView({
     onUpdateListings(updated);
   };
 
-  // Final Approve
+  // Thêm bình luận trao đổi trong Drawer chi tiết KOC Listing
+  const handleAddListingDiscussion = (listingId: string) => {
+    if (!discussionInput.trim()) return;
+    const nowIso = new Date().toISOString();
+    const updated = listings.map((item) => {
+      if (item.id !== listingId) return item;
+      const newDisc: KocListingDiscussionItem = {
+        id: `disc-msg-${Date.now()}`,
+        authorName: currentUserName,
+        authorRole: discussionRole,
+        content: discussionInput.trim(),
+        createdAt: nowIso,
+        actionType: discussionRole === 'BRAND' ? 'BRAND_FEEDBACK' : 'KOC_NEGOTIATION',
+      };
+      return {
+        ...item,
+        brandFeedbackNote: discussionRole === 'BRAND' ? discussionInput.trim() : item.brandFeedbackNote,
+        negotiationNote: discussionRole === 'BOOKING' ? discussionInput.trim() : item.negotiationNote,
+        discussions: [...(item.discussions || []), newDisc],
+        updatedAt: nowIso,
+      };
+    });
+    onUpdateListings(updated);
+    setDiscussionInput('');
+  };
+
+  // Final Approve -> Sinh Deal Booking gắn với KL & Plan Final
   const handleFinalApprove = (item: KocListingItem) => {
-    const dealId = item.generatedDealId || `DEAL-202610-${item.id.replace('LIST-', '')}`;
+    const dealId = item.generatedDealId || `DEAL-202610-${item.id.replace('LIST-', '').replace('LISTING-', '')}`;
+    const nowIso = new Date().toISOString();
+    const resolvedGrade = inferSalaryGradeFromFee(item.finalFee || item.proposedFee, item.salaryGrade);
     const updated = listings.map((l) => {
       if (l.id === item.id) {
+        const newDisc: KocListingDiscussionItem = {
+          id: `disc-final-${Date.now()}`,
+          authorName: currentUserName,
+          authorRole: 'BOOKING',
+          content: `Đã chốt duyệt chính thức (FINAL_APPROVED) ở khung ${resolvedGrade} và khởi tạo Deal Booking ${dealId}.`,
+          createdAt: nowIso,
+          actionType: 'FINAL_APPROVE',
+        };
         return {
           ...l,
+          salaryGrade: resolvedGrade,
           overallStatus: 'FINAL_APPROVED' as ListingItemStatus,
           generatedDealId: dealId,
           airVideoStage: l.airVideoStage || ('SAMPLE_DISPATCHED' as AirVideoStage),
-          updatedAt: new Date().toISOString()
+          discussions: [...(l.discussions || []), newDisc],
+          updatedAt: nowIso
         };
       }
       return l;
@@ -320,25 +658,50 @@ export function KocListingBatchHubView({
     if (onGenerateDeal) {
       onGenerateDeal({
         ...item,
+        salaryGrade: resolvedGrade,
         generatedDealId: dealId,
         overallStatus: 'FINAL_APPROVED'
       });
     }
   };
 
-  // Add new KOC to batch
+  // Mở modal thêm KOC thủ công gắn sẵn Khung lương KL từ bảng đối soát Plan Final
+  const handleOpenManualAddForGrade = (grade: SalaryGrade, unitCost: number, defaultTier: KocListingItem['tier']) => {
+    const targetStoreName = selectedStore === 'ALL' ? (matchedPlanFinal?.storeName || 'Kutieskin Chính Hãng - TikTok Shop') : selectedStore;
+    const targetBrand = matchedPlanFinal?.brandName || targetStoreName.split('_')[0] || 'Kutieskin';
+    setNewKocForm({
+      ...newKocForm,
+      storeName: targetStoreName,
+      brandName: targetBrand,
+      salaryGrade: grade,
+      tier: defaultTier,
+      proposedFee: unitCost,
+    });
+    setShowAddModal(true);
+  };
+
+  // Add new KOC to batch (starts in DRAFT status, linked to Plan Final & KL)
   const handleAddNewKoc = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newKocForm.kocName.trim()) return;
+
+    const nowIso = new Date().toISOString();
+    const matchedRow = matchedPlanFinal?.items?.find(
+      (it) => it.salaryGrade === newKocForm.salaryGrade || it.tierCode === newKocForm.salaryGrade
+    );
 
     const newItem: KocListingItem = {
       id: `LIST-${Date.now().toString().slice(-6)}`,
       batchId: `BATCH-202610-${newKocForm.batchCycle === 'BATCH_10' ? 'B1' : newKocForm.batchCycle === 'BATCH_20' ? 'B2' : 'B3'}`,
       batchCycle: newKocForm.batchCycle,
       monthKey: selectedMonth === 'ALL' ? '2026/10' : selectedMonth,
-      storeId: 'STORE-01',
+      storeId: matchedPlanFinal?.storeId || matchedStoreObj?.id || 'STORE-01',
       storeName: newKocForm.storeName,
       brandName: newKocForm.brandName,
+      sourcePlanId: matchedPlanFinal?.id,
+      sourcePlanVersion: matchedPlanFinal?.currentVersionCode || 'v1.0',
+      planRowId: matchedRow?.id,
+      salaryGrade: newKocForm.salaryGrade,
       kocId: `KOC-${Date.now().toString().slice(-4)}`,
       kocName: newKocForm.kocName,
       kocHandle: newKocForm.kocHandle.startsWith('@') ? newKocForm.kocHandle : `@${newKocForm.kocHandle}`,
@@ -353,36 +716,75 @@ export function KocListingBatchHubView({
       brandApprovalStatus: 'BRAND_PENDING',
       kocNegotiationStatus: 'NOT_CONTACTED',
       overallStatus: 'DRAFT',
+      discussions: [
+        {
+          id: `disc-init-${Date.now()}`,
+          authorName: currentUserName,
+          authorRole: 'BOOKING',
+          content: `Khởi tạo KOC ở trạng thái Bản nháp (Draft) gắn với khung lương ${newKocForm.salaryGrade} của Plan ${matchedPlanFinal?.id || 'Tháng'}.`,
+          createdAt: nowIso,
+        }
+      ],
       expectedAirDate: newKocForm.expectedAirDate,
       assignedStaffId: 'STAFF-101',
-      assignedStaffName: currentUserName,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      assignedStaffName: matchedRow?.assignedStaff || currentUserName,
+      createdAt: nowIso,
+      updatedAt: nowIso
     };
 
     onUpdateListings([newItem, ...listings]);
     setShowAddModal(false);
-    setNewKocForm({
-      storeName: 'Kutieskin Official Store',
-      brandName: 'Kutieskin',
-      batchCycle: 'BATCH_10',
-      kocName: '',
-      kocHandle: '',
-      channel: 'TikTok Shop',
-      followersCount: 150000,
-      tier: 'MICRO',
-      pillarName: 'Chăm sóc da bé mẩn ngứa',
-      videoFormat: 'Review & Hướng dẫn sử dụng',
-      proposedFee: 5000000,
-      expectedAirDate: '2026-10-15'
-    });
   };
 
-  // Thêm danh sách KOC từ bộ lọc Shortlist vào đợt duyệt
+  // Thêm danh sách KOC từ bộ lọc Shortlist vào đợt duyệt (mặc định trạng thái DRAFT, gắn KL & Plan Final)
   const handleAddShortlistToListings = (
     newListings: Partial<KocListingItem>[]
   ) => {
-    const fullListings = newListings as KocListingItem[];
+    const nowIso = new Date().toISOString();
+    const fullListings: KocListingItem[] = newListings.map((item, idx) => {
+      const grade = inferSalaryGradeFromFee(item.proposedFee || 0, item.salaryGrade);
+      return {
+        id: item.id || `LIST-SL-${Date.now()}-${idx}`,
+        batchId: item.batchId || 'BATCH-202610-B10',
+        batchCycle: item.batchCycle || 'BATCH_10',
+        monthKey: item.monthKey || (selectedMonth === 'ALL' ? '2026/10' : selectedMonth),
+        storeId: item.storeId || matchedPlanFinal?.storeId || 'STORE-01',
+        storeName: item.storeName || (selectedStore === 'ALL' ? 'Kutieskin Chính Hãng - TikTok Shop' : selectedStore),
+        brandName: item.brandName || matchedPlanFinal?.brandName || 'Kutieskin',
+        sourcePlanId: item.sourcePlanId || matchedPlanFinal?.id,
+        sourcePlanVersion: item.sourcePlanVersion || matchedPlanFinal?.currentVersionCode || 'v1.0',
+        planRowId: item.planRowId,
+        salaryGrade: grade,
+        kocId: item.kocId || `KOC-SL-${idx}`,
+        kocName: item.kocName || 'KOC Đề Xuất',
+        kocHandle: item.kocHandle || '@koc',
+        channel: item.channel || 'TikTok Shop',
+        followersCount: item.followersCount || 100000,
+        tier: item.tier || 'MICRO',
+        niche: item.niche || 'Chăm sóc cá nhân',
+        videoFormat: item.videoFormat || 'Review trải nghiệm',
+        pillarName: item.pillarName || 'Chiến dịch tháng',
+        proposedFee: item.proposedFee || 0,
+        finalFee: item.finalFee,
+        brandApprovalStatus: item.brandApprovalStatus || 'BRAND_PENDING',
+        kocNegotiationStatus: item.kocNegotiationStatus || 'NOT_CONTACTED',
+        overallStatus: 'DRAFT',
+        discussions: [
+          {
+            id: `disc-sl-${Date.now()}-${idx}`,
+            authorName: currentUserName,
+            authorRole: 'BOOKING',
+            content: `Đưa KOC từ danh sách lọc vào Bản nháp (Draft) — Khung lương ${grade} (Plan ${matchedPlanFinal?.currentVersionCode || 'v1.0'}).`,
+            createdAt: nowIso,
+          }
+        ],
+        expectedAirDate: item.expectedAirDate || '2026-10-25',
+        assignedStaffId: item.assignedStaffId || 'STAFF-101',
+        assignedStaffName: item.assignedStaffName || currentUserName,
+        createdAt: item.createdAt || nowIso,
+        updatedAt: item.updatedAt || nowIso,
+      };
+    });
     onUpdateListings([...fullListings, ...listings]);
     setShowShortlistModal(false);
   };
@@ -423,11 +825,30 @@ export function KocListingBatchHubView({
         <Button variant="secondary" icon={FileText} onClick={() => setIsKocReportOpen(true)}>
           Báo cáo đề xuất cơ cấu KOC
         </Button>
-        <Button variant="secondary" icon={Plus} onClick={() => setShowAddModal(true)}>
-          Thêm KOC thủ công
+        <Button
+          variant="secondary"
+          icon={Plus}
+          onClick={() => {
+            const gradeToUse = selectedGrade !== 'ALL' ? selectedGrade : 'KL4';
+            const rowMatch = klTrackingRows.find((r) => r.code === gradeToUse);
+            handleOpenManualAddForGrade(
+              gradeToUse,
+              rowMatch?.benchmarkUnitCost || 4500000,
+              rowMatch?.defaultTier || 'MICRO'
+            );
+          }}
+        >
+          Thêm KOC nháp (Draft)
         </Button>
-        <Button variant="primary" icon={Filter} onClick={() => setShowShortlistModal(true)}>
-          Lọc danh sách đề xuất
+        <Button
+          variant="primary"
+          icon={Filter}
+          onClick={() => {
+            setShortlistTargetGrade(selectedGrade !== 'ALL' ? selectedGrade : undefined);
+            setShowShortlistModal(true);
+          }}
+        >
+          Lọc KOC từ kho theo KL
         </Button>
       </PageActions>
 
@@ -442,7 +863,7 @@ export function KocListingBatchHubView({
           }`}
         >
           <Layers className="w-3.5 h-3.5" />
-          Đợt đề xuất & phê duyệt song song
+          1. Lên danh sách nháp (Draft) → Gửi Brand &amp; Duyệt trao đổi theo KL
           <span className="text-2xs bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded-full">
             {filteredListings.length}
           </span>
@@ -457,11 +878,241 @@ export function KocListingBatchHubView({
           }`}
         >
           <Film className="w-3.5 h-3.5" />
-          Theo dõi video lên sóng & giỏ hàng sàn
+          2. Theo dõi video lên sóng &amp; giỏ hàng sàn (Sau khi chốt Deal)
           <span className="text-2xs bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded-full">
             {airListings.length}
           </span>
         </button>
+      </div>
+
+      {/* ===================================================================== */}
+      {/* BẢNG ĐỐI SOÁT PLAN FINAL & TIẾN ĐỘ LISTING THEO KHUNG LƯƠNG (KL1–KL7) */}
+      {/* ===================================================================== */}
+      <div className="bg-white border border-slate-200 rounded-lg overflow-hidden shadow-xs">
+        <div className="px-4 py-3 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-blue-50 border border-blue-200 text-blue-700 flex items-center justify-center shrink-0">
+              <BarChart3 className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="text-xs font-bold text-slate-900">
+                  Đối soát Plan Final &amp; Tiến độ Listing KOC theo Khung lương (KL1–KL7 &amp; FOC)
+                </h3>
+                {matchedPlanFinal ? (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    <ShieldCheck className="w-3 h-3" />
+                    Gắn với {matchedPlanFinal.id} ({matchedPlanFinal.currentVersionCode || 'v1.0'}) · PIC: {matchedPlanFinal.pic}
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-medium bg-slate-100 text-slate-600 border border-slate-200">
+                    Tổng hợp toàn bộ kế hoạch tháng {selectedMonth}
+                  </span>
+                )}
+              </div>
+              <p className="text-2xs text-slate-500 mt-0.5">
+                Quy trình chuẩn: Nhân sự Booking list KOC vào <strong>Bản nháp (Draft)</strong> theo từng khung lương KL của Plan Final → bấm <strong>Gửi nhãn hàng (Submit Brand)</strong> → trao đổi &amp; đàm phán → <strong>Chốt duyệt (Final)</strong> để sinh Deal Booking.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {matchedPlanFinal && onOpenPlanStudio && (
+              <button
+                type="button"
+                onClick={() => onOpenPlanStudio(matchedPlanFinal)}
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded text-2xs font-semibold bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 transition-colors cursor-pointer"
+              >
+                <span>Xem Plan Final gốc</span>
+                <ArrowUpRight className="w-3 h-3" />
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setIsKlMatrixExpanded((prev) => !prev)}
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded text-2xs font-semibold bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 transition-colors cursor-pointer"
+            >
+              <span>{isKlMatrixExpanded ? 'Thu gọn bảng KL' : 'Mở bảng đối soát KL'}</span>
+              {isKlMatrixExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+            </button>
+          </div>
+        </div>
+
+        {isKlMatrixExpanded && (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="bg-slate-50/70 border-b border-slate-200 text-2xs font-semibold text-slate-600">
+                  <th className="py-2.5 px-3">Khung lương (KL)</th>
+                  <th className="py-2.5 px-3 text-right">Đơn giá chuẩn Plan</th>
+                  <th className="py-2.5 px-3 text-center bg-slate-100/70">Chỉ tiêu Plan Final</th>
+                  <th className="py-2.5 px-3 text-center">1. Đang nháp (Draft)</th>
+                  <th className="py-2.5 px-3 text-center">2. Đã gửi Brand (Submit)</th>
+                  <th className="py-2.5 px-3 text-center">3. Đã chốt (Final)</th>
+                  <th className="py-2.5 px-3 text-center">Rớt / Hủy</th>
+                  <th className="py-2.5 px-3 text-center">Còn thiếu cần list</th>
+                  <th className="py-2.5 px-3 text-right">Ngân sách Listing vs Plan</th>
+                  <th className="py-2.5 px-3 text-right">Thao tác theo KL</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-200">
+                {klTrackingRows.map((row) => {
+                  const isActiveFilter = selectedGrade === row.code;
+                  const progressPct = row.planQty > 0 ? Math.min(100, Math.round((row.activeListedCount / row.planQty) * 100)) : 0;
+                  const isOverBudget = row.planBudget > 0 && row.listedBudget > row.planBudget;
+
+                  return (
+                    <tr
+                      key={row.code}
+                      className={`hover:bg-slate-50/80 transition-colors ${
+                        isActiveFilter ? 'bg-blue-50/50' : ''
+                      }`}
+                    >
+                      <td className="py-2 px-3">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-slate-900">{row.label}</span>
+                          {row.assignedPics.length > 0 && (
+                            <span className="text-2xs text-slate-500 truncate max-w-[140px]" title={row.assignedPics.join(', ')}>
+                              ({row.assignedPics.join(', ')})
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="py-2 px-3 text-right tabular-nums text-slate-600">
+                        {row.benchmarkUnitCost > 0 ? formatVndShort(row.benchmarkUnitCost) : '0đ (FOC)'}
+                      </td>
+                      <td className="py-2 px-3 text-center tabular-nums bg-slate-50/60 font-semibold text-slate-900">
+                        {row.planQty} KOC
+                        <span className="block text-2xs font-normal text-slate-500">
+                          {formatVndShort(row.planBudget)}
+                        </span>
+                      </td>
+                      <td className="py-2 px-3 text-center tabular-nums">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-2xs font-semibold ${
+                          row.draftCount > 0 ? 'bg-slate-200 text-slate-800' : 'text-slate-400'
+                        }`}>
+                          {row.draftCount}
+                        </span>
+                      </td>
+                      <td className="py-2 px-3 text-center tabular-nums">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-2xs font-semibold ${
+                          row.submittedCount > 0 ? 'bg-blue-100 text-blue-800' : 'text-slate-400'
+                        }`}>
+                          {row.submittedCount}
+                        </span>
+                      </td>
+                      <td className="py-2 px-3 text-center tabular-nums">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-2xs font-semibold ${
+                          row.finalApprovedCount > 0 ? 'bg-emerald-100 text-emerald-800' : 'text-slate-400'
+                        }`}>
+                          {row.finalApprovedCount}
+                        </span>
+                      </td>
+                      <td className="py-2 px-3 text-center tabular-nums">
+                        {row.droppedCount > 0 ? (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-2xs font-semibold bg-rose-50 text-rose-700 border border-rose-200">
+                            {row.droppedCount}
+                          </span>
+                        ) : (
+                          <span className="text-slate-300">—</span>
+                        )}
+                      </td>
+                      <td className="py-2 px-3 text-center tabular-nums">
+                        <div className="flex flex-col items-center">
+                          {row.remainingToList > 0 ? (
+                            <span className="text-2xs font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded">
+                              Thiếu {row.remainingToList} slot
+                            </span>
+                          ) : row.planQty > 0 ? (
+                            <span className="text-2xs font-semibold text-emerald-700">
+                              Đủ ({row.activeListedCount}/{row.planQty})
+                            </span>
+                          ) : (
+                            <span className="text-2xs text-slate-400">Phát sinh ({row.activeListedCount})</span>
+                          )}
+                          {row.planQty > 0 && (
+                            <div className="w-20 h-1 bg-slate-200 rounded-full overflow-hidden mt-1">
+                              <div
+                                className="h-full bg-blue-600 rounded-full"
+                                style={{ width: `${progressPct}%` }}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                      <td className="py-2 px-3 text-right tabular-nums">
+                        <div className={`font-semibold ${isOverBudget ? 'text-rose-600' : 'text-slate-800'}`}>
+                          {formatVndShort(row.listedBudget)} / {formatVndShort(row.planBudget)}
+                        </div>
+                        {isOverBudget && (
+                          <div className="text-2xs text-rose-600 font-medium">
+                            Vượt {formatVndShort(row.listedBudget - row.planBudget)}
+                          </div>
+                        )}
+                      </td>
+                      <td className="py-2 px-3 text-right">
+                        <div className="inline-flex items-center justify-end gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedGrade(isActiveFilter ? 'ALL' : row.code)}
+                            className={`px-2 py-1 rounded text-2xs font-semibold border transition-colors cursor-pointer ${
+                              isActiveFilter
+                                ? 'bg-blue-600 text-white border-blue-600'
+                                : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
+                            }`}
+                          >
+                            {isActiveFilter ? 'Đang lọc' : 'Lọc KL'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShortlistTargetGrade(row.code);
+                              setShowShortlistModal(true);
+                            }}
+                            className="px-2 py-1 rounded text-2xs font-semibold bg-slate-900 text-white hover:bg-slate-800 transition-colors cursor-pointer"
+                            title={`Mở bộ lọc kho KOC theo chuẩn ${row.label} để đưa vào Bản nháp (Draft)`}
+                          >
+                            + List KOC (Nháp)
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+              <tfoot>
+                <tr className="bg-slate-100/90 border-t border-slate-200 font-bold text-xs text-slate-900">
+                  <td className="py-2.5 px-3">Tổng cộng theo Plan Final</td>
+                  <td className="py-2.5 px-3 text-right text-2xs font-normal text-slate-500">Đối soát toàn kỳ</td>
+                  <td className="py-2.5 px-3 text-center tabular-nums">
+                    {klTotals.planQty} KOC · {formatVndShort(klTotals.planBudget)}
+                  </td>
+                  <td className="py-2.5 px-3 text-center tabular-nums text-slate-700">{klTotals.draftCount} nháp</td>
+                  <td className="py-2.5 px-3 text-center tabular-nums text-blue-700">{klTotals.submittedCount} chờ duyệt</td>
+                  <td className="py-2.5 px-3 text-center tabular-nums text-emerald-700">{klTotals.finalApprovedCount} đã chốt</td>
+                  <td className="py-2.5 px-3 text-center tabular-nums text-rose-700">{klTotals.droppedCount} rớt</td>
+                  <td className="py-2.5 px-3 text-center tabular-nums text-amber-800">
+                    Còn thiếu {klTotals.remainingToList} slot
+                  </td>
+                  <td className="py-2.5 px-3 text-right tabular-nums">
+                    {formatVndShort(klTotals.listedBudget)} / {formatVndShort(klTotals.planBudget)}
+                  </td>
+                  <td className="py-2.5 px-3 text-right">
+                    {selectedGrade !== 'ALL' && (
+                      <button
+                        type="button"
+                        onClick={() => setSelectedGrade('ALL')}
+                        className="text-2xs text-blue-600 hover:underline font-semibold cursor-pointer"
+                      >
+                        Xóa lọc {selectedGrade}
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* KPI Metrics Summary Bar */}
@@ -469,19 +1120,19 @@ export function KocListingBatchHubView({
         <div className="bg-white border border-slate-200 rounded-lg p-3">
           <div className="text-2xs font-medium text-slate-500">Tổng đề xuất</div>
           <div className="text-lg font-semibold text-slate-900 mt-1">{metrics.total}</div>
-          <div className="text-2xs text-slate-400 mt-0.5">Hồ sơ trong kỳ</div>
+          <div className="text-2xs text-slate-400 mt-0.5">Hồ sơ đang lọc</div>
         </div>
 
         <div className="bg-white border border-slate-200 rounded-lg p-3">
-          <div className="text-2xs font-medium text-slate-500">Bản nháp</div>
+          <div className="text-2xs font-medium text-slate-500">1. Bản nháp (Draft)</div>
           <div className="text-lg font-semibold text-slate-700 mt-1">{metrics.draft}</div>
-          <div className="text-2xs text-slate-400 mt-0.5">Chưa gửi nhãn hàng</div>
+          <div className="text-2xs text-slate-400 mt-0.5">Mới list, chờ gửi Brand</div>
         </div>
 
         <div className="bg-white border border-slate-200 rounded-lg p-3">
-          <div className="text-2xs font-medium text-blue-600">Đã gửi nhãn hàng</div>
+          <div className="text-2xs font-medium text-blue-600">2. Đã Submit Brand</div>
           <div className="text-lg font-semibold text-blue-700 mt-1">{metrics.submitted}</div>
-          <div className="text-2xs text-slate-400 mt-0.5">Đang thẩm định</div>
+          <div className="text-2xs text-slate-400 mt-0.5">Đang duyệt &amp; trao đổi</div>
         </div>
 
         <div className="bg-white border border-slate-200 rounded-lg p-3">
@@ -497,15 +1148,15 @@ export function KocListingBatchHubView({
         </div>
 
         <div className="bg-white border border-slate-200 rounded-lg p-3 bg-emerald-50/40 border-emerald-200">
-          <div className="text-2xs font-semibold text-emerald-800">Đã chốt duyệt</div>
+          <div className="text-2xs font-semibold text-emerald-800">3. Đã chốt (Final)</div>
           <div className="text-lg font-semibold text-emerald-900 mt-1">{metrics.finalApproved}</div>
-          <div className="text-2xs text-emerald-700 mt-0.5">Tính chỉ tiêu & lên sóng</div>
+          <div className="text-2xs text-emerald-700 mt-0.5">Đã sinh Deal Booking</div>
         </div>
 
         <div className="bg-white border border-slate-200 rounded-lg p-3 bg-rose-50/40 border-rose-200">
-          <div className="text-2xs font-semibold text-rose-800">Không đạt</div>
+          <div className="text-2xs font-semibold text-rose-800">Không đạt (Dropped)</div>
           <div className="text-lg font-semibold text-rose-900 mt-1">{metrics.dropped}</div>
-          <div className="text-2xs text-rose-700 mt-0.5">Đã hoàn suất kế hoạch</div>
+          <div className="text-2xs text-rose-700 mt-0.5">Hoàn suất về Plan KL</div>
         </div>
 
         <div className="bg-white border border-slate-200 rounded-lg p-3">
@@ -513,13 +1164,13 @@ export function KocListingBatchHubView({
           <div className="text-sm font-semibold text-slate-900 mt-1 truncate">
             {formatVnd(metrics.totalBudget)}
           </div>
-          <div className="text-2xs text-slate-400 mt-0.5">Chi phí thù lao</div>
+          <div className="text-2xs text-slate-400 mt-0.5">Không tính KOC rớt</div>
         </div>
       </div>
 
       {/* Filter Toolbar */}
       <div className="bg-white border border-slate-200 rounded-lg p-4 space-y-3">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-3">
           {/* Month selector */}
           <div>
             <label className="block text-2xs font-medium text-slate-600 mb-1">Tháng kế hoạch</label>
@@ -535,28 +1186,13 @@ export function KocListingBatchHubView({
             </select>
           </div>
 
-          {/* Cycle selector */}
-          <div>
-            <label className="block text-2xs font-medium text-slate-600 mb-1">Đợt đề xuất</label>
-            <select
-              value={selectedCycle}
-              onChange={(e) => setSelectedCycle(e.target.value as ListingBatchCycle | 'ALL')}
-              className="w-full text-xs border border-slate-300 rounded px-2.5 py-1.5 bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-slate-400 font-medium"
-            >
-              <option value="ALL">Tất cả các đợt</option>
-              <option value="BATCH_10">Đợt ngày 10</option>
-              <option value="BATCH_20">Đợt ngày 20</option>
-              <option value="BATCH_30">Đợt ngày 30</option>
-            </select>
-          </div>
-
           {/* Store selector */}
           <div>
-            <label className="block text-2xs font-medium text-slate-600 mb-1">Gian hàng</label>
+            <label className="block text-2xs font-medium text-slate-600 mb-1">Gian hàng (Plan Final)</label>
             <select
               value={selectedStore}
               onChange={(e) => setSelectedStore(e.target.value)}
-              className="w-full text-xs border border-slate-300 rounded px-2.5 py-1.5 bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-slate-400"
+              className="w-full text-xs border border-slate-300 rounded px-2.5 py-1.5 bg-white text-slate-800 font-medium focus:outline-none focus:ring-1 focus:ring-slate-400"
             >
               <option value="ALL">Tất cả gian hàng</option>
               {storeOptions.map((st) => (
@@ -567,34 +1203,66 @@ export function KocListingBatchHubView({
             </select>
           </div>
 
-          {/* Brand Approval Filter */}
+          {/* Salary Grade (KL) selector */}
           <div>
-            <label className="block text-2xs font-medium text-slate-600 mb-1">Thẩm định nhãn hàng</label>
+            <label className="block text-2xs font-medium text-slate-600 mb-1">Khung lương (KL)</label>
+            <select
+              value={selectedGrade}
+              onChange={(e) => setSelectedGrade(e.target.value as SalaryGrade | 'ALL')}
+              className="w-full text-xs border border-slate-300 rounded px-2.5 py-1.5 bg-white text-slate-800 font-semibold focus:outline-none focus:ring-1 focus:ring-slate-400"
+            >
+              <option value="ALL">Tất cả khung lương (KL1–KL7)</option>
+              {KL_GRADE_ORDER.map((kl) => (
+                <option key={kl.code} value={kl.code}>
+                  {kl.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Cycle selector */}
+          <div>
+            <label className="block text-2xs font-medium text-slate-600 mb-1">Đợt đề xuất</label>
+            <select
+              value={selectedCycle}
+              onChange={(e) => setSelectedCycle(e.target.value as ListingBatchCycle | 'ALL')}
+              className="w-full text-xs border border-slate-300 rounded px-2.5 py-1.5 bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-slate-400"
+            >
+              <option value="ALL">Tất cả các đợt (10-20-30)</option>
+              <option value="BATCH_10">Đợt ngày 10</option>
+              <option value="BATCH_20">Đợt ngày 20</option>
+              <option value="BATCH_30">Đợt ngày 30</option>
+            </select>
+          </div>
+
+          {/* Overall Status Filter */}
+          <div>
+            <label className="block text-2xs font-medium text-slate-600 mb-1">Trạng thái Listing</label>
+            <select
+              value={selectedOverallStatus}
+              onChange={(e) => setSelectedOverallStatus(e.target.value as ListingItemStatus | 'ALL')}
+              className="w-full text-xs border border-slate-300 rounded px-2.5 py-1.5 bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-slate-400"
+            >
+              <option value="ALL">Tất cả trạng thái</option>
+              <option value="DRAFT">1. Bản nháp (Draft)</option>
+              <option value="SUBMITTED">2. Đã Submit Brand (Đang duyệt)</option>
+              <option value="FINAL_APPROVED">3. Đã chốt duyệt (Final)</option>
+              <option value="DROPPED">Không đạt (Dropped)</option>
+            </select>
+          </div>
+
+          {/* Brand / KOC Status Filter */}
+          <div>
+            <label className="block text-2xs font-medium text-slate-600 mb-1">Thẩm định &amp; Đàm phán</label>
             <select
               value={selectedBrandStatus}
               onChange={(e) => setSelectedBrandStatus(e.target.value)}
               className="w-full text-xs border border-slate-300 rounded px-2.5 py-1.5 bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-slate-400"
             >
-              <option value="ALL">Tất cả trạng thái</option>
+              <option value="ALL">Tất cả thẩm định Brand</option>
               <option value="BRAND_PENDING">Chờ nhãn hàng duyệt</option>
               <option value="BRAND_APPROVED">Nhãn hàng đã duyệt</option>
               <option value="BRAND_REJECTED">Nhãn hàng từ chối</option>
-            </select>
-          </div>
-
-          {/* KOC Status Filter */}
-          <div>
-            <label className="block text-2xs font-medium text-slate-600 mb-1">Đàm phán KOC</label>
-            <select
-              value={selectedKocStatus}
-              onChange={(e) => setSelectedKocStatus(e.target.value)}
-              className="w-full text-xs border border-slate-300 rounded px-2.5 py-1.5 bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-slate-400"
-            >
-              <option value="ALL">Tất cả tiến độ đàm phán</option>
-              <option value="NOT_CONTACTED">Chưa liên hệ</option>
-              <option value="CONTACTING">Đang trao đổi</option>
-              <option value="TERMS_AGREED">Đã chốt điều khoản</option>
-              <option value="NEGOTIATION_FAILED">Đàm phán thất bại</option>
             </select>
           </div>
         </div>
@@ -636,15 +1304,15 @@ export function KocListingBatchHubView({
 
               <button
                 disabled={selectedIds.length === 0}
-                onClick={handleSubmitToBrand}
+                onClick={() => handleSubmitToBrand()}
                 className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded transition-colors ${
                   selectedIds.length > 0
-                    ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm'
+                    ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm cursor-pointer'
                     : 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200'
                 }`}
               >
                 <Send className="w-3 h-3" />
-                Gửi nhãn hàng duyệt đợt này
+                Submit Brand các KOC nháp đã chọn
               </button>
             </div>
           )}
@@ -667,13 +1335,13 @@ export function KocListingBatchHubView({
                       className="rounded border-slate-300 text-slate-900 focus:ring-slate-500"
                     />
                   </th>
-                  <th className="py-3 px-3">KOC & Kênh</th>
+                  <th className="py-3 px-3">KOC &amp; Khung lương Plan (KL)</th>
                   <th className="py-3 px-3">Đợt / Gian hàng / Ngày lên sóng</th>
-                  <th className="py-3 px-3 text-right">Chi phí đề xuất</th>
+                  <th className="py-3 px-3 text-right">Thù lao vs Chuẩn KL</th>
                   <th className="py-3 px-3">Thẩm định nhãn hàng</th>
                   <th className="py-3 px-3">Đàm phán KOC</th>
-                  <th className="py-3 px-3">Trạng thái chung</th>
-                  <th className="py-3 px-3 text-right">Phê duyệt chốt</th>
+                  <th className="py-3 px-3">Trạng thái Listing</th>
+                  <th className="py-3 px-3 text-right">Thao tác luồng duyệt</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200">
@@ -686,6 +1354,12 @@ export function KocListingBatchHubView({
                 ) : (
                   filteredListings.map((item) => {
                     const isSelected = selectedIds.includes(item.id);
+                    const resolvedGrade = inferSalaryGradeFromFee(item.finalFee || item.proposedFee, item.salaryGrade);
+                    const klBenchmarkRow = klTrackingRows.find((r) => r.code === resolvedGrade);
+                    const benchmarkCost = klBenchmarkRow?.benchmarkUnitCost || 0;
+                    const activeFee = item.finalFee || item.proposedFee || 0;
+                    const isOverKlBenchmark = benchmarkCost > 0 && activeFee > benchmarkCost * 1.15;
+
                     const canFinalApprove =
                       item.brandApprovalStatus === 'BRAND_APPROVED' &&
                       item.kocNegotiationStatus === 'TERMS_AGREED' &&
@@ -708,15 +1382,25 @@ export function KocListingBatchHubView({
                           />
                         </td>
 
-                        {/* KOC Info */}
+                        {/* KOC Info & KL Badge */}
                         <td className="py-3 px-3">
-                          <div className="font-semibold text-slate-900">{item.kocName}</div>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="font-semibold text-slate-900">{item.kocName}</span>
+                            <span className="px-1.5 py-0.5 rounded text-2xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                              {resolvedGrade}
+                            </span>
+                            {item.sourcePlanVersion && (
+                              <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-600">
+                                Plan {item.sourcePlanVersion}
+                              </span>
+                            )}
+                          </div>
                           <div className="text-2xs text-slate-500 flex items-center gap-1 mt-0.5">
                             <span>{item.kocHandle}</span>
                             <span>•</span>
                             <span className="font-medium text-slate-600">{item.channel}</span>
                             <span>•</span>
-                            <span>{(item.followersCount / 1000).toFixed(0)}K</span>
+                            <span>{(item.followersCount / 1000).toFixed(0)}K flw</span>
                           </div>
                           {(() => {
                             const handleKey = `${(item.kocHandle || '').toLowerCase().trim().replace('@', '')}|${item.brandName.toLowerCase().trim()}|${item.monthKey}`;
@@ -768,7 +1452,7 @@ export function KocListingBatchHubView({
                                 : 'Đợt 30'}
                             </span>
                           </div>
-                          <div className="text-2xs text-slate-700 font-medium mt-1 truncate max-w-[170px]">
+                          <div className="text-2xs text-slate-700 font-medium mt-1 truncate max-w-[170px]" title={item.storeName}>
                             {item.storeName}
                           </div>
                           <div className="text-2xs text-slate-500 mt-0.5 flex items-center gap-1">
@@ -777,18 +1461,23 @@ export function KocListingBatchHubView({
                           </div>
                         </td>
 
-                        {/* Fee */}
-                        <td className="py-3 px-3 text-right">
+                        {/* Fee vs Plan Benchmark */}
+                        <td className="py-3 px-3 text-right tabular-nums">
                           <div className="font-semibold text-slate-900">
                             {formatVnd(item.proposedFee)}
                           </div>
                           {item.finalFee && item.finalFee !== item.proposedFee && (
-                            <div className="text-2xs text-emerald-600 font-medium">
+                            <div className="text-2xs text-emerald-600 font-semibold">
                               Chốt: {formatVnd(item.finalFee)}
                             </div>
                           )}
+                          {benchmarkCost > 0 && (
+                            <div className={`text-2xs mt-0.5 ${isOverKlBenchmark ? 'text-amber-700 font-medium' : 'text-slate-400'}`}>
+                              Chuẩn {resolvedGrade}: {formatVndShort(benchmarkCost)}
+                            </div>
+                          )}
                           <div className="text-2xs text-slate-400 mt-0.5">
-                            Phụ trách: {item.assignedStaffName}
+                            PIC: {item.assignedStaffName}
                           </div>
                         </td>
 
@@ -805,7 +1494,7 @@ export function KocListingBatchHubView({
                               {item.brandApprovalStatus === 'BRAND_PENDING' && (
                                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-medium bg-amber-50 text-amber-700 border border-amber-200">
                                   <Clock className="w-3 h-3 text-amber-600" />
-                                  Chờ nhãn hàng duyệt
+                                  {item.overallStatus === 'DRAFT' ? 'Chưa gửi Brand' : 'Chờ nhãn hàng duyệt'}
                                 </span>
                               )}
                               {item.brandApprovalStatus === 'BRAND_REJECTED' && (
@@ -816,17 +1505,17 @@ export function KocListingBatchHubView({
                               )}
                             </div>
 
-                            {item.brandApprovalStatus === 'BRAND_PENDING' && (
+                            {item.overallStatus !== 'DRAFT' && item.brandApprovalStatus === 'BRAND_PENDING' && (
                               <div className="flex items-center gap-1.5 pt-0.5">
                                 <button
                                   onClick={() => setApprovingItem(item)}
-                                  className="px-2 py-0.5 text-2xs font-medium bg-emerald-600 text-white hover:bg-emerald-700 rounded transition-colors"
+                                  className="px-2 py-0.5 text-2xs font-medium bg-emerald-600 text-white hover:bg-emerald-700 rounded transition-colors cursor-pointer"
                                 >
                                   Duyệt
                                 </button>
                                 <button
                                   onClick={() => setRejectingItem(item)}
-                                  className="px-2 py-0.5 text-2xs font-medium bg-white text-rose-600 border border-rose-300 hover:bg-rose-50 rounded transition-colors"
+                                  className="px-2 py-0.5 text-2xs font-medium bg-white text-rose-600 border border-rose-300 hover:bg-rose-50 rounded transition-colors cursor-pointer"
                                 >
                                   Từ chối
                                 </button>
@@ -871,18 +1560,18 @@ export function KocListingBatchHubView({
                             {item.overallStatus === 'FINAL_APPROVED' && (
                               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-2xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-300">
                                 <CheckCircle2 className="w-3 h-3 text-emerald-700" />
-                                Đã chốt duyệt
+                                3. Đã chốt duyệt
                               </span>
                             )}
                             {item.overallStatus === 'SUBMITTED' && (
                               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-2xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
                                 <Clock className="w-3 h-3 text-blue-600" />
-                                Đang xử lý song song
+                                2. Đã Submit Brand
                               </span>
                             )}
                             {item.overallStatus === 'DRAFT' && (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded text-2xs font-medium bg-slate-100 text-slate-600 border border-slate-200">
-                                Bản nháp nội bộ
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-2xs font-semibold bg-slate-100 text-slate-700 border border-slate-300">
+                                1. Bản nháp (Draft)
                               </span>
                             )}
                             {item.overallStatus === 'DROPPED' && (
@@ -893,33 +1582,51 @@ export function KocListingBatchHubView({
                                 </span>
                                 <div className="text-2xs text-rose-600 mt-1 flex items-center gap-1">
                                   <RotateCcw className="w-2.5 h-2.5" />
-                                  <span>Đã hoàn 1 suất kế hoạch</span>
+                                  <span>Hoàn suất {resolvedGrade}</span>
                                 </div>
                               </div>
                             )}
                           </div>
                         </td>
 
-                        {/* Final Approve Action */}
+                        {/* Workflow Actions: Draft -> Submit Brand -> Trao đổi & Duyệt -> Final Approve */}
                         <td className="py-3 px-3 text-right">
-                          {canFinalApprove ? (
+                          <div className="flex flex-col items-end gap-1.5">
+                            {item.overallStatus === 'DRAFT' && (
+                              <button
+                                type="button"
+                                onClick={() => handleSubmitToBrand([item.id])}
+                                className="inline-flex items-center gap-1 px-2.5 py-1 text-2xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded shadow-2xs transition-colors cursor-pointer"
+                              >
+                                <Send className="w-3 h-3" />
+                                Submit Brand
+                              </button>
+                            )}
+
+                            {canFinalApprove ? (
+                              <button
+                                onClick={() => handleFinalApprove(item)}
+                                className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded shadow-sm transition-colors cursor-pointer"
+                              >
+                                <ShieldCheck className="w-3.5 h-3.5" />
+                                Chốt &amp; Tạo Deal
+                              </button>
+                            ) : item.overallStatus === 'FINAL_APPROVED' ? (
+                              <div className="text-2xs text-emerald-700 font-semibold flex items-center justify-end gap-1">
+                                <span>Deal: {item.generatedDealId}</span>
+                                <ChevronRight className="w-3 h-3 text-emerald-500" />
+                              </div>
+                            ) : null}
+
                             <button
-                              onClick={() => handleFinalApprove(item)}
-                              className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded shadow-sm transition-colors"
+                              type="button"
+                              onClick={() => setInspectingListingId(item.id)}
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 transition-colors cursor-pointer"
                             >
-                              <ShieldCheck className="w-3.5 h-3.5" />
-                              Chốt duyệt
+                              <MessageSquare className="w-3 h-3 text-slate-500" />
+                              <span>Trao đổi &amp; Duyệt ({item.discussions?.length || 0})</span>
                             </button>
-                          ) : item.overallStatus === 'FINAL_APPROVED' ? (
-                            <div className="text-2xs text-emerald-700 font-medium flex items-center justify-end gap-1">
-                              <span>Mã: {item.generatedDealId}</span>
-                              <ChevronRight className="w-3 h-3 text-emerald-500" />
-                            </div>
-                          ) : item.overallStatus === 'DROPPED' ? (
-                            <span className="text-2xs text-slate-400">Đã giải phóng</span>
-                          ) : (
-                            <span className="text-2xs text-slate-400 italic">Chờ đủ 2 điều kiện</span>
-                          )}
+                          </div>
                         </td>
                       </tr>
                     );
@@ -940,7 +1647,7 @@ export function KocListingBatchHubView({
               </span>
               <span className="flex items-center gap-1">
                 <span className="w-2 h-2 rounded-full bg-rose-500"></span>
-                KOC không đạt: Hoàn trả 1 suất khả dụng về kế hoạch tháng
+                KOC không đạt: Hoàn trả 1 suất khả dụng về đúng khung lương KL của Plan tháng
               </span>
             </div>
           </div>
@@ -973,7 +1680,7 @@ export function KocListingBatchHubView({
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold text-2xs">
                   <th className="py-3 px-3">Mã hồ sơ / KOC</th>
-                  <th className="py-3 px-3">Gian hàng & Kênh</th>
+                  <th className="py-3 px-3">Gian hàng &amp; Kênh</th>
                   <th className="py-3 px-3">Tiến trình lên sóng</th>
                   <th className="py-3 px-3">Lịch lên sóng cam kết</th>
                   <th className="py-3 px-3">Gắn giỏ hàng sàn</th>
@@ -991,7 +1698,6 @@ export function KocListingBatchHubView({
                   </tr>
                 ) : (
                   airListings.map((item) => {
-                    // Check overdue
                     const todayStr = '2026-10-09';
                     const isOverdue =
                       item.expectedAirDate &&
@@ -1004,7 +1710,12 @@ export function KocListingBatchHubView({
                       <tr key={item.id} className="hover:bg-slate-50/70 transition-colors">
                         {/* Deal & KOC */}
                         <td className="py-3 px-3">
-                          <div className="font-semibold text-slate-900">{item.kocName}</div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-semibold text-slate-900">{item.kocName}</span>
+                            <span className="px-1.5 py-0.5 rounded text-2xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                              {inferSalaryGradeFromFee(item.finalFee || item.proposedFee, item.salaryGrade)}
+                            </span>
+                          </div>
                           <div className="text-2xs text-slate-500">{item.kocHandle}</div>
                           <div className="text-2xs font-mono text-blue-600 mt-1">
                             {item.generatedDealId || 'DEAL-AUTO'}
@@ -1117,7 +1828,7 @@ export function KocListingBatchHubView({
                               setSelectedListingForAir(item);
                               setShowAirUpdateModal(true);
                             }}
-                            className="px-2.5 py-1 text-xs font-medium text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded transition-colors"
+                            className="px-2.5 py-1 text-xs font-medium text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded transition-colors cursor-pointer"
                           >
                             Cập nhật tiến độ
                           </button>
@@ -1132,15 +1843,20 @@ export function KocListingBatchHubView({
         </div>
       )}
 
-      {/* MODAL 1: ADD NEW KOC TO BATCH */}
+      {/* MODAL 1: ADD NEW KOC TO BATCH (DRAFT + LINKED TO KL) */}
       <Presence show={!!showAddModal}>
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 animate-in fade-in duration-(--motion-base)">
           <div data-motion-panel className="bg-white rounded-lg shadow-xl border border-slate-200 w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
             <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
-              <h3 className="text-sm font-semibold text-slate-900">
-                Thêm KOC mới vào đợt đề xuất
-              </h3>
+              <div>
+                <h3 className="text-sm font-semibold text-slate-900">
+                  Thêm KOC vào bản nháp (Draft) gắn với Plan Final
+                </h3>
+                <p className="text-2xs text-slate-500 mt-0.5">
+                  KOC mới sẽ ở trạng thái Bản nháp (Draft) và gắn trực tiếp với khung lương KL để đối soát chỉ tiêu.
+                </p>
+              </div>
               <button
                 onClick={() => setShowAddModal(false)}
                 className="text-slate-400 hover:text-slate-600 text-lg leading-none"
@@ -1150,7 +1866,33 @@ export function KocListingBatchHubView({
             </div>
 
             <form onSubmit={handleAddNewKoc} className="p-4 space-y-3.5 text-xs">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-2xs font-semibold text-slate-700 mb-1">
+                    Khung lương Plan (KL) *
+                  </label>
+                  <select
+                    value={newKocForm.salaryGrade}
+                    onChange={(e) => {
+                      const nextGrade = e.target.value as SalaryGrade;
+                      const rowMatch = klTrackingRows.find((r) => r.code === nextGrade);
+                      setNewKocForm({
+                        ...newKocForm,
+                        salaryGrade: nextGrade,
+                        tier: rowMatch?.defaultTier || newKocForm.tier,
+                        proposedFee: rowMatch?.benchmarkUnitCost ?? newKocForm.proposedFee,
+                      });
+                    }}
+                    className="w-full border border-blue-300 rounded px-2.5 py-1.5 bg-blue-50/40 text-blue-900 font-bold focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  >
+                    {KL_GRADE_ORDER.map((kl) => (
+                      <option key={kl.code} value={kl.code}>
+                        {kl.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
                 <div>
                   <label className="block text-2xs font-semibold text-slate-700 mb-1">
                     Chu kỳ đợt đề xuất *
@@ -1176,7 +1918,7 @@ export function KocListingBatchHubView({
                     value={newKocForm.storeName}
                     onChange={(e) => {
                       const st = e.target.value;
-                      const br = st.toLowerCase().includes('kutieskin') ? 'Kutieskin' : 'Nhãn hàng khác';
+                      const br = st.split('_')[0] || 'Kutieskin';
                       setNewKocForm({ ...newKocForm, storeName: st, brandName: br });
                     }}
                     className="w-full border border-slate-300 rounded px-2.5 py-1.5 bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-slate-400"
@@ -1224,7 +1966,7 @@ export function KocListingBatchHubView({
               {newKocDuplicate && (
                 <div className="p-3 bg-amber-50 border border-amber-300 rounded-md text-amber-900 text-xs">
                   <div className="flex items-center gap-1.5 font-semibold text-amber-800">
-                    <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                    <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
                     Cảnh báo: KOC đã có trong đợt đề xuất của nhãn này!
                   </div>
                   <div className="mt-1 text-2xs space-y-0.5 text-amber-800/90">
@@ -1285,7 +2027,7 @@ export function KocListingBatchHubView({
                   </label>
                   <input
                     type="number"
-                    step={500000}
+                    step={100000}
                     value={newKocForm.proposedFee}
                     onChange={(e) =>
                       setNewKocForm({ ...newKocForm, proposedFee: Number(e.target.value) })
@@ -1334,7 +2076,7 @@ export function KocListingBatchHubView({
                   type="submit"
                   className="px-4 py-1.5 text-xs font-semibold text-white bg-primary hover:bg-primary-hover rounded shadow-sm"
                 >
-                  Lưu vào đợt nháp
+                  Lưu vào Bản nháp (Draft)
                 </button>
               </div>
             </form>
@@ -1343,7 +2085,235 @@ export function KocListingBatchHubView({
       )}
       </Presence>
 
-      {/* MODAL 2: UPDATE AIR VIDEO PROGRESS */}
+      {/* MODAL 2: LUỒNG DUYỆT & TRAO ĐỔI CHI TIẾT (SUBMIT BRAND -> BRAND REVIEW & KOC NEGOTIATION -> FINAL APPROVE) */}
+      <Presence show={!!inspectingListing}>
+      {inspectingListing && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 animate-in fade-in duration-(--motion-base)">
+          <div data-motion-panel className="bg-white rounded-xl shadow-2xl border border-slate-200 w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
+            <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-bold text-slate-900">
+                    Luồng duyệt &amp; Trao đổi KOC: {inspectingListing.kocName} ({inspectingListing.kocHandle})
+                  </h3>
+                  <span className="px-2 py-0.5 rounded text-2xs font-bold bg-blue-100 text-blue-800 border border-blue-200">
+                    {inferSalaryGradeFromFee(inspectingListing.finalFee || inspectingListing.proposedFee, inspectingListing.salaryGrade)}
+                  </span>
+                </div>
+                <p className="text-2xs text-slate-500 mt-0.5">
+                  Gian hàng: <strong>{inspectingListing.storeName}</strong> · Plan: <strong>{inspectingListing.sourcePlanId || matchedPlanFinal?.id || 'Tháng 10/2026'} ({inspectingListing.sourcePlanVersion || 'v1.0'})</strong>
+                </p>
+              </div>
+              <button
+                onClick={() => setInspectingListingId(null)}
+                className="text-slate-400 hover:text-slate-600 text-lg leading-none cursor-pointer"
+              >
+                &times;
+              </button>
+            </div>
+
+            <div className="p-4 overflow-y-auto space-y-4 text-xs flex-1">
+              {/* Thanh tiến trình 3 bước của Listing */}
+              <div className="grid grid-cols-3 gap-2 p-2.5 bg-slate-50 rounded-lg border border-slate-200">
+                <div className={`p-2 rounded border ${inspectingListing.overallStatus === 'DRAFT' ? 'bg-white border-slate-400 font-semibold text-slate-900 shadow-2xs' : 'bg-emerald-50/60 border-emerald-200 text-emerald-800'}`}>
+                  <div className="text-2xs uppercase tracking-wider">Bước 1</div>
+                  <div className="mt-0.5">Lên danh sách Nháp (Draft)</div>
+                </div>
+                <div className={`p-2 rounded border ${inspectingListing.overallStatus === 'SUBMITTED' ? 'bg-blue-50 border-blue-400 font-semibold text-blue-900 shadow-2xs' : inspectingListing.overallStatus === 'FINAL_APPROVED' ? 'bg-emerald-50/60 border-emerald-200 text-emerald-800' : 'bg-white border-slate-200 text-slate-400'}`}>
+                  <div className="text-2xs uppercase tracking-wider">Bước 2</div>
+                  <div className="mt-0.5">Submit Brand &amp; Đàm phán</div>
+                </div>
+                <div className={`p-2 rounded border ${inspectingListing.overallStatus === 'FINAL_APPROVED' ? 'bg-emerald-100 border-emerald-400 font-semibold text-emerald-900 shadow-2xs' : inspectingListing.overallStatus === 'DROPPED' ? 'bg-rose-50 border-rose-300 text-rose-800 font-semibold' : 'bg-white border-slate-200 text-slate-400'}`}>
+                  <div className="text-2xs uppercase tracking-wider">Bước 3</div>
+                  <div className="mt-0.5">
+                    {inspectingListing.overallStatus === 'DROPPED' ? 'Không đạt (Hoàn suất KL)' : 'Chốt duyệt → Sinh Deal'}
+                  </div>
+                </div>
+              </div>
+
+              {/* Điều chỉnh Khung lương KL, Thù lao & Trạng thái duyệt song song */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 bg-white border border-slate-200 rounded-lg">
+                <div>
+                  <label className="block text-2xs font-semibold text-slate-600 mb-1">Khung lương Plan (KL)</label>
+                  <select
+                    value={inferSalaryGradeFromFee(inspectingListing.finalFee || inspectingListing.proposedFee, inspectingListing.salaryGrade)}
+                    onChange={(e) => {
+                      const nextGrade = e.target.value as SalaryGrade;
+                      onUpdateListings(
+                        listings.map((l) =>
+                          l.id === inspectingListing.id
+                            ? { ...l, salaryGrade: nextGrade, updatedAt: new Date().toISOString() }
+                            : l
+                        )
+                      );
+                    }}
+                    className="w-full border border-slate-300 rounded px-2 py-1.5 bg-white text-slate-900 font-semibold"
+                  >
+                    {KL_GRADE_ORDER.map((kl) => (
+                      <option key={kl.code} value={kl.code}>
+                        {kl.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-2xs font-semibold text-slate-600 mb-1">Thù lao đề xuất / Chốt (VNĐ)</label>
+                  <input
+                    type="number"
+                    step={100000}
+                    value={inspectingListing.finalFee ?? inspectingListing.proposedFee}
+                    onChange={(e) => {
+                      const nextFee = Number(e.target.value);
+                      onUpdateListings(
+                        listings.map((l) =>
+                          l.id === inspectingListing.id
+                            ? { ...l, finalFee: nextFee, updatedAt: new Date().toISOString() }
+                            : l
+                        )
+                      );
+                    }}
+                    className="w-full border border-slate-300 rounded px-2 py-1.5 bg-white text-slate-900 font-semibold tabular-nums"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-2xs font-semibold text-slate-600 mb-1">Tiến độ đàm phán KOC</label>
+                  <select
+                    value={inspectingListing.kocNegotiationStatus}
+                    onChange={(e) =>
+                      handleKocNegotiationChange(inspectingListing.id, e.target.value as KocNegotiationStatus)
+                    }
+                    className="w-full border border-slate-300 rounded px-2 py-1.5 bg-white text-slate-900 font-medium"
+                  >
+                    <option value="NOT_CONTACTED">Chưa liên hệ</option>
+                    <option value="CONTACTING">Đang trao đổi</option>
+                    <option value="TERMS_AGREED">Đã chốt điều khoản</option>
+                    <option value="NEGOTIATION_FAILED">Đàm phán thất bại</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Thao tác nhanh của Nhãn hàng & Booking */}
+              <div className="flex flex-wrap items-center justify-between gap-2 p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                <div className="text-2xs text-slate-600">
+                  Trạng thái Brand: <strong>{inspectingListing.brandApprovalStatus}</strong> · KOC: <strong>{inspectingListing.kocNegotiationStatus}</strong>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  {inspectingListing.overallStatus === 'DRAFT' && (
+                    <button
+                      type="button"
+                      onClick={() => handleSubmitToBrand([inspectingListing.id])}
+                      className="px-3 py-1.5 rounded text-xs font-semibold bg-blue-600 text-white hover:bg-blue-700 cursor-pointer"
+                    >
+                      Chuyển sang Submit Brand
+                    </button>
+                  )}
+                  {inspectingListing.brandApprovalStatus !== 'BRAND_APPROVED' && (
+                    <button
+                      type="button"
+                      onClick={() => handleBrandDecision(inspectingListing.id, 'APPROVE', 'Nhãn hàng đồng ý duyệt hồ sơ KOC.')}
+                      className="px-2.5 py-1 rounded text-2xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700 cursor-pointer"
+                    >
+                      Brand Duyệt KOC
+                    </button>
+                  )}
+                  {inspectingListing.brandApprovalStatus !== 'BRAND_REJECTED' && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setInspectingListingId(null);
+                        setRejectingItem(inspectingListing);
+                      }}
+                      className="px-2.5 py-1 rounded text-2xs font-semibold bg-white text-rose-600 border border-rose-300 hover:bg-rose-50 cursor-pointer"
+                    >
+                      Brand Từ chối
+                    </button>
+                  )}
+                  {inspectingListing.brandApprovalStatus === 'BRAND_APPROVED' &&
+                    inspectingListing.kocNegotiationStatus === 'TERMS_AGREED' &&
+                    inspectingListing.overallStatus !== 'FINAL_APPROVED' && (
+                      <button
+                        type="button"
+                        onClick={() => handleFinalApprove(inspectingListing)}
+                        className="px-3 py-1.5 rounded text-xs font-semibold bg-emerald-700 text-white hover:bg-emerald-800 shadow-xs cursor-pointer"
+                      >
+                        Chốt duyệt &amp; Khởi tạo Deal Booking
+                      </button>
+                    )}
+                </div>
+              </div>
+
+              {/* Lịch sử trao đổi giữa Booking / Account / Brand */}
+              <div className="space-y-2">
+                <div className="font-semibold text-slate-800">
+                  Lịch sử trao đổi &amp; phản hồi ({inspectingListing.discussions?.length || 0})
+                </div>
+                <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
+                  {(!inspectingListing.discussions || inspectingListing.discussions.length === 0) ? (
+                    <div className="p-3 text-center text-2xs text-slate-400 bg-slate-50 rounded border border-slate-200">
+                      Chưa có ghi chú trao đổi nào. Hãy nhập phản hồi của Brand hoặc kết quả thương lượng KOC bên dưới.
+                    </div>
+                  ) : (
+                    inspectingListing.discussions.map((d) => (
+                      <div key={d.id} className="p-2.5 rounded-lg border border-slate-200 bg-white space-y-1">
+                        <div className="flex items-center justify-between text-2xs">
+                          <span className="font-bold text-slate-800">
+                            {d.authorName}{' '}
+                            <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-medium ml-1">
+                              {d.authorRole}
+                            </span>
+                          </span>
+                          <span className="text-slate-400">
+                            {d.createdAt.replace('T', ' ').slice(0, 16)}
+                          </span>
+                        </div>
+                        <div className="text-xs text-slate-700">{d.content}</div>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                {/* Form gửi phản hồi mới */}
+                <div className="pt-2 flex flex-col sm:flex-row gap-2">
+                  <select
+                    value={discussionRole}
+                    onChange={(e) => setDiscussionRole(e.target.value as 'BOOKING' | 'BRAND' | 'LEADER')}
+                    className="border border-slate-300 rounded px-2 py-1.5 text-2xs font-semibold bg-slate-50 text-slate-800 shrink-0"
+                  >
+                    <option value="BOOKING">Vai trò: Nhân sự Booking</option>
+                    <option value="BRAND">Vai trò: Đại diện Brand / Account</option>
+                    <option value="LEADER">Vai trò: Leader / Trưởng phòng</option>
+                  </select>
+                  <input
+                    type="text"
+                    value={discussionInput}
+                    onChange={(e) => setDiscussionInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddListingDiscussion(inspectingListing.id);
+                      }
+                    }}
+                    placeholder="Nhập nội dung trao đổi (VD: Brand yêu cầu giảm giá về 4.5M theo khung KL4, KOC hẹn gửi lịch quay...)"
+                    className="flex-1 border border-slate-300 rounded px-2.5 py-1.5 text-xs bg-white text-slate-800"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleAddListingDiscussion(inspectingListing.id)}
+                    className="px-3 py-1.5 rounded text-xs font-semibold bg-slate-900 text-white hover:bg-slate-800 shrink-0 cursor-pointer"
+                  >
+                    Gửi trao đổi
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      </Presence>
+
+      {/* MODAL 3: UPDATE AIR VIDEO PROGRESS */}
       <Presence show={!!(showAirUpdateModal && selectedListingForAir)}>
       {showAirUpdateModal && selectedListingForAir && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 animate-in fade-in duration-(--motion-base)">
@@ -1480,7 +2450,7 @@ export function KocListingBatchHubView({
       <ConfirmDialog
         open={!!approvingItem}
         title="Xác nhận duyệt hồ sơ KOC"
-        message={`Bạn có chắc chắn muốn phê duyệt hồ sơ KOC "${approvingItem?.kocName}" của nhãn ${approvingItem?.brandName} cho đợt đề xuất hiện tại? Sau khi duyệt, hồ sơ sẽ đủ điều kiện chuyển sang theo dõi video lên sóng.`}
+        message={`Bạn có chắc chắn muốn phê duyệt hồ sơ KOC "${approvingItem?.kocName}" (${inferSalaryGradeFromFee(approvingItem?.finalFee || approvingItem?.proposedFee || 0, approvingItem?.salaryGrade)}) của nhãn ${approvingItem?.brandName} cho đợt đề xuất hiện tại?`}
         confirmLabel="Xác nhận duyệt"
         onConfirm={() => {
           if (approvingItem) {
@@ -1495,7 +2465,7 @@ export function KocListingBatchHubView({
       <ConfirmDialog
         open={!!rejectingItem}
         title="Từ chối hồ sơ KOC"
-        message={`Vui lòng nhập lý do từ chối hồ sơ KOC "${rejectingItem?.kocName}" để bộ phận phụ trách điều chỉnh hoặc tìm KOC thay thế:`}
+        message={`Vui lòng nhập lý do từ chối hồ sơ KOC "${rejectingItem?.kocName}" để bộ phận phụ trách điều chỉnh hoặc tìm KOC thay thế cho khung ${inferSalaryGradeFromFee(rejectingItem?.finalFee || rejectingItem?.proposedFee || 0, rejectingItem?.salaryGrade)}:`}
         confirmLabel="Xác nhận từ chối"
         tone="danger"
         reason={{
@@ -1512,10 +2482,17 @@ export function KocListingBatchHubView({
         onCancel={() => setRejectingItem(null)}
       />
 
-      {/* Modal Lọc Shortlist KOC cho gian hàng */}
+      {/* Modal Lọc Shortlist KOC cho gian hàng (Gắn với Plan Final & Khung lương KL) */}
       <StoreShortlistFilterModal
         isOpen={showShortlistModal}
         onClose={() => setShowShortlistModal(false)}
+        stores={stores}
+        kocs={kocs}
+        deals={deals}
+        initialStoreId={matchedStoreObj?.id}
+        initialSalaryGrade={shortlistTargetGrade}
+        activePlan={matchedPlanFinal}
+        currentUserName={currentUserName}
         onAddToListingBatch={handleAddShortlistToListings}
       />
 
@@ -1523,17 +2500,17 @@ export function KocListingBatchHubView({
         isOpen={isKocReportOpen}
         onClose={() => setIsKocReportOpen(false)}
         purposeId="KOC_MATCHING"
-        moduleTitle={`Báo Cáo Đánh Giá Cơ Cấu KOC Đề Xuất — Kỳ ${selectedMonth}`}
+        moduleTitle={`Báo Cáo Đánh Giá Cơ Cấu KOC Đề Xuất Theo KL — Kỳ ${selectedMonth}`}
         moduleSubtitle={`Kỳ ${selectedMonth} | Đợt: ${selectedCycle === 'ALL' ? 'Tất cả đợt (10-20-30)' : selectedCycle} | Gian hàng: ${selectedStore === 'ALL' ? 'Toàn bộ gian hàng' : selectedStore} | Tổng hồ sơ: ${metrics.total}`}
         contextDataText={[
-          `[DỮ LIỆU PHÂN HỆ: Đề Xuất KOC Theo Đợt (10 - 20 - 30) & Theo Dõi Lên Sóng]`,
-          `- Kỳ kế hoạch: ${selectedMonth} | Đợt: ${selectedCycle} | Tổng đề xuất: ${metrics.total} KOC | Bản nháp: ${metrics.draft} | Đã gửi nhãn: ${metrics.submitted} | Nhãn duyệt: ${metrics.brandApproved} | KOC đồng ý: ${metrics.termsAgreed} | Chốt cuối (Final): ${metrics.finalApproved} | Hủy/Rớt: ${metrics.dropped}`,
-          `- Tổng ngân sách đề xuất trong danh sách lọc: ${formatVnd(metrics.totalBudget)}`,
-          ...filteredListings.slice(0, 8).map(
-            item => `- KOC ${item.kocName} (${item.kocHandle}) | Gian hàng: ${item.storeName} | Phân khúc: ${item.tier} (${item.followersCount.toLocaleString('vi-VN')} flw) | Trụ cột: ${item.pillarName} | Chi phí: ${formatVnd(item.finalFee || item.proposedFee)} | Nhãn: ${item.brandApprovalStatus} | Đàm phán: ${item.kocNegotiationStatus}`
+          `[DỮ LIỆU PHÂN HỆ: Đề Xuất KOC Theo Đợt (10 - 20 - 30) & Đối Soát Plan Final Theo KL]`,
+          `- Kỳ kế hoạch: ${selectedMonth} | Gian hàng: ${selectedStore} | Plan gốc: ${matchedPlanFinal?.id || 'Toàn bộ'} (${matchedPlanFinal?.currentVersionCode || 'v1.0'})`,
+          `- Tổng chỉ tiêu Plan Final: ${klTotals.planQty} KOC (${formatVnd(klTotals.planBudget)}) | Đã list: ${klTotals.activeListedCount} KOC (Nháp: ${klTotals.draftCount}, Đã Submit Brand: ${klTotals.submittedCount}, Đã chốt Final: ${klTotals.finalApprovedCount}, Rớt: ${klTotals.droppedCount}) | Còn thiếu cần list: ${klTotals.remainingToList} slot.`,
+          ...klTrackingRows.map(
+            r => `- Khung ${r.label}: Plan ${r.planQty} slot (${formatVndShort(r.planBudget)}) vs Thực tế List ${r.activeListedCount} (Nháp ${r.draftCount}, Submit ${r.submittedCount}, Chốt ${r.finalApprovedCount}, Rớt ${r.droppedCount}) -> Còn thiếu ${r.remainingToList} slot.`
           ),
         ].join('\n')}
-        customSystemPrompt="Đánh giá cơ cấu danh sách KOC đề xuất theo chu kỳ 10-20-30: (1) Phân tích tỷ lệ phân bổ giữa Macro/Micro/Nano KOC so với ngân sách và mục tiêu chuyển đổi giỏ hàng, (2) Chỉ ra các KOC có đơn giá cao nhưng đang nghẽn ở bước đàm phán hoặc chờ nhãn duyệt, (3) Đề xuất phương án bổ sung KOC dự phòng cho các suất bị từ chối/rớt để đảm bảo đủ 100% số lượng cam kết trong tháng."
+        customSystemPrompt="Đánh giá tiến độ Listing KOC so với Plan Final theo từng khung lương KL1-KL7: (1) Chỉ ra các khung lương KL đang thiếu hụt số lượng listing so với Plan Final, (2) Phân tích tỷ lệ rớt/từ chối ở bước Submit Brand & Đàm phán KOC, (3) Đề xuất phương án bổ sung KOC nháp vào các khung lương còn thiếu để đảm bảo giải ngân đúng định mức Plan Final."
       />
     </div>
   );

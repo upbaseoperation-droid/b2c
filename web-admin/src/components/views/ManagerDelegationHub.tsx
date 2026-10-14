@@ -41,7 +41,8 @@ import {
   UserRole,
   BookingTeamGroup,
   BookingTeamMemberInfo,
-  SystemDepartmentScope
+  SystemDepartmentScope,
+  normalizeStoreCoefficient
 } from '../../lib/types';
 import { UPBASE_BRANDS_MASTER, UPBASE_STAFF_MASTER } from '../../lib/importedMasterData';
 import { BOOKING_TEAMS_STRUCTURE } from '../../lib/mockData';
@@ -55,6 +56,7 @@ import {
 import { Avatar, Button, Presence, Segmented, Status , ChannelTag } from '../ui';
 import { formatVndShort } from '../../lib/format';
 import { MasterDataMindmapView } from './MasterDataMindmapView';
+import { StoreCoefficientHubSection } from '../stores/StoreCoefficientHubSection';
 
 interface ManagerDelegationHubProps {
   currentUser: UserProfile;
@@ -89,7 +91,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
   const isMediaManager = currentUser.role === 'MEDIA_MANAGER';
 
   // Active Section Tab
-  const [activeSection, setActiveSection] = useState<'STORES' | 'BRANDS' | 'STAFF' | 'TASKS' | 'LEADER_TEAMS'>(
+  const [activeSection, setActiveSection] = useState<'STORES' | 'BRANDS' | 'COEFFICIENTS' | 'STAFF' | 'TASKS' | 'LEADER_TEAMS'>(
     isGrowthManager || isMediaManager ? 'STAFF' : 'STORES'
   );
   const [leaderConsoleViewMode, setLeaderConsoleViewMode] = useState<'STORES_ASSIGN' | 'WORKLOAD_BALANCE'>('STORES_ASSIGN');
@@ -171,26 +173,75 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStaffFilter, setSelectedStaffFilter] = useState('ALL');
   const [selectedBrandFilter, setSelectedBrandFilter] = useState('ALL');
+  const [selectedBrandPosRole, setSelectedBrandPosRole] = useState<'ALL' | 'CONTENT_BRAND_MAIN' | 'PLAN_STRATEGY' | 'KEY_VISUAL_SIS'>('ALL');
+
+  // Danh sách ứng viên B2C cho 3 vị trí gắn theo Brand [theo brand]
+  const brandPositionCandidateNames = useMemo(() => {
+    const base = [
+      'Quỳnh Như',
+      'Nguyễn Thị Mai Anh',
+      'Vũ Hoài Lâm',
+      'Phan Diệu Ánh',
+      'Nguyễn Thị Ngọc Tâm',
+      'Lê Phương Thảo',
+      'Lương Thị Như Quỳnh',
+      'Lê Thanh Hải',
+      'Hoàng Hải Long',
+      'Trần Hải Phượng',
+      'Phạm Thị Thu Hằng',
+      'Khánh Vy',
+      'Nguyễn Thu Trang',
+      'Lê Hoàng Yến',
+      'Đặng Thị Yến Nhi',
+    ];
+    staffList.forEach(s => {
+      if (s.name && !base.includes(s.name)) base.push(s.name);
+    });
+    brands.forEach(b => {
+      if (b.contentBrandMainPic && !base.includes(b.contentBrandMainPic)) base.push(b.contentBrandMainPic);
+      if (b.planStrategyPic && !base.includes(b.planStrategyPic)) base.push(b.planStrategyPic);
+      if (b.keyVisualSisPic && !base.includes(b.keyVisualSisPic)) base.push(b.keyVisualSisPic);
+    });
+    return base;
+  }, [staffList, brands]);
 
   const displayedBrands = useMemo(() => {
     const q = searchTerm.trim().toLowerCase();
     return brands.filter(b => {
+      const contentMain = b.contentBrandMainPic || b.contentPic || 'Quỳnh Như';
+      const planStrat = b.planStrategyPic || b.brandPicName || 'Nguyễn Thị Ngọc Tâm';
+      const kvSis = b.keyVisualSisPic || 'Vũ Hoài Lâm';
+
       if (selectedBrandFilter !== 'ALL') {
-        const pic = b.bookingPicLead || 'Đặng Thị Yến Nhi';
-        if (pic !== selectedBrandFilter) return false;
+        if (selectedBrandPosRole === 'CONTENT_BRAND_MAIN' && contentMain !== selectedBrandFilter) return false;
+        if (selectedBrandPosRole === 'PLAN_STRATEGY' && planStrat !== selectedBrandFilter) return false;
+        if (selectedBrandPosRole === 'KEY_VISUAL_SIS' && kvSis !== selectedBrandFilter) return false;
+        if (
+          selectedBrandPosRole === 'ALL' &&
+          contentMain !== selectedBrandFilter &&
+          planStrat !== selectedBrandFilter &&
+          kvSis !== selectedBrandFilter &&
+          (b.bookingPicLead || 'Đặng Thị Yến Nhi') !== selectedBrandFilter
+        ) {
+          return false;
+        }
       }
       if (q) {
         const matchName = b.name.toLowerCase().includes(q);
         const matchCompany = (b.companyName || '').toLowerCase().includes(q);
         const matchCat = (b.category || '').toLowerCase().includes(q);
-        const matchPic = (b.bookingPicLead || '').toLowerCase().includes(q) ||
-                         (b.accountPic || '').toLowerCase().includes(q) ||
-                         (b.growthPic || '').toLowerCase().includes(q);
+        const matchPic =
+          (b.bookingPicLead || '').toLowerCase().includes(q) ||
+          (b.accountPic || '').toLowerCase().includes(q) ||
+          (b.growthPic || '').toLowerCase().includes(q) ||
+          contentMain.toLowerCase().includes(q) ||
+          planStrat.toLowerCase().includes(q) ||
+          kvSis.toLowerCase().includes(q);
         if (!matchName && !matchCompany && !matchCat && !matchPic) return false;
       }
       return true;
     });
-  }, [brands, searchTerm, selectedBrandFilter]);
+  }, [brands, searchTerm, selectedBrandFilter, selectedBrandPosRole]);
 
   // Bộ lọc danh sách gian hàng (mặc định chỉ lọc gian B2C làm plan)
   const [storeFilterMode, setStoreFilterMode] = useState<'B2C_ONLY' | 'ALL'>('B2C_ONLY');
@@ -286,6 +337,9 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
     bookingPicLead: string;
     accountPic: string;
     growthPic: string;
+    contentBrandMainPic: string;
+    planStrategyPic: string;
+    keyVisualSisPic: string;
     brandGuideline: string;
   }>({
     name: '',
@@ -296,6 +350,9 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
     bookingPicLead: 'Đặng Thị Yến Nhi',
     accountPic: 'Phạm Thị Nhài',
     growthPic: 'Hoàng Long',
+    contentBrandMainPic: 'Quỳnh Như',
+    planStrategyPic: 'Nguyễn Thị Ngọc Tâm',
+    keyVisualSisPic: 'Vũ Hoài Lâm',
     brandGuideline: ''
   });
 
@@ -348,6 +405,9 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
       bookingPicLead: master.bookingPicLead || staffList[0]?.name || 'Đặng Thị Yến Nhi',
       accountPic: master.accountPic || 'Phạm Thị Nhài',
       growthPic: master.growthPic || 'Hoàng Long',
+      contentBrandMainPic: master.contentBrandMainPic || master.contentPic || 'Quỳnh Như',
+      planStrategyPic: master.planStrategyPic || master.brandPicName || 'Nguyễn Thị Ngọc Tâm',
+      keyVisualSisPic: master.keyVisualSisPic || 'Vũ Hoài Lâm',
       brandGuideline: master.brandGuideline || ''
     });
   };
@@ -428,10 +488,15 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
         bookingPicLead: brandFormState.bookingPicLead,
         accountPic: brandFormState.accountPic,
         growthPic: brandFormState.growthPic,
+        contentBrandMainPic: brandFormState.contentBrandMainPic,
+        planStrategyPic: brandFormState.planStrategyPic,
+        keyVisualSisPic: brandFormState.keyVisualSisPic,
         brandGuideline: brandFormState.brandGuideline
       };
       onUpdateBrand(updated);
-      notify(`Đã cập nhật phân công cho nhãn hàng ${updated.name}: PIC Lead là ${updated.bookingPicLead}!`);
+      notify(
+        `Đã cập nhật phân bổ nhân sự theo Brand cho ${updated.name}: Content/Brand main (${updated.contentBrandMainPic}), Plan/Strategy (${updated.planStrategyPic}), KV/SIS (${updated.keyVisualSisPic})!`
+      );
     } else if (onAddBrand) {
       const baseMaster = selectedMasterBrandId
         ? UPBASE_BRANDS_MASTER.find(b => b.id === selectedMasterBrandId)
@@ -455,13 +520,16 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
         bookingPicLead: brandFormState.bookingPicLead,
         accountPic: brandFormState.accountPic,
         growthPic: brandFormState.growthPic,
+        contentBrandMainPic: brandFormState.contentBrandMainPic,
+        planStrategyPic: brandFormState.planStrategyPic,
+        keyVisualSisPic: brandFormState.keyVisualSisPic,
         brandGuideline: brandFormState.brandGuideline || baseMaster?.brandGuideline || 'Quy định nội dung thương hiệu...',
         kocCriteria: baseMaster?.kocCriteria || 'Phù hợp định vị nhãn hàng',
         stores: baseMaster?.stores || [],
         heroProducts: baseMaster?.heroProducts || []
       };
       onAddBrand(newBrand);
-      notify(`Đã thêm nhãn hàng mới ${newBrand.name} ${baseMaster ? 'từ Master Data' : ''} và phân bổ PIC Lead ${newBrand.bookingPicLead}!`);
+      notify(`Đã thêm nhãn hàng mới ${newBrand.name} ${baseMaster ? 'từ Master Data' : ''} và phân bổ 3 vị trí gắn theo Brand!`);
     }
 
     setIsBrandModalOpen(false);
@@ -483,6 +551,9 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
       bookingPicLead: brand.bookingPicLead || staffList[0]?.name || 'Đặng Thị Yến Nhi',
       accountPic: brand.accountPic || 'Phạm Thị Nhài',
       growthPic: brand.growthPic || 'Hoàng Long',
+      contentBrandMainPic: brand.contentBrandMainPic || brand.contentPic || 'Quỳnh Như',
+      planStrategyPic: brand.planStrategyPic || brand.brandPicName || 'Nguyễn Thị Ngọc Tâm',
+      keyVisualSisPic: brand.keyVisualSisPic || 'Vũ Hoài Lâm',
       brandGuideline: brand.brandGuideline || ''
     });
     setIsBrandModalOpen(true);
@@ -529,9 +600,65 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
   const uniqueBrandPics = useMemo(() => {
     const set = new Set<string>();
     brands.forEach(b => {
+      if (b.contentBrandMainPic) set.add(b.contentBrandMainPic);
+      if (b.planStrategyPic) set.add(b.planStrategyPic);
+      if (b.keyVisualSisPic) set.add(b.keyVisualSisPic);
       if (b.bookingPicLead) set.add(b.bookingPicLead);
     });
     return Array.from(set).sort();
+  }, [brands]);
+
+  // Thống kê tải theo Brand của từng nhân sự trên 3 vị trí [theo brand]
+  const brandStaffPositionSummary = useMemo(() => {
+    const map = new Map<
+      string,
+      { name: string; contentMainCount: number; planStrategyCount: number; kvSisCount: number; totalPositions: number; brandCount: number }
+    >();
+    const brandSets = new Map<string, Set<string>>();
+
+    const ensure = (name: string) => {
+      if (!map.has(name)) {
+        map.set(name, {
+          name,
+          contentMainCount: 0,
+          planStrategyCount: 0,
+          kvSisCount: 0,
+          totalPositions: 0,
+          brandCount: 0,
+        });
+      }
+      if (!brandSets.has(name)) {
+        brandSets.set(name, new Set());
+      }
+      return map.get(name)!;
+    };
+
+    brands.forEach(b => {
+      const cPic = b.contentBrandMainPic || b.contentPic || 'Quỳnh Như';
+      const pPic = b.planStrategyPic || b.brandPicName || 'Nguyễn Thị Ngọc Tâm';
+      const kPic = b.keyVisualSisPic || 'Vũ Hoài Lâm';
+
+      const cRec = ensure(cPic);
+      cRec.contentMainCount += 1;
+      cRec.totalPositions += 1;
+      brandSets.get(cPic)!.add(b.name);
+
+      const pRec = ensure(pPic);
+      pRec.planStrategyCount += 1;
+      pRec.totalPositions += 1;
+      brandSets.get(pPic)!.add(b.name);
+
+      const kRec = ensure(kPic);
+      kRec.kvSisCount += 1;
+      kRec.totalPositions += 1;
+      brandSets.get(kPic)!.add(b.name);
+    });
+
+    const list = Array.from(map.values()).map(item => ({
+      ...item,
+      brandCount: brandSets.get(item.name)?.size || 0,
+    }));
+    return list.sort((a, b) => b.totalPositions - a.totalPositions);
   }, [brands]);
 
   return (
@@ -548,7 +675,8 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                 ? `Phân công Gian hàng (2 tầng) · ${b2cPlanStores.length}` 
                 : `Phân công Gian hàng · ${storePortfolios.length}` 
             },
-            { key: 'BRANDS', label: `Phân công Nhãn hàng · ${brands.length}` },
+            { key: 'BRANDS', label: `Phân bổ Nhân sự theo Brand · ${brands.length}` },
+            { key: 'COEFFICIENTS', label: `Hệ số Gian hàng (Bảng 2) · ${b2cPlanStores.length}` },
             { key: 'STAFF', label: `Cân bằng tải & Danh bạ · ${staffList.length}` },
             { key: 'TASKS', label: `Giao việc & Chỉ đạo · ${tasks.length}` },
           ]}
@@ -568,7 +696,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                 {activeSection === 'BRANDS' ? 'Xem Dashboard Thương hiệu' :
                  activeSection === 'STAFF' ? 'Xem Dashboard Hiệu suất Nhân viên' : 'Xem Dashboard Gian hàng'}
               </span>
-              <ArrowRight className="w-3 h-3 text-ink-3" />
+              <ArrowRight className="w-3.5 h-3.5 text-ink-3" />
             </button>
           )}
           <Button icon={Send} onClick={() => setIsTaskModalOpen(true)}>Giao việc</Button>
@@ -591,6 +719,9 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                 bookingPicLead: staffList[0]?.name || 'Đặng Thị Yến Nhi',
                 accountPic: 'Phạm Thị Nhài',
                 growthPic: 'Hoàng Long',
+                contentBrandMainPic: 'Quỳnh Như',
+                planStrategyPic: 'Nguyễn Thị Ngọc Tâm',
+                keyVisualSisPic: 'Vũ Hoài Lâm',
                 brandGuideline: ''
               });
               setIsBrandModalOpen(true);
@@ -602,180 +733,325 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
       </div>
 
       {/* ========================================================================= */}
-      {/* 1. PHÂN CÔNG NHÃN HÀNG (BRAND PIC, ACCOUNT PIC, GROWTH PIC)               */}
+      {/* 1. PHÂN BỔ NHÂN SỰ THEO BRAND (3 VỊ TRÍ GẮN THEO BRAND + ACCOUNT/GROWTH) */}
       {/* ========================================================================= */}
       {activeSection === 'BRANDS' && (
-        <div className="bg-surface rounded-xl border border-line overflow-hidden">
-          <div className="px-4 py-3 border-b border-line flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-            <div className="flex items-center gap-3 flex-wrap">
-              <div className="relative min-w-[220px]">
-                <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-3" />
-                <input
-                  type="text"
-                  placeholder="Tìm nhãn hàng, công ty, PIC..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-8 pr-3 py-1.5 text-xs bg-surface border border-line-strong rounded-md text-ink placeholder-ink-3 focus:outline-none focus:border-focus"
-                />
+        <div className="space-y-4">
+          {/* Khung tổng quan 3 vị trí gắn theo Brand dành cho Giám đốc */}
+          <div className="bg-surface rounded-xl border border-line p-4 space-y-3">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="text-sm font-semibold text-ink">
+                    Phân bổ nhân sự cho 3 vị trí gắn theo Brand ({brands.length} thương hiệu B2C)
+                  </h3>
+                  <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-amber-50 text-amber-800 border border-amber-200">
+                    theo brand
+                  </span>
+                </div>
+                <p className="text-xs text-ink-3 mt-0.5">
+                  Giám đốc Marketing B2C (<strong className="text-ink">Đặng Thị Yến Nhi</strong>) phân bổ nhân sự phụ trách xuyên suốt cấp Brand cho 3 vị trí: <strong className="text-ink">Content / Brand main</strong>, <strong className="text-ink">Plan / Strategy</strong> và <strong className="text-ink">Key Visual / SIS</strong> (định mức khuyến nghị ~5–6 Brand/nhân sự/vị trí).
+                </p>
               </div>
 
-              <select
-                value={selectedBrandFilter}
-                onChange={(e) => setSelectedBrandFilter(e.target.value)}
-                className="text-xs px-2.5 py-1.5 bg-surface border border-line-strong rounded-md text-ink focus:outline-none focus:border-focus"
-              >
-                <option value="ALL">Tất cả Brand PIC</option>
-                {uniqueBrandPics.map(pic => (
-                  <option key={pic} value={pic}>{pic}</option>
-                ))}
-              </select>
-
-              {(searchTerm || selectedBrandFilter !== 'ALL') && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSearchTerm('');
-                    setSelectedBrandFilter('ALL');
-                  }}
-                  className="text-2xs text-ink-3 hover:text-ink px-2 py-1 rounded bg-sunken transition"
-                >
-                  Xóa lọc ({displayedBrands.length}/{brands.length})
-                </button>
-              )}
+              {/* Bộ lọc nhanh theo vị trí gắn theo Brand */}
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {[
+                  { key: 'ALL' as const, label: 'Tất cả 3 vị trí', badge: `${brands.length} Brand` },
+                  { key: 'CONTENT_BRAND_MAIN' as const, label: 'Content / Brand main', badge: 'theo brand' },
+                  { key: 'PLAN_STRATEGY' as const, label: 'Plan / Strategy', badge: 'theo brand' },
+                  { key: 'KEY_VISUAL_SIS' as const, label: 'Key Visual / SIS', badge: 'theo brand' },
+                ].map(roleTab => {
+                  const active = selectedBrandPosRole === roleTab.key;
+                  return (
+                    <button
+                      key={roleTab.key}
+                      type="button"
+                      onClick={() => setSelectedBrandPosRole(roleTab.key)}
+                      className={`px-2.5 py-1.5 rounded-lg text-xs font-medium border flex items-center gap-1.5 transition ${
+                        active
+                          ? 'bg-amber-50/90 border-amber-300 text-amber-950 font-semibold shadow-2xs'
+                          : 'bg-canvas border-line text-ink-2 hover:text-ink hover:border-line-strong'
+                      }`}
+                    >
+                      <span>{roleTab.label}</span>
+                      <span className="px-1.5 py-0.5 rounded text-2xs font-semibold bg-amber-100/80 text-amber-900">
+                        {roleTab.badge}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
-            <div className="text-2xs text-ink-3">
-              Gán đầu mối chịu trách nhiệm chính (Brand PIC, Account PIC, Growth PIC) cho <strong className="text-ink font-semibold">{displayedBrands.length}</strong> thương hiệu
+            {/* Thanh tóm tắt tải nhân sự theo Brand */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 pt-1">
+              {brandStaffPositionSummary.map(st => {
+                const isSelected = selectedBrandFilter === st.name;
+                return (
+                  <button
+                    key={st.name}
+                    type="button"
+                    onClick={() => setSelectedBrandFilter(isSelected ? 'ALL' : st.name)}
+                    className={`p-2.5 rounded-lg border text-left transition ${
+                      isSelected
+                        ? 'bg-brand/5 border-brand ring-1 ring-brand/30'
+                        : 'bg-canvas/70 border-line hover:border-line-strong'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-1.5">
+                      <span className="text-xs font-semibold text-ink truncate">{st.name}</span>
+                      <span className="px-1.5 py-0.5 rounded text-2xs font-mono font-semibold bg-surface border border-line text-ink-2 shrink-0">
+                        {st.brandCount} Brand
+                      </span>
+                    </div>
+                    <div className="mt-1.5 flex items-center gap-1 flex-wrap text-2xs text-ink-3">
+                      {st.contentMainCount > 0 && (
+                        <span className="px-1.5 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200/70">
+                          Content: {st.contentMainCount}
+                        </span>
+                      )}
+                      {st.planStrategyCount > 0 && (
+                        <span className="px-1.5 py-0.5 rounded bg-blue-50 text-blue-800 border border-blue-200/70">
+                          Plan: {st.planStrategyCount}
+                        </span>
+                      )}
+                      {st.kvSisCount > 0 && (
+                        <span className="px-1.5 py-0.5 rounded bg-purple-50 text-purple-800 border border-purple-200/70">
+                          KV/SIS: {st.kvSisCount}
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
-              <thead>
-                <tr className="bg-canvas text-ink-3 font-medium border-b border-line text-2xs">
-                  <th className="py-2.5 px-4 min-w-[200px]">Nhãn hàng</th>
-                  <th className="py-2.5 px-3 min-w-[185px]">Brand PIC (Booking Lead)</th>
-                  <th className="py-2.5 px-3 min-w-[180px]">Account PIC</th>
-                  <th className="py-2.5 px-3 min-w-[180px]">Growth PIC</th>
-                  <th className="py-2.5 px-3 text-center w-28">Số gian B2C</th>
-                  <th className="py-2.5 px-3 text-right w-28"><span className="sr-only">Thao tác</span></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-line">
-                {displayedBrands.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="py-10 text-center text-ink-3 text-xs">
-                      Không tìm thấy nhãn hàng phù hợp với bộ lọc.
-                    </td>
-                  </tr>
-                ) : (
-                  displayedBrands.map((brand) => {
-                    const brandStoresCount = storePortfolios.filter(s => 
-                      s.brandName.toLowerCase().includes(brand.name.toLowerCase()) && 
-                      (storeFilterMode === 'ALL' ? true : Boolean(s.requiresB2cPlan || s.isB2cManaged))
-                    ).length;
+          <div className="bg-surface rounded-xl border border-line overflow-hidden">
+            <div className="px-4 py-3 border-b border-line flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+              <div className="flex items-center gap-3 flex-wrap">
+                <div className="relative min-w-[230px]">
+                  <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-3" />
+                  <input
+                    type="text"
+                    placeholder="Tìm nhãn hàng, nhân sự phụ trách..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full pl-8 pr-3 py-1.5 text-xs bg-surface border border-line-strong rounded-md text-ink placeholder-ink-3 focus:outline-none focus:border-focus"
+                  />
+                </div>
 
-                    return (
-                      <tr key={brand.id} className="hover:bg-canvas transition-colors group">
-                        <td className="py-3 px-4">
-                          <div className="flex items-center gap-2.5">
-                            <div className="w-7 h-7 rounded-md bg-sunken text-ink-2 font-semibold text-2xs flex items-center justify-center shrink-0">
-                              {brand.name.substring(0, 2).toUpperCase()}
-                            </div>
-                            <div className="min-w-0">
-                              <span className="font-semibold text-ink text-xs block truncate">{brand.name}</span>
-                              <span className="text-2xs text-ink-3 block truncate max-w-[180px]">
-                                {brand.companyName || brand.category}
-                              </span>
-                            </div>
-                          </div>
-                        </td>
+                <select
+                  value={selectedBrandFilter}
+                  onChange={(e) => setSelectedBrandFilter(e.target.value)}
+                  className="text-xs px-2.5 py-1.5 bg-surface border border-line-strong rounded-md text-ink focus:outline-none focus:border-focus"
+                >
+                  <option value="ALL">Tất cả nhân sự phụ trách Brand</option>
+                  {uniqueBrandPics.map(pic => (
+                    <option key={pic} value={pic}>{pic}</option>
+                  ))}
+                </select>
 
-                        {/* Brand PIC Dropdown */}
-                        <td className="py-3 px-3">
-                          <div className="flex items-center gap-2">
-                            <Avatar name={brand.bookingPicLead || 'Đặng Thị Yến Nhi'} size={22} />
-                            <select
-                              value={brand.bookingPicLead || 'Đặng Thị Yến Nhi'}
-                              onChange={(e) => {
-                                const updated = { ...brand, bookingPicLead: e.target.value };
-                                onUpdateBrand(updated);
-                                notify(`Đã gán Brand PIC của ${brand.name} cho ${e.target.value}`);
-                              }}
-                              className="w-full min-w-0 text-xs font-medium px-2 py-1.5 bg-surface hover:bg-canvas border border-line rounded-md text-ink focus:outline-none focus:border-focus transition-colors"
-                            >
-                              {staffList.map(s => (
-                                <option key={s.id} value={s.name}>
-                                  {s.name}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                        </td>
-
-                        {/* Account PIC Dropdown */}
-                        <td className="py-3 px-3">
-                          <div className="flex items-center gap-2">
-                            <Avatar name={brand.accountPic || 'Phạm Thị Nhài'} size={22} />
-                            <select
-                              value={brand.accountPic || 'Phạm Thị Nhài'}
-                              onChange={(e) => {
-                                const updated = { ...brand, accountPic: e.target.value };
-                                onUpdateBrand(updated);
-                                notify(`Đã gán Account PIC của ${brand.name} cho ${e.target.value}`);
-                              }}
-                              className="w-full min-w-0 text-xs px-2 py-1.5 bg-surface hover:bg-canvas border border-line rounded-md text-ink focus:outline-none focus:border-focus transition-colors"
-                            >
-                              {staffList.filter(s => s.role === 'ACCOUNT' || s.role === 'GROWTH' || s.role === 'MANAGER').map(s => (
-                                <option key={s.id} value={s.name}>
-                                  {s.name}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                        </td>
-
-                        {/* Growth PIC Dropdown */}
-                        <td className="py-3 px-3">
-                          <div className="flex items-center gap-2">
-                            <Avatar name={brand.growthPic || 'Hoàng Long'} size={22} />
-                            <select
-                              value={brand.growthPic || 'Hoàng Long'}
-                              onChange={(e) => {
-                                const updated = { ...brand, growthPic: e.target.value };
-                                onUpdateBrand(updated);
-                                notify(`Đã gán Growth PIC của ${brand.name} cho ${e.target.value}`);
-                              }}
-                              className="w-full min-w-0 text-xs px-2 py-1.5 bg-surface hover:bg-canvas border border-line rounded-md text-ink focus:outline-none focus:border-focus transition-colors"
-                            >
-                              {staffList.filter(s => s.role === 'GROWTH' || s.role === 'MANAGER').map(s => (
-                                <option key={s.id} value={s.name}>
-                                  {s.name}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                        </td>
-
-                        <td className="py-3 px-3 text-center">
-                          {brandStoresCount > 0 ? (
-                            <span className="tabular-nums font-medium text-ink-2">{brandStoresCount} gian</span>
-                          ) : (
-                            <Status tone="warning">Chưa gán</Status>
-                          )}
-                        </td>
-
-                        <td className="py-3 px-3 text-right">
-                          <Button size="sm" variant="secondary" onClick={() => handleOpenEditBrand(brand)}>
-                            Cấu hình
-                          </Button>
-                        </td>
-                      </tr>
-                    );
-                  })
+                {(searchTerm || selectedBrandFilter !== 'ALL' || selectedBrandPosRole !== 'ALL') && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearchTerm('');
+                      setSelectedBrandFilter('ALL');
+                      setSelectedBrandPosRole('ALL');
+                    }}
+                    className="text-2xs text-ink-3 hover:text-ink px-2 py-1 rounded bg-sunken transition"
+                  >
+                    Xóa lọc ({displayedBrands.length}/{brands.length})
+                  </button>
                 )}
-              </tbody>
-            </table>
+              </div>
+
+              <div className="text-2xs text-ink-3">
+                Phân bổ trực tiếp 3 vị trí gắn theo Brand (<strong className="text-ink">Content / Brand main</strong>, <strong className="text-ink">Plan / Strategy</strong>, <strong className="text-ink">Key Visual / SIS</strong>) cho <strong className="text-ink font-semibold">{displayedBrands.length}</strong> thương hiệu
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="bg-canvas text-ink-3 font-medium border-b border-line text-2xs">
+                    <th className="py-2.5 px-4 min-w-[185px]">Nhãn hàng</th>
+                    <th className="py-2.5 px-3 min-w-[200px]">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-semibold text-ink">Content / Brand main</span>
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-100 text-amber-900 border border-amber-200">
+                          theo brand
+                        </span>
+                      </div>
+                    </th>
+                    <th className="py-2.5 px-3 min-w-[200px]">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-semibold text-ink">Plan / Strategy</span>
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-100 text-amber-900 border border-amber-200">
+                          theo brand
+                        </span>
+                      </div>
+                    </th>
+                    <th className="py-2.5 px-3 min-w-[200px]">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-semibold text-ink">Key Visual / SIS</span>
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-100 text-amber-900 border border-amber-200">
+                          theo brand
+                        </span>
+                      </div>
+                    </th>
+                    <th className="py-2.5 px-3 min-w-[195px]">Phối hợp (Account / Growth)</th>
+                    <th className="py-2.5 px-3 text-center w-24">Số gian B2C</th>
+                    <th className="py-2.5 px-3 text-right w-28"><span className="sr-only">Thao tác</span></th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-line">
+                  {displayedBrands.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="py-10 text-center text-ink-3 text-xs">
+                        Không tìm thấy nhãn hàng phù hợp với bộ lọc.
+                      </td>
+                    </tr>
+                  ) : (
+                    displayedBrands.map((brand) => {
+                      const brandStoresCount = storePortfolios.filter(s => 
+                        s.brandName.toLowerCase().includes(brand.name.toLowerCase()) && 
+                        (storeFilterMode === 'ALL' ? true : Boolean(s.requiresB2cPlan || s.isB2cManaged))
+                      ).length;
+
+                      const contentMainVal = brand.contentBrandMainPic || brand.contentPic || 'Quỳnh Như';
+                      const planStrategyVal = brand.planStrategyPic || brand.brandPicName || 'Nguyễn Thị Ngọc Tâm';
+                      const kvSisVal = brand.keyVisualSisPic || 'Vũ Hoài Lâm';
+
+                      return (
+                        <tr key={brand.id} className="hover:bg-canvas transition-colors group">
+                          <td className="py-3 px-4">
+                            <div className="flex items-center gap-2.5">
+                              <div className="w-7 h-7 rounded-md bg-sunken text-ink-2 font-semibold text-2xs flex items-center justify-center shrink-0">
+                                {brand.name.substring(0, 2).toUpperCase()}
+                              </div>
+                              <div className="min-w-0">
+                                <span className="font-semibold text-ink text-xs block truncate">{brand.name}</span>
+                                <span className="text-2xs text-ink-3 block truncate max-w-[165px]">
+                                  {brand.category || brand.companyName}
+                                </span>
+                              </div>
+                            </div>
+                          </td>
+
+                          {/* 1. Content / Brand main [theo brand] */}
+                          <td className="py-3 px-3">
+                            <div className="flex items-center gap-2">
+                              <Avatar name={contentMainVal} size={22} />
+                              <select
+                                value={contentMainVal}
+                                onChange={(e) => {
+                                  const updated: BrandDetail = {
+                                    ...brand,
+                                    contentBrandMainPic: e.target.value,
+                                    contentPic: e.target.value,
+                                  };
+                                  onUpdateBrand(updated);
+                                  notify(`Đã phân bổ vị trí Content / Brand main [theo brand] của ${brand.name} cho ${e.target.value}`);
+                                }}
+                                className="w-full min-w-0 text-xs font-medium px-2 py-1.5 bg-amber-50/40 hover:bg-amber-50 border border-amber-200/80 rounded-md text-ink focus:outline-none focus:border-focus transition-colors"
+                              >
+                                {brandPositionCandidateNames.map(name => (
+                                  <option key={name} value={name}>
+                                    {name}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          </td>
+
+                          {/* 2. Plan / Strategy [theo brand] */}
+                          <td className="py-3 px-3">
+                            <div className="flex items-center gap-2">
+                              <Avatar name={planStrategyVal} size={22} />
+                              <select
+                                value={planStrategyVal}
+                                onChange={(e) => {
+                                  const updated: BrandDetail = {
+                                    ...brand,
+                                    planStrategyPic: e.target.value,
+                                    brandPicName: e.target.value,
+                                  };
+                                  onUpdateBrand(updated);
+                                  notify(`Đã phân bổ vị trí Plan / Strategy [theo brand] của ${brand.name} cho ${e.target.value}`);
+                                }}
+                                className="w-full min-w-0 text-xs font-medium px-2 py-1.5 bg-blue-50/40 hover:bg-blue-50 border border-blue-200/80 rounded-md text-ink focus:outline-none focus:border-focus transition-colors"
+                              >
+                                {brandPositionCandidateNames.map(name => (
+                                  <option key={name} value={name}>
+                                    {name}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          </td>
+
+                          {/* 3. Key Visual / SIS [theo brand] */}
+                          <td className="py-3 px-3">
+                            <div className="flex items-center gap-2">
+                              <Avatar name={kvSisVal} size={22} />
+                              <select
+                                value={kvSisVal}
+                                onChange={(e) => {
+                                  const updated: BrandDetail = {
+                                    ...brand,
+                                    keyVisualSisPic: e.target.value,
+                                  };
+                                  onUpdateBrand(updated);
+                                  notify(`Đã phân bổ vị trí Key Visual / SIS [theo brand] của ${brand.name} cho ${e.target.value}`);
+                                }}
+                                className="w-full min-w-0 text-xs font-medium px-2 py-1.5 bg-purple-50/40 hover:bg-purple-50 border border-purple-200/80 rounded-md text-ink focus:outline-none focus:border-focus transition-colors"
+                              >
+                                {brandPositionCandidateNames.map(name => (
+                                  <option key={name} value={name}>
+                                    {name}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          </td>
+
+                          {/* Phối hợp Account PIC & Growth PIC */}
+                          <td className="py-3 px-3">
+                            <div className="space-y-1 text-2xs">
+                              <div className="flex items-center justify-between gap-1.5">
+                                <span className="text-ink-3 shrink-0">Account:</span>
+                                <span className="font-medium text-ink truncate">{brand.accountPic || 'Phạm Thị Nhài'}</span>
+                              </div>
+                              <div className="flex items-center justify-between gap-1.5">
+                                <span className="text-ink-3 shrink-0">Growth:</span>
+                                <span className="font-medium text-ink truncate">{brand.growthPic || 'Hoàng Long'}</span>
+                              </div>
+                            </div>
+                          </td>
+
+                          <td className="py-3 px-3 text-center">
+                            {brandStoresCount > 0 ? (
+                              <span className="tabular-nums font-medium text-ink-2">{brandStoresCount} gian</span>
+                            ) : (
+                              <Status tone="warning">Chưa gán</Status>
+                            )}
+                          </td>
+
+                          <td className="py-3 px-3 text-right">
+                            <Button size="sm" variant="secondary" onClick={() => handleOpenEditBrand(brand)}>
+                              Cấu hình
+                            </Button>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}
@@ -898,6 +1174,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                   <tr className="bg-canvas text-ink-3 font-medium border-b border-line text-2xs">
                     <th className="py-2.5 px-4 min-w-[200px]">Gian hàng & sàn</th>
                     <th className="py-2.5 px-3">Nhãn hàng</th>
+                    <th className="py-2.5 px-3 text-center min-w-[140px]">Hệ số gian hàng (Bảng 2)</th>
                     <th className="py-2.5 px-3 min-w-[195px]">Cấp duyệt trung gian (Leader)</th>
                     <th className="py-2.5 px-3 min-w-[200px]">Chuyên viên B2C phụ trách</th>
                     <th className="py-2.5 px-3">Account PIC</th>
@@ -908,7 +1185,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                 <tbody className="divide-y divide-line">
                   {displayedStores.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="py-10 text-center text-ink-3 text-xs">
+                      <td colSpan={8} className="py-10 text-center text-ink-3 text-xs">
                         Không có gian hàng nào phù hợp với bộ lọc hiện tại.
                       </td>
                     </tr>
@@ -917,6 +1194,15 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                       const owners = store.b2cOwners || (store.b2cOwnerName ? store.b2cOwnerName.split(',').map(s => s.trim()) : ['Khánh Vy']);
                       const hasLeader = Boolean(store.hasBookingLeader && store.bookingLeader);
                       const currentLeaderVal = hasLeader ? (store.bookingLeader || 'Nguyễn Thị Ngọc Tâm') : 'NONE';
+                      const coef = normalizeStoreCoefficient(store.difficultyTier, store.difficultyMultiplier);
+                      const coefBadgeClass =
+                        coef.tier === 'Khó'
+                          ? 'bg-rose-50 text-rose-800 border-rose-300'
+                          : coef.tier === 'Vừa'
+                            ? 'bg-amber-50 text-amber-900 border-amber-300'
+                            : coef.tier === 'Tiêu chuẩn'
+                              ? 'bg-blue-50 text-blue-800 border-blue-200'
+                              : 'bg-slate-100 text-slate-800 border-slate-300';
 
                       return (
                         <tr key={store.id} className="hover:bg-canvas transition-colors group">
@@ -932,6 +1218,26 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
 
                           <td className="py-3 px-3 font-medium text-ink-2">
                             {store.brandName}
+                          </td>
+
+                          {/* Hệ số gian hàng (Bảng 2) */}
+                          <td className="py-3 px-3 text-center">
+                            <button
+                              type="button"
+                              onClick={() => setActiveSection('COEFFICIENTS')}
+                              className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-md border text-xs font-semibold transition cursor-pointer hover:opacity-85 ${coefBadgeClass}`}
+                              title={`Bảng 2. Hệ số gian hàng: ${coef.tier} (${coef.label}) — ${coef.rule.definition}. Bấm để mở cấu hình & duyệt hệ số đầu tháng.`}
+                            >
+                              <span>{coef.tier}</span>
+                              <span className="font-mono font-bold">· {coef.label}</span>
+                            </button>
+                            <div className="text-[10px] text-ink-3 mt-0.5">
+                              {store.coefficientApprovalStatus === 'PENDING_MANAGER_APPROVAL'
+                                ? 'Chờ duyệt đầu kỳ'
+                                : store.coefficientApprovalStatus === 'ADJUSTED_BY_APPROVED_PLAN'
+                                  ? 'Theo Plan điều chỉnh'
+                                  : 'Đã duyệt đầu kỳ'}
+                            </div>
                           </td>
 
                           {/* Inline Leader Selector */}
@@ -1018,6 +1324,20 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 2B. BẢNG 2. HỆ SỐ GIAN HÀNG (HS PHẠM VI CHO VIỆC CẤP SÀN VÀ CẤP BRAND)     */}
+      {/* ========================================================================= */}
+      {activeSection === 'COEFFICIENTS' && (
+        <StoreCoefficientHubSection
+          stores={storePortfolios}
+          brands={brands}
+          selectedMonth="2026/10"
+          currentUser={currentUser}
+          onUpdateStore={onUpdateStore}
+          onNotify={(msg) => notify(msg)}
+        />
       )}
 
       {/* ========================================================================= */}
@@ -1108,6 +1428,11 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                   const isOverloaded = assignedStores.length > maxCap;
                   const isOptimal = assignedStores.length === maxCap;
 
+                  const contentMainBrands = brands.filter(b => (b.contentBrandMainPic || b.contentPic) === staff.name);
+                  const planStrategyBrands = brands.filter(b => (b.planStrategyPic || b.brandPicName) === staff.name);
+                  const kvSisBrands = brands.filter(b => b.keyVisualSisPic === staff.name);
+                  const totalBrandPositions = contentMainBrands.length + planStrategyBrands.length + kvSisBrands.length;
+
                   return (
                     <div
                       key={staff.id}
@@ -1146,8 +1471,37 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                           />
                         </div>
 
+                        {/* Vị trí gắn theo Brand [theo brand] */}
+                        <div className="mt-2.5 p-2 rounded-lg bg-amber-50/40 border border-amber-200/70">
+                          <div className="flex items-center justify-between text-2xs mb-1">
+                            <span className="font-semibold text-amber-900">Vị trí gắn theo Brand:</span>
+                            <span className="font-mono font-semibold text-amber-950">{totalBrandPositions} vị trí</span>
+                          </div>
+                          {totalBrandPositions > 0 ? (
+                            <div className="flex flex-wrap gap-1 text-[10px]">
+                              {contentMainBrands.length > 0 && (
+                                <span className="px-1.5 py-0.5 rounded bg-white border border-amber-200 text-amber-900 font-medium">
+                                  Content/Brand main: {contentMainBrands.length}
+                                </span>
+                              )}
+                              {planStrategyBrands.length > 0 && (
+                                <span className="px-1.5 py-0.5 rounded bg-white border border-blue-200 text-blue-900 font-medium">
+                                  Plan/Strategy: {planStrategyBrands.length}
+                                </span>
+                              )}
+                              {kvSisBrands.length > 0 && (
+                                <span className="px-1.5 py-0.5 rounded bg-white border border-purple-200 text-purple-900 font-medium">
+                                  Key Visual/SIS: {kvSisBrands.length}
+                                </span>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-2xs text-ink-3 italic">Chưa gán vị trí theo Brand</span>
+                          )}
+                        </div>
+
                         {/* Assigned Stores List tags */}
-                        <div className="mt-3">
+                        <div className="mt-2.5">
                           <span className="text-2xs font-medium text-ink-3 block mb-1">
                             Danh sách gian hàng:
                           </span>
@@ -1874,35 +2228,85 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
 
                 {/* SECTION: PHÂN CÔNG NHÂN SỰ & HẠN MỨC (DELEGATION SETTINGS) */}
                 <div className="pt-2 border-t border-slate-200 space-y-3">
-                  <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-800">
-                    <Users className="w-3.5 h-3.5 text-blue-600" />
-                    <span>Phân bổ nhân sự chịu trách nhiệm & chỉ tiêu tài chính</span>
+                  <div className="flex items-center justify-between gap-1.5 text-xs font-semibold text-slate-800">
+                    <div className="flex items-center gap-1.5">
+                      <Users className="w-3.5 h-3.5 text-blue-600" />
+                      <span>Phân bổ 3 vị trí gắn theo Brand & đầu mối phối hợp</span>
+                    </div>
+                    <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-amber-100 text-amber-900 border border-amber-200">
+                      theo brand
+                    </span>
                   </div>
 
-                  <div>
-                    <label className="font-semibold text-slate-700 block mb-1">
-                      Brand PIC Lead (Chịu trách nhiệm chính booking & điều phối kịch bản)
-                    </label>
-                    <select
-                      value={brandFormState.bookingPicLead}
-                      onChange={(e) => setBrandFormState(prev => ({ ...prev, bookingPicLead: e.target.value }))}
-                      className="w-full text-xs font-semibold px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg text-blue-900 focus:outline-none focus:border-blue-500 shadow-2xs"
-                    >
-                      {staffList.map(s => (
-                        <option key={s.id} value={s.name}>
-                          {s.name} ({s.roleTitle} - {s.team})
-                        </option>
-                      ))}
-                    </select>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 p-3 rounded-xl bg-amber-50/50 border border-amber-200/80">
+                    <div>
+                      <label className="font-semibold text-slate-800 block mb-1 text-2xs">
+                        Content / Brand main <span className="text-amber-700">[theo brand]</span>
+                      </label>
+                      <select
+                        value={brandFormState.contentBrandMainPic}
+                        onChange={(e) => setBrandFormState(prev => ({ ...prev, contentBrandMainPic: e.target.value }))}
+                        className="w-full text-xs font-medium px-2.5 py-2 bg-white border border-amber-300 rounded-lg text-slate-900 focus:outline-none focus:border-blue-500 shadow-2xs"
+                      >
+                        {brandPositionCandidateNames.map(name => (
+                          <option key={name} value={name}>{name}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="font-semibold text-slate-800 block mb-1 text-2xs">
+                        Plan / Strategy <span className="text-amber-700">[theo brand]</span>
+                      </label>
+                      <select
+                        value={brandFormState.planStrategyPic}
+                        onChange={(e) => setBrandFormState(prev => ({ ...prev, planStrategyPic: e.target.value }))}
+                        className="w-full text-xs font-medium px-2.5 py-2 bg-white border border-blue-200 rounded-lg text-slate-900 focus:outline-none focus:border-blue-500 shadow-2xs"
+                      >
+                        {brandPositionCandidateNames.map(name => (
+                          <option key={name} value={name}>{name}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="font-semibold text-slate-800 block mb-1 text-2xs">
+                        Key Visual / SIS <span className="text-amber-700">[theo brand]</span>
+                      </label>
+                      <select
+                        value={brandFormState.keyVisualSisPic}
+                        onChange={(e) => setBrandFormState(prev => ({ ...prev, keyVisualSisPic: e.target.value }))}
+                        className="w-full text-xs font-medium px-2.5 py-2 bg-white border border-purple-200 rounded-lg text-slate-900 focus:outline-none focus:border-blue-500 shadow-2xs"
+                      >
+                        {brandPositionCandidateNames.map(name => (
+                          <option key={name} value={name}>{name}</option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                    <div>
+                      <label className="font-semibold text-slate-700 block mb-1">Brand Lead / Duyệt B2C</label>
+                      <select
+                        value={brandFormState.bookingPicLead}
+                        onChange={(e) => setBrandFormState(prev => ({ ...prev, bookingPicLead: e.target.value }))}
+                        className="w-full text-xs font-semibold px-2.5 py-2 bg-blue-50 border border-blue-200 rounded-lg text-blue-900 focus:outline-none focus:border-blue-500 shadow-2xs"
+                      >
+                        {staffList.map(s => (
+                          <option key={s.id} value={s.name}>
+                            {s.name} ({s.roleTitle})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
                     <div>
                       <label className="font-semibold text-slate-700 block mb-1">Account PIC (Đầu mối Brand)</label>
                       <select
                         value={brandFormState.accountPic}
                         onChange={(e) => setBrandFormState(prev => ({ ...prev, accountPic: e.target.value }))}
-                        className="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:outline-none"
+                        className="w-full text-xs px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:outline-none"
                       >
                         {staffList.filter(s => s.role === 'ACCOUNT' || s.role === 'GROWTH' || s.role === 'MANAGER').map(s => (
                           <option key={s.id} value={s.name}>{s.name} ({s.roleTitle})</option>
@@ -1915,7 +2319,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
                       <select
                         value={brandFormState.growthPic}
                         onChange={(e) => setBrandFormState(prev => ({ ...prev, growthPic: e.target.value }))}
-                        className="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:outline-none"
+                        className="w-full text-xs px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:outline-none"
                       >
                         {staffList.filter(s => s.role === 'GROWTH' || s.role === 'MANAGER').map(s => (
                           <option key={s.id} value={s.name}>{s.name} ({s.roleTitle})</option>

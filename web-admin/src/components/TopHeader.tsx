@@ -5,6 +5,7 @@ import { Menu, ArrowRight, Building2, PanelLeftOpen, PanelLeftClose } from 'luci
 import { UserProfile } from '../lib/types';
 import type { TabKey } from './Sidebar';
 import { PageActionsSlot } from './ui';
+import type { UserScopeSummary } from '../lib/rbacScope';
 
 interface TopHeaderProps {
   currentUser: UserProfile;
@@ -21,6 +22,7 @@ interface TopHeaderProps {
   isSidebarCollapsed?: boolean;
   onToggleSidebarCollapse?: () => void;
   onLogout?: () => void;
+  userScopeSummary?: UserScopeSummary;
 }
 
 export const TopHeader: React.FC<TopHeaderProps> = ({
@@ -32,6 +34,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   onToggleMobileSidebar,
   isSidebarCollapsed = false,
   onToggleSidebarCollapse,
+  userScopeSummary,
 }) => {
   return (
     <header className="app-header sticky top-0 z-20 min-h-14 bg-surface/95 backdrop-blur border-b border-line px-4 sm:px-6 lg:px-8 py-2.5 flex flex-wrap items-center justify-between gap-3 shrink-0">
@@ -76,10 +79,23 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
       </div>
 
       <div className="flex flex-wrap items-center gap-2 min-w-0 max-w-full">
-        {currentUser.role === 'BRAND_PARTNER' && (
+        {currentUser.role === 'BRAND_PARTNER' ? (
           <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-positive-soft text-positive text-xs font-medium">
             <Building2 className="w-3.5 h-3.5 text-positive" />
             <span>{currentUser.assignedBrands?.[0] || currentUser.linkedEntityName || 'Kutieskin'}</span>
+          </div>
+        ) : userScopeSummary && !userScopeSummary.isGlobal ? (
+          <div 
+            title={userScopeSummary.scopeTooltip}
+            className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-accent-soft text-accent text-xs font-medium border border-line"
+          >
+            <Building2 className="w-3.5 h-3.5 text-accent shrink-0" />
+            <span className="truncate max-w-[260px]">{userScopeSummary.scopeBadgeText}</span>
+          </div>
+        ) : (
+          <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-sunken text-ink-2 text-xs font-medium border border-line">
+            <Building2 className="w-3.5 h-3.5 text-ink-3 shrink-0" />
+            <span>Toàn quyền ({userScopeSummary?.totalBrandCount || 42} thương hiệu / {userScopeSummary?.totalStoreCount || 69} gian hàng B2C)</span>
           </div>
         )}
 

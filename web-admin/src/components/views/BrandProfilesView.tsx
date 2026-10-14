@@ -1,23 +1,48 @@
 'use client';
 
 /**
- * Hồ sơ thương hiệu: danh sách nhãn (từ Dữ liệu gốc) → hồ sơ từng nhãn.
- * Hồ sơ lưu trên máy chủ (/api/brands/profiles); kho tệp lưu trữ trên Cloudflare R2 (/api/brands/files).
- * Chọn một nhãn ở bộ chọn “Nhãn” trên thanh trên sẽ mở thẳng hồ sơ nhãn đó.
+ * Hồ sơ thương hiệu:
+ * - Tách bạch hồ sơ định danh tĩnh (Pháp nhân, Định vị, SKU, Từ cấm, Kho tệp R2)
+ *   với Hồ sơ Tháng (Plan & Report theo từng kỳ tháng: Doanh số NMV, Ngân sách Net, Sản lượng Video, 3 vị trí gắn theo Brand).
+ * - Từ danh sách hoặc từ chi tiết thương hiệu có thể drill-down trực tiếp sang Kế hoạch tháng (Plan), Đề xuất KOC, Quản lý Booking hoặc Hồ sơ gian hàng.
  */
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { HardDrive, Loader2 } from 'lucide-react';
-import type { BookingDealItem, BrandDetail, StorePortfolioItem, UserProfile } from '../../lib/types';
+import { Calendar, FileSpreadsheet, HardDrive, Loader2, Video } from 'lucide-react';
+import type { BookingDealItem, BrandDetail, InputPlanBreakdownState, StorePortfolioItem, UserProfile } from '../../lib/types';
 import type { BrandProfile, BrandSection } from '../../lib/brands/types';
 import { brandKey } from '../../lib/brands/types';
 import { UPBASE_BRANDS_MASTER, UPBASE_STORES_MASTER } from '../../lib/importedMasterData';
-import { formatDate, formatVndShort } from '../../lib/format';
-import { Avatar, Button, ChannelTag, Chips, DataTable, EmptyState, FilterBar, Pagination, Panel, Person, Stat, StatRow, Skeleton, Status, channelOf, closeShared, openShared, sharedFrom } from '../ui';
+import { formatDate, formatNumber, formatVndShort } from '../../lib/format';
+import {
+  PROFILE_MONTH_OPTIONS,
+  buildBrandMonthlyPlanReport,
+  type BrandMonthlyPlanReport,
+} from '../../lib/monthlyProfileMetrics';
+import {
+  Avatar,
+  Button,
+  ChannelTag,
+  Chips,
+  DataTable,
+  EmptyState,
+  FilterBar,
+  Pagination,
+  Panel,
+  Stat,
+  StatRow,
+  Skeleton,
+  Status,
+  channelOf,
+  closeShared,
+  openShared,
+  sharedFrom,
+} from '../ui';
 import type { Column } from '../ui';
 import { BrandProfileDetail } from '../brands/BrandProfileDetail';
 import { buildRows, isExpired, permissionsOf, real, type BrandAccess, type BrandRow } from '../brands/brandUi';
 import { getSharedProfilesSnapshot, subscribeSharedProfiles, updateSharedProfilesCache } from '../../lib/brands/useBrandProfiles';
+import { isBrandManagedByUser, isStaffGlobalAdminOrManager } from '../../lib/rbacScope';
 
 type Filter = 'ALL' | 'MINE' | 'KEY_BUDGET' | 'COMPLETE' | 'EXPIRED_LEGAL';
 
@@ -41,26 +66,37 @@ export function BrandProfilesView({
   brands,
   stores,
   deals = [],
+  monthlyPlans,
   onNotify,
   onOpenBooking,
   onNavigateToStoreProfile,
   onUpdateStore,
+  onDrilldownToPlan,
+  onDrilldownToListing,
+  onDrilldownToBooking,
+  onSelectDealForContract,
 }: {
   currentUser?: UserProfile | null;
   selectedBrand?: string;
   brands?: BrandDetail[];
   stores?: StorePortfolioItem[];
   deals?: BookingDealItem[];
+  monthlyPlans?: InputPlanBreakdownState[];
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
   onOpenBooking?: () => void;
   onNavigateToStoreProfile?: (storeName: string) => void;
   onUpdateStore?: (store: StorePortfolioItem) => void;
+  onDrilldownToPlan?: (params: { planId?: string; storeId?: string; storeName?: string; brandName?: string; month: string }) => void;
+  onDrilldownToListing?: (params: { storeName?: string; brandName?: string; month: string }) => void;
+  onDrilldownToBooking?: (params: { storeName?: string; brandName?: string; dealCode?: string; month: string }) => void;
+  onSelectDealForContract?: (deal: BookingDealItem) => void;
 }) {
   const [profiles, setProfiles] = useState<BrandProfile[] | null>(() => getSharedProfilesSnapshot()?.profiles || brandProfilesClientCache?.profiles || null);
   const [access, setAccess] = useState<BrandAccess | undefined>(() => getSharedProfilesSnapshot()?.access || brandProfilesClientCache?.access);
   const [loadError, setLoadError] = useState<LoadError | null>(null);
   const [busy, setBusy] = useState(false);
   const [openKey, setOpenKey] = useState<string | null>(selectedBrand !== 'ALL' ? brandKey(selectedBrand) : null);
+  const [selectedMonth, setSelectedMonth] = useState<string>('2026/10');
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<Filter>('ALL');
   const [page, setPage] = useState(1);
@@ -113,40 +149,49 @@ export function BrandProfilesView({
     setOpenKey(selectedBrand !== 'ALL' ? brandKey(selectedBrand) : null);
   }
 
-  const allStores = stores?.length ? stores : UPBASE_STORES_MASTER;
-  const rows = useMemo(() => buildRows(brands?.length ? brands : UPBASE_BRANDS_MASTER, profiles || []), [brands, profiles]);
+  const allStores = stores !== undefined ? stores : UPBASE_STORES_MASTER;
+  const baseBrands = brands !== undefined ? brands : UPBASE_BRANDS_MASTER;
+  const rows = useMemo(() => buildRows(baseBrands, profiles || []), [baseBrands, profiles]);
 
-  // Map gian hàng theo brandKey để tính toán số gian, hạn mức và thực chi
-  const storeStatsByBrand = useMemo(() => {
-    const map = new Map<string, { count: number; platforms: string[]; budgetNet: number; spentNet: number }>();
+  // Gom nhóm gian hàng theo brandKey và tổng hợp báo cáo Plan vs Report theo kỳ tháng đang chọn (selectedMonth)
+  const monthlyReportByBrand = useMemo(() => {
+    const storesByKey = new Map<string, StorePortfolioItem[]>();
     for (const s of allStores) {
       const bName = s.brandName || s.storeName?.split('_')[0] || '';
       if (!bName) continue;
       const k = brandKey(bName);
-      const cur = map.get(k) || { count: 0, platforms: [], budgetNet: 0, spentNet: 0 };
-      cur.count += 1;
-      if (s.platform && !cur.platforms.includes(s.platform)) cur.platforms.push(s.platform);
-      cur.budgetNet += s.budgetNet ?? s.monthlyBudget ?? 0;
-      cur.spentNet += s.actualSpentNet ?? 0;
-      map.set(k, cur);
+      const list = storesByKey.get(k) || [];
+      list.push(s);
+      storesByKey.set(k, list);
     }
-    return map;
-  }, [allStores]);
 
-  const me = access?.name.trim().toLowerCase();
+    const reportMap = new Map<string, BrandMonthlyPlanReport>();
+    for (const r of rows) {
+      const bStores = storesByKey.get(r.key) || [];
+      reportMap.set(
+        r.key,
+        buildBrandMonthlyPlanReport(r.name, bStores, selectedMonth, {
+          monthlyPlans,
+          deals,
+        }),
+      );
+    }
+    return reportMap;
+  }, [allStores, rows, selectedMonth, monthlyPlans, deals]);
+
   const matches: Record<Filter, (r: BrandRow) => boolean> = useMemo(() => ({
     ALL: () => true,
     MINE: r => {
-      if (!me) return false;
-      return real(r.master?.accountPic).toLowerCase() === me || real(r.master?.brandPicName).toLowerCase() === me;
+      if (!currentUser) return false;
+      return isBrandManagedByUser(r.name, currentUser, allStores);
     },
     KEY_BUDGET: r => {
-      const st = storeStatsByBrand.get(r.key);
-      return (st?.budgetNet || r.master?.planBudget || r.master?.monthlyBudget || 0) >= 50_000_000;
+      const rep = monthlyReportByBrand.get(r.key);
+      return (rep?.planBudgetNet || 0) >= 20_000_000;
     },
     COMPLETE: r => r.done === r.total,
     EXPIRED_LEGAL: r => r.profile.legal.length === 0 || r.profile.legal.some(l => Boolean(l.validUntil && isExpired(l.validUntil))),
-  }), [me, storeStatsByBrand]);
+  }), [currentUser, allStores, monthlyReportByBrand]);
 
   const searched = useMemo(() => rows.filter(r => {
     if (!search.trim()) return true;
@@ -158,21 +203,31 @@ export function BrandProfilesView({
   const [pagedKey, setPagedKey] = useState('');
   if (`${search}|${filter}` !== pagedKey) { setPagedKey(`${search}|${filter}`); setPage(1); }
 
-  // Chỉ số KPI tổng hợp toàn bộ thương hiệu B2C
+  // Chỉ số KPI tổng hợp toàn bộ thương hiệu B2C trong kỳ tháng đang chọn
   const kpiSummary = useMemo(() => {
     let totalStores = 0;
-    let totalBudgetNet = 0;
-    let totalSpentNet = 0;
+    let totalPlanNmv = 0;
+    let totalReportNmv = 0;
+    let totalPlanBudgetNet = 0;
+    let totalReportSpentNet = 0;
+    let totalPlanVideos = 0;
+    let totalAiredVideos = 0;
+    let totalBookedDeals = 0;
     let completeCount = 0;
     let totalDocs = 0;
     let totalLegal = 0;
     let uploadedFiles = 0;
 
     for (const r of rows) {
-      const st = storeStatsByBrand.get(r.key);
-      totalStores += st?.count || r.master?.storeCount || 0;
-      totalBudgetNet += st?.budgetNet || r.master?.planBudget || r.master?.monthlyBudget || 0;
-      totalSpentNet += st?.spentNet || r.master?.spentBudget || 0;
+      const rep = monthlyReportByBrand.get(r.key);
+      totalStores += rep?.storeCount || r.master?.storeCount || 0;
+      totalPlanNmv += rep?.planNmv || 0;
+      totalReportNmv += rep?.reportNmv || 0;
+      totalPlanBudgetNet += rep?.planBudgetNet || 0;
+      totalReportSpentNet += rep?.reportSpentNet || 0;
+      totalPlanVideos += rep?.planTotalVideos || 0;
+      totalAiredVideos += rep?.reportAiredCount || 0;
+      totalBookedDeals += rep?.reportBookedCount || 0;
       if (r.done === r.total) completeCount += 1;
       totalDocs += r.profile.documents.length;
       totalLegal += r.profile.legal.length;
@@ -180,8 +235,21 @@ export function BrandProfilesView({
         + r.profile.legal.filter(l => l.storage === 'R2' || l.storage === 'LOCAL').length;
     }
 
-    return { totalStores, totalBudgetNet, totalSpentNet, completeCount, totalDocs, totalLegal, uploadedFiles };
-  }, [rows, storeStatsByBrand]);
+    return {
+      totalStores,
+      totalPlanNmv,
+      totalReportNmv,
+      totalPlanBudgetNet,
+      totalReportSpentNet,
+      totalPlanVideos,
+      totalAiredVideos,
+      totalBookedDeals,
+      completeCount,
+      totalDocs,
+      totalLegal,
+      uploadedFiles,
+    };
+  }, [rows, monthlyReportByBrand]);
 
   const save = async (row: BrandRow, section: BrandSection, data: unknown, summary?: string) => {
     setBusy(true);
@@ -228,6 +296,9 @@ export function BrandProfilesView({
         can={permissionsOf(access, real(open.master?.accountPic), open.name)}
         deals={deals}
         stores={allStores}
+        monthlyPlans={monthlyPlans}
+        selectedMonth={selectedMonth}
+        onMonthChange={setSelectedMonth}
         busy={busy}
         onBack={() => closeBrand(open.key)}
         nav={{
@@ -240,6 +311,10 @@ export function BrandProfilesView({
         onOpenBooking={onOpenBooking}
         onNavigateToStoreProfile={onNavigateToStoreProfile}
         onUpdateStore={onUpdateStore}
+        onDrilldownToPlan={onDrilldownToPlan}
+        onDrilldownToListing={onDrilldownToListing}
+        onDrilldownToBooking={onDrilldownToBooking}
+        onSelectDealForContract={onSelectDealForContract}
         onNotify={onNotify}
       />
     );
@@ -252,8 +327,8 @@ export function BrandProfilesView({
     label: {
       ALL: 'Tất cả nhãn',
       MINE: 'Tôi phụ trách',
-      KEY_BUDGET: 'Ngân sách ≥ 50tr',
-      COMPLETE: 'Đủ 8/8 mục',
+      KEY_BUDGET: `Plan Net ≥ 20tr (${selectedMonth})`,
+      COMPLETE: 'Đủ 8/8 mục tĩnh',
       EXPIRED_LEGAL: 'Cần rà soát pháp lý',
     }[key],
     count: searched.filter(matches[key]).length,
@@ -263,171 +338,244 @@ export function BrandProfilesView({
     {
       key: 'name',
       header: 'Thương hiệu & Sàn',
-      width: 250,
+      width: 235,
       render: r => {
-        const st = storeStatsByBrand.get(r.key);
-        const platforms = st?.platforms.length ? st.platforms : (r.master?.platforms || []);
+        const rep = monthlyReportByBrand.get(r.key);
+        const platforms = rep?.platforms.length ? rep.platforms : (r.master?.platforms || []);
+        const count = rep?.storeCount || r.master?.storeCount || 0;
         return (
-          <div className="min-w-0 max-w-[270px] leading-tight flex items-start gap-2.5">
+          <div className="min-w-0 max-w-[250px] leading-tight flex items-start gap-2.5">
             <span {...sharedFrom('brand-avatar', r.key)} className="shrink-0 inline-flex"><Avatar name={r.name} size={28} /></span>
             <div className="min-w-0">
-            <div className="flex items-center gap-1.5">
-              <span {...sharedFrom('brand-title', r.key)} className="truncate font-semibold text-ink">{r.name}</span>
-              {real(r.master?.code) && (
+              <div className="flex items-center gap-1.5">
+                <span {...sharedFrom('brand-title', r.key)} className="truncate font-semibold text-ink">{r.name}</span>
                 <span className="text-2xs font-mono text-ink-3 bg-surface-2 px-1 py-0.5 rounded border border-line shrink-0">
-                  {real(r.master?.code)}
+                  {count} gian
                 </span>
-              )}
-            </div>
-            <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-              <span className="truncate text-2xs text-ink-3 max-w-[140px]">{real(r.master?.category) || '—'}</span>
-              {platforms.map(p => <ChannelTag key={p} channel={channelOf(p)} />)}
-            </div>
+              </div>
+              <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                <span className="truncate text-2xs text-ink-3 max-w-[130px]">{real(r.master?.category) || '—'}</span>
+                {platforms.map(p => <ChannelTag key={p} channel={channelOf(p)} />)}
+              </div>
             </div>
           </div>
         );
       },
     },
     {
-      key: 'stores',
-      header: 'Gian hàng',
-      width: 90,
-      align: 'right',
+      key: 'pic',
+      header: '3 vị trí gắn theo Brand & Account',
+      width: 230,
       render: r => {
-        const count = storeStatsByBrand.get(r.key)?.count || r.master?.storeCount || 0;
-        return <span className="font-mono font-medium text-ink">{count} gian</span>;
+        const rep = monthlyReportByBrand.get(r.key);
+        const acc = real(r.master?.accountPic);
+        const contentMain = rep?.brandPlan?.contentBrandMainPic || real(r.master?.contentBrandMainPic) || real(r.master?.contentPic);
+        const planStrat = rep?.brandPlan?.planStrategyPic || real(r.master?.planStrategyPic) || real(r.master?.brandPicName);
+        const kvSis = rep?.brandPlan?.keyVisualSisPic || real(r.master?.keyVisualSisPic);
+        return (
+          <div className="grid gap-0.5 leading-tight text-2xs">
+            {planStrat && (
+              <div className="flex items-center justify-between gap-1.5">
+                <span className="text-blue-800 font-medium">Plan/Strategy:</span>
+                <span className="font-semibold text-ink truncate">{planStrat}</span>
+              </div>
+            )}
+            {contentMain && (
+              <div className="flex items-center justify-between gap-1.5">
+                <span className="text-amber-800 font-medium">Content/Brand:</span>
+                <span className="font-semibold text-ink truncate">{contentMain}</span>
+              </div>
+            )}
+            {kvSis && (
+              <div className="flex items-center justify-between gap-1.5">
+                <span className="text-purple-800 font-medium">KV/SIS:</span>
+                <span className="font-semibold text-ink truncate">{kvSis}</span>
+              </div>
+            )}
+            {acc && (
+              <div className="flex items-center justify-between gap-1.5 text-ink-3 pt-0.5 border-t border-line/60">
+                <span>Account:</span>
+                <span className="truncate">{acc}</span>
+              </div>
+            )}
+          </div>
+        );
       },
     },
     {
-      key: 'pic',
-      header: 'Account & Booking PIC',
-      width: 190,
+      key: 'nmv',
+      header: `NMV (${selectedMonth})`,
+      width: 155,
+      align: 'right',
       render: r => {
-        const acc = real(r.master?.accountPic);
-        const book = real(r.master?.brandPicName);
+        const rep = monthlyReportByBrand.get(r.key);
+        const planNmv = rep?.planNmv || 0;
+        const reportNmv = rep?.reportNmv || 0;
         return (
-          <div className="grid gap-0.5 leading-tight">
-            {acc ? <Person name={acc} size={18} /> : <span className="text-ink-3 text-xs">—</span>}
-            {book && book !== acc && (
-              <span className="text-2xs text-ink-3 truncate">Booking: {book}</span>
-            )}
+          <div className="leading-tight tabular-nums text-right">
+            <span className="block font-mono font-medium text-ink">
+              Plan: {planNmv > 0 ? formatVndShort(planNmv) : 'Theo sàn'}
+            </span>
+            <span className="block text-2xs font-mono text-accent font-medium mt-0.5">
+              Report: {reportNmv > 0 ? formatVndShort(reportNmv) : '0 đ'}
+              {planNmv > 0 ? ` (${rep?.nmvAchievementPct || 0}%)` : ''}
+            </span>
           </div>
         );
       },
     },
     {
       key: 'budget',
-      header: 'Hạn mức Order Net',
+      header: `Ngân sách Net (${selectedMonth})`,
+      width: 165,
+      align: 'right',
+      render: r => {
+        const rep = monthlyReportByBrand.get(r.key);
+        const budget = rep?.planBudgetNet || 0;
+        const spent = rep?.reportSpentNet || 0;
+        const isOver = (rep?.overbudgetStoresCount || 0) > 0 || (budget > 0 && spent > budget);
+        const isUnbudgeted = (rep?.unbudgetedStoresCount || 0) > 0;
+        return (
+          <div className="leading-tight tabular-nums text-right">
+            <span className="block font-mono font-medium text-ink">
+              Plan: {budget > 0 ? formatVndShort(budget) : '0 đ'}
+            </span>
+            <span className={`block text-2xs font-mono mt-0.5 ${isOver || isUnbudgeted ? 'text-danger font-semibold' : 'text-ink-3'}`}>
+              Chi: {formatVndShort(spent)}
+              {isUnbudgeted ? ' · Ngoài KH' : isOver ? ' · Vượt trần' : budget > 0 ? ` (${rep?.budgetBurnPct || 0}%)` : ''}
+            </span>
+          </div>
+        );
+      },
+    },
+    {
+      key: 'videos',
+      header: `Video (${selectedMonth})`,
       width: 145,
       align: 'right',
       render: r => {
-        const st = storeStatsByBrand.get(r.key);
-        const budget = st?.budgetNet || r.master?.planBudget || r.master?.monthlyBudget || 0;
-        const spent = st?.spentNet || r.master?.spentBudget || 0;
+        const rep = monthlyReportByBrand.get(r.key);
         return (
-          <div className="leading-tight tabular-nums">
-            <span className="block font-mono font-medium text-ink">{budget > 0 ? formatVndShort(budget) : '0 đ'}</span>
-            {spent > 0 && (
-              <span className={`block text-2xs font-mono ${budget > 0 && spent > budget ? 'text-danger font-medium' : 'text-ink-3'}`}>
-                Chi: {formatVndShort(spent)}
-              </span>
-            )}
+          <div className="leading-tight tabular-nums text-right text-xs">
+            <span className="block font-medium text-ink">
+              Plan {rep?.planTotalVideos || 0} → Air <strong className="text-positive">{rep?.reportAiredCount || 0}</strong>
+            </span>
+            <span className="block text-2xs text-ink-3 mt-0.5">
+              {rep?.reportBookedCount || 0} deal · {formatNumber(rep?.reportTotalOrders || 0)} đơn
+            </span>
           </div>
         );
       },
     },
     {
       key: 'status',
-      header: 'Độ đầy đủ hồ sơ',
+      header: 'Hồ sơ tĩnh & Tệp',
       width: 145,
-      render: r => (
-        <div className="grid gap-1 justify-items-start">
-          {isSyncing ? (
-            <Skeleton className="w-20" />
-          ) : r.done === r.total ? (
-            <Status tone="positive">Đủ {r.done}/{r.total} mục</Status>
-          ) : r.done >= 5 ? (
-            <Status tone="info">{r.done}/{r.total} mục</Status>
-          ) : (
-            <Status tone="warning">{r.done}/{r.total} mục</Status>
-          )}
-        </div>
-      ),
-    },
-    {
-      key: 'assets',
-      header: 'SKU · Từ cấm',
-      width: 115,
-      align: 'right',
-      render: r => isSyncing ? <Skeleton className="w-16 ml-auto" /> : (
-        <div className="leading-tight tabular-nums text-xs">
-          <span className="text-ink font-medium">{r.profile.products.length}</span>
-          <span className="text-ink-3"> SKU · </span>
-          <span className="text-danger font-medium">{r.profile.contentRules?.banned.length || 0}</span>
-          <span className="text-ink-3"> cấm</span>
-        </div>
-      ),
-    },
-    {
-      key: 'files',
-      header: 'Kho tệp & Pháp lý',
-      width: 135,
-      align: 'right',
       render: r => {
-        if (isSyncing) return <span className="text-ink-3">—</span>;
-        const r2Count = r.profile.documents.filter(d => d.storage === 'R2' || d.storage === 'LOCAL').length
-          + r.profile.legal.filter(l => l.storage === 'R2' || l.storage === 'LOCAL').length;
+        if (isSyncing) return <Skeleton className="w-20" />;
         return (
-          <div className="leading-tight tabular-nums text-xs">
-            <span className="inline-flex items-center gap-1 text-ink font-medium">
-              <HardDrive className="w-3 h-3 text-accent" />
-              {r.profile.documents.length} tệp · {r.profile.legal.length} giấy
-            </span>
-            {r2Count > 0 && (
-              <span className="block text-2xs text-accent font-medium">{r2Count} tệp đã tải lên</span>
+          <div className="grid gap-0.5 justify-items-start leading-tight">
+            {r.done === r.total ? (
+              <Status tone="positive">Đủ {r.done}/{r.total} mục</Status>
+            ) : (
+              <Status tone="info">{r.done}/{r.total} mục</Status>
             )}
+            <span className="text-2xs text-ink-3 inline-flex items-center gap-1 mt-0.5">
+              <HardDrive className="w-3 h-3 text-accent" />
+              {r.profile.products.length} SKU · {r.profile.documents.length} tệp
+            </span>
           </div>
         );
       },
     },
     {
-      key: 'updated',
-      header: 'Cập nhật',
-      width: 130,
+      key: 'drilldown',
+      header: 'Drill-down Tháng',
+      width: 165,
       align: 'right',
-      render: r => (r.saved && r.profile.updatedAt ? (
-        <div className="leading-tight">
-          <span className="block tabular-nums text-ink-2 text-xs">{formatDate(r.profile.updatedAt)}</span>
-          <span className="block text-2xs text-ink-3 truncate max-w-[130px] ml-auto">{r.profile.updatedBy}</span>
+      render: r => (
+        <div className="inline-flex items-center justify-end gap-1" onClick={e => e.stopPropagation()}>
+          {onDrilldownToPlan && (
+            <Button
+              size="sm"
+              variant="secondary"
+              icon={FileSpreadsheet}
+              onClick={() => onDrilldownToPlan({ brandName: r.name, month: selectedMonth })}
+            >
+              Plan
+            </Button>
+          )}
+          {(onDrilldownToBooking || onOpenBooking) && (
+            <Button
+              size="sm"
+              variant="secondary"
+              icon={Video}
+              onClick={() => {
+                if (onDrilldownToBooking) {
+                  onDrilldownToBooking({ brandName: r.name, month: selectedMonth });
+                } else {
+                  onOpenBooking?.();
+                }
+              }}
+            >
+              Booking
+            </Button>
+          )}
         </div>
-      ) : <span className="text-ink-3">—</span>),
+      ),
     },
   ];
 
+  const activeMonthLabel = PROFILE_MONTH_OPTIONS.find(m => m.value === selectedMonth)?.label || `Kỳ ${selectedMonth}`;
+
   return (
     <div className="space-y-4">
+      {!isStaffGlobalAdminOrManager(currentUser) && (
+        <div className="flex items-center gap-2 p-3 text-xs bg-canvas border border-line rounded-xl text-ink-2">
+          <span className="font-semibold text-ink">Phạm vi phân quyền:</span>
+          <span>
+            Hệ thống đang hiển thị {rows.length} thương hiệu thuộc quyền quản lý của chuyên viên <strong>{currentUser?.name || ''}</strong>.
+          </span>
+        </div>
+      )}
       <StatRow>
         <Stat
-          label="Thương hiệu & Gian hàng B2C"
-          value={`${rows.length} nhãn · ${kpiSummary.totalStores} gian`}
-          note="Phạm vi B2C phụ trách = 1 (TikTok, Shopee, Lazada)"
-        />
-        <Stat
-          label="Tổng hạn mức Order Net tháng"
-          value={formatVndShort(kpiSummary.totalBudgetNet)}
-          note={`Thực tế đã duyệt chi: ${formatVndShort(kpiSummary.totalSpentNet)}`}
-          tone={kpiSummary.totalSpentNet > kpiSummary.totalBudgetNet ? 'critical' : 'positive'}
-        />
-        <Stat
-          label="Độ phủ hồ sơ thương hiệu"
-          value={`${kpiSummary.completeCount}/${rows.length} nhãn`}
-          note="Đủ 7/7 hạng mục (USP, SKU, Từ cấm, Ratecard, Pháp lý, FAQ)"
+          label={`Doanh số NMV (${activeMonthLabel})`}
+          value={kpiSummary.totalReportNmv > 0 ? formatVndShort(kpiSummary.totalReportNmv) : '0 đ'}
+          progress={
+            kpiSummary.totalPlanNmv > 0
+              ? { value: kpiSummary.totalReportNmv, max: kpiSummary.totalPlanNmv }
+              : undefined
+          }
+          note={`Plan NMV: ${formatVndShort(kpiSummary.totalPlanNmv)} · ${rows.length} nhãn (${kpiSummary.totalStores} gian)`}
           tone="positive"
         />
         <Stat
-          label="Tài liệu & Giấy tờ pháp lý"
-          value={`${kpiSummary.totalDocs} tài liệu · ${kpiSummary.totalLegal} giấy phép`}
-          note={kpiSummary.uploadedFiles > 0 ? `${kpiSummary.uploadedFiles} tệp đính kèm trực tiếp` : 'Hỗ trợ tải tệp PDF, PPTX, Ảnh, DOCX, XLSX'}
+          label={`Ngân sách Net (${activeMonthLabel})`}
+          value={formatVndShort(kpiSummary.totalReportSpentNet)}
+          progress={{
+            value: kpiSummary.totalReportSpentNet,
+            max: kpiSummary.totalPlanBudgetNet || 1,
+            invert: kpiSummary.totalReportSpentNet > kpiSummary.totalPlanBudgetNet,
+          }}
+          note={`Plan Net: ${formatVndShort(kpiSummary.totalPlanBudgetNet)} · Đã chốt ${kpiSummary.totalBookedDeals} deal`}
+          tone={kpiSummary.totalReportSpentNet > kpiSummary.totalPlanBudgetNet ? 'critical' : 'positive'}
+        />
+        <Stat
+          label={`Sản lượng Video (${activeMonthLabel})`}
+          value={`${formatNumber(kpiSummary.totalAiredVideos)} / ${formatNumber(kpiSummary.totalPlanVideos)} video`}
+          progress={
+            kpiSummary.totalPlanVideos > 0
+              ? { value: kpiSummary.totalAiredVideos, max: kpiSummary.totalPlanVideos }
+              : undefined
+          }
+          note={`Đã chốt ${kpiSummary.totalBookedDeals} deal KOC trong kỳ ${selectedMonth}`}
+        />
+        <Stat
+          label="Hồ sơ tĩnh & Tài liệu R2"
+          value={`${kpiSummary.completeCount}/${rows.length} nhãn đủ 8/8 mục`}
+          note={`${kpiSummary.totalDocs} tài liệu · ${kpiSummary.totalLegal} giấy phép pháp lý`}
+          tone="positive"
         />
       </StatRow>
 
@@ -437,6 +585,24 @@ export function BrandProfilesView({
             <FilterBar
               search={{ value: search, onChange: setSearch, placeholder: 'Tìm tên nhãn, mã brand, ngành hàng, Account/Booking PIC…' }}
               chips={<Chips items={chips} value={filter} onChange={setFilter} />}
+              filters={
+                <div className="flex items-center gap-1.5 rounded-md border border-line bg-surface px-2.5 py-1 text-xs">
+                  <Calendar className="w-3.5 h-3.5 text-accent" />
+                  <span className="text-ink-3">Kỳ hồ sơ:</span>
+                  <select
+                    value={selectedMonth}
+                    onChange={e => setSelectedMonth(e.target.value)}
+                    className="bg-transparent font-semibold text-ink focus:outline-none cursor-pointer"
+                    aria-label="Chọn kỳ hồ sơ tháng của thương hiệu"
+                  >
+                    {PROFILE_MONTH_OPTIONS.map(opt => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              }
               resultCount={search.trim() ? visible.length : undefined}
             />
           </div>
@@ -459,3 +625,4 @@ export function BrandProfilesView({
     </div>
   );
 }
+

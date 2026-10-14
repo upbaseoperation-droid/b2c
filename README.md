@@ -1,44 +1,49 @@
-# B2C OPS HUB — HỆ THỐNG QUẢN TRỊ PHÒNG MARKETING B2C
+# B2C OPS HUB — HỆ THỐNG QUẢN TRỊ & ĐIỀU HÀNH PHÒNG MARKETING B2C
 
-> **Trạng thái 30/09/2026:** SDLC giai đoạn 1 (yêu cầu), **chưa qua cổng G1**. Chưa có thiết kế kỹ thuật hay mã nguồn sản phẩm được duyệt. `web-admin/` là **prototype v0** chỉ để khảo sát và thử UX, không lưu dữ liệu, không dùng dữ liệu thật (`DEC-002`).
+> **Trạng thái 14/10/2026:** Giai đoạn 2 — Phân tích & Thiết kế kỹ thuật. Hệ thống đang hoàn thiện và vận hành mã nguồn tại `web-admin/` với đầy đủ đặc tả phần mềm ([HUB-2.1 SRS](blueprint/2-design/2.1_SRS_B2C_OPS_HUB.md)), tích hợp API ([HUB-2.5](blueprint/2-design/2.5_INTEGRATION_SPEC.md)) và phân quyền ([HUB-2.6](blueprint/2-design/2.6_AUTH_AND_RBAC_SPEC.md)).
 
-## 1. Dự án
+---
 
-B2C Ops Hub giúp Giám đốc khối và Lead điều hành phòng Marketing B2C bằng dữ liệu, gồm:
-- danh mục store và phân công nhân sự (owner/backup);
-- workload và capacity;
-- danh mục SLA và theo dõi SLA;
-- 5–7 chỉ số điều hành;
-- báo cáo tuần/tháng;
-- dữ liệu cho đánh giá năng lực và kết quả.
+## 1. Mục tiêu hệ thống
 
-Thao tác booking (master KOC, phân rã plan, BO, duyệt brand, hợp đồng, nghiệm thu) thuộc dự án riêng **UpAffiliate** ([`../Upaffiliate`](../Upaffiliate/README.md)), theo quyết định `DEC-001` ngày 30/09/2026. Ranh giới dữ liệu giữa hai dự án: [SDLC-02](../sdlc/02_SYSTEM_BOUNDARY.md).
+B2C Ops Hub là nền tảng quản trị và điều phối vận hành tập trung cho khối Marketing B2C tại UpBase:
+- **Quản lý đa tầng:** Brand (Thương hiệu) → Gian hàng (Store/Platform) → Đợt Booking (Campaign) → Video/Nội dung → Nhân sự thực thi.
+- **Phân bổ & Kiểm soát ngân sách:** Quản lý trần PnL 69 gian hàng B2C, phân rã chỉ tiêu Paid/FOC, kiểm soát hạn mức chi phí Net/Gross.
+- **Tiến độ & Đo lường SLA:** Theo dõi từng chặng bàn giao từ nhận order đến nghiệm thu bài đăng, định vị chính xác điểm nghẽn.
+- **Cổng đối tác tập trung (Partner Hub):** Kết nối 2 chiều giữa thương hiệu và đội ngũ vận hành nội bộ.
 
-## 2. Tài liệu
+---
 
-- **Sổ đăng ký tài liệu và trạng thái cổng:** [blueprint/README.md](blueprint/README.md). Đây là điểm bắt đầu.
-- Quy trình SDLC, glossary, mẫu tài liệu dùng chung: [`../sdlc`](../sdlc/README.md).
-- Quyết định: [blueprint/governance/DECISION_LOG.md](blueprint/governance/DECISION_LOG.md) · Vấn đề mở: [OPEN_ISSUES.md](blueprint/governance/OPEN_ISSUES.md)
+## 2. Tài liệu hệ thống & Quy chuẩn vận hành
+
+- **Quy tắc vận hành & đồng bộ tài liệu:** [GEMINI.md](GEMINI.md) (Tuân thủ nguyên tắc "Code đổi - Doc cập nhật trong cùng một lượt").
+- **Sổ đăng ký tài liệu:** [blueprint/README.md](blueprint/README.md).
+- **Đặc tả yêu cầu phần mềm:** [HUB-2.1 SRS](blueprint/2-design/2.1_SRS_B2C_OPS_HUB.md).
+- **Đặc tả tích hợp API:** [HUB-2.5 Integrations](blueprint/2-design/2.5_INTEGRATION_SPEC.md).
+- **Đặc tả xác thực & RBAC:** [HUB-2.6 Auth & RBAC](blueprint/2-design/2.6_AUTH_AND_RBAC_SPEC.md).
+- **Nhật ký quyết định:** [DECISION_LOG.md](blueprint/governance/DECISION_LOG.md).
+
+---
 
 ## 3. Cấu trúc thư mục
 
 ```
 B2C/
-├── README.md
+├── GEMINI.md                     # Hướng dẫn & Quy tắc vận hành bắt buộc
+├── README.md                     # Tổng quan dự án
 ├── blueprint/
-│   ├── README.md                 # Sổ đăng ký tài liệu (register)
-│   ├── governance/               # DECISION_LOG, OPEN_ISSUES, TRACEABILITY
-│   ├── 1-requirements/           # 1.1 Charter · 1.2 RACI · 1.3 As-is · 1.4–1.5 Discovery · 1.6 Mục tiêu · 1.7 BRD
-│   └── archive/prototype-v0/     # Đặc tả 01–07 của prototype (lưu trữ)
-├── web-admin/                    # Prototype v0 (Next.js) — không phải sản phẩm
-├── app/                          # Prototype tĩnh cũ (HTML/CSS/JS)
-├── Luồng quản lý job/            # Ghi chú luồng job có cast (nguồn cho UpAffiliate)
-└── *.xlsx, *.pdf, *.docx, *.md   # Tài liệu gốc: khảo sát, quy trình, dữ liệu Lark xuất ra
+│   ├── README.md                 # Sổ đăng ký tài liệu hệ thống
+│   ├── 1-requirements/           # Hồ sơ khảo sát, hiện trạng & BRD
+│   ├── 2-design/                 # Đặc tả kỹ thuật (SRS, Integrations, Auth & RBAC)
+│   ├── governance/               # Decision Log, Open Issues, Traceability
+│   └── archive/prototype-v0/     # Hồ sơ lưu trữ lịch sử khảo sát
+├── web-admin/                    # Ứng dụng quản trị Next.js 15
+└── *.xlsx, *.pdf, *.md           # Dữ liệu nguồn & tài liệu khảo sát nghiệp vụ
 ```
 
-Dữ liệu xuất từ Lark (`B2C_Quản lý Booking*.xlsx|csv`) có thông tin cá nhân của KOC. Không đưa lên dịch vụ ngoài và không dùng làm dữ liệu cho prototype.
+---
 
-## 4. Chạy prototype
+## 4. Khởi chạy ứng dụng
 
 ```bash
 cd web-admin
@@ -46,8 +51,5 @@ npm install
 npm run dev
 ```
 
-Mở `http://localhost:3000`. Mọi thay đổi sẽ mất khi tải lại trang. Các tính năng import Excel, "đồng bộ Lark", "Lark Approval" và portal brand chỉ là **giả lập**.
-
-## 5. Quy tắc
-
-Tuân theo [SDLC-00](../sdlc/00_SDLC_PROTOCOL.md): không nhảy giai đoạn; mọi thay đổi yêu cầu, thiết kế hay mã nguồn phải cập nhật tài liệu liên quan trong cùng một thay đổi.
+Mở trình duyệt tại `http://localhost:3000`.
+Kiểm tra bản dựng: `npm run build`.

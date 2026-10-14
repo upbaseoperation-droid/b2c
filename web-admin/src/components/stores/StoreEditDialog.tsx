@@ -5,14 +5,23 @@
  */
 
 import React, { useState } from 'react';
-import type { StorePortfolioItem } from '../../lib/types';
-import { Button, Field, Input, Modal } from '../ui';
+import {
+  type StorePortfolioItem,
+  type StoreDifficultyTier,
+  STORE_COEFFICIENT_TABLE_2,
+  getStoreCoefficientByTier,
+  normalizeStoreCoefficient,
+  getStoreTierByCoefficient,
+  formatStoreCoefficient,
+} from '../../lib/types';
+import { Button, Field, Input, Modal, Select } from '../ui';
 
 export interface StoreEditDialogProps {
   open: boolean;
   onClose: () => void;
   store: StorePortfolioItem;
   onSave: (updated: StorePortfolioItem) => void;
+  onOpenMonthlyPlan?: (store: StorePortfolioItem) => void;
 }
 
 export function StoreEditDialog({
@@ -21,11 +30,15 @@ export function StoreEditDialog({
   store,
   onSave
 }: StoreEditDialogProps) {
+  const normalizedCoef = normalizeStoreCoefficient(store.difficultyTier, store.difficultyMultiplier);
+  const initialTier = normalizedCoef.tier;
+
   const [storeName, setStoreName] = useState(store.storeName);
   const [storeOperationId, setStoreOperationId] = useState(store.storeOperationId || store.id);
   const [servicePackage, setServicePackage] = useState(store.servicePackage || 'E2E-S');
   const [platformStoreId, setPlatformStoreId] = useState(store.platformStoreId || '');
   const [affiliateRate, setAffiliateRate] = useState(store.affiliateRate || 15);
+  const [difficultyTier, setDifficultyTier] = useState<StoreDifficultyTier>(initialTier);
   const [requiresSparkAds, setRequiresSparkAds] = useState(store.requiresSparkAds || false);
   const [monthlyBudget, setMonthlyBudget] = useState(store.budgetNet ?? store.monthlyBudget ?? 0);
   const [monthlyTargetGmv, setMonthlyTargetGmv] = useState(store.monthlyTargetGmv ?? 0);
@@ -38,6 +51,8 @@ export function StoreEditDialog({
     e.preventDefault();
     if (!storeName.trim()) return;
 
+    const updatedMultiplier = getStoreCoefficientByTier(difficultyTier);
+
     const updated: StorePortfolioItem = {
       ...store,
       storeName: storeName.trim(),
@@ -45,6 +60,8 @@ export function StoreEditDialog({
       servicePackage,
       platformStoreId: platformStoreId.trim() || undefined,
       affiliateRate: Number(affiliateRate) || 15,
+      difficultyTier,
+      difficultyMultiplier: updatedMultiplier,
       requiresSparkAds,
       monthlyBudget: Number(monthlyBudget) || 0,
       budgetNet: Number(monthlyBudget) || 0,
@@ -65,7 +82,7 @@ export function StoreEditDialog({
       open={open}
       onClose={onClose}
       title={`Cập nhật thông số gian hàng [${store.storeName}]`}
-      description="Cấu hình hạn mức kế hoạch, gói dịch vụ và thông số sàn"
+      description="Cấu hình hạn mức kế hoạch, hệ số gian hàng (Bảng 2), gói dịch vụ và thông số sàn"
       size="lg"
       footer={
         <>
@@ -122,6 +139,22 @@ export function StoreEditDialog({
             />
           </Field>
         </div>
+
+        <Field
+          label="Hệ số gian hàng — Bảng 2 (HS phạm vi cho việc cấp Sàn và cấp Brand)"
+          hint="Áp dụng theo store, không theo brand. Một store chỉ áp dụng một hệ số trong cùng kỳ."
+        >
+          <Select
+            value={difficultyTier}
+            onChange={(e) => setDifficultyTier(e.target.value as StoreDifficultyTier)}
+          >
+            {STORE_COEFFICIENT_TABLE_2.rows.map((rule) => (
+              <option key={rule.tier} value={rule.tier}>
+                {rule.tier} — Hệ số {rule.multiplierLabel} ({rule.definition})
+              </option>
+            ))}
+          </Select>
+        </Field>
 
         <Field label="Link gian hàng sàn (URL)">
           <Input
