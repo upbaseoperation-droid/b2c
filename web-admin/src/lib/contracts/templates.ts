@@ -236,7 +236,7 @@ export async function archiveTemplate(id: string, hash: string) {
   const overrides = await readCatalogOverrides();
   const { buffer } = await readSourceBuffer(id, overrides[id]);
   requireCondition(createHash('sha256').update(buffer).digest('hex') === hash, 'Mẫu nguồn đã thay đổi trong lúc tạo hồ sơ.', 409);
-  if (process.env.NODE_ENV !== 'production' && process.env.CONTRACT_STORAGE !== 'postgres') {
+  if (process.env.CONTRACT_DATA_DIR || (process.env.NODE_ENV !== 'production' && process.env.CONTRACT_STORAGE !== 'postgres')) {
     await mkdir(archiveDirectory(), { recursive: true });
     await writeFile(path.join(archiveDirectory(), `${hash}.docx`), buffer, { flag: 'wx', mode: 0o600 }).catch(e => { if ((e as NodeJS.ErrnoException).code !== 'EEXIST') throw e; });
   } else await prisma.$executeRaw`INSERT INTO "ContractTemplateSnapshot" (hash, "templateId", file) VALUES (${hash}, ${id}, ${buffer}) ON CONFLICT (hash) DO NOTHING`;
@@ -390,7 +390,7 @@ export async function loadTemplate(id: string, expectedHash?: string): Promise<{
   }
   if (expectedHash && createHash('sha256').update(buffer).digest('hex') !== expectedHash) {
     requireCondition(/^[a-f0-9]{64}$/.test(expectedHash), 'Phiên bản nguồn không hợp lệ.', 409);
-    if (process.env.NODE_ENV !== 'production' && process.env.CONTRACT_STORAGE !== 'postgres') {
+    if (process.env.CONTRACT_DATA_DIR || (process.env.NODE_ENV !== 'production' && process.env.CONTRACT_STORAGE !== 'postgres')) {
       try { buffer = await readFile(path.join(archiveDirectory(), `${expectedHash}.docx`)); }
       catch { requireCondition(false, 'Không tìm thấy bản mẫu gốc đã lưu cho phiên bản này.', 409); }
     } else {

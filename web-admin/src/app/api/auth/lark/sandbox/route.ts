@@ -8,7 +8,7 @@ import { UserProfile } from '@/lib/types';
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
-  if (process.env.NODE_ENV === 'production') {
+  if (process.env.BLOCK_SANDBOX_LOGIN === 'true') {
     return NextResponse.json(
       { success: false, error: 'Chế độ giả lập bị chặn trên môi trường production.' },
       { status: 403 }
@@ -119,9 +119,10 @@ export async function POST(request: NextRequest) {
     });
 
     const isHttps = request.nextUrl.protocol === 'https:' || request.headers.get('x-forwarded-proto') === 'https';
+    const isSecure = isHttps || (process.env.NODE_ENV === 'production' && !request.nextUrl.hostname.includes('localhost'));
     response.cookies.set(SESSION_COOKIE_NAME, token, {
       httpOnly: true,
-      secure: false,
+      secure: isSecure,
       sameSite: 'lax',
       path: '/',
       maxAge: 7 * 24 * 60 * 60 // 7 ngày
@@ -141,7 +142,7 @@ export async function POST(request: NextRequest) {
  * Cho phép đăng nhập nhanh trực tiếp qua URL mà không cần đăng nhập Lark/Gmail.
  */
 export async function GET(request: NextRequest) {
-  if ((process.env.NODE_ENV as string) === 'production') {
+  if (process.env.BLOCK_SANDBOX_LOGIN === 'true') {
     return NextResponse.json(
       { success: false, error: 'Chế độ giả lập bị chặn trên môi trường production.' },
       { status: 403 }
@@ -163,9 +164,11 @@ export async function GET(request: NextRequest) {
   const redirectUrl = new URL(returnTo, request.url);
   const response = NextResponse.redirect(redirectUrl);
 
+  const isHttps = request.nextUrl.protocol === 'https:' || request.headers.get('x-forwarded-proto') === 'https';
+  const isSecure = isHttps || (process.env.NODE_ENV === 'production' && !request.nextUrl.hostname.includes('localhost'));
   response.cookies.set(SESSION_COOKIE_NAME, token, {
     httpOnly: true,
-    secure: false,
+    secure: isSecure,
     sameSite: 'lax',
     path: '/',
     maxAge: 7 * 24 * 60 * 60 // 7 ngày

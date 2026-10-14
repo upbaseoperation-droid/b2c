@@ -8,6 +8,10 @@ Hệ thống điều hành và quản trị vận hành tập trung cho phòng M
 
 - **Framework:** Next.js 15 (App Router), React 19, TypeScript.
 - **Styling & UI:** Tailwind CSS, Lucide React, Design System chuẩn hóa theo [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md).
+- **Cơ sở dữ liệu thực tế (Database & Storage Engine):**
+  - **Prisma ORM & PostgreSQL trên Supabase** (AWS ap-southeast-1 Pooler / Direct).
+  - Vận hành 100% dữ liệu thực tế thông qua các biến môi trường: `BRAND_STORAGE=postgres`, `CONTRACT_STORAGE=postgres`, `PARTNER_HUB_STORAGE=postgres`, `SHARED_STORAGE=postgres`.
+  - Bộ kiểm tra & đối soát dữ liệu thực: `npx tsx scripts/verify-db.ts` (16 tài khoản nhân sự/lãnh đạo B2C, 69 gian hàng `StorePortfolio`, 42 thương hiệu trong `AppSharedRecord` & `BrandProfileRecord`, 8/8 mẫu Word pháp chế trong `ContractTemplateSnapshot`, 98 kế hoạch tháng `MonthlyPlan`).
 - **Quản lý dữ liệu & State:** Kiến trúc phân lớp, đồng bộ trạng thái thời gian thực giữa giao diện và các API nội bộ / bên thứ ba.
 - **Xác thực:** Hỗ trợ Lark Suite SSO (`/api/auth/lark/*`) cho nhân sự nội bộ và Cổng đối tác Partner Hub Token (`/api/auth/partner/*`) cho đại diện Brand.
 - **Xử lý tài liệu & Nhận diện:** Tích hợp Tesseract OCR (`/api/ocr/extract-legal-doc`) bóc tách ảnh CCCD và giấy tờ pháp lý KOC.

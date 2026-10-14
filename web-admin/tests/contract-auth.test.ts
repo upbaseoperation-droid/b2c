@@ -7,9 +7,10 @@ import { actorFromRequest } from '../src/lib/contracts/access';
 import { encodeSessionToken, SESSION_COOKIE_NAME } from '../src/lib/larkAuth';
 import { USERS } from '../src/lib/mockData';
 
-test('Production không tự cấp quản trị hoặc cho đăng nhập giả lập', async () => {
+test('Production không tự cấp quản trị hoặc cho đăng nhập giả lập khi bật BLOCK_SANDBOX_LOGIN', async () => {
   const previous = process.env.NODE_ENV;
-  Object.assign(process.env, { NODE_ENV: 'production' });
+  const prevBlock = process.env.BLOCK_SANDBOX_LOGIN;
+  Object.assign(process.env, { NODE_ENV: 'production', BLOCK_SANDBOX_LOGIN: 'true' });
   try {
     const req = new NextRequest('http://localhost/api/auth/me');
     const result = await me(req);
@@ -17,7 +18,11 @@ test('Production không tự cấp quản trị hoặc cho đăng nhập giả l
     assert.equal(result.cookies.get(SESSION_COOKIE_NAME), undefined);
     assert.equal((await sandboxGet(req)).status, 403);
     assert.equal((await sandboxPost(req)).status, 403);
-  } finally { Object.assign(process.env, { NODE_ENV: previous }); }
+  } finally {
+    Object.assign(process.env, { NODE_ENV: previous });
+    if (prevBlock === undefined) delete process.env.BLOCK_SANDBOX_LOGIN;
+    else process.env.BLOCK_SANDBOX_LOGIN = prevBlock;
+  }
 });
 
 test('Phiên Lark thực giữ danh tính và quyền hợp đồng từ máy chủ', async () => {

@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto';
 import prisma from '../prisma';
 import { ContractError, requireCondition } from './domain';
 import type { ContractRecord } from './types';
-const local = () => process.env.NODE_ENV !== 'production' && process.env.CONTRACT_STORAGE !== 'postgres';
+const local = () => !!process.env.CONTRACT_DATA_DIR || (process.env.NODE_ENV !== 'production' && process.env.CONTRACT_STORAGE !== 'postgres');
 const directory = () => path.resolve(/*turbopackIgnore: true*/ process.env.CONTRACT_DATA_DIR || path.join(/*turbopackIgnore: true*/ process.cwd(), '.contract-data'));
 async function localRecords(): Promise<ContractRecord[]> {
   try { return JSON.parse(await readFile(path.join(directory(), 'records.json'), 'utf8')); }

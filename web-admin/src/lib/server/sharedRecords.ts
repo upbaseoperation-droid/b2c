@@ -8,7 +8,7 @@ export class RecordError extends Error {
   constructor(message: string, public status = 400) { super(message); }
 }
 export interface SharedRecord<T> { revision: number; data: T }
-const local = () => process.env.NODE_ENV !== 'production' && process.env.SHARED_STORAGE !== 'postgres';
+const local = () => !!process.env.SHARED_DATA_DIR || (process.env.NODE_ENV !== 'production' && process.env.SHARED_STORAGE !== 'postgres');
 const directory = () => path.resolve(process.env.SHARED_DATA_DIR || path.join(process.cwd(), '.shared-data'));
 function file(key: string) {
   if (!/^[a-z][a-z0-9-]{0,80}$/.test(key)) throw new RecordError('Mã dữ liệu không hợp lệ.');

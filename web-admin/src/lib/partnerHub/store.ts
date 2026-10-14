@@ -6,7 +6,7 @@ import type { UserProfile } from '../types';
 import type { EntryInput, HubScope, HubThread } from './types';
 import { applyEntry, currentThread, emptyThread, HubError } from './domain';
 
-const local = () => process.env.NODE_ENV !== 'production' && process.env.PARTNER_HUB_STORAGE !== 'postgres';
+const local = () => !!process.env.PARTNER_HUB_DATA_DIR || (process.env.NODE_ENV !== 'production' && process.env.PARTNER_HUB_STORAGE !== 'postgres');
 const directory = () => path.resolve(/*turbopackIgnore: true*/ process.env.PARTNER_HUB_DATA_DIR || path.join(/*turbopackIgnore: true*/ process.cwd(), '.partner-hub-data'));
 function filename(scope: HubScope) { return path.join(directory(), `${createHash('sha256').update(scope.key).digest('hex')}.json`); }
 async function readLocal(scope: HubScope): Promise<HubThread> {

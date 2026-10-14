@@ -23,7 +23,7 @@ import type {
 } from './types';
 import { brandKey } from './types';
 
-const local = () => process.env.NODE_ENV !== 'production' && process.env.BRAND_STORAGE !== 'postgres';
+const local = () => !!process.env.BRAND_DATA_DIR || (process.env.NODE_ENV !== 'production' && process.env.BRAND_STORAGE !== 'postgres');
 const directory = () => path.resolve(/*turbopackIgnore: true*/ process.env.BRAND_DATA_DIR || path.join(/*turbopackIgnore: true*/ process.cwd(), '.brand-data'));
 const file = () => path.join(directory(), 'profiles.json');
 

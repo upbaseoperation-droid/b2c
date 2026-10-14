@@ -127,7 +127,11 @@ function LoginContent() {
       });
       const data = await res.json();
       if (data.success) {
-        router.push(returnTo);
+        if (typeof window !== 'undefined') {
+          window.location.href = returnTo || '/';
+        } else {
+          router.push(returnTo);
+        }
       } else {
         setSandboxError(data.error || 'Không đăng nhập được bằng vai trò đã chọn. Thử lại sau ít phút.');
         setIsLoading(false);
@@ -167,7 +171,11 @@ function LoginContent() {
         if (data.user?.id && typeof window !== 'undefined') {
           localStorage.setItem('upbase_selected_user_id', data.user.id);
         }
-        router.push(returnTo);
+        if (typeof window !== 'undefined') {
+          window.location.href = returnTo || '/';
+        } else {
+          router.push(returnTo);
+        }
       } else {
         setSandboxError(data.error || 'Nhân sự không có quyền đăng nhập vào hệ thống.');
         setIsLoading(false);
@@ -206,7 +214,11 @@ function LoginContent() {
         if (data.user?.id && typeof window !== 'undefined') {
           localStorage.setItem('upbase_selected_user_id', data.user.id);
         }
-        router.push(returnTo);
+        if (typeof window !== 'undefined') {
+          window.location.href = returnTo || '/';
+        } else {
+          router.push(returnTo);
+        }
       } else {
         setPartnerError(data.error || 'Không xác thực được tài khoản Gmail. Vui lòng kiểm tra lại quyền.');
         setIsLoading(false);
@@ -231,11 +243,8 @@ function LoginContent() {
         <div className="w-full max-w-[460px] space-y-5">
           <BrandLogo height={26} />
 
-          <div className="space-y-1.5">
-            <h1 className="text-xl font-semibold tracking-tight">Hệ thống đăng nhập B2C</h1>
-            <p className="text-[13px] text-ink-2">
-              Chỉ nhân sự thuộc 3 khối <strong>Marketing B2C</strong>, <strong>Growth</strong>, <strong>Media</strong> (hoặc được Admin cấp quyền) mới được đăng nhập.
-            </p>
+          <div>
+            <h1 className="text-xl font-semibold tracking-tight">Đăng nhập</h1>
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-2">
