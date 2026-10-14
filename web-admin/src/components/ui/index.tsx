@@ -62,7 +62,7 @@ export function Button({ variant = 'secondary', size = 'md', icon: Icon, classNa
 
 /* ------------------------------------------------------------------ Status */
 
-export type StatusTone = 'neutral' | 'info' | 'positive' | 'warning' | 'critical';
+export type StatusTone = 'neutral' | 'info' | 'positive' | 'warning' | 'critical' | 'warn' | 'ok' | 'err' | 'danger' | 'brand';
 
 const STATUS_TONE: Record<StatusTone, string> = {
   neutral: 'bg-sunken text-ink-2',
@@ -70,6 +70,11 @@ const STATUS_TONE: Record<StatusTone, string> = {
   positive: 'bg-positive-soft text-positive',
   warning: 'bg-warning-soft text-warning',
   critical: 'bg-critical-soft text-critical',
+  warn: 'bg-warning-soft text-warning',
+  ok: 'bg-positive-soft text-positive',
+  err: 'bg-critical-soft text-critical',
+  danger: 'bg-critical-soft text-critical',
+  brand: 'bg-accent-soft text-accent',
 };
 
 /** Bộ từ trạng thái chuẩn — dùng đúng nhãn, đúng màu. */

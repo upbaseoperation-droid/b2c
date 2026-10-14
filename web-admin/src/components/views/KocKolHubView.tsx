@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { Avatar, Presence } from '../ui';
+import { Avatar, Presence, Status } from '../ui';
 import { PartnerDiscussion } from '../PartnerDiscussion';
 import { LegalOcrModal } from '../LegalOcrModal';
 import {
@@ -572,10 +572,12 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
   const handleConfirmReceivedSample = (dealId: string) => {
     const target = deals.find(d => d.id === dealId);
     if (!target) return;
+    const deadlineDate = new Date();
+    deadlineDate.setDate(deadlineDate.getDate() + 5);
     const updated: BookingDealItem = {
       ...target,
       sampleStatus: 'ĐÃ_NHẬN',
-      slaDeadline: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      slaDeadline: deadlineDate.toISOString().split('T')[0],
       pipelineText: 'Đã nhận mẫu - SLA 5 ngày nộp video'
     };
     commitDealUpdate(
@@ -680,8 +682,8 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
               <div>
                 <h2 className="text-sm font-semibold text-slate-900 tracking-tight flex items-center gap-2">
                   <span>Trung Tâm Điều Hành KOC Đối Tác</span>
-                  <span className="text-2xs font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
-                    {filteredKocs.length}/{kocs.length} KOC
+                  <span className="text-2xs font-normal text-slate-500">
+                    ({filteredKocs.length}/{kocs.length} KOC)
                   </span>
                 </h2>
                 <p className="text-2xs text-slate-500">
@@ -970,36 +972,28 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                         </td>
 
                         <td className="py-3 px-3">
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              <span className="px-1.5 py-0.5 rounded text-2xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
-                                {koc.tierLabel || koc.tier}
-                              </span>
-                              <span className="px-1.5 py-0.5 rounded text-2xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 font-mono">
-                                {koc.salaryGrade}
-                              </span>
+                          <div className="space-y-0.5">
+                            <div className="text-xs font-medium text-slate-800">
+                              {koc.tierLabel || koc.tier} <span className="text-slate-300">·</span>{' '}
+                              <span className="font-mono text-slate-600">{koc.salaryGrade}</span>
                             </div>
-                            <div className="text-2xs text-slate-600 font-mono font-semibold">
+                            <div className="text-2xs text-slate-500 font-mono font-semibold">
                               {formatVndShort(koc.rateCardVideo || 3000000)}
                             </div>
                           </div>
                         </td>
 
                         <td className="py-3 px-3">
-                          <span className="inline-block px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 text-2xs font-medium">
+                          <span className="text-xs text-slate-700">
                             {koc.tepKenh || 'Chăm sóc da'}
                           </span>
                         </td>
 
                         <td className="py-3 px-3">
                           <div className="space-y-0.5 text-2xs">
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              <span className="px-2 py-0.5 rounded font-semibold bg-blue-50 text-blue-700 border border-blue-200">
-                                {koc.brandName || 'Đa nhãn'}
-                              </span>
-                              <span className="px-1.5 py-0.5 rounded font-semibold bg-emerald-50 text-emerald-700">
-                                {kDeals.length} chiến dịch
-                              </span>
+                            <div className="text-xs font-medium text-slate-800">
+                              {koc.brandName || 'Đa nhãn'} <span className="text-slate-300">·</span>{' '}
+                              <span className="text-slate-500 font-normal">{kDeals.length} chiến dịch</span>
                             </div>
                             <div className="text-slate-500 font-mono">
                               GMV: <strong className="text-slate-800">{formatVndShort(kPerf.totalGmv)}</strong> · ROI: <strong className="text-emerald-700">{kPerf.overallRoi.toFixed(1)}x</strong>
@@ -1008,18 +1002,16 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                         </td>
 
                         <td className="py-3 px-3">
-                          <div className="text-2xs text-slate-700 font-medium flex items-center gap-1.5">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                            <span>{koc.bookingPic || 'Lê Phương Thảo'}</span>
+                          <div className="text-xs text-slate-700 font-medium">
+                            {koc.bookingPic || 'Lê Phương Thảo'}
                           </div>
                         </td>
 
                         <td className="py-3 px-3">
-                          <div className="space-y-0.5 text-2xs">
-                            <div className={`flex items-center gap-1 font-medium ${hasLegalId(koc) ? 'text-emerald-600' : 'text-amber-600'}`}>
-                              <ShieldCheck className="w-3 h-3" />
-                              <span>{hasLegalId(koc) ? `${LEGAL_TYPE_LABEL[legalTypeOf(koc)]}: Đủ giấy tờ` : 'Thiếu giấy tờ'}</span>
-                            </div>
+                          <div className="space-y-1 text-2xs">
+                            <Status tone={hasLegalId(koc) ? 'ok' : 'warn'}>
+                              {hasLegalId(koc) ? `${LEGAL_TYPE_LABEL[legalTypeOf(koc)]}: Đủ giấy tờ` : 'Thiếu giấy tờ'}
+                            </Status>
                             <div className="text-slate-500 font-mono">
                               {koc.bankName ? `${koc.bankName} · ${koc.bankAccount || '—'}` : `MST: ${koc.taxCode || 'Chưa có'}`}
                             </div>
@@ -1163,18 +1155,15 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                     {activeKoc.realName && (
                       <span className="text-xs text-slate-500">({activeKoc.realName})</span>
                     )}
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-2xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
-                      {activeKoc.salaryGrade} · {activeKoc.segment}
+                    <span className="text-xs font-medium text-slate-600">
+                      · {activeKoc.salaryGrade} · {activeKoc.segment}
                     </span>
-                    <span className="font-mono text-2xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
-                      @{activeKoc.channelId.replace(/^@/, '')}
+                    <span className="font-mono text-xs text-slate-500">
+                      · @{activeKoc.channelId.replace(/^@/, '')}
                     </span>
-                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-semibold ${
-                      legalComplete ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'
-                    }`}>
-                      <ShieldCheck className="w-3 h-3" />
+                    <Status tone={legalComplete ? 'ok' : 'warn'}>
                       {legalComplete ? `${LEGAL_TYPE_LABEL[legalType]} · Đủ pháp lý` : 'Thiếu hồ sơ pháp lý'}
-                    </span>
+                    </Status>
                   </div>
                   <p className="text-xs text-slate-500 mt-1">
                     Cast chuẩn: <strong className="text-slate-800 font-mono">{formatVndShort(activeKoc.rateCardVideo || 3000000)}</strong> • Followers: <strong className="text-slate-800 font-mono">{formatFollowers(activeKoc.followers)}</strong> • Ngân hàng: <strong className="text-slate-700">{activeKoc.bankName || 'Chưa cập nhật'} ({activeKoc.bankAccount || '—'})</strong> • Địa chỉ nhận mẫu: <span className="text-slate-700">{addressForm.address}</span> (
@@ -1256,12 +1245,7 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
               }`}
             >
               <UserCheck className="w-3.5 h-3.5" />
-              <span>Thông tin cá nhân &amp; Pháp lý</span>
-              {!legalComplete && (
-                <span className="px-1.5 py-0.5 rounded-full text-2xs font-semibold bg-amber-500 text-white">
-                  Thiếu
-                </span>
-              )}
+              <span>Thông tin cá nhân &amp; Pháp lý{!legalComplete ? ' (Thiếu)' : ''}</span>
             </button>
 
             <button
@@ -1440,45 +1424,45 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                   <div className="p-3.5 rounded-lg bg-slate-50 border border-slate-100 space-y-1">
                     <div className="flex items-center justify-between">
                       <span className="font-semibold text-slate-800">1. Thông tin cá nhân</span>
-                      <span className="px-1.5 py-0.5 rounded text-2xs font-semibold bg-emerald-50 text-emerald-700">Đồng bộ</span>
+                      <span className="text-2xs font-medium text-emerald-700">Đồng bộ</span>
                     </div>
                     <p className="text-2xs text-slate-500">
                       CCCD: <strong className="font-mono text-slate-700">{legalIdOf(activeKoc) || 'Chưa có'}</strong> • NH: <strong className="text-slate-700">{activeKoc.bankName || '—'}</strong>
                     </p>
-                    <p className="text-2xs text-blue-600">→ Danh bạ KOC · Hàng mẫu · Hợp đồng</p>
+                    <p className="text-2xs text-blue-600">Danh bạ KOC · Hàng mẫu · Hợp đồng</p>
                   </div>
 
                   <div className="p-3.5 rounded-lg bg-slate-50 border border-slate-100 space-y-1">
                     <div className="flex items-center justify-between">
                       <span className="font-semibold text-slate-800">2. Hợp đồng &amp; Duyệt chi</span>
-                      <span className="px-1.5 py-0.5 rounded text-2xs font-semibold bg-emerald-50 text-emerald-700">Đồng bộ</span>
+                      <span className="text-2xs font-medium text-emerald-700">Đồng bộ</span>
                     </div>
                     <p className="text-2xs text-slate-500">
                       Đã ký: <strong className="font-mono text-slate-700">{stats.signedContractsCount} HĐ</strong> • Đã tạm ứng: <strong className="font-mono text-emerald-700">{formatVndShort(stats.advancePaid)}</strong>
                     </p>
-                    <p className="text-2xs text-blue-600">→ Hợp đồng &amp; Thanh toán · Kế toán</p>
+                    <p className="text-2xs text-blue-600">Hợp đồng &amp; Thanh toán · Kế toán</p>
                   </div>
 
                   <div className="p-3.5 rounded-lg bg-slate-50 border border-slate-100 space-y-1">
                     <div className="flex items-center justify-between">
                       <span className="font-semibold text-slate-800">3. Lịch sử hợp tác</span>
-                      <span className="px-1.5 py-0.5 rounded text-2xs font-semibold bg-emerald-50 text-emerald-700">Đồng bộ</span>
+                      <span className="text-2xs font-medium text-emerald-700">Đồng bộ</span>
                     </div>
                     <p className="text-2xs text-slate-500">
                       Tổng: <strong className="font-mono text-slate-700">{currentKocDeals.length} deal</strong> • Điểm uy tín: <strong className="font-mono text-amber-600">{perfStats.avgRatingScore > 0 ? `${perfStats.avgRatingScore.toFixed(1)}/5.0` : '5.0/5.0'}</strong>
                     </p>
-                    <p className="text-2xs text-blue-600">→ Booking · Đề xuất KOC · Kịch bản</p>
+                    <p className="text-2xs text-blue-600">Booking · Đề xuất KOC · Kịch bản</p>
                   </div>
 
                   <div className="p-3.5 rounded-lg bg-slate-50 border border-slate-100 space-y-1">
                     <div className="flex items-center justify-between">
                       <span className="font-semibold text-slate-800">4. Hiệu quả &amp; Kênh</span>
-                      <span className="px-1.5 py-0.5 rounded text-2xs font-semibold bg-emerald-50 text-emerald-700">Đồng bộ</span>
+                      <span className="text-2xs font-medium text-emerald-700">Đồng bộ</span>
                     </div>
                     <p className="text-2xs text-slate-500">
                       GMV: <strong className="font-mono text-slate-700">{formatVndShort(perfStats.totalGmv)}</strong> • Đúng hạn đăng: <strong className="font-mono text-emerald-700">{perfStats.onTimePostRate.toFixed(0)}%</strong>
                     </p>
-                    <p className="text-2xs text-blue-600">→ Báo cáo Ads tuần · Dashboard B2C</p>
+                    <p className="text-2xs text-blue-600">Báo cáo Ads tuần · Dashboard B2C</p>
                   </div>
                 </div>
               </div>
@@ -1522,7 +1506,7 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                       <Users className="w-4 h-4 text-blue-600" />
                       <span>1. Thông Tin Kênh &amp; Định Giá Cast</span>
                     </h4>
-                    <span className="px-2 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200 font-mono text-2xs font-semibold">
+                    <span className="font-mono text-2xs font-semibold text-slate-600">
                       {getSalaryGradeFromRate(Number(profileForm.rateCardVideo) || 0)} · {getSegmentFromSalaryGrade(getSalaryGradeFromRate(Number(profileForm.rateCardVideo) || 0))}
                     </span>
                   </div>
@@ -1624,11 +1608,9 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                       <ShieldCheck className="w-4 h-4 text-emerald-600" />
                       <span>2. Giấy Tờ Pháp Lý &amp; Mã Số Thuế (Dùng Soạn Hợp Đồng)</span>
                     </h4>
-                    <span className={`px-2 py-0.5 rounded text-2xs font-semibold ${
-                      legalComplete ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
-                    }`}>
+                    <Status tone={legalComplete ? 'ok' : 'warn'}>
                       {activeKoc.isOcrVerified ? 'Đã đọc ảnh CCCD' : legalComplete ? 'Đã có giấy tờ' : 'Chưa đủ giấy tờ'}
-                    </span>
+                    </Status>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
@@ -1760,7 +1742,7 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                       </div>
                       <div className="text-right">
                         <span className="text-2xs text-slate-400 block">Chế độ thuế áp dụng</span>
-                        <span className="text-2xs font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded">
+                        <span className="text-2xs font-semibold text-slate-700">
                           {profileForm.companyName ? 'Hóa đơn VAT (Doanh nghiệp/HKD)' : 'Khấu trừ 10% TNCN tại nguồn'}
                         </span>
                       </div>
@@ -1903,8 +1885,8 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                             <div>
                               <div className="flex items-center gap-2">
                                 <span className="font-semibold text-slate-900 text-xs">{deal.campaignTitle}</span>
-                                <span className="px-2 py-0.5 rounded text-2xs font-medium bg-blue-50 text-blue-700">
-                                  {deal.brandName}
+                                <span className="text-2xs font-medium text-slate-500">
+                                  · {deal.brandName}
                                 </span>
                               </div>
                               <p className="text-xs text-slate-500 mt-0.5">
@@ -1953,9 +1935,7 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                             <div>
                               <div className="flex items-center gap-2">
                                 <span className="font-semibold text-slate-900 text-xs">Hợp đồng dịch vụ KOC: {deal.dealCode}</span>
-                                <span className="px-2 py-0.5 rounded text-2xs font-medium bg-emerald-50 text-emerald-700">
-                                  Chờ ký xác nhận
-                                </span>
+                                <Status tone="warn">Chờ ký xác nhận</Status>
                               </div>
                               <p className="text-xs text-slate-500 mt-0.5">
                                 Nhãn hàng: <strong>{deal.brandName}</strong> • Giá trị Gross: <strong className="font-mono text-slate-800">{formatVnd(deal.totalValue)}</strong> (Thực nhận Net: <strong className="font-mono text-emerald-700">{formatVnd(Math.round(deal.totalValue * 0.9))}</strong>)
@@ -1993,7 +1973,7 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                             <div>
                               <div className="flex items-center gap-2">
                                 <span className="font-semibold text-slate-900 text-xs">Kiện hàng mẫu: {deal.productName || 'Combo sản phẩm'}</span>
-                                <span className="font-mono text-2xs text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">{deal.jobId || 'GHN-89421'}</span>
+                                <span className="font-mono text-2xs text-slate-500">· {deal.jobId || 'GHN-89421'}</span>
                               </div>
                               <p className="text-xs text-slate-500 mt-0.5">
                                 Nhãn hàng: <strong>{deal.brandName}</strong> • Giao đến: {addressForm.address}
@@ -2063,34 +2043,28 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                       >
                         <div className="space-y-1.5 flex-1">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-mono text-2xs font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
+                            <span className="font-mono text-2xs text-slate-500">
                               {deal.dealCode || deal.jobId || 'DEAL-KOC'}
                             </span>
-                            <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-blue-50 text-blue-700">
+                            <span className="text-slate-300">·</span>
+                            <span className="text-2xs font-medium text-slate-700">
                               {deal.brandName}
                             </span>
                             {deal.storeName && (
-                              <span className="px-2 py-0.5 rounded text-2xs font-medium bg-slate-100 text-slate-600">
-                                {deal.storeName}
-                              </span>
+                              <>
+                                <span className="text-slate-300">·</span>
+                                <span className="text-2xs text-slate-500">{deal.storeName}</span>
+                              </>
                             )}
-                            {isAccepted ? (
-                              <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-emerald-50 text-emerald-700">
-                                Đã xác nhận hợp tác
-                              </span>
-                            ) : isNegotiating ? (
-                              <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-amber-50 text-amber-700">
-                                Đang đàm phán mức cast
-                              </span>
-                            ) : isRejected ? (
-                              <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-slate-100 text-slate-500">
-                                Đã từ chối
-                              </span>
-                            ) : (
-                              <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-blue-50 text-blue-700">
-                                Chờ xác nhận
-                              </span>
-                            )}
+                            <Status tone={isAccepted ? 'ok' : isNegotiating ? 'warn' : isRejected ? 'neutral' : 'info'}>
+                              {isAccepted
+                                ? 'Đã xác nhận hợp tác'
+                                : isNegotiating
+                                ? 'Đang đàm phán mức cast'
+                                : isRejected
+                                ? 'Đã từ chối'
+                                : 'Chờ xác nhận'}
+                            </Status>
                           </div>
 
                           <h3 className="text-sm font-semibold text-slate-900">{deal.campaignTitle}</h3>
@@ -2166,8 +2140,8 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                       <span className="text-slate-500">Địa chỉ nhận hàng mẫu hiện tại: </span>
                       <strong className="text-slate-900">{addressForm.recipient} ({addressForm.phone}) — {addressForm.address}</strong>
                       {activeKoc.samplePreferences?.skinType && (
-                        <span className="ml-2 px-2 py-0.5 rounded bg-blue-50 text-blue-700 text-2xs font-medium">
-                          Da: {activeKoc.samplePreferences.skinType}
+                        <span className="ml-2 text-2xs text-slate-600">
+                          · Da: {activeKoc.samplePreferences.skinType}
                         </span>
                       )}
                     </div>
@@ -2211,15 +2185,9 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                                 {formatVndShort(d.focSampleCost || 350000)}
                               </td>
                               <td className="py-3 px-4 text-center">
-                                {isReceived ? (
-                                  <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-emerald-50 text-emerald-700">
-                                    Đã nhận hàng
-                                  </span>
-                                ) : (
-                                  <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-amber-50 text-amber-700">
-                                    Đang giao hàng
-                                  </span>
-                                )}
+                                <Status tone={isReceived ? 'ok' : 'warn'}>
+                                  {isReceived ? 'Đã nhận hàng' : 'Đang giao hàng'}
+                                </Status>
                               </td>
                               <td className="py-3 px-4 text-right">
                                 {!isReceived ? (
@@ -2255,12 +2223,10 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                       {currentKocDeals.map(d => (
                         <div key={d.id} className="border border-slate-100 rounded-xl p-3.5 space-y-2 bg-slate-50/50 text-xs">
                           <div className="flex items-center justify-between">
-                            <span className="font-semibold text-slate-800">{d.brandName} · {d.dealCode}</span>
-                            <span className={`px-2 py-0.5 rounded text-2xs font-semibold ${
-                              d.tiktokVideoUrl ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
-                            }`}>
+                            <span className="font-semibold text-slate-800">{d.brandName} · <span className="font-mono text-slate-500 font-normal">{d.dealCode}</span></span>
+                            <Status tone={d.tiktokVideoUrl ? 'ok' : 'warn'}>
                               {d.tiktokVideoUrl ? 'Đã nộp video' : 'Chưa nộp video'}
-                            </span>
+                            </Status>
                           </div>
 
                           <div className="font-semibold text-slate-900">{d.productName || d.campaignTitle}</div>
@@ -2272,7 +2238,7 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                           )}
 
                           {d.sparkAdsCode && (
-                            <div className="text-2xs font-mono text-emerald-700 bg-emerald-50/70 px-2 py-1 rounded border border-emerald-200 truncate">
+                            <div className="text-2xs font-mono text-emerald-700 truncate">
                               Spark Ads: {d.sparkAdsCode}
                             </div>
                           )}
@@ -2441,19 +2407,9 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                               </td>
 
                               <td className="py-3 px-3 text-center">
-                                {isFoc ? (
-                                  <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-slate-100 text-slate-600">
-                                    Thỏa thuận FOC
-                                  </span>
-                                ) : isSigned ? (
-                                  <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                    Đã ký xác nhận
-                                  </span>
-                                ) : (
-                                  <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
-                                    Chờ KOC ký
-                                  </span>
-                                )}
+                                <Status tone={isFoc ? 'neutral' : isSigned ? 'ok' : 'warn'}>
+                                  {isFoc ? 'Thỏa thuận FOC' : isSigned ? 'Đã ký xác nhận' : 'Chờ KOC ký'}
+                                </Status>
                               </td>
 
                               <td className="py-3 px-4 text-right">
@@ -2612,15 +2568,19 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                         return (
                           <tr key={deal.id} className="hover:bg-slate-50/50 transition">
                             <td className="py-3 px-4">
-                              <div className="flex items-center gap-1.5 flex-wrap">
-                                <span className="font-mono text-2xs font-semibold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700">
+                              <div className="flex items-center gap-1.5 flex-wrap text-2xs">
+                                <span className="font-mono text-slate-500">
                                   {deal.dealCode}
                                 </span>
-                                <span className="px-1.5 py-0.5 rounded text-2xs font-semibold bg-blue-50 text-blue-700">
+                                <span className="text-slate-300">·</span>
+                                <span className="font-medium text-slate-700">
                                   {deal.brandName}
                                 </span>
                                 {deal.storeName && (
-                                  <span className="text-2xs text-slate-400">{deal.storeName}</span>
+                                  <>
+                                    <span className="text-slate-300">·</span>
+                                    <span className="text-slate-400">{deal.storeName}</span>
+                                  </>
                                 )}
                               </div>
                               <div className="font-semibold text-slate-900 mt-1">{deal.campaignTitle}</div>
@@ -2630,14 +2590,10 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                             </td>
 
                             <td className="py-3 px-3">
-                              <div className="space-y-1">
-                                <span className={`inline-block px-2 py-0.5 rounded text-2xs font-semibold ${
-                                  isFoc
-                                    ? 'bg-purple-50 text-purple-700 border border-purple-200'
-                                    : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                }`}>
+                              <div className="space-y-0.5">
+                                <div className="text-xs font-medium text-slate-800">
                                   {isFoc ? 'Suất gửi mẫu miễn phí (FOC 0đ)' : 'Video KOC trả phí (Paid)'}
-                                </span>
+                                </div>
                                 <div className="text-2xs text-slate-500 font-mono">
                                   Ngày đăng: {deal.postedDate || deal.slaDeadline || '—'}
                                 </div>
@@ -2663,14 +2619,12 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                             <td className="py-3 px-3">
                               <div className="space-y-1 text-2xs">
                                 <div className="flex items-center gap-1.5">
-                                  <span className={`px-1.5 py-0.5 rounded font-semibold ${
-                                    deal.isPostOnTime !== false ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'
-                                  }`}>
+                                  <Status tone={deal.isPostOnTime !== false ? 'ok' : 'err'}>
                                     {deal.isPostOnTime !== false ? 'Đúng hạn SLA' : 'Trễ SLA'}
-                                  </span>
+                                  </Status>
                                   {deal.ratingScore && (
                                     <span className="font-mono font-semibold text-amber-600">
-                                      ★ {deal.ratingScore.toFixed(1)}
+                                      {deal.ratingScore.toFixed(1)}/5.0
                                     </span>
                                   )}
                                 </div>
@@ -2831,7 +2785,7 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                             </td>
                             <td className="py-3 px-3 font-mono text-2xs">
                               {deal.sparkAdsCode ? (
-                                <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                <span className="text-emerald-700 font-semibold">
                                   {deal.sparkAdsCode}
                                 </span>
                               ) : (
@@ -2910,7 +2864,7 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                     <div className="p-3 rounded-lg bg-slate-50 border border-slate-100">
                       <span className="text-2xs text-slate-500 block">Điểm uy tín &amp; Hoàn hủy</span>
                       <span className="text-sm font-semibold font-mono text-amber-600 mt-0.5 block">
-                        ★ {activeKoc.tiktokShopRating ?? 4.8} / 5.0
+                        {activeKoc.tiktokShopRating ?? 4.8} / 5.0
                       </span>
                       <span className="text-2xs text-slate-400 font-mono">
                         Tỷ lệ hủy: {activeKoc.tiktokCancellationRate ?? 2.4}%
@@ -2960,7 +2914,7 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                         </span>
                       </div>
                       <div className="h-2 rounded-full bg-slate-100 overflow-hidden flex">
-                        <div style={{ width: `${activeKoc.femaleRatio ?? 82}%` }} className="bg-pink-500 h-full" />
+                        <div style={{ width: `${activeKoc.femaleRatio ?? 82}%` }} className="bg-rose-500 h-full" />
                         <div style={{ width: `${activeKoc.maleRatio ?? 18}%` }} className="bg-blue-500 h-full" />
                       </div>
                     </div>
@@ -3023,7 +2977,7 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                 <div className="text-center space-y-1 border-b border-slate-100 pb-4">
                   <div className="font-semibold text-slate-900 uppercase">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
                   <div className="text-2xs text-slate-500">Độc lập - Tự do - Hạnh phúc</div>
-                  <h4 className="text-sm font-bold text-slate-900 pt-2 uppercase">
+                  <h4 className="text-sm font-semibold text-slate-900 pt-2 uppercase">
                     HỢP ĐỒNG DỊCH VỤ QUẢNG BÁ THƯƠNG HIỆU (BOOKING KOC/KOL)
                   </h4>
                   <div className="font-mono text-2xs text-blue-600">
@@ -3084,7 +3038,7 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                 <div className="text-2xs text-slate-500">
                   {previewContractDeal.contractCreatedAt ? (
                     <span className="text-emerald-700 font-semibold">
-                      ✓ Đã xác nhận hợp đồng ngày {previewContractDeal.contractCreatedAt}
+                      Đã xác nhận hợp đồng ngày {previewContractDeal.contractCreatedAt}
                     </span>
                   ) : (
                     <span>Bấm &quot;Ký xác nhận hợp đồng&quot; để đồng bộ sang phân hệ Hợp đồng &amp; Kế toán</span>
@@ -3219,14 +3173,14 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
 
               <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 inline-flex flex-col items-center space-y-2">
                 <QrCode className="w-28 h-28 text-slate-800" />
-                <span className="text-2xs font-mono text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded font-semibold">
+                <span className="text-2xs font-mono text-emerald-700 font-semibold">
                   Chuẩn chuyển khoản Napas 247
                 </span>
               </div>
 
               <div className="text-xs space-y-1 text-slate-700">
                 <div className="font-semibold text-slate-900 uppercase">{activeKoc.realName || activeKoc.stageName}</div>
-                <div className="font-mono text-sm font-bold text-blue-600">{activeKoc.bankAccount || 'Chưa cập nhật STK'}</div>
+                <div className="font-mono text-sm font-semibold text-blue-600">{activeKoc.bankAccount || 'Chưa cập nhật STK'}</div>
                 <div className="text-slate-500">{activeKoc.bankName || 'Chưa cập nhật ngân hàng'}</div>
               </div>
 
@@ -3480,7 +3434,7 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                     onChange={(e) => setSubmissionForm(prev => ({ ...prev, sparkAdsCode: e.target.value }))}
                     className="w-full px-3 py-2 border border-slate-200 rounded-lg font-mono text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none"
                   />
-                  <span className="text-2xs text-slate-400 mt-0.5 block">Mã sinh từ mục Video Setting ➔ Ad Authorization trên TikTok.</span>
+                  <span className="text-2xs text-slate-400 mt-0.5 block">Mã sinh từ mục Video Setting / Ad Authorization trên TikTok.</span>
                 </div>
 
                 <div>

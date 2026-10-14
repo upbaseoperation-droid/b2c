@@ -183,7 +183,7 @@ export function ContractDocumentViewer({
       if (p.boldPrefix && p.boldPrefix > 0 && p.boldPrefix < text.length) {
         return (
           <>
-            <strong className="font-bold">{text.slice(0, p.boldPrefix)}</strong>
+            <strong className="font-semibold">{text.slice(0, p.boldPrefix)}</strong>
             {text.slice(p.boldPrefix)}
           </>
         );
@@ -207,7 +207,7 @@ export function ContractDocumentViewer({
           const bEnd = Math.min(prefixSlice.length, p.boldPrefix);
           nodes.push(
             <React.Fragment key={`txt-${idx}`}>
-              <strong className="font-bold">{prefixSlice.slice(0, bEnd)}</strong>
+              <strong className="font-semibold">{prefixSlice.slice(0, bEnd)}</strong>
               {prefixSlice.slice(bEnd)}
             </React.Fragment>,
           );
@@ -265,7 +265,7 @@ export function ContractDocumentViewer({
           }
           className={`field-mark inline rounded px-1 py-0.5 font-medium transition-all ${
             changed
-              ? 'bg-sky-100 text-sky-950 border-b-2 border-sky-600'
+              ? 'bg-blue-100 text-blue-950 border-b-2 border-blue-600'
               : 'bg-emerald-50/95 text-emerald-950 border-b-2 border-emerald-600/70'
           } ${isSelected ? 'ring-2 ring-accent bg-amber-100/90' : ''} ${
             onSelectField ? 'cursor-pointer hover:bg-emerald-100' : ''
@@ -319,7 +319,7 @@ export function ContractDocumentViewer({
       return (
         <p
           key={idx}
-          className={`${alignClass} ${block.bold ? 'font-bold' : ''} ${block.italic ? 'italic' : ''} ${
+          className={`${alignClass} ${block.bold ? 'font-semibold' : ''} ${block.italic ? 'italic' : ''} ${
             isMainTitle
               ? 'text-[17px] uppercase tracking-wide mt-4 mb-1 text-[#111]'
               : isClause
@@ -364,10 +364,10 @@ export function ContractDocumentViewer({
                           }`}
                         >
                           <span className="font-semibold uppercase tracking-wide">
-                            {signer.action === 2 ? '✓ Đã ký xác nhận' : signer.status}
+                            {signer.action === 2 ? 'Đã ký xác nhận' : signer.status}
                           </span>
                           <span className="font-medium mt-0.5">{signer.name}</span>
-                          {signer.email && <span className="text-[11px] opacity-75">{signer.email}</span>}
+                          {signer.email && <span className="text-2xs opacity-75">{signer.email}</span>}
                         </div>
                       )}
                     </td>
@@ -499,10 +499,10 @@ export function ContractDocumentViewer({
 
           {uniqueFields.length > 0 && (
             <span
-              className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-2xs font-medium ${
+              className={`inline-flex items-center gap-1 text-2xs ${
                 missingRequired.length === 0
-                  ? 'bg-emerald-50 text-emerald-800 border border-emerald-300'
-                  : 'bg-amber-50 text-amber-900 border border-amber-300'
+                  ? 'text-ink-2'
+                  : 'text-amber-800 font-medium'
               }`}
             >
               {missingRequired.length === 0 ? (
@@ -523,9 +523,9 @@ export function ContractDocumentViewer({
             <button
               type="button"
               onClick={jumpToNextMissing}
-              className="text-2xs font-medium text-accent hover:underline px-1.5 py-0.5 rounded bg-accent/10"
+              className="text-2xs font-medium text-accent hover:underline"
             >
-              Tới mục trống tiếp theo →
+              Tới mục trống tiếp theo
             </button>
           )}
         </div>
@@ -615,7 +615,7 @@ export function ContractDocumentViewer({
             </span>
             {compareValues && (
               <span className="inline-flex items-center gap-1">
-                <span className="w-2.5 h-2.5 rounded-xs bg-sky-100 border-b-2 border-sky-600 inline-block" />
+                <span className="w-2.5 h-2.5 rounded-xs bg-blue-100 border-b-2 border-blue-600 inline-block" />
                 Nội dung mới thay đổi
               </span>
             )}

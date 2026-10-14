@@ -1,12 +1,11 @@
 'use client';
 
 import { PartnerDiscussion } from '../PartnerDiscussion';
-import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { Avatar, Presence } from '../ui';
+import React, { useState, useMemo, useRef } from 'react';
+import { Avatar, Presence, Status } from '../ui';
 import {
   Video,
   CheckCircle2,
-  Clock,
   AlertTriangle,
   AlertCircle,
   Plus,
@@ -29,24 +28,24 @@ import {
   Wallet,
   MessageSquare,
   Users,
-  Package,
   Truck,
   ShieldCheck,
   FolderOpen,
   QrCode,
   Sparkles,
   FileCheck2,
-  Link2
+  Link2,
+  X
 } from 'lucide-react';
 import {
-  BrandChannelAllocation,
   Contributor,
   SelfChannelVideoTask,
   VideoTaskStatus,
   SampleShippingStatus,
   BrandApprovalMode,
   UserProfile,
-  BrandDetail
+  BrandDetail,
+  BrandChannelAllocation
 } from '../../lib/types';
 import {
   DEFAULT_CONTENT_PILLARS,
@@ -108,16 +107,13 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
   contributors: propContributors,
   tasks: propTasks,
   onTasksChange,
-  onContributorCreated,
   onContributorUpdated,
   onOpenCtvProfile,
   onOpenInputPlan,
   onNotify,
-  onOpenPushProducts,
-  onNavigateToBrand
+  onOpenPushProducts
 }) => {
   // Master State (Sync with parent page.tsx when provided)
-  const [allocation] = useState<BrandChannelAllocation>(MOCK_BRAND_ALLOCATION);
   const [localTasks, setLocalTasks] = useState<SelfChannelVideoTask[]>(propTasks || INITIAL_SELF_CHANNEL_TASKS);
   const [syncedPropTasks, setSyncedPropTasks] = useState(propTasks);
   if (propTasks && propTasks !== syncedPropTasks) {
@@ -149,16 +145,15 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
   const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'PLAN_FINAL_RBAC' | 'CTV_PORTAL' | 'APPROVALS' | 'ACTIVE_JOBS' | 'CONTRIBUTORS' | 'DISCUSSION' | 'HISTORY'>(
     currentUser?.role === 'CTV_PARTNER' ? 'CTV_PORTAL' : 'OVERVIEW'
   );
-  const [ctvPortalSubTab, setCtvPortalSubTab] = useState<'WORKSPACE' | 'MY_PROFILE'>('WORKSPACE');
-  const [myProfileDraft, setMyProfileDraft] = useState<Contributor | null>(null);
-  const [newSkuAtHomeInput, setNewSkuAtHomeInput] = useState('');
   const [isCtvSimulatorView, setIsCtvSimulatorView] = useState(false);
 
-  useEffect(() => {
+  const [syncedRole, setSyncedRole] = useState(currentUser?.role);
+  if (currentUser?.role !== syncedRole) {
+    setSyncedRole(currentUser?.role);
     if (currentUser?.role === 'CTV_PARTNER') {
       setActiveTab('CTV_PORTAL');
     }
-  }, [currentUser?.role]);
+  }
 
   // State: Phân quyền nhân sự Content & Partnership trong quy trình 6 bước Video Self-Channel
   const [staffPermissions, setStaffPermissions] = useState<Array<{
@@ -579,75 +574,25 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
   const renderStatusBadge = (status: VideoTaskStatus) => {
     switch (status) {
       case 'OPEN_TASK':
-        return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-semibold bg-slate-100 text-slate-700">
-            <Clock className="w-3 h-3 text-slate-500" />
-            Mở nhận việc
-          </span>
-        );
+        return <Status tone="neutral">Mở nhận việc</Status>;
       case 'BRAND_ORIENTATION_PENDING':
-        return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-semibold bg-amber-50 text-amber-800 border border-amber-200">
-            <Clock className="w-3 h-3 text-amber-600" />
-            Chờ Brand duyệt VJ (48h)
-          </span>
-        );
+        return <Status tone="warn">Chờ Brand duyệt VJ (48h)</Status>;
       case 'SCRIPT_PENDING_REVIEW':
-        return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-semibold bg-amber-50 text-amber-800">
-            <FileText className="w-3 h-3 text-amber-600" />
-            Chờ duyệt kịch bản (24h)
-          </span>
-        );
+        return <Status tone="warn">Chờ duyệt kịch bản (24h)</Status>;
       case 'SCRIPT_REVISION':
-        return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-semibold bg-rose-50 text-rose-700">
-            <AlertTriangle className="w-3 h-3 text-rose-500" />
-            Sửa kịch bản
-          </span>
-        );
+        return <Status tone="err">Sửa kịch bản</Status>;
       case 'SCRIPT_APPROVED':
-        return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-semibold bg-blue-50 text-blue-700">
-            <Video className="w-3 h-3 text-blue-600" />
-            Đang quay &amp; dựng
-          </span>
-        );
+        return <Status tone="info">Đang quay &amp; dựng</Status>;
       case 'DRAFT_VIDEO_SUBMITTED':
-        return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-semibold bg-blue-50 text-blue-700">
-            <Play className="w-3 h-3 text-blue-600" />
-            Chờ QA nội bộ (Vòng 1)
-          </span>
-        );
+        return <Status tone="info">Chờ QA nội bộ (Vòng 1)</Status>;
       case 'INTERNAL_QA_PASSED':
-        return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
-            <ShieldCheck className="w-3 h-3 text-indigo-600" />
-            Chờ Brand nghiệm thu &amp; Đăng kênh
-          </span>
-        );
+        return <Status tone="brand">Chờ Brand nghiệm thu &amp; Đăng kênh</Status>;
       case 'VIDEO_REVISION':
-        return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-semibold bg-amber-50 text-amber-700">
-            <AlertCircle className="w-3 h-3 text-amber-600" />
-            Sửa video nháp
-          </span>
-        );
+        return <Status tone="warn">Sửa video nháp</Status>;
       case 'ACCEPTED_COMPLETED':
-        return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-semibold bg-emerald-50 text-emerald-700">
-            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-            Đã nghiệm thu (Chờ lập DNTT)
-          </span>
-        );
+        return <Status tone="ok">Đã nghiệm thu (Chờ lập DNTT)</Status>;
       case 'PAID':
-        return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-semibold bg-blue-50 text-blue-700">
-            <Wallet className="w-3 h-3 text-blue-600" />
-            Đã quyết toán
-          </span>
-        );
+        return <Status tone="info">Đã quyết toán</Status>;
     }
   };
 
@@ -656,28 +601,28 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
     const st = task.sampleShippingStatus || 'PENDING_SHIP';
     if (st === 'ON_HAND_AT_HOME') {
       return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
-          <Package className="w-3 h-3" /> Sẵn mẫu tại nhà VJ
+        <span className="text-2xs text-emerald-700 font-medium">
+          · Sẵn mẫu tại nhà VJ
         </span>
       );
     }
     if (st === 'DELIVERED') {
       return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-medium bg-emerald-50 text-emerald-700">
-          <Check className="w-3 h-3" /> VJ đã nhận mẫu ({task.sampleTrackingCode || 'Đã giao'})
+        <span className="text-2xs text-emerald-700 font-medium">
+          · VJ đã nhận mẫu ({task.sampleTrackingCode || 'Đã giao'})
         </span>
       );
     }
     if (st === 'SHIPPING') {
       return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-medium bg-blue-50 text-blue-700">
-          <Truck className="w-3 h-3" /> Đang giao mẫu ({task.sampleTrackingCode || 'SPX'})
+        <span className="text-2xs text-blue-700 font-medium">
+          · Đang giao mẫu ({task.sampleTrackingCode || 'SPX'})
         </span>
       );
     }
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-medium bg-amber-50 text-amber-800">
-        <Clock className="w-3 h-3" /> Chờ gửi mẫu (SLA 48h)
+      <span className="text-2xs text-amber-800 font-medium">
+        · Chờ gửi mẫu (SLA 48h)
       </span>
     );
   };
@@ -1301,15 +1246,12 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                 <h2 className="text-base font-semibold text-slate-900 tracking-tight">
                   Sản xuất Video kênh Brand &amp; Điều phối CTV / VJ
                 </h2>
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-2xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
-                  Luồng Self-Channel 5 bước
-                </span>
-                <span className="font-mono text-2xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
-                  {activeAllocation.brandName}
+                <span className="text-xs text-slate-500">
+                  · Luồng Self-Channel 5 bước · <span className="font-mono font-medium text-slate-700">{activeAllocation.brandName}</span>
                 </span>
               </div>
               <p className="text-xs text-slate-500 mt-0.5">
-                Nhận chỉ tiêu Kế hoạch tháng → Chọn VJ &amp; Duyệt định hướng (48h) → Giao mẫu (48h) &amp; Quay dựng → Duyệt QA 2 vòng &amp; Đăng kênh → Lập DNTT &amp; Khấu trừ thuế TNCN.
+                Nhận chỉ tiêu Kế hoạch tháng - Chọn VJ &amp; Duyệt định hướng (48h) - Giao mẫu (48h) &amp; Quay dựng - Duyệt QA 2 vòng &amp; Đăng kênh - Lập DNTT &amp; Khấu trừ thuế TNCN.
               </p>
             </div>
           </div>
@@ -1432,7 +1374,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
           >
             <div className="flex items-center justify-between font-semibold text-slate-800">
               <span>B4. QA 2 vòng &amp; Đăng kênh</span>
-              <span className="font-mono text-indigo-700">
+              <span className="font-mono text-blue-700">
                 {stats.videoQaPendingTasks + stats.brandAcceptPendingTasks} chờ
               </span>
             </div>
@@ -1475,8 +1417,8 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
           onClick={() => setActiveTab('PLAN_FINAL_RBAC')}
           className={`px-3.5 py-2 rounded-lg font-medium transition flex items-center gap-2 whitespace-nowrap ${
             activeTab === 'PLAN_FINAL_RBAC'
-              ? 'bg-indigo-600 text-white font-semibold shadow-xs'
-              : 'text-indigo-700 bg-indigo-50/70 hover:bg-indigo-100 border border-indigo-200/70'
+              ? 'bg-slate-900 text-white font-semibold shadow-xs'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
           }`}
         >
           <ShieldCheck className="w-3.5 h-3.5" />
@@ -1493,16 +1435,9 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
           }`}
         >
           <AlertCircle className="w-3.5 h-3.5" />
-          <span>Hàng chờ Duyệt &amp; Nghiệm thu</span>
-          {stats.pendingApprovalsCount > 0 && (
-            <span
-              className={`text-2xs font-semibold px-1.5 py-0.5 rounded-full ${
-                activeTab === 'APPROVALS' ? 'bg-white text-blue-700' : 'bg-rose-500 text-white'
-              }`}
-            >
-              {stats.pendingApprovalsCount}
-            </span>
-          )}
+          <span>
+            Hàng chờ Duyệt &amp; Nghiệm thu{stats.pendingApprovalsCount > 0 ? ` (${stats.pendingApprovalsCount})` : ''}
+          </span>
         </button>
 
         <button
@@ -1581,14 +1516,14 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
             <div className="p-4 sm:px-5 border-b border-slate-100 bg-slate-50/70 flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-indigo-600" />
+                  <ShieldCheck className="w-4 h-4 text-blue-600" />
                   <span>1. Phân quyền thao tác nhân sự trong Quy trình sản xuất Video Self-Channel (6 Bước SOP)</span>
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">
                   Gắn quyền rõ ràng giữa <strong>Trưởng phòng B2C (Đặng Thị Yến Nhi)</strong>, <strong>Leader Partnership (Việt Hoàng)</strong> và <strong>4 Chuyên viên Content</strong> bên dưới để không chồng chéo việc liên hệ CTV, duyệt kịch bản và lập DNTT.
                 </p>
               </div>
-              <span className="px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-200 text-2xs font-semibold">
+              <span className="text-2xs text-slate-500">
                 Bấm vào ô quyền để bật / tắt quyền thao tác
               </span>
             </div>
@@ -1622,8 +1557,8 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                           <div className="text-2xs text-slate-500 mt-0.5 flex items-center gap-1.5">
                             <span>{perm.roleTitle}</span>
                             {assignedStoreCount > 0 && (
-                              <span className="px-1.5 py-0 rounded bg-violet-50 text-violet-700 border border-violet-200 font-semibold">
-                                {assignedStoreCount} gian hàng
+                              <span className="font-medium text-blue-700">
+                                · {assignedStoreCount} gian hàng
                               </span>
                             )}
                           </div>
@@ -1684,12 +1619,12 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                   value={planFinalSearch}
                   onChange={(e) => setPlanFinalSearch(e.target.value)}
                   placeholder="Tìm gian hàng, thương hiệu..."
-                  className="h-8 px-3 rounded-lg border border-slate-200 bg-white text-xs text-slate-800 focus:outline-none focus:border-indigo-500"
+                  className="h-8 px-3 rounded-lg border border-slate-200 bg-white text-xs text-slate-800 focus:outline-none focus:border-blue-500"
                 />
                 <select
                   value={planFinalStaffFilter}
                   onChange={(e) => setPlanFinalStaffFilter(e.target.value)}
-                  className="h-8 px-2.5 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-700 focus:outline-none focus:border-indigo-500"
+                  className="h-8 px-2.5 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-700 focus:outline-none focus:border-blue-500"
                 >
                   <option value="ALL">Tất cả Content ({approvedPlanFinalsForSelfChannel.length} gian)</option>
                   {['Quỳnh Như', 'Nguyễn Thị Mai Anh', 'Vũ Hoài Lâm', 'Phan Diệu Ánh'].map(name => (
@@ -1704,7 +1639,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                     onClick={onOpenInputPlan}
                     className="h-8 px-3 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition cursor-pointer"
                   >
-                    Mở Sổ Kế Hoạch Tháng →
+                    Mở Sổ Kế Hoạch Tháng
                   </button>
                 )}
               </div>
@@ -1793,8 +1728,8 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                           <td className="py-2.5 px-4 align-middle">
                             <div className="flex items-center gap-1.5">
                               <span className="font-semibold text-slate-900">{item.storeName}</span>
-                              <span className="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-semibold">
-                                Final {item.versionCode}
+                              <span className="font-mono text-2xs text-emerald-700 font-medium">
+                                · Final {item.versionCode}
                               </span>
                             </div>
                             <div className="text-2xs text-slate-500 mt-0.5">
@@ -1807,12 +1742,12 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                               Duyệt: <strong className="text-emerald-700">{item.approvedBy}</strong>
                             </div>
                             <div className="text-2xs text-slate-500 mt-0.5">
-                              Leader Partnership: <strong className="text-indigo-700">{item.partnershipLeader}</strong>
+                              Leader Partnership: <strong className="text-blue-700">{item.partnershipLeader}</strong>
                             </div>
                           </td>
 
                           <td className="py-2.5 px-3 text-right font-mono align-middle">
-                            <span className="font-semibold text-indigo-700 text-xs">{item.approvedVideosQuota} video</span>
+                            <span className="font-semibold text-blue-700 text-xs">{item.approvedVideosQuota} video</span>
                           </td>
 
                           <td className="py-2.5 px-3 text-right font-mono align-middle">
@@ -1831,7 +1766,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                                     onClick={() => handleToggleContentStaffOnStore(staffName)}
                                     className={`px-2 py-0.5 rounded text-2xs font-semibold border transition cursor-pointer ${
                                       isAssigned
-                                        ? 'bg-violet-600 text-white border-violet-600 shadow-2xs'
+                                        ? 'bg-blue-600 text-white border-blue-600 shadow-2xs'
                                         : 'bg-slate-50 text-slate-500 border-slate-200 hover:bg-slate-100'
                                     }`}
                                     title={isAssigned ? `Đang gán ${staffName} làm Content gian hàng này. Bấm để gỡ` : `Bấm để gán thêm ${staffName} cùng làm gian hàng này`}
@@ -1844,20 +1779,16 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                           </td>
 
                           <td className="py-2.5 px-3 text-center font-mono align-middle">
-                            <span className={`px-2 py-0.5 rounded text-2xs font-semibold ${
-                              item.spawnedCount >= item.approvedVideosQuota
-                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                : 'bg-amber-50 text-amber-800 border border-amber-200'
-                            }`}>
-                              Đã rã {item.spawnedCount} / {item.approvedVideosQuota} video
-                            </span>
+                            <Status tone={item.spawnedCount >= item.approvedVideosQuota ? 'ok' : 'warn'}>
+                              Đã rã {item.spawnedCount}/{item.approvedVideosQuota}
+                            </Status>
                           </td>
 
                           <td className="py-2.5 px-4 text-right align-middle">
                             <button
                               type="button"
                               onClick={handleSpawnTasksFromPlanFinal}
-                              className="px-2.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-2xs font-semibold transition cursor-pointer"
+                              className="px-2.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-2xs font-semibold transition cursor-pointer"
                             >
                               + Rã đề bài từ Plan Final
                             </button>
@@ -1945,11 +1876,11 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                     <span className="text-xs font-semibold text-slate-900">
                       {SELF_CHANNEL_PARTNERSHIP_LEADER.name}
                     </span>
-                    <span className="px-2 py-0.5 rounded-full text-2xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
-                      Leader Partnership &amp; Self-Channel
+                    <span className="text-2xs font-medium text-blue-700">
+                      · Leader Partnership &amp; Self-Channel
                     </span>
                     <span className="text-2xs text-slate-500">
-                      Báo cáo trực tiếp: <strong className="text-slate-700">{SELF_CHANNEL_PARTNERSHIP_LEADER.managerName}</strong>
+                      · Báo cáo trực tiếp: <strong className="text-slate-700">{SELF_CHANNEL_PARTNERSHIP_LEADER.managerName}</strong>
                     </span>
                   </div>
                   <p className="text-2xs text-slate-600 mt-0.5">
@@ -1973,9 +1904,9 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                   <button
                     type="button"
                     onClick={() => onOpenCtvProfile()}
-                    className="px-3 py-1.5 rounded-lg text-2xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white transition"
+                    className="px-3 py-1.5 rounded-lg text-2xs font-semibold bg-blue-600 hover:bg-blue-700 text-white transition"
                   >
-                    Quản lý Hồ sơ &amp; Hợp đồng CTV →
+                    Quản lý Hồ sơ &amp; Hợp đồng CTV
                   </button>
                 )}
               </div>
@@ -1984,7 +1915,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
             <div className="p-4 sm:p-5 space-y-3">
               <div className="flex items-center justify-between">
                 <h4 className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
-                  <Users className="w-3.5 h-3.5 text-indigo-600" />
+                  <Users className="w-3.5 h-3.5 text-blue-600" />
                   <span>Đội ngũ Chuyên viên Content dưới quyền ({SELF_CHANNEL_CONTENT_MEMBERS.length} nhân sự) — Lên đề bài, duyệt kịch bản 24h &amp; QA video nội bộ</span>
                 </h4>
                 <span className="text-2xs text-slate-400 hidden sm:inline">
@@ -2025,22 +1956,15 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                               <div className="text-2xs text-slate-500">Báo cáo: Việt Hoàng</div>
                             </div>
                           </div>
-                          <span className="px-1.5 py-0.5 rounded text-2xs font-mono font-semibold bg-white border border-slate-200 text-slate-700">
+                          <span className="text-2xs font-mono font-semibold text-slate-600">
                             {memberTasks.length} việc
                           </span>
                         </div>
 
                         <p className="text-2xs text-slate-500 line-clamp-2">{member.specialty}</p>
 
-                        <div className="flex flex-wrap gap-1 pt-0.5">
-                          {member.assignedBrands.map(b => (
-                            <span
-                              key={b}
-                              className="px-1.5 py-0.5 rounded bg-white border border-slate-200 text-2xs text-slate-700 font-medium truncate max-w-full"
-                            >
-                              {b.split(' ')[0]}
-                            </span>
-                          ))}
+                        <div className="text-2xs text-slate-600 font-medium truncate">
+                          {member.assignedBrands.map(b => b.split(' ')[0]).join(' · ')}
                         </div>
                       </div>
 
@@ -2048,15 +1972,15 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                         <div className="grid grid-cols-3 gap-1 text-center">
                           <div className="p-1.5 rounded bg-amber-50/80 border border-amber-200/60">
                             <div className="font-mono font-semibold text-amber-800">{waitingCtvCount}</div>
-                            <div className="text-amber-700 text-[10px]">Chờ CTV</div>
+                            <div className="text-amber-700 text-2xs">Chờ CTV</div>
                           </div>
                           <div className="p-1.5 rounded bg-blue-50/80 border border-blue-200/60">
                             <div className="font-mono font-semibold text-blue-800">{inProgressCount}</div>
-                            <div className="text-blue-700 text-[10px]">Đang chạy</div>
+                            <div className="text-blue-700 text-2xs">Đang chạy</div>
                           </div>
                           <div className="p-1.5 rounded bg-emerald-50/80 border border-emerald-200/60">
                             <div className="font-mono font-semibold text-emerald-800">{doneCount}</div>
-                            <div className="text-emerald-700 text-[10px]">Hoàn tất</div>
+                            <div className="text-emerald-700 text-2xs">Hoàn tất</div>
                           </div>
                         </div>
 
@@ -2102,7 +2026,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                     onClick={onOpenInputPlan}
                     className="px-3 py-1.5 rounded-lg border border-slate-200 text-2xs font-semibold text-slate-700 hover:bg-slate-50"
                   >
-                    Mở Kế hoạch tháng →
+                    Mở Kế hoạch tháng
                   </button>
                 )}
               </div>
@@ -2153,9 +2077,9 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                             {brandCompleted} video
                           </td>
                           <td className="py-3 px-3 text-center">
-                            <span className="px-2 py-0.5 rounded-full text-2xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            <Status tone={brandProgress >= 80 ? 'ok' : 'info'}>
                               {brandProgress}%
-                            </span>
+                            </Status>
                           </td>
                           <td className="py-3 px-3 text-right font-mono font-semibold text-slate-900">
                             {formatVnd(alloc.budgetSelfChannel)}
@@ -2208,7 +2132,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                     <div className="space-y-1.5">
                       <div className="flex items-start justify-between gap-1">
                         <span className="font-semibold text-slate-900">{pillar.name}</span>
-                        <span className="text-2xs font-mono font-semibold px-1.5 py-0.5 rounded bg-white text-blue-700 border border-slate-200 shrink-0">
+                        <span className="text-2xs font-mono font-semibold text-blue-700 shrink-0">
                           {formatVnd(pillar.unitCostPerVideo)}/clip
                         </span>
                       </div>
@@ -2216,15 +2140,8 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                         {pillar.description}
                       </p>
                       {pillar.coreSkuIds && pillar.coreSkuIds.length > 0 && (
-                        <div className="flex flex-wrap gap-1 pt-0.5">
-                          {pillar.coreSkuIds.map(sku => (
-                            <span
-                              key={sku}
-                              className="px-1.5 py-0.5 rounded bg-white border border-slate-200 font-mono text-2xs text-slate-600"
-                            >
-                              {sku}
-                            </span>
-                          ))}
+                        <div className="font-mono text-2xs text-slate-600 pt-0.5">
+                          SKU: {pillar.coreSkuIds.join(' · ')}
                         </div>
                       )}
                     </div>
@@ -2278,7 +2195,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                     Hộp việc Phê duyệt theo 4 bước kiểm soát chất lượng ({stats.pendingApprovalsCount} mục)
                   </h3>
                   <p className="text-2xs text-slate-500 mt-0.5">
-                    1. Duyệt VJ &amp; Định hướng (SLA 48h) → 2. Duyệt Kịch bản (SLA 24h) → 3. QA Video nội bộ &amp; Lưu Drive gian hàng → 4. Brand nghiệm thu &amp; Đăng kênh
+                    1. Duyệt VJ &amp; Định hướng (SLA 48h) - 2. Duyệt Kịch bản (SLA 24h) - 3. QA Video nội bộ &amp; Lưu Drive gian hàng - 4. Brand nghiệm thu &amp; Đăng kênh
                   </p>
                 </div>
               </div>
@@ -2301,8 +2218,8 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                             <span className="font-semibold text-slate-900 text-xs">
                               [Bước 2 - Trình Brand duyệt VJ &amp; Góc kịch bản] {t.title}
                             </span>
-                            <span className="font-mono text-2xs text-slate-500 bg-white px-1.5 py-0.5 rounded border border-slate-200">
-                              {t.taskCode}
+                            <span className="font-mono text-2xs text-slate-500">
+                              · {t.taskCode}
                             </span>
                             {renderStatusBadge(t.status)}
                             {renderSampleBadge(t)}
@@ -2356,8 +2273,8 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                             <span className="font-semibold text-slate-900 text-xs">
                               [Bước 3 - Duyệt kịch bản 24h] {t.title}
                             </span>
-                            <span className="font-mono text-2xs text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
-                              {t.taskCode}
+                            <span className="font-mono text-2xs text-slate-500">
+                              · {t.taskCode}
                             </span>
                             {renderStatusBadge(t.status)}
                             {renderSampleBadge(t)}
@@ -2402,8 +2319,8 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                             <span className="font-semibold text-slate-900 text-xs">
                               [Bước 4A - QA Video nội bộ] {t.title}
                             </span>
-                            <span className="font-mono text-2xs text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
-                              {t.taskCode}
+                            <span className="font-mono text-2xs text-slate-500">
+                              · {t.taskCode}
                             </span>
                             {renderStatusBadge(t.status)}
                           </div>
@@ -2439,10 +2356,10 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                   .map(t => (
                     <div
                       key={t.id}
-                      className="p-4 bg-indigo-50/30 hover:bg-indigo-50/50 transition flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                      className="p-4 bg-blue-50/30 hover:bg-blue-50/50 transition flex flex-col sm:flex-row sm:items-center justify-between gap-3"
                     >
                       <div className="flex items-start gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-700 font-semibold text-xs flex items-center justify-center shrink-0">
+                        <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-700 font-semibold text-xs flex items-center justify-center shrink-0">
                           <FileCheck2 className="w-4 h-4" />
                         </div>
                         <div>
@@ -2450,8 +2367,8 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                             <span className="font-semibold text-slate-900 text-xs">
                               [Bước 4B - Brand nghiệm thu &amp; Đăng kênh] {t.title}
                             </span>
-                            <span className="font-mono text-2xs text-slate-500 bg-white px-1.5 py-0.5 rounded border border-slate-200">
-                              {t.taskCode}
+                            <span className="font-mono text-2xs text-slate-500">
+                              · {t.taskCode}
                             </span>
                             {renderStatusBadge(t.status)}
                           </div>
@@ -2464,7 +2381,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                               rel="noreferrer"
                               className="text-blue-600 hover:underline font-mono text-2xs"
                             >
-                              Mở thư mục Drive ↗
+                              Mở thư mục Drive
                             </a>
                           </p>
                         </div>
@@ -2480,7 +2397,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                           );
                           setIsBrandAcceptModalOpen(true);
                         }}
-                        className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition shadow-2xs self-end sm:self-auto"
+                        className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition shadow-2xs self-end sm:self-auto"
                       >
                         <CheckCircle2 className="w-3.5 h-3.5" />
                         <span>Xác nhận Nghiệm thu &amp; Gắn link Air</span>
@@ -2513,18 +2430,14 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                               <span className="font-semibold text-slate-900 text-xs">
                                 [Bước 5 - Chờ lập DNTT] {t.title}
                               </span>
-                              <span className="font-mono text-2xs text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
-                                {t.taskCode}
+                              <span className="font-mono text-2xs text-slate-500">
+                                · {t.taskCode}
                               </span>
-                              {legal.ready ? (
-                                <span className="px-2 py-0.5 rounded text-2xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                  Đủ CCCD &amp; Hợp đồng ({ctvObj?.contractCode})
-                                </span>
-                              ) : (
-                                <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-rose-50 text-rose-700 border border-rose-200">
-                                  Chặn chi: {legal.missingReason}
-                                </span>
-                              )}
+                              <Status tone={legal.ready ? 'ok' : 'err'}>
+                                {legal.ready
+                                  ? `Đủ CCCD & Hợp đồng (${ctvObj?.contractCode})`
+                                  : `Chặn chi: ${legal.missingReason}`}
+                              </Status>
                             </div>
                             <p className="text-xs text-slate-500 mt-0.5">
                               VJ: <strong className="text-slate-700">{t.contributorName}</strong> • Thù lao Gross:{' '}
@@ -2539,7 +2452,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                                     rel="noreferrer"
                                     className="text-blue-600 hover:underline text-2xs"
                                   >
-                                    Link bài đăng kênh Brand ↗
+                                    Link bài đăng kênh Brand
                                   </a>
                                 </>
                               )}
@@ -2554,7 +2467,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                               onClick={() => onOpenCtvProfile(ctvObj?.id)}
                               className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg text-xs font-semibold transition"
                             >
-                              Bổ sung CCCD / HĐ →
+                              Bổ sung CCCD / HĐ
                             </button>
                           )}
                           {ctvObj && (
@@ -2700,33 +2613,33 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                     <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
                       <div className="space-y-1">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-mono text-2xs font-semibold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded">
+                          <span className="font-mono text-2xs font-semibold text-slate-600">
                             {task.taskCode}
                           </span>
                           {task.videoFormat && (
-                            <span className="px-2 py-0.5 rounded text-2xs font-medium bg-slate-100 text-slate-700">
-                              {task.videoFormat}
+                            <span className="text-2xs font-medium text-slate-500">
+                              · {task.videoFormat}
                             </span>
                           )}
                           <span className="font-semibold text-slate-900 text-xs">{task.title}</span>
                           {renderStatusBadge(task.status)}
                           {task.status === 'OPEN_TASK' && (
                             <span
-                              className={`px-2 py-0.5 rounded text-2xs font-semibold border ${
+                              className={`text-2xs font-semibold ${
                                 task.partnershipStatus === 'CONTACTING_CTV'
-                                  ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
-                                  : 'bg-amber-50 text-amber-800 border-amber-200'
+                                  ? 'text-blue-700'
+                                  : 'text-amber-800'
                               }`}
                             >
-                              {task.partnershipStatus === 'CONTACTING_CTV'
+                              · {task.partnershipStatus === 'CONTACTING_CTV'
                                 ? `Partnership (${task.partnershipPic || 'Việt Hoàng'}): Đang liên hệ CTV`
                                 : `Chờ Partnership (${task.partnershipPic || 'Việt Hoàng'}) tìm CTV`}
                             </span>
                           )}
                           {renderSampleBadge(task)}
                           {isUrgent && (
-                            <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-rose-50 text-rose-700 border border-rose-200">
-                              Đơn gấp ({daysLeft} ngày)
+                            <span className="text-2xs font-semibold text-rose-700">
+                              · Đơn gấp ({daysLeft} ngày)
                             </span>
                           )}
                         </div>
@@ -2736,7 +2649,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                           <strong className="text-blue-700">{task.pillarName}</strong> • SKU:{' '}
                           <span className="font-mono font-semibold text-slate-700">{task.linkedSku}</span> • Content đề bài:{' '}
                           <strong className="text-slate-900">{task.contentPic || 'Quỳnh Như'}</strong> • Partnership CTV:{' '}
-                          <strong className="text-indigo-700">{task.partnershipPic || 'Việt Hoàng'}</strong> • VJ:{' '}
+                          <strong className="text-blue-700">{task.partnershipPic || 'Việt Hoàng'}</strong> • VJ:{' '}
                           <strong className="text-slate-900">{task.contributorName || 'Chưa giao VJ'}</strong> • Thù lao:{' '}
                           <strong className="text-slate-900 font-mono">{formatVnd(task.remuneration)}</strong>
                         </p>
@@ -2831,7 +2744,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                                   onClick={() => handleTogglePartnershipContacting(task)}
                                   className={`px-2.5 py-1.5 rounded-lg text-2xs font-semibold border transition ${
                                     task.partnershipStatus === 'CONTACTING_CTV'
-                                      ? 'bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100'
+                                      ? 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
                                       : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
                                   }`}
                                 >
@@ -2909,7 +2822,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                                   );
                                   setIsBrandAcceptModalOpen(true);
                                 }}
-                                className="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white flex items-center gap-1 shadow-2xs"
+                                className="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-1 shadow-2xs"
                               >
                                 <CheckCircle2 className="w-3.5 h-3.5" /> Nghiệm thu &amp; Đăng kênh
                               </button>
@@ -3027,23 +2940,23 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                       <td className="py-3 px-3">
                         {legalStatus.ready ? (
                           <div className="space-y-0.5">
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-semibold bg-emerald-50 text-emerald-700">
-                              <CheckCircle2 className="w-3 h-3" /> Đủ CCCD &amp; HĐ ({ctv.contractCode})
-                            </span>
+                            <Status tone="ok">
+                              Đủ CCCD &amp; HĐ ({ctv.contractCode})
+                            </Status>
                             <span className="block text-2xs text-slate-400">MST: {ctv.taxCode || 'Đã khai báo'}</span>
                           </div>
                         ) : (
                           <div className="space-y-1">
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-semibold bg-rose-50 text-rose-700">
-                              <AlertTriangle className="w-3 h-3" /> {legalStatus.missingReason}
-                            </span>
+                            <Status tone="err">
+                              {legalStatus.missingReason}
+                            </Status>
                             {onOpenCtvProfile && (
                               <button
                                 type="button"
                                 onClick={() => onOpenCtvProfile(ctv.id)}
                                 className="block text-2xs font-semibold text-blue-600 hover:underline"
                               >
-                                Mở hồ sơ CTV để bổ sung →
+                                Mở hồ sơ CTV để bổ sung
                               </button>
                             )}
                           </div>
@@ -3123,7 +3036,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                                 rel="noreferrer"
                                 className="text-blue-600 hover:underline font-medium"
                               >
-                                Xem bài đăng kênh ↗
+                                Xem bài đăng kênh
                               </a>
                             )}
                           </div>
@@ -3175,7 +3088,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                 onClick={() => onOpenCtvProfile()}
                 className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white shadow-2xs transition flex items-center gap-1.5"
               >
-                <Users className="w-3.5 h-3.5" /> Mở Danh bạ &amp; Hồ sơ chuyên sâu CTV →
+                <Users className="w-3.5 h-3.5" /> Mở Danh bạ &amp; Hồ sơ chuyên sâu CTV
               </button>
             )}
           </div>
@@ -3201,22 +3114,16 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                         </div>
                         <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                           <span className="text-2xs font-mono text-slate-500">{ctv.code || ctv.id}</span>
-                          <span className="text-2xs font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded">
-                            {ctv.role === 'ALL_IN_ONE'
+                          <span className="text-2xs font-medium text-blue-700">
+                            · {ctv.role === 'ALL_IN_ONE'
                               ? 'Quay dựng trọn gói'
                               : ctv.role === 'VIDEO_EDITOR'
                               ? 'Dựng phim'
                               : 'VJ / Diễn viên'}
                           </span>
-                          <span
-                            className={`text-2xs font-medium px-1.5 py-0.5 rounded ${
-                              legal.ready
-                                ? 'bg-emerald-50 text-emerald-700'
-                                : 'bg-rose-50 text-rose-700'
-                            }`}
-                          >
+                          <Status tone={legal.ready ? 'ok' : 'err'}>
                             {legal.ready ? 'Đủ pháp lý' : 'Thiếu CCCD/HĐ'}
-                          </span>
+                          </Status>
                         </div>
                       </div>
                     </div>
@@ -3241,15 +3148,8 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                     </div>
 
                     {(ctv.onHandProducts || []).length > 0 && (
-                      <div className="flex flex-wrap gap-1">
-                        {(ctv.onHandProducts || []).map(sku => (
-                          <span
-                            key={sku}
-                            className="px-2 py-0.5 rounded text-2xs font-mono bg-emerald-50 text-emerald-800 border border-emerald-200"
-                          >
-                            {sku}
-                          </span>
-                        ))}
+                      <div className="text-2xs font-mono text-emerald-800">
+                        {(ctv.onHandProducts || []).join(' · ')}
                       </div>
                     )}
                   </div>
@@ -3278,7 +3178,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                           onClick={() => onOpenCtvProfile(ctv.id)}
                           className="text-2xs font-semibold text-blue-600 hover:underline"
                         >
-                          Hồ sơ &amp; Lịch sử →
+                          Hồ sơ &amp; Lịch sử
                         </button>
                       )}
                     </div>
@@ -3326,29 +3226,23 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                   <Avatar name={portalCtv.name} src={portalCtv.avatar} size={46} />
                   <div>
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="px-2 py-0.5 rounded bg-emerald-600 text-white text-2xs font-semibold">
-                        Cổng làm việc CTV / VJ
+                      <span className="text-2xs font-semibold text-emerald-700">
+                        Cổng làm việc CTV / VJ ·
                       </span>
                       <h3 className="text-sm font-semibold text-slate-900">{portalCtv.name}</h3>
-                      <span className="font-mono text-2xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">
-                        {portalCtv.code || portalCtv.id}
+                      <span className="font-mono text-2xs text-slate-500">
+                        · {portalCtv.code || portalCtv.id}
                       </span>
-                      <span
-                        className={`px-2 py-0.5 rounded text-2xs font-semibold ${
-                          legalStatus.ready
-                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                            : 'bg-rose-50 text-rose-700 border border-rose-200'
-                        }`}
-                      >
+                      <Status tone={legalStatus.ready ? 'ok' : 'err'}>
                         {legalStatus.ready
                           ? `Đủ CCCD & HĐ (${portalCtv.contractCode})`
                           : legalStatus.missingReason}
-                      </span>
+                      </Status>
                     </div>
                     <p className="text-xs text-slate-500 mt-1">
                       Đơn giá trọn gói: <strong className="text-slate-900 font-mono">{formatVnd(portalCtv.unitRateAllInOne || 1500000)}/video</strong> •
                       Content phụ trách: <strong className="text-slate-800">{portalCtv.contentPic || 'Quỳnh Như'}</strong> •
-                      Partnership hỗ trợ HĐ &amp; Thanh toán: <strong className="text-indigo-700">{portalCtv.partnershipPic || 'Việt Hoàng'}</strong>
+                      Partnership hỗ trợ HĐ &amp; Thanh toán: <strong className="text-blue-700">{portalCtv.partnershipPic || 'Việt Hoàng'}</strong>
                     </p>
                   </div>
                 </div>
@@ -3376,7 +3270,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                       onClick={() => onOpenCtvProfile(portalCtv.id)}
                       className="px-3 py-1.5 rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-semibold transition"
                     >
-                      Mở Hồ sơ &amp; Lịch sử CTV →
+                      Mở Hồ sơ &amp; Lịch sử CTV
                     </button>
                   )}
                 </div>
@@ -3386,7 +3280,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 pt-3 border-t border-slate-100 text-xs">
                 <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80">
                   <span className="text-2xs text-slate-500 block">Việc đang thực hiện</span>
-                  <span className="text-base font-bold text-slate-900 font-mono mt-0.5 block">
+                  <span className="text-base font-semibold text-slate-900 font-mono mt-0.5 block">
                     {activeActionTasks.length} video
                   </span>
                   <span className="text-2xs text-slate-500">
@@ -3395,7 +3289,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                 </div>
                 <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80">
                   <span className="text-2xs text-slate-500 block">Sản phẩm mẫu cầm sẵn tại nhà</span>
-                  <span className="text-base font-bold text-emerald-700 font-mono mt-0.5 block">
+                  <span className="text-base font-semibold text-emerald-700 font-mono mt-0.5 block">
                     {(portalCtv.onHandProducts || []).length} mã SKU
                   </span>
                   <span className="text-2xs text-slate-500 truncate block">
@@ -3404,7 +3298,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                 </div>
                 <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80">
                   <span className="text-2xs text-slate-500 block">Chờ lập DNTT &amp; Giải ngân</span>
-                  <span className="text-base font-bold text-amber-700 font-mono mt-0.5 block">
+                  <span className="text-base font-semibold text-amber-700 font-mono mt-0.5 block">
                     {formatVnd(pendingGross)}
                   </span>
                   <span className="text-2xs text-slate-500">
@@ -3413,11 +3307,13 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                 </div>
                 <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80">
                   <span className="text-2xs text-slate-500 block">Tổng thù lao đã nhận</span>
-                  <span className="text-base font-bold text-slate-900 font-mono mt-0.5 block">
+                  <span className="text-base font-semibold text-slate-900 font-mono mt-0.5 block">
                     {formatVnd(portalCtv.totalPaidAmount)}
                   </span>
-                  <span className="text-2xs text-emerald-700 font-medium">
-                    Đã hoàn thành {portalCtv.completedTaskCount} video • ★ {portalCtv.ratingScore}
+                  <span className="text-2xs text-emerald-700 font-medium inline-flex items-center gap-1">
+                    <span>Đã hoàn thành {portalCtv.completedTaskCount} video •</span>
+                    <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
+                    <span>{portalCtv.ratingScore}</span>
                   </span>
                 </div>
               </div>
@@ -3456,12 +3352,12 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
                           <div className="space-y-1">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <span className="font-mono text-2xs font-semibold px-1.5 py-0.5 rounded bg-white border border-slate-200 text-slate-700">
+                              <span className="font-mono text-2xs font-semibold text-slate-600">
                                 {task.taskCode}
                               </span>
                               {task.videoFormat && (
-                                <span className="px-2 py-0.5 rounded text-2xs font-medium bg-indigo-50 text-indigo-700">
-                                  {task.videoFormat}
+                                <span className="text-2xs font-medium text-blue-700">
+                                  · {task.videoFormat}
                                 </span>
                               )}
                               <span className="font-semibold text-xs text-slate-900">{task.title}</span>
@@ -3616,7 +3512,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                             Hạn: {formatDate(task.deadline)}
                           </div>
                           {hasSkuAtHome && (
-                            <span className="inline-block px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 text-2xs font-semibold">
+                            <span className="block text-2xs font-semibold text-emerald-700">
                               Bạn đang có sẵn mẫu {task.linkedSku} tại nhà
                             </span>
                           )}
@@ -3691,7 +3587,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                               rel="noreferrer"
                               className="text-blue-600 hover:underline font-medium"
                             >
-                              Xem bài đăng trên kênh ↗
+                              Xem bài đăng trên kênh
                             </a>
                           )}
                         </td>
@@ -3747,7 +3643,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                 }}
                 className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center"
               >
-                ✕
+                <X className="w-4 h-4" />
               </button>
             </div>
 
@@ -3860,9 +3756,9 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                   <label className="font-semibold text-slate-700 block">
                     Leader Partnership (Liên hệ &amp; Chốt CTV)
                   </label>
-                  <div className="px-3 py-2 rounded-lg border border-indigo-200 bg-indigo-50/70 text-indigo-900 font-semibold flex items-center justify-between">
+                  <div className="px-3 py-2 rounded-lg border border-blue-200 bg-blue-50/70 text-blue-900 font-semibold flex items-center justify-between">
                     <span>{SELF_CHANNEL_PARTNERSHIP_LEADER.name} (Leader)</span>
-                    <span className="text-2xs font-medium text-indigo-700">Chuyên trách CTV</span>
+                    <span className="text-2xs font-medium text-blue-700">Chuyên trách CTV</span>
                   </div>
                 </div>
               </div>
@@ -3892,7 +3788,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                       );
                       return (
                         <option key={c.id} value={c.id}>
-                          {c.name} ({hasSku ? '✓ Sẵn mẫu tại nhà' : 'Chưa có mẫu'} •{' '}
+                          {c.name} ({hasSku ? 'Sẵn mẫu tại nhà' : 'Chưa có mẫu'} •{' '}
                           {formatVnd(c.unitRateAllInOne || 1500000)})
                         </option>
                       );
@@ -3962,7 +3858,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                           }
                           className="px-2 py-0.5 rounded bg-white border border-emerald-300 text-emerald-800 font-semibold text-2xs hover:bg-emerald-50"
                         >
-                          {vj.name} ✓
+                          {vj.name}
                         </button>
                       ))}
                     </div>
@@ -4017,7 +3913,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                 onClick={() => setIsSyncPlanModalOpen(false)}
                 className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center"
               >
-                ✕
+                <X className="w-4 h-4" />
               </button>
             </div>
 
@@ -4109,7 +4005,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                 onClick={() => setIsSampleShippingModalOpen(false)}
                 className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center"
               >
-                ✕
+                <X className="w-4 h-4" />
               </button>
             </div>
 
@@ -4186,7 +4082,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                 onClick={() => setIsScriptReviewModalOpen(false)}
                 className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center"
               >
-                ✕
+                <X className="w-4 h-4" />
               </button>
             </div>
 
@@ -4303,7 +4199,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                 onClick={() => setIsVideoQaModalOpen(false)}
                 className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center"
               >
-                ✕
+                <X className="w-4 h-4" />
               </button>
             </div>
 
@@ -4321,7 +4217,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                     <ExternalLink className="w-3 h-3" />
                   </a>
                 </div>
-                <span className="text-2xs font-semibold px-2 py-1 rounded bg-white text-slate-700 border border-slate-200 font-mono">
+                <span className="text-2xs font-semibold text-slate-700 font-mono">
                   {selectedTask.videoDeliverables?.durationSeconds || 45}s
                 </span>
               </div>
@@ -4445,7 +4341,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
       </Presence>
 
       {/* ============================================================== */}
-      {/* MODAL 6: VÒNG 2 — BRAND NGHIỆM THU & GẮN LINK ĐĂNG KÊNH         */}
+      {/* MODAL 6: VÒNG 2 — BRAND NGHIỆM THU & GẮN LINK BÀI ĐĂNG KÊNH      */}
       {/* ============================================================== */}
       <Presence show={!!(isBrandAcceptModalOpen && selectedTask)}>
       {isBrandAcceptModalOpen && selectedTask && (
@@ -4454,7 +4350,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
               <div>
                 <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-                  <FileCheck2 className="w-4 h-4 text-indigo-600" />
+                  <FileCheck2 className="w-4 h-4 text-blue-600" />
                   Vòng 2 — Brand Nghiệm thu &amp; Đăng kênh: {selectedTask.taskCode}
                 </h3>
                 <p className="text-2xs text-slate-500 mt-0.5">
@@ -4467,7 +4363,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                 onClick={() => setIsBrandAcceptModalOpen(false)}
                 className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center"
               >
-                ✕
+                <X className="w-4 h-4" />
               </button>
             </div>
 
@@ -4487,7 +4383,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                     rel="noreferrer"
                     className="text-blue-600 hover:underline font-mono"
                   >
-                    Mở Drive tổng ↗
+                    Mở Drive tổng
                   </a>
                 </div>
               </div>
@@ -4554,7 +4450,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                 <button
                   type="button"
                   onClick={handleSaveBrandAcceptance}
-                  className="px-5 py-2 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-2xs"
+                  className="px-5 py-2 rounded-lg text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white shadow-2xs"
                 >
                   Xác nhận hoàn tất
                 </button>
@@ -4583,7 +4479,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                 onClick={() => setIsCtvSubmitModalOpen(false)}
                 className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center"
               >
-                ✕
+                <X className="w-4 h-4" />
               </button>
             </div>
 
@@ -4709,7 +4605,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                 }}
                 className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center"
               >
-                ✕
+                <X className="w-4 h-4" />
               </button>
             </div>
 
@@ -4777,7 +4673,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                       </div>
                       <div className="flex justify-between pt-2 border-t border-slate-200 text-sm">
                         <span className="font-semibold text-slate-900">Thực nhận (Net):</span>
-                        <span className="font-mono font-bold text-emerald-700">{formatVnd(netTotal)}</span>
+                        <span className="font-mono font-semibold text-emerald-700">{formatVnd(netTotal)}</span>
                       </div>
                     </div>
                   </div>

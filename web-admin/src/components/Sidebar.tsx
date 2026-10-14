@@ -681,12 +681,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const isAnyDashboardActive = DASHBOARD_TAB_KEYS.includes(activeTab);
   const [isDashboardMenuOpen, setIsDashboardMenuOpen] = React.useState<boolean>(true);
 
-  React.useEffect(() => {
-    if (isAnyDashboardActive) {
-      setIsDashboardMenuOpen(true);
-    }
-  }, [isAnyDashboardActive]);
-
   // Nền + vạch của mục đang mở là một phần tử, trượt sang mục mới khi chuyển màn.
   const navRef = useRef<HTMLElement>(null);
   const { box, ready } = useActiveBox(navRef, activeTab);
@@ -784,7 +778,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                             }}
                             className={`sidebar-item w-full flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-md text-left text-[13px] leading-5 transition-colors cursor-pointer ${
                               isGroupActive
-                                ? 'bg-indigo-50/70 text-accent font-semibold border border-indigo-200/70'
+                                ? 'bg-accent-soft/60 text-accent font-semibold'
                                 : 'text-ink-2 hover:text-ink hover:bg-sunken'
                             }`}
                           >
@@ -798,11 +792,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
                               <span className="truncate">{item.label}</span>
                             </div>
                             <div className="flex items-center gap-1 shrink-0">
-                              {item.badge && (
-                                <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-indigo-100 text-indigo-800">
-                                  {item.badge}
-                                </span>
-                              )}
                               {isDashboardMenuOpen ? (
                                 <ChevronDown className="w-3.5 h-3.5 text-ink-3" />
                               ) : (
@@ -840,17 +829,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
                                       />
                                       <span className="truncate">{child.label}</span>
                                     </div>
-                                    {child.badge && (
-                                      <span
-                                        className={`px-1 py-0.2 rounded text-[9px] font-mono shrink-0 ${
-                                          isChildActive
-                                            ? 'bg-indigo-600 text-white font-bold'
-                                            : 'bg-slate-100 text-slate-600'
-                                        }`}
-                                      >
-                                        {child.badge}
-                                      </span>
-                                    )}
                                   </button>
                                 );
                               })}

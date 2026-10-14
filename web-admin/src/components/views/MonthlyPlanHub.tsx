@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useMemo, useRef } from 'react';
 import {
@@ -32,8 +32,7 @@ import {
   Store as StoreIcon,
   RefreshCw,
   Database,
-  FileText,
-  CheckCircle2
+  FileText
 } from 'lucide-react';
 import {
   InputPlanBreakdownState,
@@ -1370,9 +1369,6 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                   <h3 className="text-sm font-semibold text-ink">
                     Nhập &amp; Quản trị Kế hoạch Tháng theo Brand ({filteredBrandMonthlyPlans.length} thương hiệu B2C)
                   </h3>
-                  <span className="text-2xs text-ink-3">
-                    · theo brand
-                  </span>
                 </div>
                 <p className="text-xs text-ink-3 mt-0.5">
                   Nơi nhập kế hoạch tháng cho 3 vị trí gắn cấp Brand: <strong className="text-ink">Content / Brand main</strong>, <strong className="text-ink">Plan / Strategy</strong> và <strong className="text-ink">Key Visual / SIS</strong>. Giám đốc Marketing B2C (<strong className="text-ink">Đặng Thị Yến Nhi</strong>) phân bổ nhân sự và phê duyệt định hướng tháng của từng Brand.
@@ -1381,10 +1377,10 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
 
               <div className="flex items-center gap-1.5 flex-wrap">
                 {[
-                  { key: 'ALL' as const, label: 'Tất cả 3 vị trí', badge: `${brandMonthlyPlans.length} Brand` },
-                  { key: 'CONTENT_BRAND_MAIN' as const, label: 'Content / Brand main', badge: 'theo brand' },
-                  { key: 'PLAN_STRATEGY' as const, label: 'Plan / Strategy', badge: 'theo brand' },
-                  { key: 'KEY_VISUAL_SIS' as const, label: 'Key Visual / SIS', badge: 'theo brand' },
+                  { key: 'ALL' as const, label: 'Tất cả 3 vị trí', badge: `${brandMonthlyPlans.length}` },
+                  { key: 'CONTENT_BRAND_MAIN' as const, label: 'Content / Brand main' },
+                  { key: 'PLAN_STRATEGY' as const, label: 'Plan / Strategy' },
+                  { key: 'KEY_VISUAL_SIS' as const, label: 'Key Visual / SIS' },
                 ].map(pos => {
                   const active = brandPlanPositionFilter === pos.key;
                   return (
@@ -1400,9 +1396,11 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                       )}
                     >
                       <span>{pos.label}</span>
-                      <span className="text-2xs text-ink-3">
-                        · {pos.badge}
-                      </span>
+                      {pos.badge && (
+                        <span className="text-2xs text-ink-3">
+                          ({pos.badge})
+                        </span>
+                      )}
                     </button>
                   );
                 })}
@@ -1414,9 +1412,6 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
               <div className="p-3 rounded-xl bg-amber-50/50 border border-amber-200/80">
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-xs font-semibold text-amber-950">1. Content / Brand main</span>
-                  <span className="text-2xs text-ink-3">
-                    theo brand
-                  </span>
                 </div>
                 <p className="text-2xs text-ink-2 mt-1">
                   Lập Master Content Plan tháng, xây dựng các tuyến Content Pillar / Angle, duyệt khung kịch bản Hero/KOL và kiểm soát chất lượng nội dung toàn Brand.
@@ -1426,9 +1421,6 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
               <div className="p-3 rounded-xl bg-blue-50/50 border border-blue-200/80">
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-xs font-semibold text-blue-950">2. Plan / Strategy</span>
-                  <span className="text-2xs text-ink-3">
-                    theo brand
-                  </span>
                 </div>
                 <p className="text-2xs text-ink-2 mt-1">
                   Hoạch định chiến lược Brand &amp; Campaign tháng (Big Idea, Key Message, USP/RTB), báo cáo đối soát thị trường (Brand Audit) và phân bổ hạn mức xuống các gian hàng.
@@ -1438,9 +1430,6 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
               <div className="p-3 rounded-xl bg-sunken/50 border border-line">
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-xs font-semibold text-ink">3. Key Visual / SIS</span>
-                  <span className="text-2xs text-ink-3">
-                    theo brand
-                  </span>
                 </div>
                 <p className="text-2xs text-ink-2 mt-1">
                   Định hướng Key Visual chiến dịch/Mega Sale, thiết kế bộ trang trí gian hàng SIS/Banner đa sàn và chuẩn hóa khung ảnh sản phẩm PDP chuẩn SEO.
@@ -1499,29 +1488,14 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                 <thead>
                   <tr className="bg-sunken/70 border-b border-line text-ink-2 font-semibold text-2xs">
                     <th className="py-2.5 px-3 min-w-[165px]">Thương hiệu (Brand)</th>
-                    <th className="py-2.5 px-3 min-w-[235px]">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-ink font-semibold">1. Content / Brand main</span>
-                        <span className="text-2xs font-normal text-ink-3">
-                          · theo brand
-                        </span>
-                      </div>
+                    <th className="py-2.5 px-3 min-w-[220px]">
+                      <span className="text-ink font-semibold">1. Content / Brand main</span>
                     </th>
-                    <th className="py-2.5 px-3 min-w-[245px]">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-ink font-semibold">2. Plan / Strategy</span>
-                        <span className="text-2xs font-normal text-ink-3">
-                          · theo brand
-                        </span>
-                      </div>
+                    <th className="py-2.5 px-3 min-w-[220px]">
+                      <span className="text-ink font-semibold">2. Plan / Strategy</span>
                     </th>
-                    <th className="py-2.5 px-3 min-w-[235px]">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-ink font-semibold">3. Key Visual / SIS</span>
-                        <span className="text-2xs font-normal text-ink-3">
-                          · theo brand
-                        </span>
-                      </div>
+                    <th className="py-2.5 px-3 min-w-[220px]">
+                      <span className="text-ink font-semibold">3. Key Visual / SIS</span>
                     </th>
                     <th className="py-2.5 px-3 text-center w-28">Trạng thái</th>
                     <th className="py-2.5 px-3 text-right w-36">Thao tác</th>
@@ -2222,7 +2196,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                           onClick={() => onSelectPlan(plan)}
                         >
                           <td className="py-2 px-2.5 align-middle">
-                            <div className="font-semibold text-ink text-[12px] truncate" title={plan.title}>
+                            <div className="font-semibold text-ink text-xs truncate" title={plan.title}>
                               {plan.title}
                             </div>
                             <div className="text-2xs text-ink-3 mt-0.5 truncate">
@@ -2263,7 +2237,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                             </div>
                           </td>
                           <td className="py-2 px-2 text-right tabular-nums align-middle bg-sunken/25">
-                            <div className="font-semibold text-ink text-[12px]">
+                            <div className="font-semibold text-ink text-xs">
                               {formatVndShort(bd.totalBudget)}
                             </div>
                             <div className="text-2xs font-medium text-accent">
@@ -2273,7 +2247,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                           <td className="py-2 px-2 text-right tabular-nums align-middle">
                             {bd.affPaidQty > 0 || bd.affPaidBudget > 0 ? (
                               <div>
-                                <div className="font-semibold text-ink text-[12px]">{bd.affPaidQty} video</div>
+                                <div className="font-semibold text-ink text-xs">{bd.affPaidQty} video</div>
                                 <div className="text-2xs text-ink-3">{formatVndShort(bd.affPaidBudget)}</div>
                               </div>
                             ) : (
@@ -2295,7 +2269,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                           <td className="py-2 px-2 text-right tabular-nums align-middle">
                             {bd.selfQty > 0 || bd.selfBudget > 0 ? (
                               <div>
-                                <div className="font-semibold text-ink text-[12px]">{bd.selfQty} video</div>
+                                <div className="font-semibold text-ink text-xs">{bd.selfQty} video</div>
                                 <div className="text-2xs text-ink-3">{formatVndShort(bd.selfBudget)}</div>
                               </div>
                             ) : (
@@ -2305,7 +2279,7 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
                           <td className="py-2 px-2 text-right tabular-nums align-middle">
                             {bd.otherQty > 0 || bd.otherBudget > 0 ? (
                               <div>
-                                <div className="font-semibold text-ink text-[12px]">{bd.otherQty} video</div>
+                                <div className="font-semibold text-ink text-xs">{bd.otherQty} video</div>
                                 <div className="text-2xs text-ink-3">{formatVndShort(bd.otherBudget)}</div>
                               </div>
                             ) : (

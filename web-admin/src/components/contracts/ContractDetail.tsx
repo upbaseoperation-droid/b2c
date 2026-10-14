@@ -10,7 +10,7 @@ import { ArrowLeft, Download, FileCheck2, FilePlus2, Pencil, RefreshCw, RotateCc
 import type { BookingDealItem } from '../../lib/types';
 import type { ContractField, ContractRecord, ContractRole, DocBlock } from '../../lib/contracts/types';
 import { ActionMenu, Button, ConfirmDialog, EmptyState, Field, Input, Modal, Person, SectionHeader, Select, Status } from '../ui';
-import type { ActionMenuItem } from '../ui';
+import type { ActionMenuItem, StatusTone } from '../ui';
 import { contractApi, type ContractBootstrap } from './api';
 import { ContractDocumentViewer } from './ContractDocumentViewer';
 import { HISTORY_LABEL, ROLE_LABEL, contractStatus, dateTime, isAcceptance, signerStatus, stepStatus } from './contractUi';
@@ -477,7 +477,7 @@ export function ContractDetail({
   );
 }
 
-function Step({ title, who, status, meta, note }: { title: string; who: string; status: { label: string; tone: 'neutral' | 'info' | 'positive' | 'warning' | 'critical'; note?: string }; meta?: string; note?: string }) {
+function Step({ title, who, status, meta, note }: { title: string; who: string; status: { label: string; tone: StatusTone; note?: string }; meta?: string; note?: string }) {
   return (
     <li className="px-4 py-3 grid gap-1.5">
       <div className="flex flex-wrap items-center justify-between gap-2">
