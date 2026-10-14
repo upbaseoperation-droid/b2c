@@ -242,6 +242,33 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
       leadB2c: { confirmed: false }
     };
 
+    const nextAffBudget = Math.round(Math.max(0, newBudget - newAdsBudget) * 0.7);
+    const nextSelfBudget = Math.round(Math.max(0, newBudget - newAdsBudget) * 0.2);
+    const nextMultiBudget = Math.max(0, newBudget - newAdsBudget - nextAffBudget - nextSelfBudget);
+
+    const nextLayer1 = {
+      ...(plan.coreMetricsLayer1 || {
+        targetGmvAffiliate: Math.round(newGmv * 0.72),
+        targetGmvSelfChannel: Math.round(newGmv * 0.18),
+        targetGmvLivestream: Math.round(newGmv * 0.10),
+        budgetLivestreamNet: 0,
+        targetAdsRoas: 4.5,
+        qtyAffiliatePaid: 30,
+        qtyFocSample: 50,
+        qtySelfChannel: 20,
+        qtyMultiPlatform: 10,
+        qtyLivestreamSessions: 4,
+      }),
+      isLocked: false,
+      pnlTotalBudgetNet: newBudget,
+      targetNmvTotal: newGmv,
+      budgetAdsNet: newAdsBudget,
+      budgetAffiliateNet: nextAffBudget,
+      budgetSelfChannelNet: nextSelfBudget,
+      budgetMultiPlatformNet: nextMultiBudget,
+      alignmentNote: `Bản điều chỉnh ${newVersionCode}: ${newChangeReason} (Mở khóa điều chỉnh cả Layer 1 & Layer 2)`,
+    };
+
     const newSnap: PlanVersionSnapshot = {
       id: `SNAP-${plan.id}-${newVersionCode.replace(/[^a-zA-Z0-9]/g, '')}-${Date.now().toString().slice(-3)}`,
       versionCode: newVersionCode,
@@ -255,8 +282,9 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
       totalTargetContents: plan.totalTargetContents,
       targetGmv: newGmv,
       budgetAdsTotal: newAdsBudget,
-      budgetAffiliate: plan.budgetAffiliate || Math.round(newBudget * 0.75),
-      budgetSelfChannel: plan.budgetSelfChannel || Math.round(newBudget * 0.25),
+      budgetAffiliate: nextAffBudget,
+      budgetSelfChannel: nextSelfBudget,
+      coreMetricsLayer1: nextLayer1,
       items: plan.items || [],
       signOffRecord: updatedSignOff
     };
@@ -267,7 +295,10 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
         isVersionLocked: false,
         totalTargetBudget: newBudget,
         budgetAdsTotal: newAdsBudget,
+        budgetAffiliate: nextAffBudget,
+        budgetSelfChannel: nextSelfBudget,
         targetGmv: newGmv,
+        coreMetricsLayer1: nextLayer1,
         multiPartySignOff: updatedSignOff,
         versionSnapshots: [...existingSnapshots, newSnap],
         status: 'DRAFT',

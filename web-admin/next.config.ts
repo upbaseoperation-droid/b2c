@@ -1,7 +1,12 @@
 import type { NextConfig } from "next";
+import fs from "fs";
+
+const isBuildWhileDevRunning =
+  process.argv.includes("build") && fs.existsSync(".next/dev/lock");
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  ...(isBuildWhileDevRunning ? { distDir: ".next-build" } : {}),
 };
 
 export default nextConfig;
+

@@ -44,6 +44,7 @@ export function BrandProfilesView({
   onNotify,
   onOpenBooking,
   onNavigateToStoreProfile,
+  onUpdateStore,
 }: {
   currentUser?: UserProfile | null;
   selectedBrand?: string;
@@ -53,6 +54,7 @@ export function BrandProfilesView({
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
   onOpenBooking?: () => void;
   onNavigateToStoreProfile?: (storeName: string) => void;
+  onUpdateStore?: (store: StorePortfolioItem) => void;
 }) {
   const [profiles, setProfiles] = useState<BrandProfile[] | null>(() => getSharedProfilesSnapshot()?.profiles || brandProfilesClientCache?.profiles || null);
   const [access, setAccess] = useState<BrandAccess | undefined>(() => getSharedProfilesSnapshot()?.access || brandProfilesClientCache?.access);
@@ -223,7 +225,7 @@ export function BrandProfilesView({
       <BrandProfileDetail
         key={open.key}
         row={open}
-        can={permissionsOf(access, real(open.master?.accountPic))}
+        can={permissionsOf(access, real(open.master?.accountPic), open.name)}
         deals={deals}
         stores={allStores}
         busy={busy}
@@ -237,6 +239,7 @@ export function BrandProfilesView({
         onSave={(section, data, summary) => save(open, section, data, summary)}
         onOpenBooking={onOpenBooking}
         onNavigateToStoreProfile={onNavigateToStoreProfile}
+        onUpdateStore={onUpdateStore}
         onNotify={onNotify}
       />
     );
@@ -250,7 +253,7 @@ export function BrandProfilesView({
       ALL: 'Tất cả nhãn',
       MINE: 'Tôi phụ trách',
       KEY_BUDGET: 'Ngân sách ≥ 50tr',
-      COMPLETE: 'Đủ 7/7 mục',
+      COMPLETE: 'Đủ 8/8 mục',
       EXPIRED_LEGAL: 'Cần rà soát pháp lý',
     }[key],
     count: searched.filter(matches[key]).length,

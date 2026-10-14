@@ -523,6 +523,21 @@ export interface KocItem {
   totalPastCost?: number;
   historicalRoi?: number;
   isWinnerTop20?: boolean;
+
+  // Mở rộng chỉ số kênh & nhân khẩu học cho KocKolHubView
+  rateCardLive?: number;
+  followerGrowth30dPct?: number;
+  tiktokGmv30d?: number;
+  avgOrderValue?: number;
+  ctrPct?: number;
+  cvrPct?: number;
+  avgCommissionPct?: number;
+  shopRatingScore?: number;
+  cancellationRatePct?: number;
+  revenueShareByFormat?: { videoPct: number; livePct: number; showcasePct: number };
+  audienceGender?: { femalePct: number; malePct: number };
+  audienceTopAge?: { age18_24Pct: number; age25_34Pct: number; age35PlusPct?: number };
+  audienceTopLocations?: string[];
 }
 
 export type KocMasterItem = KocItem;
@@ -694,6 +709,19 @@ export interface BookingDealItem {
   adAuthorizationType?: string; // Loại ủy quyền (Video code, Affiliate...)
   adExplorationStatus?: string; // Trạng thái phân phối ads (Performing, Authorization needed...)
   adReportPeriod?: string; // Chu kỳ báo cáo (ví dụ: 2026-10-01 ~ 2026-10-08)
+
+  // Các trường tương thích mở rộng cho Cổng Đối Tác KOC (KocKolHubView)
+  picName?: string;
+  isFreeSample?: boolean;
+  sampleCost?: number;
+  paymentStatus?: string;
+  orderDate?: string;
+  postDate?: string;
+  advanceLarkCode?: string;
+  orders30?: number;
+  views30?: number;
+  isOnTimePost?: boolean;
+  contentFormat?: string;
 }
 
 export interface MasterTierQuota {
@@ -2234,6 +2262,33 @@ export interface MultiPartySignOff {
   };
 }
 
+// Layer 1: Khung Chỉ Số Cốt Lõi (Các bên cùng điền, chỉnh sửa & bấm Chốt trước khi sang Layer 2 phân rã chi tiết)
+export interface CorePlanMetricsLayer1 {
+  isLocked?: boolean; // Đã nhấn Chốt khung Layer 1 để sang Layer 2 (vẫn mở khóa sửa lại được ở bản nháp/bản điều chỉnh)
+  lockedBy?: string;
+  lockedAt?: string;
+  alignmentNote?: string;
+  // 1. Mục tiêu doanh số
+  targetNmvTotal: number;
+  targetGmvAffiliate: number;
+  targetGmvSelfChannel: number;
+  targetGmvLivestream: number;
+  // 2. Trần ngân sách chi phí (Net)
+  pnlTotalBudgetNet: number; // Số tổng PnL ban đầu Growth đưa vào
+  budgetAffiliateNet: number;
+  budgetSelfChannelNet: number;
+  budgetMultiPlatformNet: number;
+  budgetLivestreamNet: number;
+  budgetAdsNet: number;
+  targetAdsRoas: number;
+  // 3. Định mức sản lượng nội dung cần đạt
+  qtyAffiliatePaid: number;
+  qtyFocSample: number;
+  qtySelfChannel: number;
+  qtyMultiPlatform: number;
+  qtyLivestreamSessions: number;
+}
+
 // Bản chụp bất biến của Phiên Bản Kế Hoạch đã chốt (Immutable Version Snapshot)
 export interface PlanVersionSnapshot {
   id: string;
@@ -2250,6 +2305,7 @@ export interface PlanVersionSnapshot {
   budgetAdsTotal: number; // Gói tổng Ads không phân tách kênh
   budgetAffiliate: number;
   budgetSelfChannel: number;
+  coreMetricsLayer1?: CorePlanMetricsLayer1;
   items: InputPlanRowItem[];
   signOffRecord: MultiPartySignOff;
 }
@@ -2314,6 +2370,8 @@ export interface InputPlanBreakdownState {
   createdAt?: string;
   updatedAt?: string;
   items: InputPlanRowItem[];
+  // Layer 1: Khung chỉ số cốt lõi thống nhất giữa các bên trước khi phân rã Layer 2
+  coreMetricsLayer1?: CorePlanMetricsLayer1;
   // Phân bổ 2 kênh độc lập: Affiliate vs Self Channel (Kênh thương hiệu)
   budgetAffiliate?: number; // Ngân sách Affiliate (VD: 150,000,000 VNĐ)
   budgetSelfChannel?: number; // Ngân sách Self Channel (VD: 50,000,000 VNĐ)
@@ -2795,6 +2853,7 @@ export interface WeeklyAdsReportMeta {
   totalGmv: number;
   totalOrders: number;
   overallRoas: number;
+  avgHookRate2s?: number;
   status: 'READY' | 'MAPPED' | 'PROCESSING';
   formatType: 'TIKTOK_SELLER_PGM_EN' | 'TIKTOK_SELLER_CREATIVE_VN';
 }

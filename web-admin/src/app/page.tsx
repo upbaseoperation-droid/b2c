@@ -1083,6 +1083,7 @@ export default function App() {
               deals={deals}
               onNotify={showToast}
               onOpenBooking={() => setActiveTab('booking')}
+              onUpdateStore={handleUpdateStore}
               onNavigateToStoreProfile={(storeName) => {
                 if (storeName) {
                   setSelectedStoreContext(storeName);
@@ -1244,6 +1245,21 @@ export default function App() {
               currentUser={currentUser}
               deals={deals}
               brands={brands}
+              stores={storePortfolios}
+              onUpdateStore={handleUpdateStore}
+              onOpenBooking={() => setActiveTab('booking')}
+              onNavigateToBrandProfile={(brandName: string) => {
+                if (brandName && brandName !== 'ALL') {
+                  setSelectedBrandContext(brandName);
+                }
+                setActiveTab('brand-knowledge');
+              }}
+              onNavigateToStoreProfile={(storeName: string) => {
+                if (storeName) {
+                  setSelectedStoreContext(storeName);
+                }
+                setActiveTab('stores');
+              }}
               selectedBrand={selectedBrandContext}
               onNotify={showToast}
               onNavigateToCtvHub={['ADMIN', 'MANAGER'].includes(currentUser.role) ? () => setActiveTab('self-channel-hub') : undefined}

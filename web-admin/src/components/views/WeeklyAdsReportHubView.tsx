@@ -15,8 +15,10 @@ import {
   Layers, 
   Award,
   Zap,
-  Database
+  Database,
+  FileText
 } from 'lucide-react';
+import { OperationalReportDrawer } from '../OperationalReportDrawer';
 import { 
   WeeklyAdsReportMeta, 
   AdsReportParseResult,
@@ -49,6 +51,7 @@ export const WeeklyAdsReportHubView: React.FC<WeeklyAdsReportHubViewProps> = ({
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [isMappingApplied, setIsMappingApplied] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<'CAMPAIGNS' | 'KOC_MAPPING' | 'CREATIVES' | 'INSIGHTS'>('CAMPAIGNS');
+  const [isAdsReportOpen, setIsAdsReportOpen] = useState<boolean>(false);
 
   // Search & Filter state
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -246,6 +249,15 @@ export const WeeklyAdsReportHubView: React.FC<WeeklyAdsReportHubViewProps> = ({
 
           {/* Action buttons */}
           <div className="flex items-center gap-2 flex-wrap">
+            <button
+              type="button"
+              onClick={() => setIsAdsReportOpen(true)}
+              className="btn-md bg-ink hover:bg-ink-2 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
+            >
+              <FileText className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Lập báo cáo hiệu quả Ads</span>
+            </button>
+
             <input 
               type="file" 
               ref={fileInputRef} 
@@ -912,6 +924,21 @@ export const WeeklyAdsReportHubView: React.FC<WeeklyAdsReportHubViewProps> = ({
           </div>
         </div>
       )}
+
+      <OperationalReportDrawer
+        isOpen={isAdsReportOpen}
+        onClose={() => setIsAdsReportOpen(false)}
+        purposeId="PLAN_ADS_ANALYSIS"
+        moduleTitle={`Báo Cáo Quảng Cáo Tuần & Spark Ads (${activeReportData?.meta.reportWeek || selectedFileName})`}
+        moduleSubtitle="Phân tích ROAS, CPA, Top KOC hiệu quả cao và kiểm soát mã ủy quyền Spark Ads"
+        contextDataText={[
+          `[DỮ LIỆU PHÂN HỆ: Báo Cáo Quảng Cáo Tuần TikTok Seller (${activeReportData?.meta.reportWeek || selectedFileName})]`,
+          `- Tổng chi phí Ads: ${formatVndShort(activeReportData?.meta.totalSpend || 30250000)} | Tổng doanh thu GMV: ${formatVndShort(activeReportData?.meta.totalGmv || 165200000)}.`,
+          `- ROAS trung bình: ${activeReportData?.meta.overallRoas || 5.46}x | Tổng số đơn hàng: ${(activeReportData?.meta.totalOrders || 1420).toLocaleString('vi-VN')} đơn.`,
+          `- Số lượng chiến dịch PGM: ${activeReportData?.campaigns.length || 6} chiến dịch | Số KOC hiệu quả cao (Top 20% GMV): ${activeReportData?.creators.filter(c => c.isWinnerTop20).length || 12} KOC.`,
+        ].join('\n')}
+        onNotify={onNotify}
+      />
     </div>
   );
 };

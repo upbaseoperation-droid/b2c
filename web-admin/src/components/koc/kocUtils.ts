@@ -161,6 +161,7 @@ export interface KocPerformanceSummary {
   totalAdsBudget: number;
   totalInvestment: number;
   totalGmv: number;
+  avgGmvPerVideo?: number;
   overallRoi: number;
   totalOrders: number;
   avgCpo: number;

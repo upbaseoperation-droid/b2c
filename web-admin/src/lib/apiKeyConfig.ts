@@ -59,7 +59,7 @@ export interface ApiUsageLogItem {
   latencyMs: number;
   status: 'SUCCESS' | 'FALLBACK' | 'ERROR';
   errorMessage?: string;
-  source?: 'PLAYGROUND' | 'STAFF_REVIEW' | 'LEGAL_OCR' | 'SCRIPT_REVIEW' | 'CONTRACT' | 'PLAN' | 'TEST';
+  source?: 'PLAYGROUND' | 'STAFF_REVIEW' | 'LEGAL_OCR' | 'SCRIPT_REVIEW' | 'CONTRACT' | 'PLAN' | 'QA' | 'TEST';
 }
 
 export const USD_TO_VND_RATE = 25450; // Tỷ giá quy đổi chuẩn USD -> VNĐ

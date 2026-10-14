@@ -39,7 +39,11 @@ import {
   MOCK_P3_STAFF_RECORDS,
   INITIAL_STAFF_ALLOCATIONS_26
 } from '../lib/mockData';
-import { getEffectiveConfigForPurpose } from '../lib/apiKeyConfig';
+import {
+  getEffectiveConfigForPurpose,
+  calculateExecutionCost,
+  recordApiUsageLog,
+} from '../lib/apiKeyConfig';
 
 interface AiStaffReviewModalProps {
   isOpen: boolean;
@@ -174,6 +178,7 @@ export const AiStaffReviewModal: React.FC<AiStaffReviewModalProps> = ({
       customPrompt: customInstruction.trim() || undefined
     };
 
+    const startTime = Date.now();
     try {
       const res = await fetch('/api/ai/employee-review', {
         method: 'POST',
@@ -187,6 +192,50 @@ export const AiStaffReviewModal: React.FC<AiStaffReviewModalProps> = ({
 
       const data: AiEmployeeReviewResponse = await res.json();
       setReviewResult(data);
+
+      const eff = getEffectiveConfigForPurpose('STAFF_REVIEW');
+      const promptChars = JSON.stringify(payload).length;
+      const completionChars = JSON.stringify(data).length;
+      const promptTokens = Math.max(120, Math.ceil(promptChars / 3.8));
+      const completionTokens = Math.max(80, Math.ceil(completionChars / 3.8));
+      const modelUsed =
+        data.providerUsed?.includes('Gemini')
+          ? 'gemini-3.8-flash'
+          : data.providerUsed?.includes('GPT')
+          ? 'gpt-5-mini'
+          : data.providerUsed?.includes('Claude')
+          ? 'claude-sonnet-5-5'
+          : eff.primaryProvider === 'INTERNAL'
+          ? 'upbase-local-engine'
+          : eff.primaryModel;
+      const providerId =
+        data.providerUsed?.includes('Gemini')
+          ? 'GOOGLE'
+          : data.providerUsed?.includes('GPT')
+          ? 'OPENAI'
+          : data.providerUsed?.includes('Claude')
+          ? 'CLAUDE'
+          : 'INTERNAL';
+      const costReport = calculateExecutionCost(modelUsed, {
+        promptTokens,
+        completionTokens,
+        totalTokens: promptTokens + completionTokens,
+      });
+
+      recordApiUsageLog({
+        purposeId: 'STAFF_REVIEW',
+        purposeTitle: `Đánh giá nhân sự 4P & SLA: ${selectedStaffName}`,
+        provider: providerId,
+        modelUsed,
+        promptTokens: costReport.promptTokens,
+        completionTokens: costReport.completionTokens,
+        totalTokens: costReport.totalTokens,
+        costUsd: costReport.costUsd,
+        costVnd: costReport.costVnd,
+        latencyMs: Date.now() - startTime,
+        status: providerId === 'INTERNAL' ? 'FALLBACK' : 'SUCCESS',
+        source: 'STAFF_REVIEW',
+      });
     } catch (err: any) {
       console.error('Failed to run AI review via API:', err);
       // Fallback in case fetch fails

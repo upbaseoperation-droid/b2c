@@ -8,7 +8,7 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Download, Eye, FolderKanban, Plus } from 'lucide-react';
+import { Download, Eye, FileText, FolderKanban, Plus } from 'lucide-react';
 import type { BookingDealItem, KocItem } from '../../lib/types';
 import type { ContractField, ContractRecord, DocBlock, LegalTemplate } from '../../lib/contracts/types';
 import { formatDate } from '../../lib/format';
@@ -21,6 +21,7 @@ import { ContractCatalogView, CATEGORY_LABELS } from '../contracts/ContractCatal
 import { ContractDetail } from '../contracts/ContractDetail';
 import { ContractDocumentViewer } from '../contracts/ContractDocumentViewer';
 import { ContractForm, type ContractFormInit, type ContractFormPayload } from '../contracts/ContractForm';
+import { OperationalReportDrawer } from '../OperationalReportDrawer';
 
 /** Yêu cầu mở hồ sơ của một booking (từ màn Booking). `nonce` đổi mỗi lần bấm. */
 export interface ContractIntent { dealId: string; nonce: number }
@@ -56,6 +57,7 @@ export function ContractManagementView({
   const [page, setPage] = useState(1);
   const [quickViewRecord, setQuickViewRecord] = useState<ContractRecord | null>(null);
   const [quickViewDoc, setQuickViewDoc] = useState<{ paragraphs: string[]; blocks?: DocBlock[]; fields?: ContractField[]; values?: Record<string, string> } | null>(null);
+  const [isContractReportOpen, setIsContractReportOpen] = useState(false);
 
   const refresh = useCallback(async () => {
     if (demoMode) enableBrowserDemo();
@@ -254,6 +256,9 @@ export function ContractManagementView({
       {(screen.mode === 'list' || screen.mode === 'catalog') && (
         <>
           <PageActions>
+            <Button variant="secondary" icon={FileText} onClick={() => setIsContractReportOpen(true)}>
+              Báo cáo kiểm tra điều khoản & thuế
+            </Button>
             {canCreate && <Button variant="primary" icon={Plus} onClick={() => setScreen({ mode: 'form' })}>Tạo hợp đồng</Button>}
           </PageActions>
 
@@ -389,6 +394,24 @@ export function ContractManagementView({
           />
         )}
       </Modal>
+
+      <OperationalReportDrawer
+        isOpen={isContractReportOpen}
+        onClose={() => setIsContractReportOpen(false)}
+        purposeId="CONTRACT_DRAFTING"
+        moduleTitle="Báo Cáo Rà Soát Hồ Sơ Hợp Đồng, Điều Khoản Pháp Chế & Khấu Trừ Thuế TNCN"
+        moduleSubtitle={`Tổng số hồ sơ hợp đồng/nghiệm thu: ${data.records.length} | Biểu mẫu pháp chế chuẩn: ${data.templates.length} | Hồ sơ hiển thị: ${rows.length}`}
+        contextDataText={[
+          `[DỮ LIỆU PHÂN HỆ: Quản Lý Hợp Đồng, Biên Bản Nghiệm Thu & Thuế TNCN]`,
+          `- Tổng quan hồ sơ pháp lý B2C: ${data.records.length} hồ sơ, ${data.templates.length} mẫu hợp đồng & biên bản nghiệm thu chuẩn.`,
+          `- Đang chờ duyệt: ${data.records.filter(r => r.approval === 'IN_REVIEW').length} bộ | Chờ ký: ${data.records.filter(awaitingSign).length} bộ | Đã ký hoàn tất: ${data.records.filter(done).length} bộ | Cần lập nghiệm thu: ${data.records.filter(needAcceptance).length} bộ.`,
+          ...rows.slice(0, 8).map(
+            r => `- Hồ sơ ${r.id} | Tiêu đề: ${r.title} | Đối tác/KOC: ${r.partner} | Nhãn hàng: ${r.brand} | Trạng thái: ${contractStatus(r).label} | Phiên bản: v${r.version} | Cập nhật: ${formatDate(r.updatedAt)}`
+          ),
+        ].join('\n')}
+        customSystemPrompt="Kiểm tra danh sách hồ sơ hợp đồng và biên bản nghiệm thu hiện tại: (1) Rà soát rủi ro điều khoản sử dụng hình ảnh KOC chạy Spark Ads 30-90 ngày và thời hạn giữ link giỏ hàng vàng, (2) Kiểm tra quy định khấu trừ thuế TNCN 10% đối với cá nhân kinh doanh/KOC có phát sinh thù lao từ 2.000.000đ/lần trở lên, (3) Liệt kê các hồ sơ đang tắc ở bước chờ duyệt pháp chế hoặc chờ ký số để đôn đốc giải ngân đúng hạn."
+        onNotify={onNotify}
+      />
     </div>
   );
 }

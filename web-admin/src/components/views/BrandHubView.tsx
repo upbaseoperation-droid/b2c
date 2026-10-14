@@ -22,7 +22,11 @@ import {
   Download,
   Search,
   ArrowRight,
-  ArrowLeft
+  ArrowLeft,
+  Store,
+  BookOpen,
+  Sliders,
+  Pencil
 } from 'lucide-react';
 import {
   BrandCampaignPortalData,
@@ -31,16 +35,35 @@ import {
   BrandRejectReasonType,
   BookingDealItem,
   BrandDetail,
+  StorePortfolioItem,
   UserProfile
 } from '../../lib/types';
-import { INITIAL_BRAND_PORTAL_DATA } from '../../lib/mockData';
+import { INITIAL_BRAND_PORTAL_DATA, INITIAL_BRANDS, INITIAL_STORE_PORTFOLIOS } from '../../lib/mockData';
 import { formatVndShort } from '../../lib/format';
 import { Presence } from '../ui';
+import { useBrandProfiles } from '../../lib/brands/useBrandProfiles';
+import { BrandProfileDetail } from '../brands/BrandProfileDetail';
+import {
+  buildRows,
+  permissionsOf,
+  real,
+  KOC_APPROVAL_MODE_LABEL,
+  SAMPLE_SENDER_LABEL,
+  type BrandRow,
+} from '../brands/brandUi';
+import { brandKey, type BrandSection } from '../../lib/brands/types';
+import { StoreProfile } from '../stores/StoreProfile';
+import { StoreEditDialog } from '../stores/StoreEditDialog';
 
 export interface BrandHubViewProps {
   currentUser?: UserProfile;
   deals?: BookingDealItem[];
   brands?: BrandDetail[];
+  stores?: StorePortfolioItem[];
+  onUpdateStore?: (updatedStore: StorePortfolioItem) => void;
+  onOpenBooking?: () => void;
+  onNavigateToBrandProfile?: (brandName: string) => void;
+  onNavigateToStoreProfile?: (storeName: string) => void;
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
   onNavigateToCtvHub?: () => void;
   onNavigateToKocHub?: () => void;
@@ -49,7 +72,14 @@ export interface BrandHubViewProps {
   selectedBrand?: string;
 }
 
-export type BrandHubPillarTab = 'OVERVIEW' | 'APPROVALS' | 'ACTIVE_JOBS' | 'DISCUSSION' | 'HISTORY';
+export type BrandHubPillarTab =
+  | 'OVERVIEW'
+  | 'BRAND_PROFILE'
+  | 'STORES'
+  | 'APPROVALS'
+  | 'ACTIVE_JOBS'
+  | 'DISCUSSION'
+  | 'HISTORY';
 
 interface ChatMessage {
   id: string;
@@ -64,16 +94,136 @@ interface ChatMessage {
 
 export const BrandHubView: React.FC<BrandHubViewProps> = ({ 
   currentUser,
+  deals = [],
+  brands = INITIAL_BRANDS,
+  stores = INITIAL_STORE_PORTFOLIOS,
+  onUpdateStore,
+  onOpenBooking,
   onNotify,
   onBrandApproveDeal,
   onBrandRejectDeal,
   selectedBrand = 'ALL'
 }) => {
-  const [portals, setPortals] = useState<BrandCampaignPortalData[]>(INITIAL_BRAND_PORTAL_DATA);
+  // Liên thông trực tiếp với Hồ sơ thương hiệu (/api/brands/profiles)
+  const { profiles, access, saveSection } = useBrandProfiles(currentUser?.id);
+  const [savingBrandProfile, setSavingBrandProfile] = useState(false);
+
+  const brandRows = useMemo<BrandRow[]>(
+    () => buildRows(brands, profiles),
+    [brands, profiles]
+  );
+
+  // Mở rộng danh sách cổng cho toàn bộ nhãn hàng B2C (kết hợp dữ liệu chiến dịch mẫu và dữ liệu thực từ Hồ sơ thương hiệu & Gian hàng)
+  const [portalOverrides, setPortalOverrides] = useState<Record<string, Partial<BrandCampaignPortalData>>>({});
+
+  const portals = useMemo<BrandCampaignPortalData[]>(() => {
+    const result: BrandCampaignPortalData[] = [];
+    const seenKeys = new Set<string>();
+
+    // 1. Giữ nguyên các cổng chiến dịch có sẵn, đồng thời đồng bộ thông tin mới nhất từ Hồ sơ thương hiệu & Gian hàng
+    for (const p of INITIAL_BRAND_PORTAL_DATA) {
+      const k = brandKey(p.brandName);
+      seenKeys.add(k);
+      const row = brandRows.find(r => r.key === k);
+      const brandStores = stores.filter(s => brandKey(s.brandName) === k);
+      const storeBudgetSum = brandStores.reduce((sum, s) => sum + (s.budgetNet ?? s.monthlyBudget ?? 0), 0);
+      const storeTargetGmvSum = brandStores.reduce((sum, s) => sum + (s.monthlyTargetGmv ?? 0), 0);
+      const liveHeroSkus = row?.profile.products?.filter(pr => pr.name.trim()).map(pr => pr.name) || [];
+      const override = portalOverrides[p.id] || {};
+
+      result.push({
+        ...p,
+        accountPic: real(row?.profile.workflowRules?.brandApproverName) || real(row?.master?.accountPic) || p.accountPic,
+        totalBudget: storeBudgetSum > 0 ? storeBudgetSum : (row?.master?.planBudget || row?.master?.monthlyBudget || p.totalBudget),
+        targetGmv: storeTargetGmvSum > 0 ? storeTargetGmvSum : p.targetGmv,
+        bigIdea: real(row?.profile.positioning?.slogan) || real(row?.master?.brandGuideline) || p.bigIdea,
+        focusSkus: liveHeroSkus.length > 0 ? liveHeroSkus : p.focusSkus,
+        ...override,
+      });
+    }
+
+    // 2. Tạo cổng tự động cho toàn bộ các thương hiệu còn lại trong hệ thống B2C để mọi nhãn hàng đều có Cổng Đối Tác
+    for (const row of brandRows) {
+      if (seenKeys.has(row.key)) continue;
+      seenKeys.add(row.key);
+      const brandStores = stores.filter(s => brandKey(s.brandName) === row.key);
+      const storeBudgetSum = brandStores.reduce((sum, s) => sum + (s.budgetNet ?? s.monthlyBudget ?? 0), 0);
+      const storeTargetGmvSum = brandStores.reduce((sum, s) => sum + (s.monthlyTargetGmv ?? 0), 0);
+      const storeTargetVideos = brandStores.reduce(
+        (sum, s) => sum + (s.targetAffiliateContents ?? 0) + (s.targetSelfChannelContents ?? 0),
+        0
+      );
+      const totalBudget = storeBudgetSum || row.master?.planBudget || row.master?.monthlyBudget || 50_000_000;
+      const targetGmv = storeTargetGmvSum || totalBudget * 5;
+      const profileSkus = row.profile.products?.filter(pr => pr.name.trim()).map(pr => pr.name) || [];
+      const masterSkus = row.master?.heroProducts?.map(h => h.productName) || [];
+      const liveHeroSkus = profileSkus.length > 0 ? profileSkus : (masterSkus.length > 0 ? masterSkus : ['Sản phẩm chủ lực']);
+      const targetVideosCount = storeTargetVideos || 20;
+      const avgCost = Math.round(totalBudget / Math.max(1, targetVideosCount));
+      const portalId = `bp-${row.key}`;
+      const override = portalOverrides[portalId] || {};
+
+      result.push({
+        id: portalId,
+        brandId: row.master?.id || portalId,
+        brandName: row.name,
+        brandLogoText: row.name.slice(0, 3).toUpperCase(),
+        campaignTitle: `Chiến dịch KOC/Affiliate — ${row.name}`,
+        campaignCode: `CP-2026-${row.name.replace(/[^A-Za-z0-9]/g, '').slice(0, 6).toUpperCase()}`,
+        month: 'Tháng 10/2026',
+        accountPic: real(row.profile.workflowRules?.brandApproverName) || real(row.master?.accountPic) || 'Đặng Thị Yến Nhi',
+        bookingPic: brandStores[0]?.b2cOwnerName || brandStores[0]?.bookingLeader || 'Team Booking B2C',
+        totalBudget,
+        targetGmv,
+        targetCir: targetGmv > 0 ? Number(((totalBudget / targetGmv) * 100).toFixed(1)) : 20,
+        totalTargetVideos: targetVideosCount,
+        liveAiredVideosCount: 0,
+        totalAiredViews: 0,
+        totalAffiliateGmv: 0,
+        bigIdea: real(row.profile.positioning?.slogan) || real(row.master?.brandGuideline) || `Tăng trưởng nhận diện & chuyển đổi gian hàng ${row.name}`,
+        focusSkus: liveHeroSkus,
+        planApprovalStatus: 'BRAND_PLAN_APPROVED',
+        breakdownTiers: [
+          {
+            tier: 'TIER_3_MICRO',
+            tierLabel: 'Micro & Nano KOC (Review chuyển đổi)',
+            salaryGradeLabel: 'KL1-KL3',
+            targetCount: targetVideosCount,
+            estimatedAvgCost: avgCost,
+            allocatedBudget: totalBudget,
+            estimatedGmvPerKoc: Math.round(targetGmv / Math.max(1, targetVideosCount)),
+            totalExpectedGmv: targetGmv,
+            historicalRoiBenchmark: 5.0,
+          },
+        ],
+        kocCandidates: [],
+        scripts: [],
+        ...override,
+      });
+    }
+
+    return result;
+  }, [brandRows, stores, portalOverrides]);
+
+  const setPortals: React.Dispatch<React.SetStateAction<BrandCampaignPortalData[]>> = (updater) => {
+    setPortalOverrides(prev => {
+      const nextList = typeof updater === 'function' ? updater(portals) : updater;
+      const nextMap = { ...prev };
+      for (const item of nextList) {
+        nextMap[item.id] = item;
+      }
+      return nextMap;
+    });
+  };
+
   const [selectedPortalId, setSelectedPortalId] = useState<string>(() => {
     if (currentUser?.role === 'BRAND_PARTNER' && currentUser?.linkedEntityName) {
-      const match = INITIAL_BRAND_PORTAL_DATA.find(p => p.brandName.toLowerCase().includes(currentUser.linkedEntityName!.toLowerCase()));
+      const match = INITIAL_BRAND_PORTAL_DATA.find(
+        p => brandKey(p.brandName) === brandKey(currentUser.linkedEntityName!) ||
+          p.brandName.toLowerCase().includes(currentUser.linkedEntityName!.toLowerCase())
+      );
       if (match) return match.id;
+      return `bp-${brandKey(currentUser.linkedEntityName)}`;
     }
     return INITIAL_BRAND_PORTAL_DATA[0].id;
   });
@@ -88,7 +238,10 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
           setSelectedPortalId('ALL');
         }
       } else {
-        const match = portals.find(p => p.brandName.toLowerCase().includes(selectedBrand.toLowerCase()));
+        const match = portals.find(
+          p => brandKey(p.brandName) === brandKey(selectedBrand) ||
+            p.brandName.toLowerCase().includes(selectedBrand.toLowerCase())
+        );
         if (match) {
           setSelectedPortalId(match.id);
         }
@@ -100,7 +253,57 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
     return portals.find(p => p.id === selectedPortalId) || portals[0];
   }, [portals, selectedPortalId]);
 
-  // The 5 Universal Enterprise Hub Tabs
+  // Liên kết trực tiếp Thương hiệu đang chọn với Hồ sơ thương hiệu (BrandRow), Danh sách Gian hàng (StorePortfolioItem) & Deals
+  const activeBrandKey = useMemo(() => brandKey(activePortal.brandName), [activePortal.brandName]);
+
+  const activeBrandRow = useMemo<BrandRow | undefined>(() => {
+    return brandRows.find(r => r.key === activeBrandKey);
+  }, [brandRows, activeBrandKey]);
+
+  const activeBrandStores = useMemo<StorePortfolioItem[]>(() => {
+    return stores.filter(s => brandKey(s.brandName) === activeBrandKey);
+  }, [stores, activeBrandKey]);
+
+  const activeBrandDeals = useMemo<BookingDealItem[]>(() => {
+    return deals.filter(d => brandKey(d.brandName || '') === activeBrandKey);
+  }, [deals, activeBrandKey]);
+
+  const activeBrandPermissions = useMemo(() => {
+    return permissionsOf(
+      access,
+      activeBrandRow?.profile.workflowRules?.brandApproverName || activeBrandRow?.master?.accountPic,
+      activeBrandRow?.name || activePortal.brandName
+    );
+  }, [access, activeBrandRow, activePortal.brandName]);
+
+  // State quản lý chi tiết / chỉnh sửa Gian hàng ngay trong Cổng Đối Tác Brand
+  const [inspectingStore, setInspectingStore] = useState<StorePortfolioItem | null>(null);
+  const [editingStore, setEditingStore] = useState<StorePortfolioItem | null>(null);
+
+  const handleSaveBrandSection = async (section: BrandSection, data: unknown, summary?: string): Promise<boolean> => {
+    if (!activeBrandRow) return false;
+    setSavingBrandProfile(true);
+    try {
+      const ok = await saveSection({
+        brandName: activeBrandRow.name,
+        revision: activeBrandRow.profile.revision,
+        section,
+        data,
+        summary,
+      });
+      if (ok) {
+        onNotify?.(`Đã lưu hồ sơ thương hiệu ${activeBrandRow.name} — đồng bộ trực tiếp sang quy trình vận hành B2C.`, 'success');
+      }
+      return Boolean(ok);
+    } catch (err) {
+      onNotify?.((err as Error).message || 'Không thể lưu hồ sơ thương hiệu', 'error');
+      return false;
+    } finally {
+      setSavingBrandProfile(false);
+    }
+  };
+
+  // The Universal Enterprise Hub Tabs
   const [activeTab, setActiveTab] = useState<BrandHubPillarTab>('OVERVIEW');
 
   // Stage 1: Plan Revision Form state
@@ -703,6 +906,42 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
 
         <button
           type="button"
+          onClick={() => setActiveTab('BRAND_PROFILE')}
+          className={`px-3.5 py-2 rounded-lg font-medium transition flex items-center gap-2 whitespace-nowrap ${
+            activeTab === 'BRAND_PROFILE'
+              ? 'bg-slate-900 text-white font-semibold shadow-xs'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+          }`}
+        >
+          <BookOpen className="w-3.5 h-3.5" />
+          <span>Hồ sơ &amp; Quy chuẩn nhãn</span>
+          {activeBrandRow && (
+            <span className={`text-2xs font-mono px-1.5 py-0.5 rounded-full ${
+              activeTab === 'BRAND_PROFILE' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
+            }`}>
+              {activeBrandRow.done}/{activeBrandRow.total}
+            </span>
+          )}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setInspectingStore(null);
+            setActiveTab('STORES');
+          }}
+          className={`px-3.5 py-2 rounded-lg font-medium transition flex items-center gap-2 whitespace-nowrap ${
+            activeTab === 'STORES'
+              ? 'bg-slate-900 text-white font-semibold shadow-xs'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+          }`}
+        >
+          <Store className="w-3.5 h-3.5" />
+          <span>Gian hàng sàn ({activeBrandStores.length})</span>
+        </button>
+
+        <button
+          type="button"
           onClick={() => setActiveTab('APPROVALS')}
           className={`px-3.5 py-2 rounded-lg font-medium transition flex items-center gap-2 whitespace-nowrap ${
             activeTab === 'APPROVALS'
@@ -930,6 +1169,160 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
             </div>
           </div>
 
+          {/* Liên thông trực tiếp Hồ sơ thương hiệu & Hệ thống gian hàng sàn */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* Khối 1: Tóm tắt Hồ sơ & Quy tắc vận hành thương hiệu */}
+            <div className="bg-white rounded-xl p-5 border border-slate-200/80 shadow-xs flex flex-col justify-between gap-4">
+              <div>
+                <div className="flex items-center justify-between gap-2 mb-3">
+                  <h3 className="text-xs font-semibold text-slate-900 flex items-center gap-1.5">
+                    <Sliders className="w-3.5 h-3.5 text-blue-600" />
+                    Thiết Lập Quy Chuẩn &amp; Luồng Phối Hợp Nhãn Hàng
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('BRAND_PROFILE')}
+                    className="text-2xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                  >
+                    <span>Quản lý hồ sơ nhãn</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </button>
+                </div>
+
+                {activeBrandRow ? (
+                  <div className="grid grid-cols-2 gap-2.5 text-xs">
+                    <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
+                      <span className="text-2xs text-slate-500 block">Chế độ duyệt KOC</span>
+                      <span className="font-semibold text-slate-800 mt-0.5 block">
+                        {KOC_APPROVAL_MODE_LABEL[activeBrandRow.profile.workflowRules?.kocApprovalMode || 'ALL']}
+                      </span>
+                    </div>
+                    <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
+                      <span className="text-2xs text-slate-500 block">Đầu mối gửi hàng mẫu</span>
+                      <span className="font-semibold text-slate-800 mt-0.5 block">
+                        {SAMPLE_SENDER_LABEL[activeBrandRow.profile.workflowRules?.sampleSender || 'UPBASE_WAREHOUSE']}
+                      </span>
+                    </div>
+                    <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
+                      <span className="text-2xs text-slate-500 block">Số vòng sửa kịch bản/video</span>
+                      <span className="font-semibold text-slate-800 mt-0.5 block">
+                        Tối đa {activeBrandRow.profile.workflowRules?.maxFreeRevisions ?? 2} vòng miễn phí
+                      </span>
+                    </div>
+                    <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
+                      <span className="text-2xs text-slate-500 block">Quy chuẩn từ ngữ &amp; tài liệu</span>
+                      <span className="font-semibold text-slate-800 mt-0.5 block">
+                        {activeBrandRow.profile.contentRules?.banned?.length || 0} từ cấm • {activeBrandRow.profile.documents?.length || 0} tài liệu
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-xs text-slate-500">Đang đồng bộ hồ sơ thương hiệu...</p>
+                )}
+              </div>
+
+              <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-2xs text-slate-500">
+                <span>
+                  Mọi chỉnh sửa tại đây được áp dụng ngay vào màn hình Tạo lệnh đặt KOC và Duyệt kịch bản của chuyên viên B2C.
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('BRAND_PROFILE')}
+                  className="px-2.5 py-1 rounded-md bg-slate-900 hover:bg-slate-800 text-white font-semibold shrink-0 ml-2"
+                >
+                  Cập nhật quy chuẩn
+                </button>
+              </div>
+            </div>
+
+            {/* Khối 2: Tóm tắt Danh mục Gian hàng thuộc Thương hiệu */}
+            <div className="bg-white rounded-xl p-5 border border-slate-200/80 shadow-xs flex flex-col justify-between gap-4">
+              <div>
+                <div className="flex items-center justify-between gap-2 mb-3">
+                  <h3 className="text-xs font-semibold text-slate-900 flex items-center gap-1.5">
+                    <Store className="w-3.5 h-3.5 text-emerald-600" />
+                    Hệ Thống Gian Hàng Sàn ({activeBrandStores.length} gian hàng)
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setInspectingStore(null);
+                      setActiveTab('STORES');
+                    }}
+                    className="text-2xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                  >
+                    <span>Quản lý gian hàng</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </button>
+                </div>
+
+                {activeBrandStores.length > 0 ? (
+                  <div className="space-y-2">
+                    {activeBrandStores.slice(0, 3).map((st) => {
+                      const netLimit = st.budgetNet ?? st.monthlyBudget ?? 0;
+                      const spent = st.actualSpentNet ?? 0;
+                      return (
+                        <div
+                          key={st.id}
+                          className="p-2.5 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-between gap-3 text-xs"
+                        >
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-semibold text-slate-900 truncate">{st.storeName}</span>
+                              <span className="px-1.5 py-0.5 rounded bg-white border border-slate-200 text-2xs font-medium text-slate-600">
+                                {st.platform}
+                              </span>
+                            </div>
+                            <span className="text-2xs text-slate-500 block mt-0.5">
+                              Order Net: <strong className="font-mono text-slate-700">{formatVndShort(netLimit)}</strong> • Đã duyệt chi: <strong className="font-mono text-slate-700">{formatVndShort(spent)}</strong>
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => setEditingStore(st)}
+                              className="px-2 py-1 rounded border border-slate-200 bg-white hover:bg-slate-100 text-2xs font-medium text-slate-700"
+                            >
+                              Cập nhật
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setInspectingStore(st);
+                                setActiveTab('STORES');
+                              }}
+                              className="px-2 py-1 rounded bg-blue-50 hover:bg-blue-100 text-2xs font-semibold text-blue-700"
+                            >
+                              Chi tiết
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-xs text-slate-500">Chưa ghi nhận gian hàng sàn cho thương hiệu này.</p>
+                )}
+              </div>
+
+              <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-2xs text-slate-500">
+                <span>
+                  Đồng bộ trực tiếp với Danh mục Gian hàng B2C (File 4.1 &amp; 4.1.1).
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setInspectingStore(null);
+                    setActiveTab('STORES');
+                  }}
+                  className="px-2.5 py-1 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold shrink-0 ml-2"
+                >
+                  Xem {activeBrandStores.length} gian hàng
+                </button>
+              </div>
+            </div>
+          </div>
+
           {/* Budget Breakdown Table */}
           <div className="bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-hidden">
             <div className="p-4 border-b border-slate-100 flex items-center justify-between">
@@ -976,6 +1369,243 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
               </table>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* TAB 1B: HỒ SƠ & QUY CHUẨN NHÃN HÀNG (LIÊN THÔNG 2 CHIỀU VỚI HỒ SƠ THƯƠNG HIỆU) */}
+      {/* ========================================================================= */}
+      {activeTab === 'BRAND_PROFILE' && (
+        <div className="space-y-4 animate-in fade-in duration-150">
+          {activeBrandRow ? (
+            <BrandProfileDetail
+              row={activeBrandRow}
+              can={activeBrandPermissions}
+              deals={activeBrandDeals}
+              stores={activeBrandStores}
+              busy={savingBrandProfile}
+              onBack={() => setActiveTab('OVERVIEW')}
+              onSave={handleSaveBrandSection}
+              onOpenBooking={onOpenBooking}
+              onNavigateToStoreProfile={(storeName) => {
+                const found = activeBrandStores.find(
+                  s => s.storeName === storeName || s.id === storeName
+                );
+                if (found) {
+                  setInspectingStore(found);
+                  setActiveTab('STORES');
+                }
+              }}
+              onUpdateStore={onUpdateStore}
+              onNotify={onNotify}
+              embedded
+              hideInternalRatecard={currentUser?.role === 'BRAND_PARTNER'}
+            />
+          ) : (
+            <div className="p-8 bg-white rounded-xl border border-slate-200 text-center text-xs text-slate-500">
+              Không tìm thấy dữ liệu hồ sơ cho thương hiệu {activePortal.brandName}.
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* TAB 1C: GIAN HÀNG SÀN (LIÊN THÔNG 2 CHIỀU VỚI QUẢN LÝ GIAN HÀNG B2C) */}
+      {/* ========================================================================= */}
+      {activeTab === 'STORES' && (
+        <div className="space-y-5 animate-in fade-in duration-150">
+          {inspectingStore ? (
+            <StoreProfile
+              store={inspectingStore}
+              brand={activeBrandRow?.master}
+              deals={activeBrandDeals}
+              currentUser={currentUser}
+              nav={{ onBack: () => setInspectingStore(null) }}
+              onUpdateStore={(updated) => {
+                onUpdateStore?.(updated);
+                setInspectingStore(updated);
+              }}
+              onNavigateToBrandProfile={() => {
+                setInspectingStore(null);
+                setActiveTab('BRAND_PROFILE');
+              }}
+              onOpenEdit={(st) => setEditingStore(st)}
+            />
+          ) : (
+            <>
+              {/* Tổng hợp chỉ số toàn bộ gian hàng thuộc Brand */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="bg-white rounded-xl p-4 border border-slate-200/80 shadow-xs">
+                  <span className="text-2xs font-medium text-slate-500">Số gian hàng hoạt động</span>
+                  <div className="mt-1 flex items-baseline justify-between">
+                    <span className="text-lg font-semibold font-mono text-slate-900">
+                      {activeBrandStores.length} gian hàng
+                    </span>
+                    <span className="text-2xs text-emerald-600 font-medium">B2C phụ trách</span>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-xl p-4 border border-slate-200/80 shadow-xs">
+                  <span className="text-2xs font-medium text-slate-500">Tổng hạn mức Order Net</span>
+                  <div className="mt-1 flex items-baseline justify-between">
+                    <span className="text-lg font-semibold font-mono text-slate-900">
+                      {formatVndShort(
+                        activeBrandStores.reduce((s, st) => s + (st.budgetNet ?? st.monthlyBudget ?? 0), 0)
+                      )}
+                    </span>
+                    <span className="text-2xs text-slate-500">Trần kế toán duyệt</span>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-xl p-4 border border-slate-200/80 shadow-xs">
+                  <span className="text-2xs font-medium text-slate-500">Thực tế đã duyệt chi (Net)</span>
+                  <div className="mt-1 flex items-baseline justify-between">
+                    <span className="text-lg font-semibold font-mono text-blue-600">
+                      {formatVndShort(
+                        activeBrandStores.reduce((s, st) => s + (st.actualSpentNet ?? 0), 0)
+                      )}
+                    </span>
+                    <span className="text-2xs text-slate-500">Đối soát thời gian thực</span>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-xl p-4 border border-slate-200/80 shadow-xs">
+                  <span className="text-2xs font-medium text-slate-500">Cam kết đầu ra nội dung</span>
+                  <div className="mt-1 flex items-baseline justify-between">
+                    <span className="text-lg font-semibold font-mono text-emerald-600">
+                      {activeBrandStores.reduce(
+                        (s, st) => s + (st.targetAffiliateContents ?? 0) + (st.targetSelfChannelContents ?? 0),
+                        0
+                      )}{' '}
+                      video
+                    </span>
+                    <span className="text-2xs text-slate-500">
+                      + {activeBrandStores.reduce((s, st) => s + (st.targetFocVideos ?? 0), 0)} suất FOC
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Danh sách từng gian hàng sàn của Thương hiệu */}
+              <div className="bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-hidden">
+                <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <h3 className="text-xs font-semibold text-slate-900">
+                      Danh Sách Gian Hàng Thuộc Thương Hiệu {activePortal.brandName}
+                    </h3>
+                    <p className="text-2xs text-slate-500 mt-0.5">
+                      Cập nhật thông số hoa hồng, ngân sách gian hàng hoặc chỉ tiêu nội dung sẽ liên thông trực tiếp với màn hình Quản lý Gian hàng B2C.
+                    </p>
+                  </div>
+                </div>
+
+                {activeBrandStores.length === 0 ? (
+                  <div className="p-8 text-center text-xs text-slate-500">
+                    Chưa có gian hàng nào được gán cho thương hiệu {activePortal.brandName}.
+                  </div>
+                ) : (
+                  <div className="divide-y divide-slate-100">
+                    {activeBrandStores.map((st) => {
+                      const netLimit = st.budgetNet ?? st.monthlyBudget ?? 0;
+                      const spentNet = st.actualSpentNet ?? 0;
+                      const isOverBudget = netLimit > 0 && spentNet > netLimit;
+                      const isUnbudgeted = netLimit === 0 && spentNet > 0;
+                      return (
+                        <div
+                          key={st.id}
+                          className="p-4 hover:bg-slate-50/70 transition flex flex-col lg:flex-row lg:items-center justify-between gap-4 text-xs"
+                        >
+                          <div className="space-y-1.5 flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-semibold text-slate-900 text-sm">{st.storeName}</span>
+                              <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-semibold text-2xs">
+                                {st.platform}
+                              </span>
+                              {st.storeOperationId && (
+                                <span className="font-mono text-2xs text-slate-500 bg-slate-50 border border-slate-200 px-1.5 py-0.5 rounded">
+                                  Mã vận hành: {st.storeOperationId}
+                                </span>
+                              )}
+                              {isOverBudget && (
+                                <span className="px-2 py-0.5 rounded bg-rose-50 text-rose-700 border border-rose-200 text-2xs font-semibold">
+                                  Vượt hạn mức Order Net
+                                </span>
+                              )}
+                              {isUnbudgeted && (
+                                <span className="px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 text-2xs font-semibold">
+                                  Phát sinh chi ngoài kế hoạch
+                                </span>
+                              )}
+                            </div>
+
+                            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-2xs text-slate-600">
+                              <span>
+                                Phụ trách B2C:{' '}
+                                <strong className="text-slate-800">
+                                  {st.b2cOwnerName || st.b2cOwners?.join(', ') || 'Chưa gán'}
+                                </strong>
+                              </span>
+                              <span>
+                                Trưởng nhóm:{' '}
+                                <strong className="text-slate-800">
+                                  {st.hasBookingLeader && st.bookingLeader ? st.bookingLeader : 'Không có leader (Trình trực tiếp GĐ Marketing)'}
+                                </strong>
+                              </span>
+                              {typeof st.affiliateRate === 'number' && (
+                                <span>
+                                  Hoa hồng sàn: <strong className="text-slate-800">{st.affiliateRate}%</strong>
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-3 gap-4 shrink-0 border-t lg:border-t-0 pt-2 lg:pt-0 border-slate-100">
+                            <div>
+                              <span className="text-2xs text-slate-500 block">Hạn mức Order Net</span>
+                              <span className="font-mono font-semibold text-slate-900">
+                                {formatVndShort(netLimit)}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-2xs text-slate-500 block">Đã duyệt chi (Net)</span>
+                              <span className={`font-mono font-semibold ${isOverBudget || isUnbudgeted ? 'text-rose-600' : 'text-blue-600'}`}>
+                                {formatVndShort(spentNet)}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-2xs text-slate-500 block">Chỉ tiêu Video / FOC</span>
+                              <span className="font-mono font-semibold text-slate-900">
+                                {(st.targetAffiliateContents ?? 0) + (st.targetSelfChannelContents ?? 0)} clip • {st.targetFocVideos ?? 0} FOC
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => setEditingStore(st)}
+                              className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-medium text-xs flex items-center gap-1.5 transition"
+                            >
+                              <Pencil className="w-3.5 h-3.5 text-slate-500" />
+                              <span>Cập nhật</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setInspectingStore(st)}
+                              className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs flex items-center gap-1.5 transition"
+                            >
+                              <span>Chi tiết gian hàng</span>
+                              <ArrowRight className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
         </div>
       )}
 
@@ -1704,7 +2334,12 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
 
       {/* Modal 3: Script Review Drawer / Modal */}
       <Presence show={!!inspectingScript}>
-      {inspectingScript && (
+      {inspectingScript && (() => {
+        const maxRevisions = activeBrandRow?.profile.workflowRules?.maxFreeRevisions ?? 2;
+        const bannedList = (activeBrandRow?.profile.contentRules?.banned || []).map(b => b.phrase);
+        const fullScriptText = `${inspectingScript.hook} ${inspectingScript.painPoint} ${inspectingScript.solutionAndUsp} ${inspectingScript.callToAction}`.toLowerCase();
+        const violatedKeywords = bannedList.filter((kw: string) => kw.trim() && fullScriptText.includes(kw.toLowerCase()));
+        return (
         <div 
           className="fixed inset-0 z-50 bg-slate-900/40 flex items-center justify-center p-4 animate-in fade-in duration-(--motion-base)"
           onClick={(e) => {
@@ -1721,7 +2356,7 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
                   Kịch bản: {inspectingScript.kocStageName}
                 </h4>
                 <p className="text-2xs text-slate-500 mt-0.5">
-                  Sản phẩm: {inspectingScript.productName} ({inspectingScript.videoDuration}) • Lần sửa: {inspectingScript.revisionCount}/2
+                  Sản phẩm: {inspectingScript.productName} ({inspectingScript.videoDuration}) • Lần sửa: {inspectingScript.revisionCount}/{maxRevisions}
                 </p>
               </div>
               <button
@@ -1732,6 +2367,21 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
                 ✕
               </button>
             </div>
+
+            {violatedKeywords.length > 0 ? (
+              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-800 flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                <div>
+                  <span className="font-semibold block">Cảnh báo từ ngữ hạn chế theo Hồ sơ thương hiệu:</span>
+                  <span>Phát hiện từ khóa cần tránh: <strong>{violatedKeywords.join(', ')}</strong></span>
+                </div>
+              </div>
+            ) : bannedList.length > 0 ? (
+              <div className="p-2.5 rounded-xl bg-emerald-50/70 border border-emerald-200 text-2xs text-emerald-800 flex items-center gap-2">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                <span>Đã đối chiếu {bannedList.length} từ khóa hạn chế trong Hồ sơ thương hiệu: Không phát hiện vi phạm.</span>
+              </div>
+            ) : null}
 
             {/* 4 segments in a clean 2x2 grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
@@ -1746,7 +2396,7 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
               </div>
 
               <div className="p-3 rounded-xl bg-emerald-50/50 border border-emerald-200/80">
-                <span className="font-semibold text-emerald-900 block mb-1">3. Giải pháp &amp; USP sản phẩm:</span>
+                <span className="font-semibold text-emerald-900 block mb-1">3. Giải pháp &amp; lợi điểm sản phẩm:</span>
                 <p className="text-slate-700 leading-relaxed">{inspectingScript.solutionAndUsp}</p>
               </div>
 
@@ -1772,7 +2422,7 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
                   >
                     <option value="HOOK">1. Hook</option>
                     <option value="PAIN">2. Pain Point</option>
-                    <option value="USP">3. USP sản phẩm</option>
+                    <option value="USP">3. Lợi điểm sản phẩm</option>
                     <option value="CTA">4. CTA</option>
                   </select>
                 </div>
@@ -1789,7 +2439,7 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
               <div className="flex items-center justify-between pt-2">
                 <button
                   type="button"
-                  disabled={!scriptFeedbackText.trim() || inspectingScript.revisionCount >= 2}
+                  disabled={!scriptFeedbackText.trim() || inspectingScript.revisionCount >= maxRevisions}
                   onClick={handleSubmitScriptFeedback}
                   className="px-3.5 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium flex items-center gap-1.5 disabled:opacity-40 transition"
                 >
@@ -1809,9 +2459,27 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
             </div>
           </div>
         </div>
-      )}
+        );
+      })()}
       </Presence>
         </div>
+      )}
+
+      {/* Hộp thoại chỉnh sửa thông số Gian hàng trực tiếp từ Cổng Đối Tác Brand */}
+      {editingStore && (
+        <StoreEditDialog
+          open={!!editingStore}
+          store={editingStore}
+          onClose={() => setEditingStore(null)}
+          onSave={(updated) => {
+            onUpdateStore?.(updated);
+            if (inspectingStore?.id === updated.id) {
+              setInspectingStore(updated);
+            }
+            setEditingStore(null);
+            onNotify?.(`Đã cập nhật thông số gian hàng "${updated.storeName}" — đồng bộ toàn hệ thống.`, 'success');
+          }}
+        />
       )}
     </div>
   );

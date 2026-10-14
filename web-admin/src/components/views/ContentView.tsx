@@ -11,11 +11,13 @@ import {
   Video, 
   Layers, 
   Share2,
-  ExternalLink
+  ExternalLink,
+  FileText
 } from 'lucide-react';
 import { ScriptReviewItem, ContentItemModel, PublicationItemModel } from '../../lib/types';
 import { INITIAL_SCRIPTS, INITIAL_CONTENT_ITEMS, INITIAL_PUBLICATIONS } from '../../lib/mockData';
 import { ScriptReviewModal } from '../ScriptReviewModal';
+import { OperationalReportDrawer } from '../OperationalReportDrawer';
 
 interface ContentViewProps {
   onScriptApprovedNotification?: (dealCode: string) => void;
@@ -32,6 +34,7 @@ export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotifi
   const [activeSubTab, setActiveSubTab] = useState<ContentSubTab>('CONTENT_ITEMS');
   const [approvingDraftVideo, setApprovingDraftVideo] = useState<string | null>(null);
   const [approvedDraftVideos, setApprovedDraftVideos] = useState<Set<string>>(new Set());
+  const [isScriptReportOpen, setIsScriptReportOpen] = useState(false);
 
   const handleApprove = (scriptId: string) => {
     setScripts(prev => prev.map(item => item.id === scriptId ? { ...item, status: 'APPROVED', remainingHours: 0 } : item));
@@ -65,15 +68,24 @@ export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotifi
           ]}
         />
 
-        {onNavigateToAngles && (
+        <div className="flex items-center gap-2 self-start lg:self-auto">
           <button
-            onClick={onNavigateToAngles}
-            className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-accent-soft text-accent hover:bg-sunken border border-line transition flex items-center gap-1.5 shrink-0 shadow-2xs self-start lg:self-auto"
+            onClick={() => setIsScriptReportOpen(true)}
+            className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-primary text-white hover:bg-primary-hover transition flex items-center gap-1.5 shrink-0 shadow-2xs"
           >
-            <Layers className="w-3.5 h-3.5 text-accent" />
-            <span>Thiết lập góc tiếp cận SP</span>
+            <FileText className="w-3.5 h-3.5" />
+            <span>Báo cáo rà soát kịch bản & từ cấm</span>
           </button>
-        )}
+          {onNavigateToAngles && (
+            <button
+              onClick={onNavigateToAngles}
+              className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-accent-soft text-accent hover:bg-sunken border border-line transition flex items-center gap-1.5 shrink-0 shadow-2xs"
+            >
+              <Layers className="w-3.5 h-3.5 text-accent" />
+              <span>Thiết lập góc tiếp cận SP</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* View 0: Content Items Master Grid */}
@@ -491,6 +503,25 @@ export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotifi
             setApprovingDraftVideo(null);
           }
         }}
+      />
+
+      <OperationalReportDrawer
+        isOpen={isScriptReportOpen}
+        onClose={() => setIsScriptReportOpen(false)}
+        purposeId="SCRIPT_REVIEW"
+        moduleTitle="Báo Cáo Rà Soát Kịch Bản, Từ Cấm Sàn & Tiến Độ Sản Xuất Video"
+        moduleSubtitle={`Tổng kho nội dung: ${contentItems.length} mã | Kịch bản chờ duyệt: ${scripts.filter(s => s.status === 'PENDING').length}/${scripts.length} | Bài đăng đối soát: ${publications.length}`}
+        contextDataText={[
+          `[DỮ LIỆU PHÂN HỆ: Kho Nội Dung, Kịch Bản & Video KOC]`,
+          `- Tổng số kịch bản đang theo dõi: ${scripts.length} (Chờ duyệt: ${scripts.filter(s => s.status === 'PENDING').length}, Đã duyệt: ${scripts.filter(s => s.status === 'APPROVED').length}, Yêu cầu sửa: ${scripts.filter(s => s.status === 'REVISION_REQUESTED').length})`,
+          ...scripts.slice(0, 6).map(
+            s => `- Kịch bản ${s.dealCode} | KOC: ${s.kocName} | Trụ cột: ${s.pillar} | Trạng thái: ${s.status} | SLA còn: ${s.remainingHours}h | Hook 3s: "${s.hook}" | USP: ${s.solutionAndUsp}`
+          ),
+          ...publications.slice(0, 5).map(
+            p => `- Bài đăng ${p.publicationCode} (${p.contentCode}) | KOC: ${p.creatorName} | Kênh: ${p.platform} | Lượt xem: ${p.viewsCount.toLocaleString('vi-VN')} | GMV: ${formatVndShort(p.affiliateGmv)}`
+          ),
+        ].join('\n')}
+        customSystemPrompt="Rà soát toàn bộ kịch bản chờ duyệt để phát hiện từ ngữ nhạy cảm/vi phạm chính sách sàn (cam kết 100%, trị dứt điểm, thuốc đặc trị, trắng tức thì...), kiểm tra kịch bản sắp trễ SLA 24h, và đánh giá chất lượng mở đầu (Hook 3s) kèm khuyến nghị chỉnh sửa cụ thể cho từng KOC."
       />
     </div>
   );

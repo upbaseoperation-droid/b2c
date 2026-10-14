@@ -9,7 +9,7 @@
  *   + Cột phải: Lịch sử & Hiệu quả sản xuất video kênh Brand, Công việc đang chạy & Hàng mẫu, Cập nhật hồ sơ chuyên sâu.
  */
 
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useMemo, useRef, useState, useDeferredValue } from 'react';
 import {
   ArrowLeft,
   ChevronLeft,
@@ -120,6 +120,7 @@ export const CtvManagementView: React.FC<CtvManagementViewProps> = ({
 
   // Bộ lọc danh sách
   const [search, setSearch] = useState('');
+  const deferredSearch = useDeferredValue(search);
   const [roleFilter, setRoleFilter] = useState<RoleFilter>('ALL');
   const [issueFilter, setIssueFilter] = useState<IssueFilter>('');
   const [selectedNiche, setSelectedNiche] = useState('ALL');
@@ -166,7 +167,7 @@ export const CtvManagementView: React.FC<CtvManagementViewProps> = ({
 
   // Lọc cơ sở (trừ chip)
   const baseFiltered = useMemo(() => {
-    const q = search.trim().toLowerCase();
+    const q = deferredSearch.trim().toLowerCase();
     return localCtvs.filter((c) => {
       if (q) {
         const hit =
@@ -181,7 +182,7 @@ export const CtvManagementView: React.FC<CtvManagementViewProps> = ({
       if (selectedPic !== 'ALL' && c.contentPic !== selectedPic) return false;
       return true;
     });
-  }, [localCtvs, search, selectedNiche, selectedPic]);
+  }, [localCtvs, deferredSearch, selectedNiche, selectedPic]);
 
   const matchesIssue = (c: Contributor, f: IssueFilter) => {
     if (!f) return true;

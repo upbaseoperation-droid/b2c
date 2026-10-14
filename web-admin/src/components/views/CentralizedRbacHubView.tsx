@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useDeferredValue } from 'react';
 import { ConfirmDialog, Tabs, Presence } from '../ui';
 import {
   ShieldCheck,
@@ -36,6 +36,10 @@ import {
 } from '../../lib/types';
 import {
   RBAC_ROLE_DEFINITIONS,
+  ALL_ROLE_DEFINITIONS,
+  ALL_SYSTEM_SCREENS,
+  ROLE_ALLOWED_TABS,
+  ROLE_DEFAULT_LANDING,
   INITIAL_PERMISSION_MATRIX,
   INITIAL_INTERNAL_STAFF_RBAC,
   INITIAL_RBAC_AUDIT_LOGS,
@@ -45,8 +49,16 @@ import {
   saveStaffAccessOverrides,
   getSavedDeptAccessRules,
   saveDeptAccessRules,
+  getSavedRoleAllowedTabs,
+  saveRoleAllowedTabs,
+  getSavedRoleDefaultLanding,
+  saveRoleDefaultLanding,
+  resetAllRoleScreenPermissions,
+  getSavedInternalStaffList,
+  saveInternalStaffList,
   StaffAccessOverrideItem
 } from '../../lib/rbacData';
+import type { TabKey } from '../Sidebar';
 import { UPBASE_STAFF_MASTER } from '../../lib/importedMasterData';
 import { ThirdPartyAccessSetupView } from './ThirdPartyAccessSetupView';
 import { INITIAL_BRANDS, INITIAL_KOCS } from '../../lib/mockData';
@@ -60,7 +72,7 @@ interface CentralizedRbacHubViewProps {
   onImpersonatePartner?: (partnerUser: UserProfile) => void;
 }
 
-type MainTab = 'gatekeeper' | 'internal' | 'matrix' | 'third-party' | 'audit';
+type MainTab = 'roles' | 'gatekeeper' | 'internal' | 'matrix' | 'third-party' | 'audit';
 
 const SCOPE_LABELS: Record<SystemDepartmentScope, { label: string; badgeClass: string; managerLabel: string }> = {
   MARKETING_B2C: {
@@ -113,7 +125,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
   onImpersonateUser,
   onImpersonatePartner
 }) => {
-  const [activeMainTab, setActiveMainTab] = useState<MainTab>('gatekeeper');
+  const [activeMainTab, setActiveMainTab] = useState<MainTab>('roles');
   const logCounterRef = useRef(100);
 
   const isAdmin = !currentUser || currentUser.role === 'ADMIN';
@@ -121,10 +133,18 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
   const isMediaManager = currentUser?.role === 'MEDIA_MANAGER';
   const isB2cManager = currentUser?.role === 'MANAGER';
 
+  // --- STATE TAB ROLES: QUẢN TRỊ LỚP ROLE & PHÂN QUYỀN MÀN HÌNH (16 VAI TRÒ) ---
+  const [roleAllowedTabsMap, setRoleAllowedTabsMap] = useState<Record<UserRole, TabKey[]>>(() => getSavedRoleAllowedTabs());
+  const [roleDefaultLandingMap, setRoleDefaultLandingMap] = useState<Record<UserRole, TabKey>>(() => getSavedRoleDefaultLanding());
+  const [selectedRoleKey, setSelectedRoleKey] = useState<UserRole>('LEGAL');
+  const [roleSearchScreen, setRoleSearchScreen] = useState<string>('');
+  const [assignStaffToRoleId, setAssignStaffToRoleId] = useState<string>('');
+
   // --- STATE TAB 0: CỔNG KIỂM SOÁT TRUY CẬP 1.011 NHÂN SỰ & PHÒNG BAN ---
   const [deptRules, setDeptRules] = useState<DepartmentAccessRule[]>(() => getSavedDeptAccessRules());
   const [staffOverrides, setStaffOverrides] = useState<Record<string, StaffAccessOverrideItem>>(() => getSavedStaffAccessOverrides());
   const [dirSearch, setDirSearch] = useState('');
+  const deferredDirSearch = useDeferredValue(dirSearch);
   const [dirScopeFilter, setDirScopeFilter] = useState<string>(() => {
     if (isGrowthManager) return 'GROWTH';
     if (isMediaManager) return 'MEDIA';
@@ -248,8 +268,8 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
         if (label !== dirDeptFilter && s.team !== dirDeptFilter && s.department !== dirDeptFilter) return false;
       }
 
-      if (dirSearch.trim()) {
-        const q = dirSearch.toLowerCase().trim();
+      if (deferredDirSearch.trim()) {
+        const q = deferredDirSearch.toLowerCase().trim();
         const match =
           s.name.toLowerCase().includes(q) ||
           (s.staffCode && s.staffCode.toLowerCase().includes(q)) ||
@@ -263,7 +283,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
 
       return true;
     });
-  }, [classifiedDirectory, isGrowthManager, isMediaManager, dirScopeFilter, dirLoginFilter, dirDeptFilter, dirSearch]);
+  }, [classifiedDirectory, isGrowthManager, isMediaManager, dirScopeFilter, dirLoginFilter, dirDeptFilter, deferredDirSearch]);
 
   const totalDirPages = Math.ceil(filteredDirectory.length / DIR_PAGE_SIZE) || 1;
   const pagedDirectory = useMemo(() => {
@@ -438,13 +458,15 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
   const [matrixItems, setMatrixItems] = useState<PermissionMatrixItem[]>(INITIAL_PERMISSION_MATRIX);
   const [categoryFilter, setCategoryFilter] = useState<string>('ALL');
   const [searchMatrix, setSearchMatrix] = useState<string>('');
+  const deferredSearchMatrix = useDeferredValue(searchMatrix);
   const [roleColumnFilter, setRoleColumnFilter] = useState<string>('ALL');
   const [selectedCell, setSelectedCell] = useState<{ itemId: string; role: string; currentLevel: PermissionAccessLevel } | null>(null);
   const [isConfirmingResetMatrix, setIsConfirmingResetMatrix] = useState(false);
 
   // --- STATE TAB 2: NHÂN SỰ NỘI BỘ ---
-  const [internalStaff, setInternalStaff] = useState<InternalStaffRbacMember[]>(INITIAL_INTERNAL_STAFF_RBAC);
+  const [internalStaff, setInternalStaff] = useState<InternalStaffRbacMember[]>(() => getSavedInternalStaffList());
   const [searchStaff, setSearchStaff] = useState<string>('');
+  const deferredSearchStaff = useDeferredValue(searchStaff);
   const [staffRoleFilter, setStaffRoleFilter] = useState<string>('ALL');
   const [editingStaff, setEditingStaff] = useState<InternalStaffRbacMember | null>(null);
   const [staffFormRole, setStaffFormRole] = useState<UserRole>('MEMBER');
@@ -463,13 +485,159 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
   const [auditLogs, setAuditLogs] = useState<RbacAuditLogItem[]>(INITIAL_RBAC_AUDIT_LOGS);
   const [auditFilterType, setAuditFilterType] = useState<string>('ALL');
   const [searchAudit, setSearchAudit] = useState<string>('');
+  const deferredSearchAudit = useDeferredValue(searchAudit);
+
+  // --- HANDLERS CHO TAB QUẢN TRỊ LỚP ROLE & PHÂN QUYỀN MÀN HÌNH ---
+  const selectedRoleDef = useMemo(() => {
+    return ALL_ROLE_DEFINITIONS.find(r => r.id === selectedRoleKey) || ALL_ROLE_DEFINITIONS[0];
+  }, [selectedRoleKey]);
+
+  const selectedRoleAllowedTabs = useMemo(() => {
+    return roleAllowedTabsMap[selectedRoleKey] || ROLE_ALLOWED_TABS[selectedRoleKey] || [];
+  }, [roleAllowedTabsMap, selectedRoleKey]);
+
+  const selectedRoleDefaultLanding = useMemo(() => {
+    const landing = roleDefaultLandingMap[selectedRoleKey] || ROLE_DEFAULT_LANDING[selectedRoleKey];
+    if (selectedRoleAllowedTabs.includes(landing)) return landing;
+    return selectedRoleAllowedTabs[0] || landing;
+  }, [roleDefaultLandingMap, selectedRoleKey, selectedRoleAllowedTabs]);
+
+  const handleToggleRoleScreen = (role: UserRole, screenKey: TabKey) => {
+    if (!isAdmin) {
+      onNotify?.('Chỉ Quản trị hệ thống (Admin) mới được phép thay đổi phân quyền màn hình của Role.', 'warning');
+      return;
+    }
+    const currentTabs = roleAllowedTabsMap[role] || ROLE_ALLOWED_TABS[role] || [];
+    const exists = currentTabs.includes(screenKey);
+    if (exists && currentTabs.length <= 1) {
+      onNotify?.('Mỗi vai trò phải có tối thiểu 1 màn hình được phép truy cập.', 'warning');
+      return;
+    }
+    const nextTabs = exists
+      ? currentTabs.filter(t => t !== screenKey)
+      : [...currentTabs, screenKey];
+
+    const nextMap = { ...roleAllowedTabsMap, [role]: nextTabs };
+    setRoleAllowedTabsMap(nextMap);
+    saveRoleAllowedTabs(nextMap);
+
+    const currentLanding = roleDefaultLandingMap[role] || ROLE_DEFAULT_LANDING[role];
+    if (!nextTabs.includes(currentLanding) && nextTabs.length > 0) {
+      const nextLandingMap = { ...roleDefaultLandingMap, [role]: nextTabs[0] };
+      setRoleDefaultLandingMap(nextLandingMap);
+      saveRoleDefaultLanding(nextLandingMap);
+    }
+
+    const screenLabel = ALL_SYSTEM_SCREENS.find(s => s.key === screenKey)?.label || screenKey;
+    const newLog: RbacAuditLogItem = {
+      id: `log-${++logCounterRef.current}`,
+      timestamp: new Date().toISOString().substring(0, 19).replace('T', ' '),
+      actorName: currentUser?.name || 'Đỗ Văn Giang',
+      actorEmail: currentUser?.email || 'giangdv@upbase.vn',
+      actorRole: currentUser?.role || 'ADMIN',
+      actionType: 'PERMISSION_TOGGLE',
+      targetUserOrEntity: `Role ${role} -> Màn hình "${screenLabel}"`,
+      description: `${exists ? 'Thu hồi quyền xem màn hình' : 'Cấp quyền xem màn hình'} "${screenLabel}" (${screenKey}) đối với vai trò ${ROLE_DISPLAY_NAME[role]}.`,
+      ipAddress: '118.70.182.44',
+      deviceInfo: 'Chrome 128 / Windows',
+      status: 'SUCCESS'
+    };
+    setAuditLogs(prev => [newLog, ...prev]);
+    onNotify?.(
+      `${exists ? 'Đã ẩn màn hình' : 'Đã mở màn hình'} "${screenLabel}" cho vai trò ${ROLE_DISPLAY_NAME[role]}`,
+      'success'
+    );
+  };
+
+  const handleToggleRoleCategoryScreens = (role: UserRole, categoryScreens: TabKey[], enableAll: boolean) => {
+    if (!isAdmin) {
+      onNotify?.('Chỉ Quản trị hệ thống (Admin) mới được phép thay đổi phân quyền màn hình của Role.', 'warning');
+      return;
+    }
+    const currentTabs = roleAllowedTabsMap[role] || ROLE_ALLOWED_TABS[role] || [];
+    let nextTabs: TabKey[];
+    if (enableAll) {
+      const set = new Set<TabKey>([...currentTabs, ...categoryScreens]);
+      nextTabs = Array.from(set);
+    } else {
+      nextTabs = currentTabs.filter(t => !categoryScreens.includes(t));
+      if (nextTabs.length === 0) {
+        const fallback = ROLE_DEFAULT_LANDING[role] || 'cockpit';
+        nextTabs = [fallback];
+      }
+    }
+    const nextMap = { ...roleAllowedTabsMap, [role]: nextTabs };
+    setRoleAllowedTabsMap(nextMap);
+    saveRoleAllowedTabs(nextMap);
+    onNotify?.(`Đã cập nhật cụm màn hình cho vai trò ${ROLE_DISPLAY_NAME[role]}`, 'success');
+  };
+
+  const handleChangeRoleDefaultLanding = (role: UserRole, nextLanding: TabKey) => {
+    if (!isAdmin) {
+      onNotify?.('Chỉ Quản trị hệ thống (Admin) mới được phép đổi màn hình mặc định của Role.', 'warning');
+      return;
+    }
+    const nextLandingMap = { ...roleDefaultLandingMap, [role]: nextLanding };
+    setRoleDefaultLandingMap(nextLandingMap);
+    saveRoleDefaultLanding(nextLandingMap);
+    const screenLabel = ALL_SYSTEM_SCREENS.find(s => s.key === nextLanding)?.label || nextLanding;
+    onNotify?.(`Đã đặt màn hình mặc định khi đăng nhập của ${ROLE_DISPLAY_NAME[role]} là "${screenLabel}"`, 'success');
+  };
+
+  const handleResetSingleRoleScreens = (role: UserRole) => {
+    const defaultTabs = [...ROLE_ALLOWED_TABS[role]];
+    const defaultLanding = ROLE_DEFAULT_LANDING[role];
+    const nextMap = { ...roleAllowedTabsMap, [role]: defaultTabs };
+    const nextLandingMap = { ...roleDefaultLandingMap, [role]: defaultLanding };
+    setRoleAllowedTabsMap(nextMap);
+    setRoleDefaultLandingMap(nextLandingMap);
+    saveRoleAllowedTabs(nextMap);
+    saveRoleDefaultLanding(nextLandingMap);
+    onNotify?.(`Đã khôi phục danh sách màn hình mặc định cho vai trò ${ROLE_DISPLAY_NAME[role]}`, 'info');
+  };
+
+  const handleAssignStaffToSelectedRole = (staffId: string, targetRole: UserRole) => {
+    if (!staffId) return;
+    const targetStaff = internalStaff.find(s => s.id === staffId);
+    if (!targetStaff) return;
+
+    const updatedList = internalStaff.map(s => {
+      if (s.id === staffId) {
+        return {
+          ...s,
+          role: targetRole,
+          roleTitle: ROLE_DISPLAY_NAME[targetRole] || s.roleTitle,
+        };
+      }
+      return s;
+    });
+    setInternalStaff(updatedList);
+    saveInternalStaffList(updatedList);
+
+    const newLog: RbacAuditLogItem = {
+      id: `log-${++logCounterRef.current}`,
+      timestamp: new Date().toISOString().substring(0, 19).replace('T', ' '),
+      actorName: currentUser?.name || 'Đỗ Văn Giang',
+      actorEmail: currentUser?.email || 'giangdv@upbase.vn',
+      actorRole: currentUser?.role || 'ADMIN',
+      actionType: 'ROLE_CHANGE',
+      targetUserOrEntity: `${targetStaff.name} (${targetStaff.email})`,
+      description: `Admin gán vai trò ${ROLE_DISPLAY_NAME[targetRole]} (${targetRole}) cho nhân sự ${targetStaff.name}.`,
+      ipAddress: '118.70.182.44',
+      deviceInfo: 'Chrome 128 / Windows',
+      status: 'SUCCESS'
+    };
+    setAuditLogs(prev => [newLog, ...prev]);
+    setAssignStaffToRoleId('');
+    onNotify?.(`Đã gán vai trò ${ROLE_DISPLAY_NAME[targetRole]} cho nhân sự ${targetStaff.name}`, 'success');
+  };
 
   // Lọc Ma trận phân quyền
   const filteredMatrix = useMemo(() => {
     return matrixItems.filter(item => {
       if (categoryFilter !== 'ALL' && item.category !== categoryFilter) return false;
-      if (searchMatrix.trim()) {
-        const q = searchMatrix.toLowerCase();
+      if (deferredSearchMatrix.trim()) {
+        const q = deferredSearchMatrix.toLowerCase();
         const matchName = item.featureName.toLowerCase().includes(q);
         const matchDesc = item.description.toLowerCase().includes(q);
         const matchCat = item.categoryTitle.toLowerCase().includes(q);
@@ -477,7 +645,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
       }
       return true;
     });
-  }, [matrixItems, categoryFilter, searchMatrix]);
+  }, [matrixItems, categoryFilter, deferredSearchMatrix]);
 
   // Đổi quyền trên ma trận
   const handleUpdatePermission = (itemId: string, role: string, newLevel: PermissionAccessLevel) => {
@@ -526,8 +694,8 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
       if (isGrowthManager && staff.departmentScope !== 'GROWTH') return false;
       if (isMediaManager && staff.departmentScope !== 'MEDIA') return false;
       if (staffRoleFilter !== 'ALL' && staff.role !== staffRoleFilter) return false;
-      if (searchStaff.trim()) {
-        const q = searchStaff.toLowerCase();
+      if (deferredSearchStaff.trim()) {
+        const q = deferredSearchStaff.toLowerCase();
         return (
           staff.name.toLowerCase().includes(q) ||
           staff.email.toLowerCase().includes(q) ||
@@ -537,7 +705,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
       }
       return true;
     });
-  }, [internalStaff, isGrowthManager, isMediaManager, staffRoleFilter, searchStaff]);
+  }, [internalStaff, isGrowthManager, isMediaManager, staffRoleFilter, deferredSearchStaff]);
 
   // Mở modal sửa nhân sự
   const handleOpenEditStaff = (staff: InternalStaffRbacMember) => {
@@ -553,18 +721,20 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
     e.preventDefault();
     if (!editingStaff) return;
 
-    setInternalStaff(prev => prev.map(s => {
+    const updatedList = internalStaff.map(s => {
       if (s.id === editingStaff.id) {
         return {
           ...s,
           role: staffFormRole,
-          roleTitle: staffFormRoleTitle || s.roleTitle,
+          roleTitle: staffFormRoleTitle || ROLE_DISPLAY_NAME[staffFormRole] || s.roleTitle,
           picBrands: staffFormPicBrands,
           permissions: { ...staffFormPerms }
         };
       }
       return s;
-    }));
+    });
+    setInternalStaff(updatedList);
+    saveInternalStaffList(updatedList);
 
     const newLog: RbacAuditLogItem = {
       id: `log-${++logCounterRef.current}`,
@@ -631,8 +801,8 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
   const filteredAuditLogs = useMemo(() => {
     return auditLogs.filter(log => {
       if (auditFilterType !== 'ALL' && log.actionType !== auditFilterType) return false;
-      if (searchAudit.trim()) {
-        const q = searchAudit.toLowerCase();
+      if (deferredSearchAudit.trim()) {
+        const q = deferredSearchAudit.toLowerCase();
         return (
           log.actorName.toLowerCase().includes(q) ||
           log.targetUserOrEntity.toLowerCase().includes(q) ||
@@ -642,7 +812,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
       }
       return true;
     });
-  }, [auditLogs, auditFilterType, searchAudit]);
+  }, [auditLogs, auditFilterType, deferredSearchAudit]);
 
   // Các vai trò hiển thị trên cột ma trận
   const matrixRolesToRender = useMemo(() => {
@@ -700,15 +870,417 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
 
       <Tabs
         items={[
-          { key: 'gatekeeper', label: '1. Cổng truy cập & Phân khối (1.011 NV)', count: `${directoryStats.totalAllowed}/${directoryStats.totalStaff}` },
-          { key: 'internal', label: '2. Trưởng phòng & PIC cốt lõi', count: filteredStaff.length },
-          { key: 'matrix', label: '3. Ma trận phân quyền (9 Vai trò)', count: matrixItems.length },
-          { key: 'third-party', label: '4. Tài khoản đối tác ngoài', count: 'Brand / KOC / CTV' },
-          { key: 'audit', label: '5. Nhật ký bảo mật', count: auditLogs.length },
+          { key: 'roles', label: '1. Quản trị Role & Màn hình', count: `${ALL_ROLE_DEFINITIONS.length} Role` },
+          { key: 'gatekeeper', label: '2. Cổng truy cập & Phân khối (1.011 NV)', count: `${directoryStats.totalAllowed}/${directoryStats.totalStaff}` },
+          { key: 'internal', label: '3. Gán Role nhân sự nội bộ', count: filteredStaff.length },
+          { key: 'matrix', label: '4. Ma trận quyền chức năng', count: matrixItems.length },
+          { key: 'third-party', label: '5. Tài khoản đối tác ngoài', count: 'Brand / KOC / CTV' },
+          { key: 'audit', label: '6. Nhật ký bảo mật', count: auditLogs.length },
         ]}
         value={activeMainTab}
         onChange={(k) => setActiveMainTab(k as MainTab)}
       />
+
+      {/* ========================================================================= */}
+      {/* SUB-TAB ROLES: QUẢN TRỊ LỚP ROLE & PHÂN QUYỀN MÀN HÌNH (16 VAI TRÒ)        */}
+      {/* ========================================================================= */}
+      {activeMainTab === 'roles' && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 animate-in fade-in duration-200">
+          {/* Cột trái: Danh sách 16 Role hệ thống chia theo 4 nhóm */}
+          <div className="lg:col-span-4 space-y-3">
+            <div className="bg-white rounded-xl border border-slate-200 shadow-xs p-3.5 space-y-3">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+                <div>
+                  <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                    Danh mục 16 Lớp Role Hệ Thống
+                  </h3>
+                  <p className="text-2xs text-slate-500 mt-0.5">
+                    Chọn 1 Role để cấu hình các màn hình được phép truy cập và gán nhân sự
+                  </p>
+                </div>
+                <span className="px-2 py-0.5 rounded-full text-2xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                  {ALL_ROLE_DEFINITIONS.length} Role
+                </span>
+              </div>
+
+              {[
+                {
+                  groupTitle: 'Khối Pháp chế · Kế toán · Ký số',
+                  roleIds: ['LEGAL', 'FINANCE', 'SIGN_ADMIN'] as UserRole[],
+                },
+                {
+                  groupTitle: 'Cấp Quản trị & Trưởng phòng (3 Khối)',
+                  roleIds: ['ADMIN', 'MANAGER', 'GROWTH_MANAGER', 'MEDIA_MANAGER', 'LEADER'] as UserRole[],
+                },
+                {
+                  groupTitle: 'Cấp Chuyên viên Thực thi',
+                  roleIds: ['BOOKING_MEMBER', 'CONTENT_MEMBER', 'BRAND_MEMBER', 'GROWTH_MEMBER', 'MEDIA_MEMBER'] as UserRole[],
+                },
+                {
+                  groupTitle: 'Tài khoản Đối tác ngoài (Portal)',
+                  roleIds: ['BRAND_PARTNER', 'KOC_PARTNER', 'CTV_PARTNER'] as UserRole[],
+                },
+              ].map((group) => (
+                <div key={group.groupTitle} className="space-y-1.5">
+                  <div className="text-2xs font-bold text-slate-400 uppercase tracking-wider px-1">
+                    {group.groupTitle}
+                  </div>
+                  <div className="space-y-1">
+                    {group.roleIds.map((rId) => {
+                      const rDef = ALL_ROLE_DEFINITIONS.find((x) => x.id === rId);
+                      if (!rDef) return null;
+                      const isSelected = selectedRoleKey === rDef.id;
+                      const allowedCount = (roleAllowedTabsMap[rDef.id] || ROLE_ALLOWED_TABS[rDef.id] || []).length;
+                      const staffCount = internalStaff.filter((s) => s.role === rDef.id).length;
+
+                      return (
+                        <button
+                          key={rDef.id}
+                          type="button"
+                          onClick={() => setSelectedRoleKey(rDef.id)}
+                          className={`w-full text-left p-2.5 rounded-xl border transition flex items-start justify-between gap-2 ${
+                            isSelected
+                              ? 'bg-blue-50/80 border-blue-400 ring-2 ring-blue-500/15 shadow-xs'
+                              : 'bg-white border-slate-200 hover:bg-slate-50 hover:border-slate-300'
+                          }`}
+                        >
+                          <div className="min-w-0 space-y-0.5">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="font-semibold text-xs text-slate-900">
+                                {rDef.name}
+                              </span>
+                              <span className="font-mono text-[10px] px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 border border-slate-200">
+                                {rDef.id}
+                              </span>
+                            </div>
+                            <p className="text-2xs text-slate-500 line-clamp-1">
+                              {rDef.description}
+                            </p>
+                          </div>
+                          <div className="flex flex-col items-end shrink-0 gap-1">
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
+                              allowedCount <= 2
+                                ? 'bg-amber-50 text-amber-800 border-amber-200'
+                                : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                            }`}>
+                              {allowedCount}/{ALL_SYSTEM_SCREENS.length} màn
+                            </span>
+                            {rDef.scopeType === 'INTERNAL' && (
+                              <span className="text-[10px] text-slate-400">
+                                {staffCount} nhân sự
+                              </span>
+                            )}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Cột phải: Chi tiết phân quyền màn hình & gán nhân sự cho Role đang chọn */}
+          <div className="lg:col-span-8 space-y-4">
+            {/* Card Header của Role đang chọn */}
+            <div className="bg-white rounded-xl border border-slate-200 shadow-xs p-4 space-y-4">
+              <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 pb-3.5">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border ${selectedRoleDef.badgeColor}`}>
+                      {selectedRoleDef.name}
+                    </span>
+                    <span className="font-mono text-xs px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 font-semibold">
+                      Mã Role: {selectedRoleDef.id}
+                    </span>
+                    <span className="text-2xs px-2 py-0.5 rounded bg-slate-50 text-slate-600 border border-slate-200">
+                      {selectedRoleDef.scopeType === 'INTERNAL' ? 'Nhân sự nội bộ (Lark SSO)' : 'Đối tác bên ngoài'}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-600 leading-relaxed">
+                    {selectedRoleDef.description}
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleResetSingleRoleScreens(selectedRoleKey)}
+                    className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition flex items-center gap-1.5"
+                    title="Đặt lại danh sách màn hình mặc định cho Role này"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    <span>Đặt lại mặc định Role</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const sampleStaff = internalStaff.find((s) => s.role === selectedRoleKey);
+                      if (sampleStaff) {
+                        handleImpersonateInternal(sampleStaff);
+                      } else {
+                        const syntheticProfile: UserProfile = {
+                          id: `role_preview_${selectedRoleKey.toLowerCase()}`,
+                          name: `Tài khoản kiểm thử (${selectedRoleDef.name})`,
+                          email: `${selectedRoleKey.toLowerCase()}@upbase.vn`,
+                          role: selectedRoleKey,
+                          roleTitle: `${selectedRoleDef.name} (Kiểm thử Role)`,
+                          avatar: selectedRoleKey.slice(0, 2),
+                          departmentScope: 'MARKETING_B2C',
+                          canLogin: true,
+                          loginProvider: 'SANDBOX',
+                          assignedBrands: ['Kutieskin', 'ClubClio'],
+                        };
+                        onImpersonateUser?.(syntheticProfile);
+                      }
+                    }}
+                    className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold transition flex items-center gap-1.5 shadow-2xs"
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                    <span>Đóng vai kiểm thử Role này</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Cấu hình Màn hình mở mặc định & Thống kê số màn hình được phép */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 bg-slate-50/80 p-3 rounded-xl border border-slate-200/80">
+                <div className="space-y-1">
+                  <label className="text-2xs font-bold text-slate-700 uppercase tracking-wider block">
+                    Màn hình mở mặc định sau khi đăng nhập
+                  </label>
+                  <select
+                    value={selectedRoleDefaultLanding}
+                    onChange={(e) => handleChangeRoleDefaultLanding(selectedRoleKey, e.target.value as TabKey)}
+                    className="w-full h-9 px-3 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-900 focus:outline-none focus:border-blue-500"
+                  >
+                    {ALL_SYSTEM_SCREENS.filter((s) => selectedRoleAllowedTabs.includes(s.key)).map((scr) => (
+                      <option key={scr.key} value={scr.key}>
+                        {scr.label} ({scr.key})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="flex flex-col justify-between">
+                  <span className="text-2xs font-bold text-slate-700 uppercase tracking-wider">
+                    Phạm vi màn hình Sidebar đang cấp cho {selectedRoleDef.name}
+                  </span>
+                  <div className="flex items-center justify-between bg-white px-3 py-2 rounded-lg border border-slate-200">
+                    <span className="text-xs text-slate-600">
+                      Được phép truy cập: <strong className="text-blue-700">{selectedRoleAllowedTabs.length}</strong> / {ALL_SYSTEM_SCREENS.length} màn hình
+                    </span>
+                    <span className="text-2xs text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                      Áp dụng tức thì
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Danh sách 28 màn hình hệ thống chia theo 6 nhóm để bật/tắt cho Role */}
+              <div className="space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-900">
+                      1. Phân quyền Màn hình được phép nhìn thấy & truy cập ({selectedRoleAllowedTabs.length}/{ALL_SYSTEM_SCREENS.length})
+                    </h4>
+                    <p className="text-2xs text-slate-500">
+                      Tích chọn hoặc bỏ tích để cấp/thu hồi màn hình trên thanh menu trái (Sidebar) và khóa đường dẫn trực tiếp đối với vai trò <strong>{selectedRoleDef.name}</strong>.
+                    </p>
+                  </div>
+                  <div className="relative w-60">
+                    <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      value={roleSearchScreen}
+                      onChange={(e) => setRoleSearchScreen(e.target.value)}
+                      placeholder="Tìm tên màn hình..."
+                      className="w-full pl-8 pr-3 h-8 text-xs rounded-lg border border-slate-200 bg-slate-50/60 focus:outline-none focus:border-blue-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  {Array.from(new Set(ALL_SYSTEM_SCREENS.map((s) => s.groupTitle))).map((catName) => {
+                    const screensInCat = ALL_SYSTEM_SCREENS.filter((s) => {
+                      if (s.groupTitle !== catName) return false;
+                      if (roleSearchScreen.trim()) {
+                        const q = roleSearchScreen.toLowerCase();
+                        return (
+                          s.label.toLowerCase().includes(q) ||
+                          s.key.toLowerCase().includes(q) ||
+                          s.description.toLowerCase().includes(q)
+                        );
+                      }
+                      return true;
+                    });
+                    if (screensInCat.length === 0) return null;
+
+                    const catKeys = screensInCat.map((s) => s.key);
+                    const enabledInCatCount = catKeys.filter((k) => selectedRoleAllowedTabs.includes(k)).length;
+                    const allCatEnabled = enabledInCatCount === catKeys.length;
+
+                    return (
+                      <div key={catName} className="rounded-xl border border-slate-200 overflow-hidden">
+                        <div className="bg-slate-50/90 px-3.5 py-2 border-b border-slate-200 flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            <Layers className="w-3.5 h-3.5 text-blue-600" />
+                            <span className="text-xs font-semibold text-slate-800">{catName}</span>
+                            <span className="text-2xs px-2 py-0.5 rounded-full bg-white border border-slate-200 text-slate-600 font-semibold">
+                              {enabledInCatCount}/{catKeys.length} màn hình
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleToggleRoleCategoryScreens(selectedRoleKey, catKeys, !allCatEnabled)}
+                            className="text-2xs font-semibold text-blue-600 hover:text-blue-800 px-2 py-0.5 rounded hover:bg-blue-50 transition"
+                          >
+                            {allCatEnabled ? 'Bỏ chọn nhóm này' : 'Bật toàn bộ nhóm này'}
+                          </button>
+                        </div>
+
+                        <div className="p-3 grid grid-cols-1 md:grid-cols-2 gap-2 bg-white">
+                          {screensInCat.map((scr) => {
+                            const isAllowed = selectedRoleAllowedTabs.includes(scr.key);
+                            const isDefaultLanding = selectedRoleDefaultLanding === scr.key;
+
+                            return (
+                              <label
+                                key={scr.key}
+                                className={`p-2.5 rounded-xl border cursor-pointer transition flex items-start gap-2.5 ${
+                                  isAllowed
+                                    ? 'bg-blue-50/40 border-blue-300 shadow-2xs'
+                                    : 'bg-white border-slate-200 opacity-70 hover:opacity-100 hover:bg-slate-50'
+                                }`}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={isAllowed}
+                                  onChange={() => handleToggleRoleScreen(selectedRoleKey, scr.key)}
+                                  className="mt-0.5 w-4 h-4 rounded text-blue-600 focus:ring-0 shrink-0"
+                                />
+                                <div className="min-w-0 flex-1 space-y-0.5">
+                                  <div className="flex items-center justify-between gap-1.5">
+                                    <span className={`text-xs font-semibold leading-snug ${isAllowed ? 'text-slate-900' : 'text-slate-600'}`}>
+                                      {scr.label}
+                                    </span>
+                                    {isDefaultLanding && isAllowed && (
+                                      <span className="px-1.5 py-0.2 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
+                                        Mặc định
+                                      </span>
+                                    )}
+                                  </div>
+                                  <p className="text-2xs text-slate-500 leading-relaxed">
+                                    {scr.description}
+                                  </p>
+                                  <span className="font-mono text-[10px] text-slate-400 block">
+                                    tab: {scr.key}
+                                  </span>
+                                </div>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* Khu vực 2: Danh sách nhân sự đang giữ Role này & Gán nhanh nhân sự vào Role */}
+            <div className="bg-white rounded-xl border border-slate-200 shadow-xs p-4 space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                <div>
+                  <h4 className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                    <Users className="w-4 h-4 text-blue-600" />
+                    <span>
+                      2. Nhân sự được gán vào Role &ldquo;{selectedRoleDef.name}&rdquo; ({internalStaff.filter((s) => s.role === selectedRoleKey).length} nhân sự)
+                    </span>
+                  </h4>
+                  <p className="text-2xs text-slate-500 mt-0.5">
+                    Gán nhân sự nội bộ vào lớp Role này để nhân sự kế thừa đúng danh sách {selectedRoleAllowedTabs.length} màn hình bên trên.
+                  </p>
+                </div>
+
+                {/* Gán nhanh nhân sự vào Role đang chọn */}
+                <div className="flex items-center gap-2">
+                  <select
+                    value={assignStaffToRoleId}
+                    onChange={(e) => setAssignStaffToRoleId(e.target.value)}
+                    className="h-8 px-2.5 rounded-lg border border-slate-200 bg-slate-50 text-xs text-slate-800 focus:outline-none focus:border-blue-500"
+                  >
+                    <option value="">+ Chọn nhân sự để gán vào Role này...</option>
+                    {internalStaff
+                      .filter((s) => s.role !== selectedRoleKey)
+                      .map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.name} ({s.email}) — đang là {ROLE_DISPLAY_NAME[s.role] || s.role}
+                        </option>
+                      ))}
+                  </select>
+                  <button
+                    type="button"
+                    disabled={!assignStaffToRoleId}
+                    onClick={() => handleAssignStaffToSelectedRole(assignStaffToRoleId, selectedRoleKey)}
+                    className="px-3 h-8 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 text-white text-xs font-semibold transition shrink-0"
+                  >
+                    Gán vào Role
+                  </button>
+                </div>
+              </div>
+
+              {internalStaff.filter((s) => s.role === selectedRoleKey).length === 0 ? (
+                <div className="p-6 text-center bg-slate-50/60 rounded-xl border border-dashed border-slate-200 text-xs text-slate-500">
+                  Hiện chưa có nhân sự nội bộ nào được gán vào Role <strong>{selectedRoleDef.name}</strong>. Chọn nhân sự ở ô phía trên để gán ngay.
+                </div>
+              ) : (
+                <div className="divide-y divide-slate-100">
+                  {internalStaff
+                    .filter((s) => s.role === selectedRoleKey)
+                    .map((staff) => (
+                      <div key={staff.id} className="py-2.5 flex flex-wrap items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-lg bg-blue-100 border border-blue-200 text-blue-700 font-semibold flex items-center justify-center text-xs shrink-0">
+                            {staff.avatar}
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-semibold text-xs text-slate-900">{staff.name}</span>
+                              <span className="text-2xs text-slate-500">({staff.email})</span>
+                            </div>
+                            <span className="text-2xs text-slate-500 block">
+                              {staff.department} · {staff.position}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleImpersonateInternal(staff)}
+                            className="px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-2xs font-semibold transition flex items-center gap-1"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                            <span>Đóng vai</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEditStaff(staff)}
+                            className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-2xs font-semibold transition flex items-center gap-1"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                            <span>Đổi Role / Nhãn</span>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ========================================================================= */}
       {/* SUB-TAB 0: CỔNG TRUY CẬP & PHÂN KHỐI 1.011 NHÂN VIÊN TOÀN CÔNG TY          */}
@@ -1307,6 +1879,11 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                             <option value="GROWTH_MEMBER">Chuyên Viên Growth (GROWTH_MEMBER)</option>
                             <option value="MEDIA_MEMBER">Chuyên Viên Media & Ads (MEDIA_MEMBER)</option>
                           </optgroup>
+                          <optgroup label="Khối Pháp Chế · Kế Toán · Ký Số">
+                            <option value="LEGAL">Pháp Chế (LEGAL)</option>
+                            <option value="FINANCE">Kế Toán (FINANCE)</option>
+                            <option value="SIGN_ADMIN">Điều Phối Ký Điện Tử (SIGN_ADMIN)</option>
+                          </optgroup>
                         </select>
                       </div>
 
@@ -1615,6 +2192,9 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                 <option value="MEDIA_MEMBER">Chuyên Viên Media & Ads</option>
                 <option value="CONTENT_MEMBER">Chuyên Viên Content</option>
                 <option value="BRAND_MEMBER">Brand PIC</option>
+                <option value="LEGAL">Pháp Chế (LEGAL)</option>
+                <option value="FINANCE">Kế Toán (FINANCE)</option>
+                <option value="SIGN_ADMIN">Điều Phối Ký Điện Tử (SIGN_ADMIN)</option>
               </select>
             </div>
 
@@ -1664,6 +2244,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                           staff.role === 'GROWTH_MANAGER' ? 'bg-amber-50 text-amber-800 border-amber-300' :
                           staff.role === 'MEDIA_MANAGER' ? 'bg-blue-50 text-blue-800 border-blue-300' :
                           staff.role === 'LEADER' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                          staff.role === 'LEGAL' || staff.role === 'FINANCE' || staff.role === 'SIGN_ADMIN' ? 'bg-amber-50 text-amber-800 border-amber-200' :
                           'bg-emerald-50 text-emerald-700 border-emerald-200'
                         }`}>
                           {ROLE_DISPLAY_NAME[staff.role] || staff.role}
@@ -1791,6 +2372,9 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                       <option value="MEDIA_MEMBER">Chuyên Viên Media & Ads (MEDIA_MEMBER)</option>
                       <option value="CONTENT_MEMBER">Chuyên Viên Sáng Tạo Kịch Bản (CONTENT_MEMBER)</option>
                       <option value="BRAND_MEMBER">Chuyên Viên Brand PIC (BRAND_MEMBER)</option>
+                      <option value="LEGAL">Pháp Chế (LEGAL)</option>
+                      <option value="FINANCE">Kế Toán (FINANCE)</option>
+                      <option value="SIGN_ADMIN">Điều Phối Ký Điện Tử (SIGN_ADMIN)</option>
                     </select>
                   </div>
 
@@ -2007,14 +2591,17 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
       <ConfirmDialog
         open={isConfirmingResetMatrix}
         onOpenChange={setIsConfirmingResetMatrix}
-        title="Xác nhận khôi phục ma trận phân quyền"
-        description="Bạn có chắc chắn muốn khôi phục toàn bộ Ma trận phân quyền RBAC về cấu hình mặc định chuẩn UpBase B2C? Mọi thay đổi quyền tùy chỉnh sẽ được đặt lại."
+        title="Xác nhận khôi phục phân quyền Role & Ma trận"
+        description="Bạn có chắc chắn muốn khôi phục toàn bộ Phân quyền màn hình của 16 Role và Ma trận chức năng về cấu hình mặc định chuẩn UpBase B2C?"
         confirmLabel="Khôi phục mặc định"
         cancelLabel="Hủy"
         variant="danger"
         onConfirm={() => {
+          resetAllRoleScreenPermissions();
+          setRoleAllowedTabsMap({ ...ROLE_ALLOWED_TABS });
+          setRoleDefaultLandingMap({ ...ROLE_DEFAULT_LANDING });
           setMatrixItems(INITIAL_PERMISSION_MATRIX);
-          if (onNotify) onNotify('Đã khôi phục Ma trận phân quyền chuẩn UpBase B2C thành công!', 'info');
+          if (onNotify) onNotify('Đã khôi phục Phân quyền Role & Ma trận chuẩn UpBase B2C thành công!', 'info');
           setIsConfirmingResetMatrix(false);
         }}
       />

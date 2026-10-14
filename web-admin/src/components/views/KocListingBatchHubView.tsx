@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useDeferredValue } from 'react';
 import {
   KocListingItem,
   ListingBatchCycle,
@@ -13,6 +13,7 @@ import {
 import { ConfirmDialog, PageActions, Button, Presence } from '../ui';
 import { formatVnd } from '../../lib/format';
 import { StoreShortlistFilterModal } from '../shortlist/StoreShortlistFilterModal';
+import { OperationalReportDrawer } from '../OperationalReportDrawer';
 import {
   Filter,
   Search,
@@ -28,7 +29,8 @@ import {
   Calendar,
   Layers,
   ShieldCheck,
-  RotateCcw
+  RotateCcw,
+  FileText
 } from 'lucide-react';
 
 interface KocListingBatchHubViewProps {
@@ -55,6 +57,7 @@ export function KocListingBatchHubView({
   const [selectedBrandStatus, setSelectedBrandStatus] = useState<string>('ALL');
   const [selectedKocStatus, setSelectedKocStatus] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const deferredSearchQuery = useDeferredValue(searchQuery);
 
   // Bulk Selection
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -67,6 +70,7 @@ export function KocListingBatchHubView({
   const [selectedListingForAir, setSelectedListingForAir] = useState<KocListingItem | null>(null);
   const [approvingItem, setApprovingItem] = useState<KocListingItem | null>(null);
   const [rejectingItem, setRejectingItem] = useState<KocListingItem | null>(null);
+  const [isKocReportOpen, setIsKocReportOpen] = useState<boolean>(false);
 
   // New KOC form state
   const [newKocForm, setNewKocForm] = useState<{
@@ -164,8 +168,8 @@ export function KocListingBatchHubView({
       if (selectedStore !== 'ALL' && item.storeName !== selectedStore) return false;
       if (selectedBrandStatus !== 'ALL' && item.brandApprovalStatus !== selectedBrandStatus) return false;
       if (selectedKocStatus !== 'ALL' && item.kocNegotiationStatus !== selectedKocStatus) return false;
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase();
+      if (deferredSearchQuery.trim()) {
+        const q = deferredSearchQuery.toLowerCase();
         const matchName = item.kocName.toLowerCase().includes(q);
         const matchHandle = item.kocHandle.toLowerCase().includes(q);
         const matchStore = item.storeName.toLowerCase().includes(q);
@@ -174,7 +178,7 @@ export function KocListingBatchHubView({
       }
       return true;
     });
-  }, [listings, filterOnlyDuplicates, duplicateHandleMap, selectedMonth, selectedCycle, selectedStore, selectedBrandStatus, selectedKocStatus, searchQuery]);
+  }, [listings, filterOnlyDuplicates, duplicateHandleMap, selectedMonth, selectedCycle, selectedStore, selectedBrandStatus, selectedKocStatus, deferredSearchQuery]);
 
   // KPI Metrics
   const metrics = useMemo(() => {
@@ -416,6 +420,9 @@ export function KocListingBatchHubView({
   return (
     <div className="space-y-4">
       <PageActions>
+        <Button variant="secondary" icon={FileText} onClick={() => setIsKocReportOpen(true)}>
+          Báo cáo đề xuất cơ cấu KOC
+        </Button>
         <Button variant="secondary" icon={Plus} onClick={() => setShowAddModal(true)}>
           Thêm KOC thủ công
         </Button>
@@ -1510,6 +1517,23 @@ export function KocListingBatchHubView({
         isOpen={showShortlistModal}
         onClose={() => setShowShortlistModal(false)}
         onAddToListingBatch={handleAddShortlistToListings}
+      />
+
+      <OperationalReportDrawer
+        isOpen={isKocReportOpen}
+        onClose={() => setIsKocReportOpen(false)}
+        purposeId="KOC_MATCHING"
+        moduleTitle={`Báo Cáo Đánh Giá Cơ Cấu KOC Đề Xuất — Kỳ ${selectedMonth}`}
+        moduleSubtitle={`Kỳ ${selectedMonth} | Đợt: ${selectedCycle === 'ALL' ? 'Tất cả đợt (10-20-30)' : selectedCycle} | Gian hàng: ${selectedStore === 'ALL' ? 'Toàn bộ gian hàng' : selectedStore} | Tổng hồ sơ: ${metrics.total}`}
+        contextDataText={[
+          `[DỮ LIỆU PHÂN HỆ: Đề Xuất KOC Theo Đợt (10 - 20 - 30) & Theo Dõi Lên Sóng]`,
+          `- Kỳ kế hoạch: ${selectedMonth} | Đợt: ${selectedCycle} | Tổng đề xuất: ${metrics.total} KOC | Bản nháp: ${metrics.draft} | Đã gửi nhãn: ${metrics.submitted} | Nhãn duyệt: ${metrics.brandApproved} | KOC đồng ý: ${metrics.termsAgreed} | Chốt cuối (Final): ${metrics.finalApproved} | Hủy/Rớt: ${metrics.dropped}`,
+          `- Tổng ngân sách đề xuất trong danh sách lọc: ${formatVnd(metrics.totalBudget)}`,
+          ...filteredListings.slice(0, 8).map(
+            item => `- KOC ${item.kocName} (${item.kocHandle}) | Gian hàng: ${item.storeName} | Phân khúc: ${item.tier} (${item.followersCount.toLocaleString('vi-VN')} flw) | Trụ cột: ${item.pillarName} | Chi phí: ${formatVnd(item.finalFee || item.proposedFee)} | Nhãn: ${item.brandApprovalStatus} | Đàm phán: ${item.kocNegotiationStatus}`
+          ),
+        ].join('\n')}
+        customSystemPrompt="Đánh giá cơ cấu danh sách KOC đề xuất theo chu kỳ 10-20-30: (1) Phân tích tỷ lệ phân bổ giữa Macro/Micro/Nano KOC so với ngân sách và mục tiêu chuyển đổi giỏ hàng, (2) Chỉ ra các KOC có đơn giá cao nhưng đang nghẽn ở bước đàm phán hoặc chờ nhãn duyệt, (3) Đề xuất phương án bổ sung KOC dự phòng cho các suất bị từ chối/rớt để đảm bảo đủ 100% số lượng cam kết trong tháng."
       />
     </div>
   );

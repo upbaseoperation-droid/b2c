@@ -60,6 +60,7 @@ import {
   WorkflowRulesDialog,
   type ItemField,
 } from './BrandEditors';
+import { StoreEditDialog } from '../stores/StoreEditDialog';
 import {
   DOC_CATEGORY_LABEL,
   KOC_APPROVAL_MODE_LABEL,
@@ -151,7 +152,10 @@ export function BrandProfileDetail({
   onSave,
   onOpenBooking,
   onNavigateToStoreProfile,
+  onUpdateStore,
   onNotify,
+  embedded = false,
+  hideInternalRatecard = false,
 }: {
   row: BrandRow;
   can: BrandPermissions;
@@ -163,7 +167,10 @@ export function BrandProfileDetail({
   onSave: Save;
   onOpenBooking?: () => void;
   onNavigateToStoreProfile?: (storeName: string) => void;
+  onUpdateStore?: (store: StorePortfolioItem) => void;
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
+  embedded?: boolean;
+  hideInternalRatecard?: boolean;
 }) {
   const p = row.profile;
   const m = row.master;
@@ -172,6 +179,7 @@ export function BrandProfileDetail({
   const [dialog, setDialog] = useState<null | 'POSITIONING' | 'ENTITY' | 'RATECARD' | 'CONTENT_RULES' | 'WORKFLOW_RULES'>(null);
   const [item, setItem] = useState<null | { list: ListKey; index: number }>(null);
   const [removing, setRemoving] = useState<null | { list: ListKey; index: number }>(null);
+  const [editingStore, setEditingStore] = useState<StorePortfolioItem | null>(null);
   const [showTaxCode, setShowTaxCode] = useState(false);
 
   // Kho tệp R2 state
@@ -439,13 +447,21 @@ export function BrandProfileDetail({
       key: 'action',
       header: '',
       align: 'right',
-      width: 100,
-      render: s =>
-        onNavigateToStoreProfile ? (
-          <Button size="sm" variant="ghost" onClick={() => onNavigateToStoreProfile(s.storeName)}>
-            Mở gian hàng
-          </Button>
-        ) : null,
+      width: 170,
+      render: s => (
+        <div className="inline-flex items-center justify-end gap-1.5" onClick={e => e.stopPropagation()}>
+          {onUpdateStore && (can.WORKFLOW_RULES || can.POSITIONING) && (
+            <Button size="sm" variant="secondary" icon={Pencil} onClick={() => setEditingStore(s)}>
+              Cập nhật
+            </Button>
+          )}
+          {onNavigateToStoreProfile ? (
+            <Button size="sm" variant="ghost" onClick={() => onNavigateToStoreProfile(s.storeName)}>
+              Mở gian hàng
+            </Button>
+          ) : null}
+        </div>
+      ),
     },
   ];
 
@@ -508,7 +524,7 @@ export function BrandProfileDetail({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="sm" icon={ArrowLeft} onClick={onBack} className="-ml-2.5">
-            Danh bạ thương hiệu
+            {embedded ? 'Quay lại Tổng quan Cổng' : 'Danh bạ thương hiệu'}
           </Button>
           {(nav?.onPrev || nav?.onNext) && (
             <div className="flex items-center gap-1 pl-2 border-l border-line text-2xs text-ink-3">
@@ -1229,22 +1245,24 @@ export function BrandProfileDetail({
             </Aside>
 
             {/* Trần thù lao */}
-            <Aside title={SECTION_LABEL.RATECARD} action={editBtn('RATECARD', () => setDialog('RATECARD'))} note="Mức tối đa cho 1 video theo khung lương KOC.">
-              {p.ratecard.some(r => r.maxBudget) ? (
-                <dl className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[13px]">
-                  {p.ratecard.map(r => (
-                    <React.Fragment key={r.grade}>
-                      <dt className="text-ink-2 font-code">{r.grade}</dt>
-                      <dd className="text-right tabular-nums font-medium text-ink">
-                        {r.maxBudget ? formatVndShort(r.maxBudget) : <span className="text-ink-3">—</span>}
-                      </dd>
-                    </React.Fragment>
-                  ))}
-                </dl>
-              ) : (
-                <p className="text-[13px] text-ink-3">Chưa đặt trần riêng cho nhãn.</p>
-              )}
-            </Aside>
+            {!hideInternalRatecard && (
+              <Aside title={SECTION_LABEL.RATECARD} action={editBtn('RATECARD', () => setDialog('RATECARD'))} note="Mức tối đa cho 1 video theo khung lương KOC.">
+                {p.ratecard.some(r => r.maxBudget) ? (
+                  <dl className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[13px]">
+                    {p.ratecard.map(r => (
+                      <React.Fragment key={r.grade}>
+                        <dt className="text-ink-2 font-code">{r.grade}</dt>
+                        <dd className="text-right tabular-nums font-medium text-ink">
+                          {r.maxBudget ? formatVndShort(r.maxBudget) : <span className="text-ink-3">—</span>}
+                        </dd>
+                      </React.Fragment>
+                    ))}
+                  </dl>
+                ) : (
+                  <p className="text-[13px] text-ink-3">Chưa đặt trần riêng cho nhãn.</p>
+                )}
+              </Aside>
+            )}
 
             <History profile={p} />
           </aside>
@@ -1717,37 +1735,39 @@ export function BrandProfileDetail({
             )}
           </Panel>
 
-          <Panel
-            title={SECTION_LABEL.RATECARD}
-            description="Định mức chi phí tối đa cho 1 video theo phân hạng KOC (KL1 → KL7)"
-            actions={editBtn('RATECARD', () => setDialog('RATECARD'))}
-          >
-            {p.ratecard.some(r => r.maxBudget) ? (
-              <div className="space-y-3">
-                {(() => {
-                  const maxVal = Math.max(...p.ratecard.map(r => r.maxBudget || 0), 1);
-                  return p.ratecard.map(r => {
-                    const pct = r.maxBudget ? Math.max(6, Math.round((r.maxBudget / maxVal) * 100)) : 0;
-                    return (
-                      <div key={r.grade} className="space-y-1">
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="font-code font-semibold text-ink">{r.grade}</span>
-                          <span className="tabular-nums font-medium text-ink">
-                            {r.maxBudget ? formatVnd(r.maxBudget) : <span className="text-ink-3">Không đặt trần</span>}
-                          </span>
+          {!hideInternalRatecard && (
+            <Panel
+              title={SECTION_LABEL.RATECARD}
+              description="Định mức chi phí tối đa cho 1 video theo phân hạng KOC (KL1 → KL7)"
+              actions={editBtn('RATECARD', () => setDialog('RATECARD'))}
+            >
+              {p.ratecard.some(r => r.maxBudget) ? (
+                <div className="space-y-3">
+                  {(() => {
+                    const maxVal = Math.max(...p.ratecard.map(r => r.maxBudget || 0), 1);
+                    return p.ratecard.map(r => {
+                      const pct = r.maxBudget ? Math.max(6, Math.round((r.maxBudget / maxVal) * 100)) : 0;
+                      return (
+                        <div key={r.grade} className="space-y-1">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="font-code font-semibold text-ink">{r.grade}</span>
+                            <span className="tabular-nums font-medium text-ink">
+                              {r.maxBudget ? formatVnd(r.maxBudget) : <span className="text-ink-3">Không đặt trần</span>}
+                            </span>
+                          </div>
+                          <div className="h-1.5 w-full rounded-full bg-sunken overflow-hidden">
+                            <div className="h-full rounded-full bg-accent" style={{ width: `${pct}%` }} />
+                          </div>
                         </div>
-                        <div className="h-1.5 w-full rounded-full bg-sunken overflow-hidden">
-                          <div className="h-full rounded-full bg-accent" style={{ width: `${pct}%` }} />
-                        </div>
-                      </div>
-                    );
-                  });
-                })()}
-              </div>
-            ) : (
-              <EmptyState title="Chưa đặt trần thù lao" description="Trưởng phòng B2C có thể cấu hình mức trần thù lao KOC cho nhãn hàng này." />
-            )}
-          </Panel>
+                      );
+                    });
+                  })()}
+                </div>
+              ) : (
+                <EmptyState title="Chưa đặt trần thù lao" description="Trưởng phòng B2C có thể cấu hình mức trần thù lao KOC cho nhãn hàng này." />
+              )}
+            </Panel>
+          )}
         </div>
       )}
 
@@ -1984,6 +2004,19 @@ export function BrandProfileDetail({
           />
         );
       })()}
+
+              {editingStore && onUpdateStore && (
+        <StoreEditDialog
+          open={!!editingStore}
+          store={editingStore}
+          onClose={() => setEditingStore(null)}
+          onSave={updated => {
+            onUpdateStore(updated);
+            setEditingStore(null);
+            onNotify?.(`Đã cập nhật thông số gian hàng "${updated.storeName}" — đồng bộ toàn hệ thống.`, 'success');
+          }}
+        />
+      )}
 
       <ConfirmDialog
         open={!!removing}

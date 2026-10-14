@@ -34,8 +34,10 @@ import {
   ShoppingBag,
   UserCheck,
   ArrowUpRight,
-  ArrowDownRight
+  ArrowDownRight,
+  FileText
 } from 'lucide-react';
+import { OperationalReportDrawer } from '../OperationalReportDrawer';
 import {
   BookingDealItem,
   UserProfile,
@@ -183,6 +185,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
   const [inspectVideo, setInspectVideo] = useState<B2cBookedVideoRecord | null>(null);
   const [isSyncingSeller, setIsSyncingSeller] = useState<boolean>(false);
   const [isExportingExcel, setIsExportingExcel] = useState<boolean>(false);
+  const [isReportDrawerOpen, setIsReportDrawerOpen] = useState<boolean>(false);
 
   // Hàm phân nhóm gian hàng theo tương quan % Spend Chi Phí vs Số lượng Video Air
   const classifyStoreSpendAndAir = (s: StorePortfolioItem): 'OVER_SPEND' | 'HIGH_SPEND_LOW_AIR' | 'OPTIMAL' | 'SLOW_BOTH' => {
@@ -1062,6 +1065,44 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
     );
   };
 
+  const dashboardReportMeta = useMemo(() => {
+    const isStaffTab = activeTab === 'TEAM_SLA' || activeTab === 'STAFF_EFFICIENCY';
+    const purposeId = isStaffTab ? ('STAFF_REVIEW' as const) : ('PLAN_ADS_ANALYSIS' as const);
+    const tabTitleMap: Record<DashboardMainTab, string> = {
+      OVERVIEW_FINANCE: 'Dashboard B2C — Thương hiệu & Ngân sách (Gross/Net)',
+      STORE_SELLER: 'Dashboard B2C — 69 Gian hàng & TikTok Seller',
+      VIDEO_CREATIVE: 'Dashboard B2C — Video Booking (Paid/FOC) & Ads Creative',
+      TEAM_SLA: 'Dashboard B2C — Tiến độ W1-W4 & Kỷ luật SLA Vận hành',
+      STAFF_EFFICIENCY: `Dashboard B2C — Hiệu suất & Hiệu quả Nhân sự (${selectedFocusStaffName})`,
+      EXPORT_CENTER: 'Dashboard B2C — Đối soát Kế toán (File 4.1 vs File 3.2)',
+    };
+
+    const topRiskList = riskStores
+      .slice(0, 5)
+      .map(
+        r =>
+          `${r.storeName} (${r.financialRiskStatus}: Net ${formatVndShort(r.budgetNet || r.monthlyBudget || 0)} | Thực chi ${formatVndShort(r.actualSpentNet || 0)} | PIC: ${r.primaryPic || r.assignedStaff || 'Chưa gán'})`
+      )
+      .join('; ');
+
+    const contextLines = [
+      `[DỮ LIỆU PHÂN HỆ: ${tabTitleMap[activeTab]}]`,
+      `- Phạm vi đang lọc: ${filteredStores.length} / 69 gian hàng B2C (B2C phụ trách = 1), thuộc ${allBrands.length} Thương hiệu.`,
+      `- Cơ cấu quản trị: 8 gian hàng có Trưởng nhóm (Nguyễn Thị Ngọc Tâm), 61 gian hàng trình trực tiếp Giám đốc Marketing B2C (Đặng Thị Yến Nhi).`,
+      `- Hạn mức Order Gross: ${formatVndShort(kpiSummary.totalBudgetGross)} | Hạn mức Order Net: ${formatVndShort(kpiSummary.totalBudgetNet)}.`,
+      `- Thực tế duyệt chi lũy kế (File 3.2): ${formatVndShort(kpiSummary.totalActualSpentNet)} (Đạt ${kpiSummary.pacingNetPct}% trần Net).`,
+      `- Sản lượng Video: Đã lên sóng ${kpiSummary.totalActualAiredVideos} video / Chỉ tiêu ${kpiSummary.totalTargetPaidVideos} Video Paid KOC + ${kpiSummary.totalTargetFocVideos} suất gửi mẫu miễn phí 0đ (FOC) + ${kpiSummary.totalTargetSelfVideos} video kênh Brand.`,
+      `- Cảnh báo tài chính: ${kpiSummary.unbudgetedCount} gian hàng chi khi hạn mức 0đ (Unbudgeted Spend), ${kpiSummary.overbudgetCount} gian hàng vượt trần Net (Overbudget), ${kpiSummary.slowBurnCount} gian hàng giải ngân chậm (<25%).`,
+      topRiskList ? `- Chi tiết gian hàng cảnh báo trọng điểm: ${topRiskList}.` : '',
+    ].filter(Boolean);
+
+    return {
+      purposeId,
+      moduleTitle: tabTitleMap[activeTab],
+      contextDataText: contextLines.join('\n'),
+    };
+  }, [activeTab, filteredStores.length, allBrands.length, kpiSummary, riskStores, selectedFocusStaffName]);
+
   return (
     <div className="space-y-5 pb-12 text-slate-900">
       {/* THANH CÔNG CỤ NGỮ CẢNH GỌN NHẸ THEO TỪNG TAB DASHBOARD */}
@@ -1077,6 +1118,14 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
         </div>
 
         <div className="flex flex-wrap items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={() => setIsReportDrawerOpen(true)}
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white shadow-xs transition cursor-pointer"
+          >
+            <FileText className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Lập báo cáo nhận xét</span>
+          </button>
           <button
             type="button"
             onClick={handleSyncTikTokSeller}
@@ -4769,6 +4818,16 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
           </div>
         </Modal>
       )}
+
+      <OperationalReportDrawer
+        isOpen={isReportDrawerOpen}
+        onClose={() => setIsReportDrawerOpen(false)}
+        purposeId={dashboardReportMeta.purposeId}
+        moduleTitle={dashboardReportMeta.moduleTitle}
+        moduleSubtitle="Tổng hợp trực tiếp từ dữ liệu 69 gian hàng B2C, File 4.1, File 3.2 và TikTok Seller đang lọc"
+        contextDataText={dashboardReportMeta.contextDataText}
+        onNotify={onNotify}
+      />
     </div>
   );
 };

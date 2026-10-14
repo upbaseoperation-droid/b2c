@@ -239,6 +239,101 @@ async function dispatchProviderCall(params: {
 }
 
 function buildInternalPurposeOutput(purposeId: OperationalApiPurposeId, inputText: string): string {
+  const cleanInput = (inputText || '').trim();
+  const hasCustomModuleContext = cleanInput.includes('[DỮ LIỆU PHÂN HỆ') || cleanInput.includes('PHÂN HỆ:');
+
+  if (hasCustomModuleContext) {
+    const lines = cleanInput.split('\n').map(l => l.trim()).filter(Boolean);
+    const headerLine = lines[0] || 'BÁO CÁO PHÂN TÍCH VẬN HÀNH B2C';
+    const bulletLines = lines.slice(1, 14).map(l => (l.startsWith('-') || l.startsWith('•') ? `  ${l}` : `  • ${l}`));
+
+    switch (purposeId) {
+      case 'PLAN_ADS_ANALYSIS':
+        return [
+          `BÁO CÁO ĐỐI SOÁT NGÂN SÁCH NET, TIẾN ĐỘ & ROAS — ${headerLine.replace(/^\[|\]$/g, '')}`,
+          '────────────────────────────────────────────────────────────────────',
+          '1. TÓM TẮT SỐ LIỆU ĐANG LỌC TRÊN MÀN HÌNH:',
+          ...bulletLines,
+          '',
+          '2. CẢNH BÁO TÀI CHÍNH & KIỂM SOÁT HẠN MỨC (QUY TẮC KẾ TOÁN B2C):',
+          '  • Tách bạch Ngân sách Gross và Ngân sách Net: Kế toán kiểm soát duyệt chi theo trần Order Net của từng gian hàng (phạm vi 69 gian hàng B2C phụ trách = 1).',
+          '  • Nhóm Báo động đỏ (Unbudgeted Spend - Hạn mức Net = 0đ nhưng phát sinh thực chi): Yêu cầu Chuyên viên (PIC) và bộ phận Growth trình bổ sung phê duyệt ngân sách ngay trước khi Kế toán giải ngân.',
+          '  • Nhóm Vượt trần (Overbudget - Thực chi > Hạn mức Order Net): Tạm dừng phát sinh đơn Paid KOC mới trên gian hàng vượt trần; chuyển sang nghiệm thu các suất gửi mẫu miễn phí 0đ (FOC - Trần Thị Hảo phụ trách) và khai thác video kênh Brand (Self-channel).',
+          '',
+          '3. ĐỀ XUẤT ĐIỀU PHỐI THEO CẤP PHÊ DUYỆT:',
+          '  • Với 8 gian hàng có Trưởng nhóm (Nguyễn Thị Ngọc Tâm phụ trách: ClubClio TikTok/Shopee, Cindy Bloom, Mine, EUPC, L\'Occitane, Bye Bye Blemish, Rejuran): Trưởng nhóm rà soát lại cơ cấu khung lương KL2–KL4 và điều chuyển hạn mức nội bộ.',
+          '  • Với 61 gian hàng không có Trưởng nhóm (chuyên viên phụ trách trực tiếp): Chuyên viên lập tờ trình điều chỉnh kế hoạch W3–W4 gửi trực tiếp Giám đốc Marketing B2C (Đặng Thị Yến Nhi) phê duyệt.',
+        ].join('\n');
+
+      case 'STAFF_REVIEW':
+        return [
+          `BÁO CÁO ĐÁNH GIÁ TIẾN ĐỘ, SLA & HIỆU SUẤT NHÂN SỰ 4P — ${headerLine.replace(/^\[|\]$/g, '')}`,
+          '────────────────────────────────────────────────────────────────────',
+          '1. DỮ LIỆU ĐẦU VÀO GHI NHẬN TỪ PHÂN HỆ:',
+          ...bulletLines,
+          '',
+          '2. NHẬN XÉT TIẾN ĐỘ LẤP ĐẦY W1–W4 & KỶ LUẬT SLA:',
+          '  • Đối chiếu tỷ lệ video đã lên sóng (Aired) so với chỉ tiêu Paid KOC + FOC: Cần ưu tiên xử lý dứt điểm các đơn đang kẹt ở bước "Đã nhận mẫu > 5 ngày chưa nộp video nháp" và "Chờ cấp mã Spark Ads".',
+          '  • Điểm khối lượng việc 4P (P3) đã tính trọng số độ khó gian hàng: Các chuyên viên phụ trách nhiều gian hàng hoặc tỷ lệ giải ngân chậm (< 40% hạn mức Net) cần chốt danh sách KOC dự phòng ngay trong đợt Listing tiếp theo.',
+          '',
+          '3. GỢI Ý TIN NHẮN NHẮC VIỆC GỬI LARK (CHO TRƯỞNG PHÒNG ĐẶNG THỊ YẾN NHI):',
+          '  "Chào team B2C, đề nghị các PIC rà soát ngay các gian hàng có tỷ lệ giải ngân dưới 50% hoặc có đơn trễ mốc SLA nộp video nháp. Các gian hàng thuộc nhóm Ngọc Tâm gửi báo cáo qua Leader trước 16h00; các gian hàng còn lại báo cáo trực tiếp cho Yến Nhi để duyệt phương án đẩy tiến độ tuần tới."',
+        ].join('\n');
+
+      case 'SCRIPT_REVIEW':
+        return [
+          `BÁO CÁO RÀ SOÁT TỪ CẤM & CHẤM ĐIỂM KỊCH BẢN VIDEO — ${headerLine.replace(/^\[|\]$/g, '')}`,
+          '────────────────────────────────────────────────────────────────────',
+          '1. THÔNG TIN KỊCH BẢN & GÓC NỘI DUNG ĐANG KIỂM DUYỆT:',
+          ...bulletLines,
+          '',
+          '2. KIỂM TRA TỪ CẤM & TUÂN THỦ BRAND GUIDELINE:',
+          '  • Tuyệt đối loại bỏ các cụm từ cam kết quá mức dễ bị TikTok Shop quét vi phạm: "trị dứt điểm", "khỏi hoàn toàn 100%", "thuốc đặc trị", "cam kết vĩnh viễn", "số 1 Việt Nam".',
+          '  • Kiểm tra câu khuyến cáo bắt buộc (đối với Dược mỹ phẩm / Thực phẩm bảo vệ sức khỏe / Mẹ & Bé) ở 3 giây cuối hoặc trên phụ đề màn hình.',
+          '',
+          '3. ĐÁNH GIÁ BỐ CỤC 4 PHẦN CHUẨN CHUYỂN ĐỔI B2C:',
+          '  • Mở đầu (3s đầu): Phải nêu trực diện vấn đề hoặc hình ảnh trước/sau rõ ràng để giữ chân người xem.',
+          '  • Nỗi đau & Giải pháp: Nêu đúng USP sản phẩm theo Hồ sơ thương hiệu, cảnh quay cận chất (texture) rõ nét.',
+          '  • Kêu gọi mua hàng (CTA): Nhắc bấm giỏ hàng góc trái kèm ưu đãi của gian hàng.',
+        ].join('\n');
+
+      case 'CONTRACT_DRAFTING':
+      case 'LEGAL_OCR':
+        return [
+          `BÁO CÁO KIỂM TRA PHÁP LÝ, THUẾ & HỢP ĐỒNG B2C — ${headerLine.replace(/^\[|\]$/g, '')}`,
+          '────────────────────────────────────────────────────────────────────',
+          '1. TỔNG HỢP DỮ LIỆU HỢP ĐỒNG & THANH TOÁN ĐANG RÀ SOÁT:',
+          ...bulletLines,
+          '',
+          '2. ĐỐI SOÁT CHÍNH SÁCH THUẾ & ĐƠN GIÁ GROSS / NET:',
+          '  • Cá nhân cư trú (Mẫu 1.1.1 / 1.1.2): Khấu trừ 10% thuế TNCN tại nguồn đối với khoản chi từ 2.000.000đ/lần trở lên (Công thức quy đổi: Giá Gross = Giá Net thực nhận / 0.9).',
+          '  • Hộ kinh doanh (Mẫu 1.2.1): Áp dụng mức thuế 7% (5% GTGT + 2% TNCN) kèm bản sao ĐKKD Hộ kinh doanh hợp lệ.',
+          '  • Công ty / Agency (Mẫu 1.3.1): Xuất hóa đơn VAT 8% hoặc 10% theo quy định hiện hành.',
+          '',
+          '3. KIỂM TRA ĐIỀU KHOẢN BẮT BUỘC TRƯỚC KHI TRÌNH DUYỆT CHI:',
+          '  • Đảm bảo đủ thông tin CCCD 12 số, ngày cấp, nơi cấp, MST cá nhân và tài khoản ngân hàng chính chủ.',
+          '  • Kiểm tra điều khoản bàn giao mã Spark Ads tối thiểu 30–60 ngày và hạn nộp video nháp trong 5 ngày từ khi nhận mẫu.',
+        ].join('\n');
+
+      case 'KOC_MATCHING':
+      default:
+        return [
+          `BÁO CÁO ĐỀ XUẤT CƠ CẤU KOC & ĐỢT LISTING 10-20-30 — ${headerLine.replace(/^\[|\]$/g, '')}`,
+          '────────────────────────────────────────────────────────────────────',
+          '1. DỮ LIỆU ĐỢT ĐỀ XUẤT KOC & HẠN MỨC GIAN HÀNG:',
+          ...bulletLines,
+          '',
+          '2. KHUYẾN NGHỊ CƠ CẤU KHUNG LƯƠNG (KL1–KL7 & FOC) TỐI ƯU CIR:',
+          '  • Nhóm KOC chủ lực tạo GMV (KL3 1.5M–3M & KL4 3M–5M): Chiếm 45%–55% ngân sách Order Net, ưu tiên các kênh có lịch sử ROAS >= 3.2x.',
+          '  • Nhóm KOC phủ độ nhận diện & giữ nhịp hiển thị (KL1 <500k & KL2 500k–1.5M): Chiếm 30%–35% ngân sách Order Net.',
+          '  • Nhóm gửi mẫu miễn phí 0đ (FOC / TAP UpAffiliate): Kết hợp tối thiểu 30% tổng số lượng video để giảm chi phí bình quân trên mỗi video lên sóng.',
+          '',
+          '3. HÀNH ĐỘNG TIẾP THEO:',
+          '  • Chốt danh sách KOC gửi Nhãn hàng duyệt đúng mốc ngày 10, 20, 30 hàng tháng; gửi mẫu ngay sau khi Brand phản hồi đồng ý.',
+        ].join('\n');
+    }
+  }
+
   switch (purposeId) {
     case 'LEGAL_OCR':
       return [

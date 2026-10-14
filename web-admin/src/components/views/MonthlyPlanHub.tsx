@@ -78,19 +78,47 @@ function generateDiscussionId(): string {
   return `DISC-${Date.now()}`;
 }
 
-function findPlanForStore(plans: InputPlanBreakdownState[], store: StorePortfolioItem, month: string): InputPlanBreakdownState | null {
-  return plans.find(p => {
-    const matchMonth = month === 'ALL' || p.month === month;
-    if (!matchMonth) return false;
-    if (p.storeId && p.storeId === store.id) return true;
-    if (p.storeName && p.storeName.trim().toLowerCase() === store.storeName.trim().toLowerCase()) return true;
+function buildPlanLookupMap(plans: InputPlanBreakdownState[], month: string) {
+  const byStoreId = new Map<string, InputPlanBreakdownState>();
+  const byStoreName = new Map<string, InputPlanBreakdownState>();
+  const byBrandName = new Map<string, InputPlanBreakdownState>();
+  const brandPrefixList: Array<{ prefix: string; brandName: string; plan: InputPlanBreakdownState }> = [];
 
-    const b1 = (p.brandName || '').toLowerCase();
-    const b2 = (store.brandName || '').toLowerCase();
-    const sName = (store.storeName || '').toLowerCase();
-    return (b1.length >= 2 && b2.length >= 2 && (b1.includes(b2) || b2.includes(b1))) ||
-           (b1.length >= 2 && sName.includes(b1.split('_')[0].trim()));
-  }) || null;
+  for (const p of plans) {
+    if (month !== 'ALL' && p.month !== month) continue;
+    if (p.storeId) byStoreId.set(p.storeId, p);
+    if (p.storeName) byStoreName.set(p.storeName.trim().toLowerCase(), p);
+    if (p.brandName) {
+      const b = p.brandName.trim().toLowerCase();
+      byBrandName.set(b, p);
+      const prefix = b.split('_')[0].trim();
+      if (prefix.length >= 2) {
+        brandPrefixList.push({ prefix, brandName: b, plan: p });
+      }
+    }
+  }
+
+  return (store: StorePortfolioItem): InputPlanBreakdownState | null => {
+    if (store.id && byStoreId.has(store.id)) return byStoreId.get(store.id)!;
+    const sName = (store.storeName || '').trim().toLowerCase();
+    if (sName && byStoreName.has(sName)) return byStoreName.get(sName)!;
+    const bName = (store.brandName || '').trim().toLowerCase();
+    if (bName && byBrandName.has(bName)) return byBrandName.get(bName)!;
+
+    for (const item of brandPrefixList) {
+      if (bName.length >= 2 && item.brandName.length >= 2 && (item.brandName.includes(bName) || bName.includes(item.brandName))) {
+        return item.plan;
+      }
+      if (item.prefix.length >= 2 && sName.includes(item.prefix)) {
+        return item.plan;
+      }
+    }
+    return null;
+  };
+}
+
+function findPlanForStore(plans: InputPlanBreakdownState[], store: StorePortfolioItem, month: string): InputPlanBreakdownState | null {
+  return buildPlanLookupMap(plans, month)(store);
 }
 
 interface B2cWorkloadBreakdown {
@@ -256,9 +284,10 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
 
   // Ma trận từng gian hàng và kế hoạch trong tháng
   const storeGovernanceList = useMemo<StoreGovernanceItem[]>(() => {
+    const lookupPlan = buildPlanLookupMap(plans, selectedMonth);
     return activeStores.map((store: StorePortfolioItem) => {
       const isB2c = store.isB2cManaged !== false && store.requiresB2cPlan !== false;
-      const plan = findPlanForStore(plans, store, selectedMonth);
+      const plan = lookupPlan(store);
       return {
         store,
         isB2c,
