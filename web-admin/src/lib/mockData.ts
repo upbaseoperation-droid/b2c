@@ -370,6 +370,48 @@ export const USERS: UserProfile[] = [
     linkedEntityName: 'La Roche-Posay, Kutieskin',
     assignedBrands: ['La Roche-Posay', 'Kutieskin']
   },
+  {
+    id: 'contract-demo-legal',
+    name: 'Pháp chế (kiểm thử)',
+    email: 'phapche@upbase.vn',
+    role: 'BOOKING_MEMBER',
+    roleTitle: 'Pháp Chế — Duyệt Hợp Đồng & Biểu Mẫu (Legal)',
+    avatar: 'PC',
+    departmentScope: 'MARKETING_B2C',
+    departmentName: 'Phòng Pháp Chế',
+    teamName: 'Pháp chế',
+    canLogin: true,
+    loginProvider: 'LARK',
+    assignedBrands: ['Tất cả nhãn hàng']
+  },
+  {
+    id: 'contract-demo-finance',
+    name: 'Kế toán (kiểm thử)',
+    email: 'ketoan@upbase.vn',
+    role: 'BOOKING_MEMBER',
+    roleTitle: 'Kế Toán — Duyệt Hợp Đồng & Hạn Mức Thanh Toán (Finance)',
+    avatar: 'KT',
+    departmentScope: 'MARKETING_B2C',
+    departmentName: 'Phòng Tài Chính Kế Toán',
+    teamName: 'Kế toán',
+    canLogin: true,
+    loginProvider: 'LARK',
+    assignedBrands: ['Tất cả nhãn hàng']
+  },
+  {
+    id: 'contract-demo-sign',
+    name: 'Điều phối ký (kiểm thử)',
+    email: 'dieuphoiky@upbase.vn',
+    role: 'BOOKING_MEMBER',
+    roleTitle: 'Điều Phối Ký Điện Tử — Trình Ký Hợp Đồng (weSign)',
+    avatar: 'ĐK',
+    departmentScope: 'MARKETING_B2C',
+    departmentName: 'Phòng Hành Chính - Pháp Chế',
+    teamName: 'Điều phối ký',
+    canLogin: true,
+    loginProvider: 'LARK',
+    assignedBrands: ['Tất cả nhãn hàng']
+  },
 
   // =========================================================================
   // 3. ĐỐI TÁC BÊN THỨ 3 (BRAND, KOC, CTV - GMAIL SSO)

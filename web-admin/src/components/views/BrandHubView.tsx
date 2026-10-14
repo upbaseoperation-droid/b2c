@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   ShieldCheck,
   CheckCircle2,
@@ -28,7 +28,6 @@ import {
   BrandCampaignPortalData,
   BrandKocCandidate,
   BrandScriptItem,
-  BrandRejectReasonType,
   BookingDealItem,
   BrandDetail,
   UserProfile
@@ -36,6 +35,7 @@ import {
 import { INITIAL_BRAND_PORTAL_DATA } from '../../lib/mockData';
 import { formatVndShort } from '../../lib/format';
 import { Presence } from '../ui';
+import { PartnerDiscussion, type DiscussionRoom } from '../PartnerDiscussion';
 
 export interface BrandHubViewProps {
   currentUser?: UserProfile;
@@ -51,28 +51,21 @@ export interface BrandHubViewProps {
 
 export type BrandHubPillarTab = 'OVERVIEW' | 'APPROVALS' | 'ACTIVE_JOBS' | 'DISCUSSION' | 'HISTORY';
 
-interface ChatMessage {
-  id: string;
-  sender: 'BRAND' | 'UPBASE_ACCOUNT' | 'UPBASE_BOOKING';
-  senderName: string;
-  senderRole: string;
-  avatarText: string;
-  time: string;
-  content: string;
-  attachmentName?: string;
-}
-
-export const BrandHubView: React.FC<BrandHubViewProps> = ({ 
+export const BrandHubView: React.FC<BrandHubViewProps> = (props) => {
+  if (props.currentUser?.role === 'BRAND_PARTNER' && !INITIAL_BRAND_PORTAL_DATA.some(p => p.brandId === props.currentUser?.linkedEntityId)) {
+    return <div className="rounded-xl border bg-white p-6 text-sm">Chưa có chiến dịch được phân công cho nhãn hàng của bạn.</div>;
+  }
+  return <BrandHubWorkspace key={props.currentUser?.id || 'guest'} {...props} />;
+};
+const BrandHubWorkspace: React.FC<BrandHubViewProps> = ({
   currentUser,
   onNotify,
-  onBrandApproveDeal,
-  onBrandRejectDeal,
   selectedBrand = 'ALL'
 }) => {
-  const [portals, setPortals] = useState<BrandCampaignPortalData[]>(INITIAL_BRAND_PORTAL_DATA);
+  const [portals, setPortals] = useState<BrandCampaignPortalData[]>(() => INITIAL_BRAND_PORTAL_DATA.filter(p => currentUser?.role !== 'BRAND_PARTNER' || p.brandId === currentUser.linkedEntityId));
   const [selectedPortalId, setSelectedPortalId] = useState<string>(() => {
     if (currentUser?.role === 'BRAND_PARTNER' && currentUser?.linkedEntityName) {
-      const match = INITIAL_BRAND_PORTAL_DATA.find(p => p.brandName.toLowerCase().includes(currentUser.linkedEntityName!.toLowerCase()));
+      const match = INITIAL_BRAND_PORTAL_DATA.find(p => p.brandId === currentUser.linkedEntityId);
       if (match) return match.id;
     }
     return INITIAL_BRAND_PORTAL_DATA[0].id;
@@ -107,11 +100,6 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
   const [isPlanRevisionModalOpen, setIsPlanRevisionModalOpen] = useState(false);
   const [planRevisionNotes, setPlanRevisionNotes] = useState('');
 
-  // Stage 2: KOC Reject Modal state
-  const [rejectingKoc, setRejectingKoc] = useState<BrandKocCandidate | null>(null);
-  const [selectedRejectReason, setSelectedRejectReason] = useState<BrandRejectReasonType>('Lệch định vị thương hiệu');
-  const [rejectCustomNote, setRejectCustomNote] = useState('');
-
   // Stage 3: Script Review Drawer / Modal State
   const [inspectingScript, setInspectingScript] = useState<BrandScriptItem | null>(null);
   const [scriptFeedbackText, setScriptFeedbackText] = useState('');
@@ -145,37 +133,37 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
     });
   }, [portals, executiveBrandFilter, executivePlanStatusFilter, executivePicFilter, executiveSearchQuery]);
 
-  // Discussion Chat State
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
-    {
-      id: 'msg-1',
-      sender: 'UPBASE_ACCOUNT',
-      senderName: activePortal.accountPic || 'Vân Ngọc',
-      senderRole: 'Account Lead Upbase',
-      avatarText: 'VN',
-      time: 'Hôm qua lúc 14:20',
-      content: `Chào Quý Nhãn Hàng ${activePortal.brandName}! Đội ngũ Upbase đã chuẩn bị xong kế hoạch ngân sách và danh sách các KOC đề xuất cho chiến dịch ${activePortal.campaignTitle}. Anh/chị xem qua và phê duyệt giúp team nhé ạ!`
-    },
-    {
-      id: 'msg-2',
-      sender: 'BRAND',
-      senderName: 'Brand Manager',
-      senderRole: activePortal.brandName,
-      avatarText: 'BM',
-      time: 'Hôm qua lúc 16:05',
-      content: 'Cảm ơn em. Mình đã xem qua, kế hoạch ngân sách cơ bản ổn. Tuy nhiên với tệp Micro KOC bên em ưu tiên chọn các bạn có thế mạnh về phân tích thành phần lành tính giúp bên mình nhé.'
-    },
-    {
-      id: 'msg-3',
-      sender: 'UPBASE_BOOKING',
-      senderName: activePortal.bookingPic || 'Khánh Vy',
-      senderRole: 'Booking Execution Lead',
-      avatarText: 'KV',
-      time: 'Sáng nay lúc 09:15',
-      content: 'Dạ vâng ạ! Team Booking đã lọc kỹ và bổ sung 2 bạn Dược sĩ/Beauty Reviewer chuyên sâu về da nhạy cảm. Kịch bản của 2 bạn đã được gửi lên mục "Cần duyệt ngay" để anh/chị xem trước ạ.'
-    }
-  ]);
-  const [newChatText, setNewChatText] = useState('');
+  const [discussionKey, setDiscussionKey] = useState<string>();
+  const syncReviews = useCallback((rooms: DiscussionRoom[]) => {
+    setPortals(previous => {
+      let changed = false;
+      const next = previous.map(portal => ({ ...portal, kocCandidates: portal.kocCandidates.map(koc => {
+        const room = rooms.find(r => r.key === `candidate:${portal.id}:${koc.id}`);
+        if (!room?.decision) return koc;
+        const status = room.decision === 'APPROVED' ? 'ĐÃ_DUYỆT' : room.decision === 'REJECTED' ? 'TỪ_CHỐI' : 'CHỜ_DUYỆT';
+        if (koc.brandApprovalStatus === status) return koc;
+        changed = true;
+        return { ...koc, brandApprovalStatus: status as BrandKocCandidate['brandApprovalStatus'] };
+      }) }));
+      return changed ? next : previous;
+    });
+  }, []);
+  useEffect(() => {
+    const controller = new AbortController();
+    const load = async () => {
+      try {
+        const response = await fetch('/api/partner-hub?' + new URLSearchParams({ root: `brand:${activePortal.id}` }), { cache: 'no-store', signal: controller.signal });
+        if (response.ok) { const body = await response.json(); if (!controller.signal.aborted) syncReviews(body.rooms); }
+      } catch { /* The discussion panel presents connection errors with retry. */ }
+    };
+    void load();
+    const timer = setInterval(() => { if (document.visibilityState === 'visible') void load(); }, 15000);
+    return () => { controller.abort(); clearInterval(timer); };
+  }, [activePortal.id, syncReviews]);
+  const openKocReview = (kocId: string) => {
+    setDiscussionKey(`candidate:${activePortal.id}:${kocId}`);
+    setActiveTab('DISCUSSION');
+  };
 
   // Copy Magic Link state
   const [copiedLink, setCopiedLink] = useState(false);
@@ -185,15 +173,14 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         if (isPlanRevisionModalOpen) setIsPlanRevisionModalOpen(false);
-        if (rejectingKoc) setRejectingKoc(null);
         if (inspectingScript) setInspectingScript(null);
       }
     };
-    if (isPlanRevisionModalOpen || rejectingKoc || inspectingScript) {
+    if (isPlanRevisionModalOpen || inspectingScript) {
       window.addEventListener('keydown', handleKeyDown);
       return () => window.removeEventListener('keydown', handleKeyDown);
     }
-  }, [isPlanRevisionModalOpen, rejectingKoc, inspectingScript]);
+  }, [isPlanRevisionModalOpen, inspectingScript]);
 
   // Check if Stage 1 is completed
   const isPlanApproved = activePortal.planApprovalStatus === 'BRAND_PLAN_APPROVED';
@@ -261,56 +248,6 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
     setIsPlanRevisionModalOpen(false);
   };
 
-  // KOC Actions
-  const handleApproveKoc = (kocId: string) => {
-    const targetKoc = activePortal.kocCandidates.find(k => k.id === kocId);
-    setPortals(prev => prev.map(p => {
-      if (p.id === activePortal.id) {
-        return {
-          ...p,
-          kocCandidates: p.kocCandidates.map(k => k.id === kocId ? { ...k, brandApprovalStatus: 'ĐÃ_DUYỆT', rejectReason: undefined } : k)
-        };
-      }
-      return p;
-    }));
-
-    if (targetKoc && onBrandApproveDeal) {
-      onBrandApproveDeal(targetKoc.stageName);
-    }
-
-    if (onNotify) {
-      onNotify(`Brand đã duyệt KOC! Hệ thống chuyển sang chặng gửi hàng mẫu và kịch bản.`, 'success');
-    }
-  };
-
-  const handleConfirmRejectKoc = () => {
-    if (!rejectingKoc) return;
-    const finalReason = selectedRejectReason === 'Lý do khác' ? (rejectCustomNote || 'Lý do khác') : selectedRejectReason;
-
-    setPortals(prev => prev.map(p => {
-      if (p.id === activePortal.id) {
-        return {
-          ...p,
-          kocCandidates: p.kocCandidates.map(k => k.id === rejectingKoc.id ? {
-            ...k,
-            brandApprovalStatus: 'TỪ_CHỐI',
-            rejectReason: finalReason
-          } : k)
-        };
-      }
-      return p;
-    }));
-
-    if (onBrandRejectDeal) {
-      onBrandRejectDeal(rejectingKoc.stageName, finalReason);
-    }
-    if (onNotify) {
-      onNotify(`Đã từ chối KOC ${rejectingKoc.stageName} (Lý do: ${finalReason}). Upbase sẽ đề xuất KOC thay thế trong 24 giờ.`, 'warning');
-    }
-    setRejectingKoc(null);
-    setRejectCustomNote('');
-  };
-
   // Script Actions
   const handleApproveScript = (scriptId: string) => {
     setPortals(prev => prev.map(p => {
@@ -355,26 +292,6 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
     }
     setScriptFeedbackText('');
     setInspectingScript(null);
-  };
-
-  // Chat message send handler
-  const handleSendMessage = (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    if (!newChatText.trim()) return;
-
-    const newMsg: ChatMessage = {
-      id: `msg-${Date.now()}`,
-      sender: 'BRAND',
-      senderName: 'Brand Manager',
-      senderRole: activePortal.brandName,
-      avatarText: 'BM',
-      time: 'Vừa xong',
-      content: newChatText.trim()
-    };
-
-    setChatMessages(prev => [...prev, newMsg]);
-    setNewChatText('');
-    if (onNotify) onNotify('Đã gửi tin nhắn đến Upbase Account Team!', 'success');
   };
 
   const handleCopyMagicLink = () => {
@@ -1140,21 +1057,18 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
                     <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
                       <button
                         type="button"
-                        onClick={() => {
-                          setRejectingKoc(koc);
-                          setSelectedRejectReason('Lệch định vị thương hiệu');
-                        }}
+                        onClick={() => openKocReview(koc.id)}
                         className="px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg text-xs font-medium transition cursor-pointer"
                       >
-                        Đổi KOC
+                        Ý kiến / Không duyệt
                       </button>
                       <button
                         type="button"
-                        onClick={() => handleApproveKoc(koc.id)}
+                        onClick={() => openKocReview(koc.id)}
                         className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition shadow-2xs cursor-pointer"
                       >
                         <Check className="w-3.5 h-3.5" />
-                        Duyệt KOC
+                        Xem & duyệt KOC
                       </button>
                     </div>
                   </div>
@@ -1388,76 +1302,18 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
       {/* TAB 4: TRAO ĐỔI (TWO-WAY DISCUSSION) */}
       {/* ========================================================================= */}
       {activeTab === 'DISCUSSION' && (
-        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs flex flex-col h-[560px] overflow-hidden animate-in fade-in duration-150">
-          <div className="p-3.5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-slate-900 text-white font-semibold flex items-center justify-center text-xs">
-                UP
-              </div>
-              <div>
-                <h4 className="text-xs font-semibold text-slate-900">
-                  {activePortal.brandName} ⇄ Upbase Operations
-                </h4>
-                <p className="text-2xs text-slate-500">
-                  {activePortal.accountPic} (Account Lead) &amp; {activePortal.bookingPic} (Booking Lead)
-                </p>
-              </div>
-            </div>
-            <span className="text-2xs px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 font-medium">
-              SLA phản hồi &lt; 2h
-            </span>
-          </div>
-
-          <div className="flex-1 p-4 overflow-y-auto space-y-3 text-xs bg-slate-50/20">
-            {chatMessages.map(msg => {
-              const isBrand = msg.sender === 'BRAND';
-              return (
-                <div
-                  key={msg.id}
-                  className={`flex items-start gap-2.5 ${isBrand ? 'flex-row-reverse' : 'flex-row'}`}
-                >
-                  <div className={`w-7 h-7 rounded-full flex items-center justify-center font-semibold text-2xs text-white shrink-0 ${
-                    isBrand ? 'bg-blue-600' : 'bg-slate-800'
-                  }`}>
-                    {msg.avatarText}
-                  </div>
-                  <div className={`max-w-[70%] space-y-1 ${isBrand ? 'items-end' : 'items-start'}`}>
-                    <div className={`flex items-center gap-2 text-2xs text-slate-400 ${isBrand ? 'justify-end' : 'justify-start'}`}>
-                      <span className="font-semibold text-slate-700">{msg.senderName}</span>
-                      <span>•</span>
-                      <span>{msg.time}</span>
-                    </div>
-                    <div className={`p-3 rounded-2xl leading-relaxed text-xs ${
-                      isBrand 
-                        ? 'bg-blue-600 text-white rounded-tr-none' 
-                        : 'bg-white text-slate-800 border border-slate-200/80 rounded-tl-none shadow-2xs'
-                    }`}>
-                      {msg.content}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          <form onSubmit={handleSendMessage} className="p-3 border-t border-slate-100 bg-white flex items-center gap-2">
-            <input
-              type="text"
-              value={newChatText}
-              onChange={(e) => setNewChatText(e.target.value)}
-              placeholder="Nhập nội dung trao đổi với đội ngũ Upbase..."
-              className="flex-1 text-xs bg-slate-50 text-slate-900 placeholder-slate-400 border border-slate-200 rounded-xl px-3.5 py-2.5 outline-none focus:border-blue-500 focus:bg-white transition"
-            />
-            <button
-              type="submit"
-              disabled={!newChatText.trim()}
-              className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white font-semibold text-xs transition flex items-center gap-1.5 shadow-2xs"
-            >
-              <Send className="w-3.5 h-3.5" />
-              <span>Gửi</span>
-            </button>
-          </form>
-        </div>
+        <PartnerDiscussion family="BRAND" root={`brand:${activePortal.id}`} actorId={currentUser?.id || 'guest'} initialRoom={discussionKey} onRooms={syncReviews}
+          renderContext={key => {
+            const candidate = activePortal.kocCandidates.find(k => key === `candidate:${activePortal.id}:${k.id}`);
+            if (!candidate) return null;
+            return <div className="rounded-lg border border-blue-100 bg-blue-50 p-4 text-sm space-y-2">
+              <h4 className="font-semibold">{candidate.stageName} · {candidate.tierLabel}</h4>
+              <p>{candidate.followers.toLocaleString('vi-VN')} followers · ER {candidate.engagementRate}% · {candidate.niche}</p>
+              <p>{candidate.formatDescription}</p>
+              <a href={candidate.channelUrl} target="_blank" rel="noopener noreferrer" className="text-blue-700 underline">Xem kênh KOC</a>
+              <div className="flex flex-wrap gap-3">{candidate.sampleVideoUrls.map((video, i) => <a key={i} href={video.url} target="_blank" rel="noopener noreferrer" className="text-blue-700 underline">{video.title}</a>)}</div>
+            </div>;
+          }} />
       )}
 
       {/* ========================================================================= */}
@@ -1609,92 +1465,6 @@ export const BrandHubView: React.FC<BrandHubViewProps> = ({
                 className="px-4 py-2 rounded-lg text-xs font-semibold bg-amber-600 hover:bg-amber-700 text-white disabled:opacity-50 transition shadow-2xs"
               >
                 Gửi yêu cầu chỉnh sửa
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-      </Presence>
-
-      {/* Modal 2: KOC Reject Reason */}
-      <Presence show={!!rejectingKoc}>
-      {rejectingKoc && (
-        <div 
-          className="fixed inset-0 z-50 bg-slate-900/40 flex items-center justify-center p-4 animate-in fade-in duration-(--motion-base)"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setRejectingKoc(null);
-          }}
-          role="dialog"
-          aria-modal="true"
-        >
-          <div data-motion-panel className="w-full max-w-md p-6 bg-white rounded-2xl border border-slate-200 shadow-xl space-y-4 text-slate-800 animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h4 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-                <RotateCcw className="w-4 h-4 text-rose-600" />
-                Đề xuất đổi KOC: {rejectingKoc.stageName}
-              </h4>
-              <button
-                type="button"
-                onClick={() => setRejectingKoc(null)}
-                className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition"
-              >
-                ✕
-              </button>
-            </div>
-
-            <p className="text-xs text-slate-600 leading-relaxed">
-              Chọn lý do quý nhãn hàng chưa đồng ý KOC này để Upbase đề xuất Creator phù hợp hơn:
-            </p>
-
-            <div className="space-y-2 text-xs">
-              {[
-                'Lệch định vị thương hiệu',
-                'Từng booking đối thủ cạnh tranh',
-                'Rủi ro hình ảnh / Scandal',
-                'Chất giọng / Phong cách chưa phù hợp',
-                'Yêu cầu Creator chuyên môn cao hơn (Bác sĩ/Dược sĩ)',
-                'Lý do khác'
-              ].map(reason => (
-                <label
-                  key={reason}
-                  className="flex items-center gap-2.5 p-2.5 rounded-lg bg-slate-50 border border-slate-200/80 cursor-pointer hover:bg-slate-100 transition text-slate-800"
-                >
-                  <input
-                    type="radio"
-                    name="rejectReason"
-                    checked={selectedRejectReason === reason}
-                    onChange={() => setSelectedRejectReason(reason as BrandRejectReasonType)}
-                    className="accent-blue-600 cursor-pointer"
-                  />
-                  <span>{reason}</span>
-                </label>
-              ))}
-
-              {selectedRejectReason === 'Lý do khác' && (
-                <input
-                  type="text"
-                  placeholder="Nhập lý do cụ thể..."
-                  value={rejectCustomNote}
-                  onChange={(e) => setRejectCustomNote(e.target.value)}
-                  className="w-full text-xs bg-slate-50 text-slate-900 placeholder-slate-400 border border-slate-200 rounded-lg p-2.5 focus:bg-white focus:ring-1 focus:ring-blue-500 outline-none mt-2"
-                />
-              )}
-            </div>
-
-            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
-              <button
-                type="button"
-                onClick={() => setRejectingKoc(null)}
-                className="px-4 py-2 rounded-lg text-xs font-medium text-slate-700 hover:bg-slate-100 transition"
-              >
-                Hủy
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmRejectKoc}
-                className="px-4 py-2 rounded-lg text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white shadow-2xs transition"
-              >
-                Xác nhận đổi KOC
               </button>
             </div>
           </div>

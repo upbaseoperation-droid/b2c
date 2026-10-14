@@ -126,6 +126,7 @@ interface ManagerViewProps {
   onUpdateStore?: (store: StorePortfolioItem) => void;
   tasks?: SlaTask[];
   onAddTask?: (task: SlaTask) => void;
+  onNavigateToTab?: (tabKey: string) => void;
 }
 
 export const ManagerView: React.FC<ManagerViewProps> = ({ 
@@ -147,17 +148,18 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
   storePortfolios: externalStorePortfolios,
   onUpdateStore: externalOnUpdateStore,
   tasks: externalTasks,
-  onAddTask: externalOnAddTask
+  onAddTask: externalOnAddTask,
+  onNavigateToTab
 }) => {
   const isManager = currentUser
     ? ['MANAGER', 'GROWTH_MANAGER', 'MEDIA_MANAGER', 'ADMIN'].includes(currentUser.role)
     : true;
-  const [activeTab, setActiveTab] = useState<'DELEGATION' | 'MINDMAP' | 'ALLOCATION' | 'MONITORING' | 'SLA_MANAGEMENT'>('DELEGATION');
+  const [activeTab, setActiveTab] = useState<'DELEGATION' | 'ALLOCATION' | 'SLA_MANAGEMENT' | 'MINDMAP' | 'MONITORING'>('DELEGATION');
+  const [monitoringSubTab, setMonitoringSubTab] = useState<'CONTROL_TOWER' | 'AIR_PROGRESS' | 'STAFF_GMV' | 'MONTHLY_PLAN' | 'PLAN_GAP'>('CONTROL_TOWER');
+  const [slaSubTab, setSlaSubTab] = useState<'BREACHES' | 'ANALYTICS'>('BREACHES');
   const [allocationSubTab, setAllocationSubTab] = useState<'4_TIER' | 'GROWTH'>(
     currentUser?.role === 'GROWTH_MANAGER' ? 'GROWTH' : '4_TIER'
   );
-  const [monitoringSubTab, setMonitoringSubTab] = useState<'CONTROL_TOWER' | 'AIR_PROGRESS' | 'STAFF_GMV' | 'MONTHLY_PLAN' | 'PLAN_GAP'>('CONTROL_TOWER');
-  const [slaSubTab, setSlaSubTab] = useState<'BREACHES' | 'ANALYTICS'>('BREACHES');
   
   // State phân quyền Brand, Gian Hàng, Giao Việc của Trưởng Phòng
   const [internalBrands, setInternalBrands] = useState<BrandDetail[]>(externalBrands || INITIAL_BRANDS);
@@ -256,7 +258,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
   
   // Master Plans state (Quản lý chỉ tiêu theo tháng & theo 4 Tier KOC/KOL)
   const [masterPlans, setMasterPlans] = useState<MonthlyMasterQuotaPlan[]>(MONTHLY_MASTER_QUOTA_PLANS);
-  const [selectedMonth, setSelectedMonth] = useState<string>('2026/08');
+  const [selectedMonth, setSelectedMonth] = useState<string>('2026/09');
   
   // Interactive Staff Allocation State across months (26 nhân sự thực tế)
   const [staffAllocationsByMonth, setStaffAllocationsByMonth] = useState<Record<string, MonthlyStaffAllocation[]>>({
@@ -562,54 +564,42 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
   });
 
   return (
-    <div className="space-y-6">
-      {/* Thanh điều khiển: chọn tháng, thao tác phụ, tab */}
-      <div className="space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <Segmented
-            items={masterPlans.map(plan => ({
-              key: plan.month,
-              label: `${plan.monthLabel}${plan.status === 'COMPLETED' ? ' · Đã chốt' : plan.status === 'ACTIVE' ? ' · Đang chạy' : ' · Nháp'}`,
-            }))}
-            value={selectedMonth}
-            onChange={setSelectedMonth}
+    <div className="space-y-5">
+      {/* Thanh điều khiển: 4 phân khu tác nghiệp điều phối & quản lý (tách biệt hoàn toàn với 6 Dashboard Báo cáo) */}
+      <div className="space-y-3">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 border-b border-line pb-2">
+          <Tabs
+            value={activeTab}
+            onChange={(k) => setActiveTab(k as any)}
+            items={[
+              { key: 'DELEGATION', label: '1. Phân công Gian hàng & Nhãn hàng' },
+              { key: 'ALLOCATION', label: '2. Giao Hạn mức 4 Bậc & Duyệt Plan' },
+              { key: 'SLA_MANAGEMENT', label: '3. Xử lý Vi phạm SLA & Khóa sổ', count: slaBreaches.filter(b => b.status !== 'RESOLVED').length, tone: 'critical' },
+              { key: 'MINDMAP', label: '4. Sơ đồ Tổ chức & Phụ trách' },
+            ]}
           />
-        </div>
 
-        <Tabs
-          value={activeTab}
-          onChange={setActiveTab}
-          items={[
-            { key: 'DELEGATION', label: 'Phân bổ & Giao việc' },
-            { key: 'MINDMAP', label: 'Sơ đồ dữ liệu' },
-            { key: 'ALLOCATION', label: 'Kế hoạch & Hạn mức 4 bậc' },
-            { key: 'MONITORING', label: 'Giám sát & Tiến độ lên sóng' },
-            { key: 'SLA_MANAGEMENT', label: 'Quản trị SLA & Vi phạm', count: slaBreaches.filter(b => b.status !== 'RESOLVED').length, tone: 'critical' },
-          ]}
-        />
+          {activeTab === 'ALLOCATION' && (
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="text-2xs font-medium text-ink-3 hidden sm:inline">Kỳ kế hoạch:</span>
+              <Segmented
+                items={masterPlans.map(plan => ({
+                  key: plan.month,
+                  label: plan.monthLabel,
+                }))}
+                value={selectedMonth}
+                onChange={setSelectedMonth}
+              />
+            </div>
+          )}
+        </div>
       </div>
 
       {/* ========================================================================= */}
-      {/* TAB MỚI: SƠ ĐỒ DỮ LIỆU MINDMAP (MASTER DATA MINDMAP VIEW)                */}
+      {/* TAB 4: SƠ ĐỒ TỔ CHỨC & LUỒNG PHỤ TRÁCH (MASTER DATA MINDMAP VIEW)          */}
       {/* ========================================================================= */}
       {activeTab === 'MINDMAP' && (
-        <div className="space-y-4 animate-in fade-in duration-150">
-          <div className="bg-white border border-slate-200 px-4 py-3 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-600 shrink-0">
-                <GitFork className="w-4 h-4" />
-              </div>
-              <div>
-                <h2 className="text-xs font-semibold text-slate-900 flex items-center gap-2">
-                  Sơ đồ cây phân cấp: Nhãn hàng → Gian hàng → Nhân sự phụ trách → Doanh thu
-                </h2>
-                <p className="text-2xs text-slate-500">
-                  Nhấn vào từng node để mở rộng hoặc thu gọn nhánh dữ liệu
-                </p>
-              </div>
-            </div>
-          </div>
-
+        <div className="animate-in fade-in duration-150">
           <MasterDataMindmapView
             currentUser={currentUser || {
               id: 'user-van-ngoc',
@@ -631,7 +621,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
       )}
 
       {/* ========================================================================= */}
-      {/* TAB MỚI: TRUNG TÂM PHÂN BỔ & ĐIỀU PHỐI (MANAGER DELEGATION HUB)           */}
+      {/* TAB 1: TRUNG TÂM PHÂN CÔNG & GIAO VIỆC (MANAGER DELEGATION HUB)           */}
       {/* ========================================================================= */}
       {activeTab === 'DELEGATION' && (
         <ManagerDelegationHub
@@ -652,6 +642,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
           tasks={currentTasks}
           onAddTask={handleAddTask}
           onPingStaff={onPingStaffNotification}
+          onNavigateToDashboard={onNavigateToTab}
           onNotify={(msg) => {
             if (onPingStaffNotification) {
               onPingStaffNotification('Trưởng Phòng', msg);
@@ -665,15 +656,21 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
       {/* ========================================================================= */}
       {activeTab === 'ALLOCATION' && (
         <div className="space-y-5 animate-in fade-in duration-150">
-          <div className="flex flex-wrap items-center justify-between gap-3 p-1.5 bg-slate-100/80 border border-slate-200 rounded-xl text-xs">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <Segmented
               value={allocationSubTab}
               onChange={setAllocationSubTab}
               items={[
-                { key: '4_TIER', label: 'Hạn mức 4 Tier & Phân bổ 26 Chuyên viên' },
+                { key: '4_TIER', label: 'Hạn mức 4 bậc & Phân bổ 26 chuyên viên' },
                 { key: 'GROWTH', label: 'Nhu cầu KOC từ team Growth' },
               ]}
             />
+            {currentPlan.status === 'COMPLETED' && (
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-sunken border border-line text-xs text-ink-2">
+                <ShieldAlert className="w-3.5 h-3.5 text-ink-3 shrink-0" />
+                <span>Kỳ lịch sử <strong>{currentPlan.monthLabel}</strong> đã khóa sổ đối soát — Dữ liệu được bảo toàn (Chỉ xem)</span>
+              </div>
+            )}
           </div>
 
           {allocationSubTab === 'GROWTH' && (
@@ -690,7 +687,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
           )}
 
           {allocationSubTab === '4_TIER' && (
-            <div className="space-y-6">
+            <div className="space-y-5">
           {/* Supervisor / Read-Only Notice if not Manager */}
           {!isManager && (
             <div className="p-2.5 bg-amber-50/80 border border-amber-200 rounded-xl flex items-center justify-between gap-3 text-xs">
@@ -711,31 +708,36 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-200">
               <div>
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-sm" />
+                  <span className="w-2 h-2 rounded-full bg-blue-600" />
                   <h3 className="text-sm font-semibold text-slate-900 tracking-tight">
-                    CẤP 1: QUẢN LÝ HẠN MỨC 4 TIER KOC / KOL TOÀN PHÒNG — {currentPlan.monthLabel}
+                    Cấp 1: Hạn mức 4 bậc KOC / KOL toàn phòng — {currentPlan.monthLabel}
                   </h3>
                   <span className={`text-2xs px-2 py-0.5 rounded-full font-semibold border ${
-                    currentPlan.status === 'COMPLETED' ? 'bg-slate-100 text-slate-600 border-slate-200' :
-                    currentPlan.status === 'ACTIVE' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
-                    'bg-amber-50 text-amber-700 border border-amber-200'
+                    currentPlan.status === 'COMPLETED' ? 'bg-slate-100 text-slate-700 border-slate-300' :
+                    currentPlan.status === 'ACTIVE' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                    'bg-amber-50 text-amber-700 border-amber-200'
                   }`}>
-                    {currentPlan.status === 'COMPLETED' ? 'Đã Chốt Số Liệu' : currentPlan.status === 'ACTIVE' ? 'Đang Thực Hiện' : 'Dự Thảo Q4'}
+                    {currentPlan.status === 'COMPLETED' ? 'Đã khóa sổ lịch sử' : currentPlan.status === 'ACTIVE' ? 'Đang thực hiện' : 'Dự thảo Q4'}
                   </span>
                 </div>
                 <p className="text-xs text-slate-500 mt-1">
-                  Mô hình Top-Down: Quản lý trần video, ngân sách và đơn giá theo 4 Tier KOC/KOL trước khi phân bổ chi tiết cho 26 chuyên viên
+                  Quản lý trần video, ngân sách và đơn giá theo 4 bậc KOC/KOL trước khi phân bổ chi tiết cho 26 chuyên viên
                 </p>
               </div>
 
               <div className="flex items-center gap-2">
-                {isManager ? (
+                {currentPlan.status === 'COMPLETED' ? (
+                  <span className="px-3 py-1.5 bg-slate-100 border border-slate-200 text-slate-600 rounded-lg text-xs font-medium flex items-center gap-1.5 cursor-not-allowed">
+                    <SlidersHorizontal className="w-3.5 h-3.5 text-slate-400" />
+                    <span>Đã chốt sổ (Chỉ xem)</span>
+                  </span>
+                ) : isManager ? (
                   <button
                     onClick={handleOpenEditTierQuota}
                     className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-xs font-semibold transition flex items-center gap-1.5"
                   >
                     <SlidersHorizontal className="w-3.5 h-3.5" />
-                    <span>Cấu hình hạn mức 4 Tier</span>
+                    <span>Cấu hình hạn mức 4 bậc</span>
                   </button>
                 ) : (
                   <span className="px-3 py-1.5 bg-slate-100 border border-slate-200 text-slate-500 rounded-lg text-xs font-medium flex items-center gap-1.5 cursor-not-allowed">
@@ -749,10 +751,10 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
             {/* Ceiling Metrics Summary */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 py-4 border-b border-slate-200">
               <div>
-                <span className="text-2xs text-slate-500 font-medium block">Trần Ngân Sách {currentPlan.monthLabel}</span>
-                <div className="text-xl font-semibold text-slate-900 mt-0.5">{TOTAL_CEILING_BUDGET.toLocaleString('vi-VN')} đ</div>
+                <span className="text-2xs text-slate-500 font-medium block">Trần ngân sách {currentPlan.monthLabel}</span>
+                <div className="text-xl font-semibold text-slate-900 mt-0.5 font-mono">{TOTAL_CEILING_BUDGET.toLocaleString('vi-VN')} đ</div>
                 <div className="flex items-center justify-between text-2xs text-slate-500 mt-1">
-                  <span>Đã giao: <strong className="text-blue-700 font-semibold">{totalAllocatedBudget.toLocaleString('vi-VN')} đ</strong></span>
+                  <span>Đã giao: <strong className="text-blue-700 font-semibold font-mono">{totalAllocatedBudget.toLocaleString('vi-VN')} đ</strong></span>
                   <span className={remainingBudget === 0 ? 'text-emerald-700 font-semibold' : remainingBudget < 0 ? 'text-rose-700 font-semibold' : 'text-amber-700 font-semibold'}>
                     {remainingBudget === 0 ? 'Cân đối 100%' : remainingBudget < 0 ? `Vượt: ${Math.abs(remainingBudget).toLocaleString('vi-VN')} đ` : `Còn: ${remainingBudget.toLocaleString('vi-VN')} đ`}
                   </span>
@@ -767,16 +769,16 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
 
               <div>
                 <span className="text-2xs text-slate-500 font-medium block">Chỉ tiêu video toàn phòng</span>
-                <div className="text-xl font-semibold text-slate-900 mt-0.5">{TOTAL_TARGET_VIDEOS.toLocaleString('vi-VN')} Video</div>
+                <div className="text-xl font-semibold text-slate-900 mt-0.5 font-mono">{TOTAL_TARGET_VIDEOS.toLocaleString('vi-VN')} video</div>
                 <div className="flex items-center justify-between text-2xs text-slate-500 mt-1">
-                  <span>Đã giao: <strong className="text-slate-700 font-semibold">{totalAllocatedVideos.toLocaleString('vi-VN')}</strong></span>
+                  <span>Đã giao: <strong className="text-slate-700 font-semibold font-mono">{totalAllocatedVideos.toLocaleString('vi-VN')}</strong></span>
                   <span className={remainingVideos === 0 ? 'text-emerald-700 font-semibold' : remainingVideos < 0 ? 'text-rose-700 font-semibold' : 'text-slate-600'}>
-                    {remainingVideos === 0 ? '100% Cân đối' : remainingVideos < 0 ? `Vượt +${Math.abs(remainingVideos)}` : `Còn ${remainingVideos}`}
+                    {remainingVideos === 0 ? '100% cân đối' : remainingVideos < 0 ? `Vượt +${Math.abs(remainingVideos)}` : `Còn ${remainingVideos}`}
                   </span>
                 </div>
                 <div className="w-full h-1.5 bg-slate-200 rounded-full mt-2 overflow-hidden">
                   <div 
-                    className={`data-bar h-full rounded-full ${totalAllocatedVideos > TOTAL_TARGET_VIDEOS ? 'bg-rose-500' : 'bg-slate-500'}`}
+                    className={`data-bar h-full rounded-full ${totalAllocatedVideos > TOTAL_TARGET_VIDEOS ? 'bg-rose-500' : 'bg-slate-600'}`}
                     style={{ width: `${Math.min(100, (totalAllocatedVideos / TOTAL_TARGET_VIDEOS) * 100)}%` }}
                   />
                 </div>
@@ -784,10 +786,10 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
 
               <div>
                 <span className="text-2xs text-slate-500 font-medium block">Mục tiêu doanh số (GMV)</span>
-                <div className="text-xl font-semibold text-emerald-700 mt-0.5">{totalTargetGmv.toLocaleString('vi-VN')} đ</div>
+                <div className="text-xl font-semibold text-emerald-700 mt-0.5 font-mono">{totalTargetGmv.toLocaleString('vi-VN')} đ</div>
                 <div className="flex items-center justify-between text-2xs text-slate-500 mt-1">
-                  <span>Thực đạt: <strong className="text-slate-900 font-semibold">{(allocations.reduce((sum, a) => sum + (a.actualGmv || 0), 0) / 1000000000).toFixed(2)} B</strong></span>
-                  <span className="text-emerald-700 font-semibold">
+                  <span>Thực đạt: <strong className="text-slate-900 font-semibold font-mono">{(allocations.reduce((sum, a) => sum + (a.actualGmv || 0), 0) / 1000000000).toFixed(2)} tỷ</strong></span>
+                  <span className="text-emerald-700 font-semibold font-mono">
                     {totalTargetGmv > 0 ? Math.round((allocations.reduce((sum, a) => sum + (a.actualGmv || 0), 0) / totalTargetGmv) * 100) : 0}%
                   </span>
                 </div>
@@ -801,10 +803,10 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
 
               <div>
                 <span className="text-2xs text-slate-500 font-medium block">Quy mô & tải nhân sự</span>
-                <div className="text-xl font-semibold text-slate-900 mt-0.5">{allocations.length} Chuyên Viên</div>
+                <div className="text-xl font-semibold text-slate-900 mt-0.5 font-mono">{allocations.length} chuyên viên</div>
                 <div className="flex items-center justify-between text-2xs text-slate-500 mt-1">
-                  <span>{allocations.filter(a => !a.isLagging).length} Đạt tiến độ</span>
-                  <span className="text-rose-700 font-semibold">{allocations.filter(a => a.isLagging).length} Cần hỗ trợ</span>
+                  <span>{allocations.filter(a => !a.isLagging).length} đạt tiến độ</span>
+                  <span className="text-rose-700 font-semibold">{allocations.filter(a => a.isLagging).length} cần hỗ trợ</span>
                 </div>
                 <div className="w-full h-1.5 bg-slate-200 rounded-full mt-2 overflow-hidden">
                   <div 
@@ -818,12 +820,12 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
             {/* 4 TIER MASTER QUOTA CARDS */}
             <div className="pt-4">
               <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
-                  <LayersIcon className="w-3.5 h-3.5 text-blue-400" />
-                  Hạn Mức Chi tiết Theo 4 Tier KOC / KOL ({currentPlan.tierQuotas.length} Tiers)
+                <span className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
+                  <LayersIcon className="w-3.5 h-3.5 text-blue-600" />
+                  Hạn mức chi tiết theo 4 bậc KOC / KOL ({currentPlan.tierQuotas.length} bậc)
                 </span>
-                <span className="text-2xs text-slate-400">
-                  Tổng 4 Tier = 100% trần ngân sách & số lượng video toàn phòng
+                <span className="text-2xs text-slate-500">
+                  Tổng 4 bậc = 100% trần ngân sách & số lượng video toàn phòng
                 </span>
               </div>
 
@@ -838,31 +840,31 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
 
                   const tierMeta = {
                     TIER_1_CELEB: {
-                      badgeBg: 'bg-rose-500/10 text-rose-400 border-rose-500/30',
+                      badgeBg: 'bg-rose-50 text-rose-700 border-rose-200',
                       borderAccent: 'border-l-rose-500',
                       barColor: 'bg-rose-500',
                       icon: Crown
                     },
                     TIER_2_MACRO: {
-                      badgeBg: 'bg-blue-500/10 text-blue-400 border-blue-500/30',
+                      badgeBg: 'bg-blue-50 text-blue-700 border-blue-200',
                       borderAccent: 'border-l-blue-500',
                       barColor: 'bg-blue-500',
                       icon: Award
                     },
                     TIER_3_MICRO: {
-                      badgeBg: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',
+                      badgeBg: 'bg-emerald-50 text-emerald-700 border-emerald-200',
                       borderAccent: 'border-l-emerald-500',
                       barColor: 'bg-emerald-500',
                       icon: Target
                     },
                     TIER_4_AFFILIATE: {
-                      badgeBg: 'bg-slate-500/10 text-slate-400 border-slate-500/30',
+                      badgeBg: 'bg-slate-100 text-slate-700 border-slate-200',
                       borderAccent: 'border-l-slate-500',
                       barColor: 'bg-slate-500',
                       icon: Package
                     }
                   }[tier.tierId] || {
-                    badgeBg: 'bg-slate-800 text-slate-300 border-slate-700',
+                    badgeBg: 'bg-slate-100 text-slate-700 border-slate-200',
                     borderAccent: 'border-l-slate-500',
                     barColor: 'bg-slate-500',
                     icon: Video
@@ -881,7 +883,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                             <IconComp className="w-3.5 h-3.5 shrink-0 text-slate-500" />
                             <span className="truncate">{tier.tierName.split('—')[1]?.trim() || tier.tierName}</span>
                           </span>
-                          <span className={`text-2xs font-mono px-2 py-0.5 rounded border shrink-0 ${tierMeta.badgeBg}`}>
+                          <span className={`text-2xs font-mono px-2 py-0.5 rounded border shrink-0 font-semibold ${tierMeta.badgeBg}`}>
                             {tier.klRange}
                           </span>
                         </div>
@@ -932,15 +934,15 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                         <div className="flex items-center justify-between mt-2 text-2xs">
                           <span className="text-slate-500 font-mono">{pctAllocated}% trần</span>
                           {isBalanced ? (
-                            <span className="text-emerald-400 font-medium flex items-center gap-1">
+                            <span className="text-emerald-700 font-semibold flex items-center gap-1">
                               <Check className="w-3 h-3" /> Cân đối 100%
                             </span>
                           ) : isOver ? (
-                            <span className="text-rose-400 font-semibold flex items-center gap-0.5">
+                            <span className="text-rose-700 font-semibold flex items-center gap-0.5">
                               <AlertTriangle className="w-3 h-3" /> Vượt trần +{diff}
                             </span>
                           ) : (
-                            <span className="text-blue-400 font-medium">
+                            <span className="text-blue-700 font-medium">
                               Còn trống {Math.abs(diff)} clips
                             </span>
                           )}
@@ -973,7 +975,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                   allocationFilter === 'ALL' ? 'bg-blue-600 text-white' : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200 hover:bg-slate-50'
                 }`}
               >
-                Tất Cả ({allocations.length})
+                Tất cả ({allocations.length})
               </button>
               <button
                 onClick={() => setAllocationFilter('LAGGING')}
@@ -981,7 +983,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                   allocationFilter === 'LAGGING' ? 'bg-rose-600 text-white' : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200 hover:bg-slate-50'
                 }`}
               >
-                Chậm Tiến Độ (&lt;50%)
+                Chậm tiến độ (&lt;50%)
               </button>
               <button
                 onClick={() => setAllocationFilter('GOOD')}
@@ -989,7 +991,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                   allocationFilter === 'GOOD' ? 'bg-emerald-600 text-white' : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200 hover:bg-slate-50'
                 }`}
               >
-                Tiến Độ Tốt (&gt;=80%)
+                Tiến độ tốt (&gt;=80%)
               </button>
             </div>
           </div>
@@ -999,12 +1001,12 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
             <div className="px-5 py-3 border-b border-slate-200 bg-slate-50 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
               <div>
                 <h4 className="text-xs font-semibold text-slate-900 flex items-center gap-2">
-                  <Table className="w-4 h-4 text-blue-500" />
-                  <span>Bảng ma trận phân bổ chỉ tiêu & giám sát plan nhân viên</span>
+                  <Table className="w-4 h-4 text-blue-600" />
+                  <span>Cấp 2: Ma trận phân bổ chỉ tiêu & giám sát plan 26 chuyên viên</span>
                   <span className="text-2xs font-normal text-slate-500 font-mono">({currentPlan.monthLabel})</span>
                 </h4>
                 <p className="text-2xs text-slate-500 mt-0.5">
-                  Chuyển đổi linh hoạt giữa 3 Ma trận: 4 Tier KOC, nhãn hàng, hoặc tuần lên sóng • Bấm "Soi Plan" để xem và duyệt danh sách KOC chi tiết do nhân viên lập
+                  Chuyển đổi giữa 3 ma trận: 4 bậc KOC, nhãn hàng, hoặc tuần lên sóng • Bấm &ldquo;Soi Plan&rdquo; để xem và duyệt danh sách KOC chi tiết
                 </p>
               </div>
 
@@ -1019,7 +1021,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                     }`}
                   >
                     <LayersIcon className="w-3.5 h-3.5" />
-                    <span>Ma Trận 4 Tier</span>
+                    <span>Ma trận 4 bậc</span>
                   </button>
                   <button
                     type="button"
@@ -1052,7 +1054,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                     if (allocationFilter === 'LAGGING') return staff.isLagging || staff.airProgress < 50;
                     if (allocationFilter === 'GOOD') return staff.airProgress >= 80;
                     return true;
-                  }).length} Nhân sự
+                  }).length} nhân sự
                 </span>
               </div>
             </div>
@@ -1094,14 +1096,14 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                       ))
                     )}
 
-                    <th className="p-3 text-right text-slate-700 font-semibold">Tổng Video</th>
+                    <th className="p-3 text-right text-slate-700 font-semibold">Tổng video</th>
                     <th className="p-3 text-right text-slate-700 font-semibold">Ngân sách giao</th>
-                    <th className="p-3 text-right text-slate-700 font-semibold">Target GMV</th>
+                    <th className="p-3 text-right text-slate-700 font-semibold">Mục tiêu GMV</th>
                     <th className="p-3 text-center text-slate-700 font-semibold min-w-[150px]">
                       <span>Plan nhân viên</span>
                       <span className="block text-2xs text-slate-500 font-normal">Độ lấp đầy & duyệt</span>
                     </th>
-                    <th className="p-3 pr-5 text-right text-slate-700 font-semibold min-w-[130px]">Thao Tác</th>
+                    <th className="p-3 pr-5 text-right text-slate-700 font-semibold min-w-[130px]">Thao tác</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200">
@@ -1139,7 +1141,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                           <td className="p-3">
                             <div className="flex flex-wrap gap-1 max-w-[170px]">
                               {staff.assignedBrands.map(b => (
-                                <span key={b} className="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 text-2xs font-medium border border-slate-700/60">
+                                <span key={b} className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 text-2xs font-medium border border-slate-200">
                                   {b}
                                 </span>
                               ))}
@@ -1151,28 +1153,28 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                         {matrixViewMode === '4_TIER' && (
                           <>
                             <td className="p-3 text-center font-mono">
-                              <span className={`px-2 py-0.5 rounded text-2xs font-semibold ${
-                                (staff.tier1Videos || 0) > 0 ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' : 'text-slate-600 bg-slate-900/50'
+                              <span className={`px-2 py-0.5 rounded text-2xs font-semibold border ${
+                                (staff.tier1Videos || 0) > 0 ? 'bg-rose-50 text-rose-700 border-rose-200' : 'text-slate-400 bg-slate-50 border-slate-200'
                               }`}>
                                 {staff.tier1Videos || 0}
                               </span>
                             </td>
                             <td className="p-3 text-center font-mono">
-                              <span className={`px-2 py-0.5 rounded text-2xs font-semibold ${
-                                (staff.tier2Videos || 0) > 0 ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' : 'text-slate-600 bg-slate-900/50'
+                              <span className={`px-2 py-0.5 rounded text-2xs font-semibold border ${
+                                (staff.tier2Videos || 0) > 0 ? 'bg-blue-50 text-blue-700 border-blue-200' : 'text-slate-400 bg-slate-50 border-slate-200'
                               }`}>
                                 {staff.tier2Videos || 0}
                               </span>
                             </td>
                             <td className="p-3 text-center font-mono">
-                              <span className={`px-2 py-0.5 rounded text-2xs font-semibold ${
-                                (staff.tier3Videos || 0) > 0 ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'text-slate-600 bg-slate-900/50'
+                              <span className={`px-2 py-0.5 rounded text-2xs font-semibold border ${
+                                (staff.tier3Videos || 0) > 0 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'text-slate-400 bg-slate-50 border-slate-200'
                               }`}>
                                 {staff.tier3Videos || 0}
                               </span>
                             </td>
                             <td className="p-3 text-center font-mono">
-                              <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-slate-500/20 text-slate-300 border border-slate-500/30">
+                              <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
                                 {staff.tier4Videos ?? staff.planVideos}
                               </span>
                             </td>
@@ -1186,11 +1188,11 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                             return (
                               <td key={brand} className="p-3 text-center font-mono">
                                 {isAssigned ? (
-                                  <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                                  <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
                                     {brandItemsCount > 0 ? `${brandItemsCount} clips` : 'Phụ trách'}
                                   </span>
                                 ) : (
-                                  <span className="text-slate-600 text-2xs">—</span>
+                                  <span className="text-slate-400 text-2xs">—</span>
                                 )}
                               </td>
                             );
@@ -1202,8 +1204,8 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                             const weekCount = staffPlanItems.filter(p => p.targetWeek === week).length;
                             return (
                               <td key={week} className="p-3 text-center font-mono">
-                                <span className={`px-2 py-0.5 rounded text-2xs font-semibold ${
-                                  weekCount > 0 ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'text-slate-600 bg-slate-900/50'
+                                <span className={`px-2 py-0.5 rounded text-2xs font-semibold border ${
+                                  weekCount > 0 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'text-slate-400 bg-slate-50 border-slate-200'
                                 }`}>
                                   {weekCount} clips
                                 </span>
@@ -1214,9 +1216,9 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
 
                         {/* Tổng Video */}
                         <td className="p-3 text-right">
-                          <div className="font-semibold text-white font-mono">{staff.reportVideos} / {staff.planVideos}</div>
-                          <div className="text-2xs text-slate-400 mt-0.5">
-                            Đạt <strong className={staff.airProgress >= 80 ? 'text-emerald-400' : staff.airProgress < 50 ? 'text-rose-400' : 'text-amber-400'}>
+                          <div className="font-semibold text-slate-900 font-mono">{staff.reportVideos} / {staff.planVideos}</div>
+                          <div className="text-2xs text-slate-500 mt-0.5">
+                            Đạt <strong className={staff.airProgress >= 80 ? 'text-emerald-700' : staff.airProgress < 50 ? 'text-rose-700' : 'text-amber-700'}>
                               {staff.airProgress}%
                             </strong>
                           </div>
@@ -1224,20 +1226,20 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
 
                         {/* Ngân Sách */}
                         <td className="p-3 text-right">
-                          <div className="font-semibold text-blue-400 font-mono">
+                          <div className="font-semibold text-blue-700 font-mono">
                             {staff.planBudget.toLocaleString('vi-VN')} đ
                           </div>
-                          <div className="text-2xs text-slate-400 mt-0.5">
+                          <div className="text-2xs text-slate-500 mt-0.5">
                             Đã chi: {formatVndShort(staff.reportBudget)}
                           </div>
                         </td>
 
                         {/* GMV */}
                         <td className="p-3 text-right">
-                          <div className="font-semibold text-emerald-400 font-mono">
+                          <div className="font-semibold text-emerald-700 font-mono">
                             {staff.targetGmv.toLocaleString('vi-VN')} đ
                           </div>
-                          <div className="text-2xs text-slate-400 mt-0.5">
+                          <div className="text-2xs text-slate-500 mt-0.5">
                             Đạt: {formatVndShort(staff.actualGmv)}
                           </div>
                         </td>
@@ -1245,20 +1247,20 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                         {/* Plan Nhân Viên (Fill Rate) */}
                         <td className="p-3 text-center">
                           <div className="flex flex-col items-center gap-1">
-                            <span className="font-semibold text-white font-mono text-2xs">
+                            <span className="font-semibold text-slate-900 font-mono text-2xs">
                               {plannedCount}/{staff.planVideos} clips ({fillPct}%)
                             </span>
-                            <div className="w-20 bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                            <div className="w-20 bg-slate-200 h-1.5 rounded-full overflow-hidden">
                               <div 
-                                className={`data-bar h-full ${fillPct >= 90 ? 'bg-emerald-500' : fillPct > 50 ? 'bg-amber-500' : 'bg-slate-600'}`}
+                                className={`data-bar h-full ${fillPct >= 90 ? 'bg-emerald-500' : fillPct > 50 ? 'bg-amber-500' : 'bg-slate-500'}`}
                                 style={{ width: `${Math.min(100, fillPct)}%` }}
                               />
                             </div>
                             <span className={`text-2xs font-semibold px-1.5 py-0.2 rounded border ${
-                              hasSubmitted ? 'bg-amber-500/10 text-amber-300 border-amber-500/30' :
-                              isFullyApproved ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30' :
-                              hasRevision ? 'bg-rose-500/10 text-rose-300 border-rose-500/30' :
-                              'bg-slate-800 text-slate-400 border-slate-700'
+                              hasSubmitted ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                              isFullyApproved ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                              hasRevision ? 'bg-rose-50 text-rose-700 border-rose-200' :
+                              'bg-slate-100 text-slate-600 border-slate-200'
                             }`}>
                               {hasSubmitted ? 'Chờ duyệt' :
                                isFullyApproved ? 'Đã duyệt' :
@@ -1273,16 +1275,16 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                             <button
                               onClick={() => setInspectingStaffAllocation(staff)}
                               title="Soi chi tiết toàn bộ danh sách KOC do nhân viên này lập và duyệt plan"
-                              className="px-2 py-1 bg-blue-950/60 hover:bg-blue-600 text-blue-300 hover:text-white border border-blue-800/80 hover:border-blue-500 rounded text-xs font-semibold transition flex items-center gap-1 shadow-sm"
+                              className="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded text-xs font-semibold transition flex items-center gap-1"
                             >
                               <Eye className="w-3.5 h-3.5" />
                               <span>Soi Plan</span>
                             </button>
-                            {isManager && (
+                            {isManager && currentPlan.status !== 'COMPLETED' && (
                               <button
                                 onClick={() => handleOpenEditAlloc(staff)}
-                                title="Chỉnh sửa hạn mức phân bổ theo Tier"
-                                className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 rounded text-xs font-medium transition flex items-center gap-1"
+                                title="Chỉnh sửa hạn mức phân bổ theo bậc"
+                                className="px-2 py-1 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded text-xs font-medium transition flex items-center gap-1"
                               >
                                 <Edit3 className="w-3 h-3" />
                                 <span>Sửa</span>
@@ -1304,7 +1306,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                     <td className="p-3 pl-5 sticky left-0 z-10 bg-slate-100 border-r border-slate-200 shadow-[2px_0_5px_rgba(0,0,0,0.04)]">
                       <span className="text-slate-900 text-2xs">Tổng phân bổ (26 nhân sự)</span>
                     </td>
-                    {matrixViewMode !== 'BRANDS' && <td className="p-3 text-slate-600">Toàn bộ Brands</td>}
+                    {matrixViewMode !== 'BRANDS' && <td className="p-3 text-slate-600">Toàn bộ nhãn hàng</td>}
 
                     {matrixViewMode === '4_TIER' && (
                       <>
@@ -1341,16 +1343,16 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                   {/* Row 2: Trần Kế Hoạch Tổng Của Trưởng Phòng */}
                   <tr className="bg-slate-50 text-slate-700">
                     <td className="p-3 pl-5 font-semibold text-slate-700 sticky left-0 z-10 bg-slate-50 border-r border-slate-200 shadow-[2px_0_5px_rgba(0,0,0,0.04)]">
-                      TRẦN PLAN TỔNG (TRƯỞNG PHÒNG)
+                      Trần kế hoạch tổng (Trưởng phòng)
                     </td>
                     {matrixViewMode !== 'BRANDS' && <td className="p-3 text-slate-500">Định mức chốt</td>}
 
                     {matrixViewMode === '4_TIER' && (
                       <>
-                        <td className="p-3 text-center text-rose-600 font-medium">{currentPlan.tierQuotas.find(t => t.tierId === 'TIER_1_CELEB')?.targetVideos || 0} trần</td>
-                        <td className="p-3 text-center text-blue-600 font-medium">{currentPlan.tierQuotas.find(t => t.tierId === 'TIER_2_MACRO')?.targetVideos || 0} trần</td>
-                        <td className="p-3 text-center text-emerald-600 font-medium">{currentPlan.tierQuotas.find(t => t.tierId === 'TIER_3_MICRO')?.targetVideos || 0} trần</td>
-                        <td className="p-3 text-center text-slate-600 font-medium">{currentPlan.tierQuotas.find(t => t.tierId === 'TIER_4_AFFILIATE')?.targetVideos || 0} trần</td>
+                        <td className="p-3 text-center text-rose-700 font-medium">{currentPlan.tierQuotas.find(t => t.tierId === 'TIER_1_CELEB')?.targetVideos || 0} trần</td>
+                        <td className="p-3 text-center text-blue-700 font-medium">{currentPlan.tierQuotas.find(t => t.tierId === 'TIER_2_MACRO')?.targetVideos || 0} trần</td>
+                        <td className="p-3 text-center text-emerald-700 font-medium">{currentPlan.tierQuotas.find(t => t.tierId === 'TIER_3_MICRO')?.targetVideos || 0} trần</td>
+                        <td className="p-3 text-center text-slate-700 font-medium">{currentPlan.tierQuotas.find(t => t.tierId === 'TIER_4_AFFILIATE')?.targetVideos || 0} trần</td>
                       </>
                     )}
 
@@ -1367,16 +1369,16 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                     )}
 
                     <td className="p-3 text-right text-slate-700">{TOTAL_TARGET_VIDEOS} clips</td>
-                    <td className="p-3 text-right text-blue-600">{formatVndShort(TOTAL_CEILING_BUDGET)}</td>
-                    <td className="p-3 text-right text-emerald-600">{formatVndShort(currentPlan.totalTargetGmv)}</td>
+                    <td className="p-3 text-right text-blue-700">{formatVndShort(TOTAL_CEILING_BUDGET)}</td>
+                    <td className="p-3 text-right text-emerald-700">{formatVndShort(currentPlan.totalTargetGmv)}</td>
                     <td className="p-3 text-center text-slate-600">100% mục tiêu</td>
                     <td className="p-3 pr-5 text-right text-slate-400">—</td>
                   </tr>
 
-                  {/* Row 3: Gap Đối Soát (Headroom) */}
+                  {/* Row 3: Chênh lệch đối soát */}
                   <tr className="bg-white font-semibold text-slate-900 border-t border-slate-200">
                     <td className="p-3 pl-5 text-slate-800 sticky left-0 z-10 bg-white border-r border-slate-200 shadow-[2px_0_5px_rgba(0,0,0,0.04)]">
-                      Gap đối soát (headroom)
+                      Chênh lệch đối soát
                     </td>
                     {matrixViewMode !== 'BRANDS' && <td className="p-3 text-slate-500">—</td>}
 
@@ -1392,9 +1394,9 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                           return (
                             <td key={t.key} className="p-3 text-center">
                               <span className={`px-2 py-0.5 rounded text-2xs font-semibold inline-block border ${
-                                diff === 0 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' :
-                                diff > 0 ? 'bg-rose-500/10 text-rose-400 border-rose-500/30' :
-                                'bg-amber-500/10 text-amber-400 border-amber-500/30'
+                                diff === 0 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                                diff > 0 ? 'bg-rose-50 text-rose-700 border-rose-200' :
+                                'bg-amber-50 text-amber-700 border-amber-200'
                               }`}>
                                 {diff === 0 ? '✓ Khớp' : diff > 0 ? `Vượt +${diff}` : `Trống ${Math.abs(diff)}`}
                               </span>
@@ -1409,7 +1411,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                         const count = allocations.filter(s => s.assignedBrands.some(ab => ab.toLowerCase().includes(b.toLowerCase()))).length;
                         return (
                           <td key={b} className="p-3 text-center">
-                            <span className="px-2 py-0.5 rounded text-2xs font-medium bg-blue-500/10 text-blue-400 border border-blue-500/30 inline-block">
+                            <span className="px-2 py-0.5 rounded text-2xs font-medium bg-blue-50 text-blue-700 border border-blue-200 inline-block">
                               ✓ {count} NV
                             </span>
                           </td>
@@ -1420,34 +1422,34 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                     {matrixViewMode === 'WEEKS' && (
                       MATRIX_WEEKS.map(w => {
                         const count = localPlanItems.filter(p => p.targetWeek === w).length;
-                        const phaseLabel = w === 'W1' ? 'Khởi động' : w === 'W2' ? 'Tăng tốc' : w === 'W3' ? 'Mega Peak' : 'Về đích';
+                        const phaseLabel = w === 'W1' ? 'Khởi động' : w === 'W2' ? 'Tăng tốc' : w === 'W3' ? 'Cao điểm' : 'Về đích';
                         return (
                           <td key={w} className="p-3 text-center">
                             <div className="flex flex-col items-center gap-0.5">
-                              <span className="px-1.5 py-0.2 rounded text-2xs font-semibold bg-slate-500/10 text-slate-300 border border-slate-500/30">
+                              <span className="px-1.5 py-0.2 rounded text-2xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
                                 {phaseLabel}
                               </span>
-                              <span className="text-2xs text-slate-300 font-mono">{count} clips</span>
+                              <span className="text-2xs text-slate-600 font-mono">{count} clips</span>
                             </div>
                           </td>
                         );
                       })
                     )}
 
-                    <td className={`p-3 text-right ${remainingVideos === 0 ? 'text-emerald-400' : remainingVideos > 0 ? 'text-amber-400' : 'text-rose-400'}`}>
+                    <td className={`p-3 text-right ${remainingVideos === 0 ? 'text-emerald-700' : remainingVideos > 0 ? 'text-amber-700' : 'text-rose-700'}`}>
                       {remainingVideos === 0 ? '✓ Khớp trần' : remainingVideos > 0 ? `Còn ${remainingVideos} clips` : `Vượt ${Math.abs(remainingVideos)}`}
                     </td>
-                    <td className={`p-3 text-right ${remainingBudget === 0 ? 'text-emerald-400' : remainingBudget > 0 ? 'text-amber-400' : 'text-rose-400'}`}>
+                    <td className={`p-3 text-right ${remainingBudget === 0 ? 'text-emerald-700' : remainingBudget > 0 ? 'text-amber-700' : 'text-rose-700'}`}>
                       {remainingBudget === 0 ? '✓ Khớp trần' : remainingBudget > 0 ? `Còn ${formatVndShort(remainingBudget)}` : `Vượt ${formatVndShort(Math.abs(remainingBudget))}`}
                     </td>
-                    <td className="p-3 text-right text-emerald-400">
+                    <td className="p-3 text-right text-emerald-700">
                       {totalTargetGmv >= currentPlan.totalTargetGmv ? '✓ Đạt chỉ tiêu' : `Hụt ${formatVndShort((currentPlan.totalTargetGmv - totalTargetGmv))}`}
                     </td>
                     <td className="p-3 text-center">
                       <span className={`text-2xs font-semibold px-2 py-0.5 rounded border inline-block ${
-                        remainingBudget >= 0 && remainingVideos >= 0 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : 'bg-rose-500/10 text-rose-400 border-rose-500/30'
+                        remainingBudget >= 0 && remainingVideos >= 0 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200'
                       }`}>
-                        {remainingBudget >= 0 && remainingVideos >= 0 ? 'HỢP LỆ TRẦN' : 'VƯỢT ĐỊNH MỨC'}
+                        {remainingBudget >= 0 && remainingVideos >= 0 ? 'Hợp lệ trần' : 'Vượt định mức'}
                       </span>
                     </td>
                     <td className="p-3 pr-5 text-right text-slate-500">—</td>
@@ -1461,820 +1463,15 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
         </div>
       )}
 
-      {/* ========================================================================= */}
-      {/* KHÔNG GIAN 4: GIÁM SÁT & TIẾN ĐỘ AIR                                      */}
-      {/* ========================================================================= */}
-      {activeTab === 'MONITORING' && (
-        <div className="space-y-5 animate-in fade-in duration-150">
-          <div className="flex flex-wrap items-center justify-between gap-3 p-1.5 bg-slate-100/80 border border-slate-200 rounded-xl text-xs overflow-x-auto">
-            <Segmented
-              value={monitoringSubTab}
-              onChange={setMonitoringSubTab}
-              items={[
-                { key: 'CONTROL_TOWER', label: 'Bảng điều hành Control Tower' },
-                { key: 'AIR_PROGRESS', label: 'Tiến độ Air Video' },
-                { key: 'STAFF_GMV', label: 'GMV theo nhân sự' },
-                { key: 'MONTHLY_PLAN', label: 'Kế hoạch vs Thực đạt' },
-                { key: 'PLAN_GAP', label: 'Khoảng trống ngân sách' },
-              ]}
-            />
-          </div>
 
-          {/* ========================================================================= */}
-      {/* MODULE 6: CONTROL TOWER (HEAD/LEAD ZERO INPUT - STRICTLY MONITORING ONLY) */}
-      {/* ========================================================================= */}
-      {monitoringSubTab === 'CONTROL_TOWER' && (
-        <div className="space-y-5 animate-in fade-in duration-150">
-          {/* Executive Read-Only Header */}
-          <div className="card-enterprise p-4 bg-white border border-slate-200 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-600 shrink-0">
-                <ShieldAlert className="w-5 h-5" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="text-sm font-semibold text-slate-900">Tháp điều khiển Trung tâm</h3>
-                  <span className="badge-emerald px-2 py-0.5 rounded-full text-2xs font-semibold">
-                    ● Hệ thống vận hành ổn định
-                  </span>
-                </div>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Dành riêng cho Head / Lead: <strong className="text-slate-700">Không nhập liệu thủ công</strong>. Giám sát tự động Plan vs Actual, SLA, điểm nghẽn, cân bằng tải & cảnh báo ngoại lệ.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 text-xs">
-              <div className="px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-600">
-                Chu kỳ: <strong className="text-blue-600 font-mono font-semibold">{selectedMonth}</strong>
-              </div>
-              <div className="px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-600">
-                SLA toàn phòng: <strong className="text-emerald-600 font-mono font-semibold">{controlTower.slaOnTimeRate}%</strong>
-              </div>
-            </div>
-          </div>
-
-          {/* 1. Plan vs Actual Bảng điều hành Cards */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div className="card-enterprise p-4 bg-white border border-emerald-200/80 shadow-2xs space-y-1">
-              <span className="text-2xs text-slate-500 font-medium">GMV Plan vs Actual (MTD)</span>
-              <div className="text-xl font-semibold text-emerald-600 font-mono">
-                {(controlTower.actualGmv / 1000000000).toFixed(2)}B / {(controlTower.planGmv / 1000000000).toFixed(2)}B
-              </div>
-              <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden mt-1">
-                <div className="data-bar bg-emerald-500 h-full rounded-full" style={{ width: `${controlTower.gmvAchievementRate}%` }} />
-              </div>
-              <span className="text-2xs text-emerald-600 font-semibold block pt-0.5">
-                Đạt {controlTower.gmvAchievementRate}% kế hoạch
-              </span>
-            </div>
-
-            <div className="card-enterprise p-4 bg-white border border-amber-200/80 shadow-2xs space-y-1">
-              <span className="text-2xs text-slate-500 font-medium">Ngân sách giải ngân</span>
-              <div className="text-xl font-semibold text-amber-600 font-mono">
-                {(controlTower.actualSpentBudget / 1000000).toLocaleString('vi-VN')}M / {(controlTower.planBudget / 1000000).toLocaleString('vi-VN')}M
-              </div>
-              <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden mt-1">
-                <div className="data-bar bg-amber-500 h-full rounded-full" style={{ width: `${controlTower.budgetBurnRate}%` }} />
-              </div>
-              <span className="text-2xs text-slate-500 block pt-0.5">
-                Đã tiêu {controlTower.budgetBurnRate}% • CIR: <strong className="text-blue-600">{controlTower.cirCurrent}%</strong>
-              </span>
-            </div>
-
-            <div className="card-enterprise p-4 bg-white border border-rose-200/80 shadow-2xs space-y-1">
-              <span className="text-2xs text-slate-500 font-medium">Radar tắc nghẽn & Backlog</span>
-              <div className="text-xl font-semibold text-rose-600">{controlTower.pendingBacklogCases} Cases Tồn Đọng</div>
-              <div className="text-2xs text-amber-700 font-semibold truncate">
-                Điểm nghẽn: {controlTower.bottleneckTeam}
-              </div>
-              <span className="text-2xs text-slate-500 block pt-0.5">
-                4 ca trễ SLA &gt;24h ở khâu kịch bản
-              </span>
-            </div>
-
-            <div className="card-enterprise p-4 bg-white border border-slate-200/80 shadow-2xs space-y-1">
-              <span className="text-2xs text-slate-500 font-medium">Cân bằng tải</span>
-              <div className="text-xl font-semibold text-slate-600">26 nhân sự</div>
-              <div className="text-2xs text-slate-700 font-medium">
-                1 Quá tải (&gt;115%) • 3 Non tải (&lt;75%)
-              </div>
-              <span className="text-2xs text-slate-600 font-semibold block pt-0.5">
-                Tỷ lệ pass kịch bản Vòng 1: {controlTower.firstTimePassRate}%
-              </span>
-            </div>
-          </div>
-
-          {/* 2. Bottleneck & Exceptions Radar */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Bottlenecks by Stage */}
-            <div className="card-enterprise p-5 bg-white border border-slate-200 shadow-2xs space-y-3">
-              <div className="flex items-center justify-between border-b border-slate-200 pb-2.5">
-                <h4 className="text-xs font-semibold text-slate-900 flex items-center gap-2">
-                  <Flame className="w-4 h-4 text-amber-500" />
-                  <span>Điểm nghẽn quy trình tác nghiệp</span>
-                </h4>
-                <span className="badge-slate text-2xs font-mono px-2 py-0.5 rounded">14 Cases</span>
-              </div>
-
-              <div className="space-y-2 text-xs">
-                <div className="p-3 rounded-lg bg-amber-50/50 border border-amber-200 flex items-center justify-between">
-                  <div>
-                    <span className="font-semibold text-amber-900">Khâu 3: Thẩm định kịch bản 4 phần</span>
-                    <p className="text-2xs text-slate-500">Thời gian duyệt trung bình: 28.4h (vượt chuẩn SLA 24h)</p>
-                  </div>
-                  <span className="badge-amber px-2 py-0.5 rounded text-2xs font-semibold">4 Cases Trễ</span>
-                </div>
-
-                <div className="p-3 rounded-lg bg-emerald-50/50 border border-emerald-200 flex items-center justify-between">
-                  <div>
-                    <span className="font-semibold text-slate-900">Khâu 2: Đàm phán hợp đồng & chi tạm ứng Lark</span>
-                    <p className="text-2xs text-slate-500">Phê duyệt API tạm ứng 2M qua Lark: Trung bình 3.2h (rất tốt)</p>
-                  </div>
-                  <span className="badge-emerald px-2 py-0.5 rounded text-2xs font-semibold">Thông suốt</span>
-                </div>
-
-                <div className="p-3 rounded-lg bg-rose-50/50 border border-rose-200 flex items-center justify-between">
-                  <div>
-                    <span className="font-semibold text-rose-700">Khâu 5: Thu hồi mã Spark Ads sau khi video lên sóng</span>
-                    <p className="text-2xs text-slate-500">2 KOC đã lên video nhưng chưa cung cấp mã ủy quyền Ads</p>
-                  </div>
-                  <span className="badge-rose px-2 py-0.5 rounded text-2xs font-semibold">2 Cases cần đốc thúc</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Quality & Exception Alerts */}
-            <div className="card-enterprise p-5 bg-white border border-slate-200 shadow-2xs space-y-3">
-              <div className="flex items-center justify-between border-b border-slate-200 pb-2.5">
-                <h4 className="text-xs font-semibold text-slate-900 flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4 text-rose-500" />
-                  <span>Cảnh báo ngoại lệ & rủi Ro dự án</span>
-                </h4>
-                <span className="badge-rose px-2 py-0.5 rounded text-2xs font-semibold">3 cảnh báo</span>
-              </div>
-
-              <div className="space-y-2 text-xs">
-                <div className="p-3 rounded-lg bg-rose-50/60 border border-rose-200 space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold text-rose-800">Cảnh báo bùng mẫu</span>
-                    <span className="text-2xs font-mono font-semibold text-rose-600">SLA &gt; 5 Ngày</span>
-                  </div>
-                  <p className="text-2xs text-slate-600">
-                    KOC <strong className="text-slate-900">@thuydung_review</strong> đã nhận mẫu Kutieskin Mama 6 ngày trước nhưng chưa gửi video nháp demo.
-                  </p>
-                </div>
-
-                <div className="p-3 rounded-lg bg-amber-50/60 border border-amber-200 space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold text-amber-800">Lệch tiến độ Air cụm gian hàng FMCG</span>
-                    <span className="text-2xs font-mono font-semibold text-amber-600">Gap 42M GMV</span>
-                  </div>
-                  <p className="text-2xs text-slate-600">
-                    Cụm gian hàng Bio-Essence mới đạt 68% sản lượng video cam kết tuần W39, cần tăng tốc book KL3-KL4.
-                  </p>
-                </div>
-
-                <div className="p-3 rounded-lg bg-blue-50/60 border border-blue-200 space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold text-blue-800">Top Winner Video bứt phá doanh số</span>
-                    <span className="text-2xs font-mono font-semibold text-emerald-600">ROI 18.2x</span>
-                  </div>
-                  <p className="text-2xs text-slate-600">
-                    Video của Mega Uri Review đạt 182M GMV sau 3 ngày lên sóng, kích hoạt mở ngân sách Spark Ads quy mô lớn.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* ========================================================================= */}
-
-      {/* TAB 1: MONTHLY PLAN VS REVISE VS ACTUAL & SELF CHANNEL (IMAGES 1, 2, 8) */}
-      {/* ========================================================================= */}
-      {monitoringSubTab === 'MONTHLY_PLAN' && (
-        <div className="space-y-6">
-          {/* Executive Summary 4 Cards (From Image 1) */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="card-enterprise p-5 bg-white border-blue-200 shadow-2xs text-center">
-              <span className="text-xs text-blue-700 font-semibold block">AFFILIATE GMV</span>
-              <div className="text-2xl font-semibold text-slate-900 mt-1">84,0%</div>
-              <span className="text-xs text-slate-600 mt-1 block">
-                <strong className="text-emerald-700">24,15 B</strong> / 28,74 B plan
-              </span>
-            </div>
-
-            <div className="card-enterprise p-5 bg-white border-slate-200 shadow-2xs text-center">
-              <span className="text-xs text-slate-700 font-semibold block">AFFILIATE BUDGET</span>
-              <div className="text-2xl font-semibold text-slate-900 mt-1">90,4%</div>
-              <span className="text-xs text-slate-600 mt-1 block">
-                Gross <strong className="text-slate-700">3,05 B</strong> / 3,37 B
-              </span>
-            </div>
-
-            <div className="card-enterprise p-5 bg-white border-emerald-200 shadow-2xs text-center">
-              <span className="text-xs text-emerald-700 font-semibold block">VIDEO CÓ CAST BOOKING</span>
-              <div className="text-2xl font-semibold text-slate-900 mt-1">622 Video</div>
-              <span className="text-xs text-slate-600 mt-1 block">
-                GMV30 ~ <strong className="text-emerald-700">1,27 B</strong>
-              </span>
-            </div>
-
-            <div className="card-enterprise p-5 bg-white border-amber-200 shadow-2xs text-center">
-              <span className="text-xs text-amber-700 font-semibold block">SELF CHANNEL GMV</span>
-              <div className="text-2xl font-semibold text-slate-900 mt-1">63,4%</div>
-              <span className="text-xs text-slate-600 mt-1 block">
-                <strong className="text-amber-700">1,19 B</strong> / 1,88 B plan
-              </span>
-            </div>
-          </div>
-
-          {/* Master Table: Overall Marketing B2C T8 (From Image 2) */}
-          <div className="card-enterprise overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-200 bg-slate-50/80 flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-                  <CheckSquare className="w-4 h-4 text-emerald-600" />
-                  Bảng theo dõi kế hoạch & thực đạt
-                </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Đối chiếu chỉ số Plan T8 vs Revise T8 vs Actual T8 và tỷ lệ % hoàn thành
-                </p>
-              </div>
-              <span className="badge-emerald px-2.5 py-1 rounded-full text-xs font-semibold">
-                Cập nhật: Cuối kỳ T8
-              </span>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse text-xs">
-                <thead>
-                  <tr className="bg-slate-100/70 border-b border-slate-200">
-                    <th className="p-3.5 pl-6 font-semibold text-slate-600">Workstream (hạng mục)</th>
-                    <th className="p-3.5 font-semibold text-slate-600">Metric (chỉ số)</th>
-                    <th className="p-3.5 font-semibold text-slate-600">Plan T8</th>
-                    <th className="p-3.5 font-semibold text-slate-600">Revise T8</th>
-                    <th className="p-3.5 font-semibold text-slate-600">Actual T8</th>
-                    <th className="p-3.5 pr-6 font-semibold text-slate-600 text-right">% Đạt kế hoạch</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {MONTHLY_PLAN_DATA.map((row) => (
-                    <tr key={row.id} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="p-3.5 pl-6 font-semibold text-slate-900">{row.workstream}</td>
-                      <td className="p-3.5 font-medium text-slate-700">{row.metric}</td>
-                      <td className="p-3.5 text-slate-500 font-mono">{row.planT8}</td>
-                      <td className="p-3.5 text-slate-500 font-mono">{row.reviseT8}</td>
-                      <td className="p-3.5 font-semibold text-slate-900 font-mono">{row.actualT8}</td>
-                      <td className="p-3.5 pr-6 text-right">
-                        <span className={`px-2.5 py-1 rounded-full text-2xs font-semibold inline-block ${
-                          row.pctAchieved === '100%' || Number(row.pctAchieved.replace('%','').replace(',','.')) >= 90
-                            ? 'badge-emerald'
-                            : Number(row.pctAchieved.replace('%','').replace(',','.')) >= 80
-                            ? 'badge-blue'
-                            : 'badge-amber'
-                        }`}>
-                          {row.pctAchieved}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          {/* Detailed Section: VI. Self Channel (From Image 8) */}
-          <div className="card-enterprise p-5 bg-amber-50/40 border border-amber-200 shadow-2xs space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-amber-200/80">
-              <div>
-                <h4 className="text-sm font-semibold text-amber-800 flex items-center gap-2">
-                  <Flame className="w-4 h-4 fill-amber-500 text-amber-500" />
-                  VI. Chi tiết phân hệ kênh tự vận hành
-                </h4>
-                <p className="text-xs text-slate-600 mt-0.5">
-                  Đánh giá chỉ tiêu GMV, Budget Gross và 853 Video thực tế lên sóng từ hệ thống kênh In-House
-                </p>
-              </div>
-              <span className="badge-amber px-2.5 py-1 rounded-full text-xs font-semibold">
-                883 Video Pillar / 72,6M GMV30
-              </span>
-            </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
-              <div className="p-3.5 bg-white rounded-xl border border-slate-200 shadow-2xs">
-                <span className="text-slate-500 block mb-1">GMV Self Channel:</span>
-                <div className="text-lg font-semibold text-slate-900">
-                  {SELF_CHANNEL_SUMMARY.gmvActual} <span className="text-xs text-slate-400 font-normal">/ {SELF_CHANNEL_SUMMARY.gmvPlan} plan</span>
-                </div>
-                <span className="text-amber-700 font-semibold mt-1 block">Đạt {SELF_CHANNEL_SUMMARY.gmvPct}</span>
-              </div>
-
-              <div className="p-3.5 bg-white rounded-xl border border-slate-200 shadow-2xs">
-                <span className="text-slate-500 block mb-1">Budget Gross:</span>
-                <div className="text-lg font-semibold text-slate-700">
-                  {SELF_CHANNEL_SUMMARY.budgetActual} <span className="text-xs text-slate-400 font-normal">/ {SELF_CHANNEL_SUMMARY.budgetPlan} plan</span>
-                </div>
-                <span className="text-emerald-700 font-semibold mt-1 block">Giải ngân {SELF_CHANNEL_SUMMARY.budgetPct}</span>
-              </div>
-
-              <div className="p-3.5 bg-white rounded-xl border border-slate-200 shadow-2xs">
-                <span className="text-slate-500 block mb-1">Sản lượng video Air:</span>
-                <div className="text-lg font-semibold text-blue-700">
-                  {SELF_CHANNEL_SUMMARY.videoActual} <span className="text-xs text-slate-400 font-normal">/ {SELF_CHANNEL_SUMMARY.videoPlan} plan</span>
-                </div>
-                <span className="text-emerald-700 font-semibold mt-1 block">Đạt {SELF_CHANNEL_SUMMARY.videoPct}</span>
-              </div>
-
-              <div className="p-3.5 bg-white rounded-xl border border-slate-200 shadow-2xs">
-                <span className="text-slate-500 block mb-1">Bảng Pillar kênh In-House:</span>
-                <div className="text-lg font-semibold text-emerald-700">
-                  {SELF_CHANNEL_SUMMARY.pillarVideoCount} Video
-                </div>
-                <span className="text-slate-600 mt-1 block font-mono">GMV 30: {SELF_CHANNEL_SUMMARY.pillarGmv30}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ========================================================================= */}
-      {/* TAB 2: STAFF AIR PROGRESS & BUDGET TRACKING (IMAGE 6: 26 NHÂN SỰ) */}
-      {/* ========================================================================= */}
-      {monitoringSubTab === 'AIR_PROGRESS' && (
-        <div className="space-y-6">
-          {/* Action Header & Quick Filters */}
-          <div className="card-enterprise p-5 bg-white border border-slate-200 shadow-2xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
-            <div>
-              <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-                <Video className="w-4 h-4 text-blue-600" />
-                Chi tiết chỉ tiêu ngân sách & tiến độ Air theo 26 nhân sự booking (tháng 8/2026)
-              </h3>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Tổng Plan 5.648 video vs Report 1.407 video (TB 65%) • Plan ngân sách 3,681B vs Report 2,849B (TB 74%)
-              </p>
-            </div>
-
-            <div className="flex items-center gap-2">
-              {/* Quick Filter buttons */}
-              <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs">
-                <button
-                  onClick={() => setAirFilter('ALL')}
-                  className={`px-2.5 py-1 rounded-lg font-semibold transition ${
-                    airFilter === 'ALL' ? 'bg-blue-600 text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  Tất cả (26)
-                </button>
-                <button
-                  onClick={() => setAirFilter('LAGGING')}
-                  className={`px-2.5 py-1 rounded-lg font-semibold transition flex items-center gap-1 ${
-                    airFilter === 'LAGGING' ? 'bg-rose-600 text-white shadow-2xs' : 'text-rose-700 hover:text-rose-900'
-                  }`}
-                >
-                  <AlertTriangle className="w-3 h-3" />
-                  <span>Tụt Air &lt;50% (5)</span>
-                </button>
-                <button
-                  onClick={() => setAirFilter('OVER_BUDGET')}
-                  className={`px-2.5 py-1 rounded-lg font-semibold transition ${
-                    airFilter === 'OVER_BUDGET' ? 'bg-slate-600 text-white shadow-2xs' : 'text-slate-700 hover:text-slate-900'
-                  }`}
-                >
-                  Vượt Ngân Sách &gt;100%
-                </button>
-                <button
-                  onClick={() => setAirFilter('GOOD')}
-                  className={`px-2.5 py-1 rounded-lg font-semibold transition ${
-                    airFilter === 'GOOD' ? 'bg-emerald-600 text-white shadow-2xs' : 'text-emerald-700 hover:text-emerald-900'
-                  }`}
-                >
-                  Tiến Độ Tốt (&gt;=80%)
-                </button>
-              </div>
-
-              {/* Bulk Ping Button */}
-              <button
-                onClick={handlePingAllLagging}
-                disabled={isAllLaggingPinged}
-                className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition flex items-center gap-1.5 shadow-xs cursor-pointer ${
-                  isAllLaggingPinged
-                    ? 'bg-slate-100 text-slate-400 border border-slate-200'
-                    : 'bg-rose-600 hover:bg-rose-700 text-white'
-                }`}
-              >
-                <BellRing className="w-3.5 h-3.5" />
-                <span>{isAllLaggingPinged ? 'Đã Nhắc Nhở Toàn Bộ' : 'Đốc Thúc 5 Bạn Tụt Air'}</span>
-              </button>
-            </div>
-          </div>
-
-          {/* 26 Staff Progress Table */}
-          <div className="card-enterprise overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse text-xs">
-                <thead>
-                  <tr className="bg-slate-100/70 border-b border-slate-200">
-                    <th className="p-3 pl-6 font-semibold text-slate-600">Tháng</th>
-                    <th className="p-3 font-semibold text-slate-600">Nhân sự booking</th>
-                    <th className="p-3 font-semibold text-slate-600 text-right">Plan Số Video</th>
-                    <th className="p-3 font-semibold text-slate-600 text-right">Report Số Video</th>
-                    <th className="p-3 font-semibold text-slate-600 text-center">Tiến độ Air</th>
-                    <th className="p-3 font-semibold text-slate-600 text-right">Plan Ngân Sách</th>
-                    <th className="p-3 font-semibold text-slate-600 text-right">Report ngân sách</th>
-                    <th className="p-3 font-semibold text-slate-600 text-center">Tiến độ ngân sách</th>
-                    <th className="p-3 pr-6 font-semibold text-slate-600 text-right">Hành động</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {filteredStaffProgress.map((staff, idx) => (
-                    <tr 
-                      key={staff.id} 
-                      className={`transition-colors ${
-                        staff.isLagging || staff.airProgress < 50 
-                          ? 'bg-rose-50/60 hover:bg-rose-100/50' 
-                          : 'hover:bg-slate-50/80'
-                      }`}
-                    >
-                      <td className="p-3 pl-6 text-slate-500 font-mono">{staff.month}</td>
-                      <td className="p-3">
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold text-slate-900 text-sm">{staff.staffName}</span>
-                          {(staff.isLagging || staff.airProgress < 50) && (
-                            <span className="badge-rose px-1.5 py-0.2 rounded text-2xs font-semibold">
-                              Chậm Tiến Độ
-                            </span>
-                          )}
-                          {staff.budgetProgress > 100 && (
-                            <span className="badge-purple px-1.5 py-0.2 rounded text-2xs font-semibold">
-                              Vượt Plan
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="p-3 text-right font-mono text-slate-600">{staff.planVideos}</td>
-                      <td className="p-3 text-right font-mono font-semibold text-slate-900">{staff.reportVideos}</td>
-                      <td className="p-3 text-center">
-                        <div className="inline-flex items-center gap-2">
-                          <div className="w-16 bg-slate-200 rounded-full h-1.5 hidden sm:block">
-                            <div 
-                              className={`data-bar h-1.5 rounded-full ${
-                                staff.airProgress < 50 ? 'bg-rose-500' :
-                                staff.airProgress >= 80 ? 'bg-emerald-500' : 'bg-blue-500'
-                              }`} 
-                              style={{ width: `${Math.min(staff.airProgress, 100)}%` }}
-                            />
-                          </div>
-                          <span className={`px-2 py-0.5 rounded font-semibold text-2xs ${
-                            staff.airProgress < 50 ? 'badge-rose' :
-                            staff.airProgress >= 80 ? 'badge-emerald' : 'badge-blue'
-                          }`}>
-                            {staff.airProgress}%
-                          </span>
-                        </div>
-                      </td>
-                      <td className="p-3 text-right font-mono text-slate-500">
-                        {staff.planBudget.toLocaleString('vi-VN')} đ
-                      </td>
-                      <td className="p-3 text-right font-mono font-semibold text-blue-700">
-                        {staff.reportBudget.toLocaleString('vi-VN')} đ
-                      </td>
-                      <td className="p-3 text-center">
-                        <span className={`px-2 py-0.5 rounded font-semibold text-2xs ${
-                          staff.budgetProgress >= 100 ? 'badge-purple' :
-                          staff.budgetProgress >= 80 ? 'badge-emerald' : 'badge-amber'
-                        }`}>
-                          {staff.budgetProgress}%
-                        </span>
-                      </td>
-                      <td className="p-3 pr-6 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
-                          <button
-                            onClick={() => setAiReviewTargetStaff(staff.staffName)}
-                            className="px-2 py-1 rounded bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 font-semibold text-2xs transition flex items-center gap-1 shadow-2xs cursor-pointer"
-                            title={`Gợi ý nhận xét tiến độ của ${staff.staffName}`}
-                          >
-                            <Sparkles className="w-3 h-3 text-slate-600" />
-                            <span>Nhận xét</span>
-                          </button>
-                          <button
-                            onClick={() => handlePing(staff.id, staff.staffName, 'Đốc thúc trả link video TikTok lên sóng')}
-                            disabled={pingedStaff[staff.id]}
-                            className={`px-2.5 py-1 rounded-lg font-semibold text-xs flex items-center gap-1 transition cursor-pointer ${
-                              pingedStaff[staff.id]
-                                ? 'bg-slate-100 text-slate-400 border border-slate-200'
-                                : (staff.isLagging || staff.airProgress < 50)
-                                ? 'bg-rose-600 hover:bg-rose-700 text-white shadow-xs'
-                                : 'bg-blue-600 hover:bg-blue-700 text-white shadow-xs'
-                            }`}
-                          >
-                            <BellRing className="w-3 h-3" />
-                            <span>{pingedStaff[staff.id] ? 'Đã Nhắc' : 'Đốc Thúc'}</span>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-                {/* Total Footer Row */}
-                <tfoot>
-                  <tr className="bg-slate-100/90 border-t-2 border-blue-500 font-semibold text-slate-900">
-                    <td className="p-3.5 pl-6" colSpan={2}>
-                      Tổng cộng (26 bản ghi toàn bộ b2c)
-                    </td>
-                    <td className="p-3.5 text-right font-mono text-blue-700">5.648</td>
-                    <td className="p-3.5 text-right font-mono text-emerald-700">1.407</td>
-                    <td className="p-3.5 text-center">
-                      <span className="badge-emerald px-2 py-0.5 rounded text-2xs">
-                        Trung Bình 65%
-                      </span>
-                    </td>
-                    <td className="p-3.5 text-right font-mono text-slate-700">3.681.480.001 đ</td>
-                    <td className="p-3.5 text-right font-mono text-blue-700">2.849.289.000 đ</td>
-                    <td className="p-3.5 text-center">
-                      <span className="badge-blue px-2 py-0.5 rounded text-2xs">
-                        Trung Bình 74%
-                      </span>
-                    </td>
-                    <td className="p-3.5 pr-6 text-right text-slate-500 text-2xs">
-                      Kiểm duyệt 100%
-                    </td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ========================================================================= */}
-      {/* TAB 3: STAFF REVENUE & GMV GROWTH (IMAGE 7: REPORT THEO HIỆU QUẢ) */}
-      {/* ========================================================================= */}
-      {monitoringSubTab === 'STAFF_GMV' && (
-        <div className="space-y-6">
-          {/* Caveat Banner from Image 7 */}
-          <div className="p-4 bg-blue-50/80 rounded-xl border border-blue-200 flex items-center justify-between text-xs">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center font-semibold">
-                <HelpCircle className="w-5 h-5" />
-              </div>
-              <div>
-                <span className="font-semibold text-blue-900 text-sm">
-                  Ghi chú đánh giá hiệu quả: Dữ liệu kéo thiếu kênh tự vận hành
-                </span>
-                <p className="text-slate-600 mt-0.5">
-                  Một số nhân sự làm thuần Self Channel nhìn hiệu quả doanh thu affiliate trên bảng này sẽ bị thấp hơn đóng góp thực tế. Quản lý cần đối chiếu thêm với phân hệ Self Channel tại Tab 1.
-                </p>
-              </div>
-            </div>
-            <span className="badge-blue px-3 py-1.5 rounded-lg font-semibold shrink-0">
-              Tổng KOC Book mới: 243 KOCs
-            </span>
-          </div>
-
-          {/* Revenue Table from Image 7 */}
-          <div className="card-enterprise overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-200 bg-slate-50/80 flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4 text-emerald-600" />
-                  Báo cáo hiệu quả doanh thu & tăng trưởng GMV 30 ngày từng nhân sự
-                </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  So sánh GMV tháng này vs GMV tháng trước, tỷ lệ tăng trưởng và số KOC book mới phát triển
-                </p>
-              </div>
-              <span className="badge-emerald px-2.5 py-1 rounded-full text-xs font-semibold">
-                Tổng GMV: 1,36 tỷ đ
-              </span>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse text-xs">
-                <thead>
-                  <tr className="bg-slate-100/70 border-b border-slate-200">
-                    <th className="p-3 pl-6 font-semibold text-slate-600">#</th>
-                    <th className="p-3 font-semibold text-slate-600">Nhân sự booking</th>
-                    <th className="p-3 font-semibold text-slate-600 text-center">Tiến độ ngân sách</th>
-                    <th className="p-3 font-semibold text-slate-600 text-center">KOC Book Mới</th>
-                    <th className="p-3 font-semibold text-slate-600 text-right">GMV tháng này (30 ngày)</th>
-                    <th className="p-3 font-semibold text-slate-600 text-right">GMV tháng trước</th>
-                    <th className="p-3 font-semibold text-slate-600 text-right">Tăng trưởng GMV</th>
-                    <th className="p-3 pr-6 font-semibold text-slate-600 text-center">ROI 14 Ngày</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {BOOKING_STAFF_REVENUE_26.map((staff, idx) => (
-                    <tr key={staff.id} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="p-3 pl-6 text-slate-500 font-mono">{idx + 1}</td>
-                      <td className="p-3">
-                        <span className="font-semibold text-slate-900 text-sm">{staff.staffName}</span>
-                        {idx === 0 && (
-                          <span className="badge-amber ml-2 px-1.5 py-0.2 rounded text-2xs font-semibold">
-                            Dẫn đầu doanh thu
-                          </span>
-                        )}
-                        {staff.newKocsBooked >= 30 && (
-                          <span className="badge-cyan ml-2 px-1.5 py-0.2 rounded text-2xs font-semibold">
-                            Tuyển Mới Tốt ({staff.newKocsBooked})
-                          </span>
-                        )}
-                      </td>
-                      <td className="p-3 text-center">
-                        <span className={`px-2 py-0.5 rounded font-semibold text-2xs ${
-                          staff.budgetProgress >= 100 ? 'badge-purple' :
-                          staff.budgetProgress >= 80 ? 'badge-emerald' : 'badge-amber'
-                        }`}>
-                          {staff.budgetProgress}%
-                        </span>
-                      </td>
-                      <td className="p-3 text-center font-semibold text-blue-700 font-mono">
-                        {staff.newKocsBooked}
-                      </td>
-                      <td className="p-3 text-right font-mono font-semibold text-emerald-700">
-                        {staff.gmvThisMonth > 0 ? `${staff.gmvThisMonth.toLocaleString('vi-VN')} đ` : '0 đ'}
-                      </td>
-                      <td className="p-3 text-right font-mono text-slate-500">
-                        {staff.gmvLastMonth > 0 ? `${staff.gmvLastMonth.toLocaleString('vi-VN')} đ` : '0 đ'}
-                      </td>
-                      <td className="p-3 text-right">
-                        <span className={`font-mono font-semibold text-2xs flex items-center justify-end gap-0.5 ${
-                          staff.growthRate > 0 ? 'text-emerald-700' :
-                          staff.growthRate < 0 ? 'text-rose-700' : 'text-slate-500'
-                        }`}>
-                          {staff.growthRate > 0 ? '+' : ''}{staff.growthRate.toFixed(2)}%
-                        </span>
-                      </td>
-                      <td className="p-3 pr-6 text-center font-mono text-slate-600">
-                        {staff.roi14Days.toFixed(2)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-                <tfoot>
-                  <tr className="bg-slate-100/90 border-t-2 border-emerald-600 font-semibold text-slate-900">
-                    <td className="p-3.5 pl-6" colSpan={3}>
-                      Tổng cộng thực tế
-                    </td>
-                    <td className="p-3.5 text-center font-mono text-blue-700">243 KOC</td>
-                    <td className="p-3.5 text-right font-mono text-emerald-700">1.361.919.883 đ</td>
-                    <td className="p-3.5 text-right font-mono text-slate-700">2.395.027.916 đ</td>
-                    <td className="p-3.5 text-right font-mono text-emerald-700">+22.51% (TB)</td>
-                    <td className="p-3.5 pr-6 text-center font-mono text-slate-600">0.00</td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ========================================================================= */}
-      {/* TAB 4: PLAN GAP ANALYSIS (IMAGE 8: HỤT 466 TRIỆU THEO 5 NHÓM NGUYÊN NHÂN) */}
-      {/* ========================================================================= */}
-      {monitoringSubTab === 'PLAN_GAP' && (
-        <div className="space-y-6">
-          {/* Executive Overview Banner of the 466M Gap */}
-          <div className="card-enterprise p-6 bg-rose-50/50 border border-rose-200 shadow-2xs">
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-              <div>
-                <div className="flex items-center gap-2 mb-1.5">
-                  <span className="badge-rose px-2.5 py-0.5 rounded-full text-xs font-semibold flex items-center gap-1.5">
-                    <AlertTriangle className="w-3.5 h-3.5" />
-                    V. Chi tiêu ngân sách booking tháng 8 — Phân tích Plan Gap
-                  </span>
-                  <span className="text-xs text-slate-500">Báo cáo trực quan theo nguyên nhân gốc rễ</span>
-                </div>
-                <h3 className="text-xl font-semibold text-slate-900">
-                  Phân tích hụt 466 triệu ngân sách theo 5 cụm gian hàng thực tế
-                </h3>
-                <p className="text-xs text-slate-600 mt-1 max-w-2xl leading-relaxed">
-                  Lý do gap 466M: Xảy ra cục bộ tại một số cụm gian hàng do thiếu capacity, vận hành nội bộ, thay đổi plan, và chưa nghiệm thu chi phí mã Ads. Toàn bộ B2C vẫn đạt 90,4% ngân sách nhờ bù đắp từ các gian tiêu vượt như Babe.
-                </p>
-              </div>
-
-              <div className="text-right bg-white p-4 rounded-xl border border-rose-200 shadow-2xs shrink-0">
-                <span className="text-xs text-rose-700 font-semibold block">Tổng ngân sách gap</span>
-                <div className="text-2xl font-semibold text-rose-700 mt-1">466.809.172 đ</div>
-                <span className="text-2xs text-slate-500">Phân bổ trên 5 nhóm nguyên nhân</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Master Table of 5 Cause Groups (Direct from Image 8) */}
-          <div className="card-enterprise overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-200 bg-slate-50/80 flex items-center justify-between">
-              <div>
-                <h4 className="text-sm font-semibold text-slate-900">Bảng phân tích 5 nhóm nguyên nhân & cụm gian hàng bị Gap</h4>
-                <p className="text-xs text-slate-500 mt-0.5">Xác định giải pháp khắc phục cụ thể cho từng nhãn hàng trong tháng 9</p>
-              </div>
-              <span className="badge-rose px-2.5 py-1 rounded-full text-xs font-semibold">
-                5 nhóm nguyên nhân
-              </span>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse text-xs">
-                <thead>
-                  <tr className="bg-slate-100/70 border-b border-slate-200">
-                    <th className="p-3.5 pl-6 font-semibold text-slate-600">Nhóm nguyên nhân</th>
-                    <th className="p-3.5 font-semibold text-slate-600">Cụm gian hàng / Brand</th>
-                    <th className="p-3.5 font-semibold text-slate-600 text-right">Ngân sách Gap</th>
-                    <th className="p-3.5 font-semibold text-slate-600 text-center">Tỷ trọng Gap</th>
-                    <th className="p-3.5 pr-6 font-semibold text-slate-600 text-right">Giải pháp khắc phục</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {PLAN_GAP_DATA.map((gap, idx) => (
-                    <tr key={gap.id} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="p-3.5 pl-6 font-semibold text-slate-900">{gap.causeGroup}</td>
-                      <td className="p-3.5 font-semibold text-blue-700">{gap.brandCluster}</td>
-                      <td className="p-3.5 text-right font-mono font-semibold text-rose-700">
-                        {gap.gapAmount.toLocaleString('vi-VN')} đ
-                      </td>
-                      <td className="p-3.5 text-center">
-                        <span className="badge-rose px-2 py-0.5 rounded font-semibold text-2xs">
-                          {((gap.gapAmount / 466809172) * 100).toFixed(1)}%
-                        </span>
-                      </td>
-                      <td className="p-3.5 pr-6 text-right">
-                        {gap.brandCluster.includes('pHCare') ? (
-                          <button
-                            onClick={handleResolveAdsCode}
-                            disabled={isAdsCodeResolved}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition inline-flex items-center gap-1 cursor-pointer ${
-                              isAdsCodeResolved
-                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-2xs'
-                                : 'bg-amber-600 hover:bg-amber-700 text-white shadow-xs'
-                            }`}
-                          >
-                            <Zap className="w-3 h-3" />
-                            <span>{isAdsCodeResolved ? 'Đã Giải Tỏa 50M' : 'Duyệt Nghiệm Thu Mã Ads'}</span>
-                          </button>
-                        ) : gap.brandCluster.includes('EUPC') ? (
-                          <button
-                            onClick={handleRebalanceCapacity}
-                            disabled={isCapacityRebalanced}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition inline-flex items-center gap-1 cursor-pointer ${
-                              isCapacityRebalanced
-                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-2xs'
-                                : 'bg-blue-600 hover:bg-blue-700 text-white shadow-xs'
-                            }`}
-                          >
-                            <Users className="w-3 h-3" />
-                            <span>{isCapacityRebalanced ? 'Đã Điều Phối Nhân Sự' : 'Bổ Sung Capacity Booking'}</span>
-                          </button>
-                        ) : (
-                          <span className="text-slate-500 italic text-2xs">{gap.note}</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-                <tfoot>
-                  <tr className="bg-slate-100/90 border-t-2 border-rose-500 font-semibold text-slate-900">
-                    <td className="p-3.5 pl-6" colSpan={2}>
-                      Tổng ngân sách gap 5 nhóm
-                    </td>
-                    <td className="p-3.5 text-right font-mono text-rose-700 text-sm">
-                      466.809.172 đ
-                    </td>
-                    <td className="p-3.5 text-center">
-                      <span className="badge-rose px-2 py-0.5 rounded text-2xs">100.0%</span>
-                    </td>
-                    <td className="p-3.5 pr-6 text-right text-slate-600 text-2xs">
-                      Bù đắp bởi các gian tiêu vượt như Babe
-                    </td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-          </div>
-        </div>
-      )}
-        </div>
-      )}
-
-      {/* ========================================================================= */}
-      {/* KHÔNG GIAN 5: QUẢN TRỊ SLA & PHÂN TÍCH                                    */}
+      {/* KHÔNG GIAN 3: XỬ LÝ VI PHẠM SLA, THÁO GỠ ĐIỂM NGHẼN & KHÓA SỔ ĐỐI SOÁT    */}
       {/* ========================================================================= */}
       {activeTab === 'SLA_MANAGEMENT' && (
         <div className="space-y-5 animate-in fade-in duration-150">
-          <div className="flex flex-wrap items-center justify-between gap-3 p-1.5 bg-slate-100/80 border border-slate-200 rounded-xl text-xs">
-            <Segmented
-              value={slaSubTab}
-              onChange={setSlaSubTab}
-              items={[
-                { key: 'BREACHES', label: 'Xử lý vi phạm SLA' },
-                { key: 'ANALYTICS', label: 'Báo cáo phân tích chuyên sâu' },
-              ]}
-            />
-          </div>
-
           {slaSubTab === 'BREACHES' && (
-        <div className="space-y-6">
+        <div className="space-y-5">
           {/* Notification Toast Banner when pinging */}
           {pingSuccessStaff && (
             <div className="p-3.5 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-xl flex items-center justify-between shadow-xs animate-in slide-in-from-top-2">
@@ -2282,7 +1479,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                 <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
                 <span>{pingSuccessStaff}</span>
               </div>
-              <button onClick={() => setPingSuccessStaff(null)} className="text-emerald-600 hover:text-emerald-800">
+              <button onClick={() => setPingSuccessStaff(null)} className="text-emerald-600 hover:text-emerald-800 cursor-pointer">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -2374,242 +1571,128 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
             </div>
           </div>
 
-          {/* 4 Executive KPI Cards */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {/* KPI 1 */}
-            <div className="card-enterprise p-4 bg-white border border-slate-200 shadow-xs">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-500">Tỷ lệ đúng hạn SLA</span>
-                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-              </div>
-              <div className="text-2xl font-semibold text-slate-900 mt-1">91.8%</div>
-              <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden mt-2">
-                <div className="data-bar bg-emerald-500 h-full rounded-full" style={{ width: '91.8%' }} />
-              </div>
-              <div className="flex items-center justify-between text-2xs text-slate-500 mt-1.5">
-                <span>Mục tiêu: &gt;= 90%</span>
-                <span className="text-emerald-700 font-semibold">80 / 87 Jobs</span>
-              </div>
-            </div>
-
-            {/* KPI 2 */}
-            <div className="card-enterprise p-4 bg-white border border-rose-200 shadow-xs">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-rose-700">Vi phạm đang kích hoạt</span>
-                <ShieldAlert className="w-4 h-4 text-rose-600" />
-              </div>
-              <div className="text-2xl font-semibold text-rose-600 mt-1">
-                {slaBreaches.filter(b => b.status !== 'RESOLVED').length} <span className="text-xs font-medium text-slate-500">vụ việc</span>
-              </div>
-              <div className="flex items-center gap-1.5 mt-2">
-                <span className="px-1.5 py-0.5 rounded text-2xs font-semibold bg-rose-100 text-rose-800">
-                  2 Khẩn cấp
-                </span>
-                <span className="px-1.5 py-0.5 rounded text-2xs font-semibold bg-amber-100 text-amber-800">
-                  3 Cảnh báo
-                </span>
-                <span className="px-1.5 py-0.5 rounded text-2xs font-medium bg-slate-100 text-slate-700">
-                  1 Info
-                </span>
-              </div>
-              <div className="text-2xs text-slate-400 mt-1.5">
-                Cần can thiệp trước 17:00
-              </div>
-            </div>
-
-            {/* KPI 3 */}
-            <div className="card-enterprise p-4 bg-white border border-slate-200 shadow-xs">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-500">Điểm trừ phạt SLA tháng</span>
-                <TrendingDown className="w-4 h-4 text-amber-600" />
-              </div>
-              <div className="text-2xl font-semibold text-amber-600 mt-1">-35 <span className="text-xs font-medium text-slate-500">điểm</span></div>
-              <p className="text-2xs text-slate-500 mt-2">
-                Áp dụng quy chế trừ điểm vi phạm SLA đối với 4 nhân sự Booking, Content & Logistics.
-              </p>
-            </div>
-
-            {/* KPI 4 */}
-            <div className="card-enterprise p-4 bg-white border border-slate-200 shadow-xs">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-500">Khóa Data & trễ DNTT</span>
-                <Lock className="w-4 h-4 text-slate-700" />
-              </div>
-              <div className="text-2xl font-semibold text-slate-900 mt-1">2 <span className="text-xs font-medium text-slate-500">deal</span></div>
-              <div className="space-y-0.5 mt-2 text-2xs text-slate-600">
-                <div className="flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-                  <span>1 deal trễ DNTT 10:00 sáng</span>
+          {/* Banner 2: Quyết định Điều phối & Giải tỏa Điểm nghẽn Vận hành (Operational Unblocking) */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="card-enterprise p-4 bg-white border border-slate-200 shadow-xs flex items-center justify-between gap-4">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="px-2 py-0.5 rounded text-2xs font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                    Nghẽn nghiệm thu mã Spark Ads
+                  </span>
+                  <span className="text-xs font-bold text-slate-900">Cụm gian pHCare (50.000.000 đ)</span>
                 </div>
-                <div className="flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-slate-500" />
-                  <span>1 deal tự khóa data (&gt;7 ngày)</span>
-                </div>
+                <p className="text-xs text-slate-600">
+                  KOC đã lên video nhưng treo nghiệm thu do thiếu xác nhận mã ủy quyền Spark Ads từ Trưởng phòng.
+                </p>
               </div>
+              <button
+                onClick={handleResolveAdsCode}
+                disabled={isAdsCodeResolved}
+                className={`px-3.5 py-2 rounded-lg text-xs font-semibold transition inline-flex items-center gap-1.5 shrink-0 cursor-pointer ${
+                  isAdsCodeResolved
+                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                    : 'bg-amber-600 hover:bg-amber-700 text-white shadow-xs'
+                }`}
+              >
+                <Zap className="w-3.5 h-3.5" />
+                <span>{isAdsCodeResolved ? 'Đã giải tỏa 50M' : 'Duyệt nghiệm thu mã Ads'}</span>
+              </button>
+            </div>
+
+            <div className="card-enterprise p-4 bg-white border border-slate-200 shadow-xs flex items-center justify-between gap-4">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="px-2 py-0.5 rounded text-2xs font-bold bg-blue-50 text-blue-800 border border-blue-200">
+                    Thiếu tải nhân sự Booking
+                  </span>
+                  <span className="text-xs font-bold text-slate-900">Cụm EUPC / G.G.G / Rejuran (164.6M)</span>
+                </div>
+                <p className="text-xs text-slate-600">
+                  Cụm gian hàng hụt tiến độ trả video do thiếu nhân sự hỗ trợ săn KOC và gửi mẫu gấp trong tuần.
+                </p>
+              </div>
+              <button
+                onClick={handleRebalanceCapacity}
+                disabled={isCapacityRebalanced}
+                className={`px-3.5 py-2 rounded-lg text-xs font-semibold transition inline-flex items-center gap-1.5 shrink-0 cursor-pointer ${
+                  isCapacityRebalanced
+                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                    : 'bg-blue-600 hover:bg-blue-700 text-white shadow-xs'
+                }`}
+              >
+                <Users className="w-3.5 h-3.5" />
+                <span>{isCapacityRebalanced ? 'Đã điều phối nhân sự' : 'Điều động nhân sự hỗ trợ'}</span>
+              </button>
             </div>
           </div>
 
-          {/* Section 1: Bảng Đánh Giá Tuân Thủ SLA Từng Nhân Viên */}
-          <div className="card-enterprise overflow-hidden bg-white border border-slate-200 shadow-xs">
-            <div className="px-6 py-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50">
+          {/* Section 1: Nhân sự đang có Vi phạm SLA Mở cần Đốc thúc / Lập biên bản */}
+          <div className="card-enterprise p-4 bg-white border border-slate-200 shadow-xs space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
-                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-                  <Users className="w-4 h-4 text-blue-600" />
-                  Bảng đánh giá hiệu suất & tuân thủ SLA nhân sự
+                <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                  <BellRing className="w-4 h-4 text-rose-600" />
+                  Nhân sự có vi phạm SLA đang mở cần đốc thúc ({staffSlaReports.filter(s => s.activeViolationsCount > 0).length} nhân sự)
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Theo dõi tỷ lệ hoàn thành đúng hạn, điểm phạt, và gửi cảnh báo trực tiếp qua Lark tới nhân sự vi phạm
+                <p className="text-2xs text-slate-500 mt-0.5">
+                  Bấm để gửi cảnh báo Lark trực tiếp, xem hồ sơ vi phạm hoặc lập biên bản nhắc nhở. (Xem bảng điểm đầy đủ tại Dashboard Tiến độ & SLA)
                 </p>
               </div>
-
-              {/* Department Filter Pills */}
-              <div className="flex items-center gap-1.5 text-xs">
-                {['ALL', 'Booking', 'Content', 'Account'].map(dept => (
-                  <button
-                    key={dept}
-                    onClick={() => setSlaStaffFilter(dept)}
-                    className={`px-2.5 py-1 rounded-lg font-semibold transition ${
-                      slaStaffFilter === dept
-                        ? 'bg-blue-600 text-white shadow-2xs'
-                        : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200'
-                    }`}
-                  >
-                    {dept === 'ALL' ? 'Tất cả Bộ phận' : dept}
-                  </button>
-                ))}
-              </div>
+              {onNavigateToTab && (
+                <button
+                  onClick={() => onNavigateToTab('dashboard-sla')}
+                  className="px-2.5 py-1.5 rounded-lg text-2xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 transition cursor-pointer"
+                >
+                  Mở Dashboard SLA & Phễu vận hành →
+                </button>
+              )}
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs min-w-[950px]">
-                <thead className="bg-slate-50 border-b border-slate-200 text-slate-700 font-semibold">
-                  <tr>
-                    <th className="py-3 px-4 w-[240px]">Nhân sự & đội ngũ</th>
-                    <th className="py-3 px-3 w-[220px]">Nhãn hàng phụ trách</th>
-                    <th className="py-3 px-3 text-center w-[120px]">Tổng Jobs</th>
-                    <th className="py-3 px-3 w-[160px]">Tỷ lệ đúng hạn</th>
-                    <th className="py-3 px-3 text-center w-[110px]">Điểm SLA</th>
-                    <th className="py-3 px-3 text-center w-[110px]">Vi phạm mở</th>
-                    <th className="py-3 px-3 text-center w-[130px]">Xếp loại</th>
-                    <th className="py-3 px-4 pr-5 text-right w-[180px] sticky right-0 bg-slate-50 border-l border-slate-200">
-                      Thao tác quản lý
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {staffSlaReports
-                    .filter(s => slaStaffFilter === 'ALL' || s.role.toLowerCase().includes(slaStaffFilter.toLowerCase()) || s.team.toLowerCase().includes(slaStaffFilter.toLowerCase()))
-                    .map(staff => {
-                      const isNeedImprovement = staff.rating === 'Cần cải thiện';
-                      return (
-                        <tr key={staff.id} className={`hover:bg-slate-50/70 transition ${isNeedImprovement ? 'bg-rose-50/20' : ''}`}>
-                          {/* Col 1: Staff Info */}
-                          <td className="py-3.5 px-4">
-                            <div className="flex items-center gap-2.5">
-                              <div className="w-8 h-8 rounded-full bg-blue-500 text-white font-semibold text-xs flex items-center justify-center shrink-0 shadow-2xs">
-                                {staff.avatar}
-                              </div>
-                              <div>
-                                <div className="font-semibold text-slate-900 text-xs">{staff.staffName}</div>
-                                <div className="text-2xs text-slate-500">{staff.role} • {staff.team}</div>
-                              </div>
-                            </div>
-                          </td>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
+              {staffSlaReports
+                .filter(s => s.activeViolationsCount > 0)
+                .map(staff => (
+                  <div key={staff.id} className="p-3 rounded-xl bg-rose-50/40 border border-rose-200/80 flex flex-col justify-between gap-2.5">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-full bg-rose-600 text-white font-semibold text-2xs flex items-center justify-center shrink-0">
+                          {staff.avatar}
+                        </div>
+                        <div>
+                          <div className="font-bold text-slate-900 text-xs">{staff.staffName}</div>
+                          <div className="text-2xs text-slate-500">{staff.role} • {staff.onTimeRate}% đúng hạn</div>
+                        </div>
+                      </div>
+                      <span className="px-2 py-0.5 rounded-full text-2xs font-bold bg-rose-100 text-rose-800 border border-rose-300">
+                        {staff.activeViolationsCount} lỗi mở ({staff.penaltyPoints}đ)
+                      </span>
+                    </div>
 
-                          {/* Col 2: Assigned Brands */}
-                          <td className="py-3.5 px-3">
-                            <div className="flex flex-wrap gap-1">
-                              {staff.assignedBrands.map(b => (
-                                <span key={b} className="px-1.5 py-0.5 rounded text-2xs font-medium bg-slate-100 text-slate-700 border border-slate-200">
-                                  {b}
-                                </span>
-                              ))}
-                            </div>
-                          </td>
-
-                          {/* Col 3: Total Jobs */}
-                          <td className="py-3.5 px-3 text-center">
-                            <div className="font-semibold text-slate-900 text-xs">{staff.totalJobs}</div>
-                            <div className="text-2xs text-slate-400">
-                              {staff.onTimeJobs} đúng / {staff.breachedJobs} trễ
-                            </div>
-                          </td>
-
-                          {/* Col 4: On-time Rate */}
-                          <td className="py-3.5 px-3">
-                            <div className="flex items-center justify-between text-xs font-semibold mb-1">
-                              <span className={staff.onTimeRate >= 90 ? 'text-emerald-700' : 'text-rose-700'}>
-                                {staff.onTimeRate}%
-                              </span>
-                            </div>
-                            <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                              <div
-                                className={`data-bar h-full rounded-full ${staff.onTimeRate >= 90 ? 'bg-emerald-500' : 'bg-rose-500'}`}
-                                style={{ width: `${staff.onTimeRate}%` }}
-                              />
-                            </div>
-                          </td>
-
-                          {/* Col 5: SLA Score */}
-                          <td className="py-3.5 px-3 text-center">
-                            <span className="font-semibold text-slate-900 text-xs">{staff.currentScore}/100</span>
-                            {staff.penaltyPoints < 0 && (
-                              <span className="block text-2xs text-rose-600 font-semibold">
-                                {staff.penaltyPoints}đ
-                              </span>
-                            )}
-                          </td>
-
-                          {/* Col 6: Active Violations */}
-                          <td className="py-3.5 px-3 text-center">
-                            {staff.activeViolationsCount > 0 ? (
-                              <span className="px-2 py-0.5 rounded-full text-2xs font-semibold bg-rose-100 text-rose-800 border border-rose-300">
-                                {staff.activeViolationsCount} vi phạm
-                              </span>
-                            ) : (
-                              <span className="text-2xs text-emerald-600 font-medium">✓ Không</span>
-                            )}
-                          </td>
-
-                          {/* Col 7: Rating */}
-                          <td className="py-3.5 px-3 text-center">
-                            <span className={`px-2 py-1 rounded-full text-2xs font-semibold inline-block ${
-                              staff.rating === 'Xuất sắc'
-                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                : staff.rating === 'Đạt chuẩn'
-                                ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                                : 'bg-rose-50 text-rose-700 border border-rose-200'
-                            }`}>
-                              {staff.rating}
-                            </span>
-                          </td>
-
-                          {/* Col 8: Actions */}
-                          <td className="py-3.5 px-4 pr-5 text-right sticky right-0 bg-white/95 group-hover:bg-slate-50/95 transition border-l border-slate-200 shadow-[-3px_0_6px_rgba(0,0,0,0.03)]">
-                            <div className="flex items-center justify-end gap-1.5">
-                              <button
-                                onClick={() => handlePingStaff(staff.staffName, 'Nhắc nhở xử lý vi phạm SLA B2C')}
-                                className="px-2.5 py-1 text-2xs font-semibold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg transition flex items-center gap-1 shadow-2xs"
-                                title="Gửi cảnh báo SLA qua Lark"
-                              >
-                                <Send className="w-3 h-3" />
-                                <span>Ping cảnh báo</span>
-                              </button>
-                              <button
-                                onClick={() => setInspectStaffModal(staff)}
-                                className="px-2.5 py-1 text-2xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-lg transition flex items-center gap-1"
-                                title="Xem chi tiết vi phạm"
-                              >
-                                <Eye className="w-3 h-3 text-blue-600" />
-                                <span>Chi tiết</span>
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                </tbody>
-              </table>
+                    <div className="flex items-center justify-between gap-1.5 pt-2 border-t border-rose-200/60">
+                      <button
+                        onClick={() => handlePingStaff(staff.staffName, 'Nhắc nhở xử lý vi phạm SLA B2C trước 17:00')}
+                        className="flex-1 px-2 py-1 text-2xs font-semibold bg-rose-600 hover:bg-rose-700 text-white rounded-lg transition flex items-center justify-center gap-1 cursor-pointer"
+                      >
+                        <Send className="w-3 h-3" />
+                        <span>Ping Lark</span>
+                      </button>
+                      <button
+                        onClick={() => setAiReviewTargetStaff(staff.staffName)}
+                        className="px-2 py-1 text-2xs font-semibold bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg transition cursor-pointer"
+                        title="Soạn nhận xét & nhắc nhở"
+                      >
+                        Nhận xét
+                      </button>
+                      <button
+                        onClick={() => setInspectStaffModal(staff)}
+                        className="px-2 py-1 text-2xs font-semibold bg-white hover:bg-slate-50 text-blue-700 border border-slate-200 rounded-lg transition flex items-center gap-1 cursor-pointer"
+                      >
+                        <Eye className="w-3 h-3" />
+                        <span>Hồ sơ</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
             </div>
           </div>
 
@@ -3474,214 +2557,9 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
       )}
       </Presence>
 
-          {/* ========================================================================= */}
-      {/* TAB 5: DEEP ANALYTICS: KL1-KL7, CONTENT PILLAR, CREATOR NICHE */}
-      {/* ========================================================================= */}
-      {slaSubTab === 'ANALYTICS' && (
-        <div className="space-y-6">
-          {/* Sub-navigation between 3 Analysis Dimensions */}
-          <div className="flex items-center gap-2 text-xs">
-            <button
-              onClick={() => setAnalyticsSubTab('KL')}
-              className={`px-3.5 py-2 rounded-xl font-semibold transition ${
-                analyticsSubTab === 'KL'
-                  ? 'bg-amber-600 text-white shadow-xs'
-                  : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200'
-              }`}
-            >
-              2.2 hiệu quả theo khung lương (KL1 → KL7)
-            </button>
-            <button
-              onClick={() => setAnalyticsSubTab('PILLAR')}
-              className={`px-3.5 py-2 rounded-xl font-semibold transition ${
-                analyticsSubTab === 'PILLAR'
-                  ? 'bg-amber-600 text-white shadow-xs'
-                  : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200'
-              }`}
-            >
-              2.3 hiệu quả theo Content Pillar (6 trụ cột)
-            </button>
-            <button
-              onClick={() => setAnalyticsSubTab('CREATOR_NICHE')}
-              className={`px-3.5 py-2 rounded-xl font-semibold transition ${
-                analyticsSubTab === 'CREATOR_NICHE'
-                  ? 'bg-amber-600 text-white shadow-xs'
-                  : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200'
-              }`}
-            >
-              2.4 báo cáo theo tệp Creator (Review nữ, mẹ bé...)
-            </button>
-          </div>
-
-          {/* Dimension 1: Khung Lương KL1 -> KL7 (Table 2.2 from Image 4) */}
-          {analyticsSubTab === 'KL' && (
-            <div className="card-enterprise overflow-hidden">
-              <div className="px-6 py-4 border-b border-slate-200 bg-slate-50/80 flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-semibold text-slate-900">2.2 báo cáo hiệu quả theo khung lương KOC (KL)</h3>
-                  <p className="text-xs text-slate-500 mt-0.5">Đánh giá sản lượng video, chi phí bỏ ra, GMV30 và tỷ suất hoàn vốn ROI từng khung</p>
-                </div>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse text-xs">
-                  <thead>
-                    <tr className="bg-slate-100/70 border-b border-slate-200">
-                      <th className="p-3.5 pl-6 font-semibold text-slate-600">Khung Lương (KL)</th>
-                      <th className="p-3.5 font-semibold text-slate-600">Số Video</th>
-                      <th className="p-3.5 font-semibold text-slate-600">% Video</th>
-                      <th className="p-3.5 font-semibold text-slate-600">Chi Phí (CP)</th>
-                      <th className="p-3.5 font-semibold text-slate-600">% CP</th>
-                      <th className="p-3.5 font-semibold text-slate-600">GMV 30 Ngày</th>
-                      <th className="p-3.5 font-semibold text-slate-600">% GMV</th>
-                      <th className="p-3.5 pr-6 font-semibold text-slate-600 text-right">ROI thực đạt</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {KL_PERFORMANCE_DATA.map((r) => (
-                      <tr key={r.kl} className="hover:bg-slate-50/80 transition-colors">
-                        <td className="p-3.5 pl-6 font-semibold text-slate-900 font-mono">{r.kl}</td>
-                        <td className="p-3.5 font-semibold text-slate-800">{r.videoCount}</td>
-                        <td className="p-3.5 text-slate-500">{r.pctVideo}</td>
-                        <td className="p-3.5 font-mono text-slate-700">{r.cost}</td>
-                        <td className="p-3.5 text-slate-500">{r.pctCost}</td>
-                        <td className="p-3.5 font-mono font-semibold text-emerald-700">{r.gmv30}</td>
-                        <td className="p-3.5 text-slate-500">{r.pctGmv}</td>
-                        <td className="p-3.5 pr-6 text-right">
-                          <span className={`px-2 py-0.5 rounded font-semibold text-2xs ${
-                            r.roi >= 0.8 ? 'badge-emerald' : r.roi >= 0.5 ? 'badge-blue' : 'badge-amber'
-                          }`}>
-                            ROI {r.roi.toFixed(2)}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {/* Dimension 2: Content Pillar (Table 2.3 from Image 4) */}
-          {analyticsSubTab === 'PILLAR' && (
-            <div className="card-enterprise overflow-hidden">
-              <div className="px-6 py-4 border-b border-slate-200 bg-slate-50/80 flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-semibold text-slate-900">2.3 báo cáo hiệu quả theo Content Pillar</h3>
-                  <p className="text-xs text-slate-500 mt-0.5">Xác định trụ cột nội dung nào mang lại ROI cao nhất để tập trung nguồn lực</p>
-                </div>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse text-xs">
-                  <thead>
-                    <tr className="bg-slate-100/70 border-b border-slate-200">
-                      <th className="p-3.5 pl-6 font-semibold text-slate-600">Content Pillar</th>
-                      <th className="p-3.5 font-semibold text-slate-600">Số Video</th>
-                      <th className="p-3.5 font-semibold text-slate-600">% Video</th>
-                      <th className="p-3.5 font-semibold text-slate-600">Chi Phí</th>
-                      <th className="p-3.5 font-semibold text-slate-600">% CP</th>
-                      <th className="p-3.5 font-semibold text-slate-600">GMV 30 Ngày</th>
-                      <th className="p-3.5 font-semibold text-slate-600">% GMV</th>
-                      <th className="p-3.5 pr-6 font-semibold text-slate-600 text-right">ROI</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {PILLAR_PERFORMANCE_DATA.map((p) => (
-                      <tr key={p.pillar} className="hover:bg-slate-50/80 transition-colors">
-                        <td className="p-3.5 pl-6 font-semibold text-slate-900">{p.pillar}</td>
-                        <td className="p-3.5 font-semibold text-slate-800">{p.videoCount}</td>
-                        <td className="p-3.5 text-slate-500">{p.pctVideo}</td>
-                        <td className="p-3.5 font-mono text-slate-700">{p.cost}</td>
-                        <td className="p-3.5 text-slate-500">{p.pctCost}</td>
-                        <td className="p-3.5 font-mono font-semibold text-emerald-700">{p.gmv30}</td>
-                        <td className="p-3.5 text-slate-500">{p.pctGmv}</td>
-                        <td className="p-3.5 pr-6 text-right">
-                          <span className={`px-2 py-0.5 rounded font-semibold text-2xs ${
-                            p.roi >= 0.8 ? 'badge-emerald' : p.roi >= 0.4 ? 'badge-blue' : 'badge-amber'
-                          }`}>
-                            ROI {p.roi.toFixed(2)}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {/* Dimension 3: Creator Niche (Table 2.4 from Image 5) */}
-          {analyticsSubTab === 'CREATOR_NICHE' && (
-            <div className="card-enterprise overflow-hidden">
-              <div className="px-6 py-4 border-b border-slate-200 bg-slate-50/80 flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-semibold text-slate-900">2.4 Report hiệu quả theo tệp Creator</h3>
-                  <p className="text-xs text-slate-500 mt-0.5">Phân tích hiệu suất theo từng nhóm đối tượng Creator booking</p>
-                </div>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse text-xs">
-                  <thead>
-                    <tr className="bg-slate-100/70 border-b border-slate-200">
-                      <th className="p-3.5 pl-6 font-semibold text-slate-600">Tệp Creator</th>
-                      <th className="p-3.5 font-semibold text-slate-600">Số Video</th>
-                      <th className="p-3.5 font-semibold text-slate-600">% Video</th>
-                      <th className="p-3.5 font-semibold text-slate-600">Chi Phí</th>
-                      <th className="p-3.5 font-semibold text-slate-600">% CP</th>
-                      <th className="p-3.5 font-semibold text-slate-200">GMV 30 Ngày</th>
-                      <th className="p-3.5 font-semibold text-slate-200">% GMV</th>
-                      <th className="p-3.5 pr-6 font-semibold text-slate-200 text-right">ROI</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {CREATOR_NICHE_PERFORMANCE_DATA.map((c) => (
-                      <tr key={c.niche} className="hover:bg-slate-50/80 transition-colors">
-                        <td className="p-3.5 pl-6 font-semibold text-slate-900">{c.niche}</td>
-                        <td className="p-3.5 font-semibold text-slate-800">{c.videoCount}</td>
-                        <td className="p-3.5 text-slate-500">{c.pctVideo}</td>
-                        <td className="p-3.5 font-mono text-slate-700">{c.cost}</td>
-                        <td className="p-3.5 text-slate-500">{c.pctCost}</td>
-                        <td className="p-3.5 font-mono font-semibold text-emerald-700">{c.gmv30}</td>
-                        <td className="p-3.5 text-slate-500">{c.pctGmv}</td>
-                        <td className="p-3.5 pr-6 text-right">
-                          <span className={`px-2 py-0.5 rounded font-semibold text-2xs ${
-                            c.roi >= 0.8 ? 'badge-emerald' : c.roi >= 0.4 ? 'badge-blue' : 'badge-amber'
-                          }`}>
-                            ROI {c.roi.toFixed(2)}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {/* Strategic Action Insight from Real Data */}
-          <div className="card-enterprise p-5 bg-white border border-slate-200 shadow-xs space-y-3">
-            <h4 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-              <Check className="w-4 h-4 text-blue-600" />
-              Định hướng điều phối kế hoạch cho quản lý:
-            </h4>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-slate-700">
-              <div className="p-3 bg-emerald-50/60 rounded-xl border border-emerald-200/80">
-                <strong className="text-emerald-800 block mb-1">1. Đẩy mạnh KL1 & Unboxing (ROI &gt; 0.85):</strong>
-                Unboxing chi phí chỉ chiếm 0,52% nhưng đạt ROI 1.01 (hoàn vốn 100%). Cần tăng tỷ trọng video Unboxing và KL1 trong tháng 9.
-              </div>
-              <div className="p-3 bg-amber-50/60 rounded-xl border border-amber-200/80">
-                <strong className="text-amber-800 block mb-1">2. Tái ký KOC Gia Đình & Bác Sĩ (ROI 0.96 &amp; 0.86):</strong>
-                Nhóm bác sĩ và gia đình có độ tin cậy vượt trội và tỷ lệ chuyển đổi đơn hàng rất cao so với nhóm Review nữ phổ thông.
-              </div>
-              <div className="p-3 bg-blue-50/60 rounded-xl border border-blue-200/80">
-                <strong className="text-blue-800 block mb-1">3. Kiểm soát ngân sách KL6 &amp; KL7:</strong>
-                KL6 và KL7 chiếm tới 67,6% ngân sách (hơn 1,9 tỷ đ) nhưng ROI chỉ đạt 0.30 - 0.62. Cần đàm phán gắt gao điều khoản cam kết view/GMV.
-              </div>
-            </div>
-          </div>
         </div>
       )}
-        </div>
-      )}
+
 
       {/* AI Staff Review Modal (API Powered) */}
       <Presence show={!!aiReviewTargetStaff}>

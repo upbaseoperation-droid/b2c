@@ -24,6 +24,12 @@ export type TabKey =
   | 'cockpit'
   | 'overview'
   | 'dashboard-bi'
+  | 'dashboard-brand'
+  | 'dashboard-store'
+  | 'dashboard-video'
+  | 'dashboard-team-sla'
+  | 'dashboard-staff'
+  | 'dashboard-finance'
   | 'input-plan'
   | 'koc-listing'
   | 'self-channel-hub'
@@ -45,7 +51,9 @@ export type TabKey =
   | 'leaderboard'
   | 'brand-hub'
   | 'koc-hub'
-  | 'ads-report';
+  | 'ads-report'
+  | 'api-settings'
+  | 'knowledge-qa';
 
 export interface UserProfile {
   id: string;
@@ -307,6 +315,7 @@ export interface OcrExtractedFields {
 
   // Doanh nghiệp / Hộ kinh doanh
   companyName?: string;         // Tên công ty / Tên hộ kinh doanh
+  householdBusinessName?: string; // Tên hộ kinh doanh
   taxCode?: string;             // Mã số thuế / Mã số doanh nghiệp
   headquartersAddress?: string; // Địa chỉ trụ sở chính
   legalRepresentative?: string; // Người đại diện theo pháp luật / Chủ hộ
@@ -2079,7 +2088,7 @@ export interface AiEmployeeReviewRequest {
   };
   recentDealOrPlanContext?: string;
   apiKey?: string;
-  apiProvider?: 'GEMINI' | 'OPENAI' | 'AUTO';
+  apiProvider?: 'GEMINI' | 'OPENAI' | 'CLAUDE' | 'AUTO';
   customPrompt?: string;
 }
 

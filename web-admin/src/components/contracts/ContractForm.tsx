@@ -5,11 +5,11 @@
  * và điền sẵn các ô có dữ liệu (Bên B, số hợp đồng, ngày ký, sản phẩm, giá). Người tạo kiểm tra lại trước khi lưu.
  */
 
-import React, { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, Columns2, Download } from 'lucide-react';
-import type { BookingDealItem, KocItem } from '../../lib/types';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { ArrowLeft, Columns2, Download, FileScan, Upload } from 'lucide-react';
+import type { BookingDealItem, KocItem, OcrExtractedFields } from '../../lib/types';
 import type { ContractField, ContractRecord, LegalTemplate } from '../../lib/contracts/types';
-import { Button, Field, Input, Panel, Segmented, Select, Textarea } from '../ui';
+import { Button, Field, Input, Modal, Panel, Segmented, Select, Textarea } from '../ui';
 import { contractApi, type ContractBootstrap } from './api';
 import { ContractDocumentViewer } from './ContractDocumentViewer';
 import { GROUP_ORDER, formatMoneyInput, isAcceptance, partnerName, prefill, templateFor, uniqueFields } from './contractUi';
@@ -70,6 +70,10 @@ export function ContractForm({
   const [loadError, setLoadError] = useState('');
   const [showSplitPreview, setShowSplitPreview] = useState(true);
   const [activeFieldKey, setActiveFieldKey] = useState<string | null>(null);
+  const [ocrOpen, setOcrOpen] = useState(false);
+  const [ocrBusy, setOcrBusy] = useState(false);
+  const [ocrNotice, setOcrNotice] = useState('');
+  const ocrInputRef = useRef<HTMLInputElement | null>(null);
 
   const deal = deals.find(d => d.id === dealId);
   const koc = findKoc(kocs, deal);
@@ -138,7 +142,92 @@ export function ContractForm({
     }
   };
 
-  const templates = data.templates.filter(t => t.kind === kind);
+  const applyOcrFields = (extracted: OcrExtractedFields, docLabel?: string) => {
+    const resolvedPartner =
+      extracted.companyName ||
+      extracted.fullName ||
+      partner;
+    if (resolvedPartner) setPartner(resolvedPartner);
+
+    if (fields.length > 0) {
+      const nextValues = { ...values };
+      const filledKeys = new Set(prefilled);
+      const cccdText = [
+        extracted.idNumber,
+        extracted.issueDate ? `cấp ngày ${extracted.issueDate}` : '',
+        extracted.issuePlace ? `tại ${extracted.issuePlace}` : '',
+      ]
+        .filter(Boolean)
+        .join(' ');
+      const repText = [
+        extracted.legalRepresentative || extracted.fullName,
+        extracted.legalRepTitle ? `Chức vụ: ${extracted.legalRepTitle}` : '',
+      ]
+        .filter(Boolean)
+        .join(' — ');
+      const addrText = extracted.headquartersAddress || extracted.permanentAddress || extracted.originAddress || '';
+
+      for (const f of fields) {
+        if (f.source === 'partyName' && resolvedPartner) {
+          nextValues[f.key] = resolvedPartner;
+          filledKeys.add(f.key);
+        } else if (f.source === 'ownerName' && (extracted.fullName || extracted.legalRepresentative)) {
+          nextValues[f.key] = extracted.fullName || extracted.legalRepresentative || '';
+          filledKeys.add(f.key);
+        } else if (f.source === 'representative' && repText) {
+          nextValues[f.key] = repText;
+          filledKeys.add(f.key);
+        } else if (f.source === 'cccd' && cccdText) {
+          nextValues[f.key] = cccdText;
+          filledKeys.add(f.key);
+        } else if (f.source === 'taxCode' && extracted.taxCode) {
+          nextValues[f.key] = extracted.taxCode;
+          filledKeys.add(f.key);
+        } else if (f.source === 'address' && addrText) {
+          nextValues[f.key] = addrText;
+          filledKeys.add(f.key);
+        }
+      }
+      setValues(nextValues);
+      setPrefilled(filledKeys);
+    }
+    setOcrNotice(`Đã điền thông tin Bên B từ ${docLabel || 'giấy tờ pháp lý'}: ${resolvedPartner}`);
+    setOcrOpen(false);
+  };
+
+  const runOcrRequest = async (payload: { imageBase64?: string; fileName?: string; presetKey?: string }) => {
+    setOcrBusy(true);
+    try {
+      const res = await fetch('/api/ocr/extract-legal-doc', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const json = await res.json();
+      if (json.success && json.data?.fields) {
+        applyOcrFields(json.data.fields as OcrExtractedFields, json.data.documentTypeLabel);
+      } else {
+        setLoadError(json.error || 'Không đọc được thông tin từ ảnh giấy tờ.');
+      }
+    } catch (e) {
+      setLoadError((e as Error).message);
+    } finally {
+      setOcrBusy(false);
+    }
+  };
+
+  const handleOcrFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = typeof reader.result === 'string' ? reader.result : '';
+      runOcrRequest({ imageBase64: base64, fileName: file.name });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const templates = data.templates.filter(t => t.kind === kind && t.active !== false);
   const parents = data.records.filter(r => !isAcceptance(r.templateId) && r.id !== record?.id && (!dealId || !r.dealId || r.dealId === dealId));
   const dealOptions = [...deals].sort((a, b) => a.dealCode.localeCompare(b.dealCode));
 
@@ -157,12 +246,22 @@ export function ContractForm({
           <h2 className="text-base font-semibold text-ink truncate">{editing ? `Sửa ${record!.title} · tạo phiên bản ${record!.version + 1}` : 'Tạo hợp đồng'}</h2>
         </div>
         <div className="flex items-center gap-2">
+          <Button variant="secondary" icon={FileScan} onClick={() => setOcrOpen(true)}>
+            Đọc ảnh CCCD / ĐKKD
+          </Button>
           <Button variant="ghost" onClick={onCancel}>Hủy</Button>
           <Button variant="primary" type="submit" disabled={busy || !template || !title.trim() || !brand.trim() || !partner.trim()}>
             {editing ? 'Lưu phiên bản mới' : 'Lưu nháp'}
           </Button>
         </div>
       </div>
+
+      {ocrNotice && (
+        <div role="status" className="rounded-xl bg-positive-soft border border-line px-4 py-2.5 text-xs text-positive font-medium flex items-center justify-between gap-2">
+          <span>{ocrNotice}</span>
+          <button type="button" onClick={() => setOcrNotice('')} className="text-ink-3 hover:text-ink">Đóng</button>
+        </div>
+      )}
 
       <Panel title="Thông tin chung" description={editing ? 'Không đổi được mẫu của hồ sơ đã tạo.' : 'Chọn booking để tự chọn mẫu theo loại hồ sơ của KOC và điền sẵn thông tin.'}>
         <div className="grid gap-4 md:grid-cols-2">
@@ -217,6 +316,9 @@ export function ContractForm({
               Đã điền <span className="font-semibold text-ink tabular-nums">{requiredDone}/{required.length}</span> ô bắt buộc. Lưu nháp được khi chưa điền hết; đủ ô bắt buộc mới gửi duyệt được.
             </p>
             <div className="flex items-center gap-2">
+              <Button size="sm" variant="secondary" icon={FileScan} onClick={() => setOcrOpen(true)}>
+                Đọc ảnh CCCD / ĐKKD
+              </Button>
               <Button size="sm" variant="secondary" icon={Columns2} onClick={() => setShowSplitPreview(v => !v)}>
                 {showSplitPreview ? 'Ẩn khung xem hợp đồng' : 'Xem hợp đồng song song'}
               </Button>
@@ -293,6 +395,74 @@ export function ContractForm({
           </div>
         </>
       )}
+
+      <Modal
+        open={ocrOpen}
+        onClose={() => setOcrOpen(false)}
+        title="Đọc ảnh CCCD / Giấy phép ĐKKD"
+        description="Tải ảnh chụp Căn cước công dân hoặc Đăng ký kinh doanh để tự động điền thông tin Bên B vào hợp đồng."
+        footer={
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" onClick={() => setOcrOpen(false)}>Đóng</Button>
+          </div>
+        }
+      >
+        <div className="space-y-4">
+          <div className="border-2 border-dashed border-line-strong rounded-xl p-5 text-center bg-canvas/50 space-y-2">
+            <input
+              ref={ocrInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleOcrFileChange}
+              className="hidden"
+            />
+            <Button
+              variant="primary"
+              icon={Upload}
+              disabled={ocrBusy}
+              onClick={() => ocrInputRef.current?.click()}
+            >
+              {ocrBusy ? 'Đang đọc ảnh giấy tờ…' : 'Tải ảnh CCCD / ĐKKD từ máy'}
+            </Button>
+            <p className="text-2xs text-ink-3">
+              Hỗ trợ ảnh JPG, PNG chụp rõ nét mặt trước CCCD gắn chip hoặc trang thông tin ĐKKD.
+            </p>
+          </div>
+
+          <div className="space-y-2 pt-2 border-t border-line">
+            <p className="text-xs font-medium text-ink">Hoặc chọn nhanh mẫu giấy tờ có sẵn để điền thử:</p>
+            <div className="grid gap-2">
+              <button
+                type="button"
+                disabled={ocrBusy}
+                onClick={() => runOcrRequest({ presetKey: 'CCCD_INDIVIDUAL' })}
+                className="w-full text-left px-3.5 py-2.5 rounded-lg border border-line hover:bg-sunken transition-colors text-xs"
+              >
+                <span className="font-semibold text-ink block">CCCD Cá nhân · Nguyễn Thu Trang</span>
+                <span className="text-2xs text-ink-3">Số CCCD: 001201019876 · Nơi cấp: Cục Cảnh sát QLHC về TTXH</span>
+              </button>
+              <button
+                type="button"
+                disabled={ocrBusy}
+                onClick={() => runOcrRequest({ presetKey: 'BUSINESS_HOUSEHOLD' })}
+                className="w-full text-left px-3.5 py-2.5 rounded-lg border border-line hover:bg-sunken transition-colors text-xs"
+              >
+                <span className="font-semibold text-ink block">ĐKKD Hộ kinh doanh · Studio Sáng Tạo Hoàng Gia</span>
+                <span className="text-2xs text-ink-3">MST: 8129481023 · Chủ hộ: Trần Hoàng Nam</span>
+              </button>
+              <button
+                type="button"
+                disabled={ocrBusy}
+                onClick={() => runOcrRequest({ presetKey: 'BUSINESS_COMPANY' })}
+                className="w-full text-left px-3.5 py-2.5 rounded-lg border border-line hover:bg-sunken transition-colors text-xs"
+              >
+                <span className="font-semibold text-ink block">ĐKKD Công ty · Công ty TNHH Truyền thông &amp; Quảng cáo Creator Việt</span>
+                <span className="text-2xs text-ink-3">MST: 0109876543 · Đại diện: Lê Quang Huy (Giám đốc)</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </Modal>
     </form>
   );
 }

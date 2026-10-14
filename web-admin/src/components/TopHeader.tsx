@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Menu, ChevronDown, ArrowRight, Building2, PanelLeftOpen, PanelLeftClose } from 'lucide-react';
+import { Menu, ChevronDown, ArrowRight, Building2, PanelLeftOpen, PanelLeftClose, Sliders, HelpCircle } from 'lucide-react';
 import { UserProfile } from '../lib/types';
 import type { TabKey } from './Sidebar';
 import { PageActionsSlot } from './ui';
@@ -122,6 +122,38 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
             </select>
             <ChevronDown className="w-3.5 h-3.5 text-ink-3 absolute right-2 pointer-events-none" />
           </label>
+        )}
+
+        {!['BRAND_PARTNER', 'KOC_PARTNER', 'CTV_PARTNER'].includes(currentUser.role) && onNavigateTab && (
+          <>
+            <button
+              type="button"
+              onClick={() => onNavigateTab('knowledge-qa')}
+              title="Tra cứu Sổ tay quy trình, SLA, mẫu hợp đồng, tính thuế và hỏi đáp nghiệp vụ Marketing B2C"
+              className={`h-[34px] px-2.5 rounded-md border text-2xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer ${
+                activeTab === 'knowledge-qa'
+                  ? 'bg-accent text-white border-accent'
+                  : 'bg-surface hover:bg-sunken text-ink border-line-strong'
+              }`}
+            >
+              <HelpCircle className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Sổ tay & Hỏi đáp</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => onNavigateTab('api-settings')}
+              title="Thiết lập khóa API Google (Gemini), ChatGPT (OpenAI), Claude (Anthropic) và phân bổ theo mục đích nghiệp vụ"
+              className={`h-[34px] px-2.5 rounded-md border text-2xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer ${
+                activeTab === 'api-settings'
+                  ? 'bg-accent text-white border-accent'
+                  : 'bg-surface hover:bg-sunken text-ink border-line-strong'
+              }`}
+            >
+              <Sliders className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Cấu hình API</span>
+            </button>
+          </>
         )}
 
         {activeTab === 'content' && onNavigateTab && (

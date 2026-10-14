@@ -1,21 +1,23 @@
 'use client';
 
 /**
- * Hợp đồng: danh sách hồ sơ → hồ sơ chi tiết → form tạo/sửa theo mẫu pháp chế.
+ * Hợp đồng: danh sách hồ sơ → hồ sơ chi tiết → form tạo/sửa theo mẫu pháp chế,
+ * kèm Quản lý danh mục & biểu mẫu hợp đồng chuẩn của Pháp chế.
  * Dữ liệu và quyền lấy từ máy chủ (/api/contracts); giao diện không tự cấp quyền.
  * Từ màn Booking, nút “HĐ” mở hồ sơ của booking đó, chưa có thì mở form tạo đã điền sẵn.
  */
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Download, Eye, FileText, Plus } from 'lucide-react';
+import { Download, Eye, FolderKanban, Plus } from 'lucide-react';
 import type { BookingDealItem, KocItem } from '../../lib/types';
 import type { ContractField, ContractRecord, DocBlock, LegalTemplate } from '../../lib/contracts/types';
 import { formatDate } from '../../lib/format';
-import { Button, Chips, DataTable, EmptyState, FilterBar, Modal, PageActions, Pagination, Panel, Person, Status } from '../ui';
+import { Button, Chips, DataTable, EmptyState, FilterBar, Modal, PageActions, Pagination, Panel, Person, Segmented, Status } from '../ui';
 import type { Column } from '../ui';
 import { ApiError, contractApi, type ContractBootstrap } from '../contracts/api';
 import { browserDemoEnabled, downloadBrowserDemo, enableBrowserDemo } from '../contracts/browserDemo';
-import { ROLE_LABEL, contractStatus, isAcceptance } from '../contracts/contractUi';
+import { contractStatus, isAcceptance } from '../contracts/contractUi';
+import { ContractCatalogView, CATEGORY_LABELS } from '../contracts/ContractCatalogView';
 import { ContractDetail } from '../contracts/ContractDetail';
 import { ContractDocumentViewer } from '../contracts/ContractDocumentViewer';
 import { ContractForm, type ContractFormInit, type ContractFormPayload } from '../contracts/ContractForm';
@@ -23,8 +25,12 @@ import { ContractForm, type ContractFormInit, type ContractFormPayload } from '.
 /** Yêu cầu mở hồ sơ của một booking (từ màn Booking). `nonce` đổi mỗi lần bấm. */
 export interface ContractIntent { dealId: string; nonce: number }
 
-type Screen = { mode: 'list' } | { mode: 'detail'; id: string } | { mode: 'form'; editId?: string; init?: ContractFormInit };
-type Filter = 'ALL' | 'MINE' | 'REVIEW' | 'SIGN' | 'DONE';
+type Screen =
+  | { mode: 'list' }
+  | { mode: 'catalog' }
+  | { mode: 'detail'; id: string }
+  | { mode: 'form'; editId?: string; init?: ContractFormInit };
+type Filter = 'ALL' | 'MINE' | 'REVIEW' | 'SIGN' | 'DONE' | 'NEED_ACCEPTANCE';
 
 export function ContractManagementView({
   deals = [],
@@ -32,12 +38,14 @@ export function ContractManagementView({
   intent,
   onNotify,
   demoMode = false,
+  currentUserId,
 }: {
   deals?: BookingDealItem[];
   kocs?: KocItem[];
   intent?: ContractIntent | null;
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
   demoMode?: boolean;
+  currentUserId?: string;
 }) {
   const [data, setData] = useState<ContractBootstrap | null>(null);
   const [loadError, setLoadError] = useState<ApiError | null>(null);
@@ -46,9 +54,6 @@ export function ContractManagementView({
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<Filter>('ALL');
   const [page, setPage] = useState(1);
-  const [showTemplates, setShowTemplates] = useState(false);
-  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
-  const [loadedTemplate, setLoadedTemplate] = useState<LegalTemplate | null>(null);
   const [quickViewRecord, setQuickViewRecord] = useState<ContractRecord | null>(null);
   const [quickViewDoc, setQuickViewDoc] = useState<{ paragraphs: string[]; blocks?: DocBlock[]; fields?: ContractField[]; values?: Record<string, string> } | null>(null);
 
@@ -56,7 +61,7 @@ export function ContractManagementView({
     if (demoMode) enableBrowserDemo();
     const result = await contractApi<ContractBootstrap>('/api/contracts');
     setData(result); setLoadError(null); return result;
-  }, [demoMode]);
+  }, [demoMode, currentUserId]);
 
   useEffect(() => {
     (async () => {
@@ -64,18 +69,6 @@ export function ContractManagementView({
       await refresh();
     })().catch(e => setLoadError(e instanceof ApiError ? e : new ApiError((e as Error).message, 503)));
   }, [refresh]);
-
-  // Tải chi tiết mẫu pháp chế khi mở cửa sổ Mẫu pháp chế
-  useEffect(() => {
-    if (!showTemplates || !data?.templates.length) return;
-    const targetId = selectedTemplateId || data.templates[0].id;
-    if (!selectedTemplateId) setSelectedTemplateId(targetId);
-    let cancelled = false;
-    contractApi<{ template: LegalTemplate }>(`/api/contracts/templates/${targetId}`)
-      .then(r => { if (!cancelled) setLoadedTemplate(r.template); })
-      .catch(() => undefined);
-    return () => { cancelled = true; };
-  }, [showTemplates, selectedTemplateId, data?.templates]);
 
   // Tải văn bản hợp đồng khi bấm Xem nhanh trên bảng danh sách
   useEffect(() => {
@@ -131,12 +124,18 @@ export function ContractManagementView({
   const waitingMe = (r: ContractRecord) => r.approval === 'IN_REVIEW' && r.steps.some(s => s.reviewerId === me?.id && s.status === 'PENDING');
   const awaitingSign = (r: ContractRecord) => r.approval === 'APPROVED' && r.signing.at(-1)?.status !== 'COMPLETED';
   const done = (r: ContractRecord) => r.signing.at(-1)?.status === 'COMPLETED';
+  const needAcceptance = (r: ContractRecord) =>
+    r.signing.at(-1)?.status === 'COMPLETED' &&
+    !isAcceptance(r.templateId) &&
+    !(data?.records || []).some(child => child.parentId === r.id);
+
   const matches: Record<Filter, (r: ContractRecord) => boolean> = {
     ALL: () => true,
     MINE: r => r.ownerId === me?.id,
     REVIEW: waitingMe,
     SIGN: awaitingSign,
     DONE: done,
+    NEED_ACCEPTANCE: needAcceptance,
   };
 
   const searched = useMemo(() => {
@@ -148,9 +147,16 @@ export function ContractManagementView({
   const [pagedKey, setPagedKey] = useState('');
   if (`${search}|${filter}` !== pagedKey) { setPagedKey(`${search}|${filter}`); setPage(1); }
 
-  const chips = (['ALL', 'MINE', 'REVIEW', 'SIGN', 'DONE'] as Filter[]).map(key => ({
+  const chips = (['ALL', 'MINE', 'REVIEW', 'SIGN', 'DONE', 'NEED_ACCEPTANCE'] as Filter[]).map(key => ({
     key,
-    label: { ALL: 'Tất cả', MINE: 'Của tôi', REVIEW: 'Chờ tôi duyệt', SIGN: 'Chờ ký', DONE: 'Đã ký' }[key],
+    label: {
+      ALL: 'Tất cả',
+      MINE: 'Của tôi',
+      REVIEW: 'Chờ tôi duyệt',
+      SIGN: 'Chờ ký',
+      DONE: 'Đã ký',
+      NEED_ACCEPTANCE: 'Cần lập nghiệm thu',
+    }[key],
     count: searched.filter(matches[key]).length,
   }));
 
@@ -159,12 +165,18 @@ export function ContractManagementView({
       key: 'title',
       header: 'Hồ sơ',
       width: 260,
-      render: r => (
-        <div className="min-w-0 max-w-[340px] leading-tight">
-          <span className="block truncate font-medium text-ink">{r.title}</span>
-          <span className="block truncate text-2xs text-ink-3">{data?.templates.find(t => t.id === r.templateId)?.name || r.templateId} · phiên bản {r.version}</span>
-        </div>
-      ),
+      render: r => {
+        const tpl = data?.templates.find(t => t.id === r.templateId);
+        const catLabel = tpl?.category ? CATEGORY_LABELS[tpl.category] : undefined;
+        return (
+          <div className="min-w-0 max-w-[340px] leading-tight">
+            <span className="block truncate font-medium text-ink">{r.title}</span>
+            <span className="block truncate text-2xs text-ink-3">
+              {tpl?.name || r.templateId} · v{r.version}{catLabel ? ` · ${catLabel}` : ''}
+            </span>
+          </div>
+        );
+      },
     },
     {
       key: 'partner',
@@ -238,14 +250,43 @@ export function ContractManagementView({
       if (link?.getAttribute('href')?.startsWith('/api/contracts/')) { e.preventDefault(); downloadBrowserDemo(link.getAttribute('href')!).catch(error => onNotify?.(error.message, 'error')); }
     }}>
       {data.config.storage === 'BROWSER_DEMO' && <div role="status" className="rounded-xl bg-warning-soft px-4 py-3 text-[13px] text-ink">Bản giả lập online · Dữ liệu thử chỉ lưu trong trình duyệt này. Dùng mẫu rút gọn để thử quy trình; bộ mẫu pháp chế gốc và kết nối Lark/MISA/AI đang chờ cấu hình. Không nhập dữ liệu thật hoặc dùng tài liệu thử để ký.</div>}
-      {screen.mode === 'list' && (
-        <PageActions>
-          <Button icon={FileText} onClick={() => setShowTemplates(true)}>Mẫu pháp chế</Button>
-          {canCreate && <Button variant="primary" icon={Plus} onClick={() => setScreen({ mode: 'form' })}>Tạo hợp đồng</Button>}
-        </PageActions>
+
+      {(screen.mode === 'list' || screen.mode === 'catalog') && (
+        <>
+          <PageActions>
+            <Button
+              icon={FolderKanban}
+              variant={screen.mode === 'catalog' ? 'primary' : 'secondary'}
+              onClick={() => setScreen(screen.mode === 'catalog' ? { mode: 'list' } : { mode: 'catalog' })}
+            >
+              {screen.mode === 'catalog' ? 'Về danh sách hồ sơ' : 'Danh mục & Mẫu hợp đồng'}
+            </Button>
+            {canCreate && <Button variant="primary" icon={Plus} onClick={() => setScreen({ mode: 'form' })}>Tạo hợp đồng</Button>}
+          </PageActions>
+
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <Segmented
+              value={screen.mode === 'catalog' ? 'CATALOG' : 'RECORDS'}
+              onChange={v => setScreen(v === 'CATALOG' ? { mode: 'catalog' } : { mode: 'list' })}
+              items={[
+                { key: 'RECORDS', label: `Hồ sơ hợp đồng (${data.records.length})` },
+                { key: 'CATALOG', label: `Danh mục & Mẫu hợp đồng (${data.templates.length})` },
+              ]}
+            />
+          </div>
+        </>
       )}
 
-      {screen.mode === 'form' ? (
+      {screen.mode === 'catalog' ? (
+        <ContractCatalogView
+          data={data}
+          onRefresh={refresh}
+          onNotify={onNotify}
+          onUseTemplate={(tpl: LegalTemplate) =>
+            setScreen({ mode: 'form', init: { templateId: tpl.id, kind: tpl.kind } })
+          }
+        />
+      ) : screen.mode === 'form' ? (
         <ContractForm
           key={screen.editId || `new-${screen.init?.dealId || ''}-${screen.init?.kind || ''}-${screen.init?.parentId || ''}-${screen.init?.templateId || ''}`}
           data={data}
@@ -262,6 +303,7 @@ export function ContractManagementView({
           key={record.id}
           record={record}
           data={data}
+          deals={deals}
           busy={busy}
           onBack={() => setScreen({ mode: 'list' })}
           onAction={act}
@@ -287,8 +329,15 @@ export function ContractManagementView({
               data.records.length === 0 ? (
                 <EmptyState
                   title="Chưa có hợp đồng nào"
-                  description="Tạo hợp đồng từ mẫu pháp chế, hoặc bấm “HĐ” ở một booking để tạo hợp đồng đã điền sẵn."
-                  action={canCreate && <Button variant="primary" icon={Plus} onClick={() => setScreen({ mode: 'form' })}>Tạo hợp đồng</Button>}
+                  description="Tạo hợp đồng từ danh mục mẫu pháp chế, hoặc bấm “HĐ” ở một booking để tạo hợp đồng đã điền sẵn."
+                  action={
+                    <div className="flex items-center gap-2">
+                      <Button variant="secondary" icon={FolderKanban} onClick={() => setScreen({ mode: 'catalog' })}>
+                        Xem danh mục mẫu hợp đồng
+                      </Button>
+                      {canCreate && <Button variant="primary" icon={Plus} onClick={() => setScreen({ mode: 'form' })}>Tạo hợp đồng</Button>}
+                    </div>
+                  }
                 />
               ) : (
                 <EmptyState title="Không có hồ sơ khớp" description="Đổi bộ lọc hoặc tìm bằng tên khác." />
@@ -297,31 +346,6 @@ export function ContractManagementView({
           />
           <Pagination page={page} pageSize={pageSize} total={rows.length} onPageChange={setPage} />
         </Panel>
-      )}
-
-      {data.demoActors.length > 0 && (
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3 rounded-xl bg-warning-soft text-[13px] text-ink-2">
-          <span className="font-medium text-ink">Môi trường thử</span>
-          <span>Đang dùng: {data.actor.name} ({data.actor.roles.map(r => ROLE_LABEL[r].toLowerCase()).join(', ')})</span>
-          <span className="text-ink-3">Đổi vai trò:</span>
-          {data.demoActors.map(a => (
-            <Button
-              key={a.id}
-              size="sm"
-              variant={a.id === data.actor.id ? 'secondary' : 'ghost'}
-              disabled={busy || a.id === data.actor.id}
-              onClick={async () => {
-                setBusy(true);
-                try { await contractApi('/api/contracts/demo', { id: a.id }); await refresh(); } catch (e) { onNotify?.((e as Error).message, 'error'); } finally { setBusy(false); }
-              }}
-            >
-              {a.name.replace(' (kiểm thử)', '')}
-            </Button>
-          ))}
-          <span className="text-ink-3">
-            Dữ liệu chỉ lưu trên máy này.{!data.config.wesign && ' Ký điện tử dùng chế độ ký thử.'}
-          </span>
-        </div>
       )}
 
       {/* Xem nhanh văn bản hợp đồng ngay từ bảng danh sách */}
@@ -371,86 +395,6 @@ export function ContractManagementView({
             maxHeight="65vh"
           />
         )}
-      </Modal>
-
-      {/* Cửa sổ Mẫu pháp chế: chọn mẫu và xem trực tiếp bố cục A4 ngay trên màn hình */}
-      <Modal
-        open={showTemplates}
-        onClose={() => setShowTemplates(false)}
-        title="Mẫu pháp chế"
-        description="Bản gốc do pháp chế ban hành. Bấm vào từng mẫu để kiểm tra trực tiếp văn bản và các trường điền."
-        size="lg"
-        footer={
-          <div className="flex items-center justify-between w-full gap-2">
-            {loadedTemplate ? (
-              <a
-                href={`/api/contracts/templates/${loadedTemplate.id}?download=1`}
-                className="inline-flex items-center gap-1.5 text-[13px] text-accent hover:underline"
-              >
-                <Download className="w-4 h-4" strokeWidth={1.75} />
-                Tải file mẫu ({loadedTemplate.filename})
-              </a>
-            ) : <span />}
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" onClick={() => setShowTemplates(false)}>Đóng</Button>
-              {canCreate && loadedTemplate && (
-                <Button
-                  variant="primary"
-                  icon={Plus}
-                  onClick={() => {
-                    setShowTemplates(false);
-                    setScreen({ mode: 'form', init: { templateId: loadedTemplate.id, kind: loadedTemplate.kind } });
-                  }}
-                >
-                  Soạn hợp đồng theo mẫu này
-                </Button>
-              )}
-            </div>
-          </div>
-        }
-      >
-        <div className="grid gap-4 lg:grid-cols-[240px_minmax(0,1fr)] items-start">
-          <ul className="divide-y divide-line border border-line rounded-lg overflow-hidden bg-surface">
-            {data.templates.map(t => {
-              const active = (selectedTemplateId || data.templates[0]?.id) === t.id;
-              return (
-                <li key={t.id}>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedTemplateId(t.id)}
-                    className={`w-full text-left px-3 py-2.5 transition-colors flex items-center justify-between gap-2 ${
-                      active ? 'bg-accent/10 text-ink font-medium' : 'hover:bg-sunken text-ink-2'
-                    }`}
-                  >
-                    <div className="min-w-0">
-                      <span className="block text-[13px] truncate">{t.name}</span>
-                      <span className="block text-2xs text-ink-3">{t.version}</span>
-                    </div>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-          <div className="min-w-0">
-            {loadedTemplate ? (
-              <ContractDocumentViewer
-                title={loadedTemplate.name}
-                templateName={`${loadedTemplate.name} (${loadedTemplate.version})`}
-                blocks={loadedTemplate.blocks || []}
-                paragraphs={loadedTemplate.paragraphs}
-                fields={loadedTemplate.fields}
-                values={{}}
-                downloadHref={`/api/contracts/templates/${loadedTemplate.id}?download=1`}
-                maxHeight="62vh"
-                compactToolbar
-              />
-            ) : (
-              <div className="p-8 text-center text-[13px] text-ink-3 border border-line rounded-xl">
-                Đang tải nội dung mẫu pháp chế…
-              </div>
-            )}
-          </div>
-        </div>
       </Modal>
     </div>
   );

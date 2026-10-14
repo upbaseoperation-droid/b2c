@@ -875,7 +875,489 @@ function buildScaledItems(items: InputPlanRowItem[], ratio: number): InputPlanRo
   });
 }
 
-export function enrichPlanWithVersions(plan: InputPlanBreakdownState, idx: number = 0): InputPlanBreakdownState {
+export type B2cWorkstreamType = 'AFFILIATE_PAID' | 'FOC_SAMPLE' | 'SELF_CHANNEL' | 'MULTI_PLATFORM';
+
+export interface WorkstreamStaffSlice {
+  staffName: string;
+  roleGroup: 'BOOKING' | 'CONTENT_SELF_CHANNEL' | 'FOC' | 'MULTI_PLATFORM';
+  leaderName?: string;
+  qty: number;
+  videos: number;
+  budget: number;
+  tierOrFormatLabels: string[];
+  rowIds: string[];
+}
+
+export interface StorePlanWorkstreamSummary {
+  affiliatePaid: { totalQty: number; totalBudget: number; leaderName?: string; assignees: WorkstreamStaffSlice[] };
+  focSample: { totalQty: number; totalBudget: number; leaderName?: string; assignees: WorkstreamStaffSlice[] };
+  selfChannel: { totalQty: number; totalBudget: number; leaderName: string; assignees: WorkstreamStaffSlice[] };
+  multiPlatform: { totalQty: number; totalBudget: number; leaderName?: string; assignees: WorkstreamStaffSlice[] };
+  allStaffNames: string[];
+  allAssignedStaff: string[];
+  affiliateSlices: WorkstreamStaffSlice[];
+  focSlices: WorkstreamStaffSlice[];
+  selfChannelSlices: WorkstreamStaffSlice[];
+  multiPlatformSlices: WorkstreamStaffSlice[];
+  selfChannelVideos: number;
+  selfChannelBudget: number;
+}
+
+export interface PersonalWorkPackageItem {
+  id: string;
+  staffName: string;
+  roleGroup: 'BOOKING' | 'CONTENT_SELF_CHANNEL' | 'FOC' | 'MULTI_PLATFORM';
+  leaderName?: string;
+  planId: string;
+  planTitle: string;
+  month: string;
+  storeId?: string;
+  storeName: string;
+  brandName: string;
+  platform: string;
+  planStatus: InputPlanBreakdownState['status'];
+  versionCode: string;
+  workstream: B2cWorkstreamType;
+  workstreamLabel: string;
+  myQty: number;
+  myBudget: number;
+  assignedVideos: number;
+  assignedBudget: number;
+  storeTotalQty: number;
+  storeTotalBudget: number;
+  tierOrFormatLabels: string[];
+  tiersSummary: string;
+  coWorkersInSameWorkstream: string[];
+  allStoreContributors: string[];
+  coWorkersOnSameStore: string[];
+  rowIds: string[];
+}
+
+const BOOKING_CO_PIC_POOL = [
+  'Phạm Thị Thu Hằng',
+  'Lương Thị Như Quỳnh',
+  'Lê Phương Thảo',
+  'Lê Thanh Hải',
+  'Hoàng Hải Long',
+  'Trần Hải Phượng',
+  'Khánh Vy',
+  'Nguyễn Thu Trang',
+];
+
+const CONTENT_SELF_CHANNEL_POOL = [
+  'Quỳnh Như',
+  'Nguyễn Thị Mai Anh',
+  'Vũ Hoài Lâm',
+  'Phan Diệu Ánh',
+];
+
+function pickContentPrimaryForBrand(brandOrStore: string, idx: number): { primary: string; secondary: string } {
+  const lower = (brandOrStore || '').toLowerCase();
+  if (lower.includes('kutie') || lower.includes('cỏ mềm') || lower.includes('comem') || lower.includes('dr.papa') || lower.includes('papa')) {
+    return { primary: 'Quỳnh Như', secondary: 'Nguyễn Thị Mai Anh' };
+  }
+  if (lower.includes('senka') || lower.includes('anessa') || lower.includes('tsubaki') || lower.includes('dprogram') || lower.includes('elixir') || lower.includes('clubclio') || lower.includes('clio')) {
+    return { primary: 'Nguyễn Thị Mai Anh', secondary: 'Quỳnh Như' };
+  }
+  if (lower.includes('cocoon') || lower.includes('la roche') || lower.includes('bioderma') || lower.includes('cerave') || lower.includes('fresh') || lower.includes('rejuran')) {
+    return { primary: 'Vũ Hoài Lâm', secondary: 'Phan Diệu Ánh' };
+  }
+  if (lower.includes('sunplay') || lower.includes('selsun') || lower.includes('rohto') || lower.includes('blossomy') || lower.includes('loccitane') || lower.includes('eupc')) {
+    return { primary: 'Phan Diệu Ánh', secondary: 'Vũ Hoài Lâm' };
+  }
+  const p = CONTENT_SELF_CHANNEL_POOL[idx % CONTENT_SELF_CHANNEL_POOL.length];
+  const s = CONTENT_SELF_CHANNEL_POOL[(idx + 1) % CONTENT_SELF_CHANNEL_POOL.length];
+  return { primary: p, secondary: s };
+}
+
+/**
+ * Chuẩn hóa phân bổ nhân sự theo đúng 4 mảng độc lập trên từng gian hàng:
+ * - Video Affiliate trả phí: 1 đến 3 chuyên viên Booking cùng chạy (tách theo bậc KL cao vs KL1-KL3)
+ * - Gửi mẫu FOC (0đ): Chuyên viên FOC (Trần Thị Hảo / Phạm Thị Thu Hằng)
+ * - Video Self-Channel (Kênh Brand): Đội Content dưới quyền Leader Partnership Việt Hoàng (1-2 bạn Content cùng làm)
+ * - Đa sàn khác: Chuyên viên Đa sàn (Lê Hoàng Yến / Phan Diệu Ánh)
+ */
+export function enrichPlanWithMultiStaffWorkstreams(plan: InputPlanBreakdownState, idx: number = 0): InputPlanBreakdownState {
+  const primaryBooking = (plan.primaryPic || plan.pic || 'Lê Phương Thảo').trim();
+  const coCandidates = BOOKING_CO_PIC_POOL.filter(n => n !== primaryBooking);
+  const coBooking1 = coCandidates[idx % coCandidates.length] || 'Phạm Thị Thu Hằng';
+  const coBooking2 = coCandidates[(idx + 2) % coCandidates.length] || 'Nguyễn Thu Trang';
+  const contentTeam = pickContentPrimaryForBrand(`${plan.brandName} ${plan.storeName || ''}`, idx);
+
+  const rawItems = plan.items || [];
+  let selfIdx = 0;
+  let affIdx = 0;
+
+  const totalAffQty = rawItems
+    .filter(it => it.channel === 'TIKTOK' && !it.tierCode.includes('TAP') && it.id !== 'row-tt-tap' && it.totalBudget > 0)
+    .reduce((s, i) => s + (i.qty || 0), 0);
+
+  const enrichedItems: InputPlanRowItem[] = rawItems.map(it => {
+    // 1. Mảng Gửi mẫu FOC (0đ / TAP)
+    if (it.tierCode.includes('TAP') || it.id === 'row-tt-tap' || (it.channel === 'TIKTOK' && it.unitCost === 0)) {
+      const focPic = idx % 2 === 0 ? 'Trần Thị Hảo' : 'Phạm Thị Thu Hằng';
+      return {
+        ...it,
+        assignedStaff: focPic,
+        staffNotes: `Gói FOC gửi mẫu 0đ (${focPic} phụ trách rải đơn & thu hồi clip)`
+      };
+    }
+
+    // 2. Mảng Video Self-Channel (Kênh Brand — dưới quyền Leader Partnership Việt Hoàng)
+    if (it.channel === 'SELF_CHANNEL') {
+      const assignedContent = selfIdx === 0 ? contentTeam.primary : contentTeam.secondary;
+      selfIdx += 1;
+      return {
+        ...it,
+        assignedStaff: assignedContent,
+        staffNotes: `Kênh Brand Self-Channel • Content PIC: ${assignedContent} (Leader Partnership: Việt Hoàng liên hệ CTV)`
+      };
+    }
+
+    // 3. Mảng Đa sàn khác (Shopee, FB, IG, Threads)
+    if (['SHOPEE', 'FACEBOOK', 'INSTAGRAM', 'THREADS'].includes(it.channel)) {
+      const isShopeeMain = (plan.storeName || '').toLowerCase().includes('shopee');
+      const multiPic = isShopeeMain ? primaryBooking : (idx % 2 === 0 ? 'Lê Hoàng Yến' : 'Phan Diệu Ánh');
+      return {
+        ...it,
+        assignedStaff: multiPic,
+        staffNotes: `Gói Đa sàn (${it.platform}) do ${multiPic} phụ trách`
+      };
+    }
+
+    // 4. Mảng Video Affiliate trả phí (KL1 -> KL7): Chia 2-3 người nếu gian hàng có nhiều video
+    if (it.channel === 'TIKTOK') {
+      const tier = (it.tierCode || '').toUpperCase();
+      let assigned = primaryBooking;
+      if (totalAffQty >= 20) {
+        if (['KL1', 'KL2'].includes(tier)) {
+          assigned = coBooking1;
+        } else if (tier === 'KL3' && totalAffQty >= 50) {
+          assigned = coBooking2;
+        } else {
+          assigned = primaryBooking;
+        }
+      } else if (affIdx > 0 && (plan.totalTargetBudget || 0) >= 40000000) {
+        assigned = coBooking1;
+      }
+      affIdx += 1;
+      return {
+        ...it,
+        assignedStaff: assigned,
+        staffNotes: assigned === primaryBooking
+          ? `PIC chính (${primaryBooking}) phụ trách nhóm ${it.tierCode}`
+          : `Phối hợp cùng ${primaryBooking}: ${assigned} chạy gói ${it.tierCode}`
+      };
+    }
+
+    return it;
+  });
+
+  // Nếu gian có chỉ tiêu Self-Channel ở cấp Plan nhưng chưa có dòng SELF_CHANNEL trong items, tự bổ sung 2 dòng cho 2 bạn Content
+  const hasSelfItems = enrichedItems.some(it => it.channel === 'SELF_CHANNEL' && it.qty > 0);
+  const targetSelfQty = plan.targetSelfChannelContents || 0;
+  const targetSelfBudget = plan.budgetSelfChannel || 0;
+  if (!hasSelfItems && (targetSelfQty > 0 || targetSelfBudget > 0)) {
+    const qtyTotal = targetSelfQty > 0 ? targetSelfQty : Math.max(4, Math.round(targetSelfBudget / 500000));
+    const unitCost = qtyTotal > 0 && targetSelfBudget > 0 ? Math.round(targetSelfBudget / qtyTotal) : 450000;
+    if (qtyTotal >= 10) {
+      const q1 = Math.ceil(qtyTotal * 0.6);
+      const q2 = qtyTotal - q1;
+      enrichedItems.push(
+        {
+          id: `${plan.id}-self-voice`,
+          channel: 'SELF_CHANNEL',
+          platform: 'TikTok Shop',
+          category: 'SELF_CHANNEL',
+          tierCode: 'Review voice',
+          tierLabel: 'Kênh Brand - Review Voice',
+          contentFormat: 'Kênh Brand - Review Voice',
+          qty: q1,
+          unitCost,
+          benchmarkCost: 450000,
+          totalBudget: q1 * unitCost,
+          expectedRoiMultiplier: 2.8,
+          targetGmv: Math.round(q1 * unitCost * 2.8),
+          assignedStaff: contentTeam.primary,
+          staffNotes: `Kênh Brand Self-Channel • Content PIC: ${contentTeam.primary} (Leader Partnership: Việt Hoàng)`
+        },
+        {
+          id: `${plan.id}-self-pov`,
+          channel: 'SELF_CHANNEL',
+          platform: 'TikTok Shop',
+          category: 'SELF_CHANNEL',
+          tierCode: 'POV',
+          tierLabel: 'Kênh Brand - POV & Tình Huống',
+          contentFormat: 'Kênh Brand - POV & Tình Huống',
+          qty: q2,
+          unitCost,
+          benchmarkCost: 450000,
+          totalBudget: q2 * unitCost,
+          expectedRoiMultiplier: 2.8,
+          targetGmv: Math.round(q2 * unitCost * 2.8),
+          assignedStaff: contentTeam.secondary,
+          staffNotes: `Kênh Brand Self-Channel • Content PIC: ${contentTeam.secondary} (Leader Partnership: Việt Hoàng)`
+        }
+      );
+    } else {
+      enrichedItems.push({
+        id: `${plan.id}-self-main`,
+        channel: 'SELF_CHANNEL',
+        platform: 'TikTok Shop',
+        category: 'SELF_CHANNEL',
+        tierCode: 'Review voice',
+        tierLabel: 'Kênh Brand - Review Voice',
+        contentFormat: 'Kênh Brand - Review Voice',
+        qty: qtyTotal,
+        unitCost,
+        benchmarkCost: 450000,
+        totalBudget: targetSelfBudget || qtyTotal * unitCost,
+        expectedRoiMultiplier: 2.8,
+        targetGmv: Math.round((targetSelfBudget || qtyTotal * unitCost) * 2.8),
+        assignedStaff: contentTeam.primary,
+        staffNotes: `Kênh Brand Self-Channel • Content PIC: ${contentTeam.primary} (Leader Partnership: Việt Hoàng)`
+      });
+    }
+  }
+
+  const allContributors = Array.from(
+    new Set(
+      [
+        primaryBooking,
+        ...enrichedItems.filter(i => i.qty > 0).map(i => i.assignedStaff || primaryBooking)
+      ].filter(Boolean)
+    )
+  );
+
+  return {
+    ...plan,
+    assignedMembers: allContributors,
+    items: enrichedItems
+  };
+}
+
+export function getStorePlanWorkstreamSummary(plan: InputPlanBreakdownState | null): StorePlanWorkstreamSummary {
+  const empty: StorePlanWorkstreamSummary = {
+    affiliatePaid: { totalQty: 0, totalBudget: 0, leaderName: plan?.bookingLeader, assignees: [] },
+    focSample: { totalQty: 0, totalBudget: 0, leaderName: plan?.bookingLeader, assignees: [] },
+    selfChannel: { totalQty: 0, totalBudget: 0, leaderName: 'Việt Hoàng', assignees: [] },
+    multiPlatform: { totalQty: 0, totalBudget: 0, leaderName: plan?.bookingLeader, assignees: [] },
+    allStaffNames: [],
+    allAssignedStaff: [],
+    affiliateSlices: [],
+    focSlices: [],
+    selfChannelSlices: [],
+    multiPlatformSlices: [],
+    selfChannelVideos: 0,
+    selfChannelBudget: 0,
+  };
+  if (!plan) return empty;
+
+  const primaryPic = plan.primaryPic || plan.pic || 'Lê Phương Thảo';
+  const bookingLeader = plan.hasBookingLeader ? (plan.bookingLeader || 'Nguyễn Thị Ngọc Tâm') : undefined;
+
+  const groupRows = (
+    rows: InputPlanRowItem[],
+    roleGroup: WorkstreamStaffSlice['roleGroup'],
+    defaultStaff: string,
+    leaderName?: string
+  ): WorkstreamStaffSlice[] => {
+    const map = new Map<string, WorkstreamStaffSlice>();
+    for (const r of rows) {
+      if ((r.qty || 0) <= 0 && (r.totalBudget || 0) <= 0) continue;
+      const staff = (r.assignedStaff || defaultStaff).trim();
+      const cur = map.get(staff) || {
+        staffName: staff,
+        roleGroup,
+        leaderName,
+        qty: 0,
+        videos: 0,
+        budget: 0,
+        tierOrFormatLabels: [],
+        rowIds: []
+      };
+      cur.qty += r.qty || 0;
+      cur.videos = cur.qty;
+      cur.budget += r.totalBudget || 0;
+      const tag = r.tierCode || r.contentFormat;
+      if (tag && !cur.tierOrFormatLabels.includes(tag)) cur.tierOrFormatLabels.push(tag);
+      cur.rowIds.push(r.id);
+      map.set(staff, cur);
+    }
+    return Array.from(map.values());
+  };
+
+  const items = plan.items || [];
+  const affRows = items.filter(
+    it => it.channel === 'TIKTOK' && !it.tierCode.includes('TAP') && it.id !== 'row-tt-tap' && (it.totalBudget > 0 || it.unitCost > 0)
+  );
+  const focRows = items.filter(
+    it => it.tierCode.includes('TAP') || it.id === 'row-tt-tap' || (it.channel === 'TIKTOK' && it.totalBudget === 0 && it.unitCost === 0)
+  );
+  const selfRows = items.filter(it => it.channel === 'SELF_CHANNEL');
+  const multiRows = items.filter(it => ['SHOPEE', 'FACEBOOK', 'INSTAGRAM', 'THREADS'].includes(it.channel));
+
+  const affSlices = groupRows(affRows, 'BOOKING', primaryPic, bookingLeader);
+  const focSlices = groupRows(focRows, 'FOC', 'Trần Thị Hảo', bookingLeader);
+  const selfSlices = groupRows(selfRows, 'CONTENT_SELF_CHANNEL', 'Quỳnh Như', 'Việt Hoàng');
+  const multiSlices = groupRows(multiRows, 'MULTI_PLATFORM', primaryPic, bookingLeader);
+
+  // Fallback nếu plan chưa có items chi tiết nhưng có chỉ tiêu tổng
+  if (affSlices.length === 0 && ((plan.budgetAffiliate || 0) > 0 || (plan.targetAffiliateContents || 0) > 0)) {
+    const isShopee = (plan.storeName || '').toLowerCase().includes('shopee');
+    if (isShopee) {
+      const q = plan.targetAffiliateContents || plan.totalTargetContents || 0;
+      multiSlices.push({
+        staffName: primaryPic,
+        roleGroup: 'MULTI_PLATFORM',
+        leaderName: bookingLeader,
+        qty: q,
+        videos: q,
+        budget: plan.budgetAffiliate || plan.totalTargetBudget || 0,
+        tierOrFormatLabels: ['Shopee Video & Affiliate'],
+        rowIds: []
+      });
+    } else if ((plan.budgetAffiliate || 0) > 0) {
+      const q = plan.targetAffiliateContents || 0;
+      affSlices.push({
+        staffName: primaryPic,
+        roleGroup: 'BOOKING',
+        leaderName: bookingLeader,
+        qty: q,
+        videos: q,
+        budget: plan.budgetAffiliate || 0,
+        tierOrFormatLabels: ['KL1-KL5'],
+        rowIds: []
+      });
+    } else if ((plan.targetAffiliateContents || 0) > 0) {
+      const q = plan.targetAffiliateContents || 0;
+      focSlices.push({
+        staffName: 'Trần Thị Hảo',
+        roleGroup: 'FOC',
+        leaderName: bookingLeader,
+        qty: q,
+        videos: q,
+        budget: 0,
+        tierOrFormatLabels: ['FOC 0đ'],
+        rowIds: []
+      });
+    }
+  }
+
+  if (selfSlices.length === 0 && ((plan.budgetSelfChannel || 0) > 0 || (plan.targetSelfChannelContents || 0) > 0)) {
+    const defContent = pickContentPrimaryForBrand(`${plan.brandName} ${plan.storeName || ''}`, 0).primary;
+    const q = plan.targetSelfChannelContents || 0;
+    selfSlices.push({
+      staffName: defContent,
+      roleGroup: 'CONTENT_SELF_CHANNEL',
+      leaderName: 'Việt Hoàng',
+      qty: q,
+      videos: q,
+      budget: plan.budgetSelfChannel || 0,
+      tierOrFormatLabels: ['Review voice'],
+      rowIds: []
+    });
+  }
+
+  const sumQ = (arr: WorkstreamStaffSlice[]) => arr.reduce((s, x) => s + x.qty, 0);
+  const sumB = (arr: WorkstreamStaffSlice[]) => arr.reduce((s, x) => s + x.budget, 0);
+
+  const allStaff = Array.from(
+    new Set([
+      ...affSlices.map(s => s.staffName),
+      ...focSlices.map(s => s.staffName),
+      ...selfSlices.map(s => s.staffName),
+      ...multiSlices.map(s => s.staffName),
+    ])
+  );
+
+  const selfChannelTotalQty = sumQ(selfSlices);
+  const selfChannelTotalBudget = sumB(selfSlices);
+
+  return {
+    affiliatePaid: { totalQty: sumQ(affSlices), totalBudget: sumB(affSlices), leaderName: bookingLeader, assignees: affSlices },
+    focSample: { totalQty: sumQ(focSlices), totalBudget: sumB(focSlices), leaderName: bookingLeader, assignees: focSlices },
+    selfChannel: { totalQty: selfChannelTotalQty, totalBudget: selfChannelTotalBudget, leaderName: 'Việt Hoàng', assignees: selfSlices },
+    multiPlatform: { totalQty: sumQ(multiSlices), totalBudget: sumB(multiSlices), leaderName: bookingLeader, assignees: multiSlices },
+    allStaffNames: allStaff,
+    allAssignedStaff: allStaff,
+    affiliateSlices: affSlices,
+    focSlices: focSlices,
+    selfChannelSlices: selfSlices,
+    multiPlatformSlices: multiSlices,
+    selfChannelVideos: selfChannelTotalQty,
+    selfChannelBudget: selfChannelTotalBudget,
+  };
+}
+
+export function buildPersonalWorkPackages(
+  plans: InputPlanBreakdownState[],
+  month: string = '2026/10'
+): PersonalWorkPackageItem[] {
+  const packages: PersonalWorkPackageItem[] = [];
+  const filteredPlans = plans.filter(p => month === 'ALL' || p.month === month);
+
+  for (const plan of filteredPlans) {
+    const ws = getStorePlanWorkstreamSummary(plan);
+    const storeName = plan.storeName || plan.brandName;
+    const platform = storeName.toLowerCase().includes('shopee') ? 'Shopee Mall' : 'TikTok Shop';
+    const versionCode = plan.currentVersionCode || 'v1.0';
+    const storeTotalQty =
+      ws.affiliatePaid.totalQty + ws.focSample.totalQty + ws.selfChannel.totalQty + ws.multiPlatform.totalQty || plan.totalTargetContents || 0;
+    const storeTotalBudget = plan.totalTargetBudget || (ws.affiliatePaid.totalBudget + ws.selfChannel.totalBudget + ws.multiPlatform.totalBudget);
+
+    const pushSlices = (
+      workstream: B2cWorkstreamType,
+      workstreamLabel: string,
+      slices: WorkstreamStaffSlice[]
+    ) => {
+      const namesInWs = slices.map(s => s.staffName);
+      for (const sl of slices) {
+        if (sl.qty <= 0 && sl.budget <= 0) continue;
+        const coWorkersSameStore = ws.allStaffNames.filter(n => n !== sl.staffName);
+        packages.push({
+          id: `${plan.id}-${workstream}-${sl.staffName}`,
+          staffName: sl.staffName,
+          roleGroup: sl.roleGroup,
+          leaderName: sl.leaderName,
+          planId: plan.id,
+          planTitle: plan.title,
+          month: plan.month,
+          storeId: plan.storeId,
+          storeName,
+          brandName: plan.brandName,
+          platform,
+          planStatus: plan.status || 'DRAFT',
+          versionCode,
+          workstream,
+          workstreamLabel,
+          myQty: sl.qty,
+          myBudget: sl.budget,
+          assignedVideos: sl.qty,
+          assignedBudget: sl.budget,
+          storeTotalQty,
+          storeTotalBudget,
+          tierOrFormatLabels: sl.tierOrFormatLabels,
+          tiersSummary: sl.tierOrFormatLabels.join(', '),
+          coWorkersInSameWorkstream: namesInWs.filter(n => n !== sl.staffName),
+          allStoreContributors: coWorkersSameStore,
+          coWorkersOnSameStore: coWorkersSameStore,
+          rowIds: sl.rowIds
+        });
+      }
+    };
+
+    pushSlices('AFFILIATE_PAID', '1. Video Affiliate (KOC trả phí)', ws.affiliatePaid.assignees);
+    pushSlices('FOC_SAMPLE', '2. Gửi mẫu FOC (0đ)', ws.focSample.assignees);
+    pushSlices('SELF_CHANNEL', '3. Video Self-Channel (Kênh Brand)', ws.selfChannel.assignees);
+    pushSlices('MULTI_PLATFORM', '4. Đa sàn (Shopee / FB / IG)', ws.multiPlatform.assignees);
+  }
+
+  return packages;
+}
+
+export function enrichPlanWithVersions(rawPlan: InputPlanBreakdownState, idx: number = 0): InputPlanBreakdownState {
+  const plan = enrichPlanWithMultiStaffWorkstreams(rawPlan, idx);
   if (plan.versionSnapshots && plan.versionSnapshots.length > 0) {
     return plan;
   }

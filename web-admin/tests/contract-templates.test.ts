@@ -1,8 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import JSZip from 'jszip';
-import { loadTemplate, renderTemplate, templateCatalog, archiveTemplate } from '../src/lib/contracts/templates';
-import { mkdtemp, writeFile, mkdir, unlink, rmdir } from 'node:fs/promises';
+import { loadTemplate, renderTemplate, templateCatalog, archiveTemplate, saveTemplateMeta, uploadTemplateDocx } from '../src/lib/contracts/templates';
+import { mkdtemp, writeFile, mkdir, unlink, rmdir, rm } from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
 test('Đọc đủ 8 mẫu gốc và phát hiện trường trong bảng/đoạn văn', async () => {
@@ -79,5 +79,44 @@ test('Dựng cấu trúc trang A4 (blocks) giữ đủ bảng Bên A/B, bảng h
   walk(template.blocks);
   for (const f of template.fields) {
     assert.ok(coords.has(`${f.part}:${f.paragraph}`), `Trường ${f.key} (${f.part}:${f.paragraph}) phải nằm trong cấu trúc trang A4`);
+  }
+});
+test('Quản lý danh mục hợp đồng: cập nhật cấu hình danh mục và phát hành mẫu .docx mới', async () => {
+  const original = await loadTemplate('IND-HD');
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'b2c-catalog-'));
+  const previousData = process.env.CONTRACT_DATA_DIR;
+  try {
+    process.env.CONTRACT_DATA_DIR = directory;
+    const updatedMeta = await saveTemplateMeta('IND-HD', 'Pháp chế UpBase', {
+      version: 'Ver102026',
+      category: 'BOOKING_VIDEO',
+      defaultReviewRoles: ['LEGAL', 'FINANCE', 'LEAD'],
+      active: true,
+    });
+    assert.equal(updatedMeta.version, 'Ver102026');
+    assert.deepEqual(updatedMeta.defaultReviewRoles, ['LEGAL', 'FINANCE', 'LEAD']);
+
+    const docxBuffer = await original.zip.generateAsync({ type: 'nodebuffer' });
+    const created = await uploadTemplateDocx('LIV-HD', 'Pháp chế UpBase', {
+      base64Docx: docxBuffer.toString('base64'),
+      filename: 'Mau_Livestream_2026.docx',
+      name: 'Hợp đồng dịch vụ Livestream · Cá nhân',
+      subject: 'Cá nhân',
+      kind: 'CONTRACT',
+      category: 'LIVESTREAM_APPENDIX',
+      version: 'Ver102026',
+      note: 'Ban hành mẫu Livestream mới',
+    });
+    assert.equal(created.id, 'LIV-HD');
+    assert.equal(created.category, 'LIVESTREAM_APPENDIX');
+    assert.ok(created.fields.length > 5);
+
+    const catalog = await templateCatalog();
+    assert.equal(catalog.length, 9);
+    assert.ok(catalog.some(t => t.id === 'LIV-HD' && t.name === 'Hợp đồng dịch vụ Livestream · Cá nhân'));
+  } finally {
+    if (previousData === undefined) delete process.env.CONTRACT_DATA_DIR;
+    else process.env.CONTRACT_DATA_DIR = previousData;
+    await rm(directory, { recursive: true, force: true });
   }
 });

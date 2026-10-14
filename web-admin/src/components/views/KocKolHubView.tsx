@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { Avatar, Presence } from '../ui';
+import { PartnerDiscussion } from '../PartnerDiscussion';
 import {
   ArrowLeft,
   ChevronLeft,
@@ -47,7 +48,17 @@ interface KocKolHubViewProps {
   onNavigateToCtvHub?: () => void;
 }
 
-export const KocKolHubView: React.FC<KocKolHubViewProps> = ({
+export const KocKolHubView: React.FC<KocKolHubViewProps> = (props) => {
+  const kocs = props.initialKocs || INITIAL_KOCS;
+  if (props.currentUser?.role === 'KOC_PARTNER') {
+    const own = kocs.filter(k => k.id === props.currentUser?.linkedEntityId);
+    if (!own.length) return <div className="rounded-xl border bg-white p-6 text-sm">Chưa có hồ sơ KOC được liên kết với tài khoản của bạn.</div>;
+    return <KocKolWorkspace key={props.currentUser.id} {...props} initialKocs={own} initialDeals={(props.initialDeals || INITIAL_DEALS).filter(d => d.kocId === own[0].id)} />;
+  }
+  if (!kocs.length) return <div className="rounded-xl border bg-white p-6 text-sm">Chưa có hồ sơ KOC.</div>;
+  return <KocKolWorkspace key={props.currentUser?.id || 'guest'} {...props} />;
+};
+const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
   currentUser,
   initialKocs = INITIAL_KOCS,
   initialDeals = INITIAL_DEALS,
@@ -155,59 +166,7 @@ export const KocKolHubView: React.FC<KocKolHubViewProps> = ({
   const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'APPROVALS' | 'ACTIVE_JOBS' | 'DISCUSSION' | 'HISTORY'>('OVERVIEW');
   const [activeJobsSubTab, setActiveJobsSubTab] = useState<'DEALS' | 'SAMPLES' | 'SUBMISSION'>('DEALS');
 
-  // Discussion Chat State between KOC and Upbase Booking PIC
-  const [kocChatMessages, setKocChatMessages] = useState([
-    {
-      id: 'kmsg-1',
-      sender: 'UPBASE_BOOKING',
-      senderName: 'Khánh Vy (Booking Lead Upbase)',
-      time: 'Hôm qua lúc 11:20',
-      content: `Chào ${activeKoc.stageName}! Team Booking vừa gửi bạn lời mời hợp tác chiến dịch mới của nhãn hàng. Hàng mẫu đã được gửi chuyển phát nhanh GHN đến bạn rồi nhé!`
-    },
-    {
-      id: 'kmsg-2',
-      sender: 'KOC',
-      senderName: activeKoc.stageName,
-      time: 'Hôm qua lúc 15:45',
-      content: 'Dạ em vừa nhận được kiện hàng mẫu rồi chị Vy ơi! Sản phẩm đóng gói rất cẩn thận. Em sẽ lên kịch bản unboxing và test chất kem trong 2 ngày tới rồi nộp kịch bản qua tab Cần duyệt cho bên mình duyệt ạ.'
-    },
-    {
-      id: 'kmsg-3',
-      sender: 'UPBASE_BOOKING',
-      senderName: 'Khánh Vy (Booking Lead Upbase)',
-      time: 'Sáng nay lúc 09:30',
-      content: 'Tuyệt vời em ơi! Lưu ý giúp chị là Brand muốn nhấn mạnh tính năng kiềm dầu 8 tiếng và dịu nhẹ cho da mụn nha. Cần hỗ trợ mã Spark Ads code cứ nhắn chị nhé!'
-    }
-  ]);
-  const [newKocChatText, setNewKocChatText] = useState('');
-
-  const handleSendKocChat = (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    if (!newKocChatText.trim()) return;
-
-    setKocChatMessages(prev => [
-      ...prev,
-      {
-        id: `kmsg-${Date.now()}`,
-        sender: 'KOC',
-        senderName: activeKoc.stageName,
-        time: 'Vừa xong',
-        content: newKocChatText.trim()
-      }
-    ]);
-    setNewKocChatText('');
-    notify('Đã gửi tin nhắn đến Booking PIC Upbase!');
-  };
-
-
-
-  // Filter deals belonging to current KOC or generic demo deals
-  const currentKocDeals = useMemo(() => {
-    const matched = deals.filter(d => d.kocId === activeKoc.id || d.kocStageName === activeKoc.stageName);
-    if (matched.length > 0) return matched;
-    // Fallback: assign sample deals to this KOC for interactive simulation
-    return deals.slice(0, 4).map(d => ({ ...d, kocId: activeKoc.id, kocStageName: activeKoc.stageName }));
-  }, [deals, activeKoc]);
+  const currentKocDeals = useMemo(() => deals.filter(d => d.kocId === activeKoc.id), [deals, activeKoc.id]);
 
   // Modals state
   const [negotiatingDeal, setNegotiatingDeal] = useState<BookingDealItem | null>(null);
@@ -1401,71 +1360,7 @@ export const KocKolHubView: React.FC<KocKolHubViewProps> = ({
       {/* TAB 4: TRAO ĐỔI (TWO-WAY DISCUSSION) */}
       {/* ========================================================================= */}
       {activeTab === 'DISCUSSION' && (
-        <div className="bg-white border border-slate-200/80 shadow-xs rounded-2xl flex flex-col h-[560px] overflow-hidden animate-in fade-in duration-150">
-          <div className="p-3.5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-blue-600 text-white font-semibold flex items-center justify-center text-xs">
-                KOC
-              </div>
-              <div>
-                <h4 className="text-xs font-semibold text-slate-900">
-                  {activeKoc.stageName} ⇄ Upbase Booking Lead
-                </h4>
-                <p className="text-2xs text-slate-500">
-                  Hỗ trợ kịch bản, thời gian nộp mẫu, gia hạn lịch quay, mã Spark Ads
-                </p>
-              </div>
-            </div>
-            <span className="text-2xs px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 font-medium">
-              Phản hồi trực tuyến &lt; 15 phút
-            </span>
-          </div>
-
-          <div className="flex-1 p-4 overflow-y-auto space-y-3 text-xs bg-slate-50/20">
-            {kocChatMessages.map(msg => {
-              const isKoc = msg.sender === 'KOC';
-              return (
-                <div key={msg.id} className={`flex items-start gap-2.5 ${isKoc ? 'flex-row-reverse' : 'flex-row'}`}>
-                  <div className={`w-7 h-7 rounded-full flex items-center justify-center font-semibold text-2xs text-white shrink-0 ${
-                    isKoc ? 'bg-blue-600' : 'bg-slate-700'
-                  }`}>
-                    {isKoc ? activeKoc.stageName.slice(0, 2).toUpperCase() : 'UP'}
-                  </div>
-                  <div className={`max-w-[70%] space-y-1 ${isKoc ? 'items-end' : 'items-start'}`}>
-                    <div className={`flex items-center gap-2 text-2xs text-slate-400 ${isKoc ? 'justify-end' : 'justify-start'}`}>
-                      <span className="font-semibold text-slate-700">{msg.senderName}</span>
-                      <span>•</span>
-                      <span>{msg.time}</span>
-                    </div>
-                    <div className={`p-3 rounded-2xl leading-relaxed text-xs ${
-                      isKoc ? 'bg-blue-600 text-white rounded-tr-none' : 'bg-white text-slate-800 border border-slate-200/80 rounded-tl-none shadow-2xs'
-                    }`}>
-                      {msg.content}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          <form onSubmit={handleSendKocChat} className="p-3 border-t border-slate-100 bg-white flex items-center gap-2">
-            <input
-              type="text"
-              value={newKocChatText}
-              onChange={(e) => setNewKocChatText(e.target.value)}
-              placeholder="Nhập nội dung trao đổi với Booking Lead Upbase..."
-              className="flex-1 text-xs bg-slate-50 text-slate-900 placeholder-slate-400 border border-slate-200 rounded-xl px-3.5 py-2.5 outline-none focus:border-blue-500 focus:bg-white transition"
-            />
-            <button
-              type="submit"
-              disabled={!newKocChatText.trim()}
-              className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white font-semibold text-xs transition flex items-center gap-1.5 shadow-2xs"
-            >
-              <Send className="w-3.5 h-3.5" />
-              <span>Gửi</span>
-            </button>
-          </form>
-        </div>
+        <PartnerDiscussion family="KOC" root={`koc:${activeKoc.id}`} actorId={currentUser?.id || 'guest'} />
       )}
 
       {/* ========================================================================= */}

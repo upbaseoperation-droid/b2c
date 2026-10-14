@@ -4,7 +4,19 @@
  */
 
 import type { BrandDetail } from '../../lib/types';
-import type { BrandDocCategory, BrandPermissions, BrandProfile, ToneTag } from '../../lib/brands/types';
+import type {
+  BrandDocCategory,
+  BrandOperatingModel,
+  BrandPermissions,
+  BrandProfile,
+  BrandProjectTier,
+  KocApprovalMode,
+  SampleReturnRule,
+  SampleSenderType,
+  SampleStockStatus,
+  StrategyOwnerTeam,
+  ToneTag,
+} from '../../lib/brands/types';
 import { brandKey, emptyProfile } from '../../lib/brands/types';
 
 export interface BrandAccess { name: string; lead: boolean; legal: boolean }
@@ -35,15 +47,55 @@ export const DOC_CATEGORY_LABEL: Record<BrandDocCategory, string> = {
   OTHER: 'Khác',
 };
 
+export const PROJECT_TIER_LABEL: Record<BrandProjectTier, string> = {
+  TIER_A_STRATEGIC: 'Tier A — Nhãn chiến lược (Ngân sách & quy mô lớn)',
+  TIER_B_GROWTH: 'Tier B — Tăng trưởng qua nội dung (Content-driven)',
+  TIER_C_FULLSTACK: 'Tier C — Gian hàng nhỏ (Full-stack tự triển khai)',
+};
+
+export const OPERATING_MODEL_LABEL: Record<BrandOperatingModel, string> = {
+  SPLIT_RESOURCE: 'Tách nguồn lực (Content & Booking chuyên biệt)',
+  FULLSTACK_CONTENT_BOOKING: 'Full-stack Content × Booking',
+};
+
+export const STRATEGY_OWNER_LABEL: Record<StrategyOwnerTeam, string> = {
+  BRAND_TEAM: 'Brand Team (Chịu trách nhiệm chiến lược tổng)',
+  CONTENT_TEAM: 'Content Team (Chịu trách nhiệm định hướng nội dung)',
+};
+
+export const KOC_APPROVAL_MODE_LABEL: Record<KocApprovalMode, string> = {
+  ALL: 'Nhãn hàng duyệt toàn bộ danh sách KOC',
+  KL4_PLUS_ONLY: 'Tự duyệt KL1–KL3 · Nhãn chỉ duyệt từ KL4 trở lên',
+  NONE_AUTO: 'Phòng B2C tự chủ duyệt danh sách KOC (Luồng tự động / FOC)',
+};
+
+export const SAMPLE_SENDER_LABEL: Record<SampleSenderType, string> = {
+  UPBASE_WAREHOUSE: 'Kho UpBase xuất hàng (Tạo đơn trên hệ thống UpS)',
+  BRAND_DIRECT: 'Kho Nhãn hàng tự gửi trực tiếp cho KOC',
+};
+
+export const SAMPLE_RETURN_LABEL: Record<SampleReturnRule, string> = {
+  GIFT: 'Tặng luôn hàng mẫu cho KOC (FOC)',
+  LOAN_RETURN: 'Cho mượn hàng mẫu — Bắt buộc thu hồi sau nghiệm thu',
+};
+
+export const SAMPLE_STOCK_LABEL: Record<SampleStockStatus, { label: string; tone: 'positive' | 'warning' | 'critical' | 'info' }> = {
+  IN_STOCK: { label: 'Sẵn hàng mẫu', tone: 'positive' },
+  LOW_STOCK: { label: 'Sắp hết hàng mẫu', tone: 'warning' },
+  OUT_OF_STOCK: { label: 'Hết hàng mẫu — Tạm ngừng book', tone: 'critical' },
+  PRE_ORDER: { label: 'Hàng Pre-order (Đợi nhập kho)', tone: 'info' },
+};
+
 const PLACEHOLDER = /^(Bộ quy chuẩn nội dung|Đại diện Nhãn hàng|Chưa phân công|KOC phù hợp tệp)/i;
 /** Giá trị thật từ Dữ liệu gốc, chữ giữ chỗ trả về rỗng. */
 export const real = (v?: string) => (v && !PLACEHOLDER.test(v.trim()) ? v.trim() : '');
 
-/** 7 mục làm nên một hồ sơ đủ để KOC và người duyệt dùng được. */
+/** 8 mục làm nên một hồ sơ đủ để KOC và người duyệt dùng được. */
 export function completeness(p: BrandProfile) {
   const checks = [
     !!p.positioning?.slogan && !!p.positioning?.toneOfVoice,
     !!p.entity?.companyName && !!p.entity?.taxCode,
+    !!p.workflowRules?.projectTier && !!p.workflowRules?.kocApprovalMode,
     p.products.length > 0,
     (p.contentRules?.banned.length || 0) > 0,
     p.faqs.length > 0,
@@ -70,7 +122,13 @@ export function permissionsOf(access: BrandAccess | undefined, accountPic?: stri
   const pic = !!access && !!accountPic && access.name.trim().toLowerCase() === accountPic.trim().toLowerCase();
   const content = !!access && (access.lead || pic);
   return {
-    POSITIONING: content, ENTITY: content, PRODUCTS: content, CONTENT_RULES: content, FAQS: content, DOCUMENTS: content,
+    POSITIONING: content,
+    ENTITY: content,
+    WORKFLOW_RULES: content,
+    PRODUCTS: content,
+    CONTENT_RULES: content,
+    FAQS: content,
+    DOCUMENTS: content,
     LEGAL: !!access && (access.lead || access.legal),
     RATECARD: !!access && access.lead,
   };
@@ -136,4 +194,3 @@ export async function uploadBrandFileClient(params: {
   }
   return data.file as UploadedBrandFileResult;
 }
-

@@ -63,6 +63,8 @@ const CtvManagementView = dynamic(() => import('../components/views/CtvManagemen
 const ContractManagementView = dynamic(() => import('../components/views/ContractManagementView').then(m => m.ContractManagementView), { loading: ViewLoading });
 const WeeklyAdsReportHubView = dynamic(() => import('../components/views/WeeklyAdsReportHubView').then(m => m.WeeklyAdsReportHubView), { loading: ViewLoading });
 const ExecutiveDashboardReportsView = dynamic(() => import('../components/views/ExecutiveDashboardReportsView').then(m => m.ExecutiveDashboardReportsView), { loading: ViewLoading });
+const ApiKeySetupView = dynamic(() => import('../components/views/ApiKeySetupView').then(m => m.ApiKeySetupView), { loading: ViewLoading });
+const MarketingKnowledgeQaView = dynamic(() => import('../components/views/MarketingKnowledgeQaView').then(m => m.MarketingKnowledgeQaView), { loading: ViewLoading });
 
 import { isThirdPartyPartner } from '../lib/thirdPartyAccessData';
 import { isTabAllowedForRole, getAllowedTabsForRole, getDefaultLandingTabForRole } from '../lib/rbacData';
@@ -728,8 +730,11 @@ export default function App() {
     'dashboard-brand': { title: 'Dashboard Thương Hiệu & Ngân Sách (Brand & P&L)', subtitle: 'Đối soát 42 Thương hiệu, Hạn mức Order Gross vs Trần Net Kế toán, Thực chi 3.2 và Cảnh báo đỏ vượt trần' },
     'dashboard-store': { title: 'Dashboard Gian Hàng & TikTok Seller (69 Gian Hàng B2C)', subtitle: 'Đối soát 39 TikTok Shop & 30 Shopee Mall, chiến dịch PGM/LGM TikTok Seller Center, ROAS và tiến độ giải ngân' },
     'dashboard-video': { title: 'Dashboard Hiệu Quả Video Booking & KOC/Ads', subtitle: 'Phân tích 786 đơn video File 3.2 & 4.211 dòng Creative TikTok Seller, bóc tách Paid vs FOC 0đ, Khung lương KL1–7 và Phễu giữ chân' },
-    'dashboard-team-sla': { title: 'Dashboard Tiến Độ, SLA & Nhân Sự B2C', subtitle: 'Quản trị 3 cấp (Trưởng phòng Yến Nhi · Leader Ngọc Tâm 8 gian · 61 gian trực tiếp), băng tải tiến độ 786 video, tỷ lệ đúng hạn SLA và điểm 4P' },
+    'dashboard-team-sla': { title: 'Dashboard Tiến Độ & SLA Vận Hành B2C', subtitle: 'Quản trị 3 cấp (Trưởng phòng Yến Nhi · Leader Ngọc Tâm 8 gian · 61 gian trực tiếp), băng tải tiến độ 786 video và tỷ lệ đúng hạn SLA' },
+    'dashboard-staff': { title: 'Dashboard Hiệu Suất & Hiệu Quả Từng Nhân Viên B2C', subtitle: 'Đánh giá 360° từng chuyên viên: % Spend Chi phí, Số lượng Video Air, GMV & ROAS tạo ra, Đơn giá TB/Video, SLA và Điểm KPI tổng hợp' },
     'dashboard-finance': { title: 'Dashboard Đối Soát Kế Toán & Xuất File (.xlsx)', subtitle: 'Kiểm soát hồ sơ thanh toán (ĐNTT / Tạm ứng / Done), khóa trần Order Net và kết xuất báo cáo đối soát Excel 4 Sheets' },
+    'api-settings': { title: 'Cấu hình API & Định tuyến Nghiệp vụ', subtitle: 'Quản lý khóa API Google (Gemini), OpenAI (ChatGPT), Anthropic (Claude) và phân bổ công cụ xử lý theo từng nghiệp vụ B2C' },
+    'knowledge-qa': { title: 'Sổ tay & Hỏi đáp', subtitle: 'Tra cứu quy trình, mốc SLA, mẫu hợp đồng, tính thuế Gross/Net, khung lương KL1–KL7 và hỏi đáp nghiệp vụ Marketing B2C' },
   };
 
   if (isLoadingAuth || !currentUser) {
@@ -882,6 +887,7 @@ export default function App() {
                 'dashboard-store',
                 'dashboard-video',
                 'dashboard-team-sla',
+                'dashboard-staff',
                 'dashboard-finance'
               ].includes(activeTab)
                 ? 'dashboard-bi'
@@ -1173,6 +1179,7 @@ export default function App() {
               onUpdateStore={handleUpdateStore}
               tasks={tasks}
               onAddTask={handleAddTask}
+              onNavigateToTab={(tabKey) => setActiveTab(tabKey as TabKey)}
             />
           </KeepAliveTab>
 
@@ -1242,6 +1249,24 @@ export default function App() {
               onNotify={showToast}
               onUpdateKocsWithAdsData={(updated) => setKocs(updated)}
               onUpdateDealsWithAdsData={(updated) => setDeals(updated)}
+            />
+          </KeepAliveTab>
+
+          <KeepAliveTab tabKey="api-settings" currentTab={activeTab}>
+            <ApiKeySetupView
+              currentUser={currentUser}
+              onNotify={showToast}
+            />
+          </KeepAliveTab>
+
+          <KeepAliveTab tabKey="knowledge-qa" currentTab={activeTab}>
+            <MarketingKnowledgeQaView
+              currentUser={currentUser}
+              brands={brands}
+              stores={storePortfolios}
+              kocs={kocs}
+              onNotify={showToast}
+              onNavigateToTab={(tab) => setActiveTab(tab)}
             />
           </KeepAliveTab>
             </>

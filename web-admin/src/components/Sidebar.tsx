@@ -30,6 +30,8 @@ import {
   FileSpreadsheet,
   ChevronDown,
   ChevronRight,
+  Sliders,
+  HelpCircle,
   type LucideIcon,
 } from 'lucide-react';
 import { UserProfile, TabKey } from '../lib/types';
@@ -64,8 +66,9 @@ const B2C_DASHBOARD_SUB_ITEMS: NavItem[] = [
   { key: 'dashboard-brand', label: '1. Thương hiệu & Ngân sách', icon: Building2, badge: '42 Brand' },
   { key: 'dashboard-store', label: '2. Gian hàng & TikTok Seller', icon: Store, badge: '69 Gian' },
   { key: 'dashboard-video', label: '3. Video Booking & KOC/Ads', icon: Film, badge: '786 Đơn' },
-  { key: 'dashboard-team-sla', label: '4. Tiến độ, SLA & Nhân sự', icon: Activity, badge: 'SLA' },
-  { key: 'dashboard-finance', label: '5. Đối soát Kế toán & Xuất file', icon: FileSpreadsheet, badge: '.xlsx' },
+  { key: 'dashboard-team-sla', label: '4. Tiến độ & SLA Vận hành', icon: Activity, badge: 'SLA' },
+  { key: 'dashboard-staff', label: '5. Hiệu suất & Hiệu quả Nhân viên', icon: Users, badge: '32 NS' },
+  { key: 'dashboard-finance', label: '6. Đối soát Kế toán & Xuất file', icon: FileSpreadsheet, badge: '.xlsx' },
 ];
 
 export const DASHBOARD_TAB_KEYS: TabKey[] = [
@@ -74,10 +77,11 @@ export const DASHBOARD_TAB_KEYS: TabKey[] = [
   'dashboard-store',
   'dashboard-video',
   'dashboard-team-sla',
+  'dashboard-staff',
   'dashboard-finance',
 ];
 
-// Danh mục điều hướng theo vai trò — gọn trên một màn hình, có Tab lớn "Dashboard Quản Trị" chia 5 mục đích
+// Danh mục điều hướng theo vai trò — gọn trên một màn hình, có Tab lớn "Dashboard Quản Trị" chia 6 mục đích
 function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
   switch (role) {
     case 'ADMIN':
@@ -90,7 +94,7 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
               key: 'dashboard-brand',
               label: 'Dashboard Quản Trị B2C',
               icon: LayoutDashboard,
-              badge: '5 mục',
+              badge: '6 mục',
               children: B2C_DASHBOARD_SUB_ITEMS,
             },
           ],
@@ -125,6 +129,8 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           items: [
             { key: 'master-data', label: 'Dữ liệu gốc', icon: Database },
             { key: 'partner-access', label: 'Phân quyền & Tài khoản', icon: KeyRound },
+            { key: 'knowledge-qa', label: 'Sổ tay & Hỏi đáp', icon: HelpCircle },
+            { key: 'api-settings', label: 'Cấu hình API & Công cụ', icon: Sliders, badge: '3 API' },
           ],
         },
       ];
@@ -138,7 +144,7 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
               key: 'dashboard-brand',
               label: 'Dashboard Quản Trị B2C',
               icon: LayoutDashboard,
-              badge: '5 mục',
+              badge: '6 mục',
               children: B2C_DASHBOARD_SUB_ITEMS,
             },
           ],
@@ -165,6 +171,8 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           items: [
             { key: 'master-data', label: 'Dữ liệu gốc', icon: Database },
             { key: 'partner-access', label: 'Phân quyền & Nhân sự', icon: KeyRound },
+            { key: 'knowledge-qa', label: 'Sổ tay & Hỏi đáp', icon: HelpCircle },
+            { key: 'api-settings', label: 'Cấu hình API & Công cụ', icon: Sliders, badge: '3 API' },
           ],
         },
       ];
@@ -178,7 +186,7 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
               key: 'dashboard-brand',
               label: 'Dashboard Quản Trị B2C',
               icon: LayoutDashboard,
-              badge: '5 mục',
+              badge: '6 mục',
               children: B2C_DASHBOARD_SUB_ITEMS,
             },
           ],
@@ -205,6 +213,8 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           items: [
             { key: 'master-data', label: 'Dữ liệu gốc', icon: Database },
             { key: 'partner-access', label: 'Phân quyền & Nhân sự', icon: KeyRound },
+            { key: 'knowledge-qa', label: 'Sổ tay & Hỏi đáp', icon: HelpCircle },
+            { key: 'api-settings', label: 'Cấu hình API & Công cụ', icon: Sliders, badge: '3 API' },
           ],
         },
       ];
@@ -218,7 +228,7 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
               key: 'dashboard-brand',
               label: 'Dashboard Quản Trị B2C',
               icon: LayoutDashboard,
-              badge: '5 mục',
+              badge: '6 mục',
               children: B2C_DASHBOARD_SUB_ITEMS,
             },
           ],
@@ -249,9 +259,11 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           ],
         },
         {
-          title: 'Dữ liệu gốc',
+          title: 'Hệ thống & Dữ liệu gốc',
           items: [
             { key: 'master-data', label: 'Dữ liệu gốc', icon: Database },
+            { key: 'knowledge-qa', label: 'Sổ tay & Hỏi đáp', icon: HelpCircle },
+            { key: 'api-settings', label: 'Cấu hình API & Công cụ', icon: Sliders, badge: '3 API' },
           ],
         },
       ];
@@ -265,11 +277,12 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
               key: 'dashboard-store',
               label: 'Dashboard Quản Trị B2C',
               icon: LayoutDashboard,
-              badge: '3 mục',
+              badge: '4 mục',
               children: [
                 { key: 'dashboard-store', label: 'Gian hàng & TikTok Seller', icon: Store },
                 { key: 'dashboard-video', label: 'Video Booking & KOC/Ads', icon: Film },
-                { key: 'dashboard-team-sla', label: 'Tiến độ, SLA & Nhân sự', icon: Activity },
+                { key: 'dashboard-team-sla', label: 'Tiến độ & SLA Vận hành', icon: Activity },
+                { key: 'dashboard-staff', label: 'Hiệu suất & Hiệu quả Nhân viên', icon: Users },
               ],
             },
           ],
@@ -292,10 +305,12 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           ],
         },
         {
-          title: 'Hợp đồng & Hàng mẫu',
+          title: 'Hợp đồng, Mẫu & Công cụ',
           items: [
             { key: 'contracts', label: 'Hợp đồng', icon: FileCheck },
             { key: 'sample-tracker', label: 'Hàng mẫu & Spark Ads', icon: Package },
+            { key: 'knowledge-qa', label: 'Sổ tay & Hỏi đáp', icon: HelpCircle },
+            { key: 'api-settings', label: 'Cấu hình API & Công cụ', icon: Sliders, badge: '3 API' },
           ],
         },
       ];
@@ -309,10 +324,11 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
               key: 'dashboard-video',
               label: 'Dashboard Quản Trị B2C',
               icon: LayoutDashboard,
-              badge: '2 mục',
+              badge: '3 mục',
               children: [
                 { key: 'dashboard-video', label: 'Video Booking & KOC/Ads', icon: Film },
-                { key: 'dashboard-team-sla', label: 'Tiến độ, SLA & Nhân sự', icon: Activity },
+                { key: 'dashboard-team-sla', label: 'Tiến độ & SLA Vận hành', icon: Activity },
+                { key: 'dashboard-staff', label: 'Hiệu suất & Hiệu quả Nhân viên', icon: Users },
               ],
             },
           ],
@@ -335,10 +351,12 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           ],
         },
         {
-          title: 'Vận hành & Đánh giá',
+          title: 'Vận hành & Công cụ',
           items: [
             { key: 'sample-tracker', label: 'Hàng mẫu & Spark Ads', icon: Package },
             { key: 'performance-p3', label: 'Đánh giá 4P & thưởng', icon: Coins },
+            { key: 'knowledge-qa', label: 'Sổ tay & Hỏi đáp', icon: HelpCircle },
+            { key: 'api-settings', label: 'Cấu hình API & Công cụ', icon: Sliders, badge: '3 API' },
           ],
         },
       ];
@@ -378,10 +396,12 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           ],
         },
         {
-          title: 'Báo cáo hiệu suất',
+          title: 'Báo cáo & Công cụ',
           items: [
             { key: 'ads-report', label: 'Báo cáo Ads TikTok', icon: BarChart3 },
             { key: 'performance-p3', label: 'Đánh giá 4P & thưởng', icon: Coins },
+            { key: 'knowledge-qa', label: 'Sổ tay & Hỏi đáp', icon: HelpCircle },
+            { key: 'api-settings', label: 'Cấu hình API & Công cụ', icon: Sliders, badge: '3 API' },
           ],
         },
       ];
@@ -395,12 +415,13 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
               key: 'dashboard-brand',
               label: 'Dashboard Quản Trị B2C',
               icon: LayoutDashboard,
-              badge: '4 mục',
+              badge: '5 mục',
               children: [
                 { key: 'dashboard-brand', label: 'Thương hiệu & Ngân sách', icon: Building2 },
                 { key: 'dashboard-store', label: 'Gian hàng & TikTok Seller', icon: Store },
                 { key: 'dashboard-video', label: 'Video Booking & KOC/Ads', icon: Film },
-                { key: 'dashboard-team-sla', label: 'Tiến độ, SLA & Nhân sự', icon: Activity },
+                { key: 'dashboard-team-sla', label: 'Tiến độ & SLA Vận hành', icon: Activity },
+                { key: 'dashboard-staff', label: 'Hiệu suất & Hiệu quả Nhân viên', icon: Users },
               ],
             },
           ],
@@ -414,11 +435,13 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           ],
         },
         {
-          title: 'Chiến dịch & Báo cáo',
+          title: 'Chiến dịch & Công cụ',
           items: [
             { key: 'campaigns', label: 'Chiến dịch Brand', icon: Layers },
             { key: 'ads-report', label: 'Báo cáo Ads TikTok', icon: BarChart3 },
             { key: 'performance-p3', label: 'Đánh giá 4P & thưởng', icon: Coins },
+            { key: 'knowledge-qa', label: 'Sổ tay & Hỏi đáp', icon: HelpCircle },
+            { key: 'api-settings', label: 'Cấu hình API & Công cụ', icon: Sliders, badge: '3 API' },
           ],
         },
       ];
@@ -432,12 +455,13 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
               key: 'dashboard-brand',
               label: 'Dashboard Quản Trị B2C',
               icon: LayoutDashboard,
-              badge: '4 mục',
+              badge: '5 mục',
               children: [
                 { key: 'dashboard-brand', label: 'Thương hiệu & Ngân sách', icon: Building2 },
                 { key: 'dashboard-store', label: 'Gian hàng & TikTok Seller', icon: Store },
                 { key: 'dashboard-video', label: 'Video Booking & KOC/Ads', icon: Film },
-                { key: 'dashboard-team-sla', label: 'Tiến độ, SLA & Nhân sự', icon: Activity },
+                { key: 'dashboard-team-sla', label: 'Tiến độ & SLA Vận hành', icon: Activity },
+                { key: 'dashboard-staff', label: 'Hiệu suất & Hiệu quả Nhân viên', icon: Users },
               ],
             },
           ],
@@ -450,10 +474,12 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           ],
         },
         {
-          title: 'Chiến dịch & Đánh giá',
+          title: 'Chiến dịch & Công cụ',
           items: [
             { key: 'campaigns', label: 'Chiến dịch Brand', icon: Layers },
             { key: 'performance-p3', label: 'Đánh giá 4P & thưởng', icon: Coins },
+            { key: 'knowledge-qa', label: 'Sổ tay & Hỏi đáp', icon: HelpCircle },
+            { key: 'api-settings', label: 'Cấu hình API & Công cụ', icon: Sliders, badge: '3 API' },
           ],
         },
       ];
@@ -467,11 +493,12 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
               key: 'dashboard-store',
               label: 'Dashboard Quản Trị B2C',
               icon: LayoutDashboard,
-              badge: '3 mục',
+              badge: '4 mục',
               children: [
                 { key: 'dashboard-store', label: 'Gian hàng & TikTok Seller', icon: Store },
                 { key: 'dashboard-video', label: 'Video Booking & KOC/Ads', icon: Film },
-                { key: 'dashboard-team-sla', label: 'Tiến độ, SLA & Nhân sự', icon: Activity },
+                { key: 'dashboard-team-sla', label: 'Tiến độ & SLA Vận hành', icon: Activity },
+                { key: 'dashboard-staff', label: 'Hiệu suất & Hiệu quả Nhân viên', icon: Users },
               ],
             },
           ],
@@ -492,11 +519,13 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
           ],
         },
         {
-          title: 'Hàng mẫu & Đánh giá',
+          title: 'Hàng mẫu & Công cụ',
           items: [
             { key: 'sample-tracker', label: 'Hàng mẫu & Spark Ads', icon: Package },
             { key: 'performance-p3', label: 'Đánh giá 4P & thưởng', icon: Coins },
             { key: 'brand-knowledge', label: 'Hồ sơ thương hiệu', icon: BookOpen },
+            { key: 'knowledge-qa', label: 'Sổ tay & Hỏi đáp', icon: HelpCircle },
+            { key: 'api-settings', label: 'Cấu hình API & Công cụ', icon: Sliders, badge: '3 API' },
           ],
         },
       ];

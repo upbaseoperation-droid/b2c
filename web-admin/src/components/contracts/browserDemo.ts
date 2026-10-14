@@ -9,6 +9,7 @@ const actors: ContractActor[] = [
   { id: 'demo-owner', name: 'Người tạo (kiểm thử)', roles: ['CREATOR'], brands: [], allBrands: true },
   { id: 'demo-legal', name: 'Pháp chế (kiểm thử)', roles: ['LEGAL'], brands: [], allBrands: true },
   { id: 'demo-finance', name: 'Kế toán (kiểm thử)', roles: ['FINANCE'], brands: [], allBrands: true },
+  { id: 'demo-lead', name: 'Trưởng nhóm (kiểm thử)', roles: ['LEAD'], brands: [], allBrands: true },
   { id: 'demo-sign', name: 'Điều phối ký (kiểm thử)', roles: ['SIGN_COORDINATOR'], brands: [], allBrands: true },
 ];
 const fields: ContractField[] = [
@@ -87,8 +88,17 @@ const buildDemoBlocks = (kind: string, subject: string): DocBlock[] => [
 const templates: LegalTemplate[] = ['IND', 'HKD', 'COM', 'CTV'].flatMap((subject, i) => ['HD', 'BBNT'].map(kind => ({
   id: `${subject}-${kind}`, name: `${kind === 'HD' ? 'Hợp đồng' : 'Nghiệm thu'} · ${['Cá nhân', 'Hộ kinh doanh', 'Công ty', 'CTV tháng'][i]} (mẫu thử)`,
   filename: `mau-thu-${subject}-${kind}.docx`, subject: ['Cá nhân', 'Hộ kinh doanh', 'Công ty', 'CTV tháng'][i], kind: kind === 'HD' ? 'CONTRACT' as const : 'ACCEPTANCE' as const,
-  version: 'Giả lập', hash: `demo-${subject}-${kind}`, fields, paragraphs: ['MẪU GIẢ LẬP — KHÔNG DÙNG ĐỂ KÝ', 'Mẫu rút gọn dùng thử quy trình. Bộ mẫu pháp chế gốc sẽ dùng khi kết nối môi trường thật.'],
+  version: 'Ver052026', hash: `demo-${subject}-${kind}`, fields, paragraphs: ['MẪU GIẢ LẬP — KHÔNG DÙNG ĐỂ KÝ', 'Mẫu rút gọn dùng thử quy trình. Bộ mẫu pháp chế gốc sẽ dùng khi kết nối môi trường thật.'],
   blocks: buildDemoBlocks(kind, ['Cá nhân', 'Hộ kinh doanh', 'Công ty', 'CTV tháng'][i]),
+  category: subject === 'CTV' ? 'CTV_FRAMEWORK' : kind === 'BBNT' ? 'ACCEPTANCE_SETTLEMENT' : 'BOOKING_VIDEO',
+  description: `Biểu mẫu ${kind === 'HD' ? 'hợp đồng dịch vụ' : 'biên bản nghiệm thu'} dành cho đối tác ${['cá nhân', 'hộ kinh doanh', 'công ty', 'CTV tháng'][i]}.`,
+  active: true,
+  defaultReviewRoles: kind === 'BBNT' ? ['FINANCE', 'LEAD'] : ['LEGAL', 'FINANCE'],
+  updatedAt: '2026-05-01T08:00:00.000Z',
+  updatedBy: 'Phòng Pháp chế',
+  fieldCount: fields.length,
+  requiredFieldCount: fields.filter(f => f.required).length,
+  history: [{ version: 'Ver052026', hash: `demo-${subject}-${kind}`, filename: `mau-thu-${subject}-${kind}.docx`, updatedAt: '2026-05-01T08:00:00.000Z', updatedBy: 'Phòng Pháp chế', note: 'Phiên bản chuẩn' }],
 })));
 interface DemoState { actorId: string; records: ContractRecord[] }
 let memory: DemoState = { actorId: actors[0].id, records: [] };
@@ -96,6 +106,19 @@ let enabled = false;
 export const browserDemoEnabled = () => enabled;
 export function enableBrowserDemo() { enabled = true; }
 export function disableBrowserDemo() { enabled = false; }
+function resolveLoginActor(): ContractActor | undefined {
+  try {
+    const savedId = localStorage.getItem('upbase_selected_user_id');
+    if (!savedId) return undefined;
+    if (savedId === 'contract-demo-legal') return actors.find(a => a.id === 'demo-legal');
+    if (savedId === 'contract-demo-finance') return actors.find(a => a.id === 'demo-finance');
+    if (savedId === 'contract-demo-sign') return actors.find(a => a.id === 'demo-sign');
+    if (savedId === 'user-ngoc-tam' || savedId === 'user-yen-nhi' || savedId === 'user-admin-giang') return actors.find(a => a.id === 'demo-lead');
+    return actors[0];
+  } catch {
+    return undefined;
+  }
+}
 function read(): DemoState {
   try { const raw = localStorage.getItem(KEY); if (raw) { const value = JSON.parse(raw); if (actors.some(a => a.id === value.actorId) && Array.isArray(value.records)) memory = value; } } catch { /* Chế độ riêng tư dùng bộ nhớ của tab. */ }
   return structuredClone(memory);
@@ -103,14 +126,28 @@ function read(): DemoState {
 function write(state: DemoState) { memory = structuredClone(state); try { localStorage.setItem(KEY, JSON.stringify(state)); } catch { /* Không gửi dữ liệu thử ra máy chủ khi lưu trình duyệt không khả dụng. */ } }
 const paragraphs = (record: ContractRecord) => [templates.find(t => t.id === record.templateId)!.paragraphs[0], record.title, `${record.brand} · ${record.partner}`, ...fields.map(f => `${f.label}: ${record.values[f.key] || '[Chưa điền]'}`)];
 export function browserDemoRequest<T>(url: string, body?: Record<string, unknown>): T {
-  const state = read(); const actor = actors.find(a => a.id === state.actorId)!;
+  const state = read(); const actor = resolveLoginActor() || actors.find(a => a.id === state.actorId)!;
   const path = new URL(url, 'https://demo.invalid');
   if (path.pathname === '/api/contracts/demo') {
     requireCondition(actors.some(a => a.id === body?.id), 'Vai trò thử không hợp lệ.'); state.actorId = body!.id as string; write(state); return { success: true } as T;
   }
-  if (!body && path.pathname === '/api/contracts') return { actor, reviewers: actors.filter(a => a.roles.some(r => ['LEGAL', 'FINANCE'].includes(r))), demoActors: actors, templates, records: state.records.filter(r => canRead(r, actor)), config: { ai: false, wesign: false, storage: 'BROWSER_DEMO' } } satisfies ContractBootstrap as T;
+  if (!body && path.pathname === '/api/contracts') return { actor, reviewers: actors.filter(a => a.roles.some(r => ['LEGAL', 'FINANCE', 'LEAD'].includes(r))), demoActors: actors, templates, records: state.records.filter(r => canRead(r, actor)), config: { ai: false, wesign: false, storage: 'BROWSER_DEMO' } } satisfies ContractBootstrap as T;
   if (path.pathname.startsWith('/api/contracts/templates/')) {
-    const template = templates.find(t => t.id === path.pathname.split('/').at(-1)); requireCondition(template, 'Không tìm thấy mẫu thử.'); return { template } as T;
+    const id = path.pathname.split('/').at(-1) || '';
+    const template = templates.find(t => t.id === id);
+    if (body && (body.action === 'SAVE_META' || body.action === 'UPLOAD_DOCX')) {
+      if (template) {
+        if (typeof body.name === 'string' && body.name.trim()) template.name = body.name.trim();
+        if (typeof body.subject === 'string' && body.subject.trim()) template.subject = body.subject.trim();
+        if (typeof body.version === 'string' && body.version.trim()) template.version = body.version.trim();
+        if (typeof body.description === 'string') template.description = body.description.trim();
+        if (typeof body.active === 'boolean') template.active = body.active;
+        template.updatedAt = new Date().toISOString();
+        template.updatedBy = actor.name;
+        return { template } as T;
+      }
+    }
+    requireCondition(template, 'Không tìm thấy mẫu thử.'); return { template } as T;
   }
   if (path.pathname.endsWith('/document')) {
     const record = state.records.find(r => r.id === path.pathname.split('/')[3]); requireCondition(record && canRead(record, actor), 'Không có quyền đọc hồ sơ thử.', 403);

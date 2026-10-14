@@ -13,7 +13,14 @@ import { REAL_B2C_42_BRANDS } from '../realB2cBrandsData';
 import { UPBASE_BRANDS_MASTER } from '../importedMasterData';
 import type { BrandDetail, BrandKnowledgeBase } from '../types';
 import { BrandError, requireBrand } from './domain';
-import type { BrandDocument, BrandProfile, ToneTag } from './types';
+import { findRealBrandFileLinks } from './brandFilesCatalog';
+import type {
+  BrandDocument,
+  BrandProfile,
+  BrandProjectTier,
+  BrandWorkflowRules,
+  ToneTag,
+} from './types';
 import { brandKey } from './types';
 
 const local = () => process.env.NODE_ENV !== 'production' && process.env.BRAND_STORAGE !== 'postgres';
@@ -26,6 +33,74 @@ const TONE_FROM_MOCK: Record<string, ToneTag> = {
   'GEN_Z_TRENDING': 'GENZ',
   'SANG_TRỌNG_CAO_CẤP': 'PREMIUM',
 };
+
+function buildDefaultWorkflowRules(m: BrandDetail, actor: string): BrandWorkflowRules {
+  const bKey = brandKey(m.name);
+  const realFiles = findRealBrandFileLinks(bKey);
+  const budget = m.planBudget || m.monthlyBudget || 0;
+  const isStrategic = budget >= 120_000_000 || (m.stores?.length || 0) >= 2;
+  const projectTier: BrandProjectTier = isStrategic
+    ? 'TIER_A_STRATEGIC'
+    : budget >= 40_000_000
+      ? 'TIER_B_GROWTH'
+      : 'TIER_C_FULLSTACK';
+
+  const operatingModel = realFiles?.operatingModel
+    || (isStrategic ? 'SPLIT_RESOURCE' : 'FULLSTACK_CONTENT_BOOKING');
+
+  const isMomBaby = /mẹ|bé|sữa|dinh dưỡng/i.test(m.category);
+  const isHealth = /sức khỏe|thực phẩm|dược/i.test(m.category);
+
+  // Theo khảo sát nhân sự B2C: Một số nhãn cho phép tự duyệt KL1-KL3, chỉ trình duyệt từ KL4+; nhãn FOC tự duyệt
+  const kocApprovalMode = budget === 0
+    ? 'NONE_AUTO'
+    : /kutieskin|eupc|clio|ziaja|fresh|l-occitane|nucos|meracine/i.test(bKey)
+      ? 'KL4_PLUS_ONLY'
+      : 'ALL';
+
+  const requiresSpark = m.stores?.some(s => s.requiresSparkAds) ?? true;
+
+  return {
+    projectTier,
+    operatingModel,
+    strategyOwnerTeam: projectTier === 'TIER_A_STRATEGIC' ? 'BRAND_TEAM' : 'CONTENT_TEAM',
+    brandApproverName: m.contactPerson && !/Đại diện/i.test(m.contactPerson)
+      ? m.contactPerson
+      : (actor || 'Đặng Thị Yến Nhi'),
+    kocApprovalMode,
+    requireScriptApproval: projectTier !== 'TIER_C_FULLSTACK',
+    requireDemoApproval: true,
+    autoAirAfterHours: 72,
+    maxFreeRevisions: 2,
+    sampleSender: /babe|ekseption|talaypu/i.test(bKey) ? 'BRAND_DIRECT' : 'UPBASE_WAREHOUSE',
+    samplePrepSlaHours: 48,
+    defaultSamplePolicy: /doji|miuusilver/i.test(bKey) ? 'LOAN_RETURN' : 'GIFT',
+    requiresAdsCode: requiresSpark,
+    adsCodeDurationDays: isStrategic ? 90 : 60,
+    requireRawVideoHandover: true,
+    repostAllowedChannels: [
+      'TikTok Official của nhãn',
+      'Shopee Video & Trang sản phẩm (PDP/SIS)',
+      'Chèn trong phiên Livestream gian hàng',
+    ],
+    minVideoRetentionDays: 90,
+    exclusivityDays: isStrategic ? 15 : 0,
+    allowExtraFeeForAdsOrCrosspost: isStrategic,
+    preferredKocNiches: isMomBaby
+      ? ['Mẹ bỉm sữa & Gia đình', 'Bác sĩ Nhi / Dược sĩ', 'Review đồ mẹ & bé']
+      : isHealth
+        ? ['Dược sĩ / Bác sĩ chuyên khoa', 'Chăm sóc sức khỏe gia đình', 'Lifestyle lành mạnh']
+        : ['Beauty Reviewer', 'Bác sĩ Da liễu / Chuyên gia', 'Haul & Routine chăm sóc cá nhân'],
+    kocSelectionCriteria:
+      'Ưu tiên kênh có tệp người xem thật tại Việt Nam, lịch sử ra đơn ổn định trên TikTok Shop/Shopee, không dính gậy vi phạm chính sách sàn và không nhận bài đối thủ cạnh tranh trực tiếp trong vòng 7 ngày.',
+    handoverFrom: realFiles?.handoverFrom,
+    handoverTo: realFiles?.handoverTo || m.brandPicName,
+    handoverFileUrl: realFiles?.handoverFileUrl,
+    bookingSheetUrl: realFiles?.bookingSheetUrl,
+    operationFileUrl: realFiles?.operationFileUrl,
+    canvaBriefUrl: realFiles?.canvaBriefUrl,
+  };
+}
 
 /** Dữ liệu mẫu (mockData) cho môi trường phát triển hoặc khi database chưa kết nối được. */
 function seedFromMock(kb: BrandKnowledgeBase, master?: BrandDetail): BrandProfile {
@@ -53,6 +128,8 @@ function seedFromMock(kb: BrandKnowledgeBase, master?: BrandDetail): BrandProfil
     } as unknown as BrandDetail),
     0,
   );
+
+  const realFiles = findRealBrandFileLinks(bKey);
   const docs: BrandDocument[] = [
     {
       id: `doc-guide-${bKey}`,
@@ -67,6 +144,36 @@ function seedFromMock(kb: BrandKnowledgeBase, master?: BrandDetail): BrandProfil
       mimeType: 'application/pdf',
       storage: 'LINK',
     },
+    ...(realFiles?.canvaBriefUrl ? [{
+      id: `doc-canva-${bKey}`,
+      title: `Canva Brief định hướng sản phẩm & hình ảnh ${kb.brandName}`,
+      category: 'BRIEF' as const,
+      url: realFiles.canvaBriefUrl,
+      note: `Tài liệu Brief sản phẩm thực tế từ danh mục 3.5 (${realFiles.storeCode})`,
+      addedBy: realFiles.handoverTo || master?.accountPic || 'Phòng B2C',
+      addedAt: '2026-10-01T08:45:00.000Z',
+      storage: 'LINK' as const,
+    }] : []),
+    ...(realFiles?.bookingSheetUrl ? [{
+      id: `doc-sheet-${bKey}`,
+      title: `File Booking Google Sheet — ${realFiles.storeCode}`,
+      category: 'BRIEF' as const,
+      url: realFiles.bookingSheetUrl,
+      note: `Bảng theo dõi danh sách KOC và tiến độ booking của gian hàng ${realFiles.storeCode}`,
+      addedBy: realFiles.handoverTo || master?.accountPic || 'Phòng B2C',
+      addedAt: '2026-10-01T09:10:00.000Z',
+      storage: 'LINK' as const,
+    }] : []),
+    ...(realFiles?.operationFileUrl ? [{
+      id: `doc-ops-${bKey}`,
+      title: `File vận hành gian hàng — ${realFiles.storeCode}`,
+      category: 'OTHER' as const,
+      url: realFiles.operationFileUrl,
+      note: 'Bảng tổng hợp kế hoạch và theo dõi vận hành hàng tháng của nhãn.',
+      addedBy: realFiles.handoverTo || master?.accountPic || 'Phòng B2C',
+      addedAt: '2026-10-01T09:20:00.000Z',
+      storage: 'LINK' as const,
+    }] : []),
     ...(kb.logoDownloadUrls || []).map((logo, idx) => ({
       id: `doc-asset-${bKey}-${idx + 1}`,
       title: logo.format,
@@ -89,12 +196,19 @@ function seedFromMock(kb: BrandKnowledgeBase, master?: BrandDetail): BrandProfil
     })),
   ];
 
-  const mappedProducts = (kb.skus || []).map(s => ({
+  const defaultAffRate = master?.stores?.[0]?.affiliateRate || 12;
+
+  const mappedProducts = (kb.skus || []).map((s, idx) => ({
     id: s.id,
     name: s.name,
     skuCode: s.skuCode,
     size: s.volumeOrWeight,
     priceVnd: s.priceVnd || undefined,
+    dealPriceVnd: s.priceVnd ? Math.round((s.priceVnd * 0.85) / 1000) * 1000 : undefined,
+    commissionOrganicPct: defaultAffRate,
+    commissionAdsPct: Math.max(5, defaultAffRate - 4),
+    sampleStockStatus: s.sampleStockCount && s.sampleStockCount < 10 ? ('LOW_STOCK' as const) : idx === 2 ? ('LOW_STOCK' as const) : ('IN_STOCK' as const),
+    sampleReturnRule: 'GIFT' as const,
     pdpUrl: /^https?:/.test(s.pdpUrl) ? s.pdpUrl : '',
     usps: s.uniqueSellingPoints,
     mechanism: s.scientificMechanism,
@@ -146,6 +260,13 @@ function seedFromMock(kb: BrandKnowledgeBase, master?: BrandDetail): BrandProfil
       toneTag: TONE_FROM_MOCK[kb.toneTag] || fallback.positioning!.toneTag,
       toneOfVoice: kb.toneOfVoice || fallback.positioning!.toneOfVoice,
       targetAudience: kb.targetPersonaSummary || fallback.positioning!.targetAudience,
+      painPoints: fallback.positioning!.painPoints,
+      barriersToTrial: fallback.positioning!.barriersToTrial,
+      rtbs: (kb.skus || []).map(s => s.clinicalTrials).filter(Boolean).length > 0
+        ? (kb.skus || []).map(s => s.clinicalTrials).filter(Boolean)
+        : fallback.positioning!.rtbs,
+      contentPillars: fallback.positioning!.contentPillars,
+      competitors: fallback.positioning!.competitors,
     },
     entity: {
       companyName: kb.companyName || master?.companyName || fallback.entity!.companyName,
@@ -153,6 +274,7 @@ function seedFromMock(kb: BrandKnowledgeBase, master?: BrandDetail): BrandProfil
       contactPerson: kb.contactPerson || master?.contactPerson || fallback.entity!.contactPerson,
       originCountry: kb.originCountry || fallback.entity!.originCountry,
     },
+    workflowRules: fallback.workflowRules,
     products: mappedProducts.length > 0 ? mappedProducts : fallback.products,
     contentRules: {
       banned: mappedBanned.length > 0 ? mappedBanned : fallback.contentRules!.banned,
@@ -163,6 +285,10 @@ function seedFromMock(kb: BrandKnowledgeBase, master?: BrandDetail): BrandProfil
       })),
       visualDo: kb.visualDoList?.length ? kb.visualDoList : fallback.contentRules!.visualDo,
       visualDont: kb.visualDontList?.length ? kb.visualDontList : fallback.contentRules!.visualDont,
+      mandatoryHashtags: fallback.contentRules!.mandatoryHashtags,
+      mandatoryMentions: fallback.contentRules!.mandatoryMentions,
+      defaultCta: fallback.contentRules!.defaultCta,
+      videoDurationRule: fallback.contentRules!.videoDurationRule,
     },
     faqs: mappedFaqs.length > 0 ? mappedFaqs : fallback.faqs,
     legal: mappedLegal.length > 0 ? mappedLegal : fallback.legal,
@@ -189,18 +315,27 @@ function seedFromMasterBrand(m: BrandDetail, index: number): BrandProfile {
 
   const taxSuffix = String(100000000 + ((index + 1) * 7919) % 899999999).slice(0, 9);
   const taxCode = `0${taxSuffix}`;
+  const defaultAffRate = m.stores?.[0]?.affiliateRate || (isHealth ? 15 : 12);
 
   const matchedPushProducts = INITIAL_PUSH_PRODUCTS.filter(
     p => p.brandName.trim().toLowerCase() === m.name.trim().toLowerCase(),
   );
 
+  // Theo khảo sát nhân sự B2C: Lipit và Natural Care có một số SKU phụ dễ gặp tình trạng hết hàng mẫu
+  const hasStockAlertBrand = /lipit|natural-care/i.test(bKey);
+
   const products = (matchedPushProducts.length > 0
-    ? matchedPushProducts.map(p => ({
+    ? matchedPushProducts.map((p, idx) => ({
         id: p.id,
         name: p.productName,
         skuCode: p.sku,
         size: 'Quy cách tiêu chuẩn',
         priceVnd: p.originalPrice || undefined,
+        dealPriceVnd: p.originalPrice ? Math.round((p.originalPrice * 0.85) / 1000) * 1000 : undefined,
+        commissionOrganicPct: defaultAffRate,
+        commissionAdsPct: Math.max(5, defaultAffRate - 4),
+        sampleStockStatus: hasStockAlertBrand && idx > 0 ? ('OUT_OF_STOCK' as const) : idx === 1 ? ('LOW_STOCK' as const) : ('IN_STOCK' as const),
+        sampleReturnRule: /doji|miuusilver/i.test(bKey) ? ('LOAN_RETURN' as const) : ('GIFT' as const),
         pdpUrl: p.pdpUrl && /^https?:/.test(p.pdpUrl) ? p.pdpUrl : `https://upbase.vn/products/${bKey}`,
         usps: p.usp ? p.usp.split(/[.;]\s*/).filter(Boolean) : [
           `Sản phẩm chủ lực chính hãng của thương hiệu ${m.name}`,
@@ -217,26 +352,102 @@ function seedFromMasterBrand(m: BrandDetail, index: number): BrandProfile {
         sku: `${(m.code || bKey).toUpperCase()}-HERO-01`,
         price: 350_000,
         pdpUrl: `https://upbase.vn/products/${bKey}`,
-      }]).map(hp => ({
+      }]).map((hp, idx) => ({
         id: hp.id,
         name: hp.productName,
         skuCode: hp.sku,
         size: 'Bản tiêu chuẩn chính hãng',
         priceVnd: hp.price || undefined,
+        dealPriceVnd: hp.price ? Math.round((hp.price * 0.85) / 1000) * 1000 : undefined,
+        commissionOrganicPct: defaultAffRate,
+        commissionAdsPct: Math.max(5, defaultAffRate - 4),
+        sampleStockStatus: hasStockAlertBrand && idx > 0 ? ('OUT_OF_STOCK' as const) : ('IN_STOCK' as const),
+        sampleReturnRule: /doji|miuusilver/i.test(bKey) ? ('LOAN_RETURN' as const) : ('GIFT' as const),
         pdpUrl: /^https?:/.test(hp.pdpUrl || '') ? hp.pdpUrl! : `https://upbase.vn/products/${bKey}`,
         usps: [
           `Dòng sản phẩm trọng tâm chiến dịch tháng 10/2026 của ${m.name}`,
           `Phân phối chính hãng trên ${m.platforms?.join(', ') || 'TikTok Shop & Shopee'}`,
           `Hỗ trợ mã ưu đãi độc quyền và quà tặng kèm cho phiên live / video KOC`,
         ],
-        mechanism: `Trình bày trực quan kết cấu/chất lượng sản phẩm trong 3 giây đầu (Hook), chứng minh giải pháp thực tế và kêu gọi gắn giỏ hàng chính hãng.`,
-        ingredients: ['Công thức chính hãng nhập khẩu / phân phối độc quyền có tem phụ tiếng Việt'],
-        targetUser: `Tệp khách hàng ngành ${m.category} trên sàn thương mại điện tử`,
+        mechanism: `Quay rõ chất sản phẩm khi dùng thử trực tiếp và gắn giỏ hàng gian hàng chính hãng.`,
+        ingredients: ['Sản phẩm phân phối chính hãng, có đầy đủ tem phụ tiếng Việt'],
+        targetUser: `Khách hàng ngành ${m.category} trên sàn thương mại điện tử`,
         contraindications: 'Không dùng sản phẩm đã quá hạn hoặc rách niêm phong.',
       }))
   );
 
   const actor = m.accountPic && !/Đại diện|Chưa phân công/i.test(m.accountPic) ? m.accountPic : (m.brandPicName || 'Đặng Thị Yến Nhi');
+  const realFiles = findRealBrandFileLinks(bKey);
+  const cleanHashtag = m.name.replace(/[^a-zA-Z0-9À-ỹ]/g, '');
+
+  const docs: BrandDocument[] = [
+    {
+      id: `doc-guide-${bKey}`,
+      title: `Brand Guideline & Quy chuẩn KOC ${m.name} Q4/2026.pdf`,
+      category: 'GUIDELINE',
+      url: `https://cdn.upbase.vn/brands/${bKey}/brand-guideline-q4-2026.pdf`,
+      note: m.brandGuideline || `Tài liệu quy chuẩn hình ảnh, giọng văn và từ khóa cho KOC nhãn ${m.name}.`,
+      addedBy: actor,
+      addedAt: '2026-10-01T08:30:00.000Z',
+      fileName: `Brand-Guideline-${m.code || bKey}-Q4-2026.pdf`,
+      fileSize: 1_840_000,
+      mimeType: 'application/pdf',
+      storage: 'LINK',
+    },
+    ...(realFiles?.canvaBriefUrl ? [{
+      id: `doc-canva-${bKey}`,
+      title: `Canva Brief định hướng sản phẩm & hình ảnh ${m.name}`,
+      category: 'BRIEF' as const,
+      url: realFiles.canvaBriefUrl,
+      note: `Link Canva Brief sản phẩm thực tế từ bảng 3.5 Danh sách file brand (${realFiles.storeCode}).`,
+      addedBy: realFiles.handoverTo || actor,
+      addedAt: '2026-10-01T09:00:00.000Z',
+      storage: 'LINK' as const,
+    }] : []),
+    ...(realFiles?.bookingSheetUrl ? [{
+      id: `doc-sheet-${bKey}`,
+      title: `File Booking Google Sheet — ${realFiles.storeCode}`,
+      category: 'BRIEF' as const,
+      url: realFiles.bookingSheetUrl,
+      note: `Bảng quản lý danh sách KOC và theo dõi booking gian hàng ${realFiles.storeCode}.`,
+      addedBy: realFiles.handoverTo || actor,
+      addedAt: '2026-10-01T09:30:00.000Z',
+      storage: 'LINK' as const,
+    }] : []),
+    ...(realFiles?.operationFileUrl ? [{
+      id: `doc-ops-${bKey}`,
+      title: `File vận hành gian hàng — ${realFiles.storeCode}`,
+      category: 'OTHER' as const,
+      url: realFiles.operationFileUrl,
+      note: `File vận hành tổng hợp kế hoạch và báo cáo của gian hàng ${realFiles.storeCode}.`,
+      addedBy: realFiles.handoverTo || actor,
+      addedAt: '2026-10-01T10:00:00.000Z',
+      storage: 'LINK' as const,
+    }] : []),
+    ...(realFiles?.handoverFileUrl ? [{
+      id: `doc-handover-${bKey}`,
+      title: `Hồ sơ bàn giao dự án ${m.name} (${realFiles.handoverFrom || 'B2C'} → ${realFiles.handoverTo || actor})`,
+      category: 'OTHER' as const,
+      url: realFiles.handoverFileUrl,
+      note: `Tài liệu bàn giao lịch sử triển khai và tệp KOC của nhãn ${m.name}.`,
+      addedBy: realFiles.handoverFrom || actor,
+      addedAt: '2026-09-28T10:00:00.000Z',
+      storage: 'LINK' as const,
+    }] : []),
+    {
+      id: `doc-brief-${bKey}`,
+      title: `Brief Chiến dịch Booking & Phân bổ KOC ${m.name} Tháng 10/2026.xlsx`,
+      category: 'BRIEF',
+      url: `https://cdn.upbase.vn/brands/${bKey}/brief-booking-2026-10.xlsx`,
+      note: `Kế hoạch ngân sách ${m.planBudget ? `${(m.planBudget / 1_000_000).toFixed(1)}M` : 'FOC'} · Chỉ tiêu ${m.targetVideos || 10} video.`,
+      addedBy: actor,
+      addedAt: '2026-10-02T10:15:00.000Z',
+      fileName: `Brief-Booking-${m.code || bKey}-T10-2026.xlsx`,
+      fileSize: 645_000,
+      mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      storage: 'LINK',
+    },
+  ];
 
   return {
     key: bKey,
@@ -245,50 +456,72 @@ function seedFromMasterBrand(m: BrandDetail, index: number): BrandProfile {
     updatedAt: '2026-10-04T09:00:00.000Z',
     updatedBy: actor,
     positioning: {
-      slogan: `Giải pháp ${m.category.toLowerCase()} chính hãng chuẩn chất lượng từ ${m.name}`,
-      story: `${m.name} là thương hiệu thuộc nhóm ${m.category}, hiện đang vận hành ${m.stores?.length || m.storeCount || 1} gian hàng chính hãng (${(m.platforms || ['TikTok Shop']).join(', ')}) do khối B2C UpBase trực tiếp quản lý kế hoạch Order & Booking KOC.`,
+      slogan: `Sản phẩm ${m.category.toLowerCase()} chính hãng từ ${m.name}`,
+      story: `${m.name} thuộc ngành ${m.category}, hiện vận hành ${m.stores?.length || m.storeCount || 1} gian hàng chính hãng (${(m.platforms || ['TikTok Shop']).join(', ')}) do phòng B2C UpBase phụ trách.`,
       toneTag,
-      toneOfVoice: 'Chân thực, rõ ràng về công dụng được phép công bố, nhấn mạnh trải nghiệm thực tế và cam kết hàng chính hãng.',
-      targetAudience: `Khách hàng mua sắm ngành ${m.category} trên ${(m.platforms || ['TikTok Shop', 'Shopee Mall']).join(' và ')}, ưu tiên sản phẩm có đánh giá thực tế từ KOC.`,
+      toneOfVoice: 'Chia sẻ tự nhiên, nói đúng công dụng theo giấy công bố và quay trải nghiệm dùng thật.',
+      targetAudience: `Khách hàng mua ${m.category.toLowerCase()} trên ${(m.platforms || ['TikTok Shop', 'Shopee Mall']).join(' và ')}.`,
+      painPoints: isMomBaby
+        ? ['Lo ngại sản phẩm gây kích ứng cho làn da nhạy cảm của bé', 'Đã thử nhiều dòng trên thị trường nhưng hiệu quả chậm, tốn kém']
+        : isHealth
+          ? ['Cơ thể mệt mỏi, thiếu hụt vi chất nhưng ngại dùng sản phẩm khó uống', 'Lo lắng về nguồn gốc xuất xứ và độ an toàn khi dùng dài ngày']
+          : ['Da gặp khuyết điểm/kích ứng khi thay đổi thời tiết hoặc thức khuya', 'Khó chọn sản phẩm phù hợp với tình trạng cá nhân giữa quá nhiều lời quảng cáo'],
+      barriersToTrial: [
+        'Sợ mua phải hàng giả, hàng nhái hoặc cận date trên sàn TMĐT',
+        'Ngần ngại mức giá cao hơn các dòng đại trà nếu chưa thấy bằng chứng rõ ràng',
+        'Lo ngại sản phẩm không hợp cơ địa hoặc gây kích ứng khi mới chuyển sang dùng',
+      ],
+      rtbs: [
+        `Nhập khẩu / phân phối chính ngạch với đầy đủ phiếu công bố lưu hành tại Việt Nam`,
+        `Gian hàng chính hãng (Official Mall) của ${m.name} với cam kết hoàn tiền nếu phát hiện hàng giả`,
+        `Hàng nghìn đánh giá 4.9/5 sao thực tế từ khách hàng đã mua lại trên TikTok Shop & Shopee`,
+      ],
+      contentPillars: [
+        'Awareness: Gọi đúng nỗi đau đời thường của tệp khách hàng + Giải thích nguyên nhân khoa học',
+        'Consideration: Trải nghiệm thực tế chất sản phẩm (test trực tiếp, routine hàng ngày, giải đáp rào cản)',
+        'Conversion: Bằng chứng mua lại lần 2–3 + Tung ưu đãi combo/quà tặng độc quyền phiên Mega/Payday',
+      ],
+      competitors: ['Các thương hiệu cùng phân khúc chưa có giấy phép công bố hoặc hàng xách tay trôi nổi'],
     },
     entity: {
       companyName: m.companyName || `Công ty TNHH Phân phối Chính hãng ${m.name} Việt Nam`,
       taxCode,
       contactPerson: m.contactPerson || actor,
-      originCountry: /nhật|sakura|senka|cure/i.test(m.name) ? 'Nhật Bản' : /hàn|clio|peripera|goodal|klairs|skin1004|rejuran|dear/i.test(m.name) ? 'Hàn Quốc' : /pháp|l'occitane|bioderma|eupc|babe/i.test(m.name) ? 'Châu Âu' : 'Việt Nam / Nhập khẩu chính ngạch',
+      originCountry: /nhật|sakura|senka|cure|82x|nucos/i.test(m.name) ? 'Nhật Bản' : /hàn|clio|peripera|goodal|klairs|skin1004|rejuran|dear|nabizam|baegayul|face republic/i.test(m.name) ? 'Hàn Quốc' : /pháp|l'occitane|bioderma|eupc|babe|ziaja|eubos|christian lenart/i.test(m.name) ? 'Châu Âu' : 'Việt Nam / Nhập khẩu chính ngạch',
     },
+    workflowRules: buildDefaultWorkflowRules(m, actor),
     products,
     contentRules: {
       banned: [
         {
           id: `ban-${bKey}-1`,
           phrase: 'trị dứt điểm 100%',
-          replacement: 'hỗ trợ cải thiện hiệu quả',
-          reason: 'Tuân thủ quy định quảng cáo thương mại điện tử và hồ sơ công bố sản phẩm.',
+          replacement: 'hỗ trợ cải thiện',
+          reason: 'Quảng cáo mỹ phẩm/thực phẩm không được cam kết điều trị tuyệt đối.',
         },
         {
           id: `ban-${bKey}-2`,
           phrase: 'cam kết khỏi hoàn toàn',
-          replacement: 'mang lại thay đổi tích cực khi sử dụng đều đặn',
-          reason: 'Tránh dùng từ ngữ khẳng định tuyệt đối gây vi phạm chính sách sàn.',
+          replacement: 'cải thiện rõ hơn khi dùng đều đặn',
+          reason: 'Tránh từ ngữ khẳng định tuyệt đối gây vi phạm chính sách sàn.',
         },
         {
           id: `ban-${bKey}-3`,
           phrase: 'dìm hàng đối thủ',
-          replacement: 'tập trung nêu bật điểm mạnh riêng của sản phẩm',
-          reason: 'Quy chuẩn bảo vệ hình ảnh thương hiệu và tuân thủ Luật Quảng cáo.',
+          replacement: 'tập trung nói điểm mạnh của sản phẩm',
+          reason: 'Không so sánh trực tiếp với nhãn hàng khác theo Luật Quảng cáo.',
         },
       ],
       preferred: [
         {
           id: `pref-${bKey}-1`,
           phrase: `Gian hàng chính hãng ${m.name}`,
-          note: 'Nhắc trong phần CTA cuối video để tăng tỷ lệ bấm vào giỏ hàng.',
+          note: 'Nhắc ở cuối video khi chỉ vào giỏ hàng.',
         },
         {
           id: `pref-${bKey}-2`,
-          phrase: 'Trải nghiệm thực tế sau khi sử dụng',
-          note: 'Giúp video tự nhiên, giữ chân người xem 3 giây đầu.',
+          phrase: 'Cảm nhận thực tế khi dùng',
+          note: 'Nêu rõ cảm giác trên da/khi sử dụng để người xem dễ hình dung.',
         },
       ],
       visualDo: [
@@ -301,6 +534,10 @@ function seedFromMasterBrand(m: BrandDetail, index: number): BrandProfile {
         'Không dùng filter làm biến đổi màu sắc thật của bao bì sản phẩm',
         'Không chèn chữ che khuất vùng giỏ hàng TikTok Shop / Shopee Video',
       ],
+      mandatoryHashtags: [`#${cleanHashtag}`, `#${cleanHashtag}ChinhHang`, '#UpBaseB2C'],
+      mandatoryMentions: [`@${bKey.replace(/-/g, '')}.official`],
+      defaultCta: `Bấm vào giỏ hàng góc trái gian hàng chính hãng ${m.name} để áp voucher ưu đãi và nhận quà tặng kèm ngay hôm nay.`,
+      videoDurationRule: 'Thời lượng 45–90 giây; sản phẩm phải xuất hiện trong 5 giây đầu và quay cận cảnh kết cấu.',
     },
     faqs: [
       {
@@ -339,34 +576,7 @@ function seedFromMasterBrand(m: BrandDetail, index: number): BrandProfile {
       { grade: 'KL6', maxBudget: 25_000_000 },
       { grade: 'KL7', maxBudget: 50_000_000 },
     ],
-    documents: [
-      {
-        id: `doc-guide-${bKey}`,
-        title: `Brand Guideline & Quy chuẩn KOC ${m.name} Q4/2026.pdf`,
-        category: 'GUIDELINE',
-        url: `https://cdn.upbase.vn/brands/${bKey}/brand-guideline-q4-2026.pdf`,
-        note: m.brandGuideline || `Tài liệu quy chuẩn hình ảnh, giọng văn và từ khóa cho KOC nhãn ${m.name}.`,
-        addedBy: actor,
-        addedAt: '2026-10-01T08:30:00.000Z',
-        fileName: `Brand-Guideline-${m.code || bKey}-Q4-2026.pdf`,
-        fileSize: 1_840_000,
-        mimeType: 'application/pdf',
-        storage: 'LINK',
-      },
-      {
-        id: `doc-brief-${bKey}`,
-        title: `Brief Chiến dịch Booking & Phân bổ KOC ${m.name} Tháng 10/2026.xlsx`,
-        category: 'BRIEF',
-        url: `https://cdn.upbase.vn/brands/${bKey}/brief-booking-2026-10.xlsx`,
-        note: `Kế hoạch ngân sách ${m.planBudget ? `${(m.planBudget / 1_000_000).toFixed(1)}M` : 'FOC'} · Chỉ tiêu ${m.targetVideos || 10} video.`,
-        addedBy: actor,
-        addedAt: '2026-10-02T10:15:00.000Z',
-        fileName: `Brief-Booking-${m.code || bKey}-T10-2026.xlsx`,
-        fileSize: 645_000,
-        mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        storage: 'LINK',
-      },
-    ],
+    documents: docs,
     history: [
       {
         at: '2026-10-04T09:00:00.000Z',
@@ -401,6 +611,72 @@ export function getFallbackProfiles(): BrandProfile[] {
   return inMemoryFallback;
 }
 
+/** Bổ sung các trường mới từ seed nếu bản ghi cũ trong file JSON / DB chưa có */
+function enrichExistingProfile(cur: BrandProfile, seed: BrandProfile): { profile: BrandProfile; upgraded: boolean } {
+  let upgraded = false;
+  let next = cur;
+
+  if (!cur.workflowRules && seed.workflowRules) {
+    next = { ...next, workflowRules: seed.workflowRules };
+    upgraded = true;
+  }
+  if (cur.positioning && seed.positioning && !cur.positioning.painPoints?.length) {
+    next = {
+      ...next,
+      positioning: {
+        ...cur.positioning,
+        painPoints: cur.positioning.painPoints?.length ? cur.positioning.painPoints : seed.positioning.painPoints,
+        barriersToTrial: cur.positioning.barriersToTrial?.length ? cur.positioning.barriersToTrial : seed.positioning.barriersToTrial,
+        rtbs: cur.positioning.rtbs?.length ? cur.positioning.rtbs : seed.positioning.rtbs,
+        contentPillars: cur.positioning.contentPillars?.length ? cur.positioning.contentPillars : seed.positioning.contentPillars,
+        competitors: cur.positioning.competitors?.length ? cur.positioning.competitors : seed.positioning.competitors,
+      },
+    };
+    upgraded = true;
+  }
+  if (cur.contentRules && seed.contentRules && !cur.contentRules.mandatoryHashtags?.length) {
+    next = {
+      ...next,
+      contentRules: {
+        ...cur.contentRules,
+        mandatoryHashtags: seed.contentRules.mandatoryHashtags,
+        mandatoryMentions: seed.contentRules.mandatoryMentions,
+        defaultCta: cur.contentRules.defaultCta || seed.contentRules.defaultCta,
+        videoDurationRule: cur.contentRules.videoDurationRule || seed.contentRules.videoDurationRule,
+      },
+    };
+    upgraded = true;
+  }
+  if (cur.products.length > 0 && cur.products.every(p => p.commissionOrganicPct === undefined)) {
+    next = {
+      ...next,
+      products: cur.products.map((p, idx) => {
+        const sp = seed.products[idx] || seed.products[0];
+        return {
+          ...p,
+          dealPriceVnd: p.dealPriceVnd ?? sp?.dealPriceVnd,
+          commissionOrganicPct: p.commissionOrganicPct ?? sp?.commissionOrganicPct ?? 12,
+          commissionAdsPct: p.commissionAdsPct ?? sp?.commissionAdsPct ?? 8,
+          sampleStockStatus: p.sampleStockStatus ?? sp?.sampleStockStatus ?? 'IN_STOCK',
+          sampleReturnRule: p.sampleReturnRule ?? sp?.sampleReturnRule ?? 'GIFT',
+        };
+      }),
+    };
+    upgraded = true;
+  }
+  // Bổ sung các tài liệu thực tế từ bảng 3.5 nếu chưa có trong documents
+  if (seed.documents.length > cur.documents.length) {
+    const existingIds = new Set(cur.documents.map(d => d.id));
+    const missingDocs = seed.documents.filter(d => !existingIds.has(d.id));
+    if (missingDocs.length > 0) {
+      next = { ...next, documents: [...cur.documents, ...missingDocs] };
+      upgraded = true;
+    }
+  }
+
+  return { profile: next, upgraded };
+}
+
 // Bộ nhớ đệm tầng ứng dụng (In-Memory Cache) với TTL 30 giây để phản hồi ngay lập tức (<1ms)
 let profilesMemoryCache: { profiles: BrandProfile[]; timestamp: number } | null = null;
 const PROFILES_CACHE_TTL_MS = 30_000;
@@ -420,30 +696,6 @@ async function withTimeout<T>(promise: Promise<T>, ms: number, errorMsg: string)
   return Promise.race([promise, timeoutPromise]).finally(() => clearTimeout(timeoutId));
 }
 
-async function ensurePostgresTable(): Promise<boolean> {
-  if (!dbHealth.isAvailable) return false;
-  try {
-    await withTimeout(
-      prisma.$executeRaw`
-        CREATE TABLE IF NOT EXISTS "BrandProfileRecord" (
-          "key" TEXT NOT NULL PRIMARY KEY,
-          "revision" INTEGER NOT NULL DEFAULT 1,
-          "data" JSONB NOT NULL,
-          "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
-        );
-      `,
-      1500,
-      'Khởi tạo bảng BrandProfileRecord quá thời gian cho phép'
-    );
-    return true;
-  } catch (err) {
-    console.warn('[BrandProfileStore] Could not auto-create BrandProfileRecord table:', err);
-    dbHealth.isAvailable = false;
-    dbHealth.lastFailureTime = Date.now();
-    return false;
-  }
-}
-
 async function localProfiles(): Promise<BrandProfile[]> {
   const seeds = getFallbackProfiles();
   try {
@@ -455,9 +707,12 @@ async function localProfiles(): Promise<BrandProfile[]> {
       if (!cur) {
         byKey.set(s.key, s);
         changed = true;
-      } else if (cur.revision === 1 && cur.documents.length === 0 && s.documents.length > 0) {
-        byKey.set(s.key, { ...cur, documents: s.documents, history: cur.history.length ? cur.history : s.history });
-        changed = true;
+      } else {
+        const { profile: enriched, upgraded } = enrichExistingProfile(cur, s);
+        if (upgraded) {
+          byKey.set(s.key, enriched);
+          changed = true;
+        }
       }
     }
     const merged = Array.from(byKey.values());
@@ -503,25 +758,32 @@ export async function listProfiles(): Promise<BrandProfile[]> {
       );
       dbHealth.isAvailable = true;
 
-      if (rows.length === 0) {
-        const seeds = getFallbackProfiles();
-        // Cập nhật ngầm trong nền không chặn người dùng
-        ensurePostgresTable().then(async ready => {
-          if (!ready) return;
-          for (const s of seeds) {
-            await prisma.$executeRaw`
-              INSERT INTO "BrandProfileRecord" (key, revision, data, "updatedAt")
-              VALUES (${s.key}, 1, ${JSON.stringify(s)}::jsonb, NOW())
-              ON CONFLICT (key) DO NOTHING;
-            `.catch(() => undefined);
-          }
-        }).catch(() => undefined);
-
-        profilesMemoryCache = { profiles: seeds, timestamp: Date.now() };
-        return seeds;
+      const seeds = getFallbackProfiles();
+      const byKey = new Map(rows.map(r => [r.data.key, r.data]));
+      const missing: BrandProfile[] = [];
+      for (const s of seeds) {
+        const cur = byKey.get(s.key);
+        if (!cur) {
+          byKey.set(s.key, s);
+          missing.push(s);
+        } else {
+          const { profile: enriched } = enrichExistingProfile(cur, s);
+          byKey.set(s.key, enriched);
+        }
       }
 
-      const profiles = rows.map(r => r.data);
+      if (missing.length > 0) {
+        prisma.brandProfileRecord.createMany({
+          data: missing.map(s => ({
+            key: s.key,
+            revision: 1,
+            data: s as unknown as object
+          })),
+          skipDuplicates: true
+        }).catch(() => undefined);
+      }
+
+      const profiles = Array.from(byKey.values());
       profilesMemoryCache = { profiles, timestamp: Date.now() };
       return profiles;
     } catch (dbErr) {

@@ -6,6 +6,8 @@ import path from 'node:path';
 import { applyEntry, canAccess, canDecide, emptyThread, parseEntry } from '../src/lib/partnerHub/domain';
 import type { HubScope } from '../src/lib/partnerHub/types';
 import type { UserProfile } from '../src/lib/types';
+import { mergeLatest } from '../src/lib/partnerHub/client';
+import type { ThreadResponse } from '../src/lib/partnerHub/types';
 
 const brand: UserProfile = { id: 'brand-user', name: 'Brand test', email: '', role: 'BRAND_PARTNER', roleTitle: '', avatar: '', partnerType: 'BRAND', linkedEntityId: 'brand-a', permissions: ['CAN_APPROVE_DEALS'] };
 const scope: HubScope = { key: 'candidate:campaign-a:koc-a', title: 'KOC test', partnerType: 'BRAND', partnerId: 'brand-a', brandIds: ['brand-a'], staffNames: ['PIC test'], proposalVersion: 'v1', initialDecision: 'PENDING' };
@@ -66,4 +68,17 @@ test('Kho lưu giữ qua lần đọc mới; ghi đồng thời không mất com
   const persisted = await readThread(scope);
   assert.equal(persisted.entries.length, 5);
   assert.equal(persisted.decision, 'PENDING');
+});
+
+test('Nối trang lịch sử: không lẫn phòng, không ghi đè phản hồi mới, không bỏ qua tin sau mất mạng', () => {
+  const first = applyEntry(emptyThread(scope), parseEntry(input()), brand, scope);
+  const initial: ThreadResponse = { thread: first, title: 'Test', canDecide: true, hasMore: false };
+  const second = applyEntry(first, parseEntry({ ...input(), clientId: 'message-0002' }), brand, scope);
+  const latest = { ...initial, thread: second };
+  assert.equal(mergeLatest(initial, latest).thread.entries.length, 2);
+  assert.equal(mergeLatest(latest, initial).thread.revision, 2);
+  const afterGap = { ...latest, hasMore: true, thread: { ...second, entries: [second.entries[1]] } };
+  assert.equal(mergeLatest(initial, afterGap).hasMore, true);
+  assert.equal(mergeLatest(initial, afterGap).thread.entries.length, 1);
+  assert.equal(mergeLatest(initial, { ...initial, thread: { ...first, key: 'other-room', entries: [] } }).thread.entries.length, 0);
 });

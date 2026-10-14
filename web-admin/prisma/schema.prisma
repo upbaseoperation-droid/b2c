@@ -32,6 +32,13 @@ model ContractTemplateSnapshot {
   file       Bytes
 }
 
+model PartnerHubThread {
+  id        String   @id
+  data      Json
+  updatedAt DateTime @default(now()) @db.Timestamp(3)
+  @@index([updatedAt])
+}
+
 generator client {
   provider = "prisma-client-js"
 }

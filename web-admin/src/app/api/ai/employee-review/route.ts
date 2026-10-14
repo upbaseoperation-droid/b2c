@@ -56,12 +56,15 @@ export async function POST(req: NextRequest) {
       : undefined;
 
     // Detect API Keys securely (server-side only by default, client key only if format matches)
-    const validClientKey = typeof apiKey === 'string' && apiKey.length > 20 && apiKey.length < 200 ? apiKey.trim() : '';
+    const validClientKey = typeof apiKey === 'string' && apiKey.length > 15 && apiKey.length < 250 ? apiKey.trim() : '';
     const resolvedGeminiKey = (apiProvider === 'GEMINI' || apiProvider === 'AUTO') 
       ? (validClientKey || process.env.GEMINI_API_KEY || '') 
       : '';
     const resolvedOpenAiKey = (apiProvider === 'OPENAI' || (apiProvider === 'AUTO' && !resolvedGeminiKey)) 
       ? (validClientKey || process.env.OPENAI_API_KEY || '') 
+      : '';
+    const resolvedClaudeKey = (apiProvider === 'CLAUDE' || (apiProvider === 'AUTO' && !resolvedGeminiKey && !resolvedOpenAiKey))
+      ? (validClientKey || process.env.ANTHROPIC_API_KEY || '')
       : '';
 
     // Build the executive system prompt
@@ -110,7 +113,7 @@ Trả về định dạng JSON thuần túy (không markdown bao quanh) với c�
     if (resolvedGeminiKey) {
       try {
         const geminiRes = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${resolvedGeminiKey}`,
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${resolvedGeminiKey}`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -140,7 +143,7 @@ Trả về định dạng JSON thuần túy (không markdown bao quanh) với c�
             return NextResponse.json({
               ...parsed,
               evaluatedAt: new Date().toISOString(),
-              providerUsed: 'Google Gemini 1.5 Flash (Live API)'
+              providerUsed: 'Google Gemini 2.5 Flash (API)'
             });
           }
         }
@@ -177,12 +180,53 @@ Trả về định dạng JSON thuần túy (không markdown bao quanh) với c�
             return NextResponse.json({
               ...parsed,
               evaluatedAt: new Date().toISOString(),
-              providerUsed: 'OpenAI GPT-4o-mini (Live API)'
+              providerUsed: 'OpenAI ChatGPT-4o-mini (API)'
             });
           }
         }
       } catch (openAiError) {
-        console.warn('OpenAI API call failed, falling back to Domain Engine...', openAiError);
+        console.warn('OpenAI API call failed, attempting fallback...', openAiError);
+      }
+    }
+
+    // Try Anthropic Claude API if key available
+    if (resolvedClaudeKey) {
+      try {
+        const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': resolvedClaudeKey,
+            'anthropic-version': '2023-06-01',
+          },
+          body: JSON.stringify({
+            model: 'claude-3-7-sonnet-20250219',
+            max_tokens: 1800,
+            temperature: 0.2,
+            system: systemPrompt,
+            messages: [
+              {
+                role: 'user',
+                content: `DỮ LIỆU NHÂN VIÊN (chỉ trả về JSON thuần túy theo cấu trúc đã yêu cầu):\n${JSON.stringify(contextPayload, null, 2)}`,
+              },
+            ],
+          }),
+        });
+
+        if (claudeRes.ok) {
+          const data = await claudeRes.json();
+          const rawText = data?.content?.[0]?.text;
+          if (rawText) {
+            const parsed = JSON.parse(rawText.replace(/```json|```/g, '').trim());
+            return NextResponse.json({
+              ...parsed,
+              evaluatedAt: new Date().toISOString(),
+              providerUsed: 'Anthropic Claude 3.7 Sonnet (API)',
+            });
+          }
+        }
+      } catch (claudeError) {
+        console.warn('Claude API call failed, falling back to Domain Engine...', claudeError);
       }
     }
 

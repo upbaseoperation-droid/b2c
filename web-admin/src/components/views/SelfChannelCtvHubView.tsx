@@ -1,5 +1,6 @@
 'use client';
 
+import { PartnerDiscussion } from '../PartnerDiscussion';
 import React, { useState, useMemo, useRef } from 'react';
 import { Avatar, Presence } from '../ui';
 import {
@@ -56,6 +57,10 @@ import {
   SELF_CHANNEL_PARTNERSHIP_LEADER,
   SELF_CHANNEL_CONTENT_MEMBERS
 } from '../../lib/selfChannelData';
+import {
+  INITIAL_MONTHLY_PLANS,
+  getStorePlanWorkstreamSummary
+} from '../../lib/monthlyPlanData';
 
 export interface SelfChannelCtvHubViewProps {
   currentUser?: UserProfile;
@@ -140,57 +145,140 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
 
   const idCounterRef = useRef(1050);
 
-  // Tab State: 'OVERVIEW' | 'APPROVALS' | 'ACTIVE_JOBS' | 'CONTRIBUTORS' | 'DISCUSSION' | 'HISTORY'
-  const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'APPROVALS' | 'ACTIVE_JOBS' | 'CONTRIBUTORS' | 'DISCUSSION' | 'HISTORY'>('OVERVIEW');
+  // Tab State: 'OVERVIEW' | 'PLAN_FINAL_RBAC' | 'CTV_PORTAL' | 'APPROVALS' | 'ACTIVE_JOBS' | 'CONTRIBUTORS' | 'DISCUSSION' | 'HISTORY'
+  const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'PLAN_FINAL_RBAC' | 'CTV_PORTAL' | 'APPROVALS' | 'ACTIVE_JOBS' | 'CONTRIBUTORS' | 'DISCUSSION' | 'HISTORY'>(
+    currentUser?.role === 'CTV_PARTNER' ? 'CTV_PORTAL' : 'OVERVIEW'
+  );
   const [isCtvSimulatorView, setIsCtvSimulatorView] = useState(false);
 
-  // Discussion Chat State
-  const [ctvChatMessages, setCtvChatMessages] = useState<Array<{ id: string; sender: 'CTV' | 'UPBASE_LEAD'; senderName: string; time: string; content: string }>>([
+  // State: Phân quyền nhân sự Content & Partnership trong quy trình 6 bước Video Self-Channel
+  const [staffPermissions, setStaffPermissions] = useState<Array<{
+    staffName: string;
+    roleTitle: string;
+    leaderName: string;
+    canReceivePlanFinalQuota: boolean;
+    canCreateBriefAndApproveScript24h: boolean;
+    canContactAndNegotiateCtv: boolean;
+    canSubmitBrandOrientation72h: boolean;
+    canQaVideoAndUploadDrive: boolean;
+    canCreateDnttAndCheckLegal: boolean;
+  }>>([
     {
-      id: 'cmsg-1',
-      sender: 'UPBASE_LEAD',
-      senderName: 'Việt Hoàng (Leader Partnership & Self-Channel)',
-      time: 'Hôm qua lúc 10:15',
-      content: 'Chào các bạn CTV/VJ và đội ngũ Content tháng 10! Mình đã chốt xong danh sách CTV cho Kutieskin & Senka theo đề bài của Quỳnh Như và Mai Anh. Với các đơn gấp dưới 5 ngày, mình ưu tiên giao các bạn VJ đang cầm sẵn mẫu tại nhà nhé!'
+      staffName: 'Đặng Thị Yến Nhi',
+      roleTitle: 'Trưởng phòng B2C (Lead B2C)',
+      leaderName: 'Đỗ Văn Giang (CEO)',
+      canReceivePlanFinalQuota: true,
+      canCreateBriefAndApproveScript24h: true,
+      canContactAndNegotiateCtv: true,
+      canSubmitBrandOrientation72h: true,
+      canQaVideoAndUploadDrive: true,
+      canCreateDnttAndCheckLegal: true,
     },
     {
-      id: 'cmsg-2',
-      sender: 'CTV',
-      senderName: 'Nguyễn Hoàng Yến (VJ Mẹ & Bé)',
-      time: 'Hôm qua lúc 14:30',
-      content: 'Chào anh Việt Hoàng và Quỳnh Như ơi, mình đã có sẵn tuýp KUTIE-SOOTH-30G ở nhà và quay xong clip nháp theo kịch bản Như duyệt rồi. Mình vừa gắn link Drive trên mục Cần duyệt nhé!'
+      staffName: 'Việt Hoàng',
+      roleTitle: 'Leader Partnership & Self-Channel',
+      leaderName: 'Đặng Thị Yến Nhi',
+      canReceivePlanFinalQuota: true,
+      canCreateBriefAndApproveScript24h: true,
+      canContactAndNegotiateCtv: true,
+      canSubmitBrandOrientation72h: true,
+      canQaVideoAndUploadDrive: true,
+      canCreateDnttAndCheckLegal: true,
     },
     {
-      id: 'cmsg-3',
-      sender: 'UPBASE_LEAD',
-      senderName: 'Quỳnh Như (Chuyên viên Content Self-Channel)',
-      time: 'Sáng nay lúc 08:45',
-      content: 'Em đã kiểm tra QA nội bộ video của chị Yến đạt 4/4 tiêu chí và tải file sạch lên Drive tổng gian hàng Kutieskin rồi ạ. Nhờ anh Việt Hoàng trình Brand nghiệm thu và đưa vào bảng kê DNTT đợt này nhé!'
+      staffName: 'Quỳnh Như',
+      roleTitle: 'Chuyên viên Content Self-Channel',
+      leaderName: 'Việt Hoàng',
+      canReceivePlanFinalQuota: true,
+      canCreateBriefAndApproveScript24h: true,
+      canContactAndNegotiateCtv: false,
+      canSubmitBrandOrientation72h: true,
+      canQaVideoAndUploadDrive: true,
+      canCreateDnttAndCheckLegal: false,
+    },
+    {
+      staffName: 'Nguyễn Thị Mai Anh',
+      roleTitle: 'Chuyên viên Content Self-Channel',
+      leaderName: 'Việt Hoàng',
+      canReceivePlanFinalQuota: true,
+      canCreateBriefAndApproveScript24h: true,
+      canContactAndNegotiateCtv: false,
+      canSubmitBrandOrientation72h: true,
+      canQaVideoAndUploadDrive: true,
+      canCreateDnttAndCheckLegal: false,
+    },
+    {
+      staffName: 'Vũ Hoài Lâm',
+      roleTitle: 'Chuyên viên Content Self-Channel',
+      leaderName: 'Việt Hoàng',
+      canReceivePlanFinalQuota: true,
+      canCreateBriefAndApproveScript24h: true,
+      canContactAndNegotiateCtv: false,
+      canSubmitBrandOrientation72h: false,
+      canQaVideoAndUploadDrive: true,
+      canCreateDnttAndCheckLegal: false,
+    },
+    {
+      staffName: 'Phan Diệu Ánh',
+      roleTitle: 'Chuyên viên Content Self-Channel',
+      leaderName: 'Việt Hoàng',
+      canReceivePlanFinalQuota: true,
+      canCreateBriefAndApproveScript24h: true,
+      canContactAndNegotiateCtv: false,
+      canSubmitBrandOrientation72h: false,
+      canQaVideoAndUploadDrive: true,
+      canCreateDnttAndCheckLegal: false,
     }
   ]);
-  const [newCtvChatText, setNewCtvChatText] = useState('');
+
+  // State: Ghi đè nhân sự Content phụ trách trên từng Plan Final gian hàng
+  const [storeContentOverrides, setStoreContentOverrides] = useState<Record<string, string[]>>({});
+  const [planFinalSearch, setPlanFinalSearch] = useState('');
+  const [planFinalStaffFilter, setPlanFinalStaffFilter] = useState<string>('ALL');
+
+  // Danh sách các Kế hoạch Tháng ĐÃ DUYỆT (Plan Final) có chỉ tiêu làm Video Self-Channel
+  const approvedPlanFinalsForSelfChannel = useMemo(() => {
+    return INITIAL_MONTHLY_PLANS
+      .filter(p => {
+        if (p.month !== '10/2026' && p.month !== '2026/10') return false;
+        const isApproved = ['APPROVED', 'IN_EXECUTION', 'LEAD_APPROVED', 'BRAND_APPROVED', 'COMPLETED'].includes(p.status || '');
+        const ws = getStorePlanWorkstreamSummary(p);
+        return isApproved && (ws.selfChannel.totalQty > 0 || ws.selfChannel.totalBudget > 0);
+      })
+      .map(p => {
+        const ws = getStorePlanWorkstreamSummary(p);
+        const defaultContentStaff = ws.selfChannel.assignees.map(s => s.staffName);
+        const assignedContentStaff = storeContentOverrides[p.id] || (defaultContentStaff.length > 0 ? defaultContentStaff : ['Quỳnh Như']);
+        const storeLabel = p.storeName || p.brandName;
+        const spawnedTasks = tasks.filter(
+          t =>
+            (t.storeName && storeLabel.toLowerCase().includes(t.storeName.split(' ')[0].toLowerCase())) ||
+            t.brandName.toLowerCase().includes((p.brandName.split('_')[0] || p.brandName).toLowerCase())
+        );
+
+        return {
+          planId: p.id,
+          planTitle: p.title,
+          storeName: storeLabel,
+          brandName: p.brandName.split('_')[0] || p.brandName,
+          platform: storeLabel.toLowerCase().includes('shopee') ? 'Shopee' : 'TikTok',
+          versionCode: p.currentVersionCode || 'v1.0',
+          approvedBy: p.approvedBy || 'Đặng Thị Yến Nhi',
+          bookingPic: p.pic,
+          partnershipLeader: 'Việt Hoàng',
+          assignedContentStaff,
+          approvedVideosQuota: ws.selfChannel.totalQty,
+          approvedBudgetQuota: ws.selfChannel.totalBudget,
+          unitCostAvg: ws.selfChannel.totalQty > 0 ? Math.round(ws.selfChannel.totalBudget / ws.selfChannel.totalQty) : 700000,
+          spawnedCount: spawnedTasks.length,
+          remainingQuota: Math.max(0, ws.selfChannel.totalQty - spawnedTasks.length),
+        };
+      });
+  }, [storeContentOverrides, tasks]);
 
   // Helper: notify
   const notify = (msg: string, type: 'success' | 'warning' | 'info' | 'error' = 'success') => {
     if (onNotify) onNotify(msg, type);
-  };
-
-  const handleSendCtvChat = (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    if (!newCtvChatText.trim()) return;
-
-    setCtvChatMessages(prev => [
-      ...prev,
-      {
-        id: `cmsg-${Date.now()}`,
-        sender: 'CTV',
-        senderName: currentUser?.name || 'Cộng Tác Viên',
-        time: 'Vừa xong',
-        content: newCtvChatText.trim()
-      }
-    ]);
-    setNewCtvChatText('');
-    notify('Đã gửi tin nhắn đến nhóm sản xuất Video B2C!');
   };
 
   // Brand Selection State for Manager & Multi-Brand Staff
@@ -1374,6 +1462,19 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
 
         <button
           type="button"
+          onClick={() => setActiveTab('PLAN_FINAL_RBAC')}
+          className={`px-3.5 py-2 rounded-lg font-medium transition flex items-center gap-2 whitespace-nowrap ${
+            activeTab === 'PLAN_FINAL_RBAC'
+              ? 'bg-indigo-600 text-white font-semibold shadow-xs'
+              : 'text-indigo-700 bg-indigo-50/70 hover:bg-indigo-100 border border-indigo-200/70'
+          }`}
+        >
+          <ShieldCheck className="w-3.5 h-3.5" />
+          <span>Plan Final &amp; Phân quyền Content ({approvedPlanFinalsForSelfChannel.length} gian)</span>
+        </button>
+
+        <button
+          type="button"
           onClick={() => setActiveTab('APPROVALS')}
           className={`px-3.5 py-2 rounded-lg font-medium transition flex items-center gap-2 whitespace-nowrap ${
             activeTab === 'APPROVALS'
@@ -1435,6 +1536,19 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
 
         <button
           type="button"
+          onClick={() => setActiveTab('CTV_PORTAL')}
+          className={`px-3.5 py-2 rounded-lg font-medium transition flex items-center gap-2 whitespace-nowrap ${
+            activeTab === 'CTV_PORTAL'
+              ? 'bg-emerald-600 text-white font-semibold shadow-xs'
+              : 'text-emerald-800 bg-emerald-50/80 hover:bg-emerald-100 border border-emerald-200/80'
+          }`}
+        >
+          <User className="w-3.5 h-3.5" />
+          <span>Cổng làm việc CTV (Nhận việc &amp; Nộp bài)</span>
+        </button>
+
+        <button
+          type="button"
           onClick={() => setActiveTab('DISCUSSION')}
           className={`px-3.5 py-2 rounded-lg font-medium transition flex items-center gap-2 whitespace-nowrap ${
             activeTab === 'DISCUSSION'
@@ -1446,6 +1560,307 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
           <span>Trao đổi nhanh</span>
         </button>
       </div>
+
+      {/* ========================================================================= */}
+      {/* TAB MỚI: ĐẦU VÀO PLAN FINAL ĐÃ DUYỆT & PHÂN QUYỀN NHÂN SỰ SELF-CHANNEL    */}
+      {/* ========================================================================= */}
+      {activeTab === 'PLAN_FINAL_RBAC' && (
+        <div className="space-y-6 animate-in fade-in duration-150">
+          {/* KHỐI 1: MA TRẬN PHÂN QUYỀN NHÂN SỰ TRONG QUY TRÌNH 6 BƯỚC VIDEO SELF-CHANNEL */}
+          <div className="bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-hidden">
+            <div className="p-4 sm:px-5 border-b border-slate-100 bg-slate-50/70 flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-indigo-600" />
+                  <span>1. Phân quyền thao tác nhân sự trong Quy trình sản xuất Video Self-Channel (6 Bước SOP)</span>
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Gắn quyền rõ ràng giữa <strong>Trưởng phòng B2C (Đặng Thị Yến Nhi)</strong>, <strong>Leader Partnership (Việt Hoàng)</strong> và <strong>4 Chuyên viên Content</strong> bên dưới để không chồng chéo việc liên hệ CTV, duyệt kịch bản và lập DNTT.
+                </p>
+              </div>
+              <span className="px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-200 text-2xs font-semibold">
+                Bấm vào ô quyền để bật / tắt quyền thao tác
+              </span>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold text-2xs">
+                    <th className="py-2.5 px-4">Nhân sự &amp; Chức danh</th>
+                    <th className="py-2.5 px-3">Người quản lý trực tiếp</th>
+                    <th className="py-2.5 px-3 text-center">B1. Nhận hạn mức từ Plan Final</th>
+                    <th className="py-2.5 px-3 text-center">B2. Lên đề bài &amp; Duyệt kịch bản (24h)</th>
+                    <th className="py-2.5 px-3 text-center">B3. Liên hệ CTV, Đàm phán &amp; Gửi mẫu</th>
+                    <th className="py-2.5 px-3 text-center">B4. Trình Brand duyệt định hướng (72h)</th>
+                    <th className="py-2.5 px-3 text-center">B5. QA Video nháp &amp; Lưu Drive sạch</th>
+                    <th className="py-2.5 px-3 text-center">B6. Lập DNTT &amp; Kiểm tra CCCD/HĐ</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {staffPermissions.map((perm, idx) => {
+                    const togglePerm = (field: 'canReceivePlanFinalQuota' | 'canCreateBriefAndApproveScript24h' | 'canContactAndNegotiateCtv' | 'canSubmitBrandOrientation72h' | 'canQaVideoAndUploadDrive' | 'canCreateDnttAndCheckLegal') => {
+                      setStaffPermissions(prev => prev.map((row, i) => i === idx ? { ...row, [field]: !row[field] } : row));
+                      notify(`Đã cập nhật quyền thao tác cho ${perm.staffName}.`, 'info');
+                    };
+                    const assignedStoreCount = approvedPlanFinalsForSelfChannel.filter(p => p.assignedContentStaff.includes(perm.staffName)).length;
+
+                    return (
+                      <tr key={perm.staffName} className="hover:bg-slate-50/70 transition">
+                        <td className="py-2.5 px-4 align-middle">
+                          <div className="font-semibold text-slate-900">{perm.staffName}</div>
+                          <div className="text-2xs text-slate-500 mt-0.5 flex items-center gap-1.5">
+                            <span>{perm.roleTitle}</span>
+                            {assignedStoreCount > 0 && (
+                              <span className="px-1.5 py-0 rounded bg-violet-50 text-violet-700 border border-violet-200 font-semibold">
+                                {assignedStoreCount} gian hàng
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="py-2.5 px-3 align-middle text-slate-700 font-medium">
+                          {perm.leaderName}
+                        </td>
+                        {([
+                          'canReceivePlanFinalQuota',
+                          'canCreateBriefAndApproveScript24h',
+                          'canContactAndNegotiateCtv',
+                          'canSubmitBrandOrientation72h',
+                          'canQaVideoAndUploadDrive',
+                          'canCreateDnttAndCheckLegal',
+                        ] as const).map(field => {
+                          const enabled = perm[field];
+                          return (
+                            <td key={field} className="py-2.5 px-3 text-center align-middle">
+                              <button
+                                type="button"
+                                onClick={() => togglePerm(field)}
+                                className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-2xs font-semibold border transition cursor-pointer ${
+                                  enabled
+                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+                                    : 'bg-slate-100 text-slate-400 border-slate-200 hover:bg-slate-200'
+                                }`}
+                              >
+                                {enabled ? <Check className="w-3 h-3" /> : null}
+                                <span>{enabled ? 'Được phép' : 'Không'}</span>
+                              </button>
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* KHỐI 2: ĐẦU VÀO QUY TRÌNH — DANH SÁCH PLAN FINAL ĐÃ DUYỆT LÀM VIDEO SELF-CHANNEL */}
+          <div className="bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-hidden">
+            <div className="p-4 sm:px-5 border-b border-slate-100 bg-slate-50/70 flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
+                  <FileCheck2 className="w-4 h-4 text-emerald-600" />
+                  <span>2. Đầu vào Quy trình: Kế hoạch Tháng Đã Duyệt (Plan Final) có hạn mức Video Self-Channel</span>
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Chỉ các gian hàng có <strong>Plan Final đã được Trưởng phòng duyệt</strong> mới được mở hạn mức sản xuất Video Self-Channel. Một gian hàng có thể gán 1–2 chuyên viên Content cùng phụ trách dưới sự điều phối CTV của <strong>Việt Hoàng</strong>.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2 flex-wrap">
+                <input
+                  type="text"
+                  value={planFinalSearch}
+                  onChange={(e) => setPlanFinalSearch(e.target.value)}
+                  placeholder="Tìm gian hàng, thương hiệu..."
+                  className="h-8 px-3 rounded-lg border border-slate-200 bg-white text-xs text-slate-800 focus:outline-none focus:border-indigo-500"
+                />
+                <select
+                  value={planFinalStaffFilter}
+                  onChange={(e) => setPlanFinalStaffFilter(e.target.value)}
+                  className="h-8 px-2.5 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-700 focus:outline-none focus:border-indigo-500"
+                >
+                  <option value="ALL">Tất cả Content ({approvedPlanFinalsForSelfChannel.length} gian)</option>
+                  {['Quỳnh Như', 'Nguyễn Thị Mai Anh', 'Vũ Hoài Lâm', 'Phan Diệu Ánh'].map(name => (
+                    <option key={name} value={name}>
+                      Phụ trách: {name}
+                    </option>
+                  ))}
+                </select>
+                {onOpenInputPlan && (
+                  <button
+                    type="button"
+                    onClick={onOpenInputPlan}
+                    className="h-8 px-3 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition cursor-pointer"
+                  >
+                    Mở Sổ Kế Hoạch Tháng →
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold text-2xs">
+                    <th className="py-2.5 px-4">Gian hàng &amp; Bản Plan Final</th>
+                    <th className="py-2.5 px-3">Người duyệt &amp; Đầu mối</th>
+                    <th className="py-2.5 px-3 text-right">Hạn mức Video Self-Channel</th>
+                    <th className="py-2.5 px-3 text-right">Ngân sách SX (Net)</th>
+                    <th className="py-2.5 px-3">Phân quyền Chuyên viên Content phụ trách (1–2 người)</th>
+                    <th className="py-2.5 px-3 text-center">Tiến độ rã đề bài</th>
+                    <th className="py-2.5 px-4 text-right">Nhận đề bài từ Plan Final</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {approvedPlanFinalsForSelfChannel
+                    .filter(item => {
+                      if (planFinalStaffFilter !== 'ALL' && !item.assignedContentStaff.includes(planFinalStaffFilter)) {
+                        return false;
+                      }
+                      if (planFinalSearch.trim()) {
+                        const q = planFinalSearch.toLowerCase();
+                        return item.storeName.toLowerCase().includes(q) || item.brandName.toLowerCase().includes(q);
+                      }
+                      return true;
+                    })
+                    .map(item => {
+                      const contentCandidates = ['Quỳnh Như', 'Nguyễn Thị Mai Anh', 'Vũ Hoài Lâm', 'Phan Diệu Ánh'];
+                      const handleToggleContentStaffOnStore = (staffName: string) => {
+                        const current = item.assignedContentStaff;
+                        const exists = current.includes(staffName);
+                        const next = exists
+                          ? (current.length > 1 ? current.filter(s => s !== staffName) : current)
+                          : [...current, staffName];
+                        setStoreContentOverrides(prev => ({ ...prev, [item.planId]: next }));
+                        notify(`Đã cập nhật phân công Content cho gian hàng ${item.storeName}: ${next.join(', ')}`);
+                      };
+
+                      const handleSpawnTasksFromPlanFinal = () => {
+                        const batchCount = Math.min(item.remainingQuota > 0 ? item.remainingQuota : 2, 3);
+                        const generated: SelfChannelVideoTask[] = [];
+                        for (let i = 0; i < batchCount; i++) {
+                          const assignedMember = item.assignedContentStaff[i % item.assignedContentStaff.length] || 'Quỳnh Như';
+                          const seq = tasks.length + i + 1;
+                          generated.push({
+                            id: `task-pf-${++idCounterRef.current}`,
+                            taskCode: `SC-${item.brandName.slice(0, 4).toUpperCase()}-202610-${String(seq).padStart(2, '0')}`,
+                            title: `[Plan Final ${item.versionCode}] Video kênh ${item.storeName} — Đề bài #${item.spawnedCount + i + 1}`,
+                            brandId: `brand-${item.brandName.toLowerCase()}`,
+                            brandName: item.brandName,
+                            storeId: item.planId,
+                            storeName: item.storeName,
+                            planMonth: '2026/10',
+                            videoFormat: i % 2 === 0 ? 'Review voice' : 'Unboxing + Test',
+                            contentPic: assignedMember,
+                            partnershipPic: 'Việt Hoàng',
+                            partnershipStatus: 'WAITING_PARTNERSHIP',
+                            pillarId: 'pillar-1',
+                            pillarName: 'Giải quyết nỗi đau & Công dụng thực tế',
+                            pillarCode: 'P1',
+                            linkedSku: `${item.brandName.slice(0, 5).toUpperCase()}-HERO-01`,
+                            productName: `Sản phẩm chủ lực ${item.brandName}`,
+                            remuneration: item.unitCostAvg || 700000,
+                            deadline: '2026-10-25',
+                            brandApprovalMode: 'BRAND_REVIEW_REQUIRED',
+                            brandOrientationStatus: 'PENDING',
+                            sampleShippingStatus: 'PENDING_SHIP',
+                            status: 'OPEN_TASK',
+                            feedbackLogs: [],
+                            createdAt: new Date().toISOString()
+                          });
+                        }
+                        updateTasks(prev => [...generated, ...prev]);
+                        notify(
+                          `Đã rã ${generated.length} đề bài từ Plan Final [${item.storeName}] giao cho ${item.assignedContentStaff.join(' & ')} và chuyển sang Việt Hoàng (Partnership) liên hệ CTV!`
+                        );
+                        setActiveTab('ACTIVE_JOBS');
+                      };
+
+                      return (
+                        <tr key={item.planId} className="hover:bg-slate-50/70 transition">
+                          <td className="py-2.5 px-4 align-middle">
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-semibold text-slate-900">{item.storeName}</span>
+                              <span className="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-semibold">
+                                Final {item.versionCode}
+                              </span>
+                            </div>
+                            <div className="text-2xs text-slate-500 mt-0.5">
+                              Brand: <strong className="text-slate-700">{item.brandName}</strong> • Sàn: {item.platform}
+                            </div>
+                          </td>
+
+                          <td className="py-2.5 px-3 align-middle">
+                            <div className="text-xs text-slate-800">
+                              Duyệt: <strong className="text-emerald-700">{item.approvedBy}</strong>
+                            </div>
+                            <div className="text-2xs text-slate-500 mt-0.5">
+                              Leader Partnership: <strong className="text-indigo-700">{item.partnershipLeader}</strong>
+                            </div>
+                          </td>
+
+                          <td className="py-2.5 px-3 text-right font-mono align-middle">
+                            <span className="font-semibold text-indigo-700 text-xs">{item.approvedVideosQuota} video</span>
+                          </td>
+
+                          <td className="py-2.5 px-3 text-right font-mono align-middle">
+                            <div className="font-semibold text-slate-900">{formatVnd(item.approvedBudgetQuota)}</div>
+                            <div className="text-2xs text-slate-400">~{formatVnd(item.unitCostAvg)}/clip</div>
+                          </td>
+
+                          <td className="py-2.5 px-3 align-middle">
+                            <div className="flex flex-wrap gap-1">
+                              {contentCandidates.map(staffName => {
+                                const isAssigned = item.assignedContentStaff.includes(staffName);
+                                return (
+                                  <button
+                                    key={staffName}
+                                    type="button"
+                                    onClick={() => handleToggleContentStaffOnStore(staffName)}
+                                    className={`px-2 py-0.5 rounded text-2xs font-semibold border transition cursor-pointer ${
+                                      isAssigned
+                                        ? 'bg-violet-600 text-white border-violet-600 shadow-2xs'
+                                        : 'bg-slate-50 text-slate-500 border-slate-200 hover:bg-slate-100'
+                                    }`}
+                                    title={isAssigned ? `Đang gán ${staffName} làm Content gian hàng này. Bấm để gỡ` : `Bấm để gán thêm ${staffName} cùng làm gian hàng này`}
+                                  >
+                                    {staffName}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </td>
+
+                          <td className="py-2.5 px-3 text-center font-mono align-middle">
+                            <span className={`px-2 py-0.5 rounded text-2xs font-semibold ${
+                              item.spawnedCount >= item.approvedVideosQuota
+                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                : 'bg-amber-50 text-amber-800 border border-amber-200'
+                            }`}>
+                              Đã rã {item.spawnedCount} / {item.approvedVideosQuota} video
+                            </span>
+                          </td>
+
+                          <td className="py-2.5 px-4 text-right align-middle">
+                            <button
+                              type="button"
+                              onClick={handleSpawnTasksFromPlanFinal}
+                              className="px-2.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-2xs font-semibold transition cursor-pointer"
+                            >
+                              + Rã đề bài từ Plan Final
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ========================================================================= */}
       {/* TAB 1: TỔNG QUAN & CONTENT PILLARS (OVERVIEW)                             */}
@@ -2836,15 +3251,27 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
                         {ctv.completedTaskCount}/{ctv.monthlyCapacityVideos || 15} video
                       </span>
                     </div>
-                    {onOpenCtvProfile && (
+                    <div className="flex items-center gap-2">
                       <button
                         type="button"
-                        onClick={() => onOpenCtvProfile(ctv.id)}
-                        className="text-2xs font-semibold text-blue-600 hover:underline"
+                        onClick={() => {
+                          setSimulatedCtvId(ctv.id);
+                          setActiveTab('CTV_PORTAL');
+                        }}
+                        className="px-2 py-1 rounded bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-2xs font-semibold transition"
                       >
-                        Xem hồ sơ CTV →
+                        Mở Cổng CTV
                       </button>
-                    )}
+                      {onOpenCtvProfile && (
+                        <button
+                          type="button"
+                          onClick={() => onOpenCtvProfile(ctv.id)}
+                          className="text-2xs font-semibold text-blue-600 hover:underline"
+                        >
+                          Hồ sơ &amp; Lịch sử →
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               );
@@ -2852,86 +3279,443 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
           </div>
         </div>
       )}
+
+      {/* ========================================================================= */}
+      {/* TAB MỚI: CỔNG LÀM VIỆC CTV / VJ (CTV PORTAL — NHẬN VIỆC, NỘP BÀI & LỊCH SỬ) */}
+      {/* ========================================================================= */}
+      {activeTab === 'CTV_PORTAL' && (() => {
+        const portalCtv =
+          (isCtvPartner && currentUser?.linkedEntityId
+            ? contributors.find(c => c.id === currentUser.linkedEntityId)
+            : contributors.find(c => c.id === simulatedCtvId)) || contributors[0];
+
+        const myAssignedTasks = tasks.filter(
+          t =>
+            t.contributorId === portalCtv.id ||
+            (t.contributorName &&
+              t.contributorName.toLowerCase().includes(portalCtv.name.split('(')[0].trim().toLowerCase()))
+        );
+        const openTasksForClaim = tasks.filter(t => t.status === 'OPEN_TASK');
+        const activeActionTasks = myAssignedTasks.filter(
+          t => t.status !== 'ACCEPTED_COMPLETED' && t.status !== 'PAID'
+        );
+        const completedAndPaidTasks = myAssignedTasks.filter(
+          t => t.status === 'ACCEPTED_COMPLETED' || t.status === 'PAID'
+        );
+        const pendingGross = myAssignedTasks
+          .filter(t => t.status === 'ACCEPTED_COMPLETED')
+          .reduce((s, t) => s + t.remuneration, 0);
+        const legalStatus = isCtvLegalReady(portalCtv);
+
+        return (
+          <div className="space-y-5 animate-in fade-in duration-150">
+            {/* 1. Header Cổng làm việc cá nhân của CTV */}
+            <div className="bg-white rounded-xl border border-emerald-200 p-4 sm:p-5 shadow-xs space-y-4">
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                <div className="flex items-start gap-3.5">
+                  <Avatar name={portalCtv.name} src={portalCtv.avatar} size={46} />
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="px-2 py-0.5 rounded bg-emerald-600 text-white text-2xs font-semibold">
+                        Cổng làm việc CTV / VJ
+                      </span>
+                      <h3 className="text-sm font-semibold text-slate-900">{portalCtv.name}</h3>
+                      <span className="font-mono text-2xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">
+                        {portalCtv.code || portalCtv.id}
+                      </span>
+                      <span
+                        className={`px-2 py-0.5 rounded text-2xs font-semibold ${
+                          legalStatus.ready
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                            : 'bg-rose-50 text-rose-700 border border-rose-200'
+                        }`}
+                      >
+                        {legalStatus.ready
+                          ? `Đủ CCCD & HĐ (${portalCtv.contractCode})`
+                          : legalStatus.missingReason}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-500 mt-1">
+                      Đơn giá trọn gói: <strong className="text-slate-900 font-mono">{formatVnd(portalCtv.unitRateAllInOne || 1500000)}/video</strong> •
+                      Content phụ trách: <strong className="text-slate-800">{portalCtv.contentPic || 'Quỳnh Như'}</strong> •
+                      Partnership hỗ trợ HĐ &amp; Thanh toán: <strong className="text-indigo-700">{portalCtv.partnershipPic || 'Việt Hoàng'}</strong>
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 flex-wrap">
+                  {!isCtvPartner && (
+                    <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-xs">
+                      <span className="text-slate-500 text-2xs">Đang xem Cổng của CTV:</span>
+                      <select
+                        value={portalCtv.id}
+                        onChange={(e) => setSimulatedCtvId(e.target.value)}
+                        className="font-semibold text-slate-900 bg-transparent focus:outline-none cursor-pointer"
+                      >
+                        {contributors.map(c => (
+                          <option key={c.id} value={c.id}>
+                            {c.name} ({c.code || c.id})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                  {onOpenCtvProfile && (
+                    <button
+                      type="button"
+                      onClick={() => onOpenCtvProfile(portalCtv.id)}
+                      className="px-3 py-1.5 rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-semibold transition"
+                    >
+                      Mở Hồ sơ &amp; Lịch sử CTV →
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* 4 Thẻ chỉ số nhanh của CTV */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 pt-3 border-t border-slate-100 text-xs">
+                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80">
+                  <span className="text-2xs text-slate-500 block">Việc đang thực hiện</span>
+                  <span className="text-base font-bold text-slate-900 font-mono mt-0.5 block">
+                    {activeActionTasks.length} video
+                  </span>
+                  <span className="text-2xs text-slate-500">
+                    Đề bài mới có thể nhận: {openTasksForClaim.length}
+                  </span>
+                </div>
+                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80">
+                  <span className="text-2xs text-slate-500 block">Sản phẩm mẫu cầm sẵn tại nhà</span>
+                  <span className="text-base font-bold text-emerald-700 font-mono mt-0.5 block">
+                    {(portalCtv.onHandProducts || []).length} mã SKU
+                  </span>
+                  <span className="text-2xs text-slate-500 truncate block">
+                    {(portalCtv.onHandProducts || []).join(', ') || 'Chưa có mẫu tại nhà'}
+                  </span>
+                </div>
+                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80">
+                  <span className="text-2xs text-slate-500 block">Chờ lập DNTT &amp; Giải ngân</span>
+                  <span className="text-base font-bold text-amber-700 font-mono mt-0.5 block">
+                    {formatVnd(pendingGross)}
+                  </span>
+                  <span className="text-2xs text-slate-500">
+                    {myAssignedTasks.filter(t => t.status === 'ACCEPTED_COMPLETED').length} video đã nghiệm thu
+                  </span>
+                </div>
+                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80">
+                  <span className="text-2xs text-slate-500 block">Tổng thù lao đã nhận</span>
+                  <span className="text-base font-bold text-slate-900 font-mono mt-0.5 block">
+                    {formatVnd(portalCtv.totalPaidAmount)}
+                  </span>
+                  <span className="text-2xs text-emerald-700 font-medium">
+                    Đã hoàn thành {portalCtv.completedTaskCount} video • ★ {portalCtv.ratingScore}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* 2. Danh sách việc cần CTV thao tác ngay (Nộp kịch bản / Sửa bài / Nộp Video Demo / Nhận hàng mẫu) */}
+            <div className="bg-white rounded-xl border border-slate-200/80 p-5 shadow-xs space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div>
+                  <h4 className="text-xs font-semibold text-slate-900">
+                    1. Đầu việc của {portalCtv.name} đang triển khai ({activeActionTasks.length} việc)
+                  </h4>
+                  <p className="text-2xs text-slate-500 mt-0.5">
+                    Nộp kịch bản (Hook/Body/CTA), xác nhận đã nhận hàng mẫu hoặc dán link Google Drive nộp Video Demo để Content B2C duyệt.
+                  </p>
+                </div>
+              </div>
+
+              {activeActionTasks.length === 0 ? (
+                <div className="py-8 text-center text-xs text-slate-400">
+                  Hiện không có video nào đang chờ {portalCtv.name} nộp bài. Hãy nhận thêm đề bài mới bên dưới!
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {activeActionTasks.map(task => {
+                    const lastFeedback =
+                      task.feedbackLogs && task.feedbackLogs.length > 0
+                        ? task.feedbackLogs[task.feedbackLogs.length - 1]
+                        : null;
+
+                    return (
+                      <div
+                        key={task.id}
+                        className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 space-y-3"
+                      >
+                        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-mono text-2xs font-semibold px-1.5 py-0.5 rounded bg-white border border-slate-200 text-slate-700">
+                                {task.taskCode}
+                              </span>
+                              {task.videoFormat && (
+                                <span className="px-2 py-0.5 rounded text-2xs font-medium bg-indigo-50 text-indigo-700">
+                                  {task.videoFormat}
+                                </span>
+                              )}
+                              <span className="font-semibold text-xs text-slate-900">{task.title}</span>
+                              {renderStatusBadge(task.status)}
+                              {renderSampleBadge(task)}
+                            </div>
+                            <p className="text-xs text-slate-500">
+                              Nhãn hàng: <strong className="text-slate-800">{task.brandName}</strong> • SKU:{' '}
+                              <span className="font-mono font-semibold text-slate-700">{task.linkedSku}</span> •
+                              Content duyệt bài: <strong className="text-slate-900">{task.contentPic || 'Quỳnh Như'}</strong> •
+                              Hạn nộp: <strong className="text-slate-900">{formatDate(task.deadline)}</strong> •
+                              Thù lao: <strong className="font-mono text-emerald-700">{formatVnd(task.remuneration)}</strong>
+                            </p>
+                          </div>
+
+                          <div className="flex flex-wrap items-center gap-2">
+                            {/* Nút xác nhận đã nhận hàng mẫu */}
+                            {task.sampleShippingStatus === 'SHIPPING' && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  updateTasks(prev =>
+                                    prev.map(t =>
+                                      t.id === task.id
+                                        ? {
+                                            ...t,
+                                            sampleShippingStatus: 'DELIVERED',
+                                            sampleDeliveredAt: new Date().toISOString(),
+                                          }
+                                        : t
+                                    )
+                                  );
+                                  if (task.linkedSku && !(portalCtv.onHandProducts || []).includes(task.linkedSku)) {
+                                    const updatedCtv: Contributor = {
+                                      ...portalCtv,
+                                      onHandProducts: [...(portalCtv.onHandProducts || []), task.linkedSku],
+                                    };
+                                    setLocalContributors(prev =>
+                                      prev.map(c => (c.id === updatedCtv.id ? updatedCtv : c))
+                                    );
+                                    onContributorUpdated?.(updatedCtv);
+                                  }
+                                  notify(`Đã xác nhận nhận hàng mẫu ${task.linkedSku} cho việc ${task.taskCode}!`);
+                                }}
+                                className="px-2.5 py-1.5 rounded-lg text-2xs font-semibold bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 transition"
+                              >
+                                Xác nhận đã nhận mẫu ({task.sampleTrackingCode || '48h'})
+                              </button>
+                            )}
+
+                            {/* Nút nộp hoặc sửa kịch bản */}
+                            {(task.status === 'BRAND_ORIENTATION_PENDING' ||
+                              task.status === 'SCRIPT_REVISION' ||
+                              !task.scriptContent) && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelectedTask(task);
+                                  setCtvSubmitType('SCRIPT');
+                                  setCtvScriptForm({
+                                    hook: task.scriptContent?.hook || '',
+                                    body: task.scriptContent?.body || '',
+                                    cta: task.scriptContent?.cta || '',
+                                  });
+                                  setIsCtvSubmitModalOpen(true);
+                                }}
+                                className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-600 hover:bg-amber-700 text-white transition"
+                              >
+                                {task.scriptContent ? 'Cập nhật / Nộp lại Kịch bản' : 'Nộp kịch bản'}
+                              </button>
+                            )}
+
+                            {/* Nút nộp hoặc sửa Video Demo */}
+                            {(task.status === 'SCRIPT_APPROVED' ||
+                              task.status === 'VIDEO_REVISION' ||
+                              task.status === 'DRAFT_VIDEO_SUBMITTED') && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelectedTask(task);
+                                  setCtvSubmitType('VIDEO');
+                                  setCtvVideoForm({
+                                    draftVideoUrl: task.videoDeliverables?.draftVideoUrl || '',
+                                    durationSeconds: task.videoDeliverables?.durationSeconds || 45,
+                                    captionSuggested: task.videoDeliverables?.captionSuggested || '',
+                                  });
+                                  setIsCtvSubmitModalOpen(true);
+                                }}
+                                className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white transition"
+                              >
+                                {task.videoDeliverables?.draftVideoUrl
+                                  ? `Nộp bản sửa Video (v${(task.videoDeliverables?.currentVersion || 1) + 1})`
+                                  : 'Nộp link Video Demo (Drive)'}
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Hiển thị phản hồi gần nhất của Content PIC / Brand ngay trên thẻ việc của CTV */}
+                        {lastFeedback && (
+                          <div
+                            className={`p-2.5 rounded-lg border text-xs ${
+                              lastFeedback.verdict === 'REVISE'
+                                ? 'bg-amber-50/80 border-amber-200 text-amber-900'
+                                : 'bg-emerald-50/70 border-emerald-200 text-emerald-900'
+                            }`}
+                          >
+                            <span className="font-semibold">
+                              Nhận xét từ {lastFeedback.reviewedBy} (Vòng v{lastFeedback.version}):{' '}
+                            </span>
+                            <span>{lastFeedback.comment}</span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* 3. Đề bài mới đang mở từ Partnership & Content (OPEN_TASK) */}
+            {openTasksForClaim.length > 0 && (
+              <div className="bg-white rounded-xl border border-slate-200/80 p-5 shadow-xs space-y-3">
+                <div>
+                  <h4 className="text-xs font-semibold text-slate-900">
+                    2. Đề bài mới từ Partnership &amp; Content đang mở nhận việc ({openTasksForClaim.length} đề bài)
+                  </h4>
+                  <p className="text-2xs text-slate-500 mt-0.5">
+                    Các đề bài phù hợp với thế mạnh của CTV. Với đơn gấp &lt; 5 ngày, hệ thống tự động kiểm tra mã SKU có sẵn tại nhà.
+                  </p>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {openTasksForClaim.map(task => {
+                    const hasSkuAtHome = Boolean(
+                      task.linkedSku && (portalCtv.onHandProducts || []).includes(task.linkedSku)
+                    );
+                    return (
+                      <div
+                        key={task.id}
+                        className="p-3.5 rounded-xl border border-slate-200 flex flex-col justify-between gap-3 bg-slate-50/40"
+                      >
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="font-mono text-2xs font-semibold text-slate-600">{task.taskCode}</span>
+                            <span className="font-mono text-xs font-semibold text-emerald-700">
+                              {formatVnd(task.remuneration)}
+                            </span>
+                          </div>
+                          <div className="font-semibold text-xs text-slate-900">{task.title}</div>
+                          <div className="text-2xs text-slate-500">
+                            {task.brandName} • SKU: <span className="font-mono font-semibold">{task.linkedSku}</span> •
+                            Hạn: {formatDate(task.deadline)}
+                          </div>
+                          {hasSkuAtHome && (
+                            <span className="inline-block px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 text-2xs font-semibold">
+                              Bạn đang có sẵn mẫu {task.linkedSku} tại nhà
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                          <span className="text-2xs text-slate-500">
+                            PIC: {task.contentPic || 'Quỳnh Như'}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSimulatedCtvId(portalCtv.id);
+                              handleCtvClaimOpenTask(task);
+                            }}
+                            className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold transition"
+                          >
+                            Nhận đầu việc này
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* 4. Lịch sử Video đã nghiệm thu & Bảng kê quyết toán của riêng CTV */}
+            <div className="bg-white rounded-xl border border-slate-200/80 p-5 shadow-xs space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-xs font-semibold text-slate-900">
+                    3. Lịch sử Video đã nghiệm thu &amp; Quyết toán thù lao của {portalCtv.name} ({completedAndPaidTasks.length} video)
+                  </h4>
+                  <p className="text-2xs text-slate-500 mt-0.5">
+                    Minh bạch trạng thái nghiệm thu, số vòng chỉnh sửa, link đăng kênh và mã phiếu DNTT / Ủy nhiệm chi.
+                  </p>
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="border-b border-slate-200 bg-slate-50 text-slate-500 font-semibold text-2xs">
+                      <th className="py-2.5 px-3">MÃ VIỆC</th>
+                      <th className="py-2.5 px-3">TIÊU ĐỀ VIDEO &amp; NHÃN HÀNG</th>
+                      <th className="py-2.5 px-3">VÒNG DUYỆT &amp; BÀI ĐĂNG</th>
+                      <th className="py-2.5 px-3 text-right">THÙ LAO GROSS</th>
+                      <th className="py-2.5 px-3 text-center">TRẠNG THÁI</th>
+                      <th className="py-2.5 px-3 text-right">PHIẾU DNTT / UNC</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {completedAndPaidTasks.map(task => (
+                      <tr key={task.id} className="hover:bg-slate-50/60">
+                        <td className="py-2.5 px-3 font-mono font-semibold text-2xs text-slate-600">
+                          {task.taskCode}
+                        </td>
+                        <td className="py-2.5 px-3">
+                          <div className="font-semibold text-slate-900">{task.title}</div>
+                          <div className="text-2xs text-slate-500">
+                            {task.brandName} • SKU: {task.linkedSku}
+                          </div>
+                        </td>
+                        <td className="py-2.5 px-3 text-2xs">
+                          <span className="font-medium text-slate-700 block">
+                            Bản chốt v{task.videoDeliverables?.currentVersion || 1} ({(task.feedbackLogs || []).length} nhận xét)
+                          </span>
+                          {task.videoDeliverables?.publishedChannelUrl && (
+                            <a
+                              href={task.videoDeliverables.publishedChannelUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-blue-600 hover:underline font-medium"
+                            >
+                              Xem bài đăng trên kênh ↗
+                            </a>
+                          )}
+                        </td>
+                        <td className="py-2.5 px-3 text-right font-mono font-semibold text-slate-900">
+                          {formatVnd(task.remuneration)}
+                        </td>
+                        <td className="py-2.5 px-3 text-center">{renderStatusBadge(task.status)}</td>
+                        <td className="py-2.5 px-3 text-right font-mono text-2xs">
+                          {task.dnttCode ? (
+                            <div>
+                              <span className="font-semibold text-emerald-700 block">{task.dnttCode}</span>
+                              <span className="text-slate-400">{task.paymentRef}</span>
+                            </div>
+                          ) : (
+                            <span className="text-amber-700 font-sans font-medium">Chờ lập DNTT</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ========================================================================= */}
       {/* TAB 6: TRAO ĐỔI NHANH (DISCUSSION)                                        */}
       {/* ========================================================================= */}
       {activeTab === 'DISCUSSION' && (
-        <div className="bg-white border border-slate-200/80 shadow-xs rounded-2xl flex flex-col h-[540px] overflow-hidden animate-in fade-in duration-150">
-          <div className="p-3.5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-xl bg-blue-600 text-white font-semibold flex items-center justify-center text-xs">
-                VJ
-              </div>
-              <div>
-                <h4 className="text-xs font-semibold text-slate-900">
-                  Trao đổi sản xuất: VJ / CTV ⇄ Chuyên viên Content B2C
-                </h4>
-                <p className="text-2xs text-slate-500">
-                  Giải đáp kịch bản, xác nhận vận đơn hàng mẫu 48h, góp ý góc quay và âm thanh
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex-1 p-4 overflow-y-auto space-y-3 text-xs bg-slate-50/20">
-            {ctvChatMessages.map(msg => {
-              const isCtv = msg.sender === 'CTV';
-              return (
-                <div key={msg.id} className={`flex items-start gap-2.5 ${isCtv ? 'flex-row-reverse' : 'flex-row'}`}>
-                  <div
-                    className={`w-7 h-7 rounded-full flex items-center justify-center font-semibold text-2xs text-white shrink-0 ${
-                      isCtv ? 'bg-blue-600' : 'bg-slate-700'
-                    }`}
-                  >
-                    {isCtv ? 'VJ' : 'B2C'}
-                  </div>
-                  <div className={`max-w-[70%] space-y-1 ${isCtv ? 'items-end' : 'items-start'}`}>
-                    <div
-                      className={`flex items-center gap-2 text-2xs text-slate-400 ${
-                        isCtv ? 'justify-end' : 'justify-start'
-                      }`}
-                    >
-                      <span className="font-semibold text-slate-700">{msg.senderName}</span>
-                      <span>•</span>
-                      <span>{msg.time}</span>
-                    </div>
-                    <div
-                      className={`p-3 rounded-2xl leading-relaxed text-xs ${
-                        isCtv
-                          ? 'bg-blue-600 text-white rounded-tr-none'
-                          : 'bg-white text-slate-800 border border-slate-200/80 rounded-tl-none shadow-2xs'
-                      }`}
-                    >
-                      {msg.content}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          <form onSubmit={handleSendCtvChat} className="p-3 border-t border-slate-100 bg-white flex items-center gap-2">
-            <input
-              type="text"
-              value={newCtvChatText}
-              onChange={(e) => setNewCtvChatText(e.target.value)}
-              placeholder="Nhập nội dung trao đổi với nhóm sản xuất..."
-              className="flex-1 text-xs bg-slate-50 text-slate-900 placeholder-slate-400 border border-slate-200 rounded-xl px-3.5 py-2.5 outline-none focus:border-blue-500 focus:bg-white transition"
-            />
-            <button
-              type="submit"
-              disabled={!newCtvChatText.trim()}
-              className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white font-semibold text-xs transition flex items-center gap-1.5 shadow-2xs"
-            >
-              <Send className="w-3.5 h-3.5" />
-              <span>Gửi</span>
-            </button>
-          </form>
-        </div>
+        <PartnerDiscussion family="CTV" root={isCtvPartner ? `ctv:${currentUser?.linkedEntityId || 'unassigned'}` : undefined} actorId={currentUser?.id || 'guest'} />
       )}
 
-      {/* ============================================================== */}
       {/* MODAL 1: TẠO HOẶC GIAO TASK VIDEO (CÓ CHECK ĐƠN GẤP < 5 NGÀY)    */}
       {/* ============================================================== */}
       <Presence show={!!isCreateTaskModalOpen}>

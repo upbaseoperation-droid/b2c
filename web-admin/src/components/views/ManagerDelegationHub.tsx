@@ -29,8 +29,8 @@ import {
   ArrowRight,
   TrendingUp,
   Coins,
-  GitFork,
-  Database
+  Database,
+  GitFork
 } from 'lucide-react';
 import { 
   UserProfile, 
@@ -52,9 +52,9 @@ import {
   INITIAL_DEPARTMENT_ACCESS_RULES,
   ROLE_DISPLAY_NAME
 } from '../../lib/rbacData';
-import { MasterDataMindmapView } from './MasterDataMindmapView';
 import { Avatar, Button, Presence, Segmented, Status , ChannelTag } from '../ui';
 import { formatVndShort } from '../../lib/format';
+import { MasterDataMindmapView } from './MasterDataMindmapView';
 
 interface ManagerDelegationHubProps {
   currentUser: UserProfile;
@@ -68,6 +68,7 @@ interface ManagerDelegationHubProps {
   onAddTask: (task: SlaTask) => void;
   onPingStaff?: (staffName: string, message: string) => void;
   onNotify?: (msg: string) => void;
+  onNavigateToDashboard?: (tabKey: string) => void;
 }
 
 export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
@@ -81,17 +82,21 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
   tasks,
   onAddTask,
   onPingStaff,
-  onNotify
+  onNotify,
+  onNavigateToDashboard
 }) => {
   const isGrowthManager = currentUser.role === 'GROWTH_MANAGER';
   const isMediaManager = currentUser.role === 'MEDIA_MANAGER';
 
   // Active Section Tab
-  const [activeSection, setActiveSection] = useState<'BRANDS' | 'STORES' | 'LEADER_TEAMS' | 'STAFF' | 'TASKS' | 'MINDMAP'>(
-    isGrowthManager || isMediaManager ? 'STAFF' : 'BRANDS'
+  const [activeSection, setActiveSection] = useState<'STORES' | 'BRANDS' | 'STAFF' | 'TASKS' | 'LEADER_TEAMS'>(
+    isGrowthManager || isMediaManager ? 'STAFF' : 'STORES'
   );
-  const [selectedLeaderTeam, setSelectedLeaderTeam] = useState<'ALL' | 'TEAM_1' | 'TEAM_2' | 'TEAM_MULTI'>('ALL');
   const [leaderConsoleViewMode, setLeaderConsoleViewMode] = useState<'STORES_ASSIGN' | 'WORKLOAD_BALANCE'>('STORES_ASSIGN');
+  const [selectedLeaderTeam, setSelectedLeaderTeam] = useState<'ALL' | 'TEAM_1' | 'TEAM_2'>('ALL');
+  const [staffSubView, setStaffSubView] = useState<'WORKLOAD' | 'DIRECTORY'>(
+    isGrowthManager || isMediaManager ? 'DIRECTORY' : 'WORKLOAD'
+  );
 
   // Bộ lọc nhân sự theo Khối của Trưởng phòng (Marketing B2C / Growth / Media)
   const [deptStaffScope, setDeptStaffScope] = useState<SystemDepartmentScope>(
@@ -104,9 +109,11 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
     if (currentUser.role === 'GROWTH_MANAGER') {
       setDeptStaffScope('GROWTH');
       setActiveSection('STAFF');
+      setStaffSubView('DIRECTORY');
     } else if (currentUser.role === 'MEDIA_MANAGER') {
       setDeptStaffScope('MEDIA');
       setActiveSection('STAFF');
+      setStaffSubView('DIRECTORY');
     } else if (currentUser.role === 'MANAGER') {
       setDeptStaffScope('MARKETING_B2C');
     }
@@ -165,12 +172,32 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
   const [selectedStaffFilter, setSelectedStaffFilter] = useState('ALL');
   const [selectedBrandFilter, setSelectedBrandFilter] = useState('ALL');
 
+  const displayedBrands = useMemo(() => {
+    const q = searchTerm.trim().toLowerCase();
+    return brands.filter(b => {
+      if (selectedBrandFilter !== 'ALL') {
+        const pic = b.bookingPicLead || 'Đặng Thị Yến Nhi';
+        if (pic !== selectedBrandFilter) return false;
+      }
+      if (q) {
+        const matchName = b.name.toLowerCase().includes(q);
+        const matchCompany = (b.companyName || '').toLowerCase().includes(q);
+        const matchCat = (b.category || '').toLowerCase().includes(q);
+        const matchPic = (b.bookingPicLead || '').toLowerCase().includes(q) ||
+                         (b.accountPic || '').toLowerCase().includes(q) ||
+                         (b.growthPic || '').toLowerCase().includes(q);
+        if (!matchName && !matchCompany && !matchCat && !matchPic) return false;
+      }
+      return true;
+    });
+  }, [brands, searchTerm, selectedBrandFilter]);
+
   // Bộ lọc danh sách gian hàng (mặc định chỉ lọc gian B2C làm plan)
   const [storeFilterMode, setStoreFilterMode] = useState<'B2C_ONLY' | 'ALL'>('B2C_ONLY');
   const [storePlatformFilter, setStorePlatformFilter] = useState<'ALL' | 'TikTok Shop' | 'Shopee Mall' | 'Lazada'>('ALL');
   const [storeSearchTerm, setStoreSearchTerm] = useState('');
 
-  // Danh sách gian hàng B2C làm kế hoạch tháng (16 gian hàng)
+  // Danh sách gian hàng B2C làm kế hoạch tháng (69 gian hàng)
   const b2cPlanStores = useMemo(() => {
     return storePortfolios.filter(s => Boolean(s.requiresB2cPlan || s.isB2cManaged));
   }, [storePortfolios]);
@@ -182,6 +209,13 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
       if (storeFilterMode === 'B2C_ONLY') {
         const isB2c = Boolean(store.requiresB2cPlan || store.isB2cManaged);
         if (!isB2c) return false;
+      }
+
+      // 1b. Lọc theo nhóm mô hình 2 tầng (Trưởng nhóm vs Duyệt thẳng Trưởng phòng)
+      if (selectedLeaderTeam !== 'ALL') {
+        const isAssignedLeader = Boolean(store.hasBookingLeader && store.bookingLeader);
+        if (selectedLeaderTeam === 'TEAM_1' && !isAssignedLeader) return false;
+        if (selectedLeaderTeam === 'TEAM_2' && isAssignedLeader) return false;
       }
 
       // 2. Lọc theo nhân sự phụ trách
@@ -209,7 +243,7 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
 
       return true;
     });
-  }, [storePortfolios, storeFilterMode, selectedStaffFilter, storePlatformFilter, storeSearchTerm]);
+  }, [storePortfolios, storeFilterMode, selectedLeaderTeam, selectedStaffFilter, storePlatformFilter, storeSearchTerm]);
 
   // Modals
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
@@ -459,45 +493,84 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
     setEditingStore(store);
   };
 
-  // Save Store Assignment
+  // Save Store Assignment (lưu vết bàn giao nếu đổi PIC để bảo toàn lịch sử)
   const handleSaveStoreAssignment = (storeId: string, b2cOwners: string[], notes: string) => {
     const targetStore = storePortfolios.find(s => s.id === storeId);
     if (!targetStore) return;
 
+    const prevOwner = (targetStore.b2cOwners && targetStore.b2cOwners[0]) || targetStore.b2cOwnerName || '';
+    const nextOwner = b2cOwners[0] || '';
+    const isPicChanged = Boolean(prevOwner && nextOwner && prevOwner !== nextOwner);
+    const today = new Date().toISOString().slice(0, 10);
+
     const updated: StorePortfolioItem = {
       ...targetStore,
+      ...(isPicChanged ? {
+        previousPic: prevOwner,
+        handoverEffectiveDate: today,
+      } : {}),
       b2cOwners: b2cOwners,
       b2cOwnerName: b2cOwners.join(', '),
-      assignmentNotes: notes
+      primaryPic: nextOwner || targetStore.primaryPic,
+      assignedStaff: nextOwner || targetStore.assignedStaff,
+      assignmentNotes: notes,
+      updatedAt: new Date().toISOString(),
     };
 
     onUpdateStore(updated);
-    notify(`Đã phân công gian hàng "${updated.storeName}" cho: ${b2cOwners.join(' & ')}!`);
+    notify(
+      isPicChanged
+        ? `Đã bàn giao gian "${updated.storeName}" từ ${prevOwner} sang ${b2cOwners.join(' & ')} (hiệu lực ${today})`
+        : `Đã cập nhật phân công gian hàng "${updated.storeName}"`
+    );
     setEditingStore(null);
   };
 
+  const uniqueBrandPics = useMemo(() => {
+    const set = new Set<string>();
+    brands.forEach(b => {
+      if (b.bookingPicLead) set.add(b.bookingPicLead);
+    });
+    return Array.from(set).sort();
+  }, [brands]);
+
   return (
-    <div className="space-y-5">
-      {/* Thanh phân khu: chọn mục, thao tác chính bên phải */}
+    <div className="space-y-4">
+      {/* Thanh phân khu: 4 mục tác nghiệp điều phối (không trùng lặp báo cáo với Dashboard) */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Segmented
           value={activeSection}
           onChange={setActiveSection}
           items={[
-            { key: 'BRANDS', label: `Nhãn hàng · ${brands.length}` },
             { 
               key: 'STORES', 
               label: storeFilterMode === 'B2C_ONLY' 
-                ? `Gian B2C làm plan · ${b2cPlanStores.length}` 
-                : `Tất cả gian hàng · ${storePortfolios.length}` 
+                ? `Phân công Gian hàng (2 tầng) · ${b2cPlanStores.length}` 
+                : `Phân công Gian hàng · ${storePortfolios.length}` 
             },
-            { key: 'LEADER_TEAMS', label: 'Đội ngũ Leader & Member' },
-            { key: 'STAFF', label: `Tải nhân sự · ${staffList.length}` },
-            { key: 'TASKS', label: `Giao việc · ${tasks.length}` },
-            { key: 'MINDMAP', label: 'Sơ đồ dữ liệu' },
+            { key: 'BRANDS', label: `Phân công Nhãn hàng · ${brands.length}` },
+            { key: 'STAFF', label: `Cân bằng tải & Danh bạ · ${staffList.length}` },
+            { key: 'TASKS', label: `Giao việc & Chỉ đạo · ${tasks.length}` },
           ]}
         />
         <div className="flex items-center gap-2">
+          {onNavigateToDashboard && (
+            <button
+              type="button"
+              onClick={() => onNavigateToDashboard(
+                activeSection === 'BRANDS' ? 'dashboard-brand' :
+                activeSection === 'STAFF' ? 'dashboard-staff' : 'dashboard-store'
+              )}
+              className="px-3 py-1.5 rounded-lg border border-line bg-surface hover:bg-canvas text-xs font-medium text-ink-2 hover:text-ink flex items-center gap-1.5 transition"
+            >
+              <BarChart3 className="w-3.5 h-3.5 text-brand" />
+              <span>
+                {activeSection === 'BRANDS' ? 'Xem Dashboard Thương hiệu' :
+                 activeSection === 'STAFF' ? 'Xem Dashboard Hiệu suất Nhân viên' : 'Xem Dashboard Gian hàng'}
+              </span>
+              <ArrowRight className="w-3 h-3 text-ink-3" />
+            </button>
+          )}
           <Button icon={Send} onClick={() => setIsTaskModalOpen(true)}>Giao việc</Button>
           <Button
             variant="primary"
@@ -529,330 +602,173 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
       </div>
 
       {/* ========================================================================= */}
-      {/* 3. SECTION 1: PHÂN CHIA NHÃN HÀNG (BRAND PIC LEAD ALLOCATION)              */}
+      {/* 1. PHÂN CÔNG NHÃN HÀNG (BRAND PIC, ACCOUNT PIC, GROWTH PIC)               */}
       {/* ========================================================================= */}
       {activeSection === 'BRANDS' && (
-        <div className="bg-white rounded-2xl border border-slate-200/90 overflow-hidden shadow-xs">
-          <div className="p-4 border-b border-slate-200 bg-slate-50/70 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div>
-              <h3 className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
-                <Building2 className="w-4 h-4 text-blue-600" />
-                Danh sách nhãn hàng & trưởng nhóm phụ trách
-              </h3>
-              <p className="text-2xs text-slate-500 mt-0.5">
-                Trưởng phòng chỉ định Brand PIC chịu trách nhiệm lập kế hoạch, phân rã KOC và phối hợp cùng Brand Client
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-500 font-mono">
-                Tổng ngân sách giao: <strong className="text-slate-900 font-semibold">{formatVndShort(brands.reduce((s, b) => s + (b.planBudget || 0), 0))}</strong>
-              </span>
-            </div>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
-              <thead>
-                <tr className="bg-slate-100/70 text-slate-600 font-semibold border-b border-slate-200 text-2xs">
-                  <th className="py-3 px-4 min-w-[200px]">Nhãn hàng</th>
-                  <th className="py-3 px-4 min-w-[210px]">Brand PIC</th>
-                  <th className="py-3 px-3 min-w-[170px]">Account PIC</th>
-                  <th className="py-3 px-3 min-w-[170px]">Growth PIC</th>
-                  <th className="py-3 px-3 text-right">Ngân sách</th>
-                  <th className="py-3 px-3 text-right">GMV mục tiêu</th>
-                  <th className="py-3 px-3 text-center">Gian hàng</th>
-                  <th className="py-3 px-3 text-center w-24"><span className="sr-only">Thao tác</span></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {brands.map((brand) => {
-                  const brandStoresCount = storePortfolios.filter(s => 
-                    s.brandName.toLowerCase().includes(brand.name.toLowerCase()) && 
-                    (storeFilterMode === 'ALL' ? true : Boolean(s.requiresB2cPlan || s.isB2cManaged))
-                  ).length;
-
-                  return (
-                    <tr key={brand.id} className="hover:bg-slate-50 transition group">
-                      <td className="py-3.5 px-4">
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-8 h-8 rounded-md bg-sunken text-ink-2 font-semibold text-2xs flex items-center justify-center shrink-0">
-                            {brand.name.substring(0, 2).toUpperCase()}
-                          </div>
-                          <div>
-                            <span className="font-semibold text-slate-900 text-xs block">{brand.name}</span>
-                            <span className="text-2xs text-slate-400 block truncate max-w-[180px]">
-                              {brand.companyName || brand.category}
-                            </span>
-                          </div>
-                        </div>
-                      </td>
-
-                      {/* Brand PIC Dropdown */}
-                      <td className="py-3.5 px-4">
-                        <div className="flex items-center gap-2"><Avatar name={brand.bookingPicLead || 'Đặng Thị Yến Nhi' || '?'} size={22} /><select
-                          value={brand.bookingPicLead || 'Đặng Thị Yến Nhi'}
-                          onChange={(e) => {
-                            const updated = { ...brand, bookingPicLead: e.target.value };
-                            onUpdateBrand(updated);
-                            notify(`Đã gán Brand PIC của ${brand.name} cho: ${e.target.value}`);
-                          }}
-                          className="w-full min-w-0 text-xs font-medium px-2 py-1.5 bg-surface border border-line-strong rounded-md text-ink focus:outline-none focus:border-focus transition-colors"
-                        >
-                          {staffList.map(s => (
-                            <option key={s.id} value={s.name}>
-                              {s.name} ({s.roleTitle})
-                            </option>
-                          ))}
-                        </select></div>
-                      </td>
-
-                      {/* Account PIC Dropdown */}
-                      <td className="py-3.5 px-3">
-                        <div className="flex items-center gap-2"><Avatar name={brand.accountPic || 'Phạm Thị Nhài' || '?'} size={22} /><select
-                          value={brand.accountPic || 'Phạm Thị Nhài'}
-                          onChange={(e) => {
-                            const updated = { ...brand, accountPic: e.target.value };
-                            onUpdateBrand(updated);
-                            notify(`Đã gán Account PIC của ${brand.name} cho: ${e.target.value}`);
-                          }}
-                          className="w-full text-xs px-2 py-1.5 bg-slate-50 hover:bg-white border border-slate-200 rounded-lg text-slate-800 focus:outline-none focus:border-blue-500 transition shadow-2xs"
-                        >
-                          {staffList.filter(s => s.role === 'ACCOUNT' || s.role === 'GROWTH' || s.role === 'MANAGER').map(s => (
-                            <option key={s.id} value={s.name}>
-                              {s.name}
-                            </option>
-                          ))}
-                        </select></div>
-                      </td>
-
-                      {/* Growth PIC Dropdown */}
-                      <td className="py-3.5 px-3">
-                        <div className="flex items-center gap-2"><Avatar name={brand.growthPic || 'Hoàng Long' || '?'} size={22} /><select
-                          value={brand.growthPic || 'Hoàng Long'}
-                          onChange={(e) => {
-                            const updated = { ...brand, growthPic: e.target.value };
-                            onUpdateBrand(updated);
-                            notify(`Đã gán Growth PIC của ${brand.name} cho: ${e.target.value}`);
-                          }}
-                          className="w-full text-xs px-2 py-1.5 bg-slate-50 hover:bg-white border border-slate-200 rounded-lg text-slate-800 focus:outline-none focus:border-blue-500 transition shadow-2xs"
-                        >
-                          {staffList.filter(s => s.role === 'GROWTH' || s.role === 'MANAGER').map(s => (
-                            <option key={s.id} value={s.name}>
-                              {s.name}
-                            </option>
-                          ))}
-                        </select></div>
-                      </td>
-
-                      <td className="py-3.5 px-3 text-right font-mono font-semibold text-slate-800">
-                        {formatVndShort(brand.planBudget || 0)}
-                      </td>
-
-                      <td className="py-3.5 px-3 text-right font-mono font-semibold text-emerald-700">
-                        {formatVndShort(brand.targetGmv || 0)}
-                      </td>
-
-                      <td className="py-3.5 px-3 text-center">
-                        {brandStoresCount > 0 ? (<span className="tabular-nums text-slate-700">{brandStoresCount}</span>) : (<Status tone="warning">Chưa gán</Status>)}
-                      </td>
-
-                      <td className="py-3.5 px-3 text-center">
-                        <button
-                          onClick={() => handleOpenEditBrand(brand)}
-                          className="px-2.5 py-1 rounded text-xs font-semibold text-blue-700 hover:bg-blue-50 border border-blue-200 transition"
-                        >
-                          Chi tiết
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {/* ========================================================================= */}
-      {/* 4. SECTION 2: PHÂN CHIA GIAN HÀNG (STORE PORTFOLIO ASSIGNMENT)             */}
-      {/* ========================================================================= */}
-      {activeSection === 'STORES' && (
-        <div className="bg-white rounded-2xl border border-slate-200/90 overflow-hidden shadow-xs">
-          <div className="p-4 border-b border-slate-200 bg-slate-50/70 flex flex-col xl:flex-row xl:items-center justify-between gap-3">
-            <div>
-              <h3 className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
-                <Store className="w-4 h-4 text-blue-600" />
-                Danh sách gian hàng & chuyên viên tác nghiệp
-              </h3>
-              <p className="text-2xs text-slate-500 mt-0.5">
-                {storeFilterMode === 'B2C_ONLY'
-                  ? `Đang lọc: ${displayedStores.length}/${b2cPlanStores.length} gian hàng B2C phụ trách lập kế hoạch tháng`
-                  : `Đang hiển thị: ${displayedStores.length}/${storePortfolios.length} gian hàng phòng B2C`}
-              </p>
-            </div>
-            
-            <div className="flex items-center gap-2 flex-wrap">
-              {/* Segmented Switcher: B2C Plan Only (Default) vs All */}
-              <div className="inline-flex p-0.5 bg-slate-200/70 rounded-lg text-xs font-medium">
-                <button
-                  type="button"
-                  onClick={() => setStoreFilterMode('B2C_ONLY')}
-                  className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-all ${
-                    storeFilterMode === 'B2C_ONLY'
-                      ? 'bg-white text-blue-700 shadow-2xs'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  Chỉ gian B2C làm plan ({b2cPlanStores.length})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setStoreFilterMode('ALL')}
-                  className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-all ${
-                    storeFilterMode === 'ALL'
-                      ? 'bg-white text-slate-900 shadow-2xs'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  Tất cả gian ({storePortfolios.length})
-                </button>
-              </div>
-
-              {/* Search input */}
-              <div className="relative">
-                <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+        <div className="bg-surface rounded-xl border border-line overflow-hidden">
+          <div className="px-4 py-3 border-b border-line flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="relative min-w-[220px]">
+                <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-3" />
                 <input
                   type="text"
-                  placeholder="Tìm tên gian hàng, PIC..."
-                  value={storeSearchTerm}
-                  onChange={(e) => setStoreSearchTerm(e.target.value)}
-                  className="pl-8 pr-2.5 py-1.5 text-xs bg-white border border-slate-200 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500"
+                  placeholder="Tìm nhãn hàng, công ty, PIC..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-8 pr-3 py-1.5 text-xs bg-surface border border-line-strong rounded-md text-ink placeholder-ink-3 focus:outline-none focus:border-focus"
                 />
               </div>
 
-              {/* Platform Filter */}
               <select
-                value={storePlatformFilter}
-                onChange={(e) => setStorePlatformFilter(e.target.value as any)}
-                className="text-xs font-medium px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-slate-700 focus:outline-none"
+                value={selectedBrandFilter}
+                onChange={(e) => setSelectedBrandFilter(e.target.value)}
+                className="text-xs px-2.5 py-1.5 bg-surface border border-line-strong rounded-md text-ink focus:outline-none focus:border-focus"
               >
-                <option value="ALL">Tất cả sàn</option>
-                <option value="TikTok Shop">TikTok Shop</option>
-                <option value="Shopee Mall">Shopee Mall</option>
-                <option value="Lazada">Lazada</option>
-              </select>
-
-              {/* Staff Filter */}
-              <select
-                value={selectedStaffFilter}
-                onChange={(e) => setSelectedStaffFilter(e.target.value)}
-                className="text-xs font-medium px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-slate-700 focus:outline-none"
-              >
-                <option value="ALL">Tất cả nhân sự phụ trách</option>
-                {staffList.filter(s => s.role === 'BOOKING').map(s => (
-                  <option key={s.id} value={s.name}>{s.name}</option>
+                <option value="ALL">Tất cả Brand PIC</option>
+                {uniqueBrandPics.map(pic => (
+                  <option key={pic} value={pic}>{pic}</option>
                 ))}
               </select>
+
+              {(searchTerm || selectedBrandFilter !== 'ALL') && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchTerm('');
+                    setSelectedBrandFilter('ALL');
+                  }}
+                  className="text-2xs text-ink-3 hover:text-ink px-2 py-1 rounded bg-sunken transition"
+                >
+                  Xóa lọc ({displayedBrands.length}/{brands.length})
+                </button>
+              )}
+            </div>
+
+            <div className="text-2xs text-ink-3">
+              Gán đầu mối chịu trách nhiệm chính (Brand PIC, Account PIC, Growth PIC) cho <strong className="text-ink font-semibold">{displayedBrands.length}</strong> thương hiệu
             </div>
           </div>
 
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className="bg-slate-100/70 text-slate-600 font-semibold border-b border-slate-200 text-2xs">
-                  <th className="py-3 px-4 min-w-[200px]">Gian hàng & sàn</th>
-                  <th className="py-3 px-3">Nhãn hàng</th>
-                  <th className="py-3 px-3 text-center">Diện quản lý</th>
-                  <th className="py-3 px-4 min-w-[220px]">Nhân sự B2C Ops phụ trách</th>
-                  <th className="py-3 px-3">Account Owner</th>
-                  <th className="py-3 px-3 text-right">Target GMV</th>
-                  <th className="py-3 px-4 min-w-[200px]">Chỉ đạo riêng của trưởng phòng</th>
-                  <th className="py-3 px-3 text-center w-24">Cập nhật</th>
+                <tr className="bg-canvas text-ink-3 font-medium border-b border-line text-2xs">
+                  <th className="py-2.5 px-4 min-w-[200px]">Nhãn hàng</th>
+                  <th className="py-2.5 px-3 min-w-[185px]">Brand PIC (Booking Lead)</th>
+                  <th className="py-2.5 px-3 min-w-[180px]">Account PIC</th>
+                  <th className="py-2.5 px-3 min-w-[180px]">Growth PIC</th>
+                  <th className="py-2.5 px-3 text-center w-28">Số gian B2C</th>
+                  <th className="py-2.5 px-3 text-right w-28"><span className="sr-only">Thao tác</span></th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
-                {displayedStores.length === 0 ? (
+              <tbody className="divide-y divide-line">
+                {displayedBrands.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="py-10 text-center text-slate-400 text-xs">
-                      Không có gian hàng nào phù hợp với bộ lọc hiện tại.
+                    <td colSpan={6} className="py-10 text-center text-ink-3 text-xs">
+                      Không tìm thấy nhãn hàng phù hợp với bộ lọc.
                     </td>
                   </tr>
                 ) : (
-                  displayedStores.map((store) => {
-                    const isB2c = Boolean(store.requiresB2cPlan || store.isB2cManaged);
-                    const owners = store.b2cOwners || (store.b2cOwnerName ? store.b2cOwnerName.split(',').map(s => s.trim()) : ['Khánh Vy']);
+                  displayedBrands.map((brand) => {
+                    const brandStoresCount = storePortfolios.filter(s => 
+                      s.brandName.toLowerCase().includes(brand.name.toLowerCase()) && 
+                      (storeFilterMode === 'ALL' ? true : Boolean(s.requiresB2cPlan || s.isB2cManaged))
+                    ).length;
 
                     return (
-                      <tr key={store.id} className="hover:bg-slate-50 transition group">
+                      <tr key={brand.id} className="hover:bg-canvas transition-colors group">
                         <td className="py-3 px-4">
-                          <div className="font-semibold text-slate-900 text-xs">{store.storeName}</div>
-                          <ChannelTag channel={store.platform} />
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-7 h-7 rounded-md bg-sunken text-ink-2 font-semibold text-2xs flex items-center justify-center shrink-0">
+                              {brand.name.substring(0, 2).toUpperCase()}
+                            </div>
+                            <div className="min-w-0">
+                              <span className="font-semibold text-ink text-xs block truncate">{brand.name}</span>
+                              <span className="text-2xs text-ink-3 block truncate max-w-[180px]">
+                                {brand.companyName || brand.category}
+                              </span>
+                            </div>
+                          </div>
                         </td>
 
-                        <td className="py-3 px-3 font-semibold text-slate-700">
-                          {store.brandName}
+                        {/* Brand PIC Dropdown */}
+                        <td className="py-3 px-3">
+                          <div className="flex items-center gap-2">
+                            <Avatar name={brand.bookingPicLead || 'Đặng Thị Yến Nhi'} size={22} />
+                            <select
+                              value={brand.bookingPicLead || 'Đặng Thị Yến Nhi'}
+                              onChange={(e) => {
+                                const updated = { ...brand, bookingPicLead: e.target.value };
+                                onUpdateBrand(updated);
+                                notify(`Đã gán Brand PIC của ${brand.name} cho ${e.target.value}`);
+                              }}
+                              className="w-full min-w-0 text-xs font-medium px-2 py-1.5 bg-surface hover:bg-canvas border border-line rounded-md text-ink focus:outline-none focus:border-focus transition-colors"
+                            >
+                              {staffList.map(s => (
+                                <option key={s.id} value={s.name}>
+                                  {s.name}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        </td>
+
+                        {/* Account PIC Dropdown */}
+                        <td className="py-3 px-3">
+                          <div className="flex items-center gap-2">
+                            <Avatar name={brand.accountPic || 'Phạm Thị Nhài'} size={22} />
+                            <select
+                              value={brand.accountPic || 'Phạm Thị Nhài'}
+                              onChange={(e) => {
+                                const updated = { ...brand, accountPic: e.target.value };
+                                onUpdateBrand(updated);
+                                notify(`Đã gán Account PIC của ${brand.name} cho ${e.target.value}`);
+                              }}
+                              className="w-full min-w-0 text-xs px-2 py-1.5 bg-surface hover:bg-canvas border border-line rounded-md text-ink focus:outline-none focus:border-focus transition-colors"
+                            >
+                              {staffList.filter(s => s.role === 'ACCOUNT' || s.role === 'GROWTH' || s.role === 'MANAGER').map(s => (
+                                <option key={s.id} value={s.name}>
+                                  {s.name}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        </td>
+
+                        {/* Growth PIC Dropdown */}
+                        <td className="py-3 px-3">
+                          <div className="flex items-center gap-2">
+                            <Avatar name={brand.growthPic || 'Hoàng Long'} size={22} />
+                            <select
+                              value={brand.growthPic || 'Hoàng Long'}
+                              onChange={(e) => {
+                                const updated = { ...brand, growthPic: e.target.value };
+                                onUpdateBrand(updated);
+                                notify(`Đã gán Growth PIC của ${brand.name} cho ${e.target.value}`);
+                              }}
+                              className="w-full min-w-0 text-xs px-2 py-1.5 bg-surface hover:bg-canvas border border-line rounded-md text-ink focus:outline-none focus:border-focus transition-colors"
+                            >
+                              {staffList.filter(s => s.role === 'GROWTH' || s.role === 'MANAGER').map(s => (
+                                <option key={s.id} value={s.name}>
+                                  {s.name}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
                         </td>
 
                         <td className="py-3 px-3 text-center">
-                          {isB2c ? (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-2xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                              Làm plan B2C
-                            </span>
+                          {brandStoresCount > 0 ? (
+                            <span className="tabular-nums font-medium text-ink-2">{brandStoresCount} gian</span>
                           ) : (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-2xs font-medium bg-slate-100 text-slate-500 border border-slate-200">
-                              Miễn trừ plan
-                            </span>
+                            <Status tone="warning">Chưa gán</Status>
                           )}
                         </td>
 
-                        {/* Assignee Selector */}
-                        <td className="py-3 px-4">
-                          <select
-                            value={owners[0] || 'Khánh Vy'}
-                            onChange={(e) => {
-                              const newOwners = [e.target.value];
-                              handleSaveStoreAssignment(store.id, newOwners, store.assignmentNotes || '');
-                            }}
-                            className="w-full min-w-0 text-xs font-medium px-2 py-1.5 bg-surface border border-line-strong rounded-md text-ink focus:outline-none focus:border-focus transition-colors"
-                          >
-                            {staffList.filter(s => s.role === 'BOOKING' || s.role === 'CONTENT').map(s => (
-                              <option key={s.id} value={s.name}>
-                                {s.name} ({s.roleTitle})
-                              </option>
-                            ))}
-                          </select>
-                        </td>
-
-                        <td className="py-3 px-3 text-slate-600">
-                          {store.accountOwnerName || 'Phạm Thị Nhài'}
-                        </td>
-
-                        <td className="py-3 px-3 text-right font-mono font-semibold text-emerald-700">
-                          {formatVndShort((store.monthlyTargetGmv || 0))}
-                        </td>
-
-                        {/* Assignment Notes */}
-                        <td className="py-3 px-4">
-                          <input
-                            type="text"
-                            placeholder="Ghi chú: Tập trung live, book KOC micro..."
-                            defaultValue={store.assignmentNotes || ''}
-                            onBlur={(e) => {
-                              if (e.target.value !== store.assignmentNotes) {
-                                handleSaveStoreAssignment(store.id, owners, e.target.value);
-                              }
-                            }}
-                            className="w-full text-xs px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-blue-500 transition"
-                          />
-                        </td>
-
-                        <td className="py-3 px-3 text-center">
-                          <button
-                            onClick={() => handleOpenEditStore(store)}
-                            className="px-2.5 py-1 rounded text-xs font-semibold text-slate-700 hover:bg-slate-100 border border-slate-200 transition"
-                          >
-                            Chi tiết
-                          </button>
+                        <td className="py-3 px-3 text-right">
+                          <Button size="sm" variant="secondary" onClick={() => handleOpenEditBrand(brand)}>
+                            Cấu hình
+                          </Button>
                         </td>
                       </tr>
                     );
@@ -865,836 +781,640 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
       )}
 
       {/* ========================================================================= */}
-      {/* SECTION: ĐỘI NGŨ LEADER & TEAM MEMBER (CƠ CHẾ PHÂN CÔNG 2 TẦNG)           */}
+      {/* 2. PHÂN CÔNG GIAN HÀNG 2 TẦNG (HỢP NHẤT TRƯỞNG NHÓM & CHUYÊN VIÊN)         */}
       {/* ========================================================================= */}
-      {activeSection === 'LEADER_TEAMS' && (
-        <div className="space-y-5">
-          {/* Header Card & Filter */}
-          <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-xs">
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-              <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="text-base font-semibold text-slate-900 flex items-center gap-2">
-                    <Users className="w-5 h-5 text-blue-600" />
-                    <span>Bàn Điều Phối Của Trưởng Nhóm & Chuyên Viên (Leader & Team Member Console)</span>
-                  </h3>
-                  <span className="text-2xs font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
-                    Mô hình 2 Tầng
-                  </span>
-                </div>
-                <p className="text-xs text-slate-500 mt-1 max-w-3xl">
-                  Trưởng phòng phân bổ nhóm gian hàng cho các Trưởng nhóm (Leader) • Trưởng nhóm chủ động phân công Chuyên viên chính (Primary PIC), giao hạn ngạch (quota) và kiểm soát cân bằng tải công việc trong nhóm.
-                </p>
-              </div>
-
-              {/* View Mode Toggle: Phân Công Gian Hàng vs Cân Bằng Tải */}
-              <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-xl border border-slate-200 shrink-0">
-                <button
-                  onClick={() => setLeaderConsoleViewMode('STORES_ASSIGN')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition ${
-                    leaderConsoleViewMode === 'STORES_ASSIGN'
-                      ? 'bg-white text-slate-900 shadow-2xs font-semibold'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  <Store className="w-3.5 h-3.5" />
-                  <span>Phân công gian hàng</span>
-                </button>
-                <button
-                  onClick={() => setLeaderConsoleViewMode('WORKLOAD_BALANCE')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition ${
-                    leaderConsoleViewMode === 'WORKLOAD_BALANCE'
-                      ? 'bg-white text-slate-900 shadow-2xs font-semibold'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  <UserCheck className="w-3.5 h-3.5" />
-                  <span>Cân bằng tải ({staffList.length} nhân sự)</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Filter by Team */}
-            <div className="flex items-center gap-2 mt-4 pt-4 border-t border-slate-100 flex-wrap">
-              <span className="text-xs font-semibold text-slate-600">Lọc theo nhóm:</span>
-              <button
-                onClick={() => setSelectedLeaderTeam('ALL')}
-                className={`px-3 py-1 rounded-lg text-xs font-semibold transition ${
-                  selectedLeaderTeam === 'ALL'
-                    ? 'bg-slate-900 text-white'
-                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                }`}
-              >
-                Tất cả gian hàng ({storePortfolios.length} gian)
-              </button>
-              {BOOKING_TEAMS_STRUCTURE.map(t => (
-                <button
-                  key={t.id}
-                  onClick={() => setSelectedLeaderTeam(t.teamCode as any)}
-                  className={`px-3 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition ${
-                    selectedLeaderTeam === t.teamCode
-                      ? 'bg-blue-600 text-white shadow-2xs'
-                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                  }`}
-                >
-                  <span>{t.name.split('(')[0].trim()}</span>
-                  <span className="text-2xs opacity-80">({t.leaderName.split(' ').slice(-2).join(' ')})</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* 3 Team Cards Overview */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {activeSection === 'STORES' && (
+        <div className="space-y-4">
+          {/* 2 Thẻ Nhóm Quản Trị (Mô hình 2 tầng B2C) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
             {BOOKING_TEAMS_STRUCTURE.map(team => {
-              const isSelected = selectedLeaderTeam === 'ALL' || selectedLeaderTeam === team.teamCode;
+              const isSelected = selectedLeaderTeam === (team.teamCode as any);
+              const isLeaderGroup = team.id === 'team-tam';
               return (
-                <div
+                <button
                   key={team.id}
-                  className={`bg-white rounded-2xl border p-4 transition ${
-                    isSelected ? 'border-blue-300 ring-2 ring-blue-500/10 shadow-xs' : 'border-slate-200 opacity-60'
+                  type="button"
+                  onClick={() => setSelectedLeaderTeam(isSelected ? 'ALL' : (team.teamCode as any))}
+                  className={`text-left bg-surface rounded-xl border p-3.5 transition flex items-center justify-between gap-3 ${
+                    isSelected
+                      ? 'border-brand ring-1 ring-brand/20 bg-brand-soft/15'
+                      : 'border-line hover:border-line-strong'
                   }`}
                 >
-                  {/* Leader Header */}
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-10 h-10 rounded-xl bg-blue-600 text-white font-semibold flex items-center justify-center text-sm shadow-xs">
-                        {team.leaderAvatar}
-                      </div>
-                      <div>
-                        <span className="text-2xs font-semibold px-2 py-0.2 rounded bg-blue-50 text-blue-700 border border-blue-200">
-                          {team.teamCode}
+                  <div className="flex items-center gap-3 min-w-0">
+                    <Avatar name={team.leaderName} size={38} />
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-2xs font-mono font-semibold px-1.5 py-0.5 rounded bg-brand-soft text-brand border border-brand-line">
+                          {isLeaderGroup ? 'Nhóm có Trưởng nhóm' : 'Báo cáo trực tiếp Trưởng phòng'}
                         </span>
-                        <h4 className="text-xs font-semibold text-slate-900 mt-0.5">{team.leaderName}</h4>
-                        <span className="text-2xs text-slate-500 block">{team.leaderTitle}</span>
+                        <span className="text-xs font-semibold text-ink truncate">{team.leaderName}</span>
                       </div>
-                    </div>
-                    <span className="text-2xs bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full font-semibold">
-                      Tải an toàn
-                    </span>
-                  </div>
-
-                  {/* Team Scope */}
-                  <div className="mt-3 pt-3 border-t border-slate-100 grid grid-cols-3 gap-2 text-center">
-                    <div className="bg-slate-50 p-2 rounded-lg">
-                      <span className="text-2xs text-slate-400 block">Gian hàng</span>
-                      <strong className="text-xs font-mono font-semibold text-slate-900">{team.managedStoresCount}</strong>
-                    </div>
-                    <div className="bg-slate-50 p-2 rounded-lg">
-                      <span className="text-2xs text-slate-400 block">Ngân sách</span>
-                      <strong className="text-xs font-mono font-semibold text-blue-700">{formatVndShort(team.totalMonthlyTargetBudget)}</strong>
-                    </div>
-                    <div className="bg-slate-50 p-2 rounded-lg">
-                      <span className="text-2xs text-slate-400 block">Chỉ tiêu clip</span>
-                      <strong className="text-xs font-mono font-semibold text-slate-900">{team.totalMonthlyTargetClips}</strong>
+                      <p className="text-2xs text-ink-3 mt-0.5 truncate">
+                        {isLeaderGroup
+                          ? 'Sơ duyệt kịch bản/plan cho 8 gian hàng trước khi trình Trưởng phòng'
+                          : 'Chuyên viên chủ động lập phân rã & trình duyệt thẳng Trưởng phòng Đặng Thị Yến Nhi'}
+                      </p>
                     </div>
                   </div>
-
-                  {/* Team Members List */}
-                  <div className="mt-3">
-                    <span className="text-2xs text-slate-400 font-semibold   block mb-1.5">
-                      Thành viên trong nhóm ({team.members.length} chuyên viên)
-                    </span>
-                    <div className="space-y-1.5">
-                      {team.members.map(m => (
-                        <div key={m.id} className="flex items-center justify-between p-1.5 rounded-lg bg-slate-50 text-2xs hover:bg-blue-50/50 transition">
-                          <div className="flex items-center gap-1.5">
-                            <span className="w-5 h-5 rounded-md bg-white border border-slate-200 flex items-center justify-center font-semibold text-2xs text-slate-700">
-                              {m.avatar}
-                            </span>
-                            <div>
-                              <strong className="text-slate-900 block leading-tight">{m.name}</strong>
-                              <span className="text-2xs text-slate-400">{m.expertise.split('&')[0]}</span>
-                            </div>
-                          </div>
-                          <span className="font-mono text-2xs text-blue-700 font-semibold">
-                            {m.assignedClips || 0}/{m.maxCapacityClips} clip
-                          </span>
-                        </div>
-                      ))}
-                    </div>
+                  <div className="text-right shrink-0 pl-2 border-l border-line">
+                    <div className="text-base font-mono font-bold text-ink">{team.managedStoresCount} gian</div>
+                    <div className="text-2xs text-ink-3">{team.members.length} chuyên viên</div>
                   </div>
-                </div>
+                </button>
               );
             })}
           </div>
 
-          {/* VIEW MODE 1: BẢNG PHÂN CÔNG GIAN HÀNG 2 TẦNG (LEADER & PRIMARY PIC) */}
-          {leaderConsoleViewMode === 'STORES_ASSIGN' && (
-            <div className="bg-white rounded-2xl border border-slate-200/90 overflow-hidden shadow-xs">
-              <div className="p-4 border-b border-slate-200 bg-slate-50/70 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div>
-                  <h4 className="text-xs font-semibold text-slate-900 flex items-center gap-1.5">
-                    <Store className="w-4 h-4 text-blue-600" />
-                    <span>Bảng Phân Công Gian Hàng Cho Chuyên Viên Dưới Sự Giám Sát Của Leader</span>
-                  </h4>
-                  <p className="text-2xs text-slate-500 mt-0.5">
-                    Trưởng nhóm trực tiếp chỉ định Chuyên viên chính (Primary PIC) và ghi chú chỉ đạo chuyên môn cho từng gian hàng
-                  </p>
+          <div className="bg-surface rounded-xl border border-line overflow-hidden">
+            <div className="px-4 py-3 border-b border-line flex flex-col xl:flex-row xl:items-center justify-between gap-3">
+              <div className="flex items-center gap-2 flex-wrap">
+                {/* Segmented Switcher: B2C Plan Only (Default) vs All */}
+                <Segmented
+                  value={storeFilterMode}
+                  onChange={setStoreFilterMode}
+                  items={[
+                    { key: 'B2C_ONLY', label: `Gian B2C làm plan · ${b2cPlanStores.length}` },
+                    { key: 'ALL', label: `Tất cả gian · ${storePortfolios.length}` },
+                  ]}
+                />
+
+                {/* Lọc luồng duyệt 2 tầng */}
+                <select
+                  value={selectedLeaderTeam}
+                  onChange={(e) => setSelectedLeaderTeam(e.target.value as any)}
+                  className="text-xs px-2.5 py-1.5 bg-surface border border-line-strong rounded-md text-ink focus:outline-none focus:border-focus"
+                >
+                  <option value="ALL">Tất cả luồng duyệt (2 tầng)</option>
+                  <option value="TEAM_1">Qua Trưởng nhóm Nguyễn Thị Ngọc Tâm (8 gian)</option>
+                  <option value="TEAM_2">Duyệt thẳng Trưởng phòng Đặng Thị Yến Nhi (61 gian)</option>
+                </select>
+
+                {/* Search input */}
+                <div className="relative min-w-[200px]">
+                  <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-3" />
+                  <input
+                    type="text"
+                    placeholder="Tìm tên gian hàng, Brand, PIC..."
+                    value={storeSearchTerm}
+                    onChange={(e) => setStoreSearchTerm(e.target.value)}
+                    className="w-full pl-8 pr-2.5 py-1.5 text-xs bg-surface border border-line-strong rounded-md text-ink placeholder-ink-3 focus:outline-none focus:border-focus"
+                  />
                 </div>
-                <span className="text-xs text-slate-500 font-mono">
-                  Hiển thị: <strong className="text-slate-900 font-semibold">{b2cPlanStores.length}</strong> gian B2C làm plan
-                </span>
+
+                {/* Platform Filter */}
+                <select
+                  value={storePlatformFilter}
+                  onChange={(e) => setStorePlatformFilter(e.target.value as any)}
+                  className="text-xs px-2.5 py-1.5 bg-surface border border-line-strong rounded-md text-ink focus:outline-none focus:border-focus"
+                >
+                  <option value="ALL">Tất cả sàn</option>
+                  <option value="TikTok Shop">TikTok Shop</option>
+                  <option value="Shopee Mall">Shopee Mall</option>
+                  <option value="Lazada">Lazada</option>
+                </select>
+
+                {/* Staff Filter */}
+                <select
+                  value={selectedStaffFilter}
+                  onChange={(e) => setSelectedStaffFilter(e.target.value)}
+                  className="text-xs px-2.5 py-1.5 bg-surface border border-line-strong rounded-md text-ink focus:outline-none focus:border-focus"
+                >
+                  <option value="ALL">Tất cả chuyên viên</option>
+                  {staffList.filter(s => s.role === 'BOOKING').map(s => (
+                    <option key={s.id} value={s.name}>{s.name}</option>
+                  ))}
+                </select>
               </div>
 
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs border-collapse">
-                  <thead>
-                    <tr className="bg-slate-100 text-slate-700 font-semibold border-b border-slate-200 text-2xs">
-                      <th className="py-3 px-3 w-56">Gian hàng / Thương hiệu</th>
-                      <th className="py-3 px-3 w-48">Trưởng nhóm phụ trách (Leader)</th>
-                      <th className="py-3 px-3 w-48">Chuyên viên chính (Primary PIC)</th>
-                      <th className="py-3 px-3 w-44">Thành viên cùng chạy</th>
-                      <th className="py-3 px-3 text-right w-28">Ngân sách</th>
-                      <th className="py-3 px-3 min-w-[200px]">Ghi chú chỉ đạo của Leader</th>
-                      <th className="py-3 px-3 text-center w-24">Thao tác</th>
+              <div className="text-2xs text-ink-3">
+                Hiển thị <strong className="text-ink font-semibold">{displayedStores.length}</strong> gian hàng · Đổi chuyên viên tự động lưu vết bàn giao
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="bg-canvas text-ink-3 font-medium border-b border-line text-2xs">
+                    <th className="py-2.5 px-4 min-w-[200px]">Gian hàng & sàn</th>
+                    <th className="py-2.5 px-3">Nhãn hàng</th>
+                    <th className="py-2.5 px-3 min-w-[195px]">Cấp duyệt trung gian (Leader)</th>
+                    <th className="py-2.5 px-3 min-w-[200px]">Chuyên viên B2C phụ trách</th>
+                    <th className="py-2.5 px-3">Account PIC</th>
+                    <th className="py-2.5 px-3 min-w-[200px]">Ghi chú chỉ đạo điều phối</th>
+                    <th className="py-2.5 px-3 text-right w-28"><span className="sr-only">Thao tác</span></th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-line">
+                  {displayedStores.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="py-10 text-center text-ink-3 text-xs">
+                        Không có gian hàng nào phù hợp với bộ lọc hiện tại.
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {b2cPlanStores.map(store => {
-                      const isAssignedLeader = Boolean(store.hasBookingLeader && store.bookingLeader);
-                      const currentLeader = isAssignedLeader ? (store.bookingLeader || 'Nguyễn Thị Ngọc Tâm') : 'NONE';
-                      const matchingTeam = isAssignedLeader
-                        ? (BOOKING_TEAMS_STRUCTURE.find(t => t.id === 'team-tam') || BOOKING_TEAMS_STRUCTURE[0])
-                        : (BOOKING_TEAMS_STRUCTURE.find(t => t.id === 'team-direct') || BOOKING_TEAMS_STRUCTURE[0]);
+                  ) : (
+                    displayedStores.map((store) => {
+                      const owners = store.b2cOwners || (store.b2cOwnerName ? store.b2cOwnerName.split(',').map(s => s.trim()) : ['Khánh Vy']);
+                      const hasLeader = Boolean(store.hasBookingLeader && store.bookingLeader);
+                      const currentLeaderVal = hasLeader ? (store.bookingLeader || 'Nguyễn Thị Ngọc Tâm') : 'NONE';
 
                       return (
-                        <tr key={store.id} className="hover:bg-slate-50 transition">
-                          {/* Gian hàng */}
-                          <td className="py-3 px-3">
-                            <span className="font-semibold text-slate-900 block truncate max-w-[200px]">{store.storeName}</span>
+                        <tr key={store.id} className="hover:bg-canvas transition-colors group">
+                          <td className="py-3 px-4">
+                            <div className="font-semibold text-ink text-xs">{store.storeName}</div>
                             <div className="flex items-center gap-1.5 mt-0.5">
                               <ChannelTag channel={store.platform} />
-                              <span className="text-2xs text-slate-400">{store.category}</span>
+                              {!Boolean(store.requiresB2cPlan || store.isB2cManaged) && (
+                                <span className="text-2xs text-ink-3">· Miễn trừ plan</span>
+                              )}
                             </div>
                           </td>
 
-                          {/* Leader Dropdown */}
+                          <td className="py-3 px-3 font-medium text-ink-2">
+                            {store.brandName}
+                          </td>
+
+                          {/* Inline Leader Selector */}
                           <td className="py-3 px-3">
                             <select
-                              value={currentLeader}
+                              value={currentLeaderVal}
                               onChange={(e) => {
                                 const val = e.target.value;
                                 const isNone = val === 'NONE';
                                 const newLeader = isNone ? undefined : 'Nguyễn Thị Ngọc Tâm';
-                                const newTeam = isNone
-                                  ? (BOOKING_TEAMS_STRUCTURE.find(t => t.id === 'team-direct') || BOOKING_TEAMS_STRUCTURE[0])
-                                  : (BOOKING_TEAMS_STRUCTURE.find(t => t.id === 'team-tam') || BOOKING_TEAMS_STRUCTURE[0]);
-                                const defaultPic = store.primaryPic || newTeam.members[0]?.name || 'Lê Phương Thảo';
                                 const updated: StorePortfolioItem = {
                                   ...store,
                                   bookingLeader: newLeader,
                                   hasBookingLeader: !isNone,
-                                  primaryPic: defaultPic,
-                                  assignedStaff: defaultPic,
-                                  b2cOwnerName: defaultPic
                                 };
                                 onUpdateStore(updated);
                                 notify(isNone
-                                  ? `Gian "${store.storeName}" chuyển sang: Không có leader (Duyệt thẳng Trưởng phòng)!`
-                                  : `Đã chuyển gian "${store.storeName}" cho Trưởng nhóm: Nguyễn Thị Ngọc Tâm!`);
+                                  ? `Gian "${store.storeName}" chuyển sang: Duyệt thẳng Trưởng phòng Đặng Thị Yến Nhi`
+                                  : `Đã gán Trưởng nhóm Nguyễn Thị Ngọc Tâm phụ trách sơ duyệt gian "${store.storeName}"`);
                               }}
-                              className="w-full text-xs font-semibold px-2 py-1.5 bg-blue-50/50 border border-blue-200 rounded-lg text-blue-950 focus:outline-none focus:border-blue-500"
+                              className="w-full text-xs font-medium px-2 py-1.5 bg-surface hover:bg-canvas border border-line rounded-md text-ink focus:outline-none focus:border-focus transition-colors"
                             >
-                              <option value="NONE">Không có leader (Duyệt thẳng Trưởng phòng)</option>
-                              <option value="Nguyễn Thị Ngọc Tâm">Nguyễn Thị Ngọc Tâm (Trưởng nhóm Booking)</option>
+                              <option value="NONE">Duyệt thẳng Trưởng phòng</option>
+                              <option value="Nguyễn Thị Ngọc Tâm">Nguyễn Thị Ngọc Tâm (Leader)</option>
                             </select>
                           </td>
 
-                          {/* Primary PIC Dropdown */}
+                          {/* Assignee Selector */}
                           <td className="py-3 px-3">
-                            <select
-                              value={store.primaryPic || store.b2cOwnerName || matchingTeam.members[0]?.name}
-                              onChange={(e) => {
-                                const newPic = e.target.value;
-                                const updated: StorePortfolioItem = {
-                                  ...store,
-                                  primaryPic: newPic,
-                                  assignedStaff: newPic,
-                                  b2cOwnerName: newPic
-                                };
-                                onUpdateStore(updated);
-                                notify(`Leader đã gán chuyên viên "${newPic}" chủ trì gian "${store.storeName}"!`);
-                              }}
-                              className="w-full text-xs font-medium px-2 py-1.5 bg-white border border-slate-200 rounded-lg text-slate-800 focus:outline-none focus:border-blue-500 shadow-2xs"
-                            >
-                              {matchingTeam.members.map(m => (
-                                <option key={m.id} value={m.name}>
-                                  {m.name} ({m.roleTitle})
-                                </option>
-                              ))}
-                              {/* Option cho phép chọn thành viên khác nếu cần mượn quân */}
-                              <option disabled>──────────</option>
-                              {staffList.filter(s => !matchingTeam.members.some(m => m.name === s.name)).map(s => (
-                                <option key={s.id} value={s.name}>
-                                  {s.name} ({s.team})
-                                </option>
-                              ))}
-                            </select>
-                          </td>
-
-                          {/* Thành viên cùng chạy */}
-                          <td className="py-3 px-3">
-                            <div className="flex items-center gap-1 flex-wrap">
-                              {(store.assignedMembers || [store.primaryPic || store.b2cOwnerName || 'Khánh Vy']).map(mem => (
-                                <span key={mem} className="text-2xs bg-slate-100 text-slate-700 border border-slate-200 px-1.5 py-0.5 rounded font-medium">
-                                  {mem.split(' ').slice(-1)[0]}
-                                </span>
-                              ))}
+                            <div className="flex items-center gap-2">
+                              <Avatar name={owners[0] || 'Khánh Vy'} size={22} />
+                              <select
+                                value={owners[0] || 'Khánh Vy'}
+                                onChange={(e) => {
+                                  const newOwners = [e.target.value];
+                                  handleSaveStoreAssignment(store.id, newOwners, store.assignmentNotes || '');
+                                }}
+                                className="w-full min-w-0 text-xs font-medium px-2 py-1.5 bg-surface hover:bg-canvas border border-line rounded-md text-ink focus:outline-none focus:border-focus transition-colors"
+                              >
+                                {staffList.filter(s => s.role === 'BOOKING' || s.role === 'CONTENT').map(s => (
+                                  <option key={s.id} value={s.name}>
+                                    {s.name}
+                                  </option>
+                                ))}
+                              </select>
                             </div>
+                            {store.previousPic && (
+                              <span className="text-2xs text-ink-3 block mt-0.5 pl-7">
+                                Trước: {store.previousPic} {store.handoverEffectiveDate ? `(${store.handoverEffectiveDate})` : ''}
+                              </span>
+                            )}
                           </td>
 
-                          {/* Ngân sách */}
-                          <td className="py-3 px-3 text-right font-mono font-semibold text-blue-700">
-                            {formatVndShort(store.monthlyBudget || 150000000)}
+                          <td className="py-3 px-3 text-ink-2">
+                            {store.accountOwnerName || 'Phạm Thị Nhài'}
                           </td>
 
-                          {/* Ghi chú chỉ đạo của Leader */}
+                          {/* Assignment Notes */}
                           <td className="py-3 px-3">
                             <input
                               type="text"
-                              defaultValue={store.assignmentNotes || 'Ưu tiên KOC đúng tệp, tỷ lệ hoàn < 8%'}
+                              placeholder="Ghi chú điều phối..."
+                              defaultValue={store.assignmentNotes || ''}
                               onBlur={(e) => {
-                                const notes = e.target.value;
-                                if (notes !== store.assignmentNotes) {
-                                  onUpdateStore({ ...store, assignmentNotes: notes });
-                                  notify(`Đã lưu chỉ đạo của Leader cho gian "${store.storeName}"!`);
+                                if (e.target.value !== store.assignmentNotes) {
+                                  handleSaveStoreAssignment(store.id, owners, e.target.value);
                                 }
                               }}
-                              className="w-full text-2xs px-2 py-1 bg-slate-50 hover:bg-white border border-slate-200 rounded text-slate-700 focus:outline-none focus:border-blue-500"
-                              placeholder="Chỉ đạo của Leader..."
+                              className="w-full text-xs px-2.5 py-1 bg-surface border border-line rounded-md text-ink placeholder-ink-3 focus:outline-none focus:border-focus transition"
                             />
                           </td>
 
-                          {/* Thao tác */}
-                          <td className="py-3 px-3 text-center">
-                            <button
-                              onClick={() => handleOpenEditStore(store)}
-                              className="text-2xs text-blue-600 hover:text-blue-800 font-semibold px-2 py-1 rounded bg-blue-50 hover:bg-blue-100 border border-blue-200 transition"
-                            >
-                              Chi tiết
-                            </button>
+                          <td className="py-3 px-3 text-right">
+                            <Button size="sm" variant="secondary" onClick={() => handleOpenEditStore(store)}>
+                              Bàn giao
+                            </Button>
                           </td>
                         </tr>
                       );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {/* VIEW MODE 2: BẢNG CÂN BẰNG TẢI KHỐI LƯỢNG CÔNG VIỆC CỦA CHUYÊN VIÊN */}
-          {leaderConsoleViewMode === 'WORKLOAD_BALANCE' && (
-            <div className="bg-white rounded-2xl border border-slate-200/90 overflow-hidden shadow-xs">
-              <div className="p-4 border-b border-slate-200 bg-slate-50/70 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div>
-                  <h4 className="text-xs font-semibold text-slate-900 flex items-center gap-1.5">
-                    <UserCheck className="w-4 h-4 text-emerald-600" />
-                    <span>Cân Bằng Tải & Sức Chứa Của Từng Chuyên Viên (Capacity & Workload)</span>
-                  </h4>
-                  <p className="text-2xs text-slate-500 mt-0.5">
-                    Leader theo dõi định mức số video và số gian hàng để không chuyên viên nào bị quá tải (&gt;50 video/tháng)
-                  </p>
-                </div>
-              </div>
-
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs border-collapse">
-                  <thead>
-                    <tr className="bg-slate-100 text-slate-700 font-semibold border-b border-slate-200 text-2xs">
-                      <th className="py-3 px-4 w-48">Chuyên viên</th>
-                      <th className="py-3 px-3 w-40">Tổ đội / Leader</th>
-                      <th className="py-3 px-3 min-w-[180px]">Thế mạnh chuyên môn</th>
-                      <th className="py-3 px-3 text-center w-28">Số gian phụ trách</th>
-                      <th className="py-3 px-4 text-center w-36">Định mức clip tháng</th>
-                      <th className="py-3 px-4 w-44">Tỷ lệ tải công việc</th>
-                      <th className="py-3 px-3 text-center w-28">Trạng thái</th>
-                      <th className="py-3 px-3 text-center w-28">Điều phối</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {BOOKING_TEAMS_STRUCTURE.flatMap(team => team.members.map(member => {
-                      const assignedStores = storePortfolios.filter(s => 
-                        (s.primaryPic === member.name) || 
-                        (s.b2cOwnerName && s.b2cOwnerName.includes(member.name)) ||
-                        (s.assignedStaff === member.name)
-                      );
-                      const currentClips = member.assignedClips || assignedStores.length * 15 || 25;
-                      const capacity = member.maxCapacityClips || 50;
-                      const workloadPct = Math.round((currentClips / capacity) * 100);
-                      const isOverloaded = workloadPct > 95;
-                      const isNearFull = workloadPct >= 80 && workloadPct <= 95;
-
-                      return (
-                        <tr key={member.id} className="hover:bg-slate-50 transition">
-                          {/* Chuyên viên */}
-                          <td className="py-3 px-4">
-                            <div className="flex items-center gap-2">
-                              <span className="w-8 h-8 rounded-lg bg-blue-50 border border-blue-200 text-blue-700 font-semibold flex items-center justify-center text-xs">
-                                {member.avatar}
-                              </span>
-                              <div>
-                                <span className="font-semibold text-slate-900 block">{member.name}</span>
-                                <span className="text-2xs text-slate-400 block">{member.roleTitle}</span>
-                              </div>
-                            </div>
-                          </td>
-
-                          {/* Tổ đội */}
-                          <td className="py-3 px-3">
-                            <span className="text-2xs font-semibold text-slate-700 block">{member.team}</span>
-                            <span className="text-2xs text-blue-600 block">Leader: {team.leaderName.split(' ').slice(-2).join(' ')}</span>
-                          </td>
-
-                          {/* Thế mạnh chuyên môn */}
-                          <td className="py-3 px-3 text-slate-600 text-2xs">
-                            {member.expertise}
-                          </td>
-
-                          {/* Số gian phụ trách */}
-                          <td className="py-3 px-3 text-center font-mono font-semibold text-slate-900">
-                            {assignedStores.length} gian
-                          </td>
-
-                          {/* Định mức clip tháng */}
-                          <td className="py-3 px-4 text-center font-mono">
-                            <strong className="text-blue-900">{currentClips}</strong> / {capacity} clip
-                          </td>
-
-                          {/* Tỷ lệ tải */}
-                          <td className="py-3 px-4">
-                            <div className="flex items-center justify-between text-2xs font-mono mb-1">
-                              <span className="text-slate-500">Tải:</span>
-                              <strong className={isOverloaded ? 'text-rose-600' : isNearFull ? 'text-amber-600' : 'text-emerald-600'}>
-                                {workloadPct}%
-                              </strong>
-                            </div>
-                            <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                              <div
-                                className={`data-bar h-full rounded-full ${
-                                  isOverloaded ? 'bg-rose-500' : isNearFull ? 'bg-amber-500' : 'bg-emerald-500'
-                                }`}
-                                style={{ width: `${Math.min(100, workloadPct)}%` }}
-                              />
-                            </div>
-                          </td>
-
-                          {/* Trạng thái */}
-                          <td className="py-3 px-3 text-center">
-                            <span className={`text-2xs px-2 py-0.5 rounded-full font-semibold border ${
-                              isOverloaded
-                                ? 'bg-rose-50 text-rose-700 border-rose-200'
-                                : isNearFull
-                                ? 'bg-amber-50 text-amber-700 border-amber-200'
-                                : 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                            }`}>
-                              {isOverloaded ? ' Quá tải' : isNearFull ? 'Đầy tải' : '✓ An toàn'}
-                            </span>
-                          </td>
-
-                          {/* Nút điều phối */}
-                          <td className="py-3 px-3 text-center">
-                            <button
-                              onClick={() => {
-                                notify(`Leader đã chọn điều phối công việc cho ${member.name}!`);
-                              }}
-                              className="text-2xs font-semibold text-slate-700 hover:text-blue-600 px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 transition"
-                            >
-                              Điều chuyển
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    }))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-      {/* 5. SECTION 3: QUẢN LÝ NHÂN SỰ THEO TRƯỞNG PHÒNG 3 KHỐI & TẢI GIAN HÀNG B2C */}
-      {/* ========================================================================= */}
-      {activeSection === 'STAFF' && (
-        <div className="space-y-4">
-          {/* Bảng Quản Lý Nhân Sự Theo Phòng Ban Của Trưởng Phòng (Marketing B2C / Growth / Media) */}
-          <div className="bg-white border border-slate-200 p-4 rounded-2xl space-y-3 shadow-xs">
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-              <div>
-                <h3 className="text-xs font-semibold text-slate-900 flex items-center gap-2">
-                  <Users className="w-4 h-4 text-blue-600" />
-                  <span>
-                    {deptStaffScope === 'GROWTH'
-                      ? `Danh sách nhân sự khối Growth (${filteredDepartmentStaff.length} / ${scopedDepartmentStaff.length} nhân viên) — Trưởng phòng: Trần Thị Đỗ Quyên`
-                      : deptStaffScope === 'MEDIA'
-                      ? `Danh sách nhân sự khối Media (${filteredDepartmentStaff.length} / ${scopedDepartmentStaff.length} nhân viên) — Trưởng phòng: Nguyễn Đức Quảng`
-                      : `Danh sách nhân sự khối Marketing B2C (${filteredDepartmentStaff.length} / ${scopedDepartmentStaff.length} nhân viên) — Trưởng phòng: Đặng Thị Yến Nhi`}
-                  </span>
-                </h3>
-                <p className="text-2xs text-slate-500 mt-0.5">
-                  Đồng bộ từ danh bạ 1.011 nhân sự UpBase. Chỉ hiển thị các nhân viên thuộc khối đã được cấp quyền đăng nhập hệ thống.
-                </p>
-              </div>
-
-              {/* Nếu là Admin thì cho phép chuyển xem cả 3 khối */}
-              {currentUser.role === 'ADMIN' && (
-                <div className="inline-flex p-0.5 bg-slate-100 rounded-lg text-xs font-medium">
-                  <button
-                    type="button"
-                    onClick={() => { setDeptStaffScope('MARKETING_B2C'); setDeptStaffTeamFilter('ALL'); }}
-                    className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-all ${
-                      deptStaffScope === 'MARKETING_B2C' ? 'bg-white text-blue-700 shadow-2xs' : 'text-slate-600'
-                    }`}
-                  >
-                    Khối MKT B2C
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => { setDeptStaffScope('GROWTH'); setDeptStaffTeamFilter('ALL'); }}
-                    className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-all ${
-                      deptStaffScope === 'GROWTH' ? 'bg-white text-amber-800 shadow-2xs' : 'text-slate-600'
-                    }`}
-                  >
-                    Khối Growth
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => { setDeptStaffScope('MEDIA'); setDeptStaffTeamFilter('ALL'); }}
-                    className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-all ${
-                      deptStaffScope === 'MEDIA' ? 'bg-white text-accent shadow-2xs' : 'text-slate-600'
-                    }`}
-                  >
-                    Khối Media
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* Thanh tìm kiếm & lọc theo Team trong khối */}
-            <div className="flex flex-wrap items-center gap-2.5">
-              <div className="relative min-w-[220px] max-w-sm flex-1">
-                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  placeholder="Tìm nhân viên theo tên, mã NV, email, vị trí..."
-                  value={deptStaffSearch}
-                  onChange={(e) => setDeptStaffSearch(e.target.value)}
-                  className="w-full pl-8.5 pr-3 h-8.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:border-blue-500 bg-slate-50/60"
-                />
-              </div>
-
-              <div className="flex flex-wrap items-center gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => setDeptStaffTeamFilter('ALL')}
-                  className={`px-2.5 py-1 rounded-lg text-2xs font-semibold border transition ${
-                    deptStaffTeamFilter === 'ALL'
-                      ? 'bg-slate-900 text-white border-slate-900'
-                      : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-                  }`}
-                >
-                  Tất cả Team ({scopedDepartmentStaff.length})
-                </button>
-                {scopedTeams.map(t => {
-                  const count = scopedDepartmentStaff.filter(s => (s.department || s.team || '').trim() === t).length;
-                  return (
-                    <button
-                      key={t}
-                      type="button"
-                      onClick={() => setDeptStaffTeamFilter(t)}
-                      className={`px-2.5 py-1 rounded-lg text-2xs font-semibold border transition ${
-                        deptStaffTeamFilter === t
-                          ? 'bg-blue-600 text-white border-blue-600'
-                          : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-                      }`}
-                    >
-                      {t} ({count})
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Danh sách nhân viên thuộc khối của Trưởng phòng */}
-            <div className="border border-slate-200 rounded-xl overflow-hidden max-h-96 overflow-y-auto">
-              <table className="w-full text-left text-xs border-collapse">
-                <thead className="bg-slate-50 border-b border-slate-200 text-2xs font-semibold text-slate-600 sticky top-0">
-                  <tr>
-                    <th className="py-2.5 px-3 w-[90px]">Mã NV</th>
-                    <th className="py-2.5 px-3">Họ và tên nhân viên</th>
-                    <th className="py-2.5 px-3">Team / Bộ phận</th>
-                    <th className="py-2.5 px-3">Chức danh</th>
-                    <th className="py-2.5 px-3">Vai trò hệ thống</th>
-                    <th className="py-2.5 px-3 text-center w-[130px]">Giao việc</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {filteredDepartmentStaff.slice(0, 60).map(emp => (
-                    <tr key={emp.id} className="hover:bg-slate-50/80 transition">
-                      <td className="py-2 px-3 font-mono font-semibold text-slate-800">
-                        <span className="px-1.5 py-0.5 rounded bg-slate-100 border border-slate-200 text-2xs">
-                          {emp.staffCode || emp.id}
-                        </span>
-                      </td>
-                      <td className="py-2 px-3">
-                        <div className="font-semibold text-slate-900">{emp.name}</div>
-                        <div className="text-2xs text-slate-400 font-mono">{emp.email}</div>
-                      </td>
-                      <td className="py-2 px-3 font-medium text-slate-700">
-                        {emp.department || emp.team} · {emp.location || 'HN'}
-                      </td>
-                      <td className="py-2 px-3 text-slate-600">
-                        {emp.position || emp.roleTitle}
-                      </td>
-                      <td className="py-2 px-3">
-                        <span className="px-2 py-0.5 rounded-full text-2xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
-                          {ROLE_DISPLAY_NAME[emp.mappedRole] || emp.mappedRole}
-                        </span>
-                      </td>
-                      <td className="py-2 px-3 text-center">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setNewTaskState(prev => ({
-                              ...prev,
-                              targetStaff: emp.name
-                            }));
-                            setIsTaskModalOpen(true);
-                          }}
-                          className="px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-2xs font-semibold inline-flex items-center gap-1"
-                        >
-                          <Send className="w-3 h-3" />
-                          <span>Giao việc</span>
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                    })
+                  )}
                 </tbody>
               </table>
             </div>
           </div>
-
-          <div className="bg-white border border-slate-200 p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
-            <div>
-              <h3 className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
-                <Users className="w-4 h-4 text-blue-600" />
-                Theo dõi tải gian hàng nhân sự nòng cốt B2C
-              </h3>
-              <p className="text-2xs text-slate-500 mt-0.5">
-                {storeFilterMode === 'B2C_ONLY'
-                  ? `Nhân sự chủ động tự phân công và nhận gian hàng (tối đa định mức 3 shop/chuyên viên trên ${b2cPlanStores.length} gian B2C làm plan)`
-                  : `Đang tính tải theo toàn bộ ${storePortfolios.length} gian hàng hệ thống`}
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-500">Phạm vi tính tải:</span>
-              <div className="inline-flex p-0.5 bg-slate-100 rounded-lg text-xs font-medium">
-                <button
-                  type="button"
-                  onClick={() => setStoreFilterMode('B2C_ONLY')}
-                  className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-all ${
-                    storeFilterMode === 'B2C_ONLY'
-                      ? 'bg-white text-blue-700 shadow-2xs'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  Gian B2C làm plan ({b2cPlanStores.length})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setStoreFilterMode('ALL')}
-                  className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-all ${
-                    storeFilterMode === 'ALL'
-                      ? 'bg-white text-slate-900 shadow-2xs'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  Tất cả gian ({storePortfolios.length})
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {staffList.map((staff) => {
-              const targetPool = storeFilterMode === 'B2C_ONLY' ? b2cPlanStores : storePortfolios;
-              const assignedStores = targetPool.filter(st => 
-                (st.b2cOwners && st.b2cOwners.includes(staff.name)) || st.b2cOwnerName.includes(staff.name)
-              );
-              const maxCap = staff.maxStoresCapacity || 3;
-              const loadPct = Math.round((assignedStores.length / maxCap) * 100);
-              const isOverloaded = assignedStores.length > maxCap;
-              const isOptimal = assignedStores.length === maxCap;
-
-              return (
-                <div
-                  key={staff.id}
-                  className={`bg-white rounded-2xl border p-4 shadow-2xs flex flex-col justify-between transition hover:shadow-md ${
-                    isOverloaded ? 'border-rose-300 ring-1 ring-rose-200' : 'border-slate-200'
-                  }`}
-                >
-                  <div>
-                    <div className="flex items-start justify-between gap-2 mb-2">
-                      <div className="flex items-center gap-2">
-                        <div className="w-9 h-9 rounded-xl bg-blue-600 text-white font-semibold text-xs flex items-center justify-center shadow-xs">
-                          {staff.avatar}
-                        </div>
-                        <div>
-                          <span className="font-semibold text-slate-900 text-xs block">{staff.name}</span>
-                          <span className="text-2xs text-slate-500 block leading-tight">{staff.roleTitle}</span>
-                        </div>
-                      </div>
-                      <span className={`text-2xs font-semibold px-2 py-0.5 rounded-full ${
-                        staff.role === 'BOOKING' ? 'bg-slate-50 text-slate-700 border border-slate-200' :
-                        staff.role === 'CONTENT' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
-                        'bg-blue-50 text-blue-700 border border-blue-200'
-                      }`}>
-                        {staff.role}
-                      </span>
-                    </div>
-
-                    <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-baseline justify-between text-xs">
-                      <span className="text-slate-500">Gian hàng phụ trách:</span>
-                      <span className={`font-mono font-semibold ${isOverloaded ? 'text-rose-600' : 'text-slate-900'}`}>
-                        {assignedStores.length} / {maxCap} shops ({loadPct}%)
-                      </span>
-                    </div>
-
-                    {/* Progress Bar of Capacity */}
-                    <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden mt-1.5">
-                      <div
-                        className={`data-bar h-full rounded-full ${
-                          isOverloaded ? 'bg-rose-500' : isOptimal ? 'bg-emerald-500' : 'bg-blue-600'
-                        }`}
-                        style={{ width: `${Math.min(100, loadPct)}%` }}
-                      />
-                    </div>
-
-                    {/* Assigned Stores List tags */}
-                    <div className="mt-3">
-                      <span className="text-2xs font-semibold text-slate-400 block mb-1">
-                        Danh sách Shops:
-                      </span>
-                      <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto">
-                        {assignedStores.length > 0 ? (
-                          assignedStores.map(st => (
-                            <span key={st.id} className="text-2xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 font-medium truncate max-w-[130px]" title={st.storeName}>
-                              {st.storeName.split('_')[0]}
-                            </span>
-                          ))
-                        ) : (
-                          <span className="text-2xs text-slate-400 italic">Chưa được gán shop nào</span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 pt-2.5 border-t border-slate-100 flex items-center justify-between">
-                    <button
-                      onClick={() => {
-                        setNewTaskState(prev => ({
-                          ...prev,
-                          targetStaff: staff.name
-                        }));
-                        setIsTaskModalOpen(true);
-                      }}
-                      className="w-full py-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-semibold border border-slate-200 flex items-center justify-center gap-1.5 transition"
-                    >
-                      <Send className="w-3 h-3 text-blue-600" />
-                      <span>Giao việc cho bạn này</span>
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
         </div>
       )}
 
       {/* ========================================================================= */}
-      {/* 6. SECTION 4: GIAO VIỆC & ĐỐC THÚC SLA (DIRECT TASK DISPATCH)              */}
+      {/* 3. CÂN BẰNG TẢI ĐỊNH MỨC & DANH BẠ NHÂN SỰ THEO KHỐI                      */}
       {/* ========================================================================= */}
-      {activeSection === 'TASKS' && (
-        <div className="bg-white rounded-2xl border border-slate-200/90 overflow-hidden shadow-xs">
-          <div className="p-4 border-b border-slate-200 bg-slate-50/70 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      {activeSection === 'STAFF' && (
+        <div className="space-y-4">
+          {/* Sub-view switcher: Định mức tải gian hàng B2C vs Danh bạ theo khối */}
+          <div className="bg-surface border border-line p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <h3 className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
-                <Send className="w-4 h-4 text-blue-600" />
-                Hàng Chờ Nhiệm Vụ Trưởng Phòng Đã Giao ({tasks.length} Tasks)
+              <h3 className="text-sm font-semibold text-ink">
+                {staffSubView === 'WORKLOAD'
+                  ? `Cân bằng định mức tải gian hàng B2C (${staffList.length} nhân sự)`
+                  : `Danh bạ nhân sự theo khối (${filteredDepartmentStaff.length} / ${scopedDepartmentStaff.length} nhân viên)`}
               </h3>
-              <p className="text-2xs text-slate-500 mt-0.5">
-                Các nhiệm vụ này tự động hiển thị trong phân hệ "Công việc của tôi" của từng chuyên viên
+              <p className="text-xs text-ink-3 mt-0.5">
+                {staffSubView === 'WORKLOAD'
+                  ? `Kiểm soát định mức số gian hàng phụ trách (khuyến nghị <= 3 gian/chuyên viên) để điều chuyển khi quá tải. Để xem KPI, % Spend, Video Air và ROAS, vui lòng mở Dashboard 5.`
+                  : `Tra cứu nhân sự thuộc khối được cấp quyền truy cập và giao việc trực tiếp`}
               </p>
             </div>
-            <button
+            <div className="flex items-center gap-1 bg-sunken p-1 rounded-lg border border-line shrink-0">
+              <button
+                type="button"
+                onClick={() => setStaffSubView('WORKLOAD')}
+                className={`px-3 py-1.5 rounded-md text-xs font-medium transition ${
+                  staffSubView === 'WORKLOAD'
+                    ? 'bg-surface text-ink shadow-2xs font-semibold'
+                    : 'text-ink-2 hover:text-ink'
+                }`}
+              >
+                Định mức tải gian hàng ({staffList.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setStaffSubView('DIRECTORY')}
+                className={`px-3 py-1.5 rounded-md text-xs font-medium transition ${
+                  staffSubView === 'DIRECTORY'
+                    ? 'bg-surface text-ink shadow-2xs font-semibold'
+                    : 'text-ink-2 hover:text-ink'
+                }`}
+              >
+                Danh bạ theo khối ({scopedDepartmentStaff.length})
+              </button>
+            </div>
+          </div>
+
+          {staffSubView === 'WORKLOAD' && (
+            <>
+              <div className="flex items-center justify-between px-1">
+                <span className="text-xs text-ink-2">
+                  Đang tính tải trên: <strong className="text-ink font-semibold">{storeFilterMode === 'B2C_ONLY' ? `${b2cPlanStores.length} gian B2C làm plan` : `${storePortfolios.length} gian toàn hệ thống`}</strong>
+                </span>
+                <div className="inline-flex p-0.5 bg-sunken rounded-lg border border-line text-xs font-medium">
+                  <button
+                    type="button"
+                    onClick={() => setStoreFilterMode('B2C_ONLY')}
+                    className={`px-2.5 py-1 rounded-md text-xs transition ${
+                      storeFilterMode === 'B2C_ONLY'
+                        ? 'bg-surface text-ink font-semibold shadow-2xs'
+                        : 'text-ink-2 hover:text-ink'
+                    }`}
+                  >
+                    Gian B2C làm plan ({b2cPlanStores.length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setStoreFilterMode('ALL')}
+                    className={`px-2.5 py-1 rounded-md text-xs transition ${
+                      storeFilterMode === 'ALL'
+                        ? 'bg-surface text-ink font-semibold shadow-2xs'
+                        : 'text-ink-2 hover:text-ink'
+                    }`}
+                  >
+                    Tất cả gian ({storePortfolios.length})
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5">
+                {staffList.map((staff) => {
+                  const targetPool = storeFilterMode === 'B2C_ONLY' ? b2cPlanStores : storePortfolios;
+                  const assignedStores = targetPool.filter(st => 
+                    (st.b2cOwners && st.b2cOwners.includes(staff.name)) || st.b2cOwnerName.includes(staff.name)
+                  );
+                  const maxCap = staff.maxStoresCapacity || 3;
+                  const loadPct = Math.round((assignedStores.length / maxCap) * 100);
+                  const isOverloaded = assignedStores.length > maxCap;
+                  const isOptimal = assignedStores.length === maxCap;
+
+                  return (
+                    <div
+                      key={staff.id}
+                      className={`bg-surface rounded-xl border p-4 flex flex-col justify-between transition ${
+                        isOverloaded ? 'border-critical-line' : 'border-line hover:border-line-strong'
+                      }`}
+                    >
+                      <div>
+                        <div className="flex items-start justify-between gap-2 mb-2">
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <Avatar name={staff.name} size={36} />
+                            <div className="min-w-0">
+                              <span className="font-semibold text-ink text-xs block truncate">{staff.name}</span>
+                              <span className="text-2xs text-ink-3 block leading-tight truncate">{staff.roleTitle}</span>
+                            </div>
+                          </div>
+                          <span className="text-2xs font-medium px-2 py-0.5 rounded bg-sunken text-ink-2 border border-line shrink-0">
+                            {staff.role}
+                          </span>
+                        </div>
+
+                        <div className="mt-3 pt-2.5 border-t border-line flex items-baseline justify-between text-xs">
+                          <span className="text-ink-3">Gian phụ trách:</span>
+                          <span className={`font-mono font-semibold ${isOverloaded ? 'text-critical' : 'text-ink'}`}>
+                            {assignedStores.length} / {maxCap} gian ({loadPct}%)
+                          </span>
+                        </div>
+
+                        {/* Progress Bar of Capacity */}
+                        <div className="w-full bg-sunken h-1.5 rounded-full overflow-hidden mt-1.5">
+                          <div
+                            className={`data-bar h-full rounded-full ${
+                              isOverloaded ? 'bg-critical' : isOptimal ? 'bg-positive' : 'bg-brand'
+                            }`}
+                            style={{ width: `${Math.min(100, loadPct)}%` }}
+                          />
+                        </div>
+
+                        {/* Assigned Stores List tags */}
+                        <div className="mt-3">
+                          <span className="text-2xs font-medium text-ink-3 block mb-1">
+                            Danh sách gian hàng:
+                          </span>
+                          <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto">
+                            {assignedStores.length > 0 ? (
+                              assignedStores.map(st => (
+                                <span key={st.id} className="text-2xs px-1.5 py-0.5 rounded bg-canvas border border-line text-ink-2 font-medium truncate max-w-[140px]" title={st.storeName}>
+                                  {st.storeName.split('_')[0]}
+                                </span>
+                              ))
+                            ) : (
+                              <span className="text-2xs text-ink-3 italic">Chưa gán gian hàng</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="mt-3.5 pt-2.5 border-t border-line flex items-center justify-between">
+                        <button
+                          onClick={() => {
+                            setNewTaskState(prev => ({
+                              ...prev,
+                              targetStaff: staff.name
+                            }));
+                            setIsTaskModalOpen(true);
+                          }}
+                          className="w-full py-1.5 rounded-lg bg-canvas hover:bg-sunken text-ink-2 hover:text-ink text-xs font-medium border border-line flex items-center justify-center gap-1.5 transition"
+                        >
+                          <Send className="w-3 h-3 text-brand" />
+                          <span>Giao việc</span>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
+
+          {staffSubView === 'DIRECTORY' && (
+            <div className="bg-surface border border-line p-4 rounded-xl space-y-3">
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+                <div className="text-xs text-ink-2">
+                  {deptStaffScope === 'GROWTH'
+                    ? `Khối Growth — Trưởng phòng: Trần Thị Đỗ Quyên`
+                    : deptStaffScope === 'MEDIA'
+                    ? `Khối Media — Trưởng phòng: Nguyễn Đức Quảng`
+                    : `Khối Marketing B2C — Trưởng phòng: Đặng Thị Yến Nhi`}
+                </div>
+
+                {currentUser.role === 'ADMIN' && (
+                  <div className="inline-flex p-0.5 bg-sunken rounded-lg border border-line text-xs font-medium">
+                    <button
+                      type="button"
+                      onClick={() => { setDeptStaffScope('MARKETING_B2C'); setDeptStaffTeamFilter('ALL'); }}
+                      className={`px-2.5 py-1 rounded-md text-xs transition ${
+                        deptStaffScope === 'MARKETING_B2C' ? 'bg-surface text-ink font-semibold shadow-2xs' : 'text-ink-2'
+                      }`}
+                    >
+                      Khối MKT B2C
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setDeptStaffScope('GROWTH'); setDeptStaffTeamFilter('ALL'); }}
+                      className={`px-2.5 py-1 rounded-md text-xs transition ${
+                        deptStaffScope === 'GROWTH' ? 'bg-surface text-ink font-semibold shadow-2xs' : 'text-ink-2'
+                      }`}
+                    >
+                      Khối Growth
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setDeptStaffScope('MEDIA'); setDeptStaffTeamFilter('ALL'); }}
+                      className={`px-2.5 py-1 rounded-md text-xs transition ${
+                        deptStaffScope === 'MEDIA' ? 'bg-surface text-ink font-semibold shadow-2xs' : 'text-ink-2'
+                      }`}
+                    >
+                      Khối Media
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Thanh tìm kiếm & lọc theo Team trong khối */}
+              <div className="flex flex-wrap items-center gap-2.5">
+                <div className="relative min-w-[220px] max-w-sm flex-1">
+                  <Search className="w-3.5 h-3.5 text-ink-3 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    placeholder="Tìm theo tên, mã NV, email, vị trí..."
+                    value={deptStaffSearch}
+                    onChange={(e) => setDeptStaffSearch(e.target.value)}
+                    className="w-full pl-8 pr-3 h-8 text-xs rounded-lg border border-line focus:outline-none focus:border-brand bg-surface"
+                  />
+                </div>
+
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setDeptStaffTeamFilter('ALL')}
+                    className={`px-2.5 py-1 rounded-md text-2xs font-medium border transition ${
+                      deptStaffTeamFilter === 'ALL'
+                        ? 'bg-ink text-white border-ink font-semibold'
+                        : 'bg-surface text-ink-2 border-line hover:bg-sunken'
+                    }`}
+                  >
+                    Tất cả ({scopedDepartmentStaff.length})
+                  </button>
+                  {scopedTeams.map(t => {
+                    const count = scopedDepartmentStaff.filter(s => (s.department || s.team || '').trim() === t).length;
+                    return (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => setDeptStaffTeamFilter(t)}
+                        className={`px-2.5 py-1 rounded-md text-2xs font-medium border transition ${
+                          deptStaffTeamFilter === t
+                            ? 'bg-brand text-white border-brand font-semibold'
+                            : 'bg-surface text-ink-2 border-line hover:bg-sunken'
+                        }`}
+                      >
+                        {t} ({count})
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Danh sách nhân viên thuộc khối */}
+              <div className="border border-line rounded-xl overflow-hidden max-h-[460px] overflow-y-auto">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead className="bg-canvas border-b border-line text-2xs font-medium text-ink-2 sticky top-0">
+                    <tr>
+                      <th className="py-2.5 px-3 w-[90px]">Mã NV</th>
+                      <th className="py-2.5 px-3">Họ và tên</th>
+                      <th className="py-2.5 px-3">Bộ phận</th>
+                      <th className="py-2.5 px-3">Chức danh</th>
+                      <th className="py-2.5 px-3">Vai trò hệ thống</th>
+                      <th className="py-2.5 px-3 text-center w-[110px]">Thao tác</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-line">
+                    {filteredDepartmentStaff.slice(0, 60).map(emp => (
+                      <tr key={emp.id} className="hover:bg-surface-hover transition">
+                        <td className="py-2 px-3 font-mono font-medium text-ink-2">
+                          <span className="px-1.5 py-0.5 rounded bg-sunken border border-line text-2xs">
+                            {emp.staffCode || emp.id}
+                          </span>
+                        </td>
+                        <td className="py-2 px-3">
+                          <div className="font-semibold text-ink">{emp.name}</div>
+                          <div className="text-2xs text-ink-3 font-mono">{emp.email}</div>
+                        </td>
+                        <td className="py-2 px-3 text-ink-2">
+                          {emp.department || emp.team} · {emp.location || 'HN'}
+                        </td>
+                        <td className="py-2 px-3 text-ink-2">
+                          {emp.position || emp.roleTitle}
+                        </td>
+                        <td className="py-2 px-3">
+                          <span className="px-2 py-0.5 rounded text-2xs font-medium bg-brand-soft text-brand border border-brand-line">
+                            {ROLE_DISPLAY_NAME[emp.mappedRole] || emp.mappedRole}
+                          </span>
+                        </td>
+                        <td className="py-2 px-3 text-center">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setNewTaskState(prev => ({
+                                ...prev,
+                                targetStaff: emp.name
+                              }));
+                              setIsTaskModalOpen(true);
+                            }}
+                            className="px-2.5 py-1 rounded-md bg-surface hover:bg-sunken text-ink-2 hover:text-ink border border-line text-2xs font-medium inline-flex items-center gap-1"
+                          >
+                            <Send className="w-3 h-3" />
+                            <span>Giao việc</span>
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 6. SECTION 4: GIAO VIỆC & ĐỐC THÚC SLA                                    */}
+      {/* ========================================================================= */}
+      {activeSection === 'TASKS' && (
+        <div className="bg-surface rounded-xl border border-line overflow-hidden">
+          <div className="px-4 py-3 border-b border-line bg-canvas flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h3 className="text-xs font-semibold text-ink">
+                Danh sách công việc đã giao ({tasks.length})
+              </h3>
+              <p className="text-2xs text-ink-3 mt-0.5">
+                Hiển thị đồng bộ trong phân hệ &ldquo;Công việc của tôi&rdquo; của từng chuyên viên
+              </p>
+            </div>
+            <Button
+              variant="primary"
+              size="sm"
+              icon={Plus}
               onClick={() => setIsTaskModalOpen(true)}
-              className="px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs flex items-center gap-1.5 shadow-xs transition"
             >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Giao thêm việc mới</span>
-            </button>
+              Giao việc mới
+            </Button>
           </div>
 
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className="bg-slate-100/70 text-slate-600 font-semibold border-b border-slate-200 text-2xs">
-                  <th className="py-3 px-4 min-w-[240px]">Tiêu đề & chỉ đạo</th>
-                  <th className="py-3 px-3">Nhãn hàng</th>
-                  <th className="py-3 px-3 min-w-[150px]">Chuyên viên nhận việc</th>
-                  <th className="py-3 px-3 text-center">Độ khẩn cấp</th>
-                  <th className="py-3 px-3 text-center">Hạn SLA</th>
-                  <th className="py-3 px-3 text-center w-28">Đốc Thúc</th>
+                <tr className="bg-canvas text-ink-2 font-medium border-b border-line text-2xs">
+                  <th className="py-2.5 px-4 min-w-[240px]">Tiêu đề & chỉ đạo</th>
+                  <th className="py-2.5 px-3">Nhãn hàng</th>
+                  <th className="py-2.5 px-3 min-w-[150px]">Chuyên viên nhận việc</th>
+                  <th className="py-2.5 px-3 text-center">Mức độ</th>
+                  <th className="py-2.5 px-3 text-center">Hạn SLA</th>
+                  <th className="py-2.5 px-3 text-center w-28">Nhắc việc</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-line">
                 {tasks.map((task) => (
-                  <tr key={task.id} className="hover:bg-slate-50 transition group">
-                    <td className="py-3 px-4">
-                      <div className="font-semibold text-slate-900 text-xs">{task.title}</div>
-                      <p className="text-2xs text-slate-500 mt-0.5 line-clamp-1">{task.description}</p>
+                  <tr key={task.id} className="hover:bg-surface-hover transition group">
+                    <td className="py-2.5 px-4">
+                      <div className="font-semibold text-ink text-xs">{task.title}</div>
+                      <p className="text-2xs text-ink-3 mt-0.5 line-clamp-1">{task.description}</p>
                     </td>
 
-                    <td className="py-3 px-3 font-semibold text-slate-700">
+                    <td className="py-2.5 px-3 font-medium text-ink-2">
                       {task.brand}
                     </td>
 
-                    <td className="py-3 px-3">
-                      <div className="flex items-center gap-1.5">
-                        <span className="w-5 h-5 rounded-full bg-blue-100 text-blue-700 font-semibold text-2xs flex items-center justify-center shrink-0">
-                          {task.pic.substring(0, 2).toUpperCase()}
-                        </span>
-                        <span className="font-semibold text-slate-900 text-xs">{task.pic}</span>
+                    <td className="py-2.5 px-3">
+                      <div className="flex items-center gap-2">
+                        <Avatar name={task.pic} size={22} />
+                        <span className="font-medium text-ink text-xs">{task.pic}</span>
                       </div>
                     </td>
 
-                    <td className="py-3 px-3 text-center">
-                      <span className={`text-2xs font-semibold px-2 py-0.5 rounded-full ${
-                        task.urgency === 'critical' ? 'bg-rose-100 text-rose-800 border border-rose-300' :
-                        task.urgency === 'warning' ? 'bg-amber-100 text-amber-800 border border-amber-300' :
-                        'bg-slate-100 text-slate-700'
-                      }`}>
-                        {task.urgency === 'critical' ? 'Khẩn Cấp' : task.urgency === 'warning' ? 'Cảnh Báo' : 'Bình Thường'}
-                      </span>
+                    <td className="py-2.5 px-3 text-center">
+                      <Status tone={task.urgency === 'critical' ? 'critical' : task.urgency === 'warning' ? 'warning' : 'neutral'}>
+                        {task.urgency === 'critical' ? 'Khẩn cấp' : task.urgency === 'warning' ? 'Cảnh báo' : 'Bình thường'}
+                      </Status>
                     </td>
 
-                    <td className="py-3 px-3 text-center font-mono font-semibold text-slate-700">
+                    <td className="py-2.5 px-3 text-center font-mono font-semibold text-ink-2">
                       {task.deadlineHours}h
                     </td>
 
-                    <td className="py-3 px-3 text-center">
+                    <td className="py-2.5 px-3 text-center">
                       <button
                         onClick={() => {
                           if (onPingStaff) {
                             onPingStaff(task.pic, `Đốc thúc nhiệm vụ: ${task.title}`);
                           }
-                          notify(`Đã gửi ping nhắc nhở chuyên viên ${task.pic} qua Lark Bot thành công!`);
+                          notify(`Đã gửi nhắc việc cho chuyên viên ${task.pic}!`);
                         }}
-                        className="px-2.5 py-1 rounded text-xs font-semibold text-blue-700 hover:bg-blue-50 border border-blue-200 flex items-center justify-center gap-1 mx-auto transition"
+                        className="px-2.5 py-1 rounded-md text-2xs font-medium text-ink-2 hover:text-ink bg-surface hover:bg-sunken border border-line flex items-center justify-center gap-1 mx-auto transition"
                       >
                         <MessageSquare className="w-3 h-3" />
-                        <span>Ping</span>
+                        <span>Nhắc việc</span>
                       </button>
                     </td>
                   </tr>
@@ -1702,40 +1422,6 @@ export const ManagerDelegationHub: React.FC<ManagerDelegationHubProps> = ({
               </tbody>
             </table>
           </div>
-        </div>
-      )}
-
-      {/* ========================================================================= */}
-      {/* 7. SECTION 5: SƠ ĐỒ CÂY MINDMAP MASTER DATA (BRAND → GIAN → PIC → SKU)    */}
-      {/* ========================================================================= */}
-      {activeSection === 'MINDMAP' && (
-        <div className="space-y-4 animate-in fade-in duration-200">
-          <div className="p-4 bg-blue-900 text-white rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-md">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-blue-500/20 border border-blue-400/30 flex items-center justify-center text-blue-300 font-semibold shrink-0">
-                <GitFork className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-sm text-white flex items-center gap-2">
-                  <span>Toàn cảnh phân bổ Mindmap</span>
-                  <span className="px-2 py-0.5 rounded-full text-2xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                    Trực quan hóa 4 tầng phân cấp
-                  </span>
-                </h3>
-                <p className="text-xs text-blue-200 mt-0.5">
-                  Sơ đồ cây phân nhánh trực quan: Nhãn hàng → Gian hàng sàn → Nhân sự PIC phụ trách (1 PIC chính + các PIC hỗ trợ) → Danh mục sản phẩm Hero SKU & doanh số.
-                </p>
-              </div>
-            </div>
-            <div className="text-xs text-slate-300 bg-white/10 px-3 py-1.5 rounded-xl border border-white/10 shrink-0">
-              Nhấn vào từng node để mở rộng/thu gọn nhánh
-            </div>
-          </div>
-
-          <MasterDataMindmapView
-            currentUser={currentUser}
-            onNotify={notify}
-          />
         </div>
       )}
 

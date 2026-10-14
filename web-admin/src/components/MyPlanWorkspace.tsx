@@ -22,6 +22,7 @@ import {
 } from '../lib/types';
 import { INITIAL_CONTENT_ANGLES } from '../lib/contentAngleData';
 import { INITIAL_PUSH_PRODUCTS } from '../lib/mockData';
+import { findBrandProfile, getBrandRatecardCeiling, useBrandProfiles } from '../lib/brands/useBrandProfiles';
 
 interface MyPlanWorkspaceProps {
   currentStaffName: string;
@@ -68,6 +69,17 @@ export const MyPlanWorkspace: React.FC<MyPlanWorkspaceProps> = ({
   const [formAngleId, setFormAngleId] = useState('');
   const [formAngleName, setFormAngleName] = useState('');
   const [formHook, setFormHook] = useState('');
+
+  const { profiles } = useBrandProfiles();
+  const activeBrandProfile = React.useMemo(
+    () => findBrandProfile(profiles, formBrand),
+    [profiles, formBrand],
+  );
+  const formRatecardCeiling = React.useMemo(
+    () => getBrandRatecardCeiling(activeBrandProfile, formSalaryGrade),
+    [activeBrandProfile, formSalaryGrade],
+  );
+  const isFormOverCeiling = typeof formRatecardCeiling === 'number' && formBudget > formRatecardCeiling;
 
   const relevantAngles = React.useMemo(() => {
     return INITIAL_CONTENT_ANGLES.filter(a => 
@@ -613,12 +625,23 @@ export const MyPlanWorkspace: React.FC<MyPlanWorkspaceProps> = ({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-ink-2 font-semibold block mb-1">Dự toán chi phí Cast (VND):</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-ink-2 font-semibold">Dự toán chi phí Cast ({formSalaryGrade}):</label>
+                {typeof formRatecardCeiling === 'number' && (
+                  <span className="text-2xs text-ink-3 font-mono">
+                    Trần: {formatVndShort(formRatecardCeiling)}
+                  </span>
+                )}
+              </div>
               <input
                 type="number"
                 value={formBudget}
                 onChange={(e) => setFormBudget(Number(e.target.value))}
-                className="w-full bg-surface border border-line-strong rounded-lg p-2 text-accent font-mono font-semibold focus:border-accent focus:outline-none"
+                className={`w-full bg-surface border rounded-lg p-2 font-mono font-semibold focus:outline-none ${
+                  isFormOverCeiling
+                    ? 'border-danger text-danger focus:border-danger'
+                    : 'border-line-strong text-accent focus:border-accent'
+                }`}
               />
             </div>
             <div>
@@ -631,6 +654,21 @@ export const MyPlanWorkspace: React.FC<MyPlanWorkspaceProps> = ({
               />
             </div>
           </div>
+
+          {isFormOverCeiling && formRatecardCeiling && (
+            <div className="p-2.5 rounded-lg bg-rose-50 border border-rose-200 flex items-center justify-between gap-2 text-xs text-rose-700">
+              <span>
+                Vượt trần định mức <strong>{formSalaryGrade}</strong> của nhãn <strong>{formBrand}</strong> (+{formatVnd(formBudget - formRatecardCeiling)}).
+              </span>
+              <button
+                type="button"
+                onClick={() => setFormBudget(formRatecardCeiling)}
+                className="px-2.5 py-1 rounded bg-rose-600 hover:bg-rose-700 text-white text-2xs font-semibold shrink-0 transition"
+              >
+                Áp mức trần ({formatVndShort(formRatecardCeiling)})
+              </button>
+            </div>
+          )}
 
           <div className="flex items-center justify-end gap-2 pt-3 border-t border-line">
             <Button variant="ghost" onClick={() => setIsAddModalOpen(false)}>

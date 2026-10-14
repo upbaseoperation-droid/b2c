@@ -7,8 +7,28 @@ import { randomUUID } from 'node:crypto';
 import type { UserProfile } from '../types';
 import { configuredActors } from '../contracts/access';
 import type {
-  BrandContentRules, BrandDocCategory, BrandDocument, BrandEntity, BrandFaq, BrandFileStorage, BrandLegalDoc, BrandPermissions,
-  BrandPositioning, BrandProduct, BrandProfile, BrandRatecardRow, BrandSection, ToneTag,
+  BrandContentRules,
+  BrandDocCategory,
+  BrandDocument,
+  BrandEntity,
+  BrandFaq,
+  BrandFileStorage,
+  BrandLegalDoc,
+  BrandOperatingModel,
+  BrandPermissions,
+  BrandPositioning,
+  BrandProduct,
+  BrandProfile,
+  BrandProjectTier,
+  BrandRatecardRow,
+  BrandSection,
+  BrandWorkflowRules,
+  KocApprovalMode,
+  SampleReturnRule,
+  SampleSenderType,
+  SampleStockStatus,
+  StrategyOwnerTeam,
+  ToneTag,
 } from './types';
 import { SECTION_LABEL } from './types';
 
@@ -31,7 +51,7 @@ function isLegal(u: UserProfile) {
 }
 
 /**
- * Trưởng phòng / quản trị: sửa mọi mục. Account PIC của nhãn: định vị, pháp nhân, sản phẩm,
+ * Trưởng phòng / quản trị: sửa mọi mục. Account PIC của nhãn: định vị, pháp nhân, quy tắc vận hành, sản phẩm,
  * quy chuẩn nội dung, câu hỏi khó, tài liệu. Pháp chế: mục pháp lý. Trần thù lao: chỉ trưởng phòng.
  */
 export function permissionsFor(user: UserProfile | null, accountPic?: string): BrandPermissions {
@@ -40,7 +60,13 @@ export function permissionsFor(user: UserProfile | null, accountPic?: string): B
   const legal = !!user && isLegal(user);
   const content = lead || pic;
   return {
-    POSITIONING: content, ENTITY: content, PRODUCTS: content, CONTENT_RULES: content, FAQS: content, DOCUMENTS: content,
+    POSITIONING: content,
+    ENTITY: content,
+    WORKFLOW_RULES: content,
+    PRODUCTS: content,
+    CONTENT_RULES: content,
+    FAQS: content,
+    DOCUMENTS: content,
     LEGAL: lead || legal,
     RATECARD: lead,
   };
@@ -60,6 +86,16 @@ const money = (v: unknown) => {
   const n = typeof v === 'number' ? v : typeof v === 'string' ? Number(v.replace(/\D/g, '')) : NaN;
   return Number.isFinite(n) && n > 0 && n < 1e13 ? Math.round(n) : undefined;
 };
+const percent = (v: unknown) => {
+  const n = typeof v === 'number' ? v : typeof v === 'string' ? Number(v.replace(/[^\d.]/g, '')) : NaN;
+  return Number.isFinite(n) && n >= 0 && n <= 100 ? Math.round(n * 10) / 10 : undefined;
+};
+const intRange = (v: unknown, min: number, max: number, fallback: number) => {
+  const n = typeof v === 'number' ? v : typeof v === 'string' ? Number(v.replace(/\D/g, '')) : NaN;
+  if (!Number.isFinite(n)) return fallback;
+  return Math.max(min, Math.min(max, Math.round(n)));
+};
+const bool = (v: unknown, fallback = false) => (typeof v === 'boolean' ? v : v === 'true' ? true : v === 'false' ? false : fallback);
 const list = <T>(v: unknown, maxItems: number, fn: (x: Record<string, unknown>) => T | null): T[] =>
   (Array.isArray(v) ? v : []).slice(0, maxItems).map(x => (x && typeof x === 'object' ? fn(x as Record<string, unknown>) : null)).filter((x): x is T => x !== null);
 const id = (v: unknown) => (typeof v === 'string' && /^[\w-]{1,64}$/.test(v) ? v : randomUUID());
@@ -83,9 +119,18 @@ const storageField = (v: unknown, hasFileKey: boolean): BrandFileStorage | undef
 };
 const TONES: ToneTag[] = ['EXPERT', 'MOM', 'GENZ', 'PREMIUM'];
 const DOC_CATEGORIES: BrandDocCategory[] = ['GUIDELINE', 'LEGAL', 'PRODUCT', 'BRIEF', 'ASSET', 'OTHER'];
+const STOCK_STATUSES: SampleStockStatus[] = ['IN_STOCK', 'LOW_STOCK', 'OUT_OF_STOCK', 'PRE_ORDER'];
+const SAMPLE_RETURN_RULES: SampleReturnRule[] = ['GIFT', 'LOAN_RETURN'];
+const PROJECT_TIERS: BrandProjectTier[] = ['TIER_A_STRATEGIC', 'TIER_B_GROWTH', 'TIER_C_FULLSTACK'];
+const OPERATING_MODELS: BrandOperatingModel[] = ['SPLIT_RESOURCE', 'FULLSTACK_CONTENT_BOOKING'];
+const STRATEGY_OWNERS: StrategyOwnerTeam[] = ['BRAND_TEAM', 'CONTENT_TEAM'];
+const KOC_APPROVAL_MODES: KocApprovalMode[] = ['ALL', 'KL4_PLUS_ONLY', 'NONE_AUTO'];
+const SAMPLE_SENDERS: SampleSenderType[] = ['UPBASE_WAREHOUSE', 'BRAND_DIRECT'];
 export const GRADES = ['KL1', 'KL2', 'KL3', 'KL4', 'KL5', 'KL6', 'KL7'];
 
-type SectionData = Partial<Pick<BrandProfile, 'positioning' | 'entity' | 'products' | 'contentRules' | 'faqs' | 'legal' | 'ratecard' | 'documents'>>;
+type SectionData = Partial<
+  Pick<BrandProfile, 'positioning' | 'entity' | 'workflowRules' | 'products' | 'contentRules' | 'faqs' | 'legal' | 'ratecard' | 'documents'>
+>;
 
 /** Đọc dữ liệu một mục từ yêu cầu; bỏ trường lạ, cắt độ dài, bỏ dòng trống. */
 export function parseSection(section: BrandSection, raw: unknown, actorName: string, previous: BrandProfile): SectionData {
@@ -93,7 +138,18 @@ export function parseSection(section: BrandSection, raw: unknown, actorName: str
   switch (section) {
     case 'POSITIONING': {
       const tone = TONES.includes(d.toneTag as ToneTag) ? (d.toneTag as ToneTag) : undefined;
-      const p: BrandPositioning = { slogan: text(d.slogan, 200), story: text(d.story, 3000), toneTag: tone, toneOfVoice: text(d.toneOfVoice, 1000), targetAudience: text(d.targetAudience, 1500) };
+      const p: BrandPositioning = {
+        slogan: text(d.slogan, 200),
+        story: text(d.story, 3000),
+        toneTag: tone,
+        toneOfVoice: text(d.toneOfVoice, 1000),
+        targetAudience: text(d.targetAudience, 1500),
+        painPoints: lines(d.painPoints, 20, 300),
+        barriersToTrial: lines(d.barriersToTrial, 20, 300),
+        rtbs: lines(d.rtbs, 20, 300),
+        contentPillars: lines(d.contentPillars, 20, 300),
+        competitors: lines(d.competitors, 20, 200),
+      };
       return { positioning: p };
     }
     case 'ENTITY': {
@@ -102,18 +158,91 @@ export function parseSection(section: BrandSection, raw: unknown, actorName: str
       const e: BrandEntity = { companyName: text(d.companyName, 200), taxCode, contactPerson: text(d.contactPerson, 200), originCountry: text(d.originCountry, 100) };
       return { entity: e };
     }
+    case 'WORKFLOW_RULES': {
+      const prev = previous.workflowRules;
+      const w: BrandWorkflowRules = {
+        projectTier: PROJECT_TIERS.includes(d.projectTier as BrandProjectTier)
+          ? (d.projectTier as BrandProjectTier)
+          : (prev?.projectTier || 'TIER_B_GROWTH'),
+        operatingModel: OPERATING_MODELS.includes(d.operatingModel as BrandOperatingModel)
+          ? (d.operatingModel as BrandOperatingModel)
+          : (prev?.operatingModel || 'FULLSTACK_CONTENT_BOOKING'),
+        strategyOwnerTeam: STRATEGY_OWNERS.includes(d.strategyOwnerTeam as StrategyOwnerTeam)
+          ? (d.strategyOwnerTeam as StrategyOwnerTeam)
+          : (prev?.strategyOwnerTeam || 'CONTENT_TEAM'),
+        brandApproverName: text(d.brandApproverName, 200) || prev?.brandApproverName || 'Đại diện nhãn hàng',
+        kocApprovalMode: KOC_APPROVAL_MODES.includes(d.kocApprovalMode as KocApprovalMode)
+          ? (d.kocApprovalMode as KocApprovalMode)
+          : (prev?.kocApprovalMode || 'ALL'),
+        requireScriptApproval: bool(d.requireScriptApproval, prev?.requireScriptApproval ?? true),
+        requireDemoApproval: bool(d.requireDemoApproval, prev?.requireDemoApproval ?? true),
+        autoAirAfterHours: intRange(d.autoAirAfterHours, 0, 720, prev?.autoAirAfterHours ?? 72),
+        maxFreeRevisions: intRange(d.maxFreeRevisions, 0, 10, prev?.maxFreeRevisions ?? 2),
+        sampleSender: SAMPLE_SENDERS.includes(d.sampleSender as SampleSenderType)
+          ? (d.sampleSender as SampleSenderType)
+          : (prev?.sampleSender || 'UPBASE_WAREHOUSE'),
+        samplePrepSlaHours: intRange(d.samplePrepSlaHours, 4, 240, prev?.samplePrepSlaHours ?? 48),
+        defaultSamplePolicy: SAMPLE_RETURN_RULES.includes(d.defaultSamplePolicy as SampleReturnRule)
+          ? (d.defaultSamplePolicy as SampleReturnRule)
+          : (prev?.defaultSamplePolicy || 'GIFT'),
+        requiresAdsCode: bool(d.requiresAdsCode, prev?.requiresAdsCode ?? true),
+        adsCodeDurationDays: intRange(d.adsCodeDurationDays, 0, 3650, prev?.adsCodeDurationDays ?? 60),
+        requireRawVideoHandover: bool(d.requireRawVideoHandover, prev?.requireRawVideoHandover ?? false),
+        repostAllowedChannels: lines(d.repostAllowedChannels, 15, 150),
+        minVideoRetentionDays: intRange(d.minVideoRetentionDays, 7, 3650, prev?.minVideoRetentionDays ?? 90),
+        exclusivityDays: intRange(d.exclusivityDays, 0, 365, prev?.exclusivityDays ?? 0),
+        allowExtraFeeForAdsOrCrosspost: bool(d.allowExtraFeeForAdsOrCrosspost, prev?.allowExtraFeeForAdsOrCrosspost ?? false),
+        preferredKocNiches: lines(d.preferredKocNiches, 15, 150),
+        kocSelectionCriteria: text(d.kocSelectionCriteria, 1500),
+        handoverFrom: text(d.handoverFrom, 150) || undefined,
+        handoverTo: text(d.handoverTo, 150) || undefined,
+        handoverFileUrl: url(d.handoverFileUrl) || undefined,
+        bookingSheetUrl: url(d.bookingSheetUrl) || undefined,
+        operationFileUrl: url(d.operationFileUrl) || undefined,
+        canvaBriefUrl: url(d.canvaBriefUrl) || undefined,
+      };
+      return { workflowRules: w };
+    }
     case 'PRODUCTS':
       return {
         products: list<BrandProduct>(d.products, 50, p => {
           const name = text(p.name, 200); if (!name) return null;
-          return { id: id(p.id), name, skuCode: text(p.skuCode, 80), size: text(p.size, 80), priceVnd: money(p.priceVnd), pdpUrl: url(p.pdpUrl), usps: lines(p.usps, 8), mechanism: text(p.mechanism, 2000), ingredients: lines(p.ingredients, 20), targetUser: text(p.targetUser, 500), contraindications: text(p.contraindications, 500) };
+          const stockStatus = STOCK_STATUSES.includes(p.sampleStockStatus as SampleStockStatus)
+            ? (p.sampleStockStatus as SampleStockStatus)
+            : 'IN_STOCK';
+          const returnRule = SAMPLE_RETURN_RULES.includes(p.sampleReturnRule as SampleReturnRule)
+            ? (p.sampleReturnRule as SampleReturnRule)
+            : 'GIFT';
+          return {
+            id: id(p.id),
+            name,
+            skuCode: text(p.skuCode, 80),
+            size: text(p.size, 80),
+            priceVnd: money(p.priceVnd),
+            dealPriceVnd: money(p.dealPriceVnd),
+            commissionOrganicPct: percent(p.commissionOrganicPct),
+            commissionAdsPct: percent(p.commissionAdsPct),
+            sampleStockStatus: stockStatus,
+            sampleReturnRule: returnRule,
+            pdpUrl: url(p.pdpUrl),
+            usps: lines(p.usps, 8),
+            mechanism: text(p.mechanism, 2000),
+            ingredients: lines(p.ingredients, 20),
+            targetUser: text(p.targetUser, 500),
+            contraindications: text(p.contraindications, 500),
+          };
         }),
       };
     case 'CONTENT_RULES': {
       const r: BrandContentRules = {
         banned: list(d.banned, 300, b => { const phrase = text(b.phrase, 120); return phrase ? { id: id(b.id), phrase, reason: text(b.reason, 300), replacement: text(b.replacement, 200) } : null; }),
         preferred: list(d.preferred, 200, b => { const phrase = text(b.phrase, 200); return phrase ? { id: id(b.id), phrase, note: text(b.note, 300) } : null; }),
-        visualDo: lines(d.visualDo, 30), visualDont: lines(d.visualDont, 30),
+        visualDo: lines(d.visualDo, 30),
+        visualDont: lines(d.visualDont, 30),
+        mandatoryHashtags: lines(d.mandatoryHashtags, 20, 100),
+        mandatoryMentions: lines(d.mandatoryMentions, 15, 100),
+        defaultCta: text(d.defaultCta, 400),
+        videoDurationRule: text(d.videoDurationRule, 400),
       };
       return { contentRules: r };
     }

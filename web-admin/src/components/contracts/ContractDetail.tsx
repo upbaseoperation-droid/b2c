@@ -7,6 +7,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { ArrowLeft, Download, FileCheck2, FilePlus2, Pencil, RefreshCw, RotateCcw, ScanSearch } from 'lucide-react';
+import type { BookingDealItem } from '../../lib/types';
 import type { ContractField, ContractRecord, ContractRole, DocBlock } from '../../lib/contracts/types';
 import { ActionMenu, Button, ConfirmDialog, EmptyState, Field, Input, Modal, Person, SectionHeader, Select, Status } from '../ui';
 import type { ActionMenuItem } from '../ui';
@@ -27,6 +28,7 @@ interface PreviewResponse {
 export function ContractDetail({
   record,
   data,
+  deals = [],
   busy,
   onBack,
   onAction,
@@ -36,6 +38,7 @@ export function ContractDetail({
 }: {
   record: ContractRecord;
   data: ContractBootstrap;
+  deals?: BookingDealItem[];
   busy: boolean;
   onBack: () => void;
   onAction: Action;
@@ -59,6 +62,7 @@ export function ContractDetail({
   const canCheck = record.approval !== 'APPROVED' && !record.signing.length && (isOwner || record.steps.some(s => s.reviewerId === me.id));
   const hasAcceptance = data.records.some(r => r.parentId === record.id);
   const parent = record.parentId ? data.records.find(r => r.id === record.parentId) : undefined;
+  const linkedDeal = deals.find(d => d.id === record.dealId || (record.dealCode && d.dealCode === record.dealCode));
 
   const [dialog, setDialog] = useState<null | 'submit' | 'approve' | 'changes' | 'reject' | 'withdraw' | 'link'>(null);
   const [selectedVersion, setSelectedVersion] = useState<number>(record.version);
@@ -235,6 +239,92 @@ export function ContractDetail({
               )}
             </div>
           </section>
+
+          {/* Đối soát tài chính & hạn mức Booking (Dành cho Kế toán & Lead) */}
+          {(() => {
+            const allFields = previewData?.fields || template?.fields || [];
+            const moneyFields = allFields.filter(f => f.group === 'MONEY' || f.kind === 'money' || f.source === 'netTotal' || f.source === 'lineTotal');
+            const parsedContractValue = moneyFields.reduce((max, f) => {
+              const raw = (shownValues[f.key] || '').replace(/[^\d]/g, '');
+              const num = raw ? Number(raw) : 0;
+              return num > max ? num : max;
+            }, 0);
+            const dealValue = linkedDeal?.totalValue || 0;
+            const diff = dealValue > 0 && parsedContractValue > 0 ? parsedContractValue - dealValue : 0;
+            const subject = template?.subject || 'Cá nhân';
+            const isIndividual = subject === 'Cá nhân' || subject === 'CTV tháng';
+            const pitWithholding = isIndividual && parsedContractValue >= 2000000 ? Math.round(parsedContractValue * 0.1) : 0;
+            const netPayout = parsedContractValue > 0 ? parsedContractValue - pitWithholding : 0;
+
+            return (
+              <section className="grid gap-3">
+                <SectionHeader
+                  title="Đối soát tài chính & Hạn mức Booking"
+                  description="Đối chiếu giá trị trên hợp đồng với hạn mức Deal Booking, thuế khấu trừ tại nguồn và đợt thanh toán."
+                  actions={
+                    dealValue > 0 && parsedContractValue > 0 ? (
+                      <Status tone={diff === 0 ? 'positive' : diff > 0 ? 'critical' : 'warning'}>
+                        {diff === 0
+                          ? 'Khớp 100% giá trị Booking'
+                          : diff > 0
+                            ? `Vượt Booking +${diff.toLocaleString('vi-VN')} đ`
+                            : `Thấp hơn Booking ${Math.abs(diff).toLocaleString('vi-VN')} đ`}
+                      </Status>
+                    ) : (
+                      <Status tone="info">Chế độ thuế: {subject}</Status>
+                    )
+                  }
+                />
+                <div className="bg-surface border border-line rounded-xl p-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4 text-xs">
+                  <div className="space-y-1">
+                    <span className="text-2xs text-ink-3 block">Giá trị ghi trên hợp đồng</span>
+                    <span className="text-sm font-semibold text-ink tabular-nums block">
+                      {parsedContractValue > 0 ? `${parsedContractValue.toLocaleString('vi-VN')} đ` : 'Chưa điền số tiền'}
+                    </span>
+                    <span className="text-2xs text-ink-3 block">
+                      {template?.kind === 'ACCEPTANCE' ? 'Giá trị nghiệm thu quyết toán' : 'Tổng thù lao dịch vụ'}
+                    </span>
+                  </div>
+
+                  <div className="space-y-1">
+                    <span className="text-2xs text-ink-3 block">Hạn mức Deal Booking gốc</span>
+                    <span className="text-sm font-semibold text-ink tabular-nums block">
+                      {linkedDeal ? `${dealValue.toLocaleString('vi-VN')} đ` : 'Hồ sơ độc lập'}
+                    </span>
+                    <span className="text-2xs text-ink-3 block">
+                      {linkedDeal
+                        ? `${linkedDeal.dealCode} · Khung ${linkedDeal.salaryGrade} · Tạm ứng ${linkedDeal.advanceAmount.toLocaleString('vi-VN')} đ`
+                        : 'Không gắn mã Booking'}
+                    </span>
+                  </div>
+
+                  <div className="space-y-1">
+                    <span className="text-2xs text-ink-3 block">Khấu trừ thuế / Hóa đơn</span>
+                    <span className="text-sm font-semibold text-ink tabular-nums block">
+                      {isIndividual
+                        ? pitWithholding > 0
+                          ? `TNCN 10%: ${pitWithholding.toLocaleString('vi-VN')} đ`
+                          : 'TNCN 0 đ (< 2 triệu)'
+                        : 'Xuất hóa đơn theo ĐKKD'}
+                    </span>
+                    <span className="text-2xs text-ink-3 block">
+                      {isIndividual ? 'Khấu trừ tại nguồn trước khi chi' : `Đối tác ${subject} xuất hóa đơn`}
+                    </span>
+                  </div>
+
+                  <div className="space-y-1">
+                    <span className="text-2xs text-ink-3 block">Thực chi cho Bên B (Net)</span>
+                    <span className="text-sm font-semibold text-positive tabular-nums block">
+                      {netPayout > 0 ? `${netPayout.toLocaleString('vi-VN')} đ` : '—'}
+                    </span>
+                    <span className="text-2xs text-ink-3 block">
+                      {isAcceptance(record.templateId) ? 'Đủ điều kiện trình duyệt chi' : 'Tất toán sau khi có BBNT'}
+                    </span>
+                  </div>
+                </div>
+              </section>
+            );
+          })()}
 
           {/* Xem trực tiếp văn bản hợp đồng trên màn hình */}
           <section className="grid gap-3">
@@ -451,14 +541,30 @@ function History({ record }: { record: ContractRecord }) {
 
 function SubmitDialog({ open, record, data, busy, onClose, onSubmit }: { open: boolean; record: ContractRecord; data: ContractBootstrap; busy: boolean; onClose: () => void; onSubmit: (ids: string[]) => void }) {
   const [picked, setPicked] = useState<Record<string, string>>({});
+  const template = data.templates.find(t => t.id === record.templateId);
   const options = (role: ContractRole) => data.reviewers.filter(a => a.id !== record.ownerId && a.roles.includes(role) && (a.allBrands || a.brands.includes(record.brand)));
+
+  useEffect(() => {
+    if (!open) return;
+    const legalOpts = options('LEGAL');
+    const financeOpts = options('FINANCE');
+    const leadOpts = options('LEAD');
+    const defaultRoles = template?.defaultReviewRoles || ['LEGAL', 'FINANCE'];
+    setPicked({
+      LEGAL: legalOpts[0]?.id || '',
+      FINANCE: financeOpts.find(a => a.id !== legalOpts[0]?.id)?.id || financeOpts[0]?.id || '',
+      LEAD: defaultRoles.includes('LEAD') ? (leadOpts[0]?.id || '') : '',
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, record.id]);
+
   const ready = !!picked.LEGAL && !!picked.FINANCE && picked.LEGAL !== picked.FINANCE;
   return (
     <Modal
       open={open}
       onClose={onClose}
       title="Gửi duyệt hồ sơ"
-      description={`Phiên bản ${record.version}. Pháp chế và kế toán phải là hai người khác nhau.`}
+      description={`Phiên bản ${record.version}. Đã tự động gợi ý cấp duyệt theo cấu hình của danh mục "${template?.name || record.templateId}".`}
       footer={
         <>
           <Button variant="ghost" onClick={onClose}>Hủy</Button>
@@ -467,7 +573,7 @@ function SubmitDialog({ open, record, data, busy, onClose, onSubmit }: { open: b
       }
     >
       {(['LEGAL', 'FINANCE', 'LEAD'] as const).map(role => (
-        <Field key={role} label={`${ROLE_LABEL[role]}${role === 'LEAD' ? ' (không bắt buộc)' : ''}`} htmlFor={`rv-${role}`}>
+        <Field key={role} label={`${ROLE_LABEL[role]}${role === 'LEAD' ? ' (tùy theo hạn mức / nhóm)' : ' *'}`} htmlFor={`rv-${role}`}>
           <Select id={`rv-${role}`} value={picked[role] || ''} onChange={e => setPicked(p => ({ ...p, [role]: e.target.value }))}>
             <option value="">{role === 'LEAD' ? 'Không cần' : 'Chọn người duyệt'}</option>
             {options(role).map(a => <option key={a.id} value={a.id}>{a.name}</option>)}

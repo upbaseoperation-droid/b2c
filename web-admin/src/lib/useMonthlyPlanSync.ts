@@ -75,7 +75,11 @@ export function useMonthlyPlanSync({
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch('/api/monthly-plans', { cache: 'no-store' });
+        let res = await fetch('/api/monthly-plans', { cache: 'no-store' });
+        if (res.status === 401) {
+          await fetch('/api/auth/me', { cache: 'no-store' }).catch(() => null);
+          res = await fetch('/api/monthly-plans', { cache: 'no-store' });
+        }
         if (!res.ok) throw new Error((await res.json().catch(() => null))?.error || `HTTP ${res.status}`);
         const body = (await res.json()) as { plans: StoredPlan[] };
         if (cancelled) return;

@@ -51,9 +51,24 @@ import {
   sharedTo,
   type Column,
 } from '../ui';
-import { ContentRulesDialog, EntityDialog, ItemDialog, PositioningDialog, RatecardDialog, type ItemField } from './BrandEditors';
+import {
+  ContentRulesDialog,
+  EntityDialog,
+  ItemDialog,
+  PositioningDialog,
+  RatecardDialog,
+  WorkflowRulesDialog,
+  type ItemField,
+} from './BrandEditors';
 import {
   DOC_CATEGORY_LABEL,
+  KOC_APPROVAL_MODE_LABEL,
+  OPERATING_MODEL_LABEL,
+  PROJECT_TIER_LABEL,
+  SAMPLE_RETURN_LABEL,
+  SAMPLE_SENDER_LABEL,
+  SAMPLE_STOCK_LABEL,
+  STRATEGY_OWNER_LABEL,
   TONE_LABEL,
   dateTime,
   fileExtLabel,
@@ -66,15 +81,30 @@ import {
 
 type Save = (section: BrandSection, data: unknown, summary?: string) => Promise<boolean>;
 type ListKey = 'products' | 'faqs' | 'legal' | 'documents';
-type BrandDetailTab = 'OVERVIEW' | 'FILES' | 'STORES' | 'PRODUCTS' | 'COMPLIANCE';
+type BrandDetailTab = 'OVERVIEW' | 'WORKFLOW' | 'FILES' | 'STORES' | 'PRODUCTS' | 'COMPLIANCE';
 
 const PRODUCT_FIELDS: ItemField[] = [
   { key: 'name', label: 'Tên sản phẩm', required: true, wide: true },
   { key: 'skuCode', label: 'Mã SKU' },
   { key: 'size', label: 'Quy cách', hint: 'Ví dụ 120g, 500ml, 60 viên.' },
   { key: 'priceVnd', label: 'Giá niêm yết', kind: 'money' },
-  { key: 'pdpUrl', label: 'Link trang sản phẩm', kind: 'url' },
-  { key: 'usps', label: 'Điểm nổi bật KOC cần nói', kind: 'lines' },
+  { key: 'dealPriceVnd', label: 'Giá bán chiến dịch / Giá deal', kind: 'money' },
+  { key: 'commissionOrganicPct', label: 'Hoa hồng tự nhiên (%)', kind: 'number', hint: 'VD: 12' },
+  { key: 'commissionAdsPct', label: 'Hoa hồng chạy quảng cáo (%)', kind: 'number', hint: 'VD: 8' },
+  {
+    key: 'sampleStockStatus',
+    label: 'Tồn kho hàng mẫu gửi KOC',
+    kind: 'select',
+    options: Object.entries(SAMPLE_STOCK_LABEL).map(([value, info]) => ({ value, label: info.label })),
+  },
+  {
+    key: 'sampleReturnRule',
+    label: 'Chính sách thu hồi hàng mẫu',
+    kind: 'select',
+    options: Object.entries(SAMPLE_RETURN_LABEL).map(([value, label]) => ({ value, label })),
+  },
+  { key: 'pdpUrl', label: 'Link trang sản phẩm', kind: 'url', wide: true },
+  { key: 'usps', label: 'Điểm nổi bật KOC cần nhấn mạnh', kind: 'lines' },
   { key: 'mechanism', label: 'Cơ chế tác động', kind: 'long' },
   { key: 'ingredients', label: 'Thành phần chính', kind: 'lines', hint: 'Mỗi dòng: tên thành phần: công dụng.' },
   { key: 'targetUser', label: 'Phù hợp với' },
@@ -139,7 +169,7 @@ export function BrandProfileDetail({
   const m = row.master;
 
   const [activeTab, setActiveTab] = useState<BrandDetailTab>('OVERVIEW');
-  const [dialog, setDialog] = useState<null | 'POSITIONING' | 'ENTITY' | 'RATECARD' | 'CONTENT_RULES'>(null);
+  const [dialog, setDialog] = useState<null | 'POSITIONING' | 'ENTITY' | 'RATECARD' | 'CONTENT_RULES' | 'WORKFLOW_RULES'>(null);
   const [item, setItem] = useState<null | { list: ListKey; index: number }>(null);
   const [removing, setRemoving] = useState<null | { list: ListKey; index: number }>(null);
   const [showTaxCode, setShowTaxCode] = useState(false);
@@ -526,11 +556,11 @@ export function BrandProfileDetail({
               disabled={busy || quickUploading}
               onClick={() => quickFileInputRef.current?.click()}
             >
-              {quickUploading ? 'Đang tải lên R2…' : 'Tải tệp thương hiệu'}
+              {quickUploading ? 'Đang tải tệp…' : 'Tải tệp thương hiệu'}
             </Button>
           )}
           <Button size="sm" variant="secondary" icon={FolderOpen} onClick={() => setActiveTab('FILES')}>
-            Kho tệp R2 ({p.documents.length})
+            Kho tài liệu ({p.documents.length})
           </Button>
           {onOpenBooking && (
             <Button size="sm" variant="primary" onClick={onOpenBooking}>
@@ -617,7 +647,7 @@ export function BrandProfileDetail({
           note={`${brandStores.length} gian hàng (${(m?.platforms || ['TikTok Shop']).join(', ')})`}
         />
         <Stat
-          label="Kho tệp R2 & Pháp lý"
+          label="Tài liệu & Pháp lý"
           value={`${p.documents.length} tệp`}
           note={
             expiredLegalCount > 0
@@ -634,7 +664,12 @@ export function BrandProfileDetail({
         onChange={setActiveTab}
         items={[
           { key: 'OVERVIEW', label: 'Tổng quan & Định vị', count: `${row.done}/${row.total}` },
-          { key: 'FILES', label: 'Kho tệp & Tài liệu (R2)', count: p.documents.length },
+          {
+            key: 'WORKFLOW',
+            label: 'Quy tắc vận hành & Phê duyệt',
+            count: p.workflowRules?.kocApprovalMode === 'KL4_PLUS_ONLY' ? 'Duyệt KL4+' : p.workflowRules?.kocApprovalMode === 'NONE_AUTO' ? 'Tự chủ' : 'Duyệt 100%',
+          },
+          { key: 'FILES', label: 'Tài liệu & Hợp đồng', count: p.documents.length },
           { key: 'STORES', label: 'Gian hàng & Booking', count: brandStores.length },
           { key: 'PRODUCTS', label: 'Sản phẩm & Trần thù lao', count: p.products.length },
           {
@@ -652,10 +687,72 @@ export function BrandProfileDetail({
       {activeTab === 'OVERVIEW' && (
         <div className="grid gap-6 items-start lg:grid-cols-[minmax(0,1fr)_340px]">
           <div className="grid gap-6 min-w-0">
-            {/* Định vị & thông điệp */}
+            {/* Quy tắc vận hành & Phê duyệt (ảnh hưởng trực tiếp tới luồng làm việc của nhân sự) */}
+            <Panel
+              title={SECTION_LABEL.WORKFLOW_RULES}
+              description="Thiết lập phân hạng dự án, cổng phê duyệt KOC/kịch bản, SLA gửi mẫu và bản quyền chạy quảng cáo"
+              actions={
+                <div className="flex items-center gap-1.5">
+                  <Button size="sm" variant="ghost" onClick={() => setActiveTab('WORKFLOW')}>
+                    Chi tiết quy trình
+                  </Button>
+                  {editBtn('WORKFLOW_RULES', () => setDialog('WORKFLOW_RULES'), 'Cấu hình luồng')}
+                </div>
+              }
+            >
+              {p.workflowRules ? (
+                <div className="grid gap-3.5 text-[13px]">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Status tone={p.workflowRules.projectTier === 'TIER_A_STRATEGIC' ? 'info' : p.workflowRules.projectTier === 'TIER_B_GROWTH' ? 'positive' : 'neutral'}>
+                      {PROJECT_TIER_LABEL[p.workflowRules.projectTier]}
+                    </Status>
+                    <span className="px-2 py-0.5 rounded bg-sunken border border-line text-2xs font-medium text-ink-2">
+                      {OPERATING_MODEL_LABEL[p.workflowRules.operatingModel]}
+                    </span>
+                    <span className="px-2 py-0.5 rounded bg-canvas border border-line text-2xs text-ink-2">
+                      {STRATEGY_OWNER_LABEL[p.workflowRules.strategyOwnerTeam]}
+                    </span>
+                  </div>
+                  <dl className="grid gap-3 sm:grid-cols-3 pt-1">
+                    <Info label="Chốt chặn duyệt danh sách KOC">
+                      <span className="font-medium text-ink">{KOC_APPROVAL_MODE_LABEL[p.workflowRules.kocApprovalMode]}</span>
+                    </Info>
+                    <Info label="SLA duyệt kịch bản & giới hạn sửa">
+                      <span>
+                        {[
+                          p.workflowRules.requireScriptApproval ? 'Duyệt kịch bản' : 'Bỏ duyệt kịch bản',
+                          p.workflowRules.requireDemoApproval ? 'Duyệt video nháp' : 'Không duyệt nháp',
+                        ].join(' + ')}{' '}
+                        · Tự động cho phép đăng sau <strong>{p.workflowRules.autoAirAfterHours}h</strong> · Tối đa <strong>{p.workflowRules.maxFreeRevisions} lần sửa</strong>
+                      </span>
+                    </Info>
+                    <Info label="Đầu mối gửi mẫu & thu hồi">
+                      <span>
+                        {SAMPLE_SENDER_LABEL[p.workflowRules.sampleSender]} (SLA {p.workflowRules.samplePrepSlaHours}h) · {SAMPLE_RETURN_LABEL[p.workflowRules.defaultSamplePolicy]}
+                      </span>
+                    </Info>
+                  </dl>
+                  <div className="rounded-lg bg-canvas/80 border border-line px-3 py-2 flex flex-wrap items-center justify-between gap-2 text-2xs text-ink-2">
+                    <span>
+                      <strong>Bản quyền &amp; Quảng cáo:</strong>{' '}
+                      {p.workflowRules.requiresAdsCode ? `Cấp mã quảng cáo ${p.workflowRules.adsCodeDurationDays} ngày` : 'Không bắt buộc mã quảng cáo'}
+                      {' · '}Giữ clip tối thiểu {p.workflowRules.minVideoRetentionDays} ngày
+                      {p.workflowRules.exclusivityDays > 0 ? ` · Độc quyền ngành hàng ${p.workflowRules.exclusivityDays} ngày` : ''}
+                    </span>
+                    <span className="text-ink-3">
+                      Người duyệt phía nhãn: <strong className="text-ink">{p.workflowRules.brandApproverName || 'Đại diện nhãn hàng'}</strong>
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <EmptyState title="Chưa cấu hình quy tắc vận hành" description="Thiết lập cổng duyệt KOC, SLA duyệt kịch bản và chính sách gửi mẫu." />
+              )}
+            </Panel>
+
+            {/* Định vị & thông điệp 4P / Insight */}
             <Panel
               title={SECTION_LABEL.POSITIONING}
-              description="Khẩu hiệu, giọng văn và tệp khách hàng mục tiêu để KOC bám sát khi lên kịch bản"
+              description="Khẩu hiệu, nỗi đau khách hàng, rào cản mua hàng và trụ cột nội dung để KOC bám sát khi lên kịch bản"
               actions={editBtn('POSITIONING', () => setDialog('POSITIONING'), p.positioning ? 'Sửa' : 'Thêm')}
             >
               {p.positioning && (p.positioning.slogan || p.positioning.toneOfVoice || p.positioning.story) ? (
@@ -677,6 +774,45 @@ export function BrandProfileDetail({
                       <span className="whitespace-pre-line text-ink-2 leading-relaxed">{p.positioning.story}</span>
                     </Info>
                   )}
+                  {((p.positioning.painPoints?.length || 0) > 0 || (p.positioning.barriersToTrial?.length || 0) > 0) && (
+                    <div className="grid gap-3 sm:grid-cols-2 pt-2 border-t border-line">
+                      {(p.positioning.painPoints?.length || 0) > 0 && (
+                        <div className="rounded-lg bg-canvas/60 border border-line p-3">
+                          <span className="block text-2xs font-medium text-ink-3 mb-1">Nỗi đau khách hàng (mở đầu 3 giây đầu):</span>
+                          <ul className="list-disc pl-4 text-xs text-ink-2 grid gap-1">
+                            {p.positioning.painPoints!.map((pt, idx) => <li key={idx}>{pt}</li>)}
+                          </ul>
+                        </div>
+                      )}
+                      {(p.positioning.barriersToTrial?.length || 0) > 0 && (
+                        <div className="rounded-lg bg-canvas/60 border border-line p-3">
+                          <span className="block text-2xs font-medium text-ink-3 mb-1">Rào cản mua hàng KOC cần hóa giải:</span>
+                          <ul className="list-disc pl-4 text-xs text-ink-2 grid gap-1">
+                            {p.positioning.barriersToTrial!.map((br, idx) => <li key={idx}>{br}</li>)}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {((p.positioning.rtbs?.length || 0) > 0 || (p.positioning.contentPillars?.length || 0) > 0 || (p.positioning.competitors?.length || 0) > 0) && (
+                    <dl className="grid gap-3 sm:grid-cols-2 pt-1">
+                      {(p.positioning.rtbs?.length || 0) > 0 && (
+                        <Info label="Bằng chứng tin cậy & kiểm nghiệm">
+                          {p.positioning.rtbs!.join(' · ')}
+                        </Info>
+                      )}
+                      {(p.positioning.contentPillars?.length || 0) > 0 && (
+                        <Info label="Trụ cột tuyến nội dung">
+                          {p.positioning.contentPillars!.join(' · ')}
+                        </Info>
+                      )}
+                      {(p.positioning.competitors?.length || 0) > 0 && (
+                        <Info label="Nhãn hàng cùng phân khúc (không nhắc tên trong clip)">
+                          {p.positioning.competitors!.join(', ')}
+                        </Info>
+                      )}
+                    </dl>
+                  )}
                 </div>
               ) : (
                 <EmptyState title="Chưa có định vị thương hiệu" description="Thêm khẩu hiệu, giọng văn và chân dung khách hàng để KOC viết kịch bản." />
@@ -696,55 +832,71 @@ export function BrandProfileDetail({
                   description={
                     (m?.heroProducts.length || 0) > 0
                       ? `Dữ liệu gốc có ${m!.heroProducts.length} sản phẩm (${m!.heroProducts.map(h => h.productName || h.sku).slice(0, 3).join(', ')}) nhưng chưa cập nhật hướng dẫn cho KOC.`
-                      : 'Thêm các SKU trọng tâm để KOC nắm rõ USP, thành phần và cơ chế tác động.'
+                      : 'Thêm các SKU trọng tâm để KOC nắm rõ điểm nổi bật, thành phần và cơ chế tác động.'
                   }
                 />
               ) : (
                 <ul className="divide-y divide-line">
-                  {p.products.map((x, i) => (
-                    <li key={x.id} className="px-4 py-4 grid gap-2.5 text-[13px]">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="font-semibold text-ink">{x.name}</span>
-                            {x.skuCode && (
-                              <span className="px-1.5 py-0.5 rounded bg-sunken border border-line text-2xs font-code text-ink-2">
-                                {x.skuCode}
-                              </span>
-                            )}
-                            {x.size && <span className="text-2xs text-ink-3">· {x.size}</span>}
-                            {x.priceVnd && <span className="text-xs font-semibold text-ink tabular-nums">· {formatVnd(x.priceVnd)}</span>}
+                  {p.products.map((x, i) => {
+                    const stockMeta = x.sampleStockStatus ? SAMPLE_STOCK_LABEL[x.sampleStockStatus] : SAMPLE_STOCK_LABEL.IN_STOCK;
+                    return (
+                      <li key={x.id} className="px-4 py-4 grid gap-2.5 text-[13px]">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="font-semibold text-ink">{x.name}</span>
+                              {x.skuCode && (
+                                <span className="px-1.5 py-0.5 rounded bg-sunken border border-line text-2xs font-code text-ink-2">
+                                  {x.skuCode}
+                                </span>
+                              )}
+                              {x.size && <span className="text-2xs text-ink-3">· {x.size}</span>}
+                              {x.priceVnd && <span className="text-xs font-semibold text-ink tabular-nums">· Niêm yết {formatVnd(x.priceVnd)}</span>}
+                              {x.dealPriceVnd && <span className="text-xs font-semibold text-accent tabular-nums">· Giá deal {formatVnd(x.dealPriceVnd)}</span>}
+                              <Status tone={stockMeta.tone}>{stockMeta.label}</Status>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-2xs text-ink-3 mt-1">
+                              {(x.commissionOrganicPct !== undefined || x.commissionAdsPct !== undefined) && (
+                                <span>
+                                  Hoa hồng KOC: <strong className="text-ink-2">{x.commissionOrganicPct ?? 10}% tự nhiên</strong>
+                                  {x.commissionAdsPct !== undefined ? ` / ${x.commissionAdsPct}% quảng cáo` : ''}
+                                </span>
+                              )}
+                              {x.sampleReturnRule && (
+                                <span>· {SAMPLE_RETURN_LABEL[x.sampleReturnRule]}</span>
+                              )}
+                              {x.pdpUrl && (
+                                <a
+                                  href={x.pdpUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="text-accent hover:underline inline-flex items-center gap-1"
+                                >
+                                  <span>Mở trang sản phẩm trên sàn</span>
+                                  <ExternalLink className="w-3 h-3" />
+                                </a>
+                              )}
+                            </div>
                           </div>
-                          {x.pdpUrl && (
-                            <a
-                              href={x.pdpUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="text-2xs text-accent hover:underline inline-flex items-center gap-1 mt-0.5"
-                            >
-                              <span>Mở trang sản phẩm trên sàn</span>
-                              <ExternalLink className="w-3 h-3" />
-                            </a>
-                          )}
+                          {itemMenu('products', i)}
                         </div>
-                        {itemMenu('products', i)}
-                      </div>
-                      {x.usps.length > 0 && (
-                        <div>
-                          <span className="block text-2xs text-ink-3 mb-1">Điểm nổi bật KOC cần nhấn mạnh (USP):</span>
-                          <ul className="list-disc pl-5 text-ink-2 grid gap-0.5">
-                            {x.usps.map((u, k) => <li key={k}>{u}</li>)}
-                          </ul>
-                        </div>
-                      )}
-                      <dl className="grid gap-3 sm:grid-cols-2 pt-1">
-                        {x.mechanism && <Info label="Cơ chế tác động / Góc kịch bản">{x.mechanism}</Info>}
-                        {x.ingredients.length > 0 && <Info label="Thành phần chính">{x.ingredients.join('; ')}</Info>}
-                        {x.targetUser && <Info label="Đối tượng phù hợp">{x.targetUser}</Info>}
-                        {x.contraindications && <Info label="Lưu ý / Không dùng cho">{x.contraindications}</Info>}
-                      </dl>
-                    </li>
-                  ))}
+                        {x.usps.length > 0 && (
+                          <div>
+                            <span className="block text-2xs text-ink-3 mb-1">Điểm nổi bật KOC cần nhấn mạnh:</span>
+                            <ul className="list-disc pl-5 text-ink-2 grid gap-0.5">
+                              {x.usps.map((u, k) => <li key={k}>{u}</li>)}
+                            </ul>
+                          </div>
+                        )}
+                        <dl className="grid gap-3 sm:grid-cols-2 pt-1">
+                          {x.mechanism && <Info label="Cơ chế tác động / Góc kịch bản">{x.mechanism}</Info>}
+                          {x.ingredients.length > 0 && <Info label="Thành phần chính">{x.ingredients.join('; ')}</Info>}
+                          {x.targetUser && <Info label="Đối tượng phù hợp">{x.targetUser}</Info>}
+                          {x.contraindications && <Info label="Lưu ý / Không dùng cho">{x.contraindications}</Info>}
+                        </dl>
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
             </Panel>
@@ -752,7 +904,7 @@ export function BrandProfileDetail({
             {/* Quy chuẩn nội dung */}
             <Panel
               title={SECTION_LABEL.CONTENT_RULES}
-              description="Từ khóa cấm, từ khuyến khích và quy chuẩn hình ảnh bắt buộc khi duyệt kịch bản & video"
+              description="Từ khóa cấm, từ khuyến khích, hashtag và quy chuẩn hình ảnh bắt buộc khi duyệt kịch bản & video"
               actions={editBtn('CONTENT_RULES', () => setDialog('CONTENT_RULES'), p.contentRules ? 'Sửa' : 'Thêm')}
               flush
             >
@@ -763,56 +915,71 @@ export function BrandProfileDetail({
                 !p.contentRules.visualDont.length) ? (
                 <EmptyState title="Chưa có quy chuẩn nội dung" description="Thiết lập từ cấm và quy tắc hình ảnh để đối soát kịch bản KOC." />
               ) : (
-                <div className="grid sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-line text-[13px]">
-                  <div className="px-4 py-4 grid gap-2.5 content-start">
-                    <h4 className="text-2xs font-medium text-critical">Từ khóa cấm dùng ({p.contentRules.banned.length})</h4>
-                    {p.contentRules.banned.length === 0 ? (
-                      <p className="text-ink-3">—</p>
-                    ) : (
-                      <ul className="grid gap-2">
-                        {p.contentRules.banned.map(b => (
-                          <li key={b.id} className="rounded-lg bg-canvas/60 border border-line p-2.5">
-                            <div className="flex flex-wrap items-center gap-1.5">
-                              <span className="font-medium text-critical">“{b.phrase}”</span>
-                              {b.replacement && <span className="text-ink-2">→ Thay bằng: <strong className="text-positive font-medium">“{b.replacement}”</strong></span>}
-                            </div>
-                            {b.reason && <span className="block text-2xs text-ink-3 mt-0.5">{b.reason}</span>}
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                    {p.contentRules.visualDont.length > 0 && (
-                      <>
-                        <h4 className="text-2xs font-medium text-ink-3 pt-2">Hình ảnh không được xuất hiện</h4>
-                        <ul className="list-disc pl-5 text-ink-2 grid gap-1">
-                          {p.contentRules.visualDont.map((x, k) => <li key={k}>{x}</li>)}
+                <div className="divide-y divide-line text-[13px]">
+                  <div className="grid sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-line">
+                    <div className="px-4 py-4 grid gap-2.5 content-start">
+                      <h4 className="text-2xs font-medium text-critical">Từ khóa cấm dùng ({p.contentRules.banned.length})</h4>
+                      {p.contentRules.banned.length === 0 ? (
+                        <p className="text-ink-3">—</p>
+                      ) : (
+                        <ul className="grid gap-2">
+                          {p.contentRules.banned.map(b => (
+                            <li key={b.id} className="rounded-lg bg-canvas/60 border border-line p-2.5">
+                              <div className="flex flex-wrap items-center gap-1.5">
+                                <span className="font-medium text-critical">“{b.phrase}”</span>
+                                {b.replacement && <span className="text-ink-2">→ Thay bằng: <strong className="text-positive font-medium">“{b.replacement}”</strong></span>}
+                              </div>
+                              {b.reason && <span className="block text-2xs text-ink-3 mt-0.5">{b.reason}</span>}
+                            </li>
+                          ))}
                         </ul>
-                      </>
-                    )}
-                  </div>
-                  <div className="px-4 py-4 grid gap-2.5 content-start">
-                    <h4 className="text-2xs font-medium text-positive">Cụm từ khuyến khích ({p.contentRules.preferred.length})</h4>
-                    {p.contentRules.preferred.length === 0 ? (
-                      <p className="text-ink-3">—</p>
-                    ) : (
-                      <ul className="grid gap-2">
-                        {p.contentRules.preferred.map(x => (
-                          <li key={x.id} className="rounded-lg bg-canvas/60 border border-line p-2.5">
-                            <span className="font-medium text-positive">“{x.phrase}”</span>
-                            {x.note && <span className="block text-2xs text-ink-3 mt-0.5">{x.note}</span>}
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                    {p.contentRules.visualDo.length > 0 && (
-                      <>
-                        <h4 className="text-2xs font-medium text-ink-3 pt-2">Hình ảnh nên có trong video</h4>
-                        <ul className="list-disc pl-5 text-ink-2 grid gap-1">
-                          {p.contentRules.visualDo.map((x, k) => <li key={k}>{x}</li>)}
+                      )}
+                      {p.contentRules.visualDont.length > 0 && (
+                        <>
+                          <h4 className="text-2xs font-medium text-ink-3 pt-2">Hình ảnh không được xuất hiện</h4>
+                          <ul className="list-disc pl-5 text-ink-2 grid gap-1">
+                            {p.contentRules.visualDont.map((x, k) => <li key={k}>{x}</li>)}
+                          </ul>
+                        </>
+                      )}
+                    </div>
+                    <div className="px-4 py-4 grid gap-2.5 content-start">
+                      <h4 className="text-2xs font-medium text-positive">Cụm từ khuyến khích ({p.contentRules.preferred.length})</h4>
+                      {p.contentRules.preferred.length === 0 ? (
+                        <p className="text-ink-3">—</p>
+                      ) : (
+                        <ul className="grid gap-2">
+                          {p.contentRules.preferred.map(x => (
+                            <li key={x.id} className="rounded-lg bg-canvas/60 border border-line p-2.5">
+                              <span className="font-medium text-positive">“{x.phrase}”</span>
+                              {x.note && <span className="block text-2xs text-ink-3 mt-0.5">{x.note}</span>}
+                            </li>
+                          ))}
                         </ul>
-                      </>
-                    )}
+                      )}
+                      {p.contentRules.visualDo.length > 0 && (
+                        <>
+                          <h4 className="text-2xs font-medium text-ink-3 pt-2">Hình ảnh nên có trong video</h4>
+                          <ul className="list-disc pl-5 text-ink-2 grid gap-1">
+                            {p.contentRules.visualDo.map((x, k) => <li key={k}>{x}</li>)}
+                          </ul>
+                        </>
+                      )}
+                    </div>
                   </div>
+                  {((p.contentRules.mandatoryHashtags?.length || 0) > 0 || p.contentRules.defaultCta || p.contentRules.videoDurationRule) && (
+                    <div className="px-4 py-3.5 bg-canvas/40 grid gap-2 sm:grid-cols-3 text-xs">
+                      <Info label="Hashtag & gắn thẻ bắt buộc">
+                        {[...(p.contentRules.mandatoryHashtags || []), ...(p.contentRules.mandatoryMentions || [])].join(' ')}
+                      </Info>
+                      <Info label="Thời lượng & cấu trúc clip">
+                        {p.contentRules.videoDurationRule}
+                      </Info>
+                      <Info label="Câu điều hướng mua hàng (CTA)">
+                        {p.contentRules.defaultCta}
+                      </Info>
+                    </div>
+                  )}
                 </div>
               )}
             </Panel>
@@ -845,7 +1012,7 @@ export function BrandProfileDetail({
                               )}
                               {l.fileKey && (
                                 <span className="px-1.5 py-0.5 rounded bg-canvas border border-line text-2xs text-ink-2 font-code">
-                                  {[ext || 'FILE', size, l.storage === 'R2' ? 'R2' : undefined].filter(Boolean).join(' · ')}
+                                  {[ext || 'FILE', size].filter(Boolean).join(' · ')}
                                 </span>
                               )}
                             </div>
@@ -914,10 +1081,10 @@ export function BrandProfileDetail({
 
           {/* CỘT PHỤ BÊN PHẢI */}
           <aside className="bg-surface border border-line rounded-xl divide-y divide-line min-w-0">
-            {/* Kho tệp R2 rút gọn */}
+            {/* Kho tài liệu rút gọn */}
             <Aside
               title={`${SECTION_LABEL.DOCUMENTS} (${p.documents.length})`}
-              note="Lưu trữ trên Cloudflare R2 hoặc liên kết tài liệu"
+              note="Tệp tải lên hoặc liên kết tài liệu"
               action={
                 <div className="flex items-center gap-1.5">
                   {can.DOCUMENTS && (
@@ -948,7 +1115,7 @@ export function BrandProfileDetail({
               >
                 {p.documents.length === 0 ? (
                   <p className="text-[13px] text-ink-3">
-                    {can.DOCUMENTS ? 'Chưa có tài liệu. Nhấn “Tải tệp” hoặc kéo thả tệp vào đây để lưu lên Cloudflare R2.' : 'Chưa có tài liệu.'}
+                    {can.DOCUMENTS ? 'Chưa có tài liệu. Nhấn “Tải tệp” hoặc kéo thả tệp vào đây để lưu lên hệ thống.' : 'Chưa có tài liệu.'}
                   </p>
                 ) : (
                   <ul className="grid gap-2 text-[13px]">
@@ -966,9 +1133,9 @@ export function BrandProfileDetail({
                               </a>
                               <div className="flex flex-wrap items-center gap-1.5 text-2xs text-ink-3 mt-0.5">
                                 <span>{DOC_CATEGORY_LABEL[d.category]}</span>
-                                {(ext || size || d.storage === 'R2') && (
+                                {(ext || size) && (
                                   <span className="px-1.5 py-0.2 rounded bg-surface border border-line text-ink-2 font-code">
-                                    {[ext || (d.fileKey ? 'FILE' : 'LINK'), size, d.storage === 'R2' ? 'R2' : undefined].filter(Boolean).join(' · ')}
+                                    {[ext || (d.fileKey ? 'FILE' : 'LINK'), size].filter(Boolean).join(' · ')}
                                   </span>
                                 )}
                                 {downloadUrl && (
@@ -1085,11 +1252,198 @@ export function BrandProfileDetail({
       )}
 
       {/* ===================================================================== */}
-      {/* TAB 2: KHO TỆP & TÀI LIỆU THƯƠNG HIỆU (CLOUDFLARE R2 HUB)             */}
+      {/* TAB 1B: QUY TẮC VẬN HÀNH & PHÊ DUYỆT (ĐIỀU KHIỂN LUỒNG LÀM VIỆC)       */}
+      {/* ===================================================================== */}
+      {activeTab === 'WORKFLOW' && (
+        <div className="space-y-6">
+          <Panel
+            title={`${SECTION_LABEL.WORKFLOW_RULES} — ${row.name}`}
+            description="Các thiết lập tại màn hình này được áp dụng trực tiếp vào màn Tạo deal Booking, màn Duyệt kịch bản KOC và điều khoản nghiệm thu hợp đồng"
+            actions={editBtn('WORKFLOW_RULES', () => setDialog('WORKFLOW_RULES'), 'Chỉnh sửa quy tắc vận hành')}
+          >
+            {p.workflowRules ? (
+              <div className="grid gap-6 md:grid-cols-2 text-[13px]">
+                {/* Nhóm 1: Phân hạng dự án & Mô hình vận hành */}
+                <div className="rounded-xl border border-line bg-canvas/50 p-4 space-y-3">
+                  <h4 className="text-xs font-semibold text-ink uppercase tracking-wide">
+                    1. Phân hạng dự án &amp; Mô hình phối hợp team
+                  </h4>
+                  <dl className="grid gap-3">
+                    <Info label="Phân hạng dự án B2C">
+                      <Status tone={p.workflowRules.projectTier === 'TIER_A_STRATEGIC' ? 'info' : p.workflowRules.projectTier === 'TIER_B_GROWTH' ? 'positive' : 'neutral'}>
+                        {PROJECT_TIER_LABEL[p.workflowRules.projectTier]}
+                      </Status>
+                    </Info>
+                    <Info label="Mô hình phân công nhân sự (theo định hướng B2C)">
+                      <span className="font-medium text-ink">{OPERATING_MODEL_LABEL[p.workflowRules.operatingModel]}</span>
+                    </Info>
+                    <Info label="Đơn vị chủ trì chiến lược nội dung (Key Message)">
+                      <span>{STRATEGY_OWNER_LABEL[p.workflowRules.strategyOwnerTeam]}</span>
+                    </Info>
+                    <Info label="Đầu mối phê duyệt phía nhãn hàng">
+                      <span className="font-medium text-ink">{p.workflowRules.brandApproverName || 'Đại diện nhãn hàng'}</span>
+                    </Info>
+                  </dl>
+                </div>
+
+                {/* Nhóm 2: Chốt chặn phê duyệt KOC & Kịch bản */}
+                <div className="rounded-xl border border-line bg-canvas/50 p-4 space-y-3">
+                  <h4 className="text-xs font-semibold text-ink uppercase tracking-wide">
+                    2. Chốt chặn duyệt danh sách KOC &amp; SLA kịch bản
+                  </h4>
+                  <dl className="grid gap-3">
+                    <Info label="Quy tắc duyệt danh sách KOC (tác động khi tạo deal)">
+                      <span className="font-semibold text-accent">{KOC_APPROVAL_MODE_LABEL[p.workflowRules.kocApprovalMode]}</span>
+                    </Info>
+                    <Info label="Các bước bắt buộc trình nhãn duyệt">
+                      <span>
+                        {[
+                          p.workflowRules.requireScriptApproval ? 'Bắt buộc duyệt kịch bản' : 'Không cần nhãn duyệt kịch bản',
+                          p.workflowRules.requireDemoApproval ? 'Bắt buộc duyệt video nháp (Demo)' : 'Không cần duyệt video nháp',
+                        ].join(' · ')}
+                      </span>
+                    </Info>
+                    <Info label="Thời hạn tự động cho phép đăng bài (Auto-air SLA)">
+                      <span>
+                        Sau <strong>{p.workflowRules.autoAirAfterHours} giờ</strong> kể từ khi gửi kịch bản/video nháp mà nhãn chưa phản hồi, chuyên viên được phép cho KOC lên bài để kịp tiến độ chiến dịch.
+                      </span>
+                    </Info>
+                    <Info label="Giới hạn số lần chỉnh sửa miễn phí">
+                      <span>
+                        Tối đa <strong>{p.workflowRules.maxFreeRevisions} lần sửa</strong> theo đúng brief ban đầu (từ lần thứ {p.workflowRules.maxFreeRevisions + 1} cần thương lượng phụ phí).
+                      </span>
+                    </Info>
+                  </dl>
+                </div>
+
+                {/* Nhóm 3: Gửi mẫu & Bản quyền chạy Ads */}
+                <div className="rounded-xl border border-line bg-canvas/50 p-4 space-y-3">
+                  <h4 className="text-xs font-semibold text-ink uppercase tracking-wide">
+                    3. Quy định gửi hàng mẫu &amp; Bản quyền quảng cáo
+                  </h4>
+                  <dl className="grid gap-3">
+                    <Info label="Đầu mối xuất kho gửi mẫu &amp; SLA chuẩn bị">
+                      <span>
+                        <strong>{SAMPLE_SENDER_LABEL[p.workflowRules.sampleSender]}</strong> · Chuẩn bị đơn trong <strong>{p.workflowRules.samplePrepSlaHours} giờ</strong>
+                      </span>
+                    </Info>
+                    <Info label="Chính sách thu hồi hàng mẫu mặc định">
+                      <span>{SAMPLE_RETURN_LABEL[p.workflowRules.defaultSamplePolicy]}</span>
+                    </Info>
+                    <Info label="Yêu cầu cấp mã quảng cáo (Spark Ads) &amp; File gốc">
+                      <span>
+                        {p.workflowRules.requiresAdsCode
+                          ? `Bắt buộc cấp mã quảng cáo tối thiểu ${p.workflowRules.adsCodeDurationDays} ngày`
+                          : 'Không bắt buộc cấp mã quảng cáo'}
+                        {p.workflowRules.requireRawVideoHandover ? ' · Bắt buộc bàn giao file video gốc không logo' : ''}
+                      </span>
+                    </Info>
+                    <Info label="Phạm vi sử dụng lại hình ảnh &amp; Độc quyền">
+                      <span>
+                        Kênh được đăng lại: <strong>{(p.workflowRules.repostAllowedChannels || []).join(', ') || 'TikTok'}</strong>
+                        {' · '}Giữ video tối thiểu <strong>{p.workflowRules.minVideoRetentionDays} ngày</strong>
+                        {p.workflowRules.exclusivityDays > 0 ? ` · Độc quyền ngành hàng ${p.workflowRules.exclusivityDays} ngày` : ' · Không yêu cầu độc quyền'}
+                      </span>
+                    </Info>
+                    <Info label="Chính sách phụ phí mua bản quyền / chạy quảng cáo">
+                      <span>
+                        {p.workflowRules.allowExtraFeeForAdsOrCrosspost
+                          ? 'Cho phép đàm phán phụ phí với KOC lớn khi nhãn cần mua đứt file gốc hoặc đăng đa kênh'
+                          : 'Giá booking trọn gói đã bao gồm quyền sử dụng hình ảnh theo thời hạn chuẩn'}
+                      </span>
+                    </Info>
+                  </dl>
+                </div>
+
+                {/* Nhóm 4: Chân dung KOC ưu tiên & Bàn giao tài liệu */}
+                <div className="rounded-xl border border-line bg-canvas/50 p-4 space-y-3">
+                  <h4 className="text-xs font-semibold text-ink uppercase tracking-wide">
+                    4. Tiêu chí chọn KOC &amp; Liên kết điều hành (Bảng 3.5)
+                  </h4>
+                  <dl className="grid gap-3">
+                    <Info label="Nhóm KOC ưu tiên của nhãn">
+                      <span>{(p.workflowRules.preferredKocNiches || []).join(' · ') || 'Chưa giới hạn'}</span>
+                    </Info>
+                    <Info label="Tiêu chí duyệt kênh KOC">
+                      <span>{p.workflowRules.kocSelectionCriteria || '—'}</span>
+                    </Info>
+                    {(p.workflowRules.handoverFrom || p.workflowRules.handoverTo) && (
+                      <Info label="Nhân sự bàn giao &amp; tiếp nhận (Bảng 3.5)">
+                        <span>
+                          Bàn giao: <strong>{p.workflowRules.handoverFrom || '—'}</strong> → Tiếp nhận: <strong>{p.workflowRules.handoverTo || primarySpecialist}</strong>
+                        </span>
+                      </Info>
+                    )}
+                    <Info label="Liên kết điều hành trực tiếp của nhãn">
+                      <div className="flex flex-wrap gap-2 pt-0.5">
+                        {p.workflowRules.bookingSheetUrl && (
+                          <a
+                            href={p.workflowRules.bookingSheetUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="px-2.5 py-1 rounded border border-line bg-surface hover:bg-sunken text-xs text-accent font-medium inline-flex items-center gap-1"
+                          >
+                            <span>Bảng theo dõi Booking</span>
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
+                        )}
+                        {p.workflowRules.operationFileUrl && (
+                          <a
+                            href={p.workflowRules.operationFileUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="px-2.5 py-1 rounded border border-line bg-surface hover:bg-sunken text-xs text-accent font-medium inline-flex items-center gap-1"
+                          >
+                            <span>Bảng vận hành &amp; Kịch bản</span>
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
+                        )}
+                        {p.workflowRules.canvaBriefUrl && (
+                          <a
+                            href={p.workflowRules.canvaBriefUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="px-2.5 py-1 rounded border border-line bg-surface hover:bg-sunken text-xs text-accent font-medium inline-flex items-center gap-1"
+                          >
+                            <span>Canva Brief</span>
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
+                        )}
+                        {p.workflowRules.handoverFileUrl && (
+                          <a
+                            href={p.workflowRules.handoverFileUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="px-2.5 py-1 rounded border border-line bg-surface hover:bg-sunken text-xs text-accent font-medium inline-flex items-center gap-1"
+                          >
+                            <span>Hồ sơ bàn giao gốc</span>
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
+                        )}
+                        {!p.workflowRules.bookingSheetUrl &&
+                          !p.workflowRules.operationFileUrl &&
+                          !p.workflowRules.canvaBriefUrl &&
+                          !p.workflowRules.handoverFileUrl && (
+                            <span className="text-xs text-ink-3">Xem trong tab Tài liệu &amp; Hợp đồng</span>
+                          )}
+                      </div>
+                    </Info>
+                  </dl>
+                </div>
+              </div>
+            ) : (
+              <EmptyState title="Chưa có quy tắc vận hành" description="Nhấn “Chỉnh sửa quy tắc vận hành” để thiết lập." />
+            )}
+          </Panel>
+        </div>
+      )}
+
+      {/* ===================================================================== */}
+      {/* TAB 2: KHO TÀI LIỆU & HỢP ĐỒNG THƯƠNG HIỆU                            */}
       {/* ===================================================================== */}
       {activeTab === 'FILES' && (
         <div className="space-y-6">
-          {/* Khu vực tải tệp lên Cloudflare R2 */}
+          {/* Khu vực tải tệp thương hiệu */}
           {can.DOCUMENTS && (
             <div
               onDragOver={e => { e.preventDefault(); e.stopPropagation(); }}
@@ -1106,7 +1460,7 @@ export function BrandProfileDetail({
                 </div>
                 <div className="min-w-0">
                   <h3 className="text-sm font-semibold text-ink">
-                    Tải tệp thương hiệu lên kho lưu trữ Cloudflare R2
+                    Tải tài liệu thương hiệu lên hệ thống
                   </h3>
                   <p className="text-xs text-ink-2 mt-0.5">
                     Kéo thả nhiều tệp vào khung này hoặc chọn tệp từ máy tính. Hỗ trợ PDF, Word, Excel, PowerPoint, ảnh PNG/JPG/SVG, ZIP (tối đa 25 MB/tệp).
@@ -1133,7 +1487,7 @@ export function BrandProfileDetail({
                   disabled={busy || quickUploading}
                   onClick={() => quickFileInputRef.current?.click()}
                 >
-                  {quickUploading ? 'Đang tải lên R2…' : 'Chọn tệp từ máy'}
+                  {quickUploading ? 'Đang tải tệp…' : 'Chọn tệp từ máy'}
                 </Button>
                 <Button
                   variant="secondary"
@@ -1170,7 +1524,7 @@ export function BrandProfileDetail({
                 title="Chưa có tệp tài liệu phù hợp"
                 description={
                   can.DOCUMENTS
-                    ? 'Nhấn “Chọn tệp từ máy” phía trên để tải tệp thương hiệu lên Cloudflare R2.'
+                    ? 'Nhấn “Chọn tệp từ máy” phía trên để tải tệp thương hiệu lên hệ thống.'
                     : 'Nhãn hàng hiện chưa có tài liệu trong danh mục này.'
                 }
               />
@@ -1199,8 +1553,8 @@ export function BrandProfileDetail({
                             <span className="px-2 py-0.5 rounded bg-sunken text-2xs text-ink-2">
                               {DOC_CATEGORY_LABEL[d.category]}
                             </span>
-                            <Status tone={d.storage === 'R2' ? 'positive' : d.fileKey ? 'info' : 'neutral'}>
-                              {d.storage === 'R2' ? 'Cloudflare R2' : d.fileKey ? 'Kho nội bộ' : 'Liên kết ngoài'}
+                            <Status tone={d.fileKey ? 'positive' : 'neutral'}>
+                              {d.fileKey ? 'Tệp đính kèm' : 'Liên kết ngoài'}
                             </Status>
                           </div>
                           <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-2xs text-ink-3 mt-0.5">
@@ -1298,7 +1652,7 @@ export function BrandProfileDetail({
         <div className="grid gap-6 items-start lg:grid-cols-[minmax(0,1fr)_360px]">
           <Panel
             title={`Danh mục Sản phẩm chủ lực (${p.products.length} SKU)`}
-            description="Thông tin chi tiết về điểm bán hàng độc nhất (USP), cơ chế, thành phần và lưu ý cho KOC"
+            description="Thông tin chi tiết về giá bán chiến dịch, hoa hồng KOC, tồn kho mẫu, điểm nổi bật sản phẩm và lưu ý sử dụng"
             actions={addBtn('products')}
             flush
           >
@@ -1306,45 +1660,59 @@ export function BrandProfileDetail({
               <EmptyState title="Chưa có sản phẩm chủ lực" description="Nhấn “Thêm sản phẩm” để cập nhật thông tin SKU cho KOC." />
             ) : (
               <ul className="divide-y divide-line">
-                {p.products.map((x, i) => (
-                  <li key={x.id} className="px-4 py-4 grid gap-2.5 text-[13px]">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="font-semibold text-ink text-sm">{x.name}</span>
-                          {x.skuCode && (
-                            <span className="px-1.5 py-0.5 rounded bg-sunken border border-line text-2xs font-code text-ink-2">
-                              {x.skuCode}
-                            </span>
-                          )}
-                          {x.size && <span className="text-xs text-ink-3">· {x.size}</span>}
-                          {x.priceVnd && <span className="text-xs font-semibold text-ink tabular-nums">· {formatVnd(x.priceVnd)}</span>}
+                {p.products.map((x, i) => {
+                  const stockMeta = x.sampleStockStatus ? SAMPLE_STOCK_LABEL[x.sampleStockStatus] : SAMPLE_STOCK_LABEL.IN_STOCK;
+                  return (
+                    <li key={x.id} className="px-4 py-4 grid gap-2.5 text-[13px]">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="font-semibold text-ink text-sm">{x.name}</span>
+                            {x.skuCode && (
+                              <span className="px-1.5 py-0.5 rounded bg-sunken border border-line text-2xs font-code text-ink-2">
+                                {x.skuCode}
+                              </span>
+                            )}
+                            {x.size && <span className="text-xs text-ink-3">· {x.size}</span>}
+                            {x.priceVnd && <span className="text-xs font-semibold text-ink tabular-nums">· Niêm yết {formatVnd(x.priceVnd)}</span>}
+                            {x.dealPriceVnd && <span className="text-xs font-semibold text-accent tabular-nums">· Giá deal {formatVnd(x.dealPriceVnd)}</span>}
+                            <Status tone={stockMeta.tone}>{stockMeta.label}</Status>
+                          </div>
+                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-2xs text-ink-3 mt-1">
+                            {(x.commissionOrganicPct !== undefined || x.commissionAdsPct !== undefined) && (
+                              <span>
+                                Hoa hồng KOC: <strong className="text-ink-2">{x.commissionOrganicPct ?? 10}% tự nhiên</strong>
+                                {x.commissionAdsPct !== undefined ? ` / ${x.commissionAdsPct}% quảng cáo` : ''}
+                              </span>
+                            )}
+                            {x.sampleReturnRule && <span>· {SAMPLE_RETURN_LABEL[x.sampleReturnRule]}</span>}
+                            {x.pdpUrl && (
+                              <a href={x.pdpUrl} target="_blank" rel="noreferrer" className="text-accent hover:underline inline-flex items-center gap-1">
+                                <span>Xem trang sản phẩm</span>
+                                <ExternalLink className="w-3 h-3" />
+                              </a>
+                            )}
+                          </div>
                         </div>
-                        {x.pdpUrl && (
-                          <a href={x.pdpUrl} target="_blank" rel="noreferrer" className="text-2xs text-accent hover:underline inline-flex items-center gap-1 mt-0.5">
-                            <span>Xem trang sản phẩm (PDP)</span>
-                            <ExternalLink className="w-3 h-3" />
-                          </a>
-                        )}
+                        {itemMenu('products', i)}
                       </div>
-                      {itemMenu('products', i)}
-                    </div>
-                    {x.usps.length > 0 && (
-                      <div className="rounded-lg bg-canvas/70 border border-line p-3">
-                        <span className="block text-2xs font-medium text-ink-3 mb-1">Điểm nổi bật KOC bắt buộc nhắc (USP):</span>
-                        <ul className="list-disc pl-5 text-ink-2 grid gap-1">
-                          {x.usps.map((u, k) => <li key={k}>{u}</li>)}
-                        </ul>
-                      </div>
-                    )}
-                    <dl className="grid gap-3 sm:grid-cols-2">
-                      {x.mechanism && <Info label="Cơ chế tác động / Hướng dẫn quay">{x.mechanism}</Info>}
-                      {x.ingredients.length > 0 && <Info label="Thành phần chính">{x.ingredients.join('; ')}</Info>}
-                      {x.targetUser && <Info label="Đối tượng phù hợp">{x.targetUser}</Info>}
-                      {x.contraindications && <Info label="Chống chỉ định / Lưu ý">{x.contraindications}</Info>}
-                    </dl>
-                  </li>
-                ))}
+                      {x.usps.length > 0 && (
+                        <div className="rounded-lg bg-canvas/70 border border-line p-3">
+                          <span className="block text-2xs font-medium text-ink-3 mb-1">Điểm nổi bật KOC cần nhắc:</span>
+                          <ul className="list-disc pl-5 text-ink-2 grid gap-1">
+                            {x.usps.map((u, k) => <li key={k}>{u}</li>)}
+                          </ul>
+                        </div>
+                      )}
+                      <dl className="grid gap-3 sm:grid-cols-2">
+                        {x.mechanism && <Info label="Cơ chế tác động / Hướng dẫn quay">{x.mechanism}</Info>}
+                        {x.ingredients.length > 0 && <Info label="Thành phần chính">{x.ingredients.join('; ')}</Info>}
+                        {x.targetUser && <Info label="Đối tượng phù hợp">{x.targetUser}</Info>}
+                        {x.contraindications && <Info label="Chống chỉ định / Lưu ý">{x.contraindications}</Info>}
+                      </dl>
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </Panel>
@@ -1390,7 +1758,7 @@ export function BrandProfileDetail({
         <div className="space-y-6">
           <Panel
             title={SECTION_LABEL.CONTENT_RULES}
-            description="Danh mục từ khóa cấm, cách diễn đạt thay thế và quy chuẩn hình ảnh cho KOC"
+            description="Danh mục từ khóa cấm, cách diễn đạt thay thế, hashtag và quy chuẩn hình ảnh cho KOC"
             actions={editBtn('CONTENT_RULES', () => setDialog('CONTENT_RULES'), p.contentRules ? 'Sửa quy chuẩn' : 'Thêm quy chuẩn')}
             flush
           >
@@ -1401,51 +1769,66 @@ export function BrandProfileDetail({
               !p.contentRules.visualDont.length) ? (
               <EmptyState title="Chưa có quy chuẩn nội dung" description="Thiết lập từ khóa cấm và quy chuẩn hình ảnh." />
             ) : (
-              <div className="grid sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-line text-[13px]">
-                <div className="p-4 grid gap-3 content-start">
-                  <h4 className="text-xs font-semibold text-critical">Từ khóa cấm ({p.contentRules.banned.length})</h4>
-                  {p.contentRules.banned.map(b => (
-                    <div key={b.id} className="rounded-lg bg-canvas border border-line p-3 grid gap-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-semibold text-critical">“{b.phrase}”</span>
-                        {b.replacement && <span className="text-ink-2">→ Thay bằng: <strong className="text-positive">“{b.replacement}”</strong></span>}
+              <div className="divide-y divide-line text-[13px]">
+                <div className="grid sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-line">
+                  <div className="p-4 grid gap-3 content-start">
+                    <h4 className="text-xs font-semibold text-critical">Từ khóa cấm ({p.contentRules.banned.length})</h4>
+                    {p.contentRules.banned.map(b => (
+                      <div key={b.id} className="rounded-lg bg-canvas border border-line p-3 grid gap-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="font-semibold text-critical">“{b.phrase}”</span>
+                          {b.replacement && <span className="text-ink-2">→ Thay bằng: <strong className="text-positive">“{b.replacement}”</strong></span>}
+                        </div>
+                        {b.reason && <p className="text-2xs text-ink-3">{b.reason}</p>}
                       </div>
-                      {b.reason && <p className="text-2xs text-ink-3">{b.reason}</p>}
-                    </div>
-                  ))}
-                  {p.contentRules.visualDont.length > 0 && (
-                    <div className="pt-2">
-                      <h4 className="text-xs font-semibold text-ink mb-1.5">Hình ảnh không được dùng</h4>
-                      <ul className="list-disc pl-5 text-ink-2 grid gap-1">
-                        {p.contentRules.visualDont.map((x, k) => <li key={k}>{x}</li>)}
-                      </ul>
-                    </div>
-                  )}
+                    ))}
+                    {p.contentRules.visualDont.length > 0 && (
+                      <div className="pt-2">
+                        <h4 className="text-xs font-semibold text-ink mb-1.5">Hình ảnh không được dùng</h4>
+                        <ul className="list-disc pl-5 text-ink-2 grid gap-1">
+                          {p.contentRules.visualDont.map((x, k) => <li key={k}>{x}</li>)}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-4 grid gap-3 content-start">
+                    <h4 className="text-xs font-semibold text-positive">Cụm từ nên dùng ({p.contentRules.preferred.length})</h4>
+                    {p.contentRules.preferred.map(x => (
+                      <div key={x.id} className="rounded-lg bg-canvas border border-line p-3 grid gap-1">
+                        <span className="font-semibold text-positive">“{x.phrase}”</span>
+                        {x.note && <p className="text-2xs text-ink-3">{x.note}</p>}
+                      </div>
+                    ))}
+                    {p.contentRules.visualDo.length > 0 && (
+                      <div className="pt-2">
+                        <h4 className="text-xs font-semibold text-ink mb-1.5">Hình ảnh khuyến khích trong video</h4>
+                        <ul className="list-disc pl-5 text-ink-2 grid gap-1">
+                          {p.contentRules.visualDo.map((x, k) => <li key={k}>{x}</li>)}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <div className="p-4 grid gap-3 content-start">
-                  <h4 className="text-xs font-semibold text-positive">Cụm từ nên dùng ({p.contentRules.preferred.length})</h4>
-                  {p.contentRules.preferred.map(x => (
-                    <div key={x.id} className="rounded-lg bg-canvas border border-line p-3 grid gap-1">
-                      <span className="font-semibold text-positive">“{x.phrase}”</span>
-                      {x.note && <p className="text-2xs text-ink-3">{x.note}</p>}
-                    </div>
-                  ))}
-                  {p.contentRules.visualDo.length > 0 && (
-                    <div className="pt-2">
-                      <h4 className="text-xs font-semibold text-ink mb-1.5">Hình ảnh khuyến khích trong video</h4>
-                      <ul className="list-disc pl-5 text-ink-2 grid gap-1">
-                        {p.contentRules.visualDo.map((x, k) => <li key={k}>{x}</li>)}
-                      </ul>
-                    </div>
-                  )}
-                </div>
+                {((p.contentRules.mandatoryHashtags?.length || 0) > 0 || p.contentRules.defaultCta || p.contentRules.videoDurationRule) && (
+                  <div className="p-4 bg-canvas/40 grid gap-3 sm:grid-cols-3 text-xs">
+                    <Info label="Hashtag & gắn thẻ bắt buộc">
+                      {[...(p.contentRules.mandatoryHashtags || []), ...(p.contentRules.mandatoryMentions || [])].join(' ')}
+                    </Info>
+                    <Info label="Thời lượng & cấu trúc clip">
+                      {p.contentRules.videoDurationRule}
+                    </Info>
+                    <Info label="Câu điều hướng mua hàng (CTA)">
+                      {p.contentRules.defaultCta}
+                    </Info>
+                  </div>
+                )}
               </div>
             )}
           </Panel>
 
           <Panel
             title={`${SECTION_LABEL.LEGAL} (${p.legal.length})`}
-            description="Phiếu công bố sản phẩm, giấy xác nhận nội dung quảng cáo và chứng nhận kiểm nghiệm lưu trên Cloudflare R2"
+            description="Phiếu công bố sản phẩm, giấy xác nhận nội dung quảng cáo và chứng nhận kiểm nghiệm"
             actions={addBtn('legal')}
             flush
           >
@@ -1469,7 +1852,7 @@ export function BrandProfileDetail({
                           )}
                           {l.fileKey && (
                             <span className="px-1.5 py-0.5 rounded bg-canvas border border-line text-2xs text-ink-2 font-code">
-                              {[ext || 'FILE', size, l.storage === 'R2' ? 'R2' : undefined].filter(Boolean).join(' · ')}
+                              {[ext || 'FILE', size].filter(Boolean).join(' · ')}
                             </span>
                           )}
                         </div>
@@ -1575,6 +1958,7 @@ export function BrandProfileDetail({
       {dialog === 'ENTITY' && <EntityDialog open value={p.entity} fallbackCompany={real(m?.companyName)} busy={busy} onClose={() => setDialog(null)} onSave={v => saveDialog('ENTITY', v)} />}
       {dialog === 'RATECARD' && <RatecardDialog open value={p.ratecard} busy={busy} onClose={() => setDialog(null)} onSave={v => saveDialog('RATECARD', { ratecard: v })} />}
       {dialog === 'CONTENT_RULES' && <ContentRulesDialog open value={p.contentRules} busy={busy} onClose={() => setDialog(null)} onSave={v => saveDialog('CONTENT_RULES', v)} />}
+      {dialog === 'WORKFLOW_RULES' && <WorkflowRulesDialog open value={p.workflowRules} busy={busy} onClose={() => setDialog(null)} onSave={v => saveDialog('WORKFLOW_RULES', v)} />}
 
       {item && (() => {
         const meta = LIST_META[item.list];

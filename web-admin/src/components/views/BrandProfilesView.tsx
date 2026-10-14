@@ -17,6 +17,7 @@ import { Avatar, Button, ChannelTag, Chips, DataTable, EmptyState, FilterBar, Pa
 import type { Column } from '../ui';
 import { BrandProfileDetail } from '../brands/BrandProfileDetail';
 import { buildRows, isExpired, permissionsOf, real, type BrandAccess, type BrandRow } from '../brands/brandUi';
+import { getSharedProfilesSnapshot, subscribeSharedProfiles, updateSharedProfilesCache } from '../../lib/brands/useBrandProfiles';
 
 type Filter = 'ALL' | 'MINE' | 'KEY_BUDGET' | 'COMPLETE' | 'EXPIRED_LEGAL';
 
@@ -53,8 +54,8 @@ export function BrandProfilesView({
   onOpenBooking?: () => void;
   onNavigateToStoreProfile?: (storeName: string) => void;
 }) {
-  const [profiles, setProfiles] = useState<BrandProfile[] | null>(() => brandProfilesClientCache?.profiles || null);
-  const [access, setAccess] = useState<BrandAccess | undefined>(() => brandProfilesClientCache?.access);
+  const [profiles, setProfiles] = useState<BrandProfile[] | null>(() => getSharedProfilesSnapshot()?.profiles || brandProfilesClientCache?.profiles || null);
+  const [access, setAccess] = useState<BrandAccess | undefined>(() => getSharedProfilesSnapshot()?.access || brandProfilesClientCache?.access);
   const [loadError, setLoadError] = useState<LoadError | null>(null);
   const [busy, setBusy] = useState(false);
   const [openKey, setOpenKey] = useState<string | null>(selectedBrand !== 'ALL' ? brandKey(selectedBrand) : null);
@@ -65,6 +66,7 @@ export function BrandProfilesView({
   const load = useCallback(
     () => request<{ profiles: BrandProfile[]; access: BrandAccess }>().then(r => {
       brandProfilesClientCache = r;
+      updateSharedProfilesCache(r.profiles, r.access);
       setProfiles(r.profiles);
       setAccess(r.access);
       setLoadError(null);
@@ -72,13 +74,20 @@ export function BrandProfilesView({
     [],
   );
 
-  // Tải lần đầu hoặc đồng bộ ngầm khi đổi người dùng
+  // Tải lần đầu hoặc đồng bộ ngầm khi đổi người dùng, đồng thời nhận cập nhật từ các màn khác
   useEffect(() => {
     let isCancelled = false;
+    const unsubscribe = subscribeSharedProfiles(next => {
+      if (!isCancelled) {
+        setProfiles(next.profiles);
+        if (next.access) setAccess(next.access);
+      }
+    });
     request<{ profiles: BrandProfile[]; access: BrandAccess }>()
       .then(r => {
         if (!isCancelled) {
           brandProfilesClientCache = r;
+          updateSharedProfilesCache(r.profiles, r.access);
           setProfiles(r.profiles);
           setAccess(r.access);
           setLoadError(null);
@@ -89,7 +98,10 @@ export function BrandProfilesView({
           setLoadError(e instanceof LoadError ? e : new LoadError((e as Error).message, 503));
         }
       });
-    return () => { isCancelled = true; };
+    return () => {
+      isCancelled = true;
+      unsubscribe();
+    };
   }, [currentUser?.id]);
 
   // Bộ chọn Nhãn trên thanh trên quyết định nhãn đang mở.
@@ -176,6 +188,7 @@ export function BrandProfilesView({
       const nextProfiles = [...(profiles || []).filter(p => p.key !== r.profile.key), r.profile];
       setProfiles(nextProfiles);
       if (brandProfilesClientCache) brandProfilesClientCache.profiles = nextProfiles;
+      updateSharedProfilesCache(nextProfiles, access);
       onNotify?.(summary ? `Đã lưu: ${summary.charAt(0).toLowerCase()}${summary.slice(1)}` : 'Đã lưu hồ sơ', 'success');
       return true;
     } catch (e) {
@@ -409,9 +422,9 @@ export function BrandProfilesView({
           tone="positive"
         />
         <Stat
-          label="Kho tệp R2 & Giấy tờ pháp lý"
+          label="Tài liệu & Giấy tờ pháp lý"
           value={`${kpiSummary.totalDocs} tài liệu · ${kpiSummary.totalLegal} giấy phép`}
-          note={kpiSummary.uploadedFiles > 0 ? `${kpiSummary.uploadedFiles} tệp lưu trực tiếp trên Cloudflare R2` : 'Sẵn sàng tải tệp PDF, PPTX, Ảnh, DOCX lên Cloudflare R2'}
+          note={kpiSummary.uploadedFiles > 0 ? `${kpiSummary.uploadedFiles} tệp đính kèm trực tiếp` : 'Hỗ trợ tải tệp PDF, PPTX, Ảnh, DOCX, XLSX'}
         />
       </StatRow>
 

@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "db:push": "node --env-file=.env.local node_modules/prisma/build/index.js db push",
+    "db:status": "node --env-file=.env.local node_modules/prisma/build/index.js migrate status"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

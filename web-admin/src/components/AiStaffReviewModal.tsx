@@ -39,6 +39,7 @@ import {
   MOCK_P3_STAFF_RECORDS,
   INITIAL_STAFF_ALLOCATIONS_26
 } from '../lib/mockData';
+import { getEffectiveConfigForPurpose } from '../lib/apiKeyConfig';
 
 interface AiStaffReviewModalProps {
   isOpen: boolean;
@@ -57,7 +58,7 @@ export const AiStaffReviewModal: React.FC<AiStaffReviewModalProps> = ({
 }) => {
   const [selectedStaffName, setSelectedStaffName] = useState<string>(initialStaffName || 'Khánh Vy');
   const [reviewType, setReviewType] = useState<AiReviewType>('COMPREHENSIVE');
-  const [apiProvider, setApiProvider] = useState<'AUTO' | 'GEMINI' | 'OPENAI'>('AUTO');
+  const [apiProvider, setApiProvider] = useState<'AUTO' | 'GEMINI' | 'OPENAI' | 'CLAUDE'>('AUTO');
   const [customApiKey, setCustomApiKey] = useState<string>('');
   const [showApiSettings, setShowApiSettings] = useState<boolean>(false);
   const [customInstruction, setCustomInstruction] = useState<string>('');
@@ -81,6 +82,24 @@ export const AiStaffReviewModal: React.FC<AiStaffReviewModalProps> = ({
       setSelectedStaffName(initialStaffName);
     }
   }, [initialStaffName]);
+
+  // Đồng bộ cấu hình API từ Trung tâm Cấu hình API (mục đích STAFF_REVIEW)
+  useEffect(() => {
+    if (isOpen) {
+      const eff = getEffectiveConfigForPurpose('STAFF_REVIEW');
+      if (eff.primaryProvider === 'GOOGLE') setApiProvider('GEMINI');
+      else if (eff.primaryProvider === 'OPENAI') setApiProvider('OPENAI');
+      else if (eff.primaryProvider === 'CLAUDE') setApiProvider('CLAUDE');
+      else setApiProvider('AUTO');
+
+      if (eff.primaryApiKey) {
+        setCustomApiKey(eff.primaryApiKey);
+      }
+      if (eff.purpose.systemInstruction && !customInstruction) {
+        setCustomInstruction(eff.purpose.systemInstruction);
+      }
+    }
+  }, [isOpen]);
 
   // ESC key listener
   useEffect(() => {
@@ -339,7 +358,7 @@ export const AiStaffReviewModal: React.FC<AiStaffReviewModalProps> = ({
                 className="text-2xs font-semibold text-blue-700 hover:text-blue-800 flex items-center gap-1 transition"
               >
                 <Key className="w-3 h-3" />
-                <span>Cấu hình kết nối mô hình phân tích (tùy chọn API Key Gemini / OpenAI)</span>
+                <span>Cấu hình kết nối API (Google Gemini / OpenAI ChatGPT / Anthropic Claude)</span>
                 {showApiSettings ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
               </button>
 
@@ -347,25 +366,26 @@ export const AiStaffReviewModal: React.FC<AiStaffReviewModalProps> = ({
                 <div className="mt-2.5 p-3 rounded-md bg-blue-50/50 border border-blue-200 space-y-2.5 animate-in fade-in duration-150">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-1">
-                      <label className="text-2xs font-semibold text-blue-900">Mô hình phân tích:</label>
+                      <label className="text-2xs font-semibold text-blue-900">Nhà cung cấp & Mô hình phân tích:</label>
                       <select
                         value={apiProvider}
-                        onChange={(e) => setApiProvider(e.target.value as any)}
+                        onChange={(e) => setApiProvider(e.target.value as 'AUTO' | 'GEMINI' | 'OPENAI' | 'CLAUDE')}
                         className="w-full p-1.5 bg-white border border-blue-200 rounded text-xs text-slate-800 font-medium"
                       >
                         <option value="AUTO">Tự động (Mặc định)</option>
-                        <option value="GEMINI">Google Gemini 1.5 Flash (API Key)</option>
-                        <option value="OPENAI">OpenAI GPT-4o-mini (API Key)</option>
+                        <option value="GEMINI">Google Gemini 2.5 Flash (API Key)</option>
+                        <option value="OPENAI">OpenAI ChatGPT / GPT-4o-mini (API Key)</option>
+                        <option value="CLAUDE">Anthropic Claude 3.7 Sonnet (API Key)</option>
                       </select>
                     </div>
 
                     <div className="space-y-1">
                       <label className="text-2xs font-semibold text-blue-900">
-                        Khóa API Key (tùy chọn, để trống nếu dùng mặc định):
+                        Khóa API Key (đồng bộ từ Cấu hình API hoặc nhập riêng):
                       </label>
                       <input
                         type="password"
-                        placeholder="sk-... hoặc AIzaSy..."
+                        placeholder="AIzaSy... / sk-... / sk-ant-..."
                         value={customApiKey}
                         onChange={(e) => setCustomApiKey(e.target.value)}
                         className="w-full p-1.5 bg-white border border-blue-200 rounded text-xs text-slate-800 font-mono"

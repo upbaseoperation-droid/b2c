@@ -525,28 +525,47 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
   ];
 
   const PIC_OPTIONS = [
+    'Lê Phương Thảo',
+    'Lương Thị Như Quỳnh',
+    'Lê Thanh Hải',
+    'Phạm Thị Thu Hằng',
+    'Hoàng Hải Long',
+    'Trần Hải Phượng',
+    'Phan Diệu Ánh',
+    'Vũ Hoài Lâm',
+    'Nguyễn Thị Mai Anh',
+    'Quỳnh Như',
+    'Trần Thị Hảo',
     'Đặng Mai Hà Linh',
     'Khánh Vy',
     'Nguyễn Thu Trang',
-    'Phạm Thị Thu Hằng',
-    'Trần Minh Đức',
     'Lê Hoàng Yến',
-    'Phan Diệu Ánh'
+    'Trần Minh Đức'
   ];
 
-  // Thông tin chuyên môn của các thành viên trong team Booking để bạn PIC dễ dàng phân công
+  // Thông tin chuyên môn của các thành viên trong team Booking & Content để phân công nhiều người cùng làm
   const TEAM_MEMBERS_INFO: Record<string, { role: string; avatar: string; expertise: string }> = {
+    'Lê Phương Thảo': { role: 'Chuyên viên Booking B2C', avatar: 'PT', expertise: 'KOC Affiliate trả phí (KL1–KL6)' },
+    'Lương Thị Như Quỳnh': { role: 'Chuyên viên Booking B2C', avatar: 'NQ', expertise: 'KOC Affiliate & Key Creator (KL2–KL6)' },
+    'Lê Thanh Hải': { role: 'Chuyên viên Booking B2C', avatar: 'TH', expertise: 'KOC Affiliate & Mega Campaign' },
+    'Phạm Thị Thu Hằng': { role: 'Chuyên viên Booking B2C', avatar: 'TH', expertise: 'Affiliate TAP, FOC & Review voice' },
+    'Hoàng Hải Long': { role: 'Chuyên viên Booking B2C', avatar: 'HL', expertise: 'KOC Affiliate & Micro/Macro (KL1–KL5)' },
+    'Trần Hải Phượng': { role: 'Chuyên viên Booking B2C', avatar: 'HP', expertise: 'KOC Affiliate & Gian hàng mới' },
+    'Phan Diệu Ánh': { role: 'Chuyên viên Booking & Content', avatar: 'DÁ', expertise: 'KOC Mới, Self-Channel & Reup Sàn' },
+    'Vũ Hoài Lâm': { role: 'Chuyên viên Booking & Content', avatar: 'HL', expertise: 'Video Self-Channel & KOC Affiliate' },
+    'Nguyễn Thị Mai Anh': { role: 'Chuyên viên Content Self-Channel', avatar: 'MA', expertise: 'Kịch bản & Sản xuất Video Kênh Brand (Team Việt Hoàng)' },
+    'Quỳnh Như': { role: 'Chuyên viên Content Self-Channel', avatar: 'QN', expertise: 'Sản xuất Video Self-Channel & CTV (Team Việt Hoàng)' },
+    'Trần Thị Hảo': { role: 'Chuyên viên Gửi mẫu FOC', avatar: 'TH', expertise: 'Điều phối gửi mẫu miễn phí 0đ Cast (FOC)' },
     'Đặng Mai Hà Linh': { role: 'Brand PIC / Senior Specialist', avatar: 'HL', expertise: 'Chiến lược, Celeb & Macro (KL5-KL7)' },
     'Khánh Vy': { role: 'Senior Booking Specialist', avatar: 'KV', expertise: 'Key Creator & Mid-Macro (KL3-KL5)' },
     'Nguyễn Thu Trang': { role: 'Booking Specialist', avatar: 'TT', expertise: 'Micro KOC & Shopee Affiliate' },
-    'Phạm Thị Thu Hằng': { role: 'Booking Specialist', avatar: 'TH', expertise: 'Affiliate TAP & Review voice' },
     'Trần Minh Đức': { role: 'Live & Creator Specialist', avatar: 'MĐ', expertise: 'Livestream Độc quyền & Co-host' },
-    'Lê Hoàng Yến': { role: 'Multi-platform Specialist', avatar: 'HY', expertise: 'Facebook, Instagram & Threads' },
-    'Phan Diệu Ánh': { role: 'Junior Booking Associate', avatar: 'DÁ', expertise: 'KOC Mới & Reup Sàn' }
+    'Lê Hoàng Yến': { role: 'Multi-platform Specialist', avatar: 'HY', expertise: 'Facebook, Instagram & Shopee Video' }
   };
 
   const LEADER_OPTIONS = [
     'Nguyễn Thị Ngọc Tâm (Trưởng nhóm Booking)',
+    'Việt Hoàng (Leader Partnership Self-Channel)',
     'Không có leader (Duyệt thẳng Trưởng phòng)'
   ];
 
@@ -586,6 +605,8 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
   // State Modal Phân Bổ Kế Hoạch Cho Team của bạn PIC
   const [isAllocationModalOpen, setIsAllocationModalOpen] = useState(false);
   const [allocationFilterChannel, setAllocationFilterChannel] = useState<'ALL' | InputPlanChannelType>('ALL');
+  // Chế độ Focus riêng kế hoạch của 1 nhân sự trong gian hàng (khi 2-3 người cùng làm chung 1 gian hàng)
+  const [focusedStaffFilter, setFocusedStaffFilter] = useState<string>('ALL');
 
   // State Gửi Duyệt Quản Lý sau khi trao đổi với Growth
   const [isSubmitToManagerModalOpen, setIsSubmitToManagerModalOpen] = useState<boolean>(false);
@@ -996,6 +1017,73 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
     }));
   };
 
+  // Tách 1 dòng hạng mục thành 2 dòng để chia cho 2–3 nhân sự cùng làm chung trên 1 gian hàng
+  const handleSplitRowForCoWorker = (rowId: string) => {
+    setPlanState(prev => {
+      const idx = prev.items.findIndex(it => it.id === rowId);
+      if (idx === -1) return prev;
+      const source = prev.items[idx];
+      const currentAssignee = source.assignedStaff || prev.pic;
+      // Chọn đồng đội mặc định khác người hiện tại
+      const isSelfChannel = source.channel === 'SELF_CHANNEL';
+      const candidatePool = isSelfChannel
+        ? ['Quỳnh Như', 'Nguyễn Thị Mai Anh', 'Vũ Hoài Lâm', 'Phan Diệu Ánh']
+        : ['Lương Thị Như Quỳnh', 'Lê Phương Thảo', 'Phạm Thị Thu Hằng', 'Hoàng Hải Long', 'Lê Thanh Hải', 'Phan Diệu Ánh'];
+      const coWorker = candidatePool.find(name => name !== currentAssignee) || PIC_OPTIONS.find(name => name !== currentAssignee) || currentAssignee;
+
+      const firstQty = source.qty > 1 ? Math.ceil(source.qty / 2) : source.qty;
+      const secondQty = source.qty > 1 ? Math.floor(source.qty / 2) : 1;
+
+      const updatedSource = {
+        ...source,
+        qty: firstQty,
+        totalBudget: firstQty * source.unitCost,
+        targetGmv: firstQty * source.unitCost * source.expectedRoiMultiplier,
+      };
+
+      const splitRow = {
+        ...source,
+        id: `${source.id}-split-${Date.now().toString(36).slice(-4)}`,
+        assignedStaff: coWorker,
+        qty: secondQty,
+        totalBudget: secondQty * source.unitCost,
+        targetGmv: secondQty * source.unitCost * source.expectedRoiMultiplier,
+        staffNotes: `Tách chia cùng ${currentAssignee} trên cùng gian hàng`,
+      };
+
+      const nextItems = [...prev.items];
+      nextItems.splice(idx, 1, updatedSource, splitRow);
+      return { ...prev, items: nextItems };
+    });
+    notify('Đã tách dòng hạng mục để 2–3 nhân sự cùng phụ trách trên gian hàng này.');
+  };
+
+  // Gộp lại dòng đã tách vào dòng gốc
+  const handleRemoveSplitRow = (rowId: string) => {
+    setPlanState(prev => {
+      const target = prev.items.find(it => it.id === rowId);
+      if (!target) return prev;
+      const baseId = rowId.split('-split-')[0];
+      const sibling = prev.items.find(it => it.id !== rowId && (it.id === baseId || it.tierCode === target.tierCode));
+      const nextItems = prev.items
+        .filter(it => it.id !== rowId)
+        .map(it => {
+          if (sibling && it.id === sibling.id) {
+            const mergedQty = it.qty + target.qty;
+            return {
+              ...it,
+              qty: mergedQty,
+              totalBudget: mergedQty * it.unitCost,
+              targetGmv: mergedQty * it.unitCost * it.expectedRoiMultiplier,
+            };
+          }
+          return it;
+        });
+      return { ...prev, items: nextItems };
+    });
+    notify('Đã gộp lại dòng tách chia vào hạng mục chính.');
+  };
+
   // Cập nhật ghi chú/yêu cầu riêng của PIC cho dòng đó
   const handleUpdateItemStaffNotes = (id: string, notes: string) => {
     setPlanState(prev => ({
@@ -1027,23 +1115,27 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
         else if (['SHOPEE', 'FACEBOOK', 'INSTAGRAM', 'THREADS'].includes(it.channel)) {
           assigned = 'Lê Hoàng Yến';
         }
-        // Kênh tự xây & Reup -> Phan Diệu Ánh
+        // Kênh tự xây & Reup -> Quỳnh Như / Nguyễn Thị Mai Anh (Team Việt Hoàng)
         else if (it.channel === 'SELF_CHANNEL') {
-          assigned = 'Phan Diệu Ánh';
+          assigned = it.id.includes('reup') ? 'Nguyễn Thị Mai Anh' : 'Quỳnh Như';
         }
         // TikTok Celeb & Macro lớn (KL6, KL7) -> PIC chủ trì
         else if (['KL6', 'KL7'].includes(it.tierCode)) {
           assigned = prev.pic;
         }
-        // TikTok Mid-Macro (KL4, KL5) -> Khánh Vy
+        // TikTok Mid-Macro (KL4, KL5) -> Lương Thị Như Quỳnh
         else if (['KL4', 'KL5'].includes(it.tierCode)) {
-          assigned = 'Khánh Vy';
+          assigned = 'Lương Thị Như Quỳnh';
         }
-        // TikTok Micro (KL3) -> Nguyễn Thu Trang
+        // TikTok Micro (KL3) -> Lê Phương Thảo
         else if (it.tierCode === 'KL3') {
-          assigned = 'Nguyễn Thu Trang';
+          assigned = 'Lê Phương Thảo';
         }
-        // TikTok Affiliate / TAP (KL1, KL2, TAP) -> Phạm Thị Thu Hằng
+        // FOC 0đ -> Trần Thị Hảo
+        else if (it.tierCode.includes('TAP') || it.id === 'row-tt-tap') {
+          assigned = 'Trần Thị Hảo';
+        }
+        // TikTok Affiliate (KL1, KL2) -> Phạm Thị Thu Hằng
         else {
           assigned = 'Phạm Thị Thu Hằng';
         }
@@ -1051,7 +1143,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
         return { ...it, assignedStaff: assigned };
       })
     }));
-    notify(`PIC ${planState.pic} đã phân bổ tự động các dòng theo chuyên môn của từng thành viên trong team!`);
+    notify(`PIC ${planState.pic} đã phân bổ tự động các dòng theo chuyên môn của từng thành viên (Booking, Content Self-Channel, FOC, Đa sàn)!`);
   };
 
   // Tổng hợp phân bổ theo từng nhân sự trong team
@@ -1149,14 +1241,19 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
     setIsAllocationModalOpen(false);
   };
 
-  // Visible items based on activeTab: Chia tách rõ 4 đầu việc B2C (Livestream do Growth phụ trách)
+  // Visible items based on activeTab & focusedStaffFilter: Chia tách rõ 4 đầu việc B2C + lọc theo nhân sự phụ trách
   const visibleItems = useMemo(() => {
-    if (activeTab === 'AFFILIATE_PAID') return planState.items.filter(it => it.channel === 'TIKTOK' && !it.tierCode.includes('TAP'));
-    if (activeTab === 'TAP_FREECAST') return planState.items.filter(it => it.tierCode.includes('TAP') || it.id === 'row-tt-tap');
-    if (activeTab === 'SELF_CHANNEL') return planState.items.filter(it => it.channel === 'SELF_CHANNEL');
-    if (activeTab === 'MULTI_PLATFORM') return planState.items.filter(it => ['SHOPEE', 'FACEBOOK', 'INSTAGRAM', 'THREADS'].includes(it.channel));
-    return planState.items.filter(it => it.channel !== 'LIVESTREAM');
-  }, [activeTab, planState.items]);
+    let base = planState.items.filter(it => it.channel !== 'LIVESTREAM');
+    if (activeTab === 'AFFILIATE_PAID') base = planState.items.filter(it => it.channel === 'TIKTOK' && !it.tierCode.includes('TAP'));
+    else if (activeTab === 'TAP_FREECAST') base = planState.items.filter(it => it.tierCode.includes('TAP') || it.id === 'row-tt-tap');
+    else if (activeTab === 'SELF_CHANNEL') base = planState.items.filter(it => it.channel === 'SELF_CHANNEL');
+    else if (activeTab === 'MULTI_PLATFORM') base = planState.items.filter(it => ['SHOPEE', 'FACEBOOK', 'INSTAGRAM', 'THREADS'].includes(it.channel));
+
+    if (focusedStaffFilter !== 'ALL') {
+      return base.filter(it => (it.assignedStaff || planState.pic) === focusedStaffFilter);
+    }
+    return base;
+  }, [activeTab, planState.items, focusedStaffFilter, planState.pic]);
 
   // Helper for Tier Badge Color
   const getTierBadgeStyle = (tierCode: string) => {
@@ -1288,9 +1385,19 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
         onUpdateStore={onUpdateStore}
         currentUser={currentUser}
         onNotify={notify}
-        onSelectPlan={(selected) => {
+        onSelectPlan={(selected, options) => {
           setPlanState(selected);
           setIsApprovalDetailOpen(selected.status === 'PENDING_APPROVAL');
+          if (options?.focusStaffName) {
+            setFocusedStaffFilter(options.focusStaffName);
+            if (options.focusWorkstream === 'AFFILIATE_PAID') setActiveTab('AFFILIATE_PAID');
+            else if (options.focusWorkstream === 'FOC_SAMPLE') setActiveTab('TAP_FREECAST');
+            else if (options.focusWorkstream === 'SELF_CHANNEL') setActiveTab('SELF_CHANNEL');
+            else if (options.focusWorkstream === 'MULTI_PLATFORM') setActiveTab('MULTI_PLATFORM');
+            else setActiveTab('ALL_SUMMARY');
+          } else {
+            setFocusedStaffFilter('ALL');
+          }
           setIsShowingStudio(true);
         }}
         onCreatePlan={(newPlan) => {
@@ -1947,77 +2054,125 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
       {/* MÀN 2: CHI TIẾT HẠNG MỤC (TÁCH RỜI KHỎI TỔNG QUAN, KHÔNG LẶP NỘI DUNG)     */}
       {/* ========================================================================= */}
       {isDetailBreakdownTab && (
-        <div className="bg-white rounded-xl border border-slate-200/90 px-3.5 py-2 flex flex-wrap items-center justify-between gap-2">
-          {/* Bộ lọc kênh 1 dòng gọn gàng */}
-          <div className="flex items-center gap-1.5 flex-wrap">
-            {([
-              { key: 'ALL_SUMMARY', label: `Tất cả (${totalAllocatedContents})` },
-              { key: 'AFFILIATE_PAID', label: `1. KOC trả phí (${channelTotals.affiliatePaid.qty})` },
-              { key: 'TAP_FREECAST', label: `2. Mẫu FOC (${channelTotals.tapFreecast.qty})` },
-              { key: 'SELF_CHANNEL', label: `3. Kênh Brand (${channelTotals.selfChannel.qty})` },
-              { key: 'MULTI_PLATFORM', label: `4. Đa sàn (${channelTotals.multiPlatform.qty})` },
-            ] as const).map(tab => (
-              <button
-                key={tab.key}
-                onClick={() => setActiveTab(tab.key)}
-                className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition border cursor-pointer ${
-                  activeTab === tab.key
-                    ? 'bg-blue-600 text-white border-blue-600'
-                    : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
+        <div className="bg-white rounded-xl border border-slate-200/90 px-3.5 py-2.5 space-y-2">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            {/* Bộ lọc kênh 1 dòng gọn gàng */}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {([
+                { key: 'ALL_SUMMARY', label: `Tất cả (${totalAllocatedContents})` },
+                { key: 'AFFILIATE_PAID', label: `1. KOC trả phí (${channelTotals.affiliatePaid.qty})` },
+                { key: 'TAP_FREECAST', label: `2. Mẫu FOC (${channelTotals.tapFreecast.qty})` },
+                { key: 'SELF_CHANNEL', label: `3. Kênh Brand (${channelTotals.selfChannel.qty})` },
+                { key: 'MULTI_PLATFORM', label: `4. Đa sàn (${channelTotals.multiPlatform.qty})` },
+              ] as const).map(tab => (
+                <button
+                  key={tab.key}
+                  onClick={() => setActiveTab(tab.key)}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition border cursor-pointer ${
+                    activeTab === tab.key
+                      ? 'bg-blue-600 text-white border-blue-600'
+                      : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Bên phải: Chỉ số đối soát 1 dòng + Chuyển chế độ Bảng / Sơ đồ nhánh / Thẻ */}
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="text-xs text-slate-600 hidden sm:flex items-center gap-1.5">
+                <span>Đã chia:</span>
+                <strong className={`font-mono ${isOverBudget ? 'text-rose-600' : 'text-slate-900'}`}>
+                  {formatVndShort(totalCombinedBudget)}
+                </strong>
+                <span className="text-slate-400">/ {formatVndShort(planState.totalTargetBudget)}</span>
+                <span className={`font-mono text-2xs font-semibold px-1.5 py-0.5 rounded ${
+                  isOverBudget ? 'bg-rose-100 text-rose-700' : budgetHeadroom === 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-50 text-blue-700'
+                }`}>
+                  {isOverBudget ? `Vượt ${formatVndShort(Math.abs(budgetHeadroom))}` : budgetHeadroom === 0 ? 'Khớp trần' : `Còn ${formatVndShort(budgetHeadroom)}`}
+                </span>
+              </div>
+
+              <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200/80 shrink-0">
+                <button
+                  onClick={() => {
+                    if (activeTab === 'MINDMAP') setActiveTab('ALL_SUMMARY');
+                    setViewMode('TABLE');
+                  }}
+                  className={`px-2.5 py-1 rounded-md text-xs font-semibold flex items-center gap-1 transition cursor-pointer ${
+                    activeTab !== 'MINDMAP' && viewMode === 'TABLE' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  <TableIcon className="w-3.5 h-3.5" /> Bảng
+                </button>
+                <button
+                  onClick={() => setActiveTab('MINDMAP')}
+                  className={`px-2.5 py-1 rounded-md text-xs font-semibold flex items-center gap-1 transition cursor-pointer ${
+                    activeTab === 'MINDMAP' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  <Layers className="w-3.5 h-3.5" /> Sơ đồ nhánh
+                </button>
+                <button
+                  onClick={() => {
+                    if (activeTab === 'MINDMAP') setActiveTab('ALL_SUMMARY');
+                    setViewMode('CARDS');
+                  }}
+                  className={`px-2.5 py-1 rounded-md text-xs font-semibold flex items-center gap-1 transition cursor-pointer ${
+                    activeTab !== 'MINDMAP' && viewMode === 'CARDS' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  <LayoutGrid className="w-3.5 h-3.5" /> Thẻ
+                </button>
+              </div>
+            </div>
           </div>
 
-          {/* Bên phải: Chỉ số đối soát 1 dòng + Chuyển chế độ Bảng / Sơ đồ nhánh / Thẻ */}
-          <div className="flex items-center gap-3 flex-wrap">
-            <div className="text-xs text-slate-600 hidden sm:flex items-center gap-1.5">
-              <span>Đã chia:</span>
-              <strong className={`font-mono ${isOverBudget ? 'text-rose-600' : 'text-slate-900'}`}>
-                {formatVndShort(totalCombinedBudget)}
-              </strong>
-              <span className="text-slate-400">/ {formatVndShort(planState.totalTargetBudget)}</span>
-              <span className={`font-mono text-2xs font-semibold px-1.5 py-0.5 rounded ${
-                isOverBudget ? 'bg-rose-100 text-rose-700' : budgetHeadroom === 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-50 text-blue-700'
-              }`}>
-                {isOverBudget ? `Vượt ${formatVndShort(Math.abs(budgetHeadroom))}` : budgetHeadroom === 0 ? 'Khớp trần' : `Còn ${formatVndShort(budgetHeadroom)}`}
+          {/* Thanh Focus riêng theo từng nhân sự phụ trách trên gian hàng này */}
+          <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-xs">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-2xs font-semibold text-slate-500 inline-flex items-center gap-1 mr-1">
+                <Users className="w-3.5 h-3.5 text-blue-600" />
+                Lọc theo người làm trên gian hàng ({staffAllocationSummary.filter(s => s.videoCount > 0).length} người):
               </span>
+              <button
+                type="button"
+                onClick={() => setFocusedStaffFilter('ALL')}
+                className={`px-2 py-0.5 rounded-md text-2xs font-semibold border transition cursor-pointer ${
+                  focusedStaffFilter === 'ALL'
+                    ? 'bg-slate-900 text-white border-slate-900'
+                    : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                }`}
+              >
+                Toàn đội ({totalAllocatedContents} video)
+              </button>
+              {staffAllocationSummary
+                .filter(s => s.videoCount > 0)
+                .map(s => {
+                  const isFocused = focusedStaffFilter === s.staffName;
+                  return (
+                    <button
+                      key={s.staffName}
+                      type="button"
+                      onClick={() => setFocusedStaffFilter(isFocused ? 'ALL' : s.staffName)}
+                      className={`px-2 py-0.5 rounded-md text-2xs font-semibold border transition cursor-pointer ${
+                        isFocused
+                          ? 'bg-blue-600 text-white border-blue-600 shadow-2xs'
+                          : 'bg-blue-50/60 text-blue-800 border-blue-200 hover:bg-blue-100/70'
+                      }`}
+                      title={`Chỉ hiện phần việc của ${s.staffName}: ${s.videoCount} video (${formatVndShort(s.totalBudget)})`}
+                    >
+                      {s.staffName} ({s.videoCount} video · {formatVndShort(s.totalBudget)})
+                    </button>
+                  );
+                })}
             </div>
-
-            <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200/80 shrink-0">
-              <button
-                onClick={() => {
-                  if (activeTab === 'MINDMAP') setActiveTab('ALL_SUMMARY');
-                  setViewMode('TABLE');
-                }}
-                className={`px-2.5 py-1 rounded-md text-xs font-semibold flex items-center gap-1 transition cursor-pointer ${
-                  activeTab !== 'MINDMAP' && viewMode === 'TABLE' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-800'
-                }`}
-              >
-                <TableIcon className="w-3.5 h-3.5" /> Bảng
-              </button>
-              <button
-                onClick={() => setActiveTab('MINDMAP')}
-                className={`px-2.5 py-1 rounded-md text-xs font-semibold flex items-center gap-1 transition cursor-pointer ${
-                  activeTab === 'MINDMAP' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-800'
-                }`}
-              >
-                <Layers className="w-3.5 h-3.5" /> Sơ đồ nhánh
-              </button>
-              <button
-                onClick={() => {
-                  if (activeTab === 'MINDMAP') setActiveTab('ALL_SUMMARY');
-                  setViewMode('CARDS');
-                }}
-                className={`px-2.5 py-1 rounded-md text-xs font-semibold flex items-center gap-1 transition cursor-pointer ${
-                  activeTab !== 'MINDMAP' && viewMode === 'CARDS' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500 hover:text-slate-800'
-                }`}
-              >
-                <LayoutGrid className="w-3.5 h-3.5" /> Thẻ
-              </button>
-            </div>
+            {focusedStaffFilter !== 'ALL' && (
+              <span className="text-2xs font-semibold text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded">
+                Đang focus riêng kế hoạch của: {focusedStaffFilter}
+              </span>
+            )}
           </div>
         </div>
       )}
@@ -2213,18 +2368,19 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
             <table className="w-full table-fixed text-left text-xs border-collapse">
               <thead>
                 <tr className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200 text-2xs">
-                  <th className="py-2.5 px-3 w-[24%]">Đầu việc / Khung lương KOC</th>
-                  <th className="py-2.5 px-2.5 w-[18%]">Định dạng video</th>
-                  <th className="py-2.5 px-2.5 w-[16%]">Nhân sự B2C thực thi</th>
-                  <th className="py-2.5 px-2 w-[17%] text-center">Số lượng video</th>
+                  <th className="py-2.5 px-3 w-[23%]">Đầu việc / Khung lương KOC</th>
+                  <th className="py-2.5 px-2.5 w-[17%]">Định dạng video</th>
+                  <th className="py-2.5 px-2.5 w-[18%]">Nhân sự thực thi (Tách 2–3 người)</th>
+                  <th className="py-2.5 px-2 w-[16%] text-center">Số lượng video</th>
                   <th className="py-2.5 px-2.5 w-[11%] text-right">Đơn giá Net</th>
                   <th className="py-2.5 px-2.5 w-[9%] text-right">Thành tiền</th>
-                  <th className="py-2.5 px-2 w-[5%] text-center">Bù</th>
+                  <th className="py-2.5 px-2 w-[6%] text-center">Bù</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {visibleItems.map((item) => {
                   const itemBudgetPct = totalAllocatedBudget > 0 ? (item.totalBudget / totalAllocatedBudget) * 100 : 0;
+                  const isSplitRow = item.id.includes('-split-');
 
                   return (
                     <tr
@@ -2256,23 +2412,45 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                         </select>
                       </td>
 
-                      {/* Column 3: Assignee Selector */}
+                      {/* Column 3: Assignee Selector + Split for Co-Workers */}
                       <td className="py-2 px-2.5 align-middle">
-                        <select
-                          value={item.assignedStaff || planState.pic}
-                          onChange={(e) => handleUpdateItemAssignee(item.id, e.target.value)}
-                          className={`w-full text-xs font-semibold px-2 py-1.5 rounded-lg border transition truncate ${
-                            item.assignedStaff && item.assignedStaff !== planState.pic
-                              ? 'bg-blue-50/70 border-blue-300 text-blue-900'
-                              : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-800'
-                          }`}
-                        >
-                          {PIC_OPTIONS.map(staff => (
-                            <option key={staff} value={staff}>
-                              {staff} {staff === planState.pic ? '(PIC)' : ''}
-                            </option>
-                          ))}
-                        </select>
+                        <div className="flex items-center gap-1">
+                          <select
+                            value={item.assignedStaff || planState.pic}
+                            onChange={(e) => handleUpdateItemAssignee(item.id, e.target.value)}
+                            className={`flex-1 min-w-0 text-xs font-semibold px-2 py-1.5 rounded-lg border transition truncate ${
+                              item.assignedStaff && item.assignedStaff !== planState.pic
+                                ? 'bg-blue-50/70 border-blue-300 text-blue-900'
+                                : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-800'
+                            }`}
+                          >
+                            {PIC_OPTIONS.map(staff => (
+                              <option key={staff} value={staff}>
+                                {staff} {staff === planState.pic ? '(PIC)' : ''}
+                              </option>
+                            ))}
+                          </select>
+                          {!isPlanLocked && (
+                            <button
+                              type="button"
+                              onClick={() => handleSplitRowForCoWorker(item.id)}
+                              className="px-1.5 py-1 rounded border border-slate-200 bg-slate-50 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 text-slate-600 text-[10px] font-semibold shrink-0 transition cursor-pointer"
+                              title="Tách dòng này để 2–3 nhân sự cùng chia nhau làm trên cùng gian hàng"
+                            >
+                              +Chia
+                            </button>
+                          )}
+                          {!isPlanLocked && isSplitRow && (
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveSplitRow(item.id)}
+                              className="px-1 py-1 rounded border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-[10px] font-semibold shrink-0 transition cursor-pointer"
+                              title="Gộp lại vào dòng gốc"
+                            >
+                              Gộp
+                            </button>
+                          )}
+                        </div>
                       </td>
 
                       {/* Column 4: Quantity Stepper (Gọn 1 hàng, bỏ thanh kéo thừa) */}

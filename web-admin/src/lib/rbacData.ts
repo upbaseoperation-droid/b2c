@@ -1545,6 +1545,12 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'cockpit',
     'overview',
     'dashboard-bi',
+    'dashboard-brand',
+    'dashboard-store',
+    'dashboard-video',
+    'dashboard-team-sla',
+    'dashboard-staff',
+    'dashboard-finance',
     'input-plan',
     'koc-listing',
     'self-channel-hub',
@@ -1566,12 +1572,20 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'leaderboard',
     'brand-hub',
     'koc-hub',
-    'ads-report'
+    'ads-report',
+    'api-settings',
+    'knowledge-qa'
   ],
   MANAGER: [
     'cockpit',
     'overview',
     'dashboard-bi',
+    'dashboard-brand',
+    'dashboard-store',
+    'dashboard-video',
+    'dashboard-team-sla',
+    'dashboard-staff',
+    'dashboard-finance',
     'input-plan',
     'koc-listing',
     'self-channel-hub',
@@ -1593,7 +1607,9 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'leaderboard',
     'brand-hub',
     'koc-hub',
-    'ads-report'
+    'ads-report',
+    'api-settings',
+    'knowledge-qa'
   ],
   GROWTH_MANAGER: [
     'cockpit',
@@ -1601,6 +1617,12 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'input-plan',
     'overview',
     'dashboard-bi',
+    'dashboard-brand',
+    'dashboard-store',
+    'dashboard-video',
+    'dashboard-team-sla',
+    'dashboard-staff',
+    'dashboard-finance',
     'stores',
     'campaigns',
     'brand-knowledge',
@@ -1608,7 +1630,9 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'ads-report',
     'performance-p3',
     'master-data',
-    'partner-access'
+    'partner-access',
+    'api-settings',
+    'knowledge-qa'
   ],
   MEDIA_MANAGER: [
     'cockpit',
@@ -1618,16 +1642,31 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'sample-tracker',
     'overview',
     'dashboard-bi',
+    'dashboard-brand',
+    'dashboard-store',
+    'dashboard-video',
+    'dashboard-team-sla',
+    'dashboard-staff',
+    'dashboard-finance',
     'stores',
     'campaigns',
     'brand-knowledge',
     'performance-p3',
     'master-data',
-    'partner-access'
+    'partner-access',
+    'api-settings',
+    'knowledge-qa'
   ],
   LEADER: [
     'cockpit',
     'overview',
+    'dashboard-bi',
+    'dashboard-brand',
+    'dashboard-store',
+    'dashboard-video',
+    'dashboard-team-sla',
+    'dashboard-staff',
+    'dashboard-finance',
     'ads-report',
     'performance-p3',
     'manager',
@@ -1645,10 +1684,17 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'contracts',
     'sample-tracker',
     'master-data',
-    'brand-knowledge'
+    'brand-knowledge',
+    'api-settings',
+    'knowledge-qa'
   ],
   BOOKING_MEMBER: [
     'cockpit',
+    'dashboard-bi',
+    'dashboard-store',
+    'dashboard-video',
+    'dashboard-team-sla',
+    'dashboard-staff',
     'booking',
     'koc-listing',
     'koc-master',
@@ -1659,10 +1705,16 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'sample-tracker',
     'push-products',
     'performance-p3',
-    'brand-knowledge'
+    'brand-knowledge',
+    'api-settings',
+    'knowledge-qa'
   ],
   CONTENT_MEMBER: [
     'cockpit',
+    'dashboard-bi',
+    'dashboard-video',
+    'dashboard-team-sla',
+    'dashboard-staff',
     'content',
     'content-angles',
     'self-channel-hub',
@@ -1671,10 +1723,16 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'brand-knowledge',
     'sample-tracker',
     'push-products',
-    'performance-p3'
+    'performance-p3',
+    'api-settings',
+    'knowledge-qa'
   ],
   BRAND_MEMBER: [
     'cockpit',
+    'dashboard-bi',
+    'dashboard-brand',
+    'dashboard-store',
+    'dashboard-video',
     'campaigns',
     'push-products',
     'brand-knowledge',
@@ -1684,10 +1742,17 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'ads-report',
     'overview',
     'sample-tracker',
-    'performance-p3'
+    'performance-p3',
+    'api-settings',
+    'knowledge-qa'
   ],
   MEMBER: [
     'cockpit',
+    'dashboard-bi',
+    'dashboard-store',
+    'dashboard-video',
+    'dashboard-team-sla',
+    'dashboard-staff',
     'booking',
     'koc-listing',
     'koc-master',
@@ -1698,18 +1763,27 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'sample-tracker',
     'push-products',
     'performance-p3',
-    'brand-knowledge'
+    'brand-knowledge',
+    'api-settings',
+    'knowledge-qa'
   ],
   GROWTH_MEMBER: [
     'input-plan',
     'cockpit',
     'overview',
     'dashboard-bi',
+    'dashboard-brand',
+    'dashboard-store',
+    'dashboard-video',
+    'dashboard-team-sla',
+    'dashboard-staff',
     'stores',
     'campaigns',
     'performance-p3',
     'ads-report',
-    'brand-knowledge'
+    'brand-knowledge',
+    'api-settings',
+    'knowledge-qa'
   ],
   MEDIA_MEMBER: [
     'input-plan',
@@ -1717,9 +1791,16 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'cockpit',
     'overview',
     'dashboard-bi',
+    'dashboard-brand',
+    'dashboard-store',
+    'dashboard-video',
+    'dashboard-team-sla',
+    'dashboard-staff',
     'campaigns',
     'performance-p3',
-    'brand-knowledge'
+    'brand-knowledge',
+    'api-settings',
+    'knowledge-qa'
   ],
   BRAND_PARTNER: [
     'brand-hub',

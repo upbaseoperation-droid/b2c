@@ -130,7 +130,7 @@ test('Tải lên, đọc, xóa tệp thương hiệu và ký xác thực Cloudfl
   await assert.rejects(readBrandFile(uploaded.fileKey));
 });
 
-test('Khởi tạo đầy đủ hồ sơ cho toàn bộ 42 thương hiệu B2C thực tế', async () => {
+test('Khởi tạo đầy đủ hồ sơ cho toàn bộ 42 thương hiệu B2C thực tế (8/8 mục kèm Quy tắc vận hành)', async () => {
   const { getFallbackProfiles } = await import('../src/lib/brands/store');
   const { buildRows } = await import('../src/components/brands/brandUi');
   const { REAL_B2C_42_BRANDS } = await import('../src/lib/realB2cBrandsData');
@@ -139,12 +139,40 @@ test('Khởi tạo đầy đủ hồ sơ cho toàn bộ 42 thương hiệu B2C t
   const rows = buildRows(REAL_B2C_42_BRANDS, profiles).filter(r => REAL_B2C_42_BRANDS.some(b => b.name === r.name));
   assert.equal(rows.length, 42);
   for (const row of rows) {
-    assert.equal(row.done, 7, `Thương hiệu ${row.name} chưa đủ 7/7 mục (${row.done}/${row.total})`);
+    assert.equal(row.done, 8, `Thương hiệu ${row.name} chưa đủ 8/8 mục (${row.done}/${row.total})`);
     assert.ok(row.profile.products.length > 0, `Thương hiệu ${row.name} thiếu SKU chủ lực`);
     assert.ok((row.profile.contentRules?.banned.length || 0) > 0, `Thương hiệu ${row.name} thiếu từ cấm`);
     assert.ok(row.profile.ratecard.some(r => (r.maxBudget || 0) > 0), `Thương hiệu ${row.name} thiếu khung thù lao`);
     assert.ok(row.profile.documents.length > 0, `Thương hiệu ${row.name} thiếu tài liệu`);
+    assert.ok(row.profile.workflowRules, `Thương hiệu ${row.name} thiếu quy tắc vận hành (workflowRules)`);
+    assert.ok((row.profile.positioning?.painPoints?.length || 0) > 0, `Thương hiệu ${row.name} thiếu nỗi đau khách hàng`);
   }
+
+  // Kiểm tra parseSection cho WORKFLOW_RULES
+  const base = emptyProfile('Kutieskin');
+  const wf = parseSection(
+    'WORKFLOW_RULES',
+    {
+      projectTier: 'TIER_A_STRATEGIC',
+      operatingModel: 'SPLIT_RESOURCE',
+      strategyOwnerTeam: 'BRAND_TEAM',
+      kocApprovalMode: 'KL4_PLUS_ONLY',
+      autoAirAfterHours: 72,
+      maxFreeRevisions: 2,
+      sampleSender: 'UPBASE_WAREHOUSE',
+      samplePrepSlaHours: 48,
+      defaultSamplePolicy: 'GIFT',
+      requiresAdsCode: true,
+      adsCodeDurationDays: 365,
+      repostAllowedChannels: 'TikTok\nShopee Video',
+    },
+    'Đặng Thị Yến Nhi',
+    base,
+  ).workflowRules!;
+  assert.equal(wf.kocApprovalMode, 'KL4_PLUS_ONLY');
+  assert.equal(wf.autoAirAfterHours, 72);
+  assert.deepEqual(wf.repostAllowedChannels, ['TikTok', 'Shopee Video']);
 });
+
 
 

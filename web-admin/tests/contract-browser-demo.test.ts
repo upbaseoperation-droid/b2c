@@ -14,7 +14,7 @@ test('Thiếu khóa phiên chỉ mở kho thử trình duyệt, không đổi qu
     await contractApi('/api/contracts/demo', { id: 'demo-legal' });
     assert.equal((await contractApi<ContractBootstrap>('/api/contracts')).actor.id, 'demo-legal');
     assert.equal(requests, 1);
-    assert.ok(data.templates.every(t => t.version === 'Giả lập' && t.paragraphs[0].includes('KHÔNG DÙNG ĐỂ KÝ')));
+    assert.ok(data.templates.every(t => (t.version === 'Giả lập' || t.version === 'Ver052026') && t.paragraphs[0].includes('KHÔNG DÙNG ĐỂ KÝ')));
   } finally { globalThis.fetch = previous; disableBrowserDemo(); }
 });
 test('Kho thử tạo, duyệt độc lập, ký từng người, chặn gọi MISA/tải chữ ký', () => {

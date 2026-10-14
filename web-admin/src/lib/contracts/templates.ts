@@ -2,7 +2,7 @@ import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import JSZip from 'jszip';
-import type { ContractField, DocBlock, DocParagraph, DocTable, DocTableCell, FieldGroup, FieldKind, FieldSource, LegalTemplate } from './types';
+import type { ContractCategory, ContractField, DocBlock, DocParagraph, DocTable, DocTableCell, FieldGroup, FieldKind, FieldSource, LegalTemplate, TemplateVersionHistoryItem } from './types';
 import { requireCondition } from './domain';
 import prisma from '../prisma';
 const SOURCES = [
@@ -156,13 +156,85 @@ function describeEach(fields: ContractField[], subject: string): ContractField[]
     return { ...f, title: tidy, group: 'OTHER', kind: 'text' };
   });
 }
-const archiveDirectory = () => path.resolve(process.env.CONTRACT_DATA_DIR || path.join(process.cwd(), '.contract-data'), 'sources');
+const dataRoot = () => process.env.CONTRACT_DATA_DIR || path.join(process.cwd(), '.contract-data');
+const archiveDirectory = () => path.resolve(dataRoot(), 'sources');
+const customTemplateDirectory = () => path.resolve(dataRoot(), 'templates');
+const catalogFile = () => path.resolve(dataRoot(), 'catalog.json');
+
+export interface CatalogOverride {
+  id: string;
+  name: string;
+  filename: string;
+  subject: string;
+  kind: 'CONTRACT' | 'ACCEPTANCE';
+  category: ContractCategory;
+  version: string;
+  description?: string;
+  active: boolean;
+  defaultReviewRoles: ('LEGAL' | 'FINANCE' | 'LEAD')[];
+  customFile?: string;
+  updatedAt: string;
+  updatedBy: string;
+  history: TemplateVersionHistoryItem[];
+}
+
+function defaultCategoryFor(id: string, kind: 'CONTRACT' | 'ACCEPTANCE'): ContractCategory {
+  if (id.startsWith('CTV-')) return 'CTV_FRAMEWORK';
+  if (kind === 'ACCEPTANCE') return 'ACCEPTANCE_SETTLEMENT';
+  return 'BOOKING_VIDEO';
+}
+
+function defaultReviewRolesFor(kind: 'CONTRACT' | 'ACCEPTANCE'): ('LEGAL' | 'FINANCE' | 'LEAD')[] {
+  return kind === 'ACCEPTANCE' ? ['FINANCE', 'LEAD'] : ['LEGAL', 'FINANCE'];
+}
+
+function defaultDescriptionFor(id: string, subject: string, kind: 'CONTRACT' | 'ACCEPTANCE'): string {
+  if (id.startsWith('CTV-')) {
+    return kind === 'CONTRACT'
+      ? 'Hợp đồng nguyên tắc theo tháng dành cho Cộng tác viên (CTV) sản xuất video kênh nội bộ.'
+      : 'Biên bản nghiệm thu tổng hợp số lượng video đạt chuẩn trong tháng của CTV để tất toán thù lao.';
+  }
+  return kind === 'CONTRACT'
+    ? `Mẫu hợp đồng dịch vụ sản xuất & đăng tải video quảng cáo áp dụng cho đối tác là ${subject.toLowerCase()}.`
+    : `Biên bản nghiệm thu link bài đăng, mã Spark Ads và giá trị thanh toán thực tế cho đối tác ${subject.toLowerCase()}.`;
+}
+
+async function readCatalogOverrides(): Promise<Record<string, CatalogOverride>> {
+  try {
+    const raw = await readFile(catalogFile(), 'utf8');
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+async function writeCatalogOverrides(map: Record<string, CatalogOverride>) {
+  await mkdir(path.dirname(catalogFile()), { recursive: true });
+  await writeFile(catalogFile(), JSON.stringify(map, null, 2), 'utf8');
+}
+
+async function readSourceBuffer(id: string, override?: CatalogOverride): Promise<{ buffer: Buffer; filename: string; name: string; subject: string; kind: 'CONTRACT' | 'ACCEPTANCE'; version: string }> {
+  const builtIn = SOURCES.find(s => s[0] === id);
+  requireCondition(builtIn || override, 'Không tìm thấy mẫu pháp chế.', 404);
+  const name = override?.name || builtIn![1];
+  const filename = override?.filename || builtIn![4];
+  const subject = override?.subject || builtIn![2];
+  const kind = override?.kind || builtIn![3];
+  const version = override?.version || 'Ver052026';
+  if (override?.customFile) {
+    const buffer = await readFile(path.join(customTemplateDirectory(), override.customFile));
+    return { buffer, filename, name, subject, kind, version };
+  }
+  const directory = process.env.CONTRACT_TEMPLATE_DIR || path.resolve(/*turbopackIgnore: true*/ process.cwd(), '..', 'Quản lý hợp đồng');
+  const buffer = await readFile(path.join(/*turbopackIgnore: true*/ directory, builtIn![4]));
+  return { buffer, filename, name, subject, kind, version };
+}
+
 export async function archiveTemplate(id: string, hash: string) {
-  const { zip, template } = await loadTemplate(id); requireCondition(template.hash === hash, 'Mẫu nguồn đã thay đổi trong lúc tạo hồ sơ.', 409);
-  // Dùng đúng bytes gốc, không giải nén/đóng gói lại để hash không đổi.
-  void zip;
-  const source = SOURCES.find(s => s[0] === id)!;
-  const buffer = await readFile(path.join(/*turbopackIgnore: true*/ process.env.CONTRACT_TEMPLATE_DIR || path.resolve(/*turbopackIgnore: true*/ process.cwd(), '..', 'Quản lý hợp đồng'), source[4]));
+  const { template } = await loadTemplate(id); requireCondition(template.hash === hash, 'Mẫu nguồn đã thay đổi trong lúc tạo hồ sơ.', 409);
+  const overrides = await readCatalogOverrides();
+  const { buffer } = await readSourceBuffer(id, overrides[id]);
   requireCondition(createHash('sha256').update(buffer).digest('hex') === hash, 'Mẫu nguồn đã thay đổi trong lúc tạo hồ sơ.', 409);
   if (process.env.NODE_ENV !== 'production' && process.env.CONTRACT_STORAGE !== 'postgres') {
     await mkdir(archiveDirectory(), { recursive: true });
@@ -292,11 +364,30 @@ export function extractBlocks(xml: string, part: string): DocBlock[] {
 }
 
 export async function loadTemplate(id: string, expectedHash?: string): Promise<{ template: LegalTemplate; zip: JSZip }> {
-  const source = SOURCES.find(s => s[0] === id); requireCondition(source, 'Không tìm thấy mẫu pháp chế.', 404);
-  const directory = process.env.CONTRACT_TEMPLATE_DIR || path.resolve(/*turbopackIgnore: true*/ process.cwd(), '..', 'Quản lý hợp đồng');
+  const overrides = await readCatalogOverrides();
+  const override = overrides[id];
+  const source = SOURCES.find(s => s[0] === id);
+  requireCondition(source || override, 'Không tìm thấy mẫu pháp chế.', 404);
+  const name = override?.name || source![1];
+  const filename = override?.filename || source![4];
+  const subject = override?.subject || source![2];
+  const kind = override?.kind || source![3];
+  const version = override?.version || 'Ver052026';
+  const category = override?.category || defaultCategoryFor(id, kind);
+  const description = override?.description || defaultDescriptionFor(id, subject, kind);
+  const active = override?.active !== undefined ? override.active : true;
+  const defaultReviewRoles = override?.defaultReviewRoles?.length ? override.defaultReviewRoles : defaultReviewRolesFor(kind);
+  const updatedAt = override?.updatedAt || '2026-05-01T08:00:00.000Z';
+  const updatedBy = override?.updatedBy || 'Phòng Pháp chế';
+
   let buffer: Buffer;
-  try { buffer = await readFile(path.join(/*turbopackIgnore: true*/ directory, source[4])); }
-  catch (e) { if (!expectedHash) throw e; buffer = Buffer.alloc(0); }
+  try {
+    const loaded = await readSourceBuffer(id, override);
+    buffer = loaded.buffer;
+  } catch (e) {
+    if (!expectedHash) throw e;
+    buffer = Buffer.alloc(0);
+  }
   if (expectedHash && createHash('sha256').update(buffer).digest('hex') !== expectedHash) {
     requireCondition(/^[a-f0-9]{64}$/.test(expectedHash), 'Phiên bản nguồn không hợp lệ.', 409);
     if (process.env.NODE_ENV !== 'production' && process.env.CONTRACT_STORAGE !== 'postgres') {
@@ -314,7 +405,7 @@ export async function loadTemplate(id: string, expectedHash?: string): Promise<{
   const parts = Object.keys(zip.files).filter(p => /^word\/(document|header\d+|footer\d+)\.xml$/.test(p)).sort();
   for (const part of parts) {
     const xml = await zip.file(part)!.async('string');
-    fields.push(...describeFields(extractFields(xml, part), source[2]));
+    fields.push(...describeFields(extractFields(xml, part), subject));
     texts.push(...paragraphs(xml).map(p => paragraphText(p[0])));
     blocksByPart.set(part, extractBlocks(xml, part));
   }
@@ -324,9 +415,202 @@ export async function loadTemplate(id: string, expectedHash?: string): Promise<{
     ...parts.filter(p => p.startsWith('word/footer')),
   ];
   const blocks = orderedParts.flatMap(p => blocksByPart.get(p) || []);
-  return { zip, template: { id, name: source[1], filename: source[4], subject: source[2], kind: source[3], version: 'Ver052026', hash: createHash('sha256').update(buffer).digest('hex'), fields, paragraphs: texts, blocks } };
+  const hash = createHash('sha256').update(buffer).digest('hex');
+  const history: TemplateVersionHistoryItem[] = override?.history?.length
+    ? override.history
+    : [{ version, hash, filename, updatedAt, updatedBy, note: 'Phiên bản chuẩn ban hành bởi Pháp chế' }];
+  return {
+    zip,
+    template: {
+      id,
+      name,
+      filename,
+      subject,
+      kind,
+      version,
+      hash,
+      fields,
+      paragraphs: texts,
+      blocks,
+      category,
+      description,
+      active,
+      defaultReviewRoles,
+      updatedAt,
+      updatedBy,
+      fieldCount: fields.length,
+      requiredFieldCount: fields.filter(f => f.required).length,
+      history,
+    },
+  };
 }
-export async function templateCatalog() { return Promise.all(SOURCES.map(async s => { const { template } = await loadTemplate(s[0]); return { ...template, paragraphs: [], fields: [], blocks: [] }; })); }
+
+export async function templateCatalog() {
+  const overrides = await readCatalogOverrides();
+  const builtInIds = SOURCES.map(s => s[0] as string);
+  const customIds = Object.keys(overrides).filter(id => !builtInIds.includes(id));
+  const allIds = [...builtInIds, ...customIds];
+  return Promise.all(
+    allIds.map(async id => {
+      const { template } = await loadTemplate(id);
+      return { ...template, paragraphs: [], fields: [], blocks: [] };
+    }),
+  );
+}
+
+export async function saveTemplateMeta(
+  id: string,
+  actorName: string,
+  input: {
+    name?: string;
+    subject?: string;
+    kind?: 'CONTRACT' | 'ACCEPTANCE';
+    category?: ContractCategory;
+    version?: string;
+    description?: string;
+    active?: boolean;
+    defaultReviewRoles?: ('LEGAL' | 'FINANCE' | 'LEAD')[];
+  },
+): Promise<LegalTemplate> {
+  const { template } = await loadTemplate(id);
+  const overrides = await readCatalogOverrides();
+  const prev = overrides[id];
+  const now = new Date().toISOString();
+  const nextVersion = input.version?.trim() || template.version;
+  const history: TemplateVersionHistoryItem[] = prev?.history?.length
+    ? [...prev.history]
+    : [...(template.history || [])];
+
+  if (nextVersion !== template.version && !history.some(h => h.version === nextVersion && h.hash === template.hash)) {
+    history.unshift({
+      version: nextVersion,
+      hash: template.hash,
+      filename: template.filename,
+      updatedAt: now,
+      updatedBy: actorName,
+      note: 'Cập nhật thông tin danh mục biểu mẫu',
+    });
+  }
+
+  overrides[id] = {
+    id,
+    name: input.name?.trim() || template.name,
+    filename: template.filename,
+    subject: input.subject?.trim() || template.subject,
+    kind: input.kind || template.kind,
+    category: input.category || template.category || defaultCategoryFor(id, template.kind),
+    version: nextVersion,
+    description: input.description !== undefined ? input.description.trim() : template.description,
+    active: input.active !== undefined ? input.active : (template.active ?? true),
+    defaultReviewRoles: input.defaultReviewRoles?.length ? input.defaultReviewRoles : (template.defaultReviewRoles || defaultReviewRolesFor(template.kind)),
+    customFile: prev?.customFile,
+    updatedAt: now,
+    updatedBy: actorName,
+    history,
+  };
+  await writeCatalogOverrides(overrides);
+  return (await loadTemplate(id)).template;
+}
+
+export async function uploadTemplateDocx(
+  id: string,
+  actorName: string,
+  input: {
+    base64Docx: string;
+    filename: string;
+    name?: string;
+    subject?: string;
+    kind?: 'CONTRACT' | 'ACCEPTANCE';
+    category?: ContractCategory;
+    version?: string;
+    description?: string;
+    defaultReviewRoles?: ('LEGAL' | 'FINANCE' | 'LEAD')[];
+    note?: string;
+  },
+): Promise<LegalTemplate> {
+  requireCondition(/^[A-Z0-9_-]{3,32}$/i.test(id), 'Mã biểu mẫu chỉ gồm chữ, số, gạch ngang (3–32 ký tự).');
+  const buffer = Buffer.from(input.base64Docx, 'base64');
+  requireCondition(buffer.byteLength > 200 && buffer.byteLength <= 15 * 1024 * 1024, 'File .docx không hợp lệ hoặc vượt quá 15MB.');
+
+  // Kiểm tra cấu trúc .docx hợp lệ trước khi lưu
+  let zip: JSZip;
+  try {
+    zip = await JSZip.loadAsync(buffer);
+  } catch {
+    requireCondition(false, 'Tệp tải lên không phải định dạng Word (.docx) hợp lệ.');
+    throw new Error('Invalid docx');
+  }
+  requireCondition(Boolean(zip.file('word/document.xml')), 'File .docx thiếu nội dung word/document.xml.');
+
+  const overrides = await readCatalogOverrides();
+  const prev = overrides[id];
+  const builtIn = SOURCES.find(s => s[0] === id);
+
+  // Nếu mẫu đã tồn tại, lưu trữ bản cũ theo hash để các hợp đồng cũ không bị ảnh hưởng
+  let existingTemplate: LegalTemplate | null = null;
+  if (builtIn || prev) {
+    try {
+      const loaded = await loadTemplate(id);
+      existingTemplate = loaded.template;
+      await archiveTemplate(id, existingTemplate.hash);
+    } catch {
+      // Bỏ qua nếu mẫu mới
+    }
+  }
+
+  const newHash = createHash('sha256').update(buffer).digest('hex');
+  await mkdir(customTemplateDirectory(), { recursive: true });
+  await mkdir(archiveDirectory(), { recursive: true });
+
+  const customFilename = `${id}-${newHash.slice(0, 12)}.docx`;
+  await writeFile(path.join(customTemplateDirectory(), customFilename), buffer, { mode: 0o600 });
+  await writeFile(path.join(archiveDirectory(), `${newHash}.docx`), buffer, { flag: 'wx', mode: 0o600 }).catch(e => {
+    if ((e as NodeJS.ErrnoException).code !== 'EEXIST') throw e;
+  });
+
+  const now = new Date().toISOString();
+  const kind = input.kind || existingTemplate?.kind || 'CONTRACT';
+  const subject = input.subject?.trim() || existingTemplate?.subject || 'Cá nhân';
+  const name = input.name?.trim() || existingTemplate?.name || `Mẫu ${kind === 'CONTRACT' ? 'Hợp đồng' : 'Nghiệm thu'} · ${subject}`;
+  const version = input.version?.trim() || existingTemplate?.version || 'Ver102026';
+  const filename = input.filename?.trim() || existingTemplate?.filename || `${id}.docx`;
+  const category = input.category || existingTemplate?.category || defaultCategoryFor(id, kind);
+  const description = input.description?.trim() || existingTemplate?.description || defaultDescriptionFor(id, subject, kind);
+  const defaultReviewRoles = input.defaultReviewRoles?.length ? input.defaultReviewRoles : (existingTemplate?.defaultReviewRoles || defaultReviewRolesFor(kind));
+
+  const prevHistory = prev?.history?.length ? prev.history : (existingTemplate?.history || []);
+  const history: TemplateVersionHistoryItem[] = [
+    {
+      version,
+      hash: newHash,
+      filename,
+      updatedAt: now,
+      updatedBy: actorName,
+      note: input.note?.trim() || (existingTemplate ? 'Cập nhật file .docx phiên bản mới' : 'Tạo mới biểu mẫu trong danh mục'),
+    },
+    ...prevHistory.filter(h => h.hash !== newHash),
+  ];
+
+  overrides[id] = {
+    id,
+    name,
+    filename,
+    subject,
+    kind,
+    category,
+    version,
+    description,
+    active: prev?.active ?? true,
+    defaultReviewRoles,
+    customFile: customFilename,
+    updatedAt: now,
+    updatedBy: actorName,
+    history,
+  };
+  await writeCatalogOverrides(overrides);
+  return (await loadTemplate(id)).template;
+}
+
 export async function renderTemplate(id: string, expectedHash: string, values: Record<string, string>) {
   const { template, zip } = await loadTemplate(id, expectedHash); requireCondition(template.hash === expectedHash, 'File nguồn không khớp phiên bản.', 409);
   const texts: string[] = [];

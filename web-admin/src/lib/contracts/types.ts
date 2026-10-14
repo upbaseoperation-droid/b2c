@@ -30,7 +30,36 @@ export interface DocTable {
   rows: DocTableCell[][];
 }
 export type DocBlock = DocParagraph | DocTable;
-export interface LegalTemplate { id: string; name: string; filename: string; subject: string; kind: 'CONTRACT' | 'ACCEPTANCE'; version: string; hash: string; fields: ContractField[]; paragraphs: string[]; blocks?: DocBlock[] }
+export type ContractCategory = 'BOOKING_VIDEO' | 'ACCEPTANCE_SETTLEMENT' | 'CTV_FRAMEWORK' | 'LIVESTREAM_APPENDIX';
+export interface TemplateVersionHistoryItem {
+  version: string;
+  hash: string;
+  filename: string;
+  updatedAt: string;
+  updatedBy: string;
+  note?: string;
+}
+export interface LegalTemplate {
+  id: string;
+  name: string;
+  filename: string;
+  subject: string;
+  kind: 'CONTRACT' | 'ACCEPTANCE';
+  version: string;
+  hash: string;
+  fields: ContractField[];
+  paragraphs: string[];
+  blocks?: DocBlock[];
+  category?: ContractCategory;
+  description?: string;
+  active?: boolean;
+  defaultReviewRoles?: ('LEGAL' | 'FINANCE' | 'LEAD')[];
+  updatedAt?: string;
+  updatedBy?: string;
+  fieldCount?: number;
+  requiredFieldCount?: number;
+  history?: TemplateVersionHistoryItem[];
+}
 export interface ReviewStep { role: 'LEGAL' | 'FINANCE' | 'LEAD'; reviewerId: string; reviewerName: string; status: 'PENDING' | 'APPROVED' | 'CHANGES' | 'REJECTED'; note: string; decidedAt?: string; version: number }
 export interface ContractFinding { severity: 'ERROR' | 'WARNING' | 'INFO'; message: string; evidence: string; fieldKey?: string }
 export interface AiCheck { version: number; at: string; provider: 'RULES' | 'AI'; findings: ContractFinding[] }
