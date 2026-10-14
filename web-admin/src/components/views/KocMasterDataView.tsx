@@ -6,7 +6,7 @@
  */
 
 import React, { useMemo, useRef, useState } from 'react';
-import { FileScan, Plus, RefreshCw, SlidersHorizontal } from 'lucide-react';
+import { FileScan, Plus, RefreshCw, SlidersHorizontal, UserCheck } from 'lucide-react';
 import type { BookingDealItem, KocItem, OcrLegalExtractionResult, UserProfile } from '../../lib/types';
 import { INITIAL_KOCS } from '../../lib/mockData';
 import { formatVndShort } from '../../lib/format';
@@ -31,9 +31,12 @@ interface KocMasterDataViewProps {
   currentUser?: UserProfile;
   /** Nhãn hàng đang chọn ở thanh trên (‘ALL’ = tất cả). Danh bạ lọc theo nhãn này, không có bộ lọc nhãn riêng. */
   selectedBrand?: string;
+  selectedKocId?: string | null;
   onOpenQuickBookWithKoc: (koc: KocItem) => void;
   onKocUpdated?: (updatedKoc: KocItem) => void;
   onKocCreated?: (newKoc: KocItem) => void;
+  onOpenKocPortal?: (kocId: string) => void;
+  onSelectDealForContract?: (deal: BookingDealItem) => void;
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
 }
 
@@ -53,9 +56,12 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
   allDeals,
   currentUser,
   selectedBrand = ALL,
+  selectedKocId = null,
   onOpenQuickBookWithKoc,
   onKocUpdated,
   onKocCreated,
+  onOpenKocPortal,
+  onSelectDealForContract,
   onNotify,
 }) => {
   const [localKocs, setLocalKocs] = useState<KocItem[]>(kocs);
@@ -67,7 +73,14 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
   }
 
   // Hồ sơ đang mở (null = đang ở danh sách)
-  const [openKocId, setOpenKocId] = useState<string | null>(null);
+  const [openKocId, setOpenKocId] = useState<string | null>(selectedKocId);
+  const [syncedSelectedId, setSyncedSelectedId] = useState<string | null>(selectedKocId);
+  if (selectedKocId !== syncedSelectedId) {
+    setSyncedSelectedId(selectedKocId);
+    if (selectedKocId) {
+      setOpenKocId(selectedKocId);
+    }
+  }
   const rootRef = useRef<HTMLDivElement>(null);
 
   // Modal
@@ -222,6 +235,7 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
   const backToList = (id: string) => closeShared(id, () => setOpenKocId(null));
 
   const rowActions = (k: KocItem) => [
+    ...(onOpenKocPortal ? [{ label: 'Mở Cổng KOC', icon: UserCheck, onSelect: () => onOpenKocPortal(k.id) }] : []),
     { label: 'Tạo booking', icon: Plus, onSelect: () => onOpenQuickBookWithKoc(k) },
     { label: 'Cập nhật chỉ số', icon: RefreshCw, onSelect: () => setMetricsTarget(k) },
     { label: hasLegalId(k) ? 'Đọc lại giấy tờ' : 'Đọc ảnh giấy tờ', icon: FileScan, onSelect: () => setOcrTarget(k) },
@@ -333,6 +347,8 @@ export const KocMasterDataView: React.FC<KocMasterDataViewProps> = ({
           onCreateBooking={onOpenQuickBookWithKoc}
           onUpdateMetrics={setMetricsTarget}
           onScanDocs={setOcrTarget}
+          onOpenKocPortal={onOpenKocPortal}
+          onSelectDealForContract={onSelectDealForContract}
         />
       ) : (
         <>

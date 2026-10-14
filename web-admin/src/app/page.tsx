@@ -67,7 +67,7 @@ const ApiKeySetupView = dynamic(() => import('../components/views/ApiKeySetupVie
 const MarketingKnowledgeQaView = dynamic(() => import('../components/views/MarketingKnowledgeQaView').then(m => m.MarketingKnowledgeQaView), { loading: ViewLoading });
 
 import { isThirdPartyPartner } from '../lib/thirdPartyAccessData';
-import { isTabAllowedForRole, getAllowedTabsForRole, getDefaultLandingTabForRole } from '../lib/rbacData';
+import { isTabAllowedForRole, getAllowedTabsForRole, getDefaultLandingTabForRole, getSavedInternalStaffList } from '../lib/rbacData';
 import { Button, PageActiveContext, Skeleton, SkeletonRows, ToastStack, useToastQueue } from '../components/ui';
 
 import { 
@@ -157,11 +157,30 @@ export default function App() {
   const [selectedBrandContext, setSelectedBrandContext] = useState<string>('ALL');
   const [selectedStoreContext, setSelectedStoreContext] = useState<string>('');
   const [selectedCtvContext, setSelectedCtvContext] = useState<string | null>(null);
+  const [selectedKocContext, setSelectedKocContext] = useState<string | null>(null);
 
   // Notifications Toast (Enhanced with Type & Dismiss)
   // Thông báo xếp chồng: nhiều thông báo liên tiếp không đè nhau, rê chuột để xem và dừng đếm giờ.
   const toastQueue = useToastQueue();
   const showToast = toastQueue.show;
+
+  const [, setRbacVersion] = useState(0);
+  useEffect(() => {
+    const onRbacUpdated = () => {
+      setRbacVersion(v => v + 1);
+      setCurrentUser(prev => {
+        if (!prev) return prev;
+        const staffList = getSavedInternalStaffList();
+        const matchedStaff = staffList.find(s => s.id === prev.id || s.email === prev.email);
+        if (matchedStaff && matchedStaff.role !== prev.role) {
+          return { ...prev, role: matchedStaff.role, roleTitle: matchedStaff.roleTitle };
+        }
+        return prev;
+      });
+    };
+    window.addEventListener('upbase-rbac-updated', onRbacUpdated);
+    return () => window.removeEventListener('upbase-rbac-updated', onRbacUpdated);
+  }, []);
 
   // Đảm bảo activeTab luôn hợp lệ theo phân quyền của vai trò hiện tại
   if (currentUser) {
@@ -729,7 +748,7 @@ export default function App() {
     'performance-p3': { title: 'Đánh giá 4P', subtitle: 'Điểm khối lượng việc theo độ khó gian hàng, chất lượng và SLA' },
     leaderboard: { title: 'Bảng xếp hạng', subtitle: 'Bảng xếp hạng KPI và SLA đội ngũ vận hành' },
     'brand-hub': { title: 'Cổng nhãn hàng', subtitle: 'Duyệt kế hoạch → Duyệt KOC → Duyệt kịch bản → Nghiệm thu video' },
-    'koc-hub': { title: 'Cổng KOC', subtitle: 'Lời mời booking, xác nhận nhận hàng mẫu, nộp link video và mã Spark Ads' },
+    'koc-hub': { title: 'Cổng KOC', subtitle: 'Quản lý thông tin cá nhân, hợp đồng, lịch sử hợp tác, hiệu quả kênh và tiến độ công việc' },
     'ads-report': { title: 'Báo cáo Ads tuần', subtitle: 'Đọc file báo cáo từ TikTok Shop Seller, đối soát mã Spark Ads và ROAS thực tế' },
     'dashboard-bi': { title: 'Dashboard Quản Trị B2C', subtitle: 'Đối soát 42 Thương hiệu, 69 Gian hàng, 786 Đơn Video, TikTok Seller & Nhân sự B2C' },
     'dashboard-brand': { title: 'Dashboard Thương Hiệu & Ngân Sách (Brand & P&L)', subtitle: 'Đối soát 42 Thương hiệu, Hạn mức Order Gross vs Trần Net Kế toán, Thực chi 3.2 và Cảnh báo đỏ vượt trần' },
@@ -944,6 +963,7 @@ export default function App() {
               brands={brands}
               stores={storePortfolios}
               kocs={kocs}
+              deals={deals}
               contributors={contributors}
               onNotify={showToast}
               onOpenQuickBookWithKoc={handleOpenQuickBookWithKoc}
@@ -969,6 +989,11 @@ export default function App() {
                 setSelectedCtvContext(ctvId || null);
                 setActiveTab('ctv-master');
               }}
+              onNavigateToKocPortal={(kocId) => {
+                setSelectedKocContext(kocId);
+                setActiveTab('koc-hub');
+              }}
+              onSelectDealForContract={openContractForDeal}
             />
           </KeepAliveTab>
 
@@ -1133,9 +1158,15 @@ export default function App() {
               allDeals={deals}
               currentUser={currentUser}
               selectedBrand={selectedBrandContext}
+              selectedKocId={selectedKocContext}
               onOpenQuickBookWithKoc={handleOpenQuickBookWithKoc}
               onKocCreated={handleKocCreated}
               onKocUpdated={handleKocUpdated}
+              onOpenKocPortal={(kocId: string | null) => {
+                setSelectedKocContext(kocId);
+                setActiveTab('koc-hub');
+              }}
+              onSelectDealForContract={openContractForDeal}
               onNotify={showToast}
             />
           </KeepAliveTab>
@@ -1240,6 +1271,14 @@ export default function App() {
               brands={brands}
               initialKocs={kocs}
               initialDeals={deals}
+              selectedKocId={selectedKocContext}
+              onKocUpdated={handleKocUpdated}
+              onUpdateDeal={handleUpdateDeal}
+              onOpenContractForDeal={openContractForDeal}
+              onOpenKocMaster={(kocId: string | null) => {
+                setSelectedKocContext(kocId);
+                setActiveTab('koc-master');
+              }}
               onNotify={showToast}
               onNavigateToBrandHub={['ADMIN', 'MANAGER'].includes(currentUser.role) ? () => setActiveTab('brand-hub') : undefined}
               onNavigateToCtvHub={['ADMIN', 'MANAGER'].includes(currentUser.role) ? () => setActiveTab('self-channel-hub') : undefined}

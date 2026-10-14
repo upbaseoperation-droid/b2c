@@ -14,6 +14,8 @@ import {
   Search,
   ExternalLink,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
   Activity,
   PlaySquare,
   AlertCircle,
@@ -1807,8 +1809,8 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                 <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  value={storeSearchQuery}
+                  onChange={(e) => setStoreSearchQuery(e.target.value)}
                   placeholder="Tìm tên gian hàng, PIC, Brand..."
                   className="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-hidden focus:border-indigo-500 focus:bg-white"
                 />
@@ -2031,7 +2033,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {filteredStores.map((st) => {
+                  {filteredStores.slice(0, storeVisibleLimit).map((st) => {
                     const net = st.budgetNet || st.monthlyBudget || 0;
                     const spent = st.actualSpentNet || 0;
                     const burnPct = net > 0 ? Math.round((spent / net) * 100) : spent > 0 ? 999 : 0;
@@ -2157,6 +2159,21 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                 </tbody>
               </table>
             </div>
+
+            {filteredStores.length > 15 && (
+              <div className="px-5 py-3 border-t border-slate-200 bg-slate-50/50 flex items-center justify-between">
+                <span className="text-xs text-slate-500">
+                  Hiển thị <strong className="text-slate-800 font-mono">{Math.min(storeVisibleLimit, filteredStores.length)}</strong> / <strong className="text-slate-800 font-mono">{filteredStores.length}</strong> gian hàng B2C
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setStoreVisibleLimit((prev) => (prev >= filteredStores.length ? 15 : filteredStores.length))}
+                  className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 transition cursor-pointer"
+                >
+                  {storeVisibleLimit >= filteredStores.length ? 'Thu gọn (15 gian hàng)' : `Xem tất cả ${filteredStores.length} gian hàng`}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -2241,8 +2258,8 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
               <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                value={videoSearchQuery}
+                onChange={(e) => setVideoSearchQuery(e.target.value)}
                 placeholder="Tìm mã BO26, kênh KOC, sản phẩm..."
                 className="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-hidden focus:border-indigo-500 focus:bg-white"
               />
@@ -3337,8 +3354,28 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                       </option>
                     ))}
                   </select>
+                  <button
+                    type="button"
+                    onClick={() => setIsStaff360Open(!isStaff360Open)}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-indigo-200 bg-white hover:bg-indigo-50 text-indigo-700 text-xs font-bold transition cursor-pointer"
+                  >
+                    {isStaff360Open ? (
+                      <>
+                        <ChevronUp className="w-3.5 h-3.5" />
+                        <span>Thu gọn hồ sơ</span>
+                      </>
+                    ) : (
+                      <>
+                        <ChevronDown className="w-3.5 h-3.5" />
+                        <span>Mở rộng hồ sơ 360°</span>
+                      </>
+                    )}
+                  </button>
                 </div>
               </div>
+
+              {isStaff360Open && (
+                <>
 
               {/* Dải pill chọn nhanh các chuyên viên chủ lực */}
               <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
@@ -3730,6 +3767,8 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                   )}
                 </div>
               </div>
+                </>
+              )}
             </div>
           )}
 
@@ -3956,26 +3995,38 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                     Đánh giá đầy đủ cả Sản lượng thực thi (Số Video Air, % Spend) và Hiệu quả đầu tư (Đơn giá/Video, GMV, ROAS, CIR, Điểm KPI)
                   </p>
                 </div>
-                <div className="flex flex-wrap items-center gap-1.5">
-                  {[
-                    { key: 'ALL', label: 'Tất cả 32 NS' },
-                    { key: 'WITH_STORES', label: 'Chuyên viên giữ gian hàng (4.1)' },
-                    { key: 'SPECIALIST', label: 'Toàn bộ Chuyên viên' },
-                    { key: 'MANAGEMENT', label: 'Cấp Quản lý' }
-                  ].map((f) => (
-                    <button
-                      key={f.key}
-                      type="button"
-                      onClick={() => setStaffRoleFilter(f.key as any)}
-                      className={`px-2.5 py-1 rounded text-xs font-semibold transition cursor-pointer ${
-                        staffRoleFilter === f.key
-                          ? 'bg-slate-900 text-white'
-                          : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                      }`}
-                    >
-                      {f.label}
-                    </button>
-                  ))}
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="relative">
+                    <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      value={staffSearchQuery}
+                      onChange={(e) => setStaffSearchQuery(e.target.value)}
+                      placeholder="Tìm tên nhân sự, PIC..."
+                      className="w-48 pl-8 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-hidden focus:border-indigo-500 focus:bg-white"
+                    />
+                  </div>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {[
+                      { key: 'ALL', label: 'Tất cả 32 NS' },
+                      { key: 'WITH_STORES', label: 'Chuyên viên giữ gian hàng (4.1)' },
+                      { key: 'SPECIALIST', label: 'Toàn bộ Chuyên viên' },
+                      { key: 'MANAGEMENT', label: 'Cấp Quản lý' }
+                    ].map((f) => (
+                      <button
+                        key={f.key}
+                        type="button"
+                        onClick={() => setStaffRoleFilter(f.key as any)}
+                        className={`px-2.5 py-1 rounded text-xs font-semibold transition cursor-pointer ${
+                          staffRoleFilter === f.key
+                            ? 'bg-slate-900 text-white'
+                            : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                        }`}
+                      >
+                        {f.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
 
@@ -4041,7 +4092,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {filteredStaffList.map((st, idx) => {
+                  {filteredStaffList.slice(0, staffVisibleLimit).map((st, idx) => {
                     const isFocused = focusedStaffProfile?.name === st.name;
                     return (
                       <tr
@@ -4202,6 +4253,21 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                 </tbody>
               </table>
             </div>
+
+            {filteredStaffList.length > 12 && (
+              <div className="px-5 py-3 border-t border-slate-200 bg-slate-50/50 flex items-center justify-between">
+                <span className="text-xs text-slate-500">
+                  Hiển thị <strong className="text-slate-800 font-mono">{Math.min(staffVisibleLimit, filteredStaffList.length)}</strong> / <strong className="text-slate-800 font-mono">{filteredStaffList.length}</strong> nhân sự B2C
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setStaffVisibleLimit((prev) => (prev >= filteredStaffList.length ? 12 : filteredStaffList.length))}
+                  className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 transition cursor-pointer"
+                >
+                  {staffVisibleLimit >= filteredStaffList.length ? 'Thu gọn (12 nhân sự)' : `Xem tất cả ${filteredStaffList.length} nhân sự`}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -4210,61 +4276,198 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
       {/* TAB 6: TRUNG TÂM XUẤT BÁO CÁO ĐỐI SOÁT ĐA SHEET (.XLSX) */}
       {/* ========================================================================= */}
       {activeTab === 'EXPORT_CENTER' && (
-        <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-xs space-y-5">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-100 pb-4">
-            <div>
-              <h3 className="text-base font-bold text-slate-900">
-                Xuất Báo Cáo Đối Soát Kế Toán & Hiệu Suất B2C (Định Dạng Excel .xlsx 4 Sheets)
-              </h3>
-              <p className="text-xs text-slate-500 mt-1">
-                Dữ liệu xuất ra tuân thủ đúng phạm vi 69 gian hàng B2C (B2C phụ trách = 1), tách bạch Gross vs Net, Paid vs FOC và tích hợp số liệu thực thu từ TikTok Seller Center.
-              </p>
+        <div className="space-y-5">
+          {/* 1. THANH TIÊU ĐỀ & NÚT TẢI XUẤT EXCEL */}
+          <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-indigo-900 text-white">
+                    Kiểm Soát Tài Chính B2C
+                  </span>
+                  <h3 className="text-base font-bold text-slate-900">
+                    Trung Tâm Đối Soát Kế Toán, Dòng Tiền Booking &amp; Xuất Báo Cáo Đa Sheet (.xlsx)
+                  </h3>
+                </div>
+                <p className="text-xs text-slate-500 mt-1">
+                  Đảm bảo kỷ luật tài chính phòng B2C: Đối soát giữa Định mức Order Gross (File 4.1), Trần duyệt Net Kế toán (File 4.1.1) và Thực tế duyệt chi (File 3.2).
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleExportMultiSheetExcel}
+                disabled={isExportingExcel}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition cursor-pointer shrink-0"
+              >
+                <Download className="w-4 h-4" />
+                {isExportingExcel ? 'Đang tạo file Excel...' : 'Tải Xuống Sổ Cái Đối Soát Ngay (.xlsx)'}
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={handleExportMultiSheetExcel}
-              disabled={isExportingExcel}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition cursor-pointer"
-            >
-              <Download className="w-4 h-4" />
-              {isExportingExcel ? 'Đang tạo file Excel...' : 'Tải Xuống File Excel Đối Soát Ngay (.xlsx)'}
-            </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {[
-              {
-                sheet: 'Sheet 1: Đối Soát 69 Gian Hàng B2C',
-                rows: '69 dòng gian hàng chuẩn',
-                desc: 'Đầy đủ Brand, Gian hàng, Sàn, Giám đốc Marketing (Yến Nhi), Leader (Ngọc Tâm / Không có leader), PIC, Order Gross, Order Net, Thực chi File 3.2, Paid/FOC/Self video và Cảnh báo vượt trần.'
-              },
-              {
-                sheet: 'Sheet 2: Hiệu Suất Nhân Sự B2C',
-                rows: `${B2C_STAFF_ANALYTICS_LIST.length} nhân sự phòng B2C`,
-                desc: 'Thống kê chi tiết số gian hàng TikTok/Shopee, số gian có Leader vs trực tiếp, tổng hạn mức Gross/Net quản lý, thực chi lũy kế, số đơn book, video đã air và tỷ lệ đúng hạn SLA.'
-              },
-              {
-                sheet: 'Sheet 3: Sổ Cái Video Đã Book (File 3.2)',
-                rows: `${B2C_BOOKED_VIDEOS_OCT_2026.length} bản ghi đối soát mẫu & 786 đơn tháng`,
-                desc: 'Chi tiết mã BO26..., ID kênh KOC, gian hàng, chuyên viên book, bậc khung lương (TAP 0đ, KL1-KL7), cát-xê duyệt chi, trạng thái ĐNTT/Tạm ứng và doanh thu GMV TikTok Seller.'
-              },
-              {
-                sheet: 'Sheet 4: Chiến Dịch & Creative TikTok Seller',
-                rows: `${TIKTOK_SELLER_TOP_CREATIVES.length} Top Creative & 6 Chiến dịch PGM/LGM`,
-                desc: 'Báo cáo hiệu quả chạy quảng cáo thực tế từ TikTok Shop Seller Center: Chi phí Ads, GMV thực thu, ROAS, số đơn hàng, CPA, CTR, CVR và tỷ lệ giữ chân 2s / 6s.'
-              }
-            ].map((item) => (
-              <div key={item.sheet} className="p-4 rounded-xl bg-slate-50 border border-slate-200">
-                <div className="flex items-center gap-2 text-indigo-700 font-bold text-xs mb-1">
-                  <FileSpreadsheet className="w-4 h-4 shrink-0" />
-                  <span>{item.sheet}</span>
-                </div>
-                <div className="text-[11px] font-mono font-semibold text-slate-800 mb-2">
-                  Quy mô: {item.rows}
-                </div>
-                <p className="text-xs text-slate-600 leading-relaxed">{item.desc}</p>
+          {/* 2. 4 THẺ CHỈ SỐ TÀI CHÍNH CỐT LÕI (GROSS vs NET vs THỰC CHI) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3.5">
+            <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs">
+              <div className="flex items-center justify-between text-xs text-slate-500 font-medium mb-1">
+                <span>Hạn Mức Order Gross (4.1)</span>
+                <DollarSign className="w-4 h-4 text-slate-500" />
               </div>
-            ))}
+              <div className="text-xl font-extrabold text-slate-900 font-mono">
+                {formatVndShort(kpiSummary.totalBudgetGross)}
+              </div>
+              <div className="mt-2 pt-2 border-t border-slate-100 text-[11px] text-slate-500">
+                Định mức kế hoạch tổng (Trước thuế &amp; phí sàn)
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl border border-indigo-200 p-4 shadow-xs">
+              <div className="flex items-center justify-between text-xs text-indigo-800 font-bold mb-1">
+                <span>Trần Phê Duyệt Net (4.1.1)</span>
+                <ShieldCheck className="w-4 h-4 text-indigo-600" />
+              </div>
+              <div className="text-xl font-extrabold text-indigo-700 font-mono">
+                {formatVndShort(kpiSummary.totalBudgetNet)}
+              </div>
+              <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
+                <span className="text-slate-500">Kế toán duyệt trần:</span>
+                <strong className="text-indigo-900">100% gian có trần Net</strong>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs">
+              <div className="flex items-center justify-between text-xs text-slate-500 font-medium mb-1">
+                <span>Chênh Lệch Gross - Net</span>
+                <PieChart className="w-4 h-4 text-amber-600" />
+              </div>
+              <div className="text-xl font-extrabold text-amber-600 font-mono">
+                {formatVndShort(Math.max(kpiSummary.totalBudgetGross - kpiSummary.totalBudgetNet, 0))}
+              </div>
+              <div className="mt-2 pt-2 border-t border-slate-100 text-[11px] text-slate-500">
+                Thuế VAT, chiết khấu sàn &amp; giảm trừ biên đại lý
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl border border-emerald-200 p-4 shadow-xs">
+              <div className="flex items-center justify-between text-xs text-emerald-800 font-bold mb-1">
+                <span>Thực Chi Đã Duyệt Book (3.2)</span>
+                <TrendingUp className="w-4 h-4 text-emerald-600" />
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-xl font-extrabold text-emerald-700 font-mono">
+                  {formatVndShort(kpiSummary.totalActualSpentNet)}
+                </span>
+                <span className="text-xs font-bold text-emerald-800 bg-emerald-100 px-1.5 py-0.5 rounded">
+                  {kpiSummary.pacingNetPct}% Trần Net
+                </span>
+              </div>
+              <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
+                <span className="text-slate-500">Còn dư hạn mức:</span>
+                <strong className="text-slate-700 font-mono">
+                  {formatVndShort(Math.max(kpiSummary.totalBudgetNet - kpiSummary.totalActualSpentNet, 0))}
+                </strong>
+              </div>
+            </div>
+          </div>
+
+          {/* 3. ĐỐI SOÁT DÒNG TIỀN TẠM ỨNG & HOÀN ỨNG BOOKING (786 ĐƠN) */}
+          <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs space-y-3">
+            <div>
+              <h4 className="text-sm font-bold text-slate-900">
+                Sổ Cái Kiểm Soát Dòng Tiền &amp; Trạng Thái Đề Nghị Thanh Toán (ĐNTT) — Tháng 10/2026
+              </h4>
+              <p className="text-xs text-slate-500">
+                Theo dõi tiến độ từ lúc duyệt tạm ứng hợp đồng đến nghiệm thu video và thanh lý quyết toán với KOC.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+              <div className="p-3.5 rounded-xl border border-emerald-200 bg-emerald-50/40">
+                <div className="flex items-center justify-between text-xs font-bold text-emerald-900 mb-1">
+                  <span>1. Đã Nghiệm Thu &amp; Tất Toán ĐNTT 100%</span>
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                </div>
+                <div className="text-lg font-extrabold text-emerald-800 font-mono">
+                  642 Đơn · 2,14 Tỷ VNĐ
+                </div>
+                <p className="text-[11px] text-slate-600 mt-1">
+                  Video đã lên sóng (Air) đạt chuẩn yêu cầu thương hiệu, hoàn tất biên bản nghiệm thu và thanh lý kế toán.
+                </p>
+              </div>
+
+              <div className="p-3.5 rounded-xl border border-amber-200 bg-amber-50/40">
+                <div className="flex items-center justify-between text-xs font-bold text-amber-900 mb-1">
+                  <span>2. Đang Tạm Ứng 50% (Chờ KOC Air Video)</span>
+                  <AlertCircle className="w-4 h-4 text-amber-600" />
+                </div>
+                <div className="text-lg font-extrabold text-amber-800 font-mono">
+                  104 Đơn · 376 Triệu VNĐ
+                </div>
+                <p className="text-[11px] text-slate-600 mt-1">
+                  KOC đã nhận tạm ứng đợt 1 và sản phẩm mẫu; chuyên viên đang giám sát lịch quay để lên sóng đúng hạn.
+                </p>
+              </div>
+
+              <div className="p-3.5 rounded-xl border border-sky-200 bg-sky-50/40">
+                <div className="flex items-center justify-between text-xs font-bold text-sky-900 mb-1">
+                  <span>3. Suất Gửi Mẫu Miễn Phí TAP FOC (0đ Cát-xê)</span>
+                  <ShoppingBag className="w-4 h-4 text-sky-600" />
+                </div>
+                <div className="text-lg font-extrabold text-sky-800 font-mono">
+                  212 Suất · 0đ Cát-xê
+                </div>
+                <p className="text-[11px] text-slate-600 mt-1">
+                  Suất mẫu sản phẩm miễn phí cho KOC liên kết Affiliate (Trần Thị Hảo phụ trách), không phát sinh tiền mặt chi ra.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* 4. CẤU TRÚC 4 SHEET EXCEL BÁO CÁO ĐỐI SOÁT */}
+          <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs space-y-4">
+            <div>
+              <h4 className="text-sm font-bold text-slate-900">
+                Cấu Trúc Tệp Báo Cáo Đối Soát Đa Sheet (Định Dạng Excel .xlsx)
+              </h4>
+              <p className="text-xs text-slate-500">
+                Tệp tải xuống bao gồm 4 bảng tính độc lập được định dạng chuẩn kế toán doanh nghiệp:
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {[
+                {
+                  sheet: 'Sheet 1: Đối Soát 69 Gian Hàng B2C',
+                  rows: '69 dòng gian hàng chuẩn',
+                  desc: 'Đầy đủ Brand, Gian hàng, Sàn, Giám đốc Marketing (Yến Nhi), Leader (Ngọc Tâm / Không có leader), PIC, Order Gross, Order Net, Thực chi File 3.2, Paid/FOC/Self video và Cảnh báo vượt trần.'
+                },
+                {
+                  sheet: 'Sheet 2: Hiệu Suất Nhân Sự B2C',
+                  rows: `${B2C_STAFF_ANALYTICS_LIST.length} nhân sự phòng B2C`,
+                  desc: 'Thống kê chi tiết số gian hàng TikTok/Shopee, số gian có Leader vs trực tiếp, tổng hạn mức Gross/Net quản lý, thực chi lũy kế, số đơn book, video đã air và tỷ lệ đúng hạn SLA.'
+                },
+                {
+                  sheet: 'Sheet 3: Sổ Cái Video Đã Book (File 3.2)',
+                  rows: `${B2C_BOOKED_VIDEOS_OCT_2026.length} bản ghi đối soát mẫu & 786 đơn tháng`,
+                  desc: 'Chi tiết mã BO26..., ID kênh KOC, gian hàng, chuyên viên book, bậc khung lương (TAP 0đ, KL1-KL7), cát-xê duyệt chi, trạng thái ĐNTT/Tạm ứng và doanh thu GMV TikTok Seller.'
+                },
+                {
+                  sheet: 'Sheet 4: Chiến Dịch & Creative TikTok Seller',
+                  rows: `${TIKTOK_SELLER_TOP_CREATIVES.length} Top Creative & 6 Chiến dịch PGM/LGM`,
+                  desc: 'Báo cáo hiệu quả chạy quảng cáo thực tế từ TikTok Shop Seller Center: Chi phí Ads, GMV thực thu, ROAS, số đơn hàng, CPA, CTR, CVR và tỷ lệ giữ chân 2s / 6s.'
+                }
+              ].map((item) => (
+                <div key={item.sheet} className="p-4 rounded-xl bg-slate-50 border border-slate-200">
+                  <div className="flex items-center gap-2 text-indigo-700 font-bold text-xs mb-1">
+                    <FileSpreadsheet className="w-4 h-4 shrink-0" />
+                    <span>{item.sheet}</span>
+                  </div>
+                  <div className="text-[11px] font-mono font-semibold text-slate-800 mb-2">
+                    Quy mô: {item.rows}
+                  </div>
+                  <p className="text-xs text-slate-600 leading-relaxed">{item.desc}</p>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       )}

@@ -27,7 +27,33 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
   onOpenQuickBook,
   onSelectDeal,
 }) => {
-  const columns: Column<BookingDealItem>[] = [
+  const stats = React.useMemo(() => {
+    let totalValue = 0;
+    let advance = 0;
+    let gmv = 0;
+    const staffSet = new Set<string>();
+    const byStaff = new Map<string, number>();
+
+    for (const d of deals) {
+      totalValue += d.totalValue || 0;
+      advance += d.advanceAmount || 0;
+      gmv += d.gmv30 || 0;
+      if (d.assignedStaff) {
+        staffSet.add(d.assignedStaff);
+        byStaff.set(d.assignedStaff, (byStaff.get(d.assignedStaff) || 0) + 1);
+      }
+    }
+    const top = [...byStaff.entries()].sort((x, y) => y[1] - x[1])[0];
+    return {
+      totalValue,
+      advance,
+      gmv,
+      staffCount: staffSet.size,
+      top,
+    };
+  }, [deals]);
+
+  const columns: Column<BookingDealItem>[] = React.useMemo(() => [
     {
       key: 'dealCode',
       header: 'Mã deal',
@@ -120,30 +146,21 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
         </Button>
       ),
     },
-  ];
+  ], [onSelectDeal]);
 
   return (
     <div className="space-y-6">
-      {(() => {
-        const totalValue = deals.reduce((sum, d) => sum + (d.totalValue || 0), 0);
-        const advance = deals.reduce((sum, d) => sum + (d.advanceAmount || 0), 0);
-        const gmv = deals.reduce((sum, d) => sum + (d.gmv30 || 0), 0);
-        const staffCount = new Set(deals.map(d => d.assignedStaff).filter(Boolean)).size;
-        const byStaff = new Map<string, number>();
-        deals.forEach(d => d.assignedStaff && byStaff.set(d.assignedStaff, (byStaff.get(d.assignedStaff) || 0) + 1));
-        const top = [...byStaff.entries()].sort((x, y) => y[1] - x[1])[0];
-        return (
-          <div className="space-y-4">
-            <StatRow>
-              <Stat label="Giá trị deal" value={formatVndShort(totalValue)} progress={{ value: advance, max: totalValue || 1, target: 0 }} note={`Đã tạm ứng ${formatVndShort(advance)}`} />
-              <Stat label="Deal đang theo dõi" value={deals.length} note={`${staffCount} nhân sự phụ trách`} />
-              <Stat label="GMV 30 ngày" value={formatVndShort(gmv)} note={totalValue > 0 ? `Gấp ${(gmv / totalValue).toLocaleString('vi-VN', { maximumFractionDigits: 1 })} lần giá trị deal` : undefined} tone={gmv >= totalValue ? 'positive' : undefined} />
-              <Stat label="Nhiều deal nhất" value={top ? <Person name={top[0]} size={28} /> : '—'} note={top ? `${top[1]} deal` : undefined} />
-            </StatRow>
+      <div className="space-y-4">
+        <StatRow>
+          <Stat label="Giá trị deal" value={formatVndShort(stats.totalValue)} progress={{ value: stats.advance, max: stats.totalValue || 1, target: 0 }} note={`Đã tạm ứng ${formatVndShort(stats.advance)}`} />
+          <Stat label="Deal đang theo dõi" value={deals.length} note={`${stats.staffCount} nhân sự phụ trách`} />
+          <Stat label="GMV 30 ngày" value={formatVndShort(stats.gmv)} note={stats.totalValue > 0 ? `Gấp ${(stats.gmv / stats.totalValue).toLocaleString('vi-VN', { maximumFractionDigits: 1 })} lần giá trị deal` : undefined} tone={stats.gmv >= stats.totalValue ? 'positive' : undefined} />
+          <Stat label="Nhiều deal nhất" value={stats.top ? <Person name={stats.top[0]} size={28} /> : '—'} note={stats.top ? `${stats.top[1]} deal` : undefined} />
+        </StatRow>
             <div className="bg-surface border border-line rounded-xl px-4 py-3.5 grid gap-2.5">
               <div className="flex items-baseline justify-between gap-3">
                 <span className="text-[13px] font-medium text-ink">Giá trị deal theo kênh</span>
-                <span className="text-2xs text-ink-3 tabular-nums">{formatVndShort(totalValue)}</span>
+                <span className="text-2xs text-ink-3 tabular-nums">{formatVndShort(stats.totalValue)}</span>
               </div>
               <ChannelBar
                 format={formatVndShort}
@@ -154,8 +171,6 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
               />
             </div>
           </div>
-        );
-      })()}
 
       <Panel
         title="Bàn giao giữa các team"

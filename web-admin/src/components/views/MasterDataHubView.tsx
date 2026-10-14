@@ -26,7 +26,7 @@ import {
   CloudDownload,
   Edit3
 } from 'lucide-react';
-import { UserProfile, BrandDetail, StorePortfolioItem, KocItem, MasterContentPillar, Contributor } from '../../lib/types';
+import { UserProfile, BrandDetail, StorePortfolioItem, KocItem, MasterContentPillar, Contributor, BookingDealItem } from '../../lib/types';
 import { INITIAL_BRANDS, INITIAL_STORE_PORTFOLIOS, INITIAL_KOCS, INITIAL_PUSH_PRODUCTS } from '../../lib/mockData';
 import { INITIAL_CONTRIBUTORS } from '../../lib/selfChannelData';
 import { 
@@ -105,6 +105,9 @@ interface MasterDataHubViewProps {
   onNavigateToBrandProfile?: (brandName: string) => void;
   onNavigateToStoreProfile?: (storeName: string) => void;
   onNavigateToCtvProfile?: (ctvId?: string) => void;
+  deals?: BookingDealItem[];
+  onNavigateToKocPortal?: (kocId: string | null) => void;
+  onSelectDealForContract?: (deal: BookingDealItem) => void;
 }
 
 export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
@@ -113,6 +116,7 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
   brands = INITIAL_BRANDS,
   stores,
   kocs = INITIAL_KOCS,
+  deals,
   contributors = INITIAL_CONTRIBUTORS,
   onNotify,
   onOpenQuickBookWithKoc,
@@ -124,7 +128,9 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
   onUpdateStore,
   onNavigateToBrandProfile,
   onNavigateToStoreProfile,
-  onNavigateToCtvProfile
+  onNavigateToCtvProfile,
+  onNavigateToKocPortal,
+  onSelectDealForContract
 }) => {
   const [activeSubTab, setActiveSubTab] = useState<MasterDataSubTab>(initialSubTab);
 
@@ -1669,10 +1675,14 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
       {activeSubTab === 'kocs' && (
         <KocMasterDataView
           kocs={kocs}
+          allDeals={deals}
           currentUser={currentUser}
           onOpenQuickBookWithKoc={onOpenQuickBookWithKoc || (() => {})}
           onKocCreated={onKocCreated}
           onKocUpdated={onKocUpdated}
+          onOpenKocPortal={onNavigateToKocPortal}
+          onSelectDealForContract={onSelectDealForContract}
+          onNotify={onNotify}
         />
       )}
 

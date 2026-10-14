@@ -35,6 +35,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { UserProfile, TabKey } from '../lib/types';
+import { getAllowedTabsForRole, ALL_SYSTEM_SCREENS } from '../lib/rbacData';
 import { Avatar, BrandLogo, Presence, SlidingIndicator, useActiveBox } from './ui';
 export type { TabKey };
 
@@ -615,7 +616,66 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onToggleCollapse,
   onLogout,
 }) => {
-  const navSections = getNavSectionsForUserRole(currentUser.role);
+  const [rbacTick, setRbacTick] = React.useState(0);
+  React.useEffect(() => {
+    const onRbacChange = () => setRbacTick(t => t + 1);
+    window.addEventListener('upbase-rbac-updated', onRbacChange);
+    return () => window.removeEventListener('upbase-rbac-updated', onRbacChange);
+  }, []);
+
+  const navSections = React.useMemo(() => {
+    void rbacTick;
+    const baseSections = getNavSectionsForUserRole(currentUser.role);
+    const allowedSet = new Set(getAllowedTabsForRole(currentUser.role));
+    const renderedKeys = new Set<TabKey>();
+
+    const filtered: NavSection[] = [];
+    for (const sec of baseSections) {
+      const items: NavItem[] = [];
+      for (const item of sec.items) {
+        if (item.children && item.children.length > 0) {
+          const allowedChildren = item.children.filter(c => allowedSet.has(c.key));
+          if (allowedChildren.length > 0) {
+            allowedChildren.forEach(c => renderedKeys.add(c.key));
+            renderedKeys.add(item.key);
+            items.push({
+              ...item,
+              key: allowedChildren[0].key,
+              badge: `${allowedChildren.length} mục`,
+              children: allowedChildren,
+            });
+          }
+        } else if (allowedSet.has(item.key)) {
+          renderedKeys.add(item.key);
+          items.push(item);
+        }
+      }
+      if (items.length > 0) {
+        filtered.push({ ...sec, items });
+      }
+    }
+
+    // Nếu Admin bật thêm màn hình ngoài danh mục gốc của Role, tự động hiển thị trên Sidebar
+    const extraItems: NavItem[] = [];
+    for (const screen of ALL_SYSTEM_SCREENS) {
+      if (allowedSet.has(screen.key) && !renderedKeys.has(screen.key)) {
+        extraItems.push({
+          key: screen.key,
+          label: screen.label,
+          icon: FileCheck,
+        });
+      }
+    }
+    if (extraItems.length > 0) {
+      filtered.push({
+        title: 'Màn hình mở rộng',
+        items: extraItems,
+      });
+    }
+
+    return filtered;
+  }, [currentUser.role, rbacTick]);
+
   const isAnyDashboardActive = DASHBOARD_TAB_KEYS.includes(activeTab);
   const [isDashboardMenuOpen, setIsDashboardMenuOpen] = React.useState<boolean>(true);
 

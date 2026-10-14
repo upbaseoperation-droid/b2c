@@ -43,6 +43,11 @@ interface KocKolHubViewProps {
   brands?: BrandDetail[];
   initialKocs?: KocItem[];
   initialDeals?: BookingDealItem[];
+  selectedKocId?: string | null;
+  onKocUpdated?: (updatedKoc: KocItem) => void;
+  onUpdateDeal?: (updatedDeal: BookingDealItem) => void;
+  onOpenContractForDeal?: (deal: BookingDealItem) => void;
+  onOpenKocMaster?: (kocId: string | null) => void;
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
   onNavigateToBrandHub?: () => void;
   onNavigateToCtvHub?: () => void;
@@ -62,6 +67,7 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
   currentUser,
   initialKocs = INITIAL_KOCS,
   initialDeals = INITIAL_DEALS,
+  selectedKocId: initialSelectedKocId,
   onNotify,
   onNavigateToBrandHub,
   onNavigateToCtvHub

@@ -127,7 +127,7 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
             />
           ) : (
             relevantTasks.map((task) => {
-              const matchedDeal = deals.find(d => d.dealCode === task.dealCode);
+              const matchedDeal = task.dealCode ? dealsMap.get(task.dealCode) : undefined;
               return (
                 <div
                   key={task.id}

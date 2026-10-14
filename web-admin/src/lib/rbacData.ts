@@ -1083,6 +1083,96 @@ export const INITIAL_INTERNAL_STAFF_RBAC: InternalStaffRbacMember[] = [
     status: 'ACTIVE',
     lastActive: 'Hôm nay 09:30',
     authMethod: 'LARK_SSO'
+  },
+  {
+    id: 'contract-demo-legal',
+    staffCode: 'HN201',
+    name: 'Pháp chế (kiểm thử)',
+    email: 'phapche@upbase.vn',
+    avatar: 'PC',
+    role: 'LEGAL',
+    roleTitle: 'Pháp Chế — Duyệt Hợp Đồng & Biểu Mẫu (Legal)',
+    department: 'Phòng Pháp Chế',
+    team: 'Pháp chế',
+    location: 'HN',
+    employmentType: 'Chính thức',
+    departmentScope: 'MARKETING_B2C',
+    canLogin: true,
+    accessSource: 'ADMIN_EXPLICIT',
+    managerName: 'Đỗ Văn Giang',
+    position: 'Chuyên Viên Pháp Chế',
+    picBrands: ['ALL_BRANDS'],
+    permissions: {
+      canApproveBudget: false,
+      canApproveP3: false,
+      canApprovePayment: false,
+      canViewAllBrands: true,
+      canExportRawData: false,
+      canManageMasterData: false
+    },
+    status: 'ACTIVE',
+    lastActive: 'Hôm nay 10:15',
+    authMethod: 'LARK_SSO'
+  },
+  {
+    id: 'contract-demo-finance',
+    staffCode: 'HN202',
+    name: 'Kế toán (kiểm thử)',
+    email: 'ketoan@upbase.vn',
+    avatar: 'KT',
+    role: 'FINANCE',
+    roleTitle: 'Kế Toán — Duyệt Hợp Đồng & Hạn Mức Thanh Toán (Finance)',
+    department: 'Phòng Tài Chính Kế Toán',
+    team: 'Kế toán',
+    location: 'HN',
+    employmentType: 'Chính thức',
+    departmentScope: 'MARKETING_B2C',
+    canLogin: true,
+    accessSource: 'ADMIN_EXPLICIT',
+    managerName: 'Đỗ Văn Giang',
+    position: 'Kế Toán Thanh Toán',
+    picBrands: ['ALL_BRANDS'],
+    permissions: {
+      canApproveBudget: false,
+      canApproveP3: false,
+      canApprovePayment: true,
+      canViewAllBrands: true,
+      canExportRawData: true,
+      canManageMasterData: false
+    },
+    status: 'ACTIVE',
+    lastActive: 'Hôm nay 10:05',
+    authMethod: 'LARK_SSO'
+  },
+  {
+    id: 'contract-demo-sign',
+    staffCode: 'HN203',
+    name: 'Điều phối ký (kiểm thử)',
+    email: 'dieuphoiky@upbase.vn',
+    avatar: 'ĐK',
+    role: 'SIGN_ADMIN',
+    roleTitle: 'Điều Phối Ký Điện Tử — Trình Ký Hợp Đồng (weSign)',
+    department: 'Phòng Hành Chính - Pháp Chế',
+    team: 'Điều phối ký',
+    location: 'HN',
+    employmentType: 'Chính thức',
+    departmentScope: 'MARKETING_B2C',
+    canLogin: true,
+    accessSource: 'ADMIN_EXPLICIT',
+    managerName: 'Đỗ Văn Giang',
+    position: 'Điều Phối Ký Số',
+    picBrands: ['ALL_BRANDS'],
+    permissions: {
+      canApproveBudget: false,
+      canApproveP3: false,
+      canApprovePayment: false,
+      canViewAllBrands: true,
+      canExportRawData: false,
+      canManageMasterData: false
+    },
+    status: 'ACTIVE',
+    lastActive: 'Hôm nay 09:50',
+    authMethod: 'LARK_SSO'
   }
 ];
 
@@ -1877,17 +1967,207 @@ export const ROLE_DEFAULT_LANDING: Record<UserRole, TabKey> = {
 };
 
 export function isTabAllowedForRole(role: UserRole, tab: TabKey): boolean {
-  const allowed = ROLE_ALLOWED_TABS[role];
+  const map = getSavedRoleAllowedTabs();
+  const allowed = map[role] || ROLE_ALLOWED_TABS[role];
   if (!allowed) return false;
   return allowed.includes(tab);
 }
 
 export function getAllowedTabsForRole(role: UserRole): TabKey[] {
-  return ROLE_ALLOWED_TABS[role] || ['cockpit'];
+  const map = getSavedRoleAllowedTabs();
+  return map[role] || ROLE_ALLOWED_TABS[role] || ['cockpit'];
 }
 
 export function getDefaultLandingTabForRole(role: UserRole): TabKey {
-  return ROLE_DEFAULT_LANDING[role] || 'cockpit';
+  const landingMap = getSavedRoleDefaultLanding();
+  const allowed = getAllowedTabsForRole(role);
+  const candidate = landingMap[role] || ROLE_DEFAULT_LANDING[role] || 'cockpit';
+  if (allowed.includes(candidate)) return candidate;
+  return allowed[0] || candidate;
+}
+
+export interface SystemScreenCatalogItem {
+  key: TabKey;
+  label: string;
+  group: 'DASHBOARD' | 'PLANNING_BRAND' | 'BOOKING_CONTENT' | 'CONTRACTS_FINANCE' | 'SYSTEM_ADMIN' | 'PARTNER_PORTAL';
+  groupTitle: string;
+  description: string;
+}
+
+export const ALL_SYSTEM_SCREENS: SystemScreenCatalogItem[] = [
+  { key: 'cockpit', label: 'Việc của tôi (Cockpit)', group: 'DASHBOARD', groupTitle: '1. Dashboard & Điều Hành', description: 'Không gian làm việc cá nhân, việc cần xử lý trong ngày.' },
+  { key: 'dashboard-brand', label: 'Dashboard Thương hiệu & Ngân sách', group: 'DASHBOARD', groupTitle: '1. Dashboard & Điều Hành', description: 'Theo dõi ngân sách 42 thương hiệu B2C.' },
+  { key: 'dashboard-store', label: 'Dashboard Gian hàng & TikTok Seller', group: 'DASHBOARD', groupTitle: '1. Dashboard & Điều Hành', description: 'Theo dõi 69 gian hàng B2C và chỉ số sàn.' },
+  { key: 'dashboard-video', label: 'Dashboard Video Booking & Ads', group: 'DASHBOARD', groupTitle: '1. Dashboard & Điều Hành', description: 'Theo dõi tiến độ sản xuất & air video KOC.' },
+  { key: 'dashboard-team-sla', label: 'Dashboard Tiến độ & SLA Vận hành', group: 'DASHBOARD', groupTitle: '1. Dashboard & Điều Hành', description: 'Kiểm soát SLA duyệt deal, kịch bản, gửi mẫu, lên bài.' },
+  { key: 'dashboard-staff', label: 'Dashboard Hiệu suất Nhân viên', group: 'DASHBOARD', groupTitle: '1. Dashboard & Điều Hành', description: 'Đánh giá năng suất & hiệu quả chi phí theo PIC.' },
+  { key: 'dashboard-finance', label: 'Đối soát Kế toán & Xuất file (.xlsx)', group: 'CONTRACTS_FINANCE', groupTitle: '4. Hợp Đồng, Tài Chính & Hàng Mẫu', description: 'Đối soát chi phí Order Net/Gross, cảnh báo vượt trần và xuất báo cáo Kế toán.' },
+  { key: 'input-plan', label: 'Kế hoạch tháng (Input Plan 4.1)', group: 'PLANNING_BRAND', groupTitle: '2. Kế Hoạch & Thương Hiệu', description: 'Lập & duyệt kế hoạch tháng theo gian hàng và khung lương.' },
+  { key: 'brand-knowledge', label: 'Hồ sơ thương hiệu (Brand Profile)', group: 'PLANNING_BRAND', groupTitle: '2. Kế Hoạch & Thương Hiệu', description: 'Định vị nhãn hàng, pháp nhân, ratecard và quy tắc duyệt.' },
+  { key: 'stores', label: 'Hồ sơ gian hàng (Store Portfolio)', group: 'PLANNING_BRAND', groupTitle: '2. Kế Hoạch & Thương Hiệu', description: 'Quản lý danh mục gian hàng TikTok Shop, Shopee Mall.' },
+  { key: 'manager', label: 'Điều phối & Quản lý nhân sự', group: 'PLANNING_BRAND', groupTitle: '2. Kế Hoạch & Thương Hiệu', description: 'Phân bổ tải, giao việc PIC và duyệt kế hoạch cấp phòng.' },
+  { key: 'campaigns', label: 'Chiến dịch Brand', group: 'PLANNING_BRAND', groupTitle: '2. Kế Hoạch & Thương Hiệu', description: 'Quản lý chiến dịch, mục tiêu GMV và bàn giao đề bài.' },
+  { key: 'push-products', label: 'Sản phẩm đẩy (Hero SKU)', group: 'PLANNING_BRAND', groupTitle: '2. Kế Hoạch & Thương Hiệu', description: 'Danh mục sản phẩm chủ lực, USP và tồn kho hàng mẫu.' },
+  { key: 'booking', label: 'Quản lý Booking KOC', group: 'BOOKING_CONTENT', groupTitle: '3. Vận Hành Booking & KOC/CTV', description: 'Tạo deal, chốt đơn giá, duyệt KOC và theo dõi tiến độ air.' },
+  { key: 'koc-listing', label: 'Listing & Air Video', group: 'BOOKING_CONTENT', groupTitle: '3. Vận Hành Booking & KOC/CTV', description: 'Đề xuất danh sách KOC theo lô và cập nhật link video.' },
+  { key: 'content', label: 'Kịch bản & Video', group: 'BOOKING_CONTENT', groupTitle: '3. Vận Hành Booking & KOC/CTV', description: 'Soạn thảo và duyệt kịch bản video KOC / Self-channel.' },
+  { key: 'content-angles', label: 'Góc nội dung (Content Angles)', group: 'BOOKING_CONTENT', groupTitle: '3. Vận Hành Booking & KOC/CTV', description: 'Ma trận trụ cột nội dung & Hook 3s đầu.' },
+  { key: 'koc-master', label: 'Danh bạ KOC', group: 'BOOKING_CONTENT', groupTitle: '3. Vận Hành Booking & KOC/CTV', description: 'Hồ sơ KOC/KOL, thông tin pháp lý CCCD/MST và lịch sử hợp tác.' },
+  { key: 'ctv-master', label: 'Danh bạ CTV / VJ', group: 'BOOKING_CONTENT', groupTitle: '3. Vận Hành Booking & KOC/CTV', description: 'Hồ sơ cộng tác viên sản xuất video kênh nội bộ.' },
+  { key: 'self-channel-hub', label: 'Video kênh Brand (Self-channel)', group: 'BOOKING_CONTENT', groupTitle: '3. Vận Hành Booking & KOC/CTV', description: 'Giao việc & nghiệm thu video kênh tự xây.' },
+  { key: 'contracts', label: 'Hợp đồng & Biểu mẫu', group: 'CONTRACTS_FINANCE', groupTitle: '4. Hợp Đồng, Tài Chính & Hàng Mẫu', description: 'Soạn hợp đồng, duyệt Pháp chế / Kế toán, trình ký điện tử và quản lý mẫu .docx.' },
+  { key: 'sample-tracker', label: 'Hàng mẫu & Spark Ads', group: 'CONTRACTS_FINANCE', groupTitle: '4. Hợp Đồng, Tài Chính & Hàng Mẫu', description: 'Theo dõi vận đơn gửi mẫu và thu thập mã quảng cáo Spark Ads.' },
+  { key: 'ads-report', label: 'Báo cáo Ads TikTok', group: 'CONTRACTS_FINANCE', groupTitle: '4. Hợp Đồng, Tài Chính & Hàng Mẫu', description: 'Báo cáo hiệu quả chạy quảng cáo GMV, ROAS, CPA.' },
+  { key: 'performance-p3', label: 'Đánh giá 4P & thưởng', group: 'CONTRACTS_FINANCE', groupTitle: '4. Hợp Đồng, Tài Chính & Hàng Mẫu', description: 'Tính điểm hiệu suất P3 và quỹ thưởng nhân sự.' },
+  { key: 'master-data', label: 'Dữ liệu gốc (Master Data)', group: 'SYSTEM_ADMIN', groupTitle: '5. Hệ Thống & Quản Trị', description: 'Quản trị dữ liệu gốc Brand, Store, KOC, Nhân sự.' },
+  { key: 'partner-access', label: 'Phân quyền & Tài khoản (RBAC)', group: 'SYSTEM_ADMIN', groupTitle: '5. Hệ Thống & Quản Trị', description: 'Quản trị Role, gán quyền nhân sự và kiểm soát cổng đăng nhập.' },
+  { key: 'knowledge-qa', label: 'Sổ tay & Hỏi đáp B2C', group: 'SYSTEM_ADMIN', groupTitle: '5. Hệ Thống & Quản Trị', description: 'Cẩm nang quy trình SLA, khung lương và tính thuế.' },
+  { key: 'api-settings', label: 'Cấu hình API & Công cụ', group: 'SYSTEM_ADMIN', groupTitle: '5. Hệ Thống & Quản Trị', description: 'Cấu hình kết nối Kalodata, Lark Base, TikTok Seller.' },
+  { key: 'brand-hub', label: 'Cổng đối tác Brand', group: 'PARTNER_PORTAL', groupTitle: '6. Cổng Đối Tác Ngoài', description: 'Giao diện dành riêng cho đại diện thương hiệu duyệt KOC & kịch bản.' },
+  { key: 'koc-hub', label: 'Cổng đối tác KOC / KOL', group: 'PARTNER_PORTAL', groupTitle: '6. Cổng Đối Tác Ngoài', description: 'Giao diện dành riêng cho Creator cập nhật hồ sơ, ký hợp đồng và nộp bài.' },
+];
+
+export const ALL_ROLE_DEFINITIONS: RoleDefinition[] = [
+  ...RBAC_ROLE_DEFINITIONS.slice(0, 5),
+  {
+    id: 'BOOKING_MEMBER',
+    code: 'BOOKING_PIC',
+    name: 'Chuyên Viên Booking B2C',
+    scopeType: 'INTERNAL',
+    departmentScope: 'MARKETING_B2C',
+    badgeColor: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    description: 'Tìm kiếm KOC, tạo deal booking, soạn hợp đồng và theo dõi video lên bài cho các gian hàng được giao.',
+    defaultLandingTab: 'booking',
+    userCount: 118
+  },
+  {
+    id: 'CONTENT_MEMBER',
+    code: 'CONTENT_PIC',
+    name: 'Chuyên Viên Content B2C',
+    scopeType: 'INTERNAL',
+    departmentScope: 'MARKETING_B2C',
+    badgeColor: 'bg-cyan-50 text-cyan-700 border-cyan-200',
+    description: 'Xây dựng góc nội dung, viết kịch bản video KOC & kênh tự xây (Self-channel), điều phối CTV quay dựng.',
+    defaultLandingTab: 'content',
+    userCount: 10
+  },
+  {
+    id: 'BRAND_MEMBER',
+    code: 'BRAND_PIC',
+    name: 'Chuyên Viên Quản Lý Nhãn (Brand PIC)',
+    scopeType: 'INTERNAL',
+    departmentScope: 'MARKETING_B2C',
+    badgeColor: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+    description: 'Làm việc trực tiếp với nhãn hàng, quản lý chiến dịch Brand, sản phẩm đẩy và trình duyệt kịch bản.',
+    defaultLandingTab: 'campaigns',
+    userCount: 6
+  },
+  {
+    id: 'GROWTH_MEMBER',
+    code: 'GROWTH_PIC',
+    name: 'Chuyên Viên Growth Ecom',
+    scopeType: 'INTERNAL',
+    departmentScope: 'GROWTH',
+    badgeColor: 'bg-teal-50 text-teal-700 border-teal-200',
+    description: 'Lập kế hoạch tháng (Input Plan 4.1), quản lý PnL gian hàng và giao hạn mức Order Net/Gross.',
+    defaultLandingTab: 'input-plan',
+    userCount: 136
+  },
+  {
+    id: 'MEDIA_MEMBER',
+    code: 'MEDIA_PIC',
+    name: 'Chuyên Viên Media & Ads',
+    scopeType: 'INTERNAL',
+    departmentScope: 'MEDIA',
+    badgeColor: 'bg-orange-50 text-orange-700 border-orange-200',
+    description: 'Nhận mã Spark Ads, vận hành chiến dịch quảng cáo TikTok và cập nhật báo cáo Ads hàng tuần.',
+    defaultLandingTab: 'input-plan',
+    userCount: 30
+  },
+  ...RBAC_ROLE_DEFINITIONS.slice(5),
+];
+
+export const ROLE_SCREEN_PERMS_STORAGE_KEY = 'upbase_b2c_role_screen_perms_v1';
+export const ROLE_LANDING_TAB_STORAGE_KEY = 'upbase_b2c_role_landing_tab_v1';
+export const INTERNAL_STAFF_ROLES_STORAGE_KEY = 'upbase_b2c_internal_staff_roles_v1';
+
+export function getSavedRoleAllowedTabs(): Record<UserRole, TabKey[]> {
+  if (typeof window === 'undefined') return ROLE_ALLOWED_TABS;
+  try {
+    const raw = localStorage.getItem(ROLE_SCREEN_PERMS_STORAGE_KEY);
+    if (!raw) return ROLE_ALLOWED_TABS;
+    const parsed = JSON.parse(raw);
+    return { ...ROLE_ALLOWED_TABS, ...parsed };
+  } catch {
+    return ROLE_ALLOWED_TABS;
+  }
+}
+
+export function saveRoleAllowedTabs(map: Record<UserRole, TabKey[]>): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(ROLE_SCREEN_PERMS_STORAGE_KEY, JSON.stringify(map));
+    window.dispatchEvent(new Event('upbase-rbac-updated'));
+  } catch (e) {
+    console.warn('Failed to save role screen permissions:', e);
+  }
+}
+
+export function getSavedRoleDefaultLanding(): Record<UserRole, TabKey> {
+  if (typeof window === 'undefined') return ROLE_DEFAULT_LANDING;
+  try {
+    const raw = localStorage.getItem(ROLE_LANDING_TAB_STORAGE_KEY);
+    if (!raw) return ROLE_DEFAULT_LANDING;
+    const parsed = JSON.parse(raw);
+    return { ...ROLE_DEFAULT_LANDING, ...parsed };
+  } catch {
+    return ROLE_DEFAULT_LANDING;
+  }
+}
+
+export function saveRoleDefaultLanding(map: Record<UserRole, TabKey>): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(ROLE_LANDING_TAB_STORAGE_KEY, JSON.stringify(map));
+    window.dispatchEvent(new Event('upbase-rbac-updated'));
+  } catch (e) {
+    console.warn('Failed to save role landing tabs:', e);
+  }
+}
+
+export function resetAllRoleScreenPermissions(): void {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem(ROLE_SCREEN_PERMS_STORAGE_KEY);
+  localStorage.removeItem(ROLE_LANDING_TAB_STORAGE_KEY);
+  window.dispatchEvent(new Event('upbase-rbac-updated'));
+}
+
+export function getSavedInternalStaffList(): InternalStaffRbacMember[] {
+  if (typeof window === 'undefined') return INITIAL_INTERNAL_STAFF_RBAC;
+  try {
+    const raw = localStorage.getItem(INTERNAL_STAFF_ROLES_STORAGE_KEY);
+    if (!raw) return INITIAL_INTERNAL_STAFF_RBAC;
+    const saved: InternalStaffRbacMember[] = JSON.parse(raw);
+    if (!Array.isArray(saved) || saved.length === 0) return INITIAL_INTERNAL_STAFF_RBAC;
+    const savedMap = new Map(saved.map(s => [s.id, s]));
+    const merged = INITIAL_INTERNAL_STAFF_RBAC.map(init => savedMap.get(init.id) || init);
+    for (const s of saved) {
+      if (!merged.some(m => m.id === s.id)) merged.push(s);
+    }
+    return merged;
+  } catch {
+    return INITIAL_INTERNAL_STAFF_RBAC;
+  }
+}
+
+export function saveInternalStaffList(list: InternalStaffRbacMember[]): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(INTERNAL_STAFF_ROLES_STORAGE_KEY, JSON.stringify(list));
+    window.dispatchEvent(new Event('upbase-rbac-updated'));
+  } catch (e) {
+    console.warn('Failed to save internal staff list:', e);
+  }
 }
 
 export const ROLE_DISPLAY_NAME: Record<UserRole, string> = {
