@@ -21,6 +21,7 @@ import {
   Copy,
   ExternalLink,
   FileScan,
+  FileText,
   Filter,
   MessageSquare,
   Plus,
@@ -78,6 +79,8 @@ export interface KocProfileProps {
   onCreateBooking?: (koc: KocItem) => void;
   onUpdateMetrics?: (koc: KocItem) => void;
   onScanDocs?: (koc: KocItem) => void;
+  onOpenKocPortal?: (kocId: string) => void;
+  onSelectDealForContract?: (deal: BookingDealItem) => void;
 }
 
 export function classificationOf(k: KocItem): string {
@@ -99,6 +102,8 @@ export function KocProfile({
   onCreateBooking,
   onUpdateMetrics,
   onScanDocs,
+  onOpenKocPortal,
+  onSelectDealForContract,
 }: KocProfileProps) {
   const isPage = layout === 'page';
   const kocDeals = useMemo(
@@ -248,6 +253,7 @@ export function KocProfile({
                   stats={stats}
                   currentUser={currentUser}
                   onViewDetail={setSelectedCollabDetail}
+                  onSelectDealForContract={onSelectDealForContract}
                 />
               )}
 
@@ -262,6 +268,7 @@ export function KocProfile({
                 <ActiveDealsSection
                   deals={kocDeals.filter(isDealOpen)}
                   onViewDetail={setSelectedCollabDetail}
+                  onSelectDealForContract={onSelectDealForContract}
                 />
               )}
             </div>
@@ -281,6 +288,7 @@ export function KocProfile({
         <CollaborationDetailModal
           deal={selectedCollabDetail}
           onClose={() => setSelectedCollabDetail(null)}
+          onSelectDealForContract={onSelectDealForContract}
         />
       )}
 
@@ -527,12 +535,14 @@ function CollaborationHistorySection({
   stats,
   currentUser,
   onViewDetail,
+  onSelectDealForContract,
 }: {
   koc: KocItem;
   deals: BookingDealItem[];
   stats: KocPerformanceSummary;
   currentUser?: UserProfile;
   onViewDetail: (d: BookingDealItem) => void;
+  onSelectDealForContract?: (deal: BookingDealItem) => void;
 }) {
   const [selectedBrandFilter, setSelectedBrandFilter] = useState<string>('ALL');
   const [selectedFormatFilter, setSelectedFormatFilter] = useState<string>('ALL');
@@ -881,9 +891,11 @@ function CollaborationHistorySection({
 function ActiveDealsSection({
   deals,
   onViewDetail,
+  onSelectDealForContract,
 }: {
   deals: BookingDealItem[];
   onViewDetail: (d: BookingDealItem) => void;
+  onSelectDealForContract?: (deal: BookingDealItem) => void;
 }) {
   const columns: Column<BookingDealItem>[] = [
     {
@@ -1226,9 +1238,11 @@ function OperationalNotesPanel({ koc }: { koc: KocItem }) {
 function CollaborationDetailModal({
   deal,
   onClose,
+  onSelectDealForContract,
 }: {
   deal: BookingDealItem;
   onClose: () => void;
+  onSelectDealForContract?: (deal: BookingDealItem) => void;
 }) {
   const gmv = deal.gmv30 || deal.affiliateGmv || 0;
   const cost = deal.totalValue || 0;
@@ -1252,6 +1266,18 @@ function CollaborationDetailModal({
             PIC phụ trách: <b className="text-ink">{picOfDeal(deal) || 'Chưa gán'}</b>
           </div>
           <div className="flex items-center gap-2">
+            {onSelectDealForContract && cost > 0 && (
+              <Button
+                variant="secondary"
+                icon={FileText}
+                onClick={() => {
+                  onClose();
+                  onSelectDealForContract(deal);
+                }}
+              >
+                Xem hợp đồng
+              </Button>
+            )}
             {deal.tiktokVideoUrl && (
               <a
                 href={deal.tiktokVideoUrl}

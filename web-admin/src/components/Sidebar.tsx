@@ -530,6 +530,37 @@ function getNavSectionsForUserRole(role: UserProfile['role']): NavSection[] {
         },
       ];
 
+    case 'LEGAL':
+      return [
+        {
+          title: 'Pháp chế & Hợp đồng',
+          items: [
+            { key: 'contracts', label: 'Hợp đồng & Biểu mẫu', icon: FileCheck },
+          ],
+        },
+      ];
+
+    case 'FINANCE':
+      return [
+        {
+          title: 'Tài chính & Kế toán',
+          items: [
+            { key: 'contracts', label: 'Hợp đồng & Duyệt chi', icon: FileCheck },
+            { key: 'dashboard-finance', label: 'Đối soát Kế toán & Xuất file', icon: FileSpreadsheet, badge: '.xlsx' },
+          ],
+        },
+      ];
+
+    case 'SIGN_ADMIN':
+      return [
+        {
+          title: 'Hành chính & Ký số',
+          items: [
+            { key: 'contracts', label: 'Hợp đồng & Trình ký', icon: FileCheck },
+          ],
+        },
+      ];
+
     case 'BRAND_PARTNER':
       return [
         {

@@ -99,7 +99,10 @@ const ROLE_DISPLAY_NAME: Record<UserRole, string> = {
   MEMBER: 'Chuyên viên vận hành',
   BRAND_PARTNER: 'Đối tác Brand',
   KOC_PARTNER: 'KOC / KOL',
-  CTV_PARTNER: 'Cộng tác viên'
+  CTV_PARTNER: 'Cộng tác viên',
+  LEGAL: 'Pháp chế',
+  FINANCE: 'Kế toán',
+  SIGN_ADMIN: 'Điều phối ký điện tử'
 };
 
 export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({

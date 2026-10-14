@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useMemo, useRef } from 'react';
-import { Avatar, Tabs, Modal, NumberRoll, useActiveBox, SlidingIndicator } from '../ui';
+import React, { useState, useMemo, useDeferredValue } from 'react';
+import { Avatar, Tabs, Modal, NumberRoll } from '../ui';
 import {
   TrendingUp,
   Award,
@@ -142,7 +142,26 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
   const [selectedQuadrant, setSelectedQuadrant] = useState<'ALL' | 'OVER_SPEND' | 'HIGH_SPEND_LOW_AIR' | 'OPTIMAL' | 'SLOW_BOTH'>('ALL');
   const [brandSortMode, setBrandSortMode] = useState<'BUDGET' | 'SPEND_PCT_DESC' | 'AIRED_DESC'>('AIRED_DESC');
   const [storeSortMode, setStoreSortMode] = useState<'DEFAULT' | 'SPEND_PCT_DESC' | 'SPEND_PCT_ASC' | 'AIRED_DESC' | 'AIRED_ASC'>('AIRED_DESC');
+  // Tách biệt ô tìm kiếm theo từng Tab để tránh rò rỉ ngữ cảnh, kèm useDeferredValue chống lag phím
+  const [brandSearchQuery, setBrandSearchQuery] = useState<string>('');
+  const deferredBrandSearch = useDeferredValue(brandSearchQuery);
+
+  const [storeSearchQuery, setStoreSearchQuery] = useState<string>('');
+  const deferredStoreSearch = useDeferredValue(storeSearchQuery);
+
+  const [videoSearchQuery, setVideoSearchQuery] = useState<string>('');
+  const deferredVideoSearch = useDeferredValue(videoSearchQuery);
+
+  const [staffSearchQuery, setStaffSearchQuery] = useState<string>('');
+  const deferredStaffSearch = useDeferredValue(staffSearchQuery);
   const [searchQuery, setSearchQuery] = useState<string>('');
+
+  // Phân trang hiển thị bảng để chống quá tải DOM
+  const [storeVisibleLimit, setStoreVisibleLimit] = useState<number>(15);
+  const [staffVisibleLimit, setStaffVisibleLimit] = useState<number>(12);
+  const [bookedVideosVisibleLimit, setBookedVideosVisibleLimit] = useState<number>(30);
+  const [sellerCreativesVisibleLimit, setSellerCreativesVisibleLimit] = useState<number>(30);
+  const [isStaff360Open, setIsStaff360Open] = useState<boolean>(true);
 
   // State bộ lọc tab Video
   const [videoFormatFilter, setVideoFormatFilter] = useState<string>('ALL');
@@ -202,8 +221,8 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
       if (selectedGovernance === 'DIRECT_HEAD' && s.hasBookingLeader) return false;
       if (selectedRiskFilter !== 'ALL' && (s.financialRiskStatus || 'NORMAL') !== selectedRiskFilter) return false;
       if (selectedQuadrant !== 'ALL' && classifyStoreSpendAndAir(s) !== selectedQuadrant) return false;
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase();
+      if (deferredStoreSearch.trim()) {
+        const q = deferredStoreSearch.toLowerCase();
         const matchStore = s.storeName.toLowerCase().includes(q);
         const matchBrand = s.brandName.toLowerCase().includes(q);
         const matchPic = (s.primaryPic || s.assignedStaff || '').toLowerCase().includes(q);
@@ -228,7 +247,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
       if (storeSortMode === 'AIRED_ASC') return (a.actualAiredVideos || 0) - (b.actualAiredVideos || 0);
       return 0;
     });
-  }, [stores, selectedBrand, selectedPlatform, selectedGovernance, selectedRiskFilter, selectedQuadrant, storeSortMode, searchQuery]);
+  }, [stores, selectedBrand, selectedPlatform, selectedGovernance, selectedRiskFilter, selectedQuadrant, storeSortMode, deferredStoreSearch]);
 
   // Tổng hợp KPI từ tập gian hàng đang lọc
   const kpiSummary = useMemo(() => {
@@ -415,14 +434,24 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
       map.set(s.brandName, existing);
     });
 
-    return Array.from(map.values()).sort((a, b) => {
+    const allList = Array.from(map.values());
+    const list = deferredBrandSearch.trim()
+      ? allList.filter((b) => {
+          const q = deferredBrandSearch.toLowerCase();
+          const matchBrand = b.brandName.toLowerCase().includes(q);
+          const matchPics = Array.from(b.pics).some((p) => p.toLowerCase().includes(q));
+          return matchBrand || matchPics;
+        })
+      : allList;
+
+    return list.sort((a, b) => {
       const pctA = a.budgetNet > 0 ? (a.actualSpentNet / a.budgetNet) * 100 : a.actualSpentNet > 0 ? 999 : 0;
       const pctB = b.budgetNet > 0 ? (b.actualSpentNet / b.budgetNet) * 100 : b.actualSpentNet > 0 ? 999 : 0;
       if (brandSortMode === 'SPEND_PCT_DESC') return pctB - pctA || b.actualSpentNet - a.actualSpentNet;
       if (brandSortMode === 'AIRED_DESC') return b.airedVideos - a.airedVideos || b.actualSpentNet - a.actualSpentNet;
       return Math.max(b.budgetGross, b.actualSpentNet) - Math.max(a.budgetGross, a.actualSpentNet);
     });
-  }, [filteredStores, brandSortMode]);
+  }, [filteredStores, brandSortMode, deferredBrandSearch]);
 
   // Danh sách các gian hàng có cảnh báo tài chính (Unbudgeted & Overbudget)
   const riskStores = useMemo(() => {
@@ -442,8 +471,8 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
       if (selectedPlatform !== 'ALL' && v.platform !== selectedPlatform) return false;
       if (videoFormatFilter !== 'ALL' && v.format !== videoFormatFilter) return false;
       if (videoKlFilter !== 'ALL' && v.kl !== videoKlFilter) return false;
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase();
+      if (deferredVideoSearch.trim()) {
+        const q = deferredVideoSearch.toLowerCase();
         const matchCode = v.code.toLowerCase().includes(q);
         const matchChannel = v.channelId.toLowerCase().includes(q);
         const matchStore = v.storeName.toLowerCase().includes(q);
@@ -452,14 +481,14 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
       }
       return true;
     });
-  }, [selectedBrand, selectedPlatform, videoFormatFilter, videoKlFilter, searchQuery]);
+  }, [selectedBrand, selectedPlatform, videoFormatFilter, videoKlFilter, deferredVideoSearch]);
 
   // Lọc danh sách Creative TikTok Seller
   const filteredSellerCreatives = useMemo(() => {
     return TIKTOK_SELLER_TOP_CREATIVES.filter((c) => {
       if (selectedBrand !== 'ALL' && c.brandName !== selectedBrand) return false;
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase();
+      if (deferredVideoSearch.trim()) {
+        const q = deferredVideoSearch.toLowerCase();
         const matchId = c.videoId.toLowerCase().includes(q);
         const matchAcc = c.tiktokAccount.toLowerCase().includes(q);
         const matchCamp = c.campaignName.toLowerCase().includes(q);
@@ -468,7 +497,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
       }
       return true;
     });
-  }, [selectedBrand, searchQuery]);
+  }, [selectedBrand, deferredVideoSearch]);
 
   // Sắp xếp bậc Khung lương (KL) chuẩn từ TAP 0đ -> KL1..KL7
   const sortedKlBreakdown = useMemo(() => {
@@ -713,8 +742,8 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
       if (selectedGovernance === 'DIRECT_HEAD' && st.storesDirectCount === 0 && st.roleLevel !== 'HEAD') {
         return false;
       }
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase();
+      if (deferredStaffSearch.trim()) {
+        const q = deferredStaffSearch.toLowerCase();
         const matchName = st.name.toLowerCase().includes(q);
         const matchStore = st.storesList.some((s) => s.toLowerCase().includes(q));
         const matchBrand = st.brandsList.some((b) => b.toLowerCase().includes(q));
@@ -737,7 +766,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
       if (staffSortMode === 'SLA_DESC') return b.slaRate - a.slaRate || b.actualAiredVideos - a.actualAiredVideos;
       return 0;
     });
-  }, [enrichedStaffList, staffRoleFilter, staffQuadrantFilter, selectedGovernance, searchQuery, staffSortMode]);
+  }, [enrichedStaffList, staffRoleFilter, staffQuadrantFilter, selectedGovernance, deferredStaffSearch, staffSortMode]);
 
   // Nhân viên đang được chọn để xem Hồ sơ 360° trực tiếp trên trang
   const focusedStaffProfile = useMemo(() => {
@@ -1043,9 +1072,6 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-100 text-slate-700">
             Kỳ đối soát: Tháng 10/2026 (File 4.1 · 4.1.1 · 3.2 &amp; TikTok Seller)
           </span>
-          <span className="hidden xl:inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium text-slate-600">
-            Giám đốc Marketing: <strong className="text-slate-900">Đặng Thị Yến Nhi</strong> · Leader nhóm 8 gian: <strong className="text-slate-900">Nguyễn Thị Ngọc Tâm</strong> · 61 gian trực tiếp
-          </span>
         </div>
 
         <div className="flex flex-wrap items-center gap-2 shrink-0">
@@ -1081,9 +1107,9 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
               <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Tìm thương hiệu, gian hàng..."
+                value={brandSearchQuery}
+                onChange={(e) => setBrandSearchQuery(e.target.value)}
+                placeholder="Tìm thương hiệu, PIC phụ trách..."
                 className="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-hidden focus:border-indigo-500 focus:bg-white"
               />
             </div>
@@ -1271,106 +1297,41 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
             </div>
           </div>
 
-          {/* KHỐI BÁO ĐỘNG ĐỎ & VƯỢT TRẦN NET (NGUYÊN TẮC CẢNH BÁO TÀI CHÍNH) */}
-          <div className="bg-white rounded-xl border border-rose-200 overflow-hidden shadow-xs">
-            <div className="bg-rose-50/80 px-5 py-3.5 border-b border-rose-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-              <div className="flex items-center gap-2.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-rose-600" />
-                <h2 className="text-sm font-bold text-rose-950">
-                  Bảng Cảnh Báo Tài Chính Trọng Yếu: Gian Hàng Phát Sinh Chi Phí Ngoài Hạn Mức (0đ) & Vượt Trần Order Net
-                </h2>
+          {/* KHỐI BÁO ĐỘNG ĐỎ & CẢNH BÁO TÀI CHÍNH TINH GỌN (CHUYỂN TIẾP SANG TAB GIAN HÀNG) */}
+          {riskStores.length > 0 && (
+            <div className="bg-rose-50 border border-rose-200 rounded-xl p-4 shadow-xs flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+              <div className="flex items-start sm:items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-rose-600 text-white flex items-center justify-center shrink-0">
+                  <AlertTriangle className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-extrabold uppercase text-rose-950 tracking-wider">
+                      Cảnh Báo Kế Toán: {riskStores.length} Gian Hàng Vượt Trần Net / Chi Ngoài Kế Hoạch (0đ)
+                    </span>
+                    <span className="px-2 py-0.2 rounded-full text-[10px] font-bold bg-rose-600 text-white">
+                      Cần xử lý
+                    </span>
+                  </div>
+                  <p className="text-xs text-rose-800 mt-0.5">
+                    Ghi nhận <strong className="font-bold">{kpiSummary.unbudgetedCount} gian 0đ ngoài hạn mức</strong> và{' '}
+                    <strong className="font-bold">{kpiSummary.overbudgetCount} gian vượt trần Order Net</strong> (Tổng chênh lệch vượt: +{formatVndShort(riskStores.reduce((acc, s) => acc + Math.max(0, (s.actualSpentNet || 0) - (s.budgetNet || s.monthlyBudget || 0)), 0))}).
+                  </p>
+                </div>
               </div>
-              <span className="text-xs font-semibold text-rose-800">
-                Kế toán kiểm soát duyệt chi theo cột Hạn mức Net (File 4.1 vs File 3.2)
-              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedQuadrant('OVER_SPEND');
+                  handleSelectDashboardSection('STORE_SELLER');
+                }}
+                className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white shrink-0 shadow-xs transition cursor-pointer"
+              >
+                <span>Xem và xử lý tại Tab Gian Hàng</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
             </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs text-left">
-                <thead className="bg-slate-50 text-slate-600 uppercase border-b border-slate-200">
-                  <tr>
-                    <th className="py-2.5 px-4 font-bold">Gian Hàng (Store)</th>
-                    <th className="py-2.5 px-3 font-bold">Sàn</th>
-                    <th className="py-2.5 px-3 font-bold">Chuyên Viên (PIC)</th>
-                    <th className="py-2.5 px-3 font-bold">Cấp Duyệt Nhóm</th>
-                    <th className="py-2.5 px-3 font-bold text-right">Order Gross</th>
-                    <th className="py-2.5 px-3 font-bold text-right">Trần Order Net</th>
-                    <th className="py-2.5 px-3 font-bold text-right">Thực Chi 3.2</th>
-                    <th className="py-2.5 px-3 font-bold text-right">Chênh Lệch Net</th>
-                    <th className="py-2.5 px-3 font-bold text-center">Video Air</th>
-                    <th className="py-2.5 px-4 font-bold">Mức Độ Cảnh Báo & Hành Động</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {riskStores.map((st) => {
-                    const net = st.budgetNet || st.monthlyBudget || 0;
-                    const spent = st.actualSpentNet || 0;
-                    const overAmount = spent - net;
-                    return (
-                      <tr
-                        key={st.id}
-                        onClick={() => setInspectStore(st)}
-                        className="hover:bg-rose-50/40 transition cursor-pointer"
-                      >
-                        <td className="py-2.5 px-4 font-bold text-slate-900">
-                          {st.storeName}
-                          <span className="block text-[11px] font-normal text-slate-500">
-                            Brand: {st.brandName}
-                          </span>
-                        </td>
-                        <td className="py-2.5 px-3">
-                          <span
-                            className={`px-2 py-0.5 rounded text-[11px] font-semibold ${
-                              st.platform === 'TikTok Shop'
-                                ? 'bg-slate-900 text-white'
-                                : 'bg-orange-100 text-orange-800'
-                            }`}
-                          >
-                            {st.platform}
-                          </span>
-                        </td>
-                        <td className="py-2.5 px-3 font-semibold text-slate-800">
-                          {st.primaryPic || st.assignedStaff}
-                        </td>
-                        <td className="py-2.5 px-3 text-slate-600">
-                          {st.hasBookingLeader && st.bookingLeader ? (
-                            <span className="text-indigo-700 font-semibold">
-                              Leader: {st.bookingLeader}
-                            </span>
-                          ) : (
-                            <span className="text-slate-500">
-                              Không có leader (Trực tiếp Yến Nhi)
-                            </span>
-                          )}
-                        </td>
-                        <td className="py-2.5 px-3 text-right font-mono text-slate-600">
-                          {formatVndShort(st.budgetGross || 0)}
-                        </td>
-                        <td className="py-2.5 px-3 text-right font-mono font-bold text-slate-800">
-                          {formatVndShort(net)}
-                        </td>
-                        <td className="py-2.5 px-3 text-right font-mono font-bold text-rose-700">
-                          {formatVndShort(spent)}
-                        </td>
-                        <td className="py-2.5 px-3 text-right font-mono font-extrabold text-rose-600">
-                          +{formatVndShort(overAmount)}
-                        </td>
-                        <td className="py-2.5 px-3 text-center font-mono font-bold text-slate-800">
-                          {st.actualAiredVideos || 0}
-                        </td>
-                        <td className="py-2.5 px-4">
-                          {renderRiskBadge(st.financialRiskStatus)}
-                          <p className="text-[11px] text-slate-600 mt-0.5">
-                            {st.financialRiskNotes}
-                          </p>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          )}
 
           {/* HÀNG BIỂU ĐỒ 1 & 2: BIỂU ĐỒ CỘT ĐỐI SOÁT BRAND (% SPEND & SỐ VIDEO AIR) + BIỂU ĐỒ BÓC TÁCH ORDER GROWTH */}
           <div className="grid grid-cols-1 xl:grid-cols-12 gap-5">

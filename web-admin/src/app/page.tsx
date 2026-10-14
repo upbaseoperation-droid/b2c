@@ -222,7 +222,7 @@ export default function App() {
           const data = await res.json();
           if (data.authenticated && data.user) {
             let resolvedUser: UserProfile = data.user;
-            if (data.isAutoLogin && savedUserId && savedUserId !== data.user.id) {
+            if (savedUserId && savedUserId !== data.user.id) {
               const matched = USERS.find(u => u.id === savedUserId);
               if (matched) {
                 resolvedUser = matched;
@@ -232,9 +232,14 @@ export default function App() {
                   body: JSON.stringify({ userId: matched.id }),
                 }).catch(() => undefined);
               }
+            } else {
+              const canonical = USERS.find(u => u.id === resolvedUser.id);
+              if (canonical) {
+                resolvedUser = { ...resolvedUser, role: canonical.role, roleTitle: canonical.roleTitle };
+              }
             }
             handleUserChange(resolvedUser, true);
-            setActiveTab(resolvedUser.id.startsWith('contract-demo-') ? 'contracts' : getDefaultLandingTabForRole(resolvedUser.role));
+            setActiveTab(getDefaultLandingTabForRole(resolvedUser.role));
             setIsLoadingAuth(false);
             return;
           }

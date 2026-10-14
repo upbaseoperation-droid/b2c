@@ -81,7 +81,7 @@ import {
 
 type Save = (section: BrandSection, data: unknown, summary?: string) => Promise<boolean>;
 type ListKey = 'products' | 'faqs' | 'legal' | 'documents';
-type BrandDetailTab = 'OVERVIEW' | 'WORKFLOW' | 'FILES' | 'STORES' | 'PRODUCTS' | 'COMPLIANCE';
+export type BrandDetailTab = 'OVERVIEW' | 'WORKFLOW' | 'FILES' | 'STORES' | 'PRODUCTS' | 'COMPLIANCE';
 
 const PRODUCT_FIELDS: ItemField[] = [
   { key: 'name', label: 'Tên sản phẩm', required: true, wide: true },
