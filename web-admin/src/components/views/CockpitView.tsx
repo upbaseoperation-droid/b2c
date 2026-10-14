@@ -38,14 +38,34 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
   onTaskActionClick,
   onNavigateToInputPlan,
 }) => {
-  const relevantTasks = tasks.filter(t => {
-    if (currentUser.role === 'MANAGER' || currentUser.role === 'ADMIN') return true;
-    return t.targetRole === currentUser.role || t.pic.includes(currentUser.name.split(' ')[0]);
-  });
+  const userFirstToken = React.useMemo(() => currentUser.name.split(' ')[0], [currentUser.name]);
 
-  const criticalCount = relevantTasks.filter(t => t.urgency === 'critical').length;
-  const warningCount = relevantTasks.filter(t => t.urgency === 'warning' || t.urgency === 'normal').length;
-  const doneCount = relevantTasks.filter(t => t.urgency === 'done').length;
+  const relevantTasks = React.useMemo(() => {
+    return tasks.filter(t => {
+      if (currentUser.role === 'MANAGER' || currentUser.role === 'ADMIN') return true;
+      return t.targetRole === currentUser.role || t.pic.includes(userFirstToken);
+    });
+  }, [tasks, currentUser.role, userFirstToken]);
+
+  const { criticalCount, warningCount, doneCount } = React.useMemo(() => {
+    let crit = 0;
+    let warn = 0;
+    let done = 0;
+    for (const t of relevantTasks) {
+      if (t.urgency === 'critical') crit++;
+      else if (t.urgency === 'warning' || t.urgency === 'normal') warn++;
+      else if (t.urgency === 'done') done++;
+    }
+    return { criticalCount: crit, warningCount: warn, doneCount: done };
+  }, [relevantTasks]);
+
+  const dealsMap = React.useMemo(() => {
+    const map = new Map<string, BookingDealItem>();
+    for (const d of deals) {
+      if (d.dealCode) map.set(d.dealCode, d);
+    }
+    return map;
+  }, [deals]);
 
   return (
     <div className="space-y-6">

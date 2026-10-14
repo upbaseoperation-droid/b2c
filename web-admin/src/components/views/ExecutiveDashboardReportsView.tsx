@@ -2556,7 +2556,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {filteredBookedVideos.map((v) => (
+                    {filteredBookedVideos.slice(0, bookedVideosVisibleLimit).map((v) => (
                       <tr
                         key={v.code}
                         onClick={() => setInspectVideo(v)}
@@ -2637,6 +2637,20 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                     ))}
                   </tbody>
                 </table>
+                {filteredBookedVideos.length > 30 && (
+                  <div className="p-3 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-600 px-4">
+                    <span>
+                      Đang hiển thị <strong>{Math.min(bookedVideosVisibleLimit, filteredBookedVideos.length)}</strong> / <strong>{filteredBookedVideos.length}</strong> video đã booking
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setBookedVideosVisibleLimit(bookedVideosVisibleLimit >= filteredBookedVideos.length ? 30 : filteredBookedVideos.length)}
+                      className="px-3.5 py-1.5 rounded-lg font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 transition cursor-pointer"
+                    >
+                      {bookedVideosVisibleLimit >= filteredBookedVideos.length ? 'Thu gọn về 30 video' : `Xem toàn bộ ${filteredBookedVideos.length} video`}
+                    </button>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="overflow-x-auto max-h-[540px]">
@@ -2655,7 +2669,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {filteredSellerCreatives.map((c) => (
+                    {filteredSellerCreatives.slice(0, sellerCreativesVisibleLimit).map((c) => (
                       <tr key={c.id} className="hover:bg-slate-50 transition">
                         <td className="py-2.5 px-4">
                           <div className="font-mono font-bold text-slate-900">ID: {c.videoId}</div>
@@ -2707,6 +2721,20 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                     ))}
                   </tbody>
                 </table>
+                {filteredSellerCreatives.length > 30 && (
+                  <div className="p-3 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-600 px-4">
+                    <span>
+                      Đang hiển thị <strong>{Math.min(sellerCreativesVisibleLimit, filteredSellerCreatives.length)}</strong> / <strong>{filteredSellerCreatives.length}</strong> dòng creative TikTok Seller
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setSellerCreativesVisibleLimit(sellerCreativesVisibleLimit >= filteredSellerCreatives.length ? 30 : filteredSellerCreatives.length)}
+                      className="px-3.5 py-1.5 rounded-lg font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 transition cursor-pointer"
+                    >
+                      {sellerCreativesVisibleLimit >= filteredSellerCreatives.length ? 'Thu gọn về 30 dòng' : `Xem toàn bộ ${filteredSellerCreatives.length} dòng`}
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>

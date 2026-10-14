@@ -38,7 +38,7 @@ function ViewLoading() {
   );
 }
 
-import { CockpitView } from '../components/views/CockpitView';
+const CockpitView = dynamic(() => import('../components/views/CockpitView').then(m => m.CockpitView), { loading: ViewLoading });
 const OverviewView = dynamic(() => import('../components/views/OverviewView').then(m => m.OverviewView), { loading: ViewLoading });
 const BrandView = dynamic(() => import('../components/views/BrandView').then(m => m.BrandView), { loading: ViewLoading });
 const BrandProfilesView = dynamic(() => import('../components/views/BrandProfilesView').then(m => m.BrandProfilesView), { loading: ViewLoading });
