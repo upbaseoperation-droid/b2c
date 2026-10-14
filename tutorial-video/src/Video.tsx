@@ -247,7 +247,7 @@ const Lift: React.FC<{ img: string; rects: Rect[]; start: number; labels?: Label
         return (
           <div key={i} style={{
             position: 'absolute', left: r.x * K, top: CH + r.y * K, width: r.w * K, height: r.h * K,
-            transform: `translateZ(${p * 110}px) translateY(${-p * 8}px) scale(${1 + 0.09 * p})`, transformStyle: 'preserve-3d',
+            transform: `translateZ(${p * 45}px) translateY(${-p * 6}px) scale(${1 + 0.03 * p})`, transformStyle: 'preserve-3d',
             opacity: p > 0.01 ? 1 : 0,
           }}>
             <div style={{
@@ -260,10 +260,10 @@ const Lift: React.FC<{ img: string; rects: Rect[]; start: number; labels?: Label
               const q = spring({ frame: f - start - 14 - j * 5, fps, config: { damping: 12 } });
               return (
                 <div key={j} style={{
-                  position: 'absolute', left: (l.x - r.x) * K, bottom: '100%', marginBottom: 14,
+                  position: 'absolute', left: (l.x - r.x) * K, bottom: '100%', marginBottom: 8,
                   opacity: q, transform: `translateY(${(1 - q) * 16}px) scale(${0.7 + 0.3 * q})`, transformOrigin: 'left bottom',
                 }}>
-                  <div style={{ padding: '7px 14px', borderRadius: 9, background: BRAND, color: '#fff', fontSize: 16, fontWeight: 700, whiteSpace: 'nowrap', boxShadow: '0 8px 20px rgba(229,50,45,.4)' }}>{l.text}</div>
+                  <div style={{ padding: '4px 10px', borderRadius: 7, background: BRAND, color: '#fff', fontSize: 12.5, fontWeight: 700, whiteSpace: 'nowrap', boxShadow: '0 8px 20px rgba(229,50,45,.4)' }}>{l.text}</div>
                   <div style={{ marginLeft: 16, width: 0, height: 0, borderLeft: '7px solid transparent', borderRight: '7px solid transparent', borderTop: `8px solid ${BRAND}` }} />
                 </div>
               );
@@ -379,7 +379,7 @@ const BRANDS = tabScene({
 const sr = SH.brands.search!;
 const srM = mid(sr);
 const SEARCH: SceneCfg = {
-  step: 3, title: 'Tìm kiếm tức thì', dur: 200,
+  step: 3, title: 'Tìm kiếm nhanh', dur: 200,
   body: 'Gõ tên, mã, ngành hàng hoặc PIC: danh sách lọc ngay khi bạn nhập. Kết hợp thêm bộ lọc ngành hàng, trạng thái, ngân sách.',
   imgs: [{ id: 'brands' }, { id: 'brand-search', from: 120 }],
   cam: [C, { ...C, f: 18 }, { f: 52, z: 2.3, x: srM.x + 280, y: srM.y + 140 }, { f: 112, z: 2.3, x: srM.x + 280, y: srM.y + 140 }, { f: 140, z: 1, x: 960, y: 540 }],
