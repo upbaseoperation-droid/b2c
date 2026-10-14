@@ -501,11 +501,6 @@ export const CtvManagementView: React.FC<CtvManagementViewProps> = ({
   return (
     <div ref={rootRef} className="space-y-4">
       <PageActions>
-        {onOpenSelfChannelHub && (
-          <Button variant="secondary" icon={Video} onClick={() => onOpenSelfChannelHub()}>
-            Sản xuất video kênh
-          </Button>
-        )}
         <Button variant="primary" icon={Plus} onClick={() => setIsCreateOpen(true)}>
           Thêm CTV
         </Button>

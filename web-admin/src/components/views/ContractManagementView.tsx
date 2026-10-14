@@ -254,13 +254,6 @@ export function ContractManagementView({
       {(screen.mode === 'list' || screen.mode === 'catalog') && (
         <>
           <PageActions>
-            <Button
-              icon={FolderKanban}
-              variant={screen.mode === 'catalog' ? 'primary' : 'secondary'}
-              onClick={() => setScreen(screen.mode === 'catalog' ? { mode: 'list' } : { mode: 'catalog' })}
-            >
-              {screen.mode === 'catalog' ? 'Về danh sách hồ sơ' : 'Danh mục & Mẫu hợp đồng'}
-            </Button>
             {canCreate && <Button variant="primary" icon={Plus} onClick={() => setScreen({ mode: 'form' })}>Tạo hợp đồng</Button>}
           </PageActions>
 

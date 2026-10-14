@@ -724,14 +724,6 @@ export const MonthlyPlanHub: React.FC<MonthlyPlanHubProps> = ({
     <div className="space-y-6">
       <PageActions>
         <Button
-          variant="secondary"
-          size="md"
-          icon={Database}
-          onClick={() => void openLarkbaseIngestionModal()}
-        >
-          Bảng hứng Larkbase
-        </Button>
-        <Button
           variant="primary"
           size="md"
           icon={Plus}
