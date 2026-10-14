@@ -178,8 +178,8 @@ export const MyPlanWorkspace: React.FC<MyPlanWorkspaceProps> = ({
               <h2 className="text-base font-semibold text-ink tracking-tight">
                 Kế hoạch tháng của {currentStaffName}
               </h2>
-              <span className="text-2xs px-2 py-0.5 rounded font-mono font-semibold bg-accent-soft text-accent">
-                {allocation?.month || '2026/09'}
+              <span className="text-xs font-code font-medium text-ink-3">
+                · {allocation?.month || '2026/09'}
               </span>
             </div>
             <p className="text-xs text-ink-3 mt-1">
@@ -260,12 +260,8 @@ export const MyPlanWorkspace: React.FC<MyPlanWorkspaceProps> = ({
             <span className="text-xs text-ink-3 block font-medium mb-1">
               Brand & chỉ đạo của trưởng phòng:
             </span>
-            <div className="flex flex-wrap gap-1 mb-1.5">
-              {(allocation?.assignedBrands || ['Senka', 'Cure']).map(b => (
-                <span key={b} className="px-1.5 py-0.2 rounded bg-surface text-ink-2 text-2xs font-semibold border border-line">
-                  {b}
-                </span>
-              ))}
+            <div className="text-xs font-medium text-ink mb-1.5">
+              {(allocation?.assignedBrands || ['Senka', 'Cure']).join(' · ')}
             </div>
             <p className="text-2xs text-ink-2 italic line-clamp-2">
               &ldquo;{allocation?.managerNote || 'Tập trung đẩy mạnh KOC Macro cho đợt Mega Day tuần 3.'}&rdquo;
@@ -279,13 +275,17 @@ export const MyPlanWorkspace: React.FC<MyPlanWorkspaceProps> = ({
       {/* ========================================================================= */}
       <div className="card-enterprise overflow-hidden bg-surface border border-line">
         <div className="px-5 py-3 border-b border-line bg-sunken flex flex-col md:flex-row md:items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 text-xs">
             <h3 className="text-xs font-semibold text-ink">
               Slot KOC · {staffItems.length}
             </h3>
-            <Status tone="positive">{approvedCount} đã duyệt</Status>
+            <span className="text-ink-3">·</span>
+            <span className="text-positive font-medium tabular-nums">{approvedCount} đã duyệt</span>
             {pendingCount > 0 && (
-              <Status tone="warning">{pendingCount} chờ duyệt</Status>
+              <>
+                <span className="text-ink-3">·</span>
+                <span className="text-warning font-medium tabular-nums">{pendingCount} chờ duyệt</span>
+              </>
             )}
           </div>
 
@@ -337,7 +337,7 @@ export const MyPlanWorkspace: React.FC<MyPlanWorkspaceProps> = ({
                   <tr key={item.id} data-flip={item.id} className="hover:bg-sunken/50 transition-colors">
                     {/* Week */}
                     <td className="p-3 pl-4">
-                      <span className="font-semibold font-mono px-2 py-0.5 rounded bg-sunken text-ink-2 border border-line text-2xs">
+                      <span className="font-semibold font-code text-ink-2 text-xs">
                         {item.targetWeek}
                       </span>
                     </td>
@@ -357,8 +357,8 @@ export const MyPlanWorkspace: React.FC<MyPlanWorkspaceProps> = ({
 
                     {/* Tier */}
                     <td className="p-3">
-                      <span className="text-2xs font-semibold px-1.5 py-0.5 rounded border border-line bg-sunken text-ink-2 inline-block">
-                        {item.salaryGrade} ({item.tier.replace('TIER_', '')})
+                      <span className="text-xs font-medium text-ink">
+                        {item.salaryGrade} <span className="text-ink-3">({item.tier.replace('TIER_', '')})</span>
                       </span>
                       {item.tepKenh && (
                         <div className="text-2xs text-ink-3 mt-0.5">{item.tepKenh}</div>
@@ -656,14 +656,14 @@ export const MyPlanWorkspace: React.FC<MyPlanWorkspaceProps> = ({
           </div>
 
           {isFormOverCeiling && formRatecardCeiling && (
-            <div className="p-2.5 rounded-lg bg-rose-50 border border-rose-200 flex items-center justify-between gap-2 text-xs text-rose-700">
+            <div className="p-2.5 rounded-lg bg-critical-soft border border-line flex items-center justify-between gap-2 text-xs text-critical">
               <span>
                 Vượt trần định mức <strong>{formSalaryGrade}</strong> của nhãn <strong>{formBrand}</strong> (+{formatVnd(formBudget - formRatecardCeiling)}).
               </span>
               <button
                 type="button"
                 onClick={() => setFormBudget(formRatecardCeiling)}
-                className="px-2.5 py-1 rounded bg-rose-600 hover:bg-rose-700 text-white text-2xs font-semibold shrink-0 transition"
+                className="px-2.5 py-1 rounded bg-critical text-white text-2xs font-semibold shrink-0 transition"
               >
                 Áp mức trần ({formatVndShort(formRatecardCeiling)})
               </button>

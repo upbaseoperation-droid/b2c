@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { Status } from '../ui';
 import { formatVndShort } from '../../lib/format';
 import { 
   Target, 
@@ -13,7 +14,6 @@ import {
   Minus, 
   Calendar, 
   User, 
-  Clock, 
   Info,
   FileCheck,
   Zap,
@@ -21,8 +21,6 @@ import {
   Tv,
   BarChart3,
   AlertOctagon,
-  HelpCircle,
-  CheckCircle2,
   Download,
   FileSpreadsheet
 } from 'lucide-react';
@@ -30,7 +28,6 @@ import {
   GrowthDemandItem, 
   GrowthDemandBreakdownTier, 
   GrowthDemandStatus,
-  WeeklyStorePlan411
 } from '../../lib/types';
 import { INITIAL_GROWTH_DEMANDS, MOCK_WEEKLY_PLANS_411 } from '../../lib/mockData';
 import { exportPlanOrderToExcel, downloadWeeklyTemplate411 } from '../../lib/excelExport';
@@ -147,10 +144,6 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
 
   const isBlocked = blockReasons.length > 0 && !exceptionExplanation.trim();
 
-  const gmvAchievementRate = activeDemand.targetGmv > 0 
-    ? (totalExpectedGmv / activeDemand.targetGmv) * 100 
-    : 0;
-  
   const projectedCir = totalExpectedGmv > 0 
     ? (totalAllocatedBudget / totalExpectedGmv) * 100 
     : 0;
@@ -364,19 +357,20 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
       <div className="card-enterprise p-5 bg-white border border-slate-200 shadow-xs">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-200">
           <div>
-            <div className="flex items-center gap-2.5 flex-wrap">
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-2xs" />
               <h2 className="text-base font-semibold text-slate-900 tracking-tight">
                 Bàn làm việc: Phân bổ KOC / KOL từ yêu cầu growth
               </h2>
-              <span className="text-2xs px-2 py-0.5 rounded font-semibold bg-blue-50 text-blue-700 border border-blue-200">
-                Luồng Handoff Growth → Booking
-              </span>
+              <span className="text-xs text-ink-3">·</span>
+              <span className="text-xs text-ink-3">Luồng Handoff Growth → Booking</span>
               {pendingCount > 0 && (
-                <span className="text-2xs px-2 py-0.5 rounded font-semibold bg-amber-50 text-amber-800 border border-amber-300 flex items-center gap-1 shadow-2xs">
-                  <Clock className="w-3 h-3 text-amber-600" />
-                  {pendingCount} Yêu Cầu Chờ Lập Plan
-                </span>
+                <>
+                  <span className="text-xs text-ink-3">·</span>
+                  <span className="text-xs font-semibold text-warning tabular-nums">
+                    {pendingCount} yêu cầu chờ lập plan
+                  </span>
+                </>
               )}
             </div>
             <p className="text-xs text-slate-500 mt-1">
@@ -437,19 +431,20 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
               >
                 <div>
                   <div className="flex items-center justify-between gap-1 mb-1.5">
-                    <span className="text-2xs font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 font-mono">
+                    <span className="text-2xs font-mono text-ink-3">
                       {demand.code}
                     </span>
-                    <span className={`text-2xs font-semibold px-2 py-0.5 rounded border ${
-                      demand.status === 'PENDING_BREAKDOWN' ? 'bg-amber-50 text-amber-800 border-amber-300 ' :
-                      demand.status === 'PLANNED' ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                      demand.status === 'LEAD_APPROVED' ? 'bg-emerald-50 text-emerald-700 border-emerald-300' :
-                      'bg-slate-50 text-slate-700 border-slate-200'
-                    }`}>
+                    <Status
+                      tone={
+                        demand.status === 'PENDING_BREAKDOWN' ? 'warning' :
+                        demand.status === 'PLANNED' ? 'neutral' :
+                        demand.status === 'LEAD_APPROVED' ? 'positive' : 'neutral'
+                      }
+                    >
                       {demand.status === 'PENDING_BREAKDOWN' ? 'Chờ Lập Plan' :
                        demand.status === 'PLANNED' ? 'Đã Lập Xong' :
                        demand.status === 'LEAD_APPROVED' ? 'Đã Phê Duyệt' : 'Đang Chạy'}
-                    </span>
+                    </Status>
                   </div>
 
                   <h4 className="text-xs font-semibold text-slate-900 line-clamp-1">{demand.brandName}</h4>
@@ -487,9 +482,10 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200">
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-semibold px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">
+                  <span className="text-xs font-mono font-semibold text-ink-3">
                     {activeDemand.code}
                   </span>
+                  <span className="text-ink-3">·</span>
                   <h3 className="text-sm font-semibold text-slate-900">{activeDemand.title}</h3>
                 </div>
                 <div className="flex items-center gap-4 text-xs text-slate-500 mt-1.5 flex-wrap">
@@ -510,16 +506,17 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
 
               {/* Status Indicator */}
               <div className="text-right">
-                <span className={`inline-block text-xs font-semibold px-2.5 py-0.5 rounded border ${
-                  activeDemand.status === 'PENDING_BREAKDOWN' ? 'bg-amber-50 text-amber-800 border-amber-300' :
-                  activeDemand.status === 'PLANNED' ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                  activeDemand.status === 'LEAD_APPROVED' ? 'bg-emerald-50 text-emerald-700 border-emerald-300' :
-                  'bg-slate-50 text-slate-700 border-slate-200'
-                }`}>
+                <Status
+                  tone={
+                    activeDemand.status === 'PENDING_BREAKDOWN' ? 'warning' :
+                    activeDemand.status === 'PLANNED' ? 'neutral' :
+                    activeDemand.status === 'LEAD_APPROVED' ? 'positive' : 'neutral'
+                  }
+                >
                   {activeDemand.status === 'PENDING_BREAKDOWN' ? 'Chờ Lập Kế Hoạch' :
                    activeDemand.status === 'PLANNED' ? 'Đã Lập (Chờ Duyệt)' :
                    activeDemand.status === 'LEAD_APPROVED' ? 'Lead Đã Duyệt' : 'Đang Triển Khai'}
-                </span>
+                </Status>
                 <span className="text-2xs text-slate-400 block mt-1">
                   Hạn chót: {activeDemand.deadlineBreakdown}
                 </span>
@@ -670,8 +667,8 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
                   Điều chỉnh số lượng và đơn giá dự kiến để hệ thống tự động cân đối ngân sách và doanh số kỳ vọng.
                 </p>
               </div>
-              <span className="text-xs font-semibold text-slate-700 px-2.5 py-1 rounded bg-slate-100 border border-slate-200">
-                Tổng Target: <strong className="text-blue-600">{totalKocCount} KOCs</strong>
+              <span className="text-xs font-medium text-ink-2">
+                Tổng Target: <strong className="font-mono font-semibold text-accent">{totalKocCount} KOCs</strong>
               </span>
             </div>
 
@@ -781,10 +778,10 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
 
                       {/* Tier ROI */}
                       <td className="py-3 px-3 text-center">
-                        <span className={`text-2xs font-semibold px-2 py-0.5 rounded border ${
-                          parseFloat(tierRoi) >= 6.0 ? 'bg-emerald-50 text-emerald-700 border-emerald-300' :
-                          parseFloat(tierRoi) >= 4.0 ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                          'bg-amber-50 text-amber-800 border-amber-300'
+                        <span className={`text-xs font-mono font-semibold tabular-nums ${
+                          parseFloat(tierRoi) >= 6.0 ? 'text-positive' :
+                          parseFloat(tierRoi) >= 4.0 ? 'text-accent' :
+                          'text-warning'
                         }`}>
                           {tierRoi}x
                         </span>
@@ -827,7 +824,7 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
                     Sản xuất nội dung độc quyền bởi Content Team Upbase và phân phối Reup đa nền tảng để phủ sóng sản phẩm.
                   </p>
                 </div>
-                <span className="text-xs font-semibold text-emerald-700 px-2.5 py-1 rounded bg-emerald-50 border border-emerald-200">
+                <span className="text-xs font-semibold text-positive tabular-nums">
                   Tiết kiệm ~45.000.000đ chi phí Cast KOC
                 </span>
               </div>
@@ -912,8 +909,8 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
                     Phân bổ phiên live định kỳ 3h và 2h (CTV) nhằm giữ nhịp chuyển đổi trong các khung giờ vàng.
                   </p>
                 </div>
-                <span className="text-xs font-semibold text-amber-800 px-2.5 py-1 rounded bg-amber-50 border border-amber-200">
-                  Tổng 34 phiên • 92 giờ Live
+                <span className="text-xs font-medium text-ink-2">
+                  Tổng 34 phiên · 92 giờ Live
                 </span>
               </div>
 
@@ -960,8 +957,8 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
                     Theo dõi sát vòng đời ngân sách và chênh lệch Gap NMV thực thu sau khi trừ tỷ lệ hủy đơn của sàn.
                   </p>
                 </div>
-                <span className="text-xs font-semibold text-slate-700 px-2.5 py-1 rounded bg-slate-100 border border-slate-200">
-                  Tỷ lệ hủy: <strong className="text-amber-600 font-semibold">8.0%</strong>
+                <span className="text-xs font-medium text-ink-2">
+                  Tỷ lệ hủy: <strong className="font-mono font-semibold text-warning">8.0%</strong>
                 </span>
               </div>
 
@@ -1064,11 +1061,9 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
                 <DollarSign className="w-4 h-4 text-emerald-600" />
                 Kiểm soát ngân sách
               </span>
-              <span className={`text-2xs font-semibold px-2 py-0.5 rounded border ${
-                isOverBudget ? 'bg-rose-100 text-rose-800 border-rose-300' : 'bg-emerald-50 text-emerald-700 border-emerald-300'
-              }`}>
-                {isOverBudget ? 'VƯỢT HẠN MỨC' : 'TRONG HẠN MỨC'}
-              </span>
+              <Status tone={isOverBudget ? 'critical' : 'positive'}>
+                {isOverBudget ? 'Vượt hạn mức' : 'Trong hạn mức'}
+              </Status>
             </div>
 
             <div className="space-y-3 mt-4 text-xs">
@@ -1118,11 +1113,9 @@ export const GrowthPlanBreakdownView: React.FC<GrowthPlanBreakdownViewProps> = (
                 <Target className="w-4 h-4 text-blue-600" />
                 MỤC TIÊU NMV &amp; GMV (THUẦN SAU HỦY)
               </span>
-              <span className={`text-2xs font-semibold px-2 py-0.5 rounded border ${
-                nmvAchievementRate >= 100 ? 'bg-emerald-50 text-emerald-700 border-emerald-300' : 'bg-amber-50 text-amber-800 border-amber-300'
-              }`}>
-                {nmvAchievementRate >= 100 ? 'ĐẠT KỲ VỌNG' : 'CHƯA ĐẠT'}
-              </span>
+              <Status tone={nmvAchievementRate >= 100 ? 'positive' : 'warning'}>
+                {nmvAchievementRate >= 100 ? 'Đạt kỳ vọng' : 'Chưa đạt'}
+              </Status>
             </div>
 
             <div className="space-y-3 mt-4 text-xs">

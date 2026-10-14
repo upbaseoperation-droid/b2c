@@ -17,7 +17,6 @@ import {
   Minus,
   X,
   ChevronRight,
-  GripVertical,
   Layers,
   Maximize2,
   Minimize2,
@@ -706,8 +705,8 @@ export const StorePlanMindmap: React.FC<StorePlanMindmapProps> = ({
                         {renderBranchIcon(branch, 'w-4 h-4 shrink-0')}
                         <span className="font-semibold text-xs text-ink truncate">{branch.label}</span>
                         {!branch.isFreeCast && budgetSharePct > 0 && (
-                          <span className={`text-2xs font-mono font-semibold px-1.5 py-0.5 rounded border ${branch.badgeClass}`}>
-                            {budgetSharePct}%
+                          <span className="text-2xs font-mono text-ink-3 tabular-nums">
+                            · {budgetSharePct}%
                           </span>
                         )}
                       </div>
@@ -790,11 +789,11 @@ export const StorePlanMindmap: React.FC<StorePlanMindmapProps> = ({
           {/* Header gọn của Nhánh đang chọn */}
           <div className="px-4 py-3 bg-canvas border-b border-line flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className={`px-2 py-0.5 rounded-md text-xs font-semibold border inline-flex items-center gap-1.5 ${selectedBranchMeta.badgeClass}`}>
+              <span className="text-xs font-semibold text-ink inline-flex items-center gap-1.5">
                 {renderBranchIcon(selectedBranchMeta, 'w-3.5 h-3.5 shrink-0')}
                 <span>{selectedBranchMeta.label}</span>
               </span>
-              <span className="text-xs text-ink-3">•</span>
+              <span className="text-xs text-ink-3">·</span>
               <span className="text-xs font-medium text-ink-2">{selectedBranchMeta.unitLabel}</span>
             </div>
 
@@ -881,9 +880,10 @@ export const StorePlanMindmap: React.FC<StorePlanMindmapProps> = ({
                         {/* Cột 1 (4/12): Tên bậc / hạng mục + Định dạng & Nhân sự */}
                         <div className="md:col-span-5 min-w-0 space-y-1.5">
                           <div className="flex items-center gap-1.5">
-                            <span className={`px-1.5 py-0.5 rounded text-2xs font-mono font-semibold border shrink-0 ${selectedBranchMeta.badgeClass}`}>
+                            <span className="text-xs font-mono font-semibold text-ink-2 shrink-0">
                               {item.tierCode}
                             </span>
+                            <span className="text-xs text-ink-3">·</span>
                             <span className="font-semibold text-xs text-ink truncate" title={item.tierLabel}>
                               {item.tierLabel.split(':')[1]?.trim() || item.tierLabel}
                             </span>

@@ -233,8 +233,8 @@ export default function PerformanceP3View({
                       <td className="py-3 px-3">
                         <div className="flex items-center gap-2 font-medium text-ink"><Avatar name={item.staffName} size={22} />{item.staffName}</div>
                         <div className="text-2xs text-ink-3 mt-0.5 flex items-center gap-1.5">
-                          <span className="px-1.5 py-0.5 bg-sunken rounded text-ink-2 font-medium">{item.role}</span>
-                          <span>• {item.level}</span>
+                          <span className="text-ink-2 font-medium">{item.role}</span>
+                          <span>· {item.level}</span>
                         </div>
                       </td>
 
@@ -244,11 +244,11 @@ export default function PerformanceP3View({
                           {item.assignedStore}
                         </div>
                         <div className="text-2xs mt-0.5">
-                          <span className={`inline-block px-1.5 py-0.5 font-semibold rounded font-mono ${
-                            item.storeMultiplier >= 1.5 ? 'bg-critical-soft text-critical' :
-                            item.storeMultiplier >= 1.25 ? 'bg-warning-soft text-warning' :
-                            item.storeMultiplier >= 1.0 ? 'bg-accent-soft text-accent' :
-                            'bg-sunken text-ink-2'
+                          <span className={`font-semibold font-mono tabular-nums ${
+                            item.storeMultiplier >= 1.5 ? 'text-critical' :
+                            item.storeMultiplier >= 1.25 ? 'text-warning' :
+                            item.storeMultiplier >= 1.0 ? 'text-accent' :
+                            'text-ink-2'
                           }`}>
                             HS gian hàng: {formatStoreCoefficient(item.storeMultiplier)} ({getStoreTierByCoefficient(item.storeMultiplier)})
                           </span>
@@ -341,7 +341,7 @@ export default function PerformanceP3View({
                 <div key={rule.tier} className="bg-surface p-2.5 border border-line rounded-md">
                   <div className="flex items-center justify-between">
                     <span className={`font-semibold ${rule.tier === 'Khó' ? 'text-critical' : 'text-ink'}`}>{rule.tier}</span>
-                    <span className="font-mono font-semibold text-ink px-1.5 py-0.5 rounded bg-sunken">{rule.multiplierLabel}</span>
+                    <span className="font-mono font-semibold text-ink-2 tabular-nums">{rule.multiplierLabel}</span>
                   </div>
                   <div className="text-2xs text-ink-2 mt-1">{rule.definition}</div>
                   <div className="text-2xs text-ink-3 mt-0.5">VD: {rule.example}</div>
@@ -379,11 +379,11 @@ export default function PerformanceP3View({
                       {formatVnd(store.monthlyTargetGmv)}
                     </td>
                     <td className="py-3 px-3 text-center">
-                      <span className={`inline-block px-2 py-0.5 text-2xs font-semibold rounded ${
-                        store.difficultyTier === 'Khó' ? 'bg-critical-soft text-critical' :
-                        store.difficultyTier === 'Vừa' ? 'bg-warning-soft text-warning' :
-                        store.difficultyTier === 'Tiêu chuẩn' ? 'bg-accent-soft text-accent' :
-                        'bg-sunken text-ink-2'
+                      <span className={`text-xs font-medium ${
+                        store.difficultyTier === 'Khó' ? 'text-critical' :
+                        store.difficultyTier === 'Vừa' ? 'text-warning' :
+                        store.difficultyTier === 'Tiêu chuẩn' ? 'text-accent' :
+                        'text-ink-2'
                       }`}>
                         {store.difficultyTier}
                       </span>

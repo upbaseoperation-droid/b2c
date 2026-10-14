@@ -166,9 +166,9 @@ export const KocNichesMasterView: React.FC<KocNichesMasterViewProps> = ({
       </div>
 
       {/* Master Niches Table */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
+      <div className="bg-surface rounded-xl border border-line shadow-xs overflow-hidden">
         <table className="w-full text-left text-xs">
-          <thead className="bg-slate-50 text-slate-600 border-b border-slate-200 font-semibold text-2xs">
+          <thead className="bg-canvas text-ink-3 border-b border-line font-medium text-2xs">
             <tr>
               <th className="py-3 px-4 w-[180px]">Tên tệp kênh KOC</th>
               <th className="py-3 px-4 w-[160px]">Chuyên mục</th>
@@ -178,49 +178,49 @@ export const KocNichesMasterView: React.FC<KocNichesMasterViewProps> = ({
               <th className="py-3 px-4 text-right w-[80px]">Thao tác</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y divide-line">
             {filteredNiches.length === 0 ? (
               <tr>
-                <td colSpan={6} className="py-12 text-center text-slate-400">
+                <td colSpan={6} className="py-12 text-center text-ink-3">
                   Không tìm thấy tệp kênh KOC phù hợp
                 </td>
               </tr>
             ) : (
               filteredNiches.map(n => (
-                <tr key={n.id} className="hover:bg-slate-50/70 transition-colors">
+                <tr key={n.id} className="hover:bg-canvas transition-colors">
                   <td className="py-3 px-4">
-                    <span className="font-semibold text-slate-900 text-xs">
+                    <span className="font-semibold text-ink text-xs">
                       {n.nicheName}
                     </span>
-                    <div className="text-2xs font-mono text-slate-400 mt-0.5">{n.id}</div>
+                    <div className="text-2xs font-code text-ink-3 mt-0.5">{n.id}</div>
                   </td>
                   <td className="py-3 px-4">
-                    <span className="px-2 py-0.5 rounded text-2xs font-medium bg-slate-100 text-slate-700 border border-slate-200">
+                    <span className="text-xs font-medium text-ink-2">
                       {n.category || 'Đa ngành'}
                     </span>
                   </td>
                   <td className="py-3 px-4">
-                    <span className="px-2 py-0.5 rounded text-2xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                    <span className="text-xs text-ink-2">
                       {n.properties || 'Lifestyle'}
                     </span>
                   </td>
-                  <td className="py-3 px-4 text-slate-600 text-2xs leading-relaxed">
+                  <td className="py-3 px-4 text-ink-2 text-2xs leading-relaxed">
                     {n.definition || '—'}
                   </td>
                   <td className="py-3 px-4">
                     {n.pillarMatch ? (
-                      <span className="px-2 py-0.5 rounded text-2xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                      <span className="text-xs font-medium text-ink-2">
                         {n.pillarMatch}
                       </span>
                     ) : (
-                      <span className="text-slate-400 text-2xs">—</span>
+                      <span className="text-ink-3 text-2xs">—</span>
                     )}
                   </td>
                   <td className="py-3 px-4 text-right">
                     <button
                       type="button"
                       onClick={() => handleOpenEdit(n)}
-                      className="text-slate-600 hover:text-slate-900 font-medium text-xs px-2 py-1 rounded hover:bg-slate-100 transition"
+                      className="text-ink-2 hover:text-ink font-medium text-xs px-2 py-1 rounded hover:bg-sunken transition"
                     >
                       Sửa
                     </button>
@@ -235,16 +235,16 @@ export const KocNichesMasterView: React.FC<KocNichesMasterViewProps> = ({
       {/* Modal Add / Edit Niche */}
       <Presence show={!!isModalOpen}>
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/40 flex items-center justify-center p-4 animate-in fade-in duration-(--motion-base)">
-          <div data-motion-panel className="bg-white rounded-xl shadow-xl border border-slate-200 max-w-md w-full p-5 space-y-4 animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h3 className="font-semibold text-sm text-slate-900">
+        <div className="fixed inset-0 z-50 bg-ink/40 flex items-center justify-center p-4 animate-in fade-in duration-(--motion-base)">
+          <div data-motion-panel className="bg-surface rounded-xl shadow-xl border border-line max-w-md w-full p-5 space-y-4 animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
+            <div className="flex items-center justify-between pb-3 border-b border-line">
+              <h3 className="font-semibold text-sm text-ink">
                 {editingNiche ? `Cập nhật tệp kênh [${editingNiche.nicheName}]` : 'Thêm tệp kênh KOC mới'}
               </h3>
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600"
+                className="text-ink-3 hover:text-ink"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -252,73 +252,73 @@ export const KocNichesMasterView: React.FC<KocNichesMasterViewProps> = ({
 
             <form onSubmit={handleSave} className="space-y-3 text-xs">
               <div>
-                <label className="block text-slate-600 font-medium mb-1">Tên tệp kênh *</label>
+                <label className="block text-ink-2 font-medium mb-1">Tên tệp kênh *</label>
                 <input
                   type="text"
                   required
                   placeholder="VD: Review Mẹ & Bé, Bác sỹ..."
                   value={form.nicheName}
                   onChange={(e) => setForm(prev => ({ ...prev, nicheName: e.target.value }))}
-                  className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-400"
+                  className="w-full px-3 py-1.5 border border-line rounded-lg bg-surface text-ink focus:outline-none focus:ring-1 focus:ring-line-strong"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-slate-600 font-medium mb-1">Chuyên mục ngành</label>
+                  <label className="block text-ink-2 font-medium mb-1">Chuyên mục ngành</label>
                   <input
                     type="text"
                     placeholder="VD: Beauty, Mom & Baby..."
                     value={form.category}
                     onChange={(e) => setForm(prev => ({ ...prev, category: e.target.value }))}
-                    className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-400"
+                    className="w-full px-3 py-1.5 border border-line rounded-lg bg-surface text-ink focus:outline-none focus:ring-1 focus:ring-line-strong"
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-600 font-medium mb-1">Thuộc tính KOC</label>
+                  <label className="block text-ink-2 font-medium mb-1">Thuộc tính KOC</label>
                   <input
                     type="text"
                     placeholder="VD: Expert, Lifestyle..."
                     value={form.properties}
                     onChange={(e) => setForm(prev => ({ ...prev, properties: e.target.value }))}
-                    className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-400"
+                    className="w-full px-3 py-1.5 border border-line rounded-lg bg-surface text-ink focus:outline-none focus:ring-1 focus:ring-line-strong"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-slate-600 font-medium mb-1">Trụ cột nội dung gợi ý liên kết</label>
+                <label className="block text-ink-2 font-medium mb-1">Trụ cột nội dung gợi ý liên kết</label>
                 <input
                   type="text"
                   placeholder="VD: Review trực tiếp, Educate..."
                   value={form.pillarMatch}
                   onChange={(e) => setForm(prev => ({ ...prev, pillarMatch: e.target.value }))}
-                  className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-400"
+                  className="w-full px-3 py-1.5 border border-line rounded-lg bg-surface text-ink focus:outline-none focus:ring-1 focus:ring-line-strong"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-600 font-medium mb-1">Định nghĩa & Quy chuẩn tệp</label>
+                <label className="block text-ink-2 font-medium mb-1">Định nghĩa & Quy chuẩn tệp</label>
                 <textarea
                   rows={3}
                   placeholder="Mô tả tiêu chuẩn KOC thuộc tệp này..."
                   value={form.definition}
                   onChange={(e) => setForm(prev => ({ ...prev, definition: e.target.value }))}
-                  className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-400"
+                  className="w-full px-3 py-1.5 border border-line rounded-lg bg-surface text-ink focus:outline-none focus:ring-1 focus:ring-line-strong"
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-line">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-3 py-1.5 border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 transition"
+                  className="px-3 py-1.5 border border-line rounded-lg text-ink-2 hover:bg-canvas transition"
                 >
                   Hủy
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-lg transition"
+                  className="px-4 py-1.5 bg-primary hover:bg-primary-hover text-white font-semibold rounded-lg transition"
                 >
                   Lưu tệp kênh
                 </button>

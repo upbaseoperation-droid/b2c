@@ -71,14 +71,18 @@ export function ContractDetail({
   const [previewLoading, setPreviewLoading] = useState<boolean>(true);
   const [previewError, setPreviewError] = useState('');
   const [activeFieldKey, setActiveFieldKey] = useState<string | null>(null);
+  const [trackedRecordKey, setTrackedRecordKey] = useState(`${record.id}:${record.version}`);
 
-  useEffect(() => {
+  if (`${record.id}:${record.version}` !== trackedRecordKey) {
+    setTrackedRecordKey(`${record.id}:${record.version}`);
     setSelectedVersion(record.version);
-  }, [record.id, record.version]);
+  }
 
   useEffect(() => {
     let cancelled = false;
-    setPreviewLoading(true);
+    Promise.resolve().then(() => {
+      if (!cancelled) setPreviewLoading(true);
+    });
     contractApi<PreviewResponse>(`/api/contracts/${record.id}/document?preview=1&version=${selectedVersion}`)
       .then(r => {
         if (cancelled) return;
@@ -271,7 +275,7 @@ export function ContractDetail({
                             : `Thấp hơn Booking ${Math.abs(diff).toLocaleString('vi-VN')} đ`}
                       </Status>
                     ) : (
-                      <Status tone="info">Chế độ thuế: {subject}</Status>
+                      <span className="text-xs text-ink-2">Chế độ thuế: {subject}</span>
                     )
                   }
                 />
@@ -541,22 +545,25 @@ function History({ record }: { record: ContractRecord }) {
 
 function SubmitDialog({ open, record, data, busy, onClose, onSubmit }: { open: boolean; record: ContractRecord; data: ContractBootstrap; busy: boolean; onClose: () => void; onSubmit: (ids: string[]) => void }) {
   const [picked, setPicked] = useState<Record<string, string>>({});
+  const [initKey, setInitKey] = useState('');
   const template = data.templates.find(t => t.id === record.templateId);
   const options = (role: ContractRole) => data.reviewers.filter(a => a.id !== record.ownerId && a.roles.includes(role) && (a.allBrands || a.brands.includes(record.brand)));
 
-  useEffect(() => {
-    if (!open) return;
-    const legalOpts = options('LEGAL');
-    const financeOpts = options('FINANCE');
-    const leadOpts = options('LEAD');
-    const defaultRoles = template?.defaultReviewRoles || ['LEGAL', 'FINANCE'];
-    setPicked({
-      LEGAL: legalOpts[0]?.id || '',
-      FINANCE: financeOpts.find(a => a.id !== legalOpts[0]?.id)?.id || financeOpts[0]?.id || '',
-      LEAD: defaultRoles.includes('LEAD') ? (leadOpts[0]?.id || '') : '',
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, record.id]);
+  const currentKey = open ? `${record.id}:${record.version}` : '';
+  if (currentKey !== initKey) {
+    setInitKey(currentKey);
+    if (open) {
+      const legalOpts = options('LEGAL');
+      const financeOpts = options('FINANCE');
+      const leadOpts = options('LEAD');
+      const defaultRoles = template?.defaultReviewRoles || ['LEGAL', 'FINANCE'];
+      setPicked({
+        LEGAL: legalOpts[0]?.id || '',
+        FINANCE: financeOpts.find(a => a.id !== legalOpts[0]?.id)?.id || financeOpts[0]?.id || '',
+        LEAD: defaultRoles.includes('LEAD') ? (leadOpts[0]?.id || '') : '',
+      });
+    }
+  }
 
   const ready = !!picked.LEGAL && !!picked.FINANCE && picked.LEGAL !== picked.FINANCE;
   return (

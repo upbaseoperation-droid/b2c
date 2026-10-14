@@ -84,7 +84,7 @@ export interface KocProfileProps {
 }
 
 export function classificationOf(k: KocItem): string {
-  return [k.salaryGrade, k.segment, k.tepKenh || k.creatorCategory, k.kocCategory, k.location, k.isWinnerTop20 && 'Nhóm top 20 GMV']
+  return [k.salaryGrade, k.segment, k.tepKenh || k.creatorCategory, k.kocCategory, k.location, k.isWinnerTop20 && 'Nhóm top 20 GMV', 'TikTok Seller']
     .filter(Boolean)
     .join(' · ');
 }
@@ -167,8 +167,6 @@ export function KocProfile({
                 )}
                 {missingDocs && <Status tone="warning">Thiếu giấy tờ</Status>}
                 {duplicates.length > 0 && <Status tone="warning">Nghi trùng</Status>}
-                {koc.isWinnerTop20 && <Status tone="positive">Top 20 GMV</Status>}
-                <Status tone="info">TikTok Seller Verified</Status>
               </div>
             )}
             <p className="text-[13px] text-ink-2">
@@ -191,7 +189,7 @@ export function KocProfile({
                 <span className="text-ink-3">Chưa có PIC</span>
               )}
               {stats.avgRatingScore > 0 && (
-                <span className="inline-flex items-center gap-1 text-2xs font-semibold text-warning bg-warning-soft px-1.5 py-0.5 rounded">
+                <span className="inline-flex items-center gap-1 text-2xs font-medium text-warning">
                   <Star className="w-3 h-3 fill-current" />
                   {stats.avgRatingScore} / 5.0
                 </span>
@@ -337,7 +335,7 @@ function TikTokSellerMetricsSection({ koc, onUpdate }: { koc: KocItem; onUpdate?
           <div>
             <div className="flex items-center gap-2">
               <span className="text-sm font-semibold text-ink">Đã kết nối TikTok Seller Center</span>
-              <span className="inline-flex items-center gap-1 text-2xs font-medium px-2 py-0.5 rounded-full bg-positive-soft text-positive">
+              <span className="inline-flex items-center gap-1 text-2xs font-medium text-positive">
                 <CheckCircle2 className="w-3 h-3" /> Tài khoản chuẩn
               </span>
             </div>
@@ -468,13 +466,9 @@ function TikTokSellerMetricsSection({ koc, onUpdate }: { koc: KocItem; onUpdate?
           </div>
 
           <h4 className="text-xs font-semibold text-ink pt-2">Ngành hàng bán chạy</h4>
-          <div className="flex flex-wrap gap-2">
-            {topCats.map((cat) => (
-              <span key={cat} className="px-2.5 py-1 rounded-md text-xs bg-sunken text-ink font-medium">
-                {cat}
-              </span>
-            ))}
-          </div>
+          <p className="text-xs text-ink-2">
+            {topCats.join(' · ')}
+          </p>
         </div>
 
         {/* Khán giả & Nhân khẩu học */}
@@ -589,9 +583,9 @@ function CollaborationHistorySection({
             <span>·</span>
             <span className="truncate">{d.productName}</span>
           </div>
-          <div className="flex items-center gap-2 mt-1">
-            <span className="font-code text-2xs px-1 rounded bg-sunken text-ink-3">{d.dealCode}</span>
-            {d.bookingBatch && <span className="text-2xs text-ink-3">{d.bookingBatch}</span>}
+          <div className="flex items-center gap-1.5 mt-1 text-2xs text-ink-3">
+            <span className="font-code">{d.dealCode}</span>
+            {d.bookingBatch && <span>· {d.bookingBatch}</span>}
           </div>
         </div>
       ),
@@ -608,15 +602,15 @@ function CollaborationHistorySection({
           <div className="grid gap-1">
             <div>
               {isFoc ? (
-                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-2xs font-medium bg-sunken text-ink-2">
+                <span className="text-xs font-medium text-ink-2">
                   Suất mẫu FOC (0đ)
                 </span>
               ) : isLive ? (
-                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-2xs font-medium bg-accent-soft text-accent">
+                <span className="text-xs font-medium text-accent">
                   Livestream KOC
                 </span>
               ) : (
-                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-2xs font-medium bg-warning-soft text-warning">
+                <span className="text-xs font-medium text-ink">
                   Video trả phí (Paid)
                 </span>
               )}
@@ -669,11 +663,11 @@ function CollaborationHistorySection({
               {roi > 0 && (
                 <span
                   className={cx(
-                    'px-1.5 py-0.2 rounded text-2xs font-semibold tabular-nums',
-                    roi >= 4 ? 'bg-positive-soft text-positive' : roi >= 2 ? 'bg-accent-soft text-accent' : 'bg-warning-soft text-warning',
+                    'text-2xs font-medium tabular-nums',
+                    roi >= 4 ? 'text-positive' : roi >= 2 ? 'text-accent' : 'text-warning',
                   )}
                 >
-                  ROI {roi.toFixed(1)}x
+                  · ROI {roi.toFixed(1)}x
                 </span>
               )}
             </div>
@@ -704,7 +698,7 @@ function CollaborationHistorySection({
               </span>
             </div>
             {d.adsCodeStatus === 'ĐÃ_NGHIỆM_THU' && (
-              <span className="text-2xs text-accent bg-accent-soft px-1 py-0.2 rounded inline-block w-fit">
+              <span className="text-2xs text-accent inline-block w-fit">
                 Mã Ads hợp lệ
               </span>
             )}
@@ -758,7 +752,7 @@ function CollaborationHistorySection({
             description={`Đã hợp tác qua ${stats.totalDeals} chiến dịch với ${stats.uniqueBrands.length || 1} nhãn hàng Upbase B2C`}
           />
           {stats.overallRoi >= 3 && (
-            <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-positive-soft text-positive flex items-center gap-1">
+            <span className="text-xs font-medium text-positive flex items-center gap-1">
               <Award className="w-3.5 h-3.5" /> Hiệu suất sinh lời cao ({stats.overallRoi.toFixed(1)}x)
             </span>
           )}
@@ -1210,7 +1204,7 @@ function OperationalNotesPanel({ koc }: { koc: KocItem }) {
               {koc.reliabilityScore || 9.5} <span className="text-xs font-normal text-ink-3">/ 10</span>
             </span>
           </div>
-          <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-positive-soft text-positive">
+          <span className="text-2xs font-medium text-positive">
             Rất uy tín
           </span>
         </div>

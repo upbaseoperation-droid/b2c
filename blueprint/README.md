@@ -33,6 +33,7 @@ Danh sách **mọi tài liệu bắt buộc** theo quy trình quản lý dự á
 | HUB-GOV-01 | [Decision log](governance/DECISION_LOG.md) | Đang dùng |
 | HUB-GOV-02 | [Open issues](governance/OPEN_ISSUES.md) | Đang xử lý |
 | HUB-GOV-03 | [Ma trận truy vết](governance/TRACEABILITY.md) | Đang dùng |
+| HUB-AUDIT-01 | [Audit Giao diện & Design System](audits/2026-10-14-ui-design-system-audit.md) | Đã hoàn thành đợt 1 (Shell, RBAC, Kế hoạch tháng, Dashboard) |
 
 ## Giai đoạn 1 — Yêu cầu
 

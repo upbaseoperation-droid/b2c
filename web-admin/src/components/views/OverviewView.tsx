@@ -175,13 +175,12 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
       <Panel
         title="Bàn giao giữa các team"
         description="Mỗi việc có người nhận và hạn SLA, không giao qua tin nhắn"
-        actions={<Status tone="positive">8 bước có SLA</Status>}
       >
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="p-4 rounded-xl border border-line bg-canvas space-y-3">
             <div className="flex items-center justify-between pb-2 border-b border-line">
               <span className="text-xs font-semibold text-ink">1. Team Brand</span>
-              <Status tone="info">SLA 24h</Status>
+              <span className="text-2xs text-ink-3">SLA 24h</span>
             </div>
             <div className="space-y-2">
               <div className="p-3.5 bg-surface rounded-lg border border-line text-xs space-y-1.5">
@@ -206,7 +205,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
           <div className="p-4 rounded-xl border border-line bg-canvas space-y-3">
             <div className="flex items-center justify-between pb-2 border-b border-line">
               <span className="text-xs font-semibold text-ink">2. Team Content</span>
-              <Status tone="info">SLA 24–48h</Status>
+              <span className="text-2xs text-ink-3">SLA 24–48h</span>
             </div>
             <div className="space-y-2">
               <div className="p-3.5 bg-surface rounded-lg border border-line text-xs space-y-1.5">
@@ -231,7 +230,7 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
           <div className="p-4 rounded-xl border border-line bg-canvas space-y-3">
             <div className="flex items-center justify-between pb-2 border-b border-line">
               <span className="text-xs font-semibold text-ink">3. Team Booking</span>
-              <Status tone="positive">SLA 12–48h</Status>
+              <span className="text-2xs text-ink-3">SLA 12–48h</span>
             </div>
             <div className="space-y-2">
               <div className="p-3.5 bg-surface rounded-lg border border-line text-xs space-y-1.5">

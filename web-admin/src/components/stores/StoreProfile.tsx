@@ -12,7 +12,6 @@ import React, { useMemo, useState } from 'react';
 import {
   ArrowLeft,
   ArrowUpRight,
-  BarChart3,
   Building2,
   Calendar,
   ChevronLeft,
@@ -25,6 +24,7 @@ import {
   UserCheck,
   Video,
 } from 'lucide-react';
+import { INITIAL_STORE_ASSIGNMENT_HISTORY } from '../../lib/enterpriseMasterConfig';
 import type {
   BookingDealItem,
   BrandDetail,
@@ -164,6 +164,13 @@ export function StoreProfile({
     'Lê Phương Thảo';
   const focSpecialist = 'Trần Thị Hảo';
 
+  // Lịch sử phân công & bàn giao của riêng gian hàng này
+  const storeAssignmentHistory = useMemo(() => {
+    return INITIAL_STORE_ASSIGNMENT_HISTORY.filter(
+      h => h.storeId === store.id || h.storeName === store.storeName
+    );
+  }, [store.id, store.storeName]);
+
   // Products linked to this store
   const storeProducts = useMemo(() => {
     const bNameLower = store.brandName.toLowerCase();
@@ -218,10 +225,10 @@ export function StoreProfile({
               <span className={`font-semibold ${isSelected ? 'text-accent' : 'text-ink'}`}>
                 {r.monthLabel}
               </span>
-              <span className="px-1.5 py-0.5 rounded bg-sunken border border-line text-2xs font-code text-ink-2">
-                {r.versionCode}
+              <span className="text-2xs font-code text-ink-3">
+                · {r.versionCode}
               </span>
-              {isSelected && <Status tone="info">Đang xem</Status>}
+              {isSelected && <span className="text-2xs font-medium text-accent">· Đang xem</span>}
             </div>
             <div className="text-2xs text-ink-3 mt-0.5">
               {r.planStatusLabel} · PIC: {r.pic}
@@ -370,8 +377,8 @@ export function StoreProfile({
       render: it => (
         <div className="min-w-0">
           <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="px-1.5 py-0.5 rounded bg-sunken border border-line text-2xs font-code font-semibold text-ink">
-              {it.tierCode}
+            <span className="text-2xs font-code font-semibold text-ink-2">
+              {it.tierCode} ·
             </span>
             <span className="font-medium text-ink truncate">{it.tierLabel}</span>
           </div>
@@ -469,8 +476,8 @@ export function StoreProfile({
         <div className="min-w-0">
           <div className="flex items-center gap-1.5 flex-wrap">
             <span className="font-code text-xs font-semibold text-accent">{b.dealCode}</span>
-            <span className="px-1.5 py-0.5 rounded bg-sunken border border-line text-2xs font-code text-ink-2">
-              {b.kl}
+            <span className="text-2xs font-code text-ink-3">
+              · {b.kl}
             </span>
           </div>
           <div className="mt-1">
@@ -761,8 +768,8 @@ export function StoreProfile({
                 ) : (
                   <Status tone="neutral">Dừng hợp tác</Status>
                 )}
-                <span className="px-2 py-0.5 rounded bg-canvas border border-line text-2xs text-ink-2 font-medium">
-                  Hồ sơ kỳ {currentMonthReport.monthLabel} · Plan {currentMonthReport.versionCode}
+                <span className="text-2xs text-ink-3 font-medium">
+                  · Hồ sơ kỳ {currentMonthReport.monthLabel} · Plan <span className="font-code text-ink-2">{currentMonthReport.versionCode}</span>
                 </span>
               </div>
 
@@ -822,27 +829,34 @@ export function StoreProfile({
           {/* 2.2 Chỉ số Đối soát Plan vs Report của Kỳ tháng đang chọn */}
           <div className="space-y-2">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="text-sm font-semibold text-ink">
                   Đối soát Plan vs Report — {currentMonthReport.monthLabel}
                 </h3>
                 <Status
                   tone={
-                    currentMonthReport.planStatus === 'COMPLETED' ||
-                    currentMonthReport.planStatus === 'IN_EXECUTION'
-                      ? 'positive'
-                      : currentMonthReport.planStatus === 'REVISION_REQUESTED'
-                        ? 'critical'
-                        : 'info'
+                    currentMonthReport.isOverbudget
+                      ? 'critical'
+                      : currentMonthReport.isUnbudgetedSpend
+                        ? 'warning'
+                        : currentMonthReport.planStatus === 'COMPLETED' ||
+                            currentMonthReport.planStatus === 'IN_EXECUTION'
+                          ? 'positive'
+                          : currentMonthReport.planStatus === 'REVISION_REQUESTED'
+                            ? 'critical'
+                            : 'info'
                   }
                 >
-                  {currentMonthReport.planStatusLabel} ({currentMonthReport.versionCode})
+                  {currentMonthReport.isOverbudget
+                    ? 'Vượt trần ngân sách tháng'
+                    : currentMonthReport.isUnbudgetedSpend
+                      ? 'Chi ngoài kế hoạch (Plan 0đ)'
+                      : `${currentMonthReport.planStatusLabel} (${currentMonthReport.versionCode})`}
                 </Status>
-                {currentMonthReport.isOverbudget && (
-                  <Status tone="critical">Vượt trần ngân sách tháng</Status>
-                )}
-                {currentMonthReport.isUnbudgetedSpend && (
-                  <Status tone="warning">Chi ngoài kế hoạch (Plan 0đ)</Status>
+                {(currentMonthReport.isOverbudget || currentMonthReport.isUnbudgetedSpend) && (
+                  <span className="text-2xs text-ink-3">
+                    · {currentMonthReport.planStatusLabel} (<span className="font-code">{currentMonthReport.versionCode}</span>)
+                  </span>
                 )}
               </div>
 
@@ -1295,6 +1309,28 @@ export function StoreProfile({
                     Từ {store.previousPic || 'Chuyên viên trước'} sang {specialistPic}, hiệu lực từ{' '}
                     {store.handoverEffectiveDate}.
                   </p>
+                </div>
+              )}
+
+              {storeAssignmentHistory.length > 0 && (
+                <div className="mt-3 pt-3 border-t border-line space-y-2">
+                  <span className="block text-2xs font-semibold text-ink">
+                    Lịch sử phân công & bàn giao ({storeAssignmentHistory.length})
+                  </span>
+                  <ol className="space-y-1.5">
+                    {storeAssignmentHistory.map((h) => (
+                      <li key={h.id} className="text-2xs p-2 rounded bg-sunken/60 border border-line space-y-0.5">
+                        <div className="flex items-center justify-between gap-1">
+                          <span className="font-semibold text-ink">{h.staffName}</span>
+                          <span className="font-mono text-ink-3">{h.effectiveDate}</span>
+                        </div>
+                        <div className="text-ink-3">
+                          {h.action === 'ASSIGNED' ? 'Bổ nhiệm' : h.action === 'REASSIGNED' ? 'Điều chuyển' : 'Ủy quyền Backup'}
+                          {h.reason ? ` · ${h.reason}` : ''}
+                        </div>
+                      </li>
+                    ))}
+                  </ol>
                 </div>
               )}
             </div>

@@ -27,7 +27,7 @@ export const LeaderboardView: React.FC = () => {
       header: 'Thứ hạng',
       width: 90,
       render: (item) => (
-        <span className="font-code font-semibold text-ink">
+        <span className="tabular-nums font-semibold text-ink">
           #{item.rank}
         </span>
       ),
@@ -104,7 +104,7 @@ export const LeaderboardView: React.FC = () => {
   return (
     <div className="space-y-6">
       <Toolbar
-        actions={<Status tone="info">{boardData.length} nhân sự</Status>}
+        actions={<span className="text-xs text-ink-3 tabular-nums">{boardData.length} nhân sự</span>}
       >
         <Segmented
           value={timeRange}
@@ -127,9 +127,9 @@ export const LeaderboardView: React.FC = () => {
           >
             <div>
               <div className="flex items-center justify-between mb-3">
-                <Status tone={item.rank === 1 ? 'positive' : item.rank === 2 ? 'info' : 'warning'}>
-                  Hạng {item.rank} toàn phòng
-                </Status>
+                <span className="text-xs font-semibold text-ink-2 tabular-nums">
+                  Hạng #{item.rank} toàn phòng
+                </span>
                 <span className="text-xs font-semibold text-ink tabular-nums">
                   {item.totalScore} điểm
                 </span>
@@ -171,7 +171,6 @@ export const LeaderboardView: React.FC = () => {
         flush
         title="Bảng đánh giá chi tiết toàn bộ 30 nhân sự"
         description="Đồng bộ từ kết quả nghiệm thu video, doanh số đối soát và thời gian xử lý SLA"
-        actions={<Status tone="info">Thời gian thực</Status>}
       >
         <DataTable
           columns={columns}

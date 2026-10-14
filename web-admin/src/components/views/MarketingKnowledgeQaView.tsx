@@ -22,7 +22,6 @@ import {
   Stat,
   StatRow,
   Button,
-  Status,
   SearchInput,
   Chips,
   Modal,
@@ -648,11 +647,11 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
               description="Tra cứu quy trình, mốc SLA, mẫu hợp đồng, cách tính thuế Gross/Net, khung lương KL1–KL7 và thông tin 42 nhãn hàng"
               actions={
                 <div className="flex items-center gap-2">
-                  <Status tone={effectiveQaRoute.hasActiveExternalKey ? 'positive' : 'info'}>
+                  <span className="text-2xs font-medium text-ink-3">
                     {effectiveQaRoute.hasActiveExternalKey
                       ? `Kết nối ${effectiveQaRoute.primaryModel}`
                       : 'Sổ tay chuẩn nội bộ'}
-                  </Status>
+                  </span>
                   {onNavigateToTab && (
                     <Button
                       variant="ghost"
@@ -1031,28 +1030,28 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
                     <p className="font-medium text-ink">Ngày 10 · 20 · 30</p>
                     <p className="text-2xs text-ink-3">Chu kỳ gửi danh sách đề xuất KOC 3 đợt</p>
                   </div>
-                  <Status tone="info">Đang chạy</Status>
+                  <span className="text-2xs font-medium text-accent shrink-0">Định kỳ tháng</span>
                 </div>
                 <div className="py-2 flex items-start justify-between gap-2">
                   <div>
                     <p className="font-medium text-ink">Ngày 20 → 25 tháng T-1</p>
                     <p className="text-2xs text-ink-3">Growth giao Plan 4.1 → Khóa Baseline v1.0</p>
                   </div>
-                  <Status tone="warning">Chờ duyệt</Status>
+                  <span className="text-2xs font-medium text-warning shrink-0">Trước tháng T</span>
                 </div>
                 <div className="py-2 flex items-start justify-between gap-2">
                   <div>
                     <p className="font-medium text-ink">48h gửi mẫu · 5 ngày nộp Demo</p>
                     <p className="text-2xs text-ink-3">SLA xuất kho mẫu & KOC gửi video nháp</p>
                   </div>
-                  <Status tone="positive">Đã duyệt</Status>
+                  <span className="text-2xs font-medium text-positive shrink-0">Bắt buộc</span>
                 </div>
                 <div className="py-2 flex items-start justify-between gap-2">
                   <div>
                     <p className="font-medium text-ink">Ngày 02 & Ngày làm việc thứ 5, 11</p>
                     <p className="text-2xs text-ink-3">Khóa nghiệm thu 3.2 & 2 đợt mở cổng Kế toán</p>
                   </div>
-                  <Status tone="neutral">Nháp</Status>
+                  <span className="text-2xs font-medium text-ink-3 shrink-0">Chốt sổ</span>
                 </div>
               </div>
             </Panel>

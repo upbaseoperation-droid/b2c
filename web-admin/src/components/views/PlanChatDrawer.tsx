@@ -30,13 +30,13 @@ export function PlanChatButton({ unreadCount = 0, onClick, className = '', label
     <button
       type="button"
       onClick={onClick}
-      className={`relative inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-semibold text-xs ${className}`}
+      className={`relative inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-surface hover:bg-canvas text-ink-2 border border-line font-semibold text-xs ${className}`}
       aria-label={unreadCount > 0 ? `${label}, ${unreadCount} tin chưa đọc` : label}
     >
       <MessageSquare className="w-3.5 h-3.5" aria-hidden="true" />
       <span>{label}</span>
       {unreadCount > 0 && (
-        <span className="ml-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white text-2xs font-semibold leading-[18px] text-center">
+        <span className="ml-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-critical text-white text-2xs font-semibold leading-[18px] text-center tabular-nums">
           {unreadCount > 99 ? '99+' : unreadCount}
         </span>
       )}
@@ -98,18 +98,10 @@ const QUICK_REPLIES: Record<Exclude<PlanDiscussionRole, 'SYSTEM'>, string[]> = {
   ]
 };
 
-const ROLE_BADGE: Record<PlanDiscussionRole, string> = {
-  GROWTH: 'bg-amber-50 text-amber-700 border-amber-200',
-  BOOKING: 'bg-blue-50 text-blue-700 border-blue-200',
-  MEDIA: 'bg-blue-50 text-blue-700 border-blue-200',
-  LEAD: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  SYSTEM: 'bg-slate-100 text-slate-500 border-slate-200'
-};
-
 const CONNECTION_VIEW: Record<PlanChatConnection, { label: string; dot: string }> = {
-  live: { label: 'Trực tiếp', dot: 'bg-emerald-500' },
-  polling: { label: 'Cập nhật 10 giây', dot: 'bg-amber-400' },
-  connecting: { label: 'Đang kết nối', dot: 'bg-slate-300' }
+  live: { label: 'Trực tiếp', dot: 'bg-positive' },
+  polling: { label: 'Cập nhật 10 giây', dot: 'bg-warning' },
+  connecting: { label: 'Đang kết nối', dot: 'bg-line-strong' }
 };
 
 const GROUP_WINDOW_MS = 5 * 60 * 1000;
@@ -280,9 +272,9 @@ export function PlanChatDrawer({ open, onClose, plan, currentUser, chat, reviewS
     if (dk !== prevDay) {
       rows.push(
         <div key={`day-${dk}`} className="flex items-center gap-2 py-2" role="separator">
-          <div className="flex-1 h-px bg-slate-200" />
-          <span className="text-2xs font-semibold text-slate-400">{dayLabel(d)}</span>
-          <div className="flex-1 h-px bg-slate-200" />
+          <div className="flex-1 h-px bg-line" />
+          <span className="text-2xs font-semibold text-ink-3">{dayLabel(d)}</span>
+          <div className="flex-1 h-px bg-line" />
         </div>
       );
       prevDay = dk;
@@ -292,11 +284,11 @@ export function PlanChatDrawer({ open, onClose, plan, currentUser, chat, reviewS
     if (isSystemMessage(m)) {
       rows.push(
         <div key={m.id} className="flex justify-center py-1">
-          <div className="max-w-[90%] text-center text-2xs text-slate-500 bg-slate-100 rounded-full px-3 py-1">
-            <span className="font-semibold">{TYPE_LABELS[m.type] ?? 'Hệ thống'}</span>
+          <div className="max-w-[90%] text-center text-2xs text-ink-2 bg-sunken rounded-full px-3 py-1">
+            <span className="font-semibold text-ink">{TYPE_LABELS[m.type] ?? 'Hệ thống'}</span>
             <span> · {m.content}</span>
             <BudgetDiffLine m={m} />
-            <span className="text-slate-400"> · {formatTime(m.timestamp)}</span>
+            <span className="text-ink-3"> · {formatTime(m.timestamp)}</span>
           </div>
         </div>
       );
@@ -315,55 +307,61 @@ export function PlanChatDrawer({ open, onClose, plan, currentUser, chat, reviewS
     rows.push(
       <div key={m.id} className={`flex flex-col ${mine ? 'items-end' : 'items-start'} ${grouped ? 'mt-0.5' : 'mt-3'}`}>
         {!grouped && (
-          <div className={`flex items-center gap-1.5 mb-1 text-2xs ${mine ? 'flex-row-reverse' : ''}`}>
-            <span className="font-semibold text-slate-700">{mine ? 'Bạn' : m.authorName}</span>
-            <span className={`px-1.5 py-px rounded border text-2xs font-semibold ${ROLE_BADGE[m.authorRole] ?? ROLE_BADGE.BOOKING}`}>
+          <div className={`flex items-center gap-1 mb-1 text-2xs ${mine ? 'flex-row-reverse' : ''}`}>
+            <span className="font-semibold text-ink">{mine ? 'Bạn' : m.authorName}</span>
+            <span className="text-ink-3">·</span>
+            <span className="text-ink-2 font-medium">
               {ROLE_LABELS[m.authorRole] ?? m.authorRole}
             </span>
-            {m.authorTitle && !mine && <span className="text-slate-400 truncate max-w-[140px]">{m.authorTitle}</span>}
+            {m.authorTitle && !mine && (
+              <>
+                <span className="text-ink-3">·</span>
+                <span className="text-ink-3 truncate max-w-[140px]">{m.authorTitle}</span>
+              </>
+            )}
           </div>
         )}
         <div
           className={`max-w-[85%] rounded-2xl px-3 py-2 text-[13px] leading-relaxed whitespace-pre-wrap break-words ${
-            mine ? 'bg-blue-600 text-white rounded-br-md' : 'bg-white text-slate-800 border border-slate-200 rounded-bl-md'
-          } ${m.status === 'sending' ? 'opacity-70' : ''} ${m.status === 'failed' ? 'ring-2 ring-rose-300' : ''}`}
+            mine ? 'bg-primary text-white rounded-br-md' : 'bg-surface text-ink border border-line rounded-bl-md'
+          } ${m.status === 'sending' ? 'opacity-70' : ''} ${m.status === 'failed' ? 'ring-2 ring-critical/40' : ''}`}
         >
           {m.type !== 'COMMENT' && (
-            <span
-              className={`inline-block mb-1 mr-1 px-1.5 py-px rounded text-2xs font-semibold ${
+            <div
+              className={`mb-0.5 text-2xs font-semibold ${
                 mine
-                  ? 'bg-white/20 text-white'
+                  ? 'text-white/90'
                   : m.type === 'REVISION_REQUEST'
-                    ? 'bg-rose-50 text-rose-700'
-                    : 'bg-amber-50 text-amber-700'
+                    ? 'text-critical'
+                    : 'text-warning'
               }`}
             >
               {TYPE_LABELS[m.type] ?? m.type}
-            </span>
+            </div>
           )}
           {m.content}
           {m.budgetDiff && (
-            <div className={`mt-1 text-2xs ${mine ? 'text-blue-100' : 'text-slate-500'}`}>
+            <div className={`mt-1 text-2xs ${mine ? 'text-white/80' : 'text-ink-2'}`}>
               <BudgetDiffLine m={m} />
             </div>
           )}
           {m.tags && m.tags.length > 0 && (
             <div className="mt-1 flex flex-wrap gap-1">
               {m.tags.map(t => (
-                <span key={t} className={`text-2xs ${mine ? 'text-blue-100' : 'text-slate-400'}`}>
+                <span key={t} className={`text-2xs ${mine ? 'text-white/80' : 'text-ink-3'}`}>
                   #{t}
                 </span>
               ))}
             </div>
           )}
         </div>
-        <div className="mt-0.5 flex items-center gap-2 text-2xs text-slate-400">
+        <div className="mt-0.5 flex items-center gap-2 text-2xs text-ink-3">
           {m.status === 'sending' && <span>Đang gửi…</span>}
           {m.status === 'failed' && (
             <button
               type="button"
               onClick={() => void chat.retry(m.id)}
-              className="inline-flex items-center gap-1 font-semibold text-rose-600 hover:text-rose-700"
+              className="inline-flex items-center gap-1 font-semibold text-critical hover:underline"
             >
               <RotateCcw className="w-3 h-3" aria-hidden="true" /> Gửi lại
             </button>
@@ -378,7 +376,7 @@ export function PlanChatDrawer({ open, onClose, plan, currentUser, chat, reviewS
     <>
       {/* Lớp phủ mờ */}
       <div
-        className={`fixed inset-0 z-[90] bg-slate-900/30 transition-opacity duration-(--motion-base) ${
+        className={`fixed inset-0 z-[90] bg-ink/30 transition-opacity duration-(--motion-base) ${
           open ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
         onClick={onClose}
@@ -390,59 +388,59 @@ export function PlanChatDrawer({ open, onClose, plan, currentUser, chat, reviewS
         aria-modal="true"
         aria-label="Trao đổi kế hoạch"
         inert={!open}
-        className={`fixed top-0 right-0 z-[91] h-screen w-full sm:w-[420px] bg-slate-50 shadow-2xl border-l border-slate-200 flex flex-col transition-transform ${
+        className={`fixed top-0 right-0 z-[91] h-screen w-full sm:w-[420px] bg-canvas shadow-2xl border-l border-line flex flex-col transition-transform ${
           open ? 'translate-x-0 duration-(--motion-slow) ease-enter' : 'translate-x-full duration-(--motion-base) ease-exit'
         }`}
       >
         {/* Header */}
-        <header className="shrink-0 bg-white border-b border-slate-200 px-4 pt-3 pb-2.5">
+        <header className="shrink-0 bg-surface border-b border-line px-4 pt-3 pb-2.5">
           <div className="flex items-start gap-2">
             <div className="flex-1 min-w-0">
-              <h2 className="text-sm font-semibold text-slate-900">Trao đổi kế hoạch</h2>
-              <p className="text-2xs text-slate-500 truncate" title={plan.title}>
+              <h2 className="text-sm font-semibold text-ink">Trao đổi kế hoạch</h2>
+              <p className="text-2xs text-ink-2 truncate" title={plan.title}>
                 {shortTitle(plan)}
               </p>
             </div>
-            <span className="mt-0.5 inline-flex items-center gap-1.5 text-2xs font-semibold text-slate-500" aria-live="polite">
+            <span className="mt-0.5 inline-flex items-center gap-1.5 text-2xs font-semibold text-ink-2" aria-live="polite">
               <span className={`w-2 h-2 rounded-full ${conn.dot}`} aria-hidden="true" />
               {conn.label}
             </span>
             <button
               type="button"
               onClick={onClose}
-              className="p-1.5 -mr-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100"
+              className="p-1.5 -mr-1 rounded-lg text-ink-3 hover:text-ink hover:bg-sunken"
               aria-label="Đóng khung trao đổi"
             >
               <X className="w-4 h-4" />
             </button>
           </div>
-          <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-2xs text-slate-500">
+          <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-2xs text-ink-2">
             {pics.map(p => (
               <span key={p.label}>
-                {p.label}: <span className="font-semibold text-slate-700">{p.name || '—'}</span>
+                {p.label}: <span className="font-semibold text-ink">{p.name || '—'}</span>
               </span>
             ))}
           </div>
           {chat.onlineUsers.length > 1 && (
-            <div className="mt-1 text-2xs text-emerald-600">
+            <div className="mt-1 text-2xs text-positive">
               Đang mở: {chat.onlineUsers.map(u => u.name).join(', ')}
             </div>
           )}
         </header>
 
         {/* Nhận xét kế hoạch */}
-        <section className="shrink-0 mx-3 mt-3 rounded-xl bg-white border border-slate-200">
+        <section className="shrink-0 mx-3 mt-3 rounded-xl bg-surface border border-line">
           <button
             type="button"
             onClick={() => setReviewOpen(v => !v)}
-            className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-slate-700"
+            className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-ink"
             aria-expanded={reviewOpen}
           >
             <span>Nhận xét kế hoạch</span>
             {reviewOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
           </button>
           {reviewOpen && (
-            <div className="px-3 pb-2.5 text-2xs text-slate-500 max-h-48 overflow-y-auto">
+            <div className="px-3 pb-2.5 text-2xs text-ink-2 max-h-48 overflow-y-auto">
               {reviewSlot ?? <p className="italic">Chưa có nhận xét.</p>}
             </div>
           )}
@@ -459,8 +457,8 @@ export function PlanChatDrawer({ open, onClose, plan, currentUser, chat, reviewS
               onClick={() => setFilter(f.key)}
               className={`shrink-0 px-2.5 py-1 rounded-full text-2xs font-semibold border ${
                 filter === f.key
-                  ? 'bg-slate-800 text-white border-slate-800'
-                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'
+                  ? 'bg-ink text-white border-ink'
+                  : 'bg-surface text-ink-2 border-line hover:bg-sunken'
               }`}
             >
               {f.label}
@@ -478,9 +476,9 @@ export function PlanChatDrawer({ open, onClose, plan, currentUser, chat, reviewS
             aria-relevant="additions"
           >
             {visible.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center text-center px-6 text-slate-400">
-                <MessageSquare className="w-8 h-8 mb-2 text-slate-300" aria-hidden="true" />
-                <p className="text-xs font-semibold text-slate-500">
+              <div className="h-full flex flex-col items-center justify-center text-center px-6 text-ink-3">
+                <MessageSquare className="w-8 h-8 mb-2 text-ink-3" aria-hidden="true" />
+                <p className="text-xs font-semibold text-ink-2">
                   {filter === 'ALL' ? 'Chưa có trao đổi nào' : 'Không có tin phù hợp bộ lọc'}
                 </p>
                 {filter === 'ALL' && (
@@ -495,7 +493,7 @@ export function PlanChatDrawer({ open, onClose, plan, currentUser, chat, reviewS
             <button
               type="button"
               onClick={() => scrollToBottom(true)}
-              className="absolute bottom-2 left-1/2 -translate-x-1/2 inline-flex items-center gap-1 px-3 py-1 rounded-full bg-blue-600 text-white text-2xs font-semibold shadow-lg"
+              className="absolute bottom-2 left-1/2 -translate-x-1/2 inline-flex items-center gap-1 px-3 py-1 rounded-full bg-primary text-white text-2xs font-semibold shadow-lg"
             >
               Có tin mới <ArrowDown className="w-3 h-3" aria-hidden="true" />
             </button>
@@ -503,12 +501,12 @@ export function PlanChatDrawer({ open, onClose, plan, currentUser, chat, reviewS
         </div>
 
         {/* Đang nhập */}
-        <div className="shrink-0 h-5 px-4 text-2xs italic text-slate-400" aria-live="polite">
+        <div className="shrink-0 h-5 px-4 text-2xs italic text-ink-3" aria-live="polite">
           {typingText}
         </div>
 
         {/* Khung nhập */}
-        <footer className="shrink-0 bg-white border-t border-slate-200 px-3 pt-2 pb-3">
+        <footer className="shrink-0 bg-surface border-t border-line px-3 pt-2 pb-3">
           <div className="flex gap-1.5 mb-2 overflow-x-auto" role="radiogroup" aria-label="Loại tin">
             {TYPE_CHIPS.map(c => (
               <button
@@ -520,11 +518,11 @@ export function PlanChatDrawer({ open, onClose, plan, currentUser, chat, reviewS
                 className={`shrink-0 px-2 py-0.5 rounded-full text-2xs font-semibold border ${
                   msgType === c.type
                     ? c.type === 'REVISION_REQUEST'
-                      ? 'bg-rose-50 text-rose-700 border-rose-300'
+                      ? 'bg-critical-soft text-critical border-line-strong'
                       : c.type === 'BUDGET_ADJUST'
-                        ? 'bg-amber-50 text-amber-700 border-amber-300'
-                        : 'bg-blue-50 text-blue-700 border-blue-300'
-                    : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
+                        ? 'bg-warning-soft text-warning border-line-strong'
+                        : 'bg-accent-soft text-accent border-line-strong'
+                    : 'bg-surface text-ink-2 border-line hover:bg-canvas'
                 }`}
               >
                 {c.label}
@@ -541,7 +539,7 @@ export function PlanChatDrawer({ open, onClose, plan, currentUser, chat, reviewS
                   setDraft(d => (d.trim() ? `${d.trimEnd()} ${q}` : q));
                   textareaRef.current?.focus();
                 }}
-                className="shrink-0 px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-2xs text-slate-600 whitespace-nowrap"
+                className="shrink-0 px-2 py-1 rounded-lg bg-sunken hover:bg-line text-2xs text-ink-2 whitespace-nowrap"
               >
                 {q}
               </button>
@@ -561,28 +559,28 @@ export function PlanChatDrawer({ open, onClose, plan, currentUser, chat, reviewS
               placeholder={currentUser ? 'Nhập nội dung trao đổi…' : 'Cần đăng nhập để gửi tin'}
               disabled={!currentUser}
               aria-label="Nội dung tin nhắn"
-              className="flex-1 resize-none rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-[13px] leading-5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 disabled:opacity-60"
+              className="flex-1 resize-none rounded-xl border border-line bg-canvas px-3 py-2 text-[13px] leading-5 text-ink focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent disabled:opacity-60"
               style={{ maxHeight: MAX_TEXTAREA_PX }}
             />
             <button
               type="button"
               onClick={() => void submit()}
               disabled={!draft.trim() || overLimit || !currentUser}
-              className="shrink-0 h-9 w-9 inline-flex items-center justify-center rounded-xl bg-blue-600 text-white hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400"
+              className="shrink-0 h-9 w-9 inline-flex items-center justify-center rounded-xl bg-primary text-white hover:bg-primary-hover disabled:bg-sunken disabled:text-ink-3"
               aria-label="Gửi tin"
             >
               {chat.sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
             </button>
           </div>
-          <div className="mt-1.5 flex items-center justify-between gap-2 text-2xs text-slate-400">
+          <div className="mt-1.5 flex items-center justify-between gap-2 text-2xs text-ink-3">
             <span>Tin đã gửi được lưu vào biên bản, không sửa hoặc xóa được.</span>
             {draft.length > MAX_MESSAGE_LENGTH * 0.8 && (
-              <span className={overLimit ? 'text-rose-600 font-semibold' : ''}>
+              <span className={overLimit ? 'text-critical font-semibold' : ''}>
                 {draft.length}/{MAX_MESSAGE_LENGTH}
               </span>
             )}
           </div>
-          {chat.error && <div className="mt-1 text-2xs text-rose-600" role="alert">{chat.error}</div>}
+          {chat.error && <div className="mt-1 text-2xs text-critical" role="alert">{chat.error}</div>}
         </footer>
       </aside>
     </>

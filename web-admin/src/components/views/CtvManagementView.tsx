@@ -374,8 +374,8 @@ export const CtvManagementView: React.FC<CtvManagementViewProps> = ({
           <div className="min-w-0 leading-tight">
             <div className="flex items-center gap-1.5">
               <span className="truncate font-medium text-ink">{c.name}</span>
-              <span className="text-2xs font-mono px-1.5 py-0.5 rounded bg-sunken text-ink-3">
-                {c.code || c.id.toUpperCase()}
+              <span className="text-2xs font-mono text-ink-3">
+                · {c.code || c.id.toUpperCase()}
               </span>
             </div>
             <span className="block truncate text-2xs text-ink-3 mt-0.5">
@@ -468,7 +468,7 @@ export const CtvManagementView: React.FC<CtvManagementViewProps> = ({
       render: (c) => (
         <div className="leading-tight tabular-nums">
           <span className="block font-medium text-ink">
-            {c.completedTaskCount} video · ★ {c.ratingScore.toFixed(1)}
+            {c.completedTaskCount} video · {c.ratingScore.toFixed(1)}/5
           </span>
           <span className="block text-2xs text-ink-3">
             Đã chi: {formatVndShort(c.totalPaidAmount)}
@@ -729,7 +729,7 @@ export const CtvManagementView: React.FC<CtvManagementViewProps> = ({
 
 type CtvDetailTab = 'HISTORY' | 'SETTLEMENT_HISTORY' | 'SAMPLES_AND_JOBS' | 'EDIT_PROFILE';
 
-function CtvProfileDetail({
+export function CtvProfileDetail({
   ctv,
   tasks,
   nav,
@@ -1123,8 +1123,8 @@ function CtvProfileDetail({
           <div className="flex items-center gap-1.5">
             <span className="font-mono text-2xs text-ink-3">{t.taskCode}</span>
             {t.videoFormat && (
-              <span className="px-1.5 py-0 rounded bg-sunken text-ink-2 text-[10px] font-medium">
-                {t.videoFormat}
+              <span className="text-2xs text-ink-3">
+                · {t.videoFormat}
               </span>
             )}
           </div>
@@ -1259,38 +1259,47 @@ function CtvProfileDetail({
           <div className="min-w-0 grid gap-1">
             <div className="flex flex-wrap items-center gap-2">
               <h2 className="text-xl font-semibold text-ink">{ctv.name}</h2>
-              <span className="font-mono text-xs px-2 py-0.5 rounded bg-sunken text-ink-2 border border-line">
-                {ctv.code || ctv.id.toUpperCase()}
+              <span className="font-mono text-xs text-ink-3">
+                · {ctv.code || ctv.id.toUpperCase()}
               </span>
-              <Status tone="info">{CTV_ROLE_LABELS[ctv.role]}</Status>
-              <Status tone={contractMeta.tone}>{contractMeta.label}</Status>
-              {missingLegal && <Status tone="warning">Thiếu CCCD</Status>}
+              {missingLegal ? (
+                <Status tone="warning">Thiếu CCCD</Status>
+              ) : (
+                <Status tone={contractMeta.tone}>{contractMeta.label}</Status>
+              )}
             </div>
 
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-ink-2">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] text-ink-2">
+              <span className="font-medium text-ink">{CTV_ROLE_LABELS[ctv.role]}</span>
+              <span className="text-ink-3">· {ctv.nicheSpecialty.join(' · ')}</span>
               {ctv.channelLink && (
-                <a
-                  href={ctv.channelLink}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-1 font-medium text-accent hover:underline"
-                >
-                  <span>Kênh mẫu / Portfolio</span>
-                  <ExternalLink className="w-3.5 h-3.5" />
-                </a>
+                <>
+                  <span className="text-ink-3">·</span>
+                  <a
+                    href={ctv.channelLink}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 font-medium text-accent hover:underline"
+                  >
+                    <span>Kênh mẫu / Portfolio</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                </>
               )}
               {ctv.driveFolderUrl && (
-                <a
-                  href={ctv.driveFolderUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-1 font-medium text-ink-2 hover:text-ink hover:underline"
-                >
-                  <FolderOpen className="w-3.5 h-3.5 text-ink-3" />
-                  <span>Drive tổng nộp video</span>
-                </a>
+                <>
+                  <span className="text-ink-3">·</span>
+                  <a
+                    href={ctv.driveFolderUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 font-medium text-ink-2 hover:text-ink hover:underline"
+                  >
+                    <FolderOpen className="w-3.5 h-3.5 text-ink-3" />
+                    <span>Drive tổng nộp video</span>
+                  </a>
+                </>
               )}
-              <span className="text-ink-3">· {ctv.nicheSpecialty.join(' · ')}</span>
             </div>
 
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-ink-2">
@@ -1298,8 +1307,8 @@ function CtvProfileDetail({
               {ctv.partnershipPic && (
                 <Person name={ctv.partnershipPic} sub="Partnership (Hợp đồng)" size={20} />
               )}
-              <span className="inline-flex items-center gap-1 text-2xs font-semibold text-warning bg-warning-soft px-1.5 py-0.5 rounded">
-                <Star className="w-3 h-3 fill-current" />
+              <span className="inline-flex items-center gap-1 text-2xs font-medium text-ink-2 tabular-nums">
+                <Star className="w-3 h-3 text-warning fill-current" />
                 {ctv.ratingScore.toFixed(1)} / 5.0
               </span>
             </div>
@@ -1466,16 +1475,9 @@ function CtvProfileDetail({
                 </div>
                 {ctv.studioBackdrops && ctv.studioBackdrops.length > 0 && (
                   <div className="pt-1.5 border-t border-line">
-                    <dt className="text-ink-3 text-2xs mb-1">Bối cảnh quay sẵn có:</dt>
-                    <dd className="flex flex-wrap gap-1">
-                      {ctv.studioBackdrops.map((bg, i) => (
-                        <span
-                          key={i}
-                          className="px-2 py-0.5 rounded bg-sunken text-ink-2 text-2xs border border-line"
-                        >
-                          {bg}
-                        </span>
-                      ))}
+                    <dt className="text-ink-3 text-2xs mb-0.5">Bối cảnh quay sẵn có:</dt>
+                    <dd className="text-ink-2 text-xs leading-relaxed">
+                      {ctv.studioBackdrops.join(' · ')}
                     </dd>
                   </div>
                 )}
@@ -1543,7 +1545,7 @@ function CtvProfileDetail({
                         >
                           <div className="flex items-center justify-between gap-2">
                             <span className="font-semibold text-ink truncate">{b.brandName}</span>
-                            <span className="px-1.5 py-0.5 rounded bg-sunken text-ink-2 font-mono text-2xs">
+                            <span className="text-ink-3 font-mono text-2xs tabular-nums">
                               {b.completedTasks}/{b.totalTasks} video
                             </span>
                           </div>
@@ -1594,8 +1596,8 @@ function CtvProfileDetail({
                     <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-line">
                       <div>
                         <div className="flex items-center gap-2">
-                          <span className="font-mono text-2xs px-1.5 py-0.5 rounded bg-sunken text-ink-2">
-                            {selectedTaskForLog.taskCode}
+                          <span className="font-mono text-2xs text-ink-3">
+                            {selectedTaskForLog.taskCode} ·
                           </span>
                           <h4 className="font-semibold text-ink text-sm">
                             Nhật ký thực hiện &amp; Duyệt bài: {selectedTaskForLog.title}
@@ -2216,7 +2218,7 @@ function CtvProfileDetail({
 /* MODAL MÃ QR THANH TOÁN CHO CTV                                              */
 /* ========================================================================== */
 
-function CtvVietQrModal({ ctv, onClose }: { ctv: Contributor; onClose: () => void }) {
+export function CtvVietQrModal({ ctv, onClose }: { ctv: Contributor; onClose: () => void }) {
   return (
     <Modal
       open={true}

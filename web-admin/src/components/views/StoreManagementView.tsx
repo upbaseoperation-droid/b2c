@@ -457,14 +457,6 @@ export function StoreManagementView({
       align: 'center',
       render: s => {
         const norm = normalizeStoreCoefficient(s.difficultyTier, s.difficultyMultiplier);
-        const badgeTone =
-          norm.tier === 'Khó'
-            ? 'bg-rose-50 text-rose-800 border-rose-300'
-            : norm.tier === 'Vừa'
-              ? 'bg-amber-50 text-amber-900 border-amber-300'
-              : norm.tier === 'Tiêu chuẩn'
-                ? 'bg-blue-50 text-blue-800 border-blue-200'
-                : 'bg-slate-100 text-slate-800 border-slate-300';
         return (
           <div
             className="inline-flex flex-col items-center gap-0.5 cursor-pointer"
@@ -474,13 +466,11 @@ export function StoreManagementView({
             }}
             title={`${norm.tier} (HS ${norm.label}): ${norm.rule.definition}`}
           >
-            <span
-              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold border ${badgeTone}`}
-            >
+            <span className="inline-flex items-center gap-1 text-xs font-medium text-ink">
               <span>{norm.tier}</span>
-              <span className="font-mono font-bold">· {norm.label}</span>
+              <span className="font-mono font-semibold text-ink-2">· {norm.label}</span>
             </span>
-            <span className="text-[10px] text-ink-3">
+            <span className="text-2xs text-ink-3">
               {s.coefficientApprovalStatus === 'PENDING_MANAGER_APPROVAL'
                 ? 'Chờ GĐ duyệt đầu kỳ'
                 : s.coefficientApprovalStatus === 'ADJUSTED_BY_APPROVED_PLAN'

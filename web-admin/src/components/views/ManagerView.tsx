@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useMemo } from 'react';
 import { formatVndShort } from '../../lib/format';
@@ -53,7 +53,8 @@ import {
   BrandDetail,
   StorePortfolioItem,
   StaffMasterMember,
-  SlaTask
+  SlaTask,
+  GrowthDemandItem
 } from '../../lib/types';
 import { 
   MONTHLY_PLAN_DATA, 
@@ -114,7 +115,7 @@ interface ManagerViewProps {
   onUpdatePlanItemStatus?: (itemId: string, newStatus: StaffPlanStatus, leadNotes?: string) => void;
   onApproveEntirePlan?: (staffName: string, managerFeedback: string) => void;
   onRequestPlanRevision?: (staffName: string, managerFeedback: string) => void;
-  onGenerateDealsFromPlan?: (demand: any) => void;
+  onGenerateDealsFromPlan?: (demand: GrowthDemandItem) => void;
   onConvertPlanToDeals?: (staffName: string) => void;
   staffAllocationsByMonth?: Record<string, MonthlyStaffAllocation[]>;
   onUpdateStaffAllocation?: (month: string, updatedList: MonthlyStaffAllocation[]) => void;
@@ -238,22 +239,11 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
 
   React.useEffect(() => {
     if (externalPlanItems) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLocalPlanItems(externalPlanItems);
     }
   }, [externalPlanItems]);
 
-  // Global Escape key dismiss for open modals
-  React.useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setEditingAllocation(null);
-        setIsTierQuotaModalOpen(false);
-        setInspectStaffModal(null);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
 
   
   // Master Plans state (Quản lý chỉ tiêu theo tháng & theo 4 Tier KOC/KOL)
@@ -323,6 +313,20 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
   // Modal State for Master Tier Quota Configuration
   const [isTierQuotaModalOpen, setIsTierQuotaModalOpen] = useState(false);
   const [editTierForm, setEditTierForm] = useState<MasterTierQuota[]>([]);
+
+  // Global Escape key dismiss for open modals
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setEditingAllocation(null);
+        setIsTierQuotaModalOpen(false);
+        setInspectStaffModal(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
 
   // Ceiling metrics from active monthly plan
   const TOTAL_CEILING_BUDGET = currentPlan.totalCeilingBudget;
@@ -570,7 +574,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 border-b border-line pb-2">
           <Tabs
             value={activeTab}
-            onChange={(k) => setActiveTab(k as any)}
+            onChange={(k) => setActiveTab(k as typeof activeTab)}
             items={[
               { key: 'DELEGATION', label: '1. Phân công Gian hàng & Nhãn hàng' },
               { key: 'ALLOCATION', label: '2. Giao Hạn mức 4 Bậc & Duyệt Plan' },
@@ -690,58 +694,58 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
             <div className="space-y-5">
           {/* Supervisor / Read-Only Notice if not Manager */}
           {!isManager && (
-            <div className="p-2.5 bg-amber-50/80 border border-amber-200 rounded-xl flex items-center justify-between gap-3 text-xs">
-              <div className="flex items-center gap-2 text-amber-900">
-                <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0" />
-                <span className="font-medium text-slate-800">
+            <div className="p-2.5 bg-warning-soft border border-warning/20 rounded-xl flex items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-2 text-warning">
+                <ShieldAlert className="w-4 h-4 text-warning shrink-0" />
+                <span className="font-medium text-ink">
                   Chế độ giám sát: Bạn có quyền xem tiến độ và chi tiết kế hoạch các chuyên viên.
                 </span>
               </div>
-              <span className="px-2 py-0.5 rounded bg-amber-100 border border-amber-200 text-amber-800 text-2xs font-semibold shrink-0">
+              <span className="-warning/20 text-warning text-2xs font-semibold shrink-0">
                 Chỉ xem
               </span>
             </div>
           )}
 
           {/* CẤP 1: QUẢN LÝ TỔNG HẠN MỨC THEO 4 TIER KOC / KOL */}
-          <div className="card-enterprise p-5 bg-white border border-slate-200 shadow-xs">
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-200">
+          <div className="card-enterprise p-5 bg-white border border-line shadow-xs">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-line">
               <div>
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="w-2 h-2 rounded-full bg-blue-600" />
-                  <h3 className="text-sm font-semibold text-slate-900 tracking-tight">
+                  <span className="w-2 h-2 rounded-full bg-accent" />
+                  <h3 className="text-sm font-semibold text-ink tracking-tight">
                     Cấp 1: Hạn mức 4 bậc KOC / KOL toàn phòng — {currentPlan.monthLabel}
                   </h3>
                   <span className={`text-2xs px-2 py-0.5 rounded-full font-semibold border ${
-                    currentPlan.status === 'COMPLETED' ? 'bg-slate-100 text-slate-700 border-slate-300' :
-                    currentPlan.status === 'ACTIVE' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-                    'bg-amber-50 text-amber-700 border-amber-200'
+                    currentPlan.status === 'COMPLETED' ? 'bg-sunken text-ink-2 border-line-strong' :
+                    currentPlan.status === 'ACTIVE' ? 'bg-positive-soft text-positive border-positive/20' :
+                    'bg-warning-soft text-warning border-warning/20'
                   }`}>
                     {currentPlan.status === 'COMPLETED' ? 'Đã khóa sổ lịch sử' : currentPlan.status === 'ACTIVE' ? 'Đang thực hiện' : 'Dự thảo Q4'}
                   </span>
                 </div>
-                <p className="text-xs text-slate-500 mt-1">
+                <p className="text-xs text-ink-3 mt-1">
                   Quản lý trần video, ngân sách và đơn giá theo 4 bậc KOC/KOL trước khi phân bổ chi tiết cho 26 chuyên viên
                 </p>
               </div>
 
               <div className="flex items-center gap-2">
                 {currentPlan.status === 'COMPLETED' ? (
-                  <span className="px-3 py-1.5 bg-slate-100 border border-slate-200 text-slate-600 rounded-lg text-xs font-medium flex items-center gap-1.5 cursor-not-allowed">
-                    <SlidersHorizontal className="w-3.5 h-3.5 text-slate-400" />
+                  <span className=".5 -line text-ink-2 text-xs font-medium flex items-center gap-1.5 cursor-not-allowed">
+                    <SlidersHorizontal className="w-3.5 h-3.5 text-ink-3" />
                     <span>Đã chốt sổ (Chỉ xem)</span>
                   </span>
                 ) : isManager ? (
                   <button
                     onClick={handleOpenEditTierQuota}
-                    className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-xs font-semibold transition flex items-center gap-1.5"
+                    className="px-3 py-1.5 bg-accent-soft hover:bg-accent-soft text-accent border border-accent/20 rounded-lg text-xs font-semibold transition flex items-center gap-1.5"
                   >
                     <SlidersHorizontal className="w-3.5 h-3.5" />
                     <span>Cấu hình hạn mức 4 bậc</span>
                   </button>
                 ) : (
-                  <span className="px-3 py-1.5 bg-slate-100 border border-slate-200 text-slate-500 rounded-lg text-xs font-medium flex items-center gap-1.5 cursor-not-allowed">
-                    <SlidersHorizontal className="w-3.5 h-3.5 text-slate-400" />
+                  <span className=".5 -line text-ink-3 text-xs font-medium flex items-center gap-1.5 cursor-not-allowed">
+                    <SlidersHorizontal className="w-3.5 h-3.5 text-ink-3" />
                     <span>Hạn mức định mức (khóa bởi Lead)</span>
                   </span>
                 )}
@@ -749,68 +753,68 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
             </div>
 
             {/* Ceiling Metrics Summary */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 py-4 border-b border-slate-200">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 py-4 border-b border-line">
               <div>
-                <span className="text-2xs text-slate-500 font-medium block">Trần ngân sách {currentPlan.monthLabel}</span>
-                <div className="text-xl font-semibold text-slate-900 mt-0.5 font-mono">{TOTAL_CEILING_BUDGET.toLocaleString('vi-VN')} đ</div>
-                <div className="flex items-center justify-between text-2xs text-slate-500 mt-1">
-                  <span>Đã giao: <strong className="text-blue-700 font-semibold font-mono">{totalAllocatedBudget.toLocaleString('vi-VN')} đ</strong></span>
-                  <span className={remainingBudget === 0 ? 'text-emerald-700 font-semibold' : remainingBudget < 0 ? 'text-rose-700 font-semibold' : 'text-amber-700 font-semibold'}>
+                <span className="text-2xs text-ink-3 font-medium block">Trần ngân sách {currentPlan.monthLabel}</span>
+                <div className="text-xl font-semibold text-ink mt-0.5 font-mono">{TOTAL_CEILING_BUDGET.toLocaleString('vi-VN')} đ</div>
+                <div className="flex items-center justify-between text-2xs text-ink-3 mt-1">
+                  <span>Đã giao: <strong className="text-accent font-semibold font-mono">{totalAllocatedBudget.toLocaleString('vi-VN')} đ</strong></span>
+                  <span className={remainingBudget === 0 ? 'text-positive font-semibold' : remainingBudget < 0 ? 'text-critical font-semibold' : 'text-warning font-semibold'}>
                     {remainingBudget === 0 ? 'Cân đối 100%' : remainingBudget < 0 ? `Vượt: ${Math.abs(remainingBudget).toLocaleString('vi-VN')} đ` : `Còn: ${remainingBudget.toLocaleString('vi-VN')} đ`}
                   </span>
                 </div>
-                <div className="w-full h-1.5 bg-slate-200 rounded-full mt-2 overflow-hidden">
+                <div className="w-full h-1.5 bg-sunken rounded-full mt-2 overflow-hidden">
                   <div 
-                    className={`data-bar h-full rounded-full ${totalAllocatedBudget > TOTAL_CEILING_BUDGET ? 'bg-rose-500' : 'bg-blue-500'}`}
+                    className={`data-bar h-full rounded-full ${totalAllocatedBudget > TOTAL_CEILING_BUDGET ? 'bg-critical' : 'bg-accent'}`}
                     style={{ width: `${Math.min(100, (totalAllocatedBudget / TOTAL_CEILING_BUDGET) * 100)}%` }}
                   />
                 </div>
               </div>
 
               <div>
-                <span className="text-2xs text-slate-500 font-medium block">Chỉ tiêu video toàn phòng</span>
-                <div className="text-xl font-semibold text-slate-900 mt-0.5 font-mono">{TOTAL_TARGET_VIDEOS.toLocaleString('vi-VN')} video</div>
-                <div className="flex items-center justify-between text-2xs text-slate-500 mt-1">
-                  <span>Đã giao: <strong className="text-slate-700 font-semibold font-mono">{totalAllocatedVideos.toLocaleString('vi-VN')}</strong></span>
-                  <span className={remainingVideos === 0 ? 'text-emerald-700 font-semibold' : remainingVideos < 0 ? 'text-rose-700 font-semibold' : 'text-slate-600'}>
+                <span className="text-2xs text-ink-3 font-medium block">Chỉ tiêu video toàn phòng</span>
+                <div className="text-xl font-semibold text-ink mt-0.5 font-mono">{TOTAL_TARGET_VIDEOS.toLocaleString('vi-VN')} video</div>
+                <div className="flex items-center justify-between text-2xs text-ink-3 mt-1">
+                  <span>Đã giao: <strong className="text-ink-2 font-semibold font-mono">{totalAllocatedVideos.toLocaleString('vi-VN')}</strong></span>
+                  <span className={remainingVideos === 0 ? 'text-positive font-semibold' : remainingVideos < 0 ? 'text-critical font-semibold' : 'text-ink-2'}>
                     {remainingVideos === 0 ? '100% cân đối' : remainingVideos < 0 ? `Vượt +${Math.abs(remainingVideos)}` : `Còn ${remainingVideos}`}
                   </span>
                 </div>
-                <div className="w-full h-1.5 bg-slate-200 rounded-full mt-2 overflow-hidden">
+                <div className="w-full h-1.5 bg-sunken rounded-full mt-2 overflow-hidden">
                   <div 
-                    className={`data-bar h-full rounded-full ${totalAllocatedVideos > TOTAL_TARGET_VIDEOS ? 'bg-rose-500' : 'bg-slate-600'}`}
+                    className={`data-bar h-full rounded-full ${totalAllocatedVideos > TOTAL_TARGET_VIDEOS ? 'bg-critical' : 'bg-sunken'}`}
                     style={{ width: `${Math.min(100, (totalAllocatedVideos / TOTAL_TARGET_VIDEOS) * 100)}%` }}
                   />
                 </div>
               </div>
 
               <div>
-                <span className="text-2xs text-slate-500 font-medium block">Mục tiêu doanh số (GMV)</span>
-                <div className="text-xl font-semibold text-emerald-700 mt-0.5 font-mono">{totalTargetGmv.toLocaleString('vi-VN')} đ</div>
-                <div className="flex items-center justify-between text-2xs text-slate-500 mt-1">
-                  <span>Thực đạt: <strong className="text-slate-900 font-semibold font-mono">{(allocations.reduce((sum, a) => sum + (a.actualGmv || 0), 0) / 1000000000).toFixed(2)} tỷ</strong></span>
-                  <span className="text-emerald-700 font-semibold font-mono">
+                <span className="text-2xs text-ink-3 font-medium block">Mục tiêu doanh số (GMV)</span>
+                <div className="text-xl font-semibold text-positive mt-0.5 font-mono">{totalTargetGmv.toLocaleString('vi-VN')} đ</div>
+                <div className="flex items-center justify-between text-2xs text-ink-3 mt-1">
+                  <span>Thực đạt: <strong className="text-ink font-semibold font-mono">{(allocations.reduce((sum, a) => sum + (a.actualGmv || 0), 0) / 1000000000).toFixed(2)} tỷ</strong></span>
+                  <span className="text-positive font-semibold font-mono">
                     {totalTargetGmv > 0 ? Math.round((allocations.reduce((sum, a) => sum + (a.actualGmv || 0), 0) / totalTargetGmv) * 100) : 0}%
                   </span>
                 </div>
-                <div className="w-full h-1.5 bg-slate-200 rounded-full mt-2 overflow-hidden">
+                <div className="w-full h-1.5 bg-sunken rounded-full mt-2 overflow-hidden">
                   <div 
-                    className="data-bar h-full bg-emerald-500 rounded-full" 
+                    className="data-bar h-full bg-positive rounded-full" 
                     style={{ width: `${totalTargetGmv > 0 ? Math.min(100, (allocations.reduce((sum, a) => sum + (a.actualGmv || 0), 0) / totalTargetGmv) * 100) : 0}%` }} 
                   />
                 </div>
               </div>
 
               <div>
-                <span className="text-2xs text-slate-500 font-medium block">Quy mô & tải nhân sự</span>
-                <div className="text-xl font-semibold text-slate-900 mt-0.5 font-mono">{allocations.length} chuyên viên</div>
-                <div className="flex items-center justify-between text-2xs text-slate-500 mt-1">
+                <span className="text-2xs text-ink-3 font-medium block">Quy mô & tải nhân sự</span>
+                <div className="text-xl font-semibold text-ink mt-0.5 font-mono">{allocations.length} chuyên viên</div>
+                <div className="flex items-center justify-between text-2xs text-ink-3 mt-1">
                   <span>{allocations.filter(a => !a.isLagging).length} đạt tiến độ</span>
-                  <span className="text-rose-700 font-semibold">{allocations.filter(a => a.isLagging).length} cần hỗ trợ</span>
+                  <span className="text-critical font-semibold">{allocations.filter(a => a.isLagging).length} cần hỗ trợ</span>
                 </div>
-                <div className="w-full h-1.5 bg-slate-200 rounded-full mt-2 overflow-hidden">
+                <div className="w-full h-1.5 bg-sunken rounded-full mt-2 overflow-hidden">
                   <div 
-                    className="data-bar h-full bg-rose-500 rounded-full" 
+                    className="data-bar h-full bg-critical rounded-full" 
                     style={{ width: `${(allocations.filter(a => a.isLagging).length / allocations.length) * 100}%` }} 
                   />
                 </div>
@@ -820,11 +824,11 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
             {/* 4 TIER MASTER QUOTA CARDS */}
             <div className="pt-4">
               <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
-                  <LayersIcon className="w-3.5 h-3.5 text-blue-600" />
+                <span className="text-xs font-semibold text-ink flex items-center gap-1.5">
+                  <LayersIcon className="w-3.5 h-3.5 text-accent" />
                   Hạn mức chi tiết theo 4 bậc KOC / KOL ({currentPlan.tierQuotas.length} bậc)
                 </span>
-                <span className="text-2xs text-slate-500">
+                <span className="text-2xs text-ink-3">
                   Tổng 4 bậc = 100% trần ngân sách & số lượng video toàn phòng
                 </span>
               </div>
@@ -840,33 +844,33 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
 
                   const tierMeta = {
                     TIER_1_CELEB: {
-                      badgeBg: 'bg-rose-50 text-rose-700 border-rose-200',
+                      badgeBg: 'bg-critical-soft text-critical border-critical/20',
                       borderAccent: 'border-l-rose-500',
-                      barColor: 'bg-rose-500',
+                      barColor: 'bg-critical',
                       icon: Crown
                     },
                     TIER_2_MACRO: {
-                      badgeBg: 'bg-blue-50 text-blue-700 border-blue-200',
+                      badgeBg: 'bg-accent-soft text-accent border-accent/20',
                       borderAccent: 'border-l-blue-500',
-                      barColor: 'bg-blue-500',
+                      barColor: 'bg-accent',
                       icon: Award
                     },
                     TIER_3_MICRO: {
-                      badgeBg: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                      badgeBg: 'bg-positive-soft text-positive border-positive/20',
                       borderAccent: 'border-l-emerald-500',
-                      barColor: 'bg-emerald-500',
+                      barColor: 'bg-positive',
                       icon: Target
                     },
                     TIER_4_AFFILIATE: {
-                      badgeBg: 'bg-slate-100 text-slate-700 border-slate-200',
+                      badgeBg: 'bg-sunken text-ink-2 border-line',
                       borderAccent: 'border-l-slate-500',
-                      barColor: 'bg-slate-500',
+                      barColor: 'bg-sunken',
                       icon: Package
                     }
                   }[tier.tierId] || {
-                    badgeBg: 'bg-slate-100 text-slate-700 border-slate-200',
+                    badgeBg: 'bg-sunken text-ink-2 border-line',
                     borderAccent: 'border-l-slate-500',
-                    barColor: 'bg-slate-500',
+                    barColor: 'bg-sunken',
                     icon: Video
                   };
 
@@ -875,12 +879,12 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                   return (
                     <div 
                       key={tier.tierId}
-                      className={`bg-white border border-slate-200 border-l-4 ${tierMeta.borderAccent} rounded-xl p-4 flex flex-col justify-between hover:border-slate-300 shadow-2xs transition`}
+                      className={`bg-white border border-line border-l-4 ${tierMeta.borderAccent} rounded-xl p-4 flex flex-col justify-between hover:border-line-strong shadow-2xs transition`}
                     >
                       <div>
                         <div className="flex items-center justify-between gap-1 mb-2">
-                          <span className="text-xs font-semibold text-slate-900 flex items-center gap-1.5 truncate">
-                            <IconComp className="w-3.5 h-3.5 shrink-0 text-slate-500" />
+                          <span className="text-xs font-semibold text-ink flex items-center gap-1.5 truncate">
+                            <IconComp className="w-3.5 h-3.5 shrink-0 text-ink-3" />
                             <span className="truncate">{tier.tierName.split('—')[1]?.trim() || tier.tierName}</span>
                           </span>
                           <span className={`text-2xs font-mono px-2 py-0.5 rounded border shrink-0 font-semibold ${tierMeta.badgeBg}`}>
@@ -891,58 +895,58 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                         {/* Ceiling Videos & Budget */}
                         <div className="space-y-1.5 mt-3">
                           <div className="flex items-baseline justify-between">
-                            <span className="text-2xs text-slate-500">Trần số lượng:</span>
-                            <span className="text-sm font-semibold text-slate-900 font-mono">{tier.targetVideos.toLocaleString('vi-VN')} clips</span>
+                            <span className="text-2xs text-ink-3">Trần số lượng:</span>
+                            <span className="text-sm font-semibold text-ink font-mono">{tier.targetVideos.toLocaleString('vi-VN')} clips</span>
                           </div>
 
                           <div className="flex items-baseline justify-between">
-                            <span className="text-2xs text-slate-500">Trần ngân sách:</span>
-                            <span className="text-xs font-semibold text-slate-700 font-mono">
+                            <span className="text-2xs text-ink-3">Trần ngân sách:</span>
+                            <span className="text-xs font-semibold text-ink-2 font-mono">
                               {(tier.totalBudget / 1000000).toLocaleString('vi-VN', { maximumFractionDigits: 1 })}M đ ({budgetShare}%)
                             </span>
                           </div>
 
-                          <div className="flex items-baseline justify-between text-2xs text-slate-500">
+                          <div className="flex items-baseline justify-between text-2xs text-ink-3">
                             <span>Đơn giá TB:</span>
-                            <span className="font-mono text-slate-700">
+                            <span className="font-mono text-ink-2">
                               ~{(tier.avgCostPerVideo / 1000000).toLocaleString('vi-VN', { maximumFractionDigits: 2 })}M / clip
                             </span>
                           </div>
                         </div>
 
-                        <p className="text-2xs text-slate-500 mt-2.5 line-clamp-2 leading-relaxed">
+                        <p className="text-2xs text-ink-3 mt-2.5 line-clamp-2 leading-relaxed">
                           {tier.description}
                         </p>
                       </div>
 
                       {/* Allocation Balance Tracker */}
-                      <div className="mt-4 pt-3 border-t border-slate-100">
+                      <div className="mt-4 pt-3 border-t border-line">
                         <div className="flex items-center justify-between text-2xs mb-1">
-                          <span className="text-slate-500">Đã giao cho NV:</span>
-                          <span className="font-mono font-semibold text-slate-900">
+                          <span className="text-ink-3">Đã giao cho NV:</span>
+                          <span className="font-mono font-semibold text-ink">
                             {allocatedVideos} / {tier.targetVideos}
                           </span>
                         </div>
 
-                        <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                        <div className="w-full h-1.5 bg-sunken rounded-full overflow-hidden">
                           <div 
-                            className={`data-bar h-full rounded-full ${isOver ? 'bg-rose-500' : isBalanced ? 'bg-emerald-500' : tierMeta.barColor}`}
+                            className={`data-bar h-full rounded-full ${isOver ? 'bg-critical' : isBalanced ? 'bg-positive' : tierMeta.barColor}`}
                             style={{ width: `${Math.min(100, pctAllocated)}%` }}
                           />
                         </div>
 
                         <div className="flex items-center justify-between mt-2 text-2xs">
-                          <span className="text-slate-500 font-mono">{pctAllocated}% trần</span>
+                          <span className="text-ink-3 font-mono">{pctAllocated}% trần</span>
                           {isBalanced ? (
-                            <span className="text-emerald-700 font-semibold flex items-center gap-1">
+                            <span className="text-positive font-semibold flex items-center gap-1">
                               <Check className="w-3 h-3" /> Cân đối 100%
                             </span>
                           ) : isOver ? (
-                            <span className="text-rose-700 font-semibold flex items-center gap-0.5">
+                            <span className="text-critical font-semibold flex items-center gap-0.5">
                               <AlertTriangle className="w-3 h-3" /> Vượt trần +{diff}
                             </span>
                           ) : (
-                            <span className="text-blue-700 font-medium">
+                            <span className="text-accent font-medium">
                               Còn trống {Math.abs(diff)} clips
                             </span>
                           )}
@@ -958,13 +962,13 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
           {/* Search & Filter Controls */}
           <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 text-xs">
             <div className="flex items-center gap-2 flex-1 max-w-md">
-              <Search className="w-4 h-4 text-slate-400 shrink-0" />
+              <Search className="w-4 h-4 text-ink-3 shrink-0" />
               <input
                 type="text"
                 placeholder="Tìm theo tên nhân sự hoặc nhãn hàng phụ trách..."
                 value={staffSearch}
                 onChange={(e) => setStaffSearch(e.target.value)}
-                className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-blue-500 shadow-2xs"
+                className="w-full bg-white border border-line rounded-lg px-3 py-1.5 text-xs text-ink focus:outline-none focus:border-accent/20 shadow-2xs"
               />
             </div>
 
@@ -972,7 +976,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
               <button
                 onClick={() => setAllocationFilter('ALL')}
                 className={`px-3 py-1.5 rounded-lg font-medium transition ${
-                  allocationFilter === 'ALL' ? 'bg-blue-600 text-white' : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200 hover:bg-slate-50'
+                  allocationFilter === 'ALL' ? 'bg-accent text-white' : 'bg-white text-ink-2 hover:text-ink border border-line hover:bg-canvas'
                 }`}
               >
                 Tất cả ({allocations.length})
@@ -980,7 +984,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
               <button
                 onClick={() => setAllocationFilter('LAGGING')}
                 className={`px-3 py-1.5 rounded-lg font-medium transition ${
-                  allocationFilter === 'LAGGING' ? 'bg-rose-600 text-white' : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200 hover:bg-slate-50'
+                  allocationFilter === 'LAGGING' ? 'bg-critical text-white' : 'bg-white text-ink-2 hover:text-ink border border-line hover:bg-canvas'
                 }`}
               >
                 Chậm tiến độ (&lt;50%)
@@ -988,7 +992,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
               <button
                 onClick={() => setAllocationFilter('GOOD')}
                 className={`px-3 py-1.5 rounded-lg font-medium transition ${
-                  allocationFilter === 'GOOD' ? 'bg-emerald-600 text-white' : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200 hover:bg-slate-50'
+                  allocationFilter === 'GOOD' ? 'bg-positive text-white' : 'bg-white text-ink-2 hover:text-ink border border-line hover:bg-canvas'
                 }`}
               >
                 Tiến độ tốt (&gt;=80%)
@@ -998,26 +1002,26 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
 
           {/* CẤP 2: BẢNG MA TRẬN PHÂN BỔ ĐA CHIỀU XUỐNG 26 NHÂN SỰ & GIÁM SÁT PLAN */}
           <div className="card-enterprise overflow-hidden">
-            <div className="px-5 py-3 border-b border-slate-200 bg-slate-50 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+            <div className="px-5 py-3 border-b border-line bg-canvas flex flex-col lg:flex-row lg:items-center justify-between gap-3">
               <div>
-                <h4 className="text-xs font-semibold text-slate-900 flex items-center gap-2">
-                  <Table className="w-4 h-4 text-blue-600" />
+                <h4 className="text-xs font-semibold text-ink flex items-center gap-2">
+                  <Table className="w-4 h-4 text-accent" />
                   <span>Cấp 2: Ma trận phân bổ chỉ tiêu & giám sát plan 26 chuyên viên</span>
-                  <span className="text-2xs font-normal text-slate-500 font-mono">({currentPlan.monthLabel})</span>
+                  <span className="text-2xs font-normal text-ink-3 font-mono">({currentPlan.monthLabel})</span>
                 </h4>
-                <p className="text-2xs text-slate-500 mt-0.5">
+                <p className="text-2xs text-ink-3 mt-0.5">
                   Chuyển đổi giữa 3 ma trận: 4 bậc KOC, nhãn hàng, hoặc tuần lên sóng • Bấm &ldquo;Soi Plan&rdquo; để xem và duyệt danh sách KOC chi tiết
                 </p>
               </div>
 
               <div className="flex items-center gap-2 flex-wrap self-start lg:self-auto">
                 {/* Matrix Mode Switcher */}
-                <div className="flex items-center gap-1 bg-slate-100 border border-slate-200 rounded-lg p-1 text-xs">
+                <div className="flex items-center gap-1 bg-sunken border border-line rounded-lg p-1 text-xs">
                   <button
                     type="button"
                     onClick={() => setMatrixViewMode('4_TIER')}
                     className={`px-2.5 py-1 rounded font-semibold text-2xs transition flex items-center gap-1.5 ${
-                      matrixViewMode === '4_TIER' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                      matrixViewMode === '4_TIER' ? 'bg-accent text-white shadow-sm' : 'text-ink-2 hover:text-ink'
                     }`}
                   >
                     <LayersIcon className="w-3.5 h-3.5" />
@@ -1027,7 +1031,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                     type="button"
                     onClick={() => setMatrixViewMode('BRANDS')}
                     className={`px-2.5 py-1 rounded font-semibold text-2xs transition flex items-center gap-1.5 ${
-                      matrixViewMode === 'BRANDS' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                      matrixViewMode === 'BRANDS' ? 'bg-accent text-white shadow-sm' : 'text-ink-2 hover:text-ink'
                     }`}
                   >
                     <Store className="w-3.5 h-3.5" />
@@ -1037,7 +1041,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                     type="button"
                     onClick={() => setMatrixViewMode('WEEKS')}
                     className={`px-2.5 py-1 rounded font-semibold text-2xs transition flex items-center gap-1.5 ${
-                      matrixViewMode === 'WEEKS' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                      matrixViewMode === 'WEEKS' ? 'bg-accent text-white shadow-sm' : 'text-ink-2 hover:text-ink'
                     }`}
                   >
                     <CalendarDays className="w-3.5 h-3.5" />
@@ -1045,7 +1049,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                   </button>
                 </div>
 
-                <span className="badge-blue px-2.5 py-1 rounded-full text-2xs font-semibold">
+                <span className="badge-blue .5 text-2xs font-semibold">
                   {allocations.filter((staff) => {
                     const matchesSearch = staffSearch === '' || 
                       staff.staffName.toLowerCase().includes(staffSearch.toLowerCase()) ||
@@ -1062,27 +1066,27 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
-                  <tr className="table-header-enterprise bg-slate-50">
-                    <th className="p-3 pl-5 text-slate-700 font-semibold min-w-[170px] sticky left-0 z-20 bg-slate-50 border-r border-slate-200 shadow-[2px_0_5px_rgba(0,0,0,0.04)]">
+                  <tr className="table-header-enterprise bg-canvas">
+                    <th className="p-3 pl-5 text-ink-2 font-semibold min-w-[170px] sticky left-0 z-20 bg-canvas border-r border-line shadow-[2px_0_5px_rgba(0,0,0,0.04)]">
                       Nhân sự & vị trí
                     </th>
                     {matrixViewMode !== 'BRANDS' && (
-                      <th className="p-3 text-slate-700 font-semibold min-w-[140px]">Nhãn hàng phụ trách</th>
+                      <th className="p-3 text-ink-2 font-semibold min-w-[140px]">Nhãn hàng phụ trách</th>
                     )}
                     
                     {/* DYNAMIC MATRIX COLUMNS */}
                     {matrixViewMode === '4_TIER' && (
                       <>
-                        <th className="p-3 text-center text-rose-700 font-semibold">T1 Celeb (KL7)</th>
-                        <th className="p-3 text-center text-blue-700 font-semibold">T2 Macro (KL6)</th>
-                        <th className="p-3 text-center text-emerald-700 font-semibold">T3 Micro (KL4-5)</th>
-                        <th className="p-3 text-center text-slate-700 font-semibold">T4 Nano (KL1-3)</th>
+                        <th className="p-3 text-center text-critical font-semibold">T1 Celeb (KL7)</th>
+                        <th className="p-3 text-center text-accent font-semibold">T2 Macro (KL6)</th>
+                        <th className="p-3 text-center text-positive font-semibold">T3 Micro (KL4-5)</th>
+                        <th className="p-3 text-center text-ink-2 font-semibold">T4 Nano (KL1-3)</th>
                       </>
                     )}
 
                     {matrixViewMode === 'BRANDS' && (
                       MATRIX_BRANDS.map(brand => (
-                        <th key={brand} className="p-3 text-center text-slate-700 font-semibold">
+                        <th key={brand} className="p-3 text-center text-ink-2 font-semibold">
                           {brand}
                         </th>
                       ))
@@ -1090,23 +1094,23 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
 
                     {matrixViewMode === 'WEEKS' && (
                       MATRIX_WEEKS.map(week => (
-                        <th key={week} className="p-3 text-center text-slate-700 font-semibold">
+                        <th key={week} className="p-3 text-center text-ink-2 font-semibold">
                           Tuần {week}
                         </th>
                       ))
                     )}
 
-                    <th className="p-3 text-right text-slate-700 font-semibold">Tổng video</th>
-                    <th className="p-3 text-right text-slate-700 font-semibold">Ngân sách giao</th>
-                    <th className="p-3 text-right text-slate-700 font-semibold">Mục tiêu GMV</th>
-                    <th className="p-3 text-center text-slate-700 font-semibold min-w-[150px]">
+                    <th className="p-3 text-right text-ink-2 font-semibold">Tổng video</th>
+                    <th className="p-3 text-right text-ink-2 font-semibold">Ngân sách giao</th>
+                    <th className="p-3 text-right text-ink-2 font-semibold">Mục tiêu GMV</th>
+                    <th className="p-3 text-center text-ink-2 font-semibold min-w-[150px]">
                       <span>Plan nhân viên</span>
-                      <span className="block text-2xs text-slate-500 font-normal">Độ lấp đầy & duyệt</span>
+                      <span className="block text-2xs text-ink-3 font-normal">Độ lấp đầy & duyệt</span>
                     </th>
-                    <th className="p-3 pr-5 text-right text-slate-700 font-semibold min-w-[130px]">Thao tác</th>
+                    <th className="p-3 pr-5 text-right text-ink-2 font-semibold min-w-[130px]">Thao tác</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-200">
+                <tbody className="divide-y divide-line">
                   {allocations.filter((staff) => {
                     const matchesSearch = staffSearch === '' || 
                       staff.staffName.toLowerCase().includes(staffSearch.toLowerCase()) ||
@@ -1124,13 +1128,13 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                     const isFullyApproved = staffPlanItems.length > 0 && staffPlanItems.every(p => p.status === 'APPROVED' || p.status === 'CONVERTED');
 
                     return (
-                      <tr key={staff.id} className="table-row-enterprise hover:bg-slate-50 transition-colors group">
+                      <tr key={staff.id} className="table-row-enterprise hover:bg-canvas transition-colors group">
                         {/* Name & Title */}
-                        <td className="p-3 pl-5 sticky left-0 z-10 bg-white group-hover:bg-slate-50 border-r border-slate-200 shadow-[2px_0_5px_rgba(0,0,0,0.04)] transition-colors">
-                          <div className="font-semibold text-slate-900 text-xs">{staff.staffName}</div>
-                          <div className="text-2xs text-slate-500 mt-0.5">{staff.roleTitle}</div>
+                        <td className="p-3 pl-5 sticky left-0 z-10 bg-white group-hover:bg-canvas border-r border-line shadow-[2px_0_5px_rgba(0,0,0,0.04)] transition-colors">
+                          <div className="font-semibold text-ink text-xs">{staff.staffName}</div>
+                          <div className="text-2xs text-ink-3 mt-0.5">{staff.roleTitle}</div>
                           {staff.isLagging && (
-                            <span className="inline-block mt-1 px-1.5 py-0.2 bg-rose-50 border border-rose-200 text-rose-700 text-2xs rounded font-medium">
+                            <span className="inline-block mt-1 .5 py-0.2 -critical/20 text-critical text-2xs font-medium">
                               Chậm tiến độ
                             </span>
                           )}
@@ -1141,7 +1145,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                           <td className="p-3">
                             <div className="flex flex-wrap gap-1 max-w-[170px]">
                               {staff.assignedBrands.map(b => (
-                                <span key={b} className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 text-2xs font-medium border border-slate-200">
+                                <span key={b} className=".5 text-ink-2 text-2xs font-medium -line">
                                   {b}
                                 </span>
                               ))}
@@ -1154,27 +1158,27 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                           <>
                             <td className="p-3 text-center font-mono">
                               <span className={`px-2 py-0.5 rounded text-2xs font-semibold border ${
-                                (staff.tier1Videos || 0) > 0 ? 'bg-rose-50 text-rose-700 border-rose-200' : 'text-slate-400 bg-slate-50 border-slate-200'
+                                (staff.tier1Videos || 0) > 0 ? 'bg-critical-soft text-critical border-critical/20' : 'text-ink-3 bg-canvas border-line'
                               }`}>
                                 {staff.tier1Videos || 0}
                               </span>
                             </td>
                             <td className="p-3 text-center font-mono">
                               <span className={`px-2 py-0.5 rounded text-2xs font-semibold border ${
-                                (staff.tier2Videos || 0) > 0 ? 'bg-blue-50 text-blue-700 border-blue-200' : 'text-slate-400 bg-slate-50 border-slate-200'
+                                (staff.tier2Videos || 0) > 0 ? 'bg-accent-soft text-accent border-accent/20' : 'text-ink-3 bg-canvas border-line'
                               }`}>
                                 {staff.tier2Videos || 0}
                               </span>
                             </td>
                             <td className="p-3 text-center font-mono">
                               <span className={`px-2 py-0.5 rounded text-2xs font-semibold border ${
-                                (staff.tier3Videos || 0) > 0 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'text-slate-400 bg-slate-50 border-slate-200'
+                                (staff.tier3Videos || 0) > 0 ? 'bg-positive-soft text-positive border-positive/20' : 'text-ink-3 bg-canvas border-line'
                               }`}>
                                 {staff.tier3Videos || 0}
                               </span>
                             </td>
                             <td className="p-3 text-center font-mono">
-                              <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+                              <span className="text-2xs font-semibold text-ink-2 -line">
                                 {staff.tier4Videos ?? staff.planVideos}
                               </span>
                             </td>
@@ -1188,11 +1192,11 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                             return (
                               <td key={brand} className="p-3 text-center font-mono">
                                 {isAssigned ? (
-                                  <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                                  <span className="text-2xs font-semibold text-accent -accent/20">
                                     {brandItemsCount > 0 ? `${brandItemsCount} clips` : 'Phụ trách'}
                                   </span>
                                 ) : (
-                                  <span className="text-slate-400 text-2xs">—</span>
+                                  <span className="text-ink-3 text-2xs">—</span>
                                 )}
                               </td>
                             );
@@ -1205,7 +1209,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                             return (
                               <td key={week} className="p-3 text-center font-mono">
                                 <span className={`px-2 py-0.5 rounded text-2xs font-semibold border ${
-                                  weekCount > 0 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'text-slate-400 bg-slate-50 border-slate-200'
+                                  weekCount > 0 ? 'bg-positive-soft text-positive border-positive/20' : 'text-ink-3 bg-canvas border-line'
                                 }`}>
                                   {weekCount} clips
                                 </span>
@@ -1216,9 +1220,9 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
 
                         {/* Tổng Video */}
                         <td className="p-3 text-right">
-                          <div className="font-semibold text-slate-900 font-mono">{staff.reportVideos} / {staff.planVideos}</div>
-                          <div className="text-2xs text-slate-500 mt-0.5">
-                            Đạt <strong className={staff.airProgress >= 80 ? 'text-emerald-700' : staff.airProgress < 50 ? 'text-rose-700' : 'text-amber-700'}>
+                          <div className="font-semibold text-ink font-mono">{staff.reportVideos} / {staff.planVideos}</div>
+                          <div className="text-2xs text-ink-3 mt-0.5">
+                            Đạt <strong className={staff.airProgress >= 80 ? 'text-positive' : staff.airProgress < 50 ? 'text-critical' : 'text-warning'}>
                               {staff.airProgress}%
                             </strong>
                           </div>
@@ -1226,20 +1230,20 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
 
                         {/* Ngân Sách */}
                         <td className="p-3 text-right">
-                          <div className="font-semibold text-blue-700 font-mono">
+                          <div className="font-semibold text-accent font-mono">
                             {staff.planBudget.toLocaleString('vi-VN')} đ
                           </div>
-                          <div className="text-2xs text-slate-500 mt-0.5">
+                          <div className="text-2xs text-ink-3 mt-0.5">
                             Đã chi: {formatVndShort(staff.reportBudget)}
                           </div>
                         </td>
 
                         {/* GMV */}
                         <td className="p-3 text-right">
-                          <div className="font-semibold text-emerald-700 font-mono">
+                          <div className="font-semibold text-positive font-mono">
                             {staff.targetGmv.toLocaleString('vi-VN')} đ
                           </div>
-                          <div className="text-2xs text-slate-500 mt-0.5">
+                          <div className="text-2xs text-ink-3 mt-0.5">
                             Đạt: {formatVndShort(staff.actualGmv)}
                           </div>
                         </td>
@@ -1247,20 +1251,20 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                         {/* Plan Nhân Viên (Fill Rate) */}
                         <td className="p-3 text-center">
                           <div className="flex flex-col items-center gap-1">
-                            <span className="font-semibold text-slate-900 font-mono text-2xs">
+                            <span className="font-semibold text-ink font-mono text-2xs">
                               {plannedCount}/{staff.planVideos} clips ({fillPct}%)
                             </span>
-                            <div className="w-20 bg-slate-200 h-1.5 rounded-full overflow-hidden">
+                            <div className="w-20 bg-sunken h-1.5 rounded-full overflow-hidden">
                               <div 
-                                className={`data-bar h-full ${fillPct >= 90 ? 'bg-emerald-500' : fillPct > 50 ? 'bg-amber-500' : 'bg-slate-500'}`}
+                                className={`data-bar h-full ${fillPct >= 90 ? 'bg-positive' : fillPct > 50 ? 'bg-warning' : 'bg-sunken'}`}
                                 style={{ width: `${Math.min(100, fillPct)}%` }}
                               />
                             </div>
                             <span className={`text-2xs font-semibold px-1.5 py-0.2 rounded border ${
-                              hasSubmitted ? 'bg-amber-50 text-amber-700 border-amber-200' :
-                              isFullyApproved ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-                              hasRevision ? 'bg-rose-50 text-rose-700 border-rose-200' :
-                              'bg-slate-100 text-slate-600 border-slate-200'
+                              hasSubmitted ? 'bg-warning-soft text-warning border-warning/20' :
+                              isFullyApproved ? 'bg-positive-soft text-positive border-positive/20' :
+                              hasRevision ? 'bg-critical-soft text-critical border-critical/20' :
+                              'bg-sunken text-ink-2 border-line'
                             }`}>
                               {hasSubmitted ? 'Chờ duyệt' :
                                isFullyApproved ? 'Đã duyệt' :
@@ -1275,7 +1279,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                             <button
                               onClick={() => setInspectingStaffAllocation(staff)}
                               title="Soi chi tiết toàn bộ danh sách KOC do nhân viên này lập và duyệt plan"
-                              className="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded text-xs font-semibold transition flex items-center gap-1"
+                              className="px-2.5 py-1 bg-accent-soft hover:bg-accent-soft text-accent border border-accent/20 rounded text-xs font-semibold transition flex items-center gap-1"
                             >
                               <Eye className="w-3.5 h-3.5" />
                               <span>Soi Plan</span>
@@ -1284,7 +1288,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                               <button
                                 onClick={() => handleOpenEditAlloc(staff)}
                                 title="Chỉnh sửa hạn mức phân bổ theo bậc"
-                                className="px-2 py-1 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded text-xs font-medium transition flex items-center gap-1"
+                                className="px-2 py-1 bg-white hover:bg-sunken text-ink-2 border border-line rounded text-xs font-medium transition flex items-center gap-1"
                               >
                                 <Edit3 className="w-3 h-3" />
                                 <span>Sửa</span>
@@ -1300,26 +1304,26 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                 {/* ========================================================================= */}
                 {/* FOOTER: BẢNG ĐỐI SOÁT MA TRẬN VÀ TRẦN PLAN TỔNG                          */}
                 {/* ========================================================================= */}
-                <tfoot className="border-t-2 border-slate-300 font-mono text-xs">
+                <tfoot className="border-t-2 border-line-strong font-mono text-xs">
                   {/* Row 1: Tổng Phân Bổ Toàn Bộ Nhân Sự */}
-                  <tr className="bg-slate-100 font-semibold text-slate-900">
-                    <td className="p-3 pl-5 sticky left-0 z-10 bg-slate-100 border-r border-slate-200 shadow-[2px_0_5px_rgba(0,0,0,0.04)]">
-                      <span className="text-slate-900 text-2xs">Tổng phân bổ (26 nhân sự)</span>
+                  <tr className="bg-sunken font-semibold text-ink">
+                    <td className="p-3 pl-5 sticky left-0 z-10 bg-sunken border-r border-line shadow-[2px_0_5px_rgba(0,0,0,0.04)]">
+                      <span className="text-ink text-2xs">Tổng phân bổ (26 nhân sự)</span>
                     </td>
-                    {matrixViewMode !== 'BRANDS' && <td className="p-3 text-slate-600">Toàn bộ nhãn hàng</td>}
+                    {matrixViewMode !== 'BRANDS' && <td className="p-3 text-ink-2">Toàn bộ nhãn hàng</td>}
 
                     {matrixViewMode === '4_TIER' && (
                       <>
-                        <td className="p-3 text-center text-rose-700 font-semibold">{teamTierAllocated.TIER_1_CELEB} clips</td>
-                        <td className="p-3 text-center text-blue-700 font-semibold">{teamTierAllocated.TIER_2_MACRO} clips</td>
-                        <td className="p-3 text-center text-emerald-700 font-semibold">{teamTierAllocated.TIER_3_MICRO} clips</td>
-                        <td className="p-3 text-center text-slate-700 font-semibold">{teamTierAllocated.TIER_4_AFFILIATE} clips</td>
+                        <td className="p-3 text-center text-critical font-semibold">{teamTierAllocated.TIER_1_CELEB} clips</td>
+                        <td className="p-3 text-center text-accent font-semibold">{teamTierAllocated.TIER_2_MACRO} clips</td>
+                        <td className="p-3 text-center text-positive font-semibold">{teamTierAllocated.TIER_3_MICRO} clips</td>
+                        <td className="p-3 text-center text-ink-2 font-semibold">{teamTierAllocated.TIER_4_AFFILIATE} clips</td>
                       </>
                     )}
 
                     {matrixViewMode === 'BRANDS' && (
                       MATRIX_BRANDS.map(b => (
-                        <td key={b} className="p-3 text-center text-slate-700">
+                        <td key={b} className="p-3 text-center text-ink-2">
                           {allocations.filter(s => s.assignedBrands.some(ab => ab.toLowerCase().includes(b.toLowerCase()))).length} P.Trách
                         </td>
                       ))
@@ -1327,60 +1331,60 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
 
                     {matrixViewMode === 'WEEKS' && (
                       MATRIX_WEEKS.map(w => (
-                        <td key={w} className="p-3 text-center text-emerald-700 font-semibold">
+                        <td key={w} className="p-3 text-center text-positive font-semibold">
                           {localPlanItems.filter(p => p.targetWeek === w).length} clips
                         </td>
                       ))
                     )}
 
-                    <td className="p-3 text-right text-slate-900 font-semibold">{totalAllocatedVideos} clips</td>
-                    <td className="p-3 text-right text-blue-700 font-semibold">{formatVndShort(totalAllocatedBudget)}</td>
-                    <td className="p-3 text-right text-emerald-700 font-semibold">{formatVndShort(totalTargetGmv)}</td>
-                    <td className="p-3 text-center text-slate-700">{localPlanItems.length} clips đã lập</td>
-                    <td className="p-3 pr-5 text-right text-slate-400">—</td>
+                    <td className="p-3 text-right text-ink font-semibold">{totalAllocatedVideos} clips</td>
+                    <td className="p-3 text-right text-accent font-semibold">{formatVndShort(totalAllocatedBudget)}</td>
+                    <td className="p-3 text-right text-positive font-semibold">{formatVndShort(totalTargetGmv)}</td>
+                    <td className="p-3 text-center text-ink-2">{localPlanItems.length} clips đã lập</td>
+                    <td className="p-3 pr-5 text-right text-ink-3">—</td>
                   </tr>
 
                   {/* Row 2: Trần Kế Hoạch Tổng Của Trưởng Phòng */}
-                  <tr className="bg-slate-50 text-slate-700">
-                    <td className="p-3 pl-5 font-semibold text-slate-700 sticky left-0 z-10 bg-slate-50 border-r border-slate-200 shadow-[2px_0_5px_rgba(0,0,0,0.04)]">
+                  <tr className="bg-canvas text-ink-2">
+                    <td className="p-3 pl-5 font-semibold text-ink-2 sticky left-0 z-10 bg-canvas border-r border-line shadow-[2px_0_5px_rgba(0,0,0,0.04)]">
                       Trần kế hoạch tổng (Trưởng phòng)
                     </td>
-                    {matrixViewMode !== 'BRANDS' && <td className="p-3 text-slate-500">Định mức chốt</td>}
+                    {matrixViewMode !== 'BRANDS' && <td className="p-3 text-ink-3">Định mức chốt</td>}
 
                     {matrixViewMode === '4_TIER' && (
                       <>
-                        <td className="p-3 text-center text-rose-700 font-medium">{currentPlan.tierQuotas.find(t => t.tierId === 'TIER_1_CELEB')?.targetVideos || 0} trần</td>
-                        <td className="p-3 text-center text-blue-700 font-medium">{currentPlan.tierQuotas.find(t => t.tierId === 'TIER_2_MACRO')?.targetVideos || 0} trần</td>
-                        <td className="p-3 text-center text-emerald-700 font-medium">{currentPlan.tierQuotas.find(t => t.tierId === 'TIER_3_MICRO')?.targetVideos || 0} trần</td>
-                        <td className="p-3 text-center text-slate-700 font-medium">{currentPlan.tierQuotas.find(t => t.tierId === 'TIER_4_AFFILIATE')?.targetVideos || 0} trần</td>
+                        <td className="p-3 text-center text-critical font-medium">{currentPlan.tierQuotas.find(t => t.tierId === 'TIER_1_CELEB')?.targetVideos || 0} trần</td>
+                        <td className="p-3 text-center text-accent font-medium">{currentPlan.tierQuotas.find(t => t.tierId === 'TIER_2_MACRO')?.targetVideos || 0} trần</td>
+                        <td className="p-3 text-center text-positive font-medium">{currentPlan.tierQuotas.find(t => t.tierId === 'TIER_3_MICRO')?.targetVideos || 0} trần</td>
+                        <td className="p-3 text-center text-ink-2 font-medium">{currentPlan.tierQuotas.find(t => t.tierId === 'TIER_4_AFFILIATE')?.targetVideos || 0} trần</td>
                       </>
                     )}
 
                     {matrixViewMode === 'BRANDS' && (
                       MATRIX_BRANDS.map(b => (
-                        <td key={b} className="p-3 text-center text-slate-500">Chỉ tiêu</td>
+                        <td key={b} className="p-3 text-center text-ink-3">Chỉ tiêu</td>
                       ))
                     )}
 
                     {matrixViewMode === 'WEEKS' && (
                       MATRIX_WEEKS.map(w => (
-                        <td key={w} className="p-3 text-center text-slate-500">Kế hoạch tuần</td>
+                        <td key={w} className="p-3 text-center text-ink-3">Kế hoạch tuần</td>
                       ))
                     )}
 
-                    <td className="p-3 text-right text-slate-700">{TOTAL_TARGET_VIDEOS} clips</td>
-                    <td className="p-3 text-right text-blue-700">{formatVndShort(TOTAL_CEILING_BUDGET)}</td>
-                    <td className="p-3 text-right text-emerald-700">{formatVndShort(currentPlan.totalTargetGmv)}</td>
-                    <td className="p-3 text-center text-slate-600">100% mục tiêu</td>
-                    <td className="p-3 pr-5 text-right text-slate-400">—</td>
+                    <td className="p-3 text-right text-ink-2">{TOTAL_TARGET_VIDEOS} clips</td>
+                    <td className="p-3 text-right text-accent">{formatVndShort(TOTAL_CEILING_BUDGET)}</td>
+                    <td className="p-3 text-right text-positive">{formatVndShort(currentPlan.totalTargetGmv)}</td>
+                    <td className="p-3 text-center text-ink-2">100% mục tiêu</td>
+                    <td className="p-3 pr-5 text-right text-ink-3">—</td>
                   </tr>
 
                   {/* Row 3: Chênh lệch đối soát */}
-                  <tr className="bg-white font-semibold text-slate-900 border-t border-slate-200">
-                    <td className="p-3 pl-5 text-slate-800 sticky left-0 z-10 bg-white border-r border-slate-200 shadow-[2px_0_5px_rgba(0,0,0,0.04)]">
+                  <tr className="bg-white font-semibold text-ink border-t border-line">
+                    <td className="p-3 pl-5 text-ink sticky left-0 z-10 bg-white border-r border-line shadow-[2px_0_5px_rgba(0,0,0,0.04)]">
                       Chênh lệch đối soát
                     </td>
-                    {matrixViewMode !== 'BRANDS' && <td className="p-3 text-slate-500">—</td>}
+                    {matrixViewMode !== 'BRANDS' && <td className="p-3 text-ink-3">—</td>}
 
                     {matrixViewMode === '4_TIER' && (
                       <>
@@ -1394,9 +1398,9 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                           return (
                             <td key={t.key} className="p-3 text-center">
                               <span className={`px-2 py-0.5 rounded text-2xs font-semibold inline-block border ${
-                                diff === 0 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-                                diff > 0 ? 'bg-rose-50 text-rose-700 border-rose-200' :
-                                'bg-amber-50 text-amber-700 border-amber-200'
+                                diff === 0 ? 'bg-positive-soft text-positive border-positive/20' :
+                                diff > 0 ? 'bg-critical-soft text-critical border-critical/20' :
+                                'bg-warning-soft text-warning border-warning/20'
                               }`}>
                                 {diff === 0 ? '✓ Khớp' : diff > 0 ? `Vượt +${diff}` : `Trống ${Math.abs(diff)}`}
                               </span>
@@ -1411,7 +1415,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                         const count = allocations.filter(s => s.assignedBrands.some(ab => ab.toLowerCase().includes(b.toLowerCase()))).length;
                         return (
                           <td key={b} className="p-3 text-center">
-                            <span className="px-2 py-0.5 rounded text-2xs font-medium bg-blue-50 text-blue-700 border border-blue-200 inline-block">
+                            <span className="text-2xs font-medium text-accent -accent/20 inline-block">
                               ✓ {count} NV
                             </span>
                           </td>
@@ -1426,33 +1430,33 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                         return (
                           <td key={w} className="p-3 text-center">
                             <div className="flex flex-col items-center gap-0.5">
-                              <span className="px-1.5 py-0.2 rounded text-2xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+                              <span className=".5 py-0.2 text-2xs font-semibold text-ink-2 -line">
                                 {phaseLabel}
                               </span>
-                              <span className="text-2xs text-slate-600 font-mono">{count} clips</span>
+                              <span className="text-2xs text-ink-2 font-mono">{count} clips</span>
                             </div>
                           </td>
                         );
                       })
                     )}
 
-                    <td className={`p-3 text-right ${remainingVideos === 0 ? 'text-emerald-700' : remainingVideos > 0 ? 'text-amber-700' : 'text-rose-700'}`}>
+                    <td className={`p-3 text-right ${remainingVideos === 0 ? 'text-positive' : remainingVideos > 0 ? 'text-warning' : 'text-critical'}`}>
                       {remainingVideos === 0 ? '✓ Khớp trần' : remainingVideos > 0 ? `Còn ${remainingVideos} clips` : `Vượt ${Math.abs(remainingVideos)}`}
                     </td>
-                    <td className={`p-3 text-right ${remainingBudget === 0 ? 'text-emerald-700' : remainingBudget > 0 ? 'text-amber-700' : 'text-rose-700'}`}>
+                    <td className={`p-3 text-right ${remainingBudget === 0 ? 'text-positive' : remainingBudget > 0 ? 'text-warning' : 'text-critical'}`}>
                       {remainingBudget === 0 ? '✓ Khớp trần' : remainingBudget > 0 ? `Còn ${formatVndShort(remainingBudget)}` : `Vượt ${formatVndShort(Math.abs(remainingBudget))}`}
                     </td>
-                    <td className="p-3 text-right text-emerald-700">
+                    <td className="p-3 text-right text-positive">
                       {totalTargetGmv >= currentPlan.totalTargetGmv ? '✓ Đạt chỉ tiêu' : `Hụt ${formatVndShort((currentPlan.totalTargetGmv - totalTargetGmv))}`}
                     </td>
                     <td className="p-3 text-center">
                       <span className={`text-2xs font-semibold px-2 py-0.5 rounded border inline-block ${
-                        remainingBudget >= 0 && remainingVideos >= 0 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200'
+                        remainingBudget >= 0 && remainingVideos >= 0 ? 'bg-positive-soft text-positive border-positive/20' : 'bg-critical-soft text-critical border-critical/20'
                       }`}>
                         {remainingBudget >= 0 && remainingVideos >= 0 ? 'Hợp lệ trần' : 'Vượt định mức'}
                       </span>
                     </td>
-                    <td className="p-3 pr-5 text-right text-slate-500">—</td>
+                    <td className="p-3 pr-5 text-right text-ink-3">—</td>
                   </tr>
                 </tfoot>
               </table>
@@ -1474,34 +1478,34 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
         <div className="space-y-5">
           {/* Notification Toast Banner when pinging */}
           {pingSuccessStaff && (
-            <div className="p-3.5 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-xl flex items-center justify-between shadow-xs animate-in slide-in-from-top-2">
+            <div className="p-3.5 bg-positive-soft border border-positive/20 text-positive text-xs rounded-xl flex items-center justify-between shadow-xs animate-in slide-in-from-top-2">
               <div className="flex items-center gap-2 font-semibold">
-                <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+                <CheckCircle className="w-4 h-4 text-positive shrink-0" />
                 <span>{pingSuccessStaff}</span>
               </div>
-              <button onClick={() => setPingSuccessStaff(null)} className="text-emerald-600 hover:text-emerald-800 cursor-pointer">
+              <button onClick={() => setPingSuccessStaff(null)} className="text-positive hover:text-positive cursor-pointer">
                 <X className="w-4 h-4" />
               </button>
             </div>
           )}
 
           {/* Banner 1: Cửa Sổ Nghiệm Thu E2E & Quy Chuẩn Khóa Sổ */}
-          <div className="card-enterprise p-5 bg-amber-500/10 border-amber-300/80 shadow-xs space-y-4">
+          <div className="card-enterprise p-5 bg-warning/10 border-warning/20/80 shadow-xs space-y-4">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="w-8 h-8 rounded-lg bg-amber-500 text-white flex items-center justify-center font-semibold shadow-xs">
+                  <span className="w-8 h-8 rounded-lg bg-warning text-white flex items-center justify-center font-semibold shadow-xs">
                     <Timer className="w-4 h-4" />
                   </span>
                   <div>
-                    <h3 className="font-semibold text-slate-900 text-sm flex items-center gap-2">
+                    <h3 className="font-semibold text-ink text-sm flex items-center gap-2">
                       Cửa Sổ Nghiệm Thu Đối Soát E2E B2C — Tháng {currentPlan.monthLabel}
-                      <span className="px-2 py-0.5 rounded-full text-2xs font-semibold bg-amber-100 text-amber-800 border border-amber-300">
+                      <span className="text-2xs font-semibold text-warning -warning/20">
                         ● {reconWindow.phaseLabel}
                       </span>
                     </h3>
-                    <p className="text-xs text-slate-500 mt-0.5">
-                      Quy chế đối soát: Khung giờ mở sửa <strong className="text-slate-800">{reconWindow.windowOpenTime} - {reconWindow.windowCloseTime}</strong>.
+                    <p className="text-xs text-ink-3 mt-0.5">
+                      Quy chế đối soát: Khung giờ mở sửa <strong className="text-ink">{reconWindow.windowOpenTime} - {reconWindow.windowCloseTime}</strong>.
                       Sau mốc giờ quy định, hệ thống tự động khóa sổ vĩnh viễn mọi bản ghi.
                     </p>
                   </div>
@@ -1511,77 +1515,77 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
               {/* Status Badge */}
               <div className="flex items-center gap-2 shrink-0">
                 <div className="text-right">
-                  <div className="text-xs text-slate-500">Tiến độ sửa sai lệch Round 1</div>
-                  <div className="text-sm font-semibold text-amber-700">
+                  <div className="text-xs text-ink-3">Tiến độ sửa sai lệch Round 1</div>
+                  <div className="text-sm font-semibold text-warning">
                     {reconWindow.resolvedErrorsCount} / {reconWindow.totalErrorsReportedRound1} lỗi đã fix ({Math.round((reconWindow.resolvedErrorsCount / reconWindow.totalErrorsReportedRound1) * 100)}%)
                   </div>
                 </div>
-                <span className="px-3 py-1.5 rounded-xl font-semibold text-xs bg-amber-600 text-white shadow-2xs">
+                <span className=".5 -xl font-semibold text-xs bg-warning text-white shadow-2xs">
                   Còn {reconWindow.pendingErrorsCount} lỗi cần xử lý
                 </span>
               </div>
             </div>
 
             {/* 5-Step Visual E2E Reconciliation Roadmap */}
-            <div className="grid grid-cols-1 sm:grid-cols-5 gap-2 pt-2 border-t border-slate-200/80 text-xs">
-              <div className="p-2.5 rounded-lg bg-emerald-50 border border-emerald-200 flex flex-col justify-between">
+            <div className="grid grid-cols-1 sm:grid-cols-5 gap-2 pt-2 border-t border-line/80 text-xs">
+              <div className="p-2.5 rounded-lg bg-positive-soft border border-positive/20 flex flex-col justify-between">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="font-semibold text-emerald-800 text-2xs">1. MÙNG 2</span>
-                  <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
+                  <span className="font-semibold text-positive text-2xs">1. MÙNG 2</span>
+                  <CheckCircle className="w-3.5 h-3.5 text-positive" />
                 </div>
-                <p className="text-2xs text-emerald-700">Chốt số & đóng băng số liệu tạm tính</p>
-                <span className="text-2xs text-emerald-600 font-semibold mt-1">Đã hoàn thành</span>
+                <p className="text-2xs text-positive">Chốt số & đóng băng số liệu tạm tính</p>
+                <span className="text-2xs text-positive font-semibold mt-1">Đã hoàn thành</span>
               </div>
 
-              <div className="p-2.5 rounded-lg bg-emerald-50 border border-emerald-200 flex flex-col justify-between">
+              <div className="p-2.5 rounded-lg bg-positive-soft border border-positive/20 flex flex-col justify-between">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="font-semibold text-emerald-800 text-2xs">2. WD04</span>
-                  <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
+                  <span className="font-semibold text-positive text-2xs">2. WD04</span>
+                  <CheckCircle className="w-3.5 h-3.5 text-positive" />
                 </div>
-                <p className="text-2xs text-emerald-700">Kế toán gửi báo cáo Sai lệch Round 1 (14 lỗi)</p>
-                <span className="text-2xs text-emerald-600 font-semibold mt-1">Đã gửi báo cáo</span>
+                <p className="text-2xs text-positive">Kế toán gửi báo cáo Sai lệch Round 1 (14 lỗi)</p>
+                <span className="text-2xs text-positive font-semibold mt-1">Đã gửi báo cáo</span>
               </div>
 
-              <div className="p-2.5 rounded-lg bg-amber-100 border-2 border-amber-400 shadow-xs flex flex-col justify-between relative overflow-hidden">
+              <div className="p-2.5 rounded-lg bg-warning-soft border-2 border-warning/20 shadow-xs flex flex-col justify-between relative overflow-hidden">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="font-semibold text-amber-900 text-2xs">3. WD05 (HÔM NAY)</span>
-                  <span className="w-2 h-2 rounded-full bg-amber-600" />
+                  <span className="font-semibold text-warning text-2xs">3. WD05 (HÔM NAY)</span>
+                  <span className="w-2 h-2 rounded-full bg-warning" />
                 </div>
-                <p className="text-2xs text-amber-900 font-medium">Mở sửa (09:00 - 17:00), khóa cứng 17:30</p>
-                <span className="text-2xs text-amber-800 font-semibold mt-1">Đang mở cửa sổ</span>
+                <p className="text-2xs text-warning font-medium">Mở sửa (09:00 - 17:00), khóa cứng 17:30</p>
+                <span className="text-2xs text-warning font-semibold mt-1">Đang mở cửa sổ</span>
               </div>
 
-              <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200 flex flex-col justify-between opacity-80">
+              <div className="p-2.5 rounded-lg bg-canvas border border-line flex flex-col justify-between opacity-80">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="font-semibold text-slate-700 text-2xs">4. WD10</span>
-                  <Clock className="w-3.5 h-3.5 text-slate-400" />
+                  <span className="font-semibold text-ink-2 text-2xs">4. WD10</span>
+                  <Clock className="w-3.5 h-3.5 text-ink-3" />
                 </div>
-                <p className="text-2xs text-slate-600">Kế toán đối soát & báo cáo Sai lệch Round 2</p>
-                <span className="text-2xs text-slate-400 font-medium mt-1">Dự kiến: 29/09</span>
+                <p className="text-2xs text-ink-2">Kế toán đối soát & báo cáo Sai lệch Round 2</p>
+                <span className="text-2xs text-ink-3 font-medium mt-1">Dự kiến: 29/09</span>
               </div>
 
-              <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200 flex flex-col justify-between opacity-80">
+              <div className="p-2.5 rounded-lg bg-canvas border border-line flex flex-col justify-between opacity-80">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="font-semibold text-slate-700 text-2xs">5. WD11</span>
-                  <Lock className="w-3.5 h-3.5 text-slate-400" />
+                  <span className="font-semibold text-ink-2 text-2xs">5. WD11</span>
+                  <Lock className="w-3.5 h-3.5 text-ink-3" />
                 </div>
-                <p className="text-2xs text-slate-600">Mở sửa cuối (09:00 - 17:00), khóa vĩnh viễn 17:30</p>
-                <span className="text-2xs text-slate-400 font-medium mt-1">Chốt nghiệm thu cuối</span>
+                <p className="text-2xs text-ink-2">Mở sửa cuối (09:00 - 17:00), khóa vĩnh viễn 17:30</p>
+                <span className="text-2xs text-ink-3 font-medium mt-1">Chốt nghiệm thu cuối</span>
               </div>
             </div>
           </div>
 
           {/* Banner 2: Quyết định Điều phối & Giải tỏa Điểm nghẽn Vận hành (Operational Unblocking) */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div className="card-enterprise p-4 bg-white border border-slate-200 shadow-xs flex items-center justify-between gap-4">
+            <div className="card-enterprise p-4 bg-white border border-line shadow-xs flex items-center justify-between gap-4">
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
-                  <span className="px-2 py-0.5 rounded text-2xs font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                  <span className="text-2xs font-semibold text-warning -warning/20">
                     Nghẽn nghiệm thu mã Spark Ads
                   </span>
-                  <span className="text-xs font-bold text-slate-900">Cụm gian pHCare (50.000.000 đ)</span>
+                  <span className="text-xs font-semibold text-ink">Cụm gian pHCare (50.000.000 đ)</span>
                 </div>
-                <p className="text-xs text-slate-600">
+                <p className="text-xs text-ink-2">
                   KOC đã lên video nhưng treo nghiệm thu do thiếu xác nhận mã ủy quyền Spark Ads từ Trưởng phòng.
                 </p>
               </div>
@@ -1590,8 +1594,8 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                 disabled={isAdsCodeResolved}
                 className={`px-3.5 py-2 rounded-lg text-xs font-semibold transition inline-flex items-center gap-1.5 shrink-0 cursor-pointer ${
                   isAdsCodeResolved
-                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                    : 'bg-amber-600 hover:bg-amber-700 text-white shadow-xs'
+                    ? 'bg-positive-soft text-positive border border-positive/20'
+                    : 'bg-warning hover:bg-warning text-white shadow-xs'
                 }`}
               >
                 <Zap className="w-3.5 h-3.5" />
@@ -1599,15 +1603,15 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
               </button>
             </div>
 
-            <div className="card-enterprise p-4 bg-white border border-slate-200 shadow-xs flex items-center justify-between gap-4">
+            <div className="card-enterprise p-4 bg-white border border-line shadow-xs flex items-center justify-between gap-4">
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
-                  <span className="px-2 py-0.5 rounded text-2xs font-bold bg-blue-50 text-blue-800 border border-blue-200">
+                  <span className="text-2xs font-semibold text-accent -accent/20">
                     Thiếu tải nhân sự Booking
                   </span>
-                  <span className="text-xs font-bold text-slate-900">Cụm EUPC / G.G.G / Rejuran (164.6M)</span>
+                  <span className="text-xs font-semibold text-ink">Cụm EUPC / G.G.G / Rejuran (164.6M)</span>
                 </div>
-                <p className="text-xs text-slate-600">
+                <p className="text-xs text-ink-2">
                   Cụm gian hàng hụt tiến độ trả video do thiếu nhân sự hỗ trợ săn KOC và gửi mẫu gấp trong tuần.
                 </p>
               </div>
@@ -1616,8 +1620,8 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                 disabled={isCapacityRebalanced}
                 className={`px-3.5 py-2 rounded-lg text-xs font-semibold transition inline-flex items-center gap-1.5 shrink-0 cursor-pointer ${
                   isCapacityRebalanced
-                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                    : 'bg-blue-600 hover:bg-blue-700 text-white shadow-xs'
+                    ? 'bg-positive-soft text-positive border border-positive/20'
+                    : 'bg-accent hover:bg-accent text-white shadow-xs'
                 }`}
               >
                 <Users className="w-3.5 h-3.5" />
@@ -1627,21 +1631,21 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
           </div>
 
           {/* Section 1: Nhân sự đang có Vi phạm SLA Mở cần Đốc thúc / Lập biên bản */}
-          <div className="card-enterprise p-4 bg-white border border-slate-200 shadow-xs space-y-3">
+          <div className="card-enterprise p-4 bg-white border border-line shadow-xs space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
-                <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
-                  <BellRing className="w-4 h-4 text-rose-600" />
+                <h3 className="text-xs font-semibold text-ink uppercase tracking-wider flex items-center gap-2">
+                  <BellRing className="w-4 h-4 text-critical" />
                   Nhân sự có vi phạm SLA đang mở cần đốc thúc ({staffSlaReports.filter(s => s.activeViolationsCount > 0).length} nhân sự)
                 </h3>
-                <p className="text-2xs text-slate-500 mt-0.5">
+                <p className="text-2xs text-ink-3 mt-0.5">
                   Bấm để gửi cảnh báo Lark trực tiếp, xem hồ sơ vi phạm hoặc lập biên bản nhắc nhở. (Xem bảng điểm đầy đủ tại Dashboard Tiến độ & SLA)
                 </p>
               </div>
               {onNavigateToTab && (
                 <button
                   onClick={() => onNavigateToTab('dashboard-sla')}
-                  className="px-2.5 py-1.5 rounded-lg text-2xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 transition cursor-pointer"
+                  className="px-2.5 py-1.5 rounded-lg text-2xs font-semibold text-accent bg-accent-soft hover:bg-accent-soft border border-accent/20 transition cursor-pointer"
                 >
                   Mở Dashboard SLA & Phễu vận hành →
                 </button>
@@ -1652,40 +1656,40 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
               {staffSlaReports
                 .filter(s => s.activeViolationsCount > 0)
                 .map(staff => (
-                  <div key={staff.id} className="p-3 rounded-xl bg-rose-50/40 border border-rose-200/80 flex flex-col justify-between gap-2.5">
+                  <div key={staff.id} className="p-3 rounded-xl bg-critical-soft border border-critical/20/80 flex flex-col justify-between gap-2.5">
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-full bg-rose-600 text-white font-semibold text-2xs flex items-center justify-center shrink-0">
+                        <div className="w-7 h-7 rounded-full bg-critical text-white font-semibold text-2xs flex items-center justify-center shrink-0">
                           {staff.avatar}
                         </div>
                         <div>
-                          <div className="font-bold text-slate-900 text-xs">{staff.staffName}</div>
-                          <div className="text-2xs text-slate-500">{staff.role} • {staff.onTimeRate}% đúng hạn</div>
+                          <div className="font-semibold text-ink text-xs">{staff.staffName}</div>
+                          <div className="text-2xs text-ink-3">{staff.role} • {staff.onTimeRate}% đúng hạn</div>
                         </div>
                       </div>
-                      <span className="px-2 py-0.5 rounded-full text-2xs font-bold bg-rose-100 text-rose-800 border border-rose-300">
+                      <span className="text-2xs font-semibold text-critical -critical/20">
                         {staff.activeViolationsCount} lỗi mở ({staff.penaltyPoints}đ)
                       </span>
                     </div>
 
-                    <div className="flex items-center justify-between gap-1.5 pt-2 border-t border-rose-200/60">
+                    <div className="flex items-center justify-between gap-1.5 pt-2 border-t border-critical/20/60">
                       <button
                         onClick={() => handlePingStaff(staff.staffName, 'Nhắc nhở xử lý vi phạm SLA B2C trước 17:00')}
-                        className="flex-1 px-2 py-1 text-2xs font-semibold bg-rose-600 hover:bg-rose-700 text-white rounded-lg transition flex items-center justify-center gap-1 cursor-pointer"
+                        className="flex-1 px-2 py-1 text-2xs font-semibold bg-critical hover:bg-critical text-white rounded-lg transition flex items-center justify-center gap-1 cursor-pointer"
                       >
                         <Send className="w-3 h-3" />
                         <span>Ping Lark</span>
                       </button>
                       <button
                         onClick={() => setAiReviewTargetStaff(staff.staffName)}
-                        className="px-2 py-1 text-2xs font-semibold bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg transition cursor-pointer"
+                        className="px-2 py-1 text-2xs font-semibold bg-white hover:bg-canvas text-ink-2 border border-line rounded-lg transition cursor-pointer"
                         title="Soạn nhận xét & nhắc nhở"
                       >
                         Nhận xét
                       </button>
                       <button
                         onClick={() => setInspectStaffModal(staff)}
-                        className="px-2 py-1 text-2xs font-semibold bg-white hover:bg-slate-50 text-blue-700 border border-slate-200 rounded-lg transition flex items-center gap-1 cursor-pointer"
+                        className="px-2 py-1 text-2xs font-semibold bg-white hover:bg-canvas text-accent border border-line rounded-lg transition flex items-center gap-1 cursor-pointer"
                       >
                         <Eye className="w-3 h-3" />
                         <span>Hồ sơ</span>
@@ -1697,14 +1701,14 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
           </div>
 
           {/* Section 2: Queue Vi Phạm SLA Cần Xử Lý & Leo Thang (Active Breaches Queue) */}
-          <div className="card-enterprise overflow-hidden bg-white border border-slate-200 shadow-xs">
-            <div className="px-6 py-4 border-b border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-3 bg-slate-50">
+          <div className="card-enterprise overflow-hidden bg-white border border-line shadow-xs">
+            <div className="px-6 py-4 border-b border-line flex flex-col md:flex-row md:items-center justify-between gap-3 bg-canvas">
               <div>
-                <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-                  <ShieldAlert className="w-4 h-4 text-rose-600" />
+                <h3 className="text-sm font-semibold text-ink flex items-center gap-2">
+                  <ShieldAlert className="w-4 h-4 text-critical" />
                   Danh sách vi phạm SLA đang kích hoạt & cần Leo Thang
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
+                <p className="text-xs text-ink-3 mt-0.5">
                   Tự động phát hiện vi phạm dựa trên 8 điểm SLA B2C • Kích hoạt cơ chế báo cáo Leader B2C / Growth / Account
                 </p>
               </div>
@@ -1714,7 +1718,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                 <select
                   value={slaSeverityFilter}
                   onChange={(e) => setSlaSeverityFilter(e.target.value)}
-                  className="bg-white border border-slate-200 rounded-lg px-2.5 py-1 text-slate-700 text-xs focus:outline-none"
+                  className="bg-white border border-line rounded-lg px-2.5 py-1 text-ink-2 text-xs focus:outline-none"
                 >
                   <option value="ALL">Tất cả mức độ</option>
                   <option value="CRITICAL">Khẩn cấp (CRITICAL)</option>
@@ -1725,7 +1729,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                 <select
                   value={slaBreachCategoryFilter}
                   onChange={(e) => setSlaBreachCategoryFilter(e.target.value)}
-                  className="bg-white border border-slate-200 rounded-lg px-2.5 py-1 text-slate-700 text-xs focus:outline-none max-w-[200px]"
+                  className="bg-white border border-line rounded-lg px-2.5 py-1 text-ink-2 text-xs focus:outline-none max-w-[200px]"
                 >
                   <option value="ALL">Tất cả nhóm SLA</option>
                   <option value="CONTRACT_OVER_9M_INVALID">HĐ &gt; 9M thiếu scan/CCCD</option>
@@ -1740,7 +1744,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
 
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs min-w-[1100px]">
-                <thead className="bg-slate-50 border-b border-slate-200 text-slate-700 font-semibold">
+                <thead className="bg-canvas border-b border-line text-ink-2 font-semibold">
                   <tr>
                     <th className="py-3 px-4 w-[180px]">Mã Deal & KOC</th>
                     <th className="py-3 px-3 w-[150px]">Nhãn hàng</th>
@@ -1749,12 +1753,12 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                     <th className="py-3 px-3 w-[150px]">PIC & Vai Trò</th>
                     <th className="py-3 px-3 w-[170px]">Hạn SLA & quá hạn</th>
                     <th className="py-3 px-3 w-[170px]">Leo Thang (Escalation)</th>
-                    <th className="py-3 px-4 pr-5 text-right w-[150px] sticky right-0 bg-slate-50 border-l border-slate-200">
+                    <th className="py-3 px-4 pr-5 text-right w-[150px] sticky right-0 bg-canvas border-l border-line">
                       Hành động xử lý
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-line">
                   {slaBreaches
                     .filter(b => {
                       const matchSeverity = slaSeverityFilter === 'ALL' || b.severity === slaSeverityFilter;
@@ -1764,26 +1768,26 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                     .map(breach => {
                       const isCritical = breach.severity === 'CRITICAL';
                       return (
-                        <tr key={breach.id} className={`hover:bg-slate-50/70 transition ${isCritical ? 'bg-rose-50/30' : ''}`}>
+                        <tr key={breach.id} className={`hover:bg-canvas transition ${isCritical ? 'bg-critical-soft' : ''}`}>
                           {/* Col 1: Deal & KOC */}
                           <td className="py-3.5 px-4 font-medium">
-                            <div className="font-semibold text-slate-900 text-xs">{breach.kocName}</div>
-                            <div className="font-mono text-slate-500 text-2xs mt-0.5">{breach.dealCode}</div>
+                            <div className="font-semibold text-ink text-xs">{breach.kocName}</div>
+                            <div className="font-mono text-ink-3 text-2xs mt-0.5">{breach.dealCode}</div>
                           </td>
 
                           {/* Col 2: Brand */}
                           <td className="py-3.5 px-3">
-                            <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-slate-100 text-slate-800 border border-slate-200">
+                            <span className="text-2xs font-semibold text-ink -line">
                               {breach.brandName}
                             </span>
                           </td>
 
                           {/* Col 3: Category Label */}
                           <td className="py-3.5 px-3">
-                            <div className="font-semibold text-slate-800 line-clamp-1" title={breach.categoryLabel}>
+                            <div className="font-semibold text-ink line-clamp-1" title={breach.categoryLabel}>
                               {breach.categoryLabel}
                             </div>
-                            <div className="text-2xs text-slate-500 mt-0.5 line-clamp-1" title={breach.resolutionNotes}>
+                            <div className="text-2xs text-ink-3 mt-0.5 line-clamp-1" title={breach.resolutionNotes}>
                               {breach.resolutionNotes || 'Đang theo dõi tự động trên hệ thống'}
                             </div>
                           </td>
@@ -1792,10 +1796,10 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                           <td className="py-3.5 px-3 text-center">
                             <span className={`px-2 py-0.5 rounded-full text-2xs font-semibold inline-block ${
                               breach.severity === 'CRITICAL'
-                                ? 'bg-rose-100 text-rose-800 border border-rose-300'
+                                ? 'bg-critical-soft text-critical border border-critical/20'
                                 : breach.severity === 'HIGH'
-                                ? 'bg-amber-100 text-amber-800 border border-amber-300'
-                                : 'bg-slate-100 text-slate-700 border border-slate-300'
+                                ? 'bg-warning-soft text-warning border border-warning/20'
+                                : 'bg-sunken text-ink-2 border border-line-strong'
                             }`}>
                               {breach.severity === 'CRITICAL' ? '● KHẨN CẤP' : breach.severity === 'HIGH' ? '▲ NGHIÊM TRỌNG' : '■ CẢNH BÁO'}
                             </span>
@@ -1803,15 +1807,15 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
 
                           {/* Col 5: PIC */}
                           <td className="py-3.5 px-3">
-                            <div className="font-semibold text-slate-900 text-xs">{breach.picName}</div>
-                            <div className="text-2xs text-slate-500">{breach.picRole}</div>
+                            <div className="font-semibold text-ink text-xs">{breach.picName}</div>
+                            <div className="text-2xs text-ink-3">{breach.picRole}</div>
                           </td>
 
                           {/* Col 6: SLA Deadline & Overdue Hours */}
                           <td className="py-3.5 px-3">
-                            <div className="text-2xs text-slate-700 font-medium">{breach.slaDeadline}</div>
-                            <div className="text-2xs text-rose-600 font-semibold mt-0.5 flex items-center gap-1">
-                              <AlertTriangle className="w-3 h-3 text-rose-500 shrink-0" />
+                            <div className="text-2xs text-ink-2 font-medium">{breach.slaDeadline}</div>
+                            <div className="text-2xs text-critical font-semibold mt-0.5 flex items-center gap-1">
+                              <AlertTriangle className="w-3 h-3 text-critical shrink-0" />
                               <span>Quá hạn: {breach.hoursOverdue} giờ</span>
                             </div>
                           </td>
@@ -1819,20 +1823,20 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                           {/* Col 7: Escalation */}
                           <td className="py-3.5 px-3">
                             {breach.escalatedTo ? (
-                              <div className="text-slate-800 font-semibold text-2xs flex items-center gap-1">
-                                <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                              <div className="text-ink font-semibold text-2xs flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-critical" />
                                 <span>{breach.escalatedTo}</span>
                               </div>
                             ) : (
-                              <span className="text-2xs text-slate-400 italic">Nội bộ team</span>
+                              <span className="text-2xs text-ink-3 italic">Nội bộ team</span>
                             )}
                           </td>
 
                           {/* Col 8: Actions */}
-                          <td className="py-3.5 px-4 pr-5 text-right sticky right-0 bg-white/95 group-hover:bg-slate-50/95 transition border-l border-slate-200 shadow-[-3px_0_6px_rgba(0,0,0,0.03)]">
+                          <td className="py-3.5 px-4 pr-5 text-right sticky right-0 bg-white/95 group-hover:bg-canvas transition border-l border-line shadow-[-3px_0_6px_rgba(0,0,0,0.03)]">
                             <button
                               onClick={() => setBreachActionModal(breach)}
-                              className="px-2.5 py-1 text-2xs font-semibold bg-slate-900 hover:bg-slate-800 text-white rounded-lg transition shadow-2xs"
+                              className="px-2.5 py-1 text-2xs font-semibold bg-ink hover:bg-ink text-white rounded-lg transition shadow-2xs"
                             >
                               Xử lý
                             </button>
@@ -1845,11 +1849,11 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
             </div>
 
             {/* Table Footer */}
-            <div className="px-5 py-3 border-t border-slate-200 bg-slate-50 flex items-center justify-between text-xs text-slate-500">
+            <div className="px-5 py-3 border-t border-line bg-canvas flex items-center justify-between text-xs text-ink-3">
               <span>
-                Hiển thị <strong className="text-slate-800">{slaBreaches.length}</strong> cảnh báo vi phạm SLA
+                Hiển thị <strong className="text-ink">{slaBreaches.length}</strong> cảnh báo vi phạm SLA
               </span>
-              <div className="text-2xs text-slate-400">
+              <div className="text-2xs text-ink-3">
                 Cơ chế tự động đối soát SLA Upbase B2C • Cập nhật mỗi 15 phút
               </div>
             </div>
@@ -1899,22 +1903,22 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
             aria-modal="true"
           >
             <div data-motion-panel
-              className="bg-white border border-slate-200 rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden my-8 animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter"
+              className="bg-white border border-line rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden my-8 animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-line bg-canvas">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-semibold border border-blue-200">
+                  <div className="w-8 h-8 rounded-lg bg-accent-soft text-accent flex items-center justify-center font-semibold border border-accent/20">
                     <Sliders className="w-4 h-4" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-semibold text-slate-900">Phân Bổ Kế Hoạch 4 Tier — {currentPlan.monthLabel}</h3>
-                    <p className="text-xs text-slate-500">{editingAllocation.staffName} • {editingAllocation.roleTitle}</p>
+                    <h3 className="text-sm font-semibold text-ink">Phân Bổ Kế Hoạch 4 Tier — {currentPlan.monthLabel}</h3>
+                    <p className="text-xs text-ink-3">{editingAllocation.staffName} • {editingAllocation.roleTitle}</p>
                   </div>
                 </div>
                 <button 
                   onClick={() => setEditingAllocation(null)}
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition"
+                  className="p-1.5 rounded-lg text-ink-3 hover:text-ink-2 hover:bg-sunken transition"
                   aria-label="Đóng"
                 >
                   <X className="w-5 h-5" />
@@ -1924,96 +1928,96 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
               <div className="p-6 space-y-4 text-xs max-h-[75vh] overflow-y-auto">
                 {/* Tier Quotas Grid inputs */}
                 <div>
-                  <label className="block text-slate-700 font-semibold mb-2 flex items-center justify-between">
+                  <label className="block text-ink-2 font-semibold mb-2 flex items-center justify-between">
                     <span className="flex items-center gap-1.5">
-                      <LayersIcon className="w-3.5 h-3.5 text-blue-600" />
+                      <LayersIcon className="w-3.5 h-3.5 text-accent" />
                       Phân bổ số video theo 4 Tier KOC / KOL
                     </span>
-                    <span className="text-2xs text-blue-600 font-mono font-semibold">
+                    <span className="text-2xs text-accent font-mono font-semibold">
                       Tổng: {calculatedVideos} clips
                     </span>
                   </label>
 
                   <div className="grid grid-cols-2 gap-3">
                     {/* Tier 1 */}
-                    <div className="p-2.5 bg-rose-50/50 border border-rose-200 rounded-xl">
+                    <div className="p-2.5 bg-critical-soft border border-critical/20 rounded-xl">
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-2xs font-semibold text-rose-800">Tier 1: Celeb / Mega</span>
-                        <span className="text-2xs text-rose-600 font-mono">KL7 (&gt;25M)</span>
+                        <span className="text-2xs font-semibold text-critical">Tier 1: Celeb / Mega</span>
+                        <span className="text-2xs text-critical font-mono">KL7 (&gt;25M)</span>
                       </div>
                       <input
                         type="number"
                         min="0"
                         value={editAllocForm.tier1Videos}
                         onChange={(e) => setEditAllocForm(prev => ({ ...prev, tier1Videos: Math.max(0, Number(e.target.value)) }))}
-                        className="w-full bg-white border border-rose-300 rounded-lg px-2.5 py-1.5 text-slate-900 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
+                        className="w-full bg-white border border-critical/20 rounded-lg px-2.5 py-1.5 text-ink font-mono text-xs focus:outline-none focus:ring-2 focus:ring-critical/20 focus:border-critical/20"
                       />
-                      <div className="flex items-center justify-between text-2xs text-slate-500 mt-1">
+                      <div className="flex items-center justify-between text-2xs text-ink-3 mt-1">
                         <span>Đã air: {editingAllocation.tier1Videos || 0}</span>
-                        <span className={newTeamT1 > t1Ceiling ? 'text-rose-600 font-semibold' : 'text-slate-500'}>
+                        <span className={newTeamT1 > t1Ceiling ? 'text-critical font-semibold' : 'text-ink-3'}>
                           Toàn phòng: {newTeamT1}/{t1Ceiling}
                         </span>
                       </div>
                     </div>
 
                     {/* Tier 2 */}
-                    <div className="p-2.5 bg-blue-50/50 border border-blue-200 rounded-xl">
+                    <div className="p-2.5 bg-accent-soft border border-accent/20 rounded-xl">
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-2xs font-semibold text-blue-800">Tier 2: Macro Creator</span>
-                        <span className="text-2xs text-blue-600 font-mono">KL6 (10-25M)</span>
+                        <span className="text-2xs font-semibold text-accent">Tier 2: Macro Creator</span>
+                        <span className="text-2xs text-accent font-mono">KL6 (10-25M)</span>
                       </div>
                       <input
                         type="number"
                         min="0"
                         value={editAllocForm.tier2Videos}
                         onChange={(e) => setEditAllocForm(prev => ({ ...prev, tier2Videos: Math.max(0, Number(e.target.value)) }))}
-                        className="w-full bg-white border border-blue-300 rounded-lg px-2.5 py-1.5 text-slate-900 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                        className="w-full bg-white border border-accent/20 rounded-lg px-2.5 py-1.5 text-ink font-mono text-xs focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/20"
                       />
-                      <div className="flex items-center justify-between text-2xs text-slate-500 mt-1">
+                      <div className="flex items-center justify-between text-2xs text-ink-3 mt-1">
                         <span>Đã air: {editingAllocation.tier2Videos || 0}</span>
-                        <span className={newTeamT2 > t2Ceiling ? 'text-rose-600 font-semibold' : 'text-slate-500'}>
+                        <span className={newTeamT2 > t2Ceiling ? 'text-critical font-semibold' : 'text-ink-3'}>
                           Toàn phòng: {newTeamT2}/{t2Ceiling}
                         </span>
                       </div>
                     </div>
 
                     {/* Tier 3 */}
-                    <div className="p-2.5 bg-emerald-50/50 border border-emerald-200 rounded-xl">
+                    <div className="p-2.5 bg-positive-soft border border-positive/20 rounded-xl">
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-2xs font-semibold text-emerald-800">Tier 3: Micro Creator</span>
-                        <span className="text-2xs text-emerald-600 font-mono">KL4-KL5 (2.5-10M)</span>
+                        <span className="text-2xs font-semibold text-positive">Tier 3: Micro Creator</span>
+                        <span className="text-2xs text-positive font-mono">KL4-KL5 (2.5-10M)</span>
                       </div>
                       <input
                         type="number"
                         min="0"
                         value={editAllocForm.tier3Videos}
                         onChange={(e) => setEditAllocForm(prev => ({ ...prev, tier3Videos: Math.max(0, Number(e.target.value)) }))}
-                        className="w-full bg-white border border-emerald-300 rounded-lg px-2.5 py-1.5 text-slate-900 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                        className="w-full bg-white border border-positive/20 rounded-lg px-2.5 py-1.5 text-ink font-mono text-xs focus:outline-none focus:ring-2 focus:ring-positive/20 focus:border-positive/20"
                       />
-                      <div className="flex items-center justify-between text-2xs text-slate-500 mt-1">
+                      <div className="flex items-center justify-between text-2xs text-ink-3 mt-1">
                         <span>Đã air: {editingAllocation.tier3Videos || 0}</span>
-                        <span className={newTeamT3 > t3Ceiling ? 'text-rose-600 font-semibold' : 'text-slate-500'}>
+                        <span className={newTeamT3 > t3Ceiling ? 'text-critical font-semibold' : 'text-ink-3'}>
                           Toàn phòng: {newTeamT3}/{t3Ceiling}
                         </span>
                       </div>
                     </div>
 
                     {/* Tier 4 */}
-                    <div className="p-2.5 bg-slate-50/50 border border-slate-200 rounded-xl">
+                    <div className="p-2.5 bg-canvas border border-line rounded-xl">
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-2xs font-semibold text-slate-800">Tier 4: Nano & Affiliate</span>
-                        <span className="text-2xs text-slate-600 font-mono">KL1-KL3 (&lt;2.5M)</span>
+                        <span className="text-2xs font-semibold text-ink">Tier 4: Nano & Affiliate</span>
+                        <span className="text-2xs text-ink-2 font-mono">KL1-KL3 (&lt;2.5M)</span>
                       </div>
                       <input
                         type="number"
                         min="0"
                         value={editAllocForm.tier4Videos}
                         onChange={(e) => setEditAllocForm(prev => ({ ...prev, tier4Videos: Math.max(0, Number(e.target.value)) }))}
-                        className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-slate-900 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-slate-500/20 focus:border-slate-500"
+                        className="w-full bg-white border border-line-strong rounded-lg px-2.5 py-1.5 text-ink font-mono text-xs focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-line-strong"
                       />
-                      <div className="flex items-center justify-between text-2xs text-slate-500 mt-1">
+                      <div className="flex items-center justify-between text-2xs text-ink-3 mt-1">
                         <span>Đã air: {editingAllocation.tier4Videos ?? editingAllocation.reportVideos}</span>
-                        <span className={newTeamT4 > t4Ceiling ? 'text-rose-600 font-semibold' : 'text-slate-500'}>
+                        <span className={newTeamT4 > t4Ceiling ? 'text-critical font-semibold' : 'text-ink-3'}>
                           Toàn phòng: {newTeamT4}/{t4Ceiling}
                         </span>
                       </div>
@@ -2022,8 +2026,8 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
 
                   {/* Warning banner if exceeding any tier ceiling */}
                   {(newTeamT1 > t1Ceiling || newTeamT2 > t2Ceiling || newTeamT3 > t3Ceiling || newTeamT4 > t4Ceiling) && (
-                    <div className="mt-2.5 p-2 bg-rose-50 border border-rose-200 rounded-lg flex items-center gap-2 text-rose-700 text-2xs">
-                      <AlertTriangle className="w-4 h-4 shrink-0 text-rose-600" />
+                    <div className="mt-2.5 p-2 bg-critical-soft border border-critical/20 rounded-lg flex items-center gap-2 text-critical text-2xs">
+                      <AlertTriangle className="w-4 h-4 shrink-0 text-critical" />
                       <span>
                         Cảnh báo: Phân bổ này sẽ khiến trần của phòng bị vượt ({[
                           newTeamT1 > t1Ceiling && `Tier 1 (+${newTeamT1 - t1Ceiling})`,
@@ -2039,11 +2043,11 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                 {/* Budget input & Auto Calculation */}
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="text-slate-700 font-semibold">Ngân sách phân bổ (VND)</label>
+                    <label className="text-ink-2 font-semibold">Ngân sách phân bổ (VND)</label>
                     <button
                       type="button"
                       onClick={() => setEditAllocForm(prev => ({ ...prev, planBudget: suggestedBudget }))}
-                      className="text-2xs text-blue-600 hover:text-blue-700 font-medium underline transition flex items-center gap-1"
+                      className="text-2xs text-accent hover:text-accent font-medium underline transition flex items-center gap-1"
                     >
                       <Sparkles className="w-3 h-3" />
                       Áp dụng gợi ý 4 Tier: {(suggestedBudget / 1000000).toLocaleString('vi-VN', { maximumFractionDigits: 1 })}M đ
@@ -2054,54 +2058,54 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                     step="1000000"
                     value={editAllocForm.planBudget}
                     onChange={(e) => setEditAllocForm(prev => ({ ...prev, planBudget: Number(e.target.value) }))}
-                    className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-900 font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                    className="w-full bg-white border border-line-strong rounded-lg px-3 py-2 text-ink font-mono focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/20"
                   />
-                  <div className="flex items-center justify-between text-2xs text-slate-500 mt-1">
+                  <div className="flex items-center justify-between text-2xs text-ink-3 mt-1">
                     <span>Đã giải ngân thực tế: {editingAllocation.reportBudget.toLocaleString('vi-VN')} đ</span>
-                    <span className="text-slate-500">Đơn giá TB ước tính: {calculatedVideos > 0 ? Math.round(editAllocForm.planBudget / calculatedVideos).toLocaleString('vi-VN') : 0} đ/clip</span>
+                    <span className="text-ink-3">Đơn giá TB ước tính: {calculatedVideos > 0 ? Math.round(editAllocForm.planBudget / calculatedVideos).toLocaleString('vi-VN') : 0} đ/clip</span>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-slate-700 font-semibold mb-1">Target GMV (VND)</label>
+                    <label className="block text-ink-2 font-semibold mb-1">Target GMV (VND)</label>
                     <input
                       type="number"
                       step="1000000"
                       value={editAllocForm.targetGmv}
                       onChange={(e) => setEditAllocForm(prev => ({ ...prev, targetGmv: Number(e.target.value) }))}
-                      className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-900 font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                      className="w-full bg-white border border-line-strong rounded-lg px-3 py-2 text-ink font-mono focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/20"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-slate-700 font-semibold mb-1">Chỉ tiêu tuyển KOC mới</label>
+                    <label className="block text-ink-2 font-semibold mb-1">Chỉ tiêu tuyển KOC mới</label>
                     <input
                       type="number"
                       value={editAllocForm.targetNewKocs}
                       onChange={(e) => setEditAllocForm(prev => ({ ...prev, targetNewKocs: Number(e.target.value) }))}
-                      className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-900 font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                      className="w-full bg-white border border-line-strong rounded-lg px-3 py-2 text-ink font-mono focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/20"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <label className="block text-slate-700 font-semibold">
+                    <label className="block text-ink-2 font-semibold">
                       Nhãn hàng / Brand phụ trách
                     </label>
-                    <span className="text-2xs text-slate-500 font-medium">
+                    <span className="text-2xs text-ink-3 font-medium">
                       Đã gán {(editAllocForm.assignedBrands || '').split(',').map(b => b.trim()).filter(Boolean).length} nhãn hàng
                     </span>
                   </div>
 
                   {/* Active selected brand tags */}
-                  <div className="flex flex-wrap gap-1.5 min-h-[38px] p-2 bg-slate-50 border border-slate-200 rounded-lg">
+                  <div className="flex flex-wrap gap-1.5 min-h-[38px] p-2 bg-canvas border border-line rounded-lg">
                     {(() => {
                       const list = (editAllocForm.assignedBrands || '').split(',').map(b => b.trim()).filter(Boolean);
                       if (list.length === 0) {
                         return (
-                          <span className="text-slate-400 text-xs italic py-1 px-1">
+                          <span className="text-ink-3 text-xs italic">
                             Chưa gán nhãn hàng nào. Hãy chọn từ danh mục Master Data bên dưới.
                           </span>
                         );
@@ -2109,7 +2113,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                       return list.map(brandName => (
                         <span
                           key={brandName}
-                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-100/80 text-blue-900 border border-blue-200 text-xs font-semibold shadow-2xs"
+                          className="inline-flex items-center gap-1.5 .5 text-accent -accent/20 text-xs font-semibold shadow-2xs"
                         >
                           <span>{brandName}</span>
                           <button
@@ -2118,7 +2122,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                               const updated = list.filter(b => b !== brandName);
                               setEditAllocForm(prev => ({ ...prev, assignedBrands: updated.join(', ') }));
                             }}
-                            className="w-4 h-4 rounded hover:bg-blue-200 text-blue-700 flex items-center justify-center transition cursor-pointer"
+                            className="w-4 h-4 rounded hover:bg-accent-soft text-accent flex items-center justify-center transition cursor-pointer"
                             title="Xóa nhãn hàng này"
                           >
                             <X className="w-3 h-3" />
@@ -2144,7 +2148,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                           }
                         }}
                         defaultValue=""
-                        className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                        className="w-full bg-white border border-line-strong rounded-lg px-3 py-2 text-xs text-ink focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/20"
                       >
                         <option value="" disabled>
                           + Chọn nhãn hàng từ Master Data ({UPBASE_BRANDS_MASTER.length} Brands)...
@@ -2185,27 +2189,27 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-slate-700 font-semibold mb-1">Ghi chú chỉ đạo nghiệp vụ của trưởng phòng</label>
+                  <label className="block text-ink-2 font-semibold mb-1">Ghi chú chỉ đạo nghiệp vụ của trưởng phòng</label>
                   <textarea
                     rows={2}
                     value={editAllocForm.managerNote}
                     onChange={(e) => setEditAllocForm(prev => ({ ...prev, managerNote: e.target.value }))}
                     placeholder="Ghi chú điều phối tiến độ, ưu tiên nhóm Tier hoặc nhắc nhở deadline..."
-                    className="w-full bg-white border border-slate-300 rounded-lg p-3 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none"
+                    className="w-full bg-white border border-line-strong rounded-lg p-3 text-ink placeholder:text-ink-3 focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/20 resize-none"
                   />
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-slate-200 bg-slate-50">
+              <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-line bg-canvas">
                 <button
                   onClick={() => setEditingAllocation(null)}
-                  className="px-4 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-800 hover:bg-slate-200 transition"
+                  className="px-4 py-2 rounded-lg text-xs font-semibold text-ink-2 hover:text-ink hover:bg-sunken transition"
                 >
                   Hủy bỏ
                 </button>
                 <button
                   onClick={handleSaveAlloc}
-                  className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow-xs transition flex items-center gap-1.5"
+                  className="px-5 py-2 bg-accent hover:bg-accent text-white rounded-lg text-xs font-semibold shadow-xs transition flex items-center gap-1.5"
                 >
                   <Save className="w-3.5 h-3.5" />
                   <span>Lưu phân bổ</span>
@@ -2227,22 +2231,22 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
           aria-modal="true"
         >
           <div data-motion-panel
-            className="bg-white border border-slate-200 rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden my-8 animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter"
+            className="bg-white border border-line rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden my-8 animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-line bg-canvas">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-semibold border border-blue-200">
+                <div className="w-8 h-8 rounded-lg bg-accent-soft text-accent flex items-center justify-center font-semibold border border-accent/20">
                   <SlidersHorizontal className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold text-slate-900">Cấu Hình Hạn Mức 4 Tier KOC / KOL — {currentPlan.monthLabel}</h3>
-                  <p className="text-xs text-slate-500">Thiết lập trần video & ngân sách toàn phòng trước khi phân bổ cho nhân viên</p>
+                  <h3 className="text-sm font-semibold text-ink">Cấu Hình Hạn Mức 4 Tier KOC / KOL — {currentPlan.monthLabel}</h3>
+                  <p className="text-xs text-ink-3">Thiết lập trần video & ngân sách toàn phòng trước khi phân bổ cho nhân viên</p>
                 </div>
               </div>
               <button 
                 onClick={() => setIsTierQuotaModalOpen(false)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition"
+                className="p-1.5 rounded-lg text-ink-3 hover:text-ink-2 hover:bg-sunken transition"
                 aria-label="Đóng"
               >
                 <X className="w-5 h-5" />
@@ -2250,7 +2254,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
             </div>
 
             <div className="p-6 space-y-4 text-xs max-h-[75vh] overflow-y-auto">
-              <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-blue-800 text-xs">
+              <div className="p-3 bg-accent-soft border border-accent/20 rounded-xl text-accent text-xs">
                 <strong>Nguyên tắc quản trị Top-Down:</strong> Trưởng phòng chốt tổng ngân sách và trần video cho 4 Tier. Sau đó hệ thống sẽ dùng các mốc này để kiểm soát cân đối khi phân bổ xuống 26 nhân sự.
               </div>
 
@@ -2258,23 +2262,23 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                 {editTierForm.map((tier, idx) => {
                   const calculatedAvg = tier.targetVideos > 0 ? Math.round(tier.totalBudget / tier.targetVideos) : 0;
                   return (
-                    <div key={tier.tierId} className="p-4 bg-slate-50/70 border border-slate-200 rounded-xl space-y-3">
+                    <div key={tier.tierId} className="p-4 bg-canvas border border-line rounded-xl space-y-3">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <span className="w-2 h-2 rounded-full bg-blue-600" />
-                          <span className="font-semibold text-slate-900 text-xs">{tier.tierName}</span>
-                          <span className="px-2 py-0.5 rounded text-2xs bg-slate-100 text-slate-700 border border-slate-200 font-mono">
+                          <span className="w-2 h-2 rounded-full bg-accent" />
+                          <span className="font-semibold text-ink text-xs">{tier.tierName}</span>
+                          <span className="text-2xs text-ink-2 -line font-mono">
                             {tier.klRange}
                           </span>
                         </div>
-                        <span className="text-2xs text-slate-500">
-                          Đơn giá TB: <strong className="text-slate-900 font-mono">{(calculatedAvg / 1000000).toLocaleString('vi-VN', { maximumFractionDigits: 2 })}M đ/clip</strong>
+                        <span className="text-2xs text-ink-3">
+                          Đơn giá TB: <strong className="text-ink font-mono">{(calculatedAvg / 1000000).toLocaleString('vi-VN', { maximumFractionDigits: 2 })}M đ/clip</strong>
                         </span>
                       </div>
 
                       <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <label className="block text-2xs text-slate-600 mb-1 font-medium">Trần số video</label>
+                          <label className="block text-2xs text-ink-2 mb-1 font-medium">Trần số video</label>
                           <input
                             type="number"
                             min="0"
@@ -2283,12 +2287,12 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                               const val = Math.max(0, Number(e.target.value));
                               setEditTierForm(prev => prev.map((t, i) => i === idx ? { ...t, targetVideos: val } : t));
                             }}
-                            className="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-slate-900 font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                            className="w-full bg-white border border-line-strong rounded-lg px-3 py-1.5 text-ink font-mono focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/20"
                           />
                         </div>
 
                         <div>
-                          <label className="block text-2xs text-slate-600 mb-1 font-medium">Trần ngân sách (VND)</label>
+                          <label className="block text-2xs text-ink-2 mb-1 font-medium">Trần ngân sách (VND)</label>
                           <input
                             type="number"
                             min="0"
@@ -2298,7 +2302,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                               const val = Math.max(0, Number(e.target.value));
                               setEditTierForm(prev => prev.map((t, i) => i === idx ? { ...t, totalBudget: val } : t));
                             }}
-                            className="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-slate-900 font-mono focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                            className="w-full bg-white border border-line-strong rounded-lg px-3 py-1.5 text-ink font-mono focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/20"
                           />
                         </div>
                       </div>
@@ -2311,7 +2315,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                           setEditTierForm(prev => prev.map((t, i) => i === idx ? { ...t, description: val } : t));
                         }}
                         placeholder="Mô tả chiến lược và vai trò của Tier này trong tháng..."
-                        className="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-2xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                        className="w-full bg-white border border-line-strong rounded-lg px-3 py-1.5 text-2xs text-ink placeholder:text-ink-3 focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/20"
                       />
                     </div>
                   );
@@ -2319,32 +2323,32 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
               </div>
 
               {/* Total Summary */}
-              <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between text-xs">
+              <div className="p-3.5 bg-canvas border border-line rounded-xl flex items-center justify-between text-xs">
                 <div>
-                  <span className="text-slate-600">Tổng trần video tháng:</span>
-                  <span className="ml-2 font-semibold text-slate-900 font-mono">
+                  <span className="text-ink-2">Tổng trần video tháng:</span>
+                  <span className="ml-2 font-semibold text-ink font-mono">
                     {editTierForm.reduce((sum, t) => sum + (t.targetVideos || 0), 0).toLocaleString('vi-VN')} clips
                   </span>
                 </div>
                 <div>
-                  <span className="text-slate-600">Tổng trần ngân sách:</span>
-                  <span className="ml-2 font-semibold text-blue-700 font-mono">
+                  <span className="text-ink-2">Tổng trần ngân sách:</span>
+                  <span className="ml-2 font-semibold text-accent font-mono">
                     {editTierForm.reduce((sum, t) => sum + (t.totalBudget || 0), 0).toLocaleString('vi-VN')} đ
                   </span>
                 </div>
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-slate-200 bg-slate-50">
+            <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-line bg-canvas">
               <button
                 onClick={() => setIsTierQuotaModalOpen(false)}
-                className="px-4 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-800 hover:bg-slate-200 transition"
+                className="px-4 py-2 rounded-lg text-xs font-semibold text-ink-2 hover:text-ink hover:bg-sunken transition"
               >
                 Hủy bỏ
               </button>
               <button
                 onClick={handleSaveTierQuota}
-                className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow-xs transition flex items-center gap-1.5"
+                className="px-5 py-2 bg-accent hover:bg-accent text-white rounded-lg text-xs font-semibold shadow-xs transition flex items-center gap-1.5"
               >
                 <Save className="w-3.5 h-3.5" />
                 <span>Lưu hạn mức tháng</span>
@@ -2372,23 +2376,23 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
       <Presence show={!!inspectStaffModal}>
       {inspectStaffModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 animate-in fade-in duration-(--motion-base)">
-          <div data-motion-panel className="bg-white border border-slate-200 rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
+          <div data-motion-panel className="bg-white border border-line rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
             {/* Header */}
-            <div className="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+            <div className="px-6 py-4 bg-canvas border-b border-line flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-blue-600 text-white font-semibold flex items-center justify-center text-sm shadow-xs">
+                <div className="w-10 h-10 rounded-full bg-accent text-white font-semibold flex items-center justify-center text-sm shadow-xs">
                   {inspectStaffModal.avatar}
                 </div>
                 <div>
-                  <h3 className="font-semibold text-slate-900 text-sm">
+                  <h3 className="font-semibold text-ink text-sm">
                     Báo Cáo Chi tiết SLA — {inspectStaffModal.staffName}
                   </h3>
-                  <p className="text-xs text-slate-500">{inspectStaffModal.role} • {inspectStaffModal.team}</p>
+                  <p className="text-xs text-ink-3">{inspectStaffModal.role} • {inspectStaffModal.team}</p>
                 </div>
               </div>
               <button
                 onClick={() => setInspectStaffModal(null)}
-                className="w-8 h-8 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 flex items-center justify-center transition"
+                className="w-8 h-8 rounded-lg text-ink-3 hover:text-ink-2 hover:bg-sunken flex items-center justify-center transition"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -2398,52 +2402,52 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
             <div className="p-6 space-y-4 text-xs">
               {/* Scorecard row */}
               <div className="grid grid-cols-4 gap-3 text-center">
-                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-                  <span className="text-2xs text-slate-500 block">Tổng Jobs</span>
-                  <span className="text-lg font-semibold text-slate-900">{inspectStaffModal.totalJobs}</span>
+                <div className="p-3 bg-canvas rounded-xl border border-line">
+                  <span className="text-2xs text-ink-3 block">Tổng Jobs</span>
+                  <span className="text-lg font-semibold text-ink">{inspectStaffModal.totalJobs}</span>
                 </div>
-                <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200">
-                  <span className="text-2xs text-emerald-700 block">Đúng hạn</span>
-                  <span className="text-lg font-semibold text-emerald-700">{inspectStaffModal.onTimeJobs}</span>
+                <div className="p-3 bg-positive-soft rounded-xl border border-positive/20">
+                  <span className="text-2xs text-positive block">Đúng hạn</span>
+                  <span className="text-lg font-semibold text-positive">{inspectStaffModal.onTimeJobs}</span>
                 </div>
-                <div className="p-3 bg-rose-50 rounded-xl border border-rose-200">
-                  <span className="text-2xs text-rose-700 block">Vi phạm trễ</span>
-                  <span className="text-lg font-semibold text-rose-700">{inspectStaffModal.breachedJobs}</span>
+                <div className="p-3 bg-critical-soft rounded-xl border border-critical/20">
+                  <span className="text-2xs text-critical block">Vi phạm trễ</span>
+                  <span className="text-lg font-semibold text-critical">{inspectStaffModal.breachedJobs}</span>
                 </div>
-                <div className="p-3 bg-blue-50 rounded-xl border border-blue-200">
-                  <span className="text-2xs text-blue-700 block">Điểm KPI SLA</span>
-                  <span className="text-lg font-semibold text-blue-700">{inspectStaffModal.currentScore}/100</span>
+                <div className="p-3 bg-accent-soft rounded-xl border border-accent/20">
+                  <span className="text-2xs text-accent block">Điểm KPI SLA</span>
+                  <span className="text-lg font-semibold text-accent">{inspectStaffModal.currentScore}/100</span>
                 </div>
               </div>
 
               {/* Vi Phạm Chi tiết */}
               <div>
-                <h4 className="font-semibold text-slate-800 text-xs mb-2 flex items-center gap-1.5">
-                  <ShieldAlert className="w-4 h-4 text-rose-600" />
+                <h4 className="font-semibold text-ink text-xs mb-2 flex items-center gap-1.5">
+                  <ShieldAlert className="w-4 h-4 text-critical" />
                   Danh sách vi phạm quy chuẩn đang ghi nhận:
                 </h4>
                 {inspectStaffModal.violations.length === 0 ? (
-                  <div className="p-4 bg-emerald-50 text-emerald-800 rounded-xl text-center font-medium border border-emerald-200">
+                  <div className="p-4 bg-positive-soft text-positive rounded-xl text-center font-medium border border-positive/20">
                     ✓ Nhân sự hoàn thành 100% công việc đúng hạn, không có vi phạm nào.
                   </div>
                 ) : (
                   <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
                     {inspectStaffModal.violations.map((v, i) => (
-                      <div key={i} className="p-3 rounded-xl bg-rose-50/70 border border-rose-200 space-y-1">
+                      <div key={i} className="p-3 rounded-xl bg-critical-soft border border-critical/20 space-y-1">
                         <div className="flex items-center justify-between">
-                          <span className="font-semibold text-rose-900 text-xs">{v.categoryLabel}</span>
-                          <span className="text-2xs font-semibold text-rose-700 bg-rose-100 px-2 py-0.5 rounded-full">
+                          <span className="font-semibold text-critical text-xs">{v.categoryLabel}</span>
+                          <span className="text-2xs font-semibold text-critical">
                             Quá hạn {v.hoursOverdue}h
                           </span>
                         </div>
-                        <div className="text-2xs text-slate-600 flex items-center gap-2">
+                        <div className="text-2xs text-ink-2 flex items-center gap-2">
                           <span>Deal: <strong>{v.dealCode}</strong></span>
                           <span>•</span>
                           <span>KOC: <strong>{v.kocName}</strong></span>
                           <span>•</span>
                           <span>Brand: <strong>{v.brandName}</strong></span>
                         </div>
-                        <p className="text-2xs text-rose-700 italic">
+                        <p className="text-2xs text-critical italic">
                           {v.resolutionNotes}
                         </p>
                       </div>
@@ -2454,20 +2458,20 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
             </div>
 
             {/* Footer */}
-            <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+            <div className="px-6 py-4 bg-canvas border-t border-line flex items-center justify-between">
               <button
                 onClick={() => {
                   handlePingStaff(inspectStaffModal.staffName, 'Yêu cầu giải trình vi phạm SLA B2C');
                   setInspectStaffModal(null);
                 }}
-                className="px-4 py-2 text-xs font-semibold text-rose-700 bg-rose-100 hover:bg-rose-200 rounded-xl transition flex items-center gap-1.5"
+                className="px-4 py-2 text-xs font-semibold text-critical bg-critical-soft hover:bg-critical-soft rounded-xl transition flex items-center gap-1.5"
               >
                 <Send className="w-3.5 h-3.5" />
                 <span>Gửi Ping nhắc nhở Qua Lark</span>
               </button>
               <button
                 onClick={() => setInspectStaffModal(null)}
-                className="px-5 py-2 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-100 border border-slate-300 rounded-xl transition"
+                className="px-5 py-2 text-xs font-semibold text-ink-2 bg-white hover:bg-sunken border border-line-strong rounded-xl transition"
               >
                 Đóng
               </button>
@@ -2481,39 +2485,39 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
       <Presence show={!!breachActionModal}>
       {breachActionModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 animate-in fade-in duration-(--motion-base)">
-          <div data-motion-panel className="bg-white border border-slate-200 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
-            <div className="px-6 py-4 bg-rose-50 border-b border-rose-100 flex items-center justify-between">
+          <div data-motion-panel className="bg-white border border-line rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
+            <div className="px-6 py-4 bg-critical-soft border-b border-critical/20 flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <ShieldAlert className="w-5 h-5 text-rose-600" />
+                <ShieldAlert className="w-5 h-5 text-critical" />
                 <div>
-                  <h3 className="font-semibold text-slate-900 text-sm">Xử lý & Leo Thang vi phạm SLA</h3>
-                  <p className="text-2xs text-rose-700 font-semibold">{breachActionModal.dealCode} • {breachActionModal.kocName}</p>
+                  <h3 className="font-semibold text-ink text-sm">Xử lý & Leo Thang vi phạm SLA</h3>
+                  <p className="text-2xs text-critical font-semibold">{breachActionModal.dealCode} • {breachActionModal.kocName}</p>
                 </div>
               </div>
-              <button onClick={() => setBreachActionModal(null)} className="text-slate-400 hover:text-slate-600">
+              <button onClick={() => setBreachActionModal(null)} className="text-ink-3 hover:text-ink-2">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <div className="p-6 space-y-3.5 text-xs">
-              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
-                <div className="font-semibold text-slate-800">{breachActionModal.categoryLabel}</div>
-                <div className="text-slate-600">Hạn chót: <strong>{breachActionModal.slaDeadline}</strong></div>
-                <div className="text-rose-600 font-semibold">Số giờ quá hạn: {breachActionModal.hoursOverdue} giờ</div>
-                <div className="text-slate-500">PIC chịu trách nhiệm: <strong>{breachActionModal.picName} ({breachActionModal.picRole})</strong></div>
+              <div className="p-3 bg-canvas rounded-xl border border-line space-y-1">
+                <div className="font-semibold text-ink">{breachActionModal.categoryLabel}</div>
+                <div className="text-ink-2">Hạn chót: <strong>{breachActionModal.slaDeadline}</strong></div>
+                <div className="text-critical font-semibold">Số giờ quá hạn: {breachActionModal.hoursOverdue} giờ</div>
+                <div className="text-ink-3">PIC chịu trách nhiệm: <strong>{breachActionModal.picName} ({breachActionModal.picRole})</strong></div>
                 {breachActionModal.escalatedTo && (
-                  <div className="text-blue-600 font-semibold">Đã leo thang tới: <strong>{breachActionModal.escalatedTo}</strong></div>
+                  <div className="text-accent font-semibold">Đã leo thang tới: <strong>{breachActionModal.escalatedTo}</strong></div>
                 )}
               </div>
 
               {/* Action Buttons depending on Category */}
               <div className="space-y-2">
-                <span className="font-semibold text-slate-700 block">Thao tác can thiệp của Quản lý:</span>
+                <span className="font-semibold text-ink-2 block">Thao tác can thiệp của Quản lý:</span>
                 
                 {breachActionModal.category === 'BRAND_ORIENTATION_AUTO_AIR' && (
                   <button
                     onClick={() => handleResolveBreach(breachActionModal.id, 'Quản lý đã phê duyệt Tự Air do Brand quá hạn 3 ngày theo quy chế SLA B2C.')}
-                    className="w-full p-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl transition flex items-center justify-center gap-2"
+                    className="w-full p-2.5 bg-positive hover:bg-positive text-white font-semibold rounded-xl transition flex items-center justify-center gap-2"
                   >
                     <Zap className="w-4 h-4" />
                     <span>Phê duyệt đề xuất tự Air</span>
@@ -2523,7 +2527,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                 {breachActionModal.category === 'CONTRACT_OVER_9M_INVALID' && (
                   <button
                     onClick={() => handleResolveBreach(breachActionModal.id, 'Đã yêu cầu chuyên viên nộp bổ sung bản Scan HĐ và CCCD trước 17:00.')}
-                    className="w-full p-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition flex items-center justify-center gap-2"
+                    className="w-full p-2.5 bg-accent hover:bg-accent text-white font-semibold rounded-xl transition flex items-center justify-center gap-2"
                   >
                     <FileCheck className="w-4 h-4" />
                     <span>Yêu cầu bổ Sung bản Scan ký 2 bên & CCCD</span>
@@ -2533,7 +2537,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                 {breachActionModal.category === 'DATA_LOCKED_7_WORKING_DAYS' && (
                   <button
                     onClick={() => handleResolveBreach(breachActionModal.id, 'Leader đã xác nhận giải trình và mở khóa tạm 24h để chuyên viên điền link.')}
-                    className="w-full p-2.5 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-xl transition flex items-center justify-center gap-2"
+                    className="w-full p-2.5 bg-warning hover:bg-warning text-white font-semibold rounded-xl transition flex items-center justify-center gap-2"
                   >
                     <Unlock className="w-4 h-4" />
                     <span>Xác nhận mở khóa tạm 24h để điền link</span>
@@ -2545,9 +2549,9 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                     handlePingStaff(breachActionModal.picName, `Yêu cầu xử lý gấp vi phạm SLA: ${breachActionModal.categoryLabel}`);
                     handleResolveBreach(breachActionModal.id, `Quản lý đã gửi Ping qua Lark nhắc nhở chuyên viên ${breachActionModal.picName}.`);
                   }}
-                  className="w-full p-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold rounded-xl transition flex items-center justify-center gap-2 border border-slate-300"
+                  className="w-full p-2.5 bg-sunken hover:bg-sunken text-ink font-semibold rounded-xl transition flex items-center justify-center gap-2 border border-line-strong"
                 >
-                  <Send className="w-4 h-4 text-blue-600" />
+                  <Send className="w-4 h-4 text-accent" />
                   <span>Ping Lark nhắc PIC xử lý ngay</span>
                 </button>
               </div>

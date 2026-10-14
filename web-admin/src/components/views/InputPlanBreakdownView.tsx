@@ -4,50 +4,27 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { formatVndShort } from '../../lib/format';
 import {
   Layers,
-  Calculator,
-  DollarSign,
-  Video,
-  Sparkles,
-  TrendingUp,
   Download,
   Save,
   RotateCcw,
   CheckCircle2,
-  AlertTriangle,
   Send,
   Plus,
   Minus,
-  SlidersHorizontal,
   FileSpreadsheet,
-  Tv,
-  Share2,
-  Check,
   ChevronDown,
   ChevronUp,
-  Flame,
   ArrowRight,
   Zap,
-  Building2,
-  Calendar,
-  User,
-  FlaskConical,
-  Dices,
-  PieChart,
-  BarChart3,
   Sliders,
   LayoutGrid,
   Table as TableIcon,
-  HelpCircle,
-  Clock,
-  ArrowUpRight,
   ShieldCheck,
-  Coins,
   Users,
   UserCheck,
   X,
   ChevronLeft,
   MessageSquare,
-  BadgeCheck,
   SendHorizonal,
   Lock,
   Unlock,
@@ -77,11 +54,7 @@ import {
 import { 
   BENCHMARK_COSTS, 
   CONTENT_FORMAT_OPTIONS, 
-  INITIAL_INPUT_PLAN_STATE, 
   autoBalancePlanItems,
-  MOCK_PLAN_SCENARIOS,
-  generateRandomMockPlan,
-  MockPlanScenario
 } from '../../lib/inputPlanDefaults';
 import { exportInputPlanStudioToExcel, exportBrandMonthlyOneSheetToExcel } from '../../lib/excelExport';
 import { buildBrandOneSheetPlanData } from '../../lib/oneSheetPlanBuilder';
@@ -90,25 +63,58 @@ import { MonthlyPlanHub } from './MonthlyPlanHub';
 import {
   INITIAL_MONTHLY_PLANS,
   getPlanVersionSnapshots,
-  suggestNextVersionCode,
   enrichPlanWithVersions,
 } from '../../lib/monthlyPlanData';
 import { useMonthlyPlanSync } from '../../lib/useMonthlyPlanSync';
-import { PlanApprovalStepper, deriveSignOff } from './PlanApprovalStepper';
+import { PlanApprovalStepper } from './PlanApprovalStepper';
 import { PlanHistoryModal } from './PlanHistoryModal';
 import { PlanChatDrawer, PlanChatButton } from './PlanChatDrawer';
 import { usePlanChat } from '../../lib/usePlanChat';
 import { PlanSyncBadge } from './PlanSyncBadge';
 import {
   ConfirmDialog,
-  ShopeeLogo,
-  FacebookLogo,
-  InstagramLogo,
-  ThreadsLogo,
-  TikTokLogo,
   Presence,
+  Status,
 } from '../ui';
 import { StorePlanMindmap } from './StorePlanMindmap';
+
+const PIC_OPTIONS = [
+  'Lê Phương Thảo',
+  'Lương Thị Như Quỳnh',
+  'Lê Thanh Hải',
+  'Phạm Thị Thu Hằng',
+  'Hoàng Hải Long',
+  'Trần Hải Phượng',
+  'Phan Diệu Ánh',
+  'Vũ Hoài Lâm',
+  'Nguyễn Thị Mai Anh',
+  'Quỳnh Như',
+  'Trần Thị Hảo',
+  'Đặng Mai Hà Linh',
+  'Khánh Vy',
+  'Nguyễn Thu Trang',
+  'Lê Hoàng Yến',
+  'Trần Minh Đức'
+];
+
+const TEAM_MEMBERS_INFO: Record<string, { role: string; avatar: string; expertise: string }> = {
+  'Lê Phương Thảo': { role: 'Chuyên viên Booking B2C', avatar: 'PT', expertise: 'KOC Affiliate trả phí (KL1–KL6)' },
+  'Lương Thị Như Quỳnh': { role: 'Chuyên viên Booking B2C', avatar: 'NQ', expertise: 'KOC Affiliate & Key Creator (KL2–KL6)' },
+  'Lê Thanh Hải': { role: 'Chuyên viên Booking B2C', avatar: 'TH', expertise: 'KOC Affiliate & Mega Campaign' },
+  'Phạm Thị Thu Hằng': { role: 'Chuyên viên Booking B2C', avatar: 'TH', expertise: 'Affiliate TAP, FOC & Review voice' },
+  'Hoàng Hải Long': { role: 'Chuyên viên Booking B2C', avatar: 'HL', expertise: 'KOC Affiliate & Micro/Macro (KL1–KL5)' },
+  'Trần Hải Phượng': { role: 'Chuyên viên Booking B2C', avatar: 'HP', expertise: 'KOC Affiliate & Gian hàng mới' },
+  'Phan Diệu Ánh': { role: 'Chuyên viên Booking & Content', avatar: 'DÁ', expertise: 'KOC Mới, Self-Channel & Reup Sàn' },
+  'Vũ Hoài Lâm': { role: 'Chuyên viên Booking & Content', avatar: 'HL', expertise: 'Video Self-Channel & KOC Affiliate' },
+  'Nguyễn Thị Mai Anh': { role: 'Chuyên viên Content Self-Channel', avatar: 'MA', expertise: 'Kịch bản & Sản xuất Video Kênh Brand (Team Việt Hoàng)' },
+  'Quỳnh Như': { role: 'Chuyên viên Content Self-Channel', avatar: 'QN', expertise: 'Sản xuất Video Self-Channel & CTV (Team Việt Hoàng)' },
+  'Trần Thị Hảo': { role: 'Chuyên viên Gửi mẫu FOC', avatar: 'TH', expertise: 'Điều phối gửi mẫu miễn phí 0đ Cast (FOC)' },
+  'Đặng Mai Hà Linh': { role: 'Brand PIC / Senior Specialist', avatar: 'HL', expertise: 'Chiến lược, Celeb & Macro (KL5-KL7)' },
+  'Khánh Vy': { role: 'Senior Booking Specialist', avatar: 'KV', expertise: 'Key Creator & Mid-Macro (KL3-KL5)' },
+  'Nguyễn Thu Trang': { role: 'Booking Specialist', avatar: 'TT', expertise: 'Micro KOC & Shopee Affiliate' },
+  'Trần Minh Đức': { role: 'Live & Creator Specialist', avatar: 'MĐ', expertise: 'Livestream Độc quyền & Co-host' },
+  'Lê Hoàng Yến': { role: 'Multi-platform Specialist', avatar: 'HY', expertise: 'Facebook, Instagram & Shopee Video' }
+};
 
 interface InputPlanBreakdownViewProps {
   currentUser?: UserProfile;
@@ -159,7 +165,6 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
 
   // Main Plan State (default from Fresh balanced scenario or active plan)
   const [planState, setPlanState] = useState<InputPlanBreakdownState>(INITIAL_MONTHLY_PLANS[0]);
-  const [activeScenarioId, setActiveScenarioId] = useState<string>(MOCK_PLAN_SCENARIOS[0].id);
 
   // Khi người dùng drill-down từ Hồ sơ Gian hàng hoặc Hồ sơ Thương hiệu sang Kế hoạch tháng
   const [handledDrilldownNonce, setHandledDrilldownNonce] = useState<number>(0);
@@ -205,18 +210,21 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
   const [isChatOpen, setIsChatOpen] = useState(false);
 
   // Đồng bộ vai trò thao tác theo tài khoản đang đăng nhập
-  useEffect(() => {
-    if (!currentUser) return;
-    if (currentUser.role === 'GROWTH_MEMBER' || currentUser.role === 'GROWTH_MANAGER') {
-      setCurrentRole('GROWTH');
-    } else if (currentUser.role === 'MEDIA_MEMBER' || currentUser.role === 'MEDIA_MANAGER') {
-      setCurrentRole('MEDIA');
-    } else if (['ADMIN', 'MANAGER'].includes(currentUser.role)) {
-      setCurrentRole('LEAD');
-    } else if (currentUser.role === 'BOOKING_MEMBER' || currentUser.role === 'LEADER') {
-      setCurrentRole('BOOKING');
+  const [prevUserRole, setPrevUserRole] = useState<string | undefined>(undefined);
+  if (currentUser?.role !== prevUserRole) {
+    setPrevUserRole(currentUser?.role);
+    if (currentUser) {
+      if (currentUser.role === 'GROWTH_MEMBER' || currentUser.role === 'GROWTH_MANAGER') {
+        setCurrentRole('GROWTH');
+      } else if (currentUser.role === 'MEDIA_MEMBER' || currentUser.role === 'MEDIA_MANAGER') {
+        setCurrentRole('MEDIA');
+      } else if (['ADMIN', 'MANAGER'].includes(currentUser.role)) {
+        setCurrentRole('LEAD');
+      } else if (currentUser.role === 'BOOKING_MEMBER' || currentUser.role === 'LEADER') {
+        setCurrentRole('BOOKING');
+      }
     }
-  }, [currentUser]);
+  }
 
   // Active Section / Channel Sub-Tab: Tách riêng Tổng quan (OVERVIEW) và Chi tiết phân rã
   const [activeTab, setActiveTab] = useState<
@@ -345,7 +353,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
     };
   }, [weeklyMatrix]);
 
-  const handleUpdateWeeklyMatrixCell = (index: number, field: string, value: any) => {
+  const handleUpdateWeeklyMatrixCell = (index: number, field: string, value: number | string) => {
     setWeeklyMatrix(prev => prev.map((row, idx) => {
       if (idx === index) {
         return {
@@ -499,7 +507,6 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
   const [viewMode, setViewMode] = useState<'CARDS' | 'TABLE'>('TABLE');
   const [showApproveConfirm, setShowApproveConfirm] = useState(false);
   const [showRejectConfirm, setShowRejectConfirm] = useState(false);
-  const [isApprovalDetailOpen, setIsApprovalDetailOpen] = useState(false);
   const [isVersionHistoryModalOpen, setIsVersionHistoryModalOpen] = useState(false);
   const [isPlanReportOpen, setIsPlanReportOpen] = useState(false);
 
@@ -604,61 +611,6 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
     enabled: isChatOpen
   });
 
-  // Brand Options
-  const BRAND_OPTIONS = [
-    { name: 'Fresh_TikTok_E2E-C', label: 'Fresh (mỹ phẩm & chăm sóc da)' },
-    { name: 'Face Republic_TikTok_E2E-O', label: 'Face Republic (Dược mỹ phẩm)' },
-    { name: 'Clio_TikTok_E2E-C', label: 'Clio Cosmetics (Make-up chuẩn Hàn)' },
-    { name: 'Senka_TikTok_E2E-C', label: 'Senka (chăm sóc da & làm sạch)' },
-    { name: 'TM Clean_TikTok_E2E-C', label: 'TM Clean (Gia dụng & Chăm sóc nhà)' },
-    { name: 'Innisfree_TikTok_E2E-C', label: 'Innisfree (Trà xanh dưỡng da)' }
-  ];
-
-  const PIC_OPTIONS = [
-    'Lê Phương Thảo',
-    'Lương Thị Như Quỳnh',
-    'Lê Thanh Hải',
-    'Phạm Thị Thu Hằng',
-    'Hoàng Hải Long',
-    'Trần Hải Phượng',
-    'Phan Diệu Ánh',
-    'Vũ Hoài Lâm',
-    'Nguyễn Thị Mai Anh',
-    'Quỳnh Như',
-    'Trần Thị Hảo',
-    'Đặng Mai Hà Linh',
-    'Khánh Vy',
-    'Nguyễn Thu Trang',
-    'Lê Hoàng Yến',
-    'Trần Minh Đức'
-  ];
-
-  // Thông tin chuyên môn của các thành viên trong team Booking & Content để phân công nhiều người cùng làm
-  const TEAM_MEMBERS_INFO: Record<string, { role: string; avatar: string; expertise: string }> = {
-    'Lê Phương Thảo': { role: 'Chuyên viên Booking B2C', avatar: 'PT', expertise: 'KOC Affiliate trả phí (KL1–KL6)' },
-    'Lương Thị Như Quỳnh': { role: 'Chuyên viên Booking B2C', avatar: 'NQ', expertise: 'KOC Affiliate & Key Creator (KL2–KL6)' },
-    'Lê Thanh Hải': { role: 'Chuyên viên Booking B2C', avatar: 'TH', expertise: 'KOC Affiliate & Mega Campaign' },
-    'Phạm Thị Thu Hằng': { role: 'Chuyên viên Booking B2C', avatar: 'TH', expertise: 'Affiliate TAP, FOC & Review voice' },
-    'Hoàng Hải Long': { role: 'Chuyên viên Booking B2C', avatar: 'HL', expertise: 'KOC Affiliate & Micro/Macro (KL1–KL5)' },
-    'Trần Hải Phượng': { role: 'Chuyên viên Booking B2C', avatar: 'HP', expertise: 'KOC Affiliate & Gian hàng mới' },
-    'Phan Diệu Ánh': { role: 'Chuyên viên Booking & Content', avatar: 'DÁ', expertise: 'KOC Mới, Self-Channel & Reup Sàn' },
-    'Vũ Hoài Lâm': { role: 'Chuyên viên Booking & Content', avatar: 'HL', expertise: 'Video Self-Channel & KOC Affiliate' },
-    'Nguyễn Thị Mai Anh': { role: 'Chuyên viên Content Self-Channel', avatar: 'MA', expertise: 'Kịch bản & Sản xuất Video Kênh Brand (Team Việt Hoàng)' },
-    'Quỳnh Như': { role: 'Chuyên viên Content Self-Channel', avatar: 'QN', expertise: 'Sản xuất Video Self-Channel & CTV (Team Việt Hoàng)' },
-    'Trần Thị Hảo': { role: 'Chuyên viên Gửi mẫu FOC', avatar: 'TH', expertise: 'Điều phối gửi mẫu miễn phí 0đ Cast (FOC)' },
-    'Đặng Mai Hà Linh': { role: 'Brand PIC / Senior Specialist', avatar: 'HL', expertise: 'Chiến lược, Celeb & Macro (KL5-KL7)' },
-    'Khánh Vy': { role: 'Senior Booking Specialist', avatar: 'KV', expertise: 'Key Creator & Mid-Macro (KL3-KL5)' },
-    'Nguyễn Thu Trang': { role: 'Booking Specialist', avatar: 'TT', expertise: 'Micro KOC & Shopee Affiliate' },
-    'Trần Minh Đức': { role: 'Live & Creator Specialist', avatar: 'MĐ', expertise: 'Livestream Độc quyền & Co-host' },
-    'Lê Hoàng Yến': { role: 'Multi-platform Specialist', avatar: 'HY', expertise: 'Facebook, Instagram & Shopee Video' }
-  };
-
-  const LEADER_OPTIONS = [
-    'Nguyễn Thị Ngọc Tâm (Trưởng nhóm Booking)',
-    'Việt Hoàng (Leader Partnership Self-Channel)',
-    'Không có leader (Duyệt thẳng Trưởng phòng)'
-  ];
-
   // State Leader Sơ Duyệt Nội Bộ
   const [isLeaderApprovalModalOpen, setIsLeaderApprovalModalOpen] = useState(false);
   const [leaderApprovalDecision, setLeaderApprovalDecision] = useState<'APPROVE' | 'REJECT'>('APPROVE');
@@ -725,14 +677,6 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
     notify(`Đã gửi duyệt Kế hoạch "${planState.title}" lên Quản lý thành công!`);
   };
 
-  const WEEK_OPTIONS = [
-    'W40 [25.09 - 01.10]',
-    'W41 [05.10 - 11.10]',
-    'W42 [12.10 - 18.10]',
-    'W43 [19.10 - 25.10]',
-    'W44 [26.10 - 31.10]'
-  ];
-
   // -------------------------------------------------------------
   // REAL-TIME METRICS CALCULATIONS
   // -------------------------------------------------------------
@@ -753,15 +697,9 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
   const totalCombinedBudget = totalAllocatedBudget + totalAdsBudget;
   const budgetHeadroom = planState.totalTargetBudget - totalCombinedBudget;
   const isOverBudget = budgetHeadroom < 0;
-  const budgetUsagePct = planState.totalTargetBudget > 0
-    ? (totalCombinedBudget / planState.totalTargetBudget) * 100
-    : 0;
 
   // Content Headroom & Status
   const contentHeadroom = planState.totalTargetContents - totalAllocatedContents;
-  const contentFillPct = planState.totalTargetContents > 0
-    ? (totalAllocatedContents / planState.totalTargetContents) * 100
-    : 0;
 
   // Channel Subtotals for Visual Breakdown: Tách bạch rõ 4 khối nghiệp vụ
   const channelTotals = useMemo(() => {
@@ -787,7 +725,6 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
   // CIR & ROI Projected
   const projectedCir = totalProjectedGmv > 0 ? (totalAllocatedBudget / totalProjectedGmv) * 100 : 0;
   const projectedRoi = totalAllocatedBudget > 0 ? totalProjectedGmv / totalAllocatedBudget : 0;
-  const blendedCostPerVideo = totalAllocatedContents > 0 ? Math.round(totalAllocatedBudget / totalAllocatedContents) : 0;
 
   // Tỷ trọng ngân sách dành cho High-Tier KOC (KL4 - KL7) trong Affiliate (giới hạn 45%)
   const highTierBudget = useMemo(() => {
@@ -964,10 +901,10 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
       ...prev,
       items: applyLayer1FrameToLayer2Items(layer1Metrics, prev.items),
     }));
-    notify('Đã đồng bộ Khung chỉ số cốt lõi (Layer 1) xuống bảng phân rã chi tiết (Layer 2)!');
+    notify('Đã đồng bộ Chỉ tiêu tháng sang bảng phân bổ chi tiết!');
   };
 
-  // Chốt Layer 1 -> Chuyển sang Layer 2 (Phân rã chi tiết)
+  // Chốt Chỉ tiêu tháng -> Chuyển sang Phân bổ chi tiết
   const handleLockLayer1AndProceed = (syncToLayer2: boolean = true) => {
     const actor = currentUser?.name || planState.growthPic || planState.pic || 'Nhóm Kế Hoạch';
     const now = new Date().toISOString();
@@ -983,10 +920,10 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
       authorName: actor,
       authorRole: currentRole,
       authorTitle: currentRole === 'GROWTH' ? 'Growth PIC' : currentRole === 'LEAD' ? 'Quản lý B2C' : 'Booking PIC',
-      content: `Đã thống nhất và CHỐT KHUNG CHỈ SỐ CỐT LÕI (Layer 1) trên phiên bản ${planState.currentVersionCode || 'v1.0'}:\n• Tổng PnL Net: ${formatVndShort(lockedLayer1.pnlTotalBudgetNet)} | Target NMV: ${formatVndShort(lockedLayer1.targetNmvTotal)}\n• KOC trả phí: ${lockedLayer1.qtyAffiliatePaid} video (${formatVndShort(lockedLayer1.budgetAffiliateNet)}) | Mẫu FOC 0đ: ${lockedLayer1.qtyFocSample} suất\n• Kênh Brand: ${lockedLayer1.qtySelfChannel} video (${formatVndShort(lockedLayer1.budgetSelfChannelNet)}) | Đa sàn: ${lockedLayer1.qtyMultiPlatform} video (${formatVndShort(lockedLayer1.budgetMultiPlatformNet)})\n→ Chuyển sang Layer 2: Phân rã chi tiết KL1–KL7 & Lịch tuần.`,
+      content: `Đã thống nhất và CHỐT CHỈ TIÊU THÁNG trên phiên bản ${planState.currentVersionCode || 'v1.0'}:\n• Tổng PnL Net: ${formatVndShort(lockedLayer1.pnlTotalBudgetNet)} | Target NMV: ${formatVndShort(lockedLayer1.targetNmvTotal)}\n• KOC trả phí: ${lockedLayer1.qtyAffiliatePaid} video (${formatVndShort(lockedLayer1.budgetAffiliateNet)}) | Mẫu FOC 0đ: ${lockedLayer1.qtyFocSample} suất\n• Kênh Brand: ${lockedLayer1.qtySelfChannel} video (${formatVndShort(lockedLayer1.budgetSelfChannelNet)}) | Đa sàn: ${lockedLayer1.qtyMultiPlatform} video (${formatVndShort(lockedLayer1.budgetMultiPlatformNet)})\n→ Chuyển sang phân bổ chi tiết KL1–KL7 & Lịch tuần.`,
       type: 'STATUS_CHANGE',
       timestamp: now,
-      tags: ['Chốt Layer 1', planState.currentVersionCode || 'v1.0'],
+      tags: ['Chốt chỉ tiêu', planState.currentVersionCode || 'v1.0'],
     };
 
     setPlanState(prev => {
@@ -1010,14 +947,14 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
     });
 
     setActiveTab('ALL_SUMMARY');
-    notify('Đã chốt Khung chỉ số cốt lõi (Layer 1) và chuyển sang Layer 2 (Phân rã chi tiết)!');
+    notify('Đã chốt Chỉ tiêu tháng và chuyển sang Phân bổ chi tiết!');
   };
 
-  // Mở khóa Layer 1 khi đang ở Bản nháp hoặc Bản điều chỉnh (cho phép sửa cả 2 Layer)
+  // Mở khóa chỉ tiêu khi đang ở Bản nháp hoặc Bản điều chỉnh
   const handleUnlockLayer1ForEdit = () => {
     if (isPlanLocked) return;
     handleUpdateLayer1Metrics({ isLocked: false });
-    notify(`Đã mở khóa Layer 1 trên bản ${planState.currentVersionCode || 'v1.0'} — có thể chỉnh sửa đồng thời cả Layer 1 và Layer 2.`);
+    notify(`Đã mở khóa Chỉ tiêu tháng trên bản ${planState.currentVersionCode || 'v1.0'} — có thể chỉnh sửa lại chỉ tiêu và phân bổ.`);
   };
 
   // -------------------------------------------------------------
@@ -1094,38 +1031,6 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
     const newQty = item.qty + contentHeadroom;
     handleUpdateItemQty(id, newQty);
     notify(`Đã điền toàn bộ ${contentHeadroom} slot nội dung còn thiếu vào [${item.tierLabel.split(':')[0]}]!`);
-  };
-
-  const [dragOverRowId, setDragOverRowId] = useState<string | null>(null);
-  const [draggingPayload, setDraggingPayload] = useState<{ type: 'FORMAT' | 'STAFF'; value: string } | null>(null);
-
-  const handleDropOnRow = (rowId: string) => {
-    setDragOverRowId(null);
-    if (!draggingPayload) return;
-    if (draggingPayload.type === 'FORMAT') {
-      handleUpdateItemFormat(rowId, draggingPayload.value);
-      notify(`Đã gán định dạng "${draggingPayload.value}" cho dòng được thả.`);
-    } else if (draggingPayload.type === 'STAFF') {
-      handleUpdateItemAssignee(rowId, draggingPayload.value);
-      notify(`Đã phân công "${draggingPayload.value}" phụ trách dòng được thả.`);
-    }
-    setDraggingPayload(null);
-  };
-
-  const handleApplyToVisibleRows = (type: 'FORMAT' | 'STAFF', value: string) => {
-    const visibleIds = new Set(visibleItems.map(it => it.id));
-    setPlanState(prev => ({
-      ...prev,
-      items: prev.items.map(it => {
-        if (!visibleIds.has(it.id)) return it;
-        return type === 'FORMAT'
-          ? { ...it, contentFormat: value }
-          : { ...it, assignedStaff: value };
-      })
-    }));
-    notify(type === 'FORMAT'
-      ? `Đã áp dụng định dạng "${value}" cho toàn bộ ${visibleItems.length} dòng đang hiển thị.`
-      : `Đã gán nhân sự "${value}" cho toàn bộ ${visibleItems.length} dòng đang hiển thị.`);
   };
 
   // Bù phần video còn thiếu vào FOC (Mẫu 0đ) để khớp tổng chỉ tiêu nội dung mà không đội ngân sách
@@ -1271,51 +1176,11 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
     try {
       await exportInputPlanStudioToExcel(planState);
       notify(`Xuất file Excel 4.1.1 Input Plan thành công cho ${planState.brandName}!`);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      notify(`Lỗi khi xuất Excel: ${err?.message || 'Vui lòng thử lại'}`);
+      const errMsg = err instanceof Error ? err.message : 'Vui lòng thử lại';
+      notify(`Lỗi khi xuất Excel: ${errMsg}`);
     }
-  };
-
-  const handleApplyToWeeklyPlan = () => {
-    const getItem = (id: string) => planState.items.find(it => it.id === id);
-    const newWeeklyPlan: WeeklyStorePlan411 = {
-      id: `PLAN-411-${Date.now().toString().slice(-6)}`,
-      month: planState.month,
-      week: planState.week,
-      pic: planState.pic,
-      storeName: planState.brandName,
-      tiktokAffiliateQty: planState.items.filter(it => it.channel === 'TIKTOK').reduce((s, it) => s + it.qty, 0),
-      tapAffiliateQty: getItem('row-tt-tap')?.qty || 0,
-      kocTiersCount: {
-        kl1: getItem('row-tt-kl1')?.qty || 0,
-        kl2: getItem('row-tt-kl2')?.qty || 0,
-        kl3: getItem('row-tt-kl3')?.qty || 0,
-        kl4: getItem('row-tt-kl4')?.qty || 0,
-        kl5: getItem('row-tt-kl5')?.qty || 0,
-        kl6: getItem('row-tt-kl6')?.qty || 0,
-        kl7: getItem('row-tt-kl7')?.qty || 0
-      },
-      totalAffiliateBudget: planState.items.filter(it => it.channel === 'TIKTOK').reduce((s, it) => s + it.totalBudget, 0),
-      tierBudgets: {
-        kl1: getItem('row-tt-kl1')?.totalBudget || 0,
-        kl2: getItem('row-tt-kl2')?.totalBudget || 0,
-        kl3: getItem('row-tt-kl3')?.totalBudget || 0,
-        kl4: getItem('row-tt-kl4')?.totalBudget || 0,
-        kl5: getItem('row-tt-kl5')?.totalBudget || 0,
-        kl6: getItem('row-tt-kl6')?.totalBudget || 0,
-        kl7: getItem('row-tt-kl7')?.totalBudget || 0
-      },
-      actualBookedQty: 0,
-      actualSpentBudget: 0,
-      targetGmv: planState.targetGmv,
-      notes: planState.notes
-    };
-
-    if (onApplyPlanToWeeklyStore) {
-      onApplyPlanToWeeklyStore(newWeeklyPlan);
-    }
-    notify(`Đã lưu kế hoạch ${planState.week} (${planState.brandName}) vào Sổ Kế Hoạch Tuần Thực Tế!`);
   };
 
   // Cập nhật người phụ trách cho từng dòng phân rã
@@ -1551,7 +1416,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
   };
 
   // Visible items based on activeTab & focusedStaffFilter: Chia tách rõ 4 đầu việc B2C + lọc theo nhân sự phụ trách
-  const visibleItems = useMemo(() => {
+  const visibleItems = (() => {
     let base = planState.items.filter(it => it.channel !== 'LIVESTREAM');
     if (activeTab === 'AFFILIATE_PAID') base = planState.items.filter(it => it.channel === 'TIKTOK' && !it.tierCode.includes('TAP'));
     else if (activeTab === 'TAP_FREECAST') base = planState.items.filter(it => it.tierCode.includes('TAP') || it.id === 'row-tt-tap');
@@ -1562,22 +1427,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
       return base.filter(it => (it.assignedStaff || planState.pic) === focusedStaffFilter);
     }
     return base;
-  }, [activeTab, planState.items, focusedStaffFilter, planState.pic]);
-
-  // Helper for Tier Badge Color
-  const getTierBadgeStyle = (tierCode: string) => {
-    switch (tierCode) {
-      case 'KL1': return 'bg-emerald-50 text-emerald-700 border-emerald-200';
-      case 'KL2': return 'bg-emerald-50 text-emerald-700 border-emerald-200';
-      case 'KL3': return 'bg-blue-50 text-blue-700 border-blue-200';
-      case 'KL4': return 'bg-blue-50 text-blue-700 border-blue-200';
-      case 'KL5': return 'bg-slate-50 text-slate-700 border-slate-200';
-      case 'KL6': return 'bg-amber-50 text-amber-700 border-amber-200';
-      case 'KL7': return 'bg-rose-50 text-rose-700 border-rose-200';
-      case 'TAP UpAffiliate': return 'bg-slate-100 text-slate-700 border-slate-200';
-      default: return 'bg-blue-50 text-blue-700 border-blue-200';
-    }
-  };
+  })();
 
   const handleStatusChangeForPlan = (
     planId: string, 
@@ -1715,7 +1565,6 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
           onOpenPlanReport={() => setIsPlanReportOpen(true)}
         onSelectPlan={(selected, options) => {
           setPlanState(selected);
-          setIsApprovalDetailOpen(selected.status === 'PENDING_APPROVAL');
           if (options?.focusStaffName) {
             setFocusedStaffFilter(options.focusStaffName);
             if (options.focusWorkstream === 'AFFILIATE_PAID') setActiveTab('AFFILIATE_PAID');
@@ -1852,7 +1701,6 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
   const deltaQtyVsBaseline = baselineSnapshot ? (planState.totalTargetContents || 0) - (baselineSnapshot.totalTargetContents || 0) : 0;
 
   const openApprovalDetail = () => {
-    setIsApprovalDetailOpen(true);
     setTimeout(() => document.getElementById('plan-approval-detail')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
   };
 
@@ -1937,7 +1785,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
           </div>
         </div>
 
-        {/* Ở giữa: Chuyển đổi tách biệt giữa LAYER 1 (Chỉ số cốt lõi) và LAYER 2 (Phân rã chi tiết) */}
+        {/* Ở giữa: Chuyển đổi giữa Chỉ tiêu tháng và Phân bổ kênh */}
         <div className="inline-flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200/80 flex-wrap gap-0.5">
           <button
             type="button"
@@ -1948,7 +1796,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <span>1. Layer 1: Chỉ số cốt lõi</span>
+            <span>1. Chỉ tiêu tháng</span>
             <span className={`px-1.5 py-0.2 rounded text-2xs font-bold ${
               isLayer1Locked
                 ? 'bg-emerald-100 text-emerald-700'
@@ -1968,7 +1816,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <span>2. Layer 2: Phân rã KL1–KL7 &amp; Kênh</span>
+            <span>2. Phân bổ kênh &amp; KOC</span>
           </button>
           <button
             type="button"
@@ -1979,7 +1827,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            3. Chia 5 tuần (W1–W5)
+            3. Lịch tuần
           </button>
           <button
             type="button"
@@ -1990,7 +1838,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            4. Biểu mẫu 4.1.1
+            4. Biểu mẫu tổng hợp
           </button>
           <button
             type="button"
@@ -2002,7 +1850,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
             }`}
           >
             <FileSpreadsheet className="w-3.5 h-3.5" />
-            <span>5. Trình Brand (1-Sheet)</span>
+            <span>5. Bản duyệt Brand</span>
           </button>
         </div>
 
@@ -2194,12 +2042,12 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                   {isPlanLocked
                     ? 'Phiên bản đã khóa chốt'
                     : isLayer1Locked
-                    ? 'Layer 1 đã chốt — Đang mở Layer 2 phân rã (Bản nháp vẫn có thể mở khóa sửa cả 2 Layer)'
-                    : 'Đang mở Layer 1 & Layer 2 để các bên điền, chỉnh sửa và trao đổi'}
+                    ? 'Chỉ tiêu tháng đã chốt — Đang mở phân bổ chi tiết'
+                    : 'Đang mở để các bên điền chỉ tiêu và lập phân bổ'}
                 </span>
               </div>
               <p className="text-xs text-slate-300">
-                <strong>Bước 1:</strong> Growth đưa số tổng PnL → <strong>Bước 2 (Layer 1):</strong> Các bên cùng điền &amp; thống nhất chỉ số cốt lõi rồi nhấn <strong>Chốt</strong> → <strong>Bước 3 (Layer 2):</strong> Phân rã chi tiết KL1–KL7 &amp; chia tuần.
+                Thống nhất chỉ tiêu cốt lõi rồi nhấn <strong>Chốt chỉ tiêu</strong> để chuyển sang phân bổ kênh &amp; lịch tuần.
               </p>
             </div>
 
@@ -2211,7 +2059,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs transition cursor-pointer"
                 >
                   <Unlock className="w-3.5 h-3.5" />
-                  <span>Mở khóa sửa Layer 1</span>
+                  <span>Mở khóa sửa chỉ tiêu</span>
                 </button>
               )}
               {!isLayer1Locked && (
@@ -2221,7 +2069,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                   className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold text-xs shadow-xs transition cursor-pointer"
                 >
                   <CheckCircle2 className="w-3.5 h-3.5" />
-                  <span>Chốt Layer 1 &amp; Sang Phân rã Layer 2 →</span>
+                  <span>Chốt chỉ tiêu &amp; Sang phân bổ →</span>
                 </button>
               )}
               {isLayer1Locked && (
@@ -2230,7 +2078,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                   onClick={() => setActiveTab('ALL_SUMMARY')}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs transition cursor-pointer"
                 >
-                  <span>Sang Layer 2: Phân rã chi tiết</span>
+                  <span>Mở phân bổ chi tiết</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </button>
               )}
@@ -2442,11 +2290,11 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                                     targetNmvTotal: activePhase.targetGmv || layer1Metrics.targetNmvTotal,
                                     pnlTotalBudgetNet: activePhase.allocatedBudget || layer1Metrics.pnlTotalBudgetNet,
                                   });
-                                  notify(`Đã áp dụng Hạn mức Phase ${planState.month} (${formatVndShort(activePhase.allocatedBudget)}) vào Layer 1!`);
+                                  notify(`Đã áp dụng Hạn mức Phase ${planState.month} (${formatVndShort(activePhase.allocatedBudget)}) vào bảng Chỉ tiêu!`);
                                 }}
                                 className="text-[10px] font-semibold text-indigo-700 hover:underline cursor-pointer"
                               >
-                                Áp vào Layer 1 →
+                                Áp vào Chỉ tiêu →
                               </button>
                             )}
                           </div>
@@ -2629,7 +2477,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
               }`}>
                 <div className="flex items-center justify-between gap-1">
                   <span className="text-2xs font-semibold text-slate-600">
-                    4. Đối soát Chia khung Layer 1 vs PnL
+                    4. Đối soát Chỉ tiêu vs PnL
                   </span>
                   <span className={`text-2xs font-mono font-bold px-1.5 py-0.5 rounded ${
                     layer1BudgetGapVsPnl < 0
@@ -2649,24 +2497,24 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                   {formatVndShort(totalLayer1ChannelBudgetNet)} <span className="text-xs font-normal text-slate-500">/ {formatVndShort(layer1Metrics.pnlTotalBudgetNet)}</span>
                 </div>
                 <span className="text-2xs text-slate-600 mt-1 block">
-                  Tổng sản lượng Layer 1: <strong>{totalLayer1Videos} video</strong> + <strong>{layer1Metrics.qtyLivestreamSessions} phiên live</strong>
+                  Tổng sản lượng chỉ tiêu: <strong>{totalLayer1Videos} video</strong> + <strong>{layer1Metrics.qtyLivestreamSessions} phiên live</strong>
                 </span>
               </div>
             </div>
           </div>
 
-          {/* 1B. LAYER 1: BẢNG ĐIỀN & THỐNG NHẤT CÁC CHỈ SỐ CỐT LÕI GIỮA CÁC BÊN */}
+          {/* 1B. BẢNG THỐNG NHẤT CHỈ TIÊU CỐT LÕI GIỮA CÁC BÊN */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
             <div className="lg:col-span-8 bg-white rounded-xl border border-slate-200 overflow-hidden shadow-2xs">
               <div className="px-4 py-3 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2 bg-slate-50/80">
                 <div>
                   <div className="flex items-center gap-2">
                     <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wide">
-                      Layer 1 — Bảng điền &amp; thống nhất Chỉ số cốt lõi (Growth · Booking B2C · Media)
+                      Bảng thống nhất Chỉ tiêu tháng (Growth · Booking B2C · Media)
                     </h3>
                   </div>
                   <p className="text-2xs text-slate-500 mt-0.5">
-                    Các bên cùng điền số lượng mục tiêu và trần chi phí Net theo 5 luồng cốt lõi. Sau khi chốt mới chuyển sang phân rã KL1–KL7 ở Layer 2.
+                    Các bên cùng điền số lượng mục tiêu và trần chi phí Net theo 5 luồng cốt lõi trước khi phân bổ chi tiết KL1–KL7.
                   </p>
                 </div>
 
@@ -2676,9 +2524,9 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                       type="button"
                       onClick={handleSyncLayer1ToLayer2}
                       className="px-2.5 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-2xs font-semibold transition cursor-pointer"
-                      title="Cập nhật các dòng KL1-KL7, FOC, Kênh Brand ở Layer 2 khớp theo khung Layer 1 này"
+                      title="Cập nhật các dòng KL1-KL7, FOC, Kênh Brand khớp theo bảng chỉ tiêu này"
                     >
-                      Đồng bộ xuống Layer 2
+                      Đồng bộ sang Phân bổ
                     </button>
                   )}
                   <button
@@ -2701,7 +2549,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                       <th className="py-2.5 px-2.5 text-right">Trần chi phí Net (VNĐ)</th>
                       <th className="py-2.5 px-2.5 text-right">Quy đổi Gross</th>
                       <th className="py-2.5 px-2.5 text-right">Mục tiêu Doanh số</th>
-                      <th className="py-2.5 px-3.5 text-right">Đối soát Layer 2</th>
+                      <th className="py-2.5 px-3.5 text-right">Đã phân bổ</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -2709,7 +2557,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                     <tr className="hover:bg-slate-50/70">
                       <td className="py-2.5 px-3.5">
                         <div className="font-semibold text-slate-900">1. Video KOC trả phí (Affiliate Paid)</div>
-                        <div className="text-2xs text-slate-500">Video có cast (sẽ phân rã KL1 → KL7 ở Layer 2)</div>
+                        <div className="text-2xs text-slate-500">Video có cast (phân bổ KL1 → KL7 theo tuần)</div>
                       </td>
                       <td className="py-2.5 px-2.5 text-right">
                         <div className="inline-flex items-center justify-end gap-1">
@@ -2754,7 +2602,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                             ? 'text-emerald-700'
                             : 'text-amber-700'
                         }`}>
-                          L2: {channelTotals.affiliatePaid.qty} video · {formatVndShort(channelTotals.affiliatePaid.budget)}
+                          Đã phân bổ: {channelTotals.affiliatePaid.qty} video · {formatVndShort(channelTotals.affiliatePaid.budget)}
                         </div>
                         <button
                           type="button"
@@ -2800,7 +2648,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                         <div className={`text-2xs font-mono font-semibold ${
                           channelTotals.tapFreecast.qty === layer1Metrics.qtyFocSample ? 'text-emerald-700' : 'text-amber-700'
                         }`}>
-                          L2: {channelTotals.tapFreecast.qty} suất
+                          Đã phân bổ: {channelTotals.tapFreecast.qty} suất
                         </div>
                         <button
                           type="button"
@@ -2864,7 +2712,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                             ? 'text-emerald-700'
                             : 'text-amber-700'
                         }`}>
-                          L2: {channelTotals.selfChannel.qty} video · {formatVndShort(channelTotals.selfChannel.budget)}
+                          Đã phân bổ: {channelTotals.selfChannel.qty} video · {formatVndShort(channelTotals.selfChannel.budget)}
                         </div>
                         <button
                           type="button"
@@ -2920,7 +2768,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                             ? 'text-emerald-700'
                             : 'text-amber-700'
                         }`}>
-                          L2: {channelTotals.multiPlatform.qty} video · {formatVndShort(channelTotals.multiPlatform.budget)}
+                          Đã phân bổ: {channelTotals.multiPlatform.qty} video · {formatVndShort(channelTotals.multiPlatform.budget)}
                         </div>
                         <button
                           type="button"
@@ -2988,7 +2836,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                   <tfoot>
                     <tr className="bg-slate-50 border-t border-slate-200 font-bold text-slate-900">
                       <td className="py-2.5 px-3.5">
-                        Tổng cộng Khung Layer 1 (Kèm gói Ads {formatVndShort(layer1Metrics.budgetAdsNet)})
+                        Tổng cộng Chỉ tiêu (Kèm gói Ads {formatVndShort(layer1Metrics.budgetAdsNet)})
                       </td>
                       <td className="py-2.5 px-2.5 text-right font-mono">
                         {totalLayer1Videos} video + {layer1Metrics.qtyLivestreamSessions} live
@@ -3003,18 +2851,18 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                         {formatVndShort(layer1Metrics.targetNmvTotal)}
                       </td>
                       <td className="py-2.5 px-3.5 text-right font-mono text-xs">
-                        L2: {totalAllocatedContents} video · {formatVndShort(totalCombinedBudget)}
+                        Đã phân bổ: {totalAllocatedContents} video · {formatVndShort(totalCombinedBudget)}
                       </td>
                     </tr>
                   </tfoot>
                 </table>
               </div>
 
-              {/* Khu vực ghi chú thống nhất & Nút Chốt Layer 1 */}
+              {/* Khu vực ghi chú thống nhất & Nút Chốt */}
               <div className="p-3.5 bg-slate-50/70 border-t border-slate-200 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
                 <div className="flex-1">
                   <label className="text-2xs font-semibold text-slate-600 block mb-1">
-                    Ghi chú thống nhất chỉ số cốt lõi ở Layer 1 (Growth · Booking · Media):
+                    Ghi chú thống nhất chỉ tiêu tháng (Growth · Booking · Media):
                   </label>
                   <input
                     type="text"
@@ -3033,7 +2881,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                       className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-xs transition inline-flex items-center gap-1.5 cursor-pointer"
                     >
                       <CheckCircle2 className="w-4 h-4" />
-                      <span>Chốt Layer 1 &amp; Sang Phân rã Layer 2 →</span>
+                      <span>Chốt chỉ tiêu &amp; Sang phân bổ chi tiết →</span>
                     </button>
                   ) : (
                     <div className="flex items-center gap-2">
@@ -3044,7 +2892,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                           className="px-3 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 font-semibold text-xs transition inline-flex items-center gap-1 cursor-pointer"
                         >
                           <Unlock className="w-3.5 h-3.5" />
-                          <span>Sửa lại Layer 1</span>
+                          <span>Sửa lại Chỉ tiêu</span>
                         </button>
                       )}
                       <button
@@ -3052,7 +2900,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                         onClick={() => setActiveTab('ALL_SUMMARY')}
                         className="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition inline-flex items-center gap-1.5 cursor-pointer"
                       >
-                        <span>Mở Layer 2: Phân rã chi tiết</span>
+                        <span>Mở bảng Phân bổ chi tiết</span>
                         <ArrowRight className="w-3.5 h-3.5" />
                       </button>
                     </div>
@@ -3127,9 +2975,9 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                 </div>
 
                 <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
-                  <span className="text-2xs text-slate-500 block">Trạng thái Layer 1</span>
+                  <span className="text-2xs text-slate-500 block">Trạng thái Chỉ tiêu</span>
                   <strong className={`font-semibold mt-0.5 block ${isLayer1Locked ? 'text-emerald-700' : 'text-amber-700'}`}>
-                    {isLayer1Locked ? 'Đã chốt khung chỉ số' : 'Đang điền & trao đổi'}
+                    {isLayer1Locked ? 'Đã chốt chỉ tiêu tháng' : 'Đang điền & trao đổi'}
                   </strong>
                 </div>
               </div>
@@ -3137,10 +2985,10 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
               <div className="p-3 rounded-lg bg-blue-50/60 border border-blue-100 text-2xs text-slate-700 space-y-1">
                 <div className="font-semibold text-blue-900">Quy tắc điều chỉnh trên các bản nháp / phiên bản:</div>
                 <p>
-                  • Ở <strong>Bản nháp</strong> hoặc <strong>Bản điều chỉnh ({activeVersionCode})</strong>, các bên có thể chỉnh sửa linh hoạt ở cả <strong>Layer 1 (Khung chỉ số cốt lõi)</strong> và <strong>Layer 2 (Phân rã KL1–KL7 &amp; Tuần)</strong>.
+                  • Ở <strong>Bản nháp</strong> hoặc <strong>Bản điều chỉnh ({activeVersionCode})</strong>, các bên có thể chỉnh sửa linh hoạt ở cả <strong>Chỉ tiêu tháng</strong> và <strong>Phân bổ chi tiết (KL1–KL7 &amp; Tuần)</strong>.
                 </p>
                 <p>
-                  • Nhấn <strong>&ldquo;Đồng bộ xuống Layer 2&rdquo;</strong> để tự động cân đối bảng KL1–KL7 theo đúng trần Layer 1 mới.
+                  • Nhấn <strong>&ldquo;Đồng bộ sang Phân bổ&rdquo;</strong> để tự động cân đối bảng KL1–KL7 theo đúng chỉ tiêu mới.
                 </p>
               </div>
 
@@ -3178,16 +3026,16 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
       )}
 
       {/* ========================================================================= */}
-      {/* MÀN 2 (LAYER 2): PHÂN RÃ CHI TIẾT HẠNG MỤC (DỰA TRÊN KHUNG LAYER 1)       */}
+      {/* MÀN 2: PHÂN RÃ CHI TIẾT HẠNG MỤC (DỰA TRÊN CHỈ TIÊU ĐÃ THỐNG NHẤT)       */}
       {/* ========================================================================= */}
       {isDetailBreakdownTab && (
         <div className="bg-white rounded-xl border border-slate-200/90 px-3.5 py-2.5 space-y-2.5">
-          {/* Thanh mốc trần Layer 1 đối chiếu trực tiếp với Phân rã Layer 2 */}
+          {/* Thanh mốc chỉ tiêu đối chiếu trực tiếp với Phân rã chi tiết */}
           <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200/80 flex flex-wrap items-center justify-between gap-2 text-2xs">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="font-bold text-slate-800 uppercase tracking-wide inline-flex items-center gap-1">
                 {isLayer1Locked ? <Lock className="w-3 h-3 text-emerald-600" /> : <Unlock className="w-3 h-3 text-amber-600" />}
-                <span>Mốc Khung Layer 1 ({activeVersionCode}):</span>
+                <span>Mốc chỉ tiêu tháng ({activeVersionCode}):</span>
               </span>
               <span className={`px-2 py-0.5 rounded border font-mono ${
                 channelTotals.affiliatePaid.qty === layer1Metrics.qtyAffiliatePaid && channelTotals.affiliatePaid.budget === layer1Metrics.budgetAffiliateNet
@@ -3226,7 +3074,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                   onClick={handleSyncLayer1ToLayer2}
                   className="px-2 py-1 rounded bg-blue-600 hover:bg-blue-700 text-white font-semibold transition cursor-pointer"
                 >
-                  Khớp tự động theo Layer 1
+                  Khớp theo chỉ tiêu
                 </button>
               )}
               <button
@@ -3234,7 +3082,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                 onClick={() => setActiveTab('OVERVIEW')}
                 className="px-2 py-1 rounded bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 font-semibold transition cursor-pointer"
               >
-                ← Sửa Khung Layer 1
+                ← Sửa Chỉ tiêu tháng
               </button>
             </div>
           </div>
@@ -5049,3 +4897,4 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
     </div>
   );
 };
+          

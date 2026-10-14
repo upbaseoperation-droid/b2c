@@ -1,23 +1,13 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   MessageSquare,
   Send,
-  User,
   ShieldCheck,
-  BadgeCheck,
-  AlertTriangle,
-  RotateCcw,
-  Clock,
-  Tag,
   Sparkles,
   Filter,
   CheckCircle2,
-  TrendingUp,
-  DollarSign,
-  Tv,
-  Users
 } from 'lucide-react';
 import { 
   InputPlanBreakdownState, 
@@ -45,16 +35,16 @@ export const PlanDiscussionHub: React.FC<PlanDiscussionHubProps> = ({
 }) => {
   const [commentText, setCommentText] = useState('');
   const [activeAuthorRole, setActiveAuthorRole] = useState<PlanDiscussionRole>(currentRole || 'BOOKING');
-  const [messageType, setMessageType] = useState<PlanDiscussionType>('COMMENT');
-  const [filterType, setFilterType] = useState<'ALL' | 'GROWTH' | 'MEDIA' | 'BOOKING' | 'LEAD' | 'REVISION' | 'APPROVAL'>('ALL');
-  const [selectedTag, setSelectedTag] = useState<string>('');
-
-  // Tự động đồng bộ vai trò gửi khi currentRole thay đổi
-  useEffect(() => {
+  const [prevRole, setPrevRole] = useState<PlanDiscussionRole>(currentRole);
+  if (currentRole !== prevRole) {
+    setPrevRole(currentRole);
     if (currentRole) {
       setActiveAuthorRole(currentRole);
     }
-  }, [currentRole]);
+  }
+  const [messageType, setMessageType] = useState<PlanDiscussionType>('COMMENT');
+  const [filterType, setFilterType] = useState<'ALL' | 'GROWTH' | 'MEDIA' | 'BOOKING' | 'LEAD' | 'REVISION' | 'APPROVAL'>('ALL');
+  const [selectedTag, setSelectedTag] = useState<string>('');
 
   const discussions = plan.discussions || [];
 
@@ -130,145 +120,118 @@ export const PlanDiscussionHub: React.FC<PlanDiscussionHubProps> = ({
     if (onNotify) onNotify('Đã lưu nội dung trao đổi vào Kế hoạch!');
   };
 
-  const getRoleBadge = (role: PlanDiscussionRole) => {
+  const getRoleLabel = (role: PlanDiscussionRole) => {
     switch (role) {
       case 'GROWTH':
-        return (
-          <span className="px-2 py-0.5 rounded-md text-2xs font-semibold bg-amber-50 text-amber-800 border border-amber-200">
-            Growth (Chiến lược & PnL)
-          </span>
-        );
+        return <span className="text-2xs font-medium text-ink-2">Growth (Chiến lược &amp; PnL)</span>;
       case 'MEDIA':
-        return (
-          <span className="px-2 py-0.5 rounded-md text-2xs font-semibold bg-blue-50 text-blue-800 border border-blue-200">
-            Media (Quảng cáo & Ads)
-          </span>
-        );
+        return <span className="text-2xs font-medium text-ink-2">Media (Quảng cáo &amp; Ads)</span>;
       case 'BOOKING':
-        return (
-          <span className="px-2 py-0.5 rounded-md text-2xs font-semibold bg-blue-50 text-blue-800 border border-blue-200">
-            Booking B2C
-          </span>
-        );
+        return <span className="text-2xs font-medium text-ink-2">Booking B2C</span>;
       case 'LEAD':
-        return (
-          <span className="px-2 py-0.5 rounded-md text-2xs font-semibold bg-slate-100 text-slate-800 border border-slate-200">
-            Trưởng Phòng B2C
-          </span>
-        );
+        return <span className="text-2xs font-medium text-ink-2">Trưởng Phòng B2C</span>;
       case 'SYSTEM':
       default:
-        return (
-          <span className="px-2 py-0.5 rounded-md text-2xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">
-            Hệ Thống
-          </span>
-        );
+        return <span className="text-2xs font-medium text-ink-3">Hệ Thống</span>;
     }
   };
 
-  const getTypeBadge = (type: PlanDiscussionType) => {
+  const getTypeLabel = (type: PlanDiscussionType) => {
     switch (type) {
       case 'REVISION_REQUEST':
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-semibold bg-rose-50 text-rose-700 border border-rose-200">
-            <AlertTriangle className="w-3 h-3 text-rose-600" />
+          <span className="text-2xs font-semibold text-critical">
             Yêu Cầu Hiệu Chỉnh
           </span>
         );
       case 'PRE_APPROVAL_PASS':
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-            <BadgeCheck className="w-3 h-3 text-emerald-600" />
+          <span className="text-2xs font-semibold text-positive">
             Sơ Duyệt Đạt
           </span>
         );
       case 'FINAL_APPROVAL_PASS':
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-            <ShieldCheck className="w-3 h-3 text-emerald-600" />
+          <span className="text-2xs font-semibold text-positive">
             Phê Duyệt Chính Thức
           </span>
         );
       case 'STATUS_CHANGE':
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-semibold bg-slate-100 text-slate-600">
-            <Clock className="w-3 h-3 text-slate-500" />
+          <span className="text-2xs font-medium text-ink-3">
             Trạng Thái
           </span>
         );
       case 'COMMENT':
       default:
-        return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-semibold bg-slate-50 text-slate-600 border border-slate-200">
-            <MessageSquare className="w-3 h-3 text-slate-400" />
-            Thảo luận
-          </span>
-        );
+        return null;
     }
   };
 
   const isManagerOrLead = currentRole === 'LEAD' || ['ADMIN', 'MANAGER'].includes(currentUser?.role || '');
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden flex flex-col">
+    <div className="bg-surface rounded-2xl border border-line shadow-xs overflow-hidden flex flex-col">
       {/* HEADER: SỔ BIÊN BẢN & LỊCH SỬ TRAO ĐỔI 4 BÊN */}
-      <div className="p-4 sm:p-5 border-b border-slate-100 bg-slate-50/70 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="p-4 sm:p-5 border-b border-line bg-canvas flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center shrink-0">
+          <div className="w-9 h-9 rounded-xl bg-accent-soft text-accent flex items-center justify-center shrink-0">
             <MessageSquare className="w-4 h-4" />
           </div>
           <div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="font-semibold text-sm text-slate-900">
-                Sổ Biên Bản & Lịch Sử Trao Đổi 4 Bên
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <h3 className="font-semibold text-sm text-ink">
+                Sổ Biên Bản &amp; Lịch Sử Trao Đổi 4 Bên
               </h3>
-              <span className="px-2 py-0.5 rounded-full text-2xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
-                {discussions.length} Trao Đổi
+              <span className="text-xs text-ink-3">·</span>
+              <span className="text-xs font-medium text-ink-2 tabular-nums">
+                {discussions.length} trao đổi
               </span>
             </div>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-xs text-ink-2 mt-0.5">
               Ghi nhận đối thoại giữa Growth, Marketing B2C, Media và Trưởng phòng để lưu vết thẩm định và cơ sở phê duyệt.
             </p>
           </div>
         </div>
 
         {/* 4 ĐẦU MỐI PHỐI HỢP: GROWTH - MEDIA - BOOKING - LEAD */}
-        <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-xl border border-slate-200 text-2xs shadow-2xs flex-wrap">
+        <div className="flex items-center gap-2 bg-surface px-3 py-2 rounded-xl border border-line text-2xs shadow-2xs flex-wrap">
           <div className="flex items-center gap-1">
-            <span className="text-slate-400 font-medium">Growth:</span>
-            <strong className="text-amber-800 font-semibold">{plan.growthPic || 'Trần Thị Ánh'}</strong>
+            <span className="text-ink-3 font-medium">Growth:</span>
+            <strong className="text-ink font-semibold">{plan.growthPic || 'Trần Thị Ánh'}</strong>
           </div>
-          <span className="text-slate-300">•</span>
+          <span className="text-ink-3">·</span>
           <div className="flex items-center gap-1">
-            <span className="text-slate-400 font-medium">Media:</span>
-            <strong className="text-blue-800 font-semibold">{plan.mediaPic || 'Phan Thành Đạt'}</strong>
+            <span className="text-ink-3 font-medium">Media:</span>
+            <strong className="text-ink font-semibold">{plan.mediaPic || 'Phan Thành Đạt'}</strong>
           </div>
-          <span className="text-slate-300">•</span>
+          <span className="text-ink-3">·</span>
           <div className="flex items-center gap-1">
-            <span className="text-slate-400 font-medium">Booking:</span>
-            <strong className="text-blue-800 font-semibold">{plan.pic || 'Khánh Vy'}</strong>
+            <span className="text-ink-3 font-medium">Booking:</span>
+            <strong className="text-ink font-semibold">{plan.pic || 'Khánh Vy'}</strong>
           </div>
-          <span className="text-slate-300">•</span>
+          <span className="text-ink-3">·</span>
           <div className="flex items-center gap-1">
-            <span className="text-slate-400 font-medium">Trưởng phòng:</span>
-            <strong className="text-slate-800 font-semibold">{plan.approvedBy || 'Vân Ngọc'}</strong>
+            <span className="text-ink-3 font-medium">Trưởng phòng:</span>
+            <strong className="text-ink font-semibold">{plan.approvedBy || 'Vân Ngọc'}</strong>
           </div>
         </div>
       </div>
 
       {/* GÓC NHÌN RÀ SOÁT CỦA TRƯỞNG PHÒNG */}
       {isManagerOrLead && (
-        <div className="mx-4 sm:mx-5 mt-4 p-3.5 bg-blue-50/50 rounded-xl border border-blue-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+        <div className="mx-4 sm:mx-5 mt-4 p-3.5 bg-accent-soft/60 rounded-xl border border-line flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center shrink-0">
+            <div className="w-8 h-8 rounded-lg bg-primary text-white flex items-center justify-center shrink-0">
               <ShieldCheck className="w-4 h-4" />
             </div>
             <div>
-              <div className="font-semibold text-xs text-blue-950 flex items-center gap-2">
-                <span>Góc nhìn Trưởng phòng B2C: Rà soát & Đối soát biên bản 3 bên</span>
-                <span className="text-2xs bg-blue-200 text-blue-800 px-2 py-0.5 rounded-full font-semibold">Chế độ quản lý</span>
+              <div className="font-semibold text-xs text-ink flex items-center gap-1.5 flex-wrap">
+                <span>Góc nhìn Trưởng phòng B2C: Rà soát &amp; Đối soát biên bản 3 bên</span>
+                <span className="text-ink-3">·</span>
+                <span className="text-2xs text-accent font-medium">Chế độ quản lý</span>
               </div>
-              <p className="text-2xs text-blue-700 mt-0.5">
+              <p className="text-2xs text-ink-2 mt-0.5">
                 Rà soát sự thống nhất giữa ngân sách PnL từ Growth ({formatVndShort(plan.totalTargetBudget)}), hạn mức Ads từ Media ({formatVndShort(plan.budgetAdsTotal || 0)}), và cơ cấu KOC từ Booking.
               </p>
             </div>
@@ -287,7 +250,7 @@ export const PlanDiscussionHub: React.FC<PlanDiscussionHubProps> = ({
               });
               if (onNotify) onNotify('Đã ghi nhận Trưởng phòng hoàn thành rà soát lịch sử trao đổi!');
             }}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold transition-all shadow-xs shrink-0 self-start sm:self-auto cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary hover:bg-primary-hover text-white rounded-lg text-xs font-semibold transition-all shadow-xs shrink-0 self-start sm:self-auto cursor-pointer"
           >
             <CheckCircle2 className="w-3.5 h-3.5" />
             <span>Ghi nhận: Đã Rà Soát Lịch Sử Trao Đổi</span>
@@ -427,14 +390,20 @@ export const PlanDiscussionHub: React.FC<PlanDiscussionHubProps> = ({
                     </div>
 
                     <div>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-semibold text-xs text-slate-900">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="font-semibold text-xs text-ink">
                           {msg.authorName}
                         </span>
-                        {getRoleBadge(msg.authorRole)}
-                        {getTypeBadge(msg.type)}
+                        <span className="text-2xs text-ink-3">·</span>
+                        {getRoleLabel(msg.authorRole)}
+                        {getTypeLabel(msg.type) && (
+                          <>
+                            <span className="text-2xs text-ink-3">·</span>
+                            {getTypeLabel(msg.type)}
+                          </>
+                        )}
                       </div>
-                      <div className="text-2xs text-slate-400 mt-0.5">
+                      <div className="text-2xs text-ink-3 mt-0.5">
                         {msg.authorTitle}
                       </div>
                     </div>

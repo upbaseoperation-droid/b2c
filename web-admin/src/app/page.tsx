@@ -67,6 +67,7 @@ const ExecutiveDashboardReportsView = dynamic(() => import('../components/views/
 const ApiKeySetupView = dynamic(() => import('../components/views/ApiKeySetupView').then(m => m.ApiKeySetupView), { loading: ViewLoading });
 const MarketingKnowledgeQaView = dynamic(() => import('../components/views/MarketingKnowledgeQaView').then(m => m.MarketingKnowledgeQaView), { loading: ViewLoading });
 const TaskDelegationView = dynamic(() => import('../components/views/TaskDelegationView').then(m => m.TaskDelegationView), { loading: ViewLoading });
+const AuditTrailView = dynamic(() => import('../components/views/AuditTrailView').then(m => m.AuditTrailView), { loading: ViewLoading });
 
 import { isThirdPartyPartner } from '../lib/thirdPartyAccessData';
 import { isTabAllowedForRole, getAllowedTabsForRole, getDefaultLandingTabForRole, getSavedInternalStaffList } from '../lib/rbacData';
@@ -845,23 +846,24 @@ export default function App() {
     'koc-master': { title: 'Danh bạ KOC', subtitle: 'Hồ sơ, giấy tờ và lịch sử booking của KOC' },
     contracts: { title: 'Hợp đồng & thanh toán', subtitle: 'Tạo từ mẫu pháp chế, duyệt nội bộ và theo dõi ký điện tử' },
     manager: { title: 'Phân bổ & điều phối', subtitle: 'Phân bổ nhãn hàng, gian hàng, nhân sự và cân bằng khối lượng việc' },
-    'task-delegation': { title: 'Giao việc & Định mức Task', subtitle: 'Phân công công việc theo vai trò (PIC/Co-PIC/Execution/Support), cấu hình độ khó Task và Bảng 2b Research' },
-    'sample-tracker': { title: 'Hàng mẫu', subtitle: 'Vận đơn mẫu, hạn nộp kịch bản 5 ngày và mã Spark Ads' },
-    'performance-p3': { title: 'Đánh giá 4P', subtitle: 'Điểm khối lượng việc theo độ khó gian hàng, chất lượng và SLA' },
-    leaderboard: { title: 'Bảng xếp hạng', subtitle: 'Bảng xếp hạng KPI và SLA đội ngũ vận hành' },
-    'brand-hub': { title: 'Cổng nhãn hàng', subtitle: 'Duyệt kế hoạch → Duyệt KOC → Duyệt kịch bản → Nghiệm thu video' },
-    'koc-hub': { title: 'Cổng KOC', subtitle: 'Quản lý thông tin cá nhân, hợp đồng, lịch sử hợp tác, hiệu quả kênh và tiến độ công việc' },
-    'ads-report': { title: 'Báo cáo Ads tuần', subtitle: 'Đọc file báo cáo từ TikTok Shop Seller, đối soát mã Spark Ads và ROAS thực tế' },
-    'dashboard-bi': { title: 'Dashboard Quản Trị B2C', subtitle: 'Đối soát 42 Thương hiệu, 69 Gian hàng, 786 Đơn Video, TikTok Seller & Nhân sự B2C' },
-    'dashboard-brand': { title: 'Dashboard Ngân Sách & Đối Soát Kế Toán (42 Thương Hiệu)', subtitle: 'Đối soát Hạn mức Order Gross vs Trần Net Kế toán, Thực chi 3.2, Sổ cái ĐNTT và Xuất báo cáo Excel' },
-    'dashboard-store': { title: 'Dashboard Gian Hàng & TikTok Seller (69 Gian Hàng B2C)', subtitle: 'Đối soát 39 TikTok Shop & 30 Shopee Mall, chiến dịch PGM/LGM TikTok Seller Center, ROAS và tiến độ giải ngân' },
-    'dashboard-video': { title: 'Dashboard Hiệu Quả Video Booking & KOC/Ads', subtitle: 'Phân tích 786 đơn video File 3.2 & 4.211 dòng Creative TikTok Seller, bóc tách Paid vs FOC 0đ, Khung lương KL1–7 và Phễu giữ chân' },
-    'dashboard-team-sla': { title: 'Dashboard Lịch Air Tuần (W40–W45) & Tiến Độ Video', subtitle: 'Đối soát lịch air kế hoạch theo tuần vs thực tế, mật độ nổ đồng loạt theo sóng chiến dịch và tiến độ SLA 786 đơn video' },
-    'dashboard-staff': { title: 'Dashboard Hiệu Suất & Hiệu Quả Từng Nhân Viên B2C', subtitle: 'Đánh giá 360° từng chuyên viên: % Spend Chi phí, Số lượng Video Air, GMV & ROAS tạo ra, Đơn giá TB/Video, SLA và Điểm KPI tổng hợp' },
-    'dashboard-finance': { title: 'Dashboard Ngân Sách & Đối Soát Kế Toán (.xlsx)', subtitle: 'Kiểm soát hồ sơ thanh toán (ĐNTT / Tạm ứng / Done), khóa trần Order Net và kết xuất báo cáo đối soát Excel 5 Sheets' },
-    'dashboard-air-sync': { title: 'Dashboard Lịch Air Tuần (W40–W45) & Tiến Độ Video', subtitle: 'Đối soát lịch air kế hoạch theo tuần vs thực tế, mật độ nổ đồng loạt theo sóng chiến dịch và tiến độ SLA 786 đơn video' },
-    'api-settings': { title: 'Cấu hình API & Định tuyến Nghiệp vụ', subtitle: 'Quản lý khóa API Google (Gemini), OpenAI (ChatGPT), Anthropic (Claude) và phân bổ công cụ xử lý theo từng nghiệp vụ B2C' },
-    'knowledge-qa': { title: 'Sổ tay & Hỏi đáp', subtitle: 'Tra cứu quy trình, mốc SLA, mẫu hợp đồng, tính thuế Gross/Net, khung lương KL1–KL7 và hỏi đáp nghiệp vụ Marketing B2C' },
+    'task-delegation': { title: 'Giao việc & định mức', subtitle: 'Phân công công việc theo vai trò và cấu hình độ khó nhiệm vụ' },
+    'sample-tracker': { title: 'Hàng mẫu & Ads', subtitle: 'Theo dõi vận đơn gửi mẫu KOC và trạng thái mã Spark Ads' },
+    'performance-p3': { title: 'Đánh giá 4P', subtitle: 'Đánh giá khối lượng việc, chất lượng và chỉ số SLA' },
+    leaderboard: { title: 'Bảng xếp hạng', subtitle: 'Xếp hạng hiệu suất và chỉ số SLA đội ngũ vận hành' },
+    'brand-hub': { title: 'Cổng nhãn hàng', subtitle: 'Phê duyệt kế hoạch, danh sách KOC, kịch bản và nghiệm thu video' },
+    'koc-hub': { title: 'Cổng KOC', subtitle: 'Thông tin hợp đồng, lịch sử hợp tác và tiến độ công việc' },
+    'ads-report': { title: 'Báo cáo Ads TikTok', subtitle: 'Đối soát mã Spark Ads và chỉ số ROAS thực tế' },
+    'dashboard-bi': { title: 'Báo cáo tổng hợp', subtitle: 'Tổng quan chỉ số 42 thương hiệu, 69 gian hàng B2C' },
+    'dashboard-brand': { title: 'Ngân sách & PnL', subtitle: 'Hạn mức ngân sách Net/Gross và đối soát thực chi theo thương hiệu' },
+    'dashboard-store': { title: 'Gian hàng & Sàn', subtitle: 'Chiến dịch TikTok Shop, Shopee Mall và tiến độ giải ngân' },
+    'dashboard-video': { title: 'Hiệu quả video', subtitle: 'Sản lượng video, bóc tách Paid/FOC và phễu giữ chân KOC' },
+    'dashboard-team-sla': { title: 'Lịch đăng video', subtitle: 'Tiến độ lên sóng theo tuần và cam kết SLA' },
+    'dashboard-staff': { title: 'Hiệu suất nhân sự', subtitle: 'Sản lượng video, tiến độ giải ngân và chỉ số vận hành' },
+    'dashboard-finance': { title: 'Đối soát & xuất file', subtitle: 'Kiểm soát hồ sơ thanh toán và xuất file đối soát Excel' },
+    'dashboard-air-sync': { title: 'Lịch đăng video', subtitle: 'Tiến độ lên sóng theo tuần và cam kết SLA' },
+    'api-settings': { title: 'Cấu hình API', subtitle: 'Quản lý khóa API và tích hợp công cụ hỗ trợ vận hành' },
+    'knowledge-qa': { title: 'Sổ tay & Hỏi đáp', subtitle: 'Tra cứu quy trình, mốc SLA, mẫu hợp đồng và hỏi đáp nghiệp vụ' },
+    'audit-trail': { title: 'Nhật ký kiểm toán', subtitle: 'Truy vết sự kiện hệ thống: Ký hợp đồng, duyệt ngân sách và phân quyền' },
   };
 
   if (isLoadingAuth || !currentUser) {
@@ -1484,6 +1486,13 @@ export default function App() {
               kocs={kocs}
               onNotify={showToast}
               onNavigateToTab={(tab) => setActiveTab(tab)}
+            />
+          </KeepAliveTab>
+
+          <KeepAliveTab tabKey="audit-trail" currentTab={activeTab}>
+            <AuditTrailView
+              currentUser={currentUser}
+              onNotify={showToast}
             />
           </KeepAliveTab>
             </>

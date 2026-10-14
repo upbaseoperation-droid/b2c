@@ -77,22 +77,22 @@ type MainTab = 'roles' | 'gatekeeper' | 'internal' | 'matrix' | 'third-party' | 
 const SCOPE_LABELS: Record<SystemDepartmentScope, { label: string; badgeClass: string; managerLabel: string }> = {
   MARKETING_B2C: {
     label: 'Khối Marketing B2C',
-    badgeClass: 'bg-blue-50 text-blue-700 border-blue-200',
+    badgeClass: 'bg-accent-soft text-accent border-accent/20',
     managerLabel: 'Đặng Thị Yến Nhi (Trưởng phòng B2C)'
   },
   GROWTH: {
     label: 'Khối Growth Ecom',
-    badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    badgeClass: 'bg-positive-soft text-positive border-positive/20',
     managerLabel: 'Trần Thị Đỗ Quyên (Trưởng phòng Growth)'
   },
   MEDIA: {
     label: 'Khối Media & Ads',
-    badgeClass: 'bg-amber-50 text-amber-700 border-amber-200',
+    badgeClass: 'bg-warning-soft text-warning border-warning/20',
     managerLabel: 'Nguyễn Đức Quảng (Trưởng phòng Media)'
   },
   OTHER_BLOCKED: {
     label: 'Phòng ban khác (Ngoài hệ thống)',
-    badgeClass: 'bg-slate-100 text-slate-600 border-slate-200',
+    badgeClass: 'bg-sunken text-ink-2 border-line',
     managerLabel: 'Không thuộc phạm vi B2C'
   }
 };
@@ -831,98 +831,89 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
 
   return (
     <div className="space-y-5 pb-12">
-      {/* Top Banner: Vai trò đang đăng nhập & Cơ chế Kiểm soát 3 Khối */}
-      <div className="bg-surface border border-line rounded-xl p-4 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-        <div className="space-y-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-2xs font-semibold bg-accent-soft text-accent border border-line">
-              <ShieldCheck className="w-3.5 h-3.5" />
-              <span>
-                {isAdmin
-                  ? 'Quyền Admin: Kiểm soát cổng đăng nhập 1.011 nhân sự & 3 Khối (MKT B2C · Growth · Media)'
-                  : isGrowthManager
-                  ? 'Quyền Trưởng Phòng Growth: Quản lý đội ngũ & phân công nhân sự Khối Growth'
-                  : isMediaManager
-                  ? 'Quyền Trưởng Phòng Media: Quản lý đội ngũ & phân công nhân sự Khối Media'
-                  : 'Quyền Giám Đốc Marketing B2C: Quản lý đội ngũ Booking, Content & Brand'}
-              </span>
+      {/* Top Bar: Trạng thái Cổng truy cập & Thao tác nhanh */}
+      <div className="flex flex-wrap items-center justify-between gap-3 text-xs bg-white p-3 rounded-xl border border-line">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="inline-flex items-center gap-1.5 .5 text-2xs font-semibold text-accent -accent/20">
+            <ShieldCheck className="w-3.5 h-3.5" />
+            <span>
+              {isAdmin
+                ? 'Quyền Quản trị viên (Admin)'
+                : isGrowthManager
+                ? 'Trưởng phòng Growth'
+                : isMediaManager
+                ? 'Trưởng phòng Media'
+                : 'Giám đốc Marketing B2C'}
             </span>
-            <span className="text-2xs text-ink-3">
-              Đang mở cổng: <strong className="text-positive">{directoryStats.totalAllowed} nhân sự</strong> · Đang chặn: <strong className="text-critical">{directoryStats.totalBlocked} nhân sự ngoài phạm vi</strong>
-            </span>
-          </div>
-          <p className="text-xs text-muted leading-relaxed">
-            Không phải toàn bộ 1.011 nhân viên công ty đều đăng nhập được vào hệ thống. Chỉ nhân sự thuộc <strong>Marketing B2C</strong>, <strong>Growth</strong>, <strong>Media</strong> được Admin mở cổng mới có quyền truy cập và chịu sự quản lý của Trưởng phòng tương ứng.
-          </p>
+          </span>
+          <span className="text-2xs text-ink-2">
+            Cổng truy cập Lark: <strong className="text-positive">{directoryStats.totalAllowed}</strong>/{directoryStats.totalStaff} nhân sự được mở
+          </span>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 shrink-0">
+        {isAdmin && (
           <button
+            type="button"
             onClick={handleResetMatrix}
-            className="px-3 py-1.5 rounded-lg bg-surface hover:bg-surface-muted text-ink text-xs font-medium border border-line transition flex items-center gap-1.5"
-            title="Khôi phục ma trận chuẩn"
+            className="px-2.5 py-1 rounded-lg bg-canvas hover:bg-sunken text-ink-2 text-2xs font-medium border border-line transition flex items-center gap-1.5"
+            title="Khôi phục ma trận phân quyền về mặc định"
           >
-            <RefreshCw className="w-3.5 h-3.5 text-muted" />
+            <RefreshCw className="w-3 h-3 text-ink-3" />
             <span>Khôi phục mặc định</span>
           </button>
-        </div>
+        )}
       </div>
 
       <Tabs
         items={[
-          { key: 'roles', label: '1. Quản trị Role & Màn hình', count: `${ALL_ROLE_DEFINITIONS.length} Role` },
-          { key: 'gatekeeper', label: '2. Cổng truy cập & Phân khối (1.011 NV)', count: `${directoryStats.totalAllowed}/${directoryStats.totalStaff}` },
-          { key: 'internal', label: '3. Gán Role nhân sự nội bộ', count: filteredStaff.length },
-          { key: 'matrix', label: '4. Ma trận quyền chức năng', count: matrixItems.length },
-          { key: 'third-party', label: '5. Tài khoản đối tác ngoài', count: 'Brand / KOC / CTV' },
-          { key: 'audit', label: '6. Nhật ký bảo mật', count: auditLogs.length },
+          { key: 'roles', label: 'Vai trò & Màn hình', count: ALL_ROLE_DEFINITIONS.length },
+          { key: 'gatekeeper', label: 'Cổng truy cập Lark', count: `${directoryStats.totalAllowed}/${directoryStats.totalStaff}` },
+          { key: 'internal', label: 'Nhân sự nội bộ', count: filteredStaff.length },
+          { key: 'matrix', label: 'Ma trận chức năng', count: matrixItems.length },
+          { key: 'third-party', label: 'Đối tác ngoài' },
+          { key: 'audit', label: 'Nhật ký', count: auditLogs.length },
         ]}
         value={activeMainTab}
         onChange={(k) => setActiveMainTab(k as MainTab)}
       />
 
       {/* ========================================================================= */}
-      {/* SUB-TAB ROLES: QUẢN TRỊ LỚP ROLE & PHÂN QUYỀN MÀN HÌNH (16 VAI TRÒ)        */}
+      {/* SUB-TAB ROLES: QUẢN TRỊ LỚP ROLE & PHÂN QUYỀN MÀN HÌNH                    */}
       {/* ========================================================================= */}
       {activeMainTab === 'roles' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 animate-in fade-in duration-200">
-          {/* Cột trái: Danh sách 16 Role hệ thống chia theo 4 nhóm */}
+          {/* Cột trái: Danh mục Role hệ thống */}
           <div className="lg:col-span-4 space-y-3">
-            <div className="bg-white rounded-xl border border-slate-200 shadow-xs p-3.5 space-y-3">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
-                <div>
-                  <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
-                    Danh mục 16 Lớp Role Hệ Thống
-                  </h3>
-                  <p className="text-2xs text-slate-500 mt-0.5">
-                    Chọn 1 Role để cấu hình các màn hình được phép truy cập và gán nhân sự
-                  </p>
-                </div>
-                <span className="px-2 py-0.5 rounded-full text-2xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+            <div className="bg-white rounded-xl border border-line p-3 space-y-3">
+              <div className="flex items-center justify-between border-b border-line pb-2">
+                <h3 className="text-xs font-semibold text-ink uppercase tracking-wider">
+                  Danh mục vai trò
+                </h3>
+                <span className="text-2xs font-semibold text-accent -accent/20">
                   {ALL_ROLE_DEFINITIONS.length} Role
                 </span>
               </div>
 
               {[
                 {
-                  groupTitle: 'Khối Pháp chế · Kế toán · Ký số',
+                  groupTitle: 'Pháp chế · Kế toán · Ký số',
                   roleIds: ['LEGAL', 'FINANCE', 'SIGN_ADMIN'] as UserRole[],
                 },
                 {
-                  groupTitle: 'Cấp Quản trị & Trưởng phòng (3 Khối)',
+                  groupTitle: 'Quản trị & Trưởng phòng',
                   roleIds: ['ADMIN', 'MANAGER', 'GROWTH_MANAGER', 'MEDIA_MANAGER', 'LEADER'] as UserRole[],
                 },
                 {
-                  groupTitle: 'Cấp Chuyên viên Thực thi',
+                  groupTitle: 'Chuyên viên thực thi',
                   roleIds: ['BOOKING_MEMBER', 'CONTENT_MEMBER', 'BRAND_MEMBER', 'GROWTH_MEMBER', 'MEDIA_MEMBER'] as UserRole[],
                 },
                 {
-                  groupTitle: 'Tài khoản Đối tác ngoài (Portal)',
+                  groupTitle: 'Đối tác bên ngoài (Portal)',
                   roleIds: ['BRAND_PARTNER', 'KOC_PARTNER', 'CTV_PARTNER'] as UserRole[],
                 },
               ].map((group) => (
-                <div key={group.groupTitle} className="space-y-1.5">
-                  <div className="text-2xs font-bold text-slate-400 uppercase tracking-wider px-1">
+                <div key={group.groupTitle} className="space-y-1">
+                  <div className="text-2xs font-semibold text-ink-3 uppercase tracking-wider px-1 pt-1">
                     {group.groupTitle}
                   </div>
                   <div className="space-y-1">
@@ -938,36 +929,24 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                           key={rDef.id}
                           type="button"
                           onClick={() => setSelectedRoleKey(rDef.id)}
-                          className={`w-full text-left p-2.5 rounded-xl border transition flex items-start justify-between gap-2 ${
+                          className={`w-full text-left px-3 py-2 rounded-lg border transition flex items-center justify-between gap-2 ${
                             isSelected
-                              ? 'bg-blue-50/80 border-blue-400 ring-2 ring-blue-500/15 shadow-xs'
-                              : 'bg-white border-slate-200 hover:bg-slate-50 hover:border-slate-300'
+                              ? 'bg-accent-soft border-accent/20 ring-1 ring-accent/20 text-accent font-medium shadow-2xs'
+                              : 'bg-white border-line text-ink-2 hover:bg-canvas hover:border-line-strong'
                           }`}
                         >
-                          <div className="min-w-0 space-y-0.5">
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              <span className="font-semibold text-xs text-slate-900">
-                                {rDef.name}
-                              </span>
-                              <span className="font-mono text-[10px] px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 border border-slate-200">
-                                {rDef.id}
-                              </span>
-                            </div>
-                            <p className="text-2xs text-slate-500 line-clamp-1">
-                              {rDef.description}
-                            </p>
-                          </div>
-                          <div className="flex flex-col items-end shrink-0 gap-1">
-                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
+                          <span className="text-xs truncate">{rDef.name}</span>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <span className={`px-1.5 py-0.2 rounded text-2xs font-semibold border ${
                               allowedCount <= 2
-                                ? 'bg-amber-50 text-amber-800 border-amber-200'
-                                : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                ? 'bg-warning-soft text-warning border-warning/20'
+                                : 'bg-positive-soft text-positive border-positive/20'
                             }`}>
-                              {allowedCount}/{ALL_SYSTEM_SCREENS.length} màn
+                              {allowedCount} màn
                             </span>
-                            {rDef.scopeType === 'INTERNAL' && (
-                              <span className="text-[10px] text-slate-400">
-                                {staffCount} nhân sự
+                            {rDef.scopeType === 'INTERNAL' && staffCount > 0 && (
+                              <span className="text-2xs text-ink-3">
+                                {staffCount} NV
                               </span>
                             )}
                           </div>
@@ -983,21 +962,21 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
           {/* Cột phải: Chi tiết phân quyền màn hình & gán nhân sự cho Role đang chọn */}
           <div className="lg:col-span-8 space-y-4">
             {/* Card Header của Role đang chọn */}
-            <div className="bg-white rounded-xl border border-slate-200 shadow-xs p-4 space-y-4">
-              <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 pb-3.5">
+            <div className="bg-white rounded-xl border border-line p-4 space-y-3">
+              <div className="flex flex-wrap items-start justify-between gap-3 border-b border-line pb-3">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border ${selectedRoleDef.badgeColor}`}>
                       {selectedRoleDef.name}
                     </span>
-                    <span className="font-mono text-xs px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 font-semibold">
-                      Mã Role: {selectedRoleDef.id}
+                    <span className="font-mono text-2xs .5 text-ink-2 -line">
+                      {selectedRoleDef.id}
                     </span>
-                    <span className="text-2xs px-2 py-0.5 rounded bg-slate-50 text-slate-600 border border-slate-200">
-                      {selectedRoleDef.scopeType === 'INTERNAL' ? 'Nhân sự nội bộ (Lark SSO)' : 'Đối tác bên ngoài'}
+                    <span className="text-2xs text-ink-3">
+                      ({selectedRoleDef.scopeType === 'INTERNAL' ? 'Nhân sự nội bộ' : 'Đối tác ngoài'})
                     </span>
                   </div>
-                  <p className="text-xs text-slate-600 leading-relaxed">
+                  <p className="text-xs text-ink-2">
                     {selectedRoleDef.description}
                   </p>
                 </div>
@@ -1006,11 +985,11 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                   <button
                     type="button"
                     onClick={() => handleResetSingleRoleScreens(selectedRoleKey)}
-                    className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition flex items-center gap-1.5"
+                    className="px-2.5 py-1.5 rounded-lg bg-sunken hover:bg-sunken text-ink-2 text-xs font-medium transition flex items-center gap-1.5"
                     title="Đặt lại danh sách màn hình mặc định cho Role này"
                   >
-                    <RefreshCw className="w-3.5 h-3.5" />
-                    <span>Đặt lại mặc định Role</span>
+                    <RefreshCw className="w-3.5 h-3.5 text-ink-3" />
+                    <span>Đặt lại mặc định</span>
                   </button>
 
                   <button
@@ -1035,67 +1014,50 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                         onImpersonateUser?.(syntheticProfile);
                       }
                     }}
-                    className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold transition flex items-center gap-1.5 shadow-2xs"
+                    className="px-3 py-1.5 rounded-lg bg-accent hover:bg-accent text-white text-xs font-semibold transition flex items-center gap-1.5 shadow-2xs"
                   >
                     <Eye className="w-3.5 h-3.5" />
-                    <span>Đóng vai kiểm thử Role này</span>
+                    <span>Đóng vai kiểm thử</span>
                   </button>
                 </div>
               </div>
 
               {/* Cấu hình Màn hình mở mặc định & Thống kê số màn hình được phép */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 bg-slate-50/80 p-3 rounded-xl border border-slate-200/80">
-                <div className="space-y-1">
-                  <label className="text-2xs font-bold text-slate-700 uppercase tracking-wider block">
-                    Màn hình mở mặc định sau khi đăng nhập
-                  </label>
+              <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-canvas rounded-xl border border-line">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs text-ink-2 font-medium">Màn hình mở mặc định:</span>
                   <select
                     value={selectedRoleDefaultLanding}
                     onChange={(e) => handleChangeRoleDefaultLanding(selectedRoleKey, e.target.value as TabKey)}
-                    className="w-full h-9 px-3 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-900 focus:outline-none focus:border-blue-500"
+                    className="h-8 px-2.5 rounded-lg border border-line bg-white text-xs font-semibold text-ink focus:outline-none focus:border-accent/20"
                   >
                     {ALL_SYSTEM_SCREENS.filter((s) => selectedRoleAllowedTabs.includes(s.key)).map((scr) => (
                       <option key={scr.key} value={scr.key}>
-                        {scr.label} ({scr.key})
+                        {scr.label}
                       </option>
                     ))}
                   </select>
                 </div>
 
-                <div className="flex flex-col justify-between">
-                  <span className="text-2xs font-bold text-slate-700 uppercase tracking-wider">
-                    Phạm vi màn hình Sidebar đang cấp cho {selectedRoleDef.name}
-                  </span>
-                  <div className="flex items-center justify-between bg-white px-3 py-2 rounded-lg border border-slate-200">
-                    <span className="text-xs text-slate-600">
-                      Được phép truy cập: <strong className="text-blue-700">{selectedRoleAllowedTabs.length}</strong> / {ALL_SYSTEM_SCREENS.length} màn hình
-                    </span>
-                    <span className="text-2xs text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                      Áp dụng tức thì
-                    </span>
-                  </div>
+                <div className="text-xs text-ink-2">
+                  Được phép truy cập: <strong className="text-accent font-semibold">{selectedRoleAllowedTabs.length}</strong>/{ALL_SYSTEM_SCREENS.length} màn hình
                 </div>
               </div>
 
-              {/* Danh sách 28 màn hình hệ thống chia theo 6 nhóm để bật/tắt cho Role */}
-              <div className="space-y-3">
+              {/* Danh sách màn hình hệ thống chia theo nhóm để bật/tắt cho Role */}
+              <div className="space-y-3 pt-1">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div>
-                    <h4 className="text-xs font-bold text-slate-900">
-                      1. Phân quyền Màn hình được phép nhìn thấy & truy cập ({selectedRoleAllowedTabs.length}/{ALL_SYSTEM_SCREENS.length})
-                    </h4>
-                    <p className="text-2xs text-slate-500">
-                      Tích chọn hoặc bỏ tích để cấp/thu hồi màn hình trên thanh menu trái (Sidebar) và khóa đường dẫn trực tiếp đối với vai trò <strong>{selectedRoleDef.name}</strong>.
-                    </p>
-                  </div>
-                  <div className="relative w-60">
-                    <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                  <h4 className="text-xs font-semibold text-ink">
+                    Phân quyền màn hình truy cập ({selectedRoleAllowedTabs.length}/{ALL_SYSTEM_SCREENS.length})
+                  </h4>
+                  <div className="relative w-56">
+                    <Search className="w-3.5 h-3.5 text-ink-3 absolute left-2.5 top-1/2 -translate-y-1/2" />
                     <input
                       type="text"
                       value={roleSearchScreen}
                       onChange={(e) => setRoleSearchScreen(e.target.value)}
-                      placeholder="Tìm tên màn hình..."
-                      className="w-full pl-8 pr-3 h-8 text-xs rounded-lg border border-slate-200 bg-slate-50/60 focus:outline-none focus:border-blue-500"
+                      placeholder="Tìm màn hình..."
+                      className="w-full pl-8 pr-3 h-8 text-xs rounded-lg border border-line bg-canvas focus:outline-none focus:border-accent/20"
                     />
                   </div>
                 </div>
@@ -1121,25 +1083,25 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                     const allCatEnabled = enabledInCatCount === catKeys.length;
 
                     return (
-                      <div key={catName} className="rounded-xl border border-slate-200 overflow-hidden">
-                        <div className="bg-slate-50/90 px-3.5 py-2 border-b border-slate-200 flex items-center justify-between gap-2">
+                      <div key={catName} className="rounded-xl border border-line overflow-hidden">
+                        <div className="bg-canvas px-3.5 py-2 border-b border-line flex items-center justify-between gap-2">
                           <div className="flex items-center gap-2">
-                            <Layers className="w-3.5 h-3.5 text-blue-600" />
-                            <span className="text-xs font-semibold text-slate-800">{catName}</span>
-                            <span className="text-2xs px-2 py-0.5 rounded-full bg-white border border-slate-200 text-slate-600 font-semibold">
-                              {enabledInCatCount}/{catKeys.length} màn hình
+                            <Layers className="w-3.5 h-3.5 text-accent" />
+                            <span className="text-xs font-semibold text-ink">{catName}</span>
+                            <span className="text-2xs bg-white -line text-ink-2 font-semibold">
+                              {enabledInCatCount}/{catKeys.length}
                             </span>
                           </div>
                           <button
                             type="button"
                             onClick={() => handleToggleRoleCategoryScreens(selectedRoleKey, catKeys, !allCatEnabled)}
-                            className="text-2xs font-semibold text-blue-600 hover:text-blue-800 px-2 py-0.5 rounded hover:bg-blue-50 transition"
+                            className="text-2xs font-semibold text-accent hover:text-accent px-2 py-0.5 rounded hover:bg-accent-soft transition"
                           >
-                            {allCatEnabled ? 'Bỏ chọn nhóm này' : 'Bật toàn bộ nhóm này'}
+                            {allCatEnabled ? 'Bỏ chọn cả nhóm' : 'Bật cả nhóm'}
                           </button>
                         </div>
 
-                        <div className="p-3 grid grid-cols-1 md:grid-cols-2 gap-2 bg-white">
+                        <div className="p-2.5 grid grid-cols-1 md:grid-cols-2 gap-2 bg-white">
                           {screensInCat.map((scr) => {
                             const isAllowed = selectedRoleAllowedTabs.includes(scr.key);
                             const isDefaultLanding = selectedRoleDefaultLanding === scr.key;
@@ -1147,35 +1109,32 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                             return (
                               <label
                                 key={scr.key}
-                                className={`p-2.5 rounded-xl border cursor-pointer transition flex items-start gap-2.5 ${
+                                className={`p-2 rounded-lg border cursor-pointer transition flex items-start gap-2.5 ${
                                   isAllowed
-                                    ? 'bg-blue-50/40 border-blue-300 shadow-2xs'
-                                    : 'bg-white border-slate-200 opacity-70 hover:opacity-100 hover:bg-slate-50'
+                                    ? 'bg-accent-soft border-accent/20 shadow-2xs'
+                                    : 'bg-white border-line opacity-60 hover:opacity-100 hover:bg-canvas'
                                 }`}
                               >
                                 <input
                                   type="checkbox"
                                   checked={isAllowed}
                                   onChange={() => handleToggleRoleScreen(selectedRoleKey, scr.key)}
-                                  className="mt-0.5 w-4 h-4 rounded text-blue-600 focus:ring-0 shrink-0"
+                                  className="mt-0.5 w-4 h-4 rounded text-accent focus:ring-0 shrink-0"
                                 />
-                                <div className="min-w-0 flex-1 space-y-0.5">
+                                <div className="min-w-0 flex-1">
                                   <div className="flex items-center justify-between gap-1.5">
-                                    <span className={`text-xs font-semibold leading-snug ${isAllowed ? 'text-slate-900' : 'text-slate-600'}`}>
+                                    <span className={`text-xs font-semibold leading-snug ${isAllowed ? 'text-ink' : 'text-ink-2'}`}>
                                       {scr.label}
                                     </span>
                                     {isDefaultLanding && isAllowed && (
-                                      <span className="px-1.5 py-0.2 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
+                                      <span className=".5 py-0.2 text-2xs font-semibold text-positive -positive/20 shrink-0">
                                         Mặc định
                                       </span>
                                     )}
                                   </div>
-                                  <p className="text-2xs text-slate-500 leading-relaxed">
+                                  <p className="text-2xs text-ink-3 line-clamp-1 mt-0.5">
                                     {scr.description}
                                   </p>
-                                  <span className="font-mono text-[10px] text-slate-400 block">
-                                    tab: {scr.key}
-                                  </span>
                                 </div>
                               </label>
                             );
@@ -1189,28 +1148,23 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
             </div>
 
             {/* Khu vực 2: Danh sách nhân sự đang giữ Role này & Gán nhanh nhân sự vào Role */}
-            <div className="bg-white rounded-xl border border-slate-200 shadow-xs p-4 space-y-3">
-              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
-                <div>
-                  <h4 className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-                    <Users className="w-4 h-4 text-blue-600" />
-                    <span>
-                      2. Nhân sự được gán vào Role &ldquo;{selectedRoleDef.name}&rdquo; ({internalStaff.filter((s) => s.role === selectedRoleKey).length} nhân sự)
-                    </span>
-                  </h4>
-                  <p className="text-2xs text-slate-500 mt-0.5">
-                    Gán nhân sự nội bộ vào lớp Role này để nhân sự kế thừa đúng danh sách {selectedRoleAllowedTabs.length} màn hình bên trên.
-                  </p>
-                </div>
+            <div className="bg-white rounded-xl border border-line p-4 space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-3">
+                <h4 className="text-xs font-semibold text-ink flex items-center gap-1.5">
+                  <Users className="w-4 h-4 text-accent" />
+                  <span>
+                    Nhân sự giữ vai trò &ldquo;{selectedRoleDef.name}&rdquo; ({internalStaff.filter((s) => s.role === selectedRoleKey).length})
+                  </span>
+                </h4>
 
                 {/* Gán nhanh nhân sự vào Role đang chọn */}
                 <div className="flex items-center gap-2">
                   <select
                     value={assignStaffToRoleId}
                     onChange={(e) => setAssignStaffToRoleId(e.target.value)}
-                    className="h-8 px-2.5 rounded-lg border border-slate-200 bg-slate-50 text-xs text-slate-800 focus:outline-none focus:border-blue-500"
+                    className="h-8 px-2.5 rounded-lg border border-line bg-canvas text-xs text-ink focus:outline-none focus:border-accent/20"
                   >
-                    <option value="">+ Chọn nhân sự để gán vào Role này...</option>
+                    <option value="">+ Gán thêm nhân sự vào Role này...</option>
                     {internalStaff
                       .filter((s) => s.role !== selectedRoleKey)
                       .map((s) => (
@@ -1223,7 +1177,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                     type="button"
                     disabled={!assignStaffToRoleId}
                     onClick={() => handleAssignStaffToSelectedRole(assignStaffToRoleId, selectedRoleKey)}
-                    className="px-3 h-8 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 text-white text-xs font-semibold transition shrink-0"
+                    className="px-3 h-8 rounded-lg bg-accent hover:bg-accent disabled:bg-sunken disabled:text-ink-3 text-white text-xs font-semibold transition shrink-0"
                   >
                     Gán vào Role
                   </button>
@@ -1231,25 +1185,25 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
               </div>
 
               {internalStaff.filter((s) => s.role === selectedRoleKey).length === 0 ? (
-                <div className="p-6 text-center bg-slate-50/60 rounded-xl border border-dashed border-slate-200 text-xs text-slate-500">
-                  Hiện chưa có nhân sự nội bộ nào được gán vào Role <strong>{selectedRoleDef.name}</strong>. Chọn nhân sự ở ô phía trên để gán ngay.
+                <div className="p-4 text-center bg-canvas rounded-lg text-xs text-ink-3">
+                  Chưa có nhân sự nào được gán vai trò <strong>{selectedRoleDef.name}</strong>.
                 </div>
               ) : (
-                <div className="divide-y divide-slate-100">
+                <div className="divide-y divide-line">
                   {internalStaff
                     .filter((s) => s.role === selectedRoleKey)
                     .map((staff) => (
-                      <div key={staff.id} className="py-2.5 flex flex-wrap items-center justify-between gap-3">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-lg bg-blue-100 border border-blue-200 text-blue-700 font-semibold flex items-center justify-center text-xs shrink-0">
+                      <div key={staff.id} className="py-2 flex flex-wrap items-center justify-between gap-3">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-7 h-7 rounded-lg bg-accent-soft border border-accent/20 text-accent font-semibold flex items-center justify-center text-xs shrink-0">
                             {staff.avatar}
                           </div>
                           <div>
                             <div className="flex items-center gap-2">
-                              <span className="font-semibold text-xs text-slate-900">{staff.name}</span>
-                              <span className="text-2xs text-slate-500">({staff.email})</span>
+                              <span className="font-semibold text-xs text-ink">{staff.name}</span>
+                              <span className="text-2xs text-ink-3">({staff.email})</span>
                             </div>
-                            <span className="text-2xs text-slate-500 block">
+                            <span className="text-2xs text-ink-3 block">
                               {staff.department} · {staff.position}
                             </span>
                           </div>
@@ -1259,18 +1213,18 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                           <button
                             type="button"
                             onClick={() => handleImpersonateInternal(staff)}
-                            className="px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-2xs font-semibold transition flex items-center gap-1"
+                            className="px-2 py-1 rounded-md bg-accent-soft hover:bg-accent-soft text-accent border border-accent/20 text-2xs font-semibold transition flex items-center gap-1"
                           >
-                            <Eye className="w-3.5 h-3.5" />
+                            <Eye className="w-3 h-3" />
                             <span>Đóng vai</span>
                           </button>
                           <button
                             type="button"
                             onClick={() => handleOpenEditStaff(staff)}
-                            className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-2xs font-semibold transition flex items-center gap-1"
+                            className="px-2 py-1 rounded-md bg-sunken hover:bg-sunken text-ink-2 text-2xs font-medium transition flex items-center gap-1"
                           >
-                            <Edit3 className="w-3.5 h-3.5" />
-                            <span>Đổi Role / Nhãn</span>
+                            <Edit3 className="w-3 h-3" />
+                            <span>Đổi Role</span>
                           </button>
                         </div>
                       </div>
@@ -1292,132 +1246,125 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
             {/* Card 1: Marketing B2C */}
             <div
               onClick={() => { setDirScopeFilter('MARKETING_B2C'); setDirPage(1); }}
-              className={`p-4 rounded-xl border transition cursor-pointer ${
+              className={`p-3.5 rounded-xl border transition cursor-pointer ${
                 dirScopeFilter === 'MARKETING_B2C'
-                  ? 'bg-blue-50/70 border-blue-400 shadow-xs'
-                  : 'bg-white border-slate-200 hover:border-blue-300'
+                  ? 'bg-accent-soft border-accent/20 shadow-xs'
+                  : 'bg-white border-line hover:border-accent/20'
               }`}
             >
-              <div className="flex items-center justify-between mb-2">
-                <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
-                  1. Khối Marketing B2C
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-2xs font-semibold text-accent -accent/20">
+                  Marketing B2C
                 </span>
-                <span className="text-2xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                  Được phép Login
+                <span className="text-2xs font-semibold text-positive -positive/20">
+                  Được vào
                 </span>
               </div>
-              <div className="text-xl font-semibold text-slate-900">
-                {directoryStats.mktAllowed} <span className="text-xs font-normal text-slate-500">/ {directoryStats.mktTotal} nhân sự</span>
+              <div className="text-xl font-semibold text-ink">
+                {directoryStats.mktAllowed} <span className="text-xs font-normal text-ink-3">/ {directoryStats.mktTotal} NV</span>
               </div>
-              <div className="mt-2 pt-2 border-t border-slate-100 text-2xs text-slate-600 space-y-0.5">
-                <div>Trưởng phòng: <strong className="text-slate-900">Đặng Thị Yến Nhi</strong></div>
-                <div>Trưởng nhóm: <strong className="text-slate-800">Nguyễn Thị Ngọc Tâm</strong></div>
-                <div className="text-slate-400">Team: Booking, Sub-Booking, Content, Brand</div>
+              <div className="mt-2 pt-2 border-t border-line text-2xs text-ink-2 space-y-0.5">
+                <div>Trưởng phòng: <strong className="text-ink">Đặng Thị Yến Nhi</strong></div>
+                <div className="text-ink-3">Team: Booking, Sub-Booking, Content, Brand</div>
               </div>
             </div>
 
             {/* Card 2: Khối Growth */}
             <div
               onClick={() => { setDirScopeFilter('GROWTH'); setDirPage(1); }}
-              className={`p-4 rounded-xl border transition cursor-pointer ${
+              className={`p-3.5 rounded-xl border transition cursor-pointer ${
                 dirScopeFilter === 'GROWTH'
-                  ? 'bg-emerald-50/70 border-emerald-400 shadow-xs'
-                  : 'bg-white border-slate-200 hover:border-emerald-300'
+                  ? 'bg-positive-soft border-positive/20 shadow-xs'
+                  : 'bg-white border-line hover:border-positive/20'
               }`}
             >
-              <div className="flex items-center justify-between mb-2">
-                <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                  2. Khối Growth Ecom
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-2xs font-semibold text-positive -positive/20">
+                  Growth Ecom
                 </span>
-                <span className="text-2xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                  Được phép Login
+                <span className="text-2xs font-semibold text-positive -positive/20">
+                  Được vào
                 </span>
               </div>
-              <div className="text-xl font-semibold text-slate-900">
-                {directoryStats.growthAllowed} <span className="text-xs font-normal text-slate-500">/ {directoryStats.growthTotal} nhân sự</span>
+              <div className="text-xl font-semibold text-ink">
+                {directoryStats.growthAllowed} <span className="text-xs font-normal text-ink-3">/ {directoryStats.growthTotal} NV</span>
               </div>
-              <div className="mt-2 pt-2 border-t border-slate-100 text-2xs text-slate-600 space-y-0.5">
-                <div>Trưởng phòng: <strong className="text-slate-900">Trần Thị Đỗ Quyên</strong></div>
-                <div>Lead cụm: <strong className="text-slate-800">Hoài Linh (HCM), Phạm Nhung</strong></div>
-                <div className="text-slate-400">Team: Growth 1, Growth 2, Growth 3, Growth 6, HCM</div>
+              <div className="mt-2 pt-2 border-t border-line text-2xs text-ink-2 space-y-0.5">
+                <div>Trưởng phòng: <strong className="text-ink">Trần Thị Đỗ Quyên</strong></div>
+                <div className="text-ink-3">Team: Growth 1 - 6, HCM</div>
               </div>
             </div>
 
             {/* Card 3: Khối Media */}
             <div
               onClick={() => { setDirScopeFilter('MEDIA'); setDirPage(1); }}
-              className={`p-4 rounded-xl border transition cursor-pointer ${
+              className={`p-3.5 rounded-xl border transition cursor-pointer ${
                 dirScopeFilter === 'MEDIA'
-                  ? 'bg-amber-50/70 border-amber-400 shadow-xs'
-                  : 'bg-white border-slate-200 hover:border-amber-300'
+                  ? 'bg-warning-soft border-warning/20 shadow-xs'
+                  : 'bg-white border-line hover:border-warning/20'
               }`}
             >
-              <div className="flex items-center justify-between mb-2">
-                <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
-                  3. Khối Media & Ads
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-2xs font-semibold text-warning -warning/20">
+                  Media & Ads
                 </span>
-                <span className="text-2xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                  Được phép Login
+                <span className="text-2xs font-semibold text-positive -positive/20">
+                  Được vào
                 </span>
               </div>
-              <div className="text-xl font-semibold text-slate-900">
-                {directoryStats.mediaAllowed} <span className="text-xs font-normal text-slate-500">/ {directoryStats.mediaTotal} nhân sự</span>
+              <div className="text-xl font-semibold text-ink">
+                {directoryStats.mediaAllowed} <span className="text-xs font-normal text-ink-3">/ {directoryStats.mediaTotal} NV</span>
               </div>
-              <div className="mt-2 pt-2 border-t border-slate-100 text-2xs text-slate-600 space-y-0.5">
-                <div>Trưởng phòng: <strong className="text-slate-900">Nguyễn Đức Quảng</strong></div>
-                <div>Lead TikTok: <strong className="text-slate-800">Nguyễn Đình Long</strong></div>
-                <div className="text-slate-400">Team: Media Omni, Media TikTok</div>
+              <div className="mt-2 pt-2 border-t border-line text-2xs text-ink-2 space-y-0.5">
+                <div>Trưởng phòng: <strong className="text-ink">Nguyễn Đức Quảng</strong></div>
+                <div className="text-ink-3">Team: Media Omni, Media TikTok</div>
               </div>
             </div>
 
-            {/* Card 4: Các Phòng Ban Khác (Bị Chặn Mặc Định) */}
+            {/* Card 4: Các Phòng Ban Khác */}
             <div
               onClick={() => { if (isAdmin) { setDirScopeFilter('OTHER_BLOCKED'); setDirPage(1); } }}
-              className={`p-4 rounded-xl border transition ${
+              className={`p-3.5 rounded-xl border transition ${
                 isAdmin ? 'cursor-pointer' : 'opacity-75 cursor-not-allowed'
               } ${
                 dirScopeFilter === 'OTHER_BLOCKED'
-                  ? 'bg-red-50/70 border-red-400 shadow-xs'
-                  : 'bg-white border-slate-200 hover:border-red-300'
+                  ? 'bg-critical-soft border-critical/20 shadow-xs'
+                  : 'bg-white border-line hover:border-critical/20'
               }`}
             >
-              <div className="flex items-center justify-between mb-2">
-                <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-slate-100 text-slate-700 border border-slate-300">
-                  4. Phòng Ban Khác (Ngoài B2C)
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-2xs font-semibold text-ink-2 -line-strong">
+                  Phòng ban khác
                 </span>
-                <span className="text-2xs font-semibold text-red-700 bg-red-50 px-2 py-0.5 rounded border border-red-200">
+                <span className="text-2xs font-semibold text-critical -critical/20">
                   Chặn Login
                 </span>
               </div>
-              <div className="text-xl font-semibold text-slate-900">
-                {directoryStats.otherTotal - directoryStats.otherAllowed} <span className="text-xs font-normal text-slate-500">bị chặn / {directoryStats.otherTotal} NV</span>
+              <div className="text-xl font-semibold text-ink">
+                {directoryStats.otherTotal - directoryStats.otherAllowed} <span className="text-xs font-normal text-ink-3">bị chặn / {directoryStats.otherTotal} NV</span>
               </div>
-              <div className="mt-2 pt-2 border-t border-slate-100 text-2xs text-slate-600 space-y-0.5">
-                <div>Ngoại lệ Admin cấp: <strong className="text-emerald-700">{directoryStats.otherAllowed} người</strong></div>
-                <div>Trạng thái cổng: <strong className="text-red-600">Từ chối đăng nhập (403)</strong></div>
-                <div className="text-slate-400">Fulfillment, Livestream, Kế toán, HCNS, Tech...</div>
+              <div className="mt-2 pt-2 border-t border-line text-2xs text-ink-2 space-y-0.5">
+                <div>Ngoại lệ: <strong className="text-positive">{directoryStats.otherAllowed} người</strong></div>
+                <div className="text-ink-3">Fulfillment, Kho, HCNS, Tech...</div>
               </div>
             </div>
           </div>
 
           {/* Bảng Quy Tắc Cấp Quyền Tự Động Theo Phòng Ban (Admin Gatekeeper Rules) */}
           {isAdmin && (
-            <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
-              <div className="px-4 py-3 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2">
+            <div className="bg-white rounded-xl border border-line shadow-xs overflow-hidden">
+              <div className="px-4 py-2.5 bg-canvas border-b border-line flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
-                  <KeyRound className="w-4 h-4 text-blue-600" />
-                  <h3 className="text-xs font-semibold text-slate-900">
-                    Quy Tắc Mở Cổng Đăng Nhập Theo Phòng Ban (Admin Department Rules)
+                  <KeyRound className="w-4 h-4 text-accent" />
+                  <h3 className="text-xs font-semibold text-ink">
+                    Quy tắc mở cổng đăng nhập theo phòng ban
                   </h3>
                 </div>
-                <span className="text-2xs text-slate-500">
-                  Admin xác định cụm phòng ban nào được tự động vào hệ thống và gán về Trưởng phòng quản lý
-                </span>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse text-xs">
                   <thead>
-                    <tr className="border-b border-slate-200 text-2xs text-slate-500 bg-slate-50/50 font-semibold">
+                    <tr className="border-b border-line text-2xs text-ink-3 bg-canvas font-semibold">
                       <th className="py-2.5 px-4">Cụm Phòng Ban / Team (Đồng bộ từ HR Lark)</th>
                       <th className="py-2.5 px-3">Khối Hệ Thống</th>
                       <th className="py-2.5 px-3">Trưởng Phòng Quản Lý Trực Tiếp</th>
@@ -1426,27 +1373,27 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                       <th className="py-2.5 px-4 text-center">Cổng Đăng Nhập</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
+                  <tbody className="divide-y divide-line">
                     {deptRules.map(rule => {
                       const scopeMeta = SCOPE_LABELS[rule.mappedScope];
                       return (
-                        <tr key={rule.id} className="hover:bg-slate-50/70">
+                        <tr key={rule.id} className="hover:bg-canvas">
                           <td className="py-2.5 px-4">
-                            <div className="font-semibold text-slate-900">{rule.departmentOrTeamName}</div>
-                            <div className="text-2xs text-slate-500">{rule.description}</div>
+                            <div className="font-semibold text-ink">{rule.departmentOrTeamName}</div>
+                            <div className="text-2xs text-ink-3">{rule.description}</div>
                           </td>
                           <td className="py-2.5 px-3">
                             <span className={`inline-flex px-2 py-0.5 rounded text-2xs font-semibold border ${scopeMeta.badgeClass}`}>
                               {scopeMeta.label}
                             </span>
                           </td>
-                          <td className="py-2.5 px-3 font-medium text-slate-800 text-2xs">
+                          <td className="py-2.5 px-3 font-medium text-ink text-2xs">
                             {rule.defaultManagerName}
                           </td>
-                          <td className="py-2.5 px-3 text-2xs text-slate-600 font-mono">
+                          <td className="py-2.5 px-3 text-2xs text-ink-2 font-mono">
                             {rule.autoAllowLogin ? ROLE_DISPLAY_NAME[rule.defaultRole] : 'Không cấp Role'}
                           </td>
-                          <td className="py-2.5 px-3 text-center font-mono font-semibold text-slate-700">
+                          <td className="py-2.5 px-3 text-center font-mono font-semibold text-ink-2">
                             {rule.staffCount} NV
                           </td>
                           <td className="py-2.5 px-4 text-center">
@@ -1455,8 +1402,8 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                               onClick={() => handleToggleDeptRule(rule.id)}
                               className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-2xs font-semibold border transition cursor-pointer ${
                                 rule.autoAllowLogin
-                                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
-                                  : 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100'
+                                  ? 'bg-positive-soft text-positive border-positive/20 hover:bg-positive-soft'
+                                  : 'bg-critical-soft text-critical border-critical/20 hover:bg-critical-soft'
                               }`}
                             >
                               {rule.autoAllowLogin ? (
@@ -1482,25 +1429,20 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
           )}
 
           {/* Thanh Mô Phỏng Kiểm Tra Cổng Đăng Nhập (Login Gatekeeper Simulator) */}
-          <div className="bg-slate-900 text-white rounded-xl p-4 border border-slate-800 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-            <div className="space-y-1 max-w-xl">
-              <div className="text-xs font-semibold flex items-center gap-2 text-amber-300">
-                <ShieldAlert className="w-4 h-4" />
-                <span>Kiểm Tra Thử Cổng Đăng Nhập Nhân Sự (Login Gatekeeper Test)</span>
-              </div>
-              <p className="text-2xs text-slate-300">
-                Chọn bất kỳ nhân viên nào trong danh bạ 1.011 người để kiểm tra xem khi họ bấm đăng nhập Lark SSO, hệ thống sẽ cho vào hay chặn lại.
-              </p>
+          <div className="bg-ink text-white rounded-xl p-3.5 border border-line-strong flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-xs font-semibold text-warning shrink-0">
+              <ShieldAlert className="w-4 h-4" />
+              <span>Kiểm tra cổng đăng nhập Lark</span>
             </div>
 
-            <div className="flex flex-wrap items-center gap-3 flex-1 justify-end">
+            <div className="flex flex-wrap items-center gap-2.5 flex-1 justify-end">
               <select
                 value={simSelectedStaffId}
                 onChange={(e) => setSimSelectedStaffId(e.target.value)}
-                className="text-xs h-9 px-3 rounded-lg bg-slate-800 border border-slate-700 text-white font-medium focus:outline-none focus:border-blue-400 max-w-xs w-full"
+                className="text-xs h-8 px-2.5 rounded-lg bg-ink border border-line-strong text-white font-medium focus:outline-none focus:border-accent/20 max-w-xs w-full"
               >
-                <optgroup label="Nhân sự thuộc Phòng ban bị chặn (Test Chặn Login)">
-                  <option value="HN782">HN782 - Dương Quỳnh Anh (Team Livestream - CTV)</option>
+                <optgroup label="Nhân sự ngoài phạm vi (Test Chặn Login)">
+                  <option value="HN782">HN782 - Dương Quỳnh Anh (Livestream - CTV)</option>
                   <option value="HN223">HN223 - Nhân sự Fulfillment / Kho vận</option>
                   {classifiedDirectory.filter(s => !s.canLogin).slice(0, 6).map(s => (
                     <option key={s.id} value={s.id}>
@@ -1508,7 +1450,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                     </option>
                   ))}
                 </optgroup>
-                <optgroup label="Nhân sự thuộc 3 Khối MKT B2C / Growth / Media (Test Cho Phép)">
+                <optgroup label="Nhân sự thuộc MKT B2C / Growth / Media (Test Cho Phép)">
                   {classifiedDirectory.filter(s => s.canLogin).slice(0, 10).map(s => (
                     <option key={s.id} value={s.id}>
                       {s.staffCode || s.id} - {s.name} ({SCOPE_LABELS[s.classifiedScope].label})
@@ -1518,25 +1460,25 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
               </select>
 
               {simTargetStaff && (
-                <div className={`px-3.5 py-2 rounded-lg border text-2xs flex items-center gap-2.5 ${
+                <div className={`px-3 py-1.5 rounded-lg border text-2xs flex items-center gap-2 ${
                   simTargetStaff.canLogin
-                    ? 'bg-emerald-950/90 border-emerald-500/50 text-emerald-200'
-                    : 'bg-red-950/90 border-red-500/50 text-red-200'
+                    ? 'bg-positive/90 border-positive/20/50 text-positive'
+                    : 'bg-critical/90 border-critical/20/50 text-critical'
                 }`}>
                   {simTargetStaff.canLogin ? (
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <CheckCircle2 className="w-3.5 h-3.5 text-positive shrink-0" />
                   ) : (
-                    <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+                    <AlertCircle className="w-3.5 h-3.5 text-critical shrink-0" />
                   )}
                   <div>
-                    <div className="font-semibold">
+                    <span className="font-semibold">
                       {simTargetStaff.canLogin
-                        ? `CHO PHÉP ĐĂNG NHẬP → ${ROLE_DISPLAY_NAME[simTargetStaff.mappedRole]}`
-                        : `CHẶN ĐĂNG NHẬP (403 ACCESS DENIED)`}
-                    </div>
-                    <div className="opacity-80">
-                      {simTargetStaff.accessReason} · Quản lý: <strong>{simTargetStaff.managerName}</strong>
-                    </div>
+                        ? `CHO PHÉP → ${ROLE_DISPLAY_NAME[simTargetStaff.mappedRole]}`
+                        : `CHẶN (403 ACCESS DENIED)`}
+                    </span>
+                    <span className="opacity-80 ml-1.5">
+                      · Quản lý: <strong>{simTargetStaff.managerName}</strong>
+                    </span>
                   </div>
                 </div>
               )}
@@ -1544,27 +1486,20 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
           </div>
 
           {/* Bộ Lọc Danh Bạ 1.011 Nhân Sự & Quản Lý Theo Trưởng Phòng */}
-          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs space-y-3">
+          <div className="bg-white p-3.5 rounded-xl border border-line shadow-xs space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <h3 className="text-xs font-semibold text-slate-900 flex items-center gap-2">
-                  <Users className="w-4 h-4 text-blue-600" />
-                  <span>
-                    {isGrowthManager
-                      ? `Danh Sách Nhân Viên Khối Growth Của Bạn (${filteredDirectory.length} nhân sự)`
-                      : isMediaManager
-                      ? `Danh Sách Nhân Viên Khối Media Của Bạn (${filteredDirectory.length} nhân sự)`
-                      : isB2cManager
-                      ? `Danh Sách Nhân Viên Khối Marketing B2C (${filteredDirectory.length} nhân sự)`
-                      : `Danh Bạ Nhân Sự Toàn Công Ty & Phân Quyền Đăng Nhập (${filteredDirectory.length} / ${directoryStats.totalStaff} nhân sự)`}
-                  </span>
-                </h3>
-                <p className="text-2xs text-slate-500 mt-0.5">
-                  {isAdmin
-                    ? 'Admin có thể bật/tắt quyền đăng nhập cho từng cá nhân, chuyển khối (Marketing / Growth / Media) hoặc bổ nhiệm Trưởng phòng.'
-                    : 'Trưởng phòng quản lý trực tiếp danh sách nhân viên trong khối của mình và có thể đóng vai kiểm tra công việc.'}
-                </p>
-              </div>
+              <h3 className="text-xs font-semibold text-ink flex items-center gap-2">
+                <Users className="w-4 h-4 text-accent" />
+                <span>
+                  {isGrowthManager
+                    ? `Danh sách nhân viên Khối Growth (${filteredDirectory.length} NV)`
+                    : isMediaManager
+                    ? `Danh sách nhân viên Khối Media (${filteredDirectory.length} NV)`
+                    : isB2cManager
+                    ? `Danh sách nhân viên Khối Marketing B2C (${filteredDirectory.length} NV)`
+                    : `Danh bạ nhân sự (${filteredDirectory.length} / ${directoryStats.totalStaff} NV)`}
+                </span>
+              </h3>
 
               {isAdmin && Object.keys(staffOverrides).length > 0 && (
                 <button
@@ -1574,7 +1509,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                     saveStaffAccessOverrides({});
                     onNotify?.('Đã xóa các thiết lập ngoại lệ cá nhân, quay về quy tắc phòng ban chuẩn.', 'info');
                   }}
-                  className="px-2.5 py-1.5 rounded-lg border border-slate-200 text-2xs font-medium text-slate-600 hover:bg-slate-50"
+                  className="px-2.5 py-1.5 rounded-lg border border-line text-2xs font-medium text-ink-2 hover:bg-canvas"
                 >
                   Đặt lại {Object.keys(staffOverrides).length} ngoại lệ cá nhân
                 </button>
@@ -1583,13 +1518,13 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
 
             <div className="flex flex-wrap items-center gap-2.5">
               <div className="relative flex-1 min-w-[220px] max-w-sm">
-                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <Search className="w-3.5 h-3.5 text-ink-3 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
                   placeholder="Tìm tên, mã NV (HN222), email, phòng ban..."
                   value={dirSearch}
                   onChange={(e) => { setDirSearch(e.target.value); setDirPage(1); }}
-                  className="w-full pl-8.5 pr-3 h-9 text-xs rounded-lg border border-slate-200 focus:outline-none focus:border-blue-500 bg-slate-50/50"
+                  className="w-full pl-8.5 pr-3 h-9 text-xs rounded-lg border border-line focus:outline-none focus:border-accent/20 bg-canvas"
                 />
               </div>
 
@@ -1597,7 +1532,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                 <select
                   value={dirScopeFilter}
                   onChange={(e) => { setDirScopeFilter(e.target.value); setDirPage(1); }}
-                  className="text-xs h-9 px-3 rounded-lg border border-slate-200 bg-white font-medium"
+                  className="text-xs h-9 px-3 rounded-lg border border-line bg-white font-medium"
                 >
                   <option value="ALLOWED_3_SCOPES">3 Khối được vào (MKT B2C + Growth + Media)</option>
                   <option value="ALL">Toàn bộ công ty ({directoryStats.totalStaff} nhân sự)</option>
@@ -1611,7 +1546,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
               <select
                 value={dirLoginFilter}
                 onChange={(e) => { setDirLoginFilter(e.target.value as 'ALL' | 'ALLOWED' | 'BLOCKED' | 'OVERRIDDEN'); setDirPage(1); }}
-                className="text-xs h-9 px-3 rounded-lg border border-slate-200 bg-white font-medium"
+                className="text-xs h-9 px-3 rounded-lg border border-line bg-white font-medium"
               >
                 <option value="ALL">Mọi trạng thái Login</option>
                 <option value="ALLOWED">Được phép Login ({directoryStats.totalAllowed})</option>
@@ -1622,7 +1557,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
               <select
                 value={dirDeptFilter}
                 onChange={(e) => { setDirDeptFilter(e.target.value); setDirPage(1); }}
-                className="text-xs h-9 px-3 rounded-lg border border-slate-200 bg-white font-medium max-w-[200px]"
+                className="text-xs h-9 px-3 rounded-lg border border-line bg-white font-medium max-w-[200px]"
               >
                 <option value="ALL">Mọi Team / Phòng ban ({directoryDepartments.length})</option>
                 {directoryDepartments.map(d => (
@@ -1632,11 +1567,11 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
             </div>
 
             {/* Bảng Danh Bạ 1.011 Nhân Sự */}
-            <div className="border border-slate-200 rounded-xl overflow-hidden">
+            <div className="border border-line rounded-xl overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse text-xs">
                   <thead>
-                    <tr className="bg-slate-50 border-b border-slate-200 text-2xs font-semibold text-slate-600">
+                    <tr className="bg-canvas border-b border-line text-2xs font-semibold text-ink-2">
                       <th className="py-2.5 px-3 w-[90px]">Mã NV</th>
                       <th className="py-2.5 px-3 min-w-[180px]">Nhân Viên & Email</th>
                       <th className="py-2.5 px-3">Phòng Ban / Team Gốc</th>
@@ -1646,10 +1581,10 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                       <th className="py-2.5 px-3 text-center">Thao Tác</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
+                  <tbody className="divide-y divide-line">
                     {pagedDirectory.length === 0 ? (
                       <tr>
-                        <td colSpan={7} className="py-10 text-center text-slate-400">
+                        <td colSpan={7} className="py-10 text-center text-ink-3">
                           Không tìm thấy nhân viên nào khớp với bộ lọc hiện tại.
                         </td>
                       </tr>
@@ -1657,19 +1592,19 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                       pagedDirectory.map(staff => {
                         const scopeMeta = SCOPE_LABELS[staff.classifiedScope];
                         return (
-                          <tr key={staff.id} className="hover:bg-slate-50/70 transition">
-                            <td className="py-2.5 px-3 font-mono font-semibold text-slate-800">
-                              <span className="px-1.5 py-0.5 rounded bg-slate-100 border border-slate-200 text-2xs">
+                          <tr key={staff.id} className="hover:bg-canvas transition">
+                            <td className="py-2.5 px-3 font-mono font-semibold text-ink">
+                              <span className=".5 -line text-2xs">
                                 {staff.staffCode || staff.id}
                               </span>
                             </td>
                             <td className="py-2.5 px-3">
-                              <div className="font-semibold text-slate-900">{staff.name}</div>
-                              <div className="text-2xs text-slate-500 font-mono">{staff.email}</div>
+                              <div className="font-semibold text-ink">{staff.name}</div>
+                              <div className="text-2xs text-ink-3 font-mono">{staff.email}</div>
                             </td>
                             <td className="py-2.5 px-3">
-                              <div className="font-medium text-slate-800">{staff.department || staff.team || 'Chưa phân phòng'}</div>
-                              <div className="text-2xs text-slate-500">
+                              <div className="font-medium text-ink">{staff.department || staff.team || 'Chưa phân phòng'}</div>
+                              <div className="text-2xs text-ink-3">
                                 {staff.position || staff.roleTitle} · {staff.location || 'HN'}
                               </div>
                             </td>
@@ -1678,7 +1613,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                                 {scopeMeta.label}
                               </span>
                               {staff.accessSource === 'ADMIN_EXPLICIT' && (
-                                <span className="block text-2xs text-blue-600 font-semibold mt-0.5">
+                                <span className="block text-2xs text-accent font-semibold mt-0.5">
                                   Admin cấp đích danh
                                 </span>
                               )}
@@ -1686,15 +1621,15 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                             <td className="py-2.5 px-3">
                               {staff.canLogin ? (
                                 <>
-                                  <span className="font-semibold text-slate-900 block">
+                                  <span className="font-semibold text-ink block">
                                     {ROLE_DISPLAY_NAME[staff.mappedRole]}
                                   </span>
-                                  <span className="text-2xs text-slate-500">
-                                    Quản lý: <strong className="text-slate-700">{staff.managerName}</strong>
+                                  <span className="text-2xs text-ink-3">
+                                    Quản lý: <strong className="text-ink-2">{staff.managerName}</strong>
                                   </span>
                                 </>
                               ) : (
-                                <span className="text-2xs text-slate-400 italic">
+                                <span className="text-2xs text-ink-3 italic">
                                   Không có quyền truy cập B2C
                                 </span>
                               )}
@@ -1709,18 +1644,18 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                                   isAdmin ? 'cursor-pointer' : 'cursor-default'
                                 } ${
                                   staff.canLogin
-                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
-                                    : 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100'
+                                    ? 'bg-positive-soft text-positive border-positive/20 hover:bg-positive-soft'
+                                    : 'bg-critical-soft text-critical border-critical/20 hover:bg-critical-soft'
                                 }`}
                               >
                                 {staff.canLogin ? (
                                   <>
-                                    <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                                    <CheckCircle2 className="w-3 h-3 text-positive" />
                                     <span>Được vào</span>
                                   </>
                                 ) : (
                                   <>
-                                    <Lock className="w-3 h-3 text-red-500" />
+                                    <Lock className="w-3 h-3 text-critical" />
                                     <span>Chặn Login</span>
                                   </>
                                 )}
@@ -1732,7 +1667,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                                   <button
                                     type="button"
                                     onClick={() => handleImpersonateDirectoryStaff(staff)}
-                                    className="px-2 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-2xs font-semibold flex items-center gap-1"
+                                    className="px-2 py-1 rounded-lg bg-accent-soft hover:bg-accent-soft text-accent border border-accent/20 text-2xs font-semibold flex items-center gap-1"
                                     title="Đóng vai nhân viên này để kiểm tra giao diện"
                                   >
                                     <Eye className="w-3 h-3" />
@@ -1743,7 +1678,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                                   <button
                                     type="button"
                                     onClick={() => handleOpenEditDirectoryStaff(staff)}
-                                    className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-600"
+                                    className="p-1.5 rounded-lg border border-line hover:bg-sunken text-ink-2"
                                     title="Phân khối Marketing / Growth / Media & bổ nhiệm Vai trò"
                                   >
                                     <Edit3 className="w-3.5 h-3.5" />
@@ -1760,7 +1695,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
               </div>
 
               {/* Pagination */}
-              <div className="px-4 py-2.5 bg-slate-50 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2 text-2xs text-slate-600">
+              <div className="px-4 py-2.5 bg-canvas border-t border-line flex flex-wrap items-center justify-between gap-2 text-2xs text-ink-2">
                 <div>
                   Hiển thị <strong>{Math.min(filteredDirectory.length, (dirPage - 1) * DIR_PAGE_SIZE + 1)} - {Math.min(filteredDirectory.length, dirPage * DIR_PAGE_SIZE)}</strong> / <strong>{filteredDirectory.length}</strong> nhân sự
                 </div>
@@ -1769,18 +1704,18 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                     type="button"
                     disabled={dirPage <= 1}
                     onClick={() => setDirPage(p => Math.max(1, p - 1))}
-                    className="p-1 rounded border border-slate-200 bg-white disabled:opacity-40"
+                    className="p-1 rounded border border-line bg-white disabled:opacity-40"
                   >
                     <ChevronLeft className="w-3.5 h-3.5" />
                   </button>
-                  <span className="px-2 font-mono font-semibold">
+                  <span className="font-mono font-semibold">
                     Trang {dirPage} / {totalDirPages}
                   </span>
                   <button
                     type="button"
                     disabled={dirPage >= totalDirPages}
                     onClick={() => setDirPage(p => Math.min(totalDirPages, p + 1))}
-                    className="p-1 rounded border border-slate-200 bg-white disabled:opacity-40"
+                    className="p-1 rounded border border-line bg-white disabled:opacity-40"
                   >
                     <ChevronRight className="w-3.5 h-3.5" />
                   </button>
@@ -1792,44 +1727,44 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
           {/* Modal Admin Phân Khối & Cấp Quyền Truy Cập Cho Nhân Sự */}
           <Presence show={!!editingDirStaffObj}>
           {editingDirStaffObj && (
-            <div className="fixed inset-0 bg-slate-900/40 z-50 flex items-center justify-center p-4 animate-in fade-in duration-(--motion-base)">
-              <div data-motion-panel className="bg-white rounded-2xl max-w-lg w-full p-5 shadow-2xl border border-slate-200 space-y-4 animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div className="fixed inset-0 bg-ink/40 z-50 flex items-center justify-center p-4 animate-in fade-in duration-(--motion-base)">
+              <div data-motion-panel className="bg-white rounded-2xl max-w-lg w-full p-5 shadow-2xl border border-line space-y-4 animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
+                <div className="flex items-center justify-between border-b border-line pb-3">
                   <div>
-                    <h3 className="font-semibold text-sm text-slate-900">
+                    <h3 className="font-semibold text-sm text-ink">
                       Cấu Hình Cổng Đăng Nhập & Phân Khối Nhân Sự
                     </h3>
-                    <p className="text-2xs text-slate-500">
+                    <p className="text-2xs text-ink-3">
                       {editingDirStaffObj.name} ({editingDirStaffObj.staffCode} · Phòng gốc: {editingDirStaffObj.department || editingDirStaffObj.team || 'Khác'})
                     </p>
                   </div>
                   <button
                     type="button"
                     onClick={() => setEditingDirectoryStaffId(null)}
-                    className="p-1 rounded-lg text-slate-400 hover:text-slate-600"
+                    className="p-1 rounded-lg text-ink-3 hover:text-ink-2"
                   >
                     <X className="w-4 h-4" />
                   </button>
                 </div>
 
                 <form onSubmit={handleSaveDirectoryStaff} className="space-y-4 text-xs">
-                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
+                  <div className="p-3 rounded-xl bg-canvas border border-line flex items-center justify-between">
                     <div>
-                      <div className="font-semibold text-slate-900">Cho phép đăng nhập hệ thống B2C</div>
-                      <div className="text-2xs text-slate-500">Nếu tắt, nhân viên này sẽ bị chặn ở màn hình Login.</div>
+                      <div className="font-semibold text-ink">Cho phép đăng nhập hệ thống B2C</div>
+                      <div className="text-2xs text-ink-3">Nếu tắt, nhân viên này sẽ bị chặn ở màn hình Login.</div>
                     </div>
                     <input
                       type="checkbox"
                       checked={dirEditCanLogin}
                       onChange={(e) => setDirEditCanLogin(e.target.checked)}
-                      className="w-4 h-4 rounded text-blue-600"
+                      className="w-4 h-4 rounded text-accent"
                     />
                   </div>
 
                   {dirEditCanLogin && (
                     <>
                       <div className="space-y-1.5">
-                        <label className="font-semibold text-slate-700 block">
+                        <label className="font-semibold text-ink-2 block">
                           1. Thuộc Khối chức năng nào trong hệ thống? *
                         </label>
                         <select
@@ -1848,7 +1783,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                               setDirEditManager('Đặng Thị Yến Nhi');
                             }
                           }}
-                          className="w-full h-9 px-3 rounded-lg border border-slate-200 bg-white font-semibold"
+                          className="w-full h-9 px-3 rounded-lg border border-line bg-white font-semibold"
                         >
                           <option value="MARKETING_B2C">Khối Marketing B2C (Booking / Content / Brand)</option>
                           <option value="GROWTH">Khối Growth Ecom (Growth 1 - 6 & HCM)</option>
@@ -1857,13 +1792,13 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                       </div>
 
                       <div className="space-y-1.5">
-                        <label className="font-semibold text-slate-700 block">
+                        <label className="font-semibold text-ink-2 block">
                           2. Vai trò (Role) trong hệ thống *
                         </label>
                         <select
                           value={dirEditRole}
                           onChange={(e) => setDirEditRole(e.target.value as UserRole)}
-                          className="w-full h-9 px-3 rounded-lg border border-slate-200 bg-white font-semibold"
+                          className="w-full h-9 px-3 rounded-lg border border-line bg-white font-semibold"
                         >
                           <optgroup label="Cấp Quản Trị & Trưởng Phòng 3 Khối">
                             <option value="ADMIN">Quản Trị Hệ Thống (ADMIN)</option>
@@ -1888,31 +1823,31 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                       </div>
 
                       <div className="space-y-1.5">
-                        <label className="font-semibold text-slate-700 block">
+                        <label className="font-semibold text-ink-2 block">
                           3. Trưởng phòng / Quản lý trực tiếp
                         </label>
                         <input
                           type="text"
                           value={dirEditManager}
                           onChange={(e) => setDirEditManager(e.target.value)}
-                          className="w-full h-9 px-3 rounded-lg border border-slate-200 bg-white"
+                          className="w-full h-9 px-3 rounded-lg border border-line bg-white"
                           placeholder="Tên Trưởng phòng quản lý..."
                         />
                       </div>
                     </>
                   )}
 
-                  <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                  <div className="flex justify-end gap-2 pt-2 border-t border-line">
                     <button
                       type="button"
                       onClick={() => setEditingDirectoryStaffId(null)}
-                      className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100"
+                      className="px-4 py-2 rounded-xl text-xs font-semibold text-ink-2 hover:bg-sunken"
                     >
                       Hủy
                     </button>
                     <button
                       type="submit"
-                      className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold"
+                      className="px-4 py-2 rounded-xl bg-accent hover:bg-accent text-white text-xs font-semibold"
                     >
                       Lưu Phân Quyền
                     </button>
@@ -1931,17 +1866,17 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
       {activeMainTab === 'matrix' && (
         <div className="space-y-4 animate-in fade-in duration-200">
           {/* Quick Filter Bar */}
-          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex flex-wrap items-center justify-between gap-3">
+          <div className="bg-white p-4 rounded-xl border border-line shadow-xs flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap items-center gap-2.5 flex-1 min-w-[280px]">
               {/* Search */}
               <div className="relative flex-1 min-w-[200px] max-w-sm">
-                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <Search className="w-4 h-4 text-ink-3 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
                   placeholder="Tìm tính năng, quyền hạn..."
                   value={searchMatrix}
                   onChange={(e) => setSearchMatrix(e.target.value)}
-                  className="w-full pl-9 pr-3 text-xs h-9 rounded-lg border border-slate-200 focus:outline-none focus:border-blue-500 bg-slate-50/50"
+                  className="w-full pl-9 pr-3 text-xs h-9 rounded-lg border border-line focus:outline-none focus:border-accent/20 bg-canvas"
                 />
               </div>
 
@@ -1949,7 +1884,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
               <select
                 value={categoryFilter}
                 onChange={(e) => setCategoryFilter(e.target.value)}
-                className="text-xs h-9 px-3 rounded-lg border border-slate-200 bg-white font-medium focus:outline-none focus:border-blue-500"
+                className="text-xs h-9 px-3 rounded-lg border border-line bg-white font-medium focus:outline-none focus:border-accent/20"
               >
                 <option value="ALL">Tất cả 5 Phân hệ</option>
                 <option value="PLANNING">1. Lập Kế Hoạch & Phân Bổ Tải</option>
@@ -1963,7 +1898,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
               <select
                 value={roleColumnFilter}
                 onChange={(e) => setRoleColumnFilter(e.target.value)}
-                className="text-xs h-9 px-3 rounded-lg border border-slate-200 bg-white font-medium focus:outline-none focus:border-blue-500"
+                className="text-xs h-9 px-3 rounded-lg border border-line bg-white font-medium focus:outline-none focus:border-accent/20"
               >
                 <option value="ALL">Hiển thị cả 9 Vai trò (Grid Matrix)</option>
                 {RBAC_ROLE_DEFINITIONS.map(r => (
@@ -1973,22 +1908,22 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
             </div>
 
             {/* Quick Badge Legend */}
-            <div className="flex items-center gap-2 text-2xs text-slate-600 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200">
-              <span className="font-semibold text-slate-700">Chú giải:</span>
-              <span className="inline-flex items-center text-emerald-700 font-semibold">ALL</span>
-              <span className="inline-flex items-center text-blue-700 font-semibold">SCOPED</span>
-              <span className="inline-flex items-center text-amber-700 font-semibold">VIEW</span>
-              <span className="inline-flex items-center text-blue-700 font-semibold">APPROVE</span>
-              <span className="inline-flex items-center text-slate-400 font-medium">DENIED</span>
+            <div className="flex items-center gap-2 text-2xs text-ink-2 bg-canvas px-3 py-1.5 rounded-lg border border-line">
+              <span className="font-semibold text-ink-2">Chú giải:</span>
+              <span className="inline-flex items-center text-positive font-semibold">ALL</span>
+              <span className="inline-flex items-center text-accent font-semibold">SCOPED</span>
+              <span className="inline-flex items-center text-warning font-semibold">VIEW</span>
+              <span className="inline-flex items-center text-accent font-semibold">APPROVE</span>
+              <span className="inline-flex items-center text-ink-3 font-medium">DENIED</span>
             </div>
           </div>
 
           {/* Interactive Matrix Table */}
-          <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
+          <div className="bg-white rounded-xl border border-line shadow-xs overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse min-w-[1000px]">
                 <thead>
-                  <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-700 text-xs font-semibold">
+                  <tr className="bg-canvas border-b border-line text-ink-2 text-xs font-semibold">
                     <th className="py-3 px-4 w-[280px]">Tính Năng & Nghiệp Vụ</th>
                     {matrixRolesToRender.map(role => (
                       <th key={role.id} className="py-3 px-3 text-center min-w-[110px]">
@@ -1996,7 +1931,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                           <span className={`px-2 py-0.5 rounded-full text-2xs font-semibold border ${role.badgeColor}`}>
                             {role.name.split(' (')[0]}
                           </span>
-                          <span className="text-2xs text-slate-400 font-normal">
+                          <span className="text-2xs text-ink-3 font-normal">
                             {role.scopeType === 'INTERNAL' ? 'Nội bộ' : 'Gmail'}
                           </span>
                         </div>
@@ -2004,36 +1939,36 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                     ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 text-xs">
+                <tbody className="divide-y divide-line text-xs">
                   {filteredMatrix.map((item, idx) => {
                     const isNewCategory = idx === 0 || filteredMatrix[idx - 1].category !== item.category;
 
                     return (
                       <React.Fragment key={item.id}>
                         {isNewCategory && (
-                          <tr className="bg-blue-50/40 border-y border-blue-100/80">
+                          <tr className="bg-accent-soft border-y border-accent/20/80">
                             <td
                               colSpan={matrixRolesToRender.length + 1}
-                              className="py-2 px-4 text-xs font-semibold text-blue-900 flex items-center gap-2"
+                              className="py-2 px-4 text-xs font-semibold text-accent flex items-center gap-2"
                             >
-                              <Layers className="w-3.5 h-3.5 text-blue-600" />
+                              <Layers className="w-3.5 h-3.5 text-accent" />
                               <span>{item.categoryTitle}</span>
                             </td>
                           </tr>
                         )}
-                        <tr className="hover:bg-slate-50/70 transition">
+                        <tr className="hover:bg-canvas transition">
                           {/* Feature Column */}
                           <td className="py-3 px-4 align-top">
                             <div className="space-y-1">
-                              <span className="font-semibold text-slate-900 block leading-snug">
+                              <span className="font-semibold text-ink block leading-snug">
                                 {item.featureName}
                               </span>
-                              <span className="text-2xs text-slate-500 block leading-relaxed">
+                              <span className="text-2xs text-ink-3 block leading-relaxed">
                                 {item.description}
                               </span>
                               {item.securityNote && (
-                                <div className="inline-flex items-center gap-1 text-2xs text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200/80">
-                                  <AlertCircle className="w-3 h-3 text-amber-600 shrink-0" />
+                                <div className="inline-flex items-center gap-1 text-2xs text-warning bg-warning-soft px-2 py-0.5 rounded border border-warning/20/80">
+                                  <AlertCircle className="w-3 h-3 text-warning shrink-0" />
                                   <span>{item.securityNote}</span>
                                 </div>
                               )}
@@ -2071,14 +2006,14 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
             </div>
 
             {/* Matrix Footer Info */}
-            <div className="p-4 bg-slate-50/60 border-t border-slate-200 flex flex-wrap items-center justify-between text-2xs text-slate-500 gap-3">
+            <div className="p-4 bg-canvas border-t border-line flex flex-wrap items-center justify-between text-2xs text-ink-3 gap-3">
               <div className="flex items-center gap-1.5">
-                <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                <ShieldCheck className="w-4 h-4 text-positive" />
                 <span>
                   Ma trận đang kiểm soát <strong>{matrixItems.length} quyền hạn</strong> trên <strong>9 vai trò</strong> (bao gồm Trưởng phòng Growth & Trưởng phòng Media).
                 </span>
               </div>
-              <span className="text-slate-400">
+              <span className="text-ink-3">
                 Chính sách áp dụng theo thời gian thực
               </span>
             </div>
@@ -2087,33 +2022,33 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
           {/* Quick Edit Permission Modal Popup */}
           <Presence show={!!selectedCell}>
           {selectedCell && (
-            <div className="fixed inset-0 bg-slate-900/40 z-50 flex items-center justify-center p-4 animate-in fade-in duration-(--motion-base)">
-              <div data-motion-panel className="bg-white rounded-2xl max-w-md w-full p-5 shadow-2xl border border-slate-200 space-y-4 animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div className="fixed inset-0 bg-ink/40 z-50 flex items-center justify-center p-4 animate-in fade-in duration-(--motion-base)">
+              <div data-motion-panel className="bg-white rounded-2xl max-w-md w-full p-5 shadow-2xl border border-line space-y-4 animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
+                <div className="flex items-center justify-between border-b border-line pb-3">
                   <div className="flex items-center gap-2">
-                    <KeyRound className="w-5 h-5 text-blue-600" />
+                    <KeyRound className="w-5 h-5 text-accent" />
                     <div>
-                      <h3 className="font-semibold text-sm text-slate-900">Thiết Lập Cấp Độ Quyền</h3>
-                      <span className="text-2xs text-slate-500">
-                        Vai trò: <strong className="text-blue-700">{selectedCell.role}</strong>
+                      <h3 className="font-semibold text-sm text-ink">Thiết Lập Cấp Độ Quyền</h3>
+                      <span className="text-2xs text-ink-3">
+                        Vai trò: <strong className="text-accent">{selectedCell.role}</strong>
                       </span>
                     </div>
                   </div>
                   <button
                     onClick={() => setSelectedCell(null)}
-                    className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition"
+                    className="p-1 rounded-lg text-ink-3 hover:text-ink-2 hover:bg-sunken transition"
                   >
                     <X className="w-4 h-4" />
                   </button>
                 </div>
 
-                <div className="p-3 bg-blue-50/50 rounded-xl border border-blue-100 text-xs text-blue-900">
+                <div className="p-3 bg-accent-soft rounded-xl border border-accent/20 text-xs text-accent">
                   <span className="font-semibold block mb-0.5">Tính năng:</span>
                   <span>{matrixItems.find(i => i.id === selectedCell.itemId)?.featureName}</span>
                 </div>
 
                 <div className="space-y-2">
-                  <span className="text-2xs font-semibold text-slate-700 block">
+                  <span className="text-2xs font-semibold text-ink-2 block">
                     Chọn cấp độ phân quyền mới:
                   </span>
                   {(['ALL', 'SCOPED', 'VIEW', 'APPROVE', 'DENIED'] as PermissionAccessLevel[]).map(lvl => {
@@ -2127,15 +2062,15 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                         onClick={() => handleUpdatePermission(selectedCell.itemId, selectedCell.role, lvl)}
                         className={`w-full p-3 rounded-xl border text-left flex items-start justify-between gap-3 transition ${
                           isSelected
-                            ? `${cfg.bg} ${cfg.border} ring-2 ring-blue-500/20 shadow-xs`
-                            : 'bg-white border-slate-200 hover:bg-slate-50'
+                            ? `${cfg.bg} ${cfg.border} ring-2 ring-accent/20 shadow-xs`
+                            : 'bg-white border-line hover:bg-canvas'
                         }`}
                       >
                         <div className="space-y-0.5">
                           <span className={`text-xs block ${cfg.text}`}>{cfg.label}</span>
-                          <span className="text-2xs text-slate-500 block">{cfg.description}</span>
+                          <span className="text-2xs text-ink-3 block">{cfg.description}</span>
                         </div>
-                        {isSelected && <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />}
+                        {isSelected && <CheckCircle2 className="w-4 h-4 text-accent shrink-0 mt-0.5" />}
                       </button>
                     );
                   })}
@@ -2145,7 +2080,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                   <button
                     type="button"
                     onClick={() => setSelectedCell(null)}
-                    className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition"
+                    className="px-4 py-2 rounded-xl text-xs font-semibold text-ink-2 hover:bg-sunken transition"
                   >
                     Hủy bỏ
                   </button>
@@ -2163,23 +2098,23 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
       {activeMainTab === 'internal' && (
         <div className="space-y-4 animate-in fade-in duration-200">
           {/* Action Bar */}
-          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex flex-wrap items-center justify-between gap-3">
+          <div className="bg-white p-4 rounded-xl border border-line shadow-xs flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap items-center gap-2.5 flex-1 min-w-[280px]">
               <div className="relative flex-1 min-w-[200px] max-w-sm">
-                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <Search className="w-4 h-4 text-ink-3 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
                   placeholder="Tìm nhân sự, email, nhãn phụ trách..."
                   value={searchStaff}
                   onChange={(e) => setSearchStaff(e.target.value)}
-                  className="w-full pl-9 pr-3 text-xs h-9 rounded-lg border border-slate-200 focus:outline-none focus:border-blue-500 bg-slate-50/50"
+                  className="w-full pl-9 pr-3 text-xs h-9 rounded-lg border border-line focus:outline-none focus:border-accent/20 bg-canvas"
                 />
               </div>
 
               <select
                 value={staffRoleFilter}
                 onChange={(e) => setStaffRoleFilter(e.target.value)}
-                className="text-xs h-9 px-3 rounded-lg border border-slate-200 bg-white font-medium focus:outline-none focus:border-blue-500"
+                className="text-xs h-9 px-3 rounded-lg border border-line bg-white font-medium focus:outline-none focus:border-accent/20"
               >
                 <option value="ALL">Tất cả vai trò nội bộ</option>
                 <option value="ADMIN">Quản Trị Hệ Thống (ADMIN)</option>
@@ -2198,17 +2133,17 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
               </select>
             </div>
 
-            <div className="text-2xs text-slate-500">
+            <div className="text-2xs text-ink-3">
               Đồng bộ tự động từ <strong>Lark Base Nhân sự</strong>
             </div>
           </div>
 
           {/* Internal Staff Grid Table */}
-          <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
+          <div className="bg-white rounded-xl border border-line shadow-xs overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-600 text-2xs font-semibold ">
+                  <tr className="bg-canvas border-b border-line text-ink-2 text-2xs font-semibold ">
                     <th className="py-3 px-4">Nhân Sự & Email Lark</th>
                     <th className="py-3 px-4">Vai Trò Hệ Thống</th>
                     <th className="py-3 px-4">Phòng Ban & Vị Trí</th>
@@ -2217,19 +2152,19 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                     <th className="py-3 px-4 text-center">Thao Tác</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 text-xs">
+                <tbody className="divide-y divide-line text-xs">
                   {filteredStaff.map((staff) => (
-                    <tr key={staff.id} className="hover:bg-slate-50/70 transition">
+                    <tr key={staff.id} className="hover:bg-canvas transition">
                       {/* Name & Avatar */}
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-xl bg-blue-100 border border-blue-200 text-blue-700 font-semibold flex items-center justify-center text-xs shrink-0 shadow-2xs">
+                          <div className="w-9 h-9 rounded-xl bg-accent-soft border border-accent/20 text-accent font-semibold flex items-center justify-center text-xs shrink-0 shadow-2xs">
                             {staff.avatar}
                           </div>
                           <div>
-                            <span className="font-semibold text-slate-900 block leading-tight">{staff.name}</span>
-                            <span className="text-2xs text-slate-500 flex items-center gap-1 mt-0.5">
-                              <Mail className="w-3 h-3 text-slate-400" />
+                            <span className="font-semibold text-ink block leading-tight">{staff.name}</span>
+                            <span className="text-2xs text-ink-3 flex items-center gap-1 mt-0.5">
+                              <Mail className="w-3 h-3 text-ink-3" />
                               <span>{staff.email}</span>
                             </span>
                           </div>
@@ -2239,40 +2174,40 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                       {/* System Role */}
                       <td className="py-3 px-4">
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-2xs font-semibold border ${
-                          staff.role === 'ADMIN' ? 'bg-red-50 text-red-700 border-red-200' :
-                          staff.role === 'MANAGER' ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                          staff.role === 'GROWTH_MANAGER' ? 'bg-amber-50 text-amber-800 border-amber-300' :
-                          staff.role === 'MEDIA_MANAGER' ? 'bg-blue-50 text-blue-800 border-blue-300' :
-                          staff.role === 'LEADER' ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                          staff.role === 'LEGAL' || staff.role === 'FINANCE' || staff.role === 'SIGN_ADMIN' ? 'bg-amber-50 text-amber-800 border-amber-200' :
-                          'bg-emerald-50 text-emerald-700 border-emerald-200'
+                          staff.role === 'ADMIN' ? 'bg-critical-soft text-critical border-critical/20' :
+                          staff.role === 'MANAGER' ? 'bg-accent-soft text-accent border-accent/20' :
+                          staff.role === 'GROWTH_MANAGER' ? 'bg-warning-soft text-warning border-warning/20' :
+                          staff.role === 'MEDIA_MANAGER' ? 'bg-accent-soft text-accent border-accent/20' :
+                          staff.role === 'LEADER' ? 'bg-accent-soft text-accent border-accent/20' :
+                          staff.role === 'LEGAL' || staff.role === 'FINANCE' || staff.role === 'SIGN_ADMIN' ? 'bg-warning-soft text-warning border-warning/20' :
+                          'bg-positive-soft text-positive border-positive/20'
                         }`}>
                           {ROLE_DISPLAY_NAME[staff.role] || staff.role}
                         </span>
-                        <span className="text-2xs text-slate-500 block mt-1">{staff.roleTitle}</span>
+                        <span className="text-2xs text-ink-3 block mt-1">{staff.roleTitle}</span>
                       </td>
 
                       {/* Department */}
                       <td className="py-3 px-4">
-                        <span className="font-medium text-slate-700 block">{staff.department}</span>
-                        <span className="text-2xs text-slate-500">{staff.position}</span>
+                        <span className="font-medium text-ink-2 block">{staff.department}</span>
+                        <span className="text-2xs text-ink-3">{staff.position}</span>
                       </td>
 
                       {/* PIC Brands */}
                       <td className="py-3 px-4">
                         <div className="flex flex-wrap gap-1 max-w-xs">
                           {staff.picBrands.includes('ALL_BRANDS') ? (
-                            <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 text-2xs font-semibold">
+                            <span className="text-positive -positive/20 text-2xs font-semibold">
                               Tất cả nhãn hàng
                             </span>
                           ) : staff.picBrands.length > 0 ? (
                             staff.picBrands.map((b, i) => (
-                              <span key={i} className="px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 text-2xs font-medium">
+                              <span key={i} className="text-accent -accent/20 text-2xs font-medium">
                                 {b}
                               </span>
                             ))
                           ) : (
-                            <span className="text-2xs text-slate-400 italic">Chưa gán nhãn</span>
+                            <span className="text-2xs text-ink-3 italic">Chưa gán nhãn</span>
                           )}
                         </div>
                       </td>
@@ -2281,22 +2216,22 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                       <td className="py-3 px-4">
                         <div className="flex flex-wrap gap-1 text-2xs">
                           {staff.permissions.canApproveBudget && (
-                            <span className="px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 font-semibold" title="Duyệt ngân sách">
+                            <span className=".5 text-accent -accent/20 font-semibold" title="Duyệt ngân sách">
                               Duyệt Ngân Sách
                             </span>
                           )}
                           {staff.permissions.canApproveP3 && (
-                            <span className="px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 font-semibold" title="Duyệt thưởng 4P">
+                            <span className=".5 text-accent -accent/20 font-semibold" title="Duyệt thưởng 4P">
                               Duyệt P3
                             </span>
                           )}
                           {staff.permissions.canApprovePayment && (
-                            <span className="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold" title="Duyệt thanh toán">
+                            <span className=".5 text-positive -positive/20 font-semibold" title="Duyệt thanh toán">
                               Duyệt Chi
                             </span>
                           )}
                           {staff.permissions.canExportRawData && (
-                            <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200" title="Xuất dữ liệu">
+                            <span className=".5 text-ink-2 -line" title="Xuất dữ liệu">
                               Export
                             </span>
                           )}
@@ -2309,19 +2244,19 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                           <button
                             type="button"
                             onClick={() => handleImpersonateInternal(staff)}
-                            className="px-2.5 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-2xs font-semibold transition flex items-center gap-1 shadow-2xs"
+                            className="px-2.5 py-1.5 rounded-lg bg-accent-soft hover:bg-accent-soft text-accent border border-accent/20 text-2xs font-semibold transition flex items-center gap-1 shadow-2xs"
                             title="Xem trước giao diện nhân sự này"
                           >
-                            <Eye className="w-3.5 h-3.5 text-blue-600" />
+                            <Eye className="w-3.5 h-3.5 text-accent" />
                             <span>Đóng vai</span>
                           </button>
                           <button
                             type="button"
                             onClick={() => handleOpenEditStaff(staff)}
-                            className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-600 transition"
+                            className="p-1.5 rounded-lg hover:bg-sunken text-ink-2 transition"
                             title="Chỉnh sửa phân vai & quyền"
                           >
-                            <Edit3 className="w-4 h-4 text-slate-500" />
+                            <Edit3 className="w-4 h-4 text-ink-3" />
                           </button>
                         </div>
                       </td>
@@ -2335,19 +2270,19 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
           {/* Edit Internal Staff Modal */}
           <Presence show={!!editingStaff}>
           {editingStaff && (
-            <div className="fixed inset-0 bg-slate-900/40 z-50 flex items-center justify-center p-4 animate-in fade-in duration-(--motion-base)">
-              <div data-motion-panel className="bg-white rounded-2xl max-w-lg w-full p-5 shadow-2xl border border-slate-200 space-y-4 animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div className="fixed inset-0 bg-ink/40 z-50 flex items-center justify-center p-4 animate-in fade-in duration-(--motion-base)">
+              <div data-motion-panel className="bg-white rounded-2xl max-w-lg w-full p-5 shadow-2xl border border-line space-y-4 animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
+                <div className="flex items-center justify-between border-b border-line pb-3">
                   <div className="flex items-center gap-2">
-                    <UserCheck className="w-5 h-5 text-blue-600" />
+                    <UserCheck className="w-5 h-5 text-accent" />
                     <div>
-                      <h3 className="font-semibold text-sm text-slate-900">Phân Vai Trò & Phụ Trách Nhãn</h3>
-                      <span className="text-2xs text-slate-500">{editingStaff.name} ({editingStaff.email})</span>
+                      <h3 className="font-semibold text-sm text-ink">Phân Vai Trò & Phụ Trách Nhãn</h3>
+                      <span className="text-2xs text-ink-3">{editingStaff.name} ({editingStaff.email})</span>
                     </div>
                   </div>
                   <button
                     onClick={() => setEditingStaff(null)}
-                    className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition"
+                    className="p-1 rounded-lg text-ink-3 hover:text-ink-2 hover:bg-sunken transition"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -2356,11 +2291,11 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                 <form onSubmit={handleSaveStaff} className="space-y-4 text-xs">
                   {/* Role select */}
                   <div className="space-y-1.5">
-                    <label className="font-semibold text-slate-700">Vai trò hệ thống *</label>
+                    <label className="font-semibold text-ink-2">Vai trò hệ thống *</label>
                     <select
                       value={staffFormRole}
                       onChange={(e) => setStaffFormRole(e.target.value as UserRole)}
-                      className="w-full h-9 px-3 rounded-lg border border-slate-200 bg-white font-semibold focus:outline-none focus:border-blue-500"
+                      className="w-full h-9 px-3 rounded-lg border border-line bg-white font-semibold focus:outline-none focus:border-accent/20"
                     >
                       <option value="ADMIN">Quản Trị Hệ Thống (ADMIN) - Toàn quyền</option>
                       <option value="MANAGER">Giám Đốc Marketing B2C (MANAGER)</option>
@@ -2380,15 +2315,15 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
 
                   {/* Brand PIC assignment */}
                   <div className="space-y-1.5">
-                    <label className="font-semibold text-slate-700">Nhãn hàng phụ trách (PIC Brands):</label>
-                    <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-2 bg-slate-50 rounded-xl border border-slate-200">
+                    <label className="font-semibold text-ink-2">Nhãn hàng phụ trách (PIC Brands):</label>
+                    <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-2 bg-canvas rounded-xl border border-line">
                       {brands.map(b => {
                         const isChecked = staffFormPicBrands.includes(b.name);
                         return (
                           <label
                             key={b.id}
                             className={`px-2.5 py-1 rounded-lg border text-2xs font-medium cursor-pointer transition flex items-center gap-1.5 ${
-                              isChecked ? 'bg-blue-100 text-blue-900 border-blue-300 font-semibold' : 'bg-white text-slate-600 border-slate-200'
+                              isChecked ? 'bg-accent-soft text-accent border-accent/20 font-semibold' : 'bg-white text-ink-2 border-line'
                             }`}
                           >
                             <input
@@ -2401,7 +2336,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                                   setStaffFormPicBrands(prev => prev.filter(x => x !== b.name));
                                 }
                               }}
-                              className="rounded text-blue-600 focus:ring-0"
+                              className="rounded text-accent focus:ring-0"
                             />
                             <span>{b.name}</span>
                           </label>
@@ -2412,58 +2347,58 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
 
                   {/* Special Permission Checkboxes */}
                   <div className="space-y-1.5">
-                    <label className="font-semibold text-slate-700">Quyền phê duyệt đặc thù:</label>
-                    <div className="grid grid-cols-2 gap-2 p-3 bg-blue-50/40 rounded-xl border border-blue-100">
-                      <label className="flex items-center gap-2 cursor-pointer text-2xs font-medium text-slate-700">
+                    <label className="font-semibold text-ink-2">Quyền phê duyệt đặc thù:</label>
+                    <div className="grid grid-cols-2 gap-2 p-3 bg-accent-soft rounded-xl border border-accent/20">
+                      <label className="flex items-center gap-2 cursor-pointer text-2xs font-medium text-ink-2">
                         <input
                           type="checkbox"
                           checked={staffFormPerms.canApproveBudget}
                           onChange={(e) => setStaffFormPerms(p => ({ ...p, canApproveBudget: e.target.checked }))}
-                          className="rounded text-blue-600"
+                          className="rounded text-accent"
                         />
                         <span>Duyệt Ngân Sách Tháng</span>
                       </label>
-                      <label className="flex items-center gap-2 cursor-pointer text-2xs font-medium text-slate-700">
+                      <label className="flex items-center gap-2 cursor-pointer text-2xs font-medium text-ink-2">
                         <input
                           type="checkbox"
                           checked={staffFormPerms.canApproveP3}
                           onChange={(e) => setStaffFormPerms(p => ({ ...p, canApproveP3: e.target.checked }))}
-                          className="rounded text-blue-600"
+                          className="rounded text-accent"
                         />
                         <span>Đánh giá & Duyệt P3</span>
                       </label>
-                      <label className="flex items-center gap-2 cursor-pointer text-2xs font-medium text-slate-700">
+                      <label className="flex items-center gap-2 cursor-pointer text-2xs font-medium text-ink-2">
                         <input
                           type="checkbox"
                           checked={staffFormPerms.canApprovePayment}
                           onChange={(e) => setStaffFormPerms(p => ({ ...p, canApprovePayment: e.target.checked }))}
-                          className="rounded text-blue-600"
+                          className="rounded text-accent"
                         />
                         <span>Duyệt Chi Thanh Toán</span>
                       </label>
-                      <label className="flex items-center gap-2 cursor-pointer text-2xs font-medium text-slate-700">
+                      <label className="flex items-center gap-2 cursor-pointer text-2xs font-medium text-ink-2">
                         <input
                           type="checkbox"
                           checked={staffFormPerms.canExportRawData}
                           onChange={(e) => setStaffFormPerms(p => ({ ...p, canExportRawData: e.target.checked }))}
-                          className="rounded text-blue-600"
+                          className="rounded text-accent"
                         />
                         <span>Xuất File Báo Cáo Excel</span>
                       </label>
                     </div>
                   </div>
 
-                  <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                  <div className="flex justify-end gap-2 pt-2 border-t border-line">
                     <button
                       type="button"
                       onClick={() => setEditingStaff(null)}
-                      className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition"
+                      className="px-4 py-2 rounded-xl text-xs font-semibold text-ink-2 hover:bg-sunken transition"
                     >
                       Hủy bỏ
                     </button>
                     <button
                       type="submit"
-                      className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold transition shadow-md shadow-blue-600/30"
+                      className="px-4 py-2 rounded-xl bg-accent hover:bg-accent text-white text-xs font-semibold transition shadow-md shadow-xs"
                     >
                       Lưu Thay Đổi
                     </button>
@@ -2497,23 +2432,23 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
       {activeMainTab === 'audit' && (
         <div className="space-y-4 animate-in fade-in duration-200">
           {/* Action Bar */}
-          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex flex-wrap items-center justify-between gap-3">
+          <div className="bg-white p-4 rounded-xl border border-line shadow-xs flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap items-center gap-2.5 flex-1 min-w-[280px]">
               <div className="relative flex-1 min-w-[200px] max-w-sm">
-                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <Search className="w-4 h-4 text-ink-3 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
                   placeholder="Tìm theo người thực hiện, đối tượng, IP..."
                   value={searchAudit}
                   onChange={(e) => setSearchAudit(e.target.value)}
-                  className="w-full pl-9 pr-3 text-xs h-9 rounded-lg border border-slate-200 focus:outline-none focus:border-blue-500 bg-slate-50/50"
+                  className="w-full pl-9 pr-3 text-xs h-9 rounded-lg border border-line focus:outline-none focus:border-accent/20 bg-canvas"
                 />
               </div>
 
               <select
                 value={auditFilterType}
                 onChange={(e) => setAuditFilterType(e.target.value)}
-                className="text-xs h-9 px-3 rounded-lg border border-slate-200 bg-white font-medium focus:outline-none focus:border-blue-500"
+                className="text-xs h-9 px-3 rounded-lg border border-line bg-white font-medium focus:outline-none focus:border-accent/20"
               >
                 <option value="ALL">Tất cả hành động bảo mật</option>
                 <option value="LOGIN">Đăng nhập hệ thống (LOGIN)</option>
@@ -2528,18 +2463,18 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
               </select>
             </div>
 
-            <div className="text-2xs text-slate-500 flex items-center gap-1.5">
-              <ShieldCheck className="w-4 h-4 text-emerald-600" />
+            <div className="text-2xs text-ink-3 flex items-center gap-1.5">
+              <ShieldCheck className="w-4 h-4 text-positive" />
               <span>Ghi nhận bất biến (Immutable Security Log)</span>
             </div>
           </div>
 
           {/* Audit Logs Table */}
-          <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
+          <div className="bg-white rounded-xl border border-line shadow-xs overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-600 text-2xs font-semibold ">
+                  <tr className="bg-canvas border-b border-line text-ink-2 text-2xs font-semibold ">
                     <th className="py-3 px-4 w-[170px]">Thời Gian</th>
                     <th className="py-3 px-4 w-[200px]">Người Thực Hiện (Actor)</th>
                     <th className="py-3 px-4 w-[160px]">Loại Hành Động</th>
@@ -2548,35 +2483,35 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                     <th className="py-3 px-4 w-[160px]">IP & Thiết Bị</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 text-xs font-sans">
+                <tbody className="divide-y divide-line text-xs font-sans">
                   {filteredAuditLogs.map((log) => (
-                    <tr key={log.id} className="hover:bg-slate-50/70 transition">
-                      <td className="py-3 px-4 text-2xs text-slate-500 font-mono">
+                    <tr key={log.id} className="hover:bg-canvas transition">
+                      <td className="py-3 px-4 text-2xs text-ink-3 font-mono">
                         {log.timestamp}
                       </td>
                       <td className="py-3 px-4">
-                        <span className="font-semibold text-slate-900 block leading-tight">{log.actorName}</span>
-                        <span className="text-2xs text-blue-700 font-semibold">{log.actorRole}</span>
+                        <span className="font-semibold text-ink block leading-tight">{log.actorName}</span>
+                        <span className="text-2xs text-accent font-semibold">{log.actorRole}</span>
                       </td>
                       <td className="py-3 px-4">
                         <span className={`inline-flex items-center px-2 py-0.5 rounded text-2xs font-semibold border ${
-                          log.actionType === 'LOGIN_BLOCKED' || log.actionType === 'ACCESS_REVOKE' ? 'bg-red-50 text-red-700 border-red-200' :
-                          log.actionType === 'ACCESS_GRANT' || log.actionType === 'INVITE_PARTNER' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' :
-                          log.actionType === 'IMPERSONATE' ? 'bg-amber-50 text-amber-800 border-amber-200' :
-                          'bg-blue-50 text-blue-800 border-blue-200'
+                          log.actionType === 'LOGIN_BLOCKED' || log.actionType === 'ACCESS_REVOKE' ? 'bg-critical-soft text-critical border-critical/20' :
+                          log.actionType === 'ACCESS_GRANT' || log.actionType === 'INVITE_PARTNER' ? 'bg-positive-soft text-positive border-positive/20' :
+                          log.actionType === 'IMPERSONATE' ? 'bg-warning-soft text-warning border-warning/20' :
+                          'bg-accent-soft text-accent border-accent/20'
                         }`}>
                           {log.actionType}
                         </span>
                       </td>
                       <td className="py-3 px-4">
-                        <span className="font-semibold text-slate-800 block text-2xs">{log.targetUserOrEntity}</span>
+                        <span className="font-semibold text-ink block text-2xs">{log.targetUserOrEntity}</span>
                       </td>
-                      <td className="py-3 px-4 text-slate-600 text-2xs leading-relaxed">
+                      <td className="py-3 px-4 text-ink-2 text-2xs leading-relaxed">
                         {log.description}
                       </td>
-                      <td className="py-3 px-4 text-2xs text-slate-400 font-mono">
+                      <td className="py-3 px-4 text-2xs text-ink-3 font-mono">
                         <div>{log.ipAddress}</div>
-                        <div className="text-slate-500 truncate max-w-[140px]">{log.deviceInfo}</div>
+                        <div className="text-ink-3 truncate max-w-[140px]">{log.deviceInfo}</div>
                       </td>
                     </tr>
                   ))}

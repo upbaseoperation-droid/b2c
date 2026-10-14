@@ -187,12 +187,12 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
                   <h3 id="script-review-title" className="text-sm font-semibold text-slate-900">
                     Duyệt kịch bản KOC
                   </h3>
-                  <span className="px-2 py-0.5 rounded text-2xs font-semibold font-mono bg-accent-soft text-accent border border-line">
+                  <span className="text-2xs font-mono text-ink-3">
                     {script.dealCode}
                   </span>
                 </div>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  KOC: <strong className="text-slate-900">{script.kocName}</strong> • {script.campaignTitle}
+                  KOC: <strong className="text-slate-900">{script.kocName}</strong> · {script.campaignTitle}
                 </p>
               </div>
             </div>
@@ -246,7 +246,7 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
                   </select>
                 </label>
               </div>
-              <span className="px-2.5 py-1 rounded-md text-xs font-semibold flex items-center gap-1.5 bg-amber-50 text-amber-700 border border-amber-200">
+              <span className="text-xs font-medium flex items-center gap-1.5 text-warning">
                 <Clock className="w-3.5 h-3.5" />
                 SLA còn {script.remainingHours > 0 ? `${script.remainingHours}h` : 'Đã nghiệm thu'}
               </span>
@@ -303,15 +303,15 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
                       Kiểm tra từ cấm &amp; pháp lý ({detectedBrandProfile.brandName})
                     </span>
                     <span
-                      className={`px-2 py-0.5 rounded text-2xs font-semibold font-mono ${
+                      className={`text-2xs font-semibold font-mono ${
                         bannedIssues.length > 0
-                          ? 'bg-rose-100 text-rose-800 border border-rose-300'
+                          ? 'text-critical'
                           : complianceResult.overallScore >= 80
-                            ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                            : 'bg-amber-100 text-amber-800 border border-amber-300'
+                            ? 'text-positive'
+                            : 'text-warning'
                       }`}
                     >
-                      Đạt {complianceResult.overallScore}/100 điểm
+                      · Đạt {complianceResult.overallScore}/100 điểm
                     </span>
                   </div>
 
@@ -347,7 +347,7 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
                           <p className="text-2xs text-slate-500">{issue.rationale}</p>
                         </div>
                         {issue.replacementSuggestion && (
-                          <span className="px-2 py-1 rounded bg-emerald-50 border border-emerald-200 text-emerald-800 text-2xs font-medium shrink-0">
+                          <span className="text-positive text-2xs font-medium shrink-0">
                             Gợi ý sửa: &ldquo;{issue.replacementSuggestion}&rdquo;
                           </span>
                         )}
@@ -359,19 +359,13 @@ export const ScriptReviewModal: React.FC<ScriptReviewModalProps> = ({
                 {/* Tóm tắt danh mục từ cấm, nỗi đau khách hàng & hashtag bắt buộc của nhãn để người duyệt tra cứu nhanh */}
                 <div className="pt-2 border-t border-slate-200/80 space-y-1.5 text-2xs">
                   {(detectedBrandProfile.contentRules?.banned.length || 0) > 0 && (
-                    <div className="flex flex-wrap items-center gap-1.5">
+                    <div className="text-slate-600">
                       <span className="text-slate-500 font-medium">
-                        Từ cấm trong hồ sơ {detectedBrandProfile.brandName}:
+                        Từ cấm trong hồ sơ {detectedBrandProfile.brandName}:{' '}
                       </span>
-                      {detectedBrandProfile.contentRules!.banned.map(b => (
-                        <span
-                          key={b.id}
-                          className="px-1.5 py-0.5 rounded bg-white border border-rose-200 text-rose-700 font-medium"
-                          title={b.replacement ? `Thay bằng: ${b.replacement}` : b.reason}
-                        >
-                          {b.phrase}
-                        </span>
-                      ))}
+                      <span className="text-critical font-medium">
+                        {detectedBrandProfile.contentRules!.banned.map(b => b.phrase).join(', ')}
+                      </span>
                     </div>
                   )}
                   {(detectedBrandProfile.positioning?.painPoints?.length || 0) > 0 && (

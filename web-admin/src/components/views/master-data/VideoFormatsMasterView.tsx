@@ -107,7 +107,7 @@ export const VideoFormatsMasterView: React.FC<VideoFormatsMasterViewProps> = ({
       {/* Video Formats Table */}
       <div className="bg-surface rounded-xl border border-line shadow-xs overflow-hidden">
         <table className="w-full text-left text-xs">
-          <thead className="bg-canvas text-ink-3 border-b border-line font-medium text-[12.5px]">
+          <thead className="bg-canvas text-ink-3 border-b border-line font-medium text-2xs">
             <tr>
               <th className="py-2.5 px-4 w-[120px]">Mã định dạng</th>
               <th className="py-2.5 px-4 w-[240px]">Tên định dạng video</th>
@@ -127,7 +127,7 @@ export const VideoFormatsMasterView: React.FC<VideoFormatsMasterViewProps> = ({
               filteredFormats.map(f => (
                 <tr key={f.id} className="hover:bg-canvas transition-colors">
                   <td className="py-3 px-4">
-                    <span className="font-mono font-medium text-ink-2 text-xs px-1.5 py-0.5 rounded bg-sunken border border-line">
+                    <span className="font-code font-medium text-ink-2 text-xs">
                       {f.id}
                     </span>
                   </td>
@@ -137,7 +137,7 @@ export const VideoFormatsMasterView: React.FC<VideoFormatsMasterViewProps> = ({
                     </span>
                   </td>
                   <td className="py-3 px-4 text-ink-2">
-                    <span className="px-2 py-0.5 rounded text-2xs font-medium bg-sunken text-ink-2 border border-line">
+                    <span className="text-xs text-ink-2">
                       {f.option}
                     </span>
                   </td>

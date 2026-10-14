@@ -1,30 +1,64 @@
 'use client';
 
 /**
- * Dữ liệu gốc Cộng tác viên / VJ (Master Data).
- * Chỉ quản lý thông tin định danh rất cơ bản (Mã, Họ tên, SĐT, Vai trò, Ngành hàng, Trạng thái).
- * Các thông tin chuyên sâu (Pháp lý CCCD, Hợp đồng Partnership, Tài khoản ngân hàng, Địa chỉ gửi mẫu 48h,
- * Định mức đơn giá, Sản phẩm cầm sẵn, Lịch sử sản xuất video) được quản lý tại màn hình Hồ sơ CTV / VJ.
+ * Danh bạ Cộng tác viên / VJ (Dữ liệu gốc).
+ * Thiết kế chuẩn hóa theo Design System, đồng nhất 100% với Danh bạ KOC (KocMasterDataView):
+ * - PageActions: Thêm CTV / VJ
+ * - Panel flush bao trọn FilterBar + Chips phân loại + DataTable + Pagination
+ * - Bấm một hàng để mở hồ sơ chi tiết in-place (CtvProfileDetail) với thanh điều hướng, nút quay lại giữ nguyên bộ lọc
+ * - Tích hợp đọc ảnh CCCD (LegalOcrModal), xem mã VietQR thanh toán (CtvVietQrModal)
  */
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import {
-  BookOpen,
-  ChevronRight,
   Edit3,
+  FileScan,
   Plus,
-  RotateCcw,
-  Search,
+  QrCode,
+  SlidersHorizontal,
   Trash2,
-  X,
 } from 'lucide-react';
-import type { Contributor, ContributorRole, ContributorStatus } from '../../../lib/types';
-import { INITIAL_CONTRIBUTORS } from '../../../lib/selfChannelData';
-import { Avatar, Button, ConfirmDialog, Modal, Pagination } from '../../ui';
-import { CTV_ROLE_LABELS } from '../CtvManagementView';
+import type {
+  Contributor,
+  ContributorRole,
+  ContributorStatus,
+  OcrLegalExtractionResult,
+  SelfChannelVideoTask,
+  UserProfile,
+} from '../../../lib/types';
+import { INITIAL_CONTRIBUTORS, INITIAL_SELF_CHANNEL_TASKS } from '../../../lib/selfChannelData';
+import { formatVndShort } from '../../../lib/format';
+import { LegalOcrModal } from '../../LegalOcrModal';
+import {
+  CTV_CONTRACT_LABELS,
+  CTV_ROLE_LABELS,
+  CtvProfileDetail,
+  CtvVietQrModal,
+} from '../CtvManagementView';
+import {
+  ActionMenu,
+  Avatar,
+  Button,
+  Chips,
+  ConfirmDialog,
+  DataTable,
+  EmptyState,
+  FilterBar,
+  Modal,
+  PageActions,
+  Pagination,
+  Panel,
+  Person,
+  Select,
+  Status,
+} from '../../ui';
+import type { Column } from '../../ui';
 
 export interface ContributorsMasterViewProps {
   contributors?: Contributor[];
+  tasks?: SelfChannelVideoTask[];
+  currentUser?: UserProfile;
+  selectedCtvId?: string | null;
   onContributorCreated?: (ctv: Contributor) => void;
   onContributorUpdated?: (ctv: Contributor) => void;
   onContributorDeleted?: (ctvId: string) => void;
@@ -32,416 +66,646 @@ export interface ContributorsMasterViewProps {
   onNotify?: (msg: string, type?: 'success' | 'warning' | 'info' | 'error') => void;
 }
 
-const PAGE_SIZE = 15;
+type RoleFilter = 'ALL' | ContributorRole;
+type IssueFilter = '' | 'MISSING_LEGAL' | 'NO_CONTRACT' | 'ON_HOLD';
+
+const ALL = 'ALL';
+
+const hasLegalInfo = (c: Contributor) => Boolean(c.cccd && c.cccd.trim().length >= 9);
 
 export const ContributorsMasterView: React.FC<ContributorsMasterViewProps> = ({
   contributors: propContributors = INITIAL_CONTRIBUTORS,
+  tasks = INITIAL_SELF_CHANNEL_TASKS,
+  selectedCtvId = null,
   onContributorCreated,
   onContributorUpdated,
   onContributorDeleted,
-  onNavigateToCtvProfile,
   onNotify,
 }) => {
-  const [ctvList, setCtvList] = useState<Contributor[]>(propContributors);
-  const [synced, setSynced] = useState(propContributors);
-  if (propContributors !== synced) {
-    setSynced(propContributors);
-    setCtvList(propContributors);
+  const [localCtvs, setLocalCtvs] = useState<Contributor[]>(propContributors);
+  const [syncedCtvs, setSyncedCtvs] = useState(propContributors);
+  if (propContributors !== syncedCtvs) {
+    setSyncedCtvs(propContributors);
+    setLocalCtvs(propContributors);
   }
 
-  // Bộ lọc cơ bản
-  const [search, setSearch] = useState('');
-  const [selectedRole, setSelectedRole] = useState<'ALL' | ContributorRole>('ALL');
-  const [selectedStatus, setSelectedStatus] = useState<'ALL' | ContributorStatus>('ALL');
-  const [page, setPage] = useState(1);
+  // Mở hồ sơ chi tiết in-place (null = đang ở bảng danh sách)
+  const [openCtvId, setOpenCtvId] = useState<string | null>(selectedCtvId);
+  const [syncedSelectedId, setSyncedSelectedId] = useState<string | null>(selectedCtvId);
+  if (selectedCtvId !== syncedSelectedId) {
+    setSyncedSelectedId(selectedCtvId);
+    if (selectedCtvId) {
+      setOpenCtvId(selectedCtvId);
+    }
+  }
 
-  // Modal Tạo nhanh CTV (chỉ thông tin cơ bản)
-  const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
-  const [quickName, setQuickName] = useState('');
-  const [quickCode, setQuickCode] = useState('');
-  const [quickPhone, setQuickPhone] = useState('');
-  const [quickRole, setQuickRole] = useState<ContributorRole>('ALL_IN_ONE');
-  const [quickNiche, setQuickNiche] = useState('Mẹ & Bé, Chăm sóc da');
-  const [quickPic, setQuickPic] = useState('Quỳnh Như');
+  const rootRef = useRef<HTMLDivElement>(null);
 
-  // Modal Sửa thông tin cơ bản
-  const [editingCtv, setEditingCtv] = useState<Contributor | null>(null);
-  const [editName, setEditName] = useState('');
-  const [editCode, setEditCode] = useState('');
-  const [editPhone, setEditPhone] = useState('');
-  const [editRole, setEditRole] = useState<ContributorRole>('ALL_IN_ONE');
-  const [editNiche, setEditNiche] = useState('');
-  const [editPic, setEditPic] = useState('');
-  const [editStatus, setEditStatus] = useState<ContributorStatus>('ACTIVE');
-
-  // Xóa CTV
+  // Modal chức năng
+  const [ocrTarget, setOcrTarget] = useState<Contributor | null>(null);
+  const [qrTarget, setQrTarget] = useState<Contributor | null>(null);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [deletingCtv, setDeletingCtv] = useState<Contributor | null>(null);
 
-  const filtered = useMemo(() => {
+  // Form tạo nhanh CTV
+  const [createForm, setCreateForm] = useState({
+    name: '',
+    code: '',
+    phone: '',
+    email: '',
+    role: 'ALL_IN_ONE' as ContributorRole,
+    niche: 'Mẹ & Bé, Chăm sóc da',
+    contentPic: 'Quỳnh Như',
+    rate: 1500000,
+    shippingAddress: '',
+  });
+
+  // Bộ lọc danh bạ
+  const [search, setSearch] = useState('');
+  const [role, setRole] = useState<RoleFilter>(ALL);
+  const [issue, setIssue] = useState<IssueFilter>('');
+  const [pic, setPic] = useState(ALL);
+  const [niche, setNiche] = useState(ALL);
+  const [status, setStatus] = useState(ALL);
+  const [showMoreFilters, setShowMoreFilters] = useState(false);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+
+  // Danh sách lựa chọn lọc động
+  const picOptions = useMemo(() => {
+    const s = new Set<string>();
+    localCtvs.forEach((c) => {
+      if (c.contentPic) s.add(c.contentPic.trim());
+    });
+    return Array.from(s).sort((a, b) => a.localeCompare(b, 'vi'));
+  }, [localCtvs]);
+
+  const nicheOptions = useMemo(() => {
+    const s = new Set<string>();
+    localCtvs.forEach((c) => c.nicheSpecialty.forEach((n) => s.add(n.trim())));
+    return Array.from(s).sort((a, b) => a.localeCompare(b, 'vi'));
+  }, [localCtvs]);
+
+  // Lọc cơ sở trước khi áp dụng chip (để số đếm trên chip luôn chính xác)
+  const baseFiltered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return ctvList.filter((c) => {
-      if (selectedRole !== 'ALL' && c.role !== selectedRole) return false;
-      if (selectedStatus !== 'ALL' && c.status !== selectedStatus) return false;
+    const qDigits = q.replace(/\D/g, '');
+    return localCtvs.filter((c) => {
       if (q) {
         const hit =
           c.name.toLowerCase().includes(q) ||
           (c.code || '').toLowerCase().includes(q) ||
           c.phone.toLowerCase().includes(q) ||
           (c.contentPic || '').toLowerCase().includes(q) ||
-          c.nicheSpecialty.some((n) => n.toLowerCase().includes(q));
+          c.nicheSpecialty.some((n) => n.toLowerCase().includes(q)) ||
+          (qDigits.length >= 4 && (c.cccd || '').replace(/\D/g, '').includes(qDigits));
         if (!hit) return false;
       }
+      if (pic !== ALL && c.contentPic !== pic) return false;
+      if (niche !== ALL && !c.nicheSpecialty.includes(niche)) return false;
+      if (status !== ALL && c.status !== status) return false;
       return true;
     });
-  }, [ctvList, search, selectedRole, selectedStatus]);
+  }, [localCtvs, search, pic, niche, status]);
 
-  const isFiltered = Boolean(search.trim()) || selectedRole !== 'ALL' || selectedStatus !== 'ALL';
+  const matchesIssue = (c: Contributor, f: IssueFilter) => {
+    if (!f) return true;
+    if (f === 'MISSING_LEGAL') return !hasLegalInfo(c);
+    if (f === 'NO_CONTRACT') return !c.contractStatus || c.contractStatus !== 'ACTIVE';
+    if (f === 'ON_HOLD') return c.status === 'ON_HOLD';
+    return true;
+  };
 
-  const handleResetFilters = () => {
+  const filtered = useMemo(
+    () =>
+      baseFiltered.filter(
+        (c) => (role === ALL || c.role === role) && matchesIssue(c, issue),
+      ),
+    [baseFiltered, role, issue],
+  );
+
+  // Chips vai trò & Chips cần xử lý
+  const roleChips = (['ALL', 'ALL_IN_ONE', 'CREATIVE_ACTOR', 'VIDEO_EDITOR', 'SCRIPTWRITER'] as const).map(
+    (key) => ({
+      key,
+      label: key === ALL ? 'Tất cả vai trò' : CTV_ROLE_LABELS[key],
+      count: baseFiltered.filter((c) => matchesIssue(c, issue) && (key === ALL || c.role === key)).length,
+    }),
+  );
+
+  const issueBase = baseFiltered.filter((c) => role === ALL || c.role === role);
+  const issueChips = [
+    {
+      key: 'MISSING_LEGAL' as const,
+      label: 'Thiếu CCCD',
+      count: issueBase.filter((c) => !hasLegalInfo(c)).length,
+    },
+    {
+      key: 'NO_CONTRACT' as const,
+      label: 'Chưa ký HĐ',
+      count: issueBase.filter((c) => !c.contractStatus || c.contractStatus !== 'ACTIVE').length,
+    },
+    {
+      key: 'ON_HOLD' as const,
+      label: 'Tạm dừng',
+      count: issueBase.filter((c) => c.status === 'ON_HOLD').length,
+    },
+  ];
+
+  const moreFilterCount = Number(niche !== ALL) + Number(status !== ALL);
+  const isFiltered =
+    Boolean(search.trim()) ||
+    role !== ALL ||
+    issue !== '' ||
+    pic !== ALL ||
+    moreFilterCount > 0;
+
+  const resetFilters = () => {
     setSearch('');
-    setSelectedRole('ALL');
-    setSelectedStatus('ALL');
+    setRole(ALL);
+    setIssue('');
+    setPic(ALL);
+    setNiche(ALL);
+    setStatus(ALL);
     setPage(1);
   };
 
-  const handleQuickCreate = (e: React.FormEvent) => {
+  // Reset về page 1 khi bộ lọc thay đổi
+  const filterKey = [search, role, issue, pic, niche, status, pageSize].join('|');
+  const [pagedKey, setPagedKey] = useState(filterKey);
+  if (filterKey !== pagedKey) {
+    setPagedKey(filterKey);
+    setPage(1);
+  }
+
+  const rows = filtered.slice((page - 1) * pageSize, page * pageSize);
+
+  /* ------------------------------------------------------- Thao tác cập nhật */
+
+  const applyUpdate = (updated: Contributor, message: string) => {
+    setLocalCtvs((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
+    onContributorUpdated?.(updated);
+    onNotify?.(message, 'success');
+  };
+
+  const handleApplyOcr = (r: OcrLegalExtractionResult) => {
+    if (!ocrTarget) return;
+    const f = r.fields;
+    applyUpdate(
+      {
+        ...ocrTarget,
+        realName: f.fullName || ocrTarget.realName || ocrTarget.name,
+        cccd: f.idNumber || ocrTarget.cccd,
+        taxCode: f.taxCode || ocrTarget.taxCode,
+        permanentAddress: f.permanentAddress || f.headquartersAddress || ocrTarget.permanentAddress,
+        dob: f.dob || ocrTarget.dob,
+        issueDate: f.issueDate || ocrTarget.issueDate,
+        issuePlace: f.issuePlace || ocrTarget.issuePlace,
+        isOcrVerified: true,
+        ocrVerifiedAt: new Date().toISOString(),
+      },
+      `Đã cập nhật giấy tờ CCCD cho CTV ${ocrTarget.name}`,
+    );
+    setOcrTarget(null);
+  };
+
+  const handleCreateCtv = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!quickName.trim() || !quickPhone.trim()) {
+    if (!createForm.name.trim() || !createForm.phone.trim()) {
       onNotify?.('Vui lòng nhập Họ tên và Số điện thoại CTV', 'warning');
       return;
     }
-    const nextNum = ctvList.length + 1;
+    const nextIdx = localCtvs.length + 1;
     const newCtv: Contributor = {
       id: `ctv-${Date.now()}`,
-      code: quickCode.trim() || `CTV-B2C-${String(nextNum).padStart(3, '0')}`,
-      name: quickName.trim(),
-      phone: quickPhone.trim(),
-      nicheSpecialty: quickNiche
+      code: createForm.code.trim() || `CTV-B2C-${String(nextIdx).padStart(3, '0')}`,
+      name: createForm.name.trim(),
+      realName: createForm.name.trim(),
+      phone: createForm.phone.trim(),
+      email: createForm.email.trim(),
+      nicheSpecialty: createForm.niche
         .split(',')
         .map((s) => s.trim())
         .filter(Boolean),
-      role: quickRole,
+      role: createForm.role,
       status: 'ACTIVE',
-      contentPic: quickPic.trim() || 'Lê Phương Thảo',
+      contentPic: createForm.contentPic.trim() || 'Lê Phương Thảo',
       partnershipPic: 'Việt Hoàng',
-      contractStatus: 'NONE',
-      bankName: 'Chưa cập nhật',
+      contractStatus: 'PENDING_SIGN',
+      bankName: 'Techcombank',
       bankAccount: '',
-      bankAccountName: quickName.trim().toUpperCase(),
+      bankAccountName: createForm.name.trim().toUpperCase(),
+      unitRateAllInOne: Number(createForm.rate) || 1500000,
+      monthlyCapacityVideos: 12,
+      shippingRecipientName: createForm.name.trim(),
+      shippingPhone: createForm.phone.trim(),
+      shippingAddress: createForm.shippingAddress.trim(),
       ratingScore: 5.0,
+      firstPassRate: 100,
+      onTimeRate: 100,
       assignedTaskCount: 0,
       completedTaskCount: 0,
       totalPaidAmount: 0,
       joinedDate: new Date().toISOString().split('T')[0],
     };
 
-    setCtvList((prev) => [newCtv, ...prev]);
+    setLocalCtvs((prev) => [newCtv, ...prev]);
     onContributorCreated?.(newCtv);
-    setIsQuickAddOpen(false);
-    setQuickName('');
-    setQuickCode('');
-    setQuickPhone('');
-    onNotify?.(`Đã khởi tạo CTV [${newCtv.name}] trong Dữ liệu gốc`, 'success');
-  };
-
-  const handleSaveBasicEdit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingCtv || !editName.trim()) return;
-    const updated: Contributor = {
-      ...editingCtv,
-      name: editName.trim(),
-      code: editCode.trim() || editingCtv.code,
-      phone: editPhone.trim(),
-      role: editRole,
-      nicheSpecialty: editNiche
-        .split(',')
-        .map((s) => s.trim())
-        .filter(Boolean),
-      contentPic: editPic.trim(),
-      status: editStatus,
-    };
-    setCtvList((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
-    onContributorUpdated?.(updated);
-    setEditingCtv(null);
-    onNotify?.(`Đã cập nhật thông tin cơ bản của CTV [${updated.name}]`, 'success');
+    setIsCreateOpen(false);
+    setCreateForm({
+      name: '',
+      code: '',
+      phone: '',
+      email: '',
+      role: 'ALL_IN_ONE',
+      niche: 'Mẹ & Bé, Chăm sóc da',
+      contentPic: 'Quỳnh Như',
+      rate: 1500000,
+      shippingAddress: '',
+    });
+    onNotify?.(`Đã thêm CTV / VJ ${newCtv.name} (${newCtv.code}) vào danh bạ`, 'success');
   };
 
   const handleConfirmDelete = () => {
     if (!deletingCtv) return;
-    setCtvList((prev) => prev.filter((c) => c.id !== deletingCtv.id));
+    setLocalCtvs((prev) => prev.filter((c) => c.id !== deletingCtv.id));
     onContributorDeleted?.(deletingCtv.id);
-    onNotify?.(`Đã xóa CTV [${deletingCtv.name}] khỏi danh mục`, 'info');
+    onNotify?.(`Đã xóa CTV [${deletingCtv.name}] khỏi danh mục gốc`, 'info');
     setDeletingCtv(null);
   };
 
-  const currentRows = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  /* ------------------------------------------------------------- Điều hướng */
 
-  return (
-    <div className="space-y-3">
-      {/* Thanh công cụ & Bộ lọc cơ bản */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-        <div className="flex items-center gap-2 flex-1 flex-wrap">
-          <div className="relative min-w-[220px] max-w-xs flex-1">
-            <Search className="w-3.5 h-3.5 text-ink-3 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              placeholder="Tìm tên CTV, mã, SĐT, ngành hàng..."
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setPage(1);
-              }}
-              className="w-full pl-8.5 pr-8 py-1.5 text-xs rounded-lg border border-line bg-surface focus:outline-none focus:ring-1 focus:ring-line-strong text-ink"
-            />
-            {search && (
-              <button
-                type="button"
-                onClick={() => setSearch('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-3 hover:text-ink cursor-pointer"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            )}
+  const openProfile = (id: string) => {
+    setOpenCtvId(id);
+    requestAnimationFrame(() => rootRef.current?.scrollIntoView({ block: 'start' }));
+  };
+
+  const rowActions = (c: Contributor) => [
+    { label: 'Mở hồ sơ chi tiết', icon: Edit3, onSelect: () => openProfile(c.id) },
+    {
+      label: hasLegalInfo(c) ? 'Đọc lại ảnh CCCD' : 'Đọc ảnh CCCD',
+      icon: FileScan,
+      onSelect: () => setOcrTarget(c),
+    },
+    { label: 'Mã QR thanh toán', icon: QrCode, onSelect: () => setQrTarget(c) },
+    {
+      label: 'Xóa CTV',
+      icon: Trash2,
+      onSelect: () => setDeletingCtv(c),
+    },
+  ];
+
+  /* ------------------------------------------------------ Cấu hình cột Bảng */
+
+  const columns: Column<Contributor>[] = [
+    {
+      key: 'ctv',
+      header: 'CTV / VJ',
+      width: 220,
+      render: (c) => (
+        <div className="flex items-center gap-2.5 min-w-0 max-w-[270px]">
+          <Avatar name={c.name} src={c.avatar} size={32} />
+          <div className="min-w-0 leading-tight">
+            <span className="block truncate font-medium text-ink">{c.name}</span>
+            <span className="block truncate text-2xs text-ink-3">
+              <span className="font-mono">{c.code || c.id.toUpperCase()}</span>
+              {c.phone ? ` · ${c.phone}` : ''}
+            </span>
           </div>
-
-          <select
-            value={selectedRole}
-            onChange={(e) => {
-              setSelectedRole(e.target.value as 'ALL' | ContributorRole);
-              setPage(1);
-            }}
-            className="text-xs border border-line rounded-lg px-2.5 py-1.5 bg-surface text-ink focus:outline-none"
-          >
-            <option value="ALL">Mọi vai trò ({ctvList.length})</option>
-            <option value="ALL_IN_ONE">Quay dựng trọn gói</option>
-            <option value="CREATIVE_ACTOR">VJ / Diễn viên</option>
-            <option value="VIDEO_EDITOR">Dựng phim</option>
-            <option value="SCRIPTWRITER">Biên kịch</option>
-          </select>
-
-          <select
-            value={selectedStatus}
-            onChange={(e) => {
-              setSelectedStatus(e.target.value as 'ALL' | ContributorStatus);
-              setPage(1);
-            }}
-            className="text-xs border border-line rounded-lg px-2.5 py-1.5 bg-surface text-ink focus:outline-none"
-          >
-            <option value="ALL">Mọi trạng thái</option>
-            <option value="ACTIVE">Đang hợp tác</option>
-            <option value="ON_HOLD">Tạm dừng</option>
-          </select>
-
-          {isFiltered && (
-            <button
-              type="button"
-              onClick={handleResetFilters}
-              className="py-1 px-2 rounded-lg border border-line bg-surface text-critical hover:bg-critical-soft text-xs font-medium transition flex items-center gap-1 cursor-pointer"
-            >
-              <RotateCcw className="w-3 h-3" />
-              <span>Đặt lại</span>
-            </button>
+        </div>
+      ),
+    },
+    {
+      key: 'role',
+      header: 'Vai trò chính',
+      width: 145,
+      render: (c) => (
+        <div className="leading-tight">
+          <span className="block text-ink font-medium">{CTV_ROLE_LABELS[c.role]}</span>
+          <span className="block text-2xs text-ink-3 whitespace-nowrap">
+            {c.monthlyCapacityVideos || 12} video/tháng
+          </span>
+        </div>
+      ),
+    },
+    {
+      key: 'niche',
+      header: 'Ngành hàng thế mạnh',
+      width: 160,
+      render: (c) => (
+        <div className="leading-tight min-w-0">
+          <span className="block truncate text-ink">
+            {c.nicheSpecialty.join(' · ') || '—'}
+          </span>
+          <span className="block truncate text-2xs text-ink-3">
+            {c.shippingAddress ? 'Có địa chỉ nhận mẫu' : 'Chưa có địa chỉ mẫu'}
+          </span>
+        </div>
+      ),
+    },
+    {
+      key: 'pic',
+      header: 'Chuyên viên PIC',
+      width: 140,
+      render: (c) => (
+        <div className="grid gap-1 min-w-0">
+          {c.contentPic ? (
+            <Person name={c.contentPic} size={18} />
+          ) : (
+            <span className="text-2xs text-ink-3">Chưa có PIC</span>
+          )}
+          {c.partnershipPic && (
+            <span className="text-2xs text-ink-3 truncate">HĐ: {c.partnershipPic}</span>
           )}
         </div>
+      ),
+    },
+    {
+      key: 'legal',
+      header: 'Hồ sơ & Hợp đồng',
+      width: 145,
+      render: (c) => {
+        const contract = CTV_CONTRACT_LABELS[c.contractStatus || 'NONE'];
+        const toneClass =
+          contract.tone === 'positive'
+            ? 'text-positive font-medium'
+            : contract.tone === 'warning'
+              ? 'text-warning font-medium'
+              : contract.tone === 'critical'
+                ? 'text-critical font-medium'
+                : 'text-ink-2';
+        return (
+          <div className="grid gap-1 justify-items-start">
+            {!hasLegalInfo(c) ? (
+              <span className="text-xs font-medium text-warning">Thiếu CCCD</span>
+            ) : (
+              <span className={`text-xs ${toneClass}`}>{contract.label}</span>
+            )}
+            <span className="text-2xs text-ink-3 font-code truncate max-w-[130px]">
+              {c.contractCode || (c.cccd ? `CCCD: ***${c.cccd.slice(-4)}` : 'Chưa quét CCCD')}
+            </span>
+          </div>
+        );
+      },
+    },
+    {
+      key: 'rate',
+      header: 'Định mức / video',
+      align: 'right',
+      width: 120,
+      render: (c) => {
+        const mainRate =
+          c.role === 'VIDEO_EDITOR'
+            ? c.unitRateEditOnly || 500000
+            : c.role === 'SCRIPTWRITER'
+              ? c.unitRateScriptOnly || 350000
+              : c.unitRateAllInOne || 1500000;
+        return (
+          <div className="leading-tight tabular-nums">
+            <span className="block font-medium text-ink">{formatVndShort(mainRate)}</span>
+            <span className="block text-2xs text-ink-3">
+              Đã chi: {formatVndShort(c.totalPaidAmount || 0)}
+            </span>
+          </div>
+        );
+      },
+    },
+    {
+      key: 'status',
+      header: 'Trạng thái',
+      width: 110,
+      render: (c) => (
+        <Status tone={c.status === 'ACTIVE' ? 'positive' : 'neutral'}>
+          {c.status === 'ACTIVE' ? 'Đang hợp tác' : 'Tạm dừng'}
+        </Status>
+      ),
+    },
+    {
+      key: 'actions',
+      header: '',
+      align: 'right',
+      width: 48,
+      render: (c) => <ActionMenu items={rowActions(c)} />,
+    },
+  ];
 
-        <div className="flex items-center gap-2 shrink-0">
-          <Button
-            variant="secondary"
-            onClick={() => onNavigateToCtvProfile?.()}
-          >
-            Hồ sơ CTV / VJ
-          </Button>
-          <Button
-            variant="primary"
-            icon={Plus}
-            onClick={() => {
-              setQuickName('');
-              setQuickCode('');
-              setQuickPhone('');
-              setIsQuickAddOpen(true);
+  /* ------------------------------------------------------------- Render */
+
+  // Khi đang mở hồ sơ chi tiết in-place
+  if (openCtvId) {
+    const activeCtv = localCtvs.find((c) => c.id === openCtvId || c.code === openCtvId);
+    if (activeCtv) {
+      const navList = filtered.some((c) => c.id === activeCtv.id) ? filtered : localCtvs;
+      const idx = navList.findIndex((c) => c.id === activeCtv.id);
+      const prevCtv = idx > 0 ? navList[idx - 1] : undefined;
+      const nextCtv = idx >= 0 && idx < navList.length - 1 ? navList[idx + 1] : undefined;
+
+      return (
+        <div ref={rootRef} className="space-y-6 scroll-mt-4">
+          <CtvProfileDetail
+            ctv={activeCtv}
+            tasks={tasks}
+            nav={{
+              onBack: () => setOpenCtvId(null),
+              onPrev: prevCtv ? () => openProfile(prevCtv.id) : undefined,
+              onNext: nextCtv ? () => openProfile(nextCtv.id) : undefined,
+              position: idx >= 0 ? idx + 1 : undefined,
+              total: navList.length,
             }}
-          >
-            Thêm CTV
-          </Button>
+            onScanDocs={() => setOcrTarget(activeCtv)}
+            onShowQr={() => setQrTarget(activeCtv)}
+            onAssignTask={() => onNotify?.(`Mở giao việc cho CTV ${activeCtv.name}`, 'info')}
+            onSave={(updated, msg) => applyUpdate(updated, msg)}
+          />
+
+          {ocrTarget && (
+            <LegalOcrModal
+              isOpen={true}
+              onClose={() => setOcrTarget(null)}
+              onApplyToContract={handleApplyOcr}
+              initialPreset="CCCD_INDIVIDUAL"
+            />
+          )}
+
+          {qrTarget && <CtvVietQrModal ctv={qrTarget} onClose={() => setQrTarget(null)} />}
         </div>
-      </div>
+      );
+    }
+  }
 
-      {/* Bảng Dữ liệu gốc CTV / VJ (chỉ hiển thị thông tin rất cơ bản) */}
-      <div className="bg-surface rounded-xl border border-line shadow-xs overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs border-collapse">
-            <thead>
-              <tr className="bg-canvas text-ink-3 font-medium border-b border-line text-[12.5px]">
-                <th className="py-2.5 px-4 min-w-[220px]">CTV / VJ &amp; Mã</th>
-                <th className="py-2.5 px-3 min-w-[150px]">Vai trò chính</th>
-                <th className="py-2.5 px-3 min-w-[180px]">Ngành hàng thế mạnh</th>
-                <th className="py-2.5 px-3 min-w-[130px]">Số điện thoại</th>
-                <th className="py-2.5 px-3 min-w-[150px]">Chuyên viên phụ trách</th>
-                <th className="py-2.5 px-3 min-w-[175px]">Hồ sơ CTV / VJ</th>
-                <th className="py-2.5 px-3 text-center min-w-[110px]">Trạng thái</th>
-                <th className="py-2.5 px-4 text-right min-w-[90px]">
-                  <span className="sr-only">Thao tác</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-line">
-              {currentRows.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="py-12 text-center text-ink-3 text-xs">
-                    Không tìm thấy Cộng tác viên / VJ nào khớp với bộ lọc hiện tại.
-                  </td>
-                </tr>
-              ) : (
-                currentRows.map((c) => {
-                  const hasFullProfile = Boolean(
-                    c.cccd && c.bankAccount && c.shippingAddress && c.contractStatus === 'ACTIVE',
-                  );
+  return (
+    <div ref={rootRef} className="space-y-6 scroll-mt-4">
+      <PageActions>
+        <Button variant="primary" icon={Plus} onClick={() => setIsCreateOpen(true)}>
+          Thêm CTV / VJ
+        </Button>
+      </PageActions>
 
-                  return (
-                    <tr key={c.id} className="hover:bg-canvas transition-colors group">
-                      {/* 1. Tên & Mã */}
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-3">
-                          <Avatar name={c.name} src={c.avatar} size={32} />
-                          <div>
-                            <span className="font-semibold text-ink text-xs block group-hover:text-primary transition-colors">
-                              {c.name}
-                            </span>
-                            <span className="text-2xs font-mono font-medium px-1.5 py-0.5 rounded bg-sunken text-ink-2 border border-line inline-block mt-0.5">
-                              {c.code || c.id.toUpperCase()}
-                            </span>
-                          </div>
-                        </div>
-                      </td>
+      <Panel flush>
+        <div className="p-4 border-b border-line grid gap-2.5">
+          <FilterBar
+            search={{
+              value: search,
+              onChange: setSearch,
+              placeholder: 'Tên CTV, mã, SĐT, CCCD, chuyên viên PIC...',
+            }}
+            filters={
+              <>
+                <Select
+                  value={role}
+                  onChange={(e) => setRole(e.target.value as RoleFilter)}
+                  aria-label="Vai trò"
+                  className="w-auto"
+                >
+                  <option value={ALL}>Mọi vai trò</option>
+                  <option value="ALL_IN_ONE">Quay dựng trọn gói</option>
+                  <option value="CREATIVE_ACTOR">VJ / Diễn viên</option>
+                  <option value="VIDEO_EDITOR">Dựng phim</option>
+                  <option value="SCRIPTWRITER">Biên kịch</option>
+                </Select>
 
-                      {/* 2. Vai trò */}
-                      <td className="py-3 px-3">
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-2xs font-medium bg-sunken text-ink-2 border border-line">
-                          {CTV_ROLE_LABELS[c.role]}
-                        </span>
-                      </td>
+                <Select
+                  value={pic}
+                  onChange={(e) => setPic(e.target.value)}
+                  aria-label="PIC"
+                  className="w-auto"
+                >
+                  <option value={ALL}>Chuyên viên PIC</option>
+                  {picOptions.map((v) => (
+                    <option key={v} value={v}>
+                      {v}
+                    </option>
+                  ))}
+                </Select>
 
-                      {/* 3. Ngành hàng */}
-                      <td className="py-3 px-3 text-ink-2">
-                        <div className="line-clamp-1">{c.nicheSpecialty.join(' • ') || '—'}</div>
-                      </td>
+                <Button
+                  variant={showMoreFilters || moreFilterCount > 0 ? 'secondary' : 'ghost'}
+                  icon={SlidersHorizontal}
+                  aria-expanded={showMoreFilters}
+                  onClick={() => setShowMoreFilters((v) => !v)}
+                >
+                  Lọc khác{moreFilterCount > 0 ? ` (${moreFilterCount})` : ''}
+                </Button>
 
-                      {/* 4. SĐT */}
-                      <td className="py-3 px-3 font-mono text-ink">{c.phone}</td>
+                {isFiltered && (
+                  <Button variant="ghost" onClick={resetFilters}>
+                    Xóa bộ lọc
+                  </Button>
+                )}
+              </>
+            }
+            resultCount={isFiltered ? filtered.length : undefined}
+          />
 
-                      {/* 5. Chuyên viên phụ trách */}
-                      <td className="py-3 px-3">
-                        <div className="font-medium text-ink text-xs">
-                          {c.contentPic || 'Chưa phân công'}
-                        </div>
-                        {c.partnershipPic && (
-                          <div className="text-2xs text-ink-3 mt-0.5">
-                            HĐ: {c.partnershipPic}
-                          </div>
-                        )}
-                      </td>
+          {showMoreFilters && (
+            <div className="flex flex-wrap items-center gap-2">
+              <Select
+                value={niche}
+                onChange={(e) => setNiche(e.target.value)}
+                aria-label="Ngành hàng thế mạnh"
+                className="w-auto"
+              >
+                <option value={ALL}>Ngành hàng thế mạnh</option>
+                {nicheOptions.map((v) => (
+                  <option key={v} value={v}>
+                    {v}
+                  </option>
+                ))}
+              </Select>
 
-                      {/* 6. Hồ sơ chuyên sâu (Chuyển sang màn hình Hồ sơ CTV / VJ) */}
-                      <td className="py-3 px-3">
-                        <div className="flex items-center gap-2">
-                          <span
-                            className={`px-2 py-0.5 rounded-full text-2xs font-medium border border-line ${
-                              hasFullProfile
-                                ? 'bg-positive-soft text-positive'
-                                : 'bg-warning-soft text-warning'
-                            }`}
-                          >
-                            {hasFullProfile ? 'Đã đủ hồ sơ' : 'Thiếu pháp lý/mẫu'}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => onNavigateToCtvProfile?.(c.id)}
-                            className="text-2xs font-medium text-primary hover:underline flex items-center gap-0.5 cursor-pointer"
-                          >
-                            <span>{hasFullProfile ? 'Xem' : 'Thiết lập'}</span>
-                            <ChevronRight className="w-2.5 h-2.5" />
-                          </button>
-                        </div>
-                      </td>
+              <Select
+                value={status}
+                onChange={(e) => setStatus(e.target.value)}
+                aria-label="Trạng thái"
+                className="w-auto"
+              >
+                <option value={ALL}>Mọi trạng thái</option>
+                <option value="ACTIVE">Đang hợp tác</option>
+                <option value="ON_HOLD">Tạm dừng</option>
+              </Select>
+            </div>
+          )}
 
-                      {/* 7. Trạng thái */}
-                      <td className="py-3 px-3 text-center">
-                        <span
-                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-2xs font-medium border border-line ${
-                            c.status === 'ACTIVE'
-                              ? 'bg-positive-soft text-positive'
-                              : 'bg-sunken text-ink-3'
-                          }`}
-                        >
-                          {c.status === 'ACTIVE' ? 'Đang hợp tác' : 'Tạm dừng'}
-                        </span>
-                      </td>
-
-                      {/* 8. Thao tác cơ bản */}
-                      <td className="py-3 px-4 text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setEditingCtv(c);
-                              setEditName(c.name);
-                              setEditCode(c.code || '');
-                              setEditPhone(c.phone);
-                              setEditRole(c.role);
-                              setEditNiche(c.nicheSpecialty.join(', '));
-                              setEditPic(c.contentPic || '');
-                              setEditStatus(c.status);
-                            }}
-                            className="p-1.5 rounded-lg text-ink-3 hover:text-ink hover:bg-sunken transition cursor-pointer"
-                            title="Sửa thông tin cơ bản"
-                          >
-                            <Edit3 className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setDeletingCtv(c)}
-                            className="p-1.5 rounded-lg text-ink-3 hover:text-critical hover:bg-critical-soft transition cursor-pointer"
-                            title="Xóa CTV"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
+          <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
+            <Chips label="Vai trò" items={roleChips} value={role} onChange={setRole} />
+            <Chips<IssueFilter>
+              label="Cần xử lý"
+              items={issueChips}
+              value={issue}
+              onChange={(k) => setIssue((cur) => (cur === k ? '' : k))}
+            />
+          </div>
         </div>
+
+        <DataTable
+          columns={columns}
+          rows={rows}
+          rowKey={(c) => c.id}
+          onRowClick={(c) => openProfile(c.id)}
+          stickyLast
+          empty={
+            <EmptyState
+              title={localCtvs.length === 0 ? 'Chưa có CTV / VJ nào' : 'Không có CTV khớp bộ lọc'}
+              description={
+                localCtvs.length === 0
+                  ? 'Thêm CTV / VJ đầu tiên để bắt đầu quản lý danh bạ và phân công video kênh Brand.'
+                  : 'Bỏ bớt điều kiện lọc hoặc tìm bằng từ khóa khác.'
+              }
+              action={
+                localCtvs.length === 0 ? (
+                  <Button variant="primary" icon={Plus} onClick={() => setIsCreateOpen(true)}>
+                    Thêm CTV / VJ
+                  </Button>
+                ) : (
+                  <Button onClick={resetFilters}>Xóa bộ lọc</Button>
+                )
+              }
+            />
+          }
+        />
 
         <Pagination
           page={page}
-          pageSize={PAGE_SIZE}
+          pageSize={pageSize}
           total={filtered.length}
           onPageChange={setPage}
+          onPageSizeChange={setPageSize}
         />
-      </div>
+      </Panel>
 
-      {/* MODAL 1: THÊM NHANH CTV (CHỈ THÔNG TIN CƠ BẢN) */}
+      {/* Modal Đọc ảnh CCCD */}
+      {ocrTarget && (
+        <LegalOcrModal
+          isOpen={true}
+          onClose={() => setOcrTarget(null)}
+          onApplyToContract={handleApplyOcr}
+          initialPreset="CCCD_INDIVIDUAL"
+        />
+      )}
+
+      {/* Modal Mã QR thanh toán */}
+      {qrTarget && <CtvVietQrModal ctv={qrTarget} onClose={() => setQrTarget(null)} />}
+
+      {/* Modal Thêm CTV / VJ mới */}
       <Modal
-        open={isQuickAddOpen}
-        onClose={() => setIsQuickAddOpen(false)}
-        title="Thêm nhanh Cộng tác viên / VJ"
-        description="Khai báo định danh cơ bản vào Dữ liệu gốc. Hồ sơ chuyên sâu (CCCD, hợp đồng, ngân hàng, địa chỉ nhận mẫu) thiết lập tại màn hình Hồ sơ CTV / VJ."
+        open={isCreateOpen}
+        onClose={() => setIsCreateOpen(false)}
+        title="Thêm Cộng tác viên / VJ"
+        description="Khai báo thông tin định danh ban đầu. Hồ sơ CCCD, hợp đồng và mã QR thanh toán có thể hoàn thiện ngay sau khi tạo."
         size="md"
         footer={
           <>
-            <Button variant="secondary" onClick={() => setIsQuickAddOpen(false)}>
+            <Button variant="secondary" onClick={() => setIsCreateOpen(false)}>
               Hủy
             </Button>
-            <Button type="submit" form="quick-ctv-master-form" variant="primary" icon={Plus}>
+            <Button type="submit" form="create-ctv-master-form" variant="primary" icon={Plus}>
               Tạo CTV
             </Button>
           </>
         }
       >
-        <form id="quick-ctv-master-form" onSubmit={handleQuickCreate} className="space-y-3.5 text-xs">
+        <form id="create-ctv-master-form" onSubmit={handleCreateCtv} className="space-y-3.5 text-xs">
           <div>
             <label className="block text-ink font-semibold mb-1">
               Họ và tên CTV / VJ <span className="text-critical">*</span>
@@ -451,9 +715,9 @@ export const ContributorsMasterView: React.FC<ContributorsMasterViewProps> = ({
               required
               autoFocus
               placeholder="Ví dụ: Nguyễn Hoàng Yến, Dược sĩ Lê Mai Anh..."
-              value={quickName}
-              onChange={(e) => setQuickName(e.target.value)}
-              className="w-full px-3 py-2 border border-line-strong rounded-lg focus:outline-none focus:border-focus bg-surface font-medium text-ink text-sm"
+              value={createForm.name}
+              onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
+              className="w-full px-3 py-2 border border-line rounded-lg focus:outline-none focus:border-focus bg-surface font-medium text-ink text-sm"
             />
           </div>
 
@@ -466,9 +730,9 @@ export const ContributorsMasterView: React.FC<ContributorsMasterViewProps> = ({
                 type="text"
                 required
                 placeholder="VD: 0981 234 567"
-                value={quickPhone}
-                onChange={(e) => setQuickPhone(e.target.value)}
-                className="w-full px-2.5 py-1.5 border border-line-strong rounded-lg bg-surface text-ink focus:outline-none focus:border-focus"
+                value={createForm.phone}
+                onChange={(e) => setCreateForm({ ...createForm, phone: e.target.value })}
+                className="w-full px-2.5 py-1.5 border border-line rounded-lg bg-surface text-ink focus:outline-none focus:border-focus"
               />
             </div>
             <div>
@@ -476,9 +740,9 @@ export const ContributorsMasterView: React.FC<ContributorsMasterViewProps> = ({
               <input
                 type="text"
                 placeholder="Tự sinh nếu để trống"
-                value={quickCode}
-                onChange={(e) => setQuickCode(e.target.value.toUpperCase())}
-                className="w-full px-2.5 py-1.5 border border-line-strong rounded-lg font-mono bg-surface text-ink focus:outline-none focus:border-focus"
+                value={createForm.code}
+                onChange={(e) => setCreateForm({ ...createForm, code: e.target.value.toUpperCase() })}
+                className="w-full px-2.5 py-1.5 border border-line rounded-lg font-mono bg-surface text-ink focus:outline-none focus:border-focus"
               />
             </div>
           </div>
@@ -487,9 +751,11 @@ export const ContributorsMasterView: React.FC<ContributorsMasterViewProps> = ({
             <div>
               <label className="block text-ink-2 font-medium mb-1">Vai trò chính</label>
               <select
-                value={quickRole}
-                onChange={(e) => setQuickRole(e.target.value as ContributorRole)}
-                className="w-full px-2.5 py-1.5 border border-line-strong rounded-lg bg-surface text-ink focus:outline-none focus:border-focus"
+                value={createForm.role}
+                onChange={(e) =>
+                  setCreateForm({ ...createForm, role: e.target.value as ContributorRole })
+                }
+                className="w-full px-2.5 py-1.5 border border-line rounded-lg bg-surface text-ink focus:outline-none focus:border-focus"
               >
                 <option value="ALL_IN_ONE">Quay dựng trọn gói</option>
                 <option value="CREATIVE_ACTOR">VJ / Diễn viên</option>
@@ -498,12 +764,35 @@ export const ContributorsMasterView: React.FC<ContributorsMasterViewProps> = ({
               </select>
             </div>
             <div>
-              <label className="block text-ink-2 font-medium mb-1">Content PIC phụ trách</label>
+              <label className="block text-ink-2 font-medium mb-1">Chuyên viên PIC phụ trách</label>
               <input
                 type="text"
-                value={quickPic}
-                onChange={(e) => setQuickPic(e.target.value)}
-                className="w-full px-2.5 py-1.5 border border-line-strong rounded-lg bg-surface text-ink focus:outline-none focus:border-focus"
+                value={createForm.contentPic}
+                onChange={(e) => setCreateForm({ ...createForm, contentPic: e.target.value })}
+                className="w-full px-2.5 py-1.5 border border-line rounded-lg bg-surface text-ink focus:outline-none focus:border-focus"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-ink-2 font-medium mb-1">Định mức thù lao / video (VNĐ)</label>
+              <input
+                type="number"
+                step="50000"
+                value={createForm.rate}
+                onChange={(e) => setCreateForm({ ...createForm, rate: Number(e.target.value) })}
+                className="w-full px-2.5 py-1.5 border border-line rounded-lg bg-surface text-ink focus:outline-none focus:border-focus"
+              />
+            </div>
+            <div>
+              <label className="block text-ink-2 font-medium mb-1">Email liên hệ</label>
+              <input
+                type="email"
+                placeholder="ctv@gmail.com"
+                value={createForm.email}
+                onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })}
+                className="w-full px-2.5 py-1.5 border border-line rounded-lg bg-surface text-ink focus:outline-none focus:border-focus"
               />
             </div>
           </div>
@@ -512,125 +801,27 @@ export const ContributorsMasterView: React.FC<ContributorsMasterViewProps> = ({
             <label className="block text-ink-2 font-medium mb-1">Ngành hàng thế mạnh</label>
             <input
               type="text"
-              value={quickNiche}
-              onChange={(e) => setQuickNiche(e.target.value)}
-              placeholder="VD: Mẹ & Bé, Dược mỹ phẩm"
-              className="w-full px-2.5 py-1.5 border border-line-strong rounded-lg bg-surface text-ink focus:outline-none focus:border-focus"
+              value={createForm.niche}
+              onChange={(e) => setCreateForm({ ...createForm, niche: e.target.value })}
+              placeholder="VD: Mẹ & Bé, Dược mỹ phẩm, Thực phẩm chức năng"
+              className="w-full px-2.5 py-1.5 border border-line rounded-lg bg-surface text-ink focus:outline-none focus:border-focus"
             />
-          </div>
-
-          <div className="p-2.5 rounded-lg bg-accent-soft border border-line text-2xs text-accent flex items-start gap-2">
-            <BookOpen className="w-4 h-4 text-accent shrink-0 mt-0.5" />
-            <span>
-              Sau khi tạo, bấm <strong>Thiết lập →</strong> tại cột Hồ sơ CTV / VJ để đọc ảnh CCCD, cập nhật hợp đồng, tài khoản ngân hàng, đơn giá và địa chỉ nhận hàng mẫu.
-            </span>
-          </div>
-        </form>
-      </Modal>
-
-      {/* MODAL 2: SỬA THÔNG TIN CƠ BẢN */}
-      <Modal
-        open={Boolean(editingCtv)}
-        onClose={() => setEditingCtv(null)}
-        title="Sửa thông tin cơ bản CTV / VJ"
-        description="Chỉnh sửa định danh, vai trò và trạng thái hợp tác trong Dữ liệu gốc."
-        size="md"
-        footer={
-          <>
-            <Button variant="secondary" onClick={() => setEditingCtv(null)}>
-              Hủy
-            </Button>
-            <Button type="submit" form="edit-ctv-master-form" variant="primary">
-              Lưu thay đổi
-            </Button>
-          </>
-        }
-      >
-        <form id="edit-ctv-master-form" onSubmit={handleSaveBasicEdit} className="space-y-3.5 text-xs">
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-ink font-semibold mb-1">Họ và tên CTV *</label>
-              <input
-                type="text"
-                required
-                value={editName}
-                onChange={(e) => setEditName(e.target.value)}
-                className="w-full px-2.5 py-1.5 border border-line-strong rounded-lg bg-surface text-ink"
-              />
-            </div>
-            <div>
-              <label className="block text-ink font-semibold mb-1">Mã CTV</label>
-              <input
-                type="text"
-                value={editCode}
-                onChange={(e) => setEditCode(e.target.value.toUpperCase())}
-                className="w-full px-2.5 py-1.5 border border-line-strong rounded-lg font-mono bg-surface text-ink"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-ink font-semibold mb-1">Số điện thoại *</label>
-              <input
-                type="text"
-                required
-                value={editPhone}
-                onChange={(e) => setEditPhone(e.target.value)}
-                className="w-full px-2.5 py-1.5 border border-line-strong rounded-lg bg-surface text-ink"
-              />
-            </div>
-            <div>
-              <label className="block text-ink font-semibold mb-1">Vai trò chính</label>
-              <select
-                value={editRole}
-                onChange={(e) => setEditRole(e.target.value as ContributorRole)}
-                className="w-full px-2.5 py-1.5 border border-line-strong rounded-lg bg-surface text-ink"
-              >
-                <option value="ALL_IN_ONE">Quay dựng trọn gói</option>
-                <option value="CREATIVE_ACTOR">VJ / Diễn viên</option>
-                <option value="VIDEO_EDITOR">Dựng phim</option>
-                <option value="SCRIPTWRITER">Biên kịch</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-ink font-semibold mb-1">Content PIC phụ trách</label>
-              <input
-                type="text"
-                value={editPic}
-                onChange={(e) => setEditPic(e.target.value)}
-                className="w-full px-2.5 py-1.5 border border-line-strong rounded-lg bg-surface text-ink"
-              />
-            </div>
-            <div>
-              <label className="block text-ink font-semibold mb-1">Trạng thái</label>
-              <select
-                value={editStatus}
-                onChange={(e) => setEditStatus(e.target.value as ContributorStatus)}
-                className="w-full px-2.5 py-1.5 border border-line-strong rounded-lg bg-surface text-ink"
-              >
-                <option value="ACTIVE">Đang hợp tác</option>
-                <option value="ON_HOLD">Tạm dừng</option>
-              </select>
-            </div>
           </div>
 
           <div>
-            <label className="block text-ink font-semibold mb-1">Ngành hàng thế mạnh</label>
+            <label className="block text-ink-2 font-medium mb-1">Địa chỉ nhận hàng mẫu</label>
             <input
               type="text"
-              value={editNiche}
-              onChange={(e) => setEditNiche(e.target.value)}
-              className="w-full px-2.5 py-1.5 border border-line-strong rounded-lg bg-surface text-ink"
+              value={createForm.shippingAddress}
+              onChange={(e) => setCreateForm({ ...createForm, shippingAddress: e.target.value })}
+              placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành"
+              className="w-full px-2.5 py-1.5 border border-line rounded-lg bg-surface text-ink focus:outline-none focus:border-focus"
             />
           </div>
         </form>
       </Modal>
 
-      {/* XÁC NHẬN XÓA */}
+      {/* Dialog xác nhận xóa CTV */}
       <ConfirmDialog
         open={Boolean(deletingCtv)}
         onCancel={() => setDeletingCtv(null)}
@@ -638,7 +829,7 @@ export const ContributorsMasterView: React.FC<ContributorsMasterViewProps> = ({
         title="Xóa CTV khỏi Dữ liệu gốc"
         description={
           deletingCtv
-            ? `Bạn có chắc chắn muốn xóa CTV "${deletingCtv.name}" khỏi danh mục gốc?`
+            ? `Bạn có chắc chắn muốn xóa CTV "${deletingCtv.name}" khỏi danh mục gốc? Thao tác này không thể hoàn tác.`
             : ''
         }
         confirmLabel="Xóa CTV"

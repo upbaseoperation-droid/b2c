@@ -221,7 +221,7 @@ export default function SampleTrackerView({
 
                     {/* Product & Brand */}
                     <td className="py-3 px-3">
-                      <span className="inline-block px-1.5 py-0.5 text-2xs font-semibold bg-slate-100 text-slate-700 rounded mb-1">
+                      <span className="block text-2xs font-medium text-ink-3 mb-0.5">
                         {item.brandName}
                       </span>
                       <div className="font-medium text-slate-800 line-clamp-1 max-w-[200px]" title={item.productName}>
@@ -312,8 +312,8 @@ export default function SampleTrackerView({
                     <td className="py-3 px-3">
                       {item.sparkAdsCode ? (
                         <div>
-                          <div className="flex items-center gap-1.5 font-mono text-2xs bg-slate-100 px-2 py-1 rounded border border-slate-200">
-                            <span className="font-semibold text-slate-800">{item.sparkAdsCode}</span>
+                          <div className="flex items-center gap-1.5 font-code text-2xs">
+                            <span className="font-medium text-ink">{item.sparkAdsCode}</span>
                             <button 
                               onClick={() => handleCopy(item.sparkAdsCode!, `spark-${item.id}`)}
                               className="text-slate-400 hover:text-slate-600 ml-auto"

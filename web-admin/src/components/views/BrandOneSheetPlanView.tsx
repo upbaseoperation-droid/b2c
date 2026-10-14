@@ -1,8 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
-  FileSpreadsheet,
   Download,
   Save,
   Edit3,
@@ -11,9 +10,6 @@ import {
   Trash2,
   ExternalLink,
   Calendar,
-  Layers,
-  CheckCircle2,
-  User,
   RotateCcw,
 } from 'lucide-react';
 import {
@@ -67,14 +63,15 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
   );
 
   const [formData, setFormData] = useState<BrandOneSheetPlanData>(synthesizedData);
+  const [prevSynthesizedData, setPrevSynthesizedData] = useState<BrandOneSheetPlanData>(synthesizedData);
+  if (synthesizedData !== prevSynthesizedData) {
+    setPrevSynthesizedData(synthesizedData);
+    setFormData(synthesizedData);
+  }
   const [isEditMode, setIsEditMode] = useState<boolean>(false);
   const [sectionFilter, setSectionFilter] = useState<
     'ALL' | 'SEC_01' | 'SEC_02' | 'SEC_03' | 'SEC_04' | 'SEC_05'
   >('ALL');
-
-  useEffect(() => {
-    setFormData(synthesizedData);
-  }, [synthesizedData]);
 
   const sp = formData.shopeeKpi;
   const tt = formData.tiktokKpi;
@@ -263,22 +260,23 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
       <div className="bg-slate-900 text-white rounded-2xl p-5 border border-slate-800 shadow-md space-y-4">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="space-y-1.5">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="px-2.5 py-0.5 rounded-md bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 text-2xs font-bold uppercase tracking-wider">
+            <div className="flex items-center gap-2 flex-wrap text-2xs text-slate-300">
+              <span className="font-semibold text-emerald-300 uppercase tracking-wider">
                 Biểu mẫu 1-Sheet Trình Brand
               </span>
+              <span>·</span>
               {formData.hasCampaign ? (
-                <span className="px-2.5 py-0.5 rounded-md bg-blue-500/20 border border-blue-400/40 text-blue-200 text-2xs font-bold">
+                <span className="font-semibold text-blue-200">
                   Campaign: [{formData.campaignCode || 'CMP'}] {formData.campaignTitle} (
                   {formData.campaignPhaseName || formData.month})
                 </span>
               ) : (
-                <span className="px-2.5 py-0.5 rounded-md bg-slate-700 text-slate-300 text-2xs font-semibold">
+                <span className="font-medium text-slate-300">
                   Tháng Không Có Campaign (Vận hành Duy trì / Always-on)
                 </span>
               )}
             </div>
-            <h2 className="text-lg font-bold tracking-tight">
+            <h2 className="text-lg font-semibold tracking-tight">
               {formData.brandName.toUpperCase()} • PLAN THÁNG {formData.month} • MONTHLY CONTENT &amp; KEY VISUAL PLAN
             </h2>
             <p className="text-xs text-slate-300">
@@ -313,7 +311,7 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
               onClick={() => setIsEditMode((prev) => !prev)}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 transition cursor-pointer ${
                 isEditMode
-                  ? 'bg-amber-500 text-slate-950 font-bold'
+                  ? 'bg-amber-500 text-slate-950 font-semibold'
                   : 'bg-white/10 hover:bg-white/20 text-white border border-white/20'
               }`}
             >
@@ -324,7 +322,7 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
               <button
                 type="button"
                 onClick={handleSave}
-                className="px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold inline-flex items-center gap-1.5 transition cursor-pointer"
+                className="px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold inline-flex items-center gap-1.5 transition cursor-pointer"
               >
                 <Save className="w-3.5 h-3.5" />
                 <span>Lưu bản trình Brand</span>
@@ -333,7 +331,7 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
             <button
               type="button"
               onClick={() => void exportBrandMonthlyOneSheetToExcel(formData)}
-              className="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold inline-flex items-center gap-1.5 shadow-xs transition cursor-pointer"
+              className="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold inline-flex items-center gap-1.5 shadow-xs transition cursor-pointer"
             >
               <Download className="w-3.5 h-3.5" />
               <span>Xuất Excel 1-Sheet (.xlsx)</span>
@@ -411,11 +409,11 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
       {showSec01 && (
         <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-2xs">
           <div className="px-5 py-3.5 bg-slate-900 text-white flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2.5">
-              <span className="px-2 py-0.5 rounded bg-blue-600 text-white font-mono text-xs font-bold">
-                01
+            <div className="flex items-center gap-2">
+              <span className="font-mono text-xs font-semibold text-blue-400">
+                01.
               </span>
-              <h3 className="text-sm font-bold tracking-wide uppercase">ĐỊNH HƯỚNG THÁNG</h3>
+              <h3 className="text-sm font-semibold tracking-wide uppercase">ĐỊNH HƯỚNG THÁNG</h3>
             </div>
             <span className="text-2xs text-slate-300">
               Nguồn dữ liệu: <strong>Plan / Strategy PIC</strong> &amp; Thực thể{' '}
@@ -474,11 +472,11 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
       {showSec02 && (
         <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-2xs">
           <div className="px-5 py-3.5 bg-slate-900 text-white flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2.5">
-              <span className="px-2 py-0.5 rounded bg-blue-600 text-white font-mono text-xs font-bold">
-                02
+            <div className="flex items-center gap-2">
+              <span className="font-mono text-xs font-semibold text-blue-400">
+                02.
               </span>
-              <h3 className="text-sm font-bold tracking-wide uppercase">KẾ HOẠCH KPI THÁNG</h3>
+              <h3 className="text-sm font-semibold tracking-wide uppercase">KẾ HOẠCH KPI THÁNG</h3>
             </div>
             <span className="text-2xs text-slate-300">
               Nguồn dữ liệu: Tổng hợp từ <strong>Growth PnL</strong> &amp; <strong>Kế hoạch Gian hàng Shopee + TikTok Shop</strong>
@@ -488,7 +486,7 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
           <div className="overflow-x-auto">
             <table className="w-full text-xs border-collapse">
               <thead>
-                <tr className="bg-slate-100 text-slate-800 border-b border-slate-200 font-bold">
+                <tr className="bg-slate-100 text-slate-800 border-b border-slate-200 font-semibold">
                   <th className="py-2.5 px-4 text-left border-r border-slate-200 w-48">Nhóm chỉ số</th>
                   <th className="py-2.5 px-4 text-left border-r border-slate-200">Mục tiêu chính</th>
                   <th className="py-2.5 px-4 text-right border-r border-slate-200 bg-amber-50/70 text-amber-900 w-44">
@@ -504,7 +502,7 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
               </thead>
               <tbody className="divide-y divide-slate-200 font-mono">
                 {/* Nhóm 1: Chỉ số chính */}
-                <tr className="bg-slate-50/80 font-bold">
+                <tr className="bg-slate-50/80 font-semibold">
                   <td className="py-2 px-4 font-sans text-slate-900 border-r border-slate-200" rowSpan={9}>
                     Chỉ số chính
                   </td>
@@ -575,7 +573,7 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
                 </tr>
 
                 {/* Nhóm 2: Doanh thu các hoạt động */}
-                <tr className="bg-slate-50/80 font-bold">
+                <tr className="bg-slate-50/80 font-semibold">
                   <td className="py-2 px-4 font-sans text-slate-900 border-r border-slate-200" rowSpan={4}>
                     Doanh thu các hoạt động
                   </td>
@@ -604,7 +602,7 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
                 </tr>
 
                 {/* Nhóm 3: Chi phí Marketing thúc đẩy */}
-                <tr className="bg-slate-50/80 font-bold">
+                <tr className="bg-slate-50/80 font-semibold">
                   <td className="py-2 px-4 font-sans text-slate-900 border-r border-slate-200" rowSpan={8}>
                     Chi phí Marketing thúc đẩy
                   </td>
@@ -657,7 +655,7 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
                 </tr>
 
                 {/* Nhóm 4: Chi phí khác ghi nhận chung phí sàn */}
-                <tr className="bg-slate-50/80 font-bold">
+                <tr className="bg-slate-50/80 font-semibold">
                   <td className="py-2 px-4 font-sans text-slate-900 border-r border-slate-200" rowSpan={3}>
                     Chi phí khác (Ghi nhận chung với phí sàn)
                   </td>
@@ -693,11 +691,11 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
       {showSec03 && (
         <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-2xs">
           <div className="px-5 py-3.5 bg-slate-900 text-white flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2.5">
-              <span className="px-2 py-0.5 rounded bg-blue-600 text-white font-mono text-xs font-bold">
-                03
+            <div className="flex items-center gap-2">
+              <span className="font-mono text-xs font-semibold text-blue-400">
+                03.
               </span>
-              <h3 className="text-sm font-bold tracking-wide uppercase">KEY VISUAL CHUNG CỦA THÁNG</h3>
+              <h3 className="text-sm font-semibold tracking-wide uppercase">KEY VISUAL CHUNG CỦA THÁNG</h3>
             </div>
             <span className="text-2xs text-slate-300">
               Nguồn dữ liệu: <strong>Key Visual / SIS PIC ({formData.keyVisual.kvPic || 'Thiết kế'})</strong>
@@ -763,11 +761,11 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
       {showSec04 && (
         <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-2xs space-y-5 pb-5">
           <div className="px-5 py-3.5 bg-slate-900 text-white flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2.5">
-              <span className="px-2 py-0.5 rounded bg-blue-600 text-white font-mono text-xs font-bold">
-                04
+            <div className="flex items-center gap-2">
+              <span className="font-mono text-xs font-semibold text-blue-400">
+                04.
               </span>
-              <h3 className="text-sm font-bold tracking-wide uppercase">
+              <h3 className="text-sm font-semibold tracking-wide uppercase">
                 TIKTOK SHOP • CONTENT, KOC &amp; BOOKING
               </h3>
             </div>
@@ -779,12 +777,12 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
 
           {/* 4A. Tổng quan KPI TikTok Shop */}
           <div className="px-5 space-y-3">
-            <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+            <h4 className="text-xs font-semibold text-slate-800 uppercase tracking-wider">
               4.1 Tổng quan Chỉ số TikTok Shop (Video Self, Video Affiliate &amp; Livestream)
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-3 text-xs">
               <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5">
-                <span className="text-2xs font-bold text-slate-500 uppercase">Video Self Channel</span>
+                <span className="text-2xs font-semibold text-slate-500 uppercase">Video Self Channel</span>
                 <div className="flex justify-between">
                   <span className="text-slate-600">Doanh thu mục tiêu:</span>
                   <strong className="font-mono text-slate-900">
@@ -806,7 +804,7 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
               </div>
 
               <div className="p-3.5 rounded-xl bg-blue-50/50 border border-blue-200 space-y-1.5">
-                <span className="text-2xs font-bold text-blue-700 uppercase">
+                <span className="text-2xs font-semibold text-blue-700 uppercase">
                   Video Affiliate (Booking + TAP)
                 </span>
                 <div className="flex justify-between">
@@ -837,7 +835,7 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
               </div>
 
               <div className="p-3.5 rounded-xl bg-emerald-50/50 border border-emerald-200 space-y-1.5">
-                <span className="text-2xs font-bold text-emerald-800 uppercase">
+                <span className="text-2xs font-semibold text-emerald-800 uppercase">
                   Livestream Self Channel
                 </span>
                 <div className="flex justify-between">
@@ -862,7 +860,7 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
               </div>
 
               <div className="p-3.5 rounded-xl bg-amber-50/50 border border-amber-200 space-y-1.5">
-                <span className="text-2xs font-bold text-amber-800 uppercase">
+                <span className="text-2xs font-semibold text-amber-800 uppercase">
                   Hiệu suất Booking TikTok
                 </span>
                 <div className="flex justify-between">
@@ -889,7 +887,7 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
 
           {/* 4B. Bảng Số lượng & Ngân sách theo tuần (W1-W5) */}
           <div className="px-5 space-y-3">
-            <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+            <h4 className="text-xs font-semibold text-slate-800 uppercase tracking-wider">
               4.2 Phân bổ Số lượng &amp; Ngân sách KOC/KOL theo Tuần (W1–W5)
             </h4>
             <div className="overflow-x-auto border border-slate-200 rounded-xl">
@@ -939,10 +937,10 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
                       row.kl7Budget;
                     return (
                       <tr key={row.week} className="hover:bg-slate-50">
-                        <td className="py-2 px-3 font-bold text-slate-900 border-r border-slate-200">
+                        <td className="py-2 px-3 font-semibold text-slate-900 border-r border-slate-200">
                           {row.week} <span className="text-2xs font-normal text-slate-500">({row.dateRange})</span>
                         </td>
-                        <td className="py-2 px-2.5 text-center font-bold text-blue-700 bg-blue-50/30 border-r border-slate-200">
+                        <td className="py-2 px-2.5 text-center font-semibold text-blue-700 bg-blue-50/30 border-r border-slate-200">
                           {totV}
                         </td>
                         <td className="py-2 px-2 text-center border-r border-slate-200">{row.tapCount}</td>
@@ -965,7 +963,7 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
                   })}
                 </tbody>
                 <tfoot>
-                  <tr className="bg-slate-100 font-bold border-t-2 border-slate-300">
+                  <tr className="bg-slate-100 font-semibold border-t-2 border-slate-300">
                     <td className="py-2.5 px-3 border-r border-slate-200">Tổng tháng</td>
                     <td className="py-2.5 px-2.5 text-center text-blue-800 border-r border-slate-200">
                       {ttWeeklyTotals.totalVideos}
@@ -997,7 +995,7 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
           {/* 4C. Chi tiết Content TikTok Shop */}
           <div className="px-5 space-y-3">
             <div className="flex items-center justify-between">
-              <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+              <h4 className="text-xs font-semibold text-slate-800 uppercase tracking-wider">
                 4.3 Chi tiết Content TikTok Shop (Video Affiliate &amp; Video Self / Ảnh trượt)
               </h4>
               {isEditMode && (
@@ -1014,7 +1012,7 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
             <div className="overflow-x-auto border border-slate-200 rounded-xl">
               <table className="w-full text-xs border-collapse">
                 <thead>
-                  <tr className="bg-slate-100 text-slate-800 border-b border-slate-200 text-2xs font-bold">
+                  <tr className="bg-slate-100 text-slate-800 border-b border-slate-200 text-2xs font-semibold">
                     <th className="py-2.5 px-2.5 text-left border-r border-slate-200 w-28">Tuần / Ngày air</th>
                     <th className="py-2.5 px-2.5 text-left border-r border-slate-200 w-36">SKU / Combo</th>
                     <th className="py-2.5 px-2.5 text-left border-r border-slate-200 w-28">Nguồn</th>
@@ -1054,13 +1052,7 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
                       </td>
                       <td className="p-2 border-r border-slate-200 font-medium text-slate-800">{row.skuOrCombo}</td>
                       <td className="p-2 border-r border-slate-200">
-                        <span
-                          className={`px-2 py-0.5 rounded text-2xs font-semibold ${
-                            row.touchpointSource === 'Video affiliate'
-                              ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                              : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                          }`}
-                        >
+                        <span className="text-xs text-ink-2 font-medium">
                           {row.touchpointSource}
                         </span>
                       </td>
@@ -1088,7 +1080,7 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
                         )}
                       </td>
                       <td className="p-2 border-r border-slate-200 text-center font-medium">{row.contentType}</td>
-                      <td className="p-2 border-r border-slate-200 text-center font-mono font-bold">{row.qty}</td>
+                      <td className="p-2 border-r border-slate-200 text-center font-mono font-semibold">{row.qty}</td>
                       <td className="p-2 border-r border-slate-200 text-right font-mono">
                         {row.budgetVnd > 0 ? row.budgetVnd.toLocaleString('vi-VN') : '0'}
                       </td>
@@ -1124,11 +1116,11 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
       {showSec05 && (
         <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-2xs space-y-5 pb-5">
           <div className="px-5 py-3.5 bg-slate-900 text-white flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2.5">
-              <span className="px-2 py-0.5 rounded bg-blue-600 text-white font-mono text-xs font-bold">
-                05
+            <div className="flex items-center gap-2">
+              <span className="font-mono text-xs font-semibold text-blue-400">
+                05.
               </span>
-              <h3 className="text-sm font-bold tracking-wide uppercase">
+              <h3 className="text-sm font-semibold tracking-wide uppercase">
                 SHOPEE • CHIẾN LƯỢC PILLAR, CONTENT &amp; TARGET TUẦN
               </h3>
             </div>
@@ -1140,7 +1132,7 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
           {/* 5A. Bảng Chiến lược Pillar P01 - P05 */}
           <div className="px-5 space-y-3">
             <div className="flex items-center justify-between">
-              <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+              <h4 className="text-xs font-semibold text-slate-800 uppercase tracking-wider">
                 5.1 Bảng Chiến lược Tuyến Nội dung (Content Pillars P01 → P05)
               </h4>
               {isEditMode && (
@@ -1157,7 +1149,7 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
             <div className="overflow-x-auto border border-slate-200 rounded-xl">
               <table className="w-full text-xs border-collapse">
                 <thead>
-                  <tr className="bg-slate-100 text-slate-800 border-b border-slate-200 text-2xs font-bold">
+                  <tr className="bg-slate-100 text-slate-800 border-b border-slate-200 text-2xs font-semibold">
                     <th className="py-2.5 px-2.5 text-center border-r border-slate-200 w-20">Pillar ID</th>
                     <th className="py-2.5 px-3 text-left border-r border-slate-200 w-40">Tên pillar</th>
                     <th className="py-2.5 px-3 text-left border-r border-slate-200 w-44">Mục tiêu / hành vi</th>
@@ -1172,10 +1164,10 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
                 <tbody className="divide-y divide-slate-200">
                   {formData.contentPillars.map((p, idx) => (
                     <tr key={p.pillarId} className="hover:bg-slate-50">
-                      <td className="p-2.5 text-center border-r border-slate-200 font-mono font-bold text-blue-700 bg-blue-50/40">
+                      <td className="p-2.5 text-center border-r border-slate-200 font-mono font-semibold text-blue-700 bg-blue-50/40">
                         {p.pillarId}
                       </td>
-                      <td className="p-2.5 border-r border-slate-200 font-bold text-slate-900">
+                      <td className="p-2.5 border-r border-slate-200 font-semibold text-slate-900">
                         {isEditMode ? (
                           <input
                             type="text"
@@ -1200,14 +1192,14 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
                       <td className="p-2.5 border-r border-slate-200 text-slate-800 font-medium">{p.messageAndRtb}</td>
                       <td className="p-2.5 border-r border-slate-200 text-slate-800">{p.priorityAngle}</td>
                       <td className="p-2.5 border-r border-slate-200">
-                        <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-800 font-medium text-2xs">
+                        <span className="text-xs text-ink-2">
                           {p.suitableFormat}
                         </span>
                       </td>
                       <td className="p-2.5 text-center border-r border-slate-200 font-mono font-semibold">
                         {Math.round(p.videoWeightRatio * 100)}%
                       </td>
-                      <td className="p-2.5 text-center font-mono font-bold text-emerald-700">
+                      <td className="p-2.5 text-center font-mono font-semibold text-emerald-700">
                         {p.monthlyVideoCount}
                       </td>
                     </tr>
@@ -1219,13 +1211,13 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
 
           {/* 5B. Target Tuần Content Shopee */}
           <div className="px-5 space-y-3">
-            <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+            <h4 className="text-xs font-semibold text-slate-800 uppercase tracking-wider">
               5.2 Bảng Target Tuần Content Shopee (W1 → W5)
             </h4>
             <div className="overflow-x-auto border border-slate-200 rounded-xl">
               <table className="w-full text-xs border-collapse font-mono">
                 <thead>
-                  <tr className="bg-slate-100 text-slate-800 border-b border-slate-200 text-2xs font-bold">
+                  <tr className="bg-slate-100 text-slate-800 border-b border-slate-200 text-2xs font-semibold">
                     <th className="py-2 px-3 text-left border-r border-slate-200">Tuần</th>
                     <th className="py-2 px-3 text-center border-r border-slate-200">Khoảng ngày air</th>
                     <th className="py-2 px-3 text-center border-r border-slate-200">Số video plan</th>
@@ -1240,9 +1232,9 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
                 <tbody className="divide-y divide-slate-200">
                   {formData.shopeeWeeklyTargets.map((w) => (
                     <tr key={w.week} className="hover:bg-slate-50">
-                      <td className="py-2 px-3 font-bold text-slate-900 border-r border-slate-200">{w.week}</td>
+                      <td className="py-2 px-3 font-semibold text-slate-900 border-r border-slate-200">{w.week}</td>
                       <td className="py-2 px-3 text-center border-r border-slate-200">{w.airDateRange}</td>
-                      <td className="py-2 px-3 text-center font-bold text-blue-700 border-r border-slate-200">
+                      <td className="py-2 px-3 text-center font-semibold text-blue-700 border-r border-slate-200">
                         {w.plannedVideos}
                       </td>
                       <td className="py-2 px-3 text-right border-r border-slate-200">
@@ -1271,7 +1263,7 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
           {/* 5C. Lịch sản xuất & air Content Shopee gắn mã Pillar P01-P05 */}
           <div className="px-5 space-y-3">
             <div className="flex items-center justify-between">
-              <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+              <h4 className="text-xs font-semibold text-slate-800 uppercase tracking-wider">
                 5.3 Lịch Sản xuất &amp; Air Content Shopee (Gắn mã Pillar P01–P05 &amp; Phương thức VJ / Remix)
               </h4>
               {isEditMode && (
@@ -1288,7 +1280,7 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
             <div className="overflow-x-auto border border-slate-200 rounded-xl">
               <table className="w-full text-xs border-collapse">
                 <thead>
-                  <tr className="bg-slate-100 text-slate-800 border-b border-slate-200 text-2xs font-bold">
+                  <tr className="bg-slate-100 text-slate-800 border-b border-slate-200 text-2xs font-semibold">
                     <th className="py-2.5 px-2 text-center border-r border-slate-200 w-14">Tuần</th>
                     <th className="py-2.5 px-2.5 text-left border-r border-slate-200 w-36">SKU / Combo</th>
                     <th className="py-2.5 px-2.5 text-left border-r border-slate-200 w-24">Nguồn</th>
@@ -1306,18 +1298,18 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
                 <tbody className="divide-y divide-slate-200">
                   {formData.shopeeContentRows.map((row, idx) => (
                     <tr key={row.id} className="hover:bg-slate-50">
-                      <td className="p-2 text-center border-r border-slate-200 font-mono font-bold">{row.week}</td>
+                      <td className="p-2 text-center border-r border-slate-200 font-mono font-semibold">{row.week}</td>
                       <td className="p-2 border-r border-slate-200 font-medium text-slate-800">{row.skuOrCombo}</td>
                       <td className="p-2 border-r border-slate-200 text-slate-600">{row.touchpointSource}</td>
                       <td className="p-2 text-center border-r border-slate-200 font-mono text-slate-800">
                         {row.airOrHandoverDate}
                       </td>
                       <td className="p-2 border-r border-slate-200">
-                        <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-800 text-2xs font-semibold">
+                        <span className="text-xs text-ink-2">
                           {row.behaviorObjective}
                         </span>
                       </td>
-                      <td className="p-2 text-center border-r border-slate-200 font-mono font-bold text-blue-700">
+                      <td className="p-2 text-center border-r border-slate-200 font-mono font-semibold text-blue-700">
                         {isEditMode ? (
                           <select
                             value={row.pillarId}
@@ -1345,17 +1337,11 @@ export const BrandOneSheetPlanView: React.FC<BrandOneSheetPlanViewProps> = ({
                       <td className="p-2 border-r border-slate-200 text-slate-800">{row.angleAndBrief}</td>
                       <td className="p-2 border-r border-slate-200 text-slate-700 font-medium">{row.format}</td>
                       <td className="p-2 text-center border-r border-slate-200">
-                        <span
-                          className={`px-2 py-0.5 rounded text-2xs font-bold ${
-                            row.productionMethod === 'VJ'
-                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                              : 'bg-amber-50 text-amber-800 border border-amber-200'
-                          }`}
-                        >
+                        <span className="font-mono text-xs font-semibold text-ink-2">
                           {row.productionMethod}
                         </span>
                       </td>
-                      <td className="p-2 text-center border-r border-slate-200 font-mono font-bold">{row.qty}</td>
+                      <td className="p-2 text-center border-r border-slate-200 font-mono font-semibold">{row.qty}</td>
                       <td className="p-2 text-right border-r border-slate-200 font-mono">
                         {row.budgetVnd.toLocaleString('vi-VN')}
                       </td>

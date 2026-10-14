@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   CheckCircle2,
   AlertTriangle,
@@ -121,12 +121,14 @@ export const StoreCoefficientHubSection: React.FC<StoreCoefficientHubSectionProp
   const normalizedPropMonth =
     selectedMonth === 'ALL' || !selectedMonth ? '2026/10' : selectedMonth;
   const [activeMonth, setActiveMonth] = useState<string>(normalizedPropMonth);
+  const [prevSelectedMonth, setPrevSelectedMonth] = useState<string>(selectedMonth);
 
-  useEffect(() => {
+  if (selectedMonth !== prevSelectedMonth) {
+    setPrevSelectedMonth(selectedMonth);
     if (selectedMonth && selectedMonth !== 'ALL' && selectedMonth !== activeMonth) {
       setActiveMonth(selectedMonth);
     }
-  }, [selectedMonth]);
+  }
 
   const handleSelectMonth = (monthVal: string) => {
     setActiveMonth(monthVal);
@@ -849,21 +851,13 @@ export const StoreCoefficientHubSection: React.FC<StoreCoefficientHubSectionProp
                     onClick={() => handleSelectMonth(m.value)}
                     className={`px-2.5 py-1 rounded-lg text-xs transition cursor-pointer flex items-center gap-1.5 ${
                       isSelected
-                        ? 'bg-surface text-ink font-bold shadow-2xs border border-line-strong'
+                        ? 'bg-surface text-ink font-semibold shadow-2xs border border-line-strong'
                         : 'text-ink-2 hover:text-ink'
                     }`}
                   >
                     <span>{m.label}</span>
-                    <span
-                      className={`text-[10px] px-1.5 py-0.2 rounded font-semibold ${
-                        m.isFutureSetup
-                          ? 'bg-amber-100 text-amber-900'
-                          : m.isClosedPeriod
-                            ? 'bg-slate-200 text-slate-700'
-                            : 'bg-emerald-100 text-emerald-800'
-                      }`}
-                    >
-                      {m.badge}
+                    <span className="text-2xs text-ink-3 font-medium">
+                      · {m.badge}
                     </span>
                   </button>
                 );
@@ -911,7 +905,7 @@ export const StoreCoefficientHubSection: React.FC<StoreCoefficientHubSectionProp
         {isManager && (
           <div className="p-3 rounded-xl bg-blue-50/50 dark:bg-blue-950/25 border border-blue-200/80 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+              <span className="text-xs font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
                 <CheckSquare className="w-4 h-4 text-brand" />
                 Setup hàng loạt đầu tháng ({selectedStoreIds.size} store đang chọn):
               </span>
@@ -1003,15 +997,16 @@ export const StoreCoefficientHubSection: React.FC<StoreCoefficientHubSectionProp
         <div className="bg-[#cfe0f5] dark:bg-blue-950/60 px-4 py-2.5 border-b border-line flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <Sliders className="w-4 h-4 text-blue-900 dark:text-blue-200 shrink-0" />
-            <h3 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100">
+            <h3 className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-slate-100">
               {STORE_COEFFICIENT_TABLE_2.title}
             </h3>
           </div>
-          <div className="flex items-center gap-2 text-2xs">
-            <span className="px-2 py-0.5 rounded bg-white/90 text-slate-800 font-semibold border border-blue-300">
+          <div className="flex items-center gap-2 text-2xs text-slate-800 dark:text-slate-200">
+            <span className="font-semibold">
               Kỳ áp dụng: {activeMonth}
             </span>
-            <span className="px-2 py-0.5 rounded bg-amber-100 text-amber-950 font-semibold border border-amber-300">
+            <span>·</span>
+            <span className="font-medium">
               Áp dụng theo store, không theo brand
             </span>
           </div>
@@ -1054,15 +1049,11 @@ export const StoreCoefficientHubSection: React.FC<StoreCoefficientHubSectionProp
                     title="Bấm để lọc danh sách gian hàng theo mức hệ số này"
                   >
                     <td className="py-2.5 px-4 border-r border-line text-center align-top">
-                      <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded text-xs font-semibold border ${getTierBadgeClass(
-                          row.tier
-                        )}`}
-                      >
+                      <span className="font-semibold text-xs text-ink">
                         {row.tier}
                       </span>
                     </td>
-                    <td className="py-2.5 px-4 border-r border-line text-center align-top font-mono font-bold text-sm text-ink">
+                    <td className="py-2.5 px-4 border-r border-line text-center align-top font-mono font-semibold text-sm text-ink">
                       {row.multiplierLabel}
                     </td>
                     <td className="py-2.5 px-4 border-r border-line align-top text-ink leading-relaxed">
@@ -1072,10 +1063,8 @@ export const StoreCoefficientHubSection: React.FC<StoreCoefficientHubSectionProp
                       {row.example}
                     </td>
                     {!compactReferenceTable && (
-                      <td className="py-2.5 px-4 border-l border-line text-center align-middle">
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-sunken text-ink font-mono font-semibold text-xs border border-line">
-                          {countInTier} store
-                        </span>
+                      <td className="py-2.5 px-4 border-l border-line text-center align-middle font-mono font-semibold text-xs text-ink">
+                        {countInTier} store
                       </td>
                     )}
                   </tr>
@@ -1132,12 +1121,12 @@ export const StoreCoefficientHubSection: React.FC<StoreCoefficientHubSectionProp
         >
           <div className="text-2xs text-ink-3 font-medium">Tổng gian hàng kỳ {activeMonth}</div>
           <div className="mt-1 flex items-baseline justify-between">
-            <span className="text-lg font-bold text-ink font-mono">{stats.total} store</span>
+            <span className="text-lg font-semibold text-ink font-mono">{stats.total} store</span>
             <span className="text-xs font-semibold text-brand font-mono">
               TB: {stats.avgMultiplier.toFixed(2).replace('.', ',')}
             </span>
           </div>
-          <div className="text-[11px] text-ink-3 mt-0.5">1 store = 1 hệ số trong cùng kỳ</div>
+          <div className="text-2xs text-ink-3 mt-0.5">1 store = 1 hệ số trong cùng kỳ</div>
         </button>
 
         <button
@@ -1157,10 +1146,10 @@ export const StoreCoefficientHubSection: React.FC<StoreCoefficientHubSectionProp
             <span>Đã duyệt đầu tháng</span>
             <CheckCircle2 className="w-3.5 h-3.5 text-positive" />
           </div>
-          <div className="mt-1 text-lg font-bold text-positive font-mono">
+          <div className="mt-1 text-lg font-semibold text-positive font-mono">
             {stats.countApprovedStart} / {stats.total}
           </div>
-          <div className="text-[11px] text-ink-3 mt-0.5">Quản lý duyệt chốt đầu kỳ</div>
+          <div className="text-2xs text-ink-3 mt-0.5">Quản lý duyệt chốt đầu kỳ</div>
         </button>
 
         <button
@@ -1180,10 +1169,10 @@ export const StoreCoefficientHubSection: React.FC<StoreCoefficientHubSectionProp
             <span>Điều chỉnh theo Plan</span>
             <FileCheck className="w-3.5 h-3.5 text-accent" />
           </div>
-          <div className="mt-1 text-lg font-bold text-accent font-mono">
+          <div className="mt-1 text-lg font-semibold text-accent font-mono">
             {stats.countAdjustedPlan} store
           </div>
-          <div className="text-[11px] text-ink-3 mt-0.5">Thay đổi scope lớn có Plan duyệt</div>
+          <div className="text-2xs text-ink-3 mt-0.5">Thay đổi scope lớn có Plan duyệt</div>
         </button>
 
         <button
@@ -1203,10 +1192,10 @@ export const StoreCoefficientHubSection: React.FC<StoreCoefficientHubSectionProp
             <span>Chờ quản lý duyệt</span>
             <AlertTriangle className="w-3.5 h-3.5 text-warning" />
           </div>
-          <div className="mt-1 text-lg font-bold text-warning font-mono">
+          <div className="mt-1 text-lg font-semibold text-warning font-mono">
             {stats.countPending} store
           </div>
-          <div className="text-[11px] text-ink-3 mt-0.5">Cần Đặng Thị Yến Nhi chốt đầu kỳ</div>
+          <div className="text-2xs text-ink-3 mt-0.5">Cần Đặng Thị Yến Nhi chốt đầu kỳ</div>
         </button>
 
         <div className="p-3 rounded-xl border border-line bg-surface flex flex-col justify-between">
@@ -1218,8 +1207,8 @@ export const StoreCoefficientHubSection: React.FC<StoreCoefficientHubSectionProp
               className="p-1 rounded bg-slate-100 text-slate-800 hover:bg-slate-200 transition cursor-pointer"
               title="Cơ bản (0,80)"
             >
-              <div className="text-[10px] font-semibold">0,80</div>
-              <div className="text-xs font-bold font-mono">{stats.countBasic}</div>
+              <div className="text-2xs font-semibold">0,80</div>
+              <div className="text-xs font-semibold font-mono">{stats.countBasic}</div>
             </button>
             <button
               type="button"
@@ -1227,8 +1216,8 @@ export const StoreCoefficientHubSection: React.FC<StoreCoefficientHubSectionProp
               className="p-1 rounded bg-blue-50 text-blue-800 hover:bg-blue-100 transition cursor-pointer"
               title="Tiêu chuẩn (1,00)"
             >
-              <div className="text-[10px] font-semibold">1,00</div>
-              <div className="text-xs font-bold font-mono">{stats.countStandard}</div>
+              <div className="text-2xs font-semibold">1,00</div>
+              <div className="text-xs font-semibold font-mono">{stats.countStandard}</div>
             </button>
             <button
               type="button"
@@ -1236,8 +1225,8 @@ export const StoreCoefficientHubSection: React.FC<StoreCoefficientHubSectionProp
               className="p-1 rounded bg-amber-50 text-amber-900 hover:bg-amber-100 transition cursor-pointer"
               title="Vừa (1,25)"
             >
-              <div className="text-[10px] font-semibold">1,25</div>
-              <div className="text-xs font-bold font-mono">{stats.countMedium}</div>
+              <div className="text-2xs font-semibold">1,25</div>
+              <div className="text-xs font-semibold font-mono">{stats.countMedium}</div>
             </button>
             <button
               type="button"
@@ -1245,8 +1234,8 @@ export const StoreCoefficientHubSection: React.FC<StoreCoefficientHubSectionProp
               className="p-1 rounded bg-rose-50 text-rose-800 hover:bg-rose-100 transition cursor-pointer"
               title="Khó (1,50)"
             >
-              <div className="text-[10px] font-semibold">1,50</div>
-              <div className="text-xs font-bold font-mono">{stats.countHard}</div>
+              <div className="text-2xs font-semibold">1,50</div>
+              <div className="text-xs font-semibold font-mono">{stats.countHard}</div>
             </button>
           </div>
         </div>
@@ -1305,7 +1294,7 @@ export const StoreCoefficientHubSection: React.FC<StoreCoefficientHubSectionProp
 
             <select
               value={approvalFilter}
-              onChange={e => setApprovalFilter(e.target.value as any)}
+              onChange={e => setApprovalFilter(e.target.value as typeof approvalFilter)}
               className="text-xs px-2.5 py-1.5 bg-surface border border-line-strong rounded-lg text-ink focus:outline-none focus:border-focus"
             >
               <option value="ALL">Tất cả trạng thái duyệt</option>
@@ -1453,8 +1442,8 @@ export const StoreCoefficientHubSection: React.FC<StoreCoefficientHubSectionProp
                         <div className="font-semibold text-ink text-xs flex items-center gap-1.5">
                           <span>{store.storeName}</span>
                           {store.isDirty && (
-                            <span className="px-1.5 py-0.2 rounded bg-brand/10 text-brand text-[10px] font-semibold">
-                              Vừa cập nhật
+                            <span className="text-brand text-2xs font-medium">
+                              · Vừa cập nhật
                             </span>
                           )}
                         </div>
@@ -1463,16 +1452,16 @@ export const StoreCoefficientHubSection: React.FC<StoreCoefficientHubSectionProp
                           <span className="text-2xs text-ink-2 font-medium">{store.brandName}</span>
                           {store.hasCompletedPeriodResult && (
                             <span
-                              className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-300 text-[10px] font-medium"
+                              className="inline-flex items-center gap-0.5 text-ink-3 text-2xs font-medium"
                               title="Store đã có kết quả nghiệm thu trong kỳ — Khóa tự nâng hệ số nếu không có Plan điều chỉnh được duyệt"
                             >
-                              <Lock className="w-2.5 h-2.5" /> Đã có KQ
+                              · <Lock className="w-2.5 h-2.5" /> Đã có KQ
                             </span>
                           )}
                         </div>
                       </td>
 
-                      {/* 2. Setup nhanh 4 mức Hệ số trên dòng (hoặc hiển thị Badge) */}
+                      {/* 2. Setup nhanh 4 mức Hệ số trên dòng (hoặc hiển thị chữ thuần) */}
                       <td className="py-3 px-3 text-center align-middle">
                         {isManager && bulkSetupMode ? (
                           <div className="space-y-1">
@@ -1486,7 +1475,7 @@ export const StoreCoefficientHubSection: React.FC<StoreCoefficientHubSectionProp
                                     onClick={() => handleInlineTierSelect(store, r.tier)}
                                     className={`px-2 py-1 rounded-lg font-mono text-xs transition cursor-pointer ${
                                       isActive
-                                        ? `${getTierBadgeClass(r.tier)} font-bold shadow-2xs ring-1 ring-ink/10`
+                                        ? `${getTierBadgeClass(r.tier)} font-semibold shadow-2xs ring-1 ring-ink/10`
                                         : 'text-ink-3 hover:text-ink hover:bg-surface/60 font-medium'
                                     }`}
                                     title={`${r.tier} (${r.multiplierLabel}): ${r.definition}`}
@@ -1496,22 +1485,15 @@ export const StoreCoefficientHubSection: React.FC<StoreCoefficientHubSectionProp
                                 );
                               })}
                             </div>
-                            <div className="text-[11px] font-semibold text-ink-2">
+                            <div className="text-2xs font-semibold text-ink-2">
                               Mức: <span className="text-ink">{norm.tier}</span> ({norm.label})
                             </div>
                           </div>
                         ) : (
-                          <div className="inline-flex items-center gap-2">
-                            <span
-                              className={`inline-flex items-center px-2.5 py-0.5 rounded text-xs font-semibold border ${getTierBadgeClass(
-                                norm.tier
-                              )}`}
-                            >
-                              {norm.tier}
-                            </span>
-                            <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-lg bg-sunken border border-line font-mono font-bold text-sm text-ink">
-                              {norm.label}
-                            </span>
+                          <div className="inline-flex items-center gap-1.5 text-xs">
+                            <span className="font-semibold text-ink">{norm.tier}</span>
+                            <span className="text-ink-3">·</span>
+                            <span className="font-mono font-semibold text-sm text-ink">{norm.label}</span>
                           </div>
                         )}
                       </td>
@@ -1527,25 +1509,8 @@ export const StoreCoefficientHubSection: React.FC<StoreCoefficientHubSectionProp
                             <span className="text-ink-3"> (Trực tiếp GĐ)</span>
                           )}
                         </div>
-                        <div className="mt-1 flex flex-wrap gap-1 text-[10px]">
-                          <span
-                            className="px-1.5 py-0.5 rounded bg-amber-50 text-amber-900 border border-amber-200/80"
-                            title="Content / Brand main [theo brand] nhận hệ số theo store này"
-                          >
-                            Content: {contentMainPic}
-                          </span>
-                          <span
-                            className="px-1.5 py-0.5 rounded bg-blue-50 text-blue-900 border border-blue-200/80"
-                            title="Plan / Strategy [theo brand] nhận hệ số theo store này"
-                          >
-                            Plan: {planStratPic}
-                          </span>
-                          <span
-                            className="px-1.5 py-0.5 rounded bg-purple-50 text-purple-900 border border-purple-200/80"
-                            title="Key Visual / SIS [theo brand] nhận hệ số theo store này"
-                          >
-                            KV/SIS: {kvSisPic}
-                          </span>
+                        <div className="mt-1 text-2xs text-ink-3">
+                          Content: <span className="text-ink-2">{contentMainPic}</span> · Plan: <span className="text-ink-2">{planStratPic}</span> · KV/SIS: <span className="text-ink-2">{kvSisPic}</span>
                         </div>
                       </td>
 
@@ -1558,9 +1523,9 @@ export const StoreCoefficientHubSection: React.FC<StoreCoefficientHubSectionProp
                           Ví dụ chuẩn: <span className="italic">{norm.rule.example}</span>
                         </div>
                         {store.coefficientAdjustedPlanCode && (
-                          <div className="mt-1 inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-50 text-blue-800 border border-blue-200 text-[10px] font-semibold">
+                          <div className="mt-1 inline-flex items-center gap-1 text-accent text-2xs font-semibold">
                             <FileCheck className="w-3 h-3" />
-                            <span>Plan điều chỉnh: {store.coefficientAdjustedPlanCode}</span>
+                            <span>Plan điều chỉnh: <span className="font-code">{store.coefficientAdjustedPlanCode}</span></span>
                           </div>
                         )}
                       </td>
@@ -1581,7 +1546,7 @@ export const StoreCoefficientHubSection: React.FC<StoreCoefficientHubSectionProp
                         {approvalStatus === 'APPROVED_START_OF_MONTH' ? (
                           <div>
                             <Status tone="positive">Đã duyệt đầu tháng</Status>
-                            <div className="text-[10px] text-ink-3 mt-0.5">
+                            <div className="text-2xs text-ink-3 mt-0.5">
                               {store.coefficientApprovedBy || 'Đặng Thị Yến Nhi'} •{' '}
                               {store.coefficientApprovedAt || `${activeMonth.replace('/', '-')}-01`}
                             </div>
@@ -1589,7 +1554,7 @@ export const StoreCoefficientHubSection: React.FC<StoreCoefficientHubSectionProp
                         ) : approvalStatus === 'ADJUSTED_BY_APPROVED_PLAN' ? (
                           <div>
                             <Status tone="info">Đã duyệt theo Plan</Status>
-                            <div className="text-[10px] text-ink-3 mt-0.5">
+                            <div className="text-2xs text-ink-3 mt-0.5">
                               {store.coefficientApprovedBy || 'Đặng Thị Yến Nhi'} •{' '}
                               {store.coefficientApprovedAt || `${activeMonth.replace('/', '-')}-09`}
                             </div>
@@ -1597,7 +1562,7 @@ export const StoreCoefficientHubSection: React.FC<StoreCoefficientHubSectionProp
                         ) : (
                           <div>
                             <Status tone="warning">Chờ GĐ chốt đầu tháng</Status>
-                            <div className="text-[10px] text-ink-3 mt-0.5">
+                            <div className="text-2xs text-ink-3 mt-0.5">
                               Bấm chọn hệ số hoặc Duyệt
                             </div>
                           </div>
@@ -1752,19 +1717,15 @@ export const StoreCoefficientHubSection: React.FC<StoreCoefficientHubSectionProp
                       }`}
                     >
                       <div className="flex items-center justify-between gap-2">
-                        <span
-                          className={`px-2 py-0.5 rounded text-xs font-semibold border ${getTierBadgeClass(
-                            row.tier
-                          )}`}
-                        >
+                        <span className="text-xs font-semibold text-ink">
                           {row.tier}
                         </span>
-                        <span className="font-mono font-bold text-sm text-ink">
+                        <span className="font-mono font-semibold text-sm text-ink">
                           Hệ số: {row.multiplierLabel}
                         </span>
                       </div>
                       <p className="text-2xs text-ink mt-1.5 leading-snug">{row.definition}</p>
-                      <p className="text-[11px] text-ink-3 mt-1 italic">VD: {row.example}</p>
+                      <p className="text-2xs text-ink-3 mt-1 italic">VD: {row.example}</p>
                     </button>
                   );
                 })}

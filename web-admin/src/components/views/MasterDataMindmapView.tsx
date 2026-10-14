@@ -663,14 +663,14 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
       <div className="bg-surface border border-line rounded-xl p-3.5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
           <div className="flex items-center gap-2 flex-wrap flex-1">
             {/* Toggle B2C Only vs All */}
-            <div className="inline-flex p-0.5 bg-slate-200/70 rounded-lg text-xs font-medium">
+            <div className="inline-flex p-0.5 bg-sunken rounded-lg text-xs font-medium">
               <button
                 type="button"
                 onClick={() => setFilterB2cOnly(true)}
                 className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-all ${
                   filterB2cOnly
-                    ? 'bg-white text-blue-700 shadow-2xs'
-                    : 'text-slate-600 hover:text-slate-900'
+                    ? 'bg-white text-accent shadow-2xs'
+                    : 'text-ink-2 hover:text-ink'
                 }`}
               >
                 Gian B2C làm plan
@@ -680,8 +680,8 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
                 onClick={() => setFilterB2cOnly(false)}
                 className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-all ${
                   !filterB2cOnly
-                    ? 'bg-white text-slate-900 shadow-2xs'
-                    : 'text-slate-600 hover:text-slate-900'
+                    ? 'bg-white text-ink shadow-2xs'
+                    : 'text-ink-2 hover:text-ink'
                 }`}
               >
                 Tất cả gian ({stores.length})
@@ -690,18 +690,18 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
 
             {/* Search Input */}
             <div className="relative min-w-[200px] flex-1 max-w-xs">
-              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-ink-3" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 placeholder="Tìm Brand, Gian hàng, PIC chính, SKU..."
-                className="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-xs"
+                className="w-full pl-8 pr-3 py-1.5 bg-canvas border border-line rounded-lg text-ink placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/20 text-xs"
               />
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-3 hover:text-ink-2"
                 >
                   <X className="w-3 h-3" />
                 </button>
@@ -712,7 +712,7 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
             <select
               value={filterPlatform}
               onChange={e => setFilterPlatform(e.target.value as 'ALL' | 'TIKTOK_SHOP' | 'SHOPEE_MALL' | 'LAZADA')}
-              className="bg-slate-50 border border-slate-200 text-slate-700 rounded-lg px-2.5 py-1.5 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-xs"
+              className="bg-canvas border border-line text-ink-2 rounded-lg px-2.5 py-1.5 focus:bg-white focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/20 text-xs"
             >
               <option value="ALL">Tất cả sàn</option>
               <option value="TIKTOK_SHOP">TikTok Shop</option>
@@ -724,7 +724,7 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
             <select
               value={filterBrandId}
               onChange={e => setFilterBrandId(e.target.value)}
-              className="bg-slate-50 border border-slate-200 text-slate-700 rounded-lg px-2.5 py-1.5 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-xs"
+              className="bg-canvas border border-line text-ink-2 rounded-lg px-2.5 py-1.5 focus:bg-white focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/20 text-xs"
             >
               <option value="ALL">Tất cả Brand</option>
               {brands.map(b => (
@@ -736,7 +736,7 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
             <select
               value={filterPic}
               onChange={e => setFilterPic(e.target.value)}
-              className="bg-slate-50 border border-slate-200 text-slate-700 rounded-lg px-2.5 py-1.5 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-xs"
+              className="bg-canvas border border-line text-ink-2 rounded-lg px-2.5 py-1.5 focus:bg-white focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/20 text-xs"
             >
               <option value="ALL">Tất cả PIC</option>
               {allPicOptions.map(pic => (
@@ -752,8 +752,8 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
               onClick={() => setShowStaffBranches(prev => !prev)}
               className={`px-2.5 py-1.5 rounded-lg border text-xs font-semibold flex items-center gap-1.5 transition ${
                 showStaffBranches
-                  ? 'bg-amber-50 border-amber-300 text-amber-800'
-                  : 'bg-white border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                  ? 'bg-warning-soft border-warning/20 text-warning'
+                  : 'bg-white border-line text-ink-2 hover:text-ink hover:bg-canvas'
               }`}
               title="Bật/tắt hiển thị nhánh nhân sự & PIC"
             >
@@ -765,8 +765,8 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
               onClick={() => setShowProductBranches(prev => !prev)}
               className={`px-2.5 py-1.5 rounded-lg border text-xs font-semibold flex items-center gap-1.5 transition ${
                 showProductBranches
-                  ? 'bg-blue-50 border-blue-300 text-blue-800'
-                  : 'bg-white border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                  ? 'bg-accent-soft border-accent/20 text-accent'
+                  : 'bg-white border-line text-ink-2 hover:text-ink hover:bg-canvas'
               }`}
               title="Bật/tắt hiển thị nhánh sản phẩm & Store SKUs"
             >
@@ -774,36 +774,36 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
               <span>Sản phẩm</span>
             </button>
 
-            <div className="h-4 w-px bg-slate-300 mx-1" />
+            <div className="h-4 w-px bg-sunken mx-1" />
 
             <button
               onClick={expandAll}
-              className="px-2.5 py-1.5 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg text-slate-700 font-medium transition"
+              className="px-2.5 py-1.5 bg-white hover:bg-canvas border border-line rounded-lg text-ink-2 font-medium transition"
               title="Mở rộng tất cả các nhánh"
             >
               Xổ hết
             </button>
             <button
               onClick={collapseAll}
-              className="px-2.5 py-1.5 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg text-slate-700 font-medium transition"
+              className="px-2.5 py-1.5 bg-white hover:bg-canvas border border-line rounded-lg text-ink-2 font-medium transition"
               title="Thu gọn về gốc"
             >
               Thu Lại
             </button>
 
             {/* Zoom Controls */}
-            <div className="flex items-center bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-slate-700">
+            <div className="flex items-center bg-canvas border border-line rounded-lg px-2 py-1 text-ink-2">
               <button
                 onClick={() => setZoomLevel(prev => Math.max(75, prev - 10))}
-                className="px-1 hover:text-slate-900 font-semibold"
+                className="px-1 hover:text-ink font-semibold"
                 title="Thu nhỏ"
               >
                 -
               </button>
-              <span className="text-2xs px-1 font-mono">{zoomLevel}%</span>
+              <span className="text-2xs font-mono">{zoomLevel}%</span>
               <button
                 onClick={() => setZoomLevel(prev => Math.min(130, prev + 10))}
-                className="px-1 hover:text-slate-900 font-semibold"
+                className="px-1 hover:text-ink font-semibold"
                 title="Phóng to"
               >
                 +
@@ -815,7 +815,7 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
       {/* Main Grid: Mindmap Canvas (Left/Center) + Node Inspector Drawer (Right) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         {/* Mindmap Interactive Tree Canvas */}
-        <div className="lg:col-span-8 bg-slate-50/70 border border-slate-200 rounded-2xl p-4 sm:p-6 shadow-inner overflow-x-auto min-h-[620px] relative">
+        <div className="lg:col-span-8 bg-canvas border border-line rounded-2xl p-4 sm:p-6 shadow-inner overflow-x-auto min-h-[620px] relative">
           {/* Subtle Grid Background */}
           <div 
             className="absolute inset-0 opacity-[0.35] pointer-events-none"
@@ -839,28 +839,28 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
                   }}
                   className={`w-64 p-4 rounded-2xl cursor-pointer transition-all border shadow-sm ${
                     expandedNodes.has('root')
-                      ? 'bg-white border-blue-500 ring-2 ring-blue-500/20 shadow-md'
-                      : 'bg-white border-slate-200 hover:border-slate-400'
+                      ? 'bg-white border-accent/20 ring-2 ring-accent/20 shadow-md'
+                      : 'bg-white border-line hover:border-line-strong'
                   }`}
                 >
                   <div className="flex items-center justify-between">
-                    <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-xs">
+                    <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center text-white shadow-xs">
                       <Building2 className="w-5 h-5" />
                     </div>
-                    <span className="text-2xs font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                    <span className="text-2xs font-semibold text-accent -accent/20">
                       MASTER ROOT
                     </span>
                   </div>
-                  <h3 className="text-sm font-semibold text-slate-900 mt-3">Hệ thống Master Data B2C</h3>
-                  <p className="text-2xs text-slate-500 mt-0.5">
+                  <h3 className="text-sm font-semibold text-ink mt-3">Hệ thống Master Data B2C</h3>
+                  <p className="text-2xs text-ink-3 mt-0.5">
                     Quản trị tập trung {brands.length} Brands & {stores.length} Gian Hàng
                   </p>
                   
-                  <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-2xs">
-                    <span className="text-slate-500 flex items-center gap-1">
-                      <Store className="w-3 h-3 text-blue-600" /> {stores.length} Shops
+                  <div className="mt-3 pt-2.5 border-t border-line flex items-center justify-between text-2xs">
+                    <span className="text-ink-3 flex items-center gap-1">
+                      <Store className="w-3 h-3 text-accent" /> {stores.length} Shops
                     </span>
-                    <button className="text-blue-600 hover:text-blue-700 font-semibold flex items-center gap-0.5">
+                    <button className="text-accent hover:text-accent font-semibold flex items-center gap-0.5">
                       {expandedNodes.has('root') ? (
                         <><span>Thu gọn</span> <ChevronDown className="w-3.5 h-3.5" /></>
                       ) : (
@@ -873,7 +873,7 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
 
               {/* LEVEL 1: BRAND NODES */}
               {expandedNodes.has('root') && (
-                <div className="space-y-6 relative border-l-2 border-slate-300 pl-8">
+                <div className="space-y-6 relative border-l-2 border-line-strong pl-8">
                   {brands.map(brand => {
                     const isBrandExpanded = expandedNodes.has(brand.id);
                     const brandStores = filteredStores.filter(s => s.brandId === brand.id);
@@ -888,7 +888,7 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
                     return (
                       <div key={brand.id} className="relative">
                         {/* Connecting branch curve indicator */}
-                        <div className="absolute -left-8 top-6 w-8 h-0.5 bg-slate-300" />
+                        <div className="absolute -left-8 top-6 w-8 h-0.5 bg-sunken" />
 
                         <div className="flex items-start gap-8">
                           {/* Brand Node Card */}
@@ -899,45 +899,45 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
                             }}
                             className={`w-72 p-3.5 rounded-xl cursor-pointer transition-all border shadow-xs ${
                               isBrandExpanded
-                                ? 'bg-white border-blue-500 shadow-md ring-2 ring-blue-500/10'
-                                : 'bg-white border-slate-200 hover:border-slate-300'
+                                ? 'bg-white border-accent/20 shadow-md ring-2 ring-accent/20'
+                                : 'bg-white border-line hover:border-line-strong'
                             }`}
                           >
                             <div className="flex items-center justify-between">
-                              <span className="text-2xs font-semibold px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">
+                              <span className="text-2xs font-semibold text-accent -accent/20">
                                 BRAND TỔNG
                               </span>
-                              <span className="text-2xs text-slate-500">
+                              <span className="text-2xs text-ink-3">
                                 {brandStores.length} Gian Hàng
                               </span>
                             </div>
 
                             <div className="mt-2 flex items-center gap-2.5">
-                              <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center font-semibold text-slate-700 text-xs border border-slate-200 shrink-0">
+                              <div className="w-8 h-8 rounded-lg bg-sunken flex items-center justify-center font-semibold text-ink-2 text-xs border border-line shrink-0">
                                 {brand.name.substring(0, 2).toUpperCase()}
                               </div>
                               <div className="min-w-0">
-                                <h4 className="text-xs font-semibold text-slate-900 truncate">{brand.name}</h4>
-                                <div className="text-2xs text-slate-500 truncate">{brand.category}</div>
+                                <h4 className="text-xs font-semibold text-ink truncate">{brand.name}</h4>
+                                <div className="text-2xs text-ink-3 truncate">{brand.category}</div>
                               </div>
                             </div>
 
-                            <div className="mt-2.5 pt-2 border-t border-slate-100 grid grid-cols-2 gap-2 text-2xs">
+                            <div className="mt-2.5 pt-2 border-t border-line grid grid-cols-2 gap-2 text-2xs">
                               <div>
-                                <span className="text-slate-500 block">Account PIC:</span>
-                                <span className="font-semibold text-slate-700 truncate block">{brand.accountPic || 'Chưa gán'}</span>
+                                <span className="text-ink-3 block">Account PIC:</span>
+                                <span className="font-semibold text-ink-2 truncate block">{brand.accountPic || 'Chưa gán'}</span>
                               </div>
                               <div>
-                                <span className="text-slate-500 block">Ngân sách Plan:</span>
-                                <span className="font-semibold text-blue-700">{formatVndShort(brand.planBudget || 0)}</span>
+                                <span className="text-ink-3 block">Ngân sách Plan:</span>
+                                <span className="font-semibold text-accent">{formatVndShort(brand.planBudget || 0)}</span>
                               </div>
                             </div>
 
                             <div className="mt-2 flex items-center justify-between text-2xs pt-1">
-                              <span className="text-slate-500">
+                              <span className="text-ink-3">
                                 {brand.heroProducts?.length || 0} Hero SKUs
                               </span>
-                              <span className="text-blue-600 font-semibold flex items-center gap-0.5">
+                              <span className="text-accent font-semibold flex items-center gap-0.5">
                                 {isBrandExpanded ? (
                                   <><span>Thu gian hàng</span> <ChevronDown className="w-3 h-3" /></>
                                 ) : (
@@ -949,9 +949,9 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
 
                           {/* LEVEL 2: STORE NODES OF THIS BRAND */}
                           {isBrandExpanded && (
-                            <div className="space-y-6 relative border-l-2 border-slate-300 pl-8">
+                            <div className="space-y-6 relative border-l-2 border-line-strong pl-8">
                               {brandStores.length === 0 ? (
-                                <div className="p-3 bg-white border border-dashed border-slate-300 rounded-lg text-slate-500 text-xs italic">
+                                <div className="p-3 bg-white border border-dashed border-line-strong rounded-lg text-ink-3 text-xs italic">
                                   Chưa có gian hàng nào khớp bộ lọc.
                                 </div>
                               ) : (
@@ -960,7 +960,7 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
 
                                   return (
                                     <div key={store.id} className="relative">
-                                      <div className="absolute -left-8 top-6 w-8 h-0.5 bg-slate-300" />
+                                      <div className="absolute -left-8 top-6 w-8 h-0.5 bg-sunken" />
 
                                       <div className="flex items-start gap-8">
                                         {/* Store Node Card */}
@@ -971,57 +971,57 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
                                           }}
                                           className={`w-72 p-3.5 rounded-xl cursor-pointer transition-all border shadow-xs ${
                                             isStoreExpanded
-                                              ? 'bg-white border-blue-500 shadow-md ring-2 ring-blue-500/10'
-                                              : 'bg-white border-slate-200 hover:border-slate-300'
+                                              ? 'bg-white border-accent/20 shadow-md ring-2 ring-accent/20'
+                                              : 'bg-white border-line hover:border-line-strong'
                                           }`}
                                         >
                                           <div className="flex items-center justify-between gap-1">
                                             {renderPlatformBadge(store.platform)}
-                                            <span className="text-2xs font-mono text-slate-500 truncate">
+                                            <span className="text-2xs font-mono text-ink-3 truncate">
                                               {store.storeId}
                                             </span>
                                           </div>
 
                                           <div className="mt-2">
-                                            <h5 className="text-xs font-semibold text-slate-900 truncate flex items-center gap-1.5">
-                                              <Store className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                                            <h5 className="text-xs font-semibold text-ink truncate flex items-center gap-1.5">
+                                              <Store className="w-3.5 h-3.5 text-accent shrink-0" />
                                               <span className="truncate">{store.storeName}</span>
                                             </h5>
                                           </div>
 
                                           {/* Key Highlight: 1 PIC Chính */}
-                                          <div className="mt-2.5 p-2 rounded-lg bg-amber-50 border border-amber-200">
+                                          <div className="mt-2.5 p-2 rounded-lg bg-warning-soft border border-warning/20">
                                             <div className="flex items-center justify-between text-2xs">
-                                              <span className="text-amber-800 font-semibold flex items-center gap-1">
-                                                <Crown className="w-3 h-3 text-amber-600" />
+                                              <span className="text-warning font-semibold flex items-center gap-1">
+                                                <Crown className="w-3 h-3 text-warning" />
                                                 1 PIC CHÍNH:
                                               </span>
-                                              <span className="text-slate-900 font-semibold truncate">
+                                              <span className="text-ink font-semibold truncate">
                                                 {store.primaryPic}
                                               </span>
                                             </div>
-                                            <div className="text-2xs text-amber-700 mt-0.5">
+                                            <div className="text-2xs text-warning mt-0.5">
                                               Chủ trì lập kế hoạch & phân bổ ngân sách
                                             </div>
                                           </div>
 
-                                          <div className="mt-2 pt-2 border-t border-slate-100 grid grid-cols-2 gap-1.5 text-2xs">
+                                          <div className="mt-2 pt-2 border-t border-line grid grid-cols-2 gap-1.5 text-2xs">
                                             <div>
-                                              <span className="text-slate-500 block">Ngân sách:</span>
-                                              <span className="font-semibold text-slate-900">{formatVndShort(store.monthlyBudget)}</span>
+                                              <span className="text-ink-3 block">Ngân sách:</span>
+                                              <span className="font-semibold text-ink">{formatVndShort(store.monthlyBudget)}</span>
                                             </div>
                                             <div>
-                                              <span className="text-slate-500 block">Target GMV:</span>
-                                              <span className="font-semibold text-emerald-700">{formatVndShort(store.monthlyTargetGmv)}</span>
+                                              <span className="text-ink-3 block">Target GMV:</span>
+                                              <span className="font-semibold text-positive">{formatVndShort(store.monthlyTargetGmv)}</span>
                                             </div>
                                           </div>
 
                                           {/* Sub-branch action toggles */}
-                                          <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between text-2xs">
-                                            <span className="text-slate-500">
+                                          <div className="mt-2.5 pt-2 border-t border-line flex items-center justify-between text-2xs">
+                                            <span className="text-ink-3">
                                               {store.memberPics.length} PIC phụ • {store.storeProducts.length} SKUs
                                             </span>
-                                            <span className="text-blue-600 font-semibold flex items-center gap-0.5">
+                                            <span className="text-accent font-semibold flex items-center gap-0.5">
                                               {isStoreExpanded ? (
                                                 <><span>Thu nhánh</span> <ChevronDown className="w-3 h-3" /></>
                                               ) : (
@@ -1033,16 +1033,16 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
 
                                         {/* LEVEL 3: 2 SUB-BRANCHES (NHÂN SỰ & SẢN PHẨM) */}
                                         {isStoreExpanded && (
-                                          <div className="space-y-4 relative border-l-2 border-blue-300 pl-8">
+                                          <div className="space-y-4 relative border-l-2 border-accent/20 pl-8">
                                             {/* Sub-branch 1: NHÂN SỰ & PIC (Staff Allocation) */}
                                             {showStaffBranches && (
                                               <div className="relative">
-                                                <div className="absolute -left-8 top-5 w-8 h-0.5 bg-blue-300" />
+                                                <div className="absolute -left-8 top-5 w-8 h-0.5 bg-accent-soft" />
                                                 
-                                                <div className="w-64 bg-white border border-amber-200 rounded-xl p-3 shadow-xs">
-                                                  <div className="flex items-center justify-between pb-2 border-b border-amber-100">
-                                                    <span className="text-2xs font-semibold text-amber-900 flex items-center gap-1">
-                                                      <Users className="w-3 h-3 text-amber-600" />
+                                                <div className="w-64 bg-white border border-warning/20 rounded-xl p-3 shadow-xs">
+                                                  <div className="flex items-center justify-between pb-2 border-b border-warning/20">
+                                                    <span className="text-2xs font-semibold text-warning flex items-center gap-1">
+                                                      <Users className="w-3 h-3 text-warning" />
                                                       ĐỘI NGŨ PHỤ TRÁCH ({1 + store.memberPics.length})
                                                     </span>
                                                     <button
@@ -1057,7 +1057,7 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
                                                         setIsEditingStorePic(true);
                                                         setSelectedNode({ type: 'STORE', data: store });
                                                       }}
-                                                      className="p-1 hover:bg-amber-100 text-amber-700 rounded transition"
+                                                      className="p-1 hover:bg-warning-soft text-warning rounded transition"
                                                       title="Phân công lại PIC"
                                                     >
                                                       <Edit3 className="w-3 h-3" />
@@ -1065,16 +1065,16 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
                                                   </div>
 
                                                   {/* PIC Chính Highlight */}
-                                                  <div className="mt-2 p-2 rounded-lg bg-amber-50 border border-amber-200">
+                                                  <div className="mt-2 p-2 rounded-lg bg-warning-soft border border-warning/20">
                                                     <div className="flex items-center gap-2">
-                                                      <div className="w-6 h-6 rounded-full bg-amber-600 flex items-center justify-center text-white shrink-0">
+                                                      <div className="w-6 h-6 rounded-full bg-warning flex items-center justify-center text-white shrink-0">
                                                         <ShieldCheck className="w-3.5 h-3.5" />
                                                       </div>
                                                       <div className="min-w-0">
-                                                        <div className="text-2xs font-semibold text-amber-900 truncate">
+                                                        <div className="text-2xs font-semibold text-warning truncate">
                                                           {store.primaryPic}
                                                         </div>
-                                                        <div className="text-2xs text-amber-700">
+                                                        <div className="text-2xs text-warning">
                                                           PIC chính (chịu trách nhiệm số)
                                                         </div>
                                                       </div>
@@ -1083,29 +1083,29 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
 
                                                   {/* Nhân sự thành viên (Sub-PICs) */}
                                                   <div className="mt-2 space-y-1">
-                                                    <div className="text-2xs font-semibold text-slate-500">
+                                                    <div className="text-2xs font-semibold text-ink-3">
                                                       Nhân sự phối hợp:
                                                     </div>
                                                     {store.memberPics.length === 0 ? (
-                                                      <div className="text-2xs text-slate-500 italic">Chưa thêm PIC hỗ trợ</div>
+                                                      <div className="text-2xs text-ink-3 italic">Chưa thêm PIC hỗ trợ</div>
                                                     ) : (
                                                       store.memberPics.map((picName, pIdx) => (
                                                         <div
                                                           key={pIdx}
-                                                          className="flex items-center justify-between px-2 py-1 bg-slate-50 rounded text-2xs border border-slate-200"
+                                                          className="flex items-center justify-between px-2 py-1 bg-canvas rounded text-2xs border border-line"
                                                         >
-                                                          <span className="text-slate-700 font-medium truncate flex items-center gap-1.5">
-                                                            <span className="w-1.5 h-1.5 rounded-full bg-blue-600" />
+                                                          <span className="text-ink-2 font-medium truncate flex items-center gap-1.5">
+                                                            <span className="w-1.5 h-1.5 rounded-full bg-accent" />
                                                             {picName}
                                                           </span>
-                                                          <span className="text-2xs text-slate-500">Phối hợp</span>
+                                                          <span className="text-2xs text-ink-3">Phối hợp</span>
                                                         </div>
                                                       ))
                                                     )}
                                                   </div>
 
                                                   {store.assignmentNotes && (
-                                                    <div className="mt-2 p-1.5 bg-amber-50/50 rounded text-2xs text-amber-900 border border-amber-200/60 line-clamp-2">
+                                                    <div className="mt-2 p-1.5 bg-warning-soft rounded text-2xs text-warning border border-warning/20/60 line-clamp-2">
                                                       {store.assignmentNotes}
                                                     </div>
                                                   )}
@@ -1116,15 +1116,15 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
                                             {/* Sub-branch 2: SẢN PHẨM & STORE SKUs */}
                                             {showProductBranches && (
                                               <div className="relative">
-                                                <div className="absolute -left-8 top-5 w-8 h-0.5 bg-blue-300" />
+                                                <div className="absolute -left-8 top-5 w-8 h-0.5 bg-accent-soft" />
 
-                                                <div className="w-72 bg-white border border-blue-200 rounded-xl p-3 shadow-xs">
-                                                  <div className="flex items-center justify-between pb-2 border-b border-blue-100">
-                                                    <span className="text-2xs font-semibold text-blue-900 flex items-center gap-1">
-                                                      <Package className="w-3 h-3 text-blue-600" />
+                                                <div className="w-72 bg-white border border-accent/20 rounded-xl p-3 shadow-xs">
+                                                  <div className="flex items-center justify-between pb-2 border-b border-accent/20">
+                                                    <span className="text-2xs font-semibold text-accent flex items-center gap-1">
+                                                      <Package className="w-3 h-3 text-accent" />
                                                       STORE SKUS MAPPING ({store.storeProducts.length})
                                                     </span>
-                                                    <span className="text-2xs text-slate-500">
+                                                    <span className="text-2xs text-ink-3">
                                                       ID sàn riêng
                                                     </span>
                                                   </div>
@@ -1134,44 +1134,44 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
                                                       <div
                                                         key={prod.platformProductId}
                                                         onClick={() => setSelectedNode({ type: 'PRODUCT', data: { ...prod, storeName: store.storeName, platform: store.platform } })}
-                                                        className="p-2 bg-slate-50 hover:bg-blue-50/50 rounded-lg border border-slate-200 transition cursor-pointer"
+                                                        className="p-2 bg-canvas hover:bg-accent-soft rounded-lg border border-line transition cursor-pointer"
                                                       >
                                                         <div className="flex items-center justify-between">
-                                                          <span className="text-2xs font-semibold px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">
+                                                          <span className="text-2xs font-semibold .5 text-accent -accent/20">
                                                             {prod.isHeroSku ? 'HERO SKU' : 'CORE SKU'}
                                                           </span>
-                                                          <span className="text-2xs font-mono text-emerald-700 font-semibold">
+                                                          <span className="text-2xs font-mono text-positive font-semibold">
                                                             {prod.commissionRate}% hoa hồng
                                                           </span>
                                                         </div>
 
-                                                        <div className="text-2xs font-semibold text-slate-900 mt-1 truncate">
+                                                        <div className="text-2xs font-semibold text-ink mt-1 truncate">
                                                           {prod.productName}
                                                         </div>
 
                                                         {/* Highlighting the Core Logic: Platform Product ID vs Master SKU */}
-                                                        <div className="mt-1.5 p-1.5 bg-white rounded text-2xs space-y-0.5 border border-slate-200">
+                                                        <div className="mt-1.5 p-1.5 bg-white rounded text-2xs space-y-0.5 border border-line">
                                                           <div className="flex items-center justify-between">
-                                                            <span className="text-slate-500">Store Item ID:</span>
-                                                            <span className="font-mono text-blue-700 font-semibold truncate">
+                                                            <span className="text-ink-3">Store Item ID:</span>
+                                                            <span className="font-mono text-accent font-semibold truncate">
                                                               {prod.platformProductId}
                                                             </span>
                                                           </div>
                                                           <div className="flex items-center justify-between">
-                                                            <span className="text-slate-500">Master SKU:</span>
-                                                            <span className="font-mono text-slate-600 truncate">
+                                                            <span className="text-ink-3">Master SKU:</span>
+                                                            <span className="font-mono text-ink-2 truncate">
                                                               {prod.masterSku}
                                                             </span>
                                                           </div>
                                                         </div>
 
-                                                        <div className="mt-1 text-2xs text-slate-500 flex items-center justify-between">
-                                                          <span>Giá shop: <strong className="text-slate-800">{prod.storePrice.toLocaleString('vi-VN')} đ</strong></span>
+                                                        <div className="mt-1 text-2xs text-ink-3 flex items-center justify-between">
+                                                          <span>Giá shop: <strong className="text-ink">{prod.storePrice.toLocaleString('vi-VN')} đ</strong></span>
                                                           <a
                                                             href={prod.platformUrl}
                                                             target="_blank"
                                                             rel="noreferrer"
-                                                            className="text-blue-600 hover:underline flex items-center gap-0.5 text-2xs font-medium"
+                                                            className="text-accent hover:underline flex items-center gap-0.5 text-2xs font-medium"
                                                             onClick={e => e.stopPropagation()}
                                                           >
                                                             Link sàn <ExternalLink className="w-2.5 h-2.5" />
@@ -1205,24 +1205,24 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
         {/* Right Column: Node Inspector & Master Data Detail Editor */}
         <div className="lg:col-span-4 space-y-4">
           {/* Main Inspector Card */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-xs">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-200">
+          <div className="bg-white border border-line rounded-2xl p-4 sm:p-5 shadow-xs">
+            <div className="flex items-center justify-between pb-3 border-b border-line">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-600 font-semibold">
+                <div className="w-8 h-8 rounded-lg bg-accent-soft border border-accent/20 flex items-center justify-center text-accent font-semibold">
                   <Info className="w-4 h-4" />
                 </div>
                 <div>
-                  <h4 className="text-xs font-semibold text-slate-900">
+                  <h4 className="text-xs font-semibold text-ink">
                     Bảng điều khiển Master Data
                   </h4>
-                  <div className="text-2xs text-slate-500">
+                  <div className="text-2xs text-ink-3">
                     Chi tiết thực thể đang chọn
                   </div>
                 </div>
               </div>
 
               {selectedNode && (
-                <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-slate-100 text-slate-700 border border-slate-200 font-mono">
+                <span className="text-2xs font-semibold text-ink-2 -line font-mono">
                   {selectedNode.type}
                 </span>
               )}
@@ -1231,7 +1231,7 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
             {/* Content for Selected Node */}
             <div className="mt-4 text-xs">
               {!selectedNode ? (
-                <div className="p-6 text-center text-slate-500 italic">
+                <div className="p-6 text-center text-ink-3 italic">
                   Nhấn vào bất kỳ Node nào trên sơ đồ Mindmap để xem và điều chỉnh dữ liệu gốc.
                 </div>
               ) : selectedNode.type === 'STORE' ? (
@@ -1240,23 +1240,23 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
                   <div>
                     <div className="flex items-center justify-between">
                       {renderPlatformBadge(selectedNode.data.platform)}
-                      <span className="text-2xs font-mono text-slate-500">
+                      <span className="text-2xs font-mono text-ink-3">
                         ID: {selectedNode.data.storeId}
                       </span>
                     </div>
-                    <h3 className="text-sm font-semibold text-slate-900 mt-1.5">
+                    <h3 className="text-sm font-semibold text-ink mt-1.5">
                       {selectedNode.data.storeName}
                     </h3>
-                    <div className="text-2xs text-slate-500">
-                      Thuộc Brand: <strong className="text-slate-800">{selectedNode.data.brandName}</strong>
+                    <div className="text-2xs text-ink-3">
+                      Thuộc Brand: <strong className="text-ink">{selectedNode.data.brandName}</strong>
                     </div>
                   </div>
 
                   {/* Section: Phân Công PIC Chính & Phân Quyền */}
-                  <div className="p-3.5 bg-amber-50/70 border border-amber-200 rounded-xl">
+                  <div className="p-3.5 bg-warning-soft border border-warning/20 rounded-xl">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-2xs font-semibold text-amber-900 flex items-center gap-1.5">
-                        <Crown className="w-4 h-4 text-amber-600" />
+                      <span className="text-2xs font-semibold text-warning flex items-center gap-1.5">
+                        <Crown className="w-4 h-4 text-warning" />
                         Trách nhiệm & PIC chính
                       </span>
                       <button
@@ -1269,34 +1269,34 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
                           });
                           setIsEditingStorePic(true);
                         }}
-                        className="px-2.5 py-1 bg-white hover:bg-amber-100 text-amber-800 border border-amber-300 rounded-lg text-2xs font-semibold flex items-center gap-1 transition shadow-2xs"
+                        className="px-2.5 py-1 bg-white hover:bg-warning-soft text-warning border border-warning/20 rounded-lg text-2xs font-semibold flex items-center gap-1 transition shadow-2xs"
                       >
                         <Edit3 className="w-3 h-3" /> Đổi PIC
                       </button>
                     </div>
 
-                    <div className="p-2.5 bg-white rounded-lg border border-amber-200 flex items-center justify-between shadow-2xs">
+                    <div className="p-2.5 bg-white rounded-lg border border-warning/20 flex items-center justify-between shadow-2xs">
                       <div>
-                        <div className="text-2xs text-slate-500">1 PIC chính phụ trách:</div>
-                        <div className="text-xs font-semibold text-slate-900 flex items-center gap-1.5 mt-0.5">
-                          <span className="px-1.5 py-0.5 rounded text-2xs font-semibold bg-amber-100 text-amber-800 border border-amber-200">PIC CHÍNH</span>
+                        <div className="text-2xs text-ink-3">1 PIC chính phụ trách:</div>
+                        <div className="text-xs font-semibold text-ink flex items-center gap-1.5 mt-0.5">
+                          <span className=".5 text-2xs font-semibold text-warning -warning/20">PIC CHÍNH</span>
                           <span>{selectedNode.data.primaryPic}</span>
                         </div>
                       </div>
-                      <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-amber-100 text-amber-800 border border-amber-200">
+                      <span className="text-2xs font-semibold text-warning -warning/20">
                         Lead Shop
                       </span>
                     </div>
 
                     <div className="mt-2.5 space-y-1">
-                      <div className="text-2xs text-slate-600 font-semibold">
+                      <div className="text-2xs text-ink-2 font-semibold">
                         Nhân sự phối hợp ({selectedNode.data.memberPics.length}):
                       </div>
                       <div className="flex flex-wrap gap-1.5">
                         {selectedNode.data.memberPics.map((pName: string, i: number) => (
                           <span
                             key={i}
-                            className="px-2 py-0.5 rounded bg-white text-slate-700 border border-slate-200 text-2xs"
+                            className="bg-white text-ink-2 -line text-2xs"
                           >
                             {pName}
                           </span>
@@ -1304,22 +1304,22 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
                       </div>
                     </div>
 
-                    <p className="text-2xs text-slate-600 mt-2 italic bg-white p-2 rounded border border-slate-200">
+                    <p className="text-2xs text-ink-2 mt-2 italic bg-white p-2 rounded border border-line">
                       <strong>Nguyên tắc:</strong> Mọi kế hoạch tuần/tháng của gian hàng này sẽ do <strong>{selectedNode.data.primaryPic}</strong> chủ trì phân chia và giao task.
                     </p>
                   </div>
 
                   {/* Financial Targets */}
                   <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
-                      <div className="text-2xs text-slate-500 font-semibold">Ngân sách tháng</div>
-                      <div className="text-sm font-semibold text-slate-900 mt-1">
+                    <div className="p-3 bg-canvas border border-line rounded-xl">
+                      <div className="text-2xs text-ink-3 font-semibold">Ngân sách tháng</div>
+                      <div className="text-sm font-semibold text-ink mt-1">
                         {(selectedNode.data.monthlyBudget / 1000000).toFixed(0)} Triệu đ
                       </div>
                     </div>
-                    <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
-                      <div className="text-2xs text-slate-500 font-semibold">Target GMV</div>
-                      <div className="text-sm font-semibold text-emerald-700 mt-1">
+                    <div className="p-3 bg-canvas border border-line rounded-xl">
+                      <div className="text-2xs text-ink-3 font-semibold">Target GMV</div>
+                      <div className="text-sm font-semibold text-positive mt-1">
                         {(selectedNode.data.monthlyTargetGmv / 1000000).toFixed(0)} Triệu đ
                       </div>
                     </div>
@@ -1327,22 +1327,22 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
 
                   {/* Store Products List */}
                   <div>
-                    <div className="flex items-center justify-between text-xs font-semibold text-slate-900 mb-2">
+                    <div className="flex items-center justify-between text-xs font-semibold text-ink mb-2">
                       <span className="flex items-center gap-1.5">
-                        <Package className="w-3.5 h-3.5 text-blue-600" />
+                        <Package className="w-3.5 h-3.5 text-accent" />
                         Danh Mục Sản Phẩm Đang Bán ({selectedNode.data.storeProducts.length})
                       </span>
                     </div>
 
                     <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
                       {selectedNode.data.storeProducts.map((p: StoreProductSkuMap) => (
-                        <div key={p.platformProductId} className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl">
+                        <div key={p.platformProductId} className="p-2.5 bg-canvas border border-line rounded-xl">
                           <div className="flex items-center justify-between text-2xs">
-                            <span className="font-semibold text-slate-900 truncate max-w-[170px]">{p.productName}</span>
-                            <span className="text-emerald-700 font-semibold">{p.commissionRate}% comm</span>
+                            <span className="font-semibold text-ink truncate max-w-[170px]">{p.productName}</span>
+                            <span className="text-positive font-semibold">{p.commissionRate}% comm</span>
                           </div>
-                          <div className="mt-1 flex items-center justify-between text-2xs text-slate-500 font-mono">
-                            <span>Sàn ID: <strong className="text-blue-700 font-semibold">{p.platformProductId}</strong></span>
+                          <div className="mt-1 flex items-center justify-between text-2xs text-ink-3 font-mono">
+                            <span>Sàn ID: <strong className="text-accent font-semibold">{p.platformProductId}</strong></span>
                             <span>Giá: {p.storePrice.toLocaleString('vi-VN')} đ</span>
                           </div>
                         </div>
@@ -1351,11 +1351,11 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
                   </div>
 
                   {/* Actions */}
-                  <div className="pt-2 border-t border-slate-200 flex items-center gap-2">
+                  <div className="pt-2 border-t border-line flex items-center gap-2">
                     {onOpenQuickBookWithBrand && (
                       <button
                         onClick={() => onOpenQuickBookWithBrand(selectedNode.data.brandName)}
-                        className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-xs transition"
+                        className="flex-1 py-2 bg-accent hover:bg-accent text-white font-semibold rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-xs transition"
                       >
                         <Sparkles className="w-3.5 h-3.5" />
                         <span>Mở lập Plan cho gian hàng này</span>
@@ -1366,38 +1366,38 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
               ) : selectedNode.type === 'PRODUCT' ? (
                 <div className="space-y-4">
                   <div>
-                    <span className="text-2xs font-semibold px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">
+                    <span className="text-2xs font-semibold text-accent -accent/20">
                       Sản phẩm & store SKU mapping
                     </span>
-                    <h3 className="text-sm font-semibold text-slate-900 mt-2">
+                    <h3 className="text-sm font-semibold text-ink mt-2">
                       {selectedNode.data.productName}
                     </h3>
-                    <div className="text-2xs text-slate-500 mt-0.5">
-                      Đang bán tại gian: <strong className="text-slate-800">{selectedNode.data.storeName}</strong>
+                    <div className="text-2xs text-ink-3 mt-0.5">
+                      Đang bán tại gian: <strong className="text-ink">{selectedNode.data.storeName}</strong>
                     </div>
                   </div>
 
-                  <div className="p-3 bg-blue-50/60 border border-blue-200 rounded-xl space-y-2">
+                  <div className="p-3 bg-accent-soft border border-accent/20 rounded-xl space-y-2">
                     <div className="flex items-center justify-between text-2xs">
-                      <span className="text-slate-600">Store Item ID sàn:</span>
-                      <span className="font-mono text-blue-700 font-semibold">{selectedNode.data.platformProductId}</span>
+                      <span className="text-ink-2">Store Item ID sàn:</span>
+                      <span className="font-mono text-accent font-semibold">{selectedNode.data.platformProductId}</span>
                     </div>
                     <div className="flex items-center justify-between text-2xs">
-                      <span className="text-slate-600">Mã Master SKU gốc:</span>
-                      <span className="font-mono text-slate-800">{selectedNode.data.masterSku}</span>
+                      <span className="text-ink-2">Mã Master SKU gốc:</span>
+                      <span className="font-mono text-ink">{selectedNode.data.masterSku}</span>
                     </div>
                     <div className="flex items-center justify-between text-2xs">
-                      <span className="text-slate-600">Giá bán tại gian này:</span>
-                      <span className="font-semibold text-slate-900">{selectedNode.data.storePrice.toLocaleString('vi-VN')} đ</span>
+                      <span className="text-ink-2">Giá bán tại gian này:</span>
+                      <span className="font-semibold text-ink">{selectedNode.data.storePrice.toLocaleString('vi-VN')} đ</span>
                     </div>
                     <div className="flex items-center justify-between text-2xs">
-                      <span className="text-slate-600">Tỷ lệ hoa hồng affiliate:</span>
-                      <span className="font-semibold text-emerald-700">{selectedNode.data.commissionRate}%</span>
+                      <span className="text-ink-2">Tỷ lệ hoa hồng affiliate:</span>
+                      <span className="font-semibold text-positive">{selectedNode.data.commissionRate}%</span>
                     </div>
                   </div>
 
-                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-2xs text-slate-600 space-y-1.5">
-                    <div className="font-semibold text-slate-800">Cơ chế ánh xạ ID tự động:</div>
+                  <div className="p-3 bg-canvas border border-line rounded-xl text-2xs text-ink-2 space-y-1.5">
+                    <div className="font-semibold text-ink">Cơ chế ánh xạ ID tự động:</div>
                     <p>
                       Khi PIC lập Plan cho gian hàng này và chọn sản phẩm <em>{selectedNode.data.productName}</em>, hệ thống sẽ tự động gán mã <strong>{selectedNode.data.platformProductId}</strong> để KOC gắn đúng giỏ hàng, tránh nhầm lẫn giữa các sàn.
                     </p>
@@ -1406,43 +1406,43 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
               ) : selectedNode.type === 'BRAND' ? (
                 <div className="space-y-4">
                   <div>
-                    <span className="text-2xs font-semibold px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">
+                    <span className="text-2xs font-semibold text-accent -accent/20">
                       BRAND TỔNG
                     </span>
-                    <h3 className="text-sm font-semibold text-slate-900 mt-2">
+                    <h3 className="text-sm font-semibold text-ink mt-2">
                       {selectedNode.data.name}
                     </h3>
-                    <div className="text-2xs text-slate-500">
+                    <div className="text-2xs text-ink-3">
                       {selectedNode.data.companyName}
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
-                      <div className="text-2xs text-slate-500 font-semibold">Ngân sách Brand</div>
-                      <div className="text-sm font-semibold text-blue-700 mt-1">
+                    <div className="p-3 bg-canvas border border-line rounded-xl">
+                      <div className="text-2xs text-ink-3 font-semibold">Ngân sách Brand</div>
+                      <div className="text-sm font-semibold text-accent mt-1">
                         {formatVndShort(selectedNode.data.planBudget || 0)}
                       </div>
                     </div>
-                    <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
-                      <div className="text-2xs text-slate-500 font-semibold">Tổng Target GMV</div>
-                      <div className="text-sm font-semibold text-emerald-700 mt-1">
+                    <div className="p-3 bg-canvas border border-line rounded-xl">
+                      <div className="text-2xs text-ink-3 font-semibold">Tổng Target GMV</div>
+                      <div className="text-sm font-semibold text-positive mt-1">
                         {formatVndShort(selectedNode.data.targetGmv || 0)}
                       </div>
                     </div>
                   </div>
 
-                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1.5 text-2xs">
-                    <div className="text-slate-600">Account PIC: <strong className="text-slate-800">{selectedNode.data.accountPic || 'Chưa gán'}</strong></div>
-                    <div className="text-slate-600">Growth PIC: <strong className="text-slate-800">{selectedNode.data.growthPic || 'Chưa gán'}</strong></div>
-                    <div className="text-slate-600">Booking Lead: <strong className="text-slate-800">{selectedNode.data.bookingPicLead || 'Đặng Thị Yến Nhi'}</strong></div>
+                  <div className="p-3 bg-canvas border border-line rounded-xl space-y-1.5 text-2xs">
+                    <div className="text-ink-2">Account PIC: <strong className="text-ink">{selectedNode.data.accountPic || 'Chưa gán'}</strong></div>
+                    <div className="text-ink-2">Growth PIC: <strong className="text-ink">{selectedNode.data.growthPic || 'Chưa gán'}</strong></div>
+                    <div className="text-ink-2">Booking Lead: <strong className="text-ink">{selectedNode.data.bookingPicLead || 'Đặng Thị Yến Nhi'}</strong></div>
                   </div>
 
                   {/* Danh sách gian hàng sàn trực thuộc Brand */}
                   <div>
-                    <div className="flex items-center justify-between text-xs font-semibold text-slate-900 mb-2">
+                    <div className="flex items-center justify-between text-xs font-semibold text-ink mb-2">
                       <span className="flex items-center gap-1.5">
-                        <Store className="w-3.5 h-3.5 text-blue-600" />
+                        <Store className="w-3.5 h-3.5 text-accent" />
                         Gian hàng sàn trực thuộc ({stores.filter(s => s.brandId === selectedNode.data.id).length})
                       </span>
                     </div>
@@ -1452,18 +1452,18 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
                         <div
                           key={st.id}
                           onClick={() => setSelectedNode({ type: 'STORE', data: st })}
-                          className="p-2.5 bg-slate-50 hover:bg-blue-50/50 rounded-xl border border-slate-200 transition cursor-pointer"
+                          className="p-2.5 bg-canvas hover:bg-accent-soft rounded-xl border border-line transition cursor-pointer"
                         >
                           <div className="flex items-center justify-between text-2xs mb-1">
                             {renderPlatformBadge(st.platform)}
-                            <span className="font-semibold text-slate-900">{formatVndShort(st.monthlyBudget)}</span>
+                            <span className="font-semibold text-ink">{formatVndShort(st.monthlyBudget)}</span>
                           </div>
-                          <div className="font-semibold text-xs text-slate-900 truncate">
+                          <div className="font-semibold text-xs text-ink truncate">
                             {st.storeName}
                           </div>
-                          <div className="text-2xs text-slate-500 mt-1 flex items-center justify-between">
-                            <span>1 PIC Chính: <strong className="text-amber-800">{st.primaryPic}</strong></span>
-                            <span className="text-blue-600 flex items-center gap-0.5 font-medium">Chi tiết <ChevronRight className="w-2.5 h-2.5" /></span>
+                          <div className="text-2xs text-ink-3 mt-1 flex items-center justify-between">
+                            <span>1 PIC Chính: <strong className="text-warning">{st.primaryPic}</strong></span>
+                            <span className="text-accent flex items-center gap-0.5 font-medium">Chi tiết <ChevronRight className="w-2.5 h-2.5" /></span>
                           </div>
                         </div>
                       ))}
@@ -1472,8 +1472,8 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
                 </div>
               ) : (
                 <div className="space-y-3">
-                  <h3 className="text-sm font-semibold text-slate-900">Tổng quan Master Data toàn hệ thống</h3>
-                  <p className="text-slate-600 text-xs">
+                  <h3 className="text-sm font-semibold text-ink">Tổng quan Master Data toàn hệ thống</h3>
+                  <p className="text-ink-2 text-xs">
                     Hệ thống đang cấu trúc dữ liệu theo 4 chiều: <strong>Brand → Gian hàng → Nhân sự (1 PIC chính) → Sản phẩm</strong>.
                   </p>
                 </div>
@@ -1482,12 +1482,12 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
           </div>
 
           {/* Quick Legend & Guidelines */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-4 text-xs space-y-2 shadow-2xs">
-            <h5 className="font-semibold text-slate-900 text-2xs flex items-center gap-1.5">
-              <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
+          <div className="bg-white border border-line rounded-2xl p-4 text-xs space-y-2 shadow-2xs">
+            <h5 className="font-semibold text-ink text-2xs flex items-center gap-1.5">
+              <ShieldCheck className="w-3.5 h-3.5 text-accent" />
               Quy Chuẩn Master Data B2C
             </h5>
-            <ul className="space-y-1.5 text-2xs text-slate-600 list-disc list-inside">
+            <ul className="space-y-1.5 text-2xs text-ink-2 list-disc list-inside">
               <li>Mỗi Gian hàng chỉ có đúng <strong>1 PIC Chính</strong> chịu trách nhiệm KPI và số cuối.</li>
               <li>Mỗi sản phẩm có <strong>1 Master SKU</strong> ở Brand nhưng có các <strong>Store Product ID khác nhau</strong> trên mỗi sàn.</li>
               <li>Khi làm <strong>Plan</strong>, PIC chính phân rã ngân sách xuống từng nhân sự theo đúng Store Product ID của shop.</li>
@@ -1506,27 +1506,27 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
           aria-modal="true"
         >
           <div data-motion-panel
-            className="bg-white border border-slate-200 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter"
+            className="bg-white border border-line rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter"
             onClick={e => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div className="p-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+            <div className="p-4 bg-canvas border-b border-line flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600">
+                <div className="w-8 h-8 rounded-lg bg-warning-soft border border-warning/20 flex items-center justify-center text-warning">
                   <Crown className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold text-slate-900">
+                  <h3 className="text-sm font-semibold text-ink">
                     Phân công PIC chính & đội ngũ gian hàng
                   </h3>
-                  <div className="text-2xs text-slate-500">
+                  <div className="text-2xs text-ink-3">
                     Chỉ định 1 PIC chính chủ trì lập kế hoạch & các nhân sự phối hợp
                   </div>
                 </div>
               </div>
               <button
                 onClick={() => setIsEditingStorePic(false)}
-                className="p-1.5 rounded-lg hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition"
+                className="p-1.5 rounded-lg hover:bg-sunken text-ink-3 hover:text-ink-2 transition"
                 aria-label="Đóng"
               >
                 <X className="w-4 h-4" />
@@ -1537,8 +1537,8 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
             <div className="p-5 space-y-4 text-xs">
               {/* 1 PIC Chính (Primary Store PIC) */}
               <div>
-                <label className="block text-slate-700 font-semibold mb-1.5 flex items-center gap-1.5">
-                  <Crown className="w-3.5 h-3.5 text-amber-600" />
+                <label className="block text-ink-2 font-semibold mb-1.5 flex items-center gap-1.5">
+                  <Crown className="w-3.5 h-3.5 text-warning" />
                   <span>1 PIC chính phụ trách (bắt buộc chọn 1 người):</span>
                 </label>
                 <select
@@ -1556,24 +1556,24 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
                       };
                     });
                   }}
-                  className="w-full bg-white border border-amber-300 text-amber-900 font-semibold rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
+                  className="w-full bg-white border border-warning/20 text-warning font-semibold rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-warning/20 focus:border-warning/20"
                 >
                   {allPicOptions.map(staff => (
                     <option key={staff} value={staff}>{staff} (Lead PIC Gian Hàng)</option>
                   ))}
                 </select>
-                <p className="text-2xs text-amber-700 mt-1">
+                <p className="text-2xs text-warning mt-1">
                   Nhân sự này sẽ có thẩm quyền lập, phân bổ ngân sách và giao việc cho các thành viên trong gian hàng này.
                 </p>
               </div>
 
               {/* Nhân sự phối hợp (Multi-select) */}
               <div>
-                <label className="block text-slate-700 font-semibold mb-1.5 flex items-center gap-1.5">
-                  <Users className="w-3.5 h-3.5 text-blue-600" />
+                <label className="block text-ink-2 font-semibold mb-1.5 flex items-center gap-1.5">
+                  <Users className="w-3.5 h-3.5 text-accent" />
                   <span>Các nhân sự phối hợp / cùng làm Shop:</span>
                 </label>
-                <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto p-2 bg-slate-50 rounded-xl border border-slate-200">
+                <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto p-2 bg-canvas rounded-xl border border-line">
                   {allPicOptions
                     .filter(staff => staff !== editingStoreForm.primaryPic)
                     .map(staff => {
@@ -1596,12 +1596,12 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
                           }}
                           className={`p-2 rounded-lg text-left text-2xs font-medium border flex items-center justify-between transition ${
                             isSelected
-                              ? 'bg-blue-50 border-blue-400 text-blue-800 font-semibold'
-                              : 'bg-white border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                              ? 'bg-accent-soft border-accent/20 text-accent font-semibold'
+                              : 'bg-white border-line text-ink-2 hover:text-ink hover:bg-sunken'
                           }`}
                         >
                           <span className="truncate">{staff}</span>
-                          {isSelected && <CheckCircle2 className="w-3.5 h-3.5 text-blue-600 shrink-0" />}
+                          {isSelected && <CheckCircle2 className="w-3.5 h-3.5 text-accent shrink-0" />}
                         </button>
                       );
                     })}
@@ -1610,7 +1610,7 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
 
               {/* Ghi chú phân chia */}
               <div>
-                <label className="block text-slate-700 font-semibold mb-1.5">
+                <label className="block text-ink-2 font-semibold mb-1.5">
                   Ghi chú phân Chia trách nhiệm giữa các PICs:
                 </label>
                 <textarea
@@ -1618,24 +1618,24 @@ export const MasterDataMindmapView: React.FC<MasterDataMindmapViewProps> = ({
                   value={editingStoreForm.assignmentNotes}
                   onChange={e => setEditingStoreForm(prev => prev ? { ...prev, assignmentNotes: e.target.value } : null)}
                   placeholder="Ví dụ: PIC chính quản lý budget tổng và KOC Celeb; bạn B làm KOC Mass; bạn C làm Livestream..."
-                  className="w-full bg-white border border-slate-300 text-slate-900 rounded-xl p-2.5 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-xs"
+                  className="w-full bg-white border border-line-strong text-ink rounded-xl p-2.5 placeholder:text-ink-3 focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent/20 text-xs"
                 />
               </div>
             </div>
 
             {/* Modal Footer */}
-            <div className="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-2">
+            <div className="p-4 bg-canvas border-t border-line flex items-center justify-end gap-2">
               <button
                 type="button"
                 onClick={() => setIsEditingStorePic(false)}
-                className="px-4 py-2 bg-white hover:bg-slate-100 text-slate-700 font-semibold rounded-xl text-xs border border-slate-300 transition"
+                className="px-4 py-2 bg-white hover:bg-sunken text-ink-2 font-semibold rounded-xl text-xs border border-line-strong transition"
               >
                 Hủy
               </button>
               <button
                 type="button"
                 onClick={handleSaveStoreAssignment}
-                className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl text-xs shadow-xs transition flex items-center gap-1.5"
+                className="px-5 py-2 bg-accent hover:bg-accent text-white font-semibold rounded-xl text-xs shadow-xs transition flex items-center gap-1.5"
               >
                 <CheckCircle2 className="w-4 h-4" />
                 <span>Lưu phân công Master Data</span>

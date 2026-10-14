@@ -58,7 +58,8 @@ export type TabKey =
   | 'koc-hub'
   | 'ads-report'
   | 'api-settings'
-  | 'knowledge-qa';
+  | 'knowledge-qa'
+  | 'audit-trail';
 
 export interface UserProfile {
   id: string;

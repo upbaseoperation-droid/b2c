@@ -189,20 +189,14 @@ export const LegalOcrModal: React.FC<LegalOcrModalProps> = ({
             <div className="w-10 h-10 rounded-xl bg-success-soft border border-success-line text-success flex items-center justify-center font-semibold">
               <ShieldCheck className="w-5 h-5 text-success" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
+              <div>
                 <h3 className="text-sm font-semibold text-ink">
                   Đọc ảnh giấy tờ pháp lý
                 </h3>
-                <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-success-soft text-success border border-success-line flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-success"></span>
-                  Xử lý nội bộ
-                </span>
+                <p className="text-xs text-muted mt-0.5">
+                  Đọc thông tin trực tiếp từ ảnh chụp trên máy chủ nội bộ — tự động điền và cho phép chỉnh sửa.
+                </p>
               </div>
-              <p className="text-xs text-muted mt-0.5">
-                Đọc thông tin trực tiếp từ ảnh chụp trên máy chủ nội bộ — Bảo mật thông tin — Tự động điền &amp; cho phép chỉnh sửa.
-              </p>
-            </div>
           </div>
 
           <div className="flex items-center gap-2">
@@ -400,8 +394,8 @@ export const LegalOcrModal: React.FC<LegalOcrModalProps> = ({
                     {extractionResult.fileName}
                   </span>
                 </div>
-                <span className="text-2xs font-semibold px-2 py-0.5 rounded bg-success-soft text-success shrink-0">
-                  {Math.round((extractionResult.confidence || 0.85) * 100)}% Tin cậy
+                <span className="text-2xs font-medium text-positive tabular-nums shrink-0">
+                  Độ tin cậy {Math.round((extractionResult.confidence || 0.85) * 100)}%
                 </span>
               </div>
             )}
@@ -495,10 +489,10 @@ export const LegalOcrModal: React.FC<LegalOcrModalProps> = ({
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-success-soft text-success border border-success-line text-xs font-semibold">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-success" />
+                  <span className="inline-flex items-center gap-1.5 text-xs font-medium text-positive">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-positive" />
                     Đã trích xuất
-                  </div>
+                  </span>
                 </div>
 
                 {/* Form Editing Notice */}
@@ -711,7 +705,7 @@ export const LegalOcrModal: React.FC<LegalOcrModalProps> = ({
                         <FileCheck className="w-4 h-4 text-primary" />
                         Biểu mẫu chuẩn theo quy định Upbase 2026:
                       </span>
-                      <span className="font-mono text-2xs bg-surface text-info border border-info-line px-2 py-0.5 rounded font-semibold">
+                      <span className="font-mono text-2xs text-ink-2 font-medium">
                         {extractionResult.recommendedTemplate.templateCode}
                       </span>
                     </div>

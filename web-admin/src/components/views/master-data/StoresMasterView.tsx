@@ -19,9 +19,26 @@ import {
   ShieldCheck,
   Eye,
   Edit3,
-  Building2
+  Building2,
+  SlidersHorizontal
 } from 'lucide-react';
-import { ChannelTag, Presence } from '../../ui';
+import { 
+  ActionMenu,
+  Button,
+  ChannelTag, 
+  Chips,
+  DataTable,
+  EmptyState,
+  FilterBar,
+  PageActions,
+  Pagination,
+  Panel,
+  Person,
+  Presence,
+  Select,
+  Status
+} from '../../ui';
+import type { Column } from '../../ui';
 import { StorePortfolioItem, BrandDetail, BookingDealItem } from '../../../lib/types';
 import { StaffSearchSelect } from './StaffSearchSelect';
 import { StoreDetailModal } from './StoreDetailModal';
@@ -221,16 +238,6 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
       return true;
     });
   }, [stores, selectedBrand, selectedPlatform, selectedPackage, selectedStatus, selectedOwner, selectedB2cPlan, selectedTeamStructure, selectedBudgetStatus, search, getStoreActualSpent]);
-
-  const isFiltered = search.trim() !== '' || 
-    selectedBrand !== 'ALL' || 
-    selectedPlatform !== 'ALL' || 
-    selectedPackage !== 'ALL' || 
-    selectedStatus !== 'ALL' || 
-    selectedOwner !== 'ALL' || 
-    selectedB2cPlan !== 'ALL' ||
-    selectedTeamStructure !== 'ALL' ||
-    selectedBudgetStatus !== 'ALL';
 
   const handleResetFilters = () => {
     setSearch('');
@@ -487,452 +494,475 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
     setDeletingStore(null);
   };
 
-  return (
-    <div className="space-y-3">
-      {/* Filter and Action Toolbar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-        <div className="flex items-center gap-2 flex-1 flex-wrap">
-          <div className="relative min-w-[200px] max-w-xs flex-1">
-            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              placeholder="Tìm gian hàng, mã SO-B2C-xxx, brand, PIC..."
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setPage(1);
-              }}
-              className="w-full pl-8.5 pr-8 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:border-slate-800 bg-white"
-            />
-            {search && (
-              <button
-                onClick={() => {
-                  setSearch('');
-                  setPage(1);
-                }}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            )}
+  const [showMoreFilters, setShowMoreFilters] = useState(false);
+
+  const moreFilterCount =
+    Number(selectedBudgetStatus !== 'ALL') +
+    Number(selectedTeamStructure !== 'ALL') +
+    Number(selectedStatus !== 'ALL') +
+    Number(selectedPackage !== 'ALL') +
+    Number(selectedB2cPlan !== 'ALL');
+
+  const isFiltered =
+    Boolean(search.trim()) ||
+    selectedBrand !== 'ALL' ||
+    selectedPlatform !== 'ALL' ||
+    selectedOwner !== 'ALL' ||
+    moreFilterCount > 0;
+
+  const platformChips = (['ALL', 'TikTok Shop', 'Shopee Mall', 'Lazada'] as const).map((p) => ({
+    key: p,
+    label: p === 'ALL' ? 'Tất cả sàn' : p,
+    count: stores.filter((s) => p === 'ALL' || s.platform === p).length,
+  }));
+
+  const issueChips = [
+    { key: 'OVERBUDGET' as const, label: 'Bội chi', count: overbudgetStores.length },
+    { key: 'WITH_LEADER' as const, label: 'Có Leader', count: withLeaderCount },
+    { key: 'DIRECT_TO_LEAD' as const, label: 'Trực tiếp Lead', count: directLeadCount },
+    { key: 'OFF' as const, label: 'Offboard', count: offCount },
+  ];
+
+  const columns: Column<StorePortfolioItem>[] = [
+    {
+      key: 'store',
+      header: 'Gian hàng & Mã',
+      width: 220,
+      render: (s) => (
+        <div className="leading-tight min-w-0">
+          <span className="font-medium text-ink block truncate group-hover:text-primary transition-colors">
+            {s.storeName}
+          </span>
+          <div className="flex items-center gap-1.5 mt-0.5 text-2xs font-mono text-ink-3">
+            <span className="font-semibold text-ink-2">{s.storeOperationId || s.id}</span>
+            <span>•</span>
+            <span>{s.servicePackage || 'E2E-S'}</span>
           </div>
-
-          <select
-            value={selectedBrand}
-            onChange={(e) => {
-              setSelectedBrand(e.target.value);
-              setPage(1);
-            }}
-            className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-800 focus:outline-none focus:border-slate-800"
-          >
-            <option value="ALL">Mọi nhãn hàng ({uniqueBrands.length})</option>
-            {uniqueBrands.map(b => (
-              <option key={b} value={b}>{b}</option>
-            ))}
-          </select>
-
-          <select
-            value={selectedPlatform}
-            onChange={(e) => {
-              setSelectedPlatform(e.target.value);
-              setPage(1);
-            }}
-            className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-800 focus:outline-none focus:border-slate-800"
-          >
-            <option value="ALL">Mọi sàn ({stores.length})</option>
-            <option value="TikTok Shop">TikTok Shop ({tiktokCount})</option>
-            <option value="Shopee Mall">Shopee Mall ({shopeeCount})</option>
-            <option value="Lazada">Lazada ({lazadaCount})</option>
-          </select>
-
-          <select
-            value={selectedOwner}
-            onChange={(e) => {
-              setSelectedOwner(e.target.value);
-              setPage(1);
-            }}
-            className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-800 focus:outline-none focus:border-slate-800"
-          >
-            <option value="ALL">Mọi chuyên viên ({accountOwners.length})</option>
-            {accountOwners.map(owner => (
-              <option key={owner} value={owner}>{owner}</option>
-            ))}
-          </select>
-
-          <select
-            value={selectedBudgetStatus}
-            onChange={(e) => {
-              setSelectedBudgetStatus(e.target.value as 'ALL' | 'HAS_BUDGET' | 'ZERO_BUDGET' | 'OVERBUDGET');
-              setPage(1);
-            }}
-            className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-800 focus:outline-none focus:border-slate-800"
-          >
-            <option value="ALL">Mọi ngân sách</option>
-            <option value="HAS_BUDGET">Có ngân sách &gt; 0đ</option>
-            <option value="ZERO_BUDGET">Hạn mức 0đ</option>
-            <option value="OVERBUDGET">Bội chi ({overbudgetStores.length})</option>
-          </select>
-
-          <select
-            value={selectedTeamStructure}
-            onChange={(e) => {
-              setSelectedTeamStructure(e.target.value as 'ALL' | 'WITH_LEADER' | 'DIRECT_TO_LEAD');
-              setPage(1);
-            }}
-            className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-800 focus:outline-none focus:border-slate-800"
-          >
-            <option value="ALL">Mọi cơ cấu</option>
-            <option value="WITH_LEADER">Có Leader sơ duyệt ({withLeaderCount})</option>
-            <option value="DIRECT_TO_LEAD">Trực tiếp Trưởng phòng ({directLeadCount})</option>
-          </select>
-
-          <select
-            value={selectedStatus}
-            onChange={(e) => {
-              setSelectedStatus(e.target.value);
-              setPage(1);
-            }}
-            className="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-800 focus:outline-none focus:border-slate-800"
-          >
-            <option value="ALL">Mọi trạng thái</option>
-            <option value="Live">Live ({liveCount})</option>
-            <option value="Off">Off ({offCount})</option>
-          </select>
-
-          {isFiltered && (
-            <button
-              type="button"
-              onClick={handleResetFilters}
-              className="py-1 px-2 rounded-lg border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 text-xs font-semibold transition flex items-center gap-1 cursor-pointer"
+        </div>
+      ),
+    },
+    {
+      key: 'platform',
+      header: 'Nền tảng',
+      width: 130,
+      render: (s) => (
+        <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+          <ChannelTag channel={s.platform} />
+          {s.storeUrl && (
+            <a
+              href={s.storeUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="text-ink-3 hover:text-ink transition-colors"
+              title="Mở link gian hàng sàn"
             >
-              <RotateCcw className="w-3 h-3" />
-              <span>Đặt lại</span>
-            </button>
+              <ExternalLink className="w-3 h-3" />
+            </a>
           )}
         </div>
-
-        <button
-          type="button"
-          onClick={handleOpenAdd}
-          className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg transition flex items-center gap-1.5 shrink-0 shadow-xs cursor-pointer"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          Thêm gian hàng
-        </button>
-      </div>
-
-      {/* 3. STORES MASTER TABLE */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-slate-50 text-slate-600 border-b border-slate-200 font-semibold text-2xs">
-              <tr>
-                <th className="py-3 px-4 min-w-[210px]">Gian hàng & Mã vận hành</th>
-                <th className="py-3 px-3 w-[110px]">Nền tảng</th>
-                <th className="py-3 px-4 w-[160px]">Thuộc Thương hiệu</th>
-                <th className="py-3 px-4 text-right w-[150px]">Hạn mức Order Net</th>
-                <th className="py-3 px-3 text-center w-[110px]">Chỉ tiêu Video</th>
-                <th className="py-3 px-4 min-w-[210px]">Đội ngũ phụ trách</th>
-                <th className="py-3 px-3 text-center w-[120px]">Cảnh báo Tài chính</th>
-                <th className="py-3 px-3 text-center w-[110px]">B2C & Plan</th>
-                <th className="py-3 px-3 text-center w-[80px]">Trạng thái</th>
-                <th className="py-3 px-4 text-right w-[140px]">Thao tác</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {currentStores.length === 0 ? (
-                <tr>
-                  <td colSpan={10} className="py-12 text-center text-slate-400">
-                    Không tìm thấy gian hàng phù hợp với điều kiện lọc
-                  </td>
-                </tr>
-              ) : (
-                currentStores.map(s => {
-                  const bNet = s.budgetNet ?? s.monthlyBudget ?? 0;
-                  const spent = getStoreActualSpent(s);
-                  const isStoreOverbudget = bNet > 0 && spent > bNet;
-                  const isStoreUnbudgeted = bNet === 0 && spent > 0;
-                  const burnPct = bNet > 0 ? (spent / bNet) * 100 : 0;
-                  const hasLeaderTeam = s.hasBookingLeader && !!s.bookingLeader;
-
-                  return (
-                    <tr 
-                      key={s.id} 
-                      className="hover:bg-slate-50/70 transition-colors cursor-pointer group"
-                      onClick={() => setSelectedStoreForDetail(s)}
-                    >
-                      {/* Gian hàng & Mã SO */}
-                      <td className="py-3 px-4">
-                        <div className="font-semibold text-slate-900 text-xs group-hover:text-blue-700 transition">
-                          {s.storeName}
-                        </div>
-                        <div className="flex items-center gap-1.5 mt-0.5 text-2xs font-mono text-slate-400">
-                          <span className="font-semibold text-slate-600">{s.storeOperationId || s.id}</span>
-                          <span>•</span>
-                          <span className="text-slate-500">{s.servicePackage || 'E2E-S'}</span>
-                        </div>
-                      </td>
-
-                      {/* Nền tảng */}
-                      <td className="py-3 px-3" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex items-center gap-1.5">
-                          <ChannelTag channel={s.platform} />
-                          {s.storeUrl && (
-                            <a
-                              href={s.storeUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="text-slate-400 hover:text-slate-700"
-                              title="Mở link gian hàng sàn"
-                            >
-                              <ExternalLink className="w-3 h-3" />
-                            </a>
-                          )}
-                        </div>
-                      </td>
-
-                      {/* Thuộc Thương hiệu */}
-                      <td className="py-3 px-4" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex items-center gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (onNavigateToBrandProfile) {
-                                onNavigateToBrandProfile(s.brandName);
-                              }
-                            }}
-                            className="font-semibold text-slate-800 hover:text-blue-700 hover:underline flex items-center gap-1 text-xs cursor-pointer"
-                            title="Xem hồ sơ thương hiệu"
-                          >
-                            <Building2 className="w-3.5 h-3.5 text-slate-400" />
-                            <span>{s.brandName}</span>
-                          </button>
-                        </div>
-                        <div className="text-2xs text-slate-400 mt-0.5">{s.category || 'Tiêu dùng'}</div>
-                      </td>
-
-                      {/* Hạn mức Order Net */}
-                      <td className="py-3 px-4 text-right">
-                        <div className="font-mono font-semibold text-xs text-slate-900">
-                          {formatVndShort(bNet)}
-                        </div>
-                        {bNet > 0 ? (
-                          <div className="mt-1">
-                            <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
-                              <div
-                                className={`data-bar h-full rounded-full ${
-                                  isStoreOverbudget ? 'bg-rose-500' : burnPct > 80 ? 'bg-amber-500' : 'bg-emerald-500'
-                                }`}
-                                style={{ width: `${Math.min(100, burnPct)}%` }}
-                              />
-                            </div>
-                            <div className="text-2xs text-slate-500 mt-0.5 font-mono">
-                              Đã duyệt: {formatVndShort(spent)} ({burnPct.toFixed(0)}%)
-                            </div>
-                          </div>
-                        ) : (
-                          <span className="text-2xs font-mono text-blue-600">FOC (0đ)</span>
-                        )}
-                      </td>
-
-                      {/* Chỉ tiêu Video */}
-                      <td className="py-3 px-3 text-center">
-                        <div className="font-mono font-semibold text-xs text-blue-900">
-                          {(s.targetAffiliateContents || 0) + (s.targetSelfChannelContents || 0)}
-                        </div>
-                        <div className="text-2xs text-slate-400 font-mono">
-                          {s.targetAffiliateContents || 0} Aff • {s.targetSelfChannelContents || 0} Self
-                        </div>
-                      </td>
-
-                      {/* Đội ngũ Phụ trách */}
-                      <td className="py-3 px-4 text-2xs space-y-1">
-                        <div className="flex items-center gap-1.5 text-slate-800">
-                          <span className="text-blue-600 font-semibold">PIC:</span>
-                          <span className="font-semibold">{s.b2cOwnerName || s.primaryPic || 'Chưa gán'}</span>
-                        </div>
-                        
-                        {hasLeaderTeam ? (
-                          <div className="flex items-center gap-1">
-                            <span className="px-1.5 py-0.5 rounded text-2xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
-                              Leader: {s.bookingLeader}
-                            </span>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-1">
-                            <span className="px-1.5 py-0.5 rounded text-2xs font-medium bg-slate-100 text-slate-600 border border-slate-200">
-                              Trực tiếp Lead B2C
-                            </span>
-                          </div>
-                        )}
-
-                        {s.growthPic && (
-                          <div className="text-2xs text-slate-500">
-                            Growth: {s.growthPic}
-                          </div>
-                        )}
-                      </td>
-
-                      {/* Cảnh báo Tài chính */}
-                      <td className="py-3 px-3 text-center">
-                        {isStoreOverbudget ? (
-                          <span className="px-2 py-0.5 rounded-full text-2xs font-semibold bg-rose-50 text-rose-700 border border-rose-200 inline-flex items-center gap-1">
-                            <ShieldAlert className="w-3 h-3 text-rose-600" />
-                            Bội chi
-                          </span>
-                        ) : isStoreUnbudgeted ? (
-                          <span className="px-2 py-0.5 rounded-full text-2xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 inline-flex items-center gap-1">
-                            <AlertTriangle className="w-3 h-3 text-amber-600" />
-                            Chi ngoài KH
-                          </span>
-                        ) : bNet === 0 ? (
-                          <span className="px-2 py-0.5 rounded-full text-2xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
-                            Chỉ gửi mẫu
-                          </span>
-                        ) : (
-                          <span className="px-2 py-0.5 rounded-full text-2xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 inline-flex items-center gap-1">
-                            <ShieldCheck className="w-3 h-3 text-emerald-600" />
-                            An toàn
-                          </span>
-                        )}
-                      </td>
-
-                      {/* B2C Quản lý & Plan */}
-                      <td className="py-3 px-3 text-center" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex flex-col items-center gap-1">
-                          <button
-                            type="button"
-                            onClick={() => handleToggleB2cManaged(s)}
-                            title="Bật/tắt Marketing B2C phụ trách"
-                            className={`w-20 px-1.5 py-0.5 rounded-full text-2xs font-semibold border transition cursor-pointer ${
-                              s.isB2cManaged !== false
-                                ? 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
-                                : 'bg-slate-50 text-slate-400 border-slate-200 hover:bg-slate-100'
-                            }`}
-                          >
-                            {s.isB2cManaged !== false ? 'B2C Quản lý' : 'Bỏ qua'}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleToggleRequiresPlan(s)}
-                            title="Bật/tắt yêu cầu lập Plan tháng"
-                            className={`w-20 px-1.5 py-0.5 rounded-full text-2xs font-semibold border transition cursor-pointer ${
-                              s.requiresB2cPlan !== false
-                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
-                                : 'bg-slate-50 text-slate-400 border-slate-200 hover:bg-slate-100'
-                            }`}
-                          >
-                            {s.requiresB2cPlan !== false ? 'Cần Plan' : 'Miễn Plan'}
-                          </button>
-                        </div>
-                      </td>
-
-                      {/* Trạng thái */}
-                      <td className="py-3 px-3 text-center">
-                        {s.operationStatus === 'Live' || s.accountStatus === 'ACTIVE' ? (
-                          <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                            Live
-                          </span>
-                        ) : (
-                          <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-slate-100 text-slate-500 border border-slate-200">
-                            Off
-                          </span>
-                        )}
-                      </td>
-
-                      {/* Thao tác */}
-                      <td className="py-3 px-4 text-right" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex items-center justify-end gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (onNavigateToStoreManagement) {
-                                onNavigateToStoreManagement(s.storeName);
-                              } else {
-                                setSelectedStoreForDetail(s);
-                              }
-                            }}
-                            className="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-2xs font-semibold flex items-center gap-1 transition shadow-xs cursor-pointer"
-                            title="Mở màn hình Hồ sơ gian hàng chuyên sâu"
-                          >
-                            <Store className="w-3 h-3" />
-                            <span>Hồ sơ</span>
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => setSelectedStoreForDetail(s)}
-                            className="p-1.5 rounded-lg text-slate-600 hover:text-blue-700 hover:bg-blue-50 transition cursor-pointer"
-                            title="Xem chi tiết chuyên sâu gian hàng"
-                          >
-                            <Eye className="w-3.5 h-3.5" />
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => handleOpenHandover(s)}
-                            className="p-1.5 rounded-lg text-slate-600 hover:text-blue-700 hover:bg-blue-50 transition cursor-pointer"
-                            title="Lập Lệnh bàn giao giữa kỳ"
-                          >
-                            <UserCheck className="w-3.5 h-3.5" />
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => handleOpenEdit(s)}
-                            className="p-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition cursor-pointer"
-                            title="Chỉnh sửa thông số gian hàng"
-                          >
-                            <Edit3 className="w-3.5 h-3.5" />
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => setDeletingStore(s)}
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
-                            title="Xóa hoặc offboard gian hàng"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
+      ),
+    },
+    {
+      key: 'brand',
+      header: 'Thương hiệu',
+      width: 160,
+      render: (s) => (
+        <div className="leading-tight min-w-0" onClick={(e) => e.stopPropagation()}>
+          <button
+            type="button"
+            onClick={() => {
+              if (onNavigateToBrandProfile) onNavigateToBrandProfile(s.brandName);
+            }}
+            className="font-medium text-ink hover:text-primary hover:underline flex items-center gap-1 text-xs cursor-pointer truncate"
+            title="Xem hồ sơ thương hiệu"
+          >
+            <Building2 className="w-3.5 h-3.5 text-ink-3 shrink-0" />
+            <span className="truncate">{s.brandName}</span>
+          </button>
+          <div className="text-2xs text-ink-3 mt-0.5 truncate">{s.category || 'Tiêu dùng'}</div>
         </div>
-
-        {/* Pagination Bar */}
-        <div className="px-4 py-3 bg-slate-50/70 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-slate-600">
-          <div>
-            Hiển thị <span className="font-semibold text-slate-900">{Math.min(filteredStores.length, (page - 1) * PAGE_SIZE + 1)}</span> - <span className="font-semibold text-slate-900">{Math.min(filteredStores.length, page * PAGE_SIZE)}</span> trên tổng số <span className="font-semibold text-slate-900">{filteredStores.length}</span> gian hàng B2C
+      ),
+    },
+    {
+      key: 'budget',
+      header: 'Hạn mức Net',
+      align: 'right',
+      width: 140,
+      render: (s) => {
+        const bNet = s.budgetNet ?? s.monthlyBudget ?? 0;
+        const spent = getStoreActualSpent(s);
+        const isStoreOverbudget = bNet > 0 && spent > bNet;
+        const burnPct = bNet > 0 ? (spent / bNet) * 100 : 0;
+        return (
+          <div className="leading-tight tabular-nums">
+            <span className="font-medium text-ink block">{formatVndShort(bNet)}</span>
+            {bNet > 0 ? (
+              <div className="mt-1">
+                <div className="w-full bg-sunken rounded-full h-1.5 overflow-hidden">
+                  <div
+                    className={`h-full rounded-full ${
+                      isStoreOverbudget ? 'bg-critical' : burnPct > 80 ? 'bg-warning' : 'bg-positive'
+                    }`}
+                    style={{ width: `${Math.min(100, burnPct)}%` }}
+                  />
+                </div>
+                <div className="text-2xs text-ink-3 mt-0.5 font-mono">
+                  Đã duyệt: {formatVndShort(spent)} ({burnPct.toFixed(0)}%)
+                </div>
+              </div>
+            ) : (
+              <span className="text-2xs text-ink-3">FOC (0đ)</span>
+            )}
           </div>
-
-          <div className="flex items-center gap-1.5 self-end sm:self-auto">
-            <button
-              type="button"
-              disabled={page <= 1}
-              onClick={() => setPage(p => Math.max(1, p - 1))}
-              className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-            >
-              <ChevronLeft className="w-3.5 h-3.5" />
-            </button>
-            <span className="px-2 text-xs font-mono font-medium text-slate-800">
-              Trang {page} / {totalPages}
+        );
+      },
+    },
+    {
+      key: 'video',
+      header: 'Chỉ tiêu Video',
+      align: 'center',
+      width: 115,
+      render: (s) => (
+        <div className="leading-tight font-mono">
+          <span className="font-medium text-ink block">
+            {(s.targetAffiliateContents || 0) + (s.targetSelfChannelContents || 0)}
+          </span>
+          <span className="text-2xs text-ink-3 block">
+            {s.targetAffiliateContents || 0} Aff • {s.targetSelfChannelContents || 0} Self
+          </span>
+        </div>
+      ),
+    },
+    {
+      key: 'pic',
+      header: 'Đội ngũ phụ trách',
+      width: 175,
+      render: (s) => {
+        const hasLeaderTeam = s.hasBookingLeader && !!s.bookingLeader;
+        return (
+          <div className="space-y-0.5 leading-tight">
+            <div className="flex items-center gap-1.5">
+              <span className="text-2xs text-ink-3">PIC:</span>
+              <span className="font-medium text-ink text-xs">{s.b2cOwnerName || s.primaryPic || 'Chưa gán'}</span>
+            </div>
+            <span className="block text-2xs text-ink-3">
+              {hasLeaderTeam ? `Leader: ${s.bookingLeader}` : 'Trực tiếp Lead B2C'}
             </span>
-            <button
-              type="button"
-              disabled={page >= totalPages}
-              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-              className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-            >
-              <ChevronRight className="w-3.5 h-3.5" />
-            </button>
+          </div>
+        );
+      },
+    },
+    {
+      key: 'financialAlert',
+      header: 'Tài chính',
+      align: 'center',
+      width: 110,
+      render: (s) => {
+        const bNet = s.budgetNet ?? s.monthlyBudget ?? 0;
+        const spent = getStoreActualSpent(s);
+        const isStoreOverbudget = bNet > 0 && spent > bNet;
+        const isStoreUnbudgeted = bNet === 0 && spent > 0;
+        if (isStoreOverbudget) return <span className="text-xs font-medium text-critical">Bội chi</span>;
+        if (isStoreUnbudgeted) return <span className="text-xs font-medium text-warning">Chi ngoài KH</span>;
+        if (bNet === 0) return <span className="text-xs text-ink-3">Chỉ gửi mẫu</span>;
+        return <span className="text-xs text-ink-3">Đúng hạn mức</span>;
+      },
+    },
+    {
+      key: 'b2cPlan',
+      header: 'B2C & Plan',
+      align: 'center',
+      width: 105,
+      render: (s) => (
+        <div className="flex flex-col items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
+          <button
+            type="button"
+            onClick={() => handleToggleB2cManaged(s)}
+            className={`text-2xs transition cursor-pointer ${
+              s.isB2cManaged !== false
+                ? 'font-medium text-accent hover:underline'
+                : 'text-ink-3 hover:text-ink'
+            }`}
+          >
+            {s.isB2cManaged !== false ? 'B2C Quản lý' : 'Bỏ qua'}
+          </button>
+          <button
+            type="button"
+            onClick={() => handleToggleRequiresPlan(s)}
+            className={`text-2xs transition cursor-pointer ${
+              s.requiresB2cPlan !== false
+                ? 'font-medium text-ink-2 hover:underline'
+                : 'text-ink-3 hover:text-ink'
+            }`}
+          >
+            {s.requiresB2cPlan !== false ? 'Cần Plan' : 'Miễn Plan'}
+          </button>
+        </div>
+      ),
+    },
+    {
+      key: 'status',
+      header: 'Trạng thái',
+      align: 'center',
+      width: 80,
+      render: (s) => (
+        <Status tone={s.operationStatus === 'Live' || s.accountStatus === 'ACTIVE' ? 'positive' : 'neutral'}>
+          {s.operationStatus === 'Live' || s.accountStatus === 'ACTIVE' ? 'Live' : 'Off'}
+        </Status>
+      ),
+    },
+    {
+      key: 'actions',
+      header: '',
+      align: 'right',
+      width: 48,
+      render: (s) => (
+        <ActionMenu
+          items={[
+            {
+              label: 'Hồ sơ gian hàng',
+              icon: Store,
+              onSelect: () => {
+                if (onNavigateToStoreManagement) onNavigateToStoreManagement(s.storeName);
+                else setSelectedStoreForDetail(s);
+              },
+            },
+            {
+              label: 'Chi tiết gian hàng',
+              icon: Eye,
+              onSelect: () => setSelectedStoreForDetail(s),
+            },
+            {
+              label: 'Bàn giao PIC',
+              icon: UserCheck,
+              onSelect: () => handleOpenHandover(s),
+            },
+            {
+              label: 'Sửa thông số',
+              icon: Edit3,
+              onSelect: () => handleOpenEdit(s),
+            },
+            {
+              label: 'Offboard gian hàng',
+              icon: Archive,
+              onSelect: () => handleOffboardStore(s),
+            },
+            {
+              label: 'Xóa vĩnh viễn',
+              icon: Trash2,
+              onSelect: () => setDeletingStore(s),
+            },
+          ]}
+        />
+      ),
+    },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <PageActions>
+        <Button variant="primary" icon={Plus} onClick={handleOpenAdd}>
+          Thêm gian hàng
+        </Button>
+      </PageActions>
+
+      <Panel flush>
+        <div className="p-4 border-b border-line grid gap-2.5">
+          <FilterBar
+            search={{
+              value: search,
+              onChange: (v) => {
+                setSearch(v);
+                setPage(1);
+              },
+              placeholder: 'Tìm gian hàng, mã SO-B2C-xxx, brand, PIC...',
+            }}
+            filters={
+              <>
+                <Select
+                  value={selectedBrand}
+                  onChange={(e) => {
+                    setSelectedBrand(e.target.value);
+                    setPage(1);
+                  }}
+                  aria-label="Nhãn hàng"
+                  className="w-auto"
+                >
+                  <option value="ALL">Mọi nhãn hàng ({uniqueBrands.length})</option>
+                  {uniqueBrands.map((b) => (
+                    <option key={b} value={b}>
+                      {b}
+                    </option>
+                  ))}
+                </Select>
+
+                <Select
+                  value={selectedPlatform}
+                  onChange={(e) => {
+                    setSelectedPlatform(e.target.value);
+                    setPage(1);
+                  }}
+                  aria-label="Sàn"
+                  className="w-auto"
+                >
+                  <option value="ALL">Mọi sàn ({stores.length})</option>
+                  <option value="TikTok Shop">TikTok Shop ({tiktokCount})</option>
+                  <option value="Shopee Mall">Shopee Mall ({shopeeCount})</option>
+                  <option value="Lazada">Lazada ({lazadaCount})</option>
+                </Select>
+
+                <Select
+                  value={selectedOwner}
+                  onChange={(e) => {
+                    setSelectedOwner(e.target.value);
+                    setPage(1);
+                  }}
+                  aria-label="Chuyên viên"
+                  className="w-auto"
+                >
+                  <option value="ALL">Mọi chuyên viên ({accountOwners.length})</option>
+                  {accountOwners.map((owner) => (
+                    <option key={owner} value={owner}>
+                      {owner}
+                    </option>
+                  ))}
+                </Select>
+
+                <Button
+                  variant={showMoreFilters || moreFilterCount > 0 ? 'secondary' : 'ghost'}
+                  icon={SlidersHorizontal}
+                  aria-expanded={showMoreFilters}
+                  onClick={() => setShowMoreFilters((v) => !v)}
+                >
+                  Lọc khác{moreFilterCount > 0 ? ` (${moreFilterCount})` : ''}
+                </Button>
+
+                {isFiltered && (
+                  <Button variant="ghost" onClick={handleResetFilters}>
+                    Xóa bộ lọc
+                  </Button>
+                )}
+              </>
+            }
+            resultCount={isFiltered ? filteredStores.length : undefined}
+          />
+
+          {showMoreFilters && (
+            <div className="flex flex-wrap items-center gap-2">
+              <Select
+                value={selectedBudgetStatus}
+                onChange={(e) => {
+                  setSelectedBudgetStatus(e.target.value as 'ALL' | 'HAS_BUDGET' | 'ZERO_BUDGET' | 'OVERBUDGET');
+                  setPage(1);
+                }}
+                aria-label="Ngân sách"
+                className="w-auto"
+              >
+                <option value="ALL">Mọi ngân sách</option>
+                <option value="HAS_BUDGET">Có ngân sách &gt; 0đ</option>
+                <option value="ZERO_BUDGET">Hạn mức 0đ</option>
+                <option value="OVERBUDGET">Bội chi ({overbudgetStores.length})</option>
+              </Select>
+
+              <Select
+                value={selectedTeamStructure}
+                onChange={(e) => {
+                  setSelectedTeamStructure(e.target.value as 'ALL' | 'WITH_LEADER' | 'DIRECT_TO_LEAD');
+                  setPage(1);
+                }}
+                aria-label="Cơ cấu"
+                className="w-auto"
+              >
+                <option value="ALL">Mọi cơ cấu</option>
+                <option value="WITH_LEADER">Có Leader sơ duyệt ({withLeaderCount})</option>
+                <option value="DIRECT_TO_LEAD">Trực tiếp Trưởng phòng ({directLeadCount})</option>
+              </Select>
+
+              <Select
+                value={selectedStatus}
+                onChange={(e) => {
+                  setSelectedStatus(e.target.value);
+                  setPage(1);
+                }}
+                aria-label="Trạng thái"
+                className="w-auto"
+              >
+                <option value="ALL">Mọi trạng thái</option>
+                <option value="Live">Live ({liveCount})</option>
+                <option value="Off">Off ({offCount})</option>
+              </Select>
+            </div>
+          )}
+
+          <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
+            <Chips
+              label="Sàn"
+              items={platformChips}
+              value={selectedPlatform}
+              onChange={(val) => {
+                setSelectedPlatform(val);
+                setPage(1);
+              }}
+            />
+            <Chips
+              label="Cần xử lý"
+              items={issueChips}
+              value={
+                selectedBudgetStatus === 'OVERBUDGET'
+                  ? 'OVERBUDGET'
+                  : selectedTeamStructure === 'WITH_LEADER'
+                    ? 'WITH_LEADER'
+                    : selectedTeamStructure === 'DIRECT_TO_LEAD'
+                      ? 'DIRECT_TO_LEAD'
+                      : selectedStatus === 'Off'
+                        ? 'OFF'
+                        : ''
+              }
+              onChange={(k) => {
+                if (k === 'OVERBUDGET') setSelectedBudgetStatus(selectedBudgetStatus === 'OVERBUDGET' ? 'ALL' : 'OVERBUDGET');
+                else if (k === 'WITH_LEADER') setSelectedTeamStructure(selectedTeamStructure === 'WITH_LEADER' ? 'ALL' : 'WITH_LEADER');
+                else if (k === 'DIRECT_TO_LEAD') setSelectedTeamStructure(selectedTeamStructure === 'DIRECT_TO_LEAD' ? 'ALL' : 'DIRECT_TO_LEAD');
+                else if (k === 'OFF') setSelectedStatus(selectedStatus === 'Off' ? 'ALL' : 'Off');
+                setPage(1);
+              }}
+            />
           </div>
         </div>
-      </div>
+
+        <DataTable
+          columns={columns}
+          rows={currentStores}
+          rowKey={(s) => s.id}
+          onRowClick={(s) => setSelectedStoreForDetail(s)}
+          stickyLast
+          empty={
+            <EmptyState
+              title={stores.length === 0 ? 'Chưa có gian hàng nào' : 'Không có gian hàng khớp bộ lọc'}
+              description={
+                stores.length === 0
+                  ? 'Khai báo gian hàng đầu tiên để quản lý danh mục và phân bổ chỉ tiêu.'
+                  : 'Bỏ bớt điều kiện lọc hoặc tìm kiếm theo từ khóa khác.'
+              }
+              action={
+                stores.length === 0 ? (
+                  <Button variant="primary" icon={Plus} onClick={handleOpenAdd}>
+                    Thêm gian hàng
+                  </Button>
+                ) : (
+                  <Button onClick={handleResetFilters}>Xóa bộ lọc</Button>
+                )
+              }
+            />
+          }
+        />
+
+        <Pagination
+          page={page}
+          pageSize={PAGE_SIZE}
+          total={filteredStores.length}
+          onPageChange={setPage}
+        />
+      </Panel>
 
       {/* 4. MODAL: CHI TIẾT CHUYÊN SÂU GIAN HÀNG (STORE DETAIL MODAL) */}
       <Presence show={!!selectedStoreForDetail}>
@@ -966,18 +996,18 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
       {/* 6. MODAL: TẠO GIAN HÀNG MASTER DATA (CHỈ KHAI BÁO THUỘC BRAND NÀO & SÀN) */}
       <Presence show={!!isQuickAddModalOpen}>
       {isQuickAddModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/50 flex items-center justify-center p-3 sm:p-5 overflow-y-auto animate-in fade-in duration-(--motion-base)">
-          <div data-motion-panel className="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-lg w-full p-5 space-y-4 my-auto animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div className="fixed inset-0 z-50 bg-ink/50 flex items-center justify-center p-3 sm:p-5 overflow-y-auto animate-in fade-in duration-(--motion-base)">
+          <div data-motion-panel className="bg-white rounded-2xl shadow-xl border border-line max-w-lg w-full p-5 space-y-4 my-auto animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
+            <div className="flex items-center justify-between pb-3 border-b border-line">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-slate-100 text-slate-800 flex items-center justify-center font-semibold">
-                  <Store className="w-5 h-5 text-slate-700" />
+                <div className="w-9 h-9 rounded-xl bg-sunken text-ink flex items-center justify-center font-semibold">
+                  <Store className="w-5 h-5 text-ink-2" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-sm text-slate-900">
+                  <h3 className="font-semibold text-sm text-ink">
                     Thêm Gian Hàng Mới (Dữ Liệu Gốc)
                   </h3>
-                  <p className="text-2xs text-slate-500">
+                  <p className="text-2xs text-ink-3">
                     Khai báo định danh gian hàng theo quy chuẩn Master Data
                   </p>
                 </div>
@@ -985,7 +1015,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
               <button
                 type="button"
                 onClick={() => setIsQuickAddModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
+                className="text-ink-3 hover:text-ink-2 p-1 cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -993,7 +1023,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
 
             <form onSubmit={handleQuickAddStore} className="space-y-3.5 text-xs">
               <div>
-                <label className="block text-slate-700 font-semibold mb-1">
+                <label className="block text-ink-2 font-semibold mb-1">
                   Tên gian hàng vận hành *
                 </label>
                 <input
@@ -1002,34 +1032,34 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                   placeholder="VD: ClubClio TikTok Shop, Kutieskin Shopee Mall..."
                   value={quickStoreName}
                   onChange={(e) => setQuickStoreName(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-slate-800 text-xs bg-slate-50/50"
+                  className="w-full px-3 py-2 border border-line rounded-xl focus:outline-none focus:border-line-strong text-xs bg-canvas"
                   autoFocus
                 />
-                <p className="text-2xs text-slate-400 mt-1">
+                <p className="text-2xs text-ink-3 mt-1">
                   Định danh chính xác gian hàng trên sàn để liên kết đối soát hợp đồng và booking.
                 </p>
               </div>
 
               <div>
-                <label className="block text-slate-700 font-semibold mb-1">
+                <label className="block text-ink-2 font-semibold mb-1">
                   Thuộc Thương hiệu (Brand chủ quản) *
                 </label>
                 <select
                   value={quickBrandName}
                   onChange={(e) => setQuickBrandName(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white focus:outline-none focus:border-slate-800 font-medium text-xs text-slate-800"
+                  className="w-full px-3 py-2 border border-line rounded-xl bg-white focus:outline-none focus:border-line-strong font-medium text-xs text-ink"
                 >
                   {uniqueBrands.map(b => (
                     <option key={b} value={b}>{b}</option>
                   ))}
                 </select>
-                <p className="text-2xs text-slate-400 mt-1">
+                <p className="text-2xs text-ink-3 mt-1">
                   Gian hàng sẽ được gắn vào nhãn hàng để quản lý hạn mức ngân sách và quy chuẩn nội dung.
                 </p>
               </div>
 
               <div>
-                <label className="block text-slate-700 font-semibold mb-1">
+                <label className="block text-ink-2 font-semibold mb-1">
                   Sàn / Nền tảng vận hành *
                 </label>
                 <div className="grid grid-cols-3 gap-2">
@@ -1042,8 +1072,8 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                         onClick={() => setQuickPlatform(p)}
                         className={`py-2 px-3 rounded-xl border text-xs font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer ${
                           isSelected
-                            ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
-                            : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                            ? 'bg-ink text-white border-line-strong shadow-xs'
+                            : 'bg-white text-ink-2 border-line hover:bg-canvas'
                         }`}
                       >
                         <ChannelTag channel={p} />
@@ -1054,29 +1084,29 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
               </div>
 
               {/* Informative notice */}
-              <div className="p-3 bg-blue-50/60 rounded-xl border border-blue-200/70 text-2xs text-blue-900 space-y-1">
-                <div className="font-semibold flex items-center gap-1.5 text-blue-950">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-blue-700 shrink-0" />
+              <div className="p-3 bg-accent-soft rounded-xl border border-accent/20/70 text-2xs text-accent space-y-1">
+                <div className="font-semibold flex items-center gap-1.5 text-accent">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-accent shrink-0" />
                   <span>Quy trình quản trị B2C Upbase:</span>
                 </div>
-                <p className="text-blue-800 text-2xs leading-relaxed">
+                <p className="text-accent text-2xs leading-relaxed">
                   Tại Master Data, chỉ cần khai báo Tên gian hàng và thuộc Brand nào. Sau khi lưu, bấm nút <strong>&quot;Hồ sơ&quot;</strong> để sang màn hình Quản lý gian hàng riêng biệt, cấu hình hạn mức Net (File 4.1), cơ cấu 2 tầng (Trưởng phòng / Leader / Specialist) và chỉ tiêu Order.
                 </p>
               </div>
 
               {/* Action Buttons */}
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-line">
                 <button
                   type="button"
                   onClick={() => setIsQuickAddModalOpen(false)}
-                  className="px-4 py-2 border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 transition text-xs font-medium cursor-pointer"
+                  className="px-4 py-2 border border-line rounded-xl text-ink-2 hover:bg-canvas transition text-xs font-medium cursor-pointer"
                 >
                   Hủy
                 </button>
                 <button
                   type="submit"
                   disabled={!quickStoreName.trim()}
-                  className="px-4 py-2 bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white text-xs font-semibold rounded-xl transition shadow-xs flex items-center gap-1.5 cursor-pointer"
+                  className="px-4 py-2 bg-ink hover:bg-ink disabled:opacity-50 text-white text-xs font-semibold rounded-xl transition shadow-xs flex items-center gap-1.5 cursor-pointer"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   Tạo gian hàng vào Master Data
@@ -1091,14 +1121,14 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
       {/* 7. MODAL: SỬA THÔNG SỐ GIAN HÀNG */}
       <Presence show={!!(isModalOpen && editingStore)}>
       {isModalOpen && editingStore && (
-        <div className="fixed inset-0 z-50 bg-slate-900/50 flex items-center justify-center p-3 sm:p-5 overflow-y-auto animate-in fade-in duration-(--motion-base)">
-          <div data-motion-panel className="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-2xl w-full p-5 space-y-4 my-auto max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div className="fixed inset-0 z-50 bg-ink/50 flex items-center justify-center p-3 sm:p-5 overflow-y-auto animate-in fade-in duration-(--motion-base)">
+          <div data-motion-panel className="bg-white rounded-2xl shadow-xl border border-line max-w-2xl w-full p-5 space-y-4 my-auto max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
+            <div className="flex items-center justify-between pb-3 border-b border-line">
               <div>
-                <h3 className="font-semibold text-sm text-slate-900">
+                <h3 className="font-semibold text-sm text-ink">
                   Cập nhật Gian hàng [{editingStore.storeName}]
                 </h3>
-                <p className="text-2xs text-slate-500">
+                <p className="text-2xs text-ink-3">
                   Cấu hình các thông số vận hành sàn, phân cấp quản lý và hạn mức Order
                 </p>
               </div>
@@ -1108,7 +1138,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                   setIsModalOpen(false);
                   setEditingStore(null);
                 }}
-                className="text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
+                className="text-ink-3 hover:text-ink-2 p-1 cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1118,26 +1148,26 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
               {/* Group 1: Identity */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-700 font-medium mb-1">Tên gian hàng vận hành *</label>
+                  <label className="block text-ink-2 font-medium mb-1">Tên gian hàng vận hành *</label>
                   <input
                     type="text"
                     required
                     placeholder="VD: Brand_Platform_Service"
                     value={form.storeName}
                     onChange={(e) => setForm(prev => ({ ...prev, storeName: e.target.value }))}
-                    className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:border-slate-800"
+                    className="w-full px-3 py-1.5 border border-line rounded-lg focus:outline-none focus:border-line-strong"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-slate-700 font-medium mb-1">Mã vận hành Upbase (SO ID)</label>
+                  <label className="block text-ink-2 font-medium mb-1">Mã vận hành Upbase (SO ID)</label>
                   <input
                     type="text"
                     required
                     placeholder="VD: SO-B2C-001"
                     value={form.storeOperationId}
                     onChange={(e) => setForm(prev => ({ ...prev, storeOperationId: e.target.value }))}
-                    className="w-full px-3 py-1.5 border border-slate-200 rounded-lg font-mono focus:outline-none focus:border-slate-800"
+                    className="w-full px-3 py-1.5 border border-line rounded-lg font-mono focus:outline-none focus:border-line-strong"
                   />
                 </div>
               </div>
@@ -1145,11 +1175,11 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
               {/* Group 2: Brand & Platform */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-slate-700 font-medium mb-1">Thuộc Thương hiệu</label>
+                  <label className="block text-ink-2 font-medium mb-1">Thuộc Thương hiệu</label>
                   <select
                     value={form.brandName}
                     onChange={(e) => setForm(prev => ({ ...prev, brandName: e.target.value }))}
-                    className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg bg-white focus:outline-none focus:border-slate-800 font-medium"
+                    className="w-full px-2.5 py-1.5 border border-line rounded-lg bg-white focus:outline-none focus:border-line-strong font-medium"
                   >
                     {uniqueBrands.map(b => (
                       <option key={b} value={b}>{b}</option>
@@ -1158,11 +1188,11 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-slate-700 font-medium mb-1">Nền tảng sàn</label>
+                  <label className="block text-ink-2 font-medium mb-1">Nền tảng sàn</label>
                   <select
                     value={form.platform}
                     onChange={(e) => setForm(prev => ({ ...prev, platform: e.target.value as StorePortfolioItem['platform'] }))}
-                    className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg bg-white focus:outline-none focus:border-slate-800"
+                    className="w-full px-2.5 py-1.5 border border-line rounded-lg bg-white focus:outline-none focus:border-line-strong"
                   >
                     <option value="TikTok Shop">TikTok Shop</option>
                     <option value="Shopee Mall">Shopee Mall</option>
@@ -1171,11 +1201,11 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-slate-700 font-medium mb-1">Trạng thái vận hành</label>
+                  <label className="block text-ink-2 font-medium mb-1">Trạng thái vận hành</label>
                   <select
                     value={form.operationStatus}
                     onChange={(e) => setForm(prev => ({ ...prev, operationStatus: e.target.value as NonNullable<StorePortfolioItem['operationStatus']> }))}
-                    className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg bg-white focus:outline-none focus:border-slate-800 font-medium"
+                    className="w-full px-2.5 py-1.5 border border-line rounded-lg bg-white focus:outline-none focus:border-line-strong font-medium"
                   >
                     <option value="Live">Live (Đang chạy)</option>
                     <option value="Off">Off (Dừng hợp tác)</option>
@@ -1187,36 +1217,36 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
               {/* Group 3: Technical parameters */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-slate-700 font-medium mb-1">Gói dịch vụ</label>
+                  <label className="block text-ink-2 font-medium mb-1">Gói dịch vụ</label>
                   <input
                     type="text"
                     placeholder="VD: E2E-S, Live-S..."
                     value={form.servicePackage}
                     onChange={(e) => setForm(prev => ({ ...prev, servicePackage: e.target.value }))}
-                    className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:border-slate-800"
+                    className="w-full px-3 py-1.5 border border-line rounded-lg focus:outline-none focus:border-line-strong"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-slate-700 font-medium mb-1">Shop ID sàn kỹ thuật</label>
+                  <label className="block text-ink-2 font-medium mb-1">Shop ID sàn kỹ thuật</label>
                   <input
                     type="text"
                     placeholder="VD: TTS_VN_839219"
                     value={form.platformStoreId}
                     onChange={(e) => setForm(prev => ({ ...prev, platformStoreId: e.target.value }))}
-                    className="w-full px-3 py-1.5 border border-slate-200 rounded-lg font-mono focus:outline-none focus:border-slate-800"
+                    className="w-full px-3 py-1.5 border border-line rounded-lg font-mono focus:outline-none focus:border-line-strong"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-slate-700 font-medium mb-1">Hoa hồng Affiliate (%)</label>
+                  <label className="block text-ink-2 font-medium mb-1">Hoa hồng Affiliate (%)</label>
                   <input
                     type="number"
                     min={0}
                     max={100}
                     value={form.affiliateRate}
                     onChange={(e) => setForm(prev => ({ ...prev, affiliateRate: Number(e.target.value) }))}
-                    className="w-full px-3 py-1.5 border border-slate-200 rounded-lg font-mono focus:outline-none focus:border-slate-800"
+                    className="w-full px-3 py-1.5 border border-line rounded-lg font-mono focus:outline-none focus:border-line-strong"
                   />
                 </div>
               </div>
@@ -1224,13 +1254,13 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
               {/* Spark Ads check & Store URL */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
                 <div className="sm:col-span-2">
-                  <label className="block text-slate-700 font-medium mb-1">Link gian hàng sàn (URL)</label>
+                  <label className="block text-ink-2 font-medium mb-1">Link gian hàng sàn (URL)</label>
                   <input
                     type="url"
                     placeholder="https://..."
                     value={form.storeUrl}
                     onChange={(e) => setForm(prev => ({ ...prev, storeUrl: e.target.value }))}
-                    className="w-full px-3 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:border-slate-800"
+                    className="w-full px-3 py-1.5 border border-line rounded-lg focus:outline-none focus:border-line-strong"
                   />
                 </div>
 
@@ -1240,21 +1270,21 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                       type="checkbox"
                       checked={form.requiresSparkAds}
                       onChange={(e) => setForm(prev => ({ ...prev, requiresSparkAds: e.target.checked }))}
-                      className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                      className="rounded border-line-strong text-accent focus:ring-accent/20"
                     />
-                    <span className="text-2xs text-slate-700 font-medium">Bắt buộc ủy quyền mã Ads</span>
+                    <span className="text-2xs text-ink-2 font-medium">Bắt buộc ủy quyền mã Ads</span>
                   </label>
                 </div>
               </div>
 
               {/* Group 4: Order Budget & Targets */}
-              <div className="pt-2 border-t border-slate-100 space-y-2">
-                <span className="text-xs font-semibold text-slate-900 block">
+              <div className="pt-2 border-t border-line space-y-2">
+                <span className="text-xs font-semibold text-ink block">
                   Hạn mức Kế hoạch Tháng (File 4.1 Plan Order)
                 </span>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                   <div>
-                    <label className="block text-slate-600 text-2xs font-semibold mb-1">
+                    <label className="block text-ink-2 text-2xs font-semibold mb-1">
                       Hạn mức Net Kế toán duyệt (VNĐ)
                     </label>
                     <input
@@ -1263,12 +1293,12 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                       step={1000000}
                       value={form.monthlyBudget}
                       onChange={(e) => setForm(prev => ({ ...prev, monthlyBudget: Number(e.target.value) }))}
-                      className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg font-mono focus:outline-none focus:border-slate-800"
+                      className="w-full px-2.5 py-1.5 border border-line rounded-lg font-mono focus:outline-none focus:border-line-strong"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-slate-600 text-2xs font-semibold mb-1">
+                    <label className="block text-ink-2 text-2xs font-semibold mb-1">
                       Mục tiêu Doanh số NMV (VNĐ)
                     </label>
                     <input
@@ -1277,12 +1307,12 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                       step={1000000}
                       value={form.monthlyTargetGmv}
                       onChange={(e) => setForm(prev => ({ ...prev, monthlyTargetGmv: Number(e.target.value) }))}
-                      className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg font-mono focus:outline-none focus:border-slate-800"
+                      className="w-full px-2.5 py-1.5 border border-line rounded-lg font-mono focus:outline-none focus:border-line-strong"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-slate-600 text-2xs font-semibold mb-1">
+                    <label className="block text-ink-2 text-2xs font-semibold mb-1">
                       Target Video Affiliate
                     </label>
                     <input
@@ -1290,12 +1320,12 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                       min={0}
                       value={form.targetAffiliateContents}
                       onChange={(e) => setForm(prev => ({ ...prev, targetAffiliateContents: Number(e.target.value) }))}
-                      className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg font-mono focus:outline-none focus:border-slate-800"
+                      className="w-full px-2.5 py-1.5 border border-line rounded-lg font-mono focus:outline-none focus:border-line-strong"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-slate-600 text-2xs font-semibold mb-1">
+                    <label className="block text-ink-2 text-2xs font-semibold mb-1">
                       Target Video Kênh Brand
                     </label>
                     <input
@@ -1303,24 +1333,24 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                       min={0}
                       value={form.targetSelfChannelContents}
                       onChange={(e) => setForm(prev => ({ ...prev, targetSelfChannelContents: Number(e.target.value) }))}
-                      className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg font-mono focus:outline-none focus:border-slate-800"
+                      className="w-full px-2.5 py-1.5 border border-line rounded-lg font-mono focus:outline-none focus:border-line-strong"
                     />
                   </div>
                 </div>
               </div>
 
               {/* Group 5: Team Organization */}
-              <div className="pt-2 border-t border-slate-100 space-y-2.5">
-                <div className="text-xs font-semibold text-slate-900 flex items-center justify-between">
+              <div className="pt-2 border-t border-line space-y-2.5">
+                <div className="text-xs font-semibold text-ink flex items-center justify-between">
                   <span>Cơ cấu Nhân sự Phụ trách (2 Tầng)</span>
-                  <span className="text-2xs text-slate-400 font-normal">Trưởng phòng: Đặng Thị Yến Nhi</span>
+                  <span className="text-2xs text-ink-3 font-normal">Trưởng phòng: Đặng Thị Yến Nhi</span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <StaffSearchSelect
                     label="Chuyên viên Booking chính (Specialist PIC) *"
                     sublabel="(Trực tiếp chạy deal và chịu trách nhiệm nghiệm thu)"
-                    badgeColorClass="text-blue-600"
+                    badgeColorClass="text-accent"
                     placeholder="Chọn chuyên viên B2C..."
                     value={form.b2cOwnerName}
                     departmentHint="BOOKING"
@@ -1328,7 +1358,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                   />
 
                   <div>
-                    <label className="block text-slate-700 font-medium mb-1 text-2xs">
+                    <label className="block text-ink-2 font-medium mb-1 text-2xs">
                       Trưởng nhóm Booking (Leader phụ trách)
                     </label>
                     <select
@@ -1341,12 +1371,12 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                           hasBookingLeader: val !== ''
                         }));
                       }}
-                      className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs bg-white focus:outline-none focus:border-slate-800"
+                      className="w-full px-2.5 py-1.5 border border-line rounded-lg text-xs bg-white focus:outline-none focus:border-line-strong"
                     >
                       <option value="">Không có leader (Chuyên viên làm việc trực tiếp Trưởng phòng)</option>
                       <option value="Nguyễn Thị Ngọc Tâm">Nguyễn Thị Ngọc Tâm (Trưởng nhóm 8 gian)</option>
                     </select>
-                    <p className="text-2xs text-slate-400 mt-0.5">
+                    <p className="text-2xs text-ink-3 mt-0.5">
                       Theo quy chuẩn B2C: Chỉ có 8 gian hàng có Trưởng nhóm sơ duyệt, các gian còn lại làm việc trực tiếp Trưởng phòng.
                     </p>
                   </div>
@@ -1354,7 +1384,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                   <StaffSearchSelect
                     label="Growth PIC (Bộ phận Tăng trưởng sàn)"
                     sublabel="(Giao chỉ tiêu và đối soát NMV)"
-                    badgeColorClass="text-emerald-600"
+                    badgeColorClass="text-positive"
                     placeholder="Chọn Growth PIC..."
                     value={form.growthPic}
                     departmentHint="GROWTH"
@@ -1364,7 +1394,7 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                   <StaffSearchSelect
                     label="Account PIC (Quan hệ Brand)"
                     sublabel="(Quản lý hợp đồng tổng thể)"
-                    badgeColorClass="text-blue-600"
+                    badgeColorClass="text-accent"
                     placeholder="Chọn Account PIC..."
                     value={form.accountOwnerName}
                     departmentHint="ACCOUNT"
@@ -1374,18 +1404,18 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
               </div>
 
               {/* Group 6: Scope */}
-              <div className="pt-2 border-t border-slate-100">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-2xs">
+              <div className="pt-2 border-t border-line">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 bg-canvas p-2.5 rounded-lg border border-line text-2xs">
                   <label className="flex items-start gap-2 cursor-pointer">
                     <input
                       type="checkbox"
                       checked={form.isB2cManaged}
                       onChange={(e) => setForm(prev => ({ ...prev, isB2cManaged: e.target.checked }))}
-                      className="mt-0.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                      className="mt-0.5 rounded border-line-strong text-accent focus:ring-accent/20"
                     />
                     <div>
-                      <span className="font-semibold text-slate-800">Marketing B2C phụ trách</span>
-                      <p className="text-slate-500 text-2xs">Tính vào danh mục đối soát của phòng B2C</p>
+                      <span className="font-semibold text-ink">Marketing B2C phụ trách</span>
+                      <p className="text-ink-3 text-2xs">Tính vào danh mục đối soát của phòng B2C</p>
                     </div>
                   </label>
 
@@ -1394,28 +1424,28 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
                       type="checkbox"
                       checked={form.requiresB2cPlan}
                       onChange={(e) => setForm(prev => ({ ...prev, requiresB2cPlan: e.target.checked }))}
-                      className="mt-0.5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                      className="mt-0.5 rounded border-line-strong text-positive focus:ring-positive/20"
                     />
                     <div>
-                      <span className="font-semibold text-slate-800">Yêu cầu lập Kế hoạch tháng</span>
-                      <p className="text-slate-500 text-2xs">Phải có bản phân rã Input plan hàng tuần</p>
+                      <span className="font-semibold text-ink">Yêu cầu lập Kế hoạch tháng</span>
+                      <p className="text-ink-3 text-2xs">Phải có bản phân rã Input plan hàng tuần</p>
                     </div>
                   </label>
                 </div>
               </div>
 
               {/* Action Buttons */}
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-line">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-3.5 py-1.5 border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 transition font-medium"
+                  className="px-3.5 py-1.5 border border-line rounded-xl text-ink-2 hover:bg-canvas transition font-medium"
                 >
                   Hủy
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-xl transition shadow-xs"
+                  className="px-4 py-1.5 bg-ink hover:bg-ink text-white font-semibold rounded-xl transition shadow-xs"
                 >
                   Lưu thông tin gian hàng
                 </button>
@@ -1429,58 +1459,58 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
       {/* 7. MODAL: XÓA / OFFBOARD GIAN HÀNG */}
       <Presence show={!!deletingStore}>
       {deletingStore && (
-        <div className="fixed inset-0 z-50 bg-slate-900/50 flex items-center justify-center p-4 animate-in fade-in duration-(--motion-base)">
-          <div data-motion-panel className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-md w-full p-6 space-y-4 animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
+        <div className="fixed inset-0 z-50 bg-ink/50 flex items-center justify-center p-4 animate-in fade-in duration-(--motion-base)">
+          <div data-motion-panel className="bg-white rounded-2xl shadow-2xl border border-line max-w-md w-full p-6 space-y-4 animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
             <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0 border border-rose-200">
+              <div className="w-10 h-10 rounded-xl bg-critical-soft text-critical flex items-center justify-center shrink-0 border border-critical/20">
                 <Trash2 className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="font-semibold text-base text-slate-900">Xác nhận xử lý gian hàng</h3>
-                <p className="text-2xs text-slate-500 mt-0.5">
-                  Mã gian hàng: <span className="font-mono font-semibold text-slate-800">{deletingStore.storeOperationId || deletingStore.id}</span>
+                <h3 className="font-semibold text-base text-ink">Xác nhận xử lý gian hàng</h3>
+                <p className="text-2xs text-ink-3 mt-0.5">
+                  Mã gian hàng: <span className="font-mono font-semibold text-ink">{deletingStore.storeOperationId || deletingStore.id}</span>
                 </p>
               </div>
             </div>
 
-            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1.5 text-xs">
-              <div className="font-semibold text-slate-900">{deletingStore.storeName}</div>
-              <div className="text-slate-500 text-2xs flex items-center gap-2">
+            <div className="p-3 bg-canvas rounded-xl border border-line space-y-1.5 text-xs">
+              <div className="font-semibold text-ink">{deletingStore.storeName}</div>
+              <div className="text-ink-3 text-2xs flex items-center gap-2">
                 <span>{deletingStore.brandName}</span>
                 <span>•</span>
                 <span>{deletingStore.platform}</span>
                 <span>•</span>
-                <span className="font-medium text-slate-700">{deletingStore.servicePackage || 'E2E-S'}</span>
+                <span className="font-medium text-ink-2">{deletingStore.servicePackage || 'E2E-S'}</span>
               </div>
             </div>
 
-            <div className="space-y-2 text-xs text-slate-600">
+            <div className="space-y-2 text-xs text-ink-2">
               <p>Khuyến nghị an toàn từ hệ thống Upbase:</p>
               <button
                 type="button"
                 onClick={() => handleOffboardStore(deletingStore)}
-                className="w-full py-2.5 px-3 rounded-xl border border-blue-200 bg-blue-50 hover:bg-blue-100 text-blue-800 font-semibold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer"
+                className="w-full py-2.5 px-3 rounded-xl border border-accent/20 bg-accent-soft hover:bg-accent-soft text-accent font-semibold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer"
               >
-                <Archive className="w-3.5 h-3.5 text-blue-700" />
+                <Archive className="w-3.5 h-3.5 text-accent" />
                 <span>Chuyển sang &quot;Off / Dừng hợp tác&quot; (Khuyên dùng)</span>
               </button>
-              <p className="text-2xs text-slate-400">
+              <p className="text-2xs text-ink-3">
                 Lưu trữ gian hàng giữ toàn bộ dữ liệu báo cáo GMV và lịch sử booking của nhãn hàng.
               </p>
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-line">
               <button
                 type="button"
                 onClick={() => setDeletingStore(null)}
-                className="px-3.5 py-1.5 border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 transition text-xs font-medium cursor-pointer"
+                className="px-3.5 py-1.5 border border-line rounded-xl text-ink-2 hover:bg-canvas transition text-xs font-medium cursor-pointer"
               >
                 Hủy bỏ
               </button>
               <button
                 type="button"
                 onClick={() => handleHardDeleteStore(deletingStore)}
-                className="px-4 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-semibold rounded-xl transition text-xs flex items-center gap-1.5 shadow-xs cursor-pointer"
+                className="px-4 py-1.5 bg-critical hover:bg-critical text-white font-semibold rounded-xl transition text-xs flex items-center gap-1.5 shadow-xs cursor-pointer"
               >
                 <Trash2 className="w-3.5 h-3.5" />
                 Xóa vĩnh viễn

@@ -179,7 +179,7 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
                     </button>
 
                     <div className="min-w-0 space-y-1">
-                      <div className="flex items-center gap-2 flex-wrap">
+                      <div className="flex items-center gap-1.5 flex-wrap">
                         <span
                           onClick={() => onTaskActionClick && onTaskActionClick(task)}
                           className={`text-xs font-semibold cursor-pointer hover:text-accent transition truncate ${
@@ -190,27 +190,37 @@ export const CockpitView: React.FC<CockpitViewProps> = ({
                         >
                           {task.title}
                         </span>
-                        <span className="text-2xs px-1.5 py-0.5 rounded font-medium bg-sunken text-ink-2 border border-line">
+                        <span className="text-2xs text-ink-3">·</span>
+                        <span className="text-2xs font-medium text-ink-2">
                           {task.team}
                         </span>
                         {task.difficultyLabel && (
-                          <span className="text-2xs px-1.5 py-0.5 rounded font-semibold bg-accent-soft text-accent border border-accent/20">
-                            {task.difficultyLabel}
-                            {typeof task.difficultyMultiplier === 'number'
-                              ? ` · Hệ số ${task.difficultyMultiplier.toFixed(2).replace('.', ',')}`
-                              : ''}
-                          </span>
+                          <>
+                            <span className="text-2xs text-ink-3">·</span>
+                            <span className="text-2xs font-medium text-accent">
+                              {task.difficultyLabel}
+                              {typeof task.difficultyMultiplier === 'number'
+                                ? ` (HS ${task.difficultyMultiplier.toFixed(2).replace('.', ',')})`
+                                : ''}
+                            </span>
+                          </>
                         )}
                         {task.assignmentRole && (
-                          <span className="text-2xs px-1.5 py-0.5 rounded font-medium bg-canvas text-ink-2 border border-line">
-                            {ROLE_SHORT_LABELS[task.assignmentRole]}
-                            {typeof task.contributionWeightPct === 'number' ? ` · ${task.contributionWeightPct}%` : ''}
-                          </span>
+                          <>
+                            <span className="text-2xs text-ink-3">·</span>
+                            <span className="text-2xs text-ink-2">
+                              {ROLE_SHORT_LABELS[task.assignmentRole]}
+                              {typeof task.contributionWeightPct === 'number' ? ` (${task.contributionWeightPct}%)` : ''}
+                            </span>
+                          </>
                         )}
                         {typeof task.calculatedWorkloadPoints === 'number' && (
-                          <span className="text-2xs font-mono font-semibold text-ink-2">
-                            {task.calculatedWorkloadPoints.toFixed(1)} điểm WL
-                          </span>
+                          <>
+                            <span className="text-2xs text-ink-3">·</span>
+                            <span className="text-2xs font-mono font-semibold text-ink-2">
+                              {task.calculatedWorkloadPoints.toFixed(1)} điểm WL
+                            </span>
+                          </>
                         )}
                       </div>
 

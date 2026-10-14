@@ -236,13 +236,11 @@ export const WeeklyAdsReportHubView: React.FC<WeeklyAdsReportHubViewProps> = ({
       <div className="bg-surface rounded-xl border border-line p-5">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2.5 flex-wrap">
-              <span className="px-2.5 py-1 rounded-md text-xs font-semibold bg-accent-soft text-accent border border-line flex items-center gap-1.5">
-                <BarChart3 className="w-3.5 h-3.5" />
-                Đối soát báo cáo quảng cáo tuần
-              </span>
-            </div>
-            <p className="text-xs text-ink-3 mt-1.5">
+            <h2 className="text-sm font-semibold text-ink flex items-center gap-2">
+              <BarChart3 className="w-4 h-4 text-accent" />
+              <span>Đối soát báo cáo quảng cáo tuần</span>
+            </h2>
+            <p className="text-xs text-ink-3 mt-1">
               Đọc file báo cáo tuần xuất từ TikTok Shop, đối soát mã Spark Ads, tính ROAS thực tế và đồng bộ vào danh bạ KOC.
             </p>
           </div>
@@ -254,7 +252,7 @@ export const WeeklyAdsReportHubView: React.FC<WeeklyAdsReportHubViewProps> = ({
               onClick={() => setIsAdsReportOpen(true)}
               className="btn-md bg-ink hover:bg-ink-2 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
             >
-              <FileText className="w-3.5 h-3.5 text-emerald-400" />
+              <FileText className="w-3.5 h-3.5 text-positive" />
               <span>Lập báo cáo hiệu quả Ads</span>
             </button>
 
@@ -321,8 +319,8 @@ export const WeeklyAdsReportHubView: React.FC<WeeklyAdsReportHubViewProps> = ({
               >
                 <FileSpreadsheet className={`w-3.5 h-3.5 ${isSelected ? 'text-white' : 'text-ink-3'}`} />
                 <span>{rep.reportWeek}</span>
-                <span className={`text-2xs px-1.5 py-0.5 rounded font-mono ${isSelected ? 'bg-white/20 text-white' : 'bg-sunken text-ink-2'}`}>
-                  {rep.totalRows.toLocaleString()} dòng
+                <span className={`text-2xs font-mono tabular-nums ${isSelected ? 'text-white/80' : 'text-ink-3'}`}>
+                  ({rep.totalRows.toLocaleString()} dòng)
                 </span>
               </button>
             );
@@ -357,9 +355,9 @@ export const WeeklyAdsReportHubView: React.FC<WeeklyAdsReportHubViewProps> = ({
 
           <div className="bg-surface rounded-xl border border-line p-3.5">
             <div className="text-2xs font-medium text-ink-3">ROAS tổng thể</div>
-            <div className="text-lg font-semibold font-mono text-accent mt-1 flex items-center gap-1">
+            <div className="text-lg font-semibold font-mono text-accent mt-1 flex items-baseline gap-1.5">
               <span>{activeReportData.meta.overallRoas}x</span>
-              <span className="text-2xs font-medium text-positive bg-positive-soft px-1.5 py-0.5 rounded">
+              <span className="text-2xs font-medium text-positive font-sans">
                 Hiệu quả tốt
               </span>
             </div>
@@ -417,8 +415,8 @@ export const WeeklyAdsReportHubView: React.FC<WeeklyAdsReportHubViewProps> = ({
             <Layers className="w-4 h-4" />
             <span>Theo chiến dịch & sản phẩm</span>
             {activeReportData && (
-              <span className="text-2xs bg-sunken text-ink-2 px-1.5 py-0.5 rounded font-mono">
-                {activeReportData.campaigns.length}
+              <span className="text-2xs text-ink-3 font-mono tabular-nums">
+                ({activeReportData.campaigns.length})
               </span>
             )}
           </button>
@@ -435,8 +433,8 @@ export const WeeklyAdsReportHubView: React.FC<WeeklyAdsReportHubViewProps> = ({
             <Award className="w-4 h-4 text-warning" />
             <span>Đối soát KOC & nhóm hiệu quả cao</span>
             {activeReportData && (
-              <span className="text-2xs bg-warning-soft text-warning px-1.5 py-0.5 rounded font-mono font-semibold">
-                {activeReportData.creators.filter(c => c.isWinnerTop20).length}
+              <span className="text-2xs text-ink-3 font-mono tabular-nums">
+                ({activeReportData.creators.filter(c => c.isWinnerTop20).length})
               </span>
             )}
           </button>
@@ -453,8 +451,8 @@ export const WeeklyAdsReportHubView: React.FC<WeeklyAdsReportHubViewProps> = ({
             <Video className="w-4 h-4 text-accent" />
             <span>Chi tiết video & đối soát Spark Ads</span>
             {activeReportData && (
-              <span className="text-2xs bg-sunken text-ink-2 px-1.5 py-0.5 rounded font-mono">
-                100
+              <span className="text-2xs text-ink-3 font-mono tabular-nums">
+                (100)
               </span>
             )}
           </button>
@@ -517,12 +515,12 @@ export const WeeklyAdsReportHubView: React.FC<WeeklyAdsReportHubViewProps> = ({
                         {formatVnd(camp.gmv)}
                       </td>
                       <td className="py-3 px-3 text-center">
-                        <span className={`px-2 py-0.5 rounded text-xs font-mono font-semibold ${
+                        <span className={`text-xs font-mono font-semibold tabular-nums ${
                           camp.roas >= 5.0
-                            ? 'bg-positive-soft text-positive'
+                            ? 'text-positive'
                             : camp.roas >= 3.0
-                            ? 'bg-accent-soft text-accent'
-                            : 'bg-warning-soft text-warning'
+                            ? 'text-accent'
+                            : 'text-warning'
                         }`}>
                           {camp.roas}x
                         </span>
@@ -544,15 +542,15 @@ export const WeeklyAdsReportHubView: React.FC<WeeklyAdsReportHubViewProps> = ({
                       </td>
                       <td className="py-3 px-4 text-center">
                         {camp.roas >= 5.0 ? (
-                          <span className="px-2 py-0.5 bg-positive-soft text-positive rounded text-2xs font-semibold">
+                          <span className="text-positive text-xs font-semibold">
                             Tăng ngân sách
                           </span>
                         ) : camp.roas >= 3.5 ? (
-                          <span className="px-2 py-0.5 bg-accent-soft text-accent rounded text-2xs font-semibold">
+                          <span className="text-accent text-xs font-medium">
                             Duy trì ổn định
                           </span>
                         ) : (
-                          <span className="px-2 py-0.5 bg-warning-soft text-warning rounded text-2xs font-semibold">
+                          <span className="text-warning text-xs font-medium">
                             Tối ưu kịch bản
                           </span>
                         )}
@@ -639,10 +637,10 @@ export const WeeklyAdsReportHubView: React.FC<WeeklyAdsReportHubViewProps> = ({
                     <tr key={idx} className="hover:bg-canvas transition">
                       <td className="py-3 px-4">
                         <div className="font-semibold text-ink text-xs flex items-center gap-1.5">
-                          {cr.accountName}
+                          <span>{cr.accountName}</span>
                           {cr.isWinnerTop20 && (
-                            <span className="text-2xs bg-warning-soft text-warning px-1.5 py-0.5 rounded font-semibold">
-                              Hiệu quả cao
+                            <span className="text-2xs text-warning font-medium">
+                              · Hiệu quả cao
                             </span>
                           )}
                         </div>
@@ -658,8 +656,8 @@ export const WeeklyAdsReportHubView: React.FC<WeeklyAdsReportHubViewProps> = ({
                             <CheckCircle2 className="w-3.5 h-3.5" />
                             <span>{cr.mappedStageName}</span>
                             {cr.mappedTier && (
-                              <span className="text-2xs bg-sunken text-ink-2 px-1 rounded font-normal">
-                                {cr.mappedTier}
+                              <span className="text-2xs text-ink-3 font-normal">
+                                · {cr.mappedTier}
                               </span>
                             )}
                           </div>
@@ -676,12 +674,12 @@ export const WeeklyAdsReportHubView: React.FC<WeeklyAdsReportHubViewProps> = ({
                         {formatVnd(cr.gmv)}
                       </td>
                       <td className="py-3 px-3 text-center">
-                        <span className={`px-2 py-0.5 rounded text-xs font-mono font-semibold ${
+                        <span className={`text-xs font-mono font-semibold tabular-nums ${
                           cr.roas >= 6.0
-                            ? 'bg-positive-soft text-positive'
+                            ? 'text-positive'
                             : cr.roas >= 4.0
-                            ? 'bg-accent-soft text-accent'
-                            : 'bg-sunken text-ink-2'
+                            ? 'text-accent'
+                            : 'text-ink-2'
                         }`}>
                           {cr.roas}x
                         </span>
@@ -696,21 +694,21 @@ export const WeeklyAdsReportHubView: React.FC<WeeklyAdsReportHubViewProps> = ({
                         {(cr.avgHookRate2s * 100).toFixed(1)}%
                       </td>
                       <td className="py-3 px-3">
-                        <span className="text-2xs bg-sunken text-ink-2 px-2 py-0.5 rounded">
+                        <span className="text-xs text-ink-2">
                           {cr.authorizationType}
                         </span>
                       </td>
                       <td className="py-3 px-4 text-center">
                         {cr.roas >= 6.0 ? (
-                          <span className="px-2 py-0.5 bg-warning-soft text-warning rounded text-2xs font-semibold">
+                          <span className="text-warning text-xs font-semibold">
                             Nhóm dẫn đầu
                           </span>
                         ) : cr.roas >= 4.0 ? (
-                          <span className="px-2 py-0.5 bg-positive-soft text-positive rounded text-2xs font-semibold">
+                          <span className="text-positive text-xs font-semibold">
                             Đạt KPI
                           </span>
                         ) : (
-                          <span className="px-2 py-0.5 bg-sunken text-ink-3 rounded text-2xs">
+                          <span className="text-ink-3 text-xs">
                             Cần tối ưu
                           </span>
                         )}
@@ -766,7 +764,7 @@ export const WeeklyAdsReportHubView: React.FC<WeeklyAdsReportHubViewProps> = ({
               </select>
             </div>
 
-            <div className="text-xs font-semibold text-critical bg-critical-soft px-2.5 py-1 rounded-lg flex items-center gap-1.5">
+            <div className="text-xs font-medium text-critical flex items-center gap-1.5">
               <AlertTriangle className="w-3.5 h-3.5" />
               <span>Cảnh báo: Có {activeReportData.topCreatives.filter(c => c.explorationSecondaryStatus.includes('Authorization')).length} video cần KOC cấp lại mã Ads</span>
             </div>
@@ -796,10 +794,10 @@ export const WeeklyAdsReportHubView: React.FC<WeeklyAdsReportHubViewProps> = ({
                     return (
                       <tr key={idx} className={`hover:bg-canvas transition ${isAlertAuth ? 'bg-warning-soft/40' : ''}`}>
                         <td className="py-3 px-4">
-                          <div className="font-mono text-2xs font-semibold text-ink-3 bg-sunken px-1.5 py-0.5 rounded w-fit">
+                          <div className="font-mono text-2xs text-ink-3">
                             Mã: {cr.videoId}
                           </div>
-                          <div className="font-medium text-ink text-xs mt-1 max-w-sm truncate" title={cr.videoTitle}>
+                          <div className="font-medium text-ink text-xs mt-0.5 max-w-sm truncate" title={cr.videoTitle}>
                             {cr.videoTitle}
                           </div>
                         </td>
@@ -816,10 +814,10 @@ export const WeeklyAdsReportHubView: React.FC<WeeklyAdsReportHubViewProps> = ({
                           {formatVnd(cr.gmv)}
                         </td>
                         <td className="py-3 px-3 text-center">
-                          <span className={`px-2 py-0.5 rounded text-xs font-mono font-semibold ${
+                          <span className={`text-xs font-mono font-semibold tabular-nums ${
                             cr.roas >= 4.0
-                              ? 'bg-positive-soft text-positive'
-                              : 'bg-sunken text-ink-2'
+                              ? 'text-positive'
+                              : 'text-ink-2'
                           }`}>
                             {cr.roas}x
                           </span>
@@ -831,25 +829,25 @@ export const WeeklyAdsReportHubView: React.FC<WeeklyAdsReportHubViewProps> = ({
                           {(cr.completionRate100 * 100).toFixed(1)}%
                         </td>
                         <td className="py-3 px-3">
-                          <span className={`text-2xs px-2 py-0.5 rounded ${
+                          <span className={`text-xs ${
                             cr.isSparkAds 
-                              ? 'bg-accent-soft text-accent font-semibold'
-                              : 'bg-sunken text-ink-2'
+                              ? 'text-accent font-medium'
+                              : 'text-ink-2'
                           }`}>
                             {cr.authorizationType}
                           </span>
                         </td>
                         <td className="py-3 px-4 text-center">
                           {isAlertAuth ? (
-                            <span className="px-2 py-0.5 bg-warning-soft text-warning rounded text-2xs font-semibold">
+                            <span className="text-warning text-xs font-semibold">
                               Cần cấp lại mã Ads
                             </span>
                           ) : cr.explorationSecondaryStatus === 'Performing' ? (
-                            <span className="px-2 py-0.5 bg-positive-soft text-positive rounded text-2xs font-semibold">
+                            <span className="text-positive text-xs font-semibold">
                               Đang chạy
                             </span>
                           ) : (
-                            <span className="px-2 py-0.5 bg-sunken text-ink-2 rounded text-2xs">
+                            <span className="text-ink-3 text-xs">
                               {cr.explorationSecondaryStatus}
                             </span>
                           )}

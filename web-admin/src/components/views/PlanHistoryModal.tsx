@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Presence } from '../ui';
+import React, { useState } from 'react';
+import { Presence, Status } from '../ui';
 import {
   X,
   MessageSquare,
@@ -50,7 +50,6 @@ export const PlanHistoryModal: React.FC<PlanHistoryModalProps> = ({
   initialTab = 'VERSION_HISTORY',
   currentUser,
   onClose,
-  onSendMessage: _onSendMessage,
   onStatusChange,
   onUpdatePlan,
   onOpenPlanInStudio,
@@ -70,27 +69,34 @@ export const PlanHistoryModal: React.FC<PlanHistoryModalProps> = ({
   const [newAdsBudget, setNewAdsBudget] = useState<number>(0);
   const [newGmv, setNewGmv] = useState<number>(0);
 
-  useEffect(() => {
+  const openKey = `${isOpen}-${initialTab}-${plan?.id || ''}`;
+  const [prevOpenKey, setPrevOpenKey] = useState(openKey);
+  if (openKey !== prevOpenKey) {
+    setPrevOpenKey(openKey);
     if (isOpen) {
       setActiveTab(initialTab);
       setSelectedSnapshotId(null);
       setIsCreatingVersion(false);
     }
-  }, [isOpen, initialTab, plan?.id]);
+  }
 
   // Đồng bộ vai trò theo tài khoản đăng nhập thực tế
-  useEffect(() => {
-    if (!currentUser) return;
-    if (currentUser.role === 'GROWTH_MEMBER' || currentUser.role === 'GROWTH_MANAGER') {
-      setCurrentRole('GROWTH');
-    } else if (currentUser.role === 'MEDIA_MEMBER' || currentUser.role === 'MEDIA_MANAGER') {
-      setCurrentRole('MEDIA');
-    } else if (['ADMIN', 'MANAGER'].includes(currentUser.role)) {
-      setCurrentRole('LEAD');
-    } else if (currentUser.role === 'BOOKING_MEMBER' || currentUser.role === 'LEADER') {
-      setCurrentRole('BOOKING');
+  const userRoleKey = currentUser?.role || '';
+  const [prevUserRoleKey, setPrevUserRoleKey] = useState(userRoleKey);
+  if (userRoleKey !== prevUserRoleKey) {
+    setPrevUserRoleKey(userRoleKey);
+    if (currentUser) {
+      if (currentUser.role === 'GROWTH_MEMBER' || currentUser.role === 'GROWTH_MANAGER') {
+        setCurrentRole('GROWTH');
+      } else if (currentUser.role === 'MEDIA_MEMBER' || currentUser.role === 'MEDIA_MANAGER') {
+        setCurrentRole('MEDIA');
+      } else if (['ADMIN', 'MANAGER'].includes(currentUser.role)) {
+        setCurrentRole('LEAD');
+      } else if (currentUser.role === 'BOOKING_MEMBER' || currentUser.role === 'LEADER') {
+        setCurrentRole('BOOKING');
+      }
     }
-  }, [currentUser]);
+  }
 
   if (!isOpen || !plan) return <Presence show={false} />;
 
@@ -158,7 +164,7 @@ export const PlanHistoryModal: React.FC<PlanHistoryModalProps> = ({
     };
 
     const newlyCreatedSnapshot: PlanVersionSnapshot = {
-      id: `SNAP-${plan.id}-${newVersionCode.replace(/[^a-zA-Z0-9]/g, '')}-${Date.now().toString().slice(-3)}`,
+      id: `SNAP-${plan.id}-${newVersionCode.replace(/[^a-zA-Z0-9]/g, '')}-${now.replace(/[^0-9]/g, '').slice(-4)}`,
       versionCode: newVersionCode,
       versionName: newVersionName || `Phiên bản ${newVersionCode}`,
       status: 'LOCKED',
@@ -263,18 +269,18 @@ export const PlanHistoryModal: React.FC<PlanHistoryModalProps> = ({
         {/* MODAL HEADER */}
         <div className="bg-white p-5 border-b border-slate-200 flex items-start justify-between gap-4">
           <div className="space-y-1">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="px-2.5 py-0.5 rounded-full text-2xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
-                Kỳ tháng: {plan.month}
-              </span>
-              <span className="px-2.5 py-0.5 rounded-full text-2xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                Đang áp dụng: {currentVersionCode} ({snapshots.length} phiên bản trong tháng)
-              </span>
-              <span className="font-semibold text-xs text-slate-700">
+            <div className="flex items-center gap-1.5 flex-wrap text-xs text-ink-3">
+              <span className="font-semibold text-ink">
                 {plan.storeName || plan.brandName}
               </span>
-              <span className="text-xs text-slate-400">• Growth: <strong className="text-amber-800">{plan.growthPic || 'Growth Team'}</strong></span>
-              <span className="text-xs text-slate-400">• B2C: <strong className="text-slate-800">{plan.pic}</strong></span>
+              <span>·</span>
+              <span>Kỳ tháng: <strong className="font-mono text-ink-2">{plan.month}</strong></span>
+              <span>·</span>
+              <span>Đang áp dụng: <strong className="font-mono text-positive">{currentVersionCode}</strong> ({snapshots.length} phiên bản)</span>
+              <span>·</span>
+              <span>Growth: <strong className="text-ink-2">{plan.growthPic || 'Growth Team'}</strong></span>
+              <span>·</span>
+              <span>B2C: <strong className="text-ink-2">{plan.pic}</strong></span>
             </div>
             <h3 className="font-semibold text-base text-slate-900 line-clamp-1">
               {plan.title}
@@ -381,8 +387,8 @@ export const PlanHistoryModal: React.FC<PlanHistoryModalProps> = ({
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <span className="text-2xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xs font-medium text-ink-3">
                       {snapshots.length} phiên bản trong tháng
                     </span>
                     <button
@@ -551,19 +557,21 @@ export const PlanHistoryModal: React.FC<PlanHistoryModalProps> = ({
                       >
                         <div>
                           <div className="flex items-center justify-between gap-1.5 flex-wrap">
-                            <div className="flex items-center gap-1.5">
-                              <span className="font-semibold text-xs text-blue-700 bg-blue-100/80 px-2 py-0.5 rounded-md font-mono">
+                            <div className="flex items-center gap-1.5 text-2xs text-ink-3">
+                              <span className="font-semibold text-xs text-accent font-mono">
                                 {snap.versionCode}
                               </span>
                               {isCurrentActive && (
-                                <span className="text-2xs font-semibold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800">
-                                  Đang áp dụng
-                                </span>
+                                <>
+                                  <span>·</span>
+                                  <span className="font-semibold text-positive">Đang áp dụng</span>
+                                </>
                               )}
                               {!isCurrentActive && isBaseline && (
-                                <span className="text-2xs font-medium px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">
-                                  Bản gốc đầu kỳ
-                                </span>
+                                <>
+                                  <span>·</span>
+                                  <span>Bản gốc đầu kỳ</span>
+                                </>
                               )}
                             </div>
                             <span className="text-2xs text-slate-400">
@@ -748,19 +756,9 @@ export const PlanHistoryModal: React.FC<PlanHistoryModalProps> = ({
                                   {formatVndShort(s.targetGmv)}
                                 </td>
                                 <td className="py-2 px-3 text-center whitespace-nowrap">
-                                  {isCur ? (
-                                    <span className="px-2 py-0.5 rounded-full text-2xs font-semibold bg-emerald-100 text-emerald-800">
-                                      Đang áp dụng
-                                    </span>
-                                  ) : i === 0 ? (
-                                    <span className="px-2 py-0.5 rounded-full text-2xs font-medium bg-slate-100 text-slate-600">
-                                      Bản gốc đầu kỳ
-                                    </span>
-                                  ) : (
-                                    <span className="px-2 py-0.5 rounded-full text-2xs font-medium bg-slate-100 text-slate-500">
-                                      Lưu trữ
-                                    </span>
-                                  )}
+                                  <Status tone={isCur ? 'positive' : 'neutral'}>
+                                    {isCur ? 'Đang áp dụng' : i === 0 ? 'Bản gốc đầu kỳ' : 'Lưu trữ'}
+                                  </Status>
                                 </td>
                               </tr>
                             );

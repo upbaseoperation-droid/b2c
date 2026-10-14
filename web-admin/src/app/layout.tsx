@@ -7,6 +7,7 @@ const beVietnam = Be_Vietnam_Pro({
   weight: ["400", "500", "600"],
   variable: "--font-be-vietnam",
   display: "swap",
+  preload: false,
 });
 
 const jetbrains = JetBrains_Mono({
@@ -14,6 +15,7 @@ const jetbrains = JetBrains_Mono({
   weight: ["400", "500"],
   variable: "--font-jetbrains",
   display: "swap",
+  preload: false,
 });
 
 export const metadata: Metadata = {

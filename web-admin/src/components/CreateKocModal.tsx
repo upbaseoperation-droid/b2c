@@ -265,10 +265,6 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between pb-3 border-b border-line">
           <div>
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-success-soft text-success border border-success-line w-fit mb-1">
-              <UserPlus className="w-3.5 h-3.5" />
-              Thêm KOC mới vào danh mục Upbase
-            </span>
             <h3 className="text-lg font-semibold text-ink">
               Tạo hồ sơ KOC chuẩn 65 trường nghiệp vụ
             </h3>
@@ -370,8 +366,8 @@ export const CreateKocModal: React.FC<CreateKocModalProps> = ({
                 <DollarSign className="w-3.5 h-3.5 text-success" />
                 Báo giá video &amp; tự động gán khung lương (KL)
               </span>
-              <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-info-soft text-info border border-info-line">
-                {salaryGrade} • {tier}
+              <span className="text-2xs font-medium text-ink-3">
+                {salaryGrade} · {tier}
               </span>
             </div>
 

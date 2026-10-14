@@ -31,7 +31,6 @@ import {
   Status,
   Textarea,
 } from '../ui';
-import type { StatusTone } from '../ui';
 import { contractApi, type ContractBootstrap } from './api';
 import { ContractDocumentViewer } from './ContractDocumentViewer';
 import { GROUP_ORDER, ROLE_LABEL, uniqueFields } from './contractUi';
@@ -41,13 +40,6 @@ export const CATEGORY_LABELS: Record<ContractCategory, string> = {
   ACCEPTANCE_SETTLEMENT: 'Nghiệm thu & Tất toán',
   CTV_FRAMEWORK: 'Hợp đồng nguyên tắc CTV',
   LIVESTREAM_APPENDIX: 'Phụ lục & Livestream',
-};
-
-const CATEGORY_TONES: Record<ContractCategory, StatusTone> = {
-  BOOKING_VIDEO: 'info',
-  ACCEPTANCE_SETTLEMENT: 'positive',
-  CTV_FRAMEWORK: 'warning',
-  LIVESTREAM_APPENDIX: 'neutral',
 };
 
 const SOURCE_LABELS: Record<string, string> = {
@@ -130,19 +122,16 @@ export function ContractCatalogView({
     });
   }, [data.templates, categoryFilter, search]);
 
-  useEffect(() => {
-    if (!filteredTemplates.some(t => t.id === selectedId) && filteredTemplates[0]) {
-      setSelectedId(filteredTemplates[0].id);
-    }
-  }, [filteredTemplates, selectedId]);
+  if (!filteredTemplates.some(t => t.id === selectedId) && filteredTemplates[0] && selectedId !== filteredTemplates[0].id) {
+    setSelectedId(filteredTemplates[0].id);
+  }
 
   useEffect(() => {
-    if (!selectedId) {
-      setLoadedTemplate(null);
-      return;
-    }
+    if (!selectedId) return;
     let cancelled = false;
-    setLoadingDetail(true);
+    Promise.resolve().then(() => {
+      if (!cancelled) setLoadingDetail(true);
+    });
     contractApi<{ template: LegalTemplate }>(`/api/contracts/templates/${selectedId}`)
       .then(r => {
         if (!cancelled) setLoadedTemplate(r.template);
@@ -413,16 +402,16 @@ export function ContractCatalogView({
                       </Status>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <Status tone={CATEGORY_TONES[cat]}>{CATEGORY_LABELS[cat]}</Status>
+                    <div className="flex flex-wrap items-center gap-1.5 text-2xs text-ink-2">
+                      <span className="font-medium text-ink">{CATEGORY_LABELS[cat]}</span>
                       {typeof t.fieldCount === 'number' && t.fieldCount > 0 && (
-                        <span className="text-2xs px-2 py-0.5 rounded bg-surface border border-line text-ink-2 tabular-nums">
-                          {t.fieldCount} vị trí điền
+                        <span className="text-ink-3 tabular-nums">
+                          · {t.fieldCount} vị trí điền
                         </span>
                       )}
                       {usedCount > 0 && (
-                        <span className="text-2xs px-2 py-0.5 rounded bg-surface border border-line text-ink-2 tabular-nums">
-                          {usedCount} hồ sơ đã tạo
+                        <span className="text-ink-3 tabular-nums">
+                          · {usedCount} hồ sơ đã tạo
                         </span>
                       )}
                     </div>
@@ -462,8 +451,8 @@ export function ContractCatalogView({
                       <Status tone={loadedTemplate.active !== false ? 'positive' : 'neutral'}>
                         {loadedTemplate.active !== false ? 'Đang áp dụng' : 'Ngừng áp dụng'}
                       </Status>
-                      <span className="text-xs font-code px-2 py-0.5 rounded bg-sunken border border-line text-ink-2">
-                        {loadedTemplate.id} · {loadedTemplate.version}
+                      <span className="text-xs font-code text-ink-3">
+                        · {loadedTemplate.id} · {loadedTemplate.version}
                       </span>
                     </div>
                     <p className="text-xs text-ink-2">
@@ -574,7 +563,7 @@ export function ContractCatalogView({
                                 </div>
                                 <div>
                                   {f.source ? (
-                                    <span className="inline-flex items-center gap-1 text-2xs px-2 py-0.5 rounded bg-accent-soft text-accent font-medium">
+                                    <span className="inline-flex items-center gap-1 text-2xs text-accent font-medium">
                                       <FileSpreadsheet className="w-3 h-3 shrink-0" />
                                       {SOURCE_LABELS[f.source] || f.source}
                                     </span>
@@ -586,9 +575,9 @@ export function ContractCatalogView({
                                   {f.context}
                                 </div>
                                 <div className="text-right">
-                                  <Status tone={f.required ? 'warning' : 'neutral'}>
+                                  <span className={`text-2xs font-medium ${f.required ? 'text-warning' : 'text-ink-3'}`}>
                                     {f.required ? 'Bắt buộc' : 'Tùy chọn'}
-                                  </Status>
+                                  </span>
                                 </div>
                               </div>
                             ))}

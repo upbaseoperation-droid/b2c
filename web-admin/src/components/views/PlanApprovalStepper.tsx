@@ -4,23 +4,13 @@ import React, { useState } from 'react';
 import {
   Clock,
   AlertCircle,
-  ArrowRight,
-  ShieldCheck,
-  FileCheck,
   RotateCcw,
   BadgeCheck,
   UserCheck,
-  Send,
   X,
-  AlertTriangle,
-  Info,
   Layers,
   Lock,
   PlusCircle,
-  TrendingUp,
-  DollarSign,
-  Tv,
-  Users
 } from 'lucide-react';
 import { 
   InputPlanBreakdownState, 
@@ -31,7 +21,7 @@ import {
   UserProfile
 } from '../../lib/types';
 import { formatVndShort } from '../../lib/format';
-import { ChangeFlash, Presence, StepMark } from '../ui';
+import { ChangeFlash, Presence, StepMark, Status } from '../ui';
 import { getPlanVersionSnapshots } from '../../lib/monthlyPlanData';
 
 interface PlanApprovalStepperProps {
@@ -110,7 +100,6 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
   const [newAdsBudget, setNewAdsBudget] = useState(plan.budgetAdsTotal || 45000000);
   const [newGmv, setNewGmv] = useState(plan.targetGmv);
 
-  const status = plan.status || 'DRAFT';
   const currentVersion = plan.currentVersionCode || 'v1.0';
   const isLocked = plan.isVersionLocked || false;
 
@@ -169,7 +158,7 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
 
       // Đóng băng dữ liệu phiên bản chốt (Freeze Snapshot)
       const snapshot: PlanVersionSnapshot = {
-        id: `SNAP-${plan.id}-${Date.now().toString().slice(-4)}`,
+        id: `SNAP-${plan.id}-${now.slice(-6).replace(/[^0-9]/g, '')}`,
         versionCode: currentVersion,
         versionName: `${currentVersion} - Bản chốt có hiệu lực`,
         status: 'LOCKED',
@@ -270,7 +259,7 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
     };
 
     const newSnap: PlanVersionSnapshot = {
-      id: `SNAP-${plan.id}-${newVersionCode.replace(/[^a-zA-Z0-9]/g, '')}-${Date.now().toString().slice(-3)}`,
+      id: `SNAP-${plan.id}-${newVersionCode.replace(/[^a-zA-Z0-9]/g, '')}-${now.slice(-5).replace(/[^0-9]/g, '')}`,
       versionCode: newVersionCode,
       versionName: newVersionTitle || `${newVersionCode} - Điều chỉnh giữa kỳ`,
       status: 'LOCKED',
@@ -366,7 +355,7 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
             setPendingActionType('CONFIRM_GROWTH');
             setIsActionNoteOpen(true);
           }}
-          className="w-full py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-2xs transition"
+          className="w-full py-1.5 rounded-lg bg-primary hover:bg-primary-hover text-white font-semibold text-2xs transition"
         >
           Xác nhận giao số
         </button>
@@ -392,7 +381,7 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
             setPendingActionType('CONFIRM_BOOKING');
             setIsActionNoteOpen(true);
           }}
-          className="w-full py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-2xs transition"
+          className="w-full py-1.5 rounded-lg bg-primary hover:bg-primary-hover text-white font-semibold text-2xs transition"
         >
           Xác nhận cơ cấu
         </button>
@@ -417,7 +406,7 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
             setPendingActionType('CONFIRM_MEDIA');
             setIsActionNoteOpen(true);
           }}
-          className="w-full py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-2xs transition"
+          className="w-full py-1.5 rounded-lg bg-primary hover:bg-primary-hover text-white font-semibold text-2xs transition"
         >
           Xác nhận gói Ads & ROAS
         </button>
@@ -445,8 +434,8 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
           }}
           className={`w-full py-1.5 rounded-lg font-semibold text-2xs transition ${
             allThreePartiesConfirmed
-              ? 'bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer'
-              : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+              ? 'bg-positive hover:opacity-90 text-white cursor-pointer'
+              : 'bg-sunken text-ink-3 cursor-not-allowed'
           }`}
         >
           {allThreePartiesConfirmed ? `Duyệt & chốt ${currentVersion}` : 'Cần đủ 3 bên xác nhận'}
@@ -456,32 +445,30 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
   ];
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs">
+    <div className="bg-surface rounded-2xl border border-line shadow-xs">
       {/* HEADER: TIÊU ĐỀ + PHIÊN BẢN + CÔNG CỤ */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 px-5 py-3.5 border-b border-slate-100">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 px-5 py-3.5 border-b border-line">
         <div className="flex items-center gap-3 min-w-0">
           {/* Chốt phiên bản: biểu tượng khóa "đóng dấu" một lần */}
           <ChangeFlash on={isLocked} className="shrink-0">
             <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border ${
-              isLocked ? 'bg-emerald-50 border-emerald-200' : 'bg-blue-50 border-blue-200'
+              isLocked ? 'bg-positive-soft border-line' : 'bg-accent-soft border-line'
             }`}>
-              {isLocked ? <Lock className="w-4 h-4 text-emerald-600" /> : <Layers className="w-4 h-4 text-blue-600" />}
+              {isLocked ? <Lock className="w-4 h-4 text-positive" /> : <Layers className="w-4 h-4 text-accent" />}
             </div>
           </ChangeFlash>
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="font-semibold text-sm text-slate-900">Đồng thuận & phê duyệt</h3>
-              <span className={`text-2xs px-2 py-0.5 rounded-full font-semibold border ${
-                isLocked ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'
-              }`}>
-                {currentVersion} • {isLocked ? 'Đã chốt' : 'Bản nháp'}
-              </span>
-              <span className="text-2xs font-semibold text-slate-500">{confirmedCount}/4 bước hoàn tất</span>
+              <h3 className="font-semibold text-sm text-ink">Đồng thuận &amp; phê duyệt</h3>
+              <span className="text-xs font-mono font-semibold text-ink-2">{currentVersion}</span>
+              <Status tone={isLocked ? 'positive' : 'warning'}>{isLocked ? 'Đã chốt' : 'Bản nháp'}</Status>
+              <span className="text-2xs text-ink-3">·</span>
+              <span className="text-2xs font-semibold text-ink-2 tabular-nums">{confirmedCount}/4 bước hoàn tất</span>
               <span className="w-16 h-1 rounded-full bg-sunken overflow-hidden" aria-hidden="true">
                 <span className="data-bar block h-full rounded-full bg-positive" style={{ width: `${(confirmedCount / 4) * 100}%` }} />
               </span>
             </div>
-            <p className="text-2xs text-slate-500 mt-0.5 truncate">
+            <p className="text-2xs text-ink-2 mt-0.5 truncate">
               Growth giao số → Marketing B2C phân rã → Media nhận gói Ads → Trưởng phòng duyệt
             </p>
           </div>
@@ -490,13 +477,13 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
         <div className="flex items-center gap-2 flex-wrap">
           {headerExtra}
           {onRoleChange && (
-            <div className="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded-lg border border-slate-200 text-xs" title="Chỉ tài khoản Admin dùng để chạy thử">
-              <UserCheck className="w-3.5 h-3.5 text-slate-500" />
-              <span className="text-slate-500">Chạy thử vai trò:</span>
+            <div className="flex items-center gap-1.5 bg-canvas px-2 py-1 rounded-lg border border-line text-xs" title="Chỉ tài khoản Admin dùng để chạy thử">
+              <UserCheck className="w-3.5 h-3.5 text-ink-3" />
+              <span className="text-ink-2">Chạy thử vai trò:</span>
               <select
                 value={currentRole}
                 onChange={(e) => onRoleChange(e.target.value as PlanDiscussionRole)}
-                className="font-semibold text-slate-800 bg-transparent focus:outline-none cursor-pointer"
+                className="font-semibold text-ink bg-transparent focus:outline-none cursor-pointer"
               >
                 <option value="GROWTH">Growth ({plan.growthPic || 'Growth Lead'})</option>
                 <option value="BOOKING">Booking ({plan.pic || 'Nhân viên'})</option>
@@ -512,7 +499,7 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
                 setNewVersionCode(`v${(Math.round(current * 10) + 1) / 10}`.replace(/^v(\d+)$/, 'v$1.0'));
                 setIsGrowthNewVersionModalOpen(true);
               }}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white hover:bg-blue-50 text-blue-700 border border-blue-200 font-semibold text-xs transition"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface hover:bg-accent-soft text-accent border border-line font-semibold text-xs transition"
               title="Growth tạo phiên bản điều chỉnh mới"
             >
               <PlusCircle className="w-3.5 h-3.5" />
@@ -528,19 +515,19 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
           <div
             key={step.key}
             className={`flex flex-col p-3 rounded-xl border transition-colors duration-(--motion-slow) ease-enter ${
-              step.confirmed ? 'bg-emerald-50/40 border-emerald-200' : 'bg-white border-slate-200'
+              step.confirmed ? 'bg-positive-soft/40 border-line-strong' : 'bg-surface border-line'
             }`}
           >
             <div className="flex items-center gap-2">
               {/* Bước vừa được xác nhận: vòng tròn đóng dấu, dấu tích vẽ nét (DESIGN_SYSTEM.md §9) */}
               <StepMark done={step.confirmed} label={step.no} />
               <div className="min-w-0 flex-1">
-                <div className="text-2xs font-semibold text-slate-500">{step.team}</div>
-                <div className="text-xs font-semibold text-slate-900 truncate">{step.task}</div>
+                <div className="text-2xs font-semibold text-ink-3">{step.team}</div>
+                <div className="text-xs font-semibold text-ink truncate">{step.task}</div>
               </div>
               <ChangeFlash on={step.confirmed}>
-                <span className={`text-2xs font-semibold px-1.5 py-0.5 rounded-full whitespace-nowrap ${
-                  step.confirmed ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-50 text-amber-700 border border-amber-200'
+                <span className={`text-2xs font-medium whitespace-nowrap ${
+                  step.confirmed ? 'text-positive' : 'text-warning'
                 }`}>
                   {step.confirmed ? step.doneLabel : step.pendingLabel}
                 </span>
@@ -550,14 +537,14 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
             <dl className="mt-2.5 space-y-1 text-2xs flex-1">
               {step.lines.map(line => (
                 <div key={line.label} className="flex items-center justify-between gap-2">
-                  <dt className="text-slate-500">{line.label}</dt>
-                  <dd className="font-semibold text-slate-800 font-mono">{line.value}</dd>
+                  <dt className="text-ink-2">{line.label}</dt>
+                  <dd className="font-semibold text-ink font-mono">{line.value}</dd>
                 </div>
               ))}
             </dl>
 
             {step.confirmed && step.confirmedBy && (
-              <div className="mt-2 text-2xs text-emerald-700 truncate animate-in fade-in slide-in-from-bottom-1 duration-(--motion-slow) ease-enter" title={step.confirmedBy}>
+              <div className="mt-2 text-2xs text-positive truncate animate-in fade-in slide-in-from-bottom-1 duration-(--motion-slow) ease-enter" title={step.confirmedBy}>
                 ✓ {step.confirmedBy}
               </div>
             )}
@@ -568,9 +555,9 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
       </div>
 
       {/* THANH TRẠNG THÁI DƯỚI */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 px-5 py-3 border-t border-slate-100 bg-slate-50/60 rounded-b-2xl">
-        <div className={`flex items-center gap-2 text-xs ${isLocked ? 'text-emerald-700' : 'text-slate-600'}`}>
-          {isLocked ? <Lock className="w-3.5 h-3.5 text-emerald-600 shrink-0" /> : <Clock className="w-3.5 h-3.5 text-amber-500 shrink-0" />}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 px-5 py-3 border-t border-line bg-canvas rounded-b-2xl">
+        <div className={`flex items-center gap-2 text-xs ${isLocked ? 'text-positive' : 'text-ink-2'}`}>
+          {isLocked ? <Lock className="w-3.5 h-3.5 text-positive shrink-0" /> : <Clock className="w-3.5 h-3.5 text-warning shrink-0" />}
           <span>
             {isLocked
               ? `Phiên bản ${currentVersion} đã chốt. B2C triển khai theo số cam kết.`
@@ -582,7 +569,7 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
           {!isLocked && (
             <button
               onClick={() => setIsRevisionModalOpen(true)}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white hover:bg-rose-50 text-rose-700 border border-rose-200 font-semibold text-xs transition"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface hover:bg-critical-soft text-critical border border-line font-semibold text-xs transition"
             >
               <RotateCcw className="w-3.5 h-3.5" />
               <span>Yêu cầu chỉnh sửa</span>
@@ -594,25 +581,25 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
       {/* MODAL: GROWTH TẠO PHIÊN BẢN MỚI */}
       <Presence show={!!isGrowthNewVersionModalOpen}>
       {isGrowthNewVersionModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 flex items-center justify-center z-50 p-4 animate-in fade-in duration-(--motion-base)">
-          <div data-motion-panel className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 border border-slate-200 animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div className="fixed inset-0 bg-ink/60 flex items-center justify-center z-50 p-4 animate-in fade-in duration-(--motion-base)">
+          <div data-motion-panel className="bg-surface rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 border border-line animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
+            <div className="flex items-center justify-between pb-3 border-b border-line">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-xl bg-accent-soft text-accent flex items-center justify-center">
                   <PlusCircle className="w-4 h-4" />
                 </div>
                 <div>
-                  <h4 className="font-semibold text-sm text-slate-900">
+                  <h4 className="font-semibold text-sm text-ink">
                     Growth: Khởi tạo phiên bản kế hoạch mới
                   </h4>
-                  <p className="text-2xs text-slate-500">
+                  <p className="text-2xs text-ink-2">
                     Phân nhánh từ {currentVersion} để điều chỉnh chỉ tiêu hoặc bổ sung ngân sách Top-up
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setIsGrowthNewVersionModalOpen(false)}
-                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+                className="p-1 rounded-lg text-ink-3 hover:text-ink hover:bg-sunken"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -621,90 +608,90 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
             <div className="space-y-3.5 text-xs">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-700 font-semibold mb-1">Mã phiên bản mới:</label>
+                  <label className="block text-ink font-semibold mb-1">Mã phiên bản mới:</label>
                   <input
                     type="text"
                     value={newVersionCode}
                     onChange={(e) => setNewVersionCode(e.target.value)}
-                    className="w-full px-3 py-1.5 border border-slate-200 rounded-xl text-xs font-semibold text-blue-700 focus:outline-none focus:border-blue-500"
+                    className="w-full px-3 py-1.5 border border-line rounded-xl text-xs font-semibold text-accent focus:outline-none focus:border-accent"
                     placeholder="v1.1, v2.0..."
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-700 font-semibold mb-1">Tên phiên bản:</label>
+                  <label className="block text-ink font-semibold mb-1">Tên phiên bản:</label>
                   <input
                     type="text"
                     value={newVersionTitle}
                     onChange={(e) => setNewVersionTitle(e.target.value)}
-                    className="w-full px-3 py-1.5 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:border-blue-500"
+                    className="w-full px-3 py-1.5 border border-line rounded-xl text-xs font-medium focus:outline-none focus:border-accent"
                     placeholder="VD: Điều chỉnh Đợt 2..."
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-slate-700 font-semibold mb-1">
-                  Lý do điều chỉnh (Bắt buộc để lưu lịch sử đối soát) <span className="text-rose-500">*</span>:
+                <label className="block text-ink font-semibold mb-1">
+                  Lý do điều chỉnh (Bắt buộc để lưu lịch sử đối soát) <span className="text-critical">*</span>:
                 </label>
                 <textarea
                   rows={3}
                   value={newChangeReason}
                   onChange={(e) => setNewChangeReason(e.target.value)}
                   placeholder="Ví dụ: Nhãn hàng tăng 30M ngân sách Ads và bổ sung 10 video Shopee cho chiến dịch Mega 10.10. Cần B2C và Media cân đối lại..."
-                  className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-blue-500 resize-none"
+                  className="w-full px-3 py-2 border border-line rounded-xl text-xs focus:outline-none focus:border-accent resize-none"
                 />
               </div>
 
               {/* Nhập số tổng mới */}
-              <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2.5">
-                <div className="font-semibold text-slate-800 text-2xs">
+              <div className="bg-canvas p-3 rounded-xl border border-line space-y-2.5">
+                <div className="font-semibold text-ink text-2xs">
                   Chỉ tiêu và ngân sách giao mới:
                 </div>
                 <div className="grid grid-cols-3 gap-2">
                   <div>
-                    <label className="text-2xs text-slate-500 block mb-0.5">Tổng ngân sách (VNĐ):</label>
+                    <label className="text-2xs text-ink-2 block mb-0.5">Tổng ngân sách (VNĐ):</label>
                     <input
                       type="number"
                       step={5000000}
                       value={newBudget}
                       onChange={(e) => setNewBudget(Number(e.target.value))}
-                      className="w-full px-2 py-1 border border-slate-300 rounded-lg text-xs font-semibold text-slate-800"
+                      className="w-full px-2 py-1 border border-line-strong rounded-lg text-xs font-semibold text-ink"
                     />
                   </div>
                   <div>
-                    <label className="text-2xs text-slate-500 block mb-0.5">Gói Ads tổng (Media):</label>
+                    <label className="text-2xs text-ink-2 block mb-0.5">Gói Ads tổng (Media):</label>
                     <input
                       type="number"
                       step={5000000}
                       value={newAdsBudget}
                       onChange={(e) => setNewAdsBudget(Number(e.target.value))}
-                      className="w-full px-2 py-1 border border-slate-300 rounded-lg text-xs font-semibold text-blue-700"
+                      className="w-full px-2 py-1 border border-line-strong rounded-lg text-xs font-semibold text-accent"
                     />
                   </div>
                   <div>
-                    <label className="text-2xs text-slate-500 block mb-0.5">Target GMV (VNĐ):</label>
+                    <label className="text-2xs text-ink-2 block mb-0.5">Target GMV (VNĐ):</label>
                     <input
                       type="number"
                       step={50000000}
                       value={newGmv}
                       onChange={(e) => setNewGmv(Number(e.target.value))}
-                      className="w-full px-2 py-1 border border-slate-300 rounded-lg text-xs font-semibold text-emerald-700"
+                      className="w-full px-2 py-1 border border-line-strong rounded-lg text-xs font-semibold text-positive"
                     />
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-line">
               <button
                 onClick={() => setIsGrowthNewVersionModalOpen(false)}
-                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100"
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-ink-2 hover:bg-sunken"
               >
                 Hủy
               </button>
               <button
                 onClick={handleGrowthCreateNewVersion}
-                className="px-4 py-2 rounded-xl text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white shadow-xs"
+                className="px-4 py-2 rounded-xl text-xs font-semibold bg-primary hover:bg-primary-hover text-white shadow-xs"
               >
                 Kích Hoạt Phiên Bản {newVersionCode}
               </button>
@@ -717,12 +704,12 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
       {/* MODAL: NHẬP GHI CHÚ KHI THỰC HIỆN HÀNH ĐỘNG DUYỆT */}
       <Presence show={!!isActionNoteOpen}>
       {isActionNoteOpen && (
-        <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4 animate-in fade-in duration-(--motion-base)">
-          <div data-motion-panel className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 border border-slate-200 animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div className="fixed inset-0 bg-ink/50 flex items-center justify-center z-50 p-4 animate-in fade-in duration-(--motion-base)">
+          <div data-motion-panel className="bg-surface rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 border border-line animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
+            <div className="flex items-center justify-between pb-3 border-b border-line">
               <div className="flex items-center gap-2">
-                <BadgeCheck className="w-5 h-5 text-blue-600" />
-                <h4 className="font-semibold text-sm text-slate-900">
+                <BadgeCheck className="w-5 h-5 text-accent" />
+                <h4 className="font-semibold text-sm text-ink">
                   {pendingActionType === 'CONFIRM_GROWTH' && 'Growth: Xác nhận giao số tổng và gói Ads'}
                   {pendingActionType === 'CONFIRM_BOOKING' && 'Marketing B2C: Xác nhận cơ cấu phân rã'}
                   {pendingActionType === 'CONFIRM_MEDIA' && 'Media: Xác nhận nhận gói tổng Ads và ROAS'}
@@ -735,29 +722,29 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
                   setPendingActionType(null);
                   setActionNote('');
                 }}
-                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+                className="p-1 rounded-lg text-ink-3 hover:text-ink hover:bg-sunken"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             <div className="space-y-3 text-xs">
-              <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-1">
-                <div className="text-slate-600">
-                  Kế hoạch: <strong className="text-slate-900">{plan.title}</strong>
+              <div className="bg-canvas p-3 rounded-xl border border-line space-y-1">
+                <div className="text-ink-2">
+                  Kế hoạch: <strong className="text-ink">{plan.title}</strong>
                 </div>
-                <div className="text-slate-600">
-                  Phiên bản: <strong className="text-blue-700">{currentVersion}</strong> • Ngân sách: <strong>{formatVndShort(plan.totalTargetBudget)}</strong> • Gói Ads: <strong className="text-blue-700">{formatVndShort(plan.budgetAdsTotal || 0)}</strong>
+                <div className="text-ink-2">
+                  Phiên bản: <strong className="text-accent">{currentVersion}</strong> • Ngân sách: <strong>{formatVndShort(plan.totalTargetBudget)}</strong> • Gói Ads: <strong className="text-accent">{formatVndShort(plan.budgetAdsTotal || 0)}</strong>
                 </div>
-                <div className="text-2xs text-slate-500">
-                  Thao tác bởi: <strong className="text-slate-800">{currentUser?.name || 'Chuyên viên'}</strong> ({currentUser?.roleTitle || 'Thành viên'})
+                <div className="text-2xs text-ink-2">
+                  Thao tác bởi: <strong className="text-ink">{currentUser?.name || 'Chuyên viên'}</strong> ({currentUser?.roleTitle || 'Thành viên'})
                 </div>
               </div>
 
               {pendingActionType === 'CONFIRM_MEDIA' && (
-                <div className="bg-blue-50/70 p-3 rounded-xl border border-blue-200 space-y-2">
+                <div className="bg-accent-soft/70 p-3 rounded-xl border border-line space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="font-semibold text-blue-900">Mức ROAS cam kết tối thiểu:</span>
+                    <span className="font-semibold text-ink">Mức ROAS cam kết tối thiểu:</span>
                     <div className="flex items-center gap-1.5">
                       <input
                         type="number"
@@ -766,19 +753,19 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
                         max="20.0"
                         value={mediaRoasInput}
                         onChange={(e) => setMediaRoasInput(parseFloat(e.target.value) || 4.5)}
-                        className="w-20 px-2 py-1 bg-white border border-blue-300 rounded-lg text-xs font-semibold text-blue-800 text-center focus:outline-none focus:border-blue-500"
+                        className="w-20 px-2 py-1 bg-surface border border-line-strong rounded-lg text-xs font-semibold text-accent text-center focus:outline-none focus:border-accent"
                       />
-                      <span className="font-semibold text-blue-900 text-xs">x</span>
+                      <span className="font-semibold text-ink text-xs">x</span>
                     </div>
                   </div>
-                  <p className="text-2xs text-blue-700 leading-relaxed">
+                  <p className="text-2xs text-ink-2 leading-relaxed">
                     * Gói ngân sách Ads là tổng hạn mức ({formatVndShort(plan.budgetAdsTotal || 0)}) không chia nhỏ theo kênh. Media chịu trách nhiệm điều phối ngân sách này giữa Spark Ads và các nhóm quảng cáo để đảm bảo mức ROAS đã cam kết.
                   </p>
                 </div>
               )}
 
               <div>
-                <label className="block text-slate-700 font-semibold mb-1">
+                <label className="block text-ink font-semibold mb-1">
                   Ý kiến ghi chú (lưu vào lịch sử trao đổi điện tử):
                 </label>
                 <textarea
@@ -786,27 +773,27 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
                   value={actionNote}
                   onChange={(e) => setActionNote(e.target.value)}
                   placeholder="Nhập ý kiến cam kết hoặc lưu ý thực hiện..."
-                  className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-blue-500 resize-none"
+                  className="w-full px-3 py-2 border border-line rounded-xl text-xs focus:outline-none focus:border-accent resize-none"
                 />
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-line">
               <button
                 onClick={() => {
                   setIsActionNoteOpen(false);
                   setPendingActionType(null);
                   setActionNote('');
                 }}
-                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100"
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-ink-2 hover:bg-sunken"
               >
                 Hủy
               </button>
               <button
                 onClick={handleConfirmAction}
-                className="px-4 py-2 rounded-xl text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white shadow-xs"
+                className="px-4 py-2 rounded-xl text-xs font-semibold bg-primary hover:bg-primary-hover text-white shadow-xs"
               >
-                Xác nhận & Cập nhật
+                Xác nhận &amp; Cập nhật
               </button>
             </div>
           </div>
@@ -817,12 +804,12 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
       {/* MODAL: YÊU CẦU HIỆU CHỈNH / TRẢ VỀ */}
       <Presence show={!!isRevisionModalOpen}>
       {isRevisionModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4 animate-in fade-in duration-(--motion-base)">
-          <div data-motion-panel className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 border border-slate-200 animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div className="fixed inset-0 bg-ink/50 flex items-center justify-center z-50 p-4 animate-in fade-in duration-(--motion-base)">
+          <div data-motion-panel className="bg-surface rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 border border-line animate-in fade-in zoom-in-[0.97] slide-in-from-bottom-1 duration-(--motion-base) ease-enter">
+            <div className="flex items-center justify-between pb-3 border-b border-line">
               <div className="flex items-center gap-2">
-                <RotateCcw className="w-5 h-5 text-rose-600" />
-                <h4 className="font-semibold text-sm text-slate-900">
+                <RotateCcw className="w-5 h-5 text-critical" />
+                <h4 className="font-semibold text-sm text-ink">
                   Yêu Cầu Hiệu Chỉnh Kế Hoạch
                 </h4>
               </div>
@@ -831,19 +818,19 @@ export const PlanApprovalStepper: React.FC<PlanApprovalStepperProps> = ({
                   setIsRevisionModalOpen(false);
                   setRevisionNote('');
                 }}
-                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+                className="p-1 rounded-lg text-ink-3 hover:text-ink hover:bg-sunken"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             <div className="space-y-3 text-xs">
-              <div className="bg-rose-50/70 p-3 rounded-xl border border-rose-200 text-rose-800 space-y-1">
+              <div className="bg-critical-soft/70 p-3 rounded-xl border border-line text-critical space-y-1">
                 <div className="font-semibold flex items-center gap-1.5">
-                  <AlertCircle className="w-4 h-4 text-rose-600" />
-                  Kế hoạch sẽ chuyển về trạng thái "Yêu cầu hiệu chỉnh"
+                  <AlertCircle className="w-4 h-4 text-critical" />
+                  Kế hoạch sẽ chuyển về trạng thái &ldquo;Yêu cầu hiệu chỉnh&rdquo;
                 </div>
-                <p className="text-2xs leading-relaxed text-rose-700">
+                <p className="text-2xs leading-relaxed text-ink-2">
                   Ý kiến của bạn sẽ được lưu vào lịch sử trao đổi để các bên rà soát lại cơ cấu.
                 </p>
               </div>

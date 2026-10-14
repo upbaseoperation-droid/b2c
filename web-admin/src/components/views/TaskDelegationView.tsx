@@ -1245,19 +1245,19 @@ export const ROLE_SPLIT_PRESETS: {
 ];
 
 export const CATEGORY_BADGE_STYLE: Record<TaskDifficultyCategoryKey, string> = {
-  RESEARCH: 'bg-indigo-50 text-indigo-700 border-indigo-200',
-  BOOKING: 'bg-blue-50 text-blue-700 border-blue-200',
-  CONTENT: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  KEY_VISUAL: 'bg-purple-50 text-purple-700 border-purple-200',
-  CAMPAIGN: 'bg-amber-50 text-amber-800 border-amber-200',
-  LIVESTREAM: 'bg-rose-50 text-rose-700 border-rose-200',
+  RESEARCH: 'bg-accent-soft text-accent border-accent/20',
+  BOOKING: 'bg-accent-soft text-accent border-accent/20',
+  CONTENT: 'bg-positive-soft text-positive border-positive/20',
+  KEY_VISUAL: 'bg-accent-soft text-accent border-accent/20',
+  CAMPAIGN: 'bg-warning-soft text-warning border-warning/20',
+  LIVESTREAM: 'bg-critical-soft text-critical border-critical/20',
 };
 
 export const ROLE_BADGE_STYLE: Record<TaskAssignmentRoleKey, string> = {
-  PIC_OWNER: 'bg-blue-50 text-blue-700 border-blue-200',
-  CO_PIC: 'bg-indigo-50 text-indigo-700 border-indigo-200',
-  EXECUTION: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  SUPPORT: 'bg-slate-100 text-slate-700 border-slate-200',
+  PIC_OWNER: 'bg-accent-soft text-accent border-accent/20',
+  CO_PIC: 'bg-accent-soft text-accent border-accent/20',
+  EXECUTION: 'bg-positive-soft text-positive border-positive/20',
+  SUPPORT: 'bg-sunken text-ink-2 border-line',
 };
 
 export const ROLE_LABEL_MAP: Record<TaskAssignmentRoleKey, string> = {
@@ -1268,9 +1268,9 @@ export const ROLE_LABEL_MAP: Record<TaskAssignmentRoleKey, string> = {
 };
 
 export const DIFFICULTY_TIER_BADGE: Record<'EASY' | 'STANDARD' | 'HARD', { label: string; cls: string; coef: number }> = {
-  EASY: { label: 'Dễ (0,80)', cls: 'bg-slate-100 text-slate-700 border-slate-200', coef: 0.8 },
-  STANDARD: { label: 'Tiêu chuẩn (1,00)', cls: 'bg-blue-50 text-blue-700 border-blue-200', coef: 1.0 },
-  HARD: { label: 'Khó (1,20)', cls: 'bg-rose-50 text-rose-700 border-rose-200', coef: 1.2 },
+  EASY: { label: 'Dễ (0,80)', cls: 'bg-sunken text-ink-2 border-line', coef: 0.8 },
+  STANDARD: { label: 'Tiêu chuẩn (1,00)', cls: 'bg-accent-soft text-accent border-accent/20', coef: 1.0 },
+  HARD: { label: 'Khó (1,20)', cls: 'bg-critical-soft text-critical border-critical/20', coef: 1.2 },
 };
 
 interface TaskDelegationViewProps {
@@ -1549,6 +1549,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
   useEffect(() => {
     const firstLevel = activeCategoryConfig.levels[0];
     if (firstLevel && !activeCategoryConfig.levels.some(l => l.id === formLevelId)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setFormLevelId(firstLevel.id);
       setFormDeliverable(firstLevel.expectedDeliverable);
       setFormDeadlineHours(firstLevel.defaultSlaHours);
@@ -2033,15 +2034,15 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
       {/* Header Banner & 3-Tab Switcher */}
       <div className="bg-surface border border-line rounded-xl p-4 flex flex-col xl:flex-row xl:items-center justify-between gap-4">
         <div className="flex items-start gap-3">
-          <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-200 flex items-center justify-center shrink-0">
-            <ClipboardList className="w-5 h-5 text-indigo-600" />
+          <div className="w-10 h-10 rounded-xl bg-accent-soft border border-accent/20 flex items-center justify-center shrink-0">
+            <ClipboardList className="w-5 h-5 text-accent" />
           </div>
           <div>
             <div className="flex items-center gap-2 flex-wrap">
               <h2 className="text-sm font-semibold text-ink">
                 Giao việc &amp; Đo lường Workload Nhân sự B2C
               </h2>
-              <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
+              <span className="text-2xs font-semibold text-accent -accent/20">
                 Bảng 1 → Bảng 7 · 33 Đầu việc SOW &amp; 28 Nhân sự
               </span>
             </div>
@@ -2062,7 +2063,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                   : 'text-ink-2 hover:text-ink'
               }`}
             >
-              <ClipboardList className="w-3.5 h-3.5 text-indigo-600" />
+              <ClipboardList className="w-3.5 h-3.5 text-accent" />
               <span>1. Nhật ký Task: Quy trình &amp; GĐ giao ({tasks.length})</span>
             </button>
             <button
@@ -2074,7 +2075,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                   : 'text-ink-2 hover:text-ink'
               }`}
             >
-              <BarChart3 className="w-3.5 h-3.5 text-emerald-600" />
+              <BarChart3 className="w-3.5 h-3.5 text-positive" />
               <span>2. Đo lường Workload Nhân sự (28 NS)</span>
             </button>
             <button
@@ -2086,7 +2087,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                   : 'text-ink-2 hover:text-ink'
               }`}
             >
-              <Sliders className="w-3.5 h-3.5 text-blue-600" />
+              <Sliders className="w-3.5 h-3.5 text-accent" />
               <span>3. Setup Độ khó &amp; Bảng 1–7 (33 SOW)</span>
             </button>
           </div>
@@ -2147,20 +2148,20 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
               }
               className={`cursor-pointer p-4 rounded-xl border transition flex items-start justify-between gap-3 ${
                 sourceFilter === 'WORKFLOW_SYSTEM'
-                  ? 'bg-blue-50/80 border-blue-400 shadow-2xs'
-                  : 'bg-surface border-line hover:border-blue-300'
+                  ? 'bg-accent-soft border-accent/20 shadow-2xs'
+                  : 'bg-surface border-line hover:border-accent/20'
               }`}
             >
               <div className="flex items-start gap-3">
-                <div className="w-9 h-9 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center shrink-0 mt-0.5">
+                <div className="w-9 h-9 rounded-lg bg-accent-soft text-accent flex items-center justify-center shrink-0 mt-0.5">
                   <GitBranch className="w-4 h-4" />
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-ink">
+                    <span className="text-xs font-semibold text-ink">
                       Nguồn 1: Task thuộc Luồng Quy Trình Hệ Thống
                     </span>
-                    <span className="px-2 py-0.5 rounded text-2xs font-mono font-bold bg-blue-100 text-blue-800">
+                    <span className="text-2xs font-mono font-semibold text-accent">
                       {metrics.workflowTasksCount} task
                     </span>
                   </div>
@@ -2192,20 +2193,20 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
               }
               className={`cursor-pointer p-4 rounded-xl border transition flex items-start justify-between gap-3 ${
                 sourceFilter === 'DIRECTOR_ASSIGNED'
-                  ? 'bg-indigo-50/80 border-indigo-400 shadow-2xs'
-                  : 'bg-surface border-line hover:border-indigo-300'
+                  ? 'bg-accent-soft border-accent/20 shadow-2xs'
+                  : 'bg-surface border-line hover:border-accent/20'
               }`}
             >
               <div className="flex items-start gap-3">
-                <div className="w-9 h-9 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center shrink-0 mt-0.5">
+                <div className="w-9 h-9 rounded-lg bg-accent-soft text-accent flex items-center justify-center shrink-0 mt-0.5">
                   <UserCheck className="w-4 h-4" />
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-ink">
+                    <span className="text-xs font-semibold text-ink">
                       Nguồn 2: Task Giám Đốc / Quản Lý Giao Trực Tiếp
                     </span>
-                    <span className="px-2 py-0.5 rounded text-2xs font-mono font-bold bg-indigo-100 text-indigo-800">
+                    <span className="text-2xs font-mono font-semibold text-accent">
                       {metrics.directorTasksCount} task
                     </span>
                   </div>
@@ -2235,7 +2236,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
               <div>
                 <h3 className="text-xs font-semibold text-ink flex items-center gap-1.5">
-                  <Layers className="w-4 h-4 text-indigo-600" />
+                  <Layers className="w-4 h-4 text-accent" />
                   <span>Tra cứu nhanh: {difficultyConfigs[0].tableTitle}</span>
                 </h3>
                 <p className="text-2xs text-ink-3 mt-0.5">
@@ -2246,7 +2247,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                 <button
                   type="button"
                   onClick={() => setActiveSubTab('WORKLOAD_MEASUREMENT')}
-                  className="text-2xs font-semibold text-emerald-700 hover:text-emerald-900 inline-flex items-center gap-1"
+                  className="text-2xs font-semibold text-positive hover:text-positive inline-flex items-center gap-1"
                 >
                   <BarChart3 className="w-3 h-3" />
                   <span>Xem Bảng đo lường Workload 28 nhân sự</span>
@@ -2258,7 +2259,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                     setSetupSection('TABLE_2B_LEVELS');
                     setActiveSubTab('DIFFICULTY_SETUP');
                   }}
-                  className="text-2xs font-semibold text-blue-600 hover:text-blue-800 inline-flex items-center gap-1"
+                  className="text-2xs font-semibold text-accent hover:text-accent inline-flex items-center gap-1"
                 >
                   <Sliders className="w-3 h-3" />
                   <span>Chỉnh sửa hệ số &amp; Bảng 1</span>
@@ -2279,14 +2280,14 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                     handleSelectFormLevel(lvl);
                     setIsAssignModalOpen(true);
                   }}
-                  className="text-left p-3 rounded-xl border border-line bg-canvas hover:bg-indigo-50/50 hover:border-indigo-300 transition group flex flex-col justify-between"
+                  className="text-left p-3 rounded-xl border border-line bg-canvas hover:bg-accent-soft hover:border-accent/20 transition group flex flex-col justify-between"
                 >
                   <div>
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-xs font-semibold text-ink group-hover:text-indigo-700">
+                      <span className="text-xs font-semibold text-ink group-hover:text-accent">
                         {lvl.levelCode}
                       </span>
-                      <span className="px-1.5 py-0.5 rounded font-mono text-xs font-bold bg-indigo-100 text-indigo-800">
+                      <span className="font-mono text-xs font-semibold text-accent">
                         {lvl.multiplier.toFixed(2).replace('.', ',')}
                       </span>
                     </div>
@@ -2321,7 +2322,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                 onClick={() => setSourceFilter('WORKFLOW_SYSTEM')}
                 className={`px-2.5 py-1.5 rounded-lg text-xs font-medium border transition ${
                   sourceFilter === 'WORKFLOW_SYSTEM'
-                    ? 'bg-blue-600 text-white border-blue-600 font-semibold'
+                    ? 'bg-accent text-white border-accent/20 font-semibold'
                     : 'bg-canvas text-ink-2 border-line hover:bg-sunken'
                 }`}
               >
@@ -2332,7 +2333,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                 onClick={() => setSourceFilter('DIRECTOR_ASSIGNED')}
                 className={`px-2.5 py-1.5 rounded-lg text-xs font-medium border transition ${
                   sourceFilter === 'DIRECTOR_ASSIGNED'
-                    ? 'bg-indigo-600 text-white border-indigo-600 font-semibold'
+                    ? 'bg-accent text-white border-accent/20 font-semibold'
                     : 'bg-canvas text-ink-2 border-line hover:bg-sunken'
                 }`}
               >
@@ -2363,7 +2364,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
                   placeholder="Tìm task, nhân viên, SOW..."
-                  className="w-full pl-8 pr-3 py-1.5 bg-canvas border border-line rounded-lg text-xs text-ink placeholder:text-ink-3 focus:outline-none focus:border-blue-500"
+                  className="w-full pl-8 pr-3 py-1.5 bg-canvas border border-line rounded-lg text-xs text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent/20"
                 />
               </div>
 
@@ -2469,7 +2470,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                                 className={`mt-0.5 w-4 h-4 rounded border flex items-center justify-center shrink-0 transition ${
                                   task.urgency === 'done'
                                     ? 'bg-positive border-positive text-white'
-                                    : 'border-line-strong hover:border-blue-600 bg-surface'
+                                    : 'border-line-strong hover:border-accent/20 bg-surface'
                                 }`}
                               >
                                 {task.urgency === 'done' && (
@@ -2479,11 +2480,11 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                               <div className="min-w-0">
                                 <div className="flex items-center gap-1.5 flex-wrap mb-1">
                                   {tSource === 'DIRECTOR_ASSIGNED' ? (
-                                    <span className="px-1.5 py-0.5 rounded text-2xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                                    <span className="text-2xs font-semibold text-accent -accent/20">
                                       Task GĐ giao ({task.assignedBy || 'Đặng Thị Yến Nhi'})
                                     </span>
                                   ) : (
-                                    <span className="px-1.5 py-0.5 rounded text-2xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                                    <span className="text-2xs font-semibold text-accent -accent/20">
                                       Luồng quy trình hệ thống
                                     </span>
                                   )}
@@ -2514,7 +2515,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                           {/* 2. SOW (Bảng 1) & Difficulty (Bảng 2/2b & Bảng 3) */}
                           <td className="py-3 px-3 align-top">
                             <span
-                              className={`inline-flex px-2 py-0.5 rounded text-2xs font-semibold border ${CATEGORY_BADGE_STYLE[catKey]}`}
+                              className={`inline-flex text-2xs font-semibold border ${CATEGORY_BADGE_STYLE[catKey]}`}
                             >
                               {task.sowGroup || catConfig?.categoryName || catKey}
                             </span>
@@ -2523,12 +2524,12 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                               {task.sowName || task.difficultyLabel || 'Đầu việc vận hành'}
                             </div>
                             <div className="mt-1 flex flex-wrap items-center gap-1">
-                              <span className="px-1.5 py-0.5 rounded font-mono text-2xs bg-sunken text-ink border border-line">
+                              <span className="font-mono text-2xs text-ink -line">
                                 HS phạm vi: x{scopeC.toFixed(2).replace('.', ',')}
                               </span>
                               {task.taskDifficultyTier && (
                                 <span
-                                  className={`px-1.5 py-0.5 rounded text-2xs font-semibold border ${
+                                  className={`text-2xs font-semibold border ${
                                     DIFFICULTY_TIER_BADGE[task.taskDifficultyTier].cls
                                   }`}
                                 >
@@ -2555,7 +2556,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                               {task.kocStatusType && (
                                 <div>
                                   KOC:{' '}
-                                  <strong className="text-indigo-700">
+                                  <strong className="text-accent">
                                     {task.kocStatusType === 'NEW_KOC'
                                       ? 'KOC mới (Lần đầu)'
                                       : task.kocStatusType === 'REBOOK'
@@ -2565,13 +2566,13 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                                 </div>
                               )}
                               {task.originalAssetRef && (
-                                <div className="text-amber-700 font-mono">
+                                <div className="text-warning font-mono">
                                   Asset gốc: {task.originalAssetRef}
                                 </div>
                               )}
                               {task.difficultyOverrideReason && (
                                 <div
-                                  className="text-rose-700 italic line-clamp-2"
+                                  className="text-critical italic line-clamp-2"
                                   title={task.difficultyOverrideReason}
                                 >
                                   Lý do độ khó: {task.difficultyOverrideReason}
@@ -2594,7 +2595,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                             {task.assignmentRole && (
                               <div className="mt-1.5 flex items-center gap-1">
                                 <span
-                                  className={`px-1.5 py-0.5 rounded text-2xs font-semibold border ${
+                                  className={`text-2xs font-semibold border ${
                                     ROLE_BADGE_STYLE[task.assignmentRole]
                                   }`}
                                 >
@@ -2611,7 +2612,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                           <td className="py-3 px-3 align-top text-center">
                             {typeof task.calculatedWorkloadPoints === 'number' ? (
                               <div>
-                                <span className="font-mono text-sm font-bold text-indigo-700">
+                                <span className="font-mono text-sm font-semibold text-accent">
                                   {task.calculatedWorkloadPoints.toFixed(2)} pts
                                 </span>
                                 <span className="text-2xs text-ink-3 block font-mono mt-0.5">
@@ -2635,7 +2636,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                                 href={task.deliverableUrl}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="mt-1 inline-flex items-center gap-1 text-2xs font-semibold text-blue-600 hover:underline"
+                                className="mt-1 inline-flex items-center gap-1 text-2xs font-semibold text-accent hover:underline"
                               >
                                 <ExternalLink className="w-3 h-3" />
                                 <span>Xem file nghiệm thu</span>
@@ -2647,7 +2648,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                                   setEditingDeliverableTask(task);
                                   setDeliverableInputUrl(task.deliverableUrl || '');
                                 }}
-                                className="mt-1 text-2xs font-medium text-ink-3 hover:text-blue-600 underline"
+                                className="mt-1 text-2xs font-medium text-ink-3 hover:text-accent underline"
                               >
                                 + Đính kèm link đầu ra
                               </button>
@@ -2681,7 +2682,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                                 <button
                                   type="button"
                                   onClick={() => onCompleteTask(task.id)}
-                                  className="px-2 py-1 rounded bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-2xs font-semibold transition"
+                                  className="px-2 py-1 rounded bg-positive-soft hover:bg-positive-soft text-positive border border-positive/20 text-2xs font-semibold transition"
                                 >
                                   Nghiệm thu
                                 </button>
@@ -2719,20 +2720,20 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
       {activeSubTab === 'WORKLOAD_MEASUREMENT' && (
         <div className="space-y-5">
           {/* Formula Banner from Sheet 2 Excel */}
-          <div className="bg-indigo-950 text-white rounded-xl p-4 border border-indigo-800 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="bg-ink text-white rounded-xl p-4 border border-accent/20 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
-                <span className="px-2 py-0.5 rounded text-2xs font-mono font-bold bg-indigo-500/30 text-indigo-200 border border-indigo-400/30">
+                <span className="text-2xs font-mono font-semibold bg-accent/30 text-accent -accent/20/30">
                   CÔNG THỨC CHUẨN (SHEET WORKLOAD)
                 </span>
-                <span className="text-xs font-semibold text-indigo-100">
+                <span className="text-xs font-semibold text-accent">
                   Tổng hợp tự động từ Task Luồng Quy Trình + Task Giám Đốc Giao
                 </span>
               </div>
-              <div className="font-mono text-xs sm:text-sm font-bold text-amber-300">
+              <div className="font-mono text-xs sm:text-sm font-semibold text-warning">
                 Điểm workload = SL nghiệm thu × Point chuẩn (Bảng 1) × HS phạm vi (Bảng 2/2b) × HS công việc (Bảng 3) × HS timeline (Bảng 5) × HS đa sàn (Bảng 6) × HS cơ cấu (Bảng 4)
               </div>
-              <p className="text-2xs text-indigo-200">
+              <p className="text-2xs text-accent">
                 <strong>Bảng 4 (Yêu cầu tỷ trọng công việc khó theo Level nhân sự):</strong> L0 (15%) · L0.5 (17,5%) · L1 (20%) · L1.5 (25%) · L2 (30%) · L2.5 (35%) · L3 (40%) · L4 (50%) · L5 (60%). Đạt chuẩn: <strong>×1,00</strong> | Không đạt: <strong>×0,70</strong> (Ngoại lệ: công ty không phân bổ đủ việc khó và được quản lý xác nhận thì giữ <strong>×1,00</strong>).
               </p>
             </div>
@@ -2762,7 +2763,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                   onClick={() => setWorkloadLevelFilter(lvl)}
                   className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition ${
                     workloadLevelFilter === lvl
-                      ? 'bg-indigo-600 text-white border-indigo-600'
+                      ? 'bg-accent text-white border-accent/20'
                       : 'bg-canvas text-ink-2 border-line hover:bg-sunken'
                   }`}
                 >
@@ -2779,7 +2780,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                   value={workloadSearch}
                   onChange={e => setWorkloadSearch(e.target.value)}
                   placeholder="Tìm tên nhân sự, mã HNxxx, store..."
-                  className="w-full pl-8 pr-3 py-1.5 bg-canvas border border-line rounded-lg text-xs text-ink placeholder:text-ink-3 focus:outline-none focus:border-indigo-500"
+                  className="w-full pl-8 pr-3 py-1.5 bg-canvas border border-line rounded-lg text-xs text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent/20"
                 />
               </div>
 
@@ -2832,7 +2833,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                                 <span className="font-semibold text-ink text-xs">
                                   {row.name}
                                 </span>
-                                <span className="px-1.5 py-0.2 rounded font-mono text-2xs font-semibold bg-sunken text-ink-2 border border-line">
+                                <span className=".5 py-0.2 font-mono text-2xs font-semibold text-ink-2 -line">
                                   {row.staffCode}
                                 </span>
                               </div>
@@ -2845,7 +2846,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
 
                         {/* 2. Level & Required Hard % */}
                         <td className="py-3 px-3 align-top text-center">
-                          <span className="inline-flex px-2 py-0.5 rounded font-mono text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                          <span className="inline-flex font-mono text-xs font-semibold text-accent -accent/20">
                             {row.level}
                           </span>
                           <div className="text-2xs text-ink-3 mt-1 font-mono">
@@ -2865,7 +2866,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
 
                         {/* 4. Workflow System Points */}
                         <td className="py-3 px-3 align-top text-right font-mono">
-                          <div className="font-semibold text-blue-700">
+                          <div className="font-semibold text-accent">
                             {row.workflowPts.toFixed(2)}
                           </div>
                           <div className="text-2xs text-ink-3">Luồng hệ thống</div>
@@ -2873,7 +2874,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
 
                         {/* 5. Director Assigned Points */}
                         <td className="py-3 px-3 align-top text-right font-mono">
-                          <div className="font-semibold text-indigo-700">
+                          <div className="font-semibold text-accent">
                             {row.directorPts.toFixed(2)}
                           </div>
                           <div className="text-2xs text-ink-3">Task GĐ giao</div>
@@ -2881,10 +2882,10 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
 
                         {/* 6. Raw Total Points */}
                         <td className="py-3 px-3 align-top text-right font-mono">
-                          <div className="font-bold text-ink">
+                          <div className="font-semibold text-ink">
                             {row.rawTotalPts.toFixed(2)}
                           </div>
-                          <div className="text-2xs text-rose-700">
+                          <div className="text-2xs text-critical">
                             Khó: {row.hardPts.toFixed(1)} pt
                           </div>
                         </td>
@@ -2893,8 +2894,8 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                         <td className="py-3 px-3 align-top">
                           <div className="flex items-center justify-between text-2xs mb-1">
                             <span
-                              className={`font-mono font-bold ${
-                                row.meetsHardRatio ? 'text-emerald-700' : 'text-amber-700'
+                              className={`font-mono font-semibold ${
+                                row.meetsHardRatio ? 'text-positive' : 'text-warning'
                               }`}
                             >
                               Thực đạt: {row.actualHardRatioPct}%
@@ -2907,10 +2908,10 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                             <div
                               className={`h-full rounded-full ${
                                 row.meetsHardRatio
-                                  ? 'bg-emerald-500'
+                                  ? 'bg-positive'
                                   : row.hasException
-                                  ? 'bg-blue-500'
-                                  : 'bg-amber-500'
+                                  ? 'bg-accent'
+                                  : 'bg-warning'
                               }`}
                               style={{
                                 width: `${Math.min(100, (row.actualHardRatioPct / Math.max(1, row.requiredHardRatioPct)) * 100)}%`,
@@ -2918,7 +2919,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                             />
                           </div>
                           {isShortHard && (
-                            <div className="text-2xs text-amber-700 mt-1">
+                            <div className="text-2xs text-warning mt-1">
                               Thiếu {(row.requiredHardRatioPct - row.actualHardRatioPct).toFixed(1)}% điểm việc Khó
                             </div>
                           )}
@@ -2926,27 +2927,12 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
 
                         {/* 8. Bảng 4 Structure Coefficient */}
                         <td className="py-3 px-3 align-top text-center">
-                          {row.meetsHardRatio ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-mono font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                              <CheckCircle2 className="w-3 h-3" />
-                              ×1,00 (Đạt)
-                            </span>
-                          ) : row.hasException ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-mono font-bold bg-blue-50 text-blue-700 border border-blue-200">
-                              <ShieldCheck className="w-3 h-3" />
-                              ×1,00 (Ngoại lệ)
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-mono font-bold bg-rose-50 text-rose-700 border border-rose-200">
-                              <AlertCircle className="w-3 h-3" />
-                              ×0,70 (Hạ bậc)
-                            </span>
-                          )}
+                          <Status tone={row.meetsHardRatio ? "positive" : row.hasException ? "warning" : "critical"}>{row.meetsHardRatio ? "×1,00 (Đạt)" : row.hasException ? "×1,00 (Ngoại lệ)" : "×0,70 (Hạ bậc)"}</Status>
                           {isShortHard && canManageSetup && (
                             <button
                               type="button"
                               onClick={() => toggleManagerException(row.staffCode, row.name)}
-                              className="block mx-auto mt-1 text-2xs font-semibold text-blue-600 hover:underline"
+                              className="block mx-auto mt-1 text-2xs font-semibold text-accent hover:underline"
                             >
                               {row.hasException ? 'Gỡ ngoại lệ' : 'Duyệt ngoại lệ x1,00'}
                             </button>
@@ -2955,7 +2941,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
 
                         {/* 9. Final Monthly Workload Points */}
                         <td className="py-3 px-3 align-top text-right font-mono">
-                          <div className="text-sm font-bold text-emerald-700">
+                          <div className="text-sm font-semibold text-positive">
                             {row.finalMonthlyWorkloadPts.toFixed(2)} pts
                           </div>
                           <div className="text-2xs text-ink-3">
@@ -2984,7 +2970,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                                 setFormTaskSource('DIRECTOR_ASSIGNED');
                                 setIsAssignModalOpen(true);
                               }}
-                              className="px-2 py-1 rounded bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-2xs font-semibold"
+                              className="px-2 py-1 rounded bg-accent-soft hover:bg-accent-soft text-accent border border-accent/20 text-2xs font-semibold"
                               title="Giao thêm việc cho nhân sự này"
                             >
                               + Giao việc
@@ -3001,14 +2987,14 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
 
           {/* Drawer / Panel inspecting a specific staff member's tasks */}
           {inspectedStaffRow && (
-            <div className="bg-surface border-2 border-indigo-300 rounded-xl p-4 space-y-3 shadow-md">
+            <div className="bg-surface border-2 border-accent/20 rounded-xl p-4 space-y-3 shadow-md">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-bold text-ink">
+                  <h3 className="text-sm font-semibold text-ink">
                     Hồ sơ đo lường Workload chi tiết: {inspectedStaffRow.name} ({inspectedStaffRow.staffCode} · Level {inspectedStaffRow.level})
                   </h3>
                   <p className="text-2xs text-ink-3">
-                    Điểm Luồng quy trình: <strong>{inspectedStaffRow.workflowPts.toFixed(2)} pts</strong> · Điểm Task GĐ giao: <strong>{inspectedStaffRow.directorPts.toFixed(2)} pts</strong> · Tỷ lệ việc Khó: <strong>{inspectedStaffRow.actualHardRatioPct}%</strong> (Yêu cầu {inspectedStaffRow.level}: ≥{inspectedStaffRow.requiredHardRatioPct}%) → Tổng điểm sau nhân Bảng 4: <strong className="text-emerald-700">{inspectedStaffRow.finalMonthlyWorkloadPts.toFixed(2)} pts</strong>
+                    Điểm Luồng quy trình: <strong>{inspectedStaffRow.workflowPts.toFixed(2)} pts</strong> · Điểm Task GĐ giao: <strong>{inspectedStaffRow.directorPts.toFixed(2)} pts</strong> · Tỷ lệ việc Khó: <strong>{inspectedStaffRow.actualHardRatioPct}%</strong> (Yêu cầu {inspectedStaffRow.level}: ≥{inspectedStaffRow.requiredHardRatioPct}%) → Tổng điểm sau nhân Bảng 4: <strong className="text-positive">{inspectedStaffRow.finalMonthlyWorkloadPts.toFixed(2)} pts</strong>
                   </p>
                 </div>
                 <button
@@ -3029,7 +3015,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                   {inspectedStaffRow.staffTasks.map(t => (
                     <div key={t.id} className="p-3 rounded-lg bg-canvas border border-line flex items-start justify-between gap-2 text-xs">
                       <div>
-                        <span className="px-1.5 py-0.2 rounded text-2xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 mr-1.5">
+                        <span className=".5 py-0.2 text-2xs font-semibold text-accent -accent/20 mr-1.5">
                           {getTaskSource(t) === 'DIRECTOR_ASSIGNED' ? 'Task GĐ giao' : 'Luồng quy trình'}
                         </span>
                         <span className="font-semibold text-ink">{t.title}</span>
@@ -3037,7 +3023,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                           SOW: {t.sowName || t.taskCategory} · Vai trò: {t.assignmentRole ? ROLE_LABEL_MAP[t.assignmentRole] : 'PIC'} ({t.contributionWeightPct || 100}%)
                         </div>
                       </div>
-                      <span className="font-mono font-bold text-indigo-700 shrink-0">
+                      <span className="font-mono font-semibold text-accent shrink-0">
                         +{(t.calculatedWorkloadPoints || 2).toFixed(2)} pts
                       </span>
                     </div>
@@ -3062,7 +3048,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                 onClick={() => setSetupSection('TABLE_1_SOW')}
                 className={`px-3 py-2 rounded-lg text-xs font-semibold border transition ${
                   setupSection === 'TABLE_1_SOW'
-                    ? 'bg-indigo-600 text-white border-indigo-600'
+                    ? 'bg-accent text-white border-accent/20'
                     : 'bg-canvas text-ink-2 border-line hover:bg-sunken'
                 }`}
               >
@@ -3073,7 +3059,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                 onClick={() => setSetupSection('TABLE_2B_LEVELS')}
                 className={`px-3 py-2 rounded-lg text-xs font-semibold border transition ${
                   setupSection === 'TABLE_2B_LEVELS'
-                    ? 'bg-indigo-600 text-white border-indigo-600'
+                    ? 'bg-accent text-white border-accent/20'
                     : 'bg-canvas text-ink-2 border-line hover:bg-sunken'
                 }`}
               >
@@ -3084,7 +3070,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                 onClick={() => setSetupSection('TABLE_2_TO_7_RULES')}
                 className={`px-3 py-2 rounded-lg text-xs font-semibold border transition ${
                   setupSection === 'TABLE_2_TO_7_RULES'
-                    ? 'bg-indigo-600 text-white border-indigo-600'
+                    ? 'bg-accent text-white border-accent/20'
                     : 'bg-canvas text-ink-2 border-line hover:bg-sunken'
                 }`}
               >
@@ -3107,19 +3093,19 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
           {/* SECTION A: BẢNG 1 (33 LOẠI CÔNG VIỆC SOW) */}
           {setupSection === 'TABLE_1_SOW' && (
             <div className="bg-surface border border-line rounded-xl overflow-hidden shadow-2xs">
-              <div className="px-5 py-3.5 bg-indigo-50/70 border-b border-indigo-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="px-5 py-3.5 bg-accent-soft border-b border-accent/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                  <h3 className="text-sm font-bold text-slate-900">
+                  <h3 className="text-sm font-semibold text-ink">
                     Bảng 1. Chính sách Point theo Scope of Work (33 đầu việc chuẩn B2C)
                   </h3>
-                  <p className="text-2xs text-slate-600 mt-0.5">
+                  <p className="text-2xs text-ink-2 mt-0.5">
                     Bấm <strong>&ldquo;Sửa&rdquo;</strong> ở bất kỳ dòng nào để điều chỉnh Point chuẩn hoặc Độ khó mặc định (Dễ / Tiêu chuẩn / Khó)
                   </p>
                 </div>
                 <select
                   value={sowGroupFilter}
                   onChange={e => setSowGroupFilter(e.target.value)}
-                  className="px-3 py-1.5 bg-white border border-indigo-200 rounded-lg text-xs font-semibold text-slate-800"
+                  className="px-3 py-1.5 bg-white border border-accent/20 rounded-lg text-xs font-semibold text-ink"
                 >
                   <option value="ALL">Tất cả 9 phân nhóm (33 đầu việc)</option>
                   {Array.from(new Set(sowPolicies.map(s => s.group))).map(grp => (
@@ -3133,32 +3119,32 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
-                    <tr className="bg-slate-100 border-b border-slate-300 text-slate-800 font-semibold">
-                      <th className="py-2.5 px-3 border-r border-slate-200 w-[50px] text-center">STT</th>
-                      <th className="py-2.5 px-3 border-r border-slate-200 w-[160px]">Phân nhóm</th>
-                      <th className="py-2.5 px-3 border-r border-slate-200 min-w-[230px]">Chi tiết loại công việc</th>
-                      <th className="py-2.5 px-3 border-r border-slate-200 w-[95px] text-center">Point chuẩn</th>
-                      <th className="py-2.5 px-3 border-r border-slate-200 w-[135px] text-center">Độ khó mặc định</th>
-                      <th className="py-2.5 px-3 border-r border-slate-200 w-[100px] text-center">Cấp tính điểm</th>
-                      <th className="py-2.5 px-3 border-r border-slate-200 w-[130px] text-center">Nguồn mặc định</th>
-                      <th className="py-2.5 px-3 border-r border-slate-200 min-w-[240px]">Quy tắc áp dụng</th>
+                    <tr className="bg-sunken border-b border-line-strong text-ink font-semibold">
+                      <th className="py-2.5 px-3 border-r border-line w-[50px] text-center">STT</th>
+                      <th className="py-2.5 px-3 border-r border-line w-[160px]">Phân nhóm</th>
+                      <th className="py-2.5 px-3 border-r border-line min-w-[230px]">Chi tiết loại công việc</th>
+                      <th className="py-2.5 px-3 border-r border-line w-[95px] text-center">Point chuẩn</th>
+                      <th className="py-2.5 px-3 border-r border-line w-[135px] text-center">Độ khó mặc định</th>
+                      <th className="py-2.5 px-3 border-r border-line w-[100px] text-center">Cấp tính điểm</th>
+                      <th className="py-2.5 px-3 border-r border-line w-[130px] text-center">Nguồn mặc định</th>
+                      <th className="py-2.5 px-3 border-r border-line min-w-[240px]">Quy tắc áp dụng</th>
                       <th className="py-2.5 px-3 w-[120px] text-center">Thao tác</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-200">
+                  <tbody className="divide-y divide-line">
                     {sowPolicies
                       .filter(s => sowGroupFilter === 'ALL' || s.group === sowGroupFilter)
                       .map(item => {
                         const isEdit = editingSowStt === item.stt && editSowDraft;
                         return (
-                          <tr key={item.stt} className="hover:bg-slate-50/80">
-                            <td className="py-2.5 px-3 border-r border-slate-200 text-center font-mono font-semibold text-slate-600">
+                          <tr key={item.stt} className="hover:bg-canvas">
+                            <td className="py-2.5 px-3 border-r border-line text-center font-mono font-semibold text-ink-2">
                               {item.stt}
                             </td>
-                            <td className="py-2.5 px-3 border-r border-slate-200 font-semibold text-slate-800">
+                            <td className="py-2.5 px-3 border-r border-line font-semibold text-ink">
                               {item.group}
                             </td>
-                            <td className="py-2.5 px-3 border-r border-slate-200 font-semibold text-slate-900">
+                            <td className="py-2.5 px-3 border-r border-line font-semibold text-ink">
                               {isEdit ? (
                                 <input
                                   type="text"
@@ -3166,13 +3152,13 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                                   onChange={e =>
                                     setEditSowDraft({ ...editSowDraft, name: e.target.value })
                                   }
-                                  className="w-full px-2 py-1 border border-blue-400 rounded text-xs"
+                                  className="w-full px-2 py-1 border border-accent/20 rounded text-xs"
                                 />
                               ) : (
                                 item.name
                               )}
                             </td>
-                            <td className="py-2.5 px-3 border-r border-slate-200 text-center font-mono font-bold text-indigo-700">
+                            <td className="py-2.5 px-3 border-r border-line text-center font-mono font-semibold text-accent">
                               {isEdit ? (
                                 <input
                                   type="number"
@@ -3184,13 +3170,13 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                                       basePoint: Number(e.target.value) || 1.0,
                                     })
                                   }
-                                  className="w-16 px-2 py-1 border border-blue-400 rounded text-center font-mono text-xs"
+                                  className="w-16 px-2 py-1 border border-accent/20 rounded text-center font-mono text-xs"
                                 />
                               ) : (
                                 item.basePoint.toFixed(1).replace('.', ',')
                               )}
                             </td>
-                            <td className="py-2.5 px-3 border-r border-slate-200 text-center">
+                            <td className="py-2.5 px-3 border-r border-line text-center">
                               {isEdit ? (
                                 <select
                                   value={editSowDraft.defaultDifficultyTier}
@@ -3200,7 +3186,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                                       defaultDifficultyTier: e.target.value as 'EASY' | 'STANDARD' | 'HARD',
                                     })
                                   }
-                                  className="px-2 py-1 border border-blue-400 rounded text-xs"
+                                  className="px-2 py-1 border border-accent/20 rounded text-xs"
                                 >
                                   <option value="EASY">Dễ (0,80)</option>
                                   <option value="STANDARD">Tiêu chuẩn (1,00)</option>
@@ -3208,7 +3194,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                                 </select>
                               ) : (
                                 <span
-                                  className={`px-2 py-0.5 rounded text-2xs font-semibold border ${
+                                  className={`text-2xs font-semibold border ${
                                     DIFFICULTY_TIER_BADGE[item.defaultDifficultyTier].cls
                                   }`}
                                 >
@@ -3216,21 +3202,21 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                                 </span>
                               )}
                             </td>
-                            <td className="py-2.5 px-3 border-r border-slate-200 text-center font-medium text-slate-700">
+                            <td className="py-2.5 px-3 border-r border-line text-center font-medium text-ink-2">
                               {item.scopeUnit}
                             </td>
-                            <td className="py-2.5 px-3 border-r border-slate-200 text-center">
+                            <td className="py-2.5 px-3 border-r border-line text-center">
                               {item.defaultSource === 'DIRECTOR_ASSIGNED' ? (
-                                <span className="px-1.5 py-0.5 rounded text-2xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                                <span className="text-2xs font-semibold text-accent -accent/20">
                                   Task GĐ giao
                                 </span>
                               ) : (
-                                <span className="px-1.5 py-0.5 rounded text-2xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                                <span className="text-2xs font-semibold text-accent -accent/20">
                                   Luồng quy trình
                                 </span>
                               )}
                             </td>
-                            <td className="py-2.5 px-3 border-r border-slate-200 text-slate-600 text-2xs">
+                            <td className="py-2.5 px-3 border-r border-line text-ink-2 text-2xs">
                               {isEdit ? (
                                 <input
                                   type="text"
@@ -3238,7 +3224,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                                   onChange={e =>
                                     setEditSowDraft({ ...editSowDraft, ruleNote: e.target.value })
                                   }
-                                  className="w-full px-2 py-1 border border-blue-400 rounded text-xs"
+                                  className="w-full px-2 py-1 border border-accent/20 rounded text-xs"
                                 />
                               ) : (
                                 item.ruleNote
@@ -3250,7 +3236,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                                   <button
                                     type="button"
                                     onClick={handleSaveEditedSow}
-                                    className="px-2 py-1 rounded bg-blue-600 text-white text-2xs font-semibold"
+                                    className="px-2 py-1 rounded bg-accent text-white text-2xs font-semibold"
                                   >
                                     Lưu
                                   </button>
@@ -3260,7 +3246,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                                       setEditingSowStt(null);
                                       setEditSowDraft(null);
                                     }}
-                                    className="px-2 py-1 rounded bg-slate-100 text-slate-700 text-2xs"
+                                    className="px-2 py-1 rounded bg-sunken text-ink-2 text-2xs"
                                   >
                                     Huỷ
                                   </button>
@@ -3273,7 +3259,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                                       setEditingSowStt(item.stt);
                                       setEditSowDraft({ ...item });
                                     }}
-                                    className="px-2 py-1 rounded border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 text-2xs font-semibold"
+                                    className="px-2 py-1 rounded border border-line bg-white hover:bg-sunken text-ink-2 text-2xs font-semibold"
                                   >
                                     Sửa
                                   </button>
@@ -3283,7 +3269,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                                       handleSelectSowPolicy(item);
                                       setIsAssignModalOpen(true);
                                     }}
-                                    className="px-2 py-1 rounded bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-2xs font-semibold"
+                                    className="px-2 py-1 rounded bg-accent-soft hover:bg-accent-soft text-accent text-2xs font-semibold"
                                   >
                                     Giao
                                   </button>
@@ -3315,7 +3301,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                       }}
                       className={`px-3 py-2 rounded-lg text-xs font-semibold border transition flex items-center gap-2 ${
                         selectedSetupCategory === cat.categoryKey
-                          ? 'bg-indigo-600 text-white border-indigo-600 shadow-2xs'
+                          ? 'bg-accent text-white border-accent/20 shadow-2xs'
                           : 'bg-canvas text-ink-2 border-line hover:bg-sunken'
                       }`}
                     >
@@ -3323,7 +3309,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                       <span
                         className={`px-1.5 py-0.2 rounded text-2xs font-mono ${
                           selectedSetupCategory === cat.categoryKey
-                            ? 'bg-indigo-500 text-white'
+                            ? 'bg-accent text-white'
                             : 'bg-surface text-ink-3'
                         }`}
                       >
@@ -3345,12 +3331,12 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
               </div>
 
               <div className="bg-surface border border-line rounded-xl overflow-hidden shadow-2xs">
-                <div className="px-5 py-3.5 bg-indigo-50/70 border-b border-indigo-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div className="px-5 py-3.5 bg-accent-soft border-b border-accent/20 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <div>
-                    <h3 className="text-sm font-bold text-slate-900">
+                    <h3 className="text-sm font-semibold text-ink">
                       {currentSetupCategoryObj.tableTitle}
                     </h3>
-                    <p className="text-2xs text-slate-600 mt-0.5">
+                    <p className="text-2xs text-ink-2 mt-0.5">
                       Đơn vị chuẩn: <strong>{currentSetupCategoryObj.unitLabel}</strong> · Dùng làm Hệ số phạm vi (Bảng 2 / 2b) trong công thức tính điểm Workload
                     </p>
                   </div>
@@ -3359,21 +3345,21 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs border-collapse">
                     <thead>
-                      <tr className="bg-slate-100 border-b border-slate-300 text-slate-800 font-semibold">
-                        <th className="py-3 px-4 border-r border-slate-200 w-[210px]">Cấp độ</th>
-                        <th className="py-3 px-4 border-r border-slate-200 w-[110px] text-center">Hệ số</th>
-                        <th className="py-3 px-4 border-r border-slate-200 min-w-[260px]">Phạm vi thực hiện</th>
-                        <th className="py-3 px-4 border-r border-slate-200 min-w-[260px]">Đầu ra (Deliverables)</th>
-                        <th className="py-3 px-3 border-r border-slate-200 w-[110px] text-center">SLA chuẩn</th>
+                      <tr className="bg-sunken border-b border-line-strong text-ink font-semibold">
+                        <th className="py-3 px-4 border-r border-line w-[210px]">Cấp độ</th>
+                        <th className="py-3 px-4 border-r border-line w-[110px] text-center">Hệ số</th>
+                        <th className="py-3 px-4 border-r border-line min-w-[260px]">Phạm vi thực hiện</th>
+                        <th className="py-3 px-4 border-r border-line min-w-[260px]">Đầu ra (Deliverables)</th>
+                        <th className="py-3 px-3 border-r border-line w-[110px] text-center">SLA chuẩn</th>
                         <th className="py-3 px-4 w-[130px] text-center">Thiết lập</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-200">
+                    <tbody className="divide-y divide-line">
                       {currentSetupCategoryObj.levels.map(lvl => {
                         const isEditing = editingLevelId === lvl.id && editLevelDraft;
                         return (
-                          <tr key={lvl.id} className="hover:bg-slate-50/80 transition">
-                            <td className="py-3 px-4 border-r border-slate-200 font-semibold text-slate-900 align-top">
+                          <tr key={lvl.id} className="hover:bg-canvas transition">
+                            <td className="py-3 px-4 border-r border-line font-semibold text-ink align-top">
                               {isEditing ? (
                                 <input
                                   type="text"
@@ -3381,13 +3367,13 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                                   onChange={e =>
                                     setEditLevelDraft({ ...editLevelDraft, levelCode: e.target.value })
                                   }
-                                  className="w-full px-2.5 py-1.5 bg-white border border-blue-400 rounded text-xs font-semibold"
+                                  className="w-full px-2.5 py-1.5 bg-white border border-accent/20 rounded text-xs font-semibold"
                                 />
                               ) : (
                                 lvl.levelCode
                               )}
                             </td>
-                            <td className="py-3 px-4 border-r border-slate-200 text-center font-mono font-bold text-indigo-700 align-top">
+                            <td className="py-3 px-4 border-r border-line text-center font-mono font-semibold text-accent align-top">
                               {isEditing ? (
                                 <input
                                   type="number"
@@ -3401,13 +3387,13 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                                       multiplier: Number(e.target.value) || 1.0,
                                     })
                                   }
-                                  className="w-20 px-2 py-1.5 bg-white border border-blue-400 rounded text-xs font-mono text-center"
+                                  className="w-20 px-2 py-1.5 bg-white border border-accent/20 rounded text-xs font-mono text-center"
                                 />
                               ) : (
                                 lvl.multiplier.toFixed(2).replace('.', ',')
                               )}
                             </td>
-                            <td className="py-3 px-4 border-r border-slate-200 text-slate-800 align-top">
+                            <td className="py-3 px-4 border-r border-line text-ink align-top">
                               {isEditing ? (
                                 <textarea
                                   rows={2}
@@ -3418,13 +3404,13 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                                       scopeDescription: e.target.value,
                                     })
                                   }
-                                  className="w-full px-2.5 py-1.5 bg-white border border-blue-400 rounded text-xs"
+                                  className="w-full px-2.5 py-1.5 bg-white border border-accent/20 rounded text-xs"
                                 />
                               ) : (
                                 lvl.scopeDescription
                               )}
                             </td>
-                            <td className="py-3 px-4 border-r border-slate-200 text-slate-700 align-top">
+                            <td className="py-3 px-4 border-r border-line text-ink-2 align-top">
                               {isEditing ? (
                                 <textarea
                                   rows={2}
@@ -3435,13 +3421,13 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                                       expectedDeliverable: e.target.value,
                                     })
                                   }
-                                  className="w-full px-2.5 py-1.5 bg-white border border-blue-400 rounded text-xs"
+                                  className="w-full px-2.5 py-1.5 bg-white border border-accent/20 rounded text-xs"
                                 />
                               ) : (
                                 lvl.expectedDeliverable
                               )}
                             </td>
-                            <td className="py-3 px-3 border-r border-slate-200 text-center font-mono text-slate-700 align-top">
+                            <td className="py-3 px-3 border-r border-line text-center font-mono text-ink-2 align-top">
                               {isEditing ? (
                                 <input
                                   type="number"
@@ -3453,7 +3439,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                                       defaultSlaHours: Number(e.target.value) || 24,
                                     })
                                   }
-                                  className="w-16 px-2 py-1.5 bg-white border border-blue-400 rounded text-xs font-mono text-center"
+                                  className="w-16 px-2 py-1.5 bg-white border border-accent/20 rounded text-xs font-mono text-center"
                                 />
                               ) : (
                                 `${lvl.defaultSlaHours}h`
@@ -3465,7 +3451,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                                   <button
                                     type="button"
                                     onClick={handleSaveEditedLevel}
-                                    className="px-2.5 py-1 rounded bg-blue-600 text-white text-2xs font-semibold inline-flex items-center gap-1"
+                                    className="px-2.5 py-1 rounded bg-accent text-white text-2xs font-semibold inline-flex items-center gap-1"
                                   >
                                     <Check className="w-3 h-3" />
                                     <span>Lưu</span>
@@ -3476,7 +3462,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                                       setEditingLevelId(null);
                                       setEditLevelDraft(null);
                                     }}
-                                    className="px-2 py-1 rounded bg-slate-100 text-slate-700 text-2xs"
+                                    className="px-2 py-1 rounded bg-sunken text-ink-2 text-2xs"
                                   >
                                     Huỷ
                                   </button>
@@ -3489,7 +3475,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                                       setEditingLevelId(lvl.id);
                                       setEditLevelDraft({ ...lvl });
                                     }}
-                                    className="px-2.5 py-1 rounded border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 text-2xs font-semibold inline-flex items-center gap-1"
+                                    className="px-2.5 py-1 rounded border border-line bg-white hover:bg-sunken text-ink-2 text-2xs font-semibold inline-flex items-center gap-1"
                                   >
                                     <Edit3 className="w-3 h-3" />
                                     <span>Sửa</span>
@@ -3498,7 +3484,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                                     <button
                                       type="button"
                                       onClick={() => handleDeleteLevel(lvl.id)}
-                                      className="p-1 rounded border border-slate-200 bg-white hover:bg-red-50 text-slate-500 hover:text-red-600 transition"
+                                      className="p-1 rounded border border-line bg-white hover:bg-critical-soft text-ink-3 hover:text-critical transition"
                                     >
                                       <Trash2 className="w-3.5 h-3.5" />
                                     </button>
@@ -3516,11 +3502,11 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                 {isAddingNewLevel && (
                   <form
                     onSubmit={handleAddLevelToCategory}
-                    className="p-4 bg-blue-50/60 border-t border-blue-200 space-y-3"
+                    className="p-4 bg-accent-soft border-t border-accent/20 space-y-3"
                   >
                     <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 text-xs">
                       <div className="sm:col-span-3">
-                        <label className="block text-2xs font-semibold text-slate-700 mb-1">
+                        <label className="block text-2xs font-semibold text-ink-2 mb-1">
                           Tên cấp độ *
                         </label>
                         <input
@@ -3531,11 +3517,11 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                           onChange={e =>
                             setNewLevelDraft(p => ({ ...p, levelCode: e.target.value }))
                           }
-                          className="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg"
+                          className="w-full px-2.5 py-1.5 bg-white border border-line-strong rounded-lg"
                         />
                       </div>
                       <div className="sm:col-span-2">
-                        <label className="block text-2xs font-semibold text-slate-700 mb-1">
+                        <label className="block text-2xs font-semibold text-ink-2 mb-1">
                           Hệ số nhân *
                         </label>
                         <input
@@ -3549,11 +3535,11 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                               multiplier: Number(e.target.value) || 1.0,
                             }))
                           }
-                          className="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg font-mono"
+                          className="w-full px-2.5 py-1.5 bg-white border border-line-strong rounded-lg font-mono"
                         />
                       </div>
                       <div className="sm:col-span-3">
-                        <label className="block text-2xs font-semibold text-slate-700 mb-1">
+                        <label className="block text-2xs font-semibold text-ink-2 mb-1">
                           Phạm vi thực hiện
                         </label>
                         <input
@@ -3562,11 +3548,11 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                           onChange={e =>
                             setNewLevelDraft(p => ({ ...p, scopeDescription: e.target.value }))
                           }
-                          className="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg"
+                          className="w-full px-2.5 py-1.5 bg-white border border-line-strong rounded-lg"
                         />
                       </div>
                       <div className="sm:col-span-3">
-                        <label className="block text-2xs font-semibold text-slate-700 mb-1">
+                        <label className="block text-2xs font-semibold text-ink-2 mb-1">
                           Đầu ra (Deliverables)
                         </label>
                         <input
@@ -3578,11 +3564,11 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                               expectedDeliverable: e.target.value,
                             }))
                           }
-                          className="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg"
+                          className="w-full px-2.5 py-1.5 bg-white border border-line-strong rounded-lg"
                         />
                       </div>
                       <div className="sm:col-span-1">
-                        <label className="block text-2xs font-semibold text-slate-700 mb-1">
+                        <label className="block text-2xs font-semibold text-ink-2 mb-1">
                           SLA (h)
                         </label>
                         <input
@@ -3594,7 +3580,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                               defaultSlaHours: Number(e.target.value) || 48,
                             }))
                           }
-                          className="w-full px-2 py-1.5 bg-white border border-slate-300 rounded-lg font-mono text-center"
+                          className="w-full px-2 py-1.5 bg-white border border-line-strong rounded-lg font-mono text-center"
                         />
                       </div>
                     </div>
@@ -3618,7 +3604,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
               {/* Bảng 2 & Bảng 3 */}
               <div className="bg-surface border border-line rounded-xl p-4 space-y-4">
                 <div>
-                  <h4 className="text-xs font-bold text-ink">
+                  <h4 className="text-xs font-semibold text-ink">
                     Bảng 2. Hệ số gian hàng (Dùng cho các nhóm việc vận hành thường xuyên)
                   </h4>
                   <p className="text-2xs text-ink-3 mt-0.5">
@@ -3628,7 +3614,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                     {STORE_SCOPE_TABLE_2.map(s => (
                       <div key={s.code} className="p-2.5 rounded-lg bg-canvas border border-line text-center">
                         <div className="text-xs font-semibold text-ink">{s.label}</div>
-                        <div className="font-mono text-sm font-bold text-indigo-700 mt-0.5">
+                        <div className="font-mono text-sm font-semibold text-accent mt-0.5">
                           {s.coef.toFixed(2).replace('.', ',')}
                         </div>
                       </div>
@@ -3637,7 +3623,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                 </div>
 
                 <div className="pt-3 border-t border-line">
-                  <h4 className="text-xs font-bold text-ink">
+                  <h4 className="text-xs font-semibold text-ink">
                     Bảng 3. Hệ số công việc (Độ khó từng lần làm)
                   </h4>
                   <div className="space-y-2 mt-2">
@@ -3647,7 +3633,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                           <span className="font-semibold text-ink">{d.label}</span>
                           <p className="text-2xs text-ink-3">{d.criteria}</p>
                         </div>
-                        <span className="font-mono font-bold text-indigo-700 shrink-0">
+                        <span className="font-mono font-semibold text-accent shrink-0">
                           ×{d.coef.toFixed(2).replace('.', ',')}
                         </span>
                       </div>
@@ -3658,7 +3644,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
 
               {/* Bảng 4 */}
               <div className="bg-surface border border-line rounded-xl p-4 space-y-3">
-                <h4 className="text-xs font-bold text-ink">
+                <h4 className="text-xs font-semibold text-ink">
                   Bảng 4. Yêu cầu tỷ trọng công việc khó theo Level nhân sự (HS cơ cấu)
                 </h4>
                 <p className="text-2xs text-ink-3">
@@ -3667,7 +3653,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                 <div className="grid grid-cols-3 gap-2">
                   {STAFF_LEVEL_TABLE_4.map(l => (
                     <div key={l.level} className="p-2 rounded-lg bg-canvas border border-line flex items-center justify-between text-xs">
-                      <span className="font-mono font-bold text-indigo-700">{l.level}</span>
+                      <span className="font-mono font-semibold text-accent">{l.level}</span>
                       <span className="font-mono text-ink-2">≥ {l.minHardRatioPct}% Khó</span>
                     </div>
                   ))}
@@ -3677,7 +3663,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
               {/* Bảng 5 & Bảng 6 */}
               <div className="bg-surface border border-line rounded-xl p-4 space-y-4">
                 <div>
-                  <h4 className="text-xs font-bold text-ink">Bảng 5. Hệ số Timeline</h4>
+                  <h4 className="text-xs font-semibold text-ink">Bảng 5. Hệ số Timeline</h4>
                   <div className="space-y-1.5 mt-2">
                     {TIMELINE_TABLE_5.map(t => (
                       <div key={t.status} className="p-2 rounded-lg bg-canvas border border-line flex items-center justify-between text-xs">
@@ -3685,21 +3671,21 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                           <span className="font-semibold text-ink">{t.label}</span>
                           <span className="text-2xs text-ink-3 ml-2">({t.condition})</span>
                         </div>
-                        <span className="font-mono font-bold text-indigo-700">×{t.coef.toFixed(1).replace('.', ',')}</span>
+                        <span className="font-mono font-semibold text-accent">×{t.coef.toFixed(1).replace('.', ',')}</span>
                       </div>
                     ))}
                   </div>
                 </div>
 
                 <div className="pt-3 border-t border-line">
-                  <h4 className="text-xs font-bold text-ink">
+                  <h4 className="text-xs font-semibold text-ink">
                     Bảng 6. Hệ số đa sàn (Chỉ áp dụng cho việc cấp Brand)
                   </h4>
                   <div className="grid grid-cols-4 gap-2 mt-2">
                     {MULTI_PLATFORM_TABLE_6.map(m => (
                       <div key={m.stores} className="p-2 rounded-lg bg-canvas border border-line text-center text-xs">
                         <div className="font-semibold text-ink">{m.label}</div>
-                        <div className="font-mono font-bold text-indigo-700 mt-0.5">
+                        <div className="font-mono font-semibold text-accent mt-0.5">
                           ×{m.coef.toFixed(1).replace('.', ',')}
                         </div>
                       </div>
@@ -3710,7 +3696,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
 
               {/* Bảng 7 & Vai trò */}
               <div className="bg-surface border border-line rounded-xl p-4 space-y-3">
-                <h4 className="text-xs font-bold text-ink">
+                <h4 className="text-xs font-semibold text-ink">
                   Bảng 7. Cột bắt buộc khi ghi nhận đầu việc &amp; Tỷ trọng Vai trò
                 </h4>
                 <ul className="space-y-1.5 text-2xs text-ink-2 list-disc pl-4">
@@ -3723,7 +3709,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                 <div className="pt-2 border-t border-line grid grid-cols-2 gap-2">
                   {TASK_ROLE_WEIGHT_RULES.map(r => (
                     <div key={r.roleKey} className="p-2 rounded bg-canvas border border-line text-2xs">
-                      <div className="font-bold text-ink">{r.roleLabel}: {r.suggestedWeightRange}</div>
+                      <div className="font-semibold text-ink">{r.roleLabel}: {r.suggestedWeightRange}</div>
                       <div className="text-ink-3 line-clamp-1">{r.definition}</div>
                     </div>
                   ))}
@@ -3739,22 +3725,22 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
       {/* ===================================================================== */}
       <Presence show={isAssignModalOpen}>
         {isAssignModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 animate-in fade-in duration-(--motion-base)">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/60 animate-in fade-in duration-(--motion-base)">
             <div
               data-motion-panel
-              className="bg-white w-full max-w-4xl rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[92vh]"
+              className="bg-white w-full max-w-4xl rounded-2xl shadow-2xl border border-line overflow-hidden flex flex-col max-h-[92vh]"
             >
               {/* Modal Header */}
-              <div className="px-6 py-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between shrink-0">
+              <div className="px-6 py-4 border-b border-line bg-canvas flex items-center justify-between shrink-0">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-lg bg-accent text-white flex items-center justify-center">
                     <Send className="w-4 h-4" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-semibold text-slate-900">
+                    <h3 className="text-sm font-semibold text-ink">
                       Giao việc &amp; Ghi nhận Điểm Workload (Chuẩn Bảng 1 → Bảng 7)
                     </h3>
-                    <p className="text-2xs text-slate-500">
+                    <p className="text-2xs text-ink-3">
                       Hỗ trợ cả <strong>Task Giám đốc giao</strong> và <strong>Task thuộc luồng quy trình hệ thống</strong>
                     </p>
                   </div>
@@ -3762,7 +3748,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsAssignModalOpen(false)}
-                  className="w-7 h-7 rounded-lg bg-slate-200/70 hover:bg-slate-200 text-slate-600 flex items-center justify-center"
+                  className="w-7 h-7 rounded-lg bg-sunken hover:bg-sunken text-ink-2 flex items-center justify-center"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -3776,7 +3762,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                   {/* Bước 1: Chọn Nguồn Task & Đầu việc chuẩn Bảng 1 (33 SOW) */}
                   <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
                     <div className="sm:col-span-4">
-                      <label className="block font-semibold text-slate-800 mb-1">
+                      <label className="block font-semibold text-ink mb-1">
                         1. Nguồn phát sinh Task *
                       </label>
                       <select
@@ -3786,7 +3772,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                             e.target.value as 'DIRECTOR_ASSIGNED' | 'WORKFLOW_SYSTEM'
                           )
                         }
-                        className="w-full px-3 py-2 bg-indigo-50 border border-indigo-300 rounded-lg font-semibold text-indigo-950"
+                        className="w-full px-3 py-2 bg-accent-soft border border-accent/20 rounded-lg font-semibold text-accent"
                       >
                         <option value="DIRECTOR_ASSIGNED">
                           Task Giám đốc / Quản lý giao
@@ -3798,7 +3784,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                     </div>
 
                     <div className="sm:col-span-8">
-                      <label className="block font-semibold text-slate-800 mb-1">
+                      <label className="block font-semibold text-ink mb-1">
                         2. Chọn Loại công việc theo Bảng 1 (33 SOW chuẩn) *
                       </label>
                       <select
@@ -3808,7 +3794,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                           const found = sowPolicies.find(s => s.stt === stt);
                           if (found) handleSelectSowPolicy(found);
                         }}
-                        className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg font-semibold text-slate-900"
+                        className="w-full px-3 py-2 bg-white border border-line-strong rounded-lg font-semibold text-ink"
                       >
                         {sowPolicies.map(s => (
                           <option key={s.stt} value={s.stt}>
@@ -3822,7 +3808,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                   {/* Bước 2: Nhãn hàng, Gian hàng, SL nghiệm thu & Độ khó từng lần làm (Bảng 3, 5, 6) */}
                   <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                     <div>
-                      <label className="block font-semibold text-slate-800 mb-1">
+                      <label className="block font-semibold text-ink mb-1">
                         3. Nhãn hàng (Brand) *
                       </label>
                       <select
@@ -3831,7 +3817,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                           setFormBrand(e.target.value);
                           setFormStore('');
                         }}
-                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg font-medium text-slate-900"
+                        className="w-full px-3 py-2 bg-white border border-line rounded-lg font-medium text-ink"
                       >
                         {brands.map(b => (
                           <option key={b.id} value={b.name}>
@@ -3842,13 +3828,13 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                     </div>
 
                     <div>
-                      <label className="block font-semibold text-slate-800 mb-1">
+                      <label className="block font-semibold text-ink mb-1">
                         4. Gian hàng (Store)
                       </label>
                       <select
                         value={formStore}
                         onChange={e => setFormStore(e.target.value)}
-                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg font-medium text-slate-900"
+                        className="w-full px-3 py-2 bg-white border border-line rounded-lg font-medium text-ink"
                       >
                         <option value="">Toàn nhãn hàng / Cấp Brand</option>
                         {brandStores.map(st => (
@@ -3860,7 +3846,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                     </div>
 
                     <div>
-                      <label className="block font-semibold text-slate-800 mb-1">
+                      <label className="block font-semibold text-ink mb-1">
                         5. SL nghiệm thu *
                       </label>
                       <input
@@ -3869,12 +3855,12 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                         max={200}
                         value={formAcceptedQty}
                         onChange={e => setFormAcceptedQty(Number(e.target.value) || 1)}
-                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg font-mono font-bold text-indigo-700"
+                        className="w-full px-3 py-2 bg-white border border-line rounded-lg font-mono font-semibold text-accent"
                       />
                     </div>
 
                     <div>
-                      <label className="block font-semibold text-slate-800 mb-1">
+                      <label className="block font-semibold text-ink mb-1">
                         6. Độ khó lần làm (Bảng 3)
                       </label>
                       <select
@@ -3882,7 +3868,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                         onChange={e =>
                           setFormTaskDiffTier(e.target.value as 'EASY' | 'STANDARD' | 'HARD')
                         }
-                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg font-semibold text-slate-900"
+                        className="w-full px-3 py-2 bg-white border border-line rounded-lg font-semibold text-ink"
                       >
                         <option value="EASY">Dễ (×0,80)</option>
                         <option value="STANDARD">Tiêu chuẩn (×1,00)</option>
@@ -3892,25 +3878,25 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                   </div>
 
                   {/* Bước 3: Chọn Hệ số phạm vi (Bảng 2b cho Research hoặc Bảng 2 cho Gian hàng) */}
-                  <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
+                  <div className="p-4 rounded-xl bg-canvas border border-line space-y-3">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                       <div>
-                        <span className="font-bold text-slate-900 text-xs">
+                        <span className="font-semibold text-ink text-xs">
                           7. Hệ số phạm vi ({activeCategoryConfig.tableTitle})
                         </span>
-                        <p className="text-2xs text-slate-500 mt-0.5">
+                        <p className="text-2xs text-ink-3 mt-0.5">
                           {selectedSowPolicy.ruleNote}
                         </p>
                       </div>
-                      <span className="px-2 py-0.5 rounded font-mono text-xs font-bold bg-indigo-100 text-indigo-800">
+                      <span className="font-mono text-xs font-semibold text-accent">
                         HS phạm vi: ×{modalFormulaPreview.scopeCoef.toFixed(2).replace('.', ',')}
                       </span>
                     </div>
 
                     {formCategory === 'RESEARCH' && (
-                      <div className="p-3 rounded-lg bg-white border border-indigo-200 grid grid-cols-1 sm:grid-cols-4 gap-2.5">
+                      <div className="p-3 rounded-lg bg-white border border-accent/20 grid grid-cols-1 sm:grid-cols-4 gap-2.5">
                         <div>
-                          <label className="block text-2xs font-semibold text-slate-700 mb-1">
+                          <label className="block text-2xs font-semibold text-ink-2 mb-1">
                             Số sàn nghiên cứu
                           </label>
                           <select
@@ -3923,7 +3909,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                                 formIncludeBrandStrategy
                               )
                             }
-                            className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded text-xs font-medium"
+                            className="w-full px-2.5 py-1.5 bg-canvas border border-line rounded text-xs font-medium"
                           >
                             <option value={1}>1 sàn</option>
                             <option value={2}>2 sàn</option>
@@ -3932,7 +3918,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                         </div>
 
                         <div>
-                          <label className="block text-2xs font-semibold text-slate-700 mb-1">
+                          <label className="block text-2xs font-semibold text-ink-2 mb-1">
                             Số line sản phẩm
                           </label>
                           <select
@@ -3945,7 +3931,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                                 formIncludeBrandStrategy
                               )
                             }
-                            className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded text-xs font-medium"
+                            className="w-full px-2.5 py-1.5 bg-canvas border border-line rounded text-xs font-medium"
                           >
                             <option value={1}>1 line sản phẩm</option>
                             <option value={2}>2 line sản phẩm</option>
@@ -3965,9 +3951,9 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                                 formIncludeBrandStrategy
                               )
                             }
-                            className="rounded text-indigo-600"
+                            className="rounded text-accent"
                           />
-                          <span className="text-2xs font-medium text-slate-800">
+                          <span className="text-2xs font-medium text-ink">
                             Kèm KH Content &amp; Booking (L3)
                           </span>
                         </label>
@@ -3984,9 +3970,9 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                                 e.target.checked
                               )
                             }
-                            className="rounded text-indigo-600"
+                            className="rounded text-accent"
                           />
-                          <span className="text-2xs font-medium text-slate-800">
+                          <span className="text-2xs font-medium text-ink">
                             Kèm Brand Strategy (L4)
                           </span>
                         </label>
@@ -4003,8 +3989,8 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                             onClick={() => handleSelectFormLevel(lvl)}
                             className={`p-2.5 rounded-lg border text-left transition flex flex-col justify-between ${
                               isSelected
-                                ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
-                                : 'bg-white text-slate-800 border-slate-200 hover:border-indigo-300'
+                                ? 'bg-accent text-white border-accent/20 shadow-xs'
+                                : 'bg-white text-ink border-line hover:border-accent/20'
                             }`}
                           >
                             <div>
@@ -4013,10 +3999,10 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                                   {lvl.levelCode}
                                 </span>
                                 <span
-                                  className={`px-1.5 py-0.2 rounded font-mono text-2xs font-bold ${
+                                  className={`px-1.5 py-0.2 rounded font-mono text-2xs font-semibold ${
                                     isSelected
-                                      ? 'bg-white text-indigo-700'
-                                      : 'bg-indigo-50 text-indigo-700'
+                                      ? 'bg-white text-accent'
+                                      : 'bg-accent-soft text-accent'
                                   }`}
                                 >
                                   {lvl.multiplier.toFixed(2).replace('.', ',')}
@@ -4024,7 +4010,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                               </div>
                               <p
                                 className={`text-2xs mt-1 line-clamp-2 ${
-                                  isSelected ? 'text-indigo-100' : 'text-slate-500'
+                                  isSelected ? 'text-accent' : 'text-ink-3'
                                 }`}
                               >
                                 {lvl.scopeDescription}
@@ -4037,13 +4023,13 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                   </div>
 
                   {/* Bước 4: Bảng 7 (Các trường bắt buộc khi ghi nhận đầu việc) & Bảng 5, 6 */}
-                  <div className="p-4 rounded-xl bg-amber-50/50 border border-amber-200 space-y-3">
-                    <span className="font-bold text-slate-900 text-xs block">
+                  <div className="p-4 rounded-xl bg-warning-soft border border-warning/20 space-y-3">
+                    <span className="font-semibold text-ink text-xs block">
                       8. Thông tin bắt buộc theo Bảng 7, Bảng 5 (Timeline) &amp; Bảng 6 (Đa sàn)
                     </span>
                     <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                       <div>
-                        <label className="block text-2xs font-semibold text-slate-700 mb-1">
+                        <label className="block text-2xs font-semibold text-ink-2 mb-1">
                           Sàn áp dụng (Bảng 7) *
                         </label>
                         <input
@@ -4051,12 +4037,12 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                           value={formPlatformScope}
                           onChange={e => setFormPlatformScope(e.target.value)}
                           placeholder="TikTok / Shopee / Lazada"
-                          className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded text-xs"
+                          className="w-full px-2.5 py-1.5 bg-white border border-line rounded text-xs"
                         />
                       </div>
 
                       <div>
-                        <label className="block text-2xs font-semibold text-slate-700 mb-1">
+                        <label className="block text-2xs font-semibold text-ink-2 mb-1">
                           Nền tảng đăng (Bảng 7) *
                         </label>
                         <input
@@ -4064,12 +4050,12 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                           value={formChannelPlatform}
                           onChange={e => setFormChannelPlatform(e.target.value)}
                           placeholder="TikTok / FB / IG / Shopee Video"
-                          className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded text-xs"
+                          className="w-full px-2.5 py-1.5 bg-white border border-line rounded text-xs"
                         />
                       </div>
 
                       <div>
-                        <label className="block text-2xs font-semibold text-slate-700 mb-1">
+                        <label className="block text-2xs font-semibold text-ink-2 mb-1">
                           HS Timeline (Bảng 5)
                         </label>
                         <select
@@ -4079,7 +4065,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                               e.target.value as 'ON_TIME' | 'LATE_1' | 'LATE_2' | 'FAILED'
                             )
                           }
-                          className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded text-xs font-semibold"
+                          className="w-full px-2.5 py-1.5 bg-white border border-line rounded text-xs font-semibold"
                         >
                           {TIMELINE_TABLE_5.map(t => (
                             <option key={t.status} value={t.status}>
@@ -4090,14 +4076,14 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                       </div>
 
                       <div>
-                        <label className="block text-2xs font-semibold text-slate-700 mb-1">
+                        <label className="block text-2xs font-semibold text-ink-2 mb-1">
                           HS Đa sàn (Bảng 6 - Cấp Brand)
                         </label>
                         <select
                           value={formMultiStoreCount}
                           disabled={!selectedSowPolicy.supportsMultiPlatform}
                           onChange={e => setFormMultiStoreCount(Number(e.target.value))}
-                          className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded text-xs font-semibold disabled:opacity-50"
+                          className="w-full px-2.5 py-1.5 bg-white border border-line rounded text-xs font-semibold disabled:opacity-50"
                         >
                           {MULTI_PLATFORM_TABLE_6.map(m => (
                             <option key={m.stores} value={m.stores}>
@@ -4111,7 +4097,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       {selectedSowPolicy.requiresKocStatus && (
                         <div>
-                          <label className="block text-2xs font-semibold text-slate-700 mb-1">
+                          <label className="block text-2xs font-semibold text-ink-2 mb-1">
                             Trạng thái KOC (Bảng 7) *
                           </label>
                           <select
@@ -4125,7 +4111,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                                 setFormTaskDiffTier('HARD');
                               }
                             }}
-                            className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded text-xs font-semibold"
+                            className="w-full px-2.5 py-1.5 bg-white border border-line rounded text-xs font-semibold"
                           >
                             <option value="NEW_KOC">KOC mới, book lần đầu (Độ khó: Khó)</option>
                             <option value="REBOOK">Book lại (Chuyển về Tiêu chuẩn)</option>
@@ -4136,7 +4122,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
 
                       {selectedSowPolicy.requiresOriginalAsset && (
                         <div>
-                          <label className="block text-2xs font-semibold text-rose-700 mb-1">
+                          <label className="block text-2xs font-semibold text-critical mb-1">
                             Asset gốc / Reup từ (Bắt buộc Bảng 7) *
                           </label>
                           <input
@@ -4145,14 +4131,14 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                             value={formOriginalAssetRef}
                             onChange={e => setFormOriginalAssetRef(e.target.value)}
                             placeholder="Nhập mã video gốc / link asset gốc..."
-                            className="w-full px-2.5 py-1.5 bg-white border border-rose-300 rounded text-xs"
+                            className="w-full px-2.5 py-1.5 bg-white border border-critical/20 rounded text-xs"
                           />
                         </div>
                       )}
 
                       {formTaskDiffTier !== selectedSowPolicy.defaultDifficultyTier && (
                         <div className="sm:col-span-2">
-                          <label className="block text-2xs font-semibold text-rose-700 mb-1">
+                          <label className="block text-2xs font-semibold text-critical mb-1">
                             Lý do đổi độ khó khác mặc định Bảng 1 (Bắt buộc Bảng 7) *
                           </label>
                           <input
@@ -4161,7 +4147,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                             value={formDiffOverrideReason}
                             onChange={e => setFormDiffOverrideReason(e.target.value)}
                             placeholder="VD: Yêu cầu xây kênh theo nhận diện mới / kiểm duyệt pháp lý nghiêm..."
-                            className="w-full px-2.5 py-1.5 bg-white border border-rose-300 rounded text-xs"
+                            className="w-full px-2.5 py-1.5 bg-white border border-critical/20 rounded text-xs"
                           />
                         </div>
                       )}
@@ -4169,18 +4155,18 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                   </div>
 
                   {/* Bước 5: Phân công Nhân sự, Vai trò & Tỷ trọng đóng góp (%) */}
-                  <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
+                  <div className="p-4 rounded-xl bg-canvas border border-line space-y-3">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                       <div>
-                        <span className="font-bold text-slate-900 text-xs">
+                        <span className="font-semibold text-ink text-xs">
                           9. Phân vai trò nhận việc &amp; Tỷ trọng đóng góp (Tổng = 100%)
                         </span>
                       </div>
                       <span
-                        className={`px-2 py-0.5 rounded font-mono text-2xs font-bold ${
+                        className={`font-mono text-2xs font-semibold ${
                           isWeightValid
-                            ? 'bg-emerald-100 text-emerald-800'
-                            : 'bg-red-100 text-red-700'
+                            ? 'bg-positive-soft text-positive'
+                            : 'bg-critical-soft text-critical'
                         }`}
                       >
                         Tổng tỷ trọng: {totalContributionWeight}%{' '}
@@ -4194,7 +4180,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                           key={preset.id}
                           type="button"
                           onClick={() => applySplitPreset(preset.id)}
-                          className="px-2.5 py-1 rounded-md bg-white hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 border border-slate-200 text-2xs font-medium transition"
+                          className="px-2.5 py-1 rounded-md bg-white hover:bg-accent-soft text-ink-2 hover:text-accent border border-line text-2xs font-medium transition"
                         >
                           {preset.label}
                         </button>
@@ -4210,10 +4196,10 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                         return (
                           <div
                             key={idx}
-                            className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center bg-white p-2.5 rounded-lg border border-slate-200"
+                            className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center bg-white p-2.5 rounded-lg border border-line"
                           >
                             <div className="sm:col-span-5">
-                              <label className="block text-2xs text-slate-500 mb-0.5">
+                              <label className="block text-2xs text-ink-3 mb-0.5">
                                 Nhân sự nhận việc #{idx + 1}
                               </label>
                               <select
@@ -4226,7 +4212,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                                     )
                                   );
                                 }}
-                                className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded text-xs font-medium"
+                                className="w-full px-2.5 py-1.5 bg-canvas border border-line rounded text-xs font-medium"
                               >
                                 {allAssignableStaff.map(s => (
                                   <option key={s.name} value={s.name}>
@@ -4237,7 +4223,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                             </div>
 
                             <div className="sm:col-span-3">
-                              <label className="block text-2xs text-slate-500 mb-0.5">
+                              <label className="block text-2xs text-ink-3 mb-0.5">
                                 Vai trò trong Case
                               </label>
                               <select
@@ -4250,7 +4236,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                                     )
                                   );
                                 }}
-                                className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded text-xs font-semibold"
+                                className="w-full px-2.5 py-1.5 bg-canvas border border-line rounded text-xs font-semibold"
                               >
                                 <option value="PIC_OWNER">PIC / Owner (50–70%)</option>
                                 <option value="CO_PIC">Co-PIC (25–40%)</option>
@@ -4260,7 +4246,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                             </div>
 
                             <div className="sm:col-span-2">
-                              <label className="block text-2xs text-slate-500 mb-0.5">
+                              <label className="block text-2xs text-ink-3 mb-0.5">
                                 Tỷ trọng (%)
                               </label>
                               <input
@@ -4277,16 +4263,16 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                                     )
                                   );
                                 }}
-                                className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded text-xs font-mono font-semibold text-center"
+                                className="w-full px-2.5 py-1.5 bg-canvas border border-line rounded text-xs font-mono font-semibold text-center"
                               />
                             </div>
 
                             <div className="sm:col-span-2 flex items-center justify-between sm:justify-end gap-2 pt-3 sm:pt-0">
                               <div className="text-right">
-                                <span className="text-2xs text-slate-400 block">
+                                <span className="text-2xs text-ink-3 block">
                                   Điểm cá nhân
                                 </span>
-                                <span className="font-mono text-xs font-bold text-indigo-700">
+                                <span className="font-mono text-xs font-semibold text-accent">
                                   {pts} pts
                                 </span>
                               </div>
@@ -4298,7 +4284,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                                       prev.filter((_, i) => i !== idx)
                                     )
                                   }
-                                  className="p-1.5 rounded hover:bg-red-50 text-slate-400 hover:text-red-600"
+                                  className="p-1.5 rounded hover:bg-critical-soft text-ink-3 hover:text-critical"
                                 >
                                   <Trash2 className="w-3.5 h-3.5" />
                                 </button>
@@ -4321,7 +4307,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                           },
                         ])
                       }
-                      className="text-2xs font-semibold text-indigo-600 hover:text-indigo-800 inline-flex items-center gap-1"
+                      className="text-2xs font-semibold text-accent hover:text-accent inline-flex items-center gap-1"
                     >
                       <Plus className="w-3.5 h-3.5" />
                       <span>Thêm nhân sự cùng tham gia task này</span>
@@ -4331,7 +4317,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                   {/* Bước 6: Tiêu đề, Đầu ra & Hạn SLA */}
                   <div className="space-y-3">
                     <div>
-                      <label className="block font-semibold text-slate-800 mb-1">
+                      <label className="block font-semibold text-ink mb-1">
                         10. Tiêu đề công việc / Nhiệm vụ *
                       </label>
                       <input
@@ -4340,32 +4326,32 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                         placeholder={`VD: ${selectedSowPolicy.name} cho ${formBrand}...`}
                         value={formTitle}
                         onChange={e => setFormTitle(e.target.value)}
-                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-slate-900 focus:outline-none focus:border-blue-500"
+                        className="w-full px-3 py-2 bg-white border border-line rounded-lg text-ink focus:outline-none focus:border-accent/20"
                       />
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
-                        <label className="block font-semibold text-slate-800 mb-1">
+                        <label className="block font-semibold text-ink mb-1">
                           11. Đầu ra yêu cầu (Deliverables)
                         </label>
                         <input
                           type="text"
                           value={formDeliverable}
                           onChange={e => setFormDeliverable(e.target.value)}
-                          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-slate-900"
+                          className="w-full px-3 py-2 bg-white border border-line rounded-lg text-ink"
                         />
                       </div>
 
                       <div className="grid grid-cols-2 gap-2">
                         <div>
-                          <label className="block font-semibold text-slate-800 mb-1">
+                          <label className="block font-semibold text-ink mb-1">
                             12. Hạn SLA (Giờ)
                           </label>
                           <select
                             value={formDeadlineHours}
                             onChange={e => setFormDeadlineHours(Number(e.target.value))}
-                            className="w-full px-2.5 py-2 bg-white border border-slate-200 rounded-lg font-mono font-semibold"
+                            className="w-full px-2.5 py-2 bg-white border border-line rounded-lg font-mono font-semibold"
                           >
                             <option value={12}>12h</option>
                             <option value={24}>24h (1 ngày)</option>
@@ -4377,7 +4363,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                         </div>
 
                         <div>
-                          <label className="block font-semibold text-slate-800 mb-1">
+                          <label className="block font-semibold text-ink mb-1">
                             13. Mức độ ưu tiên
                           </label>
                           <select
@@ -4387,7 +4373,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                                 e.target.value as 'critical' | 'warning' | 'normal'
                               )
                             }
-                            className="w-full px-2.5 py-2 bg-white border border-slate-200 rounded-lg font-medium"
+                            className="w-full px-2.5 py-2 bg-white border border-line rounded-lg font-medium"
                           >
                             <option value="critical">Khẩn cấp (SLA gấp)</option>
                             <option value="warning">Cảnh báo (Quan trọng)</option>
@@ -4400,10 +4386,10 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                 </div>
 
                 {/* Modal Footer with Live Formula Preview */}
-                <div className="px-6 py-3.5 border-t border-slate-200 bg-slate-50 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
-                  <div className="text-2xs text-slate-700 font-mono">
+                <div className="px-6 py-3.5 border-t border-line bg-canvas flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
+                  <div className="text-2xs text-ink-2 font-mono">
                     Công thức: SL({modalFormulaPreview.qty}) × Point({modalFormulaPreview.stdPoint}) × Phạm vi({modalFormulaPreview.scopeCoef.toFixed(2)}) × Việc({modalFormulaPreview.taskDiffCoef.toFixed(2)}) × Timeline({modalFormulaPreview.timelineCoef.toFixed(1)}) × Đa sàn({modalFormulaPreview.multiPlatformCoef.toFixed(1)}) ={' '}
-                    <strong className="text-sm text-indigo-700">
+                    <strong className="text-sm text-accent">
                       {modalFormulaPreview.totalCasePoints.toFixed(2)} pts
                     </strong>
                   </div>
@@ -4436,33 +4422,33 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
       {/* ===================================================================== */}
       <Presence show={!!editingDeliverableTask}>
         {editingDeliverableTask && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60">
-            <div className="bg-white w-full max-w-md rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
-              <div className="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-slate-900">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/60">
+            <div className="bg-white w-full max-w-md rounded-2xl shadow-xl border border-line overflow-hidden">
+              <div className="px-5 py-3.5 border-b border-line flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-ink">
                   Nộp link kết quả đầu ra (Deliverable)
                 </h3>
                 <button
                   type="button"
                   onClick={() => setEditingDeliverableTask(null)}
-                  className="text-slate-400 hover:text-slate-700"
+                  className="text-ink-3 hover:text-ink-2"
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
               <div className="p-5 space-y-3 text-xs">
-                <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200">
-                  <div className="font-semibold text-slate-900">
+                <div className="p-2.5 rounded-lg bg-canvas border border-line">
+                  <div className="font-semibold text-ink">
                     {editingDeliverableTask.title}
                   </div>
-                  <div className="text-2xs text-slate-500 mt-0.5">
+                  <div className="text-2xs text-ink-3 mt-0.5">
                     Yêu cầu đầu ra:{' '}
                     {editingDeliverableTask.expectedDeliverable ||
                       'File báo cáo / kế hoạch nghiệm thu'}
                   </div>
                 </div>
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">
+                  <label className="block font-semibold text-ink-2 mb-1">
                     Đường dẫn tài liệu (Google Sheet / Docs / Lark Base)
                   </label>
                   <input
@@ -4470,7 +4456,7 @@ export const TaskDelegationView: React.FC<TaskDelegationViewProps> = ({
                     placeholder="https://docs.google.com/spreadsheets/d/..."
                     value={deliverableInputUrl}
                     onChange={e => setDeliverableInputUrl(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs"
+                    className="w-full px-3 py-2 border border-line-strong rounded-lg text-xs"
                   />
                 </div>
                 <div className="flex justify-end gap-2 pt-2">

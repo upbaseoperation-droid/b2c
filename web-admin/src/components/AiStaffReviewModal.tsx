@@ -513,28 +513,28 @@ export const AiStaffReviewModal: React.FC<AiStaffReviewModalProps> = ({
                   </div>
 
                   <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className={`px-2 py-0.5 rounded text-2xs font-semibold  border ${
+                    <div className="flex items-center gap-2 text-2xs font-semibold">
+                      <span className={
                         reviewResult.overallGrade === 'Xuất sắc'
-                          ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                          ? 'text-positive'
                           : reviewResult.overallGrade === 'Đạt chuẩn'
-                          ? 'bg-blue-100 text-blue-800 border-blue-300'
+                          ? 'text-accent'
                           : reviewResult.overallGrade === 'Cần cải thiện'
-                          ? 'bg-amber-100 text-amber-800 border-amber-300'
-                          : 'bg-rose-100 text-rose-800 border-rose-300'
-                      }`}>
-                        Xếp Loại: {reviewResult.overallGrade}
+                          ? 'text-warning'
+                          : 'text-critical'
+                      }>
+                        Xếp loại: {reviewResult.overallGrade}
                       </span>
-
-                      <span className={`px-2 py-0.5 rounded text-2xs font-semibold ${
+                      <span className="text-ink-3">·</span>
+                      <span className={
                         reviewResult.pacingStatus === 'AHEAD'
-                          ? 'bg-emerald-100 text-emerald-800'
+                          ? 'text-positive'
                           : reviewResult.pacingStatus === 'ON_TRACK'
-                          ? 'bg-blue-100 text-blue-800'
+                          ? 'text-accent'
                           : reviewResult.pacingStatus === 'BEHIND'
-                          ? 'bg-amber-100 text-amber-800'
-                          : 'bg-rose-100 text-rose-800'
-                      }`}>
+                          ? 'text-warning'
+                          : 'text-critical'
+                      }>
                         {reviewResult.pacingStatus === 'AHEAD' && 'Vượt tiến độ'}
                         {reviewResult.pacingStatus === 'ON_TRACK' && 'Đúng tiến độ'}
                         {reviewResult.pacingStatus === 'BEHIND' && 'Chậm tiến độ'}
@@ -572,7 +572,7 @@ export const AiStaffReviewModal: React.FC<AiStaffReviewModalProps> = ({
                 <div className="card-enterprise p-4 border-emerald-200 bg-emerald-50/15 space-y-2">
                   <h4 className="font-semibold text-emerald-900 flex items-center gap-1.5 text-xs">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                    <span>Điểm Mạnh Nổi Bật ({reviewResult.strengths.length})</span>
+                    <span>Điểm mạnh nổi bật ({reviewResult.strengths.length})</span>
                   </h4>
                   <ul className="space-y-1.5 text-slate-700 text-xs">
                     {reviewResult.strengths.map((s, idx) => (
@@ -588,7 +588,7 @@ export const AiStaffReviewModal: React.FC<AiStaffReviewModalProps> = ({
                 <div className="card-enterprise p-4 border-amber-200 bg-amber-50/15 space-y-2">
                   <h4 className="font-semibold text-amber-900 flex items-center gap-1.5 text-xs">
                     <AlertTriangle className="w-4 h-4 text-amber-600" />
-                    <span>Nút Thắt &amp; Rủi Ro Cần Khắc Phục ({reviewResult.bottlenecksAndRisks.length})</span>
+                    <span>Nút thắt &amp; rủi ro cần khắc phục ({reviewResult.bottlenecksAndRisks.length})</span>
                   </h4>
                   <ul className="space-y-1.5 text-slate-700 text-xs">
                     {reviewResult.bottlenecksAndRisks.map((b, idx) => (
@@ -605,13 +605,13 @@ export const AiStaffReviewModal: React.FC<AiStaffReviewModalProps> = ({
               <div className="card-enterprise p-4 bg-blue-50/30 border-blue-200 space-y-2">
                 <h4 className="font-semibold text-blue-900 flex items-center gap-1.5 text-xs">
                   <TrendingUp className="w-4 h-4 text-blue-600" />
-                  <span>Chỉ Dẫn Hành Động &amp; Huấn Luyện 1-on-1 Dành Cho Trưởng Phòng</span>
+                  <span>Chỉ dẫn hành động &amp; huấn luyện 1-on-1 dành cho trưởng phòng</span>
                 </h4>
                 <div className="space-y-1.5 text-slate-700 text-xs">
                   {reviewResult.actionableCoaching.map((c, idx) => (
                     <div key={idx} className="p-2 rounded bg-white border border-blue-100 flex items-start gap-2">
-                      <span className="px-1.5 py-0.2 bg-blue-100 text-blue-800 rounded font-semibold text-2xs">
-                        0{idx + 1}
+                      <span className="text-accent font-mono font-semibold text-2xs shrink-0">
+                        0{idx + 1}.
                       </span>
                       <span>{c}</span>
                     </div>

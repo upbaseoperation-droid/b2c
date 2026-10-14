@@ -526,12 +526,12 @@ export const BrandView: React.FC<BrandViewProps> = ({
             </div>
 
             <div className="card-enterprise p-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-md bg-indigo-50 text-indigo-600 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-md bg-accent-soft text-accent flex items-center justify-center">
                 <Layers className="w-5 h-5" />
               </div>
               <div>
                 <p className="text-2xs text-slate-500 font-medium">Chiến dịch liên tháng (2–3 tháng)</p>
-                <p className="text-lg font-semibold text-indigo-700">
+                <p className="text-lg font-semibold text-accent">
                   {multiMonthCampaignsCount} / {campaigns.length} chiến dịch
                 </p>
               </div>
@@ -564,7 +564,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
               {/* Month Filter */}
               <div className="flex items-center gap-1.5 flex-wrap text-xs">
                 <span className="text-slate-500 font-semibold flex items-center gap-1 mr-1">
-                  <Calendar className="w-3.5 h-3.5 text-indigo-600" /> Chu kỳ tháng:
+                  <Calendar className="w-3.5 h-3.5 text-accent" /> Chu kỳ tháng:
                 </span>
                 {([
                   { key: 'ALL', label: 'Tất cả các tháng' },
@@ -578,7 +578,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
                     onClick={() => setSelectedMonthFilter(m.key)}
                     className={`px-2.5 py-1 rounded-md font-semibold transition cursor-pointer ${
                       selectedMonthFilter === m.key
-                        ? 'bg-indigo-600 text-white shadow-xs'
+                        ? 'bg-primary text-white shadow-xs'
                         : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                     }`}
                   >
@@ -641,7 +641,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowCoverageMatrix(v => !v)}
-                  className="px-3 py-1.5 rounded-md text-xs font-semibold border border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition cursor-pointer whitespace-nowrap"
+                  className="px-3 py-1.5 rounded-md text-xs font-semibold border border-line bg-accent-soft text-accent hover:opacity-90 transition cursor-pointer whitespace-nowrap"
                 >
                   {showCoverageMatrix ? 'Ẩn đối soát Brand Có/Không Campaign' : 'Xem đối soát Brand Có/Không Campaign'}
                 </button>
@@ -664,16 +664,16 @@ export const BrandView: React.FC<BrandViewProps> = ({
             <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/70 space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
-                  <h4 className="text-xs font-bold text-slate-900 flex items-center gap-2">
+                  <h4 className="text-xs font-semibold text-slate-900 flex items-center gap-2 flex-wrap">
                     <span>Đối soát trạng thái Chiến dịch theo Thương hiệu — Chu kỳ {brandCoverageForMonth.targetMonth}</span>
-                    <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800">
-                      {brandCoverageForMonth.withCampaign.length} Brand CÓ Campaign
+                    <span className="text-2xs font-medium text-positive">
+                      · {brandCoverageForMonth.withCampaign.length} Brand CÓ Campaign
                     </span>
-                    <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-slate-200 text-slate-700">
-                      {brandCoverageForMonth.withoutCampaign.length} Brand KHÔNG có Campaign (Chạy duy trì tháng)
+                    <span className="text-2xs font-medium text-ink-3">
+                      · {brandCoverageForMonth.withoutCampaign.length} Brand KHÔNG có Campaign (Chạy duy trì tháng)
                     </span>
                   </h4>
-                  <p className="text-[11px] text-slate-500 mt-0.5">
+                  <p className="text-2xs text-slate-500 mt-0.5">
                     Một thương hiệu trong tháng có thể có Chiến dịch (kéo dài 1–3 tháng) hoặc không có Chiến dịch (chỉ chạy kế hoạch duy trì Always-on tại gian hàng).
                   </p>
                 </div>
@@ -683,10 +683,10 @@ export const BrandView: React.FC<BrandViewProps> = ({
                 {/* Cột 1: Brand CÓ Campaign trong tháng */}
                 <div className="p-3 bg-white rounded-lg border border-emerald-200 space-y-2">
                   <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
-                    <span className="font-bold text-emerald-800">
+                    <span className="font-semibold text-emerald-800">
                       Thương hiệu ĐANG CÓ Campaign ({brandCoverageForMonth.targetMonth})
                     </span>
-                    <span className="text-[11px] text-emerald-600 font-semibold">
+                    <span className="text-2xs text-emerald-600 font-semibold">
                       Đồng bộ KV &amp; Mốc Sale xuống Gian hàng
                     </span>
                   </div>
@@ -699,11 +699,11 @@ export const BrandView: React.FC<BrandViewProps> = ({
                           type="button"
                           onClick={() => handleOpenEditModal(campaign)}
                           title={`Nhấn để xem/cập nhật ${campaign.title}`}
-                          className="px-2.5 py-1 rounded-md bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-900 font-semibold text-[11px] flex items-center gap-1.5 transition cursor-pointer"
+                          className="px-2.5 py-1 rounded-md bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-900 font-semibold text-2xs flex items-center gap-1.5 transition cursor-pointer"
                         >
                           <span>{brandName}</span>
-                          <span className="px-1.5 py-0.2 rounded bg-white text-indigo-700 font-mono text-[10px] border border-emerald-200">
-                            {campaign.code} ({covered.length}T)
+                          <span className="text-ink-3 font-code text-2xs">
+                            · {campaign.code} ({covered.length}T)
                           </span>
                         </button>
                       );
@@ -714,10 +714,10 @@ export const BrandView: React.FC<BrandViewProps> = ({
                 {/* Cột 2: Brand KHÔNG CÓ Campaign trong tháng */}
                 <div className="p-3 bg-white rounded-lg border border-slate-200 space-y-2">
                   <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
-                    <span className="font-bold text-slate-700">
+                    <span className="font-semibold text-slate-700">
                       Thương hiệu KHÔNG có Campaign ({brandCoverageForMonth.targetMonth}) — Duy trì Always-on
                     </span>
-                    <span className="text-[11px] text-slate-500">
+                    <span className="text-2xs text-slate-500">
                       Nhấn vào Brand để khởi tạo Campaign mới
                     </span>
                   </div>
@@ -727,10 +727,10 @@ export const BrandView: React.FC<BrandViewProps> = ({
                         key={brandName}
                         type="button"
                         onClick={() => handleOpenCreateModal(brandName)}
-                        className="px-2.5 py-1 rounded-md bg-slate-100 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 border border-slate-200 text-slate-700 font-medium text-[11px] flex items-center gap-1 transition cursor-pointer"
+                        className="px-2.5 py-1 rounded-md bg-slate-100 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 border border-slate-200 text-slate-700 font-medium text-2xs flex items-center gap-1 transition cursor-pointer"
                       >
                         <span>{brandName}</span>
-                        <span className="text-[10px] text-slate-400">(Duy trì • + Tạo Campaign)</span>
+                        <span className="text-2xs text-slate-400">(Duy trì • + Tạo Campaign)</span>
                       </button>
                     ))}
                   </div>
@@ -755,18 +755,18 @@ export const BrandView: React.FC<BrandViewProps> = ({
                     {/* Header */}
                     <div className="flex items-center justify-between gap-2 flex-wrap">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="px-2 py-0.5 rounded text-2xs font-mono font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                        <span className="text-2xs font-code font-semibold text-accent">
                           {c.code}
                         </span>
-                        <span className="text-xs font-bold text-slate-900">{c.brand}</span>
+                        <span className="text-xs font-semibold text-ink">· {c.brand}</span>
                         <span
-                          className={`px-2 py-0.5 rounded-full text-[11px] font-bold border ${
+                          className={`text-2xs font-medium ${
                             isMultiMonth
-                              ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
-                              : 'bg-slate-100 text-slate-700 border-slate-200'
+                              ? 'text-accent'
+                              : 'text-ink-3'
                           }`}
                         >
-                          {isMultiMonth
+                          · {isMultiMonth
                             ? `Liên tháng • ${coveredMonths.length} tháng (${coveredMonths.join(' → ')})`
                             : `1 tháng (${coveredMonths[0] || '2026/10'})`}
                         </span>
@@ -793,7 +793,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
                     </div>
 
                     <div>
-                      <h3 className="text-sm font-bold text-slate-900 tracking-tight">{c.title}</h3>
+                      <h3 className="text-sm font-semibold text-slate-900 tracking-tight">{c.title}</h3>
                       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500 mt-1">
                         <span>
                           Khung ngày: <strong className="text-slate-700">{c.startDate} → {c.endDate}</strong>
@@ -831,7 +831,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
                       )}
                       {c.comboPromoOffer && (
                         <div className="p-2 rounded bg-amber-50/80 border border-amber-200 text-amber-950">
-                          <span className="font-bold">CTKM / Combo / Quà tặng:</span> {c.comboPromoOffer}
+                          <span className="font-semibold">CTKM / Combo / Quà tặng:</span> {c.comboPromoOffer}
                         </div>
                       )}
                       <div>
@@ -841,40 +841,38 @@ export const BrandView: React.FC<BrandViewProps> = ({
                       {c.heroSkus && c.heroSkus.length > 0 && (
                         <div className="flex items-center gap-1.5 flex-wrap pt-1">
                           <span className="text-slate-500 font-semibold">Hero SKU:</span>
-                          {c.heroSkus.map((sku, idx) => (
-                            <span key={idx} className="px-2 py-0.5 bg-white border border-slate-200 rounded text-2xs text-slate-700 font-mono font-semibold">
-                              {sku}
-                            </span>
-                          ))}
+                          <span className="text-2xs text-ink-2 font-code">
+                            {c.heroSkus.join(' · ')}
+                          </span>
                         </div>
                       )}
                     </div>
 
                     {/* Key Visual Spec Box (Section 03 Template 1 Sheet) */}
                     {c.keyVisualSpec && (
-                      <div className="p-3 rounded-lg bg-purple-50/50 border border-purple-200 space-y-1.5 text-xs">
+                      <div className="p-3 rounded-lg bg-accent-soft border border-line space-y-1.5 text-xs">
                         <div className="flex items-center justify-between">
-                          <span className="font-bold text-purple-900 flex items-center gap-1.5">
-                            <Palette className="w-3.5 h-3.5 text-purple-600" />
+                          <span className="font-semibold text-ink flex items-center gap-1.5">
+                            <Palette className="w-3.5 h-3.5 text-accent" />
                             <span>Key Visual Chiến dịch: {c.keyVisualSpec.theme}</span>
                           </span>
                           {c.keyVisualSpec.fonts && (
-                            <span className="text-[11px] text-purple-700 font-medium">
+                            <span className="text-2xs text-accent font-medium">
                               Font: {c.keyVisualSpec.fonts}
                             </span>
                           )}
                         </div>
                         {c.keyVisualSpec.promoTextOnKv && (
-                          <div className="text-[11px] text-purple-900">
+                          <div className="text-2xs text-ink-2">
                             <span className="font-semibold">Text CTKM trên KV:</span> &ldquo;{c.keyVisualSpec.promoTextOnKv}&rdquo;
                           </div>
                         )}
-                        <div className="grid grid-cols-3 gap-2 pt-1 text-[11px]">
-                          <div className="bg-white px-2 py-1 rounded border border-purple-100">
+                        <div className="grid grid-cols-3 gap-2 pt-1 text-2xs">
+                          <div className="bg-white px-2 py-1 rounded border border-line">
                             <span className="text-slate-500 block">Ngày lên Ref</span>
                             <strong className="text-slate-800">{c.keyVisualSpec.refDate || '—'}</strong>
                           </div>
-                          <div className="bg-white px-2 py-1 rounded border border-purple-100">
+                          <div className="bg-white px-2 py-1 rounded border border-line">
                             <span className="text-slate-500 block">Ngày Order KV</span>
                             <strong className="text-slate-800">{c.keyVisualSpec.orderDate || '—'}</strong>
                           </div>
@@ -888,12 +886,12 @@ export const BrandView: React.FC<BrandViewProps> = ({
 
                     {/* Bảng Phân kỳ theo từng tháng (Monthly Phases Breakdown) */}
                     {c.monthlyPhases && c.monthlyPhases.length > 0 && (
-                      <div className="rounded-lg border border-indigo-200 overflow-hidden text-xs">
-                        <div className="bg-indigo-50/80 px-3 py-1.5 border-b border-indigo-200 flex items-center justify-between">
-                          <span className="font-bold text-indigo-950 text-[11px]">
+                      <div className="rounded-lg border border-line overflow-hidden text-xs">
+                        <div className="bg-accent-soft px-3 py-1.5 border-b border-line flex items-center justify-between">
+                          <span className="font-semibold text-ink text-2xs">
                             Phân kỳ triển khai theo từng tháng ({c.monthlyPhases.length} tháng)
                           </span>
-                          <span className="text-[10px] text-indigo-700 font-semibold">
+                          <span className="text-2xs text-accent font-semibold">
                             Tự động đồng bộ vào Kế hoạch tháng của Gian hàng
                           </span>
                         </div>
@@ -904,21 +902,21 @@ export const BrandView: React.FC<BrandViewProps> = ({
                               <div
                                 key={p.month}
                                 className={`px-3 py-2 flex flex-col sm:flex-row sm:items-center justify-between gap-2 ${
-                                  isSelectedMonth ? 'bg-indigo-50/50' : ''
+                                  isSelectedMonth ? 'bg-accent-soft' : ''
                                 }`}
                               >
                                 <div className="space-y-0.5">
                                   <div className="flex items-center gap-1.5">
-                                    <span className="px-1.5 py-0.5 rounded bg-indigo-600 text-white font-mono font-bold text-[10px]">
+                                    <span className="text-accent font-code font-semibold text-2xs">
                                       {p.month}
                                     </span>
-                                    <span className="font-semibold text-slate-900 text-xs">{p.phaseName}</span>
+                                    <span className="font-semibold text-slate-900 text-xs">· {p.phaseName}</span>
                                   </div>
                                   {p.saleMilestones && (
-                                    <p className="text-[11px] text-slate-500">Mốc sale: {p.saleMilestones}</p>
+                                    <p className="text-2xs text-slate-500">Mốc sale: {p.saleMilestones}</p>
                                   )}
                                 </div>
-                                <div className="flex items-center gap-3 shrink-0 text-[11px]">
+                                <div className="flex items-center gap-3 shrink-0 text-2xs">
                                   <div className="text-right">
                                     <span className="text-slate-400 block">Ngân sách tháng</span>
                                     <strong className="text-slate-900">{formatVndShort(p.allocatedBudget)}</strong>
@@ -983,8 +981,8 @@ export const BrandView: React.FC<BrandViewProps> = ({
                           <span className="text-slate-700 font-medium">
                             Đã bàn giao nội dung ({c.contentPic || 'Quỳnh Như'})
                           </span>
-                          <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 text-2xs font-semibold flex items-center gap-1">
-                            <Clock className="w-3 h-3" /> Đúng cam kết 24h
+                          <span className="text-positive text-2xs font-medium flex items-center gap-1">
+                            · <Clock className="w-3 h-3" /> Đúng cam kết 24h
                           </span>
                         </>
                       ) : (
@@ -1004,7 +1002,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
                         <span>Bàn giao nội dung</span>
                       </button>
                     ) : (
-                      <span className="px-2.5 py-1 bg-slate-100 text-slate-600 rounded text-2xs font-semibold flex items-center gap-1">
+                      <span className="text-ink-3 text-2xs font-medium flex items-center gap-1">
                         <span>Đang đồng bộ {coveredMonths.length} tháng</span>
                       </span>
                     )}
@@ -1057,10 +1055,10 @@ export const BrandView: React.FC<BrandViewProps> = ({
                     }`}
                   >
                     <span>{g.brandName}</span>
-                    <span className={`text-2xs px-1.5 py-0.5 rounded-full ${
-                      selectedBrandName === g.brandName ? 'bg-blue-700 text-white' : 'bg-white text-slate-500 border border-slate-200'
+                    <span className={`text-2xs ${
+                      selectedBrandName === g.brandName ? 'text-blue-100' : 'text-slate-500'
                     }`}>
-                      {g.blacklistKeywords.length} cấm
+                      ({g.blacklistKeywords.length})
                     </span>
                   </button>
                 ))}
@@ -1073,8 +1071,8 @@ export const BrandView: React.FC<BrandViewProps> = ({
               <div>
                 <div className="flex items-center gap-2 flex-wrap">
                   <h2 className="text-lg font-semibold text-slate-900">{currentGuideline.brandName}</h2>
-                  <span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded text-xs font-semibold">
-                    {currentGuideline.category}
+                  <span className="text-xs font-medium text-blue-700">
+                    · {currentGuideline.category}
                   </span>
                 </div>
                 <p className="text-xs text-slate-600 mt-1 max-w-3xl">
@@ -1112,15 +1110,13 @@ export const BrandView: React.FC<BrandViewProps> = ({
                   <p className="text-2xs font-semibold text-slate-600 mb-1.5">
                     Định mức trần thù lao theo khung lương (KL1 – KL7):
                   </p>
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    {(['KL1', 'KL2', 'KL3', 'KL4', 'KL5', 'KL6', 'KL7'] as const).map((tier) => {
+                  <div className="flex items-center gap-2 flex-wrap text-2xs font-medium text-slate-700">
+                    {(['KL1', 'KL2', 'KL3', 'KL4', 'KL5', 'KL6', 'KL7'] as const).map((tier, idx) => {
                       const val = currentProfile.ratecard?.find((r) => r.grade === tier)?.maxBudget || 0;
                       return (
-                        <span
-                          key={tier}
-                          className="px-2 py-0.5 rounded bg-white border border-blue-200 text-2xs font-medium text-slate-700"
-                        >
-                          <strong className="text-blue-700 font-mono">{tier}:</strong> {formatVndShort(val)}
+                        <span key={tier}>
+                          {idx > 0 && <span className="text-slate-300 mr-2">·</span>}
+                          <strong className="text-blue-700 font-code">{tier}:</strong> {formatVndShort(val)}
                         </span>
                       );
                     })}
@@ -1225,10 +1221,8 @@ export const BrandView: React.FC<BrandViewProps> = ({
                   ) : (
                     filteredKeywords.map((kw) => (
                       <tr key={kw.id} className="hover:bg-slate-50/80 transition">
-                        <td className="py-3 px-4 font-semibold text-slate-900">
-                          <span className="bg-rose-50 text-rose-800 px-2 py-0.5 rounded border border-rose-200">
-                            &ldquo;{kw.keyword}&rdquo;
-                          </span>
+                        <td className="py-3 px-4 font-semibold text-rose-800">
+                          &ldquo;{kw.keyword}&rdquo;
                         </td>
                         <td className="py-3 px-3">
                           {kw.severity === 'CRITICAL_BANNED' && (
@@ -1253,7 +1247,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
                         <td className="py-3 px-4">
                           {kw.alternativeSuggestion ? (
                             <div className="flex items-center gap-2">
-                              <span className="text-emerald-700 font-medium bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                              <span className="text-emerald-700 font-medium">
                                 {kw.alternativeSuggestion}
                               </span>
                               <button
@@ -1338,7 +1332,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
               {currentGuideline.heroSkus.map((sku) => (
                 <div key={sku.id} className="card-enterprise p-4 space-y-3 bg-white">
                   <div className="flex items-center justify-between">
-                    <span className="font-mono text-2xs font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                    <span className="font-code text-2xs font-semibold text-accent">
                       {sku.skuCode}
                     </span>
                     <span className="text-xs font-semibold text-slate-900">
@@ -1489,10 +1483,10 @@ export const BrandView: React.FC<BrandViewProps> = ({
                           </td>
                           <td className="py-3 px-3">
                             <p className="font-semibold text-slate-900">{item.brandName}</p>
-                            <p className="font-mono text-2xs text-slate-500">{item.dealCode}</p>
+                            <p className="font-code text-2xs text-slate-500">{item.dealCode}</p>
                           </td>
                           <td className="py-3 px-3">
-                            <span className="font-mono px-2 py-0.5 rounded font-semibold text-xs bg-accent-soft text-accent border border-line">
+                            <span className="font-code font-semibold text-xs text-ink">
                               {item.salaryGrade}
                             </span>
                           </td>
@@ -1512,7 +1506,7 @@ export const BrandView: React.FC<BrandViewProps> = ({
                             {item.tepKenh}
                           </td>
                           <td className="py-3 px-3">
-                            <span className="flex items-center gap-1 text-2xs font-medium text-amber-700 bg-amber-50 px-2 py-0.5 rounded w-fit border border-amber-200">
+                            <span className="flex items-center gap-1 text-2xs font-medium text-amber-700">
                               <Clock className="w-3 h-3" /> Còn {item.remainingSlaHours}h
                             </span>
                           </td>
@@ -1582,20 +1576,20 @@ export const BrandView: React.FC<BrandViewProps> = ({
                         <div>
                           <div className="flex items-center gap-2">
                             <h4 className="text-sm font-semibold text-slate-900">{item.kocName}</h4>
-                            <span className="font-mono text-xs px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">
-                              {item.salaryGrade}
+                            <span className="font-code text-xs font-semibold text-blue-700">
+                              · {item.salaryGrade}
                             </span>
-                            <span className="text-xs text-slate-500 font-medium">Nhãn: {item.brandName}</span>
+                            <span className="text-xs text-slate-500 font-medium">· Nhãn: {item.brandName}</span>
                           </div>
                           <p className="text-xs text-slate-500 mt-0.5">
-                            Mã deal: <span className="font-mono text-slate-700 font-semibold">{item.dealCode}</span> | Người nộp:{' '}
+                            Mã deal: <span className="font-code text-slate-700 font-semibold">{item.dealCode}</span> | Người nộp:{' '}
                             <span className="font-medium text-slate-700">{item.submittedBy}</span> lúc {item.submittedAt}
                           </p>
                         </div>
                       </div>
 
                       <div className="flex items-center gap-2">
-                        <span className="flex items-center gap-1 text-xs font-semibold text-amber-700 bg-amber-50 px-2.5 py-1 rounded border border-amber-200">
+                        <span className="flex items-center gap-1 text-xs font-semibold text-amber-700">
                           <Clock className="w-3.5 h-3.5" /> SLA còn {item.remainingSlaHours}h
                         </span>
                         {item.status === 'PENDING' ? (
@@ -1799,10 +1793,10 @@ export const BrandView: React.FC<BrandViewProps> = ({
                         {item.roi.toFixed(2)}x
                       </td>
                       <td className="py-3 px-3">
-                        <span className={`px-2 py-0.5 rounded font-semibold text-2xs ${
+                        <span className={`font-semibold text-2xs ${
                           item.rejectionRate > 15
-                            ? 'bg-rose-100 text-rose-800 border border-rose-200'
-                            : 'bg-slate-100 text-slate-700'
+                            ? 'text-rose-700'
+                            : 'text-slate-700'
                         }`}>
                           {item.rejectionRate}% ({item.rejectedKocsCount}/{item.activeKocsCount})
                         </span>

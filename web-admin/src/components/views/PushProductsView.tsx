@@ -873,28 +873,28 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
     }
   };
 
-  // Render Cycle Countdown Badge
+  // Render Cycle Countdown Label
   const renderCycleBadge = (prod: PushProductItem) => {
     const { daysRemaining, status } = getCycleStats(prod.startDate, prod.endDate);
     return (
       <div className="flex items-center flex-wrap gap-1.5 text-2xs">
-        <span className="inline-flex items-center gap-1 font-mono text-slate-700 bg-white px-2 py-0.5 rounded border border-slate-200 shadow-2xs font-semibold">
-          <Calendar className="w-3 h-3 text-accent" />
+        <span className="inline-flex items-center gap-1 font-code text-ink-2 font-medium">
+          <Calendar className="w-3 h-3 text-ink-3" />
           {formatDate(prod.startDate)} → {formatDate(prod.endDate)}
         </span>
         {status === 'ACTIVE' && (
-          <span className="px-1.5 py-0.5 rounded text-2xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-            Còn {Math.max(0, daysRemaining)} ngày
+          <span className="text-2xs font-medium text-positive">
+            · Còn {Math.max(0, daysRemaining)} ngày
           </span>
         )}
         {status === 'UPCOMING' && (
-          <span className="px-1.5 py-0.5 rounded text-2xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
-            Sắp bắt đầu
+          <span className="text-2xs font-medium text-accent">
+            · Sắp bắt đầu
           </span>
         )}
         {status === 'EXPIRED' && (
-          <span className="px-1.5 py-0.5 rounded text-2xs font-semibold bg-gray-100 text-gray-600 border border-gray-200">
-            Đã kết thúc
+          <span className="text-2xs font-medium text-ink-3">
+            · Đã kết thúc
           </span>
         )}
       </div>
@@ -1274,11 +1274,8 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                     <div>
                       <div className="flex items-center gap-2">
                         <h2 className="text-lg font-semibold text-slate-900">{bGroup.brandName}</h2>
-                        <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-accent-soft text-accent">
-                          {bGroup.storeGroups.length} gian hàng
-                        </span>
-                        <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
-                          {bGroup.totalProductsCount} sản phẩm
+                        <span className="text-xs font-medium text-slate-500">
+                          · {bGroup.storeGroups.length} gian hàng · {bGroup.totalProductsCount} sản phẩm
                         </span>
                       </div>
                       <div className="text-xs text-slate-500 mt-0.5 flex items-center gap-3">
@@ -1315,7 +1312,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                           <span className="font-semibold text-slate-800 text-sm">
                             {sGroup.storeName}
                           </span>
-                          <span className="text-xs text-slate-400 font-mono">({sGroup.items.length} SKU)</span>
+                          <span className="text-xs text-slate-400 font-code">({sGroup.items.length} SKU)</span>
                           {sGroup.storeUrl && (
                             <a
                               href={sGroup.storeUrl}
@@ -1356,7 +1353,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                             {/* Card Top: Badges & Cycle */}
                             <div className="p-4 space-y-3">
                               <div className="flex items-center justify-between gap-2">
-                                <span className="font-mono text-xs font-semibold text-accent bg-accent-soft px-2 py-0.5 rounded border border-line">
+                                <span className="font-code text-xs font-semibold text-accent">
                                   {prod.sku}
                                 </span>
                                 {renderStatusBadge(prod.status)}
@@ -1376,35 +1373,35 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                                 <div className="flex items-center justify-between">
                                   <span className="text-slate-500">Giá deal chiến dịch:</span>
                                   <div className="flex items-center gap-1.5">
-                                    <span className="line-through text-slate-400 text-2xs font-mono">
+                                    <span className="line-through text-slate-400 text-2xs font-code">
                                       {formatVnd(prod.originalPrice)}
                                     </span>
-                                    <span className="font-semibold text-rose-600 font-mono text-sm">
+                                    <span className="font-semibold text-rose-600 font-code text-sm">
                                       {formatVnd(prod.promotionalPrice)}
                                     </span>
-                                    <span className="px-1 py-0.5 rounded bg-rose-100 text-rose-700 text-2xs font-semibold">
-                                      -{prod.discountPercent}%
+                                    <span className="text-rose-700 text-2xs font-semibold">
+                                      (-{prod.discountPercent}%)
                                     </span>
                                   </div>
                                 </div>
 
                                 <div className="flex items-center justify-between">
                                   <span className="text-slate-500">Hoa hồng Affiliate:</span>
-                                  <span className="font-semibold text-emerald-700 font-mono bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                                  <span className="font-semibold text-emerald-700 font-code">
                                     {prod.affiliateRate}%
                                   </span>
                                 </div>
 
                                 <div className="flex items-center justify-between">
                                   <span className="text-slate-500">Tồn kho khả dụng:</span>
-                                  <span className="font-semibold text-slate-800 font-mono">
+                                  <span className="font-semibold text-slate-800 font-code">
                                     {prod.availableStock.toLocaleString()} SP
                                   </span>
                                 </div>
 
                                 <div className="flex items-center justify-between pt-1 border-t border-slate-200/60">
                                   <span className="text-slate-500">Hạn mức mẫu cấp:</span>
-                                  <span className="font-semibold text-amber-700 font-mono">
+                                  <span className="font-semibold text-amber-700 font-code">
                                     {prod.allocatedSampleCount} / {prod.monthlySampleQuota} mẫu
                                   </span>
                                 </div>
@@ -1418,7 +1415,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                                     Brief KOC:
                                   </span>
                                   {(!prod.usp || prod.b2cBriefStatus === 'PENDING_BRIEF') && (
-                                    <span className="text-2xs font-medium text-amber-700 bg-amber-100/90 px-1.5 py-0.5 rounded">
+                                    <span className="text-2xs font-medium text-amber-700">
                                       Chờ B2C bổ sung
                                     </span>
                                   )}
@@ -1442,17 +1439,9 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                               </div>
 
                               {/* KOC Niche Tags */}
-                              <div className="flex flex-wrap gap-1">
-                                {prod.targetKocNiche.slice(0, 3).map((tag, idx) => (
-                                  <span key={idx} className="px-1.5 py-0.5 rounded text-2xs bg-slate-100 text-slate-600 border border-slate-200">
-                                    #{tag}
-                                  </span>
-                                ))}
-                                {prod.targetKocNiche.length > 3 && (
-                                  <span className="px-1.5 py-0.5 rounded text-2xs bg-slate-100 text-slate-500">
-                                    +{prod.targetKocNiche.length - 3}
-                                  </span>
-                                )}
+                              <div className="text-2xs text-slate-500">
+                                {prod.targetKocNiche.slice(0, 3).map((tag) => `#${tag}`).join(' · ')}
+                                {prod.targetKocNiche.length > 3 && ` (+${prod.targetKocNiche.length - 3})`}
                               </div>
                             </div>
 
@@ -1563,7 +1552,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                     className="hover:bg-slate-50/80 cursor-pointer transition-colors"
                   >
                     <td className="py-3 px-4">
-                      <div className="font-mono font-semibold text-accent">{prod.sku}</div>
+                      <div className="font-code font-semibold text-accent">{prod.sku}</div>
                       <div className="font-semibold text-slate-900 line-clamp-1">{prod.productName}</div>
                       <div className="text-2xs text-slate-500 line-clamp-1 italic mt-0.5">
                         USP: {prod.usp}
@@ -1579,20 +1568,20 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                     <td className="py-3 px-4">
                       {renderCycleBadge(prod)}
                     </td>
-                    <td className="py-3 px-4 text-right font-mono">
+                    <td className="py-3 px-4 text-right font-code">
                       <div className="font-semibold text-rose-600">{formatVnd(prod.promotionalPrice)}</div>
                       <div className="text-2xs text-slate-400 line-through">{formatVnd(prod.originalPrice)}</div>
                       <span className="text-2xs font-semibold text-rose-600">(-{prod.discountPercent}%)</span>
                     </td>
-                    <td className="py-3 px-4 text-center font-mono">
-                      <span className="font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                    <td className="py-3 px-4 text-center font-code">
+                      <span className="font-semibold text-emerald-700">
                         {prod.affiliateRate}%
                       </span>
                     </td>
-                    <td className="py-3 px-4 text-right font-mono font-semibold text-slate-800">
+                    <td className="py-3 px-4 text-right font-code font-semibold text-slate-800">
                       {prod.availableStock.toLocaleString()}
                     </td>
-                    <td className="py-3 px-4 text-center font-mono">
+                    <td className="py-3 px-4 text-center font-code">
                       <span className="font-semibold text-amber-700">
                         {prod.allocatedSampleCount} / {prod.monthlySampleQuota}
                       </span>
@@ -1650,7 +1639,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
             <div className="p-5 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
-                  <span className="font-mono text-xs font-semibold text-accent bg-accent-soft px-2 py-0.5 rounded">
+                  <span className="font-code text-xs font-semibold text-accent">
                     {selectedProduct.sku}
                   </span>
                   {renderStatusBadge(selectedProduct.status)}
@@ -1789,15 +1778,15 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-white p-3 rounded-lg border border-line text-xs">
                       <div>
                         <span className="text-slate-400 block text-2xs">Ngày bắt đầu:</span>
-                        <span className="font-mono font-semibold text-slate-800">{formatDate(selectedProduct.startDate)}</span>
+                        <span className="font-code font-semibold text-slate-800">{formatDate(selectedProduct.startDate)}</span>
                       </div>
                       <div>
                         <span className="text-slate-400 block text-2xs">Ngày kết thúc:</span>
-                        <span className="font-mono font-semibold text-slate-800">{formatDate(selectedProduct.endDate)}</span>
+                        <span className="font-code font-semibold text-slate-800">{formatDate(selectedProduct.endDate)}</span>
                       </div>
                       <div>
                         <span className="text-slate-400 block text-2xs">Thời lượng:</span>
-                        <span className="font-mono font-semibold text-accent">{getCycleStats(selectedProduct.startDate, selectedProduct.endDate).totalDays} ngày</span>
+                        <span className="font-code font-semibold text-accent">{getCycleStats(selectedProduct.startDate, selectedProduct.endDate).totalDays} ngày</span>
                       </div>
                       <div>
                         <span className="text-slate-400 block text-2xs">Trạng thái chu kỳ:</span>
@@ -1815,7 +1804,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
                       <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
                         <span className="text-slate-400 block text-2xs">Giá niêm yết</span>
-                        <span className="font-mono font-semibold text-slate-800 text-sm">{formatVnd(selectedProduct.originalPrice)}</span>
+                        <span className="font-code font-semibold text-slate-800 text-sm">{formatVnd(selectedProduct.originalPrice)}</span>
                       </div>
 
                       <div className="p-3 bg-rose-50/60 rounded-xl border border-rose-200">
@@ -1830,7 +1819,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                             <FileEdit className="w-3 h-3" />
                           </button>
                         </div>
-                        <span className="font-mono font-semibold text-rose-700 text-sm">{formatVnd(selectedProduct.promotionalPrice)}</span>
+                        <span className="font-code font-semibold text-rose-700 text-sm">{formatVnd(selectedProduct.promotionalPrice)}</span>
                         <span className="text-2xs text-rose-600 font-semibold block mt-0.5">Giảm {selectedProduct.discountPercent}%</span>
                       </div>
 
@@ -1846,7 +1835,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                             <FileEdit className="w-3 h-3" />
                           </button>
                         </div>
-                        <span className="font-mono font-semibold text-emerald-700 text-sm">{selectedProduct.affiliateRate}%</span>
+                        <span className="font-code font-semibold text-emerald-700 text-sm">{selectedProduct.affiliateRate}%</span>
                         <span className="text-2xs text-emerald-600 block mt-0.5">Affiliate trực tiếp</span>
                       </div>
 
@@ -1862,7 +1851,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                             <FileEdit className="w-3 h-3" />
                           </button>
                         </div>
-                        <span className="font-mono font-semibold text-amber-800 text-sm">
+                        <span className="font-code font-semibold text-amber-800 text-sm">
                           {selectedProduct.allocatedSampleCount} / {selectedProduct.monthlySampleQuota}
                         </span>
                         <span className="text-2xs text-amber-700 block mt-0.5">mẫu cho Creator</span>
@@ -1872,7 +1861,7 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                     <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between text-xs">
                       <span className="text-slate-600">Tồn kho khả dụng cam kết giữ riêng cho chiến dịch thúc đẩy:</span>
                       <div className="flex items-center gap-2">
-                        <span className="font-mono font-semibold text-slate-900 text-sm">{selectedProduct.availableStock.toLocaleString()} SP</span>
+                        <span className="font-code font-semibold text-slate-900 text-sm">{selectedProduct.availableStock.toLocaleString()} SP</span>
                         <button
                           type="button"
                           onClick={() => handleOpenChangeRequestModal('availableStock', 'Tồn kho cam kết chiến dịch', selectedProduct.availableStock)}
@@ -1988,12 +1977,8 @@ LINK TÀI LIỆU BRIEF CHI TIẾT: ${prod.briefUrl || 'Đang cập nhật'}
                           <span className="font-semibold text-slate-700 block">
                             Tệp KOC phù hợp đã thống nhất:
                           </span>
-                          <div className="flex flex-wrap gap-1.5">
-                            {selectedProduct.targetKocNiche.map((tag, idx) => (
-                              <span key={idx} className="px-2 py-0.5 rounded text-2xs font-medium bg-white text-accent border border-slate-200">
-                                #{tag}
-                              </span>
-                            ))}
+                          <div className="text-xs font-medium text-accent">
+                            {selectedProduct.targetKocNiche.map((tag) => `#${tag}`).join(' · ')}
                           </div>
                         </div>
                       </div>

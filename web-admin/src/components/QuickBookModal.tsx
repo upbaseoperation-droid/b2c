@@ -330,7 +330,7 @@ export const QuickBookModal: React.FC<QuickBookModalProps> = ({
                   <span className="font-semibold text-ink">
                     Quy tắc vận hành {brandName}: {PROJECT_TIER_LABEL[workflowRules.projectTier]}
                   </span>
-                  <span className="px-1.5 py-0.5 rounded bg-sunken border border-line text-ink-2">
+                  <span className="text-ink-3">
                     {OPERATING_MODEL_LABEL[workflowRules.operatingModel]}
                   </span>
                 </div>
@@ -498,7 +498,7 @@ export const QuickBookModal: React.FC<QuickBookModalProps> = ({
               <div className="p-2.5 bg-info-soft border border-info-line rounded-lg flex flex-wrap items-center justify-between gap-2 text-xs text-info">
                 <span>CCCD: <strong className="font-mono text-ink">{maskLast4(currentKoc.cccd)}</strong></span>
                 <span><strong>{currentKoc.bankName}</strong>: <span className="font-mono text-ink">{maskLast4(currentKoc.bankAccount)}</span></span>
-                <span className="text-success font-semibold bg-success-soft px-2 py-0.5 rounded">Uy tín {currentKoc.reliabilityScore}/10</span>
+                <span className="text-positive font-semibold">Uy tín {currentKoc.reliabilityScore}/10</span>
               </div>
             )}
 

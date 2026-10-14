@@ -372,7 +372,7 @@ export const WeeklyAirSyncDashboardSection: React.FC<WeeklyAirSyncDashboardSecti
         />
       </StatRow>
 
-      {/* 2. KHỐI BIỂU ĐỒ KÉP: LỊCH AIR KẾ HOẠCH THEO TUẦN (W40-W45) & NHỊP ĐẬP AIR ĐỒNG LOẠT 31 NGÀY */}
+      {/* 2. KHỐI BIỂU ĐỒ KÉP: LỊCH AIR KẾ HOẠCH THEO TUẦN (W40-W45) & BIỂU ĐỒ NGÀY (01/10 - 31/10) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         {/* CỘT TRÁI (5 CỘT): LỊCH AIR KẾ HOẠCH THEO TUẦN VS THỰC TẾ LÊN SÓNG */}
         <div className="lg:col-span-5 bg-surface rounded-xl border border-line p-4 flex flex-col justify-between">
@@ -380,10 +380,10 @@ export const WeeklyAirSyncDashboardSection: React.FC<WeeklyAirSyncDashboardSecti
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-line">
               <div>
                 <h3 className="text-base font-semibold text-ink">
-                  Lịch air kế hoạch vs. thực tế theo tuần
+                  1. Lịch air kế hoạch vs. thực tế theo tuần (W40 → W45)
                 </h3>
-                <p className="text-2xs text-ink-3">
-                  Bấm chọn từng tuần (W40 → W45) để lọc gian hàng và xem điểm rơi chiến dịch
+                <p className="text-xs text-ink-3">
+                  Bấm vào từng tuần để lọc bảng gian hàng bên dưới
                 </p>
               </div>
               {selectedWeekFilter !== 'ALL' && (
@@ -399,7 +399,7 @@ export const WeeklyAirSyncDashboardSection: React.FC<WeeklyAirSyncDashboardSecti
 
             {/* Bộ chọn Hệ quy chiếu Kế hoạch tuần */}
             <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-              <span className="text-2xs font-medium text-ink-2">Hệ quy chiếu kế hoạch:</span>
+              <span className="text-xs font-medium text-ink-2">Hệ quy chiếu kế hoạch:</span>
               <Segmented
                 value={baselineMode}
                 onChange={(v) => setBaselineMode(v as PlanBaselineMode)}
@@ -411,6 +411,27 @@ export const WeeklyAirSyncDashboardSection: React.FC<WeeklyAirSyncDashboardSecti
               />
             </div>
 
+            {/* Hộp Chú giải màu sắc rõ ràng ngay đầu biểu đồ tuần */}
+            <div className="mt-3 p-2.5 rounded-lg bg-canvas border border-line flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs">
+              <span className="font-semibold text-ink">Chú giải màu:</span>
+              <span className="inline-flex items-center gap-1.5 text-ink-2">
+                <span className="w-3.5 h-2.5 rounded-sm bg-ink-3/35 border border-ink-3/60 inline-block" />
+                Thanh Kế hoạch giao
+              </span>
+              <span className="inline-flex items-center gap-1.5 text-ink-2">
+                <span className="w-3.5 h-2.5 rounded-sm bg-positive inline-block" />
+                Thực tế đạt ≥70%
+              </span>
+              <span className="inline-flex items-center gap-1.5 text-ink-2">
+                <span className="w-3.5 h-2.5 rounded-sm bg-warning inline-block" />
+                Thực tế đạt 30–69%
+              </span>
+              <span className="inline-flex items-center gap-1.5 text-ink-2">
+                <span className="w-3.5 h-2.5 rounded-sm bg-critical inline-block" />
+                Chậm lịch (&lt;30%)
+              </span>
+            </div>
+
             {/* Danh sách 6 Tuần W40 -> W45 */}
             <div className="mt-3 space-y-2.5">
               {weeklyChartRows.map((wk) => {
@@ -419,6 +440,15 @@ export const WeeklyAirSyncDashboardSection: React.FC<WeeklyAirSyncDashboardSecti
                 const maxBarRef = Math.max(wk.targetQty, wk.actualAir, 1);
                 const planWidthPct = Math.min(100, Math.round((wk.targetQty / maxBarRef) * 100));
                 const actualWidthPct = Math.min(100, Math.round((wk.actualAir / maxBarRef) * 100));
+
+                const actualBarColorClass =
+                  wk.progressPct >= 70
+                    ? 'bg-positive'
+                    : wk.progressPct >= 30
+                    ? 'bg-warning'
+                    : wk.actualAir > 0
+                    ? 'bg-critical'
+                    : 'bg-ink-3/30';
 
                 return (
                   <div
@@ -435,12 +465,12 @@ export const WeeklyAirSyncDashboardSection: React.FC<WeeklyAirSyncDashboardSecti
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2 min-w-0">
                         <span
-                          className={`px-2 py-0.5 rounded text-2xs font-semibold font-code ${
+                          className={`text-xs font-semibold font-code ${
                             isSelected
-                              ? 'bg-accent text-white'
+                              ? 'text-accent'
                               : isCurrentOrPastWeek
-                              ? 'bg-surface text-ink border border-line-strong'
-                              : 'bg-sunken text-ink-3'
+                              ? 'text-ink'
+                              : 'text-ink-3'
                           }`}
                         >
                           {wk.weekCode}
@@ -451,67 +481,50 @@ export const WeeklyAirSyncDashboardSection: React.FC<WeeklyAirSyncDashboardSecti
                       </div>
                       <span
                         className={`text-xs font-semibold font-code shrink-0 ${
-                          wk.actualAir >= wk.targetQty && wk.targetQty > 0
+                          wk.progressPct >= 70
                             ? 'text-positive'
+                            : wk.progressPct >= 30
+                            ? 'text-warning'
                             : wk.actualAir > 0
-                            ? 'text-accent'
+                            ? 'text-critical'
                             : 'text-ink-3'
                         }`}
                       >
-                        {wk.actualAir} / {wk.targetQty} video ({wk.progressPct}%)
+                        Thực air {wk.actualAir} / KH {wk.targetQty} ({wk.progressPct}%)
                       </span>
                     </div>
 
-                    {/* Thanh kép: Kế hoạch tuần vs Thực tế Air */}
-                    <div className="mt-2 space-y-1.5">
-                      <div className="flex items-center gap-2 text-2xs">
-                        <span className="w-16 text-ink-3 shrink-0">Kế hoạch:</span>
-                        <div className="flex-1 h-2 bg-sunken rounded-full overflow-hidden">
+                    {/* 2 Thanh đơn sắc rõ ràng: Thanh 1 = Kế hoạch, Thanh 2 = Thực tế đã Air */}
+                    <div className="mt-2.5 space-y-1.5">
+                      <div className="flex items-center gap-2 text-xs">
+                        <span className="w-20 text-ink-3 shrink-0">Kế hoạch:</span>
+                        <div className="flex-1 h-2.5 bg-sunken rounded-full overflow-hidden">
                           <div
-                            className="data-bar h-full bg-ink-3/50 rounded-full"
+                            className="data-bar h-full bg-ink-3/40 rounded-full"
                             style={{ width: `${Math.max(planWidthPct, wk.targetQty > 0 ? 4 : 0)}%` }}
                           />
                         </div>
-                        <span className="w-28 text-right font-code text-ink-2 shrink-0">
-                          {wk.planPaid} Paid · {wk.planSelf} Brand
+                        <span className="w-36 text-right font-code text-ink-2 shrink-0">
+                          {wk.targetQty} video ({wk.planPaid} Paid · {wk.planSelf} Brand)
                         </span>
                       </div>
 
-                      <div className="flex items-center gap-2 text-2xs">
-                        <span className="w-16 text-ink font-medium shrink-0">Thực air:</span>
-                        <div className="flex-1 h-2.5 bg-sunken rounded-full overflow-hidden flex">
+                      <div className="flex items-center gap-2 text-xs">
+                        <span className="w-20 text-ink font-medium shrink-0">Thực tế air:</span>
+                        <div className="flex-1 h-2.5 bg-sunken rounded-full overflow-hidden">
                           {wk.actualAir > 0 && (
-                            <>
-                              <div
-                                className="data-bar h-full bg-positive"
-                                style={{
-                                  width: `${Math.round(((wk.onTime + wk.early) / maxBarRef) * 100)}%`,
-                                }}
-                                title={`Đúng/Sớm hẹn: ${wk.onTime + wk.early} video`}
-                              />
-                              <div
-                                className="data-bar h-full bg-warning"
-                                style={{
-                                  width: `${Math.round((wk.late / maxBarRef) * 100)}%`,
-                                }}
-                                title={`Trễ lịch tràn sang: ${wk.late} video`}
-                              />
-                              <div
-                                className="data-bar h-full bg-accent"
-                                style={{
-                                  width: `${Math.round((wk.unscheduled / maxBarRef) * 100)}%`,
-                                }}
-                                title={`Air thiếu ngày dự kiến: ${wk.unscheduled} video`}
-                              />
-                            </>
+                            <div
+                              className={`data-bar h-full rounded-full ${actualBarColorClass}`}
+                              style={{ width: `${Math.max(actualWidthPct, 4)}%` }}
+                            />
                           )}
                         </div>
-                        <span className="w-28 text-right font-code font-medium text-ink shrink-0">
+                        <span className="w-36 text-right font-code font-medium text-ink shrink-0">
                           {wk.actualAir > 0
-                            ? `${wk.onTime + wk.early} chuẩn · ${wk.late} trễ`
+                            ? `${wk.actualAir} air (${wk.onTime + wk.early} đúng hẹn · ${wk.late} trễ)`
                             : wk.pending > 0
-                            ? `${wk.pending} đơn chờ air`
-                            : `${actualWidthPct}%`}
+                            ? `0 air (${wk.pending} đơn đang chờ)`
+                            : '0 video'}
                         </span>
                       </div>
                     </div>
@@ -520,57 +533,64 @@ export const WeeklyAirSyncDashboardSection: React.FC<WeeklyAirSyncDashboardSecti
               })}
             </div>
           </div>
-
-          <div className="mt-3 pt-3 border-t border-line flex flex-wrap items-center justify-between gap-2 text-2xs text-ink-3">
-            <span>
-              Chú giải thực air: <strong className="text-positive font-medium">Xanh lá</strong> = Đúng/Sớm hẹn ·{' '}
-              <strong className="text-warning font-medium">Vàng</strong> = Trễ tràn sang ·{' '}
-              <strong className="text-accent font-medium">Xanh mực</strong> = Chưa gắn ngày KH
-            </span>
-          </div>
         </div>
 
-        {/* CỘT PHẢI (7 CỘT): BIỂU ĐỒ NHỊP ĐẬP AIR ĐỒNG LOẠT 31 NGÀY THÁNG 10/2026 */}
+        {/* CỘT PHẢI (7 CỘT): BIỂU ĐỒ LỊCH AIR KẾ HOẠCH VS THỰC TẾ TỪNG NGÀY (01/10 -> 31/10/2026) */}
         <div className="lg:col-span-7 bg-surface rounded-xl border border-line p-4 flex flex-col justify-between">
           <div>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-line">
               <div>
                 <h3 className="text-base font-semibold text-ink">
-                  Biểu đồ nhịp đập air đồng loạt theo ngày (Tháng 10/2026)
+                  2. Biểu đồ lịch air từng ngày &amp; kiểm tra nổ sóng đồng loạt (Tháng 10/2026)
                 </h3>
-                <p className="text-2xs text-ink-3">
-                  Đối chiếu đỉnh sóng kế hoạch cam kết (chấm tròn) với mật độ nổ video thực tế từng ngày (cột chồng)
+                <p className="text-xs text-ink-3">
+                  Mỗi ngày gồm 2 cột cạnh nhau: <strong className="text-ink-2">Cột trái (Xám) = Kế hoạch hẹn air</strong> · <strong className="text-ink-2">Cột phải (Màu) = Thực tế đã air</strong>
                 </p>
               </div>
-              <div className="flex items-center gap-2 text-2xs">
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-positive-soft text-positive font-medium">
-                  Đỉnh 09/10: 137 video
+            </div>
+
+            {/* HỘP CHÚ GIẢI MÀU SẮC TRỰC QUAN NGAY ĐẦU BIỂU ĐỒ NGÀY */}
+            <div className="mt-3 p-3 rounded-lg bg-canvas border border-line space-y-2">
+              <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs">
+                <span className="font-semibold text-ink">Chú giải cột biểu đồ:</span>
+                <span className="inline-flex items-center gap-1.5 text-ink">
+                  <span className="w-3.5 h-3.5 rounded-sm bg-ink-3/30 border border-dashed border-ink-2 inline-block" />
+                  <span><strong>Cột Xám (Trái):</strong> Số video Kế hoạch hẹn air</span>
                 </span>
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-critical-soft text-critical font-medium">
-                  01/10 vỡ lịch: 29/91
+                <span className="inline-flex items-center gap-1.5 text-ink">
+                  <span className="w-3.5 h-3.5 rounded-sm bg-positive inline-block" />
+                  <span><strong>Cột Xanh lá (Phải):</strong> Thực tế Air đạt lịch / Nổ đồng loạt (06–10/10)</span>
+                </span>
+                <span className="inline-flex items-center gap-1.5 text-ink">
+                  <span className="w-3.5 h-3.5 rounded-sm bg-critical inline-block" />
+                  <span><strong>Cột Đỏ (Phải):</strong> Thực tế Air bị hụt nặng so với kế hoạch (Vỡ lịch)</span>
+                </span>
+                <span className="inline-flex items-center gap-1.5 text-ink">
+                  <span className="w-3.5 h-3.5 rounded-sm bg-accent inline-block" />
+                  <span><strong>Cột Xanh lam (Phải):</strong> Thực tế Air ngày thường / Gom sóng 30/10</span>
                 </span>
               </div>
             </div>
 
-            {/* 3 Thẻ Tóm tắt 3 Đợt Sóng Chiến Dịch lớn trong tháng */}
+            {/* 3 Thẻ Tóm tắt 3 Đợt Sóng Chiến Dịch lớn trong tháng (Bấm để nhảy tới ngày đó) */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mt-3">
               <div
                 onClick={() => setSelectedDayFocus('2026-10-01')}
                 className={`p-2.5 rounded-lg border cursor-pointer transition-colors ${
                   selectedDayFocus === '2026-10-01'
-                    ? 'bg-critical-soft/50 border-critical'
+                    ? 'bg-critical-soft/60 border-critical'
                     : 'bg-canvas border-line hover:bg-sunken'
                 }`}
               >
-                <div className="flex items-center justify-between text-2xs">
-                  <span className="font-semibold text-ink">Sóng 1 · Mở màn 01/10</span>
-                  <Status tone="critical">Vỡ lịch</Status>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-semibold text-ink">Đợt 1 · Ngày 01/10</span>
+                  <span className="text-2xs font-medium text-critical">Hụt lịch (Cột Đỏ)</span>
                 </div>
-                <div className="mt-1 text-xs font-semibold font-code text-ink">
-                  Thực air 29 / Kế hoạch 91 video
+                <div className="mt-1 text-xs font-semibold font-code text-critical">
+                  Thực tế 29 / Kế hoạch 91 video
                 </div>
-                <p className="text-2xs text-ink-3 mt-0.5">
-                  Kutieskin Mama đặt 71 video ngày 01/10 nhưng trễ 61 video tràn sang 02–08/10
+                <p className="text-xs text-ink-3 mt-0.5">
+                  Hẹn 91 video ngày 01/10 nhưng chỉ lên 29 video (trễ 62 video tràn sang 02–08/10)
                 </p>
               </div>
 
@@ -578,19 +598,19 @@ export const WeeklyAirSyncDashboardSection: React.FC<WeeklyAirSyncDashboardSecti
                 onClick={() => setSelectedDayFocus('2026-10-09')}
                 className={`p-2.5 rounded-lg border cursor-pointer transition-colors ${
                   selectedDayFocus >= '2026-10-06' && selectedDayFocus <= '2026-10-10'
-                    ? 'bg-positive-soft/50 border-positive'
+                    ? 'bg-positive-soft/60 border-positive'
                     : 'bg-canvas border-line hover:bg-sunken'
                 }`}
               >
-                <div className="flex items-center justify-between text-2xs">
-                  <span className="font-semibold text-ink">Sóng 2 · Mega Sale 06–10/10</span>
-                  <Status tone="positive">Đồng loạt</Status>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-semibold text-ink">Đợt 2 · Cao điểm 06–10/10</span>
+                  <span className="text-2xs font-medium text-positive">Air đồng loạt (Cột Xanh lá)</span>
                 </div>
                 <div className="mt-1 text-xs font-semibold font-code text-positive">
-                  Thực air 413 / Kế hoạch 296 video
+                  Thực tế 413 / Kế hoạch 296 video
                 </div>
-                <p className="text-2xs text-ink-3 mt-0.5">
-                  Nổ đồng loạt 5 ngày sát 10.10 (Mine, Cathy Doll, Ziaja, EUPC, Herbal Care)
+                <p className="text-xs text-ink-3 mt-0.5">
+                  Nổ đồng loạt 5 ngày sát Mega Sale 10.10 (Đỉnh ngày 09/10 đạt 128 video/ngày)
                 </p>
               </div>
 
@@ -602,108 +622,103 @@ export const WeeklyAirSyncDashboardSection: React.FC<WeeklyAirSyncDashboardSecti
                     : 'bg-canvas border-line hover:bg-sunken'
                 }`}
               >
-                <div className="flex items-center justify-between text-2xs">
-                  <span className="font-semibold text-ink">Sóng 3 · Cuối tháng 29–31/10</span>
-                  <Status tone="info">Đón 11.11</Status>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-semibold text-ink">Đợt 3 · Cuối tháng 29–31/10</span>
+                  <span className="text-2xs font-medium text-accent">Đón sóng 11.11 (Cột Xanh lam)</span>
                 </div>
                 <div className="mt-1 text-xs font-semibold font-code text-accent">
-                  Gom cụm 31 air · 36 đơn hẹn lịch
+                  Ngày 30/10: Thực tế 31 / KH 27 video
                 </div>
-                <p className="text-2xs text-ink-3 mt-0.5">
-                  ClubClio Shopee gom 31 video ngày 30/10; HDT &amp; Natural Care đặt 37 đơn
+                <p className="text-xs text-ink-3 mt-0.5">
+                  ClubClio Shopee gom cụm 31 video ngày 30/10; 36 đơn khác chờ lên sóng
                 </p>
               </div>
             </div>
 
-            {/* Biểu đồ cột 31 ngày Tháng 10/2026 */}
-            <div className="mt-4 pt-2 px-2 pb-1 rounded-lg bg-canvas/70 border border-line">
-              <div className="flex items-center justify-between text-2xs text-ink-3 mb-2 px-1">
-                <span>Biểu đồ mật độ video lên sóng từng ngày (01/10 → 31/10/2026) — Bấm vào cột ngày để soi chi tiết</span>
-                <span className="font-code">Đỉnh cột: {maxDailyValue} video/ngày</span>
+            {/* Biểu đồ cột đôi (Kế hoạch vs Thực tế) 31 ngày Tháng 10/2026 */}
+            <div className="mt-3 pt-3 px-3 pb-2 rounded-lg bg-canvas/70 border border-line">
+              <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-ink-2 mb-2">
+                <span>
+                  <strong>Biểu đồ 31 ngày (01/10 → 31/10/2026):</strong> Bấm vào bất kỳ ngày nào để xem chi tiết bên dưới
+                </span>
+                <span className="font-code text-ink-3">Đỉnh cao nhất: {maxDailyValue} video/ngày (09/10)</span>
               </div>
 
-              <div className="h-44 flex items-end gap-1 pt-4 pb-1 px-1 overflow-x-auto">
+              <div className="h-48 flex items-end gap-1 pt-5 pb-1 overflow-x-auto">
                 {B2C_DAILY_AIR_PULSE_OCT_2026.map((d) => {
                   const isFocused = d.date === selectedDayFocus;
                   const isWeekMatched =
                     selectedWeekFilter === 'ALL' || d.weekCode === selectedWeekFilter;
-                  const totalH = Math.round((d.actualCount / maxDailyValue) * 124);
-                  const planH = Math.round((d.plannedCount / maxDailyValue) * 124);
+                  const actualH = Math.round((d.actualCount / maxDailyValue) * 128);
+                  const planH = Math.round((d.plannedCount / maxDailyValue) * 128);
 
-                  const onTimeH =
-                    d.actualCount > 0
-                      ? Math.round(((d.onTimeCount + d.earlyCount) / d.actualCount) * totalH)
-                      : 0;
-                  const lateH =
-                    d.actualCount > 0
-                      ? Math.round((d.lateSpilloverCount / d.actualCount) * totalH)
-                      : 0;
-                  const unschedH = Math.max(0, totalH - onTimeH - lateH);
+                  // Quy tắc 1 màu duy nhất cho cột Thực tế của từng ngày (không chia khúc gây rối mắt)
+                  const isMissedWaveDay =
+                    d.plannedCount >= 10 && d.actualCount < d.plannedCount * 0.6;
+                  const isMegaSaleWave = d.date >= '2026-10-06' && d.date <= '2026-10-10';
+
+                  const actualBarBg = isMissedWaveDay
+                    ? 'bg-critical'
+                    : isMegaSaleWave || (d.actualCount >= d.plannedCount && d.actualCount >= 15)
+                    ? 'bg-positive'
+                    : 'bg-accent';
+
+                  const actualTextColor = isMissedWaveDay
+                    ? 'text-critical'
+                    : isMegaSaleWave
+                    ? 'text-positive'
+                    : 'text-ink';
 
                   return (
                     <button
                       key={d.date}
                       type="button"
                       onClick={() => setSelectedDayFocus(d.date)}
-                      title={`Ngày ${d.dayLabel} (${d.weekCode}): Thực air ${d.actualCount} video | Kế hoạch ${d.plannedCount} video`}
-                      className={`group relative flex-1 min-w-[18px] flex flex-col items-center justify-end h-full rounded-sm transition-colors cursor-pointer ${
+                      title={`Ngày ${d.dayLabel} (${d.weekCode}): Kế hoạch hẹn ${d.plannedCount} video | Thực tế đã air ${d.actualCount} video`}
+                      className={`group relative flex-1 min-w-[22px] flex flex-col items-center justify-end h-full rounded-md px-0.5 py-1 transition-colors cursor-pointer ${
                         isFocused
-                          ? 'bg-accent-soft/80 ring-1 ring-accent'
-                          : d.isWaveWindow
-                          ? 'bg-sunken/70 hover:bg-sunken'
-                          : 'hover:bg-sunken/60'
+                          ? 'bg-accent-soft ring-1 ring-accent'
+                          : isMegaSaleWave
+                          ? 'bg-positive-soft/35 hover:bg-positive-soft/60'
+                          : 'hover:bg-sunken/80'
                       } ${!isWeekMatched ? 'opacity-30' : ''}`}
                     >
-                      {/* Số lượng trên đỉnh cột nếu >= 25 */}
-                      {d.actualCount >= 25 && (
-                        <span className="text-2xs font-code font-semibold text-ink mb-0.5 leading-none">
+                      {/* Nhãn số lượng Thực tế trên đỉnh cột */}
+                      {(d.actualCount >= 15 || d.plannedCount >= 30 || isFocused) && (
+                        <span
+                          className={`text-2xs font-code font-semibold mb-1 leading-none ${actualTextColor}`}
+                        >
                           {d.actualCount}
                         </span>
                       )}
 
-                      {/* Vạch mốc Kế hoạch (p_air_date) */}
-                      {d.plannedCount > 0 && (
+                      {/* Cặp 2 cột cạnh nhau: Trái = Kế hoạch (Xám viền đứt), Phải = Thực tế (1 màu đơn nhất) */}
+                      <div className="w-full flex items-end justify-center gap-0.5 h-32">
+                        {/* Cột Trái: Kế hoạch (p_air_date) */}
                         <div
-                          className="absolute left-0.5 right-0.5 border-t-2 border-dashed border-critical z-10 pointer-events-none"
-                          style={{ bottom: `${20 + planH}px` }}
+                          className="w-2 rounded-t-sm bg-ink-3/30 border border-dashed border-ink-2/70"
+                          style={{
+                            height: `${Math.max(planH, d.plannedCount > 0 ? 4 : 1)}px`,
+                          }}
                         />
-                      )}
-
-                      {/* Cột chồng Thực tế Air */}
-                      <div
-                        className="w-3/4 rounded-t-sm overflow-hidden flex flex-col justify-end"
-                        style={{ height: `${Math.max(totalH, d.actualCount > 0 ? 4 : 1)}px` }}
-                      >
-                        {unschedH > 0 && (
-                          <div
-                            className="w-full bg-accent/75"
-                            style={{ height: `${unschedH}px` }}
-                          />
-                        )}
-                        {lateH > 0 && (
-                          <div
-                            className="w-full bg-warning"
-                            style={{ height: `${lateH}px` }}
-                          />
-                        )}
-                        {onTimeH > 0 && (
-                          <div
-                            className="w-full bg-positive"
-                            style={{ height: `${onTimeH}px` }}
-                          />
-                        )}
-                        {d.actualCount === 0 && d.plannedCount > 0 && (
-                          <div className="w-full h-1 bg-critical/40" />
-                        )}
+                        {/* Cột Phải: Thực tế đã Air (air_date_real) */}
+                        <div
+                          className={`w-2.5 rounded-t-sm ${
+                            d.actualCount > 0 ? actualBarBg : 'bg-line'
+                          }`}
+                          style={{
+                            height: `${Math.max(actualH, d.actualCount > 0 ? 4 : 1)}px`,
+                          }}
+                        />
                       </div>
 
-                      {/* Nhãn ngày */}
+                      {/* Nhãn ngày (01 .. 31) */}
                       <span
-                        className={`mt-1 text-2xs font-code leading-none ${
+                        className={`mt-1.5 text-2xs font-code leading-none ${
                           isFocused
                             ? 'font-semibold text-accent'
-                            : d.isWaveWindow
-                            ? 'font-medium text-ink'
+                            : isMegaSaleWave
+                            ? 'font-semibold text-positive'
                             : 'text-ink-3'
                         }`}
                       >
@@ -719,17 +734,17 @@ export const WeeklyAirSyncDashboardSection: React.FC<WeeklyAirSyncDashboardSecti
           {/* Thanh thông tin chi tiết của Ngày đang chọn (Focused Day Inspector) */}
           {focusedDayRecord && (
             <div className="mt-3 p-3 rounded-lg bg-accent-soft/40 border border-line flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div className="space-y-0.5">
+              <div className="space-y-1">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="px-2 py-0.5 rounded text-2xs font-semibold font-code bg-accent text-white">
-                    Ngày {focusedDayRecord.dayLabel}/2026 ({focusedDayRecord.weekCode})
+                  <span className="text-xs font-semibold font-code text-accent">
+                    Đang xem Ngày {focusedDayRecord.dayLabel}/2026 ({focusedDayRecord.weekCode})
                   </span>
                   {focusedDayRecord.campaignTag && (
                     <span className="text-xs font-semibold text-ink">
-                      {focusedDayRecord.campaignTag}
+                      · {focusedDayRecord.campaignTag}
                     </span>
                   )}
-                  <span className="text-2xs text-ink-3">
+                  <span className="text-xs text-ink-3">
                     · Chi phí duyệt chi ngày {focusedDayRecord.dayLabel}:{' '}
                     <strong className="font-code text-ink">
                       {formatVndShort(focusedDayRecord.totalCostActual)}
@@ -737,24 +752,26 @@ export const WeeklyAirSyncDashboardSection: React.FC<WeeklyAirSyncDashboardSecti
                   </span>
                 </div>
                 <p className="text-xs text-ink-2">
-                  Kế hoạch cam kết (<code className="font-code text-critical">--</code>):{' '}
-                  <strong className="font-code text-ink">{focusedDayRecord.plannedCount} video</strong> · Thực tế lên sóng:{' '}
-                  <strong className="font-code text-positive">{focusedDayRecord.actualCount} video</strong> (
-                  {focusedDayRecord.onTimeCount} đúng ngày, {focusedDayRecord.earlyCount} air sớm,{' '}
-                  {focusedDayRecord.lateSpilloverCount} trễ từ ngày trước tràn sang,{' '}
-                  {focusedDayRecord.unscheduledCount} thiếu ngày KH)
+                  <strong>Cột Xám (Kế hoạch hẹn air):</strong>{' '}
+                  <strong className="font-code text-ink">{focusedDayRecord.plannedCount} video</strong>
+                  {' · '}
+                  <strong>Cột Màu (Thực tế đã air):</strong>{' '}
+                  <strong className="font-code text-positive">{focusedDayRecord.actualCount} video</strong>{' '}
+                  (Gồm: {focusedDayRecord.onTimeCount} đúng ngày hẹn, {focusedDayRecord.earlyCount} lên sớm,{' '}
+                  {focusedDayRecord.lateSpilloverCount} trễ từ ngày trước dồn sang,{' '}
+                  {focusedDayRecord.unscheduledCount} đơn chưa điền ngày dự kiến)
                 </p>
               </div>
 
               {focusedDayRecord.topStores.length > 0 && (
-                <div className="flex flex-wrap items-center gap-1.5 shrink-0">
-                  <span className="text-2xs text-ink-3">Top nổ sóng:</span>
-                  {focusedDayRecord.topStores.map((ts) => (
+                <div className="flex flex-wrap items-center gap-2 shrink-0">
+                  <span className="text-xs text-ink-3">Gian hàng lên nhiều nhất:</span>
+                  {focusedDayRecord.topStores.map((ts, idx) => (
                     <span
                       key={ts.storeName}
-                      className="px-2 py-0.5 rounded text-2xs font-medium bg-surface border border-line text-ink"
+                      className="text-xs font-medium text-ink"
                     >
-                      {ts.storeName.split('_')[0]}: <strong className="font-code">{ts.count}</strong>
+                      {idx > 0 ? '· ' : ''}{ts.storeName.split('_')[0]} (<strong className="font-code">{ts.count} video</strong>)
                     </span>
                   ))}
                 </div>
@@ -880,6 +897,35 @@ export const WeeklyAirSyncDashboardSection: React.FC<WeeklyAirSyncDashboardSecti
                 Xóa bộ lọc
               </Button>
             )}
+          </div>
+
+          {/* Chú giải màu sắc cho các ô Tuần (W40 -> W45) trong bảng */}
+          <div className="pt-2 border-t border-line flex flex-wrap items-center gap-x-5 gap-y-1.5 text-xs">
+            <span className="font-semibold text-ink">Chú giải ô tuần (Thực air / Kế hoạch):</span>
+            <span className="inline-flex items-center gap-1.5 text-ink-2">
+              <span className="px-1.5 py-0.5 rounded font-code text-2xs font-semibold bg-positive-soft/70 border border-positive/30 text-positive">
+                18/20
+              </span>
+              <span><strong>Ô Xanh lá:</strong> Đạt ≥70% kế hoạch tuần</span>
+            </span>
+            <span className="inline-flex items-center gap-1.5 text-ink-2">
+              <span className="px-1.5 py-0.5 rounded font-code text-2xs font-semibold bg-warning-soft/70 border border-warning/30 text-warning">
+                5/15
+              </span>
+              <span><strong>Ô Vàng:</strong> Mới đạt &lt;70% kế hoạch tuần</span>
+            </span>
+            <span className="inline-flex items-center gap-1.5 text-ink-2">
+              <span className="px-1.5 py-0.5 rounded font-code text-2xs font-semibold bg-critical-soft/60 border border-critical/30 text-critical">
+                0/10
+              </span>
+              <span><strong>Ô Đỏ:</strong> Có lịch kế hoạch nhưng chưa lên video nào</span>
+            </span>
+            <span className="inline-flex items-center gap-1.5 text-ink-2">
+              <span className="px-1.5 py-0.5 rounded font-code text-2xs bg-canvas border border-line text-ink-3">
+                0/0
+              </span>
+              <span><strong>Ô Xám:</strong> Không giao lịch tuần đó</span>
+            </span>
           </div>
         </div>
 

@@ -1,7 +1,7 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useMemo, useDeferredValue } from 'react';
-import { Avatar, Tabs, Modal, NumberRoll } from '../ui';
+import { Avatar, Tabs, Modal, NumberRoll, Status } from '../ui';
 import {
   TrendingUp,
   Award,
@@ -128,6 +128,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
 
   React.useEffect(() => {
     if (activeSidebarTab && SIDEBAR_TO_DASHBOARD_TAB[activeSidebarTab]) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setActiveTab(SIDEBAR_TO_DASHBOARD_TAB[activeSidebarTab]);
     }
   }, [activeSidebarTab]);
@@ -1099,34 +1100,15 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
   // Render badge trạng thái rủi ro tài chính
   const renderRiskBadge = (status?: string) => {
     if (status === 'UNBUDGETED') {
-      return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-rose-100 text-rose-800 border border-rose-300">
-          <AlertCircle className="w-3 h-3 text-rose-600" />
-          Báo động đỏ: Hạn mức 0đ
-        </span>
-      );
+      return <Status tone="critical">Báo động đỏ: Hạn mức 0đ</Status>;
     }
     if (status === 'OVERBUDGET') {
-      return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
-          <AlertTriangle className="w-3 h-3 text-amber-600" />
-          Vượt trần Net
-        </span>
-      );
+      return <Status tone="warning">Vượt trần Net</Status>;
     }
     if (status === 'SLOW_BURN') {
-      return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-sky-50 text-sky-700 border border-sky-200">
-          Giải ngân chậm
-        </span>
-      );
+      return <Status tone="neutral">Giải ngân chậm</Status>;
     }
-    return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
-        <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-        Trong hạn mức Net
-      </span>
-    );
+    return <Status tone="positive">Trong hạn mức Net</Status>;
   };
 
   const dashboardReportMeta = useMemo(() => {
@@ -1168,15 +1150,15 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
   }, [activeTab, filteredStores.length, allBrands.length, kpiSummary, riskStores, selectedFocusStaffName]);
 
   return (
-    <div className="space-y-5 pb-12 text-slate-900">
+    <div className="space-y-5 pb-12 text-ink">
       {/* THANH CÔNG CỤ NGỮ CẢNH GỌN TRÊN 1 HÀNG (KHÔNG LỒNG TAB NGANG) */}
-      <div className="bg-white rounded-xl border border-slate-200 px-4 py-2.5 shadow-xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5">
+      <div className="bg-white rounded-xl border border-line px-4 py-2.5 shadow-xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-accent-soft text-accent border border-line">
+          <span className="inline-flex items-center gap-1.5 .5 text-xs font-semibold text-accent -line">
             <ShieldCheck className="w-3.5 h-3.5" />
             Phạm vi chuẩn: 69 Gian hàng B2C (B2C phụ trách = 1)
           </span>
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium bg-slate-100 text-slate-700">
+          <span className="inline-flex items-center gap-1 .5 text-xs font-medium text-ink-2">
             Kỳ đối soát: Tháng 10/2026 (File 4.1 · 4.1.1 · 3.2 &amp; TikTok Seller)
           </span>
         </div>
@@ -1185,16 +1167,16 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
           <button
             type="button"
             onClick={() => setIsReportDrawerOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-white shadow-xs transition cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-ink hover:bg-ink text-white shadow-xs transition cursor-pointer"
           >
-            <FileText className="w-3.5 h-3.5 text-emerald-400" />
+            <FileText className="w-3.5 h-3.5 text-positive" />
             <span>Lập báo cáo nhận xét</span>
           </button>
           <button
             type="button"
             onClick={handleSyncTikTokSeller}
             disabled={isSyncingSeller}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-800 transition cursor-pointer disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-sunken hover:bg-sunken text-ink transition cursor-pointer disabled:opacity-50"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isSyncingSeller ? 'animate-spin text-accent' : ''}`} />
             {isSyncingSeller ? 'Đang đồng bộ...' : 'Đồng bộ TikTok Seller'}
@@ -1217,22 +1199,22 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
       {activeTab === 'OVERVIEW_FINANCE' && (
         <div className="space-y-5">
           {/* BỘ LỌC NHANH CẤP THƯƠNG HIỆU (BRAND) */}
-          <div className="bg-white rounded-xl border border-slate-200 p-3.5 shadow-xs grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+          <div className="bg-white rounded-xl border border-line p-3.5 shadow-xs grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
             <div className="relative">
-              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <Search className="w-3.5 h-3.5 text-ink-3 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 value={brandSearchQuery}
                 onChange={(e) => setBrandSearchQuery(e.target.value)}
                 placeholder="Tìm thương hiệu, PIC phụ trách..."
-                className="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-hidden focus:border-indigo-500 focus:bg-white"
+                className="w-full pl-8 pr-3 py-1.5 text-xs bg-canvas border border-line rounded-lg focus:outline-hidden focus:border-accent/20 focus:bg-white"
               />
             </div>
 
             <select
               value={selectedBrand}
               onChange={(e) => setSelectedBrand(e.target.value)}
-              className="px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg font-medium text-slate-700 focus:outline-hidden focus:border-indigo-500"
+              className="px-3 py-1.5 text-xs bg-canvas border border-line rounded-lg font-medium text-ink-2 focus:outline-hidden focus:border-accent/20"
             >
               <option value="ALL">Tất cả Thương hiệu ({allBrands.length} Brands)</option>
               {allBrands.map((b) => (
@@ -1244,8 +1226,8 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
 
             <select
               value={selectedGovernance}
-              onChange={(e) => setSelectedGovernance(e.target.value as any)}
-              className="px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg font-medium text-slate-700 focus:outline-hidden focus:border-indigo-500"
+              onChange={(e) => setSelectedGovernance(e.target.value as typeof selectedGovernance)}
+              className="px-3 py-1.5 text-xs bg-canvas border border-line rounded-lg font-medium text-ink-2 focus:outline-hidden focus:border-accent/20"
             >
               <option value="ALL">Cơ cấu duyệt: Tất cả 69 gian hàng</option>
               <option value="WITH_LEADER">Nhóm có Leader Nguyễn Thị Ngọc Tâm (8 gian)</option>
@@ -1254,8 +1236,8 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
 
             <select
               value={selectedRiskFilter}
-              onChange={(e) => setSelectedRiskFilter(e.target.value as any)}
-              className="px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg font-medium text-slate-700 focus:outline-hidden focus:border-indigo-500"
+              onChange={(e) => setSelectedRiskFilter(e.target.value as typeof selectedRiskFilter)}
+              className="px-3 py-1.5 text-xs bg-canvas border border-line rounded-lg font-medium text-ink-2 focus:outline-hidden focus:border-accent/20"
             >
               <option value="ALL">Kiểm soát Kế toán: Tất cả trạng thái</option>
               <option value="UNBUDGETED">Báo động đỏ: Chi ngoài KH (Hạn mức Net = 0đ)</option>
@@ -1265,172 +1247,25 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
             </select>
           </div>
 
-          {/* KHỐI TÂM ĐIỂM ĐIỀU HÀNH KÉP: % SPEND CHI PHÍ & SỐ LƯỢNG VIDEO ĐÃ AIR LÊN SÓNG */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-            {/* TÂM ĐIỂM 1 (6 CỘT): % SPEND CHI PHÍ (NET & GROSS) */}
-            <div className="lg:col-span-6 bg-white rounded-xl border-2 border-indigo-600/80 p-5 shadow-xs">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded text-[11px] font-extrabold uppercase tracking-wider bg-indigo-600 text-white">
-                    <DollarSign className="w-3.5 h-3.5" />
-                    Chỉ Số Trọng Tâm #1 · Tỷ Lệ Giải Ngân Chi Phí (% Spend)
-                  </span>
-                  <div className="mt-2.5 flex flex-wrap items-baseline gap-3">
-                    <span className="text-3xl font-extrabold text-indigo-700 font-mono tracking-tight">
-                      <NumberRoll value={`${kpiSummary.pacingNetPct}% Spend Net`} />
-                    </span>
-                    <span className="px-2 py-0.5 rounded-md text-xs font-bold font-mono bg-slate-100 text-slate-700 border border-slate-200">
-                      {kpiSummary.pacingGrossPct}% Spend Gross
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-600 mt-1">
-                    Thực chi duyệt book File 3.2:{' '}
-                    <strong className="font-mono text-slate-900">{formatVndShort(kpiSummary.totalActualSpentNet)}</strong>{' '}
-                    / Trần Order Net Kế toán:{' '}
-                    <strong className="font-mono text-indigo-700">{formatVndShort(kpiSummary.totalBudgetNet)}</strong>{' '}
-                    (Order Gross: <strong className="font-mono">{formatVndShort(kpiSummary.totalBudgetGross)}</strong>)
-                  </p>
-                </div>
-                <div className="text-right font-mono shrink-0 bg-indigo-50/80 px-3 py-2 rounded-lg border border-indigo-200">
-                  <span className="text-[10px] font-sans font-semibold text-indigo-800 block">
-                    Dư địa Net còn được chi
-                  </span>
-                  <strong className="text-base font-extrabold text-indigo-950">
-                    {formatVndShort(Math.max(0, kpiSummary.totalBudgetNet - kpiSummary.totalActualSpentNet))}
-                  </strong>
-                  <span className="block text-[10px] text-rose-700 font-bold mt-0.5">
-                    {kpiSummary.unbudgetedCount + kpiSummary.overbudgetCount} gian vượt trần / 0đ
-                  </span>
-                </div>
-              </div>
-
-              <div className="mt-3.5 space-y-2">
-                <div>
-                  <div className="flex items-center justify-between text-[11px] font-semibold mb-1">
-                    <span className="text-slate-700">Tiến độ % Spend so với Trần Order Net (Mốc Kế toán khoá duyệt chi):</span>
-                    <span className="font-mono font-bold text-indigo-700">
-                      {formatVndShort(kpiSummary.totalActualSpentNet)} / {formatVndShort(kpiSummary.totalBudgetNet)} ({kpiSummary.pacingNetPct}%)
-                    </span>
-                  </div>
-                  <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden border border-slate-200 relative">
-                    <div
-                      className={`data-bar h-full rounded-full ${
-                        kpiSummary.pacingNetPct > 100
-                          ? 'bg-rose-600'
-                          : kpiSummary.pacingNetPct >= 85
-                          ? 'bg-amber-500'
-                          : 'bg-indigo-600'
-                      }`}
-                      style={{ width: `${Math.min(100, Math.max(kpiSummary.pacingNetPct, 2))}%` }}
-                    />
-                  </div>
-                </div>
-
-                <div className="pt-2 border-t border-slate-100 grid grid-cols-3 gap-2 text-[11px]">
-                  <div className="p-2 rounded-lg bg-slate-50 border border-slate-200/80">
-                    <span className="text-slate-500 block">KOC Affiliate Net</span>
-                    <strong className="font-mono text-slate-900">{formatVndShort(kpiSummary.totalAffNet)}</strong>
-                  </div>
-                  <div className="p-2 rounded-lg bg-slate-50 border border-slate-200/80">
-                    <span className="text-slate-500 block">Kênh Brand Net</span>
-                    <strong className="font-mono text-emerald-700">{formatVndShort(kpiSummary.totalSelfNet)}</strong>
-                  </div>
-                  <div className="p-2 rounded-lg bg-rose-50/70 border border-rose-200">
-                    <span className="text-rose-800 block">Chi vượt / Ngoài KH</span>
-                    <strong className="font-mono text-rose-700">+296,04 Tr ({kpiSummary.unbudgetedCount + kpiSummary.overbudgetCount} gian)</strong>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* TÂM ĐIỂM 2 (6 CỘT): SỐ LƯỢNG VIDEO ĐÃ AIR LÊN SÓNG & % HOÀN THÀNH */}
-            <div className="lg:col-span-6 bg-white rounded-xl border-2 border-emerald-600/80 p-5 shadow-xs">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded text-[11px] font-extrabold uppercase tracking-wider bg-emerald-600 text-white">
-                    <Film className="w-3.5 h-3.5" />
-                    Chỉ Số Trọng Tâm #2 · Số Lượng Video Đã Air Lên Sóng
-                  </span>
-                  <div className="mt-2.5 flex flex-wrap items-baseline gap-3">
-                    <span className="text-3xl font-extrabold text-emerald-700 font-mono tracking-tight">
-                      <NumberRoll value={`${kpiSummary.totalActualAiredVideos.toLocaleString('vi-VN')} Video Đã Air`} />
-                    </span>
-                    <span className="px-2 py-0.5 rounded-md text-xs font-bold font-mono bg-emerald-50 text-emerald-800 border border-emerald-200">
-                      Đạt {kpiSummary.airedVsBookedPct}% đơn đã book (786 đơn)
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-600 mt-1">
-                    Đạt <strong className="font-mono text-emerald-700">{kpiSummary.airedVsPaidPct}%</strong> so với tổng chỉ tiêu Video KOC Trả phí (Paid:{' '}
-                    <strong className="font-mono text-slate-900">{kpiSummary.totalTargetPaidVideos.toLocaleString('vi-VN')} video</strong>) · Đã phủ sóng trên{' '}
-                    <strong className="text-slate-900">{kpiSummary.storesWithAiredCount}/{kpiSummary.storeCount} gian hàng</strong>
-                  </p>
-                </div>
-                <div className="text-right font-mono shrink-0 bg-emerald-50/80 px-3 py-2 rounded-lg border border-emerald-200">
-                  <span className="text-[10px] font-sans font-semibold text-emerald-800 block">
-                    Đơn đã book chờ Air / ĐNTT
-                  </span>
-                  <strong className="text-base font-extrabold text-emerald-950">
-                    {Math.max(0, 786 - kpiSummary.totalActualAiredVideos)} đơn
-                  </strong>
-                  <span className="block text-[10px] text-emerald-700 font-bold mt-0.5">
-                    23 đơn đang gửi mẫu / chờ đăng
-                  </span>
-                </div>
-              </div>
-
-              <div className="mt-3.5 space-y-2">
-                <div>
-                  <div className="flex items-center justify-between text-[11px] font-semibold mb-1">
-                    <span className="text-slate-700">Tỷ lệ Video Đã Air Lên Sóng / Tổng Đơn Đã Book Tháng 10 (File 3.2):</span>
-                    <span className="font-mono font-bold text-emerald-700">
-                      {kpiSummary.totalActualAiredVideos} / 786 đơn ({kpiSummary.airedVsBookedPct}%) · Chỉ tiêu Paid: {kpiSummary.totalTargetPaidVideos} ({kpiSummary.airedVsPaidPct}%)
-                    </span>
-                  </div>
-                  <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden border border-slate-200 relative">
-                    <div
-                      className="data-bar h-full bg-emerald-600 rounded-full"
-                      style={{ width: `${Math.min(100, Math.max(kpiSummary.airedVsBookedPct, 3))}%` }}
-                    />
-                  </div>
-                </div>
-
-                <div className="pt-2 border-t border-slate-100 grid grid-cols-3 gap-2 text-[11px]">
-                  <div className="p-2 rounded-lg bg-indigo-50/60 border border-indigo-200/80">
-                    <span className="text-indigo-800 block">Chỉ tiêu Video Paid</span>
-                    <strong className="font-mono text-indigo-950">{kpiSummary.totalTargetPaidVideos.toLocaleString('vi-VN')} video (KL1–KL7)</strong>
-                  </div>
-                  <div className="p-2 rounded-lg bg-sky-50/70 border border-sky-200/80">
-                    <span className="text-sky-800 block">Suất mẫu miễn phí FOC</span>
-                    <strong className="font-mono text-sky-950">{kpiSummary.totalTargetFocVideos.toLocaleString('vi-VN')} suất (0đ)</strong>
-                  </div>
-                  <div className="p-2 rounded-lg bg-emerald-50/70 border border-emerald-200/80">
-                    <span className="text-emerald-800 block">Video Kênh Brand</span>
-                    <strong className="font-mono text-emerald-950">{kpiSummary.totalTargetSelfVideos.toLocaleString('vi-VN')} video</strong>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
           {/* KHỐI BÁO ĐỘNG ĐỎ & CẢNH BÁO TÀI CHÍNH TINH GỌN (CHUYỂN TIẾP SANG TAB GIAN HÀNG) */}
           {riskStores.length > 0 && (
-            <div className="bg-rose-50 border border-rose-200 rounded-xl p-4 shadow-xs flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+            <div className="bg-critical-soft border border-critical/20 rounded-xl p-4 shadow-xs flex flex-col md:flex-row md:items-center md:justify-between gap-3">
               <div className="flex items-start sm:items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-rose-600 text-white flex items-center justify-center shrink-0">
+                <div className="w-8 h-8 rounded-lg bg-critical text-white flex items-center justify-center shrink-0">
                   <AlertTriangle className="w-4 h-4" />
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-extrabold uppercase text-rose-950 tracking-wider">
+                    <span className="text-xs font-semibold uppercase text-critical tracking-wider">
                       Cảnh Báo Kế Toán: {riskStores.length} Gian Hàng Vượt Trần Net / Chi Ngoài Kế Hoạch (0đ)
                     </span>
-                    <span className="px-2 py-0.2 rounded-full text-[10px] font-bold bg-rose-600 text-white">
+                    <span className="py-0.2 text-2xs font-semibold bg-critical text-white">
                       Cần xử lý
                     </span>
                   </div>
-                  <p className="text-xs text-rose-800 mt-0.5">
-                    Ghi nhận <strong className="font-bold">{kpiSummary.unbudgetedCount} gian 0đ ngoài hạn mức</strong> và{' '}
-                    <strong className="font-bold">{kpiSummary.overbudgetCount} gian vượt trần Order Net</strong> (Tổng chênh lệch vượt: +{formatVndShort(riskStores.reduce((acc, s) => acc + Math.max(0, (s.actualSpentNet || 0) - (s.budgetNet || s.monthlyBudget || 0)), 0))}).
+                  <p className="text-xs text-critical mt-0.5">
+                    Ghi nhận <strong className="font-semibold">{kpiSummary.unbudgetedCount} gian 0đ ngoài hạn mức</strong> và{' '}
+                    <strong className="font-semibold">{kpiSummary.overbudgetCount} gian vượt trần Order Net</strong> (Tổng chênh lệch vượt: +{formatVndShort(riskStores.reduce((acc, s) => acc + Math.max(0, (s.actualSpentNet || 0) - (s.budgetNet || s.monthlyBudget || 0)), 0))}).
                   </p>
                 </div>
               </div>
@@ -1440,7 +1275,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                   setSelectedQuadrant('OVER_SPEND');
                   handleSelectDashboardSection('STORE_SELLER');
                 }}
-                className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white shrink-0 shadow-xs transition cursor-pointer"
+                className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold bg-critical hover:bg-critical text-white shrink-0 shadow-xs transition cursor-pointer"
               >
                 <span>Xem và xử lý tại Tab Gian Hàng</span>
                 <ChevronRight className="w-3.5 h-3.5" />
@@ -1448,20 +1283,167 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
             </div>
           )}
 
+          {/* KHỐI TÂM ĐIỂM ĐIỀU HÀNH KÉP: % SPEND CHI PHÍ & SỐ LƯỢNG VIDEO ĐÃ AIR LÊN SÓNG */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+            {/* TÂM ĐIỂM 1 (6 CỘT): % SPEND CHI PHÍ (NET & GROSS) */}
+            <div className="lg:col-span-6 bg-white rounded-xl border-2 border-accent/20/80 p-5 shadow-xs">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <span className="inline-flex items-center gap-1.5 text-2xs font-semibold text-ink-2uppercase tracking-wider bg-accent text-white">
+                    <DollarSign className="w-3.5 h-3.5" />
+                    Tỷ Lệ Giải Ngân Chi Phí (% Spend)
+                  </span>
+                  <div className="mt-2.5 flex flex-wrap items-baseline gap-3">
+                    <span className="text-3xl font-semibold text-accent font-mono tracking-tight">
+                      <NumberRoll value={`${kpiSummary.pacingNetPct}% Spend Net`} />
+                    </span>
+                    <span className="text-xs font-semibold font-mono text-ink-2 -line">
+                      {kpiSummary.pacingGrossPct}% Spend Gross
+                    </span>
+                  </div>
+                  <p className="text-xs text-ink-2 mt-1">
+                    Thực chi duyệt book File 3.2:{' '}
+                    <strong className="font-mono text-ink">{formatVndShort(kpiSummary.totalActualSpentNet)}</strong>{' '}
+                    / Trần Order Net Kế toán:{' '}
+                    <strong className="font-mono text-accent">{formatVndShort(kpiSummary.totalBudgetNet)}</strong>{' '}
+                    (Order Gross: <strong className="font-mono">{formatVndShort(kpiSummary.totalBudgetGross)}</strong>)
+                  </p>
+                </div>
+                <div className="text-right font-mono shrink-0 bg-accent-soft px-3 py-2 rounded-lg border border-accent/20">
+                  <span className="text-2xs font-sans font-semibold text-accent block">
+                    Dư địa Net còn được chi
+                  </span>
+                  <strong className="text-base font-semibold text-accent">
+                    {formatVndShort(Math.max(0, kpiSummary.totalBudgetNet - kpiSummary.totalActualSpentNet))}
+                  </strong>
+                  <span className="block text-2xs text-critical font-semibold mt-0.5">
+                    {kpiSummary.unbudgetedCount + kpiSummary.overbudgetCount} gian vượt trần / 0đ
+                  </span>
+                </div>
+              </div>
+
+              <div className="mt-3.5 space-y-2">
+                <div>
+                  <div className="flex items-center justify-between text-2xs font-semibold mb-1">
+                    <span className="text-ink-2">Tiến độ % Spend so với Trần Order Net (Mốc Kế toán khoá duyệt chi):</span>
+                    <span className="font-mono font-semibold text-accent">
+                      {formatVndShort(kpiSummary.totalActualSpentNet)} / {formatVndShort(kpiSummary.totalBudgetNet)} ({kpiSummary.pacingNetPct}%)
+                    </span>
+                  </div>
+                  <div className="w-full h-3 bg-sunken rounded-full overflow-hidden border border-line relative">
+                    <div
+                      className={`data-bar h-full rounded-full ${
+                        kpiSummary.pacingNetPct > 100
+                          ? 'bg-critical'
+                          : kpiSummary.pacingNetPct >= 85
+                          ? 'bg-warning'
+                          : 'bg-accent'
+                      }`}
+                      style={{ width: `${Math.min(100, Math.max(kpiSummary.pacingNetPct, 2))}%` }}
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-line grid grid-cols-3 gap-2 text-2xs">
+                  <div className="p-2 rounded-lg bg-canvas border border-line/80">
+                    <span className="text-ink-3 block">KOC Affiliate Net</span>
+                    <strong className="font-mono text-ink">{formatVndShort(kpiSummary.totalAffNet)}</strong>
+                  </div>
+                  <div className="p-2 rounded-lg bg-canvas border border-line/80">
+                    <span className="text-ink-3 block">Kênh Brand Net</span>
+                    <strong className="font-mono text-positive">{formatVndShort(kpiSummary.totalSelfNet)}</strong>
+                  </div>
+                  <div className="p-2 rounded-lg bg-critical-soft border border-critical/20">
+                    <span className="text-critical block">Chi vượt / Ngoài KH</span>
+                    <strong className="font-mono text-critical">+296,04 Tr ({kpiSummary.unbudgetedCount + kpiSummary.overbudgetCount} gian)</strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* TÂM ĐIỂM 2 (6 CỘT): SỐ LƯỢNG VIDEO ĐÃ AIR LÊN SÓNG & % HOÀN THÀNH */}
+            <div className="lg:col-span-6 bg-white rounded-xl border-2 border-positive/20/80 p-5 shadow-xs">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <span className="inline-flex items-center gap-1.5 text-2xs font-semibold text-ink-2uppercase tracking-wider bg-positive text-white">
+                    <Film className="w-3.5 h-3.5" />
+                    Số Lượng Video Đã Air Lên Sóng
+                  </span>
+                  <div className="mt-2.5 flex flex-wrap items-baseline gap-3">
+                    <span className="text-3xl font-semibold text-positive font-mono tracking-tight">
+                      <NumberRoll value={`${kpiSummary.totalActualAiredVideos.toLocaleString('vi-VN')} Video Đã Air`} />
+                    </span>
+                    <span className="text-xs font-semibold font-mono text-positive -positive/20">
+                      Đạt {kpiSummary.airedVsBookedPct}% đơn đã book (786 đơn)
+                    </span>
+                  </div>
+                  <p className="text-xs text-ink-2 mt-1">
+                    Đạt <strong className="font-mono text-positive">{kpiSummary.airedVsPaidPct}%</strong> so với tổng chỉ tiêu Video KOC Trả phí (Paid:{' '}
+                    <strong className="font-mono text-ink">{kpiSummary.totalTargetPaidVideos.toLocaleString('vi-VN')} video</strong>) · Đã phủ sóng trên{' '}
+                    <strong className="text-ink">{kpiSummary.storesWithAiredCount}/{kpiSummary.storeCount} gian hàng</strong>
+                  </p>
+                </div>
+                <div className="text-right font-mono shrink-0 bg-positive-soft px-3 py-2 rounded-lg border border-positive/20">
+                  <span className="text-2xs font-sans font-semibold text-positive block">
+                    Đơn đã book chờ Air / ĐNTT
+                  </span>
+                  <strong className="text-base font-semibold text-positive">
+                    {Math.max(0, 786 - kpiSummary.totalActualAiredVideos)} đơn
+                  </strong>
+                  <span className="block text-2xs text-positive font-semibold mt-0.5">
+                    23 đơn đang gửi mẫu / chờ đăng
+                  </span>
+                </div>
+              </div>
+
+              <div className="mt-3.5 space-y-2">
+                <div>
+                  <div className="flex items-center justify-between text-2xs font-semibold mb-1">
+                    <span className="text-ink-2">Tỷ lệ Video Đã Air Lên Sóng / Tổng Đơn Đã Book Tháng 10 (File 3.2):</span>
+                    <span className="font-mono font-semibold text-positive">
+                      {kpiSummary.totalActualAiredVideos} / 786 đơn ({kpiSummary.airedVsBookedPct}%) · Chỉ tiêu Paid: {kpiSummary.totalTargetPaidVideos} ({kpiSummary.airedVsPaidPct}%)
+                    </span>
+                  </div>
+                  <div className="w-full h-3 bg-sunken rounded-full overflow-hidden border border-line relative">
+                    <div
+                      className="data-bar h-full bg-positive rounded-full"
+                      style={{ width: `${Math.min(100, Math.max(kpiSummary.airedVsBookedPct, 3))}%` }}
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-line grid grid-cols-3 gap-2 text-2xs">
+                  <div className="p-2 rounded-lg bg-accent-soft border border-accent/20/80">
+                    <span className="text-accent block">Chỉ tiêu Video Paid</span>
+                    <strong className="font-mono text-accent">{kpiSummary.totalTargetPaidVideos.toLocaleString('vi-VN')} video (KL1–KL7)</strong>
+                  </div>
+                  <div className="p-2 rounded-lg bg-accent-soft border border-accent/20/80">
+                    <span className="text-accent block">Suất mẫu miễn phí FOC</span>
+                    <strong className="font-mono text-accent">{kpiSummary.totalTargetFocVideos.toLocaleString('vi-VN')} suất (0đ)</strong>
+                  </div>
+                  <div className="p-2 rounded-lg bg-positive-soft border border-positive/20/80">
+                    <span className="text-positive block">Video Kênh Brand</span>
+                    <strong className="font-mono text-positive">{kpiSummary.totalTargetSelfVideos.toLocaleString('vi-VN')} video</strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* HÀNG BIỂU ĐỒ 1 & 2: BIỂU ĐỒ CỘT ĐỐI SOÁT BRAND (% SPEND & SỐ VIDEO AIR) + BIỂU ĐỒ BÓC TÁCH ORDER GROWTH */}
           <div className="grid grid-cols-1 xl:grid-cols-12 gap-5">
             {/* BIỂU ĐỒ 1 (7 CỘT): ĐỐI SOÁT % SPEND CHI PHÍ & SỐ LƯỢNG VIDEO AIR THEO THƯƠNG HIỆU */}
-            <div className="xl:col-span-7 bg-white rounded-xl border border-slate-200 p-5 shadow-xs">
+            <div className="xl:col-span-7 bg-white rounded-xl border border-line p-5 shadow-xs">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
                 <div>
-                  <h3 className="text-sm font-bold text-slate-900">
+                  <h3 className="text-sm font-semibold text-ink">
                     Biểu Đồ Kép Theo Thương Hiệu: % Spend Chi Phí Net &amp; Số Lượng Video Đã Air (Top 16 Brands)
                   </h3>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-ink-3">
                     Theo dõi song song tỷ lệ giải ngân thực tế (% Spend Net) và sản lượng Video đã lên sóng của từng Brand
                   </p>
                 </div>
-                <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
+                <div className="flex flex-wrap items-center gap-1.5 text-2xs">
                   {[
                     { key: 'AIRED_DESC', label: 'Xếp theo Số Video Air' },
                     { key: 'SPEND_PCT_DESC', label: 'Xếp theo % Spend cao' },
@@ -1470,11 +1452,11 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                     <button
                       key={s.key}
                       type="button"
-                      onClick={() => setBrandSortMode(s.key as any)}
-                      className={`px-2.5 py-1 rounded-md font-bold transition cursor-pointer ${
+                      onClick={() => setBrandSortMode(s.key as typeof brandSortMode)}
+                      className={`px-2.5 py-1 rounded-md font-semibold transition cursor-pointer ${
                         brandSortMode === s.key
-                          ? 'bg-indigo-600 text-white'
-                          : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                          ? 'bg-accent text-white'
+                          : 'bg-sunken text-ink-2 hover:bg-sunken'
                       }`}
                     >
                       {s.label}
@@ -1501,43 +1483,43 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                     <div
                       key={b.brandName}
                       onClick={() => setSelectedBrand(selectedBrand === b.brandName ? 'ALL' : b.brandName)}
-                      className="p-3 rounded-xl border border-slate-200/80 hover:border-indigo-300 hover:bg-slate-50/70 transition cursor-pointer"
+                      className="p-3 rounded-xl border border-line/80 hover:border-accent/20 hover:bg-canvas transition cursor-pointer"
                     >
                       <div className="flex flex-wrap items-center justify-between gap-2 text-xs mb-2">
                         <div className="flex items-center gap-2">
-                          <span className="font-bold text-slate-900 text-sm">{b.brandName}</span>
-                          <span className="text-[11px] text-slate-500">
+                          <span className="font-semibold text-ink text-sm">{b.brandName}</span>
+                          <span className="text-2xs text-ink-3">
                             ({b.storeCount} gian: {b.tiktokStores} TT · {b.shopeeStores} SP)
                           </span>
                           {b.hasLeader && (
-                            <span className="px-1.5 py-0.2 rounded text-[10px] font-semibold bg-indigo-50 text-indigo-700">
+                            <span className=".5 py-0.2 text-2xs font-semibold text-accent">
                               Leader: Ngọc Tâm
                             </span>
                           )}
                           {b.riskStatus === 'UNBUDGETED' && (
-                            <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-rose-100 text-rose-700">
+                            <span className=".5 py-0.2 text-2xs font-semibold text-critical">
                               Báo động đỏ 0đ
                             </span>
                           )}
                           {b.riskStatus === 'OVERBUDGET' && (
-                            <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-amber-100 text-amber-800">
+                            <span className=".5 py-0.2 text-2xs font-semibold text-warning">
                               Vượt trần Net
                             </span>
                           )}
                         </div>
-                        <div className="flex items-center gap-2 font-mono text-[11px]">
+                        <div className="flex items-center gap-2 font-mono text-2xs">
                           <span
-                            className={`px-2 py-0.5 rounded font-extrabold ${
+                            className={`px-2 py-0.5 rounded font-semibold ${
                               isOver
-                                ? 'bg-rose-100 text-rose-800'
+                                ? 'bg-critical-soft text-critical'
                                 : burnVsNet >= 50
-                                ? 'bg-indigo-100 text-indigo-800'
-                                : 'bg-slate-100 text-slate-700'
+                                ? 'bg-accent-soft text-accent'
+                                : 'bg-sunken text-ink-2'
                             }`}
                           >
                             % Spend: {burnVsNet === 999 ? 'Ngoài KH (0đ)' : `${burnVsNet}% Net`}
                           </span>
-                          <span className="px-2 py-0.5 rounded font-extrabold bg-emerald-100 text-emerald-800">
+                          <span className="font-semibold text-positive">
                             Đã Air: {b.airedVideos} video ({airPct}% chỉ tiêu)
                           </span>
                         </div>
@@ -1547,18 +1529,18 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         {/* Cột 1: % Spend Chi phí */}
                         <div>
-                          <div className="flex items-center justify-between text-[11px] mb-1">
-                            <span className="text-slate-500">
+                          <div className="flex items-center justify-between text-2xs mb-1">
+                            <span className="text-ink-3">
                               Thực chi / Trần Net (Gross: {formatVndShort(b.budgetGross)}):
                             </span>
-                            <span className="font-mono font-bold text-slate-800">
+                            <span className="font-mono font-semibold text-ink">
                               {formatVndShort(b.actualSpentNet)} / {formatVndShort(b.budgetNet)}
                             </span>
                           </div>
-                          <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                          <div className="w-full h-2.5 bg-sunken rounded-full overflow-hidden">
                             <div
                               className={`data-bar h-full rounded-full ${
-                                isOver ? 'bg-rose-500' : 'bg-indigo-600'
+                                isOver ? 'bg-critical' : 'bg-accent'
                               }`}
                               style={{
                                 width: `${
@@ -1573,17 +1555,17 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
 
                         {/* Cột 2: Số lượng Video Đã Air */}
                         <div>
-                          <div className="flex items-center justify-between text-[11px] mb-1">
-                            <span className="text-slate-500">
+                          <div className="flex items-center justify-between text-2xs mb-1">
+                            <span className="text-ink-3">
                               Số lượng Video Đã Air (Paid: {b.paidVideos} · FOC: {b.focVideos}):
                             </span>
-                            <span className="font-mono font-extrabold text-emerald-700">
+                            <span className="font-mono font-semibold text-positive">
                               {b.airedVideos} video đã lên sóng
                             </span>
                           </div>
-                          <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                          <div className="w-full h-2.5 bg-sunken rounded-full overflow-hidden">
                             <div
-                              className="data-bar h-full bg-emerald-500 rounded-full"
+                              className="data-bar h-full bg-positive rounded-full"
                               style={{ width: `${Math.max(airBarWidth, b.airedVideos > 0 ? 5 : 0)}%` }}
                             />
                           </div>
@@ -1598,24 +1580,24 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
             {/* BIỂU ĐỒ 2 (5 CỘT): BÓC TÁCH CHỈ TIÊU ORDER GROWTH (GROSS/NET, PAID/FOC, AFFILIATE/BRAND/LIVE) */}
             <div className="xl:col-span-5 space-y-5">
               {/* Khối 2A: Bóc tách Ngân sách Order Growth */}
-              <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs">
-                <h3 className="text-sm font-bold text-slate-900 mb-1">
+              <div className="bg-white rounded-xl border border-line p-5 shadow-xs">
+                <h3 className="text-sm font-semibold text-ink mb-1">
                   Bóc Tách Cấu Trúc Ngân Sách Order Growth (File 4.1)
                 </h3>
-                <p className="text-xs text-slate-500 mb-4">
+                <p className="text-xs text-ink-3 mb-4">
                   Phân tách rõ Hạn mức Affiliate KOC, Video kênh Brand (Self-channel) và Livestream trên 69 gian hàng B2C
                 </p>
 
                 <div className="space-y-3.5">
                   {/* Affiliate KOC */}
-                  <div className="p-3 rounded-lg bg-slate-50 border border-slate-200/80">
+                  <div className="p-3 rounded-lg bg-canvas border border-line/80">
                     <div className="flex items-center justify-between text-xs mb-1">
-                      <span className="font-bold text-slate-800">1. Ngân sách Video Affiliate KOC</span>
-                      <span className="font-mono font-bold text-indigo-700">
+                      <span className="font-semibold text-ink">1. Ngân sách Video Affiliate KOC</span>
+                      <span className="font-mono font-semibold text-accent">
                         Net: {formatVndShort(kpiSummary.totalAffNet)}
                       </span>
                     </div>
-                    <div className="flex items-center justify-between text-[11px] text-slate-500 mb-2">
+                    <div className="flex items-center justify-between text-2xs text-ink-3 mb-2">
                       <span>Gross (Gồm thuế/phí sàn): {formatVndShort(kpiSummary.totalAffGross)}</span>
                       <span>
                         Chiếm{' '}
@@ -1625,9 +1607,9 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                         % tổng Net
                       </span>
                     </div>
-                    <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+                    <div className="w-full h-2 bg-sunken rounded-full overflow-hidden">
                       <div
-                        className="data-bar h-full bg-indigo-600 rounded-full"
+                        className="data-bar h-full bg-accent rounded-full"
                         style={{
                           width: `${
                             kpiSummary.totalBudgetNet > 0
@@ -1640,20 +1622,20 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                   </div>
 
                   {/* Video Kênh Brand (Self-channel) */}
-                  <div className="p-3 rounded-lg bg-slate-50 border border-slate-200/80">
+                  <div className="p-3 rounded-lg bg-canvas border border-line/80">
                     <div className="flex items-center justify-between text-xs mb-1">
-                      <span className="font-bold text-slate-800">2. Ngân sách Video Kênh Brand (Self-channel)</span>
-                      <span className="font-mono font-bold text-emerald-700">
+                      <span className="font-semibold text-ink">2. Ngân sách Video Kênh Brand (Self-channel)</span>
+                      <span className="font-mono font-semibold text-positive">
                         Net: {formatVndShort(kpiSummary.totalSelfNet)}
                       </span>
                     </div>
-                    <div className="flex items-center justify-between text-[11px] text-slate-500 mb-2">
+                    <div className="flex items-center justify-between text-2xs text-ink-3 mb-2">
                       <span>Gross: {formatVndShort(kpiSummary.totalSelfGross)}</span>
                       <span>Chỉ tiêu: {kpiSummary.totalTargetSelfVideos.toLocaleString('vi-VN')} video kênh Brand</span>
                     </div>
-                    <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+                    <div className="w-full h-2 bg-sunken rounded-full overflow-hidden">
                       <div
-                        className="data-bar h-full bg-emerald-500 rounded-full"
+                        className="data-bar h-full bg-positive rounded-full"
                         style={{
                           width: `${
                             kpiSummary.totalBudgetNet > 0
@@ -1669,16 +1651,16 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                   </div>
 
                   {/* Ngân sách Livestream */}
-                  <div className="p-3 rounded-lg bg-slate-50 border border-slate-200/80">
+                  <div className="p-3 rounded-lg bg-canvas border border-line/80">
                     <div className="flex items-center justify-between text-xs mb-1">
-                      <span className="font-bold text-slate-800">3. Ngân sách Phiên Livestream & Host</span>
-                      <span className="font-mono font-bold text-amber-700">
+                      <span className="font-semibold text-ink">3. Ngân sách Phiên Livestream & Host</span>
+                      <span className="font-mono font-semibold text-warning">
                         {formatVndShort(kpiSummary.totalLiveBudget)}
                       </span>
                     </div>
-                    <div className="flex items-center justify-between text-[11px] text-slate-500">
+                    <div className="flex items-center justify-between text-2xs text-ink-3">
                       <span>Tổng số ca Livestream kế hoạch (File 4.1.1):</span>
-                      <span className="font-bold text-slate-800">
+                      <span className="font-semibold text-ink">
                         {kpiSummary.totalTargetLiveSessions.toLocaleString('vi-VN')} phiên Live
                       </span>
                     </div>
@@ -1687,11 +1669,11 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
               </div>
 
               {/* Khối 2B: Bóc tách Sản lượng Video Trả phí (Paid) vs Suất Gửi Mẫu Miễn Phí (FOC 0đ) */}
-              <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs">
-                <h3 className="text-sm font-bold text-slate-900 mb-1">
+              <div className="bg-white rounded-xl border border-line p-5 shadow-xs">
+                <h3 className="text-sm font-semibold text-ink mb-1">
                   Bóc Tách Sản Lượng: Video KOC Trả Phí (Paid) vs Suất Mẫu Miễn Phí (FOC 0đ)
                 </h3>
-                <p className="text-xs text-slate-500 mb-4">
+                <p className="text-xs text-ink-3 mb-4">
                   Suất gửi mẫu miễn phí (FOC - chi phí 0đ) được điều phối tách bạch với các đơn Booking KOC có cát-xê
                 </p>
 
@@ -1709,24 +1691,24 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                   return (
                     <div className="space-y-4">
                       {/* Stacked Horizontal Bar */}
-                      <div className="w-full h-5 rounded-lg overflow-hidden flex border border-slate-200">
+                      <div className="w-full h-5 rounded-lg overflow-hidden flex border border-line">
                         <div
                           style={{ width: `${focPct}%` }}
-                          className="data-bar bg-sky-500 h-full flex items-center justify-center text-[10px] font-bold text-white"
+                          className="data-bar bg-accent h-full flex items-center justify-center text-2xs font-semibold text-white"
                           title={`Mẫu miễn phí FOC (0đ): ${kpiSummary.totalTargetFocVideos}`}
                         >
                           {focPct > 10 ? `FOC ${focPct}%` : ''}
                         </div>
                         <div
                           style={{ width: `${paidPct}%` }}
-                          className="data-bar bg-indigo-600 h-full flex items-center justify-center text-[10px] font-bold text-white"
+                          className="data-bar bg-accent h-full flex items-center justify-center text-2xs font-semibold text-white"
                           title={`Video KOC trả phí (Paid): ${kpiSummary.totalTargetPaidVideos}`}
                         >
                           {paidPct > 8 ? `Paid ${paidPct}%` : ''}
                         </div>
                         <div
                           style={{ width: `${selfPct}%` }}
-                          className="data-bar bg-emerald-500 h-full flex items-center justify-center text-[10px] font-bold text-white"
+                          className="data-bar bg-positive h-full flex items-center justify-center text-2xs font-semibold text-white"
                           title={`Video kênh Brand (Self-channel): ${kpiSummary.totalTargetSelfVideos}`}
                         >
                           {selfPct > 8 ? `Brand ${selfPct}%` : ''}
@@ -1734,38 +1716,38 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                       </div>
 
                       <div className="grid grid-cols-3 gap-2.5 text-center">
-                        <div className="p-2.5 rounded-lg bg-sky-50 border border-sky-200">
-                          <span className="text-[11px] font-bold text-sky-800 block">
+                        <div className="p-2.5 rounded-lg bg-accent-soft border border-accent/20">
+                          <span className="text-2xs font-semibold text-accent block">
                             Mẫu Miễn Phí (FOC 0đ)
                           </span>
-                          <span className="text-lg font-extrabold text-sky-900 font-mono">
+                          <span className="text-lg font-semibold text-accent font-mono">
                             {kpiSummary.totalTargetFocVideos.toLocaleString('vi-VN')}
                           </span>
-                          <span className="block text-[10px] text-sky-700 mt-0.5">
+                          <span className="block text-2xs text-accent mt-0.5">
                             Đầu mối: Trần Thị Hảo & Team
                           </span>
                         </div>
 
-                        <div className="p-2.5 rounded-lg bg-indigo-50 border border-indigo-200">
-                          <span className="text-[11px] font-bold text-indigo-800 block">
+                        <div className="p-2.5 rounded-lg bg-accent-soft border border-accent/20">
+                          <span className="text-2xs font-semibold text-accent block">
                             Video KOC Trả Phí (Paid)
                           </span>
-                          <span className="text-lg font-extrabold text-indigo-900 font-mono">
+                          <span className="text-lg font-semibold text-accent font-mono">
                             {kpiSummary.totalTargetPaidVideos.toLocaleString('vi-VN')}
                           </span>
-                          <span className="block text-[10px] text-indigo-700 mt-0.5">
+                          <span className="block text-2xs text-accent mt-0.5">
                             Có cát-xê (KL1 → KL7)
                           </span>
                         </div>
 
-                        <div className="p-2.5 rounded-lg bg-emerald-50 border border-emerald-200">
-                          <span className="text-[11px] font-bold text-emerald-800 block">
+                        <div className="p-2.5 rounded-lg bg-positive-soft border border-positive/20">
+                          <span className="text-2xs font-semibold text-positive block">
                             Video Kênh Brand (Self)
                           </span>
-                          <span className="text-lg font-extrabold text-emerald-900 font-mono">
+                          <span className="text-lg font-semibold text-positive font-mono">
                             {kpiSummary.totalTargetSelfVideos.toLocaleString('vi-VN')}
                           </span>
-                          <span className="block text-[10px] text-emerald-700 mt-0.5">
+                          <span className="block text-2xs text-positive mt-0.5">
                             Xây kênh chính hãng
                           </span>
                         </div>
@@ -1778,13 +1760,13 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
           </div>
 
           {/* ĐỐI SOÁT DÒNG TIỀN TẠM ỨNG, ĐNTT KẾ TOÁN & XUẤT SỔ CÁI EXCEL (GỘP TỪ MỤC KẾ TOÁN) */}
-          <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs space-y-3.5">
+          <div className="bg-white rounded-xl border border-line p-5 shadow-xs space-y-3.5">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div>
-                <h3 className="text-sm font-semibold text-slate-900">
+                <h3 className="text-sm font-semibold text-ink">
                   Sổ Cái Kiểm Soát Dòng Tiền &amp; Đề Nghị Thanh Toán (ĐNTT) — Tháng 10/2026
                 </h3>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-ink-3">
                   Theo dõi tiến độ từ lúc duyệt tạm ứng hợp đồng đến nghiệm thu video, thanh lý quyết toán với KOC và xuất báo cáo Excel 5 Sheets.
                 </p>
               </div>
@@ -1800,41 +1782,41 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
-              <div className="p-3.5 rounded-xl border border-emerald-200 bg-emerald-50/40">
-                <div className="flex items-center justify-between text-xs font-semibold text-emerald-900 mb-1">
+              <div className="p-3.5 rounded-xl border border-positive/20 bg-positive-soft">
+                <div className="flex items-center justify-between text-xs font-semibold text-positive mb-1">
                   <span>1. Đã nghiệm thu &amp; tất toán ĐNTT 100%</span>
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  <CheckCircle2 className="w-4 h-4 text-positive" />
                 </div>
-                <div className="text-lg font-semibold text-emerald-800 font-mono">
+                <div className="text-lg font-semibold text-positive font-mono">
                   642 Đơn · 2,14 Tỷ VNĐ
                 </div>
-                <p className="text-2xs text-slate-600 mt-1">
+                <p className="text-2xs text-ink-2 mt-1">
                   Video đã lên sóng đạt chuẩn yêu cầu thương hiệu, hoàn tất biên bản nghiệm thu và thanh lý kế toán.
                 </p>
               </div>
 
-              <div className="p-3.5 rounded-xl border border-amber-200 bg-amber-50/40">
-                <div className="flex items-center justify-between text-xs font-semibold text-amber-900 mb-1">
+              <div className="p-3.5 rounded-xl border border-warning/20 bg-warning-soft">
+                <div className="flex items-center justify-between text-xs font-semibold text-warning mb-1">
                   <span>2. Đang tạm ứng 50% (Chờ KOC air video)</span>
-                  <AlertCircle className="w-4 h-4 text-amber-600" />
+                  <AlertCircle className="w-4 h-4 text-warning" />
                 </div>
-                <div className="text-lg font-semibold text-amber-800 font-mono">
+                <div className="text-lg font-semibold text-warning font-mono">
                   104 Đơn · 376 Triệu VNĐ
                 </div>
-                <p className="text-2xs text-slate-600 mt-1">
+                <p className="text-2xs text-ink-2 mt-1">
                   KOC đã nhận tạm ứng đợt 1 và sản phẩm mẫu; chuyên viên đang giám sát lịch quay để lên sóng đúng hạn.
                 </p>
               </div>
 
-              <div className="p-3.5 rounded-xl border border-line bg-slate-50">
-                <div className="flex items-center justify-between text-xs font-semibold text-slate-900 mb-1">
+              <div className="p-3.5 rounded-xl border border-line bg-canvas">
+                <div className="flex items-center justify-between text-xs font-semibold text-ink mb-1">
                   <span>3. Suất gửi mẫu miễn phí TAP FOC (0đ Cát-xê)</span>
                   <ShoppingBag className="w-4 h-4 text-accent" />
                 </div>
-                <div className="text-lg font-semibold text-slate-900 font-mono">
+                <div className="text-lg font-semibold text-ink font-mono">
                   212 Suất · 0đ Cát-xê
                 </div>
-                <p className="text-2xs text-slate-600 mt-1">
+                <p className="text-2xs text-ink-2 mt-1">
                   Suất mẫu sản phẩm miễn phí cho KOC liên kết Affiliate (Trần Thị Hảo phụ trách), không phát sinh tiền mặt chi ra.
                 </p>
               </div>
@@ -1850,87 +1832,87 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
         <div className="space-y-5">
           {/* 4 THẺ KPI ĐẶC THÙ CẤP GIAN HÀNG (STORE & TIKTOK SELLER) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3.5">
-            <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs">
-              <div className="flex items-center justify-between text-xs text-slate-500 font-medium mb-1">
+            <div className="bg-white rounded-xl border border-line p-4 shadow-xs">
+              <div className="flex items-center justify-between text-xs text-ink-3 font-medium mb-1">
                 <span>Quy Mô 69 Gian Hàng B2C</span>
-                <Store className="w-4 h-4 text-indigo-600" />
+                <Store className="w-4 h-4 text-accent" />
               </div>
-              <div className="text-xl font-extrabold text-slate-900 font-mono">
+              <div className="text-xl font-semibold text-ink font-mono">
                 {filteredStores.length} / 69 Gian hàng
               </div>
-              <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
-                <span className="text-slate-500">39 TikTok · 30 Shopee</span>
-                <span className="font-bold text-slate-800 font-mono">
+              <div className="mt-2 pt-2 border-t border-line flex items-center justify-between text-2xs">
+                <span className="text-ink-3">39 TikTok · 30 Shopee</span>
+                <span className="font-semibold text-ink font-mono">
                   Target NMV: {formatVndShort(kpiSummary.totalTargetGmv)}
                 </span>
               </div>
             </div>
 
-            <div className="bg-white rounded-xl border border-indigo-200 p-4 shadow-xs">
-              <div className="flex items-center justify-between text-xs text-indigo-800 font-bold mb-1">
+            <div className="bg-white rounded-xl border border-accent/20 p-4 shadow-xs">
+              <div className="flex items-center justify-between text-xs text-accent font-semibold mb-1">
                 <span>Thực Chi &amp; % Spend Net Gian Hàng</span>
-                <DollarSign className="w-4 h-4 text-indigo-600" />
+                <DollarSign className="w-4 h-4 text-accent" />
               </div>
               <div className="flex items-baseline gap-2">
-                <span className="text-xl font-extrabold text-indigo-700 font-mono">
+                <span className="text-xl font-semibold text-accent font-mono">
                   {kpiSummary.pacingNetPct}% Spend
                 </span>
-                <span className="text-xs font-bold text-slate-700 font-mono">
+                <span className="text-xs font-semibold text-ink-2 font-mono">
                   ({formatVndShort(kpiSummary.totalActualSpentNet)})
                 </span>
               </div>
-              <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
-                <span className="text-slate-500">Trần Order Net: {formatVndShort(kpiSummary.totalBudgetNet)}</span>
-                <span className="font-bold text-rose-600">
+              <div className="mt-2 pt-2 border-t border-line flex items-center justify-between text-2xs">
+                <span className="text-ink-3">Trần Order Net: {formatVndShort(kpiSummary.totalBudgetNet)}</span>
+                <span className="font-semibold text-critical">
                   {kpiSummary.unbudgetedCount + kpiSummary.overbudgetCount} gian vượt/0đ
                 </span>
               </div>
             </div>
 
-            <div className="bg-white rounded-xl border border-emerald-200 p-4 shadow-xs">
-              <div className="flex items-center justify-between text-xs text-emerald-800 font-bold mb-1">
+            <div className="bg-white rounded-xl border border-positive/20 p-4 shadow-xs">
+              <div className="flex items-center justify-between text-xs text-positive font-semibold mb-1">
                 <span>Độ Phủ &amp; Sản Lượng Video Air</span>
-                <Film className="w-4 h-4 text-emerald-600" />
+                <Film className="w-4 h-4 text-positive" />
               </div>
               <div className="flex items-baseline gap-2">
-                <span className="text-xl font-extrabold text-emerald-700 font-mono">
+                <span className="text-xl font-semibold text-positive font-mono">
                   {kpiSummary.totalActualAiredVideos} Video Air
                 </span>
-                <span className="text-xs font-bold text-emerald-800 bg-emerald-100 px-1.5 py-0.5 rounded">
+                <span className="text-xs font-semibold text-positive .5">
                   {kpiSummary.storesWithAiredCount}/{kpiSummary.storeCount} gian có bài
                 </span>
               </div>
-              <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
-                <span className="text-slate-500">Chỉ tiêu Paid: {kpiSummary.totalTargetPaidVideos}</span>
-                <span className="font-bold text-sky-700">FOC: {kpiSummary.totalTargetFocVideos}</span>
+              <div className="mt-2 pt-2 border-t border-line flex items-center justify-between text-2xs">
+                <span className="text-ink-3">Chỉ tiêu Paid: {kpiSummary.totalTargetPaidVideos}</span>
+                <span className="font-semibold text-accent">FOC: {kpiSummary.totalTargetFocVideos}</span>
               </div>
             </div>
 
-            <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs">
-              <div className="flex items-center justify-between text-xs text-slate-500 font-medium mb-1">
+            <div className="bg-white rounded-xl border border-line p-4 shadow-xs">
+              <div className="flex items-center justify-between text-xs text-ink-3 font-medium mb-1">
                 <span>Quảng Cáo TikTok Seller (PGM/LGM)</span>
-                <TrendingUp className="w-4 h-4 text-amber-600" />
+                <TrendingUp className="w-4 h-4 text-warning" />
               </div>
               <div className="flex items-baseline gap-2">
-                <span className="text-xl font-extrabold text-slate-900 font-mono">
+                <span className="text-xl font-semibold text-ink font-mono">
                   {formatVndShort(TIKTOK_SELLER_ADS_SUMMARY.totalGmv)}
                 </span>
-                <span className="text-xs font-extrabold text-emerald-800 bg-emerald-100 px-1.5 py-0.5 rounded font-mono">
+                <span className="text-xs font-semibold text-positive .5 font-mono">
                   ROAS {TIKTOK_SELLER_ADS_SUMMARY.overallRoas}x
                 </span>
               </div>
-              <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
-                <span className="text-slate-500">Chi Ads: {formatVndShort(TIKTOK_SELLER_ADS_SUMMARY.totalSpend)}</span>
-                <span className="font-bold text-slate-800">{TIKTOK_SELLER_ADS_SUMMARY.totalOrders} đơn hàng</span>
+              <div className="mt-2 pt-2 border-t border-line flex items-center justify-between text-2xs">
+                <span className="text-ink-3">Chi Ads: {formatVndShort(TIKTOK_SELLER_ADS_SUMMARY.totalSpend)}</span>
+                <span className="font-semibold text-ink">{TIKTOK_SELLER_ADS_SUMMARY.totalOrders} đơn hàng</span>
               </div>
             </div>
           </div>
 
           {/* THANH LỌC NHANH TƯƠNG QUAN KÉP: % SPEND CHI PHÍ vs SỐ LƯỢNG VIDEO AIR TRÊN 69 GIAN HÀNG */}
-          <div className="bg-white rounded-xl border border-slate-200 p-3.5 shadow-xs space-y-3">
+          <div className="bg-white rounded-xl border border-line p-3.5 shadow-xs space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-2 text-xs font-bold text-slate-800">
-                <Filter className="w-4 h-4 text-indigo-600" />
+              <div className="flex items-center gap-2 text-xs font-semibold text-ink">
+                <Filter className="w-4 h-4 text-accent" />
                 <span>Phân nhóm 69 gian hàng theo tương quan % Spend Chi Phí &amp; Số lượng Video Air:</span>
               </div>
               <div className="flex flex-wrap items-center gap-1.5">
@@ -1938,39 +1920,39 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                   {
                     key: 'ALL',
                     label: `Tất cả (${stores.length} gian)`,
-                    activeClass: 'bg-slate-900 text-white',
-                    idleClass: 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                    activeClass: 'bg-ink text-white',
+                    idleClass: 'bg-sunken text-ink-2 hover:bg-sunken'
                   },
                   {
                     key: 'OPTIMAL',
                     label: `Giải ngân & Air Video tốt (${kpiSummary.quadOptimal} gian)`,
-                    activeClass: 'bg-emerald-600 text-white',
-                    idleClass: 'bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100'
+                    activeClass: 'bg-positive text-white',
+                    idleClass: 'bg-positive-soft text-positive border border-positive/20 hover:bg-positive-soft'
                   },
                   {
                     key: 'HIGH_SPEND_LOW_AIR',
                     label: `% Spend cao nhưng ít Video Air (${kpiSummary.quadHighSpendLowAir} gian cần giục Air)`,
-                    activeClass: 'bg-amber-600 text-white',
-                    idleClass: 'bg-amber-50 text-amber-900 border border-amber-200 hover:bg-amber-100'
+                    activeClass: 'bg-warning text-white',
+                    idleClass: 'bg-warning-soft text-warning border border-warning/20 hover:bg-warning-soft'
                   },
                   {
                     key: 'OVER_SPEND',
                     label: `Vượt trần Net / Chi ngoài KH 0đ (${kpiSummary.quadOverSpend} gian cảnh báo đỏ)`,
-                    activeClass: 'bg-rose-600 text-white',
-                    idleClass: 'bg-rose-50 text-rose-800 border border-rose-200 hover:bg-rose-100'
+                    activeClass: 'bg-critical text-white',
+                    idleClass: 'bg-critical-soft text-critical border border-critical/20 hover:bg-critical-soft'
                   },
                   {
                     key: 'SLOW_BOTH',
                     label: `Chậm cả % Spend & Video Air (${kpiSummary.quadSlowBoth} gian cần đẩy tiến độ)`,
-                    activeClass: 'bg-sky-700 text-white',
-                    idleClass: 'bg-sky-50 text-sky-800 border border-sky-200 hover:bg-sky-100'
+                    activeClass: 'bg-accent text-white',
+                    idleClass: 'bg-accent-soft text-accent border border-accent/20 hover:bg-accent-soft'
                   }
                 ].map((q) => (
                   <button
                     key={q.key}
                     type="button"
-                    onClick={() => setSelectedQuadrant(q.key as any)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                    onClick={() => setSelectedQuadrant(q.key as typeof selectedQuadrant)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
                       selectedQuadrant === q.key ? q.activeClass : q.idleClass
                     }`}
                   >
@@ -1981,22 +1963,22 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
             </div>
 
             {/* 5 BỘ LỌC CHI TIẾT GIAN HÀNG */}
-            <div className="pt-3 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5">
+            <div className="pt-3 border-t border-line grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5">
               <div className="relative">
-                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <Search className="w-3.5 h-3.5 text-ink-3 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
                   value={storeSearchQuery}
                   onChange={(e) => setStoreSearchQuery(e.target.value)}
                   placeholder="Tìm tên gian hàng, PIC, Brand..."
-                  className="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-hidden focus:border-indigo-500 focus:bg-white"
+                  className="w-full pl-8 pr-3 py-1.5 text-xs bg-canvas border border-line rounded-lg focus:outline-hidden focus:border-accent/20 focus:bg-white"
                 />
               </div>
 
               <select
                 value={selectedBrand}
                 onChange={(e) => setSelectedBrand(e.target.value)}
-                className="px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg font-medium text-slate-700 focus:outline-hidden focus:border-indigo-500"
+                className="px-3 py-1.5 text-xs bg-canvas border border-line rounded-lg font-medium text-ink-2 focus:outline-hidden focus:border-accent/20"
               >
                 <option value="ALL">Tất cả Thương hiệu ({allBrands.length} Brands)</option>
                 {allBrands.map((b) => (
@@ -2008,8 +1990,8 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
 
               <select
                 value={selectedPlatform}
-                onChange={(e) => setSelectedPlatform(e.target.value as any)}
-                className="px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg font-medium text-slate-700 focus:outline-hidden focus:border-indigo-500"
+                onChange={(e) => setSelectedPlatform(e.target.value as typeof selectedPlatform)}
+                className="px-3 py-1.5 text-xs bg-canvas border border-line rounded-lg font-medium text-ink-2 focus:outline-hidden focus:border-accent/20"
               >
                 <option value="ALL">Tất cả Sàn (39 TikTok · 30 Shopee)</option>
                 <option value="TikTok Shop">TikTok Shop (39 gian hàng)</option>
@@ -2018,8 +2000,8 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
 
               <select
                 value={selectedGovernance}
-                onChange={(e) => setSelectedGovernance(e.target.value as any)}
-                className="px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg font-medium text-slate-700 focus:outline-hidden focus:border-indigo-500"
+                onChange={(e) => setSelectedGovernance(e.target.value as typeof selectedGovernance)}
+                className="px-3 py-1.5 text-xs bg-canvas border border-line rounded-lg font-medium text-ink-2 focus:outline-hidden focus:border-accent/20"
               >
                 <option value="ALL">Cơ cấu duyệt: Tất cả 69 gian hàng</option>
                 <option value="WITH_LEADER">Nhóm có Leader Nguyễn Thị Ngọc Tâm (8 gian)</option>
@@ -2028,8 +2010,8 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
 
               <select
                 value={selectedRiskFilter}
-                onChange={(e) => setSelectedRiskFilter(e.target.value as any)}
-                className="px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg font-medium text-slate-700 focus:outline-hidden focus:border-indigo-500"
+                onChange={(e) => setSelectedRiskFilter(e.target.value as typeof selectedRiskFilter)}
+                className="px-3 py-1.5 text-xs bg-canvas border border-line rounded-lg font-medium text-ink-2 focus:outline-hidden focus:border-accent/20"
               >
                 <option value="ALL">Kiểm soát Kế toán: Tất cả trạng thái</option>
                 <option value="UNBUDGETED">Báo động đỏ: Chi ngoài KH (Hạn mức Net = 0đ)</option>
@@ -2041,30 +2023,30 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
           </div>
 
           {/* KHỐI 1: HIỆU QUẢ CHIẾN DỊCH QUẢNG CÁO TIKTOK SHOP SELLER CENTER (PGM / LGM) */}
-          <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs">
+          <div className="bg-white rounded-xl border border-line p-5 shadow-xs">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-4">
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-slate-900 text-white">
+                  <span className="text-2xs font-semibold text-ink-2text-white">
                     TikTok Shop Seller Center
                   </span>
-                  <h3 className="text-sm font-bold text-slate-900">
+                  <h3 className="text-sm font-semibold text-ink">
                     Biểu Đồ Hiệu Suất Chiến Dịch Quảng Cáo Sản Phẩm & Livestream (PGM / LGM)
                   </h3>
                 </div>
-                <p className="text-xs text-slate-500 mt-0.5">
+                <p className="text-xs text-ink-3 mt-0.5">
                   Tổng hợp từ {TIKTOK_SELLER_ADS_SUMMARY.totalCampaignRows.toLocaleString('vi-VN')} dòng báo cáo chiến dịch và {TIKTOK_SELLER_ADS_SUMMARY.totalCreativeRows.toLocaleString('vi-VN')} dòng báo cáo video quảng cáo ({TIKTOK_SELLER_ADS_SUMMARY.reportPeriod})
                 </p>
               </div>
               <div className="flex items-center gap-4 text-xs font-mono">
-                <div className="bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200">
-                  Chi phí Ads: <strong className="text-slate-900">{formatVndShort(TIKTOK_SELLER_ADS_SUMMARY.totalSpend)}</strong>
+                <div className="bg-canvas px-3 py-1.5 rounded-lg border border-line">
+                  Chi phí Ads: <strong className="text-ink">{formatVndShort(TIKTOK_SELLER_ADS_SUMMARY.totalSpend)}</strong>
                 </div>
-                <div className="bg-indigo-50 px-3 py-1.5 rounded-lg border border-indigo-200">
-                  Doanh thu GMV Ads: <strong className="text-indigo-700">{formatVndShort(TIKTOK_SELLER_ADS_SUMMARY.totalGmv)}</strong>
+                <div className="bg-accent-soft px-3 py-1.5 rounded-lg border border-accent/20">
+                  Doanh thu GMV Ads: <strong className="text-accent">{formatVndShort(TIKTOK_SELLER_ADS_SUMMARY.totalGmv)}</strong>
                 </div>
-                <div className="bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200">
-                  ROAS TB: <strong className="text-emerald-700">{TIKTOK_SELLER_ADS_SUMMARY.overallRoas}x</strong> ({TIKTOK_SELLER_ADS_SUMMARY.totalOrders} đơn)
+                <div className="bg-positive-soft px-3 py-1.5 rounded-lg border border-positive/20">
+                  ROAS TB: <strong className="text-positive">{TIKTOK_SELLER_ADS_SUMMARY.overallRoas}x</strong> ({TIKTOK_SELLER_ADS_SUMMARY.totalOrders} đơn)
                 </div>
               </div>
             </div>
@@ -2077,22 +2059,22 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                 return (
                   <div
                     key={camp.campaignId}
-                    className="p-3.5 rounded-xl border border-slate-200 hover:border-indigo-300 bg-slate-50/50 transition"
+                    className="p-3.5 rounded-xl border border-line hover:border-accent/20 bg-canvas transition"
                   >
                     <div className="flex items-start justify-between gap-2 mb-2">
                       <div>
-                        <span className="text-xs font-bold text-slate-900 block">
+                        <span className="text-xs font-semibold text-ink block">
                           {camp.campaignName}
                         </span>
-                        <span className="text-[11px] text-slate-500">
-                          Gian hàng: <strong className="text-slate-700">{camp.storeName}</strong> · ID: {camp.campaignId}
+                        <span className="text-2xs text-ink-3">
+                          Gian hàng: <strong className="text-ink-2">{camp.storeName}</strong> · ID: {camp.campaignId}
                         </span>
                       </div>
                       <span
-                        className={`px-2 py-0.5 rounded text-xs font-extrabold font-mono ${
+                        className={`px-2 py-0.5 rounded text-xs font-semibold font-mono ${
                           camp.roas >= 5
-                            ? 'bg-emerald-100 text-emerald-800'
-                            : 'bg-indigo-100 text-indigo-800'
+                            ? 'bg-positive-soft text-positive'
+                            : 'bg-accent-soft text-accent'
                         }`}
                       >
                         ROAS {camp.roas}x
@@ -2102,51 +2084,51 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                     {/* Bar so sánh GMV vs Chi phí Ads */}
                     <div className="space-y-1.5 my-2.5">
                       <div>
-                        <div className="flex justify-between text-[11px] mb-0.5">
-                          <span className="text-slate-500">GMV thực thu:</span>
-                          <span className="font-mono font-bold text-indigo-700">
+                        <div className="flex justify-between text-2xs mb-0.5">
+                          <span className="text-ink-3">GMV thực thu:</span>
+                          <span className="font-mono font-semibold text-accent">
                             {formatVndShort(camp.gmv)}
                           </span>
                         </div>
-                        <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+                        <div className="w-full h-2 bg-sunken rounded-full overflow-hidden">
                           <div
-                            className="data-bar h-full bg-indigo-600 rounded-full"
+                            className="data-bar h-full bg-accent rounded-full"
                             style={{ width: `${Math.max(gmvBarPct, 4)}%` }}
                           />
                         </div>
                       </div>
                       <div>
-                        <div className="flex justify-between text-[11px] mb-0.5">
-                          <span className="text-slate-500">Chi phí Ads:</span>
-                          <span className="font-mono font-semibold text-slate-800">
+                        <div className="flex justify-between text-2xs mb-0.5">
+                          <span className="text-ink-3">Chi phí Ads:</span>
+                          <span className="font-mono font-semibold text-ink">
                             {formatVndShort(camp.cost)}
                           </span>
                         </div>
-                        <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                        <div className="w-full h-1.5 bg-sunken rounded-full overflow-hidden">
                           <div
-                            className="data-bar h-full bg-amber-500 rounded-full"
+                            className="data-bar h-full bg-warning rounded-full"
                             style={{ width: `${Math.max(costBarPct, 3)}%` }}
                           />
                         </div>
                       </div>
                     </div>
 
-                    <div className="pt-2 border-t border-slate-200/80 grid grid-cols-4 gap-1 text-center text-[11px]">
+                    <div className="pt-2 border-t border-line/80 grid grid-cols-4 gap-1 text-center text-2xs">
                       <div>
-                        <span className="text-slate-400 block">Đơn hàng</span>
-                        <strong className="text-slate-800 font-mono">{camp.orders}</strong>
+                        <span className="text-ink-3 block">Đơn hàng</span>
+                        <strong className="text-ink font-mono">{camp.orders}</strong>
                       </div>
                       <div>
-                        <span className="text-slate-400 block">CPA/Đơn</span>
-                        <strong className="text-slate-800 font-mono">{formatVndShort(camp.cpa)}</strong>
+                        <span className="text-ink-3 block">CPA/Đơn</span>
+                        <strong className="text-ink font-mono">{formatVndShort(camp.cpa)}</strong>
                       </div>
                       <div>
-                        <span className="text-slate-400 block">CTR</span>
-                        <strong className="text-slate-800 font-mono">{camp.ctr}%</strong>
+                        <span className="text-ink-3 block">CTR</span>
+                        <strong className="text-ink font-mono">{camp.ctr}%</strong>
                       </div>
                       <div>
-                        <span className="text-slate-400 block">CVR</span>
-                        <strong className="text-emerald-700 font-mono">{camp.cvr}%</strong>
+                        <span className="text-ink-3 block">CVR</span>
+                        <strong className="text-positive font-mono">{camp.cvr}%</strong>
                       </div>
                     </div>
                   </div>
@@ -2156,13 +2138,13 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
           </div>
 
           {/* KHỐI 2: BẢNG ĐỐI SOÁT CHI TIẾT 69 GIAN HÀNG B2C (TRỌNG TÂM % SPEND CHI PHÍ & SỐ LƯỢNG VIDEO ĐÃ AIR) */}
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs">
-            <div className="px-5 py-4 border-b border-slate-200 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+          <div className="bg-white rounded-xl border border-line overflow-hidden shadow-xs">
+            <div className="px-5 py-4 border-b border-line flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
               <div>
-                <h3 className="text-sm font-bold text-slate-900">
+                <h3 className="text-sm font-semibold text-ink">
                   Bảng Đối Soát Toàn Bộ {filteredStores.length} / 69 Gian Hàng B2C — Trọng Tâm % Spend Chi Phí &amp; Số Lượng Video Đã Air
                 </h3>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-ink-3">
                   Nhấn vào bất kỳ gian hàng nào để mở bảng phân tích chi tiết: Hạn mức Gross/Net, % Spend, Paid/FOC video và danh sách video đã book của gian hàng đó.
                 </p>
               </div>
@@ -2177,11 +2159,11 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                   <button
                     key={s.key}
                     type="button"
-                    onClick={() => setStoreSortMode(s.key as any)}
-                    className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition cursor-pointer ${
+                    onClick={() => setStoreSortMode(s.key as typeof storeSortMode)}
+                    className={`px-2.5 py-1 rounded-md text-2xs font-semibold transition cursor-pointer ${
                       storeSortMode === s.key
-                        ? 'bg-indigo-600 text-white'
-                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                        ? 'bg-accent text-white'
+                        : 'bg-sunken text-ink-2 hover:bg-sunken'
                     }`}
                   >
                     {s.label}
@@ -2192,24 +2174,24 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
 
             <div className="overflow-x-auto max-h-[640px]">
               <table className="w-full text-xs text-left">
-                <thead className="bg-slate-50 text-slate-600 uppercase border-b border-slate-200 sticky top-0 z-10">
+                <thead className="bg-canvas text-ink-2 uppercase border-b border-line sticky top-0 z-10">
                   <tr>
-                    <th className="py-3 px-4 font-bold">Gian Hàng &amp; Brand</th>
-                    <th className="py-3 px-3 font-bold">Sàn</th>
-                    <th className="py-3 px-3 font-bold">Chuyên Viên (PIC) &amp; Cấp Duyệt</th>
-                    <th className="py-3 px-3 font-bold text-right">Order Gross</th>
-                    <th className="py-3 px-3 font-bold text-right">Hạn Mức Net</th>
-                    <th className="py-3 px-3 font-bold text-right bg-indigo-50/70 text-indigo-900">
+                    <th className="py-3 px-4 font-semibold">Gian Hàng &amp; Brand</th>
+                    <th className="py-3 px-3 font-semibold">Sàn</th>
+                    <th className="py-3 px-3 font-semibold">Chuyên Viên (PIC) &amp; Cấp Duyệt</th>
+                    <th className="py-3 px-3 font-semibold text-right">Order Gross</th>
+                    <th className="py-3 px-3 font-semibold text-right">Hạn Mức Net</th>
+                    <th className="py-3 px-3 font-semibold text-right bg-accent-soft text-accent">
                       Thực Chi &amp; % Spend Net
                     </th>
-                    <th className="py-3 px-3 font-bold text-center">Chỉ Tiêu Paid / FOC / Brand</th>
-                    <th className="py-3 px-3 font-bold text-center bg-emerald-50/70 text-emerald-900">
+                    <th className="py-3 px-3 font-semibold text-center">Chỉ Tiêu Paid / FOC / Brand</th>
+                    <th className="py-3 px-3 font-semibold text-center bg-positive-soft text-positive">
                       Số Video Đã Air (% Đạt)
                     </th>
-                    <th className="py-3 px-4 font-bold">Kiểm Soát Kế Toán</th>
+                    <th className="py-3 px-4 font-semibold">Kiểm Soát Kế Toán</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-line">
                   {filteredStores.slice(0, storeVisibleLimit).map((st) => {
                     const net = st.budgetNet || st.monthlyBudget || 0;
                     const spent = st.actualSpentNet || 0;
@@ -2222,73 +2204,73 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                       <tr
                         key={st.id}
                         onClick={() => setInspectStore(st)}
-                        className="hover:bg-indigo-50/40 transition cursor-pointer"
+                        className="hover:bg-accent-soft transition cursor-pointer"
                       >
                         <td className="py-2.5 px-4">
-                          <div className="font-bold text-slate-900">{st.storeName}</div>
-                          <div className="text-[11px] text-slate-500">
-                            Brand: <strong className="text-slate-700">{st.brandName}</strong> · NMV:{' '}
+                          <div className="font-semibold text-ink">{st.storeName}</div>
+                          <div className="text-2xs text-ink-3">
+                            Brand: <strong className="text-ink-2">{st.brandName}</strong> · NMV:{' '}
                             <strong className="font-mono">{formatVndShort(st.monthlyTargetGmv || 0)}</strong>
                           </div>
                         </td>
                         <td className="py-2.5 px-3">
                           <span
-                            className={`px-2 py-0.5 rounded text-[11px] font-semibold ${
+                            className={`text-2xs font-semibold text-ink-2${
                               st.platform === 'TikTok Shop'
-                                ? 'bg-slate-900 text-white'
-                                : 'bg-orange-100 text-orange-800'
+                                ? 'bg-ink text-white'
+                                : 'bg-warning-soft text-warning'
                             }`}
                           >
                             {st.platform}
                           </span>
                         </td>
                         <td className="py-2.5 px-3">
-                          <div className="font-semibold text-slate-900">
+                          <div className="font-semibold text-ink">
                             PIC: {st.primaryPic || st.assignedStaff}
                           </div>
                           {st.hasBookingLeader && st.bookingLeader ? (
-                            <span className="text-[11px] text-indigo-700 font-medium">
+                            <span className="text-2xs text-accent font-medium">
                               Leader: {st.bookingLeader}
                             </span>
                           ) : (
-                            <span className="text-[11px] text-slate-500">
+                            <span className="text-2xs text-ink-3">
                               Không có leader (Trực tiếp Yến Nhi)
                             </span>
                           )}
                         </td>
-                        <td className="py-2.5 px-3 text-right font-mono text-slate-600">
+                        <td className="py-2.5 px-3 text-right font-mono text-ink-2">
                           {formatVndShort(st.budgetGross || 0)}
                         </td>
-                        <td className="py-2.5 px-3 text-right font-mono font-bold text-indigo-700">
+                        <td className="py-2.5 px-3 text-right font-mono font-semibold text-accent">
                           {formatVndShort(net)}
                         </td>
-                        <td className="py-2.5 px-3 text-right font-mono bg-indigo-50/25">
+                        <td className="py-2.5 px-3 text-right font-mono bg-accent-soft">
                           <div className="flex items-center justify-end gap-1.5">
                             <span
-                              className={`font-bold ${
-                                spent > net ? 'text-rose-600' : 'text-slate-900'
+                              className={`font-semibold ${
+                                spent > net ? 'text-critical' : 'text-ink'
                               }`}
                             >
                               {formatVndShort(spent)}
                             </span>
                             <span
-                              className={`px-1.5 py-0.5 rounded text-[10px] font-extrabold ${
+                              className={`text-2xs font-mono font-semibold text-ink-2${
                                 burnPct === 999 || burnPct > 100
-                                  ? 'bg-rose-600 text-white'
+                                  ? 'bg-critical text-white'
                                   : burnPct >= 50
-                                  ? 'bg-indigo-600 text-white'
+                                  ? 'bg-accent text-white'
                                   : burnPct > 0
-                                  ? 'bg-indigo-100 text-indigo-800'
-                                  : 'bg-slate-100 text-slate-500'
+                                  ? 'bg-accent-soft text-accent'
+                                  : 'bg-sunken text-ink-3'
                               }`}
                             >
                               {burnPct === 999 ? 'Ngoài KH' : `${burnPct}%`}
                             </span>
                           </div>
-                          <div className="w-28 ml-auto h-1.5 bg-slate-200 rounded-full overflow-hidden mt-1">
+                          <div className="w-28 ml-auto h-1.5 bg-sunken rounded-full overflow-hidden mt-1">
                             <div
                               className={`data-bar h-full rounded-full ${
-                                burnPct === 999 || burnPct > 100 ? 'bg-rose-500' : 'bg-indigo-600'
+                                burnPct === 999 || burnPct > 100 ? 'bg-critical' : 'bg-accent'
                               }`}
                               style={{
                                 width: `${
@@ -2298,33 +2280,33 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                             />
                           </div>
                         </td>
-                        <td className="py-2.5 px-3 text-center font-mono text-[11px]">
-                          <span className="text-indigo-700 font-bold" title="Video KOC trả phí">
+                        <td className="py-2.5 px-3 text-center font-mono text-2xs">
+                          <span className="text-accent font-semibold" title="Video KOC trả phí">
                             {st.targetPaidVideos || 0}
                           </span>{' '}
                           /{' '}
-                          <span className="text-sky-700 font-bold" title="Suất mẫu miễn phí FOC (0đ)">
+                          <span className="text-accent font-semibold" title="Suất mẫu miễn phí FOC (0đ)">
                             {st.targetFocVideos || 0}
                           </span>{' '}
                           /{' '}
-                          <span className="text-emerald-700 font-bold" title="Video kênh Brand">
+                          <span className="text-positive font-semibold" title="Video kênh Brand">
                             {st.targetSelfChannelContents || 0}
                           </span>
                         </td>
-                        <td className="py-2.5 px-3 text-center font-mono bg-emerald-50/25">
+                        <td className="py-2.5 px-3 text-center font-mono bg-positive-soft">
                           <div className="flex items-center justify-center gap-1.5">
-                            <span className="text-sm font-extrabold text-emerald-700">
+                            <span className="text-sm font-semibold text-positive">
                               {aired} video
                             </span>
                             {targetPaid > 0 && (
-                              <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                              <span className=".5 py-0.2 text-2xs font-semibold text-positive">
                                 {airVsPaidPct}% Paid
                               </span>
                             )}
                           </div>
-                          <div className="w-24 mx-auto h-1.5 bg-slate-200 rounded-full overflow-hidden mt-1">
+                          <div className="w-24 mx-auto h-1.5 bg-sunken rounded-full overflow-hidden mt-1">
                             <div
-                              className="data-bar h-full bg-emerald-500 rounded-full"
+                              className="data-bar h-full bg-positive rounded-full"
                               style={{ width: `${Math.min(100, Math.max(airVsPaidPct, aired > 0 ? 8 : 0))}%` }}
                             />
                           </div>
@@ -2338,14 +2320,14 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
             </div>
 
             {filteredStores.length > 15 && (
-              <div className="px-5 py-3 border-t border-slate-200 bg-slate-50/50 flex items-center justify-between">
-                <span className="text-xs text-slate-500">
-                  Hiển thị <strong className="text-slate-800 font-mono">{Math.min(storeVisibleLimit, filteredStores.length)}</strong> / <strong className="text-slate-800 font-mono">{filteredStores.length}</strong> gian hàng B2C
+              <div className="px-5 py-3 border-t border-line bg-canvas flex items-center justify-between">
+                <span className="text-xs text-ink-3">
+                  Hiển thị <strong className="text-ink font-mono">{Math.min(storeVisibleLimit, filteredStores.length)}</strong> / <strong className="text-ink font-mono">{filteredStores.length}</strong> gian hàng B2C
                 </span>
                 <button
                   type="button"
                   onClick={() => setStoreVisibleLimit((prev) => (prev >= filteredStores.length ? 15 : filteredStores.length))}
-                  className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 transition cursor-pointer"
+                  className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-line-strong bg-white hover:bg-sunken text-ink-2 transition cursor-pointer"
                 >
                   {storeVisibleLimit >= filteredStores.length ? 'Thu gọn (15 gian hàng)' : `Xem tất cả ${filteredStores.length} gian hàng`}
                 </button>
@@ -2362,90 +2344,90 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
         <div className="space-y-5">
           {/* 4 THẺ KPI ĐẶC THÙ CẤP VIDEO BOOKING & CREATIVE ADS */}
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3.5">
-            <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs">
-              <div className="flex items-center justify-between text-xs text-slate-500 font-medium mb-1">
+            <div className="bg-white rounded-xl border border-line p-4 shadow-xs">
+              <div className="flex items-center justify-between text-xs text-ink-3 font-medium mb-1">
                 <span>Tổng Đơn Đã Book (File 3.2)</span>
-                <PlaySquare className="w-4 h-4 text-indigo-600" />
+                <PlaySquare className="w-4 h-4 text-accent" />
               </div>
-              <div className="text-xl font-extrabold text-slate-900 font-mono">
+              <div className="text-xl font-semibold text-ink font-mono">
                 786 Đơn Video
               </div>
-              <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
-                <span className="text-slate-500">Tổng ngân sách book:</span>
-                <span className="font-bold text-indigo-700 font-mono">2,63 Tỷ VNĐ</span>
+              <div className="mt-2 pt-2 border-t border-line flex items-center justify-between text-2xs">
+                <span className="text-ink-3">Tổng ngân sách book:</span>
+                <span className="font-semibold text-accent font-mono">2,63 Tỷ VNĐ</span>
               </div>
             </div>
 
-            <div className="bg-white rounded-xl border border-emerald-200 p-4 shadow-xs">
-              <div className="flex items-center justify-between text-xs text-emerald-800 font-bold mb-1">
+            <div className="bg-white rounded-xl border border-positive/20 p-4 shadow-xs">
+              <div className="flex items-center justify-between text-xs text-positive font-semibold mb-1">
                 <span>Số Lượng Video Đã Air Lên Sóng</span>
-                <Film className="w-4 h-4 text-emerald-600" />
+                <Film className="w-4 h-4 text-positive" />
               </div>
               <div className="flex items-baseline gap-2">
-                <span className="text-xl font-extrabold text-emerald-700 font-mono">
+                <span className="text-xl font-semibold text-positive font-mono">
                   {kpiSummary.totalActualAiredVideos} Video
                 </span>
-                <span className="text-xs font-bold text-emerald-800 bg-emerald-100 px-1.5 py-0.5 rounded">
+                <span className="text-xs font-semibold text-positive .5">
                   Đạt {kpiSummary.airedVsBookedPct}% đơn book
                 </span>
               </div>
-              <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
-                <span className="text-slate-500">Đang chờ Air / gửi mẫu:</span>
-                <span className="font-bold text-amber-700 font-mono">40 đơn</span>
+              <div className="mt-2 pt-2 border-t border-line flex items-center justify-between text-2xs">
+                <span className="text-ink-3">Đang chờ Air / gửi mẫu:</span>
+                <span className="font-semibold text-warning font-mono">40 đơn</span>
               </div>
             </div>
 
-            <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs">
-              <div className="flex items-center justify-between text-xs text-slate-500 font-medium mb-1">
+            <div className="bg-white rounded-xl border border-line p-4 shadow-xs">
+              <div className="flex items-center justify-between text-xs text-ink-3 font-medium mb-1">
                 <span>Cơ Cấu Khung Lương (KL1 → KL7 &amp; FOC)</span>
-                <Layers className="w-4 h-4 text-sky-600" />
+                <Layers className="w-4 h-4 text-accent" />
               </div>
-              <div className="text-xl font-extrabold text-slate-900 font-mono">
+              <div className="text-xl font-semibold text-ink font-mono">
                 8 Bậc Đơn Giá
               </div>
-              <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
-                <span className="text-slate-500">TAP FOC (0đ): <strong>212 đơn</strong></span>
-                <span className="font-bold text-indigo-700">Paid KL1–KL7: 574 đơn</span>
+              <div className="mt-2 pt-2 border-t border-line flex items-center justify-between text-2xs">
+                <span className="text-ink-3">TAP FOC (0đ): <strong>212 đơn</strong></span>
+                <span className="font-semibold text-accent">Paid KL1–KL7: 574 đơn</span>
               </div>
             </div>
 
-            <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs">
-              <div className="flex items-center justify-between text-xs text-slate-500 font-medium mb-1">
+            <div className="bg-white rounded-xl border border-line p-4 shadow-xs">
+              <div className="flex items-center justify-between text-xs text-ink-3 font-medium mb-1">
                 <span>Hiệu Suất Creative Ads TikTok Seller</span>
-                <TrendingUp className="w-4 h-4 text-amber-600" />
+                <TrendingUp className="w-4 h-4 text-warning" />
               </div>
               <div className="flex items-baseline gap-2">
-                <span className="text-xl font-extrabold text-slate-900 font-mono">
+                <span className="text-xl font-semibold text-ink font-mono">
                   34,8% Hook 2s
                 </span>
-                <span className="text-xs font-bold text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded">
+                <span className="text-xs font-semibold text-accent .5">
                   CVR 4,62%
                 </span>
               </div>
-              <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
-                <span className="text-slate-500">4.211 dòng Creative</span>
-                <span className="font-bold text-emerald-700 font-mono">ROAS {TIKTOK_SELLER_ADS_SUMMARY.overallRoas}x</span>
+              <div className="mt-2 pt-2 border-t border-line flex items-center justify-between text-2xs">
+                <span className="text-ink-3">4.211 dòng Creative</span>
+                <span className="font-semibold text-positive font-mono">ROAS {TIKTOK_SELLER_ADS_SUMMARY.overallRoas}x</span>
               </div>
             </div>
           </div>
 
           {/* THANH BỘ LỌC VIDEO BOOKING & CREATIVE */}
-          <div className="bg-white rounded-xl border border-slate-200 p-3.5 shadow-xs grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+          <div className="bg-white rounded-xl border border-line p-3.5 shadow-xs grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
             <div className="relative">
-              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <Search className="w-3.5 h-3.5 text-ink-3 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 value={videoSearchQuery}
                 onChange={(e) => setVideoSearchQuery(e.target.value)}
                 placeholder="Tìm mã BO26, kênh KOC, sản phẩm..."
-                className="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-hidden focus:border-indigo-500 focus:bg-white"
+                className="w-full pl-8 pr-3 py-1.5 text-xs bg-canvas border border-line rounded-lg focus:outline-hidden focus:border-accent/20 focus:bg-white"
               />
             </div>
 
             <select
               value={selectedBrand}
               onChange={(e) => setSelectedBrand(e.target.value)}
-              className="px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg font-medium text-slate-700 focus:outline-hidden focus:border-indigo-500"
+              className="px-3 py-1.5 text-xs bg-canvas border border-line rounded-lg font-medium text-ink-2 focus:outline-hidden focus:border-accent/20"
             >
               <option value="ALL">Tất cả Thương hiệu ({allBrands.length} Brands)</option>
               {allBrands.map((b) => (
@@ -2458,7 +2440,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
             <select
               value={videoFormatFilter}
               onChange={(e) => setVideoFormatFilter(e.target.value)}
-              className="px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg font-medium text-slate-700 focus:outline-hidden focus:border-indigo-500"
+              className="px-3 py-1.5 text-xs bg-canvas border border-line rounded-lg font-medium text-ink-2 focus:outline-hidden focus:border-accent/20"
             >
               <option value="ALL">Tất cả Định dạng sản xuất Video</option>
               {B2C_VIDEO_FORMAT_BREAKDOWN.map((f) => (
@@ -2471,7 +2453,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
             <select
               value={videoKlFilter}
               onChange={(e) => setVideoKlFilter(e.target.value)}
-              className="px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg font-medium text-slate-700 focus:outline-hidden focus:border-indigo-500"
+              className="px-3 py-1.5 text-xs bg-canvas border border-line rounded-lg font-medium text-ink-2 focus:outline-hidden focus:border-accent/20"
             >
               <option value="ALL">Tất cả Bậc Khung lương (TAP FOC &amp; KL1→KL7)</option>
               {sortedKlBreakdown.map((k) => (
@@ -2485,17 +2467,17 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
           {/* HÀNG BIỂU ĐỒ VIDEO: 1. PHÂN BỔ KHUNG LƯƠNG KL1-KL7 + TAP 0Đ | 2. PHỄU GIỮ CHÂN & ĐỊNH DẠNG VIDEO */}
           <div className="grid grid-cols-1 xl:grid-cols-12 gap-5">
             {/* BIỂU ĐỒ KHUNG LƯƠNG KOC (KL1 -> KL7 & TAP UpAffiliate 0đ) */}
-            <div className="xl:col-span-7 bg-white rounded-xl border border-slate-200 p-5 shadow-xs">
+            <div className="xl:col-span-7 bg-white rounded-xl border border-line p-5 shadow-xs">
               <div className="flex items-center justify-between mb-3">
                 <div>
-                  <h3 className="text-sm font-bold text-slate-900">
+                  <h3 className="text-sm font-semibold text-ink">
                     Biểu Đồ Hiệu Quả Theo Khung Lương KOC (TAP FOC 0đ & KL1 → KL7)
                   </h3>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-ink-3">
                     Đối soát 786 video đã booking trong File 3.2: Số lượng đơn book, số video đã lên sóng (Air) và tổng chi phí theo từng bậc KL
                   </p>
                 </div>
-                <span className="px-2.5 py-1 rounded text-xs font-bold bg-indigo-50 text-indigo-700">
+                <span className=".5 text-xs font-semibold text-accent">
                   786 Đơn Book · 2,63 Tỷ
                 </span>
               </div>
@@ -2514,29 +2496,29 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                       onClick={() => setVideoKlFilter(videoKlFilter === item.kl ? 'ALL' : item.kl)}
                       className={`p-2.5 rounded-lg border transition cursor-pointer ${
                         videoKlFilter === item.kl
-                          ? 'border-indigo-500 bg-indigo-50/40'
-                          : 'border-slate-100 hover:border-slate-300 bg-slate-50/40'
+                          ? 'border-accent/20 bg-accent-soft'
+                          : 'border-line hover:border-line-strong bg-canvas'
                       }`}
                     >
                       <div className="flex flex-wrap items-center justify-between gap-2 text-xs mb-1.5">
                         <div className="flex items-center gap-2">
-                          <span className="px-2 py-0.5 rounded font-mono font-bold bg-slate-900 text-white text-[11px]">
+                          <span className="font-mono font-semibold bg-ink text-white text-2xs">
                             {item.kl}
                           </span>
-                          <span className="font-semibold text-slate-800">
+                          <span className="font-semibold text-ink">
                             {item.count} đơn book ({item.airedCount} đã air)
                           </span>
                           {item.kl === 'TAP UpAffiliate' && (
-                            <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-sky-100 text-sky-800">
+                            <span className=".5 py-0.2 text-2xs font-semibold text-accent">
                               Suất mẫu miễn phí FOC (0đ)
                             </span>
                           )}
                         </div>
-                        <div className="flex items-center gap-3 font-mono text-[11px]">
-                          <span className="text-slate-500">
+                        <div className="flex items-center gap-3 font-mono text-2xs">
+                          <span className="text-ink-3">
                             Đơn giá TB: <strong>{formatVndShort(avgCost)}/video</strong>
                           </span>
-                          <span className="font-bold text-indigo-700">
+                          <span className="font-semibold text-accent">
                             Tổng chi: {formatVndShort(item.totalCost)}
                           </span>
                         </div>
@@ -2544,25 +2526,25 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
 
                       <div className="grid grid-cols-2 gap-3 items-center">
                         <div>
-                          <div className="flex justify-between text-[10px] text-slate-500 mb-0.5">
+                          <div className="flex justify-between text-2xs text-ink-3 mb-0.5">
                             <span>Tỷ trọng số lượng video</span>
                             <span>{Math.round((item.count / 786) * 100)}%</span>
                           </div>
-                          <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+                          <div className="w-full h-2 bg-sunken rounded-full overflow-hidden">
                             <div
-                              className="data-bar h-full bg-sky-500 rounded-full"
+                              className="data-bar h-full bg-accent rounded-full"
                               style={{ width: `${Math.max(countPct, 4)}%` }}
                             />
                           </div>
                         </div>
                         <div>
-                          <div className="flex justify-between text-[10px] text-slate-500 mb-0.5">
+                          <div className="flex justify-between text-2xs text-ink-3 mb-0.5">
                             <span>Tỷ trọng ngân sách giải ngân</span>
                             <span>{Math.round((item.totalCost / 2632749226) * 100)}%</span>
                           </div>
-                          <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+                          <div className="w-full h-2 bg-sunken rounded-full overflow-hidden">
                             <div
-                              className="data-bar h-full bg-indigo-600 rounded-full"
+                              className="data-bar h-full bg-accent rounded-full"
                               style={{ width: `${Math.max(costPct, item.totalCost > 0 ? 4 : 0)}%` }}
                             />
                           </div>
@@ -2577,11 +2559,11 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
             {/* BIỂU ĐỒ PHỄU CHUYỂN ĐỔI VIDEO CREATIVE & ĐỊNH DẠNG VIDEO */}
             <div className="xl:col-span-5 space-y-5">
               {/* Phễu giữ chân người xem TikTok Seller Creative */}
-              <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs">
-                <h3 className="text-sm font-bold text-slate-900 mb-1">
+              <div className="bg-white rounded-xl border border-line p-5 shadow-xs">
+                <h3 className="text-sm font-semibold text-ink mb-1">
                   Phễu Hiệu Suất Video Quảng Cáo TikTok Seller (4.211 Dòng Creative)
                 </h3>
-                <p className="text-xs text-slate-500 mb-3.5">
+                <p className="text-xs text-ink-3 mb-3.5">
                   Đo lường khả năng giữ chân người xem (Hook 2s → Xem 6s → Xem 100%) và tỷ lệ bấm giỏ hàng (CTR → CVR)
                 </p>
 
@@ -2591,58 +2573,58 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                       stage: '1. Tỷ lệ giữ chân 2 giây đầu (2s Hook Rate TB)',
                       val: '34,8%',
                       pct: 82,
-                      color: 'bg-indigo-600',
+                      color: 'bg-accent',
                       note: 'Ngưỡng chuẩn ngành Beauty: 28,0%'
                     },
                     {
                       stage: '2. Tỷ lệ xem qua 6 giây (6s View Rate TB)',
                       val: '16,4%',
                       pct: 58,
-                      color: 'bg-blue-500',
+                      color: 'bg-accent',
                       note: 'Ngưỡng chuẩn ngành: 12,5%'
                     },
                     {
                       stage: '3. Tỷ lệ xem hết 100% thời lượng video',
                       val: '5,2%',
                       pct: 36,
-                      color: 'bg-sky-500',
+                      color: 'bg-accent',
                       note: 'Cao nhất ở định dạng Review Voice & Unbox'
                     },
                     {
                       stage: '4. Tỷ lệ nhấp vào sản phẩm (CTR TB)',
                       val: '3,18%',
                       pct: 28,
-                      color: 'bg-emerald-500',
+                      color: 'bg-positive',
                       note: `Tổng lượt nhấp: ${TIKTOK_SELLER_ADS_SUMMARY.totalClicks.toLocaleString('vi-VN')} clicks`
                     },
                     {
                       stage: '5. Tỷ lệ chuyển đổi ra đơn hàng (CVR TB)',
                       val: '4,62%',
                       pct: 22,
-                      color: 'bg-amber-500',
+                      color: 'bg-warning',
                       note: `${TIKTOK_SELLER_ADS_SUMMARY.totalOrders.toLocaleString('vi-VN')} đơn hàng thực thu`
                     }
                   ].map((f) => (
-                    <div key={f.stage} className="p-2 rounded-lg bg-slate-50 border border-slate-100">
+                    <div key={f.stage} className="p-2 rounded-lg bg-canvas border border-line">
                       <div className="flex justify-between text-xs mb-1">
-                        <span className="font-semibold text-slate-800">{f.stage}</span>
-                        <span className="font-mono font-extrabold text-slate-900">{f.val}</span>
+                        <span className="font-semibold text-ink">{f.stage}</span>
+                        <span className="font-mono font-semibold text-ink">{f.val}</span>
                       </div>
-                      <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden mb-1">
+                      <div className="w-full h-2 bg-sunken rounded-full overflow-hidden mb-1">
                         <div className={`data-bar h-full ${f.color} rounded-full`} style={{ width: `${f.pct}%` }} />
                       </div>
-                      <span className="text-[10px] text-slate-500">{f.note}</span>
+                      <span className="text-2xs text-ink-3">{f.note}</span>
                     </div>
                   ))}
                 </div>
               </div>
 
               {/* Phân bổ theo Định dạng Nội dung (Review Voice, Unbox Voice, Video remix...) */}
-              <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs">
-                <h3 className="text-sm font-bold text-slate-900 mb-1">
+              <div className="bg-white rounded-xl border border-line p-5 shadow-xs">
+                <h3 className="text-sm font-semibold text-ink mb-1">
                   Hiệu Quả Theo Định Dạng Sản Xuất Video & Loại Hình Booking
                 </h3>
-                <p className="text-xs text-slate-500 mb-3">
+                <p className="text-xs text-ink-3 mb-3">
                   Phân tách rõ Video KOC, Video kênh Brand và Livestream KOC
                 </p>
 
@@ -2653,16 +2635,16 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                       onClick={() => setVideoFormatFilter(videoFormatFilter === fmt.format ? 'ALL' : fmt.format)}
                       className={`p-2.5 rounded-lg border text-xs cursor-pointer transition ${
                         videoFormatFilter === fmt.format
-                          ? 'border-indigo-600 bg-indigo-50/60'
-                          : 'border-slate-200 bg-slate-50 hover:border-slate-300'
+                          ? 'border-accent/20 bg-accent-soft'
+                          : 'border-line bg-canvas hover:border-line-strong'
                       }`}
                     >
-                      <div className="font-bold text-slate-800 truncate">{fmt.format}</div>
+                      <div className="font-semibold text-ink truncate">{fmt.format}</div>
                       <div className="flex items-baseline justify-between mt-1">
-                        <span className="font-mono font-extrabold text-indigo-700">
+                        <span className="font-mono font-semibold text-accent">
                           {fmt.count} đơn ({fmt.airedCount} air)
                         </span>
-                        <span className="font-mono text-[11px] text-slate-600">
+                        <span className="font-mono text-2xs text-ink-2">
                           {formatVndShort(fmt.totalCost)}
                         </span>
                       </div>
@@ -2670,15 +2652,15 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                   ))}
                 </div>
 
-                <div className="space-y-1.5 pt-2 border-t border-slate-100">
+                <div className="space-y-1.5 pt-2 border-t border-line">
                   {B2C_VIDEO_TYPE_BREAKDOWN.slice(0, 5).map((vt) => (
                     <div key={vt.videoType} className="flex items-center justify-between text-xs py-1">
-                      <span className="font-medium text-slate-700">{vt.videoType}</span>
-                      <div className="flex items-center gap-3 font-mono text-[11px]">
-                        <span className="text-slate-600">
+                      <span className="font-medium text-ink-2">{vt.videoType}</span>
+                      <div className="flex items-center gap-3 font-mono text-2xs">
+                        <span className="text-ink-2">
                           <strong>{vt.count}</strong> video ({vt.airedCount} air)
                         </span>
-                        <span className="font-bold text-slate-900 w-20 text-right">
+                        <span className="font-semibold text-ink w-20 text-right">
                           {formatVndShort(vt.totalCost)}
                         </span>
                       </div>
@@ -2690,16 +2672,16 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
           </div>
 
           {/* BẢNG ĐỐI SOÁT CHI TIẾT VIDEO BOOKING (FILE 3.2) & CREATIVE ADS TIKTOK SELLER */}
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs">
-            <div className="px-5 py-3.5 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="bg-white rounded-xl border border-line overflow-hidden shadow-xs">
+            <div className="px-5 py-3.5 border-b border-line flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => setVideoSubView('BOOKED_32')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
                     videoSubView === 'BOOKED_32'
-                      ? 'bg-indigo-600 text-white'
-                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                      ? 'bg-accent text-white'
+                      : 'bg-sunken text-ink-2 hover:bg-sunken'
                   }`}
                 >
                   Sổ Cái Video Đã Booking File 3.2 ({filteredBookedVideos.length} bản ghi)
@@ -2707,10 +2689,10 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                 <button
                   type="button"
                   onClick={() => setVideoSubView('SELLER_CREATIVES')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
                     videoSubView === 'SELLER_CREATIVES'
-                      ? 'bg-slate-900 text-white'
-                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                      ? 'bg-ink text-white'
+                      : 'bg-sunken text-ink-2 hover:bg-sunken'
                   }`}
                 >
                   Top Video Chạy Quảng Cáo TikTok Seller ({filteredSellerCreatives.length} video)
@@ -2724,7 +2706,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                     setVideoFormatFilter('ALL');
                     setVideoKlFilter('ALL');
                   }}
-                  className="text-xs font-semibold text-indigo-600 hover:underline cursor-pointer"
+                  className="text-xs font-semibold text-accent hover:underline cursor-pointer"
                 >
                   Xóa lọc Format / KL ({videoFormatFilter} · {videoKlFilter})
                 </button>
@@ -2734,78 +2716,78 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
             {videoSubView === 'BOOKED_32' ? (
               <div className="overflow-x-auto max-h-[540px]">
                 <table className="w-full text-xs text-left">
-                  <thead className="bg-slate-50 text-slate-600 uppercase border-b border-slate-200 sticky top-0 z-10">
+                  <thead className="bg-canvas text-ink-2 uppercase border-b border-line sticky top-0 z-10">
                     <tr>
-                      <th className="py-2.5 px-4 font-bold">Mã Book & Ngày Air</th>
-                      <th className="py-2.5 px-3 font-bold">Kênh KOC (Channel ID)</th>
-                      <th className="py-2.5 px-3 font-bold">Gian Hàng & Brand</th>
-                      <th className="py-2.5 px-3 font-bold">Chuyên Viên (PIC)</th>
-                      <th className="py-2.5 px-3 font-bold">Loại Hình & Định Dạng</th>
-                      <th className="py-2.5 px-3 font-bold text-center">Bậc KL</th>
-                      <th className="py-2.5 px-3 font-bold text-right">Cát-xê (File 3.2)</th>
-                      <th className="py-2.5 px-3 font-bold text-right">GMV TikTok Seller</th>
-                      <th className="py-2.5 px-3 font-bold text-center">ROAS</th>
-                      <th className="py-2.5 px-3 font-bold">Trạng Thái Thanh Toán</th>
-                      <th className="py-2.5 px-4 font-bold text-center">Link Video</th>
+                      <th className="py-2.5 px-4 font-semibold">Mã Book & Ngày Air</th>
+                      <th className="py-2.5 px-3 font-semibold">Kênh KOC (Channel ID)</th>
+                      <th className="py-2.5 px-3 font-semibold">Gian Hàng & Brand</th>
+                      <th className="py-2.5 px-3 font-semibold">Chuyên Viên (PIC)</th>
+                      <th className="py-2.5 px-3 font-semibold">Loại Hình & Định Dạng</th>
+                      <th className="py-2.5 px-3 font-semibold text-center">Bậc KL</th>
+                      <th className="py-2.5 px-3 font-semibold text-right">Cát-xê (File 3.2)</th>
+                      <th className="py-2.5 px-3 font-semibold text-right">GMV TikTok Seller</th>
+                      <th className="py-2.5 px-3 font-semibold text-center">ROAS</th>
+                      <th className="py-2.5 px-3 font-semibold">Trạng Thái Thanh Toán</th>
+                      <th className="py-2.5 px-4 font-semibold text-center">Link Video</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
+                  <tbody className="divide-y divide-line">
                     {filteredBookedVideos.slice(0, bookedVideosVisibleLimit).map((v) => (
                       <tr
                         key={v.code}
                         onClick={() => setInspectVideo(v)}
-                        className="hover:bg-indigo-50/40 transition cursor-pointer"
+                        className="hover:bg-accent-soft transition cursor-pointer"
                       >
                         <td className="py-2.5 px-4 font-mono">
-                          <span className="font-bold text-indigo-700">{v.code}</span>
-                          <span className="block text-[11px] text-slate-500">Air: {v.airDate}</span>
+                          <span className="font-semibold text-accent">{v.code}</span>
+                          <span className="block text-2xs text-ink-3">Air: {v.airDate}</span>
                         </td>
                         <td className="py-2.5 px-3">
-                          <div className="font-bold text-slate-900">@{v.channelId}</div>
-                          <div className="text-[11px] text-slate-500 truncate max-w-[160px]">
+                          <div className="font-semibold text-ink">@{v.channelId}</div>
+                          <div className="text-2xs text-ink-3 truncate max-w-[160px]">
                             SP: {v.productName}
                           </div>
                         </td>
                         <td className="py-2.5 px-3">
-                          <div className="font-semibold text-slate-800">{v.storeName}</div>
-                          <div className="text-[11px] text-slate-500">Brand: {v.brandName}</div>
+                          <div className="font-semibold text-ink">{v.storeName}</div>
+                          <div className="text-2xs text-ink-3">Brand: {v.brandName}</div>
                         </td>
-                        <td className="py-2.5 px-3 font-semibold text-slate-800">{v.pic}</td>
+                        <td className="py-2.5 px-3 font-semibold text-ink">{v.pic}</td>
                         <td className="py-2.5 px-3">
-                          <span className="font-medium text-slate-800 block">{v.format}</span>
-                          <span className="text-[11px] text-slate-500">{v.videoType}</span>
+                          <span className="font-medium text-ink block">{v.format}</span>
+                          <span className="text-2xs text-ink-3">{v.videoType}</span>
                         </td>
                         <td className="py-2.5 px-3 text-center">
-                          <span className="px-2 py-0.5 rounded font-mono font-bold text-[11px] bg-slate-100 text-slate-800">
+                          <span className="font-mono font-semibold text-2xs text-ink">
                             {v.kl}
                           </span>
                         </td>
-                        <td className="py-2.5 px-3 text-right font-mono font-bold text-slate-900">
+                        <td className="py-2.5 px-3 text-right font-mono font-semibold text-ink">
                           {formatVndShort(v.cost)}
                         </td>
-                        <td className="py-2.5 px-3 text-right font-mono font-bold text-emerald-700">
+                        <td className="py-2.5 px-3 text-right font-mono font-semibold text-positive">
                           {formatVndShort(v.sellerGmv)}
-                          <span className="block text-[10px] text-slate-500 font-normal">
+                          <span className="block text-2xs text-ink-3 font-normal">
                             {v.sellerOrders} đơn · {v.views.toLocaleString('vi-VN')} views
                           </span>
                         </td>
                         <td className="py-2.5 px-3 text-center font-mono">
                           <span
-                            className={`px-2 py-0.5 rounded font-bold text-[11px] ${
+                            className={`px-2 py-0.5 rounded font-semibold text-2xs ${
                               v.roas >= 4.5
-                                ? 'bg-emerald-100 text-emerald-800'
-                                : 'bg-blue-50 text-blue-700'
+                                ? 'bg-positive-soft text-positive'
+                                : 'bg-accent-soft text-accent'
                             }`}
                           >
                             {v.roas}x
                           </span>
                         </td>
                         <td className="py-2.5 px-3">
-                          <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200">
+                          <Status tone={v.pipeline === 'Done' ? 'positive' : v.pipeline === 'Huỷ' ? 'critical' : 'warning'}>
                             {v.pipeline}
-                          </span>
+                          </Status>
                           {v.slaWarning !== 'Đúng hạn' && (
-                            <span className="block text-[10px] text-rose-600 font-semibold mt-0.5">
+                            <span className="block text-2xs text-critical font-semibold mt-0.5">
                               {v.slaWarning}
                             </span>
                           )}
@@ -2819,12 +2801,12 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                               href={v.linkAir}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-slate-900 text-white text-[11px] font-semibold hover:bg-indigo-600 transition"
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-ink text-white text-2xs font-semibold hover:bg-accent transition"
                             >
                               Xem TikTok <ExternalLink className="w-3 h-3" />
                             </a>
                           ) : (
-                            <span className="text-slate-400">—</span>
+                            <span className="text-ink-3">—</span>
                           )}
                         </td>
                       </tr>
@@ -2832,14 +2814,14 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                   </tbody>
                 </table>
                 {filteredBookedVideos.length > 30 && (
-                  <div className="p-3 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-600 px-4">
+                  <div className="p-3 bg-canvas border-t border-line flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-ink-2 px-4">
                     <span>
                       Đang hiển thị <strong>{Math.min(bookedVideosVisibleLimit, filteredBookedVideos.length)}</strong> / <strong>{filteredBookedVideos.length}</strong> video đã booking
                     </span>
                     <button
                       type="button"
                       onClick={() => setBookedVideosVisibleLimit(bookedVideosVisibleLimit >= filteredBookedVideos.length ? 30 : filteredBookedVideos.length)}
-                      className="px-3.5 py-1.5 rounded-lg font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 transition cursor-pointer"
+                      className="px-3.5 py-1.5 rounded-lg font-semibold text-accent bg-accent-soft hover:bg-accent-soft border border-accent/20 transition cursor-pointer"
                     >
                       {bookedVideosVisibleLimit >= filteredBookedVideos.length ? 'Thu gọn về 30 video' : `Xem toàn bộ ${filteredBookedVideos.length} video`}
                     </button>
@@ -2849,65 +2831,65 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
             ) : (
               <div className="overflow-x-auto max-h-[540px]">
                 <table className="w-full text-xs text-left">
-                  <thead className="bg-slate-50 text-slate-600 uppercase border-b border-slate-200 sticky top-0 z-10">
+                  <thead className="bg-canvas text-ink-2 uppercase border-b border-line sticky top-0 z-10">
                     <tr>
-                      <th className="py-2.5 px-4 font-bold">Video ID & Tài Khoản TikTok</th>
-                      <th className="py-2.5 px-3 font-bold">Chiến Dịch PGM/LGM</th>
-                      <th className="py-2.5 px-3 font-bold">Loại Ủy Quyền</th>
-                      <th className="py-2.5 px-3 font-bold text-right">Chi Phí Ads</th>
-                      <th className="py-2.5 px-3 font-bold text-right">Doanh Thu GMV</th>
-                      <th className="py-2.5 px-3 font-bold text-center">ROAS</th>
-                      <th className="py-2.5 px-3 font-bold text-right">Đơn Hàng / CPA</th>
-                      <th className="py-2.5 px-3 font-bold text-center">CTR / CVR</th>
-                      <th className="py-2.5 px-4 font-bold text-center">Giữ Chân 2s / 6s</th>
+                      <th className="py-2.5 px-4 font-semibold">Video ID & Tài Khoản TikTok</th>
+                      <th className="py-2.5 px-3 font-semibold">Chiến Dịch PGM/LGM</th>
+                      <th className="py-2.5 px-3 font-semibold">Loại Ủy Quyền</th>
+                      <th className="py-2.5 px-3 font-semibold text-right">Chi Phí Ads</th>
+                      <th className="py-2.5 px-3 font-semibold text-right">Doanh Thu GMV</th>
+                      <th className="py-2.5 px-3 font-semibold text-center">ROAS</th>
+                      <th className="py-2.5 px-3 font-semibold text-right">Đơn Hàng / CPA</th>
+                      <th className="py-2.5 px-3 font-semibold text-center">CTR / CVR</th>
+                      <th className="py-2.5 px-4 font-semibold text-center">Giữ Chân 2s / 6s</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
+                  <tbody className="divide-y divide-line">
                     {filteredSellerCreatives.slice(0, sellerCreativesVisibleLimit).map((c) => (
-                      <tr key={c.id} className="hover:bg-slate-50 transition">
+                      <tr key={c.id} className="hover:bg-canvas transition">
                         <td className="py-2.5 px-4">
-                          <div className="font-mono font-bold text-slate-900">ID: {c.videoId}</div>
-                          <div className="text-[11px] text-indigo-700 font-semibold">@{c.tiktokAccount}</div>
+                          <div className="font-mono font-semibold text-ink">ID: {c.videoId}</div>
+                          <div className="text-2xs text-accent font-semibold">@{c.tiktokAccount}</div>
                         </td>
                         <td className="py-2.5 px-3">
-                          <div className="font-semibold text-slate-800">{c.campaignName}</div>
-                          <div className="text-[11px] text-slate-500">Gian hàng: {c.storeName}</div>
+                          <div className="font-semibold text-ink">{c.campaignName}</div>
+                          <div className="text-2xs text-ink-3">Gian hàng: {c.storeName}</div>
                         </td>
                         <td className="py-2.5 px-3">
-                          <span className="px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-700">
+                          <span className="text-2xs font-medium text-ink-2">
                             {c.authorizationType}
                           </span>
                         </td>
-                        <td className="py-2.5 px-3 text-right font-mono font-semibold text-slate-800">
+                        <td className="py-2.5 px-3 text-right font-mono font-semibold text-ink">
                           {formatVndShort(c.cost)}
                         </td>
-                        <td className="py-2.5 px-3 text-right font-mono font-bold text-indigo-700">
+                        <td className="py-2.5 px-3 text-right font-mono font-semibold text-accent">
                           {formatVndShort(c.gmv)}
                         </td>
                         <td className="py-2.5 px-3 text-center font-mono">
                           <span
-                            className={`px-2 py-0.5 rounded font-bold ${
+                            className={`px-2 py-0.5 rounded font-semibold ${
                               c.roas >= 5
-                                ? 'bg-emerald-100 text-emerald-800'
-                                : 'bg-indigo-50 text-indigo-700'
+                                ? 'bg-positive-soft text-positive'
+                                : 'bg-accent-soft text-accent'
                             }`}
                           >
                             {c.roas}x
                           </span>
                         </td>
                         <td className="py-2.5 px-3 text-right font-mono">
-                          <div className="font-bold text-slate-900">{c.orders} đơn</div>
-                          <div className="text-[10px] text-slate-500">CPA: {formatVndShort(c.cpa)}</div>
+                          <div className="font-semibold text-ink">{c.orders} đơn</div>
+                          <div className="text-2xs text-ink-3">CPA: {formatVndShort(c.cpa)}</div>
                         </td>
-                        <td className="py-2.5 px-3 text-center font-mono text-[11px]">
-                          <span className="text-slate-800 font-semibold">{c.ctr}%</span> /{' '}
-                          <span className="text-emerald-700 font-bold">{c.cvr}%</span>
+                        <td className="py-2.5 px-3 text-center font-mono text-2xs">
+                          <span className="text-ink font-semibold">{c.ctr}%</span> /{' '}
+                          <span className="text-positive font-semibold">{c.cvr}%</span>
                         </td>
-                        <td className="py-2.5 px-4 text-center font-mono text-[11px]">
-                          <span className="px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-800 font-bold">
+                        <td className="py-2.5 px-4 text-center font-mono text-2xs">
+                          <span className=".5 text-accent font-semibold">
                             2s: {c.hookRate2s}%
                           </span>{' '}
-                          <span className="px-1.5 py-0.5 rounded bg-sky-50 text-sky-800 font-semibold">
+                          <span className=".5 text-accent font-semibold">
                             6s: {c.viewRate6s}%
                           </span>
                         </td>
@@ -2916,14 +2898,14 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                   </tbody>
                 </table>
                 {filteredSellerCreatives.length > 30 && (
-                  <div className="p-3 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-600 px-4">
+                  <div className="p-3 bg-canvas border-t border-line flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-ink-2 px-4">
                     <span>
                       Đang hiển thị <strong>{Math.min(sellerCreativesVisibleLimit, filteredSellerCreatives.length)}</strong> / <strong>{filteredSellerCreatives.length}</strong> dòng creative TikTok Seller
                     </span>
                     <button
                       type="button"
                       onClick={() => setSellerCreativesVisibleLimit(sellerCreativesVisibleLimit >= filteredSellerCreatives.length ? 30 : filteredSellerCreatives.length)}
-                      className="px-3.5 py-1.5 rounded-lg font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 transition cursor-pointer"
+                      className="px-3.5 py-1.5 rounded-lg font-semibold text-accent bg-accent-soft hover:bg-accent-soft border border-accent/20 transition cursor-pointer"
                     >
                       {sellerCreativesVisibleLimit >= filteredSellerCreatives.length ? 'Thu gọn về 30 dòng' : `Xem toàn bộ ${filteredSellerCreatives.length} dòng`}
                     </button>
@@ -2951,17 +2933,17 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
           {/* TRỌNG TÂM 2: PHỄU TIẾN ĐỘ PIPELINE 786 ĐƠN VIDEO & KIỂM SOÁT SLA VẬN HÀNH */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
             {/* Trái 7 cột: Băng tải tiến độ thực thi & hoàn tất chứng từ 786 đơn video File 3.2 */}
-            <div className="lg:col-span-7 bg-white rounded-xl border border-slate-200 p-5 shadow-xs">
+            <div className="lg:col-span-7 bg-white rounded-xl border border-line p-5 shadow-xs">
               <div className="flex items-center justify-between mb-3">
                 <div>
-                  <h3 className="text-sm font-bold text-slate-900">
+                  <h3 className="text-sm font-semibold text-ink">
                     Băng Tải Tiến Độ Thực Thi &amp; SLA Chứng Từ 786 Đơn Video (File 3.2)
                   </h3>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-ink-3">
                     Theo dõi trạng thái vận hành thực tế từ lúc Gửi mẫu 48h → Air bài → Nghiệm thu Spark Ads → ĐNTT Kế toán
                   </p>
                 </div>
-                <span className="px-2.5 py-1 rounded-md text-xs font-mono font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                <span className=".5 text-xs font-mono font-semibold text-positive -positive/20">
                   Đã Air &amp; Done: 566/786 (72,0%)
                 </span>
               </div>
@@ -2973,34 +2955,34 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                   const isPendingPayment = stage.pipeline === 'Chưa làm ĐNTT';
                   const isProcessingPayment = stage.pipeline === 'Làm ĐNTT' || stage.pipeline === 'Tạm ứng';
                   const barColor = isDone
-                    ? 'bg-emerald-500'
+                    ? 'bg-positive'
                     : isPendingPayment
-                    ? 'bg-amber-500'
+                    ? 'bg-warning'
                     : isProcessingPayment
-                    ? 'bg-indigo-500'
+                    ? 'bg-accent'
                     : stage.pipeline === 'Huỷ'
-                    ? 'bg-rose-500'
-                    : 'bg-sky-500';
+                    ? 'bg-critical'
+                    : 'bg-accent';
 
                   return (
-                    <div key={stage.pipeline} className="p-2.5 rounded-lg bg-slate-50/70 border border-slate-100">
+                    <div key={stage.pipeline} className="p-2.5 rounded-lg bg-canvas border border-line">
                       <div className="flex items-center justify-between text-xs mb-1">
                         <div className="flex items-center gap-2">
                           <span className={`w-2.5 h-2.5 rounded-full ${barColor}`} />
-                          <span className="font-bold text-slate-900">{stage.pipeline}</span>
+                          <span className="font-semibold text-ink">{stage.pipeline}</span>
                           {isPendingPayment && (
-                            <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-amber-100 text-amber-900">
+                            <span className=".5 py-0.2 text-2xs font-semibold text-warning">
                               Cần nhắc PIC hoàn tất hồ sơ 48h
                             </span>
                           )}
                         </div>
                         <div className="font-mono text-xs">
-                          <strong className="text-slate-900">{stage.count} đơn</strong>{' '}
-                          <span className="text-slate-500">({pct}%)</span> ·{' '}
-                          <strong className="text-indigo-700">{formatVndShort(stage.totalCost)}</strong>
+                          <strong className="text-ink">{stage.count} đơn</strong>{' '}
+                          <span className="text-ink-3">({pct}%)</span> ·{' '}
+                          <strong className="text-accent">{formatVndShort(stage.totalCost)}</strong>
                         </div>
                       </div>
-                      <div className="w-full h-2 bg-slate-200/80 rounded-full overflow-hidden">
+                      <div className="w-full h-2 bg-sunken rounded-full overflow-hidden">
                         <div
                           className={`data-bar h-full rounded-full ${barColor}`}
                           style={{ width: `${Math.max(pct, 2)}%` }}
@@ -3013,81 +2995,81 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
             </div>
 
             {/* Phải 5 cột: Đối sánh SLA & Tiến độ giữa 2 luồng quản trị (8 gian có Leader vs 61 gian Trực tiếp) */}
-            <div className="lg:col-span-5 bg-white rounded-xl border border-slate-200 p-5 shadow-xs flex flex-col justify-between">
+            <div className="lg:col-span-5 bg-white rounded-xl border border-line p-5 shadow-xs flex flex-col justify-between">
               <div>
-                <h3 className="text-sm font-bold text-slate-900">
+                <h3 className="text-sm font-semibold text-ink">
                   Kiểm Soát SLA Theo 2 Luồng Phê Duyệt B2C
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
+                <p className="text-xs text-ink-3 mt-0.5">
                   Đối chiếu tốc độ xử lý giữa nhóm có Trưởng nhóm sơ duyệt và nhóm trình trực tiếp Giám đốc Marketing
                 </p>
 
                 <div className="mt-4 space-y-3">
                   {/* Luồng 1: 8 gian hàng có Leader Nguyễn Thị Ngọc Tâm */}
-                  <div className="p-3.5 rounded-xl bg-indigo-50/60 border border-indigo-200">
+                  <div className="p-3.5 rounded-xl bg-accent-soft border border-accent/20">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-indigo-950">
+                      <span className="text-xs font-semibold text-accent">
                         Luồng 1: Qua Trưởng nhóm Nguyễn Thị Ngọc Tâm
                       </span>
-                      <span className="px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-indigo-600 text-white">
+                      <span className="text-2xs font-mono font-semibold bg-accent text-white">
                         8 Gian hàng
                       </span>
                     </div>
-                    <p className="text-[11px] text-slate-600 mt-1">
+                    <p className="text-2xs text-ink-2 mt-1">
                       ClubClio (TT/SP), Cindy Bloom, Mine, EUPC, L&apos;Occitane, Bye Bye Blemish, Rejuran
                     </p>
-                    <div className="grid grid-cols-3 gap-2 mt-2.5 pt-2.5 border-t border-indigo-200/70 text-center font-mono">
+                    <div className="grid grid-cols-3 gap-2 mt-2.5 pt-2.5 border-t border-accent/20/70 text-center font-mono">
                       <div>
-                        <span className="text-[10px] text-slate-500 block">Đúng hạn SLA</span>
-                        <strong className="text-xs text-emerald-700">91,4%</strong>
+                        <span className="text-2xs text-ink-3 block">Đúng hạn SLA</span>
+                        <strong className="text-xs text-positive">91,4%</strong>
                       </div>
                       <div>
-                        <span className="text-[10px] text-slate-500 block">Giải ngân Net</span>
-                        <strong className="text-xs text-indigo-700">51,2%</strong>
+                        <span className="text-2xs text-ink-3 block">Giải ngân Net</span>
+                        <strong className="text-xs text-accent">51,2%</strong>
                       </div>
                       <div>
-                        <span className="text-[10px] text-slate-500 block">Sơ duyệt KB</span>
-                        <strong className="text-xs text-slate-900">&lt; 16 giờ</strong>
+                        <span className="text-2xs text-ink-3 block">Sơ duyệt KB</span>
+                        <strong className="text-xs text-ink">&lt; 16 giờ</strong>
                       </div>
                     </div>
                   </div>
 
                   {/* Luồng 2: 61 gian hàng không có Leader -> Trình trực tiếp Đặng Thị Yến Nhi */}
-                  <div className="p-3.5 rounded-xl bg-emerald-50/50 border border-emerald-200">
+                  <div className="p-3.5 rounded-xl bg-positive-soft border border-positive/20">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-emerald-950">
+                      <span className="text-xs font-semibold text-positive">
                         Luồng 2: Trình trực tiếp TP Đặng Thị Yến Nhi
                       </span>
-                      <span className="px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-emerald-700 text-white">
+                      <span className="text-2xs font-mono font-semibold bg-positive text-white">
                         61 Gian hàng
                       </span>
                     </div>
-                    <p className="text-[11px] text-slate-600 mt-1">
-                      Toàn bộ 29 gian Shopee còn lại &amp; 32 gian TikTok 1 PIC (<code className="text-[10px]">bookingLeader: undefined</code>)
+                    <p className="text-2xs text-ink-2 mt-1">
+                      Toàn bộ 29 gian Shopee còn lại &amp; 32 gian TikTok 1 PIC (<code className="text-2xs">bookingLeader: undefined</code>)
                     </p>
-                    <div className="grid grid-cols-3 gap-2 mt-2.5 pt-2.5 border-t border-emerald-200/70 text-center font-mono">
+                    <div className="grid grid-cols-3 gap-2 mt-2.5 pt-2.5 border-t border-positive/20/70 text-center font-mono">
                       <div>
-                        <span className="text-[10px] text-slate-500 block">Đúng hạn SLA</span>
-                        <strong className="text-xs text-emerald-700">86,8%</strong>
+                        <span className="text-2xs text-ink-3 block">Đúng hạn SLA</span>
+                        <strong className="text-xs text-positive">86,8%</strong>
                       </div>
                       <div>
-                        <span className="text-[10px] text-slate-500 block">Giải ngân Net</span>
-                        <strong className="text-xs text-indigo-700">51,0%</strong>
+                        <span className="text-2xs text-ink-3 block">Giải ngân Net</span>
+                        <strong className="text-xs text-accent">51,0%</strong>
                       </div>
                       <div>
-                        <span className="text-[10px] text-slate-500 block">Duyệt thẳng TP</span>
-                        <strong className="text-xs text-slate-900">&lt; 24 giờ</strong>
+                        <span className="text-2xs text-ink-3 block">Duyệt thẳng TP</span>
+                        <strong className="text-xs text-ink">&lt; 24 giờ</strong>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+              <div className="mt-4 pt-3 border-t border-line flex items-center justify-between">
                 <button
                   type="button"
                   onClick={() => handleSelectDashboardSection('STAFF_EFFICIENCY')}
-                  className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 hover:text-emerald-900 cursor-pointer"
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-positive hover:text-positive cursor-pointer"
                 >
                   Mở Dashboard Hiệu Suất &amp; Hiệu Quả Từng Nhân Viên
                   <ChevronRight className="w-3.5 h-3.5" />
@@ -3096,7 +3078,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                   <button
                     type="button"
                     onClick={() => onNavigateToTab('performance-p3')}
-                    className="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 hover:text-indigo-800 cursor-pointer"
+                    className="inline-flex items-center gap-1 text-xs font-semibold text-accent hover:text-accent cursor-pointer"
                   >
                     Mở bảng điểm 4P
                     <ChevronRight className="w-3.5 h-3.5" />
@@ -3107,39 +3089,39 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
           </div>
 
           {/* BẢNG KIỂM SOÁT CẢNH BÁO TRỄ HẠN SLA & HỒ SƠ ĐNTT THEO CHUYÊN VIÊN */}
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs">
-            <div className="px-5 py-3.5 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div className="bg-white rounded-xl border border-line overflow-hidden shadow-xs">
+            <div className="px-5 py-3.5 border-b border-line flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
               <div>
-                <h3 className="text-sm font-bold text-slate-900">
+                <h3 className="text-sm font-semibold text-ink">
                   Theo Dõi Tỷ Lệ Đúng Hạn SLA &amp; Đơn Chờ Air / Chờ Làm ĐNTT Theo Nhân Sự
                 </h3>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-ink-3">
                   Kiểm soát các đơn video đã book nhưng chưa lên sóng hoặc trễ hạn nộp chứng từ thanh toán 10h sáng
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => handleSelectDashboardSection('STAFF_EFFICIENCY')}
-                className="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-indigo-600 text-white hover:bg-indigo-700 transition cursor-pointer"
+                className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-accent text-white hover:bg-accent transition cursor-pointer"
               >
                 Sang Tab 5: Xem Hiệu Suất &amp; Hiệu Quả Từng Nhân Viên →
               </button>
             </div>
             <div className="overflow-x-auto max-h-[420px]">
               <table className="w-full text-xs text-left">
-                <thead className="bg-slate-50 text-slate-600 uppercase border-b border-slate-200 sticky top-0 z-10">
+                <thead className="bg-canvas text-ink-2 uppercase border-b border-line sticky top-0 z-10">
                   <tr>
-                    <th className="py-2.5 px-4 font-bold">Chuyên Viên (PIC)</th>
-                    <th className="py-2.5 px-3 font-bold">Luồng Báo Cáo</th>
-                    <th className="py-2.5 px-3 font-bold text-center">Tổng Đơn Book</th>
-                    <th className="py-2.5 px-3 font-bold text-center">Đã Air Lên Sóng</th>
-                    <th className="py-2.5 px-3 font-bold text-center">Đơn Chờ Air</th>
-                    <th className="py-2.5 px-3 font-bold text-center">Đơn Trễ Hạn SLA</th>
-                    <th className="py-2.5 px-3 font-bold text-center">Tỷ Lệ Đúng Hạn SLA</th>
-                    <th className="py-2.5 px-4 font-bold">Hành Động Điều Phối</th>
+                    <th className="py-2.5 px-4 font-semibold">Chuyên Viên (PIC)</th>
+                    <th className="py-2.5 px-3 font-semibold">Luồng Báo Cáo</th>
+                    <th className="py-2.5 px-3 font-semibold text-center">Tổng Đơn Book</th>
+                    <th className="py-2.5 px-3 font-semibold text-center">Đã Air Lên Sóng</th>
+                    <th className="py-2.5 px-3 font-semibold text-center">Đơn Chờ Air</th>
+                    <th className="py-2.5 px-3 font-semibold text-center">Đơn Trễ Hạn SLA</th>
+                    <th className="py-2.5 px-3 font-semibold text-center">Tỷ Lệ Đúng Hạn SLA</th>
+                    <th className="py-2.5 px-4 font-semibold">Hành Động Điều Phối</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-line">
                   {enrichedStaffList
                     .filter((s) => s.actualBookedVideos > 0)
                     .sort((a, b) => b.lateSlaVideosCount - a.lateSlaVideosCount || b.pendingAirVideos - a.pendingAirVideos)
@@ -3150,53 +3132,53 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                           setSelectedFocusStaffName(st.name);
                           handleSelectDashboardSection('STAFF_EFFICIENCY');
                         }}
-                        className="hover:bg-indigo-50/40 transition cursor-pointer"
+                        className="hover:bg-accent-soft transition cursor-pointer"
                       >
-                        <td className="py-2.5 px-4 font-bold text-slate-900 flex items-center gap-2">
+                        <td className="py-2.5 px-4 font-semibold text-ink flex items-center gap-2">
                           <Avatar name={st.name} size={26} />
                           <span>{st.name}</span>
                         </td>
-                        <td className="py-2.5 px-3 text-slate-600">
+                        <td className="py-2.5 px-3 text-ink-2">
                           {st.storesWithLeaderCount > 0
                             ? `${st.storesWithLeaderCount} gian qua Leader · ${st.storesDirectCount} gian trực tiếp`
                             : 'Báo cáo trực tiếp TP Yến Nhi'}
                         </td>
-                        <td className="py-2.5 px-3 text-center font-mono font-bold">{st.actualBookedVideos} đơn</td>
-                        <td className="py-2.5 px-3 text-center font-mono font-bold text-emerald-700">
+                        <td className="py-2.5 px-3 text-center font-mono font-semibold">{st.actualBookedVideos} đơn</td>
+                        <td className="py-2.5 px-3 text-center font-mono font-semibold text-positive">
                           {st.actualAiredVideos} video ({st.airVsBookPct}%)
                         </td>
                         <td className="py-2.5 px-3 text-center font-mono">
                           {st.pendingAirVideos > 0 ? (
-                            <span className="px-2 py-0.5 rounded bg-amber-100 text-amber-900 font-bold">
+                            <span className="text-warning font-semibold">
                               {st.pendingAirVideos} đơn chờ Air
                             </span>
                           ) : (
-                            <span className="text-emerald-700 font-medium">Đã Air 100%</span>
+                            <span className="text-positive font-medium">Đã Air 100%</span>
                           )}
                         </td>
                         <td className="py-2.5 px-3 text-center font-mono">
                           {st.lateSlaVideosCount > 0 ? (
-                            <span className="px-2 py-0.5 rounded bg-rose-100 text-rose-800 font-bold">
+                            <span className="text-critical font-semibold">
                               {st.lateSlaVideosCount} đơn trễ
                             </span>
                           ) : (
-                            <span className="text-slate-400">0</span>
+                            <span className="text-ink-3">0</span>
                           )}
                         </td>
                         <td className="py-2.5 px-3 text-center font-mono">
                           <span
-                            className={`px-2 py-0.5 rounded font-bold ${
+                            className={`px-2 py-0.5 rounded font-semibold ${
                               st.slaRate >= 85
-                                ? 'bg-emerald-50 text-emerald-700'
+                                ? 'bg-positive-soft text-positive'
                                 : st.slaRate >= 65
-                                ? 'bg-amber-50 text-amber-800'
-                                : 'bg-rose-50 text-rose-700'
+                                ? 'bg-warning-soft text-warning'
+                                : 'bg-critical-soft text-critical'
                             }`}
                           >
                             {st.slaRate}%
                           </span>
                         </td>
-                        <td className="py-2.5 px-4 text-[11px] font-semibold text-indigo-700">
+                        <td className="py-2.5 px-4 text-2xs font-semibold text-accent">
                           Xem hồ sơ hiệu suất 360° →
                         </td>
                       </tr>
@@ -3218,28 +3200,28 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
             {/* Quán quân 1: Sản lượng Video Air */}
             <div
               onClick={() => setSelectedFocusStaffName(staffChampions.topAir.name)}
-              className="bg-white rounded-xl border-2 border-emerald-500/80 p-4 shadow-xs hover:shadow-md transition cursor-pointer"
+              className="bg-white rounded-xl border-2 border-positive/20/80 p-4 shadow-xs hover:shadow-md transition cursor-pointer"
             >
               <div className="flex items-center justify-between mb-2">
-                <span className="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase bg-emerald-600 text-white">
-                  Top #1 Sản Lượng Video Air
+                <span className="text-2xs font-semibold text-ink-2uppercase bg-positive text-white">
+                  Top Dẫn Đầu Sản Lượng Video Air
                 </span>
-                <Film className="w-4 h-4 text-emerald-600" />
+                <Film className="w-4 h-4 text-positive" />
               </div>
               <div className="flex items-center gap-2.5">
                 <Avatar name={staffChampions.topAir.name} size={36} />
                 <div>
-                  <div className="text-sm font-extrabold text-slate-900">{staffChampions.topAir.name}</div>
-                  <div className="text-[11px] text-slate-500">
+                  <div className="text-sm font-semibold text-ink">{staffChampions.topAir.name}</div>
+                  <div className="text-2xs text-ink-3">
                     Phụ trách {staffChampions.topAir.storesCount} gian hàng · SLA {staffChampions.topAir.slaRate}%
                   </div>
                 </div>
               </div>
-              <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs font-mono">
-                <span className="text-emerald-700 font-extrabold text-sm">
+              <div className="mt-3 pt-2.5 border-t border-line flex items-center justify-between text-xs font-mono">
+                <span className="text-positive font-semibold text-sm">
                   {staffChampions.topAir.actualAiredVideos} Video Air
                 </span>
-                <span className="text-slate-600">
+                <span className="text-ink-2">
                   / {staffChampions.topAir.actualBookedVideos} đơn ({staffChampions.topAir.airVsBookPct}%)
                 </span>
               </div>
@@ -3248,28 +3230,28 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
             {/* Quán quân 2: Kỷ luật Giải ngân % Spend Net */}
             <div
               onClick={() => setSelectedFocusStaffName(staffChampions.topSpendDiscipline.name)}
-              className="bg-white rounded-xl border-2 border-indigo-500/80 p-4 shadow-xs hover:shadow-md transition cursor-pointer"
+              className="bg-white rounded-xl border-2 border-accent/20/80 p-4 shadow-xs hover:shadow-md transition cursor-pointer"
             >
               <div className="flex items-center justify-between mb-2">
-                <span className="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase bg-indigo-600 text-white">
-                  Top #1 Kỷ Luật % Spend Net
+                <span className="text-2xs font-semibold text-ink-2uppercase bg-accent text-white">
+                  Top Kỷ Luật % Spend Net
                 </span>
-                <DollarSign className="w-4 h-4 text-indigo-600" />
+                <DollarSign className="w-4 h-4 text-accent" />
               </div>
               <div className="flex items-center gap-2.5">
                 <Avatar name={staffChampions.topSpendDiscipline.name} size={36} />
                 <div>
-                  <div className="text-sm font-extrabold text-slate-900">{staffChampions.topSpendDiscipline.name}</div>
-                  <div className="text-[11px] text-slate-500">
+                  <div className="text-sm font-semibold text-ink">{staffChampions.topSpendDiscipline.name}</div>
+                  <div className="text-2xs text-ink-3">
                     {staffChampions.topSpendDiscipline.storesCount} gian hàng · 0 gian vượt trần 0đ
                   </div>
                 </div>
               </div>
-              <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs font-mono">
-                <span className="text-indigo-700 font-extrabold text-sm">
+              <div className="mt-3 pt-2.5 border-t border-line flex items-center justify-between text-xs font-mono">
+                <span className="text-accent font-semibold text-sm">
                   {staffChampions.topSpendDiscipline.burnNetPct}% Spend Net
                 </span>
-                <span className="text-slate-600">
+                <span className="text-ink-2">
                   {formatVndShort(staffChampions.topSpendDiscipline.actualSpentNet)} / {formatVndShort(staffChampions.topSpendDiscipline.orderBudgetNet)}
                 </span>
               </div>
@@ -3278,28 +3260,28 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
             {/* Quán quân 3: Hiệu quả ROAS & GMV trên Chi phí */}
             <div
               onClick={() => setSelectedFocusStaffName(staffChampions.topRoasGmv.name)}
-              className="bg-white rounded-xl border-2 border-amber-500/80 p-4 shadow-xs hover:shadow-md transition cursor-pointer"
+              className="bg-white rounded-xl border-2 border-warning/20/80 p-4 shadow-xs hover:shadow-md transition cursor-pointer"
             >
               <div className="flex items-center justify-between mb-2">
-                <span className="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase bg-amber-600 text-white">
-                  Top #1 Hiệu Quả ROAS &amp; GMV
+                <span className="text-2xs font-semibold text-ink-2uppercase bg-warning text-white">
+                  Top Hiệu Quả ROAS &amp; GMV
                 </span>
-                <TrendingUp className="w-4 h-4 text-amber-600" />
+                <TrendingUp className="w-4 h-4 text-warning" />
               </div>
               <div className="flex items-center gap-2.5">
                 <Avatar name={staffChampions.topRoasGmv.name} size={36} />
                 <div>
-                  <div className="text-sm font-extrabold text-slate-900">{staffChampions.topRoasGmv.name}</div>
-                  <div className="text-[11px] text-slate-500">
+                  <div className="text-sm font-semibold text-ink">{staffChampions.topRoasGmv.name}</div>
+                  <div className="text-2xs text-ink-3">
                     GMV tạo ra: <strong>{formatVndShort(staffChampions.topRoasGmv.attributedGmv)}</strong>
                   </div>
                 </div>
               </div>
-              <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs font-mono">
-                <span className="text-amber-700 font-extrabold text-sm">
+              <div className="mt-3 pt-2.5 border-t border-line flex items-center justify-between text-xs font-mono">
+                <span className="text-warning font-semibold text-sm">
                   ROAS {staffChampions.topRoasGmv.effectiveRoas}x
                 </span>
-                <span className="text-slate-600">
+                <span className="text-ink-2">
                   CIR: {staffChampions.topRoasGmv.effectiveCirPct}% · Win: {staffChampions.topRoasGmv.winRatePct}%
                 </span>
               </div>
@@ -3308,28 +3290,28 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
             {/* Quán quân 4: Điểm Hiệu Suất Tổng Hợp KPI Score */}
             <div
               onClick={() => setSelectedFocusStaffName(staffChampions.topKpi.name)}
-              className="bg-white rounded-xl border-2 border-purple-500/80 p-4 shadow-xs hover:shadow-md transition cursor-pointer"
+              className="bg-white rounded-xl border-2 border-accent/20/80 p-4 shadow-xs hover:shadow-md transition cursor-pointer"
             >
               <div className="flex items-center justify-between mb-2">
-                <span className="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase bg-purple-700 text-white">
-                  Top #1 Điểm KPI Toàn Diện
+                <span className="text-2xs font-semibold text-ink-2uppercase bg-accent text-white">
+                  Top Điểm Đánh Giá Toàn Diện
                 </span>
-                <Award className="w-4 h-4 text-purple-600" />
+                <Award className="w-4 h-4 text-accent" />
               </div>
               <div className="flex items-center gap-2.5">
                 <Avatar name={staffChampions.topKpi.name} size={36} />
                 <div>
-                  <div className="text-sm font-extrabold text-slate-900">{staffChampions.topKpi.name}</div>
-                  <div className="text-[11px] text-slate-500">
+                  <div className="text-sm font-semibold text-ink">{staffChampions.topKpi.name}</div>
+                  <div className="text-2xs text-ink-3">
                     {staffChampions.topKpi.kpiGradeLabel} · SLA {staffChampions.topKpi.slaRate}%
                   </div>
                 </div>
               </div>
-              <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs font-mono">
-                <span className="text-purple-700 font-extrabold text-sm">
+              <div className="mt-3 pt-2.5 border-t border-line flex items-center justify-between text-xs font-mono">
+                <span className="text-accent font-semibold text-sm">
                   {staffChampions.topKpi.kpiScore}/100 điểm
                 </span>
-                <span className="text-slate-600">
+                <span className="text-ink-2">
                   {staffChampions.topKpi.actualAiredVideos} air · {staffChampions.topKpi.burnNetPct}% Spend
                 </span>
               </div>
@@ -3337,9 +3319,9 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
           </div>
 
           {/* 2. THANH LỌC MA TRẬN 4 GÓC PHẦN TƯ: HIỆU SUẤT SẢN LƯỢNG vs HIỆU QUẢ ĐẦU TƯ */}
-          <div className="bg-white rounded-xl border border-slate-200 p-3.5 shadow-xs flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2 text-xs font-bold text-slate-800">
-              <Award className="w-4 h-4 text-indigo-600" />
+          <div className="bg-white rounded-xl border border-line p-3.5 shadow-xs flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2 text-xs font-semibold text-ink">
+              <Award className="w-4 h-4 text-accent" />
               <span>Phân nhóm nhân viên theo Ma trận Hiệu suất (Số Video Air) &amp; Hiệu quả (% Spend, ROAS, SLA):</span>
             </div>
             <div className="flex flex-wrap items-center gap-1.5">
@@ -3347,39 +3329,39 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                 {
                   key: 'ALL',
                   label: `Tất cả nhân sự (${staffQuadrantCounts.total})`,
-                  activeClass: 'bg-slate-900 text-white',
-                  idleClass: 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  activeClass: 'bg-ink text-white',
+                  idleClass: 'bg-sunken text-ink-2 hover:bg-sunken'
                 },
                 {
                   key: 'STAR',
                   label: `Ngôi sao toàn diện: Air cao & ROAS tốt (${staffQuadrantCounts.star} NS)`,
-                  activeClass: 'bg-emerald-600 text-white',
-                  idleClass: 'bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100'
+                  activeClass: 'bg-positive text-white',
+                  idleClass: 'bg-positive-soft text-positive border border-positive/20 hover:bg-positive-soft'
                 },
                 {
                   key: 'HIGH_VOL_OPT_COST',
                   label: `Sản lượng Air cao — Cần tối ưu Trần Net / SLA (${staffQuadrantCounts.highVolOptCost} NS)`,
-                  activeClass: 'bg-amber-600 text-white',
-                  idleClass: 'bg-amber-50 text-amber-900 border border-amber-200 hover:bg-amber-100'
+                  activeClass: 'bg-warning text-white',
+                  idleClass: 'bg-warning-soft text-warning border border-warning/20 hover:bg-warning-soft'
                 },
                 {
                   key: 'HIGH_EFF_NEED_VOL',
                   label: `ROAS & SLA tốt — Cần đẩy nhanh Số Video Air (${staffQuadrantCounts.highEffNeedVol} NS)`,
-                  activeClass: 'bg-indigo-600 text-white',
-                  idleClass: 'bg-indigo-50 text-indigo-800 border border-indigo-200 hover:bg-indigo-100'
+                  activeClass: 'bg-accent text-white',
+                  idleClass: 'bg-accent-soft text-accent border border-accent/20 hover:bg-accent-soft'
                 },
                 {
                   key: 'NEED_COACHING',
                   label: `Cần kèm cặp sát tiến độ Air & Ngân sách (${staffQuadrantCounts.needCoaching} NS)`,
-                  activeClass: 'bg-rose-600 text-white',
-                  idleClass: 'bg-rose-50 text-rose-800 border border-rose-200 hover:bg-rose-100'
+                  activeClass: 'bg-critical text-white',
+                  idleClass: 'bg-critical-soft text-critical border border-critical/20 hover:bg-critical-soft'
                 }
               ].map((q) => (
                 <button
                   key={q.key}
                   type="button"
-                  onClick={() => setStaffQuadrantFilter(q.key as any)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                  onClick={() => setStaffQuadrantFilter(q.key as typeof staffQuadrantFilter)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
                     staffQuadrantFilter === q.key ? q.activeClass : q.idleClass
                   }`}
                 >
@@ -3391,23 +3373,23 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
 
           {/* 3. HỒ SƠ ĐÁNH GIÁ 360° TỪNG NHÂN VIÊN TRỰC TIẾP TRÊN TRANG (CHỌN NHÂN VIÊN BẤT KỲ) */}
           {focusedStaffProfile && (
-            <div className="bg-white rounded-xl border-2 border-indigo-200 p-5 shadow-xs space-y-4">
+            <div className="bg-white rounded-xl border-2 border-accent/20 p-5 shadow-xs space-y-4">
               {/* Thanh chọn nhanh nhân viên để xem Hồ sơ 360° */}
-              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 pb-3.5 border-b border-slate-100">
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 pb-3.5 border-b border-line">
                 <div>
-                  <span className="text-[11px] font-extrabold uppercase tracking-wider text-indigo-600 block">
+                  <span className="text-2xs font-semibold uppercase tracking-wider text-accent block">
                     Hồ Sơ Đánh Giá Hiệu Suất &amp; Hiệu Quả Cá Nhân 360° (Chọn nhân viên để soi chi tiết)
                   </span>
-                  <h3 className="text-base font-extrabold text-slate-900 mt-0.5">
+                  <h3 className="text-base font-semibold text-ink mt-0.5">
                     Đang xem: {focusedStaffProfile.name} — {focusedStaffProfile.roleTitle}
                   </h3>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-semibold text-slate-600">Chọn nhanh nhân sự:</span>
+                  <span className="text-xs font-semibold text-ink-2">Chọn nhanh nhân sự:</span>
                   <select
                     value={focusedStaffProfile.name}
                     onChange={(e) => setSelectedFocusStaffName(e.target.value)}
-                    className="px-3 py-1.5 text-xs font-bold bg-indigo-50 border border-indigo-300 rounded-lg text-indigo-950 focus:outline-hidden focus:border-indigo-600"
+                    className="px-3 py-1.5 text-xs font-semibold bg-accent-soft border border-accent/20 rounded-lg text-accent focus:outline-hidden focus:border-accent/20"
                   >
                     {enrichedStaffList.map((s) => (
                       <option key={s.name} value={s.name}>
@@ -3418,7 +3400,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                   <button
                     type="button"
                     onClick={() => setIsStaff360Open(!isStaff360Open)}
-                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-indigo-200 bg-white hover:bg-indigo-50 text-indigo-700 text-xs font-bold transition cursor-pointer"
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-accent/20 bg-white hover:bg-accent-soft text-accent text-xs font-semibold transition cursor-pointer"
                   >
                     {isStaff360Open ? (
                       <>
@@ -3447,16 +3429,16 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                       key={s.name}
                       type="button"
                       onClick={() => setSelectedFocusStaffName(s.name)}
-                      className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold shrink-0 transition cursor-pointer border ${
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold shrink-0 transition cursor-pointer border ${
                         isSelected
-                          ? 'bg-indigo-600 text-white border-indigo-700 shadow-xs'
-                          : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                          ? 'bg-accent text-white border-accent/20 shadow-xs'
+                          : 'bg-canvas text-ink-2 border-line hover:bg-sunken'
                       }`}
                     >
                       <span>{s.name}</span>
                       <span
-                        className={`px-1.5 py-0.2 rounded text-[10px] font-mono ${
-                          isSelected ? 'bg-indigo-800 text-indigo-100' : 'bg-emerald-100 text-emerald-800'
+                        className={`px-1.5 py-0.2 rounded text-2xs font-mono ${
+                          isSelected ? 'bg-ink text-accent' : 'bg-positive-soft text-positive'
                         }`}
                       >
                         {s.actualAiredVideos} air
@@ -3469,68 +3451,68 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
               {/* Thông tin tổng quan & Điểm KPI 4 trụ cột của nhân viên đang chọn */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
                 {/* Trái 4 cột: Thẻ Định Danh & Tổng Điểm KPI /100 */}
-                <div className="lg:col-span-4 p-4 rounded-xl bg-slate-900 text-white flex flex-col justify-between">
+                <div className="lg:col-span-4 p-4 rounded-xl bg-ink text-white flex flex-col justify-between">
                   <div>
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-center gap-3">
                         <Avatar name={focusedStaffProfile.name} size={44} />
                         <div>
-                          <div className="text-base font-extrabold">{focusedStaffProfile.name}</div>
-                          <div className="text-xs text-slate-300">{focusedStaffProfile.roleTitle}</div>
-                          <div className="text-[11px] text-indigo-300 mt-0.5">
+                          <div className="text-base font-semibold">{focusedStaffProfile.name}</div>
+                          <div className="text-xs text-ink-3">{focusedStaffProfile.roleTitle}</div>
+                          <div className="text-2xs text-accent mt-0.5">
                             Cấp duyệt: <strong>{focusedStaffProfile.directSupervisor}</strong>
                           </div>
                         </div>
                       </div>
                       <div className="text-right font-mono">
                         <span
-                          className={`inline-block px-2.5 py-1 rounded-lg text-xs font-extrabold ${
+                          className={`inline-block px-2.5 py-1 rounded-lg text-xs font-semibold ${
                             focusedStaffProfile.kpiGrade === 'S'
-                              ? 'bg-emerald-500 text-white'
+                              ? 'bg-positive text-white'
                               : focusedStaffProfile.kpiGrade === 'A'
-                              ? 'bg-indigo-500 text-white'
+                              ? 'bg-accent text-white'
                               : focusedStaffProfile.kpiGrade === 'B'
-                              ? 'bg-amber-500 text-slate-950'
-                              : 'bg-rose-500 text-white'
+                              ? 'bg-warning text-ink'
+                              : 'bg-critical text-white'
                           }`}
                         >
                           {focusedStaffProfile.kpiScore}/100 điểm
                         </span>
-                        <span className="block text-[10px] text-slate-300 mt-1">
+                        <span className="block text-2xs text-ink-3 mt-1">
                           {focusedStaffProfile.kpiGradeLabel}
                         </span>
                       </div>
                     </div>
 
                     {/* Bóc tách 4 trụ cột cấu thành điểm KPI của nhân viên */}
-                    <div className="mt-4 pt-3 border-t border-slate-800 grid grid-cols-2 gap-2 text-[11px]">
-                      <div className="p-2 rounded bg-slate-800/90">
-                        <span className="text-slate-400 block">1. Sản lượng Video Air</span>
-                        <strong className="font-mono text-emerald-400">{focusedStaffProfile.scoreAir}/35 điểm</strong>
+                    <div className="mt-4 pt-3 border-t border-line-strong grid grid-cols-2 gap-2 text-2xs">
+                      <div className="p-2 rounded bg-ink/90">
+                        <span className="text-ink-3 block">1. Sản lượng Video Air</span>
+                        <strong className="font-mono text-positive">{focusedStaffProfile.scoreAir}/35 điểm</strong>
                       </div>
-                      <div className="p-2 rounded bg-slate-800/90">
-                        <span className="text-slate-400 block">2. Kỷ luật % Spend Net</span>
-                        <strong className="font-mono text-indigo-400">{focusedStaffProfile.scoreSpend}/25 điểm</strong>
+                      <div className="p-2 rounded bg-ink/90">
+                        <span className="text-ink-3 block">2. Kỷ luật % Spend Net</span>
+                        <strong className="font-mono text-accent">{focusedStaffProfile.scoreSpend}/25 điểm</strong>
                       </div>
-                      <div className="p-2 rounded bg-slate-800/90">
-                        <span className="text-slate-400 block">3. Hiệu quả ROAS &amp; GMV</span>
-                        <strong className="font-mono text-amber-400">{focusedStaffProfile.scoreEfficiency}/20 điểm</strong>
+                      <div className="p-2 rounded bg-ink/90">
+                        <span className="text-ink-3 block">3. Hiệu quả ROAS &amp; GMV</span>
+                        <strong className="font-mono text-warning">{focusedStaffProfile.scoreEfficiency}/20 điểm</strong>
                       </div>
-                      <div className="p-2 rounded bg-slate-800/90">
-                        <span className="text-slate-400 block">4. Đúng hạn SLA &amp; ĐNTT</span>
-                        <strong className="font-mono text-sky-400">{focusedStaffProfile.scoreSla}/20 điểm</strong>
+                      <div className="p-2 rounded bg-ink/90">
+                        <span className="text-ink-3 block">4. Đúng hạn SLA &amp; ĐNTT</span>
+                        <strong className="font-mono text-accent">{focusedStaffProfile.scoreSla}/20 điểm</strong>
                       </div>
                     </div>
                   </div>
 
-                  <div className="mt-3 pt-2.5 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-300">
+                  <div className="mt-3 pt-2.5 border-t border-line-strong flex items-center justify-between text-2xs text-ink-3">
                     <span>
                       Quản lý: <strong>{focusedStaffProfile.storesCount} gian hàng</strong> ({focusedStaffProfile.tiktokStoresCount} TT · {focusedStaffProfile.shopeeStoresCount} SP)
                     </span>
                     <button
                       type="button"
                       onClick={() => setInspectStaff(focusedStaffProfile)}
-                      className="text-indigo-300 hover:text-white font-bold underline cursor-pointer"
+                      className="text-accent hover:text-white font-semibold underline cursor-pointer"
                     >
                       Mở cửa sổ chi tiết
                     </button>
@@ -3540,163 +3522,163 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                 {/* Phải 8 cột: 6 Thẻ Chỉ Số Hiệu Suất (Output) & Hiệu Quả (ROI/Cost) Của Nhân Viên */}
                 <div className="lg:col-span-8 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
                   {/* Thẻ 1: % Spend Chi phí Net & Gross */}
-                  <div className="p-3.5 rounded-xl bg-indigo-50/60 border border-indigo-200 flex flex-col justify-between">
+                  <div className="p-3.5 rounded-xl bg-accent-soft border border-accent/20 flex flex-col justify-between">
                     <div>
-                      <span className="text-[11px] font-bold text-indigo-900 uppercase block">
+                      <span className="text-2xs font-semibold text-accent uppercase block">
                         1. % Spend Chi Phí (Net &amp; Gross)
                       </span>
                       <div className="mt-1.5 flex items-baseline gap-2 font-mono">
-                        <span className="text-2xl font-extrabold text-indigo-700">
+                        <span className="text-2xl font-semibold text-accent">
                           {focusedStaffProfile.burnNetPct}% Net
                         </span>
-                        <span className="text-xs font-bold text-slate-600">
+                        <span className="text-xs font-semibold text-ink-2">
                           ({focusedStaffProfile.burnGrossPct}% Gross)
                         </span>
                       </div>
-                      <div className="w-full h-2 bg-indigo-100 rounded-full overflow-hidden mt-2">
+                      <div className="w-full h-2 bg-accent-soft rounded-full overflow-hidden mt-2">
                         <div
                           className={`data-bar h-full rounded-full ${
-                            focusedStaffProfile.burnNetPct > 100 ? 'bg-rose-500' : 'bg-indigo-600'
+                            focusedStaffProfile.burnNetPct > 100 ? 'bg-critical' : 'bg-accent'
                           }`}
                           style={{ width: `${Math.min(100, Math.max(focusedStaffProfile.burnNetPct, 4))}%` }}
                         />
                       </div>
                     </div>
-                    <div className="mt-2.5 pt-2 border-t border-indigo-200/60 text-[11px] font-mono flex justify-between">
+                    <div className="mt-2.5 pt-2 border-t border-accent/20/60 text-2xs font-mono flex justify-between">
                       <span>Thực chi: <strong>{formatVndShort(focusedStaffProfile.actualSpentNet)}</strong></span>
                       <span>Trần Net: <strong>{formatVndShort(focusedStaffProfile.orderBudgetNet)}</strong></span>
                     </div>
                   </div>
 
                   {/* Thẻ 2: Số lượng Video Đã Air Lên Sóng */}
-                  <div className="p-3.5 rounded-xl bg-emerald-50/60 border border-emerald-200 flex flex-col justify-between">
+                  <div className="p-3.5 rounded-xl bg-positive-soft border border-positive/20 flex flex-col justify-between">
                     <div>
-                      <span className="text-[11px] font-bold text-emerald-900 uppercase block">
+                      <span className="text-2xs font-semibold text-positive uppercase block">
                         2. Số Lượng Video Đã Air Lên Sóng
                       </span>
                       <div className="mt-1.5 flex items-baseline gap-2 font-mono">
-                        <span className="text-2xl font-extrabold text-emerald-700">
+                        <span className="text-2xl font-semibold text-positive">
                           {focusedStaffProfile.actualAiredVideos} video
                         </span>
-                        <span className="text-xs font-bold text-emerald-800">
+                        <span className="text-xs font-semibold text-positive">
                           ({focusedStaffProfile.airVsBookPct}% đơn book)
                         </span>
                       </div>
-                      <div className="w-full h-2 bg-emerald-100 rounded-full overflow-hidden mt-2">
+                      <div className="w-full h-2 bg-positive-soft rounded-full overflow-hidden mt-2">
                         <div
-                          className="data-bar h-full bg-emerald-600 rounded-full"
+                          className="data-bar h-full bg-positive rounded-full"
                           style={{ width: `${Math.min(100, Math.max(focusedStaffProfile.airVsBookPct, 5))}%` }}
                         />
                       </div>
                     </div>
-                    <div className="mt-2.5 pt-2 border-t border-emerald-200/60 text-[11px] font-mono flex justify-between">
+                    <div className="mt-2.5 pt-2 border-t border-positive/20/60 text-2xs font-mono flex justify-between">
                       <span>Đã book: <strong>{focusedStaffProfile.actualBookedVideos} đơn</strong></span>
                       <span>Paid/FOC: <strong>{focusedStaffProfile.targetPaidVideos}/{focusedStaffProfile.targetFocVideos}</strong></span>
                     </div>
                   </div>
 
                   {/* Thẻ 3: Hiệu Quả Doanh Thu GMV & Đơn Hàng */}
-                  <div className="p-3.5 rounded-xl bg-amber-50/60 border border-amber-200 flex flex-col justify-between">
+                  <div className="p-3.5 rounded-xl bg-warning-soft border border-warning/20 flex flex-col justify-between">
                     <div>
-                      <span className="text-[11px] font-bold text-amber-900 uppercase block">
+                      <span className="text-2xs font-semibold text-warning uppercase block">
                         3. Doanh Thu GMV Tạo Ra (Seller)
                       </span>
                       <div className="mt-1.5 flex items-baseline gap-2 font-mono">
-                        <span className="text-2xl font-extrabold text-amber-800">
+                        <span className="text-2xl font-semibold text-warning">
                           {formatVndShort(focusedStaffProfile.attributedGmv)}
                         </span>
-                        <span className="text-xs font-bold text-slate-600">
+                        <span className="text-xs font-semibold text-ink-2">
                           ({focusedStaffProfile.attributedOrders.toLocaleString('vi-VN')} đơn)
                         </span>
                       </div>
-                      <p className="text-[11px] text-slate-600 mt-1">
+                      <p className="text-2xs text-ink-2 mt-1">
                         Tổng lượt xem tích lũy:{' '}
-                        <strong className="font-mono text-slate-900">
+                        <strong className="font-mono text-ink">
                           {focusedStaffProfile.attributedViews.toLocaleString('vi-VN')} views
                         </strong>
                       </p>
                     </div>
-                    <div className="mt-2.5 pt-2 border-t border-amber-200/60 text-[11px] font-mono flex justify-between">
+                    <div className="mt-2.5 pt-2 border-t border-warning/20/60 text-2xs font-mono flex justify-between">
                       <span>Target NMV: <strong>{formatVndShort(focusedStaffProfile.targetNmv)}</strong></span>
-                      <span className="text-emerald-700 font-bold">
+                      <span className="text-positive font-semibold">
                         Win: {focusedStaffProfile.winningVideosCount} video ({focusedStaffProfile.winRatePct}%)
                       </span>
                     </div>
                   </div>
 
                   {/* Thẻ 4: Hiệu Quả Đầu Tư ROAS & CIR % */}
-                  <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex flex-col justify-between">
+                  <div className="p-3.5 rounded-xl bg-canvas border border-line flex flex-col justify-between">
                     <div>
-                      <span className="text-[11px] font-bold text-slate-700 uppercase block">
+                      <span className="text-2xs font-semibold text-ink-2 uppercase block">
                         4. Hiệu Quả Đầu Tư (ROAS &amp; CIR %)
                       </span>
                       <div className="mt-1.5 flex items-baseline gap-2 font-mono">
-                        <span className="text-xl font-extrabold text-emerald-700">
+                        <span className="text-xl font-semibold text-positive">
                           ROAS {focusedStaffProfile.effectiveRoas}x
                         </span>
-                        <span className="px-2 py-0.5 rounded text-xs font-bold bg-indigo-100 text-indigo-800">
+                        <span className="text-xs font-semibold text-accent">
                           CIR: {focusedStaffProfile.effectiveCirPct}%
                         </span>
                       </div>
                     </div>
-                    <div className="mt-2.5 pt-2 border-t border-slate-200 text-[11px] text-slate-600 flex justify-between">
+                    <div className="mt-2.5 pt-2 border-t border-line text-2xs text-ink-2 flex justify-between">
                       <span>1đ chi phí tạo ra:</span>
-                      <strong className="font-mono text-slate-900">{focusedStaffProfile.effectiveRoas}đ GMV</strong>
+                      <strong className="font-mono text-ink">{focusedStaffProfile.effectiveRoas}đ GMV</strong>
                     </div>
                   </div>
 
                   {/* Thẻ 5: Đơn Giá Bình Quân / Video & CPA */}
-                  <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex flex-col justify-between">
+                  <div className="p-3.5 rounded-xl bg-canvas border border-line flex flex-col justify-between">
                     <div>
-                      <span className="text-[11px] font-bold text-slate-700 uppercase block">
+                      <span className="text-2xs font-semibold text-ink-2 uppercase block">
                         5. Chi Phí TB / 1 Video Đã Air
                       </span>
                       <div className="mt-1.5 flex items-baseline gap-2 font-mono">
-                        <span className="text-xl font-extrabold text-slate-900">
+                        <span className="text-xl font-semibold text-ink">
                           {focusedStaffProfile.avgCostPerAiredVideo > 0
                             ? formatVndShort(focusedStaffProfile.avgCostPerAiredVideo)
                             : '0đ (FOC)'}
                         </span>
-                        <span className="text-[11px] text-slate-500">/ video air</span>
+                        <span className="text-2xs text-ink-3">/ video air</span>
                       </div>
                     </div>
-                    <div className="mt-2.5 pt-2 border-t border-slate-200 text-[11px] font-mono flex justify-between">
+                    <div className="mt-2.5 pt-2 border-t border-line text-2xs font-mono flex justify-between">
                       <span>TB/Đơn book: <strong>{formatVndShort(focusedStaffProfile.avgCostPerBookedVideo)}</strong></span>
                       <span>CPA/Đơn: <strong>{formatVndShort(focusedStaffProfile.cpaPerOrder)}</strong></span>
                     </div>
                   </div>
 
                   {/* Thẻ 6: Kỷ Luật SLA & Kiểm Soát Trần Net */}
-                  <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex flex-col justify-between">
+                  <div className="p-3.5 rounded-xl bg-canvas border border-line flex flex-col justify-between">
                     <div>
-                      <span className="text-[11px] font-bold text-slate-700 uppercase block">
+                      <span className="text-2xs font-semibold text-ink-2 uppercase block">
                         6. Kỷ Luật Đúng Hạn SLA &amp; Trần Net
                       </span>
                       <div className="mt-1.5 flex items-baseline gap-2 font-mono">
                         <span
-                          className={`text-xl font-extrabold ${
+                          className={`text-xl font-semibold ${
                             focusedStaffProfile.slaRate >= 85
-                              ? 'text-emerald-700'
+                              ? 'text-positive'
                               : focusedStaffProfile.slaRate >= 65
-                              ? 'text-amber-700'
-                              : 'text-rose-700'
+                              ? 'text-warning'
+                              : 'text-critical'
                           }`}
                         >
                           SLA {focusedStaffProfile.slaRate}%
                         </span>
-                        <span className="text-xs text-slate-500">
+                        <span className="text-xs text-ink-3">
                           ({focusedStaffProfile.lateSlaVideosCount} đơn trễ)
                         </span>
                       </div>
                     </div>
-                    <div className="mt-2.5 pt-2 border-t border-slate-200 text-[11px] flex justify-between">
+                    <div className="mt-2.5 pt-2 border-t border-line text-2xs flex justify-between">
                       <span>Kiểm soát Kế toán:</span>
                       {focusedStaffProfile.unbudgetedStoresCount > 0 || focusedStaffProfile.overbudgetStoresCount > 0 ? (
-                        <strong className="text-rose-700">
+                        <strong className="text-critical">
                           {focusedStaffProfile.unbudgetedStoresCount} gian 0đ · {focusedStaffProfile.overbudgetStoresCount} vượt Net
                         </strong>
                       ) : (
-                        <strong className="text-emerald-700">100% đúng trần Net</strong>
+                        <strong className="text-positive">100% đúng trần Net</strong>
                       )}
                     </div>
                   </div>
@@ -3706,21 +3688,21 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
               {/* Bóc tách Gian hàng & Video thực tế của Nhân viên đang chọn */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 pt-2">
                 {/* Trái 6 cột: Danh sách các gian hàng của nhân viên này kèm % Spend & Số Video Air */}
-                <div className="lg:col-span-6 rounded-xl border border-slate-200 overflow-hidden">
-                  <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-900">
+                <div className="lg:col-span-6 rounded-xl border border-line overflow-hidden">
+                  <div className="px-4 py-2.5 bg-canvas border-b border-line flex items-center justify-between">
+                    <span className="text-xs font-semibold text-ink">
                       Gian Hàng Do {focusedStaffProfile.name} Phụ Trách ({focusedStaffProfile.staffStores.length} Gian)
                     </span>
-                    <span className="text-[11px] text-slate-500">Nhấn vào gian hàng để xem chi tiết</span>
+                    <span className="text-2xs text-ink-3">Nhấn vào gian hàng để xem chi tiết</span>
                   </div>
                   {focusedStaffProfile.staffStores.length === 0 ? (
-                    <div className="p-6 text-center text-xs text-slate-500">
+                    <div className="p-6 text-center text-xs text-ink-3">
                       Nhân sự thực thi chuyên biệt theo đợt Booking / FOC hỗ trợ liên gian hàng (Xem danh sách video bên phải).
                     </div>
                   ) : (
                     <div className="overflow-x-auto max-h-60">
                       <table className="w-full text-xs text-left">
-                        <thead className="bg-slate-50/70 text-slate-500 border-b border-slate-200 sticky top-0">
+                        <thead className="bg-canvas text-ink-3 border-b border-line sticky top-0">
                           <tr>
                             <th className="py-2 px-3">Gian Hàng</th>
                             <th className="py-2 px-2 text-right">Trần Net</th>
@@ -3728,7 +3710,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                             <th className="py-2 px-3 text-center">Video Air / Paid</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-100">
+                        <tbody className="divide-y divide-line">
                           {focusedStaffProfile.staffStores.map((s) => {
                             const net = s.budgetNet || s.monthlyBudget || 0;
                             const spent = s.actualSpentNet || 0;
@@ -3737,28 +3719,28 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                               <tr
                                 key={s.id}
                                 onClick={() => setInspectStore(s)}
-                                className="hover:bg-indigo-50/40 cursor-pointer"
+                                className="hover:bg-accent-soft cursor-pointer"
                               >
                                 <td className="py-2 px-3">
-                                  <div className="font-bold text-slate-900">{s.storeName}</div>
-                                  <div className="text-[10px] text-slate-500">{s.platform}</div>
+                                  <div className="font-semibold text-ink">{s.storeName}</div>
+                                  <div className="text-2xs text-ink-3">{s.platform}</div>
                                 </td>
-                                <td className="py-2 px-2 text-right font-mono text-indigo-700 font-semibold">
+                                <td className="py-2 px-2 text-right font-mono text-accent font-semibold">
                                   {formatVndShort(net)}
                                 </td>
                                 <td className="py-2 px-2 text-right font-mono">
-                                  <span className="font-bold text-slate-900">{formatVndShort(spent)}</span>{' '}
+                                  <span className="font-semibold text-ink">{formatVndShort(spent)}</span>{' '}
                                   <span
-                                    className={`px-1.5 py-0.2 rounded text-[10px] font-bold ${
-                                      pct > 100 ? 'bg-rose-100 text-rose-800' : 'bg-indigo-100 text-indigo-800'
+                                    className={`px-1.5 py-0.2 rounded text-2xs font-semibold ${
+                                      pct > 100 ? 'bg-critical-soft text-critical' : 'bg-accent-soft text-accent'
                                     }`}
                                   >
                                     {pct === 999 ? 'Ngoài KH' : `${pct}%`}
                                   </span>
                                 </td>
                                 <td className="py-2 px-3 text-center font-mono">
-                                  <strong className="text-emerald-700">{s.actualAiredVideos || 0} air</strong> /{' '}
-                                  <span className="text-slate-500">{s.targetPaidVideos || 0}</span>
+                                  <strong className="text-positive">{s.actualAiredVideos || 0} air</strong> /{' '}
+                                  <span className="text-ink-3">{s.targetPaidVideos || 0}</span>
                                 </td>
                               </tr>
                             );
@@ -3770,23 +3752,23 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                 </div>
 
                 {/* Phải 6 cột: Danh sách các Video đã book & ROAS của nhân viên này */}
-                <div className="lg:col-span-6 rounded-xl border border-slate-200 overflow-hidden">
-                  <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-900">
+                <div className="lg:col-span-6 rounded-xl border border-line overflow-hidden">
+                  <div className="px-4 py-2.5 bg-canvas border-b border-line flex items-center justify-between">
+                    <span className="text-xs font-semibold text-ink">
                       Video Đã Book &amp; Hiệu Quả Bán Hàng Của {focusedStaffProfile.name}
                     </span>
-                    <span className="text-[11px] font-mono text-emerald-700 font-bold">
+                    <span className="text-2xs font-mono text-positive font-semibold">
                       Tổng Air: {focusedStaffProfile.actualAiredVideos}/{focusedStaffProfile.actualBookedVideos} đơn
                     </span>
                   </div>
                   {focusedStaffProfile.staffVideos.length === 0 ? (
-                    <div className="p-6 text-center text-xs text-slate-500">
+                    <div className="p-6 text-center text-xs text-ink-3">
                       Nhân sự đã thực hiện <strong>{focusedStaffProfile.actualBookedVideos} đơn book</strong> ({focusedStaffProfile.actualAiredVideos} video đã air) trên hệ thống File 3.2.
                     </div>
                   ) : (
                     <div className="overflow-x-auto max-h-60">
                       <table className="w-full text-xs text-left">
-                        <thead className="bg-slate-50/70 text-slate-500 border-b border-slate-200 sticky top-0">
+                        <thead className="bg-canvas text-ink-3 border-b border-line sticky top-0">
                           <tr>
                             <th className="py-2 px-3">Mã Book &amp; KOC</th>
                             <th className="py-2 px-2">Gian Hàng</th>
@@ -3795,26 +3777,26 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                             <th className="py-2 px-3 text-center">ROAS</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-100">
+                        <tbody className="divide-y divide-line">
                           {focusedStaffProfile.staffVideos.slice(0, 20).map((v) => (
                             <tr
                               key={v.code}
                               onClick={() => setInspectVideo(v)}
-                              className="hover:bg-indigo-50/40 cursor-pointer"
+                              className="hover:bg-accent-soft cursor-pointer"
                             >
                               <td className="py-2 px-3">
-                                <div className="font-mono font-bold text-indigo-700">{v.code}</div>
-                                <div className="text-[10px] text-slate-600">@{v.channelId} ({v.kl})</div>
+                                <div className="font-mono font-semibold text-accent">{v.code}</div>
+                                <div className="text-2xs text-ink-2">@{v.channelId} ({v.kl})</div>
                               </td>
-                              <td className="py-2 px-2 text-[11px] font-medium text-slate-800">{v.storeName}</td>
-                              <td className="py-2 px-2 text-right font-mono font-bold">{formatVndShort(v.cost)}</td>
-                              <td className="py-2 px-2 text-right font-mono text-emerald-700 font-bold">
+                              <td className="py-2 px-2 text-2xs font-medium text-ink">{v.storeName}</td>
+                              <td className="py-2 px-2 text-right font-mono font-semibold">{formatVndShort(v.cost)}</td>
+                              <td className="py-2 px-2 text-right font-mono text-positive font-semibold">
                                 {formatVndShort(v.sellerGmv)}
                               </td>
                               <td className="py-2 px-3 text-center font-mono">
                                 <span
-                                  className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
-                                    v.roas >= 3.5 ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700'
+                                  className={`text-2xs font-mono font-semibold text-ink-2${
+                                    v.roas >= 3.5 ? 'bg-positive-soft text-positive' : 'bg-sunken text-ink-2'
                                   }`}
                                 >
                                   {v.roas}x
@@ -3834,31 +3816,31 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
           )}
 
           {/* 4. BIỂU ĐỒ SO SÁNH NGANG ĐA CHIỀU GIỮA CÁC CHUYÊN VIÊN THỰC THI */}
-          <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs">
+          <div className="bg-white rounded-xl border border-line p-5 shadow-xs">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
               <div>
-                <h3 className="text-sm font-bold text-slate-900">
+                <h3 className="text-sm font-semibold text-ink">
                   Biểu Đồ Đối Sánh Hiệu Suất &amp; Hiệu Quả Giữa Các Chuyên Viên B2C
                 </h3>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-ink-3">
                   Nhấn vào thẻ của bất kỳ nhân viên nào để nạp lên khung Hồ sơ Đánh giá 360° phía trên
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-1.5">
                 {[
-                  { key: 'BOTH', label: '1. Kép: % Spend Net & Số Video Air', activeBg: 'bg-slate-900 text-white' },
-                  { key: 'GMV_ROAS', label: '2. Hiệu Quả: GMV Tạo Ra & ROAS', activeBg: 'bg-emerald-600 text-white' },
-                  { key: 'UNIT_COST', label: '3. Tối Ưu Giá: Đơn Giá TB / Video Air', activeBg: 'bg-indigo-600 text-white' },
-                  { key: 'KPI_SCORE', label: '4. Điểm KPI Tổng Hợp (/100) & SLA', activeBg: 'bg-purple-700 text-white' }
+                  { key: 'BOTH', label: '1. Kép: % Spend Net & Số Video Air', activeBg: 'bg-ink text-white' },
+                  { key: 'GMV_ROAS', label: '2. Hiệu Quả: GMV Tạo Ra & ROAS', activeBg: 'bg-positive text-white' },
+                  { key: 'UNIT_COST', label: '3. Tối Ưu Giá: Đơn Giá TB / Video Air', activeBg: 'bg-accent text-white' },
+                  { key: 'KPI_SCORE', label: '4. Điểm KPI Tổng Hợp (/100) & SLA', activeBg: 'bg-accent text-white' }
                 ].map((m) => (
                   <button
                     key={m.key}
                     type="button"
-                    onClick={() => setStaffMetricMode(m.key as any)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                    onClick={() => setStaffMetricMode(m.key as typeof staffMetricMode)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
                       staffMetricMode === m.key
                         ? m.activeBg
-                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                        : 'bg-sunken text-ink-2 hover:bg-sunken'
                     }`}
                   >
                     {m.label}
@@ -3881,8 +3863,8 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                     onClick={() => setSelectedFocusStaffName(st.name)}
                     className={`p-3.5 rounded-xl border transition cursor-pointer ${
                       isSelected
-                        ? 'border-2 border-indigo-600 bg-indigo-50/20 shadow-xs'
-                        : 'border-slate-200 hover:border-indigo-300 hover:bg-slate-50/70'
+                        ? 'border-2 border-accent/20 bg-accent-soft shadow-xs'
+                        : 'border-line hover:border-accent/20 hover:bg-canvas'
                     }`}
                   >
                     <div className="flex items-center justify-between mb-2">
@@ -3890,57 +3872,57 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                         <Avatar name={st.name} size={32} />
                         <div>
                           <div className="flex items-center gap-1.5">
-                            <span className="text-xs font-bold text-slate-900">{st.name}</span>
+                            <span className="text-xs font-semibold text-ink">{st.name}</span>
                             <span
-                              className={`px-1.5 py-0.2 rounded text-[10px] font-mono font-extrabold ${
+                              className={`px-1.5 py-0.2 rounded text-2xs font-mono font-semibold ${
                                 st.kpiGrade === 'S'
-                                  ? 'bg-emerald-600 text-white'
+                                  ? 'bg-positive text-white'
                                   : st.kpiGrade === 'A'
-                                  ? 'bg-indigo-600 text-white'
+                                  ? 'bg-accent text-white'
                                   : st.kpiGrade === 'B'
-                                  ? 'bg-amber-100 text-amber-900'
-                                  : 'bg-slate-200 text-slate-700'
+                                  ? 'bg-warning-soft text-warning'
+                                  : 'bg-sunken text-ink-2'
                               }`}
                             >
                               {st.kpiScore}đ ({st.kpiGrade})
                             </span>
                           </div>
-                          <span className="text-[11px] text-slate-500">
+                          <span className="text-2xs text-ink-3">
                             {st.storesCount} gian · GMV: <strong>{formatVndShort(st.attributedGmv)}</strong> · ROAS: <strong>{st.effectiveRoas}x</strong>
                           </span>
                         </div>
                       </div>
-                      <div className="flex items-center gap-1.5 font-mono text-[11px]">
+                      <div className="flex items-center gap-1.5 font-mono text-2xs">
                         <span
-                          className={`px-2 py-0.5 rounded font-extrabold ${
+                          className={`px-2 py-0.5 rounded font-semibold ${
                             st.burnNetPct > 100
-                              ? 'bg-rose-100 text-rose-800'
+                              ? 'bg-critical-soft text-critical'
                               : st.burnNetPct >= 45
-                              ? 'bg-indigo-100 text-indigo-800'
-                              : 'bg-slate-100 text-slate-700'
+                              ? 'bg-accent-soft text-accent'
+                              : 'bg-sunken text-ink-2'
                           }`}
                         >
                           {st.burnNetPct}% Spend
                         </span>
-                        <span className="px-2 py-0.5 rounded font-extrabold bg-emerald-100 text-emerald-800">
+                        <span className="font-semibold text-positive">
                           {st.actualAiredVideos} Air
                         </span>
                       </div>
                     </div>
 
                     {staffMetricMode === 'BOTH' && (
-                      <div className="space-y-2 mt-2 pt-2 border-t border-slate-100">
+                      <div className="space-y-2 mt-2 pt-2 border-t border-line">
                         <div>
-                          <div className="flex items-center justify-between text-[11px] mb-0.5">
-                            <span className="text-slate-500">1. Thực chi / Trần Order Net:</span>
-                            <span className="font-mono font-bold text-indigo-700">
+                          <div className="flex items-center justify-between text-2xs mb-0.5">
+                            <span className="text-ink-3">1. Thực chi / Trần Order Net:</span>
+                            <span className="font-mono font-semibold text-accent">
                               {formatVndShort(st.actualSpentNet)} / {formatVndShort(st.orderBudgetNet)} ({st.burnNetPct}%)
                             </span>
                           </div>
-                          <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                          <div className="w-full h-2 bg-sunken rounded-full overflow-hidden">
                             <div
                               className={`data-bar h-full rounded-full ${
-                                st.overbudgetStoresCount > 0 || st.unbudgetedStoresCount > 0 ? 'bg-rose-500' : 'bg-indigo-600'
+                                st.overbudgetStoresCount > 0 || st.unbudgetedStoresCount > 0 ? 'bg-critical' : 'bg-accent'
                               }`}
                               style={{ width: `${Math.min(100, Math.max(st.burnNetPct, st.actualSpentNet > 0 ? 4 : 0))}%` }}
                             />
@@ -3948,17 +3930,17 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                         </div>
 
                         <div>
-                          <div className="flex items-center justify-between text-[11px] mb-0.5">
-                            <span className="text-slate-500">
+                          <div className="flex items-center justify-between text-2xs mb-0.5">
+                            <span className="text-ink-3">
                               2. Số Video Đã Air / Đơn Book (Paid: {st.targetPaidVideos} · FOC: {st.targetFocVideos}):
                             </span>
-                            <span className="font-mono font-extrabold text-emerald-700">
+                            <span className="font-mono font-semibold text-positive">
                               {st.actualAiredVideos} / {st.actualBookedVideos} đơn ({st.airVsBookPct}% Air)
                             </span>
                           </div>
-                          <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                          <div className="w-full h-2 bg-sunken rounded-full overflow-hidden">
                             <div
-                              className="data-bar h-full bg-emerald-500 rounded-full"
+                              className="data-bar h-full bg-positive rounded-full"
                               style={{ width: `${Math.min(100, Math.max(st.airVsBookPct, st.actualAiredVideos > 0 ? 5 : 0))}%` }}
                             />
                           </div>
@@ -3967,24 +3949,24 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                     )}
 
                     {staffMetricMode === 'GMV_ROAS' && (
-                      <div className="space-y-2 mt-2 pt-2 border-t border-slate-100">
+                      <div className="space-y-2 mt-2 pt-2 border-t border-line">
                         <div>
-                          <div className="flex items-center justify-between text-[11px] mb-0.5">
-                            <span className="text-slate-500">Doanh thu GMV tạo ra ({st.attributedOrders} đơn):</span>
-                            <span className="font-mono font-bold text-emerald-700">
+                          <div className="flex items-center justify-between text-2xs mb-0.5">
+                            <span className="text-ink-3">Doanh thu GMV tạo ra ({st.attributedOrders} đơn):</span>
+                            <span className="font-mono font-semibold text-positive">
                               {formatVndShort(st.attributedGmv)} (ROAS {st.effectiveRoas}x · CIR {st.effectiveCirPct}%)
                             </span>
                           </div>
-                          <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                          <div className="w-full h-2 bg-sunken rounded-full overflow-hidden">
                             <div
-                              className="data-bar h-full bg-emerald-600 rounded-full"
+                              className="data-bar h-full bg-positive rounded-full"
                               style={{ width: `${Math.max(gmvBar, 5)}%` }}
                             />
                           </div>
                         </div>
-                        <div className="flex items-center justify-between text-[11px] font-mono text-slate-600">
+                        <div className="flex items-center justify-between text-2xs font-mono text-ink-2">
                           <span>Lượt xem: <strong>{st.attributedViews.toLocaleString('vi-VN')}</strong></span>
-                          <span className="text-emerald-700 font-bold">
+                          <span className="text-positive font-semibold">
                             Video thắng (ROAS ≥ 3x): {st.winningVideosCount}/{st.actualAiredVideos} ({st.winRatePct}%)
                           </span>
                         </div>
@@ -3992,22 +3974,22 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                     )}
 
                     {staffMetricMode === 'UNIT_COST' && (
-                      <div className="space-y-2 mt-2 pt-2 border-t border-slate-100">
+                      <div className="space-y-2 mt-2 pt-2 border-t border-line">
                         <div>
-                          <div className="flex items-center justify-between text-[11px] mb-0.5">
-                            <span className="text-slate-500">Chi phí bình quân / 1 Video Đã Air:</span>
-                            <span className="font-mono font-bold text-indigo-700">
+                          <div className="flex items-center justify-between text-2xs mb-0.5">
+                            <span className="text-ink-3">Chi phí bình quân / 1 Video Đã Air:</span>
+                            <span className="font-mono font-semibold text-accent">
                               {st.avgCostPerAiredVideo > 0 ? formatVndShort(st.avgCostPerAiredVideo) : '0đ (FOC)'} / video
                             </span>
                           </div>
-                          <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                          <div className="w-full h-2 bg-sunken rounded-full overflow-hidden">
                             <div
-                              className="data-bar h-full bg-indigo-500 rounded-full"
+                              className="data-bar h-full bg-accent rounded-full"
                               style={{ width: `${Math.max(unitCostBar, st.avgCostPerAiredVideo > 0 ? 5 : 2)}%` }}
                             />
                           </div>
                         </div>
-                        <div className="flex items-center justify-between text-[11px] font-mono text-slate-600">
+                        <div className="flex items-center justify-between text-2xs font-mono text-ink-2">
                           <span>TB / Đơn book: <strong>{formatVndShort(st.avgCostPerBookedVideo)}</strong></span>
                           <span>CPA / Đơn hàng: <strong>{formatVndShort(st.cpaPerOrder)}</strong></span>
                         </div>
@@ -4015,22 +3997,22 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                     )}
 
                     {staffMetricMode === 'KPI_SCORE' && (
-                      <div className="space-y-2 mt-2 pt-2 border-t border-slate-100">
+                      <div className="space-y-2 mt-2 pt-2 border-t border-line">
                         <div>
-                          <div className="flex items-center justify-between text-[11px] mb-0.5">
-                            <span className="text-slate-500">Điểm KPI Tổng Hợp ({st.kpiGradeLabel}):</span>
-                            <span className="font-mono font-extrabold text-purple-700">
+                          <div className="flex items-center justify-between text-2xs mb-0.5">
+                            <span className="text-ink-3">Điểm KPI Tổng Hợp ({st.kpiGradeLabel}):</span>
+                            <span className="font-mono font-semibold text-accent">
                               {st.kpiScore}/100 điểm · SLA: {st.slaRate}%
                             </span>
                           </div>
-                          <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                          <div className="w-full h-2 bg-sunken rounded-full overflow-hidden">
                             <div
-                              className="data-bar h-full bg-purple-600 rounded-full"
+                              className="data-bar h-full bg-accent rounded-full"
                               style={{ width: `${st.kpiScore}%` }}
                             />
                           </div>
                         </div>
-                        <div className="grid grid-cols-4 gap-1 text-[10px] font-mono text-center bg-slate-50 p-1 rounded">
+                        <div className="grid grid-cols-4 gap-1 text-2xs font-mono text-center bg-canvas p-1 rounded">
                           <span>Air: <strong>{st.scoreAir}/35</strong></span>
                           <span>Spend: <strong>{st.scoreSpend}/25</strong></span>
                           <span>ROAS: <strong>{st.scoreEfficiency}/20</strong></span>
@@ -4045,26 +4027,26 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
           </div>
 
           {/* 5. BẢNG XẾP HẠNG & ĐỐI SOÁT HIỆU SUẤT + HIỆU QUẢ TOÀN BỘ 32 NHÂN SỰ B2C */}
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs">
-            <div className="px-5 py-3.5 border-b border-slate-200 flex flex-col gap-3">
+          <div className="bg-white rounded-xl border border-line overflow-hidden shadow-xs">
+            <div className="px-5 py-3.5 border-b border-line flex flex-col gap-3">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                 <div>
-                  <h3 className="text-sm font-bold text-slate-900">
+                  <h3 className="text-sm font-semibold text-ink">
                     Bảng Xếp Hạng &amp; Đối Soát Hiệu Suất, Hiệu Quả Từng Nhân Viên B2C ({filteredStaffList.length} Nhân Sự)
                   </h3>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-ink-3">
                     Đánh giá đầy đủ cả Sản lượng thực thi (Số Video Air, % Spend) và Hiệu quả đầu tư (Đơn giá/Video, GMV, ROAS, CIR, Điểm KPI)
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   <div className="relative">
-                    <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <Search className="w-3.5 h-3.5 text-ink-3 absolute left-3 top-1/2 -translate-y-1/2" />
                     <input
                       type="text"
                       value={staffSearchQuery}
                       onChange={(e) => setStaffSearchQuery(e.target.value)}
                       placeholder="Tìm tên nhân sự, PIC..."
-                      className="w-48 pl-8 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-hidden focus:border-indigo-500 focus:bg-white"
+                      className="w-48 pl-8 pr-3 py-1.5 text-xs bg-canvas border border-line rounded-lg focus:outline-hidden focus:border-accent/20 focus:bg-white"
                     />
                   </div>
                   <div className="flex flex-wrap items-center gap-1.5">
@@ -4077,11 +4059,11 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                       <button
                         key={f.key}
                         type="button"
-                        onClick={() => setStaffRoleFilter(f.key as any)}
+                        onClick={() => setStaffRoleFilter(f.key as typeof staffRoleFilter)}
                         className={`px-2.5 py-1 rounded text-xs font-semibold transition cursor-pointer ${
                           staffRoleFilter === f.key
-                            ? 'bg-slate-900 text-white'
-                            : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                            ? 'bg-ink text-white'
+                            : 'bg-sunken text-ink-2 hover:bg-sunken'
                         }`}
                       >
                         {f.label}
@@ -4092,8 +4074,8 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
               </div>
 
               {/* Thanh sắp xếp 1 chạm theo từng chỉ số Hiệu suất & Hiệu quả */}
-              <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100">
-                <span className="text-[11px] font-bold text-slate-600">
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-line">
+                <span className="text-2xs font-semibold text-ink-2">
                   Sắp xếp bảng xếp hạng nhân viên theo:
                 </span>
                 <div className="flex flex-wrap items-center gap-1.5">
@@ -4109,11 +4091,11 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                     <button
                       key={srt.key}
                       type="button"
-                      onClick={() => setStaffSortMode(srt.key as any)}
-                      className={`px-2.5 py-1 rounded text-[11px] font-bold transition cursor-pointer ${
+                      onClick={() => setStaffSortMode(srt.key as typeof staffSortMode)}
+                      className={`px-2.5 py-1 rounded text-2xs font-semibold transition cursor-pointer ${
                         staffSortMode === srt.key
-                          ? 'bg-indigo-600 text-white'
-                          : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                          ? 'bg-accent text-white'
+                          : 'bg-sunken text-ink-2 hover:bg-sunken'
                       }`}
                     >
                       {srt.label}
@@ -4125,34 +4107,34 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
 
             <div className="overflow-x-auto max-h-[650px]">
               <table className="w-full text-xs text-left">
-                <thead className="bg-slate-50 text-slate-600 uppercase border-b border-slate-200 sticky top-0 z-10">
+                <thead className="bg-canvas text-ink-2 uppercase border-b border-line sticky top-0 z-10">
                   <tr>
-                    <th className="py-3 px-3 font-bold text-center">#</th>
-                    <th className="py-3 px-3 font-bold">Nhân Sự &amp; Vai Trò</th>
-                    <th className="py-3 px-2 font-bold text-center">Số Gian</th>
-                    <th className="py-3 px-3 font-bold text-right">Hạn Mức Net</th>
-                    <th className="py-3 px-3 font-bold text-right bg-indigo-50/70 text-indigo-900">
+                    <th className="py-3 px-3 font-semibold text-center">#</th>
+                    <th className="py-3 px-3 font-semibold">Nhân Sự &amp; Vai Trò</th>
+                    <th className="py-3 px-2 font-semibold text-center">Số Gian</th>
+                    <th className="py-3 px-3 font-semibold text-right">Hạn Mức Net</th>
+                    <th className="py-3 px-3 font-semibold text-right bg-accent-soft text-accent">
                       Thực Chi &amp; % Spend Net
                     </th>
-                    <th className="py-3 px-3 font-bold text-center bg-emerald-50/70 text-emerald-900">
+                    <th className="py-3 px-3 font-semibold text-center bg-positive-soft text-positive">
                       Số Video Đã Air / Đơn Book
                     </th>
-                    <th className="py-3 px-3 font-bold text-right">
+                    <th className="py-3 px-3 font-semibold text-right">
                       Đơn Giá TB / Video Air
                     </th>
-                    <th className="py-3 px-3 font-bold text-right bg-amber-50/60 text-amber-950">
+                    <th className="py-3 px-3 font-semibold text-right bg-warning-soft text-warning">
                       GMV Tạo Ra &amp; Đơn
                     </th>
-                    <th className="py-3 px-3 font-bold text-center bg-amber-50/60 text-amber-950">
+                    <th className="py-3 px-3 font-semibold text-center bg-warning-soft text-warning">
                       ROAS &amp; CIR %
                     </th>
-                    <th className="py-3 px-2 font-bold text-center">Đúng Hạn SLA</th>
-                    <th className="py-3 px-3 font-bold text-center bg-purple-50/70 text-purple-950">
+                    <th className="py-3 px-2 font-semibold text-center">Đúng Hạn SLA</th>
+                    <th className="py-3 px-3 font-semibold text-center bg-accent-soft text-accent">
                       Điểm KPI &amp; Hạng
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-line">
                   {filteredStaffList.slice(0, staffVisibleLimit).map((st, idx) => {
                     const isFocused = focusedStaffProfile?.name === st.name;
                     return (
@@ -4163,147 +4145,147 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                           setInspectStaff(st);
                         }}
                         className={`transition cursor-pointer ${
-                          isFocused ? 'bg-indigo-50/60' : 'hover:bg-indigo-50/30'
+                          isFocused ? 'bg-accent-soft' : 'hover:bg-accent-soft'
                         }`}
                       >
-                        <td className="py-2.5 px-3 text-center font-mono font-bold text-slate-500">
+                        <td className="py-2.5 px-3 text-center font-mono font-semibold text-ink-3">
                           {idx + 1}
                         </td>
                         <td className="py-2.5 px-3">
                           <div className="flex items-center gap-2.5">
                             <Avatar name={st.name} size={28} />
                             <div>
-                              <div className="font-bold text-slate-900 flex items-center gap-1.5">
+                              <div className="font-semibold text-ink flex items-center gap-1.5">
                                 {st.name}
                                 {st.roleLevel === 'HEAD' && (
-                                  <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-indigo-900 text-white">
+                                  <span className=".5 py-0.2 text-2xs font-semibold bg-ink text-white">
                                     Giám Đốc
                                   </span>
                                 )}
                                 {st.roleLevel === 'LEADER' && (
-                                  <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-indigo-100 text-indigo-800">
+                                  <span className=".5 py-0.2 text-2xs font-semibold text-accent">
                                     Leader (8 gian)
                                   </span>
                                 )}
                               </div>
-                              <div className="text-[10px] text-slate-500">
+                              <div className="text-2xs text-ink-3">
                                 Duyệt: {st.directSupervisor} · Paid/FOC/Brand: {st.targetPaidVideos}/{st.targetFocVideos}/{st.targetSelfVideos}
                               </div>
                             </div>
                           </div>
                         </td>
                         <td className="py-2.5 px-2 text-center font-mono">
-                          <span className="font-bold text-slate-900">{st.storesCount}</span>
-                          <span className="block text-[10px] text-slate-500">
+                          <span className="font-semibold text-ink">{st.storesCount}</span>
+                          <span className="block text-2xs text-ink-3">
                             {st.tiktokStoresCount}TT·{st.shopeeStoresCount}SP
                           </span>
                         </td>
-                        <td className="py-2.5 px-3 text-right font-mono font-bold text-indigo-700">
+                        <td className="py-2.5 px-3 text-right font-mono font-semibold text-accent">
                           {formatVndShort(st.orderBudgetNet)}
                         </td>
-                        <td className="py-2.5 px-3 text-right font-mono bg-indigo-50/25">
+                        <td className="py-2.5 px-3 text-right font-mono bg-accent-soft">
                           <div className="flex items-center justify-end gap-1.5">
-                            <span className="font-bold text-slate-900">
+                            <span className="font-semibold text-ink">
                               {formatVndShort(st.actualSpentNet)}
                             </span>
                             <span
-                              className={`px-1.5 py-0.5 rounded text-[10px] font-extrabold ${
+                              className={`text-2xs font-mono font-semibold text-ink-2${
                                 st.burnNetPct > 100
-                                  ? 'bg-rose-600 text-white'
+                                  ? 'bg-critical text-white'
                                   : st.burnNetPct >= 45
-                                  ? 'bg-indigo-600 text-white'
-                                  : 'bg-indigo-100 text-indigo-800'
+                                  ? 'bg-accent text-white'
+                                  : 'bg-accent-soft text-accent'
                               }`}
                             >
                               {st.burnNetPct}%
                             </span>
                           </div>
-                          <div className="w-24 ml-auto h-1.5 bg-slate-200 rounded-full overflow-hidden mt-1">
+                          <div className="w-24 ml-auto h-1.5 bg-sunken rounded-full overflow-hidden mt-1">
                             <div
                               className={`data-bar h-full rounded-full ${
-                                st.burnNetPct > 100 ? 'bg-rose-500' : 'bg-indigo-600'
+                                st.burnNetPct > 100 ? 'bg-critical' : 'bg-accent'
                               }`}
                               style={{ width: `${Math.min(100, Math.max(st.burnNetPct, st.actualSpentNet > 0 ? 4 : 0))}%` }}
                             />
                           </div>
                         </td>
-                        <td className="py-2.5 px-3 text-center font-mono bg-emerald-50/25">
+                        <td className="py-2.5 px-3 text-center font-mono bg-positive-soft">
                           <div className="flex items-center justify-center gap-1.5">
-                            <span className="text-sm font-extrabold text-emerald-700">
+                            <span className="text-sm font-semibold text-positive">
                               {st.actualAiredVideos} air
                             </span>
-                            <span className="text-[11px] text-slate-500">
+                            <span className="text-2xs text-ink-3">
                               / {st.actualBookedVideos} ({st.airVsBookPct}%)
                             </span>
                           </div>
-                          <div className="w-24 mx-auto h-1.5 bg-slate-200 rounded-full overflow-hidden mt-1">
+                          <div className="w-24 mx-auto h-1.5 bg-sunken rounded-full overflow-hidden mt-1">
                             <div
-                              className="data-bar h-full bg-emerald-500 rounded-full"
+                              className="data-bar h-full bg-positive rounded-full"
                               style={{ width: `${Math.min(100, Math.max(st.airVsBookPct, st.actualAiredVideos > 0 ? 6 : 0))}%` }}
                             />
                           </div>
                         </td>
                         <td className="py-2.5 px-3 text-right font-mono">
-                          <div className="font-bold text-slate-900">
+                          <div className="font-semibold text-ink">
                             {st.avgCostPerAiredVideo > 0 ? formatVndShort(st.avgCostPerAiredVideo) : '0đ (FOC)'}
                           </div>
-                          <div className="text-[10px] text-slate-500">
+                          <div className="text-2xs text-ink-3">
                             CPA: {formatVndShort(st.cpaPerOrder)}/đơn
                           </div>
                         </td>
-                        <td className="py-2.5 px-3 text-right font-mono bg-amber-50/20">
-                          <div className="font-extrabold text-slate-900">
+                        <td className="py-2.5 px-3 text-right font-mono bg-warning-soft">
+                          <div className="font-semibold text-ink">
                             {formatVndShort(st.attributedGmv)}
                           </div>
-                          <div className="text-[10px] text-slate-500">
+                          <div className="text-2xs text-ink-3">
                             {st.attributedOrders.toLocaleString('vi-VN')} đơn · Win {st.winRatePct}%
                           </div>
                         </td>
-                        <td className="py-2.5 px-3 text-center font-mono bg-amber-50/20">
+                        <td className="py-2.5 px-3 text-center font-mono bg-warning-soft">
                           <span
-                            className={`px-2 py-0.5 rounded font-extrabold text-[11px] ${
+                            className={`px-2 py-0.5 rounded font-semibold text-2xs ${
                               st.effectiveRoas >= 3.5
-                                ? 'bg-emerald-100 text-emerald-800'
+                                ? 'bg-positive-soft text-positive'
                                 : st.effectiveRoas >= 2.5
-                                ? 'bg-indigo-100 text-indigo-800'
-                                : 'bg-amber-100 text-amber-900'
+                                ? 'bg-accent-soft text-accent'
+                                : 'bg-warning-soft text-warning'
                             }`}
                           >
                             {st.effectiveRoas}x
                           </span>
-                          <span className="block text-[10px] text-slate-500 mt-0.5">
+                          <span className="block text-2xs text-ink-3 mt-0.5">
                             CIR: {st.effectiveCirPct}%
                           </span>
                         </td>
                         <td className="py-2.5 px-2 text-center font-mono">
                           <span
-                            className={`px-2 py-0.5 rounded font-bold text-[11px] ${
+                            className={`px-2 py-0.5 rounded font-semibold text-2xs ${
                               st.slaRate >= 85
-                                ? 'bg-emerald-50 text-emerald-700'
+                                ? 'bg-positive-soft text-positive'
                                 : st.slaRate >= 60
-                                ? 'bg-amber-50 text-amber-800'
-                                : 'bg-rose-50 text-rose-700'
+                                ? 'bg-warning-soft text-warning'
+                                : 'bg-critical-soft text-critical'
                             }`}
                           >
                             {st.slaRate}%
                           </span>
                         </td>
-                        <td className="py-2.5 px-3 text-center font-mono bg-purple-50/25">
+                        <td className="py-2.5 px-3 text-center font-mono bg-accent-soft">
                           <span
-                            className={`inline-block px-2 py-0.5 rounded text-xs font-extrabold ${
+                            className={`inline-block px-2 py-0.5 rounded text-xs font-semibold ${
                               st.kpiGrade === 'S'
-                                ? 'bg-emerald-600 text-white'
+                                ? 'bg-positive text-white'
                                 : st.kpiGrade === 'A'
-                                ? 'bg-indigo-600 text-white'
+                                ? 'bg-accent text-white'
                                 : st.kpiGrade === 'B'
-                                ? 'bg-amber-100 text-amber-900'
-                                : 'bg-rose-100 text-rose-800'
+                                ? 'bg-warning-soft text-warning'
+                                : 'bg-critical-soft text-critical'
                             }`}
                           >
                             {st.kpiScore}/100 ({st.kpiGrade})
                           </span>
                           {(st.unbudgetedStoresCount > 0 || st.overbudgetStoresCount > 0) && (
-                            <span className="block text-[10px] text-rose-700 font-bold mt-0.5">
+                            <span className="block text-2xs text-critical font-semibold mt-0.5">
                               {st.unbudgetedStoresCount + st.overbudgetStoresCount} gian vượt Net/0đ
                             </span>
                           )}
@@ -4316,14 +4298,14 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
             </div>
 
             {filteredStaffList.length > 12 && (
-              <div className="px-5 py-3 border-t border-slate-200 bg-slate-50/50 flex items-center justify-between">
-                <span className="text-xs text-slate-500">
-                  Hiển thị <strong className="text-slate-800 font-mono">{Math.min(staffVisibleLimit, filteredStaffList.length)}</strong> / <strong className="text-slate-800 font-mono">{filteredStaffList.length}</strong> nhân sự B2C
+              <div className="px-5 py-3 border-t border-line bg-canvas flex items-center justify-between">
+                <span className="text-xs text-ink-3">
+                  Hiển thị <strong className="text-ink font-mono">{Math.min(staffVisibleLimit, filteredStaffList.length)}</strong> / <strong className="text-ink font-mono">{filteredStaffList.length}</strong> nhân sự B2C
                 </span>
                 <button
                   type="button"
                   onClick={() => setStaffVisibleLimit((prev) => (prev >= filteredStaffList.length ? 12 : filteredStaffList.length))}
-                  className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 transition cursor-pointer"
+                  className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-line-strong bg-white hover:bg-sunken text-ink-2 transition cursor-pointer"
                 >
                   {staffVisibleLimit >= filteredStaffList.length ? 'Thu gọn (12 nhân sự)' : `Xem tất cả ${filteredStaffList.length} nhân sự`}
                 </button>
@@ -4344,13 +4326,13 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
           size="lg"
         >
           <div className="space-y-4 text-xs">
-            <div className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-lg bg-slate-50 border border-slate-200">
+            <div className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-lg bg-canvas border border-line">
               <div>
-                <span className="text-slate-500">Thương hiệu (Brand):</span>{' '}
-                <strong className="text-slate-900">{inspectStore.brandName}</strong> ·{' '}
-                <span className="text-slate-500">Sàn:</span>{' '}
-                <strong className="text-slate-900">{inspectStore.platform}</strong> ·{' '}
-                <span className="text-slate-500">Mã VH:</span>{' '}
+                <span className="text-ink-3">Thương hiệu (Brand):</span>{' '}
+                <strong className="text-ink">{inspectStore.brandName}</strong> ·{' '}
+                <span className="text-ink-3">Sàn:</span>{' '}
+                <strong className="text-ink">{inspectStore.platform}</strong> ·{' '}
+                <span className="text-ink-3">Mã VH:</span>{' '}
                 <strong className="font-mono">{inspectStore.storeOperationId}</strong>
               </div>
               {renderRiskBadge(inspectStore.financialRiskStatus)}
@@ -4358,21 +4340,21 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
 
             {/* Cơ cấu nhân sự phụ trách gian hàng */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="p-3 rounded-lg border border-slate-200">
-                <span className="text-[11px] text-slate-500 block">Giám Đốc Marketing B2C (Duyệt cuối)</span>
-                <strong className="text-slate-900 text-sm">Đặng Thị Yến Nhi</strong>
+              <div className="p-3 rounded-lg border border-line">
+                <span className="text-2xs text-ink-3 block">Giám Đốc Marketing B2C (Duyệt cuối)</span>
+                <strong className="text-ink text-sm">Đặng Thị Yến Nhi</strong>
               </div>
-              <div className="p-3 rounded-lg border border-slate-200">
-                <span className="text-[11px] text-slate-500 block">Trưởng Nhóm Booking (Cột 55)</span>
-                <strong className="text-indigo-700 text-sm">
+              <div className="p-3 rounded-lg border border-line">
+                <span className="text-2xs text-ink-3 block">Trưởng Nhóm Booking (Cột 55)</span>
+                <strong className="text-accent text-sm">
                   {inspectStore.hasBookingLeader && inspectStore.bookingLeader
                     ? inspectStore.bookingLeader
                     : 'Không có leader (Trực tiếp TP)'}
                 </strong>
               </div>
-              <div className="p-3 rounded-lg border border-slate-200">
-                <span className="text-[11px] text-slate-500 block">Chuyên Viên Thực Thi (PIC)</span>
-                <strong className="text-emerald-700 text-sm">
+              <div className="p-3 rounded-lg border border-line">
+                <span className="text-2xs text-ink-3 block">Chuyên Viên Thực Thi (PIC)</span>
+                <strong className="text-positive text-sm">
                   {inspectStore.primaryPic || inspectStore.assignedStaff}
                 </strong>
               </div>
@@ -4380,27 +4362,27 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
 
             {/* Bóc tách Tài chính Gross / Net / Thực chi */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <div className="p-3 rounded-lg bg-slate-50 border border-slate-200">
-                <span className="text-[11px] text-slate-500 block">Hạn Mức Order Gross</span>
-                <strong className="text-sm font-mono text-slate-900">
+              <div className="p-3 rounded-lg bg-canvas border border-line">
+                <span className="text-2xs text-ink-3 block">Hạn Mức Order Gross</span>
+                <strong className="text-sm font-mono text-ink">
                   {formatVndShort(inspectStore.budgetGross || 0)}
                 </strong>
               </div>
-              <div className="p-3 rounded-lg bg-indigo-50 border border-indigo-200">
-                <span className="text-[11px] text-indigo-800 block">Trần Order Net (Kế toán)</span>
-                <strong className="text-sm font-mono text-indigo-900">
+              <div className="p-3 rounded-lg bg-accent-soft border border-accent/20">
+                <span className="text-2xs text-accent block">Trần Order Net (Kế toán)</span>
+                <strong className="text-sm font-mono text-accent">
                   {formatVndShort(inspectStore.budgetNet || inspectStore.monthlyBudget || 0)}
                 </strong>
               </div>
-              <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200">
-                <span className="text-[11px] text-emerald-800 block">Thực Chi Duyệt Book (3.2)</span>
-                <strong className="text-sm font-mono text-emerald-900">
+              <div className="p-3 rounded-lg bg-positive-soft border border-positive/20">
+                <span className="text-2xs text-positive block">Thực Chi Duyệt Book (3.2)</span>
+                <strong className="text-sm font-mono text-positive">
                   {formatVndShort(inspectStore.actualSpentNet || 0)}
                 </strong>
               </div>
-              <div className="p-3 rounded-lg bg-amber-50 border border-amber-200">
-                <span className="text-[11px] text-amber-800 block">Video Đã Air / Kế Hoạch</span>
-                <strong className="text-sm font-mono text-amber-900">
+              <div className="p-3 rounded-lg bg-warning-soft border border-warning/20">
+                <span className="text-2xs text-warning block">Video Đã Air / Kế Hoạch</span>
+                <strong className="text-sm font-mono text-warning">
                   {inspectStore.actualAiredVideos || 0} video (Paid: {inspectStore.targetPaidVideos || 0} · FOC: {inspectStore.targetFocVideos || 0})
                 </strong>
               </div>
@@ -4408,7 +4390,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
 
             {/* Danh sách các video đã book thuộc gian hàng này */}
             <div>
-              <h4 className="font-bold text-slate-900 mb-2">
+              <h4 className="font-semibold text-ink mb-2">
                 Danh Sách Video Đã Booking Của Gian Hàng Trong Tháng 10/2026
               </h4>
               {(() => {
@@ -4419,15 +4401,15 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                 );
                 if (storeVids.length === 0) {
                   return (
-                    <p className="text-slate-500 py-4 text-center bg-slate-50 rounded-lg">
+                    <p className="text-ink-3 py-4 text-center bg-canvas rounded-lg">
                       Chưa có bản ghi video mẫu trong danh sách rút gọn cho gian hàng này.
                     </p>
                   );
                 }
                 return (
-                  <div className="overflow-x-auto max-h-60 border border-slate-200 rounded-lg">
+                  <div className="overflow-x-auto max-h-60 border border-line rounded-lg">
                     <table className="w-full text-xs text-left">
-                      <thead className="bg-slate-50 border-b border-slate-200">
+                      <thead className="bg-canvas border-b border-line">
                         <tr>
                           <th className="py-2 px-3">Mã Book</th>
                           <th className="py-2 px-3">Kênh KOC</th>
@@ -4437,15 +4419,15 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                           <th className="py-2 px-3 text-right">GMV Seller</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-100">
+                      <tbody className="divide-y divide-line">
                         {storeVids.map((v) => (
                           <tr key={v.code}>
-                            <td className="py-2 px-3 font-mono font-bold text-indigo-700">{v.code}</td>
+                            <td className="py-2 px-3 font-mono font-semibold text-accent">{v.code}</td>
                             <td className="py-2 px-3 font-semibold">@{v.channelId}</td>
                             <td className="py-2 px-3">{v.pic}</td>
                             <td className="py-2 px-3 font-mono">{v.kl}</td>
-                            <td className="py-2 px-3 text-right font-mono font-bold">{formatVndShort(v.cost)}</td>
-                            <td className="py-2 px-3 text-right font-mono text-emerald-700">
+                            <td className="py-2 px-3 text-right font-mono font-semibold">{formatVndShort(v.cost)}</td>
+                            <td className="py-2 px-3 text-right font-mono text-positive">
                               {formatVndShort(v.sellerGmv)}
                             </td>
                           </tr>
@@ -4472,27 +4454,27 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
         >
           <div className="space-y-4 text-xs">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <div className="p-3 rounded-lg bg-slate-50 border border-slate-200">
-                <span className="text-[11px] text-slate-500 block">Số Gian Hàng Phụ Trách</span>
-                <strong className="text-sm font-mono text-slate-900">
+              <div className="p-3 rounded-lg bg-canvas border border-line">
+                <span className="text-2xs text-ink-3 block">Số Gian Hàng Phụ Trách</span>
+                <strong className="text-sm font-mono text-ink">
                   {inspectStaff.storesCount} gian ({inspectStaff.tiktokStoresCount} TT · {inspectStaff.shopeeStoresCount} SP)
                 </strong>
               </div>
-              <div className="p-3 rounded-lg bg-indigo-50 border border-indigo-200">
-                <span className="text-[11px] text-indigo-800 block">Hạn Mức Order Net Quản Lý</span>
-                <strong className="text-sm font-mono text-indigo-900">
+              <div className="p-3 rounded-lg bg-accent-soft border border-accent/20">
+                <span className="text-2xs text-accent block">Hạn Mức Order Net Quản Lý</span>
+                <strong className="text-sm font-mono text-accent">
                   {formatVndShort(inspectStaff.orderBudgetNet)}
                 </strong>
               </div>
-              <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200">
-                <span className="text-[11px] text-emerald-800 block">Thực Chi Duyệt Book (3.2)</span>
-                <strong className="text-sm font-mono text-emerald-900">
+              <div className="p-3 rounded-lg bg-positive-soft border border-positive/20">
+                <span className="text-2xs text-positive block">Thực Chi Duyệt Book (3.2)</span>
+                <strong className="text-sm font-mono text-positive">
                   {formatVndShort(inspectStaff.actualSpentNet)} ({inspectStaff.burnNetPct}%)
                 </strong>
               </div>
-              <div className="p-3 rounded-lg bg-amber-50 border border-amber-200">
-                <span className="text-[11px] text-amber-800 block">Sản Lượng Video Tháng 10</span>
-                <strong className="text-sm font-mono text-amber-900">
+              <div className="p-3 rounded-lg bg-warning-soft border border-warning/20">
+                <span className="text-2xs text-warning block">Sản Lượng Video Tháng 10</span>
+                <strong className="text-sm font-mono text-warning">
                   {inspectStaff.actualBookedVideos} đơn book · {inspectStaff.actualAiredVideos} đã air
                 </strong>
               </div>
@@ -4500,14 +4482,14 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
 
             {inspectStaff.storesList.length > 0 && (
               <div>
-                <h4 className="font-bold text-slate-900 mb-1.5">
+                <h4 className="font-semibold text-ink mb-1.5">
                   Danh Sách Gian Hàng Được Giao Phụ Trách ({inspectStaff.storesList.length} Gian Hàng):
                 </h4>
                 <div className="flex flex-wrap gap-1.5">
                   {inspectStaff.storesList.map((stName) => (
                     <span
                       key={stName}
-                      className="px-2.5 py-1 rounded-md bg-slate-100 text-slate-800 font-semibold text-[11px] border border-slate-200"
+                      className=".5 text-ink font-semibold text-2xs -line"
                     >
                       {stName}
                     </span>
@@ -4517,7 +4499,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
             )}
 
             <div>
-              <h4 className="font-bold text-slate-900 mb-2">
+              <h4 className="font-semibold text-ink mb-2">
                 Danh Sách Các Video Nhân Sự Đã Trực Tiếp Book Trong File 3.2:
               </h4>
               {(() => {
@@ -4526,15 +4508,15 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                 );
                 if (staffVids.length === 0) {
                   return (
-                    <p className="text-slate-500 py-4 text-center bg-slate-50 rounded-lg">
+                    <p className="text-ink-3 py-4 text-center bg-canvas rounded-lg">
                       Nhân sự thực hiện vai trò quản lý hoặc các đơn book nằm ngoài tập mẫu 150 video hiển thị nhanh.
                     </p>
                   );
                 }
                 return (
-                  <div className="overflow-x-auto max-h-60 border border-slate-200 rounded-lg">
+                  <div className="overflow-x-auto max-h-60 border border-line rounded-lg">
                     <table className="w-full text-xs text-left">
-                      <thead className="bg-slate-50 border-b border-slate-200">
+                      <thead className="bg-canvas border-b border-line">
                         <tr>
                           <th className="py-2 px-3">Mã Book</th>
                           <th className="py-2 px-3">Gian Hàng</th>
@@ -4544,15 +4526,15 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                           <th className="py-2 px-3 text-right">Cát-xê</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-100">
+                      <tbody className="divide-y divide-line">
                         {staffVids.map((v) => (
                           <tr key={v.code}>
-                            <td className="py-2 px-3 font-mono font-bold text-indigo-700">{v.code}</td>
+                            <td className="py-2 px-3 font-mono font-semibold text-accent">{v.code}</td>
                             <td className="py-2 px-3 font-semibold">{v.storeName}</td>
                             <td className="py-2 px-3">@{v.channelId}</td>
                             <td className="py-2 px-3">{v.format}</td>
                             <td className="py-2 px-3 font-mono">{v.kl}</td>
-                            <td className="py-2 px-3 text-right font-mono font-bold">
+                            <td className="py-2 px-3 text-right font-mono font-semibold">
                               {formatVndShort(v.cost)}
                             </td>
                           </tr>
@@ -4578,40 +4560,40 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
           size="md"
         >
           <div className="space-y-3 text-xs">
-            <div className="p-3 rounded-lg bg-slate-50 border border-slate-200 space-y-1.5">
+            <div className="p-3 rounded-lg bg-canvas border border-line space-y-1.5">
               <div className="flex justify-between">
-                <span className="text-slate-500">Gian hàng:</span>
-                <strong className="text-slate-900">{inspectVideo.storeName} ({inspectVideo.brandName})</strong>
+                <span className="text-ink-3">Gian hàng:</span>
+                <strong className="text-ink">{inspectVideo.storeName} ({inspectVideo.brandName})</strong>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">Kênh KOC / Creator:</span>
-                <strong className="text-indigo-700">@{inspectVideo.channelId}</strong>
+                <span className="text-ink-3">Kênh KOC / Creator:</span>
+                <strong className="text-accent">@{inspectVideo.channelId}</strong>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">Chuyên viên Booking (PIC):</span>
-                <strong className="text-slate-900">{inspectVideo.pic}</strong>
+                <span className="text-ink-3">Chuyên viên Booking (PIC):</span>
+                <strong className="text-ink">{inspectVideo.pic}</strong>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">Sản phẩm:</span>
-                <strong className="text-slate-800">{inspectVideo.productName}</strong>
+                <span className="text-ink-3">Sản phẩm:</span>
+                <strong className="text-ink">{inspectVideo.productName}</strong>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">Hạng mục & Định dạng:</span>
-                <strong className="text-slate-800">{inspectVideo.format} · {inspectVideo.videoType} ({inspectVideo.kl})</strong>
+                <span className="text-ink-3">Hạng mục & Định dạng:</span>
+                <strong className="text-ink">{inspectVideo.format} · {inspectVideo.videoType} ({inspectVideo.kl})</strong>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">Chi phí duyệt chi (File 3.2):</span>
-                <strong className="font-mono text-rose-700">{formatVndShort(inspectVideo.cost)}</strong>
+                <span className="text-ink-3">Chi phí duyệt chi (File 3.2):</span>
+                <strong className="font-mono text-critical">{formatVndShort(inspectVideo.cost)}</strong>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">Doanh thu đối soát TikTok Seller:</span>
-                <strong className="font-mono text-emerald-700">
+                <span className="text-ink-3">Doanh thu đối soát TikTok Seller:</span>
+                <strong className="font-mono text-positive">
                   {formatVndShort(inspectVideo.sellerGmv)} ({inspectVideo.sellerOrders} đơn · ROAS {inspectVideo.roas}x)
                 </strong>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">Trạng thái chứng từ Kế toán:</span>
-                <strong className="text-amber-800">{inspectVideo.pipeline} · {inspectVideo.paymentSlipStatus}</strong>
+                <span className="text-ink-3">Trạng thái chứng từ Kế toán:</span>
+                <strong className="text-warning">{inspectVideo.pipeline} · {inspectVideo.paymentSlipStatus}</strong>
               </div>
             </div>
 
@@ -4621,7 +4603,7 @@ export const ExecutiveDashboardReportsView: React.FC<ExecutiveDashboardReportsVi
                   href={inspectVideo.linkAir}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-indigo-600 text-white font-bold hover:bg-indigo-700 transition"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-accent text-white font-semibold hover:bg-accent transition"
                 >
                   Mở xem Video trên TikTok <ExternalLink className="w-3.5 h-3.5" />
                 </a>

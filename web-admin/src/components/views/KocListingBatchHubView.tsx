@@ -141,18 +141,21 @@ export function KocListingBatchHubView({
   const [discussionRole, setDiscussionRole] = useState<'BOOKING' | 'BRAND' | 'LEADER'>('BOOKING');
 
   // Sync when navigated from Plan Final (InputPlanBreakdownView / MonthlyPlanHub)
-  useEffect(() => {
-    if (!activePlanContext) return;
-    if (activePlanContext.monthKey) setSelectedMonth(activePlanContext.monthKey);
-    if (activePlanContext.storeName) setSelectedStore(activePlanContext.storeName);
-    if (activePlanContext.salaryGrade) {
-      setSelectedGrade(activePlanContext.salaryGrade);
-    } else {
-      setSelectedGrade('ALL');
+  const [prevPlanContext, setPrevPlanContext] = useState(activePlanContext);
+  if (activePlanContext !== prevPlanContext) {
+    setPrevPlanContext(activePlanContext);
+    if (activePlanContext) {
+      if (activePlanContext.monthKey) setSelectedMonth(activePlanContext.monthKey);
+      if (activePlanContext.storeName) setSelectedStore(activePlanContext.storeName);
+      if (activePlanContext.salaryGrade) {
+        setSelectedGrade(activePlanContext.salaryGrade);
+      } else {
+        setSelectedGrade('ALL');
+      }
+      setActiveSubTab('LISTING_APPROVAL');
+      setIsKlMatrixExpanded(true);
     }
-    setActiveSubTab('LISTING_APPROVAL');
-    setIsKlMatrixExpanded(true);
-  }, [activePlanContext]);
+  }
 
   // New KOC form state
   const [newKocForm, setNewKocForm] = useState<{
@@ -864,8 +867,8 @@ export function KocListingBatchHubView({
         >
           <Layers className="w-3.5 h-3.5" />
           1. Lên danh sách nháp (Draft) → Gửi Brand &amp; Duyệt trao đổi theo KL
-          <span className="text-2xs bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded-full">
-            {filteredListings.length}
+          <span className="text-2xs text-slate-500">
+            ({filteredListings.length})
           </span>
         </button>
 
@@ -879,8 +882,8 @@ export function KocListingBatchHubView({
         >
           <Film className="w-3.5 h-3.5" />
           2. Theo dõi video lên sóng &amp; giỏ hàng sàn (Sau khi chốt Deal)
-          <span className="text-2xs bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded-full">
-            {airListings.length}
+          <span className="text-2xs text-emerald-700">
+            ({airListings.length})
           </span>
         </button>
       </div>
@@ -896,17 +899,17 @@ export function KocListingBatchHubView({
             </div>
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <h3 className="text-xs font-bold text-slate-900">
+                <h3 className="text-xs font-semibold text-slate-900">
                   Đối soát Plan Final &amp; Tiến độ Listing KOC theo Khung lương (KL1–KL7 &amp; FOC)
                 </h3>
                 {matchedPlanFinal ? (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  <span className="inline-flex items-center gap-1 text-2xs font-semibold text-emerald-700">
                     <ShieldCheck className="w-3 h-3" />
-                    Gắn với {matchedPlanFinal.id} ({matchedPlanFinal.currentVersionCode || 'v1.0'}) · PIC: {matchedPlanFinal.pic}
+                    · Gắn với {matchedPlanFinal.id} ({matchedPlanFinal.currentVersionCode || 'v1.0'}) · PIC: {matchedPlanFinal.pic}
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-medium bg-slate-100 text-slate-600 border border-slate-200">
-                    Tổng hợp toàn bộ kế hoạch tháng {selectedMonth}
+                  <span className="text-2xs font-medium text-slate-500">
+                    · Tổng hợp toàn bộ kế hoạch tháng {selectedMonth}
                   </span>
                 )}
               </div>
@@ -970,7 +973,7 @@ export function KocListingBatchHubView({
                     >
                       <td className="py-2 px-3">
                         <div className="flex items-center gap-2">
-                          <span className="font-bold text-slate-900">{row.label}</span>
+                          <span className="font-semibold text-slate-900">{row.label}</span>
                           {row.assignedPics.length > 0 && (
                             <span className="text-2xs text-slate-500 truncate max-w-[140px]" title={row.assignedPics.join(', ')}>
                               ({row.assignedPics.join(', ')})
@@ -988,29 +991,29 @@ export function KocListingBatchHubView({
                         </span>
                       </td>
                       <td className="py-2 px-3 text-center tabular-nums">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-2xs font-semibold ${
-                          row.draftCount > 0 ? 'bg-slate-200 text-slate-800' : 'text-slate-400'
+                        <span className={`text-xs font-semibold ${
+                          row.draftCount > 0 ? 'text-slate-800' : 'text-slate-400'
                         }`}>
                           {row.draftCount}
                         </span>
                       </td>
                       <td className="py-2 px-3 text-center tabular-nums">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-2xs font-semibold ${
-                          row.submittedCount > 0 ? 'bg-blue-100 text-blue-800' : 'text-slate-400'
+                        <span className={`text-xs font-semibold ${
+                          row.submittedCount > 0 ? 'text-blue-700' : 'text-slate-400'
                         }`}>
                           {row.submittedCount}
                         </span>
                       </td>
                       <td className="py-2 px-3 text-center tabular-nums">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-2xs font-semibold ${
-                          row.finalApprovedCount > 0 ? 'bg-emerald-100 text-emerald-800' : 'text-slate-400'
+                        <span className={`text-xs font-semibold ${
+                          row.finalApprovedCount > 0 ? 'text-emerald-700' : 'text-slate-400'
                         }`}>
                           {row.finalApprovedCount}
                         </span>
                       </td>
                       <td className="py-2 px-3 text-center tabular-nums">
                         {row.droppedCount > 0 ? (
-                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-2xs font-semibold bg-rose-50 text-rose-700 border border-rose-200">
+                          <span className="text-xs font-semibold text-rose-700">
                             {row.droppedCount}
                           </span>
                         ) : (
@@ -1020,7 +1023,7 @@ export function KocListingBatchHubView({
                       <td className="py-2 px-3 text-center tabular-nums">
                         <div className="flex flex-col items-center">
                           {row.remainingToList > 0 ? (
-                            <span className="text-2xs font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded">
+                            <span className="text-2xs font-semibold text-amber-700">
                               Thiếu {row.remainingToList} slot
                             </span>
                           ) : row.planQty > 0 ? (
@@ -1081,7 +1084,7 @@ export function KocListingBatchHubView({
                 })}
               </tbody>
               <tfoot>
-                <tr className="bg-slate-100/90 border-t border-slate-200 font-bold text-xs text-slate-900">
+                <tr className="bg-slate-100/90 border-t border-slate-200 font-semibold text-xs text-slate-900">
                   <td className="py-2.5 px-3">Tổng cộng theo Plan Final</td>
                   <td className="py-2.5 px-3 text-right text-2xs font-normal text-slate-500">Đối soát toàn kỳ</td>
                   <td className="py-2.5 px-3 text-center tabular-nums">
@@ -1386,12 +1389,12 @@ export function KocListingBatchHubView({
                         <td className="py-3 px-3">
                           <div className="flex items-center gap-1.5 flex-wrap">
                             <span className="font-semibold text-slate-900">{item.kocName}</span>
-                            <span className="px-1.5 py-0.5 rounded text-2xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
-                              {resolvedGrade}
+                            <span className="font-code text-2xs font-semibold text-blue-700">
+                              · {resolvedGrade}
                             </span>
                             {item.sourcePlanVersion && (
-                              <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-600">
-                                Plan {item.sourcePlanVersion}
+                              <span className="text-2xs font-medium text-slate-500">
+                                · Plan {item.sourcePlanVersion}
                               </span>
                             )}
                           </div>
@@ -1412,7 +1415,7 @@ export function KocListingBatchHubView({
                               return (
                                 <div className="mt-1">
                                   <span
-                                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-2xs font-semibold bg-amber-50 text-amber-800 border border-amber-300"
+                                    className="inline-flex items-center gap-1 text-2xs font-semibold text-amber-700"
                                     title={`Trùng KOC trong cùng nhãn với: ${otherStaffs.join(', ')}`}
                                   >
                                     <AlertTriangle className="w-2.5 h-2.5 text-amber-600 shrink-0" />
@@ -1424,11 +1427,11 @@ export function KocListingBatchHubView({
                             return null;
                           })()}
                           <div className="text-2xs text-slate-500 mt-1">
-                            <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">
+                            <span className="font-semibold text-slate-700">
                               {item.tier}
                             </span>
                             <span className="ml-1.5 text-slate-600 truncate max-w-[180px] inline-block align-bottom">
-                              {item.pillarName}
+                              · {item.pillarName}
                             </span>
                           </div>
                         </td>
@@ -1437,12 +1440,12 @@ export function KocListingBatchHubView({
                         <td className="py-3 px-3">
                           <div className="flex items-center gap-1.5">
                             <span
-                              className={`text-2xs font-semibold px-2 py-0.5 rounded border ${
+                              className={`text-2xs font-semibold ${
                                 item.batchCycle === 'BATCH_10'
-                                  ? 'bg-blue-50 text-blue-700 border-blue-200'
+                                  ? 'text-blue-700'
                                   : item.batchCycle === 'BATCH_20'
-                                  ? 'bg-accent-soft text-accent border-line'
-                                  : 'bg-amber-50 text-amber-700 border-amber-200'
+                                  ? 'text-accent'
+                                  : 'text-amber-700'
                               }`}
                             >
                               {item.batchCycle === 'BATCH_10'
@@ -1486,19 +1489,19 @@ export function KocListingBatchHubView({
                           <div className="space-y-1.5">
                             <div className="flex items-center gap-1.5">
                               {item.brandApprovalStatus === 'BRAND_APPROVED' && (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                <span className="inline-flex items-center gap-1 text-2xs font-medium text-emerald-700">
                                   <CheckCircle2 className="w-3 h-3 text-emerald-600" />
                                   Nhãn hàng đã duyệt
                                 </span>
                               )}
                               {item.brandApprovalStatus === 'BRAND_PENDING' && (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-medium bg-amber-50 text-amber-700 border border-amber-200">
+                                <span className="inline-flex items-center gap-1 text-2xs font-medium text-amber-700">
                                   <Clock className="w-3 h-3 text-amber-600" />
                                   {item.overallStatus === 'DRAFT' ? 'Chưa gửi Brand' : 'Chờ nhãn hàng duyệt'}
                                 </span>
                               )}
                               {item.brandApprovalStatus === 'BRAND_REJECTED' && (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-medium bg-rose-50 text-rose-700 border border-rose-200">
+                                <span className="inline-flex items-center gap-1 text-2xs font-medium text-rose-700">
                                   <XCircle className="w-3 h-3 text-rose-600" />
                                   Nhãn hàng từ chối
                                 </span>
@@ -1668,7 +1671,7 @@ export function KocListingBatchHubView({
               </div>
 
               <div className="flex items-center gap-2">
-                <span className="text-2xs font-semibold px-2.5 py-1 rounded bg-emerald-100 text-emerald-800 border border-emerald-300">
+                <span className="text-xs font-medium text-emerald-700">
                   {airListings.length} video đang theo dõi
                 </span>
               </div>
@@ -1712,12 +1715,12 @@ export function KocListingBatchHubView({
                         <td className="py-3 px-3">
                           <div className="flex items-center gap-1.5">
                             <span className="font-semibold text-slate-900">{item.kocName}</span>
-                            <span className="px-1.5 py-0.5 rounded text-2xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
-                              {inferSalaryGradeFromFee(item.finalFee || item.proposedFee, item.salaryGrade)}
+                            <span className="font-code text-2xs font-semibold text-blue-700">
+                              · {inferSalaryGradeFromFee(item.finalFee || item.proposedFee, item.salaryGrade)}
                             </span>
                           </div>
                           <div className="text-2xs text-slate-500">{item.kocHandle}</div>
-                          <div className="text-2xs font-mono text-blue-600 mt-1">
+                          <div className="text-2xs font-code text-blue-600 mt-1">
                             {item.generatedDealId || 'DEAL-AUTO'}
                           </div>
                         </td>
@@ -1781,12 +1784,12 @@ export function KocListingBatchHubView({
                         {/* Cart Anchor Verified */}
                         <td className="py-3 px-3">
                           {item.isCartAnchored ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            <span className="inline-flex items-center gap-1 text-2xs font-medium text-emerald-700">
                               <CheckCircle2 className="w-3 h-3 text-emerald-600" />
                               Đã gắn giỏ hàng
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-medium bg-rose-50 text-rose-700 border border-rose-200">
+                            <span className="inline-flex items-center gap-1 text-2xs font-medium text-rose-600">
                               <AlertTriangle className="w-3 h-3 text-rose-500" />
                               Chưa gắn giỏ hàng
                             </span>
@@ -1796,7 +1799,7 @@ export function KocListingBatchHubView({
                         {/* Spark Ads Code */}
                         <td className="py-3 px-3">
                           {item.sparkAdsCode ? (
-                            <span className="font-mono text-2xs bg-slate-100 text-slate-800 px-2 py-0.5 rounded border border-slate-200">
+                            <span className="font-code text-2xs text-slate-800">
                               {item.sparkAdsCode}
                             </span>
                           ) : (
@@ -1883,7 +1886,7 @@ export function KocListingBatchHubView({
                         proposedFee: rowMatch?.benchmarkUnitCost ?? newKocForm.proposedFee,
                       });
                     }}
-                    className="w-full border border-blue-300 rounded px-2.5 py-1.5 bg-blue-50/40 text-blue-900 font-bold focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="w-full border border-blue-300 rounded px-2.5 py-1.5 bg-blue-50/40 text-blue-900 font-semibold focus:outline-none focus:ring-1 focus:ring-blue-500"
                   >
                     {KL_GRADE_ORDER.map((kl) => (
                       <option key={kl.code} value={kl.code}>
@@ -2093,11 +2096,11 @@ export function KocListingBatchHubView({
             <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
               <div>
                 <div className="flex items-center gap-2">
-                  <h3 className="text-sm font-bold text-slate-900">
+                  <h3 className="text-sm font-semibold text-slate-900">
                     Luồng duyệt &amp; Trao đổi KOC: {inspectingListing.kocName} ({inspectingListing.kocHandle})
                   </h3>
-                  <span className="px-2 py-0.5 rounded text-2xs font-bold bg-blue-100 text-blue-800 border border-blue-200">
-                    {inferSalaryGradeFromFee(inspectingListing.finalFee || inspectingListing.proposedFee, inspectingListing.salaryGrade)}
+                  <span className="font-code text-2xs font-semibold text-blue-700">
+                    · {inferSalaryGradeFromFee(inspectingListing.finalFee || inspectingListing.proposedFee, inspectingListing.salaryGrade)}
                   </span>
                 </div>
                 <p className="text-2xs text-slate-500 mt-0.5">
@@ -2258,10 +2261,10 @@ export function KocListingBatchHubView({
                     inspectingListing.discussions.map((d) => (
                       <div key={d.id} className="p-2.5 rounded-lg border border-slate-200 bg-white space-y-1">
                         <div className="flex items-center justify-between text-2xs">
-                          <span className="font-bold text-slate-800">
+                          <span className="font-semibold text-slate-800">
                             {d.authorName}{' '}
-                            <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-medium ml-1">
-                              {d.authorRole}
+                            <span className="text-slate-500 font-medium ml-1">
+                              · {d.authorRole}
                             </span>
                           </span>
                           <span className="text-slate-400">

@@ -1696,7 +1696,8 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'koc-hub',
     'ads-report',
     'api-settings',
-    'knowledge-qa'
+    'knowledge-qa',
+    'audit-trail'
   ],
   MANAGER: [
     'cockpit',
@@ -1733,7 +1734,8 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'koc-hub',
     'ads-report',
     'api-settings',
-    'knowledge-qa'
+    'knowledge-qa',
+    'audit-trail'
   ],
   GROWTH_MANAGER: [
     'cockpit',
@@ -1758,7 +1760,8 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'master-data',
     'partner-access',
     'api-settings',
-    'knowledge-qa'
+    'knowledge-qa',
+    'audit-trail'
   ],
   MEDIA_MANAGER: [
     'cockpit',
@@ -1783,7 +1786,8 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'master-data',
     'partner-access',
     'api-settings',
-    'knowledge-qa'
+    'knowledge-qa',
+    'audit-trail'
   ],
   LEADER: [
     'cockpit',
@@ -1945,14 +1949,17 @@ export const ROLE_ALLOWED_TABS: Record<UserRole, TabKey[]> = {
     'knowledge-qa'
   ],
   LEGAL: [
-    'contracts'
+    'contracts',
+    'audit-trail'
   ],
   FINANCE: [
     'contracts',
-    'dashboard-finance'
+    'dashboard-finance',
+    'audit-trail'
   ],
   SIGN_ADMIN: [
-    'contracts'
+    'contracts',
+    'audit-trail'
   ],
   BRAND_PARTNER: [
     'brand-hub',

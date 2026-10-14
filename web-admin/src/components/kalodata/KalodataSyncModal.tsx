@@ -209,27 +209,11 @@ export const KalodataSyncModal: React.FC<KalodataSyncModalProps> = ({
               <TrendingUp className="w-5 h-5" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <h3 className="text-base font-semibold text-ink">
-                  Đồng bộ số liệu thương mại từ Kalodata
-                </h3>
-                {status?.hasApiKey ? (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-2xs font-semibold bg-success-soft text-success border border-success-line">
-                    <ShieldCheck className="w-3 h-3 text-success" />
-                    API trực tiếp
-                  </span>
-                ) : (
-                  <span
-                    className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-2xs font-semibold bg-warn-soft text-warn border border-warn-line"
-                    title="Chờ điền KALODATA_API_KEY khi hoàn tất hợp đồng"
-                  >
-                    <AlertCircle className="w-3 h-3 text-warn" />
-                    Chế độ thử nghiệm
-                  </span>
-                )}
-              </div>
+              <h3 className="text-base font-semibold text-ink">
+                Đồng bộ số liệu thương mại từ Kalodata
+              </h3>
               <p className="text-xs text-muted">
-                Tra cứu doanh số, GPM, đơn hàng và cơ cấu video/live của KOC trên TikTok Shop
+                Tra cứu doanh số, GPM, đơn hàng và cơ cấu video/live của KOC trên TikTok Shop ({status?.hasApiKey ? 'Kết nối trực tiếp' : 'Chế độ thử nghiệm'})
               </p>
             </div>
           </div>
@@ -355,12 +339,9 @@ export const KalodataSyncModal: React.FC<KalodataSyncModalProps> = ({
                       {result.profile.isVerified && (
                         <CheckCircle2 className="w-4 h-4 text-primary" />
                       )}
-                      <span className="px-2 py-0.5 bg-sunken text-ink-2 rounded text-2xs font-semibold border border-line">
-                        {result.profile.category}
-                      </span>
                     </div>
                     <div className="text-xs text-muted font-medium mt-0.5">
-                      @{result.profile.handle} • Khu vực: {result.profile.region}
+                      @{result.profile.handle} · {result.profile.category} · Khu vực: {result.profile.region}
                     </div>
                     {result.profile.bio && (
                       <p className="text-2xs text-ink-2 mt-1 max-w-xl line-clamp-2">

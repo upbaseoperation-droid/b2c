@@ -109,11 +109,10 @@ export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotifi
                 <div key={item.id} className="p-5 hover:bg-slate-50/60 transition space-y-3">
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
                     <div className="flex items-center gap-2.5">
-                      <span className="font-mono text-accent font-semibold text-xs">{item.contentCode}</span>
-                      <span className="text-slate-500 text-xs">• BO: <strong className="text-blue-600 font-mono">{item.dealCode}</strong></span>
-                      <span className="text-slate-900 font-semibold text-sm">{item.creatorName}</span>
-                      <span className="bg-accent-soft text-accent px-2 py-0.5 rounded text-2xs font-semibold">{item.pillar}</span>
-                      <span className="badge-blue px-2 py-0.5 rounded text-2xs font-mono">{item.format}</span>
+                      <span className="font-code text-accent font-semibold text-xs">{item.contentCode}</span>
+                      <span className="text-ink-3 text-xs">· BO: <strong className="text-ink font-code">{item.dealCode}</strong></span>
+                      <span className="text-ink font-semibold text-sm">{item.creatorName}</span>
+                      <span className="text-2xs text-ink-3">· {item.pillar} · {item.format}</span>
                     </div>
 
                     <div className="flex items-center gap-2">
@@ -168,14 +167,11 @@ export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotifi
               >
                 <div className="space-y-1.5 max-w-xl">
                   <div className="flex items-center gap-2">
-                    <span className="font-semibold text-slate-900 text-sm group-hover:text-accent transition-colors">
+                    <span className="font-semibold text-ink text-sm group-hover:text-accent transition-colors">
                       {item.kocName}
                     </span>
-                    <span className="bg-accent-soft text-accent px-2 py-0.5 rounded text-2xs font-semibold">
-                      {item.pillar}
-                    </span>
-                    <span className="badge-blue px-2 py-0.5 rounded text-2xs font-mono">
-                      {item.dealCode}
+                    <span className="text-2xs text-ink-3">
+                      · {item.pillar} · <span className="font-code text-ink-2">{item.dealCode}</span>
                     </span>
                   </div>
                   <div className="text-xs font-semibold text-slate-800">
@@ -326,7 +322,7 @@ export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotifi
                       </td>
                       <td className="p-3.5 font-mono">
                         {pub.sparkAdsCode ? (
-                          <div className="px-2 py-0.5 rounded text-2xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 w-fit">
+                          <div className="text-2xs font-medium text-ink">
                             {pub.sparkAdsCode} ({pub.sparkAdsExpiryDays} ngày)
                           </div>
                         ) : (
@@ -347,7 +343,7 @@ export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotifi
                         <div className="text-2xs text-slate-500">{pub.itemsSold} món bán</div>
                       </td>
                       <td className="p-3.5 font-mono">
-                        <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-accent-soft text-accent border border-line">
+                        <span className="text-xs font-semibold text-ink">
                           ROI: {pub.roi}x
                         </span>
                         <div className="text-2xs text-slate-500 mt-0.5">
@@ -374,7 +370,7 @@ export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotifi
           <div className="card-enterprise overflow-hidden p-6 bg-white border border-slate-200 rounded-2xl shadow-xs">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-200">
               <div className="space-y-1">
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-accent-soft text-accent font-semibold text-2xs border border-line">
+                <div className="inline-flex items-center gap-1.5 text-accent font-medium text-2xs">
                   <Layers className="w-3.5 h-3.5" />
                   <span>Chuẩn hóa kiến trúc nội dung Upbase</span>
                 </div>
@@ -401,7 +397,7 @@ export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotifi
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-6">
               <div className="p-4 rounded-xl border border-rose-200 bg-rose-50/40 space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-rose-100 text-rose-800 border border-rose-200">
+                  <span className="font-code text-2xs font-medium text-ink-3">
                     PIL-02 · PROBLEM_SOLUTION
                   </span>
                   <span className="text-2xs text-rose-600 font-semibold">Tỷ lệ chuyển đổi cao</span>
@@ -418,7 +414,7 @@ export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotifi
 
               <div className="p-4 rounded-xl border border-blue-200 bg-blue-50/40 space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-blue-100 text-blue-800 border border-blue-200">
+                  <span className="font-code text-2xs font-medium text-ink-3">
                     PIL-01 · DIRECT_REVIEW
                   </span>
                   <span className="text-2xs text-blue-600 font-semibold">Xây dựng uy tín</span>
@@ -435,7 +431,7 @@ export const ContentView: React.FC<ContentViewProps> = ({ onScriptApprovedNotifi
 
               <div className="p-4 rounded-xl border border-emerald-200 bg-emerald-50/40 space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="px-2 py-0.5 rounded text-2xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                  <span className="font-code text-2xs font-medium text-ink-3">
                     PIL-03 · UNBOXING
                   </span>
                   <span className="text-2xs text-emerald-600 font-semibold">Tự nhiên & chân thực</span>

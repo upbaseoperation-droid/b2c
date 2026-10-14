@@ -772,7 +772,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
                       <div className="leading-tight">
                         <div className="flex items-center gap-1.5">
                           <span className="font-code text-2xs text-ink-3">{d.dealCode}</span>
-                          {d.isWinnerTop20 && <Status tone="warning">Top 20</Status>}
+                          {d.isWinnerTop20 && <span className="text-2xs text-warning font-medium">· Top 20</span>}
                         </div>
                         <div className="font-medium text-ink mt-1">{d.brandName || 'Upbase'}</div>
                         <div className="text-2xs text-ink-2 truncate max-w-[220px]">{d.productName || 'Sản phẩm booking'}{d.bookingBatch ? ` · ${d.bookingBatch}` : ''}</div>
@@ -822,8 +822,8 @@ export const BookingView: React.FC<BookingViewProps> = ({
                     key: 'stage', header: 'Bước', width: 180, render: d => {
                       const st = STAGE[d.currentStage || '1_PLAN_SOURCING'];
                       return (
-                        <div className="grid gap-1 justify-items-start">
-                          <Status tone={d.pipelineText === 'Done' ? 'positive' : st.tone}>{st.label}</Status>
+                        <div className="grid gap-1 justify-items-start leading-tight">
+                          <span className={d.pipelineText === 'Done' ? 'text-xs font-medium text-positive' : 'text-xs font-medium text-ink'}>{st.label}</span>
                           <span className="text-2xs text-ink-3 max-w-[170px] whitespace-normal">{d.pipelineText || d.statusLabel}</span>
                         </div>
                       );
@@ -837,9 +837,9 @@ export const BookingView: React.FC<BookingViewProps> = ({
                           <span className={d.isSlaWarning ? 'text-2xs text-warning font-medium' : 'text-2xs text-ink-3'}>{d.slaRemainingText || 'Trong hạn'}</span>
                         </div>
                         <span className="text-2xs text-ink-3 truncate max-w-[160px]">{d.holdingReason || 'Đang xử lý'}</span>
-                        {d.brandOrientationPendingDays && d.brandOrientationPendingDays >= 3 ? <Status tone="warning">Brand quá {d.brandOrientationPendingDays} ngày</Status> : null}
-                        {d.isLocked7WorkingDays && <Status tone="critical">Khóa: quá 7 ngày chưa có link</Status>}
-                        {d.isDnttOverdue10Am && <Status tone="critical">Trễ đề nghị thanh toán</Status>}
+                        {d.brandOrientationPendingDays && d.brandOrientationPendingDays >= 3 ? <span className="text-2xs text-warning font-medium">Brand quá {d.brandOrientationPendingDays} ngày</span> : null}
+                        {d.isLocked7WorkingDays && <span className="text-2xs text-critical font-medium">Khóa: quá 7 ngày chưa có link</span>}
+                        {d.isDnttOverdue10Am && <span className="text-2xs text-critical font-medium">Trễ đề nghị thanh toán</span>}
                       </div>
                     ),
                   },
@@ -937,7 +937,7 @@ export const BookingView: React.FC<BookingViewProps> = ({
                     <div className="leading-tight min-w-0">
                       <div className="flex items-center gap-1.5">
                         <span className="font-medium text-ink">{k.stageName}</span>
-                        {k.isWinnerTop20 && <Status tone="warning">Winner</Status>}
+                        {k.isWinnerTop20 && <span className="text-2xs text-warning font-medium">· Winner</span>}
                       </div>
                       <div className="text-2xs text-ink-3 mt-0.5">{k.channelId} · {k.phone}</div>
                       <div className="text-2xs text-ink-3">{k.location || 'Hà Nội'} · {k.bookingFormat || 'Booking video'}</div>
@@ -1142,8 +1142,8 @@ export const BookingView: React.FC<BookingViewProps> = ({
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 px-3 py-2.5 rounded-md bg-sunken text-[13px]">
               <span className="text-ink-3">ROI dự tính</span>
               <strong className="font-semibold text-ink tabular-nums">{((editForm.gmv30 || 0) / (editingDeal.totalValue || 1)).toLocaleString('vi-VN', { maximumFractionDigits: 2 })}</strong>
-              {editForm.gmv30 >= 30000000 && <Status tone="warning">Đạt top 20</Status>}
-              {(editForm.gmv30 || 0) / (editingDeal.totalValue || 1) >= 1 && <Status tone="positive">Hoàn vốn</Status>}
+              {editForm.gmv30 >= 30000000 && <span className="text-2xs font-medium text-warning">· Đạt top 20</span>}
+              {(editForm.gmv30 || 0) / (editingDeal.totalValue || 1) >= 1 && <span className="text-2xs font-medium text-positive">· Hoàn vốn</span>}
             </div>
           </>
         )}

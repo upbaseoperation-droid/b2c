@@ -1041,8 +1041,8 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
                           <div>
                             <div className="flex items-center gap-1.5">
                               <span className="font-semibold text-ink text-xs">{koc.stageName}</span>
-                              <span className="px-1.5 py-0.5 rounded text-2xs font-semibold bg-info-soft text-info">
-                                {koc.salaryGrade}
+                              <span className="text-2xs font-medium text-ink-3">
+                                · {koc.salaryGrade}
                               </span>
                               {hasLegalDoc && (
                                 <span title="Đã có CCCD xác thực">
@@ -1050,9 +1050,8 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
                                 </span>
                               )}
                               {history.isWinnerTop20 && (
-                                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-2xs font-semibold bg-warn-soft text-warn border border-warn-line">
-                                  <Star className="w-2.5 h-2.5 text-warn" />
-                                  Top Winner
+                                <span className="inline-flex items-center gap-0.5 text-2xs font-medium text-warn">
+                                  · <Star className="w-2.5 h-2.5 text-warn" /> Top Winner
                                 </span>
                               )}
                             </div>
@@ -1112,9 +1111,9 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
 
                       {/* Hàng 2: ĐÁNH GIÁ LỊCH SỬ HỢP TÁC VỚI KOC */}
                       <div className="pt-2 border-t border-line flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-2xs">
-                        <div className="flex items-center gap-2 flex-wrap">
+                        <div className="flex items-center gap-3 flex-wrap">
                           {history.brandApprovedDealsCount > 0 ? (
-                            <span className="px-2 py-0.5 rounded-md font-semibold bg-success-soft text-success border border-success-line inline-flex items-center gap-1">
+                            <span className="font-medium text-success inline-flex items-center gap-1">
                               <Award className="w-3 h-3 text-success" />
                               <span>
                                 Đã làm <strong>{history.brandApprovedDealsCount} deal</strong> cho{' '}
@@ -1122,27 +1121,27 @@ export const StoreShortlistFilterModal: React.FC<StoreShortlistFilterModalProps>
                               </span>
                             </span>
                           ) : history.brandRejectedDealsCount > 0 ? (
-                            <span className="px-2 py-0.5 rounded-md font-semibold bg-danger-soft text-danger border border-danger-line inline-flex items-center gap-1">
+                            <span className="font-medium text-danger inline-flex items-center gap-1">
                               <AlertTriangle className="w-3 h-3 text-danger" />
                               <span>
                                 Từng bị {selectedStore?.brandName} từ chối ({history.brandLatestRejectReason})
                               </span>
                             </span>
                           ) : history.totalUpbaseDeals > 0 ? (
-                            <span className="px-2 py-0.5 rounded-md font-medium bg-info-soft text-info border border-info-line inline-flex items-center gap-1">
+                            <span className="font-medium text-info inline-flex items-center gap-1">
                               <History className="w-3 h-3 text-info" />
                               <span>
                                 Đối tác Upbase (<strong>{history.totalUpbaseDeals} deal</strong> • Đúng hạn {history.onTimeRate}%)
                               </span>
                             </span>
                           ) : (
-                            <span className="px-2 py-0.5 rounded-md font-medium bg-sunken text-ink-2 border border-line inline-flex items-center gap-1">
+                            <span className="font-medium text-ink-3 inline-flex items-center gap-1">
                               KOC mới (Chưa có lịch sử tại Upbase)
                             </span>
                           )}
 
-                          <span className="px-2 py-0.5 rounded-md font-medium bg-sunken text-ink-2 border border-line">
-                            Uy tín: <strong>{history.reliabilityScore.toFixed(1)}/10</strong>
+                          <span className="font-medium text-ink-3">
+                            · Uy tín: <strong className="text-ink-2">{history.reliabilityScore.toFixed(1)}/10</strong>
                           </span>
                         </div>
 

@@ -349,8 +349,8 @@ export function BrandProfilesView({
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">
                 <span {...sharedFrom('brand-title', r.key)} className="truncate font-semibold text-ink">{r.name}</span>
-                <span className="text-2xs font-mono text-ink-3 bg-surface-2 px-1 py-0.5 rounded border border-line shrink-0">
-                  {count} gian
+                <span className="text-2xs font-mono text-ink-3 shrink-0">
+                  · {count} gian
                 </span>
               </div>
               <div className="flex items-center gap-1.5 mt-1 flex-wrap">
@@ -376,19 +376,19 @@ export function BrandProfilesView({
           <div className="grid gap-0.5 leading-tight text-2xs">
             {planStrat && (
               <div className="flex items-center justify-between gap-1.5">
-                <span className="text-blue-800 font-medium">Plan/Strategy:</span>
+                <span className="text-ink-2 font-medium">Plan/Strategy:</span>
                 <span className="font-semibold text-ink truncate">{planStrat}</span>
               </div>
             )}
             {contentMain && (
               <div className="flex items-center justify-between gap-1.5">
-                <span className="text-amber-800 font-medium">Content/Brand:</span>
+                <span className="text-ink-2 font-medium">Content/Brand:</span>
                 <span className="font-semibold text-ink truncate">{contentMain}</span>
               </div>
             )}
             {kvSis && (
               <div className="flex items-center justify-between gap-1.5">
-                <span className="text-purple-800 font-medium">KV/SIS:</span>
+                <span className="text-ink-2 font-medium">KV/SIS:</span>
                 <span className="font-semibold text-ink truncate">{kvSis}</span>
               </div>
             )}
@@ -440,7 +440,7 @@ export function BrandProfilesView({
             <span className="block font-mono font-medium text-ink">
               Plan: {budget > 0 ? formatVndShort(budget) : '0 đ'}
             </span>
-            <span className={`block text-2xs font-mono mt-0.5 ${isOver || isUnbudgeted ? 'text-danger font-semibold' : 'text-ink-3'}`}>
+            <span className={`block text-2xs font-mono mt-0.5 ${isOver || isUnbudgeted ? 'text-critical font-semibold' : 'text-ink-3'}`}>
               Chi: {formatVndShort(spent)}
               {isUnbudgeted ? ' · Ngoài KH' : isOver ? ' · Vượt trần' : budget > 0 ? ` (${rep?.budgetBurnPct || 0}%)` : ''}
             </span>
@@ -476,9 +476,9 @@ export function BrandProfilesView({
         return (
           <div className="grid gap-0.5 justify-items-start leading-tight">
             {r.done === r.total ? (
-              <Status tone="positive">Đủ {r.done}/{r.total} mục</Status>
+              <span className="text-xs font-medium text-positive">Đủ {r.done}/{r.total} mục</span>
             ) : (
-              <Status tone="info">{r.done}/{r.total} mục</Status>
+              <span className="text-xs font-medium text-ink-2 tabular-nums">{r.done}/{r.total} mục</span>
             )}
             <span className="text-2xs text-ink-3 inline-flex items-center gap-1 mt-0.5">
               <HardDrive className="w-3 h-3 text-accent" />

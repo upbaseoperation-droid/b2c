@@ -63,18 +63,18 @@ export function ContractManagementView({
     if (demoMode) enableBrowserDemo();
     const result = await contractApi<ContractBootstrap>('/api/contracts');
     setData(result); setLoadError(null); return result;
-  }, [demoMode, currentUserId]);
+  }, [demoMode]);
 
   useEffect(() => {
     (async () => {
       if (process.env.NODE_ENV === 'development') await contractApi('/api/auth/me').catch(() => undefined);
       await refresh();
     })().catch(e => setLoadError(e instanceof ApiError ? e : new ApiError((e as Error).message, 503)));
-  }, [refresh]);
+  }, [refresh, currentUserId]);
 
   // Tải văn bản hợp đồng khi bấm Xem nhanh trên bảng danh sách
   useEffect(() => {
-    if (!quickViewRecord) { setQuickViewDoc(null); return; }
+    if (!quickViewRecord) return;
     let cancelled = false;
     contractApi<{ paragraphs: string[]; blocks?: DocBlock[]; fields?: ContractField[]; values?: Record<string, string> }>(`/api/contracts/${quickViewRecord.id}/document?preview=1`)
       .then(r => { if (!cancelled) setQuickViewDoc(r); })

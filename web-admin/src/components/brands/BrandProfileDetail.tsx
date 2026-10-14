@@ -398,9 +398,9 @@ export function BrandProfileDetail({
       render: r => {
         const isSelected = r.month === activeMonth;
         return (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <span className={`font-semibold tabular-nums ${isSelected ? 'text-accent' : 'text-ink'}`}>{r.monthLabel}</span>
-            {isSelected && <Status tone="info">Đang xem</Status>}
+            {isSelected && <span className="text-2xs font-medium text-accent">· Đang xem</span>}
           </div>
         );
       },
@@ -646,8 +646,8 @@ export function BrandProfileDetail({
         <div className="min-w-0">
           <div className="flex items-center gap-1.5 flex-wrap">
             <span className="font-semibold text-ink truncate">{b.kocName}</span>
-            <span className="px-1.5 py-0.5 rounded bg-sunken border border-line text-2xs font-code text-ink-2">
-              {b.tierCode}
+            <span className="text-2xs font-code text-ink-3">
+              · {b.tierCode}
             </span>
           </div>
           <span className="block text-2xs text-ink-3 font-code mt-0.5">
@@ -850,8 +850,8 @@ export function BrandProfileDetail({
             <div className="flex flex-wrap items-center gap-2">
               <h2 className="text-lg font-semibold text-ink" style={sharedTo('brand-title')}>{row.name}</h2>
               {m?.code && (
-                <span className="px-1.5 py-0.5 rounded bg-sunken border border-line text-2xs font-code text-ink-2">
-                  {m.code}
+                <span className="text-2xs font-code text-ink-3">
+                  · {m.code}
                 </span>
               )}
               <Status tone={status.tone}>{status.label}</Status>
@@ -859,8 +859,16 @@ export function BrandProfileDetail({
               {(m?.platforms || []).map(pl => (
                 <ChannelTag key={pl} channel={channelOf(pl)} />
               ))}
-              {isOverbudget && <Status tone="critical">Có gian hàng vượt hạn mức ({activeMonth})</Status>}
-              {isUnbudgetedSpend && <Status tone="warning">Có gian hàng chi ngoài KH ({activeMonth})</Status>}
+              {isOverbudget && (
+                <span className="text-2xs font-medium text-critical">
+                  · Có gian hàng vượt hạn mức ({activeMonth})
+                </span>
+              )}
+              {isUnbudgetedSpend && (
+                <span className="text-2xs font-medium text-warning">
+                  · Có gian hàng chi ngoài KH ({activeMonth})
+                </span>
+              )}
             </div>
             <p className="text-[13px] text-ink-2">
               {[
@@ -995,14 +1003,16 @@ export function BrandProfileDetail({
             >
               {p.workflowRules ? (
                 <div className="grid gap-3.5 text-[13px]">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Status tone={p.workflowRules.projectTier === 'TIER_A_STRATEGIC' ? 'info' : p.workflowRules.projectTier === 'TIER_B_GROWTH' ? 'positive' : 'neutral'}>
+                  <div className="flex flex-wrap items-center gap-2 text-xs text-ink-2">
+                    <span className="font-semibold text-ink">
                       {PROJECT_TIER_LABEL[p.workflowRules.projectTier]}
-                    </Status>
-                    <span className="px-2 py-0.5 rounded bg-sunken border border-line text-2xs font-medium text-ink-2">
+                    </span>
+                    <span className="text-ink-3">·</span>
+                    <span className="font-medium text-ink-2">
                       {OPERATING_MODEL_LABEL[p.workflowRules.operatingModel]}
                     </span>
-                    <span className="px-2 py-0.5 rounded bg-canvas border border-line text-2xs text-ink-2">
+                    <span className="text-ink-3">·</span>
+                    <span className="text-ink-3">
                       {STRATEGY_OWNER_LABEL[p.workflowRules.strategyOwnerTeam]}
                     </span>
                   </div>
@@ -1139,8 +1149,8 @@ export function BrandProfileDetail({
                             <div className="flex flex-wrap items-center gap-2">
                               <span className="font-semibold text-ink">{x.name}</span>
                               {x.skuCode && (
-                                <span className="px-1.5 py-0.5 rounded bg-sunken border border-line text-2xs font-code text-ink-2">
-                                  {x.skuCode}
+                                <span className="text-2xs font-code text-ink-3">
+                                  · {x.skuCode}
                                 </span>
                               )}
                               {x.size && <span className="text-2xs text-ink-3">· {x.size}</span>}
@@ -1304,8 +1314,8 @@ export function BrandProfileDetail({
                                 <Status tone="positive">Còn hiệu lực</Status>
                               )}
                               {l.fileKey && (
-                                <span className="px-1.5 py-0.5 rounded bg-canvas border border-line text-2xs text-ink-2 font-code">
-                                  {[ext || 'FILE', size].filter(Boolean).join(' · ')}
+                                <span className="text-2xs text-ink-3 font-code">
+                                  · {[ext || 'FILE', size].filter(Boolean).join(' · ')}
                                 </span>
                               )}
                             </div>
@@ -1427,8 +1437,8 @@ export function BrandProfileDetail({
                               <div className="flex flex-wrap items-center gap-1.5 text-2xs text-ink-3 mt-0.5">
                                 <span>{DOC_CATEGORY_LABEL[d.category]}</span>
                                 {(ext || size) && (
-                                  <span className="px-1.5 py-0.2 rounded bg-surface border border-line text-ink-2 font-code">
-                                    {[ext || (d.fileKey ? 'FILE' : 'LINK'), size].filter(Boolean).join(' · ')}
+                                  <span className="text-ink-3 font-code">
+                                    · {[ext || (d.fileKey ? 'FILE' : 'LINK'), size].filter(Boolean).join(' · ')}
                                   </span>
                                 )}
                                 {downloadUrl && (
@@ -1845,12 +1855,9 @@ export function BrandProfileDetail({
                             <a href={d.url} target="_blank" rel="noreferrer" className="text-[13.5px] font-medium text-ink hover:text-accent hover:underline break-words">
                               {d.title}
                             </a>
-                            <span className="px-2 py-0.5 rounded bg-sunken text-2xs text-ink-2">
-                              {DOC_CATEGORY_LABEL[d.category]}
+                            <span className="text-2xs text-ink-3">
+                              · {DOC_CATEGORY_LABEL[d.category]} · {d.fileKey ? 'Tệp đính kèm' : 'Liên kết ngoài'}
                             </span>
-                            <Status tone={d.fileKey ? 'positive' : 'neutral'}>
-                              {d.fileKey ? 'Tệp đính kèm' : 'Liên kết ngoài'}
-                            </Status>
                           </div>
                           <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-2xs text-ink-3 mt-0.5">
                             {d.fileName && <span className="font-code text-ink-2">{d.fileName}</span>}
@@ -1937,7 +1944,7 @@ export function BrandProfileDetail({
               <div className="grid gap-3 md:grid-cols-3 text-xs">
                 <div className="rounded-lg border border-line bg-canvas/60 p-3.5 space-y-2">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="font-semibold text-blue-800 uppercase tracking-wide text-2xs">1. Plan / Strategy</span>
+                    <span className="font-semibold text-ink-2 uppercase tracking-wide text-2xs">1. Plan / Strategy</span>
                     <Status tone={currentBrandReport.brandPlan.status === 'APPROVED' || currentBrandReport.brandPlan.status === 'COMPLETED' ? 'positive' : 'info'}>
                       {currentBrandReport.brandPlan.status === 'APPROVED' || currentBrandReport.brandPlan.status === 'COMPLETED' ? 'Đã duyệt' : 'Đang triển khai'}
                     </Status>
@@ -1951,10 +1958,10 @@ export function BrandProfileDetail({
 
                 <div className="rounded-lg border border-line bg-canvas/60 p-3.5 space-y-2">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="font-semibold text-amber-800 uppercase tracking-wide text-2xs">2. Content / Brand Main</span>
-                    <Status tone="positive">
+                    <span className="font-semibold text-ink-2 uppercase tracking-wide text-2xs">2. Content / Brand Main</span>
+                    <span className="text-2xs font-code font-semibold text-positive">
                       {currentBrandReport.brandPlan.contentBrandMainPlan.deliveredCount}/{currentBrandReport.brandPlan.contentBrandMainPlan.heroScriptsTarget} tuyến
-                    </Status>
+                    </span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-ink-3">Phụ trách:</span>
@@ -1965,10 +1972,10 @@ export function BrandProfileDetail({
 
                 <div className="rounded-lg border border-line bg-canvas/60 p-3.5 space-y-2">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="font-semibold text-purple-800 uppercase tracking-wide text-2xs">3. Key Visual / SIS</span>
-                    <Status tone="positive">
+                    <span className="font-semibold text-ink-2 uppercase tracking-wide text-2xs">3. Key Visual / SIS</span>
+                    <span className="text-2xs font-code font-semibold text-positive">
                       {currentBrandReport.brandPlan.keyVisualSisPlan.deliveredCount}/{currentBrandReport.brandPlan.keyVisualSisPlan.kvDirectionCount + currentBrandReport.brandPlan.keyVisualSisPlan.sisBannerPackageCount} bộ KV
-                    </Status>
+                    </span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-ink-3">Phụ trách:</span>
@@ -2078,8 +2085,8 @@ export function BrandProfileDetail({
                           <div className="flex flex-wrap items-center gap-2">
                             <span className="font-semibold text-ink text-sm">{x.name}</span>
                             {x.skuCode && (
-                              <span className="px-1.5 py-0.5 rounded bg-sunken border border-line text-2xs font-code text-ink-2">
-                                {x.skuCode}
+                              <span className="text-2xs font-code text-ink-3">
+                                · {x.skuCode}
                               </span>
                             )}
                             {x.size && <span className="text-xs text-ink-3">· {x.size}</span>}
@@ -2262,8 +2269,8 @@ export function BrandProfileDetail({
                             <Status tone="positive">Còn hiệu lực</Status>
                           )}
                           {l.fileKey && (
-                            <span className="px-1.5 py-0.5 rounded bg-canvas border border-line text-2xs text-ink-2 font-code">
-                              {[ext || 'FILE', size].filter(Boolean).join(' · ')}
+                            <span className="text-2xs text-ink-3 font-code">
+                              · {[ext || 'FILE', size].filter(Boolean).join(' · ')}
                             </span>
                           )}
                         </div>
