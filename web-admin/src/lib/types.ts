@@ -6,7 +6,7 @@ export type SystemDepartmentScope =
 
 export type UserRole = 
   | 'ADMIN' 
-  | 'MANAGER'        // Trưởng phòng Marketing B2C
+  | 'MANAGER'        // Giám đốc Marketing B2C
   | 'GROWTH_MANAGER' // Trưởng phòng Growth
   | 'MEDIA_MANAGER'  // Trưởng phòng Media
   | 'LEADER'         // Trưởng nhóm B2C
@@ -16,6 +16,9 @@ export type UserRole =
   | 'GROWTH_MEMBER'
   | 'MEDIA_MEMBER'
   | 'MEMBER'
+  | 'LEGAL'          // Pháp chế — Duyệt hợp đồng & Quản lý danh mục biểu mẫu
+  | 'FINANCE'        // Kế toán — Duyệt hợp đồng & Đối soát thanh toán
+  | 'SIGN_ADMIN'     // Điều phối ký điện tử (weSign)
   | 'BRAND_PARTNER' // Đại diện đối tác Brand đăng nhập Gmail
   | 'KOC_PARTNER'   // Creator / KOC đăng nhập Gmail
   | 'CTV_PARTNER';  // Cộng tác viên kênh nội bộ đăng nhập Gmail

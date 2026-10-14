@@ -39,7 +39,7 @@ export const RBAC_ROLE_DEFINITIONS: RoleDefinition[] = [
   {
     id: 'MANAGER',
     code: 'MKT_B2C_HEAD',
-    name: 'Trưởng Phòng Marketing B2C',
+    name: 'Giám Đốc Marketing B2C',
     scopeType: 'INTERNAL',
     departmentScope: 'MARKETING_B2C',
     badgeColor: 'bg-purple-50 text-purple-700 border-purple-200',
@@ -633,7 +633,7 @@ export const INITIAL_INTERNAL_STAFF_RBAC: InternalStaffRbacMember[] = [
     email: 'yennhi@upbase.vn',
     avatar: 'YN',
     role: 'MANAGER',
-    roleTitle: 'Trưởng Phòng Marketing B2C (Lead B2C)',
+    roleTitle: 'Giám Đốc Marketing B2C (Lead B2C)',
     department: 'Khối Marketing B2C',
     team: 'Booking',
     location: 'HN',
@@ -641,7 +641,7 @@ export const INITIAL_INTERNAL_STAFF_RBAC: InternalStaffRbacMember[] = [
     departmentScope: 'MARKETING_B2C',
     canLogin: true,
     accessSource: 'ADMIN_EXPLICIT',
-    position: 'Trưởng Phòng Vận Hành B2C',
+    position: 'Giám Đốc Marketing B2C',
     picBrands: ['ALL_BRANDS', 'ClubClio', 'Cindy Bloom', 'L\'Occitane Việt Nam', 'Rejuran', 'Ziaja Intimate', '4PM'],
     permissions: {
       canApproveBudget: true,

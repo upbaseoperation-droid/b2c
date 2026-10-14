@@ -108,7 +108,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({ onNotify }) =>
   const [newKeyLabel, setNewKeyLabel] = useState('');
   const [newKeyProvider, setNewKeyProvider] = useState<Exclude<ApiProviderId, 'INTERNAL'>>('GOOGLE');
   const [newKeyValue, setNewKeyValue] = useState('');
-  const [newKeyModel, setNewKeyModel] = useState('gemini-2.5-flash');
+  const [newKeyModel, setNewKeyModel] = useState('gemini-3.8-flash');
   const [newKeyDept, setNewKeyDept] = useState<SavedNamedApiKey['departmentScope']>('ALL');
   const [newKeyNotes, setNewKeyNotes] = useState('');
 
@@ -880,7 +880,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({ onNotify }) =>
                                       const val = e.target.value;
                                       setCustomModelInputs(prev => ({ ...prev, [pid]: val }));
                                     }}
-                                    placeholder="VD: gpt-4o-2024-11-20, claude-3-7-sonnet-20250219..."
+                                    placeholder="VD: gpt-5.6-sol, claude-opus-5-5, gemini-4-argon..."
                                     className="flex-1 px-2.5 py-1.5 text-xs font-mono rounded-lg border border-line-strong bg-surface text-ink focus:outline-none focus:border-accent"
                                   />
                                   <button

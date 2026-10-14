@@ -326,8 +326,8 @@ async function generateDataset() {
 
       if (name === 'Đặng Thị Yến Nhi') {
         roleLevel = 'HEAD';
-        roleTitle = 'Trưởng Phòng Marketing B2C (Lead B2C)';
-        teamName = 'Ban Quản Trị Phòng B2C';
+        roleTitle = 'Giám Đốc Marketing B2C (Lead B2C)';
+        teamName = 'Ban Quản Trị Khối Marketing B2C';
         directSupervisor = 'Ban Giám Đốc';
       } else if (name === 'Nguyễn Thị Ngọc Tâm') {
         roleLevel = 'LEADER';

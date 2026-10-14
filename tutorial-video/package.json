@@ -7,7 +7,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "capture": "node capture.mjs",
     "studio": "remotion studio src/index.ts",
-    "render": "remotion render src/index.ts MasterData out/huong-dan-du-lieu-goc.mp4 --codec=h264 --crf=20"
+    "render": "remotion render src/index.ts MasterData out/huong-dan-du-lieu-goc-v2.mp4 --codec=h264 --crf=18"
   },
   "keywords": [],
   "author": "",

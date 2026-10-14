@@ -1,7 +1,7 @@
 'use client';
 
 import { PartnerDiscussion } from '../PartnerDiscussion';
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Avatar, Presence } from '../ui';
 import {
   Video,
@@ -149,7 +149,16 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
   const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'PLAN_FINAL_RBAC' | 'CTV_PORTAL' | 'APPROVALS' | 'ACTIVE_JOBS' | 'CONTRIBUTORS' | 'DISCUSSION' | 'HISTORY'>(
     currentUser?.role === 'CTV_PARTNER' ? 'CTV_PORTAL' : 'OVERVIEW'
   );
+  const [ctvPortalSubTab, setCtvPortalSubTab] = useState<'WORKSPACE' | 'MY_PROFILE'>('WORKSPACE');
+  const [myProfileDraft, setMyProfileDraft] = useState<Contributor | null>(null);
+  const [newSkuAtHomeInput, setNewSkuAtHomeInput] = useState('');
   const [isCtvSimulatorView, setIsCtvSimulatorView] = useState(false);
+
+  useEffect(() => {
+    if (currentUser?.role === 'CTV_PARTNER') {
+      setActiveTab('CTV_PORTAL');
+    }
+  }, [currentUser?.role]);
 
   // State: Phân quyền nhân sự Content & Partnership trong quy trình 6 bước Video Self-Channel
   const [staffPermissions, setStaffPermissions] = useState<Array<{
@@ -286,7 +295,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
   const isManagerOrAdmin = currentUser?.role === 'ADMIN' || currentUser?.role === 'MANAGER' || currentUser?.role === 'LEADER';
 
   const userAssignedBrands = useMemo(() => {
-    if (!currentUser) return [];
+    if (!currentUser || isCtvPartner) return [];
     if (currentUser.assignedBrands && currentUser.assignedBrands.length > 0) {
       return currentUser.assignedBrands;
     }
@@ -294,19 +303,20 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
       return currentUser.linkedEntityName.split(',').map(s => s.trim());
     }
     return [];
-  }, [currentUser]);
+  }, [currentUser, isCtvPartner]);
 
   const availableAllocations = useMemo(() => {
-    if (isManagerOrAdmin) {
+    if (isManagerOrAdmin || isCtvPartner) {
       return MULTI_BRAND_ALLOCATIONS;
     }
     if (userAssignedBrands.length > 0) {
-      return MULTI_BRAND_ALLOCATIONS.filter(a =>
+      const matched = MULTI_BRAND_ALLOCATIONS.filter(a =>
         userAssignedBrands.some(ub => a.brandName.toLowerCase().includes(ub.toLowerCase()) || a.brandId.toLowerCase().includes(ub.toLowerCase()))
       );
+      if (matched.length > 0) return matched;
     }
     return MULTI_BRAND_ALLOCATIONS;
-  }, [isManagerOrAdmin, userAssignedBrands]);
+  }, [isManagerOrAdmin, isCtvPartner, userAssignedBrands]);
 
   const [selectedBrandId, setSelectedBrandId] = useState<string>('ALL');
 

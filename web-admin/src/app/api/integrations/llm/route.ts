@@ -34,7 +34,7 @@ async function callGoogleGemini(params: {
   maxTokens?: number;
 }): Promise<{ text: string; modelUsed: string; usage: TokenUsageMetrics }> {
   const cleanBase = (params.baseUrl || 'https://generativelanguage.googleapis.com/v1beta').replace(/\/+$/, '');
-  const modelId = params.model || 'gemini-2.5-flash';
+  const modelId = params.model || 'gemini-3.8-flash';
   const url = `${cleanBase}/models/${encodeURIComponent(modelId)}:generateContent?key=${encodeURIComponent(params.apiKey.trim())}`;
 
   const parts: Array<{ text: string }> = [];
@@ -94,7 +94,7 @@ async function callOpenAiChatGpt(params: {
   maxTokens?: number;
 }): Promise<{ text: string; modelUsed: string; usage: TokenUsageMetrics }> {
   const cleanBase = (params.baseUrl || 'https://api.openai.com/v1').replace(/\/+$/, '');
-  const modelId = params.model || 'gpt-4o-mini';
+  const modelId = params.model || 'gpt-5-mini';
   const url = `${cleanBase}/chat/completions`;
 
   const messages: Array<{ role: 'system' | 'user'; content: string }> = [];
@@ -103,7 +103,7 @@ async function callOpenAiChatGpt(params: {
   }
   messages.push({ role: 'user', content: params.userPrompt });
 
-  const isReasoningModel = modelId.startsWith('o1') || modelId.startsWith('o3');
+  const isReasoningModel = modelId.startsWith('o1') || modelId.startsWith('o3') || modelId.startsWith('o4');
   const payload: Record<string, unknown> = {
     model: modelId,
     messages,
@@ -161,7 +161,7 @@ async function callAnthropicClaude(params: {
   maxTokens?: number;
 }): Promise<{ text: string; modelUsed: string; usage: TokenUsageMetrics }> {
   const cleanBase = (params.baseUrl || 'https://api.anthropic.com/v1').replace(/\/+$/, '');
-  const modelId = params.model || 'claude-3-7-sonnet-20250219';
+  const modelId = params.model || 'claude-sonnet-5-5';
   const url = `${cleanBase}/messages`;
 
   const payload: Record<string, unknown> = {
@@ -348,7 +348,7 @@ export async function POST(req: NextRequest) {
     if (action === 'TEST_CONNECTION') {
       const provider = body.provider || 'GOOGLE';
       const apiKey = (body.apiKey || '').trim();
-      const model = body.model || 'gemini-2.5-flash';
+      const model = body.model || 'gemini-3.8-flash';
       const baseUrl = body.baseUrl;
 
       if (provider === 'INTERNAL') {
@@ -423,7 +423,7 @@ export async function POST(req: NextRequest) {
     if (action === 'EXECUTE_PURPOSE') {
       const purposeId: OperationalApiPurposeId = body.purposeId || 'SCRIPT_REVIEW';
       const primaryProvider: ApiProviderId = body.provider || 'GOOGLE';
-      const primaryModel = body.model || 'gemini-2.5-flash';
+      const primaryModel = body.model || 'gemini-3.8-flash';
       const primaryKey =
         (body.apiKey || '').trim() ||
         (primaryProvider === 'GOOGLE'

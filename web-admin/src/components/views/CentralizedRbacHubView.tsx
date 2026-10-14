@@ -87,7 +87,7 @@ const SCOPE_LABELS: Record<SystemDepartmentScope, { label: string; badgeClass: s
 
 const ROLE_DISPLAY_NAME: Record<UserRole, string> = {
   ADMIN: 'Quản trị hệ thống (Admin)',
-  MANAGER: 'Trưởng phòng Marketing B2C',
+  MANAGER: 'Giám đốc Marketing B2C',
   GROWTH_MANAGER: 'Trưởng phòng Growth',
   MEDIA_MANAGER: 'Trưởng phòng Media',
   LEADER: 'Trưởng nhóm B2C',
@@ -671,7 +671,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                   ? 'Quyền Trưởng Phòng Growth: Quản lý đội ngũ & phân công nhân sự Khối Growth'
                   : isMediaManager
                   ? 'Quyền Trưởng Phòng Media: Quản lý đội ngũ & phân công nhân sự Khối Media'
-                  : 'Quyền Trưởng Phòng Marketing B2C: Quản lý đội ngũ Booking, Content & Brand'}
+                  : 'Quyền Giám Đốc Marketing B2C: Quản lý đội ngũ Booking, Content & Brand'}
               </span>
             </span>
             <span className="text-2xs text-ink-3">
@@ -1292,7 +1292,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                         >
                           <optgroup label="Cấp Quản Trị & Trưởng Phòng 3 Khối">
                             <option value="ADMIN">Quản Trị Hệ Thống (ADMIN)</option>
-                            <option value="MANAGER">Trưởng Phòng Marketing B2C (MANAGER)</option>
+                            <option value="MANAGER">Giám Đốc Marketing B2C (MANAGER)</option>
                             <option value="GROWTH_MANAGER">Trưởng Phòng Growth (GROWTH_MANAGER)</option>
                             <option value="MEDIA_MANAGER">Trưởng Phòng Media (MEDIA_MANAGER)</option>
                             <option value="LEADER">Trưởng Nhóm Booking B2C (LEADER)</option>
@@ -1603,7 +1603,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
               >
                 <option value="ALL">Tất cả vai trò nội bộ</option>
                 <option value="ADMIN">Quản Trị Hệ Thống (ADMIN)</option>
-                <option value="MANAGER">Trưởng Phòng Marketing B2C (MANAGER)</option>
+                <option value="MANAGER">Giám Đốc Marketing B2C (MANAGER)</option>
                 <option value="GROWTH_MANAGER">Trưởng Phòng Growth (GROWTH_MANAGER)</option>
                 <option value="MEDIA_MANAGER">Trưởng Phòng Media (MEDIA_MANAGER)</option>
                 <option value="LEADER">Trưởng Nhóm Booking (LEADER)</option>
@@ -1779,7 +1779,7 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
                       className="w-full h-9 px-3 rounded-lg border border-slate-200 bg-white font-semibold focus:outline-none focus:border-blue-500"
                     >
                       <option value="ADMIN">Quản Trị Hệ Thống (ADMIN) - Toàn quyền</option>
-                      <option value="MANAGER">Trưởng Phòng Marketing B2C (MANAGER)</option>
+                      <option value="MANAGER">Giám Đốc Marketing B2C (MANAGER)</option>
                       <option value="GROWTH_MANAGER">Trưởng Phòng Growth (GROWTH_MANAGER)</option>
                       <option value="MEDIA_MANAGER">Trưởng Phòng Media (MEDIA_MANAGER)</option>
                       <option value="LEADER">Trưởng Nhóm Booking B2C (LEADER)</option>

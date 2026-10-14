@@ -30,7 +30,7 @@ import type {
   StrategyOwnerTeam,
   ToneTag,
 } from './types';
-import { SECTION_LABEL } from './types';
+import { brandKey, SECTION_LABEL } from './types';
 
 export class BrandError extends Error {
   constructor(message: string, public status = 400) { super(message); }
@@ -41,8 +41,31 @@ export function requireBrand(condition: unknown, message: string, status = 400):
 
 const isLead = (u: UserProfile) => u.role === 'ADMIN' || u.role === 'MANAGER';
 const sameName = (a?: string, b?: string) => !!a && !!b && a.trim().toLowerCase() === b.trim().toLowerCase();
+
+/** Kiểm tra tài khoản Đối tác Nhãn hàng (BRAND_PARTNER) có thuộc thương hiệu đang truy cập không. */
+export function isBrandPartnerForBrand(user: UserProfile | null | undefined, brandName?: string): boolean {
+  if (!user) return false;
+  if (user.role !== 'BRAND_PARTNER' && user.partnerType !== 'BRAND') return false;
+  if (!brandName) return false;
+  const targetKey = brandKey(brandName);
+  if (!targetKey) return false;
+
+  const candidates = [
+    user.linkedEntityName,
+    ...(user.assignedBrands || []),
+  ].filter((x): x is string => Boolean(x && x.trim()));
+
+  for (const c of candidates) {
+    const ck = brandKey(c);
+    if (ck && (ck === targetKey || ck.includes(targetKey) || targetKey.includes(ck))) {
+      return true;
+    }
+  }
+  return false;
+}
+
 /** Người được cấp vai trò pháp chế trong phân hệ Hợp đồng (CONTRACT_ACCESS_JSON). */
-function isLegal(u: UserProfile) {
+export function isLegalActor(u: UserProfile) {
   try {
     return configuredActors().some(a => a.roles.includes('LEGAL') && (a.id === u.larkOpenId || a.id === u.id));
   } catch {
@@ -52,13 +75,16 @@ function isLegal(u: UserProfile) {
 
 /**
  * Trưởng phòng / quản trị: sửa mọi mục. Account PIC của nhãn: định vị, pháp nhân, quy tắc vận hành, sản phẩm,
- * quy chuẩn nội dung, câu hỏi khó, tài liệu. Pháp chế: mục pháp lý. Trần thù lao: chỉ trưởng phòng.
+ * quy chuẩn nội dung, câu hỏi khó, tài liệu. Đại diện nhãn hàng (BRAND_PARTNER) của đúng thương hiệu: sửa định vị,
+ * pháp nhân, quy tắc vận hành/phê duyệt, sản phẩm & tồn kho mẫu, quy chuẩn nội dung, câu hỏi khó, tài liệu, pháp lý.
+ * Pháp chế: mục pháp lý. Trần thù lao nội bộ (RATECARD): chỉ trưởng phòng B2C.
  */
-export function permissionsFor(user: UserProfile | null, accountPic?: string): BrandPermissions {
+export function permissionsFor(user: UserProfile | null, accountPic?: string, brandName?: string): BrandPermissions {
   const lead = !!user && isLead(user);
   const pic = !!user && sameName(user.name, accountPic);
-  const legal = !!user && isLegal(user);
-  const content = lead || pic;
+  const legal = !!user && isLegalActor(user);
+  const brandPartner = isBrandPartnerForBrand(user, brandName);
+  const content = lead || pic || brandPartner;
   return {
     POSITIONING: content,
     ENTITY: content,
@@ -67,14 +93,15 @@ export function permissionsFor(user: UserProfile | null, accountPic?: string): B
     CONTENT_RULES: content,
     FAQS: content,
     DOCUMENTS: content,
-    LEGAL: lead || legal,
+    LEGAL: lead || legal || brandPartner,
     RATECARD: lead,
   };
 }
 
 export function requireReader(user: UserProfile | null): asserts user is UserProfile {
   requireBrand(user, 'Đăng nhập để xem hồ sơ thương hiệu.', 401);
-  requireBrand(!user.partnerType, 'Tài khoản đối tác không xem được hồ sơ nội bộ.', 403);
+  const isAllowedPartner = user.role === 'BRAND_PARTNER' || user.partnerType === 'BRAND';
+  requireBrand(!user.partnerType || isAllowedPartner, 'Tài khoản đối tác KOC/CTV không xem được hồ sơ thương hiệu.', 403);
 }
 
 /* ------------------------------------------------------- Làm sạch dữ liệu */
