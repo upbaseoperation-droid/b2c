@@ -648,48 +648,51 @@ export const BookingView: React.FC<BookingViewProps> = ({
                 empty={<EmptyState title="Không có ứng viên ở trạng thái này" />}
                 columns={[
                   {
-                    key: 'koc', header: 'KOC', width: 220, render: c => (
+                    key: 'koc', header: 'KOC & Kênh', width: 240, render: c => (
                       <div className="leading-tight">
-                        <div className="font-medium text-ink">{c.stageName}</div>
-                        <a href={c.channelUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-2xs text-ink-3 hover:text-accent mt-0.5">
-                          {c.channelId}<ExternalLink className="w-3 h-3" />
-                        </a>
-                        <div className="text-2xs text-ink-3 font-code mt-0.5">{c.candidateCode}</div>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="font-medium text-ink">{c.stageName}</span>
+                          <span className="text-2xs font-semibold text-accent">· {c.tierLabel}</span>
+                          <span className="text-2xs text-ink-3 font-code">({c.candidateCode})</span>
+                        </div>
+                        <div className="text-2xs text-ink-3 mt-0.5 flex items-center gap-1.5 flex-wrap">
+                          <a href={c.channelUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-0.5 hover:text-accent">
+                            {c.channelId}<ExternalLink className="w-2.5 h-2.5" />
+                          </a>
+                          <span>•</span>
+                          <span className="tabular-nums">{formatNumber(c.followers)} flw · {formatNumber(c.avgViews)} view</span>
+                        </div>
                       </div>
                     ),
                   },
                   {
-                    key: 'tier', header: 'Hạng', width: 160, render: c => (
+                    key: 'brand', header: 'Nhãn hàng & Đợt', width: 180, render: c => (
                       <div className="leading-tight">
-                        <div className="text-ink">{c.tierLabel}</div>
-                        <div className="text-2xs text-ink-3 mt-0.5 tabular-nums">{formatNumber(c.followers)} follower · {formatNumber(c.avgViews)} view</div>
+                        <div className="font-medium text-ink">{c.brandName}</div>
+                        <div className="text-2xs text-ink-3 mt-0.5">
+                          {c.storeName || 'Mọi gian hàng'} · <span className="font-medium text-ink-2">{c.pitchBatch || 'Đợt 1'}</span>
+                        </div>
                       </div>
                     ),
                   },
+                  { key: 'price', header: 'Giá đề xuất', align: 'right', width: 110, render: c => <span className="tabular-nums font-semibold text-ink">{formatVndShort(c.rateCardExpected)}</span> },
                   {
-                    key: 'brand', header: 'Nhãn hàng', width: 180, render: c => (
-                      <div className="leading-tight">
-                        <div className="text-ink">{c.brandName}</div>
-                        <div className="text-2xs text-ink-3 mt-0.5">{c.storeName || 'Mọi gian hàng'}</div>
-                      </div>
-                    ),
-                  },
-                  { key: 'price', header: 'Giá đề xuất', align: 'right', width: 120, render: c => <span className="tabular-nums">{formatVndShort(c.rateCardExpected)}</span> },
-                  { key: 'pic', header: 'PIC', width: 160, render: c => <Person name={c.assignedPic} sub={c.pitchBatch || 'Đợt 1'} size={22} /> },
-                  {
-                    key: 'status', header: 'Trạng thái', width: 170, render: c => {
+                    key: 'pic_status', header: 'Phụ trách & Trạng thái', width: 190, render: c => {
                       const st = OUTREACH[c.outreachStatus] || { label: c.outreachStatus, tone: 'neutral' as StatusTone };
                       return (
-                        <div className="grid gap-1 justify-items-start">
-                          <Status tone={st.tone}>{st.label}</Status>
+                        <div className="grid gap-1 justify-items-start leading-tight">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <Status tone={st.tone}>{st.label}</Status>
+                            <span className="text-2xs text-ink-2 font-medium">· {c.assignedPic}</span>
+                          </div>
                           {c.outreachStatus === 'CONVERTED_TO_BOOKING' && c.convertedBookingId && <span className="text-2xs text-ink-3 font-code">{c.convertedBookingId}</span>}
-                          {c.outreachStatus === 'REJECTED' && c.rejectionReason && <span className="text-2xs text-ink-3 max-w-[200px] whitespace-normal">{c.rejectionReason}</span>}
+                          {c.outreachStatus === 'REJECTED' && c.rejectionReason && <span className="text-2xs text-ink-3 max-w-[180px] whitespace-normal">{c.rejectionReason}</span>}
                         </div>
                       );
                     },
                   },
                   {
-                    key: 'actions', header: <span className="sr-only">Thao tác</span>, align: 'right', width: 130, render: c =>
+                    key: 'actions', header: <span className="sr-only">Thao tác</span>, align: 'right', width: 110, render: c =>
                       c.outreachStatus !== 'CONVERTED_TO_BOOKING' && c.outreachStatus !== 'REJECTED' ? (
                         <Button size="sm" onClick={() => setCandidates(prev => prev.map(x => x.id === c.id ? { ...x, outreachStatus: 'CONVERTED_TO_BOOKING', convertedBookingId: `BO26_${Date.now().toString().slice(-6)}` } : x))}>
                           Chốt booking
@@ -719,10 +722,10 @@ export const BookingView: React.FC<BookingViewProps> = ({
         return (
           <div className="space-y-4">
             <StatRow>
-              <Stat label="Video booking có phí" value="622" note="Tạo 1,27 tỷ GMV trong 30 ngày" />
-              <Stat label="Ngân sách đã giải ngân" value="2,83 tỷ" note="ROI toàn bộ 0,45" />
-              <Stat label="Video có doanh thu" value="274/622" progress={{ value: 274, max: 622, target: 0.5 }} note="44,1% video có GMV" />
-              <Stat label="Video hoàn vốn" value="93/622" progress={{ value: 93, max: 622, target: 0.3 }} note="15% đạt điểm hòa vốn" tone="warning" />
+              <Stat label="Video booking có phí" value="622" />
+              <Stat label="Ngân sách đã giải ngân" value="2,83 tỷ" />
+              <Stat label="Video có doanh thu" value="274/622" progress={{ value: 274, max: 622, target: 0.5 }} />
+              <Stat label="Video hoàn vốn" value="93/622" progress={{ value: 93, max: 622, target: 0.3 }} tone="warning" />
             </StatRow>
 
             <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 rounded-xl bg-accent-soft">
@@ -768,123 +771,98 @@ export const BookingView: React.FC<BookingViewProps> = ({
                 empty={<EmptyState title="Không có job phù hợp" />}
                 columns={[
                   {
-                    key: 'job', header: 'Job', width: 230, render: d => (
+                    key: 'job_koc', header: 'Job & KOC', width: 260, render: d => (
                       <div className="leading-tight">
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-code text-2xs text-ink-3">{d.dealCode}</span>
-                          {d.isWinnerTop20 && <span className="text-2xs text-warning font-medium">· Top 20</span>}
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="font-code text-2xs text-ink-3 font-semibold">{d.dealCode}</span>
+                          {d.isWinnerTop20 && <span className="text-2xs text-warning font-semibold">· Top 20</span>}
+                          <span className="font-medium text-ink">· {d.kocStageName}</span>
+                          <span className="text-2xs font-semibold text-accent">({d.salaryGrade})</span>
                         </div>
-                        <div className="font-medium text-ink mt-1">{d.brandName || 'Upbase'}</div>
-                        <div className="text-2xs text-ink-2 truncate max-w-[220px]">{d.productName || 'Sản phẩm booking'}{d.bookingBatch ? ` · ${d.bookingBatch}` : ''}</div>
-                        {d.contentAngleName ? (
-                          <div className="text-2xs font-medium text-accent flex items-center gap-1 mt-0.5 truncate max-w-[220px]" title={d.contentHook ? `Hook: "${d.contentHook}"` : d.contentAngleName}>
-                            <span className="truncate">{d.contentAngleName}</span>
-                          </div>
-                        ) : d.contentPillar ? (
-                          <div className="text-2xs text-ink-3 mt-0.5">{d.contentPillar}</div>
-                        ) : null}
-                        <div className="text-2xs text-ink-3 truncate max-w-[220px]">{d.campaignTitle}</div>
+                        <div className="text-2xs text-ink-2 mt-0.5 flex items-center gap-1 flex-wrap">
+                          <span className="font-medium text-ink">{d.brandName || 'Upbase'}</span>
+                          <span>·</span>
+                          <span className="truncate max-w-[160px]">{d.productName || 'Sản phẩm booking'}</span>
+                          {d.bookingBatch && <span>({d.bookingBatch})</span>}
+                        </div>
+                        <div className="text-2xs text-ink-3 mt-0.5 flex items-center gap-2">
+                          <span>Kênh: {d.kocChannelId}</span>
+                          <span>•</span>
+                          <span>PIC: {d.bookingPic || d.assignedStaff}</span>
+                        </div>
                       </div>
                     ),
                   },
                   {
-                    key: 'koc', header: 'KOC', width: 180, render: d => (
-                      <div className="leading-tight">
-                        <div className="font-medium text-ink">{d.kocStageName}</div>
-                        <div className="text-2xs text-ink-3 mt-0.5">{d.kocChannelId}</div>
-                        <div className="text-2xs text-ink-3 mt-0.5">{d.salaryGrade}{d.creatorCategory ? ` · ${d.creatorCategory}` : ''}</div>
-                      </div>
-                    ),
-                  },
-                  {
-                    key: 'approval', header: 'Brand duyệt', width: 170, render: d =>
-                      d.brandApprovalStatus === 'ĐÃ_DUYỆT' ? (
-                        <div className="grid gap-1 justify-items-start">
-                          <Status tone="positive">Đã duyệt</Status>
-                          {d.brandApprovalDate && <span className="text-2xs text-ink-3">{d.brandApprovalDate}</span>}
-                        </div>
-                      ) : d.brandApprovalStatus === 'TỪ_CHỐI' ? (
-                        <div className="grid gap-1 justify-items-start">
-                          <Status tone="critical">Từ chối</Status>
-                          <span className="text-2xs text-ink-3 max-w-[160px] whitespace-normal">{d.brandRejectReason || 'Lệch định vị'}</span>
-                        </div>
-                      ) : (
-                        <div className="grid gap-1.5 justify-items-start">
-                          <Status tone="warning">Chờ duyệt</Status>
-                          <div className="flex gap-1">
-                            <Button size="sm" icon={Check} onClick={() => setApprovingDeal(d)}>Duyệt</Button>
-                            <Button size="sm" variant="ghost" onClick={() => setRejectingDeal(d)}>Từ chối</Button>
-                          </div>
-                        </div>
-                      ),
-                  },
-                  {
-                    key: 'stage', header: 'Bước', width: 180, render: d => {
+                    key: 'lifecycle', header: 'Tiến trình & Trách nhiệm', width: 230, render: d => {
                       const st = STAGE[d.currentStage || '1_PLAN_SOURCING'];
                       return (
                         <div className="grid gap-1 justify-items-start leading-tight">
-                          <span className={d.pipelineText === 'Done' ? 'text-xs font-medium text-positive' : 'text-xs font-medium text-ink'}>{st.label}</span>
-                          <span className="text-2xs text-ink-3 max-w-[170px] whitespace-normal">{d.pipelineText || d.statusLabel}</span>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            {d.brandApprovalStatus === 'ĐÃ_DUYỆT' ? (
+                              <Status tone="positive">Brand duyệt</Status>
+                            ) : d.brandApprovalStatus === 'TỪ_CHỐI' ? (
+                              <Status tone="critical">Brand từ chối</Status>
+                            ) : (
+                              <div className="flex items-center gap-1">
+                                <Status tone="warning">Chờ duyệt</Status>
+                                <Button size="sm" icon={Check} onClick={() => setApprovingDeal(d)}>Duyệt</Button>
+                                <Button size="sm" variant="ghost" onClick={() => setRejectingDeal(d)}>Hủy</Button>
+                              </div>
+                            )}
+                            <span className="text-2xs text-ink-3 font-medium">· {st.label}</span>
+                          </div>
+                          <div className="flex items-center gap-1 text-2xs flex-wrap">
+                            <span className="font-medium text-ink">Đang ở: {TEAM[d.holdingTeam || 'BOOKING']}</span>
+                            <span className={d.isSlaWarning ? 'text-warning font-medium' : 'text-ink-3'}>({d.slaRemainingText || 'Trong hạn'})</span>
+                          </div>
+                          {d.brandOrientationPendingDays && d.brandOrientationPendingDays >= 3 ? <span className="text-2xs text-warning font-medium">Brand quá {d.brandOrientationPendingDays} ngày</span> : null}
+                          {d.isLocked7WorkingDays && <span className="text-2xs text-critical font-medium">Quá 7 ngày</span>}
+                          {d.isDnttOverdue10Am && <span className="text-2xs text-critical font-medium">Trễ ĐNTT</span>}
                         </div>
                       );
                     },
                   },
                   {
-                    key: 'holder', header: 'Đang ở', width: 170, render: d => (
-                      <div className="grid gap-1 justify-items-start leading-tight">
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-medium text-ink">{TEAM[d.holdingTeam || 'BOOKING']}</span>
-                          <span className={d.isSlaWarning ? 'text-2xs text-warning font-medium' : 'text-2xs text-ink-3'}>{d.slaRemainingText || 'Trong hạn'}</span>
+                    key: 'delivery', header: 'Nghiệm thu kỹ thuật', width: 140, render: d => (
+                      <div className="grid gap-0.5 text-2xs leading-tight">
+                        <div className="flex items-center gap-1">
+                          <span className={d.sampleStatus === 'ĐÃ_NHẬN' ? 'text-positive font-medium' : 'text-ink-2'}>
+                            {d.sampleStatus === 'ĐÃ_NHẬN' ? 'Đã nhận mẫu' : d.sampleStatus === 'ĐANG_GIAO' ? 'Đang giao mẫu' : 'Chưa gửi mẫu'}
+                          </span>
                         </div>
-                        <span className="text-2xs text-ink-3 truncate max-w-[160px]">{d.holdingReason || 'Đang xử lý'}</span>
-                        {d.brandOrientationPendingDays && d.brandOrientationPendingDays >= 3 ? <span className="text-2xs text-warning font-medium">Brand quá {d.brandOrientationPendingDays} ngày</span> : null}
-                        {d.isLocked7WorkingDays && <span className="text-2xs text-critical font-medium">Khóa: quá 7 ngày chưa có link</span>}
-                        {d.isDnttOverdue10Am && <span className="text-2xs text-critical font-medium">Trễ đề nghị thanh toán</span>}
+                        <div className="flex items-center gap-1">
+                          {d.tiktokVideoUrl || d.videoUrl ? (
+                            <a href={d.tiktokVideoUrl || d.videoUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-0.5 text-accent hover:underline font-medium">
+                              Xem video<ExternalLink className="w-2.5 h-2.5" />
+                            </a>
+                          ) : (
+                            <span className="text-ink-3 italic">Chưa có video</span>
+                          )}
+                        </div>
+                        <div className="text-ink-2 truncate max-w-[130px]">
+                          {d.sparkAdsCode ? <span className="font-code text-2xs">{d.sparkAdsCode}</span> : <span className="text-ink-3 italic">Chưa mã Ads</span>}
+                        </div>
                       </div>
                     ),
                   },
                   {
-                    key: 'delivery', header: 'Mẫu · video · Ads', width: 160, render: d => (
-                      <div className="grid gap-1 text-2xs leading-tight">
-                        <span className={d.sampleStatus === 'ĐÃ_NHẬN' ? 'text-positive' : 'text-ink-2'}>
-                          {d.sampleStatus === 'ĐÃ_NHẬN' ? 'Đã nhận mẫu' : d.sampleStatus === 'ĐANG_GIAO' ? 'Đang giao mẫu' : 'Chưa gửi mẫu'}
-                        </span>
-                        {d.tiktokVideoUrl || d.videoUrl ? (
-                          <a href={d.tiktokVideoUrl || d.videoUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-accent hover:underline">
-                            Video TikTok<ExternalLink className="w-3 h-3" />
-                          </a>
-                        ) : (
-                          <span className="text-ink-3">Chưa có video</span>
-                        )}
-                        {d.sparkAdsCode ? <span className="font-code text-ink-2 truncate max-w-[150px]">{d.sparkAdsCode}</span> : <span className="text-ink-3">Chưa mã Ads</span>}
-                      </div>
-                    ),
-                  },
-                  {
-                    key: 'money', header: 'Chi phí · GMV', align: 'right', width: 140, render: d => (
+                    key: 'money', header: 'Chi phí & GMV', align: 'right', width: 110, render: d => (
                       <div className="grid gap-0.5 justify-items-end tabular-nums leading-tight">
-                        <span className="text-ink">{formatVndShort(d.totalValue)}</span>
+                        <span className="text-ink font-semibold">{formatVndShort(d.totalValue)}</span>
                         <span className="text-2xs text-ink-3">GMV {formatVndShort(d.gmv30)}</span>
-                        <span className={(d.roi || 0) >= 1 ? 'text-2xs font-medium text-positive' : 'text-2xs text-ink-3'}>ROI {(d.roi || 0).toLocaleString('vi-VN', { maximumFractionDigits: 2 })}</span>
+                        <span className={(d.roi || 0) >= 1 ? 'text-2xs font-semibold text-positive' : 'text-2xs text-ink-3'}>ROI {(d.roi || 0).toLocaleString('vi-VN', { maximumFractionDigits: 2 })}</span>
                       </div>
                     ),
                   },
                   {
-                    key: 'people', header: 'Nhân sự', width: 170, render: d => (
-                      <div className="grid gap-1">
-                        <Person name={d.bookingPic || d.assignedStaff} size={22} />
-                        <span className="text-2xs text-ink-3 pl-[30px]">Growth: {d.growthPic || '—'} · Account: {d.accountPic || '—'}</span>
-                      </div>
-                    ),
-                  },
-                  {
-                    key: 'actions', header: <span className="sr-only">Thao tác</span>, align: 'right', width: 200, render: d => (
+                    key: 'actions', header: <span className="sr-only">Thao tác</span>, align: 'right', width: 110, render: d => (
                       <div className="flex items-center justify-end gap-1">
                         {d.brandOrientationPendingDays && d.brandOrientationPendingDays >= 3 ? (
-                          <Button size="sm" icon={Zap} onClick={() => setAutoAirDeal(d)} title="Brand quá 3 ngày chưa duyệt định hướng">Tự air</Button>
+                          <Button size="sm" icon={Zap} onClick={() => setAutoAirDeal(d)} title="Brand quá 3 ngày chưa duyệt định hướng">Air</Button>
                         ) : null}
-                        <Button size="sm" variant="ghost" icon={Share2} onClick={() => handleOpenGrowthHandoff(d)} title="Bàn giao mã Spark Ads cho team Growth">Bàn giao</Button>
-                        <Button size="sm" variant="ghost" icon={Edit3} onClick={() => handleOpenEditModal(d)}>Sửa</Button>
+                        <Button size="sm" variant="ghost" icon={Share2} onClick={() => handleOpenGrowthHandoff(d)} title="Bàn giao mã Spark Ads cho team Growth" />
+                        <Button size="sm" variant="ghost" icon={Edit3} onClick={() => handleOpenEditModal(d)} title="Chỉnh sửa deal" />
                         <Button size="sm" variant="ghost" onClick={() => onSelectDealForContract?.(d)} title="Xem hợp đồng">HĐ</Button>
                       </div>
                     ),
@@ -931,56 +909,49 @@ export const BookingView: React.FC<BookingViewProps> = ({
             empty={<EmptyState title="Không tìm thấy KOC" action={<Button size="sm" icon={UserPlus} onClick={() => setIsCreateKocOpen(true)}>Thêm KOC</Button>} />}
             columns={[
               {
-                key: 'koc', header: 'KOC', width: 300, render: k => (
+                key: 'koc_grade', header: 'KOC & Khung lương', width: 250, render: k => (
                   <div className="flex items-start gap-2.5">
                     <Avatar name={k.stageName} size={28} />
                     <div className="leading-tight min-w-0">
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-1.5 flex-wrap">
                         <span className="font-medium text-ink">{k.stageName}</span>
-                        {k.isWinnerTop20 && <span className="text-2xs text-warning font-medium">· Winner</span>}
+                        {k.isWinnerTop20 && <span className="text-2xs text-warning font-semibold">· Winner</span>}
+                        <span className="text-2xs font-semibold text-accent">({k.salaryGrade})</span>
                       </div>
                       <div className="text-2xs text-ink-3 mt-0.5">{k.channelId} · {k.phone}</div>
-                      <div className="text-2xs text-ink-3">{k.location || 'Hà Nội'} · {k.bookingFormat || 'Booking video'}</div>
+                      <div className="text-2xs text-ink-3 mt-0.5">{k.segment || 'Massive Creator'} · {k.location || 'Hà Nội'}</div>
                     </div>
                   </div>
                 ),
               },
               {
-                key: 'grade', header: 'Khung lương', width: 140, render: k => (
+                key: 'audience', header: 'Tệp kênh & Khán giả', width: 200, render: k => (
                   <div className="leading-tight">
-                    <div className="text-ink">{k.salaryGrade}</div>
-                    <div className="text-2xs text-ink-3 mt-0.5">{k.segment || 'Massive Creator'}</div>
-                  </div>
-                ),
-              },
-              {
-                key: 'audience', header: 'Tệp kênh', width: 170, render: k => (
-                  <div className="leading-tight">
-                    <div className="text-ink">{k.tepKenh || k.creatorCategory || 'Review Nữ'}</div>
+                    <div className="font-medium text-ink">{k.tepKenh || k.creatorCategory || 'Review Nữ'}</div>
                     <div className="text-2xs text-ink-3 mt-0.5">{k.kocCategory || 'Personal care'} · nữ {k.femaleRatio ?? 85}%</div>
-                  </div>
-                ),
-              },
-              { key: 'rate', header: 'Báo giá video', align: 'right', width: 130, render: k => <span className="tabular-nums">{formatVnd(k.rateCardVideo)}</span> },
-              {
-                key: 'shop', header: 'TikTok Shop', width: 180, render: k => (
-                  <div className="leading-tight tabular-nums">
-                    <div className="text-ink">{formatNumber(k.followers)} follower</div>
-                    <div className="text-2xs text-ink-3 mt-0.5">GMV cao nhất {formatVndShort(k.gmvBestCase || k.rateCardVideo * 3)} · AOV {formatVndShort(k.aov || 245000)}</div>
+                    <div className="text-2xs text-ink-2 mt-0.5 tabular-nums font-medium">{formatNumber(k.followers)} follower</div>
                   </div>
                 ),
               },
               {
-                key: 'history', header: 'Với Upbase', align: 'right', width: 130, render: k => (
+                key: 'rate_history', header: 'Báo giá & Lịch sử hiệu quả', align: 'right', width: 170, render: k => (
                   <div className="grid gap-0.5 justify-items-end tabular-nums leading-tight">
-                    <span className="text-ink">{formatVndShort(k.totalPastGmv || k.rateCardVideo * 3)}</span>
-                    <span className={(k.historicalRoi || 2.5) >= 1 ? 'text-2xs font-medium text-positive' : 'text-2xs text-warning'}>ROI {(k.historicalRoi || 2.5).toLocaleString('vi-VN', { maximumFractionDigits: 2 })}</span>
+                    <span className="font-semibold text-ink">{formatVnd(k.rateCardVideo)}</span>
+                    <span className="text-2xs text-ink-3">GMV: {formatVndShort(k.totalPastGmv || k.rateCardVideo * 3)}</span>
+                    <span className={(k.historicalRoi || 2.5) >= 1 ? 'text-2xs font-semibold text-positive' : 'text-2xs text-warning'}>ROI {(k.historicalRoi || 2.5).toLocaleString('vi-VN', { maximumFractionDigits: 2 })}</span>
                   </div>
                 ),
               },
-              { key: 'pic', header: 'PIC', width: 150, render: k => <Person name={k.bookingPic || 'Khánh Vy'} sub={k.statusKoc || 'Sẵn sàng'} size={22} /> },
               {
-                key: 'actions', header: <span className="sr-only">Thao tác</span>, align: 'right', width: 120, render: k => (
+                key: 'pic', header: 'Phụ trách', width: 130, render: k => (
+                  <div className="leading-tight">
+                    <Person name={k.bookingPic || 'Khánh Vy'} size={20} />
+                    <div className="text-2xs text-ink-3 mt-0.5">{k.statusKoc || 'Sẵn sàng'}</div>
+                  </div>
+                ),
+              },
+              {
+                key: 'actions', header: <span className="sr-only">Thao tác</span>, align: 'right', width: 110, render: k => (
                   <div onClick={e => e.stopPropagation()}>
                     <Button size="sm" onClick={() => onOpenQuickBookWithKoc(k)}>Tạo booking</Button>
                   </div>

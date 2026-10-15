@@ -1504,13 +1504,11 @@ export function CtvProfileDetail({
             <Stat
               label="Duyệt đạt ngay lần 1"
               value={`${ctv.firstPassRate ?? 88}%`}
-              note="Tỷ lệ kịch bản & demo đạt chuẩn không cần sửa"
               tone="positive"
             />
             <Stat
               label="Đúng hạn SLA"
               value={`${ctv.onTimeRate ?? 95}%`}
-              note="Cam kết nộp kịch bản & demo trước ngày air ≥ 2 ngày"
             />
             <Stat
               label="Tổng thù lao đã chi"

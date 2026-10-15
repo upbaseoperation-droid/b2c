@@ -120,12 +120,8 @@ export const ImportExcelModal: React.FC<ImportExcelModalProps> = ({
                 )}
               </div>
 
-              <div className="p-3.5 bg-sunken rounded-lg border border-line text-xs text-ink-2 space-y-1.5 leading-relaxed">
-                <div className="flex items-center gap-1.5 font-semibold text-success">
-                  <CheckCircle2 className="w-4 h-4 text-success" />
-                  <span>Quy tắc đối soát:</span>
-                </div>
-                <p>• Hệ thống tự động nhận diện cột `ID kênh`, `Mã BO` hoặc `Link kênh` để cập nhật GMV.</p>
+              <div className="p-3 bg-sunken rounded-lg border border-line text-xs text-ink-2 space-y-1">
+                <p>• Khớp cột `ID kênh`, `Mã BO` hoặc `Link kênh` để cập nhật GMV.</p>
                 <p>• Cập nhật chỉ số hiệu suất nhân sự.</p>
               </div>
             </>

@@ -4438,7 +4438,7 @@ export const InputPlanBreakdownView: React.FC<InputPlanBreakdownViewProps> = ({
                                 <td className="py-2.5 px-3">
                                   <input
                                     type="text"
-                                    placeholder="Lưu ý: Yêu cầu KOC lên link bio, reup Shopee..."
+                                    placeholder="Ghi chú tác nghiệp (VD: KOC lên link bio, reup Shopee...)"
                                     value={item.staffNotes || ''}
                                     onChange={(e) => handleUpdateItemStaffNotes(item.id, e.target.value)}
                                     className="w-full text-xs px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-blue-500 transition"

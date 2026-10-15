@@ -600,22 +600,18 @@ export const MarketingKnowledgeQaView: React.FC<MarketingKnowledgeQaViewProps> =
         <Stat
           label="Quy trình & sổ tay chuẩn"
           value={`${allArticles.length} tài liệu`}
-          note="Bao phủ 42 bước Booking, 28 bước Live, Kế hoạch 4.1 & Đối soát 3.2"
         />
         <Stat
           label="Mốc thời hạn SLA"
           value={`${SLA_QUICK_REFERENCE.length} mốc`}
-          note="Chu kỳ đề xuất 10-20-30, gửi mẫu 48h, nộp video nháp 5 ngày"
         />
         <Stat
           label="Biểu mẫu hợp đồng & thuế"
           value="8 biểu mẫu"
-          note="Cá nhân TNCN 10%, Hộ kinh doanh 7%, Doanh nghiệp VAT 8–10%"
         />
         <Stat
-          label="Kịch bản đàm phán & FAQ"
+          label="Tình huống & FAQ"
           value={`${MARKETING_KNOWLEDGE_FAQS.length + OBJECTION_SCRIPTS_REFERENCE.length} tình huống`}
-          note={`Đang tra cứu trên ${brands.length || 42} thương hiệu & ${stores.length || 69} gian hàng B2C`}
         />
       </StatRow>
 

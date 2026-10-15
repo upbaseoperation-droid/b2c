@@ -183,8 +183,7 @@ export function WorkflowRulesDialog({
     <Modal
       open={open}
       onClose={onClose}
-      title="Thiết lập quy tắc vận hành & phê duyệt của nhãn"
-      description="Các thiết lập này điều khiển trực tiếp luồng Tạo Deal, Gửi mẫu, Duyệt kịch bản và Nghiệm thu của nhân viên đối với nhãn hàng."
+      title="Thiết lập quy tắc vận hành & phê duyệt"
       size="lg"
       footer={<Footer busy={busy} onClose={onClose} onSave={handleSave} label="Lưu cấu hình vận hành" />}
     >
@@ -419,8 +418,7 @@ export function RatecardDialog({ open, value, busy, onClose, onSave }: { open: b
     <Modal
       open={open}
       onClose={onClose}
-      title="Sửa trần thù lao"
-      description="Mức tối đa cho một video theo khung lương KOC. Để trống nếu nhãn không đặt trần riêng cho khung đó."
+      title="Sửa trần thù lao KOC"
       footer={<Footer busy={busy} onClose={onClose} onSave={() => onSave(GRADES.map(grade => ({ grade, maxBudget: toNumber(v[grade]) })))} />}
     >
       <div className="grid grid-cols-2 gap-3">

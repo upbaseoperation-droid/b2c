@@ -939,20 +939,16 @@ export function KocListingBatchHubView({
         </div>
 
         {isKlMatrixExpanded && (
-          <div className="overflow-x-auto">
+          <div className="w-full">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className="bg-slate-50/70 border-b border-slate-200 text-2xs font-semibold text-slate-600">
-                  <th className="py-2.5 px-3">Khung lương (KL)</th>
-                  <th className="py-2.5 px-3 text-right">Đơn giá chuẩn Plan</th>
-                  <th className="py-2.5 px-3 text-center bg-slate-100/70">Chỉ tiêu Plan Final</th>
-                  <th className="py-2.5 px-3 text-center">1. Đang nháp (Draft)</th>
-                  <th className="py-2.5 px-3 text-center">2. Đã gửi Brand (Submit)</th>
-                  <th className="py-2.5 px-3 text-center">3. Đã chốt (Final)</th>
-                  <th className="py-2.5 px-3 text-center">Rớt / Hủy</th>
-                  <th className="py-2.5 px-3 text-center">Còn thiếu cần list</th>
-                  <th className="py-2.5 px-3 text-right">Ngân sách Listing vs Plan</th>
-                  <th className="py-2.5 px-3 text-right">Thao tác theo KL</th>
+                <tr className="bg-slate-50/70 border-b border-slate-200 text-[11px] font-semibold text-slate-600">
+                  <th className="py-2.5 px-3 w-[22%]">Khung lương (KL) &amp; Đơn giá</th>
+                  <th className="py-2.5 px-3 text-center bg-slate-100/70 w-[13%]">Chỉ tiêu Plan</th>
+                  <th className="py-2.5 px-3 w-[28%]">Tiến độ đề xuất (Chốt · Gửi · Nháp)</th>
+                  <th className="py-2.5 px-3 text-center w-[12%]">Còn thiếu</th>
+                  <th className="py-2.5 px-3 text-right w-[14%]">Ngân sách (Thực/Plan)</th>
+                  <th className="py-2.5 px-3 text-right w-[11%]">Thao tác</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200">
@@ -968,70 +964,91 @@ export function KocListingBatchHubView({
                         isActiveFilter ? 'bg-blue-50/50' : ''
                       }`}
                     >
-                      <td className="py-2 px-3">
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold text-slate-900">{row.label}</span>
+                      {/* Col 1: Khung lương, Đơn giá chuẩn, PIC */}
+                      <td className="py-2.5 px-3">
+                        <div className="leading-tight">
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-slate-900 text-xs">{row.label}</span>
+                            <span className="text-2xs text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded font-medium">
+                              Chuẩn {row.benchmarkUnitCost > 0 ? formatVndShort(row.benchmarkUnitCost) : '0đ'}
+                            </span>
+                          </div>
                           {row.assignedPics.length > 0 && (
-                            <span className="text-2xs text-slate-500 truncate max-w-[140px]" title={row.assignedPics.join(', ')}>
-                              ({row.assignedPics.join(', ')})
+                            <span className="text-[10px] text-slate-500 truncate block max-w-[200px] mt-0.5" title={row.assignedPics.join(', ')}>
+                              PIC: {row.assignedPics.join(', ')}
                             </span>
                           )}
                         </div>
                       </td>
-                      <td className="py-2 px-3 text-right tabular-nums text-slate-600">
-                        {row.benchmarkUnitCost > 0 ? formatVndShort(row.benchmarkUnitCost) : '0đ (FOC)'}
-                      </td>
-                      <td className="py-2 px-3 text-center tabular-nums bg-slate-50/60 font-semibold text-slate-900">
+
+                      {/* Col 2: Chỉ tiêu Plan */}
+                      <td className="py-2.5 px-3 text-center tabular-nums bg-slate-50/60 font-semibold text-slate-900 text-xs leading-tight">
                         {row.planQty} KOC
-                        <span className="block text-2xs font-normal text-slate-500">
+                        <span className="block text-[10px] font-normal text-slate-500">
                           {formatVndShort(row.planBudget)}
                         </span>
                       </td>
-                      <td className="py-2 px-3 text-center tabular-nums">
-                        <span className={`text-xs font-semibold ${
-                          row.draftCount > 0 ? 'text-slate-800' : 'text-slate-400'
-                        }`}>
-                          {row.draftCount}
-                        </span>
-                      </td>
-                      <td className="py-2 px-3 text-center tabular-nums">
-                        <span className={`text-xs font-semibold ${
-                          row.submittedCount > 0 ? 'text-blue-700' : 'text-slate-400'
-                        }`}>
-                          {row.submittedCount}
-                        </span>
-                      </td>
-                      <td className="py-2 px-3 text-center tabular-nums">
-                        <span className={`text-xs font-semibold ${
-                          row.finalApprovedCount > 0 ? 'text-emerald-700' : 'text-slate-400'
-                        }`}>
-                          {row.finalApprovedCount}
-                        </span>
-                      </td>
-                      <td className="py-2 px-3 text-center tabular-nums">
-                        {row.droppedCount > 0 ? (
-                          <span className="text-xs font-semibold text-rose-700">
-                            {row.droppedCount}
+
+                      {/* Col 3: Gộp tiến độ đề xuất (Chốt / Gửi / Nháp / Rớt) */}
+                      <td className="py-2.5 px-3">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span
+                            className={`px-1.5 py-0.5 rounded text-[11px] font-semibold ${
+                              row.finalApprovedCount > 0
+                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                : 'text-slate-400 bg-slate-50'
+                            }`}
+                            title="Đã chốt duyệt (Final)"
+                          >
+                            {row.finalApprovedCount} chốt
                           </span>
-                        ) : (
-                          <span className="text-slate-300">—</span>
-                        )}
+                          <span
+                            className={`px-1.5 py-0.5 rounded text-[11px] font-semibold ${
+                              row.submittedCount > 0
+                                ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                                : 'text-slate-400 bg-slate-50'
+                            }`}
+                            title="Đã gửi Brand thẩm định (Submit)"
+                          >
+                            {row.submittedCount} gửi Brand
+                          </span>
+                          <span
+                            className={`px-1.5 py-0.5 rounded text-[11px] ${
+                              row.draftCount > 0
+                                ? 'bg-slate-100 text-slate-800 font-medium'
+                                : 'text-slate-400'
+                            }`}
+                            title="Bản nháp đang chuẩn bị"
+                          >
+                            {row.draftCount} nháp
+                          </span>
+                          {row.droppedCount > 0 && (
+                            <span
+                              className="px-1.5 py-0.5 rounded text-[11px] bg-rose-50 text-rose-700 font-medium border border-rose-200"
+                              title="Rớt / Không đạt"
+                            >
+                              {row.droppedCount} rớt
+                            </span>
+                          )}
+                        </div>
                       </td>
-                      <td className="py-2 px-3 text-center tabular-nums">
-                        <div className="flex flex-col items-center">
+
+                      {/* Col 4: Còn thiếu cần list */}
+                      <td className="py-2.5 px-3 text-center tabular-nums text-xs">
+                        <div className="flex flex-col items-center leading-tight">
                           {row.remainingToList > 0 ? (
-                            <span className="text-2xs font-semibold text-amber-700">
-                              Thiếu {row.remainingToList} slot
+                            <span className="text-[11px] font-semibold text-amber-700">
+                              Thiếu {row.remainingToList}
                             </span>
                           ) : row.planQty > 0 ? (
-                            <span className="text-2xs font-semibold text-emerald-700">
+                            <span className="text-[11px] font-semibold text-emerald-700">
                               Đủ ({row.activeListedCount}/{row.planQty})
                             </span>
                           ) : (
-                            <span className="text-2xs text-slate-400">Phát sinh ({row.activeListedCount})</span>
+                            <span className="text-[10px] text-slate-400">+{row.activeListedCount}</span>
                           )}
                           {row.planQty > 0 && (
-                            <div className="w-20 h-1 bg-slate-200 rounded-full overflow-hidden mt-1">
+                            <div className="w-14 h-1 bg-slate-200 rounded-full overflow-hidden mt-0.5">
                               <div
                                 className="h-full bg-blue-600 rounded-full"
                                 style={{ width: `${progressPct}%` }}
@@ -1040,28 +1057,32 @@ export function KocListingBatchHubView({
                           )}
                         </div>
                       </td>
-                      <td className="py-2 px-3 text-right tabular-nums">
+
+                      {/* Col 5: Ngân sách Thực tế vs Plan */}
+                      <td className="py-2.5 px-3 text-right tabular-nums text-xs leading-tight">
                         <div className={`font-semibold ${isOverBudget ? 'text-rose-600' : 'text-slate-800'}`}>
                           {formatVndShort(row.listedBudget)} / {formatVndShort(row.planBudget)}
                         </div>
                         {isOverBudget && (
-                          <div className="text-2xs text-rose-600 font-medium">
+                          <div className="text-[10px] text-rose-600 font-medium">
                             Vượt {formatVndShort(row.listedBudget - row.planBudget)}
                           </div>
                         )}
                       </td>
-                      <td className="py-2 px-3 text-right">
-                        <div className="inline-flex items-center justify-end gap-1.5">
+
+                      {/* Col 6: Thao tác */}
+                      <td className="py-2.5 px-3 text-right">
+                        <div className="inline-flex items-center justify-end gap-1">
                           <button
                             type="button"
                             onClick={() => setSelectedGrade(isActiveFilter ? 'ALL' : row.code)}
-                            className={`px-2 py-1 rounded text-2xs font-semibold border transition-colors cursor-pointer ${
+                            className={`px-2 py-0.5 rounded text-[11px] font-semibold border transition-colors cursor-pointer ${
                               isActiveFilter
                                 ? 'bg-blue-600 text-white border-blue-600'
                                 : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
                             }`}
                           >
-                            {isActiveFilter ? 'Đang lọc' : 'Lọc KL'}
+                            {isActiveFilter ? 'Đang lọc' : 'Lọc'}
                           </button>
                           <button
                             type="button"
@@ -1069,10 +1090,10 @@ export function KocListingBatchHubView({
                               setShortlistTargetGrade(row.code);
                               setShowShortlistModal(true);
                             }}
-                            className="px-2 py-1 rounded text-2xs font-semibold bg-slate-900 text-white hover:bg-slate-800 transition-colors cursor-pointer"
+                            className="px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-900 text-white hover:bg-slate-800 transition-colors cursor-pointer whitespace-nowrap"
                             title={`Mở bộ lọc kho KOC theo chuẩn ${row.label} để đưa vào Bản nháp (Draft)`}
                           >
-                            + List KOC (Nháp)
+                            + Nháp
                           </button>
                         </div>
                       </td>
@@ -1082,19 +1103,29 @@ export function KocListingBatchHubView({
               </tbody>
               <tfoot>
                 <tr className="bg-slate-100/90 border-t border-slate-200 font-semibold text-xs text-slate-900">
-                  <td className="py-2.5 px-3">Tổng cộng theo Plan Final</td>
-                  <td className="py-2.5 px-3 text-right text-2xs font-normal text-slate-500">Đối soát toàn kỳ</td>
-                  <td className="py-2.5 px-3 text-center tabular-nums">
+                  <td className="py-2.5 px-3">Tổng cộng Plan Final (Toàn kỳ)</td>
+                  <td className="py-2.5 px-3 text-center tabular-nums text-xs">
                     {klTotals.planQty} KOC · {formatVndShort(klTotals.planBudget)}
                   </td>
-                  <td className="py-2.5 px-3 text-center tabular-nums text-slate-700">{klTotals.draftCount} nháp</td>
-                  <td className="py-2.5 px-3 text-center tabular-nums text-blue-700">{klTotals.submittedCount} chờ duyệt</td>
-                  <td className="py-2.5 px-3 text-center tabular-nums text-emerald-700">{klTotals.finalApprovedCount} đã chốt</td>
-                  <td className="py-2.5 px-3 text-center tabular-nums text-rose-700">{klTotals.droppedCount} rớt</td>
-                  <td className="py-2.5 px-3 text-center tabular-nums text-amber-800">
-                    Còn thiếu {klTotals.remainingToList} slot
+                  <td className="py-2.5 px-3">
+                    <div className="flex items-center gap-1.5 flex-wrap text-xs">
+                      <span className="font-semibold text-emerald-700">{klTotals.finalApprovedCount} đã chốt</span>
+                      <span>·</span>
+                      <span className="font-semibold text-blue-700">{klTotals.submittedCount} chờ duyệt</span>
+                      <span>·</span>
+                      <span className="text-slate-700">{klTotals.draftCount} nháp</span>
+                      {klTotals.droppedCount > 0 && (
+                        <>
+                          <span>·</span>
+                          <span className="text-rose-700">{klTotals.droppedCount} rớt</span>
+                        </>
+                      )}
+                    </div>
                   </td>
-                  <td className="py-2.5 px-3 text-right tabular-nums">
+                  <td className="py-2.5 px-3 text-center tabular-nums text-amber-800 text-xs">
+                    Thiếu {klTotals.remainingToList}
+                  </td>
+                  <td className="py-2.5 px-3 text-right tabular-nums text-xs">
                     {formatVndShort(klTotals.listedBudget)} / {formatVndShort(klTotals.planBudget)}
                   </td>
                   <td className="py-2.5 px-3 text-right">
@@ -1102,9 +1133,9 @@ export function KocListingBatchHubView({
                       <button
                         type="button"
                         onClick={() => setSelectedGrade('ALL')}
-                        className="text-2xs text-blue-600 hover:underline font-semibold cursor-pointer"
+                        className="text-[11px] text-blue-600 hover:underline font-semibold cursor-pointer"
                       >
-                        Xóa lọc {selectedGrade}
+                        Xóa lọc
                       </button>
                     )}
                   </td>
@@ -1310,11 +1341,11 @@ export function KocListingBatchHubView({
       {activeSubTab === 'LISTING_APPROVAL' ? (
         /* TAB 1: LISTING & PARALLEL APPROVAL */
         <div className="bg-white border border-slate-200 rounded-lg overflow-hidden shadow-sm">
-          <div className="overflow-x-auto">
+          <div className="w-full">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold text-2xs">
-                  <th className="py-3 px-3 w-8 text-center">
+                <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold text-[11px]">
+                  <th className="py-2 px-2 w-7 text-center">
                     <input
                       type="checkbox"
                       checked={selectedIds.length > 0 && selectedIds.length === filteredListings.length}
@@ -1322,19 +1353,17 @@ export function KocListingBatchHubView({
                       className="rounded border-slate-300 text-slate-900 focus:ring-slate-500"
                     />
                   </th>
-                  <th className="py-3 px-3">KOC &amp; Khung lương Plan (KL)</th>
-                  <th className="py-3 px-3">Đợt / Gian hàng / Ngày lên sóng</th>
-                  <th className="py-3 px-3 text-right">Thù lao vs Chuẩn KL</th>
-                  <th className="py-3 px-3">Thẩm định nhãn hàng</th>
-                  <th className="py-3 px-3">Đàm phán KOC</th>
-                  <th className="py-3 px-3">Trạng thái Listing</th>
-                  <th className="py-3 px-3 text-right">Thao tác luồng duyệt</th>
+                  <th className="py-2.5 px-3 w-[24%]">KOC &amp; Khung lương</th>
+                  <th className="py-2.5 px-3 w-[16%]">Đợt / Gian hàng</th>
+                  <th className="py-2.5 px-3 text-right w-[16%]">Thù lao &amp; Chuẩn KL</th>
+                  <th className="py-2.5 px-3 w-[26%]">Thẩm định Brand &amp; Đàm phán KOC</th>
+                  <th className="py-2.5 px-3 text-right w-[18%]">Trạng thái &amp; Thao tác</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200">
                 {filteredListings.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="py-8 text-center text-slate-400 text-xs">
+                    <td colSpan={6} className="py-8 text-center text-slate-400 text-xs">
                       Không tìm thấy bản ghi đề xuất nào phù hợp với bộ lọc hiện tại.
                     </td>
                   </tr>
@@ -1360,7 +1389,7 @@ export function KocListingBatchHubView({
                         }`}
                       >
                         {/* Checkbox */}
-                        <td className="py-3 px-3 text-center">
+                        <td className="py-2.5 px-2 text-center">
                           <input
                             type="checkbox"
                             checked={isSelected}
@@ -1370,7 +1399,7 @@ export function KocListingBatchHubView({
                         </td>
 
                         {/* KOC Info & KL Badge */}
-                        <td className="py-3 px-3">
+                        <td className="py-2.5 px-3">
                           <div className="flex items-center gap-1.5 flex-wrap">
                             <span className="font-semibold text-slate-900">{item.kocName}</span>
                             <span className="font-code text-2xs font-semibold text-blue-700">
@@ -1421,7 +1450,7 @@ export function KocListingBatchHubView({
                         </td>
 
                         {/* Batch & Store */}
-                        <td className="py-3 px-3">
+                        <td className="py-2.5 px-3">
                           <div className="flex items-center gap-1.5">
                             <span
                               className={`text-2xs font-semibold ${
@@ -1449,7 +1478,7 @@ export function KocListingBatchHubView({
                         </td>
 
                         {/* Fee vs Plan Benchmark */}
-                        <td className="py-3 px-3 text-right tabular-nums">
+                        <td className="py-2.5 px-3 text-right tabular-nums">
                           <div className="font-semibold text-slate-900">
                             {formatVnd(item.proposedFee)}
                           </div>
@@ -1468,151 +1497,152 @@ export function KocListingBatchHubView({
                           </div>
                         </td>
 
-                        {/* Parallel Track 1: Brand Review */}
-                        <td className="py-3 px-3">
+                        {/* Gộp: Thẩm định Brand & Đàm phán KOC */}
+                        <td className="py-2.5 px-3">
                           <div className="space-y-1.5">
-                            <div className="flex items-center gap-1.5">
-                              {item.brandApprovalStatus === 'BRAND_APPROVED' && (
-                                <span className="inline-flex items-center gap-1 text-2xs font-medium text-emerald-700">
-                                  <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                                  Nhãn hàng đã duyệt
-                                </span>
-                              )}
-                              {item.brandApprovalStatus === 'BRAND_PENDING' && (
-                                <span className="inline-flex items-center gap-1 text-2xs font-medium text-amber-700">
-                                  <Clock className="w-3 h-3 text-amber-600" />
-                                  {item.overallStatus === 'DRAFT' ? 'Chưa gửi Brand' : 'Chờ nhãn hàng duyệt'}
-                                </span>
-                              )}
-                              {item.brandApprovalStatus === 'BRAND_REJECTED' && (
-                                <span className="inline-flex items-center gap-1 text-2xs font-medium text-rose-700">
-                                  <XCircle className="w-3 h-3 text-rose-600" />
-                                  Nhãn hàng từ chối
-                                </span>
+                            {/* Brand Review */}
+                            <div className="flex items-center justify-between gap-1 flex-wrap">
+                              <div className="flex items-center gap-1.5">
+                                {item.brandApprovalStatus === 'BRAND_APPROVED' && (
+                                  <span className="inline-flex items-center gap-1 text-2xs font-medium text-emerald-700">
+                                    <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                                    Brand đã duyệt
+                                  </span>
+                                )}
+                                {item.brandApprovalStatus === 'BRAND_PENDING' && (
+                                  <span className="inline-flex items-center gap-1 text-2xs font-medium text-amber-700">
+                                    <Clock className="w-3 h-3 text-amber-600" />
+                                    {item.overallStatus === 'DRAFT' ? 'Chưa gửi Brand' : 'Chờ Brand duyệt'}
+                                  </span>
+                                )}
+                                {item.brandApprovalStatus === 'BRAND_REJECTED' && (
+                                  <span className="inline-flex items-center gap-1 text-2xs font-medium text-rose-700">
+                                    <XCircle className="w-3 h-3 text-rose-600" />
+                                    Brand từ chối
+                                  </span>
+                                )}
+                              </div>
+
+                              {item.overallStatus !== 'DRAFT' && item.brandApprovalStatus === 'BRAND_PENDING' && (
+                                <div className="flex items-center gap-1">
+                                  <button
+                                    onClick={() => setApprovingItem(item)}
+                                    className="px-1.5 py-0.5 text-2xs font-medium bg-emerald-600 text-white hover:bg-emerald-700 rounded transition-colors cursor-pointer"
+                                  >
+                                    Duyệt
+                                  </button>
+                                  <button
+                                    onClick={() => setRejectingItem(item)}
+                                    className="px-1.5 py-0.5 text-2xs font-medium bg-white text-rose-600 border border-rose-300 hover:bg-rose-50 rounded transition-colors cursor-pointer"
+                                  >
+                                    Từ chối
+                                  </button>
+                                </div>
                               )}
                             </div>
 
-                            {item.overallStatus !== 'DRAFT' && item.brandApprovalStatus === 'BRAND_PENDING' && (
-                              <div className="flex items-center gap-1.5 pt-0.5">
-                                <button
-                                  onClick={() => setApprovingItem(item)}
-                                  className="px-2 py-0.5 text-2xs font-medium bg-emerald-600 text-white hover:bg-emerald-700 rounded transition-colors cursor-pointer"
-                                >
-                                  Duyệt
-                                </button>
-                                <button
-                                  onClick={() => setRejectingItem(item)}
-                                  className="px-2 py-0.5 text-2xs font-medium bg-white text-rose-600 border border-rose-300 hover:bg-rose-50 rounded transition-colors cursor-pointer"
-                                >
-                                  Từ chối
-                                </button>
-                              </div>
-                            )}
-
                             {item.brandFeedbackNote && (
-                              <div className="text-2xs text-slate-500 italic max-w-[180px] truncate" title={item.brandFeedbackNote}>
+                              <div className="text-2xs text-slate-500 italic max-w-[200px] truncate" title={item.brandFeedbackNote}>
                                 {item.brandFeedbackNote}
                               </div>
                             )}
-                          </div>
-                        </td>
 
-                        {/* Parallel Track 2: KOC Negotiation */}
-                        <td className="py-3 px-3">
-                          <div className="space-y-1">
-                            <select
-                              value={item.kocNegotiationStatus}
-                              onChange={(e) =>
-                                handleKocNegotiationChange(item.id, e.target.value as KocNegotiationStatus)
-                              }
-                              className="text-2xs border border-slate-300 rounded px-2 py-1 bg-white text-slate-800 font-medium focus:outline-none focus:ring-1 focus:ring-slate-400"
-                            >
-                              <option value="NOT_CONTACTED">Chưa liên hệ</option>
-                              <option value="CONTACTING">Đang trao đổi</option>
-                              <option value="TERMS_AGREED">Đã chốt điều khoản</option>
-                              <option value="NEGOTIATION_FAILED">Đàm phán thất bại</option>
-                            </select>
-
+                            {/* KOC Negotiation */}
+                            <div className="flex items-center gap-2 pt-1 border-t border-slate-100">
+                              <span className="text-2xs text-slate-500 shrink-0">KOC:</span>
+                              <select
+                                value={item.kocNegotiationStatus}
+                                onChange={(e) =>
+                                  handleKocNegotiationChange(item.id, e.target.value as KocNegotiationStatus)
+                                }
+                                className="text-2xs border border-slate-300 rounded px-1.5 py-0.5 bg-white text-slate-800 font-medium focus:outline-none focus:ring-1 focus:ring-slate-400 flex-1 max-w-[170px]"
+                              >
+                                <option value="NOT_CONTACTED">Chưa liên hệ</option>
+                                <option value="CONTACTING">Đang trao đổi</option>
+                                <option value="TERMS_AGREED">Đã chốt điều khoản</option>
+                                <option value="NEGOTIATION_FAILED">Đàm phán thất bại</option>
+                              </select>
+                            </div>
                             {item.negotiationNote && (
-                              <div className="text-2xs text-slate-500 truncate max-w-[180px]" title={item.negotiationNote}>
+                              <div className="text-2xs text-slate-500 truncate max-w-[200px]" title={item.negotiationNote}>
                                 {item.negotiationNote}
                               </div>
                             )}
                           </div>
                         </td>
 
-                        {/* Overall Status Badge */}
-                        <td className="py-3 px-3">
-                          <div>
-                            {item.overallStatus === 'FINAL_APPROVED' && (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-2xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-300">
-                                <CheckCircle2 className="w-3 h-3 text-emerald-700" />
-                                3. Đã chốt duyệt
-                              </span>
-                            )}
-                            {item.overallStatus === 'SUBMITTED' && (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-2xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
-                                <Clock className="w-3 h-3 text-blue-600" />
-                                2. Đã Submit Brand
-                              </span>
-                            )}
-                            {item.overallStatus === 'DRAFT' && (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded text-2xs font-semibold bg-slate-100 text-slate-700 border border-slate-300">
-                                1. Bản nháp (Draft)
-                              </span>
-                            )}
-                            {item.overallStatus === 'DROPPED' && (
-                              <div>
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-medium bg-rose-50 text-rose-700 border border-rose-200">
-                                  <XCircle className="w-3 h-3 text-rose-600" />
-                                  Không đạt
-                                </span>
-                                <div className="text-2xs text-rose-600 mt-1 flex items-center gap-1">
-                                  <RotateCcw className="w-2.5 h-2.5" />
-                                  <span>Hoàn suất {resolvedGrade}</span>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        </td>
-
-                        {/* Workflow Actions: Draft -> Submit Brand -> Trao đổi & Duyệt -> Final Approve */}
-                        <td className="py-3 px-3 text-right">
+                        {/* Gộp: Trạng thái & Thao tác luồng duyệt */}
+                        <td className="py-2.5 px-3 text-right">
                           <div className="flex flex-col items-end gap-1.5">
-                            {item.overallStatus === 'DRAFT' && (
+                            {/* Trạng thái */}
+                            <div>
+                              {item.overallStatus === 'FINAL_APPROVED' && (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                                  <CheckCircle2 className="w-3 h-3 text-emerald-700" />
+                                  3. Đã chốt duyệt
+                                </span>
+                              )}
+                              {item.overallStatus === 'SUBMITTED' && (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                                  <Clock className="w-3 h-3 text-blue-600" />
+                                  2. Đã Submit Brand
+                                </span>
+                              )}
+                              {item.overallStatus === 'DRAFT' && (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded text-2xs font-semibold bg-slate-100 text-slate-700 border border-slate-300">
+                                  1. Bản nháp (Draft)
+                                </span>
+                              )}
+                              {item.overallStatus === 'DROPPED' && (
+                                <div>
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-medium bg-rose-50 text-rose-700 border border-rose-200">
+                                    <XCircle className="w-3 h-3 text-rose-600" />
+                                    Không đạt
+                                  </span>
+                                  <div className="text-2xs text-rose-600 mt-0.5 flex items-center justify-end gap-1">
+                                    <RotateCcw className="w-2.5 h-2.5" />
+                                    <span>Hoàn {resolvedGrade}</span>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Thao tác tương ứng */}
+                            <div className="flex items-center justify-end gap-1 mt-0.5 flex-wrap">
+                              {item.overallStatus === 'DRAFT' && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleSubmitToBrand([item.id])}
+                                  className="inline-flex items-center gap-1 px-2 py-1 text-2xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded shadow-2xs transition-colors cursor-pointer"
+                                >
+                                  <Send className="w-3 h-3" />
+                                  Submit
+                                </button>
+                              )}
+
+                              {canFinalApprove ? (
+                                <button
+                                  onClick={() => handleFinalApprove(item)}
+                                  className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded shadow-sm transition-colors cursor-pointer"
+                                >
+                                  <ShieldCheck className="w-3.5 h-3.5" />
+                                  Chốt &amp; Tạo Deal
+                                </button>
+                              ) : item.overallStatus === 'FINAL_APPROVED' ? (
+                                <span className="text-2xs text-emerald-700 font-code font-semibold">
+                                  {item.generatedDealId}
+                                </span>
+                              ) : null}
+
                               <button
                                 type="button"
-                                onClick={() => handleSubmitToBrand([item.id])}
-                                className="inline-flex items-center gap-1 px-2.5 py-1 text-2xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded shadow-2xs transition-colors cursor-pointer"
+                                onClick={() => setInspectingListingId(item.id)}
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 transition-colors cursor-pointer"
                               >
-                                <Send className="w-3 h-3" />
-                                Submit Brand
+                                <MessageSquare className="w-3 h-3 text-slate-500" />
+                                <span>Trao đổi ({item.discussions?.length || 0})</span>
                               </button>
-                            )}
-
-                            {canFinalApprove ? (
-                              <button
-                                onClick={() => handleFinalApprove(item)}
-                                className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded shadow-sm transition-colors cursor-pointer"
-                              >
-                                <ShieldCheck className="w-3.5 h-3.5" />
-                                Chốt &amp; Tạo Deal
-                              </button>
-                            ) : item.overallStatus === 'FINAL_APPROVED' ? (
-                              <div className="text-2xs text-emerald-700 font-semibold flex items-center justify-end gap-1">
-                                <span>Deal: {item.generatedDealId}</span>
-                                <ChevronRight className="w-3 h-3 text-emerald-500" />
-                              </div>
-                            ) : null}
-
-                            <button
-                              type="button"
-                              onClick={() => setInspectingListingId(item.id)}
-                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 transition-colors cursor-pointer"
-                            >
-                              <MessageSquare className="w-3 h-3 text-slate-500" />
-                              <span>Trao đổi &amp; Duyệt ({item.discussions?.length || 0})</span>
-                            </button>
+                            </div>
                           </div>
                         </td>
                       </tr>
@@ -1659,24 +1689,21 @@ export function KocListingBatchHubView({
             </div>
           </div>
 
-          <div className="overflow-x-auto">
+          <div className="w-full">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold text-2xs">
-                  <th className="py-3 px-3">Mã hồ sơ / KOC</th>
-                  <th className="py-3 px-3">Gian hàng &amp; Kênh</th>
-                  <th className="py-3 px-3">Tiến trình lên sóng</th>
-                  <th className="py-3 px-3">Lịch lên sóng cam kết</th>
-                  <th className="py-3 px-3">Gắn giỏ hàng sàn</th>
-                  <th className="py-3 px-3">Mã Spark Ads</th>
-                  <th className="py-3 px-3">Liên kết video</th>
-                  <th className="py-3 px-3 text-right">Thao tác</th>
+                <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold text-[11px]">
+                  <th className="py-2.5 px-3 w-[28%]">KOC &amp; Gian hàng</th>
+                  <th className="py-2.5 px-3 w-[22%]">Tiến trình lên sóng</th>
+                  <th className="py-2.5 px-3 w-[16%]">Lịch lên sóng</th>
+                  <th className="py-2.5 px-3 w-[22%]">Nghiệm thu &amp; Kỹ thuật</th>
+                  <th className="py-2.5 px-3 text-right w-[12%]">Thao tác</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200">
                 {airListings.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="py-8 text-center text-slate-400 text-xs">
+                    <td colSpan={5} className="py-8 text-center text-slate-400 text-xs">
                       Chưa có KOC nào đạt trạng thái chốt duyệt trong đợt này.
                     </td>
                   </tr>
@@ -1692,30 +1719,35 @@ export function KocListingBatchHubView({
 
                     return (
                       <tr key={item.id} className="hover:bg-slate-50/70 transition-colors">
-                        {/* Deal & KOC */}
-                        <td className="py-3 px-3">
-                          <div className="flex items-center gap-1.5">
+                        {/* KOC & Store */}
+                        <td className="py-2.5 px-3">
+                          <div className="flex items-center gap-1.5 flex-wrap">
                             <span className="font-semibold text-slate-900">{item.kocName}</span>
                             <span className="font-code text-2xs font-semibold text-blue-700">
                               · {inferSalaryGradeFromFee(item.finalFee || item.proposedFee, item.salaryGrade)}
                             </span>
+                            <span className="text-2xs font-code text-slate-500">
+                              · {item.generatedDealId || 'DEAL-AUTO'}
+                            </span>
                           </div>
-                          <div className="text-2xs text-slate-500">{item.kocHandle}</div>
-                          <div className="text-2xs font-code text-blue-600 mt-1">
-                            {item.generatedDealId || 'DEAL-AUTO'}
-                          </div>
-                        </td>
-
-                        {/* Store & Channel */}
-                        <td className="py-3 px-3">
-                          <div className="font-medium text-slate-800">{item.storeName}</div>
                           <div className="text-2xs text-slate-500 mt-0.5">
-                            {item.channel} • {item.pillarName}
+                            <span>{item.kocHandle}</span>
+                          </div>
+                          <div className="text-2xs text-slate-600 mt-1 flex items-center gap-1 flex-wrap">
+                            <span className="font-medium text-slate-800">{item.storeName}</span>
+                            <span>•</span>
+                            <span>{item.channel}</span>
+                            {item.pillarName && (
+                              <>
+                                <span>•</span>
+                                <span className="text-slate-500 truncate max-w-[150px]">{item.pillarName}</span>
+                              </>
+                            )}
                           </div>
                         </td>
 
                         {/* Air Video Pipeline Stage */}
-                        <td className="py-3 px-3">
+                        <td className="py-2.5 px-3">
                           <div className="space-y-1">
                             <span
                               className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-2xs font-semibold border ${
@@ -1750,71 +1782,73 @@ export function KocListingBatchHubView({
                           </div>
                         </td>
 
-                        {/* Expected Air Date */}
-                        <td className="py-3 px-3">
+                        {/* Expected Air Date vs Actual */}
+                        <td className="py-2.5 px-3">
+                          <div className="text-2xs text-slate-500">Cam kết:</div>
                           <div className="font-medium text-slate-800">
                             {item.expectedAirDate || 'Chưa định ngày'}
                           </div>
                           {item.actualAirDate && (
-                            <div className="text-2xs text-emerald-600">
+                            <div className="text-2xs text-emerald-600 mt-0.5">
                               Thực tế: {item.actualAirDate}
                             </div>
                           )}
                         </td>
 
-                        {/* Cart Anchor Verified */}
-                        <td className="py-3 px-3">
-                          {item.isCartAnchored ? (
-                            <span className="inline-flex items-center gap-1 text-2xs font-medium text-emerald-700">
-                              <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                              Đã gắn giỏ hàng
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 text-2xs font-medium text-rose-600">
-                              <AlertTriangle className="w-3 h-3 text-rose-500" />
-                              Chưa gắn giỏ hàng
-                            </span>
-                          )}
-                        </td>
+                        {/* Video & Technical Verification (Cart Anchor, Spark Ads, Video Link) */}
+                        <td className="py-2.5 px-3">
+                          <div className="space-y-1 text-2xs">
+                            <div className="flex items-center gap-2">
+                              {item.publishedVideoUrl ? (
+                                <a
+                                  href={item.publishedVideoUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 underline font-medium"
+                                >
+                                  <span>Xem video</span>
+                                  <ExternalLink className="w-3 h-3" />
+                                </a>
+                              ) : (
+                                <span className="text-slate-400 italic">Chưa có link video</span>
+                              )}
+                            </div>
 
-                        {/* Spark Ads Code */}
-                        <td className="py-3 px-3">
-                          {item.sparkAdsCode ? (
-                            <span className="font-code text-2xs text-slate-800">
-                              {item.sparkAdsCode}
-                            </span>
-                          ) : (
-                            <span className="text-2xs text-slate-400 italic">Chưa cấp mã</span>
-                          )}
-                        </td>
-
-                        {/* Published Video URL */}
-                        <td className="py-3 px-3">
-                          {item.publishedVideoUrl ? (
-                            <a
-                              href={item.publishedVideoUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 underline font-medium"
-                            >
-                              <span>Xem video</span>
-                              <ExternalLink className="w-3 h-3" />
-                            </a>
-                          ) : (
-                            <span className="text-2xs text-slate-400 italic">Chưa có liên kết</span>
-                          )}
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              {item.isCartAnchored ? (
+                                <span className="inline-flex items-center gap-1 font-medium text-emerald-700">
+                                  <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                                  Đã gắn giỏ
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 font-medium text-amber-600">
+                                  <AlertTriangle className="w-3 h-3 text-amber-500" />
+                                  Chưa gắn giỏ
+                                </span>
+                              )}
+                              <span>•</span>
+                              {item.sparkAdsCode ? (
+                                <span className="font-code text-slate-700 font-medium">
+                                  {item.sparkAdsCode}
+                                </span>
+                              ) : (
+                                <span className="text-slate-400 italic">Chưa mã Ads</span>
+                              )}
+                            </div>
+                          </div>
                         </td>
 
                         {/* Actions */}
-                        <td className="py-3 px-3 text-right">
+                        <td className="py-2.5 px-3 text-right">
                           <button
+                            type="button"
                             onClick={() => {
                               setSelectedListingForAir(item);
                               setShowAirUpdateModal(true);
                             }}
                             className="px-2.5 py-1 text-xs font-medium text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded transition-colors cursor-pointer"
                           >
-                            Cập nhật tiến độ
+                            Cập nhật
                           </button>
                         </td>
                       </tr>

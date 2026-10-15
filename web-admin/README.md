@@ -8,6 +8,7 @@ Hệ thống điều hành và quản trị vận hành tập trung cho phòng M
 
 - **Framework:** Next.js 15 (App Router), React 19, TypeScript.
 - **Styling & UI:** Tailwind CSS, Lucide React, Design System chuẩn hóa theo [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md).
+  - Tối ưu hóa hiển thị bảng danh sách (`DataTable` và các bảng ma trận chuyên biệt): tự động dàn đều vừa vặn 100% khung nhìn máy tính (laptop/desktop từ 1280px trở lên), loại bỏ hoàn toàn tình trạng tràn màn hình và thanh cuộn ngang không cần thiết; typography cô đọng, padding tinh gọn và tổ chức dữ liệu đa tầng rõ ràng.
 - **Cơ sở dữ liệu thực tế (Database & Storage Engine):**
   - **Prisma ORM & PostgreSQL trên Supabase** (AWS ap-southeast-1 Pooler / Direct).
   - Vận hành 100% dữ liệu thực tế thông qua các biến môi trường: `BRAND_STORAGE=postgres`, `CONTRACT_STORAGE=postgres`, `PARTNER_HUB_STORAGE=postgres`, `SHARED_STORAGE=postgres`.
@@ -84,7 +85,10 @@ Mở trình duyệt tại `http://localhost:3000`.
 - **Bộ thành phần lõi (`ui/index.tsx`, `ui/blocks.tsx`):**
   - `Panel`: Hỗ trợ trường mô tả phụ (`description`) dưới tiêu đề khối, bổ sung đổ bóng nhẹ `shadow-2xs`.
   - `Stat`: Hỗ trợ biểu tượng chuyên biệt (`icon`), hiệu ứng hover nhẹ nhàng `hover:bg-canvas/50`, định dạng số lớn và sparkline xu hướng sắc nét.
-  - `DataTable`: Header bảng có nền phân tách nhẹ `bg-sunken/40` giúp mắt không mỏi khi đọc hàng chục dòng deal và KOC.
+  - `DataTable`: Hỗ trợ `fitContainer` linh hoạt theo tỷ lệ màn hình thực tế, loại bỏ `minWidth` ép cố định gây tràn ngang; padding `compact` (px-2.5 sm:px-3 py-2) giúp tối ưu diện tích hiển thị; header bảng có nền phân tách nhẹ `bg-sunken/40`.
+- **Chuẩn hóa hiển thị bảng danh sách - Triệt tiêu thanh cuộn ngang (Zero-horizontal-scroll Layout):**
+  - Tinh giản số lượng cột trên các bảng nghiệp vụ trọng điểm (`KocListingBatchHubView`, `BookingView`, `SampleTrackerView`, `ManagerView`...) từ 8-10 cột xuống 5-6 cột logic có cấu trúc thông tin đa tầng (multi-line).
+  - Gộp các trường dữ liệu có liên kết nghiệp vụ trực tiếp (như KOC + Gian hàng/Kênh; Tiến trình + Trách nhiệm + Cảnh báo SLA; Nghiệm thu kỹ thuật gồm Link Video + Giỏ hàng + Mã Ads) giúp người dùng nắm bắt trọn vẹn thông tin mà không cần kéo ngang màn hình trên mọi độ phân giải laptop từ 1280px đến 1920px.
 - **Bàn làm việc nhân sự (`CockpitView`):** Thêm biểu tượng trực quan cho các ô chỉ số (Khẩn cấp, Trong ngày, Hoàn tất, Tổng đầu việc), tích hợp bộ điều khiển phân đoạn `Segmented` để lọc nhanh danh sách nhiệm vụ.
 
 ---

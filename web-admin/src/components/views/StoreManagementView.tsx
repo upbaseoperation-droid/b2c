@@ -406,14 +406,14 @@ export function StoreManagementView({
   const columns: Column<StorePortfolioItem>[] = [
     {
       key: 'storeName',
-      header: 'Gian hàng sàn & Mã định danh',
-      width: 245,
+      header: 'Gian hàng sàn & ID',
+      width: 175,
       render: s => (
-        <div className="min-w-0 max-w-[260px] leading-tight">
+        <div className="min-w-0 max-w-[190px] leading-tight">
           <div className="flex items-center gap-1.5 flex-wrap">
             <span
               {...sharedFrom('store-title', s.id)}
-              className="truncate font-medium text-ink"
+              className="truncate font-medium text-ink text-xs"
             >
               {s.storeName}
             </span>
@@ -428,23 +428,23 @@ export function StoreManagementView({
     {
       key: 'brandName',
       header: 'Thương hiệu',
-      width: 135,
-      render: s => <span className="truncate font-medium text-ink-2">{s.brandName}</span>,
+      width: 110,
+      render: s => <span className="truncate font-medium text-ink-2 text-xs">{s.brandName}</span>,
     },
     {
       key: 'pic',
-      header: 'Chuyên viên PIC & Quản lý',
-      width: 180,
+      header: 'Chuyên viên PIC',
+      width: 130,
       render: s => {
         const pic =
           s.b2cOwnerName || s.primaryPic || (s.b2cOwners && s.b2cOwners[0]) || 'Chưa giao';
         return (
           <div className="leading-tight">
             <Person name={pic} size={18} />
-            <span className="block text-2xs text-ink-3 mt-0.5">
+            <span className="block text-2xs text-ink-3 mt-0.5 truncate max-w-[120px]">
               {s.hasBookingLeader && s.bookingLeader
                 ? `TN: ${s.bookingLeader}`
-                : 'Trực tiếp Trưởng phòng'}
+                : 'Trực tiếp Lead'}
             </span>
           </div>
         );
@@ -452,8 +452,8 @@ export function StoreManagementView({
     },
     {
       key: 'storeCoefficient',
-      header: 'Hệ số gian hàng (Bảng 2)',
-      width: 155,
+      header: 'Hệ số (Bảng 2)',
+      width: 110,
       align: 'center',
       render: s => {
         const norm = normalizeStoreCoefficient(s.difficultyTier, s.difficultyMultiplier);
@@ -470,12 +470,10 @@ export function StoreManagementView({
               <span>{norm.tier}</span>
               <span className="font-mono font-semibold text-ink-2">· {norm.label}</span>
             </span>
-            <span className="text-2xs text-ink-3">
+            <span className="text-[10px] text-ink-3">
               {s.coefficientApprovalStatus === 'PENDING_MANAGER_APPROVAL'
-                ? 'Chờ GĐ duyệt đầu kỳ'
-                : s.coefficientApprovalStatus === 'ADJUSTED_BY_APPROVED_PLAN'
-                  ? 'Đã duyệt theo Plan'
-                  : 'Đã duyệt đầu tháng'}
+                ? 'Chờ duyệt'
+                : 'Đã duyệt'}
             </span>
           </div>
         );
@@ -483,15 +481,15 @@ export function StoreManagementView({
     },
     {
       key: 'nmvMonthly',
-      header: `NMV Plan / Report (${selectedMonth})`,
-      width: 165,
+      header: `NMV (${selectedMonth})`,
+      width: 120,
       align: 'right',
       render: s => {
         const rep = getStoreReport(s);
         return (
           <div className="leading-tight tabular-nums text-right">
             <span className="block font-medium text-ink text-xs">
-              Report: {rep.reportNmv > 0 ? formatVndShort(rep.reportNmv) : '0 đ'}
+              Rep: {rep.reportNmv > 0 ? formatVndShort(rep.reportNmv) : '0 đ'}
             </span>
             <span className="block text-2xs text-ink-3">
               Plan: {rep.planNmv > 0 ? formatVndShort(rep.planNmv) : '0 đ'}
@@ -504,7 +502,7 @@ export function StoreManagementView({
     {
       key: 'budgetMonthly',
       header: `Ngân sách Net (${selectedMonth})`,
-      width: 165,
+      width: 125,
       align: 'right',
       render: s => {
         const rep = getStoreReport(s);
@@ -527,8 +525,8 @@ export function StoreManagementView({
     },
     {
       key: 'videosMonthly',
-      header: `Video Plan / Air (${selectedMonth})`,
-      width: 150,
+      header: `Video (${selectedMonth})`,
+      width: 115,
       align: 'right',
       render: s => {
         const rep = getStoreReport(s);
@@ -537,8 +535,8 @@ export function StoreManagementView({
             <span className="block font-medium text-ink text-xs">
               Air {formatNumber(rep.reportAiredVideos)} / Plan {formatNumber(rep.planTotalVideos)}
             </span>
-            <span className="block text-2xs text-ink-3">
-              Aff {rep.planAffVideos} · Kênh {rep.planSelfVideos} · FOC {rep.planFocVideos}
+            <span className="block text-[10px] text-ink-3 truncate max-w-[110px]">
+              Aff {rep.planAffVideos} · Kênh {rep.planSelfVideos}
             </span>
           </div>
         );
@@ -546,14 +544,14 @@ export function StoreManagementView({
     },
     {
       key: 'drilldown',
-      header: 'Hồ sơ tháng & Drill-down',
-      width: 180,
+      header: 'Chi tiết',
+      width: 115,
       align: 'right',
       render: s => {
         const rep = getStoreReport(s);
         return (
           <div
-            className="inline-flex items-center justify-end gap-1.5"
+            className="inline-flex items-center justify-end gap-1"
             onClick={e => e.stopPropagation()}
           >
             {onDrilldownToPlan && (

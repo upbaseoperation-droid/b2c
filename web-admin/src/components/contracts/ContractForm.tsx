@@ -400,7 +400,6 @@ export function ContractForm({
         open={ocrOpen}
         onClose={() => setOcrOpen(false)}
         title="Đọc ảnh CCCD / Giấy phép ĐKKD"
-        description="Tải ảnh chụp Căn cước công dân hoặc Đăng ký kinh doanh để tự động điền thông tin Bên B vào hợp đồng."
         footer={
           <div className="flex justify-end gap-2">
             <Button variant="ghost" onClick={() => setOcrOpen(false)}>Đóng</Button>

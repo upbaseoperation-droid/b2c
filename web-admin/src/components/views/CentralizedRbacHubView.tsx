@@ -865,13 +865,33 @@ export const CentralizedRbacHubView: React.FC<CentralizedRbacHubViewProps> = ({
 
   return (
     <div className="space-y-5 pb-12">
-      <div role="status" className="rounded-lg border border-line bg-surface p-3 text-sm">
-        <strong>{policyDirty ? 'Có thay đổi chưa áp dụng' : 'Cấu hình quyền dùng chung'}</strong>
-        <p>Thay đổi bên dưới là bản nháp. Chọn “Lưu quyền” để áp dụng trên máy chủ. Chỉ Admin được lưu.</p>
-        {policyError && <p role="alert" className="text-red-600">{policyError}</p>}
-        <button className="px-3 py-2 font-semibold text-accent disabled:opacity-50" disabled={!isAdmin || policyRevision === null || policyBusy || !policyDirty} onClick={commitPolicy}>{policyBusy ? 'Đang lưu…' : 'Lưu quyền'}</button>
-        <button className="px-3 py-2" disabled={policyBusy} onClick={() => { if (policyDirty && !window.confirm('Bỏ bản nháp và tải cấu hình mới nhất?')) return; loadAccessPolicy().then(applyPolicy).catch(e => setPolicyError(e.message)); }}>Tải lại cấu hình</button>
-      </div>
+      {(policyDirty || policyError) && (
+        <div role="status" className="rounded-lg border border-warning/30 bg-warning-soft/50 p-3 text-xs flex items-center justify-between gap-3">
+          <div>
+            <strong className="text-ink">{policyDirty ? 'Có thay đổi chưa áp dụng' : 'Cấu hình quyền'}</strong>
+            {policyError && <p role="alert" className="text-critical text-2xs mt-0.5">{policyError}</p>}
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-accent text-white hover:opacity-90 disabled:opacity-50"
+              disabled={!isAdmin || policyRevision === null || policyBusy || !policyDirty}
+              onClick={commitPolicy}
+            >
+              {policyBusy ? 'Đang lưu…' : 'Lưu quyền'}
+            </button>
+            <button
+              className="px-3 py-1.5 text-xs font-medium rounded-lg bg-surface border border-line text-ink-2 hover:bg-sunken"
+              disabled={policyBusy}
+              onClick={() => {
+                if (policyDirty && !window.confirm('Bỏ bản nháp và tải cấu hình mới nhất?')) return;
+                loadAccessPolicy().then(applyPolicy).catch(e => setPolicyError(e.message));
+              }}
+            >
+              Hủy thay đổi
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Top Bar: Trạng thái Cổng truy cập & Thao tác nhanh */}
       <div className="flex flex-wrap items-center justify-between gap-3 text-xs bg-white p-3 rounded-xl border border-line">

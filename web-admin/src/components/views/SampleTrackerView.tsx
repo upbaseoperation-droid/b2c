@@ -190,16 +190,16 @@ export default function SampleTrackerView({
 
       {/* Main Table */}
       <div className="bg-white border border-slate-200 rounded-md overflow-hidden shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[1180px] text-left text-xs">
-            <thead className="bg-slate-50 border-b border-slate-200 text-slate-700 font-semibold">
+        <div className="w-full">
+          <table className="w-full text-left text-xs border-collapse">
+            <thead className="bg-slate-50 border-b border-slate-200 text-slate-700 font-semibold text-[11px]">
               <tr>
-                <th className="py-3 px-3.5 w-[200px] min-w-[200px]">KOC & mã hồ sơ</th>
-                <th className="py-3 px-3 w-[240px] min-w-[240px]">Sản phẩm & nhãn hàng</th>
-                <th className="py-3 px-3 w-[220px] min-w-[220px]">Vận đơn & trạng thái</th>
-                <th className="py-3 px-3 w-[180px] min-w-[180px]">Thời hạn nộp bản nháp</th>
-                <th className="py-3 px-3 w-[190px] min-w-[190px]">Mã TikTok Spark Ads</th>
-                <th className="py-3 px-3 pr-4 text-right w-[160px] min-w-[160px] sticky right-0 bg-slate-50 border-l border-slate-200">Xử lý & hành động</th>
+                <th className="py-2 px-2.5 w-[18%]">KOC &amp; mã hồ sơ</th>
+                <th className="py-2 px-2.5 w-[22%]">Sản phẩm &amp; nhãn hàng</th>
+                <th className="py-2 px-2.5 w-[20%]">Vận đơn &amp; trạng thái</th>
+                <th className="py-2 px-2 w-[14%]">Thời hạn bản nháp</th>
+                <th className="py-2 px-2 w-[14%]">Mã TikTok Spark Ads</th>
+                <th className="py-2 px-2.5 pr-3 text-right w-[12%]">Xử lý &amp; hành động</th>
               </tr>
             </thead>
             <tbody ref={shipmentsBodyRef} className="divide-y divide-slate-100">
@@ -209,7 +209,7 @@ export default function SampleTrackerView({
                 return (
                   <tr key={item.id} data-flip={item.id} className={`hover:bg-slate-50/70 transition ${isOverdue ? 'bg-rose-50/30' : ''}`}>
                     {/* KOC Info */}
-                    <td className="py-3 px-3">
+                    <td className="py-2 px-2.5">
                       <div className="font-semibold text-slate-900">{item.kocName}</div>
                       <div className="text-2xs text-slate-500 flex items-center gap-1.5 mt-0.5">
                         <Phone className="w-3 h-3 text-slate-400" />
@@ -219,7 +219,7 @@ export default function SampleTrackerView({
                     </td>
 
                     {/* Product & Brand */}
-                    <td className="py-3 px-3">
+                    <td className="py-2 px-2.5">
                       <span className="block text-2xs font-medium text-ink-3 mb-0.5">
                         {item.brandName}
                       </span>
@@ -232,7 +232,7 @@ export default function SampleTrackerView({
                     </td>
 
                     {/* Tracking Code */}
-                    <td className="py-3 px-3">
+                    <td className="py-2 px-2.5">
                       <div className="flex items-center gap-1.5">
                         <span className="font-mono font-medium text-slate-800">{item.trackingCode}</span>
                         <button 
@@ -284,7 +284,7 @@ export default function SampleTrackerView({
                     </td>
 
                     {/* SLA Demo Countdown */}
-                    <td className="py-3 px-3">
+                    <td className="py-2 px-2.5">
                       {item.deliveredDate ? (
                         <div>
                           <div className="flex items-center gap-1.5">

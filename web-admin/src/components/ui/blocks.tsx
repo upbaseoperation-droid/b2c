@@ -174,6 +174,8 @@ export function DataTable<T>({
   onRowClick,
   rowClassName,
   loading = false,
+  fitContainer = true,
+  compact = true,
 }: {
   columns: Column<T>[];
   rows: T[];
@@ -184,25 +186,31 @@ export function DataTable<T>({
   rowClassName?: (row: T) => string | undefined;
   /** Đang tải: giữ khung bảng, hiện hàng giữ chỗ. */
   loading?: boolean;
+  /** Tự động vừa vặn container, không ép thanh cuộn ngang trên màn hình máy tính. */
+  fitContainer?: boolean;
+  /** Giảm padding các ô để hiển thị đầy đủ các cột mà không phải kéo ngang. */
+  compact?: boolean;
 }) {
   const bodyRef = useRef<HTMLTableSectionElement>(null);
   // Sắp xếp/lọc: hàng còn lại trượt về chỗ mới, hàng mới hiện dần (DESIGN_SYSTEM.md §9).
   useFlipList(bodyRef, rows.map(rowKey).join('|'));
   const align = (a?: Column<T>['align']) => (a === 'right' ? 'text-right' : a === 'center' ? 'text-center' : 'text-left');
-  const minWidth = columns.reduce((s, c) => s + (c.width || 120), 0);
+  const minWidth = fitContainer ? undefined : columns.reduce((s, c) => s + (c.width || 120), 0);
   const last = columns.length - 1;
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full border-collapse text-xs" style={{ minWidth }}>
+    <div className={fitContainer ? "w-full overflow-x-auto" : "overflow-x-auto"}>
+      <table className="w-full border-collapse text-xs" style={minWidth ? { minWidth } : undefined}>
         <thead>
           <tr>
             {columns.map((c, i) => (
               <th
                 key={c.key}
                 scope="col"
-                style={c.width ? { minWidth: c.width } : undefined}
+                style={!fitContainer && c.width ? { minWidth: c.width } : c.width ? { width: `${c.width}px` } : undefined}
                 className={cx(
-                  'px-4 py-2.5 text-[12px] font-semibold text-ink-3 bg-sunken/40 border-b border-line whitespace-nowrap',
+                  compact
+                    ? 'px-2.5 sm:px-3 py-2 text-[11px] font-semibold text-ink-3 bg-sunken/40 border-b border-line'
+                    : 'px-4 py-2.5 text-[12px] font-semibold text-ink-3 bg-sunken/40 border-b border-line',
                   align(c.align),
                   stickyLast && i === last && 'sticky right-0 z-10 bg-sunken/60 border-l border-line',
                 )}
@@ -217,7 +225,7 @@ export function DataTable<T>({
             <SkeletonRows columns={columns.length} />
           ) : rows.length === 0 ? (
             <tr>
-              <td colSpan={columns.length} className="px-4">
+              <td colSpan={columns.length} className={compact ? "px-3" : "px-4"}>
                 {empty ?? <p className="py-10 text-[13px] text-ink-3">Không có dữ liệu phù hợp.</p>}
               </td>
             </tr>
@@ -233,7 +241,7 @@ export function DataTable<T>({
                   <td
                     key={c.key}
                     className={cx(
-                      'px-4 py-3 align-top text-ink',
+                      compact ? 'px-2.5 sm:px-3 py-2 align-top text-ink' : 'px-4 py-3 align-top text-ink',
                       align(c.align),
                       c.className,
                       stickyLast && i === last && 'sticky right-0 bg-surface group-hover:bg-canvas border-l border-line',

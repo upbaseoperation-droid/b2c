@@ -600,7 +600,6 @@ function LinkDialog({ open, version, busy, onClose, onSubmit }: { open: boolean;
       open={open}
       onClose={onClose}
       title="Liên kết luồng ký weSign"
-      description="Tạo và gửi luồng ký trên weSign như thường lệ, rồi dán mã tài liệu vào đây để theo dõi tiến độ."
       footer={
         <>
           <Button variant="ghost" onClick={onClose}>Hủy</Button>

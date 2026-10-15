@@ -323,17 +323,17 @@ export const ThirdPartyAccessSetupView: React.FC<ThirdPartyAccessSetupViewProps>
       {/* 3. PARTNERS ACCOUNTS TABLE */}
       {/* ========================================================================= */}
       <div className="card-enterprise overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs border-collapse min-w-[1100px]">
-            <thead className="bg-canvas text-ink-3 border-b border-line text-2xs font-semibold">
+        <div className="w-full">
+          <table className="w-full text-left text-xs border-collapse">
+            <thead className="bg-canvas text-ink-3 border-b border-line text-[11px] font-semibold">
               <tr>
-                <th className="p-3.5 pl-6 w-[260px]">Tài khoản Gmail & Đối tác</th>
-                <th className="p-3.5 w-[130px]">Phân loại</th>
-                <th className="p-3.5 w-[220px]">Phạm vi dữ liệu</th>
-                <th className="p-3.5 min-w-[260px]">Quyền hạn được cấp</th>
-                <th className="p-3.5 w-[140px]">Đăng nhập gần nhất</th>
-                <th className="p-3.5 w-[110px] text-center">Trạng thái</th>
-                <th className="p-3.5 pr-6 text-right w-[170px] sticky right-0 bg-canvas border-l border-line">
+                <th className="py-2.5 px-3 pl-4 w-[22%]">Tài khoản &amp; Đối tác</th>
+                <th className="py-2.5 px-2 w-[11%]">Phân loại</th>
+                <th className="py-2.5 px-2 w-[18%]">Phạm vi dữ liệu</th>
+                <th className="py-2.5 px-2 w-[23%]">Quyền hạn được cấp</th>
+                <th className="py-2.5 px-2 w-[11%]">Đăng nhập</th>
+                <th className="py-2.5 px-1.5 w-[8%] text-center">Trạng thái</th>
+                <th className="py-2.5 px-3 pr-4 text-right w-[7%]">
                   Thao tác
                 </th>
               </tr>
@@ -357,38 +357,38 @@ export const ThirdPartyAccessSetupView: React.FC<ThirdPartyAccessSetupViewProps>
                 return (
                   <tr key={acc.id} className="hover:bg-canvas transition">
                     {/* Gmail & User Info */}
-                    <td className="p-3.5 pl-6">
-                      <div className="flex items-center gap-3">
-                        <Avatar name={acc.displayName} size={36} />
+                    <td className="py-2.5 px-3 pl-4">
+                      <div className="flex items-center gap-2">
+                        <Avatar name={acc.displayName} size={28} />
                         <div className="min-w-0">
                           <div className="font-semibold text-ink text-xs flex items-center gap-1.5 truncate">
                             <span>{acc.displayName}</span>
                           </div>
                           <div className="text-2xs text-ink-2 font-code flex items-center gap-1 truncate mt-0.5">
                             <Mail className="w-3 h-3 text-ink-3 shrink-0" />
-                            <span className="font-medium text-ink-2">{acc.gmail}</span>
+                            <span className="font-medium text-ink-2 truncate max-w-[130px]">{acc.gmail}</span>
                           </div>
                         </div>
                       </div>
                     </td>
 
-                    {/* Partner Type (Plain text instead of badge) */}
-                    <td className="p-3.5">
+                    {/* Partner Type */}
+                    <td className="py-2.5 px-2">
                       <span className="text-xs font-medium text-ink-2 inline-flex items-center gap-1.5">
                         {isBrand && <Building className="w-3.5 h-3.5 text-ink-3" />}
                         {isKoc && <Users className="w-3.5 h-3.5 text-ink-3" />}
                         {isCtv && <Video className="w-3.5 h-3.5 text-ink-3" />}
-                        <span>{isBrand ? 'Brand Partner' : isKoc ? 'KOC Partner' : 'CTV Partner'}</span>
+                        <span>{isBrand ? 'Brand' : isKoc ? 'KOC' : 'CTV'}</span>
                       </span>
                     </td>
 
                     {/* Linked Entity & Store Scope */}
-                    <td className="p-3.5">
+                    <td className="py-2.5 px-2">
                       <div className="font-semibold text-ink text-xs">
                         {acc.linkedEntityName}
                       </div>
                       {isBrand && acc.linkedStoreNames && acc.linkedStoreNames.length > 0 && (
-                        <div className="text-2xs text-ink-3 mt-1 space-y-0.5">
+                        <div className="text-2xs text-ink-3 mt-0.5 space-y-0.5">
                           {acc.linkedStoreNames.map((st, sIdx) => (
                             <div key={sIdx} className="flex items-center gap-1 truncate text-ink-2">
                               <Store className="w-2.5 h-2.5 text-ink-3 shrink-0" />
@@ -399,35 +399,35 @@ export const ThirdPartyAccessSetupView: React.FC<ThirdPartyAccessSetupViewProps>
                       )}
                       {isKoc && (
                         <div className="text-2xs text-accent font-code mt-0.5">
-                          Liên kết danh bạ KOC #{acc.linkedEntityId}
+                          #{acc.linkedEntityId}
                         </div>
                       )}
                     </td>
 
                     {/* Permissions Text */}
-                    <td className="p-3.5">
-                      <div className="text-xs text-ink-2 leading-relaxed max-w-[280px]">
+                    <td className="py-2.5 px-2">
+                      <div className="text-xs text-ink-2 leading-relaxed">
                         {permissionLabels.length > 0 ? permissionLabels.join(' · ') : '—'}
                       </div>
                     </td>
 
                     {/* Last Login & Count */}
-                    <td className="p-3.5 text-2xs text-ink-3">
+                    <td className="py-2.5 px-2 text-2xs text-ink-3">
                       <div className="font-medium text-ink">{acc.lastLoginAt || 'Chưa đăng nhập'}</div>
                       <div className="text-2xs text-ink-3 mt-0.5 tabular-nums">
-                        {acc.loginCount} lần truy cập Gmail
+                        {acc.loginCount} lần
                       </div>
                     </td>
 
                     {/* Status (Single Status per row) */}
-                    <td className="p-3.5 text-center">
+                    <td className="py-2.5 px-1.5 text-center">
                       <Status tone={acc.status === 'ACTIVE' ? 'positive' : 'critical'}>
-                        {acc.status === 'ACTIVE' ? 'Hoạt động' : 'Tạm khóa'}
+                        {acc.status === 'ACTIVE' ? 'Hoạt động' : 'Khóa'}
                       </Status>
                     </td>
 
                     {/* Actions & Impersonate */}
-                    <td className="p-3.5 pr-6 text-right sticky right-0 bg-surface border-l border-line">
+                    <td className="py-2.5 px-3 pr-4 text-right">
                       <div className="flex items-center justify-end gap-1.5">
                         <button
                           onClick={() => handleImpersonate(acc)}

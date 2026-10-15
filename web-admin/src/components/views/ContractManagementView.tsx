@@ -166,12 +166,12 @@ export function ContractManagementView({
     {
       key: 'title',
       header: 'Hồ sơ',
-      width: 260,
+      width: 200,
       render: r => {
         const tpl = data?.templates.find(t => t.id === r.templateId);
         const catLabel = tpl?.category ? CATEGORY_LABELS[tpl.category] : undefined;
         return (
-          <div className="min-w-0 max-w-[340px] leading-tight">
+          <div className="min-w-0 max-w-[260px] leading-tight">
             <span className="block truncate font-medium text-ink">{r.title}</span>
             <span className="block truncate text-2xs text-ink-3">
               {tpl?.name || r.templateId} · v{r.version}{catLabel ? ` · ${catLabel}` : ''}
@@ -183,9 +183,9 @@ export function ContractManagementView({
     {
       key: 'partner',
       header: 'Đối tác · booking',
-      width: 200,
+      width: 160,
       render: r => (
-        <div className="min-w-0 max-w-[260px] leading-tight">
+        <div className="min-w-0 max-w-[200px] leading-tight">
           <span className="block truncate text-ink">{r.partner}</span>
           <span className="block truncate text-2xs text-ink-3">{r.brand}{r.dealCode ? <> · <span className="font-code">{r.dealCode}</span></> : ''}</span>
         </div>
@@ -194,23 +194,23 @@ export function ContractManagementView({
     {
       key: 'status',
       header: 'Trạng thái',
-      width: 170,
+      width: 130,
       render: r => {
         const s = contractStatus(r);
         return (
-          <div className="grid gap-1 justify-items-start">
+          <div className="grid gap-0.5 justify-items-start leading-tight">
             <Status tone={s.tone}>{s.label}</Status>
-            {s.note && <span className="text-2xs text-ink-3">{s.note}</span>}
+            {s.note && <span className="text-2xs text-ink-3 truncate max-w-[130px]">{s.note}</span>}
           </div>
         );
       },
     },
-    { key: 'owner', header: 'Người phụ trách', width: 160, render: r => <Person name={r.ownerName} size={20} /> },
-    { key: 'updated', header: 'Cập nhật', width: 100, align: 'right', render: r => <span className="text-ink-2 tabular-nums">{formatDate(r.updatedAt)}</span> },
+    { key: 'owner', header: 'Người phụ trách', width: 130, render: r => <Person name={r.ownerName} size={20} /> },
+    { key: 'updated', header: 'Cập nhật', width: 85, align: 'right', render: r => <span className="text-ink-2 tabular-nums text-xs">{formatDate(r.updatedAt)}</span> },
     {
       key: 'preview',
       header: 'Văn bản',
-      width: 110,
+      width: 95,
       align: 'right',
       render: r => (
         <button
@@ -219,10 +219,10 @@ export function ContractManagementView({
             e.stopPropagation();
             setQuickViewRecord(r);
           }}
-          className="inline-flex items-center gap-1 rounded-md border border-line bg-surface px-2.5 py-1 text-2xs font-medium text-ink hover:bg-sunken"
+          className="inline-flex items-center gap-1 rounded-md border border-line bg-surface px-2 py-1 text-2xs font-medium text-ink hover:bg-sunken"
         >
           <Eye className="w-3.5 h-3.5 text-accent" />
-          Xem hợp đồng
+          Xem HĐ
         </button>
       ),
     },

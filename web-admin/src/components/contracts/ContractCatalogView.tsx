@@ -533,13 +533,12 @@ export function ContractCatalogView({
 
                 {subTab === 'FIELDS' && (
                   <div className="space-y-4">
-                    <div className="rounded-lg bg-sunken/70 border border-line px-3.5 py-2.5 text-xs text-ink-2 flex flex-wrap items-center justify-between gap-2">
+                    <div className="rounded-lg bg-sunken/70 border border-line px-3.5 py-2 text-xs text-ink-2 flex flex-wrap items-center justify-between gap-2">
                       <span>
-                        Hệ thống tự động phát hiện <strong>{dedupedFields.length} trường thông tin</strong> (gồm{' '}
-                        <strong>{dedupedFields.filter(f => f.required).length} trường bắt buộc</strong>) từ các bảng và đoạn văn trong file Word.
+                        <strong>{dedupedFields.length} trường thông tin</strong> ({dedupedFields.filter(f => f.required).length} bắt buộc)
                       </span>
                       <span className="text-2xs text-ink-3">
-                        Các trường có gắn nguồn sẽ tự động điền khi chọn Booking / KOC
+                        Tự động điền theo thông tin Booking / KOC
                       </span>
                     </div>
 
@@ -667,7 +666,6 @@ export function ContractCatalogView({
         open={editModalOpen}
         onClose={() => setEditModalOpen(false)}
         title={`Cấu hình danh mục · ${loadedTemplate?.id || ''}`}
-        description="Phân nhóm danh mục, cập nhật tên hiển thị, trạng thái hiệu lực và các cấp phê duyệt mặc định."
         footer={
           <div className="flex justify-end gap-2">
             <Button variant="ghost" onClick={() => setEditModalOpen(false)}>Hủy</Button>
@@ -756,8 +754,7 @@ export function ContractCatalogView({
       <Modal
         open={Boolean(uploadModalMode)}
         onClose={() => setUploadModalMode(null)}
-        title={uploadModalMode === 'NEW' ? 'Thêm mẫu hợp đồng mới vào danh mục' : `Cập nhật file .docx · ${loadedTemplate?.name || ''}`}
-        description="Tải tệp Word (.docx) chuẩn của Pháp chế lên. Hệ thống tự động bóc tách bảng biểu, đoạn văn và các vị trí cần điền."
+        title={uploadModalMode === 'NEW' ? 'Thêm mẫu hợp đồng mới' : `Cập nhật file .docx · ${loadedTemplate?.name || ''}`}
         footer={
           <div className="flex justify-end gap-2">
             <Button variant="ghost" onClick={() => setUploadModalMode(null)}>Hủy</Button>

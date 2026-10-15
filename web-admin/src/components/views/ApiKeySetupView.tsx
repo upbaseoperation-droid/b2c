@@ -517,20 +517,17 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({ onNotify }) =>
       {/* 1. BANNER TỔNG QUAN & TRẠNG THÁI 3 NHÀ CUNG CẤP (GOOGLE / CHATGPT / CLAUDE) */}
       {/* ===================================================================== */}
       <div className="bg-surface border border-line rounded-xl p-5 space-y-4">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div className="space-y-1 max-w-3xl">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 .5 text-2xs font-semibold text-accent -line">
-                <KeyRound className="w-3.5 h-3.5" />
-                <span>Trung tâm Quản lý Khóa Kết Nối & Phân Luồng Nghiệp Vụ</span>
-              </span>
-              <span className="text-2xs text-ink-3">
-                Đã nhập khóa: <strong className="text-positive">{configuredProviderCount}/3 nhà cung cấp</strong> · Đang điều phối: <strong className="text-ink">6 mục đích vận hành B2C</strong>
-              </span>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-accent-soft border border-line text-accent flex items-center justify-center shrink-0">
+              <KeyRound className="w-4 h-4" />
             </div>
-            <p className="text-xs text-muted leading-relaxed">
-              Thiết lập khóa kết nối của <strong>Google (Gemini)</strong>, <strong>OpenAI (ChatGPT)</strong> và <strong>Anthropic (Claude)</strong> để phân bổ cho từng nghiệp vụ cụ thể: dùng <strong>Google Gemini</strong> đọc ảnh CCCD/ĐKKD, dùng <strong>Claude</strong> rà soát từ cấm &amp; biên tập kịch bản KOC, và dùng <strong>ChatGPT</strong> đối soát ngân sách kế hoạch tháng &amp; báo cáo Ads.
-            </p>
+            <div>
+              <h2 className="text-sm font-semibold text-ink">Quản lý Khóa API & Phân Luồng Nghiệp Vụ</h2>
+              <div className="text-2xs text-ink-3">
+                Đã cấu hình: <strong className="text-ink">{configuredProviderCount}/3 nhà cung cấp</strong> · Điều phối: <strong className="text-ink">6 nghiệp vụ</strong>
+              </div>
+            </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-2 shrink-0">
@@ -615,7 +612,7 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({ onNotify }) =>
                 </div>
 
                 <div className="text-2xs text-ink-3 font-mono truncate">
-                  {hasKey ? maskApiKey(prov.apiKey) : 'Bấm để dán khóa API...'}
+                  {hasKey ? maskApiKey(prov.apiKey) : 'Chưa nhập khóa'}
                 </div>
               </div>
             );
@@ -688,10 +685,10 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({ onNotify }) =>
       {/* ===================================================================== */}
       <Tabs
         items={[
-          { key: 'providers', label: '1. Khóa API & Nhà Cung Cấp', count: '3 Nhà cung cấp' },
-          { key: 'routing', label: '2. Phân Bổ Theo Mục Đích', count: '6 Nghiệp vụ B2C' },
-          { key: 'metrics', label: '3. Đo Lường Token & Chi Phí', count: `${usageLogs.length} Lượt gọi` },
-          { key: 'playground', label: '4. Chạy Thử & Đối Soát', count: 'Kiểm tra trực tiếp' },
+          { key: 'providers', label: 'Khóa API & Nhà Cung Cấp', count: 3 },
+          { key: 'routing', label: 'Phân Bổ Nghiệp Vụ', count: 6 },
+          { key: 'metrics', label: 'Đo Lường & Chi Phí', count: usageLogs.length },
+          { key: 'playground', label: 'Chạy Thử Nghiệp Vụ' },
         ]}
         value={activeTab}
         onChange={k => setActiveTab(k as SetupMainTab)}
@@ -726,9 +723,6 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({ onNotify }) =>
                             {meta.name}
                           </span>
                         </div>
-                        <p className="text-2xs text-ink-3 mt-1.5 leading-relaxed">
-                          {meta.strengthsSummary}
-                        </p>
                       </div>
 
                       <a
@@ -750,7 +744,6 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({ onNotify }) =>
                           <KeyRound className="w-3.5 h-3.5 text-ink-3" />
                           <span>Khóa API (API Key)</span>
                         </label>
-                        <span className="text-2xs text-ink-3 font-mono">{meta.keyPrefixHint}</span>
                       </div>
 
                       <div className="relative flex items-center">
@@ -828,13 +821,10 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({ onNotify }) =>
                       >
                         {models.map(m => (
                           <option key={m.id} value={m.id}>
-                            {m.label} ({m.id}) — {m.badge}
+                            {m.label} ({m.id})
                           </option>
                         ))}
                       </select>
-                      <p className="text-2xs text-ink-3">
-                        {models.find(m => m.id === prov.defaultModel)?.description}
-                      </p>
 
                       {/* Đơn giá Token và Tùy biến mã Model */}
                       {(() => {
@@ -1306,15 +1296,10 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({ onNotify }) =>
       {/* ===================================================================== */}
       {activeTab === 'routing' && (
         <div className="space-y-4 animate-in fade-in duration-150">
-          <div className="bg-surface border border-line rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="space-y-0.5">
-              <h3 className="text-sm font-semibold text-ink">
-                Bảng Phân Bổ Công Cụ (Google · ChatGPT · Claude) Cho Từng Nghiệp Vụ
-              </h3>
-            </div>
-            <div className="text-2xs text-ink-3 bg-sunken px-3 py-1.5 rounded-lg border border-line shrink-0">
-              Mẹo: Khi khóa chính chưa nhập hoặc hết hạn mức, hệ thống tự động chuyển sang <strong>Công cụ dự phòng</strong>.
-            </div>
+          <div className="bg-surface border border-line rounded-xl p-4 flex items-center justify-between gap-3">
+            <h3 className="text-sm font-semibold text-ink">
+              Bảng Phân Bổ Công Cụ (Google · ChatGPT · Claude) Cho Từng Nghiệp Vụ
+            </h3>
           </div>
 
           <div className="space-y-3">
@@ -2214,9 +2199,6 @@ export const ApiKeySetupView: React.FC<ApiKeySetupViewProps> = ({ onNotify }) =>
                 <div className="text-xs font-semibold text-ink">
                   Không tìm thấy nhật ký gọi API nào
                 </div>
-                <p className="text-2xs text-ink-3 max-w-md mx-auto">
-                  Hãy thử sang tab <strong>&ldquo;4. Chạy Thử &amp; Đối Soát&rdquo;</strong> bấm gửi thử một nghiệp vụ để hệ thống ghi nhận token và chi phí thực tế.
-                </p>
               </div>
             ) : (
               <div className="overflow-x-auto max-h-[460px] overflow-y-auto">

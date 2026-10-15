@@ -128,7 +128,7 @@ export const PROVIDER_MODELS_CATALOG: Record<ApiProviderId, ApiModelOption[]> = 
     {
       id: 'gemini-3.8-flash',
       label: 'Gemini 3.8 Flash',
-      badge: 'Khuyên dùng · Thế hệ 3.8 mới nhất',
+      badge: 'Khuyên dùng',
       description: 'Đọc ảnh giấy tờ CCCD/ĐKKD chính xác, tốc độ phản hồi cực nhanh và tối ưu chi phí vận hành.',
       supportsVision: true,
       recommendedFor: ['LEGAL_OCR', 'KOC_MATCHING', 'STAFF_REVIEW', 'KNOWLEDGE_QA'],
@@ -139,7 +139,7 @@ export const PROVIDER_MODELS_CATALOG: Record<ApiProviderId, ApiModelOption[]> = 
     {
       id: 'gemini-4-argon',
       label: 'Gemini 4 Argon (Flagship)',
-      badge: 'Thế hệ 4 · Suy luận sâu',
+      badge: 'Suy luận sâu',
       description: 'Mô hình cao cấp nhất của Google, xử lý bài toán phân tích dữ liệu đa bước, đối soát 69 gian hàng và pháp chế.',
       supportsVision: true,
       recommendedFor: ['PLAN_ADS_ANALYSIS', 'CONTRACT_DRAFTING'],
@@ -150,7 +150,7 @@ export const PROVIDER_MODELS_CATALOG: Record<ApiProviderId, ApiModelOption[]> = 
     {
       id: 'gemini-3.5-flash',
       label: 'Gemini 3.5 Flash',
-      badge: 'Đa năng · Ổn định',
+      badge: 'Ổn định',
       description: 'Cân bằng tốc độ và độ sâu phân tích cho các nghiệp vụ rà soát nội dung và danh bạ KOC.',
       supportsVision: true,
       recommendedFor: ['KOC_MATCHING', 'SCRIPT_REVIEW'],
@@ -161,7 +161,7 @@ export const PROVIDER_MODELS_CATALOG: Record<ApiProviderId, ApiModelOption[]> = 
     {
       id: 'gemini-3.5-flash-lite',
       label: 'Gemini 3.5 Flash-Lite',
-      badge: 'Tiết kiệm · Phản hồi tức thì',
+      badge: 'Tốc độ cao',
       description: 'Chi phí thấp, chuyên dùng cho phân loại nhanh, kiểm tra định kỳ và trích xuất dữ liệu số lượng lớn.',
       supportsVision: true,
       recommendedFor: ['LEGAL_OCR', 'STAFF_REVIEW'],
@@ -172,7 +172,7 @@ export const PROVIDER_MODELS_CATALOG: Record<ApiProviderId, ApiModelOption[]> = 
     {
       id: 'gemini-3.1-pro-preview',
       label: 'Gemini 3.1 Pro (2M Context)',
-      badge: 'Ngữ cảnh 2M · Tài liệu lớn',
+      badge: 'Ngữ cảnh 2M',
       description: 'Cửa sổ ngữ cảnh 2 triệu token, đọc toàn bộ hồ sơ nhãn hàng và lịch sử kế hoạch nhiều tháng.',
       supportsVision: true,
       recommendedFor: ['PLAN_ADS_ANALYSIS', 'CONTRACT_DRAFTING'],
@@ -183,7 +183,7 @@ export const PROVIDER_MODELS_CATALOG: Record<ApiProviderId, ApiModelOption[]> = 
     {
       id: 'gemini-2.5-pro',
       label: 'Gemini 2.5 Pro (Bản LTS)',
-      badge: 'Bản ổn định 2M',
+      badge: 'Bản LTS',
       description: 'Phiên bản ổn định dài hạn, tương thích tốt với các luồng đọc tài liệu pháp lý nhiều trang.',
       supportsVision: true,
       inputCostPerMillionUsd: 1.25,
@@ -193,7 +193,7 @@ export const PROVIDER_MODELS_CATALOG: Record<ApiProviderId, ApiModelOption[]> = 
     {
       id: 'gemini-2.5-flash',
       label: 'Gemini 2.5 Flash (Bản LTS)',
-      badge: 'Chi phí cực thấp',
+      badge: 'Tiết kiệm',
       description: 'Phiên bản tiết kiệm ngân sách cho các tác vụ đọc văn bản cơ bản.',
       supportsVision: true,
       inputCostPerMillionUsd: 0.15,
@@ -205,7 +205,7 @@ export const PROVIDER_MODELS_CATALOG: Record<ApiProviderId, ApiModelOption[]> = 
     {
       id: 'gpt-5',
       label: 'GPT-5 (Standard)',
-      badge: 'Khuyên dùng · Chuẩn thế hệ 5',
+      badge: 'Khuyên dùng',
       description: 'Mô hình chủ lực thế hệ 5 của OpenAI: xử lý chính xác bảng số liệu, đối soát kế hoạch tháng và đánh giá vận hành.',
       supportsVision: true,
       recommendedFor: ['PLAN_ADS_ANALYSIS', 'SCRIPT_REVIEW', 'CONTRACT_DRAFTING'],
@@ -216,7 +216,7 @@ export const PROVIDER_MODELS_CATALOG: Record<ApiProviderId, ApiModelOption[]> = 
     {
       id: 'gpt-5.6-sol',
       label: 'GPT-5.6 Sol (Flagship)',
-      badge: 'Thế hệ 5.6 · Cao cấp nhất',
+      badge: 'Flagship',
       description: 'Mô hình mạnh nhất hiện tại của OpenAI với ngữ cảnh 1.5M token, chuyên giải quyết bài toán chiến lược phức tạp.',
       supportsVision: true,
       recommendedFor: ['PLAN_ADS_ANALYSIS', 'CONTRACT_DRAFTING'],
@@ -227,7 +227,7 @@ export const PROVIDER_MODELS_CATALOG: Record<ApiProviderId, ApiModelOption[]> = 
     {
       id: 'gpt-5.5',
       label: 'GPT-5.5',
-      badge: 'Phân tích chuyên sâu',
+      badge: 'Chuyên sâu',
       description: 'Hiệu năng cao với cửa sổ ngữ cảnh 1.1M token, phù hợp phân tích báo cáo Ads đa sàn và hợp đồng.',
       supportsVision: true,
       recommendedFor: ['PLAN_ADS_ANALYSIS', 'SCRIPT_REVIEW'],
@@ -238,7 +238,7 @@ export const PROVIDER_MODELS_CATALOG: Record<ApiProviderId, ApiModelOption[]> = 
     {
       id: 'gpt-5-mini',
       label: 'GPT-5 mini',
-      badge: 'Nhanh & Tối ưu chi phí',
+      badge: 'Tối ưu chi phí',
       description: 'Tốc độ phản hồi nhanh, chi phí thấp, rất phù hợp đánh giá nhân sự 4P, kiểm tra SLA và phân loại KOC.',
       supportsVision: true,
       recommendedFor: ['STAFF_REVIEW', 'KOC_MATCHING', 'KNOWLEDGE_QA'],
@@ -249,7 +249,7 @@ export const PROVIDER_MODELS_CATALOG: Record<ApiProviderId, ApiModelOption[]> = 
     {
       id: 'gpt-5-nano',
       label: 'GPT-5 nano',
-      badge: 'Siêu tiết kiệm · Tác vụ nhẹ',
+      badge: 'Tiết kiệm',
       description: 'Rẻ nhất trong dòng GPT-5, chuyên dùng trích xuất trường dữ liệu, chuẩn hóa định dạng và kiểm tra nhanh.',
       supportsVision: true,
       recommendedFor: ['LEGAL_OCR', 'STAFF_REVIEW'],
@@ -260,7 +260,7 @@ export const PROVIDER_MODELS_CATALOG: Record<ApiProviderId, ApiModelOption[]> = 
     {
       id: 'o3',
       label: 'OpenAI o3 (Deep Reasoning)',
-      badge: 'Chuyên suy luận & Tài chính',
+      badge: 'Tài chính',
       description: 'Mô hình suy luận chuyên sâu: kiểm tra chéo hạn mức Gross/Net, tính thuế TNCN/HKD, CIR, ROAS và P&L.',
       supportsVision: true,
       recommendedFor: ['PLAN_ADS_ANALYSIS', 'CONTRACT_DRAFTING'],
@@ -271,7 +271,7 @@ export const PROVIDER_MODELS_CATALOG: Record<ApiProviderId, ApiModelOption[]> = 
     {
       id: 'o4-mini',
       label: 'OpenAI o4-mini (Fast Reasoning)',
-      badge: 'Tính toán số liệu nhanh',
+      badge: 'Số liệu nhanh',
       description: 'Suy luận logic và tính toán bảng số liệu nhanh với mức chi phí tiết kiệm.',
       supportsVision: true,
       recommendedFor: ['PLAN_ADS_ANALYSIS', 'STAFF_REVIEW'],
@@ -282,7 +282,7 @@ export const PROVIDER_MODELS_CATALOG: Record<ApiProviderId, ApiModelOption[]> = 
     {
       id: 'gpt-4.1',
       label: 'GPT-4.1 (1M Context)',
-      badge: 'Bám sát quy tắc JSON',
+      badge: 'Định dạng JSON',
       description: 'Tuân thủ chặt chẽ cấu trúc JSON đầu ra và danh sách quy định từ cấm của nhãn hàng.',
       supportsVision: true,
       recommendedFor: ['SCRIPT_REVIEW', 'LEGAL_OCR'],
@@ -293,7 +293,7 @@ export const PROVIDER_MODELS_CATALOG: Record<ApiProviderId, ApiModelOption[]> = 
     {
       id: 'gpt-4.1-mini',
       label: 'GPT-4.1 mini',
-      badge: 'Ổn định · 1M Context',
+      badge: 'Ngữ cảnh 1M',
       description: 'Bản thu gọn của GPT-4.1 với ngữ cảnh 1M token và chi phí hợp lý.',
       supportsVision: true,
       inputCostPerMillionUsd: 0.40,
@@ -305,7 +305,7 @@ export const PROVIDER_MODELS_CATALOG: Record<ApiProviderId, ApiModelOption[]> = 
     {
       id: 'claude-sonnet-5-5',
       label: 'Claude Sonnet 5.5',
-      badge: 'Khuyên dùng · Thế hệ 5.5 mới nhất',
+      badge: 'Khuyên dùng',
       description: 'Biên tập kịch bản video KOC tự nhiên, rà soát từ cấm tinh tế và soạn điều khoản hợp đồng chặt chẽ.',
       supportsVision: true,
       recommendedFor: ['SCRIPT_REVIEW', 'CONTRACT_DRAFTING', 'KOC_MATCHING'],
@@ -316,7 +316,7 @@ export const PROVIDER_MODELS_CATALOG: Record<ApiProviderId, ApiModelOption[]> = 
     {
       id: 'claude-opus-5-5',
       label: 'Claude Opus 5.5 (Flagship)',
-      badge: 'Cao cấp nhất · Pháp chế & Sáng tạo',
+      badge: 'Pháp chế',
       description: 'Đỉnh cao về ngôn từ tiếng Việt, phân tích điều khoản pháp lý phức tạp và viết lại kịch bản khó.',
       supportsVision: true,
       recommendedFor: ['CONTRACT_DRAFTING', 'SCRIPT_REVIEW'],
@@ -327,7 +327,7 @@ export const PROVIDER_MODELS_CATALOG: Record<ApiProviderId, ApiModelOption[]> = 
     {
       id: 'claude-haiku-5-5',
       label: 'Claude Haiku 5.5',
-      badge: 'Tốc độ cao · Chi phí cực thấp',
+      badge: 'Tốc độ cao',
       description: 'Phản hồi tức thì cho tác vụ quét lỗi chính tả, từ nhạy cảm và tóm tắt trao đổi trong sổ kế hoạch tháng.',
       supportsVision: true,
       recommendedFor: ['STAFF_REVIEW', 'KNOWLEDGE_QA'],
@@ -338,7 +338,7 @@ export const PROVIDER_MODELS_CATALOG: Record<ApiProviderId, ApiModelOption[]> = 
     {
       id: 'claude-fable-5-1',
       label: 'Claude Fable 5.1',
-      badge: 'Suy luận chuyên sâu dài hạn',
+      badge: 'Chiến dịch lớn',
       description: 'Chuyên xử lý các hồ sơ chiến dịch quy mô lớn, thẩm định rủi ro hợp đồng đa bên.',
       supportsVision: true,
       recommendedFor: ['CONTRACT_DRAFTING', 'PLAN_ADS_ANALYSIS'],

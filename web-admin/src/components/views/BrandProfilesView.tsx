@@ -338,23 +338,23 @@ export function BrandProfilesView({
     {
       key: 'name',
       header: 'Thương hiệu & Sàn',
-      width: 235,
+      width: 175,
       render: r => {
         const rep = monthlyReportByBrand.get(r.key);
         const platforms = rep?.platforms.length ? rep.platforms : (r.master?.platforms || []);
         const count = rep?.storeCount || r.master?.storeCount || 0;
         return (
-          <div className="min-w-0 max-w-[250px] leading-tight flex items-start gap-2.5">
-            <span {...sharedFrom('brand-avatar', r.key)} className="shrink-0 inline-flex"><Avatar name={r.name} size={28} /></span>
+          <div className="min-w-0 max-w-[200px] leading-tight flex items-start gap-2">
+            <span {...sharedFrom('brand-avatar', r.key)} className="shrink-0 inline-flex"><Avatar name={r.name} size={24} /></span>
             <div className="min-w-0">
-              <div className="flex items-center gap-1.5">
-                <span {...sharedFrom('brand-title', r.key)} className="truncate font-semibold text-ink">{r.name}</span>
+              <div className="flex items-center gap-1 flex-wrap">
+                <span {...sharedFrom('brand-title', r.key)} className="truncate font-semibold text-ink text-xs">{r.name}</span>
                 <span className="text-2xs font-mono text-ink-3 shrink-0">
                   · {count} gian
                 </span>
               </div>
-              <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                <span className="truncate text-2xs text-ink-3 max-w-[130px]">{real(r.master?.category) || '—'}</span>
+              <div className="flex items-center gap-1 mt-0.5 flex-wrap">
+                <span className="truncate text-2xs text-ink-3 max-w-[100px]">{real(r.master?.category) || '—'}</span>
                 {platforms.map(p => <ChannelTag key={p} channel={channelOf(p)} />)}
               </div>
             </div>
@@ -364,8 +364,8 @@ export function BrandProfilesView({
     },
     {
       key: 'pic',
-      header: '3 vị trí gắn theo Brand & Account',
-      width: 230,
+      header: 'PIC Brand & Account',
+      width: 155,
       render: r => {
         const rep = monthlyReportByBrand.get(r.key);
         const acc = real(r.master?.accountPic);
@@ -375,27 +375,27 @@ export function BrandProfilesView({
         return (
           <div className="grid gap-0.5 leading-tight text-2xs">
             {planStrat && (
-              <div className="flex items-center justify-between gap-1.5">
-                <span className="text-ink-2 font-medium">Plan/Strategy:</span>
-                <span className="font-semibold text-ink truncate">{planStrat}</span>
+              <div className="flex items-center justify-between gap-1">
+                <span className="text-ink-3">Plan:</span>
+                <span className="font-medium text-ink truncate max-w-[100px]">{planStrat}</span>
               </div>
             )}
             {contentMain && (
-              <div className="flex items-center justify-between gap-1.5">
-                <span className="text-ink-2 font-medium">Content/Brand:</span>
-                <span className="font-semibold text-ink truncate">{contentMain}</span>
+              <div className="flex items-center justify-between gap-1">
+                <span className="text-ink-3">Content:</span>
+                <span className="font-medium text-ink truncate max-w-[100px]">{contentMain}</span>
               </div>
             )}
             {kvSis && (
-              <div className="flex items-center justify-between gap-1.5">
-                <span className="text-ink-2 font-medium">KV/SIS:</span>
-                <span className="font-semibold text-ink truncate">{kvSis}</span>
+              <div className="flex items-center justify-between gap-1">
+                <span className="text-ink-3">KV/SIS:</span>
+                <span className="font-medium text-ink truncate max-w-[100px]">{kvSis}</span>
               </div>
             )}
             {acc && (
-              <div className="flex items-center justify-between gap-1.5 text-ink-3 pt-0.5 border-t border-line/60">
-                <span>Account:</span>
-                <span className="truncate">{acc}</span>
+              <div className="flex items-center justify-between gap-1 text-ink-3 pt-0.5 border-t border-line/60">
+                <span>Acc:</span>
+                <span className="truncate max-w-[100px]">{acc}</span>
               </div>
             )}
           </div>
@@ -405,7 +405,7 @@ export function BrandProfilesView({
     {
       key: 'nmv',
       header: `NMV (${selectedMonth})`,
-      width: 155,
+      width: 120,
       align: 'right',
       render: r => {
         const rep = monthlyReportByBrand.get(r.key);
@@ -414,10 +414,10 @@ export function BrandProfilesView({
         return (
           <div className="leading-tight tabular-nums text-right">
             <span className="block font-mono font-medium text-ink">
-              Plan: {planNmv > 0 ? formatVndShort(planNmv) : 'Theo sàn'}
+              {planNmv > 0 ? formatVndShort(planNmv) : 'Theo sàn'}
             </span>
             <span className="block text-2xs font-mono text-accent font-medium mt-0.5">
-              Report: {reportNmv > 0 ? formatVndShort(reportNmv) : '0 đ'}
+              Rep: {reportNmv > 0 ? formatVndShort(reportNmv) : '0 đ'}
               {planNmv > 0 ? ` (${rep?.nmvAchievementPct || 0}%)` : ''}
             </span>
           </div>
@@ -427,7 +427,7 @@ export function BrandProfilesView({
     {
       key: 'budget',
       header: `Ngân sách Net (${selectedMonth})`,
-      width: 165,
+      width: 125,
       align: 'right',
       render: r => {
         const rep = monthlyReportByBrand.get(r.key);
@@ -442,7 +442,7 @@ export function BrandProfilesView({
             </span>
             <span className={`block text-2xs font-mono mt-0.5 ${isOver || isUnbudgeted ? 'text-critical font-semibold' : 'text-ink-3'}`}>
               Chi: {formatVndShort(spent)}
-              {isUnbudgeted ? ' · Ngoài KH' : isOver ? ' · Vượt trần' : budget > 0 ? ` (${rep?.budgetBurnPct || 0}%)` : ''}
+              {isUnbudgeted ? ' · Ngoài KH' : isOver ? ' · Vượt' : budget > 0 ? ` (${rep?.budgetBurnPct || 0}%)` : ''}
             </span>
           </div>
         );
@@ -451,7 +451,7 @@ export function BrandProfilesView({
     {
       key: 'videos',
       header: `Video (${selectedMonth})`,
-      width: 145,
+      width: 120,
       align: 'right',
       render: r => {
         const rep = monthlyReportByBrand.get(r.key);
@@ -470,7 +470,7 @@ export function BrandProfilesView({
     {
       key: 'status',
       header: 'Hồ sơ tĩnh & Tệp',
-      width: 145,
+      width: 115,
       render: r => {
         if (isSyncing) return <Skeleton className="w-20" />;
         return (
@@ -490,8 +490,8 @@ export function BrandProfilesView({
     },
     {
       key: 'drilldown',
-      header: 'Drill-down Tháng',
-      width: 165,
+      header: 'Chi tiết',
+      width: 115,
       align: 'right',
       render: r => (
         <div className="inline-flex items-center justify-end gap-1" onClick={e => e.stopPropagation()}>

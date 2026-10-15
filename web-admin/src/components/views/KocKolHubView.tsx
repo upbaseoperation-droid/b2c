@@ -851,9 +851,6 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
               <div className="text-xl font-semibold text-slate-900 tracking-tight">
                 {filteredKocs.length} <span className="text-xs font-normal text-slate-500">/ {kocs.length} KOC</span>
               </div>
-              <p className="text-2xs text-slate-500 mt-1">
-                Chuẩn hóa 4 Tier &amp; 7 Khung lương KL1-KL7
-              </p>
             </div>
 
             <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs">
@@ -864,9 +861,6 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
               <div className="text-xl font-semibold text-emerald-700 tracking-tight">
                 {networkStats.activeDealsCount} <span className="text-xs font-normal text-slate-500">deals</span>
               </div>
-              <p className="text-2xs text-slate-500 mt-1">
-                Đang vận hành trên các chiến dịch nhãn hàng
-              </p>
             </div>
 
             <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs">
@@ -877,9 +871,6 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
               <div className="text-xl font-semibold text-amber-700 tracking-tight">
                 {networkStats.pendingSamples} <span className="text-xs font-normal text-slate-500">mẫu</span> • {networkStats.pendingReviews} <span className="text-xs font-normal text-slate-500">video chờ</span>
               </div>
-              <p className="text-2xs text-slate-500 mt-1">
-                SLA 5 ngày sau nhận mẫu để nộp video nháp
-              </p>
             </div>
 
             <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs">
@@ -890,9 +881,6 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
               <div className="text-xl font-semibold text-blue-700 tracking-tight">
                 {formatVndShort(networkStats.totalGmvEstimate)}
               </div>
-              <p className="text-2xs text-slate-500 mt-1">
-                Tổng ngân sách cast: <strong className="text-slate-700 font-mono">{formatVndShort(networkStats.totalCastValue)}</strong>
-              </p>
             </div>
           </div>
 
@@ -902,9 +890,6 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                 <h3 className="text-sm font-semibold text-slate-900 tracking-tight">
                   Danh Bạ Mạng Lưới KOC Đối Tác ({filteredKocs.length} KOC)
                 </h3>
-                <p className="text-2xs text-slate-500">
-                  Bấm &quot;Mở Cổng KOC&quot; để quản lý thông tin cá nhân, hợp đồng, lịch sử hợp tác và hiệu quả của từng KOC
-                </p>
               </div>
 
               <div className="flex items-center gap-2 text-xs">
@@ -1424,7 +1409,6 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                     <p className="text-2xs text-slate-500">
                       CCCD: <strong className="font-mono text-slate-700">{legalIdOf(activeKoc) || 'Chưa có'}</strong> • NH: <strong className="text-slate-700">{activeKoc.bankName || '—'}</strong>
                     </p>
-                    <p className="text-2xs text-blue-600">Danh bạ KOC · Hàng mẫu · Hợp đồng</p>
                   </div>
 
                   <div className="p-3.5 rounded-lg bg-slate-50 border border-slate-100 space-y-1">
@@ -1435,7 +1419,6 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                     <p className="text-2xs text-slate-500">
                       Đã ký: <strong className="font-mono text-slate-700">{stats.signedContractsCount} HĐ</strong> • Đã tạm ứng: <strong className="font-mono text-emerald-700">{formatVndShort(stats.advancePaid)}</strong>
                     </p>
-                    <p className="text-2xs text-blue-600">Hợp đồng &amp; Thanh toán · Kế toán</p>
                   </div>
 
                   <div className="p-3.5 rounded-lg bg-slate-50 border border-slate-100 space-y-1">
@@ -1446,7 +1429,6 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                     <p className="text-2xs text-slate-500">
                       Tổng: <strong className="font-mono text-slate-700">{currentKocDeals.length} deal</strong> • Điểm uy tín: <strong className="font-mono text-amber-600">{perfStats.avgRatingScore > 0 ? `${perfStats.avgRatingScore.toFixed(1)}/5.0` : '5.0/5.0'}</strong>
                     </p>
-                    <p className="text-2xs text-blue-600">Booking · Đề xuất KOC · Kịch bản</p>
                   </div>
 
                   <div className="p-3.5 rounded-lg bg-slate-50 border border-slate-100 space-y-1">
@@ -1457,7 +1439,6 @@ const KocKolWorkspace: React.FC<KocKolHubViewProps> = ({
                     <p className="text-2xs text-slate-500">
                       GMV: <strong className="font-mono text-slate-700">{formatVndShort(perfStats.totalGmv)}</strong> • Đúng hạn đăng: <strong className="font-mono text-emerald-700">{perfStats.onTimePostRate.toFixed(0)}%</strong>
                     </p>
-                    <p className="text-2xs text-blue-600">Báo cáo Ads tuần · Dashboard B2C</p>
                   </div>
                 </div>
               </div>

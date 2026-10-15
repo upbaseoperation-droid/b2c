@@ -119,23 +119,19 @@ export const AuditTrailView: React.FC<AuditTrailViewProps> = ({ currentUser, onN
         <Stat
           label="Tổng sự kiện kiểm toán"
           value={stats.total}
-          note="Toàn bộ lịch sử biến động"
         />
         <Stat
           label="Lệnh duyệt chi & giải ngân"
           value={stats.approvals}
           tone="positive"
-          note="Phê duyệt Kế hoạch & Deal KOC"
         />
         <Stat
           label="Điều chuyển & Kích hoạt Backup"
           value={stats.reassignments}
-          note="Bàn giao PIC & ủy quyền tạm thời"
         />
         <Stat
           label="Sự kiện Kế hoạch & Booking"
           value={stats.planDeals}
-          note="Chiếm tỷ trọng chính"
         />
       </StatRow>
 

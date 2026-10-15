@@ -1730,19 +1730,19 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
               </div>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs min-w-[1100px]">
-                <thead className="bg-canvas border-b border-line text-ink-2 font-semibold">
+            <div className="w-full">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead className="bg-canvas border-b border-line text-ink-2 font-semibold text-[11px]">
                   <tr>
-                    <th className="py-3 px-4 w-[180px]">Mã Deal & KOC</th>
-                    <th className="py-3 px-3 w-[150px]">Nhãn hàng</th>
-                    <th className="py-3 px-3 w-[260px]">Quy chuẩn vi phạm</th>
-                    <th className="py-3 px-3 text-center w-[110px]">Mức độ</th>
-                    <th className="py-3 px-3 w-[150px]">PIC & Vai Trò</th>
-                    <th className="py-3 px-3 w-[170px]">Hạn SLA & quá hạn</th>
-                    <th className="py-3 px-3 w-[170px]">Leo Thang (Escalation)</th>
-                    <th className="py-3 px-4 pr-5 text-right w-[150px] sticky right-0 bg-canvas border-l border-line">
-                      Hành động xử lý
+                    <th className="py-2 px-2.5 w-[14%]">Mã Deal &amp; KOC</th>
+                    <th className="py-2 px-2 w-[12%]">Nhãn hàng</th>
+                    <th className="py-2 px-2 w-[22%]">Quy chuẩn vi phạm</th>
+                    <th className="py-2 px-1.5 text-center w-[9%]">Mức độ</th>
+                    <th className="py-2 px-2 w-[12%]">PIC &amp; Vai Trò</th>
+                    <th className="py-2 px-2 w-[12%]">Hạn SLA</th>
+                    <th className="py-2 px-2 w-[10%]">Leo Thang</th>
+                    <th className="py-2 px-2 pr-3 text-right w-[9%]">
+                      Hành động
                     </th>
                   </tr>
                 </thead>
@@ -1758,20 +1758,20 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                       return (
                         <tr key={breach.id} className={`hover:bg-canvas transition ${isCritical ? 'bg-critical-soft' : ''}`}>
                           {/* Col 1: Deal & KOC */}
-                          <td className="py-3.5 px-4 font-medium">
+                          <td className="py-2 px-2.5 font-medium">
                             <div className="font-semibold text-ink text-xs">{breach.kocName}</div>
                             <div className="font-mono text-ink-3 text-2xs mt-0.5">{breach.dealCode}</div>
                           </td>
 
                           {/* Col 2: Brand */}
-                          <td className="py-3.5 px-3">
+                          <td className="py-2 px-2">
                             <span className="text-2xs font-semibold text-ink -line">
                               {breach.brandName}
                             </span>
                           </td>
 
                           {/* Col 3: Category Label */}
-                          <td className="py-3.5 px-3">
+                          <td className="py-2 px-2">
                             <div className="font-semibold text-ink line-clamp-1" title={breach.categoryLabel}>
                               {breach.categoryLabel}
                             </div>
@@ -1781,7 +1781,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                           </td>
 
                           {/* Col 4: Severity */}
-                          <td className="py-3.5 px-3 text-center">
+                          <td className="py-2 px-2 text-center">
                             <span className={`px-2 py-0.5 rounded-full text-2xs font-semibold inline-block ${
                               breach.severity === 'CRITICAL'
                                 ? 'bg-critical-soft text-critical border border-critical/20'
@@ -1794,13 +1794,13 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                           </td>
 
                           {/* Col 5: PIC */}
-                          <td className="py-3.5 px-3">
+                          <td className="py-2 px-2">
                             <div className="font-semibold text-ink text-xs">{breach.picName}</div>
                             <div className="text-2xs text-ink-3">{breach.picRole}</div>
                           </td>
 
                           {/* Col 6: SLA Deadline & Overdue Hours */}
-                          <td className="py-3.5 px-3">
+                          <td className="py-2 px-2">
                             <div className="text-2xs text-ink-2 font-medium">{breach.slaDeadline}</div>
                             <div className="text-2xs text-critical font-semibold mt-0.5 flex items-center gap-1">
                               <AlertTriangle className="w-3 h-3 text-critical shrink-0" />
@@ -1809,7 +1809,7 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                           </td>
 
                           {/* Col 7: Escalation */}
-                          <td className="py-3.5 px-3">
+                          <td className="py-2 px-2">
                             {breach.escalatedTo ? (
                               <div className="text-ink font-semibold text-2xs flex items-center gap-1">
                                 <span className="w-1.5 h-1.5 rounded-full bg-critical" />
@@ -1821,10 +1821,10 @@ export const ManagerView: React.FC<ManagerViewProps> = ({
                           </td>
 
                           {/* Col 8: Actions */}
-                          <td className="py-3.5 px-4 pr-5 text-right sticky right-0 bg-white/95 group-hover:bg-canvas transition border-l border-line shadow-[-3px_0_6px_rgba(0,0,0,0.03)]">
+                          <td className="py-2 px-2.5 text-right">
                             <button
                               onClick={() => setBreachActionModal(breach)}
-                              className="px-2.5 py-1 text-2xs font-semibold bg-ink hover:bg-ink text-white rounded-lg transition shadow-2xs"
+                              className="px-2 py-0.5 text-[11px] font-semibold bg-ink hover:bg-ink text-white rounded transition shadow-2xs"
                             >
                               Xử lý
                             </button>

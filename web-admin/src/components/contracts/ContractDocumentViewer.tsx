@@ -633,7 +633,6 @@ export function ContractDocumentViewer({
         open={fullscreen}
         onClose={() => setFullscreen(false)}
         title={title || templateName || 'Xem hợp đồng'}
-        description="Kiểm tra toàn văn hợp đồng trên trang giấy A4."
         size="lg"
         footer={
           <div className="flex items-center justify-between w-full gap-2">

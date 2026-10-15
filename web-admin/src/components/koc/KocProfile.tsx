@@ -369,7 +369,6 @@ function TikTokSellerMetricsSection({ koc, onUpdate }: { koc: KocItem; onUpdate?
       <div>
         <SectionHeader
           title="Chỉ số hiệu năng bán hàng"
-          description="Dữ liệu tổng hợp từ TikTok Shop Analytics và báo cáo tiếp thị liên kết 30 ngày qua"
         />
         <div className="mt-3">
           <StatRow>
@@ -967,7 +966,6 @@ function ActiveDealsSection({
     <div className="space-y-4">
       <SectionHeader
         title="Các chiến dịch đang tác nghiệp"
-        description="Theo dõi sát sao từng bước từ nhận mẫu, duyệt kịch bản đến nghiệm thu video và thanh toán"
       />
       <Panel flush>
         <DataTable
@@ -1075,7 +1073,7 @@ function ShippingAndContactPanel({ koc }: { koc: KocItem }) {
             )}
             {prefs.specialNotes && (
               <div className="text-2xs text-critical">
-                <span className="font-semibold">Lưu ý:</span> {prefs.specialNotes}
+                <span className="font-semibold">Ghi chú:</span> {prefs.specialNotes}
               </div>
             )}
           </div>

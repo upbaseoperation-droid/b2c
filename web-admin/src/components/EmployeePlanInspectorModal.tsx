@@ -700,7 +700,7 @@ export const EmployeePlanInspectorModal: React.FC<EmployeePlanInspectorModalProp
         open={isConfirmingRevision}
         onOpenChange={setIsConfirmingRevision}
         title="Xác nhận yêu cầu điều chỉnh kế hoạch"
-        description={`Bạn có chắc chắn muốn trả lại kế hoạch cho ${staffAllocation.staffName} để điều chỉnh? ${managerFeedback ? `Nội dung chỉ đạo: "${managerFeedback}"` : 'Lưu ý: Bạn chưa nhập ghi chú chỉ đạo ở ô phía trên.'}`}
+        description={`Bạn có chắc chắn muốn trả lại kế hoạch cho ${staffAllocation.staffName} để điều chỉnh? ${managerFeedback ? `Nội dung chỉ đạo: "${managerFeedback}"` : 'Chưa có ghi chú chỉ đạo.'}`}
         confirmLabel="Gửi yêu cầu sửa"
         cancelLabel="Hủy"
         variant="danger"

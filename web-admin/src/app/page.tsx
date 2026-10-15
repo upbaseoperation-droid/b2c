@@ -975,7 +975,7 @@ export default function App() {
           </div>
         )}
 
-        <main id="workspace" className={`px-4 sm:px-6 lg:px-8 py-4 sm:py-5 w-full mx-auto space-y-5 ${isSidebarCollapsed ? 'max-w-[1800px]' : 'max-w-[1600px]'}`}>
+        <main id="workspace" className={`px-3 sm:px-4 lg:px-6 py-4 sm:py-5 w-full mx-auto space-y-5 ${isSidebarCollapsed ? 'max-w-[1800px]' : 'max-w-[1600px]'}`}>
           {!isTabAllowedForRole(currentUser.role, activeTab) ? (
             <div className="p-8 sm:p-12 rounded-2xl bg-surface border border-line text-center max-w-lg mx-auto my-12 space-y-4 animate-in fade-in">
               <div className="w-14 h-14 rounded-2xl bg-critical-soft text-critical flex items-center justify-center mx-auto border border-line">

@@ -991,7 +991,6 @@ export function BrandProfileDetail({
             {/* Quy tắc vận hành & Phê duyệt (ảnh hưởng trực tiếp tới luồng làm việc của nhân sự) */}
             <Panel
               title={SECTION_LABEL.WORKFLOW_RULES}
-              description="Thiết lập phân hạng dự án, cổng phê duyệt KOC/kịch bản, SLA gửi mẫu và bản quyền chạy quảng cáo"
               actions={
                 <div className="flex items-center gap-1.5">
                   <Button size="sm" variant="ghost" onClick={() => setActiveTab('WORKFLOW')}>
@@ -1055,7 +1054,6 @@ export function BrandProfileDetail({
             {/* Định vị & thông điệp 4P / Insight */}
             <Panel
               title={SECTION_LABEL.POSITIONING}
-              description="Khẩu hiệu, nỗi đau khách hàng, rào cản mua hàng và trụ cột nội dung để KOC bám sát khi lên kịch bản"
               actions={editBtn('POSITIONING', () => setDialog('POSITIONING'), p.positioning ? 'Sửa' : 'Thêm')}
             >
               {p.positioning && (p.positioning.slogan || p.positioning.toneOfVoice || p.positioning.story) ? (
@@ -1125,7 +1123,6 @@ export function BrandProfileDetail({
             {/* Sản phẩm chủ lực */}
             <Panel
               title={SECTION_LABEL.PRODUCTS}
-              description={`Danh mục ${p.products.length} sản phẩm trọng tâm nhận booking & gửi mẫu cho KOC`}
               actions={addBtn('products')}
               flush
             >
@@ -1207,7 +1204,6 @@ export function BrandProfileDetail({
             {/* Quy chuẩn nội dung */}
             <Panel
               title={SECTION_LABEL.CONTENT_RULES}
-              description="Từ khóa cấm, từ khuyến khích, hashtag và quy chuẩn hình ảnh bắt buộc khi duyệt kịch bản & video"
               actions={editBtn('CONTENT_RULES', () => setDialog('CONTENT_RULES'), p.contentRules ? 'Sửa' : 'Thêm')}
               flush
             >
@@ -1291,7 +1287,6 @@ export function BrandProfileDetail({
             <div className="grid gap-6 md:grid-cols-2">
               <Panel
                 title={SECTION_LABEL.LEGAL}
-                description="Phiếu công bố, giấy xác nhận quảng cáo"
                 actions={addBtn('legal', 'Thêm văn bản')}
                 flush
               >
@@ -1352,7 +1347,6 @@ export function BrandProfileDetail({
 
               <Panel
                 title={SECTION_LABEL.FAQS}
-                description="Hướng dẫn KOC trả lời câu hỏi khó trên live / bình luận"
                 actions={addBtn('faqs', 'Thêm câu hỏi')}
                 flush
               >
@@ -1563,7 +1557,6 @@ export function BrandProfileDetail({
         <div className="space-y-6">
           <Panel
             title={`${SECTION_LABEL.WORKFLOW_RULES} — ${row.name}`}
-            description="Các thiết lập tại màn hình này được áp dụng trực tiếp vào màn Tạo deal Booking, màn Duyệt kịch bản KOC và điều khoản nghiệm thu hợp đồng"
             actions={editBtn('WORKFLOW_RULES', () => setDialog('WORKFLOW_RULES'), 'Chỉnh sửa quy tắc vận hành')}
           >
             {p.workflowRules ? (
@@ -1809,7 +1802,6 @@ export function BrandProfileDetail({
           {/* Danh sách tài liệu thương hiệu */}
           <Panel
             title={`Kho tài liệu & tệp thương hiệu ${row.name}`}
-            description="Bao gồm Brand Guideline, hồ sơ công bố pháp lý, thông tin sản phẩm, brief chiến dịch và bộ logo/hình ảnh gốc"
             flush
           >
             <div className="p-4 border-b border-line">
@@ -1926,7 +1918,6 @@ export function BrandProfileDetail({
           {currentBrandReport.brandPlan && (
             <Panel
               title={`Kế hoạch & Báo cáo 3 vị trí gắn theo Thương hiệu — ${currentBrandReport.monthLabel}`}
-              description="Phân công và tiến độ bàn giao 3 hạng mục cấp Thương hiệu (Plan / Strategy · Content / Brand main · Key Visual / SIS)"
               actions={
                 onDrilldownToPlan && (
                   <Button
@@ -1989,7 +1980,6 @@ export function BrandProfileDetail({
           {/* 3. ĐỐI SOÁT PLAN VS REPORT THEO TỪNG GIAN HÀNG TRỰC THUỘC TRONG KỲ */}
           <Panel
             title={`Đối soát Plan & Report theo Gian hàng trực thuộc (${currentBrandReport.monthLabel} · ${brandStores.length} gian hàng)`}
-            description="Từ bảng này có thể drill-down trực tiếp vào Kế hoạch phân rã (Plan), Quản lý Booking hoặc Hồ sơ chi tiết của từng gian hàng"
             flush
           >
             {currentBrandReport.storeReports.length === 0 ? (
@@ -2010,7 +2000,6 @@ export function BrandProfileDetail({
           {/* 4. THỰC TẾ DEAL BOOKING & BÁO CÁO VIDEO CỦA THƯƠNG HIỆU TRONG KỲ */}
           <Panel
             title={`Thực tế Deal Booking & Báo cáo Video (${currentBrandReport.monthLabel} · ${currentBrandReport.bookings.length} deal)`}
-            description="Danh sách KOC đã triển khai trong tháng kèm chi phí Net/Gross, trạng thái lên bài và kết quả lượt xem, đơn hàng, doanh thu"
             actions={
               <div className="flex flex-wrap items-center gap-2">
                 {onDrilldownToListing && (
@@ -2134,7 +2123,6 @@ export function BrandProfileDetail({
           {!hideInternalRatecard && (
             <Panel
               title={SECTION_LABEL.RATECARD}
-              description="Định mức chi phí tối đa cho 1 video theo phân hạng KOC (KL1 → KL7)"
               actions={editBtn('RATECARD', () => setDialog('RATECARD'))}
             >
               {p.ratecard.some(r => r.maxBudget) ? (
@@ -2174,7 +2162,6 @@ export function BrandProfileDetail({
         <div className="space-y-6">
           <Panel
             title={SECTION_LABEL.CONTENT_RULES}
-            description="Danh mục từ khóa cấm, cách diễn đạt thay thế, hashtag và quy chuẩn hình ảnh cho KOC"
             actions={editBtn('CONTENT_RULES', () => setDialog('CONTENT_RULES'), p.contentRules ? 'Sửa quy chuẩn' : 'Thêm quy chuẩn')}
             flush
           >
@@ -2244,7 +2231,6 @@ export function BrandProfileDetail({
 
           <Panel
             title={`${SECTION_LABEL.LEGAL} (${p.legal.length})`}
-            description="Phiếu công bố sản phẩm, giấy xác nhận nội dung quảng cáo và chứng nhận kiểm nghiệm"
             actions={addBtn('legal')}
             flush
           >
@@ -2305,7 +2291,6 @@ export function BrandProfileDetail({
 
           <Panel
             title={`${SECTION_LABEL.FAQS} (${p.faqs.length})`}
-            description="Kịch bản trả lời khi người xem hỏi vặn về giá, nguồn gốc, tác dụng phụ"
             actions={addBtn('faqs')}
             flush
           >

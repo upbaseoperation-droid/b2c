@@ -872,7 +872,7 @@ export const SelfChannelCtvHubView: React.FC<SelfChannelCtvHubViewProps> = ({
           verdict: 'APPROVED',
           comment:
             mode === 'AUTO_PASSED_72H'
-              ? 'Quá 72h Nhãn hàng chưa phản hồi định hướng & VJ — Hệ thống tự động chuyển sang bước sản xuất theo quy chuẩn SLA.'
+              ? 'Quá 72h Nhãn hàng chưa phản hồi định hướng & VJ — Chuyển sang bước sản xuất theo quy chuẩn SLA.'
               : 'Nhãn hàng đã đồng ý VJ và góc kịch bản định hướng.'
         }
       ]
