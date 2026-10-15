@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { actorFromRequest, checkOrigin } from '@/lib/contracts/access';
-import { loadTemplate, saveTemplateMeta, uploadTemplateDocx } from '@/lib/contracts/templates';
+import { deleteTemplate, loadTemplate, saveTemplateMeta, uploadTemplateDocx } from '@/lib/contracts/templates';
 import { ContractError, canRead, requireCondition } from '@/lib/contracts/domain';
-import { getContract } from '@/lib/contracts/store';
+import { getContract, listContracts } from '@/lib/contracts/store';
 import type { ContractCategory } from '@/lib/contracts/types';
 
 export const runtime = 'nodejs';
@@ -58,6 +58,7 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
         defaultReviewRoles: Array.isArray(body.defaultReviewRoles)
           ? (body.defaultReviewRoles.filter(r => ['LEGAL', 'FINANCE', 'LEAD'].includes(String(r))) as ('LEGAL' | 'FINANCE' | 'LEAD')[])
           : undefined,
+        exemptLegalReview: typeof body.exemptLegalReview === 'boolean' ? body.exemptLegalReview : undefined,
       });
       return NextResponse.json({ template });
     }
@@ -77,6 +78,7 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
         defaultReviewRoles: Array.isArray(body.defaultReviewRoles)
           ? (body.defaultReviewRoles.filter(r => ['LEGAL', 'FINANCE', 'LEAD'].includes(String(r))) as ('LEGAL' | 'FINANCE' | 'LEAD')[])
           : undefined,
+        exemptLegalReview: typeof body.exemptLegalReview === 'boolean' ? body.exemptLegalReview : undefined,
         note: typeof body.note === 'string' ? body.note : undefined,
       });
       return NextResponse.json({ template });
@@ -86,6 +88,32 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
   } catch (e) {
     return NextResponse.json(
       { error: e instanceof ContractError ? e.message : 'Không thể lưu biểu mẫu pháp chế.' },
+      { status: e instanceof ContractError ? e.status : 400 },
+    );
+  }
+}
+
+export async function DELETE(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+  try {
+    checkOrigin(req);
+    const actor = actorFromRequest(req);
+    requireCondition(
+      actor.roles.some(r => ['LEGAL', 'LEAD'].includes(r)),
+      'Chỉ Pháp chế hoặc Trưởng bộ phận mới có quyền xóa biểu mẫu hợp đồng.',
+      403,
+    );
+    const { id } = await context.params;
+    const contracts = await listContracts();
+    requireCondition(
+      !contracts.some(r => r.templateId === id),
+      'Không thể xóa biểu mẫu đã phát sinh hồ sơ hợp đồng. Vui lòng chuyển trạng thái sang Tạm dừng.',
+      400,
+    );
+    await deleteTemplate(id);
+    return NextResponse.json({ success: true, id });
+  } catch (e) {
+    return NextResponse.json(
+      { error: e instanceof ContractError ? e.message : 'Không thể xóa biểu mẫu pháp chế.' },
       { status: e instanceof ContractError ? e.status : 400 },
     );
   }

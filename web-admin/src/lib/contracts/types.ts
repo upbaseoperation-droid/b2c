@@ -59,6 +59,8 @@ export interface LegalTemplate {
   fieldCount?: number;
   requiredFieldCount?: number;
   history?: TemplateVersionHistoryItem[];
+  /** Mẫu chuẩn: hồ sơ không có điều khoản ngoại lệ được miễn bước duyệt của Pháp chế. */
+  exemptLegalReview?: boolean;
 }
 export interface ReviewStep { role: 'LEGAL' | 'FINANCE' | 'LEAD'; reviewerId: string; reviewerName: string; status: 'PENDING' | 'APPROVED' | 'CHANGES' | 'REJECTED'; note: string; decidedAt?: string; version: number }
 export interface ContractFinding { severity: 'ERROR' | 'WARNING' | 'INFO'; message: string; evidence: string; fieldKey?: string }
@@ -75,4 +77,10 @@ export interface ContractRecord {
   parentId?: string;
   /** Booking và KOC mà hồ sơ này phục vụ. */
   dealId?: string; dealCode?: string; kocId?: string;
+  /** Có điều khoản ngoại lệ / KOC yêu cầu chỉnh sửa so với mẫu chuẩn. */
+  hasCustomTerms?: boolean;
+  /** Tóm tắt các điểm KOC đề xuất sửa hoặc ngoại lệ. */
+  customTermsSummary?: string;
+  /** Ghi chú đàm phán & lưu vết thỏa thuận nội bộ. */
+  internalNotes?: string;
 }

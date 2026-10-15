@@ -59,7 +59,7 @@ export function contractStatus(r: ContractRecord): StatusView {
 
 export const HISTORY_LABEL: Record<string, string> = {
   CREATE: 'Tạo hồ sơ', EDIT: 'Tạo phiên bản mới', SUBMIT: 'Gửi duyệt', APPROVED: 'Duyệt', CHANGES: 'Yêu cầu bổ sung',
-  REJECTED: 'Từ chối', WITHDRAW: 'Thu hồi', RULE_CHECK: 'Kiểm tra ô bắt buộc', AI_CHECK: 'Kiểm tra nội dung',
+  REJECTED: 'Từ chối', WITHDRAW: 'Thu hồi', NOTE: 'Ghi chú đàm phán', RULE_CHECK: 'Kiểm tra ô bắt buộc', AI_CHECK: 'Kiểm tra nội dung',
   DEMO_SIGN_START: 'Bắt đầu ký thử', DEMO_SIGN_NEXT: 'Ký thử', DEMO_SIGN_REJECT: 'Từ chối ký thử',
   LINK_WESIGN: 'Liên kết luồng ký', SYNC_WESIGN: 'Cập nhật tiến độ ký', SYNC_ERROR: 'Lỗi cập nhật tiến độ ký',
 };
@@ -96,12 +96,36 @@ const money = (n?: number) => (n ? formatNumber(n) : '');
 /**
  * Điền sẵn các ô có nguồn dữ liệu trong hệ thống. Chỉ điền ô đang trống, không bịa giá trị:
  * thiếu dữ liệu thì để trống cho người tạo nhập.
+ * Tự động tạo hậu tố phân biệt nếu có nhiều booking cùng 1 KOC trong ngày để chống trùng số HĐ.
  */
-export function prefill(fields: ContractField[], values: Record<string, string>, ctx: { koc?: KocItem; deal?: BookingDealItem; today?: Date }) {
-  const { koc, deal } = ctx; const d = ctx.today || new Date();
+export function prefill(
+  fields: ContractField[],
+  values: Record<string, string>,
+  ctx: { koc?: KocItem; deal?: BookingDealItem; today?: Date; existingRecords?: ContractRecord[] }
+) {
+  const { koc, deal, existingRecords = [] } = ctx; const d = ctx.today || new Date();
   const dd = String(d.getDate()).padStart(2, '0'); const mm = String(d.getMonth() + 1).padStart(2, '0');
   const type = koc ? legalTypeOf(koc) : 'INDIVIDUAL';
   const quantity = deal?.committedOutputsCount;
+  const docDateStr = `${dd}.${mm}.${String(d.getFullYear()).slice(2)}`;
+
+  const getUniqueKocIdToken = () => {
+    const rawId = koc ? koc.channelId.replace(/^@/, '') : '';
+    if (!rawId) return '';
+    if (deal?.dealCode) {
+      return `${rawId}-${deal.dealCode}`;
+    }
+    const sameDayCount = existingRecords.filter(r => {
+      const matchKoc = r.kocId === koc?.id || r.partner === koc?.realName || r.partner === koc?.stageName;
+      const matchDate = r.values['token:[dd.mm.yy]'] === docDateStr || r.createdAt.startsWith(d.toISOString().slice(0, 10));
+      return matchKoc && matchDate;
+    }).length;
+    if (sameDayCount > 0) {
+      return `${rawId}-${String(sameDayCount + 1).padStart(2, '0')}`;
+    }
+    return rawId;
+  };
+
   const cccdWithIssue = (f: ContractField) =>
     koc?.cccd && f.start !== undefined && (koc.issueDate || koc.issuePlace)
       ? [koc.cccd, koc.issueDate && `cấp ngày ${koc.issueDate}`, koc.issuePlace && `tại ${koc.issuePlace}`].filter(Boolean).join(' ')
@@ -116,8 +140,8 @@ export function prefill(fields: ContractField[], values: Record<string, string>,
       case 'address': return koc?.permanentAddress || '';
       case 'phone': return koc?.phone || '';
       case 'email': return koc?.email || '';
-      case 'kocId': return koc ? koc.channelId.replace(/^@/, '') : '';
-      case 'docDate': return `${dd}.${mm}.${String(d.getFullYear()).slice(2)}`;
+      case 'kocId': return getUniqueKocIdToken();
+      case 'docDate': return docDateStr;
       case 'signDay': return dd;
       case 'signMonth': return mm;
       case 'signYearDigit': return String(d.getFullYear()).slice(-1);

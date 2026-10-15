@@ -97,6 +97,7 @@ export function ContractCatalogView({
   const [editDescription, setEditDescription] = useState('');
   const [editActive, setEditActive] = useState(true);
   const [editRoles, setEditRoles] = useState<('LEGAL' | 'FINANCE' | 'LEAD')[]>(['LEGAL', 'FINANCE']);
+  const [editExemptLegalReview, setEditExemptLegalReview] = useState(true);
 
   // Modal tải file .docx (cập nhật phiên bản hoặc thêm mẫu mới)
   const [uploadModalMode, setUploadModalMode] = useState<null | 'NEW' | 'UPDATE'>(null);
@@ -109,7 +110,9 @@ export function ContractCatalogView({
   const [uploadDescription, setUploadDescription] = useState('');
   const [uploadNote, setUploadNote] = useState('');
   const [uploadRoles, setUploadRoles] = useState<('LEGAL' | 'FINANCE' | 'LEAD')[]>(['LEGAL', 'FINANCE']);
+  const [uploadExemptLegalReview, setUploadExemptLegalReview] = useState(true);
   const [uploadFile, setUploadFile] = useState<{ name: string; base64: string } | null>(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const filteredTemplates = useMemo(() => {
@@ -168,6 +171,7 @@ export function ContractCatalogView({
     setEditDescription(tpl.description || '');
     setEditActive(tpl.active !== false);
     setEditRoles(tpl.defaultReviewRoles?.length ? tpl.defaultReviewRoles : tpl.kind === 'ACCEPTANCE' ? ['FINANCE', 'LEAD'] : ['LEGAL', 'FINANCE']);
+    setEditExemptLegalReview(tpl.exemptLegalReview !== false);
     setEditModalOpen(true);
   };
 
@@ -183,6 +187,7 @@ export function ContractCatalogView({
       setUploadVersion(tpl.version === 'Ver052026' ? 'Ver102026' : tpl.version);
       setUploadDescription(tpl.description || '');
       setUploadRoles(tpl.defaultReviewRoles?.length ? tpl.defaultReviewRoles : ['LEGAL', 'FINANCE']);
+      setUploadExemptLegalReview(tpl.exemptLegalReview !== false);
       setUploadNote('Cập nhật biểu mẫu theo quy định pháp chế mới');
     } else {
       setNewCode('LIV-HD');
@@ -193,6 +198,7 @@ export function ContractCatalogView({
       setUploadVersion('Ver102026');
       setUploadDescription('Mẫu hợp đồng áp dụng cho phiên phát sóng trực tiếp (Livestream) trên sàn TMĐT.');
       setUploadRoles(['LEGAL', 'FINANCE', 'LEAD']);
+      setUploadExemptLegalReview(true);
       setUploadNote('Ban hành biểu mẫu mới vào danh mục chuẩn');
     }
   };
@@ -227,11 +233,40 @@ export function ContractCatalogView({
         description: editDescription,
         active: editActive,
         defaultReviewRoles: editRoles,
+        exemptLegalReview: editExemptLegalReview,
       });
       setLoadedTemplate(res.template);
       setEditModalOpen(false);
       await onRefresh();
       onNotify?.('Đã cập nhật cấu hình danh mục biểu mẫu.', 'success');
+    } catch (e) {
+      onNotify?.((e as Error).message, 'error');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleDeleteTemplate = async () => {
+    if (!loadedTemplate) return;
+    const isUsed = data.records.some(r => r.templateId === loadedTemplate.id);
+    if (isUsed) {
+      onNotify?.('Không thể xóa biểu mẫu đã phát sinh hồ sơ hợp đồng. Vui lòng chuyển trạng thái sang Tạm dừng.', 'error');
+      setDeleteConfirmOpen(false);
+      return;
+    }
+    setBusy(true);
+    try {
+      const res = await fetch(`/api/contracts/templates/${loadedTemplate.id}`, {
+        method: 'DELETE',
+        headers: { credentials: 'same-origin' },
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Lỗi khi xóa biểu mẫu.');
+      setDeleteConfirmOpen(false);
+      await onRefresh();
+      onNotify?.(`Đã xóa biểu mẫu "${loadedTemplate.name}".`, 'success');
+      const remaining = data.templates.filter(t => t.id !== loadedTemplate.id);
+      if (remaining[0]) setSelectedId(remaining[0].id);
     } catch (e) {
       onNotify?.((e as Error).message, 'error');
     } finally {
@@ -260,6 +295,7 @@ export function ContractCatalogView({
         version: uploadVersion,
         description: uploadDescription,
         defaultReviewRoles: uploadRoles,
+        exemptLegalReview: uploadExemptLegalReview,
         note: uploadNote,
       });
       setUploadModalMode(null);
@@ -451,6 +487,9 @@ export function ContractCatalogView({
                       <Status tone={loadedTemplate.active !== false ? 'positive' : 'neutral'}>
                         {loadedTemplate.active !== false ? 'Đang áp dụng' : 'Ngừng áp dụng'}
                       </Status>
+                      <Status tone={loadedTemplate.exemptLegalReview !== false ? 'positive' : 'warning'}>
+                        {loadedTemplate.exemptLegalReview !== false ? 'Mẫu chuẩn: Miễn duyệt Pháp chế' : 'Bắt buộc Pháp chế duyệt'}
+                      </Status>
                       <span className="text-xs font-code text-ink-3">
                         · {loadedTemplate.id} · {loadedTemplate.version}
                       </span>
@@ -486,6 +525,14 @@ export function ContractCatalogView({
                           onClick={() => openEditMeta(loadedTemplate)}
                         >
                           Sửa danh mục
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-critical hover:bg-critical-soft"
+                          onClick={() => setDeleteConfirmOpen(true)}
+                        >
+                          Xóa mẫu
                         </Button>
                       </>
                     )}
@@ -747,6 +794,24 @@ export function ContractCatalogView({
               ]}
             />
           </Field>
+          <div className="rounded-lg border border-line bg-sunken/40 p-3 space-y-1">
+            <label className="flex items-start gap-2.5 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={editExemptLegalReview}
+                onChange={e => setEditExemptLegalReview(e.target.checked)}
+                className="mt-0.5 rounded border-line"
+              />
+              <div>
+                <span className="font-medium text-[13px] text-ink block">
+                  Mẫu chuẩn Upbase: Miễn bước duyệt Pháp chế
+                </span>
+                <span className="text-2xs text-ink-3 block">
+                  Hồ sơ soạn theo mẫu này nếu không có điều khoản sửa đổi sẽ được chuyển thẳng Kế toán soát xét ngân sách.
+                </span>
+              </div>
+            </label>
+          </div>
         </div>
       </Modal>
 
@@ -833,10 +898,49 @@ export function ContractCatalogView({
             </div>
           </Field>
 
+          <div className="rounded-lg border border-line bg-sunken/40 p-3 space-y-1">
+            <label className="flex items-start gap-2.5 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={uploadExemptLegalReview}
+                onChange={e => setUploadExemptLegalReview(e.target.checked)}
+                className="mt-0.5 rounded border-line"
+              />
+              <div>
+                <span className="font-medium text-[13px] text-ink block">
+                  Mẫu chuẩn Upbase: Miễn bước duyệt Pháp chế
+                </span>
+                <span className="text-2xs text-ink-3 block">
+                  Hồ sơ soạn theo mẫu này nếu không có điều khoản sửa đổi sẽ được chuyển thẳng Kế toán soát xét ngân sách.
+                </span>
+              </div>
+            </label>
+          </div>
+
           <Field label="Ghi chú ban hành phiên bản" htmlFor="up-note">
             <Input id="up-note" value={uploadNote} onChange={e => setUploadNote(e.target.value)} placeholder="Lý do cập nhật hoặc điều khoản thay đổi..." />
           </Field>
         </div>
+      </Modal>
+
+      {/* Modal xác nhận xóa biểu mẫu */}
+      <Modal
+        open={deleteConfirmOpen}
+        onClose={() => setDeleteConfirmOpen(false)}
+        title="Xác nhận xóa biểu mẫu"
+        description={`Bạn có chắc chắn muốn xóa biểu mẫu "${loadedTemplate?.name || ''}" khỏi danh mục không?`}
+        footer={
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" onClick={() => setDeleteConfirmOpen(false)}>Hủy</Button>
+            <Button variant="danger" disabled={busy} onClick={handleDeleteTemplate}>
+              Xác nhận xóa
+            </Button>
+          </div>
+        }
+      >
+        <p className="text-xs text-ink-2">
+          Lưu ý: Chỉ có thể xóa biểu mẫu chưa có hồ sơ hợp đồng nào liên kết. Nếu biểu mẫu đã được sử dụng, vui lòng chuyển trạng thái sang "Ngừng áp dụng".
+        </p>
       </Modal>
     </div>
   );

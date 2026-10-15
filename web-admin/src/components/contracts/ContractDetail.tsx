@@ -152,6 +152,17 @@ export function ContractDetail({
 
       <div className="grid gap-6 items-start lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="grid gap-6 min-w-0">
+          {record.hasCustomTerms && (
+            <div className="rounded-xl border border-warning/50 bg-warning-soft/70 p-4 space-y-1.5">
+              <span className="font-semibold text-xs text-warning-strong uppercase tracking-wider block">
+                ⚠️ Điều khoản KOC đề xuất sửa / Thỏa thuận riêng
+              </span>
+              <p className="text-sm font-medium text-ink">
+                {record.customTermsSummary || 'Hồ sơ có yêu cầu chỉnh sửa riêng so với mẫu chuẩn (Cần Pháp chế thẩm định trước khi chuyển Kế toán)'}
+              </p>
+            </div>
+          )}
+
           {/* Tiến trình */}
           <section className="grid gap-3">
             <SectionHeader title="Tiến trình" />
@@ -401,6 +412,11 @@ export function ContractDetail({
                   <button type="button" className="text-accent hover:underline text-left" onClick={() => onOpen(parent.id)}>{parent.title}</button>
                 </Info>
               )}
+              {record.internalNotes && (
+                <Info label="Lưu ý đàm phán">
+                  <span className="text-xs text-ink-2 italic break-words">{record.internalNotes}</span>
+                </Info>
+              )}
               {signing && <Info label="Mã luồng ký"><span className="font-code text-2xs break-all">{signing.documentId}</span></Info>}
               <Info label="Tạo lúc">{dateTime(record.createdAt)}</Info>
             </dl>
@@ -431,11 +447,22 @@ export function ContractDetail({
               ))}
             </ul>
           </AsideSection>
-          <History record={record} />
+          <DiscussionAndHistory
+            record={record}
+            onAddNote={note => onAction({ action: 'ADD_NOTE', note }, 'Đã lưu ghi chú đàm phán')}
+            busy={busy}
+          />
         </aside>
       </div>
 
-      <SubmitDialog open={dialog === 'submit'} record={record} data={data} busy={busy} onClose={() => setDialog(null)} onSubmit={ids => onAction({ action: 'SUBMIT', reviewers: ids }, 'Đã gửi duyệt').then(r => r && setDialog(null))} />
+      <SubmitDialog
+        open={dialog === 'submit'}
+        record={record}
+        data={data}
+        busy={busy}
+        onClose={() => setDialog(null)}
+        onSubmit={(ids, reqLegal) => onAction({ action: 'SUBMIT', reviewers: ids, requireLegal: reqLegal }, 'Đã gửi duyệt').then(r => r && setDialog(null))}
+      />
       <LinkDialog open={dialog === 'link'} version={record.version} busy={busy} onClose={() => setDialog(null)} onSubmit={documentId => onAction({ action: 'LINK_WESIGN', documentId, confirmed: true }, 'Đã liên kết luồng ký').then(r => r && setDialog(null))} />
       <ConfirmDialog
         open={dialog === 'approve'}
@@ -513,27 +540,74 @@ function Info({ label, children }: { label: string; children: React.ReactNode })
   );
 }
 
-function History({ record }: { record: ContractRecord }) {
+function DiscussionAndHistory({
+  record,
+  onAddNote,
+  busy,
+}: {
+  record: ContractRecord;
+  onAddNote: (note: string) => Promise<unknown>;
+  busy: boolean;
+}) {
+  const [noteText, setNoteText] = useState('');
+  const [submitting, setSubmitting] = useState(false);
   const [all, setAll] = useState(false);
   const items = [...record.history].reverse();
-  const shown = all ? items : items.slice(0, 6);
+  const shown = all ? items : items.slice(0, 8);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!noteText.trim() || submitting) return;
+    setSubmitting(true);
+    try {
+      await onAddNote(noteText.trim());
+      setNoteText('');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
-    <AsideSection title="Lịch sử">
+    <AsideSection title="Ghi chú đàm phán & Lịch sử">
+      <form onSubmit={handleSubmit} className="mb-3 space-y-2">
+        <textarea
+          rows={2}
+          value={noteText}
+          onChange={e => setNoteText(e.target.value)}
+          placeholder="Thêm lưu ý trao đổi KOC / lý do duyệt..."
+          className="w-full text-xs rounded-lg border border-line bg-surface p-2 text-ink placeholder:text-ink-3 focus:outline-none focus:ring-1 focus:ring-accent resize-none"
+        />
+        <div className="flex justify-end">
+          <Button size="sm" variant="secondary" type="submit" disabled={busy || submitting || !noteText.trim()}>
+            {submitting ? 'Đang lưu…' : 'Lưu ghi chú'}
+          </Button>
+        </div>
+      </form>
+
       {items.length === 0 ? (
         <EmptyState title="Chưa có thao tác" />
       ) : (
         <ol className="grid gap-3">
           {shown.map((h, i) => (
-            <li key={i} className="grid gap-0.5">
-              <span className="text-[13px] text-ink">{HISTORY_LABEL[h.action] || h.action} <span className="text-ink-3">· phiên bản {h.version}</span></span>
+            <li key={i} className={`grid gap-0.5 pl-2.5 border-l-2 ${h.action === 'NOTE' ? 'border-accent' : 'border-line'}`}>
+              <div className="flex items-center justify-between gap-1">
+                <span className={`text-[13px] font-medium ${h.action === 'NOTE' ? 'text-accent' : 'text-ink'}`}>
+                  {HISTORY_LABEL[h.action] || h.action}
+                </span>
+                <span className="text-2xs text-ink-3">v{h.version}</span>
+              </div>
               <span className="text-2xs text-ink-3">{h.actorName} · {dateTime(h.at)}</span>
-              {h.note && !/^-?\d+$/.test(h.note) && <span className="text-2xs text-ink-2 line-clamp-3">{h.note}</span>}
+              {h.note && !/^-?\d+$/.test(h.note) && (
+                <span className={`text-2xs mt-0.5 ${h.action === 'NOTE' ? 'text-ink font-normal bg-sunken/60 p-1.5 rounded' : 'text-ink-2 line-clamp-3'}`}>
+                  {h.note}
+                </span>
+              )}
             </li>
           ))}
-          {items.length > 6 && (
+          {items.length > 8 && (
             <li>
               <button type="button" className="text-[13px] text-accent hover:underline" onClick={() => setAll(v => !v)}>
-                {all ? 'Thu gọn' : `Xem thêm ${items.length - 6} thao tác`}
+                {all ? 'Thu gọn' : `Xem thêm ${items.length - 8} thao tác`}
               </button>
             </li>
           )}
@@ -543,11 +617,28 @@ function History({ record }: { record: ContractRecord }) {
   );
 }
 
-function SubmitDialog({ open, record, data, busy, onClose, onSubmit }: { open: boolean; record: ContractRecord; data: ContractBootstrap; busy: boolean; onClose: () => void; onSubmit: (ids: string[]) => void }) {
+function SubmitDialog({
+  open,
+  record,
+  data,
+  busy,
+  onClose,
+  onSubmit,
+}: {
+  open: boolean;
+  record: ContractRecord;
+  data: ContractBootstrap;
+  busy: boolean;
+  onClose: () => void;
+  onSubmit: (ids: string[], requireLegal?: boolean) => void;
+}) {
   const [picked, setPicked] = useState<Record<string, string>>({});
   const [initKey, setInitKey] = useState('');
   const template = data.templates.find(t => t.id === record.templateId);
   const options = (role: ContractRole) => data.reviewers.filter(a => a.id !== record.ownerId && a.roles.includes(role) && (a.allBrands || a.brands.includes(record.brand)));
+
+  const isExempt = template?.exemptLegalReview !== false && !record.hasCustomTerms;
+  const [forceLegal, setForceLegal] = useState<boolean>(!isExempt);
 
   const currentKey = open ? `${record.id}:${record.version}` : '';
   if (currentKey !== initKey) {
@@ -557,37 +648,104 @@ function SubmitDialog({ open, record, data, busy, onClose, onSubmit }: { open: b
       const financeOpts = options('FINANCE');
       const leadOpts = options('LEAD');
       const defaultRoles = template?.defaultReviewRoles || ['LEGAL', 'FINANCE'];
+      const defaultForceLegal = !isExempt;
+      setForceLegal(defaultForceLegal);
       setPicked({
-        LEGAL: legalOpts[0]?.id || '',
+        LEGAL: defaultForceLegal ? (legalOpts[0]?.id || '') : '',
         FINANCE: financeOpts.find(a => a.id !== legalOpts[0]?.id)?.id || financeOpts[0]?.id || '',
         LEAD: defaultRoles.includes('LEAD') ? (leadOpts[0]?.id || '') : '',
       });
     }
   }
 
-  const ready = !!picked.LEGAL && !!picked.FINANCE && picked.LEGAL !== picked.FINANCE;
+  const needLegal = forceLegal || Boolean(record.hasCustomTerms);
+  const ready = !!picked.FINANCE && (!needLegal || (!!picked.LEGAL && picked.LEGAL !== picked.FINANCE));
   return (
     <Modal
       open={open}
       onClose={onClose}
       title="Gửi duyệt hồ sơ"
-      description={`Phiên bản ${record.version}. Đã tự động gợi ý cấp duyệt theo cấu hình của danh mục "${template?.name || record.templateId}".`}
+      description={`Phiên bản ${record.version}. Đã tự động cấu hình luồng duyệt theo mẫu "${template?.name || record.templateId}".`}
       footer={
         <>
           <Button variant="ghost" onClick={onClose}>Hủy</Button>
-          <Button variant="primary" disabled={busy || !ready} onClick={() => onSubmit(Object.values(picked).filter(Boolean))}>Gửi duyệt</Button>
+          <Button
+            variant="primary"
+            disabled={busy || !ready}
+            onClick={() => onSubmit(Object.values(picked).filter(Boolean), needLegal)}
+          >
+            Gửi duyệt
+          </Button>
         </>
       }
     >
-      {(['LEGAL', 'FINANCE', 'LEAD'] as const).map(role => (
-        <Field key={role} label={`${ROLE_LABEL[role]}${role === 'LEAD' ? ' (tùy theo hạn mức / nhóm)' : ' *'}`} htmlFor={`rv-${role}`}>
-          <Select id={`rv-${role}`} value={picked[role] || ''} onChange={e => setPicked(p => ({ ...p, [role]: e.target.value }))}>
-            <option value="">{role === 'LEAD' ? 'Không cần' : 'Chọn người duyệt'}</option>
-            {options(role).map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
-          </Select>
-        </Field>
-      ))}
-      {picked.LEGAL && picked.LEGAL === picked.FINANCE && <p className="text-2xs text-critical">Chọn hai người khác nhau cho pháp chế và kế toán.</p>}
+      <div className="space-y-4">
+        {isExempt && !forceLegal ? (
+          <div className="rounded-lg border border-positive/30 bg-positive-soft p-3 text-xs text-ink space-y-1">
+            <div className="font-semibold text-positive flex items-center gap-1.5">
+              🚀 Áp dụng luồng chuẩn: Miễn duyệt Pháp chế
+            </div>
+            <p className="text-2xs text-ink-2">
+              Hồ sơ dùng mẫu chuẩn và không có điều khoản sửa đổi riêng. Hồ sơ chuyển thẳng Kế toán soát xét ngân sách và thuế.
+            </p>
+          </div>
+        ) : (
+          <div className="rounded-lg border border-warning/40 bg-warning-soft p-3 text-xs text-ink space-y-1">
+            <div className="font-semibold text-warning-strong flex items-center gap-1.5">
+              ⚠️ Bắt buộc Pháp chế (chị Liên) duyệt trước
+            </div>
+            <p className="text-2xs text-ink-2">
+              {record.hasCustomTerms
+                ? `Hồ sơ có thỏa thuận sửa đổi riêng theo yêu cầu của KOC: "${record.customTermsSummary || ''}".`
+                : 'Mẫu biểu này yêu cầu Pháp chế thẩm định trước.'}
+            </p>
+          </div>
+        )}
+
+        {isExempt && (
+          <label className="flex items-center gap-2 text-xs text-ink-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={forceLegal}
+              onChange={e => {
+                const nextForce = e.target.checked;
+                setForceLegal(nextForce);
+                if (nextForce && !picked.LEGAL) {
+                  setPicked(p => ({ ...p, LEGAL: options('LEGAL')[0]?.id || '' }));
+                }
+              }}
+              className="rounded border-line"
+            />
+            Yêu cầu thêm Pháp chế duyệt bổ sung nếu cần
+          </label>
+        )}
+
+        {(['LEGAL', 'FINANCE', 'LEAD'] as const).map(role => {
+          if (role === 'LEGAL' && !needLegal) return null;
+          return (
+            <Field
+              key={role}
+              label={`${ROLE_LABEL[role]}${role === 'LEAD' ? ' (tùy theo hạn mức / nhóm)' : ' *'}`}
+              htmlFor={`rv-${role}`}
+            >
+              <Select
+                id={`rv-${role}`}
+                value={picked[role] || ''}
+                onChange={e => setPicked(p => ({ ...p, [role]: e.target.value }))}
+              >
+                <option value="">{role === 'LEAD' ? 'Không cần' : 'Chọn người duyệt'}</option>
+                {options(role).map(a => (
+                  <option key={a.id} value={a.id}>{a.name}</option>
+                ))}
+              </Select>
+            </Field>
+          );
+        })}
+
+        {needLegal && picked.LEGAL && picked.LEGAL === picked.FINANCE && (
+          <p className="text-2xs text-critical">Chọn hai người khác nhau cho pháp chế và kế toán.</p>
+        )}
+      </div>
     </Modal>
   );
 }

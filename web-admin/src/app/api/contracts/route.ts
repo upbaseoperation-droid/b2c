@@ -28,7 +28,14 @@ async function parseInput(body: Record<string, unknown>, existing?: ContractReco
   const fields = new Set(template.fields.map(f => f.key)); const values: Record<string, string> = {};
   for (const [key, value] of Object.entries(body.values)) { requireCondition(fields.has(key) && typeof value === 'string' && value.length <= 4000 && !/[\x00-\x08\x0B\x0C\x0E-\x1F]/.test(value), 'Trường điền không hợp lệ.'); values[key] = value; }
   const ref = (v: unknown) => { if (v === undefined || v === null || v === '') return undefined; requireCondition(typeof v === 'string' && /^[\w.@-]{1,80}$/.test(v), 'Mã booking hoặc KOC không hợp lệ.'); return v; };
-  return { title, brand, partner, templateId: template.id, templateHash: template.hash, values, parentId: typeof body.parentId === 'string' && body.parentId ? body.parentId : undefined, dealId: ref(body.dealId), dealCode: ref(body.dealCode), kocId: ref(body.kocId) };
+  return {
+    title, brand, partner, templateId: template.id, templateHash: template.hash, values,
+    parentId: typeof body.parentId === 'string' && body.parentId ? body.parentId : undefined,
+    dealId: ref(body.dealId), dealCode: ref(body.dealCode), kocId: ref(body.kocId),
+    hasCustomTerms: Boolean(body.hasCustomTerms),
+    customTermsSummary: typeof body.customTermsSummary === 'string' ? body.customTermsSummary.trim().slice(0, 2000) : undefined,
+    internalNotes: typeof body.internalNotes === 'string' ? body.internalNotes.trim().slice(0, 4000) : undefined,
+  };
 }
 export async function POST(req: NextRequest) {
   try {
@@ -54,7 +61,10 @@ export async function POST(req: NextRequest) {
       requireCondition(Array.isArray(body.reviewers) && body.reviewers.every(id => typeof id === 'string'), 'Cần chọn người duyệt.');
       const reviewers = configuredActors().filter(a => (body.reviewers as string[]).includes(a.id));
       requireCondition(reviewers.length === body.reviewers.length, 'Người duyệt chưa được cấp quyền.');
-      next = submitContract(record, actor, reviewers);
+      next = submitContract(record, actor, reviewers, { requireLegal: typeof body.requireLegal === 'boolean' ? body.requireLegal : undefined });
+    } else if (body.action === 'ADD_NOTE') {
+      requireCondition(typeof body.note === 'string' && body.note.trim() && body.note.length <= 4000, 'Nội dung ghi chú không hợp lệ.');
+      event(next, actor, 'NOTE', (body.note as string).trim());
     } else if (body.action === 'DECIDE') {
       requireCondition(typeof body.note === 'string' && body.note.length <= 4000, 'Nhận xét không hợp lệ.');
       next = decideContract(record, actor, body.decision as ReviewStep['status'], body.note);

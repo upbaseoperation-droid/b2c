@@ -24,6 +24,7 @@ export interface ContractFormInit {
 export interface ContractFormPayload {
   title: string; brand: string; partner: string; templateId: string; parentId: string;
   values: Record<string, string>; dealId?: string; dealCode?: string; kocId?: string;
+  hasCustomTerms?: boolean; customTermsSummary?: string; internalNotes?: string;
 }
 
 const findKoc = (kocs: KocItem[], deal?: BookingDealItem) =>
@@ -66,6 +67,9 @@ export function ContractForm({
   const [parentId, setParentId] = useState(record?.parentId || init?.parentId || '');
   const [values, setValues] = useState<Record<string, string>>(record?.values || {});
   const [prefilled, setPrefilled] = useState<Set<string>>(new Set());
+  const [hasCustomTerms, setHasCustomTerms] = useState<boolean>(record?.hasCustomTerms ?? false);
+  const [customTermsSummary, setCustomTermsSummary] = useState<string>(record?.customTermsSummary || '');
+  const [internalNotes, setInternalNotes] = useState<string>(record?.internalNotes || '');
   const [template, setTemplate] = useState<LegalTemplate | null>(null);
   const [loadError, setLoadError] = useState('');
   const [showSplitPreview, setShowSplitPreview] = useState(true);
@@ -87,7 +91,7 @@ export function ContractForm({
         if (cancelled) return;
         setTemplate(r.template); setLoadError('');
         if (!record) {
-          const result = prefill(uniqueFields(r.template), {}, { koc, deal });
+          const result = prefill(uniqueFields(r.template), {}, { koc, deal, existingRecords: data.records });
           setValues(result.values); setPrefilled(new Set(result.filled));
         }
       })
@@ -116,7 +120,7 @@ export function ContractForm({
     if (!title.trim() || title === autoTitle(findKoc(kocs, deal), deal, kind)) setTitle(autoTitle(k, d, kind));
     const nextTemplate = templateFor(k, kind);
     if (nextTemplate !== templateId) { setTemplate(null); setValues({}); setTemplateId(nextTemplate); }
-    else if (template) { const result = prefill(fields, values, { koc: k, deal: d }); setValues(result.values); setPrefilled(new Set([...prefilled, ...result.filled])); }
+    else if (template) { const result = prefill(fields, values, { koc: k, deal: d, existingRecords: data.records }); setValues(result.values); setPrefilled(new Set([...prefilled, ...result.filled])); }
   };
 
   const chooseKind = (k: 'CONTRACT' | 'ACCEPTANCE') => {
@@ -231,12 +235,45 @@ export function ContractForm({
   const parents = data.records.filter(r => !isAcceptance(r.templateId) && r.id !== record?.id && (!dealId || !r.dealId || r.dealId === dealId));
   const dealOptions = [...deals].sort((a, b) => a.dealCode.localeCompare(b.dealCode));
 
+  const docDateVal = values['token:[dd.mm.yy]'] || '';
+  const kocIdVal = values['token:[ID KOC]'] || '';
+  const duplicateRecord = useMemo(() => {
+    if (!docDateVal || !kocIdVal) return null;
+    return data.records.find(
+      r =>
+        r.id !== record?.id &&
+        r.values['token:[dd.mm.yy]'] === docDateVal &&
+        r.values['token:[ID KOC]'] === kocIdVal,
+    );
+  }, [data.records, record?.id, docDateVal, kocIdVal]);
+
+  const resolveDuplicateNumber = () => {
+    const suffix = deal?.dealCode ? `-${deal.dealCode}` : `-${String(data.records.length + 1).padStart(2, '0')}`;
+    setValues(prev => ({
+      ...prev,
+      'token:[ID KOC]': `${kocIdVal}${suffix}`,
+    }));
+  };
+
   return (
     <form
       className="space-y-6"
       onSubmit={e => {
         e.preventDefault();
-        onSave({ title: title.trim(), brand: brand.trim(), partner: partner.trim(), templateId, parentId, values, dealId: deal?.id, dealCode: deal?.dealCode, kocId: koc?.id });
+        onSave({
+          title: title.trim(),
+          brand: brand.trim(),
+          partner: partner.trim(),
+          templateId,
+          parentId,
+          values,
+          dealId: deal?.id,
+          dealCode: deal?.dealCode,
+          kocId: koc?.id,
+          hasCustomTerms,
+          customTermsSummary: customTermsSummary.trim() || undefined,
+          internalNotes: internalNotes.trim() || undefined,
+        });
       }}
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -304,6 +341,72 @@ export function ContractForm({
               </Select>
             </Field>
           )}
+        </div>
+      </Panel>
+
+      {duplicateRecord && (
+        <div className="rounded-xl border border-warning/40 bg-warning-soft p-3.5 text-xs text-ink flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <span className="font-semibold text-warning-strong">⚠️ Cảnh báo trùng số hợp đồng:</span> Đã tồn tại một hồ sơ hợp đồng khác cùng KOC và ngày lập này ({docDateVal}/{kocIdVal} · "{duplicateRecord.title}").
+          </div>
+          <Button size="sm" variant="secondary" onClick={resolveDuplicateNumber}>
+            Thêm hậu tố chống trùng (-{deal?.dealCode || '02'})
+          </Button>
+        </div>
+      )}
+
+      <Panel title="Quy chuẩn xét duyệt & Điều khoản thỏa thuận">
+        <div className="space-y-4 text-xs">
+          <div className="rounded-lg border border-line bg-sunken/40 p-3.5 space-y-2">
+            <label className="flex items-start gap-2.5 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={hasCustomTerms}
+                onChange={e => setHasCustomTerms(e.target.checked)}
+                className="mt-0.5 rounded border-line"
+              />
+              <div>
+                <span className="font-medium text-[13px] text-ink block">
+                  Hồ sơ có điều khoản chỉnh sửa riêng hoặc KOC yêu cầu ngoại lệ
+                </span>
+                <span className="text-2xs text-ink-3 block mt-0.5">
+                  {hasCustomTerms
+                    ? 'Bắt buộc Pháp chế (chị Liên) duyệt trước khi chuyển sang bước Kế toán và trình ký.'
+                    : 'Hồ sơ dùng mẫu chuẩn của Upbase sẽ được áp dụng luồng Miễn duyệt Pháp chế, chuyển thẳng Kế toán soát xét ngân sách.'}
+                </span>
+              </div>
+            </label>
+          </div>
+
+          {hasCustomTerms && (
+            <Field
+              label="Nội dung KOC đề xuất sửa / Thỏa thuận riêng"
+              htmlFor="ct-custom-terms"
+              hint="Nêu rõ điều khoản thay đổi (bản quyền hình ảnh, tiến độ tạm ứng, số ngày đăng video...) để Pháp chế nắm nhanh bối cảnh."
+            >
+              <Textarea
+                id="ct-custom-terms"
+                rows={3}
+                value={customTermsSummary}
+                onChange={e => setCustomTermsSummary(e.target.value)}
+                placeholder="Ví dụ: KOC yêu cầu cọc 30% trước khi quay video; Thời hạn cấp quyền hình ảnh giảm còn 45 ngày..."
+              />
+            </Field>
+          )}
+
+          <Field
+            label="Ghi chú thương thảo & Lưu vết thỏa thuận (Lưu nội bộ)"
+            htmlFor="ct-notes"
+            hint="Ghi lại các trao đổi quan trọng giữa nhân sự booking với KOC để các bên duyệt cùng nắm rõ và lưu vết vĩnh viễn."
+          >
+            <Textarea
+              id="ct-notes"
+              rows={2}
+              value={internalNotes}
+              onChange={e => setInternalNotes(e.target.value)}
+              placeholder="Ví dụ: Đã thống nhất với Lead Marketing về mức tạm ứng qua tin nhắn Lark ngày 14/10..."
+            />
+          </Field>
         </div>
       </Panel>
 

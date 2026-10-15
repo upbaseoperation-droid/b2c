@@ -18,7 +18,10 @@ import {
   Modal, 
   ChannelTag,
   channelOf,
-  useFlipList
+  useFlipList,
+  BrandAvatar,
+  ShopeeLogo,
+  TikTokLogo
 } from '../ui';
 import { DEFAULT_MASTER_CATALOG, INITIAL_MASTER_PRODUCTS, type MasterCatalog } from '../../lib/masterCatalog';
 import type { Column } from '../ui';
@@ -281,7 +284,9 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
           b.name.toLowerCase().includes(q) ||
           b.companyName.toLowerCase().includes(q) ||
           (b.code && b.code.toLowerCase().includes(q)) ||
-          (b.accountPic && b.accountPic.toLowerCase().includes(q))
+          (b.accountPic && b.accountPic.toLowerCase().includes(q)) ||
+          (b.brandPicName && b.brandPicName.toLowerCase().includes(q)) ||
+          (b.bookingPicLead && b.bookingPicLead.toLowerCase().includes(q))
         );
       }
       return true;
@@ -833,33 +838,94 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
 
       {/* SUB-TAB 1: THƯƠNG HIỆU */}
       {activeSubTab === 'brands' && (() => {
+        const getShopeeInfo = (b: BrandDetail) => {
+          const brandStores = storeList.filter(
+            (s) =>
+              s.brandName?.toLowerCase() === b.name?.toLowerCase() ||
+              s.storeName?.toLowerCase().startsWith(b.name?.toLowerCase() || ''),
+          );
+          const stores = [
+            ...(b.stores || []).filter((s) => (s.platform || '').toUpperCase().includes('SHOPEE')),
+            ...brandStores.filter((s) => (s.platform || '').toUpperCase().includes('SHOPEE')),
+          ];
+          const seen = new Set<string>();
+          const storeNames: string[] = [];
+          stores.forEach((s) => {
+            const name = s.storeName?.trim();
+            if (name && !seen.has(name.toLowerCase())) {
+              seen.add(name.toLowerCase());
+              storeNames.push(name);
+            }
+          });
+          const hasShopee = storeNames.length > 0 || (b.platforms || []).some((p) => p.toUpperCase().includes('SHOPEE'));
+          return {
+            hasShopee,
+            count: Math.max(storeNames.length, hasShopee ? 1 : 0),
+            storeNames,
+          };
+        };
+
+        const getTikTokInfo = (b: BrandDetail) => {
+          const brandStores = storeList.filter(
+            (s) =>
+              s.brandName?.toLowerCase() === b.name?.toLowerCase() ||
+              s.storeName?.toLowerCase().startsWith(b.name?.toLowerCase() || ''),
+          );
+          const stores = [
+            ...(b.stores || []).filter((s) => (s.platform || '').toUpperCase().includes('TIKTOK')),
+            ...brandStores.filter((s) => (s.platform || '').toUpperCase().includes('TIKTOK')),
+          ];
+          const seen = new Set<string>();
+          const storeNames: string[] = [];
+          stores.forEach((s) => {
+            const name = s.storeName?.trim();
+            if (name && !seen.has(name.toLowerCase())) {
+              seen.add(name.toLowerCase());
+              storeNames.push(name);
+            }
+          });
+          const hasTikTok = storeNames.length > 0 || (b.platforms || []).some((p) => p.toUpperCase().includes('TIKTOK'));
+          return {
+            hasTikTok,
+            count: Math.max(storeNames.length, hasTikTok ? 1 : 0),
+            storeNames,
+          };
+        };
+
         const brandColumns: Column<BrandDetail>[] = [
           {
             key: 'brand',
             header: 'Thương hiệu & Mã',
-            width: 220,
+            width: 210,
             render: (b) => {
               const initials = b.name.substring(0, 2).toUpperCase();
               return (
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <div
-                    className="w-8 h-8 rounded-lg text-white font-medium text-2xs flex items-center justify-center shrink-0 shadow-2xs"
-                    style={{ backgroundColor: b.color || '#4f46e5' }}
-                  >
-                    {initials}
-                  </div>
+                  <BrandAvatar
+                    id={b.id}
+                    brandId={b.id}
+                    name={b.name}
+                    brandName={b.name}
+                    code={b.code}
+                    size={36}
+                    rounded="md"
+                    className="shrink-0 shadow-2xs"
+                    fallback={
+                      <div
+                        className="w-9 h-9 rounded-md text-white font-semibold text-xs flex items-center justify-center shrink-0 shadow-2xs"
+                        style={{ backgroundColor: b.color || '#4f46e5' }}
+                      >
+                        {initials}
+                      </div>
+                    }
+                  />
                   <div className="leading-tight min-w-0">
-                    <span className="font-medium text-ink block truncate group-hover:text-primary transition-colors">
+                    <span className="font-semibold text-ink block truncate group-hover:text-primary transition-colors text-xs">
                       {b.name}
                     </span>
-                    <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                      <span className="text-2xs font-mono font-medium text-ink-2">
-                        {b.code || b.id.replace('brand-b2c-', '').toUpperCase()}
-                      </span>
-                      {b.platforms && b.platforms.map((p) => (
-                        <ChannelTag key={p} channel={channelOf(p)} />
-                      ))}
-                    </div>
+                    <span className="text-2xs font-mono font-medium text-ink-3 block mt-0.5">
+                      {b.code || b.id.replace('brand-b2c-', '').toUpperCase()}
+                    </span>
                   </div>
                 </div>
               );
@@ -874,69 +940,92 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
             ),
           },
           {
-            key: 'stores',
-            header: 'Gian hàng trực thuộc',
+            key: 'shopee',
+            header: (
+              <span className="inline-flex items-center gap-1.5 text-ink-2 font-medium justify-center">
+                <ShopeeLogo className="w-3.5 h-3.5" />
+                <span>Shopee</span>
+              </span>
+            ),
             align: 'center',
             width: 130,
             render: (b) => {
-              const brandStores = storeList.filter(
-                (s) =>
-                  s.brandName?.toLowerCase() === b.name?.toLowerCase() ||
-                  s.storeName?.toLowerCase().startsWith(b.name?.toLowerCase() || ''),
-              );
-              const storeCount = b.stores?.length || brandStores.length || b.storeCount || 0;
+              const shopee = getShopeeInfo(b);
+              if (!shopee.hasShopee) {
+                return <span className="text-ink-4 text-xs font-normal select-none">—</span>;
+              }
+              const label = shopee.count > 1 ? `Shopee Mall (${shopee.count})` : 'Shopee Mall';
               return (
-                <div className="leading-tight text-center">
-                  <span className="font-medium text-ink block text-xs">{storeCount} gian hàng</span>
-                  {b.platforms && b.platforms.length > 0 && (
-                    <span className="text-2xs text-ink-3 block mt-0.5">{b.platforms.join(' • ')}</span>
-                  )}
+                <div className="flex items-center justify-center">
+                  <span
+                    className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-2xs font-medium bg-orange-50 text-orange-700 border border-orange-200/80 shadow-2xs hover:bg-orange-100/70 transition-colors"
+                    title={shopee.storeNames.join('\n') || 'Shopee Mall'}
+                  >
+                    <ShopeeLogo className="w-3.5 h-3.5 shrink-0" />
+                    <span>{label}</span>
+                  </span>
                 </div>
               );
             },
           },
           {
-            key: 'pic',
-            header: 'Chuyên viên phụ trách',
-            width: 160,
-            render: (b) => (
-              <div className="space-y-0.5 leading-tight">
-                <div className="font-medium text-ink text-xs">
-                  {b.brandPicName || b.bookingPicLead ? (
-                    <Person name={b.brandPicName || b.bookingPicLead || ''} size={18} />
-                  ) : (
-                    <span className="text-ink-3">Chưa phân công</span>
-                  )}
+            key: 'tiktok',
+            header: (
+              <span className="inline-flex items-center gap-1.5 text-ink-2 font-medium justify-center">
+                <TikTokLogo className="w-3.5 h-3.5" />
+                <span>TikTok</span>
+              </span>
+            ),
+            align: 'center',
+            width: 130,
+            render: (b) => {
+              const tiktok = getTikTokInfo(b);
+              if (!tiktok.hasTikTok) {
+                return <span className="text-ink-4 text-xs font-normal select-none">—</span>;
+              }
+              const label = tiktok.count > 1 ? `TikTok Shop (${tiktok.count})` : 'TikTok Shop';
+              return (
+                <div className="flex items-center justify-center">
+                  <span
+                    className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-2xs font-medium bg-zinc-100 text-zinc-900 border border-zinc-200/90 shadow-2xs hover:bg-zinc-200/60 transition-colors"
+                    title={tiktok.storeNames.join('\n') || 'TikTok Shop'}
+                  >
+                    <TikTokLogo className="w-3.5 h-3.5 shrink-0" />
+                    <span>{label}</span>
+                  </span>
                 </div>
-                {b.accountPic && <div className="text-2xs text-ink-3">AM: {b.accountPic}</div>}
-              </div>
+              );
+            },
+          },
+          {
+            key: 'am',
+            header: 'AM',
+            width: 140,
+            render: (b) => (
+              b.accountPic ? (
+                <Person name={b.accountPic} size={20} />
+              ) : (
+                <span className="text-ink-4 text-xs select-none">—</span>
+              )
             ),
           },
           {
-            key: 'budget',
-            header: 'Ngân sách tháng',
-            align: 'right',
-            width: 140,
+            key: 'marketingPic',
+            header: 'PIC Marketing',
+            width: 150,
             render: (b) => {
-              const budget = b.planBudget || b.monthlyBudget || 0;
-              return (
-                <div className="leading-tight tabular-nums text-right">
-                  <span className="font-medium text-ink block text-xs">
-                    {budget > 0 ? formatVndShort(budget) : <span className="text-ink-3 font-normal">0 đ</span>}
-                  </span>
-                  {b.targetGmv ? (
-                    <span className="text-2xs text-positive font-mono block mt-0.5">
-                      GMV: {formatVndShort(b.targetGmv)}
-                    </span>
-                  ) : null}
-                </div>
+              const picName = b.brandPicName || b.bookingPicLead;
+              return picName ? (
+                <Person name={picName} size={20} />
+              ) : (
+                <span className="text-ink-4 text-xs select-none">—</span>
               );
             },
           },
           {
             key: 'profile',
             header: 'Hồ sơ thương hiệu',
-            width: 140,
+            width: 130,
             render: (b) => {
               const hasProfile = Boolean(b.brandGuideline && b.brandGuideline.length > 5);
               return (

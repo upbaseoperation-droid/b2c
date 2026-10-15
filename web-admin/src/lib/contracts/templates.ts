@@ -172,6 +172,7 @@ export interface CatalogOverride {
   description?: string;
   active: boolean;
   defaultReviewRoles: ('LEGAL' | 'FINANCE' | 'LEAD')[];
+  exemptLegalReview?: boolean;
   customFile?: string;
   updatedAt: string;
   updatedBy: string;
@@ -377,6 +378,7 @@ export async function loadTemplate(id: string, expectedHash?: string): Promise<{
   const description = override?.description || defaultDescriptionFor(id, subject, kind);
   const active = override?.active !== undefined ? override.active : true;
   const defaultReviewRoles = override?.defaultReviewRoles?.length ? override.defaultReviewRoles : defaultReviewRolesFor(kind);
+  const exemptLegalReview = override?.exemptLegalReview !== undefined ? override.exemptLegalReview : true;
   const updatedAt = override?.updatedAt || '2026-05-01T08:00:00.000Z';
   const updatedBy = override?.updatedBy || 'Phòng Pháp chế';
 
@@ -436,6 +438,7 @@ export async function loadTemplate(id: string, expectedHash?: string): Promise<{
       description,
       active,
       defaultReviewRoles,
+      exemptLegalReview,
       updatedAt,
       updatedBy,
       fieldCount: fields.length,
@@ -470,6 +473,7 @@ export async function saveTemplateMeta(
     description?: string;
     active?: boolean;
     defaultReviewRoles?: ('LEGAL' | 'FINANCE' | 'LEAD')[];
+    exemptLegalReview?: boolean;
   },
 ): Promise<LegalTemplate> {
   const { template } = await loadTemplate(id);
@@ -503,6 +507,7 @@ export async function saveTemplateMeta(
     description: input.description !== undefined ? input.description.trim() : template.description,
     active: input.active !== undefined ? input.active : (template.active ?? true),
     defaultReviewRoles: input.defaultReviewRoles?.length ? input.defaultReviewRoles : (template.defaultReviewRoles || defaultReviewRolesFor(template.kind)),
+    exemptLegalReview: input.exemptLegalReview !== undefined ? input.exemptLegalReview : (template.exemptLegalReview ?? true),
     customFile: prev?.customFile,
     updatedAt: now,
     updatedBy: actorName,
@@ -510,6 +515,36 @@ export async function saveTemplateMeta(
   };
   await writeCatalogOverrides(overrides);
   return (await loadTemplate(id)).template;
+}
+
+export async function deleteTemplate(id: string): Promise<void> {
+  const overrides = await readCatalogOverrides();
+  const builtIn = SOURCES.find(s => s[0] === id);
+  if (builtIn) {
+    overrides[id] = {
+      ...(overrides[id] || {
+        id,
+        name: builtIn[1],
+        filename: builtIn[4],
+        subject: builtIn[2],
+        kind: builtIn[3],
+        category: defaultCategoryFor(id, builtIn[3]),
+        version: 'Ver052026',
+        defaultReviewRoles: defaultReviewRolesFor(builtIn[3]),
+        exemptLegalReview: true,
+        updatedAt: new Date().toISOString(),
+        updatedBy: 'Phòng Pháp chế',
+        history: [],
+      }),
+      active: false,
+    };
+    await writeCatalogOverrides(overrides);
+    return;
+  }
+  if (overrides[id]) {
+    delete overrides[id];
+    await writeCatalogOverrides(overrides);
+  }
 }
 
 export async function uploadTemplateDocx(
@@ -525,6 +560,7 @@ export async function uploadTemplateDocx(
     version?: string;
     description?: string;
     defaultReviewRoles?: ('LEGAL' | 'FINANCE' | 'LEAD')[];
+    exemptLegalReview?: boolean;
     note?: string;
   },
 ): Promise<LegalTemplate> {
@@ -602,6 +638,7 @@ export async function uploadTemplateDocx(
     description,
     active: prev?.active ?? true,
     defaultReviewRoles,
+    exemptLegalReview: input.exemptLegalReview !== undefined ? input.exemptLegalReview : (existingTemplate?.exemptLegalReview ?? true),
     customFile: customFilename,
     updatedAt: now,
     updatedBy: actorName,

@@ -87,7 +87,7 @@ Tự đánh giá theo skill agent-self-evaluation: chính xác 4/5 (đã xác mi
 
 - Mapping trường tự nhận diện phải được pháp chế đối chiếu từng mẫu, đặc biệt ô trống trong bảng và trường tùy chọn. Không tự suy ra ngưỡng tiền/thuế từ prototype.
 - Xuất Word là bản giữ bố cục gốc. Preview web chỉ để đọc nội dung; chưa có chuyển đổi PDF giữ bố cục trên máy chủ.
-- Mẫu có mã/hash nguồn; mỗi hồ sơ tạo mới lưu bản nguồn bất biến. File mẫu hiện hành thay đổi không đổi bản nguồn của hồ sơ cũ. Pháp chế quản lý bộ file hiện hành trên máy chủ; chưa có giao diện upload/phát hành mẫu mới.
+- Mẫu có mã/hash nguồn; mỗi hồ sơ tạo mới lưu bản nguồn bất biến. File mẫu hiện hành thay đổi không đổi bản nguồn của hồ sơ cũ. Pháp chế quản lý bộ file hiện hành thông qua màn hình Quản lý mẫu biểu (upload .docx, chỉnh sửa thông tin, cấu hình miễn duyệt Pháp chế và xóa mẫu chưa phát sinh hồ sơ).
 - Chưa kết nối tài khoản thật Lark/weSign, chưa gọi AI trên tài liệu thật; cần cấu hình và UAT tích hợp.
 - Chưa triển khai dịch vụ trên hạ tầng vận hành và chưa lên lịch đồng bộ thực tế.
 
@@ -99,3 +99,18 @@ Tự đánh giá theo skill agent-self-evaluation: chính xác 4/5 (đã xác mi
 - Trích ô từ mẫu Word: nhận ô có chữ giữ chỗ (“Tên Công ty”, “MST công ty”, “Số… cấp ngày … tại…”) – trước đây bỏ sót nên mẫu công ty/hộ kinh doanh không điền được tên, MST, địa chỉ; ô trong bảng có nhãn “dòng · cột”; mỗi ô có nhãn dễ đọc, nhóm, kiểu (tiền/số/ngày) và nguồn dữ liệu. Khóa ô không đổi nên hồ sơ cũ vẫn đúng ô.
 - Đồng bộ weSign chỉ ghi hồ sơ khi trạng thái, người ký hoặc lỗi thay đổi (trước đây mỗi lần đọc lại đều ghi lịch sử và tăng revision).
 - Kiểm tra nội dung chỉ liệt kê ô bắt buộc còn trống; ô không bắt buộc gộp một dòng.
+
+## Cập nhật 15/10/2026 — Giải quyết các điểm nghẽn nghiệp vụ Pháp chế & Hợp đồng
+
+1. **Khử trùng số ID hợp đồng:**
+   - Khi cùng một KOC có nhiều booking trong cùng một ngày, hệ thống tự động sinh số hợp đồng có hậu tố phân biệt theo mã deal (`-DEAL123`) hoặc số thứ tự theo ngày (`-01`, `-02`).
+   - Giao diện form tạo/sửa hồ sơ tích hợp bộ kiểm tra phát hiện trùng lặp theo thời gian thực (`isDuplicateNumber`), cảnh báo nổi bật và cung cấp nút bấm 1-chạm *"Thêm hậu tố chống trùng"* giúp chuyên viên xử lý nhanh.
+2. **Luồng duyệt linh hoạt (Fast-track cho mẫu chuẩn):**
+   - Hợp đồng sử dụng mẫu chuẩn Upbase (`exemptLegalReview = true`) và không có điều khoản sửa đổi (`hasCustomTerms = false`) được áp dụng luồng phê duyệt nhanh: **Miễn bước duyệt của Pháp chế**, chuyển thẳng tới Kế toán duyệt để tăng tốc độ ký kết.
+   - Khi KOC có yêu cầu sửa đổi điều khoản (`hasCustomTerms = true`), hệ thống tự động nhận diện tính chất ngoại lệ, gắn nhãn cảnh báo đỏ và **bắt buộc phải qua Pháp chế duyệt trước** khi tới Kế toán.
+3. **Lưu vết đàm phán & Bối cảnh xét duyệt:**
+   - Bổ sung trường thông tin `hasCustomTerms`, `customTermsSummary` (Tóm tắt điều khoản KOC đề xuất sửa đổi) và `internalNotes` (Ghi chú đàm phán nội bộ).
+   - Tích hợp khung lưu vết đàm phán và trao đổi ngay tại màn hình chi tiết hợp đồng (`DiscussionAndHistory`), hỗ trợ thêm ghi chú trực tiếp (`ADD_NOTE`), giúp Pháp chế và các phòng ban liên quan xem lại toàn bộ bối cảnh và lý do phê duyệt tại từng thời điểm.
+4. **Màn hình Quản lý mẫu biểu (CRUD) cho Pháp chế:**
+   - Cung cấp đầy đủ giao diện quản lý mẫu biểu tại tab **Mẫu biểu**: Cho phép Pháp chế upload mẫu Word mới (`.docx`), chỉnh sửa cấu hình metadata, cấu hình cờ *"Mẫu chuẩn: Miễn duyệt Pháp chế"*.
+   - Hỗ trợ thao tác xóa mẫu custom hoặc ngừng kích hoạt mẫu built-in, đi kèm cơ chế kiểm tra an toàn: Tuyệt đối chặn xóa các mẫu đã phát sinh hồ sơ hợp đồng thực tế.

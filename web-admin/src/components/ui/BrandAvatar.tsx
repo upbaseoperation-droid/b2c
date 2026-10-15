@@ -52,12 +52,12 @@ export function BrandAvatar({
     <span
       className={`inline-flex items-center justify-center shrink-0 bg-white border border-slate-200/90 shadow-2xs overflow-hidden select-none transition-transform hover:scale-105 ${roundedClass} ${className}`}
       style={{ width: size, height: size }}
-      title={name}
+      title={displayName}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={logoUrl}
-        alt={name}
+        alt={displayName}
         className="w-full h-full object-contain p-0.5"
         onError={() => setHasError(true)}
         loading="lazy"

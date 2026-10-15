@@ -9,7 +9,15 @@ export function event(record: ContractRecord, actor: ContractActor, action: stri
   const entry: ContractEvent = { at: new Date().toISOString(), actorId: actor.id, actorName: actor.name, action, note, version: record.version };
   record.history.push(entry); record.updatedAt = entry.at;
 }
-type Input = Pick<ContractRecord, 'title' | 'brand' | 'partner' | 'templateId' | 'templateHash' | 'values'> & { parentId?: string; dealId?: string; dealCode?: string; kocId?: string };
+type Input = Pick<ContractRecord, 'title' | 'brand' | 'partner' | 'templateId' | 'templateHash' | 'values'> & {
+  parentId?: string;
+  dealId?: string;
+  dealCode?: string;
+  kocId?: string;
+  hasCustomTerms?: boolean;
+  customTermsSummary?: string;
+  internalNotes?: string;
+};
 export function createContract(input: Input, actor: ContractActor): ContractRecord {
   requireCondition(actor.roles.includes('CREATOR') && inScope(input.brand, actor), 'Không có quyền tạo hợp đồng cho nhãn hàng này.', 403);
   const at = new Date().toISOString();
@@ -25,20 +33,38 @@ export function editContract(record: ContractRecord, actor: ContractActor, input
   next.versions.push({ version: record.version, values: structuredClone(record.values), at: record.updatedAt, actorId: actor.id });
   Object.assign(next, input); next.version++; next.steps = []; next.approval = 'DRAFT'; event(next, actor, 'EDIT'); return next;
 }
-export function submitContract(record: ContractRecord, actor: ContractActor, reviewers: ContractActor[]) {
+export function submitContract(record: ContractRecord, actor: ContractActor, reviewers: ContractActor[], options?: { requireLegal?: boolean }) {
   requireCondition(record.ownerId === actor.id && inScope(record.brand, actor), 'Không có quyền gửi hồ sơ.', 403);
   requireCondition(['DRAFT', 'CHANGES', 'REJECTED'].includes(record.approval), 'Hồ sơ không ở trạng thái có thể gửi duyệt.');
-  requireCondition(reviewers.length >= 2 && new Set(reviewers.map(r => r.id)).size === reviewers.length, 'Cần người duyệt độc lập cho kế toán và pháp chế.');
+  requireCondition(new Set(reviewers.map(r => r.id)).size === reviewers.length, 'Người duyệt chưa hợp lệ hoặc bị trùng.');
+
+  const finance = reviewers.find(r => r.roles.includes('FINANCE'));
+  requireCondition(finance && finance.id !== actor.id && inScope(record.brand, finance), 'Kế toán không có quyền hoặc trùng người tạo.');
+
+  const legal = reviewers.find(r => r.roles.includes('LEGAL'));
+  const needsLegal = options?.requireLegal ?? (record.hasCustomTerms || Boolean(legal));
+  if (needsLegal) {
+    requireCondition(legal && legal.id !== actor.id && inScope(record.brand, legal), 'Pháp chế không có quyền hoặc trùng người tạo.');
+    requireCondition(legal.id !== finance.id, 'Pháp chế và kế toán cần hai người độc lập.');
+  }
+
   const next = structuredClone(record);
-  next.steps = (['LEGAL', 'FINANCE'] as const).map(role => {
-    const reviewer = reviewers.find(r => r.roles.includes(role));
-    requireCondition(reviewer && reviewer.id !== actor.id && inScope(record.brand, reviewer), 'Reviewer không có quyền hoặc trùng người tạo.');
-    return { role, reviewerId: reviewer.id, reviewerName: reviewer.name, status: 'PENDING', note: '', version: record.version };
-  });
-  requireCondition(new Set(next.steps.map(s => s.reviewerId)).size === next.steps.length, 'Pháp chế và kế toán cần hai người độc lập.');
+  const steps: ReviewStep[] = [];
+  if (legal && needsLegal) {
+    steps.push({ role: 'LEGAL', reviewerId: legal.id, reviewerName: legal.name, status: 'PENDING', note: '', version: record.version });
+  }
+  steps.push({ role: 'FINANCE', reviewerId: finance.id, reviewerName: finance.name, status: 'PENDING', note: '', version: record.version });
+
   const lead = reviewers.find(r => r.roles.includes('LEAD'));
-  if (lead) { requireCondition(lead.id !== actor.id && inScope(record.brand, lead), 'Lead không có quyền hoặc trùng người tạo.'); next.steps.push({ role: 'LEAD', reviewerId: lead.id, reviewerName: lead.name, status: 'PENDING', note: '', version: record.version }); }
-  next.approval = 'IN_REVIEW'; event(next, actor, 'SUBMIT'); return next;
+  if (lead) {
+    requireCondition(lead.id !== actor.id && inScope(record.brand, lead), 'Lead không có quyền hoặc trùng người tạo.');
+    steps.push({ role: 'LEAD', reviewerId: lead.id, reviewerName: lead.name, status: 'PENDING', note: '', version: record.version });
+  }
+
+  next.steps = steps;
+  next.approval = 'IN_REVIEW';
+  event(next, actor, 'SUBMIT', needsLegal ? '' : 'Mẫu chuẩn: Miễn duyệt Pháp chế');
+  return next;
 }
 export function decideContract(record: ContractRecord, actor: ContractActor, decision: ReviewStep['status'], note: string) {
   requireCondition(record.approval === 'IN_REVIEW', 'Hồ sơ không đang chờ duyệt.');
@@ -52,7 +78,17 @@ export function decideContract(record: ContractRecord, actor: ContractActor, dec
 }
 export function assertCanSign(record: ContractRecord, actor: ContractActor) {
   requireCondition(actor.roles.includes('SIGN_COORDINATOR') && inScope(record.brand, actor), 'Không có quyền trình ký.', 403);
-  requireCondition(record.approval === 'APPROVED' && record.steps.length >= 2 && ['LEGAL', 'FINANCE'].every(role => record.steps.some(s => s.role === role && s.status === 'APPROVED' && s.version === record.version)) && record.steps.every(s => s.status === 'APPROVED' && s.version === record.version), 'Chỉ phiên bản đã đủ phê duyệt mới được bắt đầu luồng trình ký.');
+  const hasFinance = record.steps.some(s => s.role === 'FINANCE' && s.status === 'APPROVED' && s.version === record.version);
+  const hasLegal = record.steps.some(s => s.role === 'LEGAL');
+  const legalApproved = !hasLegal || record.steps.some(s => s.role === 'LEGAL' && s.status === 'APPROVED' && s.version === record.version);
+  requireCondition(
+    record.approval === 'APPROVED' &&
+    record.steps.length >= 1 &&
+    hasFinance &&
+    legalApproved &&
+    record.steps.every(s => s.status === 'APPROVED' && s.version === record.version),
+    'Chỉ phiên bản đã đủ phê duyệt mới được bắt đầu luồng trình ký.'
+  );
 }
 /** Kết quả đọc lại từ weSign có khác lần trước không (trạng thái, người ký, lỗi). */
 export function signingChanged(previous: SigningAttempt, detail: Pick<SigningAttempt, 'status' | 'sourceStatus' | 'people'>) {
