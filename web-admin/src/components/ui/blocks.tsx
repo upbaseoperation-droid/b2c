@@ -261,7 +261,7 @@ export function DataTable<T>({
 
 /* ------------------------------------------------------------------- Modal */
 
-const MODAL_SIZE = { sm: 'max-w-sm', md: 'max-w-lg', lg: 'max-w-2xl', xl: 'max-w-4xl' } as const;
+const MODAL_SIZE = { sm: 'max-w-sm', md: 'max-w-lg', lg: 'max-w-2xl', xl: 'max-w-4xl', '2xl': 'max-w-6xl', '3xl': 'max-w-7xl', full: 'max-w-[96vw]' } as const;
 
 /**
  * Hộp thoại. Đóng bằng Esc, nút X hoặc bấm ra ngoài. Chân modal: nút phụ bên trái nút chính.

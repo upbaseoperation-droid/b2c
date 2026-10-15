@@ -601,18 +601,20 @@ export const StoresMasterView: React.FC<StoresMasterViewProps> = ({
     {
       key: 'pic',
       header: 'Đội ngũ phụ trách',
-      width: 170,
+      width: 210,
       render: (s) => {
         const hasLeaderTeam = s.hasBookingLeader && !!s.bookingLeader;
         return (
-          <div className="space-y-0.5 leading-tight text-xs">
-            <div className="flex items-center gap-1.5">
-              <span className="text-2xs text-ink-3">PIC:</span>
-              <span className="font-medium text-ink">{s.b2cOwnerName || s.primaryPic || 'Chưa gán'}</span>
+          <div className="space-y-0.5 leading-tight text-xs whitespace-nowrap">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span className="text-2xs text-ink-3 w-10 shrink-0 font-normal">PIC:</span>
+              <span className="font-medium text-ink truncate" title={s.b2cOwnerName || s.primaryPic || 'Chưa gán'}>
+                {s.b2cOwnerName || s.primaryPic || 'Chưa gán'}
+              </span>
             </div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-2xs text-ink-3">Leader:</span>
-              <span className="text-ink-2 font-medium">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span className="text-2xs text-ink-3 w-10 shrink-0 font-normal">Leader:</span>
+              <span className="text-ink-2 font-medium truncate" title={hasLeaderTeam ? s.bookingLeader : 'Không có leader'}>
                 {hasLeaderTeam ? s.bookingLeader : '—'}
               </span>
             </div>

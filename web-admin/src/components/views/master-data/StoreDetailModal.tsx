@@ -37,20 +37,18 @@ export function StoreDetailModal({
     <Modal
       open={isOpen}
       onClose={onClose}
-      size="xl"
+      size="3xl"
       title={`Hồ sơ ${store.storeName}`}
     >
-      <div className="max-h-[80vh] overflow-y-auto pr-1">
-        <StoreProfile
-          store={store}
-          brand={brand}
-          deals={deals}
-          layout="modal"
-          onNavigateToBrandProfile={onNavigateToBrandProfile}
-          onOpenEdit={onOpenEdit}
-          onOpenHandover={onOpenHandover}
-        />
-      </div>
+      <StoreProfile
+        store={store}
+        brand={brand}
+        deals={deals}
+        layout="modal"
+        onNavigateToBrandProfile={onNavigateToBrandProfile}
+        onOpenEdit={onOpenEdit}
+        onOpenHandover={onOpenHandover}
+      />
     </Modal>
   );
 }

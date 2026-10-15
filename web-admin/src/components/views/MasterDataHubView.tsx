@@ -912,12 +912,12 @@ export const MasterDataHubView: React.FC<MasterDataHubViewProps> = ({
               if (!shopee.hasShopee) {
                 return <span className="text-ink-4 text-xs font-normal select-none">—</span>;
               }
-              const label = shopee.count > 1 ? `Shopee Mall (${shopee.count})` : 'Shopee Mall';
+              const label = shopee.count > 1 ? `Shopee (${shopee.count})` : 'Shopee';
               return (
                 <div className="flex items-center justify-center">
                   <span
                     className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-2xs font-medium bg-orange-50 text-orange-700 border border-orange-200/80 shadow-2xs hover:bg-orange-100/70 transition-colors"
-                    title={shopee.storeNames.join('\n') || 'Shopee Mall'}
+                    title={shopee.storeNames.join('\n') || 'Shopee'}
                   >
                     <ShopeeLogo className="w-3.5 h-3.5 shrink-0" />
                     <span>{label}</span>

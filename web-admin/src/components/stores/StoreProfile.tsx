@@ -763,54 +763,55 @@ export function StoreProfile({
               }
             />
 
-            <div className="min-w-0 space-y-1">
+            <div className="min-w-0 space-y-2">
               <div className="flex items-center gap-2 flex-wrap">
                 <h2
-                  className="text-lg font-semibold text-ink truncate"
+                  className="text-base sm:text-lg font-semibold text-ink truncate"
                   style={layout === 'page' ? sharedTo('store-title') : undefined}
                 >
                   {store.storeName}
                 </h2>
-                <ChannelTag channel={store.platform} />
-                {store.operationStatus === 'Live' || store.accountStatus === 'ACTIVE' ? (
-                  <Status tone="positive">Đang vận hành</Status>
-                ) : (
-                  <Status tone="neutral">Dừng hợp tác</Status>
-                )}
-                <span className="text-2xs text-ink-3 font-medium">
-                  · Hồ sơ kỳ {currentMonthReport.monthLabel} · Plan <span className="font-code text-ink-2">{currentMonthReport.versionCode}</span>
+                <div className="flex items-center gap-1.5 shrink-0 whitespace-nowrap">
+                  <ChannelTag channel={store.platform} />
+                  {store.operationStatus === 'Live' || store.accountStatus === 'ACTIVE' ? (
+                    <Status tone="positive">Đang vận hành</Status>
+                  ) : (
+                    <Status tone="neutral">Dừng hợp tác</Status>
+                  )}
+                </div>
+                <span className="text-2xs text-ink-3 font-medium whitespace-nowrap">
+                  · Kỳ {currentMonthReport.monthLabel} · Plan <span className="font-mono text-ink-2 font-medium">{currentMonthReport.versionCode}</span>
                 </span>
               </div>
 
-              <div className="flex items-center gap-2 text-2xs text-ink-3 flex-wrap">
-                <span>Thuộc thương hiệu</span>
-                {onNavigateToBrandProfile ? (
-                  <button
-                    type="button"
-                    onClick={() => onNavigateToBrandProfile(store.brandName)}
-                    className="font-medium text-ink hover:text-accent hover:underline inline-flex items-center gap-1"
-                  >
-                    <Building2 className="w-3 h-3 text-ink-3" />
+              <div className="flex items-center gap-1.5 text-2xs text-ink-3 flex-wrap">
+                <span className="inline-flex items-center gap-1 font-medium text-ink bg-sunken px-2 py-0.5 rounded border border-line whitespace-nowrap">
+                  <Building2 className="w-3 h-3 text-ink-3 shrink-0" />
+                  {onNavigateToBrandProfile ? (
+                    <button
+                      type="button"
+                      onClick={() => onNavigateToBrandProfile(store.brandName)}
+                      className="hover:text-accent hover:underline text-ink"
+                    >
+                      {store.brandName}
+                    </button>
+                  ) : (
                     <span>{store.brandName}</span>
-                  </button>
-                ) : (
-                  <span className="font-medium text-ink">{store.brandName}</span>
-                )}
-                <span>·</span>
-                <span>
-                  Mã SO: <strong className="font-code text-ink">{store.storeOperationId || store.id}</strong>
+                  )}
                 </span>
-                <span>·</span>
-                <span>
-                  Gói dịch vụ: <strong className="text-ink">{store.servicePackage || 'E2E-S'}</strong>
+                <span className="bg-sunken px-2 py-0.5 rounded border border-line whitespace-nowrap text-ink-2">
+                  Mã SO: <strong className="font-mono text-ink">{store.storeOperationId || store.id}</strong>
                 </span>
-                <span>·</span>
-                <span>
-                  Hoa hồng mặc định: <strong className="font-code text-ink">{store.affiliateRate || 15}%</strong>
+                <span className="bg-sunken px-2 py-0.5 rounded border border-line whitespace-nowrap text-ink-2">
+                  Gói: <strong className="text-ink font-medium">{store.servicePackage || 'E2E-S'}</strong>
                 </span>
-                <span>·</span>
-                <span>Chuyên viên PIC:</span>
-                <Person name={specialistPic} size={18} />
+                <span className="bg-sunken px-2 py-0.5 rounded border border-line whitespace-nowrap text-ink-2">
+                  Hoa hồng: <strong className="font-mono text-ink">{store.affiliateRate || 15}%</strong>
+                </span>
+                <span className="bg-sunken px-2 py-0.5 rounded border border-line inline-flex items-center gap-1.5 whitespace-nowrap text-ink-2">
+                  <span className="text-ink-3">PIC:</span>
+                  <strong className="text-ink font-medium">{specialistPic}</strong>
+                </span>
               </div>
             </div>
           </div>
@@ -818,7 +819,7 @@ export function StoreProfile({
       </div>
 
       {/* 2. BỐ CỤC 2 CỘT: CỘT CHÍNH (HỒ SƠ PLAN & REPORT THEO THÁNG) + CỘT PHỤ (THÔNG SỐ TĨNH & ĐỘI NGŨ) */}
-      <div className="flex flex-col lg:flex-row gap-6 items-start">
+      <div className={`flex flex-col ${layout === 'modal' ? 'xl:flex-row' : 'lg:flex-row'} gap-6 items-start`}>
         {/* CỘT CHÍNH: QUẢN LÝ HỒ SƠ KẾ HOẠCH (PLAN) & BÁO CÁO (REPORT) THEO THÁNG */}
         <div className="flex-1 min-w-0 space-y-6 w-full">
           {/* 2.1 Bảng tổng hợp Lịch sử Plan & Report qua các tháng */}
@@ -1259,7 +1260,7 @@ export function StoreProfile({
         </div>
 
         {/* CỘT PHỤ BÊN PHẢI: THÔNG TIN TĨNH CỦA GIAN HÀNG & ĐỘI NGŨ PHỤ TRÁCH */}
-        <div className="w-full lg:w-[340px] shrink-0 space-y-6">
+        <div className={`w-full ${layout === 'modal' ? 'xl:w-[320px]' : 'lg:w-[340px]'} shrink-0 space-y-6`}>
           {/* Đội ngũ phụ trách */}
           <Panel
             title="Đội ngũ phụ trách"

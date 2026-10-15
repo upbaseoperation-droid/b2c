@@ -59,11 +59,11 @@ export function Avatar({ name, src, size = 24, className }: { name: string; src?
 /** Ảnh đại diện + tên, dùng trong ô bảng. */
 export function Person({ name, sub, src, size = 24 }: { name: string; sub?: string; src?: string; size?: number }) {
   return (
-    <span className="inline-flex items-center gap-2 min-w-0">
+    <span className="inline-flex items-center gap-2 min-w-0 whitespace-nowrap">
       <Avatar name={name} src={src} size={size} />
       <span className="min-w-0 leading-tight">
-        <span className="block truncate text-ink">{name}</span>
-        {sub && <span className="block truncate text-2xs text-ink-3">{sub}</span>}
+        <span className="block truncate text-ink whitespace-nowrap" title={name}>{name}</span>
+        {sub && <span className="block truncate text-2xs text-ink-3 whitespace-nowrap">{sub}</span>}
       </span>
     </span>
   );
