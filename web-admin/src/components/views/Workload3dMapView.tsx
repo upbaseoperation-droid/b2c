@@ -24,7 +24,8 @@ import {
   Flame,
   Target,
   Activity,
-  Eye,
+  LayoutGrid,
+  Box,
 } from 'lucide-react';
 import {
   UserProfile,
@@ -37,7 +38,7 @@ import {
   normalizeStoreCoefficient,
 } from '../../lib/types';
 import { formatVndShort } from '../../lib/format';
-import { Button, Status } from '../ui';
+import { Button, BrandAvatar, PlatformBadge, Status } from '../ui';
 import {
   B2C_28_STAFF_WORKLOAD_ROSTER,
   STAFF_LEVEL_TABLE_4,
@@ -60,7 +61,7 @@ interface Workload3dMapViewProps {
   onNavigateToStoreProfile?: (storeName: string) => void;
 }
 
-type SpatialLayoutMode = 'WORKLOAD_TOWERS' | 'FOCUS_ORBIT' | 'LAYERED_3D';
+type SpatialLayoutMode = 'THREE_TIER_3D' | 'FOCUS_ORBIT';
 type WorkloadLoadStatus = 'OVERLOAD' | 'OPTIMAL' | 'UNDERLOAD';
 type RoleFilterGroup =
   | 'ALL'
@@ -114,18 +115,19 @@ interface Node3D {
   label: string;
   shortLabel: string;
   subLabel: string;
-  roleTag?: string;
+  metricBadge: string;
   tx: number;
   ty: number;
   tz: number;
-  radius: number;
   towerHeight: number;
   targetCapHeight: number;
   colorTop: string;
   colorLeft: string;
   colorRight: string;
   strokeColor: string;
-  badgeTextColor: string;
+  textColor: string;
+  pillBg: string;
+  pillBorder: string;
   staffData?: StaffComputedWorkload;
   brandData?: BrandDetail;
   storeData?: StorePortfolioItem;
@@ -192,16 +194,15 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
   onNavigateToStoreProfile,
 }) => {
   // 1. Controls & Filter States
-  const [layoutMode, setLayoutMode] = useState<SpatialLayoutMode>('WORKLOAD_TOWERS');
+  const [layoutMode, setLayoutMode] = useState<SpatialLayoutMode>('THREE_TIER_3D');
   const [roleFilter, setRoleFilter] = useState<RoleFilterGroup>('ALL');
   const [loadFilter, setLoadFilter] = useState<LoadFilterMode>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
-  const [onlyFocusedNetwork, setOnlyFocusedNetwork] = useState<boolean>(true);
   const [autoRotate, setAutoRotate] = useState<boolean>(false);
   const [showParticles, setShowParticles] = useState<boolean>(true);
 
-  // Selected entity in 3D space (defaults to top overloaded leader/staff)
-  const [selectedNodeId, setSelectedNodeId] = useState<string | null>('staff-HN206');
+  // Selected entity (can be Staff, Brand, or Store; null = overview showing all)
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 
   // Quick Task creation state inside side panel
   const [isQuickTaskOpen, setIsQuickTaskOpen] = useState(false);
@@ -218,7 +219,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
 
   // 2. Compute comprehensive Staff Workload from Roster + Live Brand/Store assignments + Tasks
   const staffWorkloads = useMemo<StaffComputedWorkload[]>(() => {
-    return B2C_28_STAFF_WORKLOAD_ROSTER.map(roster => {
+    return B2C_28_STAFF_WORKLOAD_ROSTER.map((roster, rosterIdx) => {
       const assignedBrands: StaffComputedWorkload['assignedBrands'] = [];
       brands.forEach(b => {
         const roles: string[] = [];
@@ -227,9 +228,9 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
         const kvSis = b.keyVisualSisPic || '';
         const bookingLead = b.bookingPicLead || '';
 
-        if (contentMain.toLowerCase() === roster.name.toLowerCase()) roles.push('Content / Brand Main');
+        if (contentMain.toLowerCase() === roster.name.toLowerCase()) roles.push('Content / Brand');
         if (planStrat.toLowerCase() === roster.name.toLowerCase()) roles.push('Plan / Strategy');
-        if (kvSis.toLowerCase() === roster.name.toLowerCase()) roles.push('Key Visual / SIS');
+        if (kvSis.toLowerCase() === roster.name.toLowerCase()) roles.push('Key Visual');
         if (bookingLead.toLowerCase() === roster.name.toLowerCase()) roles.push('Booking Lead');
 
         if (roles.length > 0) {
@@ -258,10 +259,10 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
 
         if (matchOwner || matchLeader || matchContent || matchLive) {
           const roleLabels: string[] = [];
-          if (matchOwner) roleLabels.push('PIC Gian hàng');
-          if (matchLeader) roleLabels.push('Trưởng nhóm');
+          if (matchOwner) roleLabels.push('PIC Gian');
+          if (matchLeader) roleLabels.push('Leader');
           if (matchContent) roleLabels.push('Content');
-          if (matchLive) roleLabels.push('Livestream');
+          if (matchLive) roleLabels.push('Live');
 
           assignedStores.push({
             storeId: s.id,
@@ -275,7 +276,8 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
         }
       });
 
-      if (assignedStores.length === 0 && roster.keyStoresSample) {
+      // Ensure every staff member in the 28 roster has connected Brand & Store links from keyStoresSample
+      if (roster.keyStoresSample) {
         const sampleTokens = roster.keyStoresSample
           .split(',')
           .map(t => t.trim())
@@ -313,6 +315,31 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
         });
       }
 
+      // Also guarantee at least 1 brand & 1 store link if keyStoresSample was generic (e.g., "Toàn bộ 69 gian B2C")
+      if (assignedBrands.length === 0 && brands.length > 0) {
+        const fallbackBrand = brands[rosterIdx % brands.length];
+        assignedBrands.push({
+          brandId: fallbackBrand.id,
+          brandName: fallbackBrand.name,
+          roles: [roster.roleGroup.split('&')[0].trim()],
+        });
+      }
+      if (assignedStores.length === 0 && b2cStores.length > 0) {
+        const fallbackStore = b2cStores[rosterIdx % b2cStores.length];
+        assignedStores.push({
+          storeId: fallbackStore.id,
+          storeName: fallbackStore.storeName,
+          brandName: fallbackStore.brandName,
+          platform: fallbackStore.platform,
+          coef: normalizeStoreCoefficient(
+            fallbackStore.difficultyTier,
+            fallbackStore.difficultyMultiplier
+          ).multiplier,
+          budgetNet: fallbackStore.budgetNet || fallbackStore.monthlyBudget || 0,
+          roleLabel: 'Điều phối FOC/Mẫu',
+        });
+      }
+
       const staffTasks = tasks.filter(
         t => t.pic && t.pic.toLowerCase() === roster.name.toLowerCase() && t.urgency !== 'done'
       );
@@ -330,11 +357,10 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
       );
 
       const storeDeltaPts =
-        (assignedStores.length - Math.min(assignedStores.length, roster.assignedStoresCount)) * 6.5;
-      const brandDeltaPts = assignedBrands.length * 3.5;
+        (assignedStores.length - Math.min(assignedStores.length, roster.assignedStoresCount)) * 4.5;
 
       const workflowPts = Math.max(20, roster.baselineWorkflowTotalPts + storeDeltaPts);
-      const directorPts = roster.baselineDirectorTotalPts + dynamicTaskPts + brandDeltaPts;
+      const directorPts = roster.baselineDirectorTotalPts + dynamicTaskPts;
       const totalPts = Math.round((workflowPts + directorPts) * 10) / 10;
 
       const hardPts =
@@ -383,7 +409,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
     });
   }, [brands, b2cStores, tasks]);
 
-  // Filtered staff list (sorted by loadPct descending so high-load pillars are easy to compare)
+  // Filtered staff list (sorted by loadPct descending)
   const filteredStaff = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     return staffWorkloads
@@ -407,6 +433,15 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
       .sort((a, b) => b.loadPct - a.loadPct);
   }, [staffWorkloads, roleFilter, loadFilter, searchQuery]);
 
+  // Group staff into 3 columns for the Quick Visual Board
+  const groupedStaffByLoad = useMemo(() => {
+    return {
+      overload: filteredStaff.filter(s => s.loadStatus === 'OVERLOAD'),
+      optimal: filteredStaff.filter(s => s.loadStatus === 'OPTIMAL'),
+      underload: filteredStaff.filter(s => s.loadStatus === 'UNDERLOAD'),
+    };
+  }, [filteredStaff]);
+
   // Summary KPIs
   const summaryStats = useMemo(() => {
     const overloadCount = staffWorkloads.filter(s => s.loadStatus === 'OVERLOAD').length;
@@ -427,146 +462,127 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
     };
   }, [staffWorkloads]);
 
-  // 3. Build Structured, Anti-Clutter 3D Graph
+  // ============================================================================
+  // 3. BUILD NON-OVERLAPPING 3-TIER 3D SCENE (ALWAYS SHOWS STAFF + BRANDS + STORES)
+  // ============================================================================
   const { graphNodes, graphLinks } = useMemo(() => {
     const nodes: Node3D[] = [];
     const links: Link3D[] = [];
 
-    // Determine which Staff/Brand/Store are actively in focus
     const focusedStaff = selectedNodeId?.startsWith('staff-')
-      ? filteredStaff.find(s => s.id === selectedNodeId) || filteredStaff[0]
+      ? filteredStaff.find(s => s.id === selectedNodeId) || null
       : null;
-
     const focusedBrandId = selectedNodeId?.startsWith('brand-')
       ? selectedNodeId.replace('brand-', '')
       : null;
-
     const focusedStoreId = selectedNodeId?.startsWith('store-')
       ? selectedNodeId.replace('store-', '')
       : null;
 
+    // Collect Brands & Stores that are connected to the visible staff (ALWAYS visible, even when nothing is clicked!)
     const activeBrandIds = new Set<string>();
     const activeStoreIds = new Set<string>();
-    const brandRoleMap = new Map<string, string>();
-    const storeRoleMap = new Map<string, string>();
 
-    if (onlyFocusedNetwork && (focusedStaff || focusedBrandId || focusedStoreId)) {
+    if (layoutMode === 'FOCUS_ORBIT' && (focusedStaff || focusedBrandId || focusedStoreId)) {
       if (focusedStaff) {
-        focusedStaff.assignedBrands.forEach(ab => {
-          activeBrandIds.add(ab.brandId);
-          brandRoleMap.set(ab.brandId, ab.roles.join(' · '));
-        });
+        focusedStaff.assignedBrands.forEach(ab => activeBrandIds.add(ab.brandId));
         focusedStaff.assignedStores.forEach(as => {
           activeStoreIds.add(as.storeId);
-          storeRoleMap.set(as.storeId, as.roleLabel);
-        });
-        // Also add brands of those assigned stores so the 3-tier hierarchy is complete
-        focusedStaff.assignedStores.forEach(as => {
-          const parentBrand = brands.find(
-            b => b.name.toLowerCase() === as.brandName.toLowerCase()
-          );
-          if (parentBrand) activeBrandIds.add(parentBrand.id);
+          const pb = brands.find(b => b.name.toLowerCase() === as.brandName.toLowerCase());
+          if (pb) activeBrandIds.add(pb.id);
         });
       } else if (focusedBrandId) {
         activeBrandIds.add(focusedBrandId);
-        const fBrand = brands.find(b => b.id === focusedBrandId);
+        const fb = brands.find(b => b.id === focusedBrandId);
         b2cStores.forEach(s => {
-          if (
-            s.brandId === focusedBrandId ||
-            (fBrand && s.brandName.toLowerCase() === fBrand.name.toLowerCase())
-          ) {
+          if (s.brandId === focusedBrandId || (fb && s.brandName.toLowerCase() === fb.name.toLowerCase())) {
             activeStoreIds.add(s.id);
           }
         });
       } else if (focusedStoreId) {
         activeStoreIds.add(focusedStoreId);
-        const fStore = b2cStores.find(s => s.id === focusedStoreId);
-        if (fStore) {
-          const parentBrand = brands.find(
-            b =>
-              b.id === fStore.brandId ||
-              b.name.toLowerCase() === fStore.brandName.toLowerCase()
+        const fs = b2cStores.find(s => s.id === focusedStoreId);
+        if (fs) {
+          const pb = brands.find(
+            b => b.id === fs.brandId || b.name.toLowerCase() === fs.brandName.toLowerCase()
           );
-          if (parentBrand) activeBrandIds.add(parentBrand.id);
+          if (pb) activeBrandIds.add(pb.id);
         }
       }
     } else {
-      // Show top connected brands & stores
-      filteredStaff.slice(0, 12).forEach(st => {
-        st.assignedBrands.forEach(b => activeBrandIds.add(b.brandId));
-        st.assignedStores.slice(0, 3).forEach(s => activeStoreIds.add(s.storeId));
+      // THREE_TIER_3D Default: Always show all connected Brands (up to 14) and Stores (up to 16) in clean horizontal bands!
+      if (focusedStaff) {
+        focusedStaff.assignedBrands.forEach(ab => activeBrandIds.add(ab.brandId));
+        focusedStaff.assignedStores.forEach(as => activeStoreIds.add(as.storeId));
+      }
+      filteredStaff.forEach(st => {
+        st.assignedBrands.forEach(ab => {
+          if (activeBrandIds.size < 12) activeBrandIds.add(ab.brandId);
+        });
+        st.assignedStores.forEach(as => {
+          if (activeStoreIds.size < 14) activeStoreIds.add(as.storeId);
+        });
       });
+      if (focusedBrandId) activeBrandIds.add(focusedBrandId);
+      if (focusedStoreId) activeStoreIds.add(focusedStoreId);
     }
 
     const visibleBrands = brands.filter(b => activeBrandIds.has(b.id));
     const visibleStores = b2cStores.filter(s => activeStoreIds.has(s.id));
 
-    // A. Position Staff Nodes
+    // A. Position Staff Nodes (Bottom Tier: y = +155)
+    // Placed in 2 wide, well-spaced rows of up to 14 columns so labels sit cleanly below each base!
     const staffToRender =
-      layoutMode === 'FOCUS_ORBIT' && focusedStaff
-        ? [focusedStaff]
-        : filteredStaff;
-
-    const cols = layoutMode === 'LAYERED_3D' ? 7 : 7;
-    const spacingX = 112;
-    const spacingZ = 104;
+      layoutMode === 'FOCUS_ORBIT' && focusedStaff ? [focusedStaff] : filteredStaff;
+    const sTotal = Math.max(1, staffToRender.length);
+    const colsPerRow = Math.min(14, Math.ceil(sTotal / 2));
 
     staffToRender.forEach((st, idx) => {
       let tx = 0;
-      let ty = 0;
+      let ty = 155;
       let tz = 0;
 
-      const towerHeight = Math.max(32, Math.min(165, st.totalPts * 0.82));
-      const targetCapHeight = Math.max(28, Math.min(155, st.targetCapacityPts * 0.82));
+      const towerHeight = Math.max(28, Math.min(115, st.totalPts * 0.52));
+      const targetCapHeight = Math.max(24, Math.min(105, st.targetCapacityPts * 0.52));
 
-      if (layoutMode === 'WORKLOAD_TOWERS') {
-        // Structured 3D Isometric Podium Grid (7 columns x 4 rows) -> Zero overlap!
-        const col = idx % cols;
-        const row = Math.floor(idx / cols);
-        const totalRows = Math.ceil(staffToRender.length / cols);
-        tx = (col - (cols - 1) / 2) * spacingX;
-        tz = (row - (totalRows - 1) / 2) * spacingZ + 30;
-        ty = 115; // 3D Floor level
-      } else if (layoutMode === 'FOCUS_ORBIT') {
-        if (focusedStaff && st.id === focusedStaff.id) {
-          tx = 0;
-          ty = 95;
-          tz = 0;
-        } else {
-          const angle = (idx / Math.max(1, staffToRender.length)) * Math.PI * 2;
-          tx = Math.cos(angle) * 280;
-          tz = Math.sin(angle) * 280;
-          ty = 110;
-        }
+      if (layoutMode === 'FOCUS_ORBIT' && focusedStaff && st.id === focusedStaff.id) {
+        tx = 0;
+        ty = 120;
+        tz = 40;
       } else {
-        // LAYERED_3D: Top Plane (y = -135)
-        const col = idx % cols;
-        const row = Math.floor(idx / cols);
-        const totalRows = Math.ceil(staffToRender.length / cols);
-        tx = (col - (cols - 1) / 2) * 105;
-        tz = (row - (totalRows - 1) / 2) * 88;
-        ty = -125;
+        const row = Math.floor(idx / colsPerRow);
+        const col = idx % colsPerRow;
+        const rowItems = row === 0 ? Math.min(colsPerRow, sTotal) : sTotal - colsPerRow;
+        const spanW = Math.min(920, Math.max(260, (rowItems - 1) * 74));
+        tx = rowItems <= 1 ? 0 : -spanW / 2 + (col / (rowItems - 1)) * spanW + (row === 1 ? 22 : -15);
+        tz = row === 0 ? 115 : 15;
+        ty = row === 0 ? 175 : 125;
       }
 
-      // 3-Face Isometric Lighting Colors
       let colorTop = '#34d399';
       let colorLeft = '#10b981';
       let colorRight = '#047857';
-      let strokeColor = '#6ee7b7';
-      let badgeTextColor = '#6ee7b7';
+      let strokeColor = '#059669';
+      let textColor = '#065f46';
+      let pillBg = '#ecfdf5';
+      let pillBorder = '#6ee7b7';
 
       if (st.loadStatus === 'OVERLOAD') {
         colorTop = '#fb7185';
-        colorLeft = '#f43f5e';
-        colorRight = '#be123c';
-        strokeColor = '#fda4af';
-        badgeTextColor = '#fda4af';
+        colorLeft = '#e11d48';
+        colorRight = '#9f1239';
+        strokeColor = '#be123c';
+        textColor = '#9f1239';
+        pillBg = '#fff1f2';
+        pillBorder = '#fda4af';
       } else if (st.loadStatus === 'UNDERLOAD') {
         colorTop = '#818cf8';
-        colorLeft = '#6366f1';
-        colorRight = '#4338ca';
-        strokeColor = '#a5b4fc';
-        badgeTextColor = '#a5b4fc';
+        colorLeft = '#4f46e5';
+        colorRight = '#3730a3';
+        strokeColor = '#4338ca';
+        textColor = '#3730a3';
+        pillBg = '#eef2ff';
+        pillBorder = '#a5b4fc';
       }
 
       nodes.push({
@@ -574,54 +590,42 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
         kind: 'STAFF',
         label: `${st.name} (${st.level})`,
         shortLabel: st.shortName,
-        subLabel: `${st.totalPts.toFixed(0)}pt · ${st.loadPct}%`,
+        subLabel: `${st.totalPts.toFixed(0)}pt`,
+        metricBadge: `${st.loadPct}%`,
         tx,
         ty,
         tz,
-        radius: 14,
         towerHeight,
         targetCapHeight,
         colorTop,
         colorLeft,
         colorRight,
         strokeColor,
-        badgeTextColor,
+        textColor,
+        pillBg,
+        pillBorder,
         staffData: st,
       });
     });
 
-    // B. Position Brand Nodes
+    // B. Position Brand Nodes (Middle Tier: y = -35 — Completely above the Staff towers!)
     const bCount = Math.max(1, visibleBrands.length);
     visibleBrands.forEach((b, idx) => {
       const nodeId = `brand-${b.id}`;
       let tx = 0;
-      let ty = 0;
-      let tz = 0;
+      let ty = -35;
+      let tz = -30;
 
-      if (layoutMode === 'WORKLOAD_TOWERS') {
-        // Clean elevated arc above the floor
-        const spread = Math.min(560, bCount * 125);
-        tx = bCount === 1 ? 0 : -spread / 2 + (idx / (bCount - 1)) * spread;
-        tz = -110 - Math.sin((idx / Math.max(1, bCount - 1)) * Math.PI) * 55;
-        ty = -95;
-      } else if (layoutMode === 'FOCUS_ORBIT') {
-        if (focusedBrandId === b.id) {
-          tx = 0;
-          ty = 20;
-          tz = 0;
-        } else {
-          const angle = (idx / bCount) * Math.PI * 2 - Math.PI / 2;
-          const r = 195;
-          tx = Math.cos(angle) * r;
-          tz = Math.sin(angle) * r;
-          ty = -10;
-        }
+      if (layoutMode === 'FOCUS_ORBIT') {
+        const angle = (idx / bCount) * Math.PI - Math.PI;
+        tx = Math.cos(angle) * 260;
+        tz = Math.sin(angle) * 110;
+        ty = -25;
       } else {
-        // LAYERED_3D: Middle Plane (y = 15)
-        const spread = Math.min(620, bCount * 115);
-        tx = bCount === 1 ? 0 : -spread / 2 + (idx / (bCount - 1)) * spread;
-        tz = (idx % 2 === 0 ? -1 : 1) * 45;
-        ty = 15;
+        const spanW = Math.min(900, Math.max(200, (bCount - 1) * 82));
+        tx = bCount <= 1 ? 0 : -spanW / 2 + (idx / (bCount - 1)) * spanW;
+        ty = -35 - (idx % 2) * 18;
+        tz = -35;
       }
 
       nodes.push({
@@ -630,84 +634,73 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
         label: b.name,
         shortLabel: b.name,
         subLabel: formatVndShort(b.planBudget || b.monthlyBudget || 150000000),
-        roleTag: brandRoleMap.get(b.id),
+        metricBadge: 'Brand',
         tx,
         ty,
         tz,
-        radius: 13,
-        towerHeight: 0,
+        towerHeight: 18,
         targetCapHeight: 0,
         colorTop: '#fcd34d',
         colorLeft: '#f59e0b',
         colorRight: '#b45309',
-        strokeColor: '#fde68a',
-        badgeTextColor: '#fde68a',
+        strokeColor: '#d97706',
+        textColor: '#92400e',
+        pillBg: '#fffbeb',
+        pillBorder: '#fcd34d',
         brandData: b,
       });
     });
 
-    // C. Position Store Nodes
-    const sCount = Math.max(1, visibleStores.length);
+    // C. Position Store Nodes (Top Tier: y = -165 — Completely above the Brand tier!)
+    const stCount = Math.max(1, visibleStores.length);
     visibleStores.forEach((s, idx) => {
       const nodeId = `store-${s.id}`;
       let tx = 0;
-      let ty = 0;
-      let tz = 0;
+      let ty = -165;
+      let tz = -85;
 
-      if (layoutMode === 'WORKLOAD_TOWERS') {
-        // Upper satellite arc
-        const spread = Math.min(660, sCount * 115);
-        tx = sCount === 1 ? 0 : -spread / 2 + (idx / (sCount - 1)) * spread;
-        tz = -175 - Math.sin((idx / Math.max(1, sCount - 1)) * Math.PI) * 65;
-        ty = -175;
-      } else if (layoutMode === 'FOCUS_ORBIT') {
-        if (focusedStoreId === s.id) {
-          tx = 0;
-          ty = 20;
-          tz = 0;
-        } else {
-          const angle = (idx / sCount) * Math.PI * 2 - Math.PI / 4;
-          const r = 340;
-          tx = Math.cos(angle) * r;
-          tz = Math.sin(angle) * r;
-          ty = -75;
-        }
+      if (layoutMode === 'FOCUS_ORBIT') {
+        const angle = (idx / stCount) * Math.PI - Math.PI;
+        tx = Math.cos(angle) * 390;
+        tz = Math.sin(angle) * 140 - 40;
+        ty = -145;
       } else {
-        // LAYERED_3D: Bottom Plane (y = 145)
-        const spread = Math.min(680, sCount * 105);
-        tx = sCount === 1 ? 0 : -spread / 2 + (idx / (sCount - 1)) * spread;
-        tz = (idx % 2 === 0 ? -1 : 1) * 65;
-        ty = 145;
+        const spanW = Math.min(940, Math.max(220, (stCount - 1) * 72));
+        tx = stCount <= 1 ? 0 : -spanW / 2 + (idx / (stCount - 1)) * spanW;
+        ty = -160 - (idx % 2) * 20;
+        tz = -85;
       }
 
       const isTikTok = s.platform === 'TikTok Shop';
       const coef = normalizeStoreCoefficient(s.difficultyTier, s.difficultyMultiplier).multiplier;
+      const shortStore = s.storeName.replace(/_TikTok.*|_Shopee.*| Official| Store/gi, '');
 
       nodes.push({
         id: nodeId,
         kind: 'STORE',
         label: s.storeName,
-        shortLabel: s.storeName,
-        subLabel: `${isTikTok ? 'TikTok' : 'Shopee'} · ×${coef.toFixed(2)}`,
-        roleTag: storeRoleMap.get(s.id),
+        shortLabel: `${shortStore} (${isTikTok ? 'TTS' : 'SP'})`,
+        subLabel: `×${coef.toFixed(2)}`,
+        metricBadge: isTikTok ? 'TikTok' : 'Shopee',
         tx,
         ty,
         tz,
-        radius: 10.5,
-        towerHeight: 0,
+        towerHeight: 14,
         targetCapHeight: 0,
-        colorTop: isTikTok ? '#67e8f9' : '#fdba74',
-        colorLeft: isTikTok ? '#06b6d4' : '#f97316',
-        colorRight: isTikTok ? '#0e7490' : '#c2410c',
-        strokeColor: isTikTok ? '#a5f3fc' : '#fed7aa',
-        badgeTextColor: isTikTok ? '#67e8f9' : '#fdba74',
+        colorTop: isTikTok ? '#38bdf8' : '#fb923c',
+        colorLeft: isTikTok ? '#0284c7' : '#ea580c',
+        colorRight: isTikTok ? '#0369a1' : '#c2410c',
+        strokeColor: isTikTok ? '#0284c7' : '#ea580c',
+        textColor: isTikTok ? '#075985' : '#9a3412',
+        pillBg: isTikTok ? '#f0f9ff' : '#fff7ed',
+        pillBorder: isTikTok ? '#7dd3fc' : '#fdba74',
         storeData: s,
       });
     });
 
     const nodeIdSet = new Set(nodes.map(n => n.id));
 
-    // Create Links
+    // Create Links: Staff -> Brand & Brand -> Store & Staff -> Store
     staffToRender.forEach(st => {
       if (!nodeIdSet.has(st.id)) return;
       st.assignedBrands.forEach(ab => {
@@ -719,9 +712,9 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
             targetId,
             roleLabel: ab.roles[0] || 'Brand PIC',
             linkType: 'STAFF_TO_BRAND',
-            color: '#fbbf24',
-            weight: 2.0,
-            particleSpeed: 0.0055,
+            color: st.loadStatus === 'OVERLOAD' ? '#e11d48' : '#d97706',
+            weight: 1.8,
+            particleSpeed: 0.005,
           });
         }
       });
@@ -735,9 +728,9 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
             targetId,
             roleLabel: as.roleLabel,
             linkType: 'STAFF_TO_STORE',
-            color: '#38bdf8',
-            weight: 1.8,
-            particleSpeed: 0.005,
+            color: '#0284c7',
+            weight: 1.5,
+            particleSpeed: 0.0045,
           });
         }
       });
@@ -757,8 +750,8 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
             targetId: storeNodeId,
             roleLabel: s.platform,
             linkType: 'BRAND_TO_STORE',
-            color: 'rgba(251, 191, 36, 0.5)',
-            weight: 1.4,
+            color: '#94a3b8',
+            weight: 1.3,
             particleSpeed: 0.004,
           });
         }
@@ -766,7 +759,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
     });
 
     return { graphNodes: nodes, graphLinks: links };
-  }, [filteredStaff, brands, b2cStores, onlyFocusedNetwork, layoutMode, selectedNodeId]);
+  }, [filteredStaff, brands, b2cStores, layoutMode, selectedNodeId]);
 
   // Connected neighbor set for the currently selected node
   const connectedNodeIds = useMemo(() => {
@@ -788,10 +781,12 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
 
   // Selected entity for the Right Inspector Panel
   const selectedNode = useMemo(() => {
-    const inGraph = graphNodes.find(n => n.id === selectedNodeId);
+    const targetId = selectedNodeId || filteredStaff[0]?.id || null;
+    if (!targetId) return null;
+    const inGraph = graphNodes.find(n => n.id === targetId);
     if (inGraph) return inGraph;
-    if (selectedNodeId?.startsWith('staff-')) {
-      const st = staffWorkloads.find(s => s.id === selectedNodeId);
+    if (targetId.startsWith('staff-')) {
+      const st = staffWorkloads.find(s => s.id === targetId);
       if (st) {
         return {
           id: st.id,
@@ -799,23 +794,25 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
           label: st.name,
           shortLabel: st.shortName,
           subLabel: '',
+          metricBadge: `${st.loadPct}%`,
           tx: 0,
           ty: 0,
           tz: 0,
-          radius: 14,
           towerHeight: 80,
           targetCapHeight: 80,
           colorTop: '#10b981',
           colorLeft: '#059669',
           colorRight: '#047857',
-          strokeColor: '#6ee7b7',
-          badgeTextColor: '#6ee7b7',
+          strokeColor: '#059669',
+          textColor: '#065f46',
+          pillBg: '#ecfdf5',
+          pillBorder: '#6ee7b7',
           staffData: st,
         };
       }
     }
     return null;
-  }, [graphNodes, selectedNodeId, staffWorkloads]);
+  }, [graphNodes, selectedNodeId, staffWorkloads, filteredStaff]);
 
   // Underloaded staff suggestions for rebalancing workload
   const underloadedStaffCandidates = useMemo(() => {
@@ -826,27 +823,27 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
   }, [staffWorkloads]);
 
   // ============================================================================
-  // 4. HIGH-PERFORMANCE ZERO-REFLOW 3D CANVAS ENGINE (60FPS LOCKED)
+  // 4. CLEAN ARCHITECTURAL 3D CANVAS ENGINE (ZERO OVERLAP, 60FPS LOCKED)
   // ============================================================================
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const canvasSizeRef = useRef({ width: 900, height: 540, dpr: 1 });
+  const canvasSizeRef = useRef({ width: 920, height: 500, dpr: 1 });
   const hoveredNodeIdRef = useRef<string | null>(null);
   const liveNodesRef = useRef<
     Map<string, { x: number; y: number; z: number; th: number; capH: number }>
   >(new Map());
 
   const cameraRef = useRef({
-    yaw: -0.38,
-    pitch: 0.44,
-    zoom: 0.96,
-    targetYaw: -0.38,
-    targetPitch: 0.44,
-    targetZoom: 0.96,
+    yaw: 0.0,
+    pitch: 0.22,
+    zoom: 0.88,
+    targetYaw: 0.0,
+    targetPitch: 0.22,
+    targetZoom: 0.88,
     fx: 0,
-    fy: 10,
+    fy: 5,
     fz: 0,
     targetFx: 0,
-    targetFy: 10,
+    targetFy: 5,
     targetFz: 0,
   });
 
@@ -861,7 +858,6 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
     { id: string; sx: number; sy: number; sr: number; topY: number; depth: number }[]
   >([]);
 
-  // Sync latest React state into a mutable ref so the rAF loop NEVER restarts on hover/click
   const sceneStateRef = useRef({
     graphNodes,
     graphLinks,
@@ -892,38 +888,33 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
     layoutMode,
   ]);
 
-  // Fly-To helper when selecting a node
-  const flyToNode = useCallback(
-    (nodeId: string | null, resetView = false) => {
-      if (resetView || !nodeId) {
-        cameraRef.current.targetFx = 0;
-        cameraRef.current.targetFy = 10;
-        cameraRef.current.targetFz = 0;
-        cameraRef.current.targetYaw = -0.38;
-        cameraRef.current.targetPitch = 0.44;
-        cameraRef.current.targetZoom = 0.96;
-        return;
-      }
-      const target = sceneStateRef.current.graphNodes.find(n => n.id === nodeId);
-      if (target) {
-        cameraRef.current.targetFx = target.tx * 0.45;
-        cameraRef.current.targetFy = (target.ty - target.towerHeight * 0.4) * 0.35;
-        cameraRef.current.targetFz = target.tz * 0.45;
-        cameraRef.current.targetZoom = Math.max(cameraRef.current.targetZoom, 1.04);
-      }
-    },
-    []
-  );
+  const flyToNode = useCallback((nodeId: string | null, resetView = false) => {
+    if (resetView || !nodeId) {
+      cameraRef.current.targetFx = 0;
+      cameraRef.current.targetFy = 5;
+      cameraRef.current.targetFz = 0;
+      cameraRef.current.targetYaw = 0.0;
+      cameraRef.current.targetPitch = 0.22;
+      cameraRef.current.targetZoom = 0.88;
+      return;
+    }
+    const target = sceneStateRef.current.graphNodes.find(n => n.id === nodeId);
+    if (target) {
+      cameraRef.current.targetFx = target.tx * 0.25;
+      cameraRef.current.targetFy = 0;
+      cameraRef.current.targetFz = 0;
+    }
+  }, []);
 
   const handleSelectAndFly = useCallback(
     (nodeId: string) => {
-      setSelectedNodeId(nodeId);
+      setSelectedNodeId(prev => (prev === nodeId ? null : nodeId));
       flyToNode(nodeId);
     },
     [flyToNode]
   );
 
-  // ResizeObserver once on mount -> Zero layout thrashing during animation!
+  // ResizeObserver once on mount
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -931,8 +922,8 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
     const updateSize = () => {
       const rect = canvas.getBoundingClientRect();
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      const w = Math.max(300, Math.floor(rect.width));
-      const h = Math.max(300, Math.floor(rect.height));
+      const w = Math.max(320, Math.floor(rect.width));
+      const h = Math.max(320, Math.floor(rect.height));
       canvasSizeRef.current = { width: w, height: h, dpr };
       canvas.width = w * dpr;
       canvas.height = h * dpr;
@@ -944,7 +935,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
     return () => ro.disconnect();
   }, []);
 
-  // Single Persistent 60fps 3D Render Loop (Never tears down on state change)
+  // Single Persistent 60fps 3D Render Loop
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -954,7 +945,6 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
     let animationFrameId: number;
     let time = 0;
 
-    // Helper: draw a true 3-face 3D Isometric Prism (Left face, Right face, Top Rhombus face)
     const drawIsometricPrism = (
       baseX: number,
       baseY: number,
@@ -978,7 +968,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
       ctx.fillStyle = colorLeft;
       ctx.fill();
 
-      // Right 3D face (shaded darker for 3D depth)
+      // Right 3D face
       ctx.beginPath();
       ctx.moveTo(topX, topY + depthH);
       ctx.lineTo(topX + halfW, topY);
@@ -988,7 +978,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
       ctx.fillStyle = colorRight;
       ctx.fill();
 
-      // Top 3D Rhombus Cap (brightest face)
+      // Top 3D Rhombus Cap
       ctx.beginPath();
       ctx.moveTo(topX, topY - depthH);
       ctx.lineTo(topX + halfW, topY);
@@ -998,9 +988,8 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
       ctx.fillStyle = colorTop;
       ctx.fill();
 
-      // Crisp 3D wireframe edges
-      ctx.strokeStyle = isHighlighted ? '#ffffff' : strokeColor;
-      ctx.lineWidth = isHighlighted ? 1.8 : 0.9;
+      ctx.strokeStyle = isHighlighted ? '#1d4ed8' : strokeColor;
+      ctx.lineWidth = isHighlighted ? 2.2 : 0.9;
       ctx.stroke();
     };
 
@@ -1014,7 +1003,6 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
         connectedNodeIds: connSet,
         autoRotate: isAutoRot,
         showParticles: isParticles,
-        layoutMode: mode,
       } = sceneStateRef.current;
       const hovId = hoveredNodeIdRef.current;
       const activeId = hovId || selId;
@@ -1022,17 +1010,47 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
       ctx.save();
       ctx.scale(dpr, dpr);
 
-      // 1. Fast solid dark slate background (Zero per-frame radial gradient allocation)
-      ctx.fillStyle = '#070d19';
+      // 1. Clean Architectural Studio Background (#F8FAFC)
+      ctx.fillStyle = '#f8fafc';
       ctx.fillRect(0, 0, width, height);
+
+      // Draw 3 subtle horizontal zone bands so the user immediately sees the 3 tiers:
+      // Band 1 (Top): TẦNG GIAN HÀNG (STORE)
+      // Band 2 (Middle): TẦNG THƯƠNG HIỆU (BRAND)
+      // Band 3 (Bottom): SÀN TRỤ TẢI TRỌNG 28 NHÂN SỰ (STAFF WORKLOAD)
+      ctx.fillStyle = '#f1f5f9';
+      ctx.fillRect(0, 0, width, 118);
+      ctx.fillStyle = '#fffbeb';
+      ctx.globalAlpha = 0.45;
+      ctx.fillRect(0, 118, width, 112);
+      ctx.globalAlpha = 1.0;
+
+      // Zone divider lines & left watermarks
+      ctx.strokeStyle = '#e2e8f0';
+      ctx.lineWidth = 1;
+      [118, 230].forEach(yLine => {
+        ctx.beginPath();
+        ctx.moveTo(0, yLine);
+        ctx.lineTo(width, yLine);
+        ctx.stroke();
+      });
+
+      ctx.font = '700 10px Inter, system-ui, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillStyle = '#0284c7';
+      ctx.fillText('TẦNG 3 · GIAN HÀNG B2C (TIKTOK / SHOPEE)', 14, 18);
+      ctx.fillStyle = '#b45309';
+      ctx.fillText('TẦNG 2 · THƯƠNG HIỆU (BRAND)', 14, 136);
+      ctx.fillStyle = '#334155';
+      ctx.fillText('TẦNG 1 · SÀN CỘT TẢI 28 NHÂN SỰ (CAO THEO WORKLOAD POINT)', 14, 248);
 
       const cx = width * 0.5;
       const cy = height * 0.54;
 
-      // 2. Smoothly interpolate 3D camera
+      // 2. Camera interpolation
       const cam = cameraRef.current;
       if (isAutoRot && !dragRef.current.isDragging && !hovId) {
-        cam.targetYaw += 0.0018;
+        cam.targetYaw = Math.sin(time * 0.008) * 0.22;
       }
       cam.yaw += (cam.targetYaw - cam.yaw) * 0.12;
       cam.pitch += (cam.targetPitch - cam.pitch) * 0.12;
@@ -1045,8 +1063,8 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
       const sinY = Math.sin(cam.yaw);
       const cosP = Math.cos(cam.pitch);
       const sinP = Math.sin(cam.pitch);
-      const fov = 840 * cam.zoom;
-      const cameraDist = 960;
+      const fov = 940 * cam.zoom;
+      const cameraDist = 1120;
 
       const project3D = (wx: number, wy: number, wz: number) => {
         const rx = wx - cam.fx;
@@ -1059,7 +1077,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
         const z2 = z1 * cosP + ry * sinP;
 
         const depth = cameraDist + z2;
-        const scale = depth > 80 ? fov / depth : 0.1;
+        const scale = depth > 100 ? fov / depth : 0.1;
         return {
           sx: cx + x1 * scale,
           sy: cy + y2 * scale,
@@ -1068,46 +1086,24 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
         };
       };
 
-      // 3. Draw Clean 3D Perspective Floor Platform
-      const floorY = mode === 'LAYERED_3D' ? 155 : 115;
+      // 3. Draw 3D Perspective Floor Grid on Bottom Tier
+      ctx.strokeStyle = 'rgba(148, 163, 184, 0.28)';
       ctx.lineWidth = 1;
-      ctx.strokeStyle = 'rgba(51, 65, 85, 0.42)';
-
-      if (mode === 'WORKLOAD_TOWERS' || mode === 'LAYERED_3D') {
-        // Draw crisp 3D isometric floor grid lines
-        const gridW = 420;
-        const gridZ = 240;
-        for (let gx = -gridW; gx <= gridW; gx += 105) {
-          const p1 = project3D(gx, floorY, -gridZ);
-          const p2 = project3D(gx, floorY, gridZ);
-          ctx.beginPath();
-          ctx.moveTo(p1.sx, p1.sy);
-          ctx.lineTo(p2.sx, p2.sy);
-          ctx.stroke();
-        }
-        for (let gz = -gridZ; gz <= gridZ; gz += 80) {
-          const p1 = project3D(-gridW, floorY, gz);
-          const p2 = project3D(gridW, floorY, gz);
-          ctx.beginPath();
-          ctx.moveTo(p1.sx, p1.sy);
-          ctx.lineTo(p2.sx, p2.sy);
-          ctx.stroke();
-        }
-      } else {
-        // FOCUS_ORBIT concentric rings
-        [195, 340].forEach((r, idx) => {
-          ctx.beginPath();
-          const ry = idx === 0 ? -10 : -75;
-          for (let i = 0; i <= 48; i++) {
-            const ang = (i / 48) * Math.PI * 2;
-            const p = project3D(Math.cos(ang) * r, ry, Math.sin(ang) * r);
-            if (i === 0) ctx.moveTo(p.sx, p.sy);
-            else ctx.lineTo(p.sx, p.sy);
-          }
-          ctx.strokeStyle =
-            idx === 0 ? 'rgba(245, 158, 11, 0.25)' : 'rgba(56, 189, 248, 0.22)';
-          ctx.stroke();
-        });
+      for (let gx = -520; gx <= 520; gx += 104) {
+        const p1 = project3D(gx, 180, -30);
+        const p2 = project3D(gx, 180, 160);
+        ctx.beginPath();
+        ctx.moveTo(p1.sx, p1.sy);
+        ctx.lineTo(p2.sx, p2.sy);
+        ctx.stroke();
+      }
+      for (let gz = -30; gz <= 160; gz += 60) {
+        const p1 = project3D(-520, 180, gz);
+        const p2 = project3D(520, 180, gz);
+        ctx.beginPath();
+        ctx.moveTo(p1.sx, p1.sy);
+        ctx.lineTo(p2.sx, p2.sy);
+        ctx.stroke();
       }
 
       // 4. Interpolate & Project Nodes
@@ -1138,18 +1134,15 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
           };
           liveNodesRef.current.set(n.id, live);
         } else {
-          live.x += (n.tx - live.x) * 0.14;
-          live.y += (n.ty - live.y) * 0.14;
-          live.z += (n.tz - live.z) * 0.14;
-          live.th += (n.towerHeight - live.th) * 0.14;
-          live.capH += (n.targetCapHeight - live.capH) * 0.14;
+          live.x += (n.tx - live.x) * 0.15;
+          live.y += (n.ty - live.y) * 0.15;
+          live.z += (n.tz - live.z) * 0.15;
+          live.th += (n.towerHeight - live.th) * 0.15;
+          live.capH += (n.targetCapHeight - live.capH) * 0.15;
         }
 
         const baseProj = project3D(live.x, live.y, live.z);
-        const topProj =
-          n.kind === 'STAFF'
-            ? project3D(live.x, live.y - live.th, live.z)
-            : baseProj;
+        const topProj = project3D(live.x, live.y - live.th, live.z);
         const capProj =
           n.kind === 'STAFF'
             ? project3D(live.x, live.y - live.capH, live.z)
@@ -1168,51 +1161,49 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
         });
       });
 
-      // 5. Draw 3D Arched Links & Particles
+      // 5. Draw Clean 3D Arched Links between Staff -> Brand -> Store
       links.forEach(link => {
         const src = projectedMap.get(link.sourceId);
         const tgt = projectedMap.get(link.targetId);
         if (!src || !tgt) return;
 
         const isHighlighted =
-          activeId &&
-          (link.sourceId === activeId ||
-            link.targetId === activeId ||
-            (connSet.has(link.sourceId) && connSet.has(link.targetId)));
+          !activeId ||
+          link.sourceId === activeId ||
+          link.targetId === activeId ||
+          (connSet.has(link.sourceId) && connSet.has(link.targetId));
 
         const x1 = src.topSx;
         const y1 = src.topSy;
-        const x2 = tgt.topSx;
-        const y2 = tgt.topSy;
+        const x2 = tgt.sx;
+        const y2 = tgt.sy;
         const midX = (x1 + x2) * 0.5;
-        const midY = (y1 + y2) * 0.5 - 28 * ((src.scale + tgt.scale) * 0.5);
+        const midY = (y1 + y2) * 0.5;
 
         ctx.beginPath();
         ctx.moveTo(x1, y1);
         ctx.quadraticCurveTo(midX, midY, x2, y2);
         ctx.strokeStyle = link.color;
-        ctx.lineWidth = isHighlighted ? link.weight * 1.25 : link.weight * 0.75;
-        ctx.globalAlpha = isHighlighted ? 0.88 : 0.25;
+        ctx.lineWidth = isHighlighted ? (activeId ? 2.2 : 1.2) : 0.7;
+        ctx.globalAlpha = isHighlighted ? (activeId ? 0.85 : 0.32) : 0.08;
         ctx.stroke();
 
         if (isParticles && isHighlighted) {
-          for (let pIdx = 0; pIdx < 2; pIdx++) {
-            const t = ((time * link.particleSpeed + pIdx * 0.5) % 1 + 1) % 1;
-            const invT = 1 - t;
-            const px = invT * invT * x1 + 2 * invT * t * midX + t * t * x2;
-            const py = invT * invT * y1 + 2 * invT * t * midY + t * t * y2;
+          const t = ((time * link.particleSpeed) % 1 + 1) % 1;
+          const invT = 1 - t;
+          const px = invT * invT * x1 + 2 * invT * t * midX + t * t * x2;
+          const py = invT * invT * y1 + 2 * invT * t * midY + t * t * y2;
 
-            ctx.beginPath();
-            ctx.arc(px, py, 3, 0, Math.PI * 2);
-            ctx.fillStyle = '#ffffff';
-            ctx.globalAlpha = 0.95;
-            ctx.fill();
-          }
+          ctx.beginPath();
+          ctx.arc(px, py, activeId ? 3.2 : 2.2, 0, Math.PI * 2);
+          ctx.fillStyle = link.color;
+          ctx.globalAlpha = activeId ? 0.95 : 0.6;
+          ctx.fill();
         }
         ctx.globalAlpha = 1;
       });
 
-      // 6. Sort Nodes Back-to-Front for 3D Geometry Painting
+      // 6. Sort Nodes Back-to-Front and Draw 3D Prisms + Non-Overlapping Labels
       const sortedBackToFront = Array.from(projectedMap.values()).sort(
         (a, b) => b.depth - a.depth
       );
@@ -1226,37 +1217,22 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
         depth: number;
       }[] = [];
 
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
       sortedBackToFront.forEach(item => {
         const { node, sx, sy, topSx, topSy, capSx, capSy, scale, depth } = item;
         const isSelected = selId === node.id;
         const isHovered = hovId === node.id;
-        const isConnected = connSet.has(node.id);
-        const isDimmed = Boolean(activeId && !isConnected && node.kind !== 'STAFF');
+        const isConnected = !activeId || connSet.has(node.id) || node.id === activeId;
 
-        ctx.globalAlpha = isDimmed ? 0.25 : 1.0;
+        ctx.globalAlpha = isConnected ? 1.0 : 0.25;
 
-        if (node.kind === 'STAFF' && node.staffData) {
-          const halfW = Math.max(9, 16 * scale);
-          const depthH = halfW * 0.48;
+        if (node.kind === 'STAFF') {
+          const halfW = Math.max(9, 13.5 * scale);
+          const depthH = halfW * 0.45;
 
-          // Floor tile under prism
-          ctx.beginPath();
-          ctx.moveTo(sx, sy - depthH * 1.45);
-          ctx.lineTo(sx + halfW * 1.45, sy);
-          ctx.lineTo(sx, sy + depthH * 1.45);
-          ctx.lineTo(sx - halfW * 1.45, sy);
-          ctx.closePath();
-          ctx.fillStyle = isSelected || isHovered
-            ? 'rgba(56, 189, 248, 0.35)'
-            : 'rgba(15, 23, 42, 0.85)';
-          ctx.strokeStyle = isSelected || isHovered
-            ? '#38bdf8'
-            : 'rgba(148, 163, 184, 0.28)';
-          ctx.lineWidth = isSelected || isHovered ? 2 : 1;
-          ctx.fill();
-          ctx.stroke();
-
-          // True 3-Face 3D Isometric Prism Bar
+          // 3D Isometric Prism Column
           drawIsometricPrism(
             sx,
             sy,
@@ -1271,33 +1247,42 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
             isSelected || isHovered
           );
 
-          // 100% Level Benchmark Ring on the 3D Prism
+          // 100% Level Benchmark Line on the column
           ctx.beginPath();
-          ctx.moveTo(capSx - halfW * 1.15, capSy);
-          ctx.lineTo(capSx, capSy + depthH * 1.15);
-          ctx.lineTo(capSx + halfW * 1.15, capSy);
-          ctx.strokeStyle = 'rgba(255, 255, 255, 0.75)';
-          ctx.lineWidth = 1.4;
+          ctx.moveTo(capSx - halfW * 1.1, capSy);
+          ctx.lineTo(capSx, capSy + depthH * 1.1);
+          ctx.lineTo(capSx + halfW * 1.1, capSy);
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 1.5;
           ctx.stroke();
+
+          // Compact % Badge right on top of the column cap (narrow, never overlaps neighbors!)
+          ctx.font = `700 ${Math.max(9, Math.round(9.5 * scale))}px Inter, system-ui, sans-serif`;
+          ctx.fillStyle = node.textColor;
+          ctx.fillText(node.metricBadge, topSx, topSy - depthH - 7);
+
+          // Short Name neatly anchored BELOW the column base (`sy + depthH + 11`)
+          ctx.font = `${isSelected || isHovered ? '700' : '600'} ${Math.max(9, Math.round(10 * scale))}px Inter, system-ui, sans-serif`;
+          ctx.fillStyle = isSelected || isHovered ? '#0f172a' : '#334155';
+          ctx.fillText(node.shortLabel, sx, sy + depthH + 11);
 
           nextHitRegions.push({
             id: node.id,
-            sx: topSx,
+            sx: (topSx + sx) * 0.5,
             sy: (topSy + sy) * 0.5,
-            sr: Math.max(20, halfW * 1.5),
+            sr: Math.max(18, halfW * 1.5),
             topY: topSy,
             depth,
           });
         } else if (node.kind === 'BRAND') {
-          // 3D Brand Isometric Cube / Gem
-          const halfW = Math.max(10, 15 * scale);
-          const depthH = halfW * 0.52;
-          const cubeH = halfW * 0.9;
+          // 3D Brand Block in Middle Tier
+          const halfW = Math.max(10, 14 * scale);
+          const depthH = halfW * 0.48;
           drawIsometricPrism(
+            sx,
+            sy,
             topSx,
-            topSy + cubeH * 0.5,
-            topSx,
-            topSy - cubeH * 0.5,
+            topSy,
             halfW,
             depthH,
             node.colorTop,
@@ -1307,106 +1292,72 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
             isSelected || isHovered
           );
 
+          // Compact Brand Pill below the 3D Brand block
+          const bw = Math.min(74, Math.max(46, node.shortLabel.length * 5.8 + 10));
+          const bh = 18;
+          ctx.fillStyle = node.pillBg;
+          ctx.beginPath();
+          ctx.roundRect(sx - bw / 2, sy + 6, bw, bh, 4);
+          ctx.fill();
+          ctx.strokeStyle = isSelected || isHovered ? '#1d4ed8' : node.pillBorder;
+          ctx.lineWidth = isSelected || isHovered ? 1.6 : 1;
+          ctx.stroke();
+
+          ctx.font = '700 9.5px Inter, system-ui, sans-serif';
+          ctx.fillStyle = node.textColor;
+          ctx.fillText(node.shortLabel.slice(0, 11), sx, sy + 6 + bh / 2);
+
           nextHitRegions.push({
             id: node.id,
-            sx: topSx,
-            sy: topSy,
-            sr: Math.max(18, halfW * 1.5),
+            sx,
+            sy,
+            sr: Math.max(20, halfW * 1.6),
             topY: topSy,
             depth,
           });
         } else {
-          // 3D Store Node
-          const r = Math.max(7, node.radius * scale);
+          // 3D Store Block in Top Tier
+          const halfW = Math.max(8, 11.5 * scale);
+          const depthH = halfW * 0.45;
+          drawIsometricPrism(
+            sx,
+            sy,
+            topSx,
+            topSy,
+            halfW,
+            depthH,
+            node.colorTop,
+            node.colorLeft,
+            node.colorRight,
+            node.strokeColor,
+            isSelected || isHovered
+          );
+
+          const sw = Math.min(72, Math.max(44, node.shortLabel.length * 5.2 + 8));
+          const sh = 17;
+          ctx.fillStyle = node.pillBg;
           ctx.beginPath();
-          ctx.arc(topSx, topSy, r, 0, Math.PI * 2);
-          ctx.fillStyle = node.colorLeft;
+          ctx.roundRect(sx - sw / 2, topSy - sh - 6, sw, sh, 4);
           ctx.fill();
-          ctx.strokeStyle = isSelected || isHovered ? '#ffffff' : node.strokeColor;
-          ctx.lineWidth = isSelected || isHovered ? 2.2 : 1.2;
+          ctx.strokeStyle = isSelected || isHovered ? '#1d4ed8' : node.pillBorder;
+          ctx.lineWidth = isSelected || isHovered ? 1.5 : 1;
           ctx.stroke();
+
+          ctx.font = '600 9px Inter, system-ui, sans-serif';
+          ctx.fillStyle = node.textColor;
+          ctx.fillText(node.shortLabel.slice(0, 12), sx, topSy - 6 - sh / 2);
 
           nextHitRegions.push({
             id: node.id,
-            sx: topSx,
+            sx,
             sy: topSy,
-            sr: Math.max(15, r * 1.6),
+            sr: Math.max(16, halfW * 1.5),
             topY: topSy,
             depth,
           });
         }
 
         ctx.globalAlpha = 1.0;
-      });
-
-      // 7. Anti-Overlap Label Pass (Sorted Front-to-Back so Foreground/Selected Labels NEVER get covered!)
-      const occupiedBoxes: { x1: number; y1: number; x2: number; y2: number }[] = [];
-      const sortedFrontToBack = sortedBackToFront.slice().reverse();
-
-      // Ensure Selected & Hovered nodes get label priority first
-      sortedFrontToBack.sort((a, b) => {
-        const aPri = a.node.id === hovId ? 3 : a.node.id === selId ? 2 : connSet.has(a.node.id) ? 1 : 0;
-        const bPri = b.node.id === hovId ? 3 : b.node.id === selId ? 2 : connSet.has(b.node.id) ? 1 : 0;
-        if (aPri !== bPri) return bPri - aPri;
-        return a.depth - b.depth;
-      });
-
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-
-      sortedFrontToBack.forEach(item => {
-        const { node, topSx, topSy, scale } = item;
-        const isSelected = selId === node.id;
-        const isHovered = hovId === node.id;
-        const isPriority = isSelected || isHovered;
-
-        const titleText = isPriority ? node.label : node.shortLabel;
-        const subText = node.roleTag ? `${node.subLabel} · ${node.roleTag}` : node.subLabel;
-
-        const boxW = Math.max(titleText.length * 6.6, subText.length * 5.8) + 16;
-        const boxH = isPriority || node.kind !== 'STAFF' ? 32 : 26;
-        const bx1 = topSx - boxW * 0.5;
-        const by1 = topSy - 14 - boxH;
-        const bx2 = topSx + boxW * 0.5;
-        const by2 = topSy - 14;
-
-        // Check collision against higher-priority labels
-        if (!isPriority) {
-          const collides = occupiedBoxes.some(
-            b => !(bx2 < b.x1 + 4 || bx1 > b.x2 - 4 || by2 < b.y1 + 2 || by1 > b.y2 - 2)
-          );
-          if (collides) return;
-        }
-
-        occupiedBoxes.push({ x1: bx1, y1: by1, x2: bx2, y2: by2 });
-
-        // Draw crisp label pill
-        ctx.fillStyle = isPriority
-          ? 'rgba(15, 23, 42, 0.96)'
-          : 'rgba(15, 23, 42, 0.86)';
-        ctx.beginPath();
-        ctx.roundRect(bx1, by1, boxW, boxH, 6);
-        ctx.fill();
-
-        ctx.strokeStyle = isPriority
-          ? '#38bdf8'
-          : node.kind === 'BRAND'
-            ? 'rgba(245, 158, 11, 0.65)'
-            : node.kind === 'STORE'
-              ? 'rgba(56, 189, 248, 0.55)'
-              : 'rgba(148, 163, 184, 0.32)';
-        ctx.lineWidth = isPriority ? 1.8 : 1;
-        ctx.stroke();
-
-        // Line 1: Name
-        ctx.font = `${isPriority ? '700' : '600'} ${Math.max(10, Math.round(11 * Math.min(1.1, scale)))}px Inter, system-ui, sans-serif`;
-        ctx.fillStyle = '#f8fafc';
-        ctx.fillText(titleText, topSx, by1 + boxH * 0.34);
-
-        // Line 2: Metric / Role
-        ctx.font = `700 ${Math.max(9, Math.round(9.5 * Math.min(1.1, scale)))}px Inter, system-ui, sans-serif`;
-        ctx.fillStyle = node.badgeTextColor;
-        ctx.fillText(subText, topSx, by1 + boxH * 0.74);
       });
 
       projectedScreenNodesRef.current = nextHitRegions;
@@ -1418,7 +1369,6 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
     return () => cancelAnimationFrame(animationFrameId);
   }, []);
 
-  // Hit-test helper using cached canvas bounds
   const findHitNodeAt = (clientX: number, clientY: number): string | null => {
     const canvas = canvasRef.current;
     if (!canvas) return null;
@@ -1434,7 +1384,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
       const dyMid = my - reg.sy;
       if (
         Math.hypot(dx, dyTop) <= reg.sr ||
-        (Math.abs(dx) <= reg.sr * 0.9 && Math.abs(dyMid) <= reg.sr * 1.45)
+        (Math.abs(dx) <= reg.sr * 0.95 && Math.abs(dyMid) <= reg.sr * 1.5)
       ) {
         return reg.id;
       }
@@ -1458,10 +1408,13 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
       if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
         dragRef.current.moved = true;
       }
-      cameraRef.current.targetYaw += dx * 0.006;
+      cameraRef.current.targetYaw = Math.max(
+        -0.55,
+        Math.min(0.55, cameraRef.current.targetYaw + dx * 0.005)
+      );
       cameraRef.current.targetPitch = Math.max(
-        0.12,
-        Math.min(0.95, cameraRef.current.targetPitch + dy * 0.005)
+        0.08,
+        Math.min(0.52, cameraRef.current.targetPitch + dy * 0.004)
       );
       dragRef.current.startX = e.clientX;
       dragRef.current.startY = e.clientY;
@@ -1481,16 +1434,18 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
       const hitId = findHitNodeAt(e.clientX, e.clientY);
       if (hitId) {
         handleSelectAndFly(hitId);
+      } else {
+        setSelectedNodeId(null);
       }
     }
   };
 
   const handleWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
     e.preventDefault();
-    const factor = e.deltaY < 0 ? 1.1 : 0.91;
+    const factor = e.deltaY < 0 ? 1.08 : 0.92;
     cameraRef.current.targetZoom = Math.max(
-      0.55,
-      Math.min(2.1, cameraRef.current.targetZoom * factor)
+      0.65,
+      Math.min(1.65, cameraRef.current.targetZoom * factor)
     );
   };
 
@@ -1581,7 +1536,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
           onClick={() => setLoadFilter('ALL')}
           className={`text-left p-3 rounded-xl border transition cursor-pointer ${
             loadFilter === 'ALL'
-              ? 'bg-accent-soft/60 border-accent shadow-2xs'
+              ? 'bg-accent-soft/60 border-accent'
               : 'bg-surface border-line hover:bg-sunken/50'
           }`}
         >
@@ -1600,7 +1555,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
           onClick={() => setLoadFilter(loadFilter === 'OVERLOAD' ? 'ALL' : 'OVERLOAD')}
           className={`text-left p-3 rounded-xl border transition cursor-pointer ${
             loadFilter === 'OVERLOAD'
-              ? 'bg-critical-soft border-critical shadow-2xs'
+              ? 'bg-critical-soft border-critical'
               : 'bg-surface border-line hover:bg-critical-soft/30'
           }`}
         >
@@ -1621,7 +1576,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
           onClick={() => setLoadFilter(loadFilter === 'OPTIMAL' ? 'ALL' : 'OPTIMAL')}
           className={`text-left p-3 rounded-xl border transition cursor-pointer ${
             loadFilter === 'OPTIMAL'
-              ? 'bg-positive-soft border-positive shadow-2xs'
+              ? 'bg-positive-soft border-positive'
               : 'bg-surface border-line hover:bg-positive-soft/30'
           }`}
         >
@@ -1642,7 +1597,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
           onClick={() => setLoadFilter(loadFilter === 'UNDERLOAD' ? 'ALL' : 'UNDERLOAD')}
           className={`text-left p-3 rounded-xl border transition cursor-pointer ${
             loadFilter === 'UNDERLOAD'
-              ? 'bg-accent-soft border-accent shadow-2xs'
+              ? 'bg-accent-soft border-accent'
               : 'bg-surface border-line hover:bg-accent-soft/30'
           }`}
         >
@@ -1663,7 +1618,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
           onClick={() => setLoadFilter(loadFilter === 'HARD_RATIO_LOW' ? 'ALL' : 'HARD_RATIO_LOW')}
           className={`text-left p-3 rounded-xl border transition cursor-pointer ${
             loadFilter === 'HARD_RATIO_LOW'
-              ? 'bg-warning-soft border-warning shadow-2xs'
+              ? 'bg-warning-soft border-warning'
               : 'bg-surface border-line hover:bg-warning-soft/30'
           }`}
         >
@@ -1698,53 +1653,42 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
       {/* 2. Control & Filter Toolbar */}
       <div className="bg-surface border border-line rounded-xl p-3 flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
-          {/* 3D Spatial Layout Switcher */}
           <div className="inline-flex rounded-lg bg-sunken p-0.5 border border-line">
             <button
               type="button"
               onClick={() => {
-                setLayoutMode('WORKLOAD_TOWERS');
+                setLayoutMode('THREE_TIER_3D');
                 flyToNode(null, true);
               }}
-              className={`px-2.5 py-1.5 rounded-md text-xs font-medium transition cursor-pointer ${
-                layoutMode === 'WORKLOAD_TOWERS'
-                  ? 'bg-surface text-ink shadow-2xs'
+              className={`px-2.5 py-1.5 rounded-md text-xs font-medium transition cursor-pointer inline-flex items-center gap-1.5 ${
+                layoutMode === 'THREE_TIER_3D'
+                  ? 'bg-surface text-ink'
                   : 'text-ink-2 hover:text-ink'
               }`}
             >
-              Sàn 3D Cột Tải (28 Nhân sự)
+              <Box className="w-3.5 h-3.5" />
+              <span>Toàn cảnh 3 Tầng 3D (Nhân sự ↔ Brand ↔ Gian hàng)</span>
             </button>
             <button
               type="button"
               onClick={() => {
                 setLayoutMode('FOCUS_ORBIT');
+                if (!selectedNodeId && filteredStaff[0]) {
+                  setSelectedNodeId(filteredStaff[0].id);
+                }
                 flyToNode(null, true);
               }}
-              className={`px-2.5 py-1.5 rounded-md text-xs font-medium transition cursor-pointer ${
+              className={`px-2.5 py-1.5 rounded-md text-xs font-medium transition cursor-pointer inline-flex items-center gap-1.5 ${
                 layoutMode === 'FOCUS_ORBIT'
-                  ? 'bg-surface text-ink shadow-2xs'
+                  ? 'bg-surface text-ink'
                   : 'text-ink-2 hover:text-ink'
               }`}
             >
-              Cây Phân Việc 3D (Tâm điểm)
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setLayoutMode('LAYERED_3D');
-                flyToNode(null, true);
-              }}
-              className={`px-2.5 py-1.5 rounded-md text-xs font-medium transition cursor-pointer ${
-                layoutMode === 'LAYERED_3D'
-                  ? 'bg-surface text-ink shadow-2xs'
-                  : 'text-ink-2 hover:text-ink'
-              }`}
-            >
-              3 Tầng: Nhân sự → Brand → Gian
+              <Compass className="w-3.5 h-3.5" />
+              <span>Tách Cây 3D Theo Nhân Sự Đang Chọn</span>
             </button>
           </div>
 
-          {/* Role group filter */}
           <select
             value={roleFilter}
             onChange={e => setRoleFilter(e.target.value as RoleFilterGroup)}
@@ -1759,23 +1703,21 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
             <option value="FOC_SAMPLE">Điều phối FOC & Mẫu</option>
           </select>
 
-          {/* Anti-clutter Focus Toggle */}
-          <button
-            type="button"
-            onClick={() => setOnlyFocusedNetwork(prev => !prev)}
-            className={`h-8 px-2.5 rounded-lg border text-xs font-medium inline-flex items-center gap-1.5 transition cursor-pointer ${
-              onlyFocusedNetwork
-                ? 'bg-accent-soft text-accent border-accent/40'
-                : 'bg-sunken text-ink-2 border-line hover:text-ink'
-            }`}
-            title="Khi bật: chỉ hiện các Brand & Gian hàng của nhân sự đang chọn để sơ đồ luôn thoáng, không bị rối dây"
-          >
-            <Eye className="w-3.5 h-3.5" />
-            <span>{onlyFocusedNetwork ? 'Chế độ gọn: Chỉ hiện nhánh đang chọn' : 'Đang hiện mọi nhánh'}</span>
-          </button>
+          {selectedNodeId && (
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedNodeId(null);
+                flyToNode(null, true);
+              }}
+              className="h-8 px-2.5 rounded-lg bg-accent-soft text-accent border border-accent/30 text-xs font-medium inline-flex items-center gap-1 cursor-pointer"
+            >
+              <X className="w-3.5 h-3.5" />
+              <span>Bỏ lọc nhánh đang chọn (Hiện tất cả)</span>
+            </button>
+          )}
         </div>
 
-        {/* Search & Quick Navigation */}
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative">
             <Search className="w-3.5 h-3.5 text-ink-3 absolute left-2.5 top-1/2 -translate-y-1/2" />
@@ -1813,125 +1755,125 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
       {/* 3. Main 3D Viewport + Side Inspector Panel */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
         {/* Left/Center: 3D Interactive Space (8 cols) */}
-        <div className="lg:col-span-8 bg-[#070d19] border border-slate-800 rounded-2xl overflow-hidden relative shadow-lg">
-          {/* Top-left 3D Legend Overlay */}
-          <div className="absolute top-3 left-3 z-10 flex flex-wrap items-center gap-2 pointer-events-none">
-            <div className="px-2.5 py-1.5 rounded-lg bg-slate-900/90 border border-slate-700/80 text-[11px] text-slate-200 flex flex-wrap items-center gap-3">
+        <div className="lg:col-span-8 bg-surface border border-line rounded-2xl overflow-hidden">
+          {/* Dedicated Non-Overlapping Header Bar for Legend & 3D Camera Controls */}
+          <div className="px-3.5 py-2.5 bg-sunken/60 border-b border-line flex flex-wrap items-center justify-between gap-2">
+            <div className="flex flex-wrap items-center gap-3 text-2xs text-ink-2 font-medium">
               <span className="inline-flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-xs bg-rose-500 inline-block" />
+                <span className="w-2.5 h-2.5 rounded-xs bg-rose-600 inline-block" />
                 <span>Cột Đỏ: Quá tải (≥115%)</span>
               </span>
               <span className="inline-flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-xs bg-emerald-500 inline-block" />
+                <span className="w-2.5 h-2.5 rounded-xs bg-emerald-600 inline-block" />
                 <span>Cột Xanh: Đủ tải (85–114%)</span>
               </span>
               <span className="inline-flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-xs bg-indigo-500 inline-block" />
+                <span className="w-2.5 h-2.5 rounded-xs bg-indigo-600 inline-block" />
                 <span>Cột Tím: Dư tải (&lt;85%)</span>
               </span>
               <span className="inline-flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-xs bg-amber-400 inline-block" />
+                <span className="w-2.5 h-2.5 rounded-xs bg-amber-500 inline-block" />
                 <span>Khối Vàng: Brand</span>
               </span>
               <span className="inline-flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 inline-block" />
-                <span>Gian hàng (TikTok / Shopee)</span>
+                <span className="w-2.5 h-2.5 rounded-xs bg-sky-600 inline-block" />
+                <span>Gian hàng (TTS / Shopee)</span>
               </span>
+            </div>
+
+            <div className="flex items-center gap-1.5 shrink-0">
+              <button
+                type="button"
+                onClick={() => setAutoRotate(prev => !prev)}
+                className={`h-7 px-2.5 rounded-md border text-2xs font-medium inline-flex items-center gap-1 transition cursor-pointer ${
+                  autoRotate
+                    ? 'bg-accent-soft text-accent border-accent/40'
+                    : 'bg-surface text-ink-2 border-line hover:bg-sunken'
+                }`}
+              >
+                {autoRotate ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
+                <span>{autoRotate ? 'Đang xoay' : 'Tự xoay'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowParticles(prev => !prev)}
+                className={`h-7 px-2.5 rounded-md border text-2xs font-medium inline-flex items-center gap-1 transition cursor-pointer ${
+                  showParticles
+                    ? 'bg-warning-soft text-warning border-warning/40'
+                    : 'bg-surface text-ink-2 border-line hover:bg-sunken'
+                }`}
+              >
+                <Sparkles className="w-3 h-3" />
+                <span>Luồng hạt</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  cameraRef.current.targetZoom = Math.min(1.65, cameraRef.current.targetZoom * 1.12);
+                }}
+                title="Phóng to"
+                className="w-7 h-7 rounded-md bg-surface border border-line text-ink-2 hover:bg-sunken flex items-center justify-center cursor-pointer"
+              >
+                <ZoomIn className="w-3.5 h-3.5" />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  cameraRef.current.targetZoom = Math.max(0.65, cameraRef.current.targetZoom * 0.88);
+                }}
+                title="Thu nhỏ"
+                className="w-7 h-7 rounded-md bg-surface border border-line text-ink-2 hover:bg-sunken flex items-center justify-center cursor-pointer"
+              >
+                <ZoomOut className="w-3.5 h-3.5" />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedNodeId(null);
+                  flyToNode(null, true);
+                }}
+                title="Đặt lại góc nhìn chuẩn"
+                className="h-7 px-2 rounded-md bg-surface border border-line text-ink-2 hover:bg-sunken text-2xs font-medium inline-flex items-center gap-1 cursor-pointer"
+              >
+                <RotateCcw className="w-3 h-3" />
+                <span>Góc chuẩn</span>
+              </button>
             </div>
           </div>
 
-          {/* Top-right 3D Camera Controls Overlay */}
-          <div className="absolute top-3 right-3 z-10 flex items-center gap-1.5">
-            <button
-              type="button"
-              onClick={() => setAutoRotate(prev => !prev)}
-              title={autoRotate ? 'Tạm dừng tự xoay 3D' : 'Bật tự động xoay 3D'}
-              className={`h-8 px-2.5 rounded-lg border text-xs font-medium flex items-center gap-1.5 transition cursor-pointer ${
-                autoRotate
-                  ? 'bg-sky-500/20 text-sky-300 border-sky-500/40'
-                  : 'bg-slate-900/90 text-slate-300 border-slate-700 hover:bg-slate-800'
-              }`}
-            >
-              {autoRotate ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
-              <span className="hidden sm:inline">{autoRotate ? 'Đang xoay' : 'Tự xoay'}</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setShowParticles(prev => !prev)}
-              title="Bật/tắt hạt chuyển động theo luồng giao việc"
-              className={`h-8 px-2.5 rounded-lg border text-xs font-medium flex items-center gap-1.5 transition cursor-pointer ${
-                showParticles
-                  ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
-                  : 'bg-slate-900/90 text-slate-300 border-slate-700 hover:bg-slate-800'
-              }`}
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Luồng hạt</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                cameraRef.current.targetZoom = Math.min(2.1, cameraRef.current.targetZoom * 1.18);
-              }}
-              title="Phóng to"
-              className="w-8 h-8 rounded-lg bg-slate-900/90 border border-slate-700 text-slate-200 hover:bg-slate-800 flex items-center justify-center cursor-pointer"
-            >
-              <ZoomIn className="w-4 h-4" />
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                cameraRef.current.targetZoom = Math.max(0.55, cameraRef.current.targetZoom * 0.84);
-              }}
-              title="Thu nhỏ"
-              className="w-8 h-8 rounded-lg bg-slate-900/90 border border-slate-700 text-slate-200 hover:bg-slate-800 flex items-center justify-center cursor-pointer"
-            >
-              <ZoomOut className="w-4 h-4" />
-            </button>
-
-            <button
-              type="button"
-              onClick={() => flyToNode(null, true)}
-              title="Đặt lại góc nhìn chuẩn"
-              className="h-8 px-2.5 rounded-lg bg-slate-900/90 border border-slate-700 text-slate-200 hover:bg-slate-800 text-xs font-medium flex items-center gap-1 cursor-pointer"
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Góc chuẩn</span>
-            </button>
-          </div>
-
-          {/* Interactive 3D Canvas */}
+          {/* Interactive 3-Tier 3D Canvas */}
           <canvas
             ref={canvasRef}
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
             onWheel={handleWheel}
-            className="w-full h-[540px] block select-none"
+            className="w-full h-[500px] block select-none"
           />
 
-          {/* Bottom Quick Staff Workload Strip inside 3D Viewport */}
-          <div className="bg-slate-950 border-t border-slate-800 px-3 py-2.5">
-            <div className="flex items-center justify-between mb-1.5">
-              <span className="text-[11px] font-semibold text-slate-300">
-                Chọn Nhân sự để xem nhánh Brand & Gian hàng trên không gian 3D (Sắp xếp từ tải cao → thấp):
+          {/* Bottom Quick Staff Bar */}
+          <div className="bg-sunken/50 border-t border-line px-3.5 py-2.5">
+            <div className="flex items-center justify-between mb-1.5 text-2xs text-ink-3">
+              <span className="font-semibold text-ink-2">
+                Click vào Nhân sự bất kỳ để làm nổi bật đường nối tới Brand & Gian hàng của người đó:
               </span>
-              <span className="text-[11px] text-slate-400 hidden sm:inline">
-                Vạch trắng trên cột 3D = Mức chuẩn 100% theo Level
+              <span className="hidden sm:inline">
+                Vạch trắng trên thân cột = Định mức chuẩn 100% theo Level
               </span>
             </div>
             <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
               {filteredStaff.map(st => {
                 const isActive = selectedNodeId === st.id;
-                const badgeTone =
+                const toneClass =
                   st.loadStatus === 'OVERLOAD'
-                    ? 'border-rose-500/50 bg-rose-500/15 text-rose-200'
+                    ? 'bg-critical-soft text-critical border-critical/30'
                     : st.loadStatus === 'UNDERLOAD'
-                      ? 'border-indigo-500/40 bg-indigo-500/15 text-indigo-200'
-                      : 'border-emerald-500/40 bg-emerald-500/15 text-emerald-200';
+                      ? 'bg-accent-soft text-accent border-accent/30'
+                      : 'bg-positive-soft text-positive border-positive/30';
                 return (
                   <button
                     key={st.id}
@@ -1939,14 +1881,12 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
                     onClick={() => handleSelectAndFly(st.id)}
                     className={`shrink-0 px-2.5 py-1 rounded-lg border text-xs font-medium transition flex items-center gap-1.5 cursor-pointer ${
                       isActive
-                        ? 'ring-2 ring-sky-400 bg-sky-500/25 text-white border-sky-400'
-                        : `${badgeTone} hover:brightness-125`
+                        ? 'ring-2 ring-accent bg-surface text-ink border-accent font-bold'
+                        : `${toneClass} hover:opacity-90`
                     }`}
                   >
-                    <span className="truncate max-w-[115px]">{st.shortName}</span>
-                    <span className="text-[10px] font-bold px-1 py-0.2 rounded bg-black/30 tabular-nums">
-                      {st.loadPct}%
-                    </span>
+                    <span>{st.shortName}</span>
+                    <span className="text-2xs font-bold tabular-nums">({st.loadPct}%)</span>
                   </button>
                 );
               })}
@@ -1955,7 +1895,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
         </div>
 
         {/* Right: Detailed Workload & Assignment Inspector Panel (4 cols) */}
-        <div className="lg:col-span-4 bg-surface border border-line rounded-2xl overflow-hidden shadow-xs">
+        <div className="lg:col-span-4 bg-surface border border-line rounded-2xl overflow-hidden">
           {!selectedNode ? (
             <div className="p-6 text-center space-y-3">
               <div className="w-12 h-12 rounded-2xl bg-accent-soft text-accent flex items-center justify-center mx-auto">
@@ -1963,10 +1903,10 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
               </div>
               <div className="space-y-1">
                 <h3 className="text-sm font-semibold text-ink">
-                  Chọn 1 Nhân sự, Brand hoặc Gian hàng trên không gian 3D
+                  Chọn 1 Nhân sự, Brand hoặc Gian hàng
                 </h3>
                 <p className="text-xs text-ink-3 leading-relaxed">
-                  Click trực tiếp vào cột 3D hoặc thanh nhân sự phía dưới để xem nhánh Brand, Gian hàng phụ trách và điều phối công việc.
+                  Click trực tiếp vào cột trên sơ đồ 3D hoặc bảng phía dưới để điều phối công việc.
                 </p>
               </div>
             </div>
@@ -1975,8 +1915,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
             (() => {
               const st = selectedNode.staffData;
               return (
-                <div className="divide-y divide-line max-h-[625px] overflow-y-auto">
-                  {/* Header */}
+                <div className="divide-y divide-line max-h-[600px] overflow-y-auto">
                   <div className="p-4 bg-sunken/40 space-y-2.5">
                     <div className="flex items-start justify-between gap-2">
                       <div>
@@ -2004,17 +1943,19 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
                         <h3 className="text-base font-bold text-ink mt-1">{st.name}</h3>
                         <p className="text-xs text-ink-2">{st.roleGroup}</p>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSelectedNodeId(null);
-                          flyToNode(null, true);
-                        }}
-                        className="p-1 rounded-lg text-ink-3 hover:text-ink hover:bg-sunken"
-                        title="Đóng chi tiết"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
+                      {selectedNodeId && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedNodeId(null);
+                            flyToNode(null, true);
+                          }}
+                          className="p-1 rounded-lg text-ink-3 hover:text-ink hover:bg-sunken"
+                          title="Xem lại toàn cảnh"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      )}
                     </div>
 
                     {/* Workload Point Progress Bar */}
@@ -2040,7 +1981,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
                             width: `${Math.min(100, Math.round((st.directorPts / Math.max(st.totalPts, st.targetCapacityPts)) * 100))}%`,
                           }}
                           className="bg-amber-500 h-full"
-                          title={`Điểm Quản lý giao & Brand: ${st.directorPts.toFixed(1)} pt`}
+                          title={`Điểm Quản lý giao: ${st.directorPts.toFixed(1)} pt`}
                         />
                       </div>
                       <div className="grid grid-cols-3 gap-2 pt-1 text-2xs">
@@ -2083,18 +2024,6 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
                         <Plus className="w-3.5 h-3.5 mr-1" />
                         Giao thêm việc
                       </Button>
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={() =>
-                          setLayoutMode(prev =>
-                            prev === 'FOCUS_ORBIT' ? 'WORKLOAD_TOWERS' : 'FOCUS_ORBIT'
-                          )
-                        }
-                      >
-                        <Compass className="w-3.5 h-3.5 mr-1" />
-                        {layoutMode === 'FOCUS_ORBIT' ? 'Về sàn 28 cột' : 'Tách riêng cây 3D'}
-                      </Button>
                       {onPingStaff && (
                         <Button
                           variant="secondary"
@@ -2112,7 +2041,6 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
                       )}
                     </div>
 
-                    {/* Quick Task Form */}
                     {isQuickTaskOpen && (
                       <div className="p-3 rounded-xl bg-surface border border-accent/40 space-y-2.5">
                         <div className="text-xs font-semibold text-ink">
@@ -2122,7 +2050,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
                           type="text"
                           value={quickTaskTitle}
                           onChange={e => setQuickTaskTitle(e.target.value)}
-                          placeholder="Nhập tên đầu việc (VD: Lên phương án Key Visual 11.11)..."
+                          placeholder="Nhập tên đầu việc..."
                           className="w-full h-8 px-2.5 rounded-lg bg-sunken border border-line text-xs text-ink"
                         />
                         <div className="grid grid-cols-3 gap-2">
@@ -2156,7 +2084,6 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
                             value={quickTaskPoints}
                             onChange={e => setQuickTaskPoints(Number(e.target.value) || 4)}
                             className="h-8 px-2 rounded-lg bg-sunken border border-line text-xs text-ink tabular-nums"
-                            title="Điểm Point"
                           />
                         </div>
                         <div className="flex justify-end gap-1.5">
@@ -2172,7 +2099,7 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
                             size="sm"
                             onClick={() => handleCreateQuickTask(st.name)}
                           >
-                            Xác nhận giao (+{quickTaskPoints} pt)
+                            Xác nhận (+{quickTaskPoints} pt)
                           </Button>
                         </div>
                       </div>
@@ -2204,21 +2131,18 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
 
                   {/* Assigned Brands Section */}
                   <div className="p-4 space-y-2.5">
-                    <div className="flex items-center justify-between">
-                      <h4 className="text-xs font-semibold text-ink uppercase tracking-wider flex items-center gap-1.5">
-                        <Building2 className="w-3.5 h-3.5 text-amber-500" />
-                        <span>Thương hiệu phụ trách ({st.assignedBrands.length})</span>
-                      </h4>
-                    </div>
-                    {st.assignedBrands.length === 0 ? (
-                      <p className="text-xs text-ink-3">Chưa gắn vị trí cấp Brand trực tiếp.</p>
-                    ) : (
-                      <div className="space-y-2">
-                        {st.assignedBrands.map(ab => (
-                          <div
-                            key={ab.brandId}
-                            className="p-2.5 rounded-xl bg-sunken/50 border border-line flex items-center justify-between gap-2"
-                          >
+                    <h4 className="text-xs font-semibold text-ink uppercase tracking-wider flex items-center gap-1.5">
+                      <Building2 className="w-3.5 h-3.5 text-warning" />
+                      <span>Thương hiệu phụ trách ({st.assignedBrands.length})</span>
+                    </h4>
+                    <div className="space-y-2">
+                      {st.assignedBrands.map(ab => (
+                        <div
+                          key={ab.brandId}
+                          className="p-2.5 rounded-xl bg-sunken/50 border border-line flex items-center justify-between gap-2"
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            <BrandAvatar brandId={ab.brandId} brandName={ab.brandName} size={24} />
                             <div className="min-w-0">
                               <button
                                 type="button"
@@ -2228,83 +2152,76 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
                                 {ab.brandName}
                               </button>
                               <div className="text-2xs text-ink-3 truncate">
-                                Vai trò: <strong className="text-ink-2">{ab.roles.join(' · ')}</strong>
+                                {ab.roles.join(' · ')}
                               </div>
                             </div>
-                            <select
-                              value={st.name}
-                              onChange={e =>
-                                handleReassignBrandRole(
-                                  ab.brandId,
-                                  'contentBrandMainPic',
-                                  e.target.value
-                                )
-                              }
-                              className="h-7 px-2 rounded bg-surface border border-line text-2xs text-ink shrink-0"
-                              title="Điều chuyển nhanh Brand sang nhân sự khác"
-                            >
-                              {B2C_28_STAFF_WORKLOAD_ROSTER.map(m => (
-                                <option key={m.staffCode} value={m.name}>
-                                  {m.name} ({m.level})
-                                </option>
-                              ))}
-                            </select>
                           </div>
-                        ))}
-                      </div>
-                    )}
+                          <select
+                            value={st.name}
+                            onChange={e =>
+                              handleReassignBrandRole(
+                                ab.brandId,
+                                'contentBrandMainPic',
+                                e.target.value
+                              )
+                            }
+                            className="h-7 px-2 rounded bg-surface border border-line text-2xs text-ink shrink-0"
+                            title="Điều chuyển nhanh Brand sang nhân sự khác"
+                          >
+                            {B2C_28_STAFF_WORKLOAD_ROSTER.map(m => (
+                              <option key={m.staffCode} value={m.name}>
+                                {m.name} ({m.level})
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      ))}
+                    </div>
                   </div>
 
                   {/* Assigned Stores Section */}
                   <div className="p-4 space-y-2.5">
-                    <div className="flex items-center justify-between">
-                      <h4 className="text-xs font-semibold text-ink uppercase tracking-wider flex items-center gap-1.5">
-                        <Store className="w-3.5 h-3.5 text-cyan-500" />
-                        <span>Gian hàng B2C phụ trách ({st.assignedStores.length})</span>
-                      </h4>
-                    </div>
-                    {st.assignedStores.length === 0 ? (
-                      <p className="text-xs text-ink-3">Không có gian hàng trực tiếp.</p>
-                    ) : (
-                      <div className="space-y-2">
-                        {st.assignedStores.map(as => (
-                          <div
-                            key={as.storeId}
-                            className="p-2.5 rounded-xl bg-sunken/50 border border-line space-y-1.5"
-                          >
-                            <div className="flex items-center justify-between gap-2">
-                              <button
-                                type="button"
-                                onClick={() => handleSelectAndFly(`store-${as.storeId}`)}
-                                className="text-xs font-semibold text-ink hover:text-accent truncate cursor-pointer"
-                              >
-                                {as.storeName}
-                              </button>
-                              <span className="px-1.5 py-0.5 rounded bg-surface border border-line text-2xs font-semibold text-ink-2 shrink-0">
-                                HS ×{as.coef.toFixed(2)}
-                              </span>
-                            </div>
-                            <div className="flex items-center justify-between gap-2 text-2xs text-ink-3">
-                              <span>
-                                {as.platform} · {as.roleLabel}
-                              </span>
-                              <select
-                                value={st.name}
-                                onChange={e => handleReassignStorePic(as.storeId, e.target.value)}
-                                className="h-6 px-1.5 rounded bg-surface border border-line text-2xs text-ink"
-                                title="Điều chuyển PIC gian hàng"
-                              >
-                                {B2C_28_STAFF_WORKLOAD_ROSTER.map(m => (
-                                  <option key={m.staffCode} value={m.name}>
-                                    Đổi PIC: {m.name}
-                                  </option>
-                                ))}
-                              </select>
-                            </div>
+                    <h4 className="text-xs font-semibold text-ink uppercase tracking-wider flex items-center gap-1.5">
+                      <Store className="w-3.5 h-3.5 text-accent" />
+                      <span>Gian hàng B2C phụ trách ({st.assignedStores.length})</span>
+                    </h4>
+                    <div className="space-y-2">
+                      {st.assignedStores.map(as => (
+                        <div
+                          key={as.storeId}
+                          className="p-2.5 rounded-xl bg-sunken/50 border border-line space-y-1.5"
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleSelectAndFly(`store-${as.storeId}`)}
+                              className="text-xs font-semibold text-ink hover:text-accent truncate cursor-pointer"
+                            >
+                              {as.storeName}
+                            </button>
+                            <span className="px-1.5 py-0.5 rounded bg-surface border border-line text-2xs font-semibold text-ink-2 shrink-0">
+                              HS ×{as.coef.toFixed(2)}
+                            </span>
                           </div>
-                        ))}
-                      </div>
-                    )}
+                          <div className="flex items-center justify-between gap-2 text-2xs text-ink-3">
+                            <span>
+                              {as.platform} · {as.roleLabel}
+                            </span>
+                            <select
+                              value={st.name}
+                              onChange={e => handleReassignStorePic(as.storeId, e.target.value)}
+                              className="h-6 px-1.5 rounded bg-surface border border-line text-2xs text-ink"
+                            >
+                              {B2C_28_STAFF_WORKLOAD_ROSTER.map(m => (
+                                <option key={m.staffCode} value={m.name}>
+                                  Đổi PIC: {m.name}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               );
@@ -2322,15 +2239,17 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
               );
 
               return (
-                <div className="divide-y divide-line max-h-[625px] overflow-y-auto">
+                <div className="divide-y divide-line max-h-[600px] overflow-y-auto">
                   <div className="p-4 bg-sunken/40 space-y-2">
                     <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <span className="px-2 py-0.5 rounded bg-amber-500/15 text-amber-600 text-2xs font-bold">
-                          Thương hiệu (Brand)
-                        </span>
-                        <h3 className="text-base font-bold text-ink mt-1">{b.name}</h3>
-                        <p className="text-xs text-ink-3">{b.category}</p>
+                      <div className="flex items-center gap-2.5">
+                        <BrandAvatar brandId={b.id} brandName={b.name} size={36} />
+                        <div>
+                          <span className="px-2 py-0.5 rounded bg-warning-soft text-warning text-2xs font-bold">
+                            Thương hiệu (Brand)
+                          </span>
+                          <h3 className="text-base font-bold text-ink mt-0.5">{b.name}</h3>
+                        </div>
                       </div>
                       {onNavigateToBrandProfile && (
                         <Button
@@ -2343,26 +2262,11 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
                         </Button>
                       )}
                     </div>
-                    <div className="grid grid-cols-2 gap-2 pt-1 text-xs">
-                      <div className="p-2 rounded-lg bg-surface border border-line">
-                        <div className="text-2xs text-ink-3">Ngân sách tháng</div>
-                        <div className="font-bold text-ink">
-                          {formatVndShort(b.planBudget || b.monthlyBudget || 150000000)}
-                        </div>
-                      </div>
-                      <div className="p-2 rounded-lg bg-surface border border-line">
-                        <div className="text-2xs text-ink-3">Mục tiêu GMV</div>
-                        <div className="font-bold text-ink">
-                          {formatVndShort(b.targetGmv || 450000000)}
-                        </div>
-                      </div>
-                    </div>
                   </div>
 
-                  {/* 4 Brand-level Positions */}
                   <div className="p-4 space-y-2.5">
                     <h4 className="text-xs font-semibold text-ink uppercase tracking-wider">
-                      Đội ngũ phụ trách cấp Brand (Điều phối trực tiếp)
+                      Đội ngũ phụ trách cấp Brand
                     </h4>
                     {(
                       [
@@ -2411,7 +2315,6 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
                     ))}
                   </div>
 
-                  {/* Stores under this Brand */}
                   <div className="p-4 space-y-2.5">
                     <h4 className="text-xs font-semibold text-ink uppercase tracking-wider">
                       Gian hàng thuộc Brand ({brandStores.length})
@@ -2450,13 +2353,11 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
               const currentPic = s.b2cOwnerName || s.assignedStaff || 'Chưa gán';
 
               return (
-                <div className="divide-y divide-line max-h-[625px] overflow-y-auto">
+                <div className="divide-y divide-line max-h-[600px] overflow-y-auto">
                   <div className="p-4 bg-sunken/40 space-y-2">
                     <div className="flex items-start justify-between gap-2">
                       <div>
-                        <span className="px-2 py-0.5 rounded bg-cyan-500/15 text-cyan-600 text-2xs font-bold">
-                          Gian hàng · {s.platform}
-                        </span>
+                        <PlatformBadge platform={s.platform} />
                         <h3 className="text-base font-bold text-ink mt-1">{s.storeName}</h3>
                         <p className="text-xs text-ink-3">Thương hiệu: {s.brandName}</p>
                       </div>
@@ -2473,7 +2374,6 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
                     </div>
                   </div>
 
-                  {/* Store Coefficient & PIC Controls */}
                   <div className="p-4 space-y-3">
                     <div className="space-y-1.5">
                       <label className="text-xs font-semibold text-ink block">
@@ -2516,28 +2416,219 @@ export const Workload3dMapView: React.FC<Workload3dMapViewProps> = ({
                         })}
                       </div>
                     </div>
-
-                    <div className="p-3 rounded-xl bg-sunken/50 border border-line space-y-1 text-xs">
-                      <div className="flex justify-between">
-                        <span className="text-ink-3">Trưởng nhóm duyệt:</span>
-                        <strong className="text-ink">
-                          {s.hasBookingLeader && s.bookingLeader
-                            ? s.bookingLeader
-                            : 'Không có Leader (Trình thẳng GĐ MKT)'}
-                        </strong>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-ink-3">Hạn mức Order Net:</span>
-                        <strong className="text-ink">
-                          {formatVndShort(s.budgetNet || s.monthlyBudget || 0)}
-                        </strong>
-                      </div>
-                    </div>
                   </div>
                 </div>
               );
             })()
           ) : null}
+        </div>
+      </div>
+
+      {/* 4. BẢNG NHÌN NHANH TOÀN BỘ 28 NHÂN SỰ KÈM BRAND & GIAN HÀNG (KHÔNG CẦN CLICK CŨNG THẤY HẾT) */}
+      <div className="bg-surface border border-line rounded-2xl p-4 space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <LayoutGrid className="w-4 h-4 text-accent" />
+            <h3 className="text-sm font-bold text-ink">
+              Bảng Nhìn Nhanh Khối Lượng & Brand / Gian Hàng Của Từng Nhân Sự (3 Nhóm Tải Trọng)
+            </h3>
+          </div>
+          <span className="text-2xs text-ink-3">
+            Hiển thị trực diện toàn bộ Brand & Gian hàng đang gán cho từng người mà không cần bấm từng cột
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          {/* Cột 1: Quá tải */}
+          <div className="rounded-xl border border-critical/30 bg-critical-soft/20 p-3 space-y-2.5">
+            <div className="flex items-center justify-between pb-1 border-b border-critical/20">
+              <span className="text-xs font-bold text-critical flex items-center gap-1.5">
+                <Flame className="w-3.5 h-3.5" />
+                <span>Đang Quá Tải ≥115% ({groupedStaffByLoad.overload.length})</span>
+              </span>
+              <span className="text-2xs text-ink-3">Cần san bớt Brand/Gian</span>
+            </div>
+            <div className="space-y-2 max-h-[420px] overflow-y-auto pr-1">
+              {groupedStaffByLoad.overload.map(st => (
+                <div
+                  key={st.id}
+                  onClick={() => handleSelectAndFly(st.id)}
+                  className={`p-2.5 rounded-xl bg-surface border transition cursor-pointer space-y-1.5 ${
+                    selectedNodeId === st.id
+                      ? 'border-accent ring-2 ring-accent/20'
+                      : 'border-line hover:border-critical/50'
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="px-1.5 py-0.5 rounded bg-sunken text-ink-2 text-3xs font-bold">
+                        {st.level}
+                      </span>
+                      <span className="text-xs font-bold text-ink truncate">{st.name}</span>
+                    </div>
+                    <span className="text-xs font-bold text-critical tabular-nums shrink-0">
+                      {st.totalPts.toFixed(0)}/{st.targetCapacityPts}pt ({st.loadPct}%)
+                    </span>
+                  </div>
+                  <div className="w-full h-1.5 rounded-full bg-sunken overflow-hidden">
+                    <div
+                      style={{ width: `${Math.min(100, st.loadPct)}%` }}
+                      className="h-full bg-rose-600"
+                    />
+                  </div>
+                  <div className="flex flex-wrap gap-1 pt-0.5">
+                    {st.assignedBrands.map(ab => (
+                      <span
+                        key={ab.brandId}
+                        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-warning-soft text-warning text-3xs font-semibold"
+                      >
+                        <Building2 className="w-2.5 h-2.5" />
+                        {ab.brandName}
+                      </span>
+                    ))}
+                    {st.assignedStores.slice(0, 4).map(as => (
+                      <span
+                        key={as.storeId}
+                        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-sunken text-ink-2 text-3xs font-medium"
+                      >
+                        <Store className="w-2.5 h-2.5 text-accent" />
+                        {as.storeName.replace(/_TikTok.*|_Shopee.*/gi, '')} (×{as.coef.toFixed(2)})
+                      </span>
+                    ))}
+                    {st.assignedStores.length > 4 && (
+                      <span className="px-1.5 py-0.5 rounded bg-sunken text-ink-3 text-3xs">
+                        +{st.assignedStores.length - 4} gian
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Cột 2: Đủ tải chuẩn */}
+          <div className="rounded-xl border border-positive/30 bg-positive-soft/20 p-3 space-y-2.5">
+            <div className="flex items-center justify-between pb-1 border-b border-positive/20">
+              <span className="text-xs font-bold text-positive flex items-center gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>Đủ Tải Chuẩn 85–114% ({groupedStaffByLoad.optimal.length})</span>
+              </span>
+              <span className="text-2xs text-ink-3">Vận hành cân bằng</span>
+            </div>
+            <div className="space-y-2 max-h-[420px] overflow-y-auto pr-1">
+              {groupedStaffByLoad.optimal.map(st => (
+                <div
+                  key={st.id}
+                  onClick={() => handleSelectAndFly(st.id)}
+                  className={`p-2.5 rounded-xl bg-surface border transition cursor-pointer space-y-1.5 ${
+                    selectedNodeId === st.id
+                      ? 'border-accent ring-2 ring-accent/20'
+                      : 'border-line hover:border-positive/50'
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="px-1.5 py-0.5 rounded bg-sunken text-ink-2 text-3xs font-bold">
+                        {st.level}
+                      </span>
+                      <span className="text-xs font-bold text-ink truncate">{st.name}</span>
+                    </div>
+                    <span className="text-xs font-bold text-positive tabular-nums shrink-0">
+                      {st.totalPts.toFixed(0)}/{st.targetCapacityPts}pt ({st.loadPct}%)
+                    </span>
+                  </div>
+                  <div className="w-full h-1.5 rounded-full bg-sunken overflow-hidden">
+                    <div
+                      style={{ width: `${Math.min(100, st.loadPct)}%` }}
+                      className="h-full bg-emerald-600"
+                    />
+                  </div>
+                  <div className="flex flex-wrap gap-1 pt-0.5">
+                    {st.assignedBrands.map(ab => (
+                      <span
+                        key={ab.brandId}
+                        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-warning-soft text-warning text-3xs font-semibold"
+                      >
+                        <Building2 className="w-2.5 h-2.5" />
+                        {ab.brandName}
+                      </span>
+                    ))}
+                    {st.assignedStores.slice(0, 4).map(as => (
+                      <span
+                        key={as.storeId}
+                        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-sunken text-ink-2 text-3xs font-medium"
+                      >
+                        <Store className="w-2.5 h-2.5 text-accent" />
+                        {as.storeName.replace(/_TikTok.*|_Shopee.*/gi, '')} (×{as.coef.toFixed(2)})
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Cột 3: Dư công suất */}
+          <div className="rounded-xl border border-accent/30 bg-accent-soft/25 p-3 space-y-2.5">
+            <div className="flex items-center justify-between pb-1 border-b border-accent/20">
+              <span className="text-xs font-bold text-accent flex items-center gap-1.5">
+                <Target className="w-3.5 h-3.5" />
+                <span>Dư Công Suất &lt;85% ({groupedStaffByLoad.underload.length})</span>
+              </span>
+              <span className="text-2xs text-ink-3">Sẵn sàng nhận thêm việc</span>
+            </div>
+            <div className="space-y-2 max-h-[420px] overflow-y-auto pr-1">
+              {groupedStaffByLoad.underload.map(st => (
+                <div
+                  key={st.id}
+                  onClick={() => handleSelectAndFly(st.id)}
+                  className={`p-2.5 rounded-xl bg-surface border transition cursor-pointer space-y-1.5 ${
+                    selectedNodeId === st.id
+                      ? 'border-accent ring-2 ring-accent/20'
+                      : 'border-line hover:border-accent/50'
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="px-1.5 py-0.5 rounded bg-sunken text-ink-2 text-3xs font-bold">
+                        {st.level}
+                      </span>
+                      <span className="text-xs font-bold text-ink truncate">{st.name}</span>
+                    </div>
+                    <span className="text-xs font-bold text-accent tabular-nums shrink-0">
+                      {st.totalPts.toFixed(0)}/{st.targetCapacityPts}pt ({st.loadPct}%)
+                    </span>
+                  </div>
+                  <div className="w-full h-1.5 rounded-full bg-sunken overflow-hidden">
+                    <div
+                      style={{ width: `${Math.min(100, st.loadPct)}%` }}
+                      className="h-full bg-indigo-600"
+                    />
+                  </div>
+                  <div className="flex flex-wrap gap-1 pt-0.5">
+                    {st.assignedBrands.map(ab => (
+                      <span
+                        key={ab.brandId}
+                        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-warning-soft text-warning text-3xs font-semibold"
+                      >
+                        <Building2 className="w-2.5 h-2.5" />
+                        {ab.brandName}
+                      </span>
+                    ))}
+                    {st.assignedStores.slice(0, 4).map(as => (
+                      <span
+                        key={as.storeId}
+                        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-sunken text-ink-2 text-3xs font-medium"
+                      >
+                        <Store className="w-2.5 h-2.5 text-accent" />
+                        {as.storeName.replace(/_TikTok.*|_Shopee.*/gi, '')} (×{as.coef.toFixed(2)})
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </div>
